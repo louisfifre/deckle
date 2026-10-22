@@ -31,6 +31,12 @@ public interface IKeyboardInputHost
     /// </summary>
     void SetWheelInterceptor(IWheelInterceptor? interceptor);
 
+    // Whether an installed interceptor will actually see suppressible wheels:
+    // the low-level hook can fail to install while Raw Input still runs. A
+    // default member, so substitutes without a hook keep compiling and read as
+    // available.
+    bool IsWheelInterceptionAvailable => true;
+
     /// <summary>
     /// Posts a drain request to the input thread; safe to call from any thread (a bare thread
     /// message). The pump raises <see cref="DrainRequested"/> on the input thread when it arrives.

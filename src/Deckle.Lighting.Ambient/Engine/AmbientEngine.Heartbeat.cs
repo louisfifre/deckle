@@ -11,26 +11,24 @@ public sealed partial class AmbientEngine
         double elapsedMs = _heartbeatWindow.ElapsedTicks(now) * 1000.0 / Stopwatch.Frequency;
         if (elapsedMs < HeartbeatIntervalMs) return;
 
-        // Push stats over the elapsed window. Skipped from the line
-        // when no push happened in the window (static screen) — the
-        // ticks=N pushed=0 prefix already says "loop alive, nothing
-        // to push", a "push_avg_ms=0.0" suffix would be misleading.
-        string pushStats = "";
+        // Push stats over the elapsed window, as typed fields so a reader
+        // can aggregate them. They stay 0 when no push happened (static
+        // screen); pushed=0 on the same line says the zeros mean "no
+        // sample", not "instant pushes".
+        double avg = 0, p95 = 0, max = 0;
         if (_hbPushDurationsMs is { Count: > 0 })
         {
-            double min = double.MaxValue, max = 0, sum = 0;
+            double sum = 0;
             foreach (var v in _hbPushDurationsMs)
             {
-                if (v < min) min = v;
                 if (v > max) max = v;
                 sum += v;
             }
-            double avg = sum / _hbPushDurationsMs.Count;
+            avg = sum / _hbPushDurationsMs.Count;
             var sorted = _hbPushDurationsMs.ToArray();
             Array.Sort(sorted);
             int p95Idx = Math.Max(0, Math.Min(sorted.Length - 1, (int)Math.Ceiling(sorted.Length * 0.95) - 1));
-            double p95 = sorted[p95Idx];
-            pushStats = $" | push_avg_ms={avg:F1} | push_p95_ms={p95:F1} | push_max_ms={max:F1}";
+            p95 = sorted[p95Idx];
         }
 
         // Counters reset whether or not the producer admits the line, so
@@ -45,7 +43,10 @@ public sealed partial class AmbientEngine
             _hbDropped,
             _hbSkippedSlots,
             _multiLightActive ? _hbUnmappedLights : 0,
-            pushStats);
+            _hbPushFailures,
+            avg,
+            p95,
+            max);
 
         _heartbeatWindow.Restart(now);
         ResetHeartbeatCounters();
@@ -53,12 +54,12 @@ public sealed partial class AmbientEngine
 
     private bool HasHeartbeatObservations()
         => _hbTicks != 0 || _hbPushed != 0 || _hbDropped != 0
-        || _hbUnmappedLights != 0 || _hbSkippedSlots != 0
+        || _hbUnmappedLights != 0 || _hbSkippedSlots != 0 || _hbPushFailures != 0
         || _hbPushDurationsMs is { Count: > 0 };
 
     private void ResetHeartbeatCounters()
     {
-        _hbTicks = _hbPushed = _hbDropped = _hbUnmappedLights = 0;
+        _hbTicks = _hbPushed = _hbDropped = _hbUnmappedLights = _hbPushFailures = 0;
         _hbSkippedSlots = 0;
         _hbPushDurationsMs?.Clear();
     }

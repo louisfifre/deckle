@@ -1,6 +1,8 @@
 ---
 name: deckle-commits
 description: Use when you commit in Deckle, split a workstream into commits or read its history, to choose each commit's grain, type and scope.
+metadata:
+  version: "1.0"
 ---
 
 ## Why

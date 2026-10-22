@@ -69,4 +69,23 @@ public class MistouchFamilyStoreTests
         }
         finally { File.Delete(path); }
     }
+
+    // Regression: a non-object entry made TryGetProperty throw past the
+    // JsonException catch, losing every valid record with a boot failure.
+    [Fact]
+    public void ANonObjectRecordIsSkippedTheRestSurvives()
+    {
+        string path = WriteTemp("""
+            [
+              "boundary_apostrophe",
+              { "signature": "sub ;→'", "kind": "boundary_apostrophe" }
+            ]
+            """);
+        try
+        {
+            var records = MistouchFamilyStore.Load(path);
+            Assert.Single(records);
+        }
+        finally { File.Delete(path); }
+    }
 }

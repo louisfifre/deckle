@@ -1,7 +1,8 @@
 namespace Deckle.Audio;
 
 // Categorical decoding of MMSYSERR codes returned by waveInOpen during the
-// pre-flight probe (mapping in MicrophoneCapture.MapMmsysErr). Capture stays
+// pre-flight probe or by a failed capture (mapping in
+// MicrophoneCapture.ClassifyError). Capture stays
 // free of any localization dependency: the caller maps MicErrorKind to
 // user-visible strings via Loc.Get on its side. The raw MMSYSERR value is also
 // returned so the caller can include it verbatim in error logs / format

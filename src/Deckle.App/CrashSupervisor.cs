@@ -25,6 +25,16 @@ internal static class CrashSupervisor
     // this process was not started after a crash.
     internal static (uint ExitCode, int Relaunch)? FollowsCrash { get; private set; }
 
+    // True in a child a launcher watches. False for the launcher that had to
+    // run Deckle itself, a debugger session and the transactional modes: a
+    // crash there ends the app, and the run identity line says so up front.
+    internal static bool Supervised { get; private set; }
+
+    // The launcher's only trace, beside the journals in the diagnostics
+    // folder. It has no sink, and the one decision no child can report is
+    // giving up: after that line there is no Deckle left to write anything.
+    private const string SupervisorFileName = "supervisor.txt";
+
     // True when this process finished its work as a launcher and Main must
     // return. False when it is the Deckle that should run: a supervised child,
     // a transactional mode, a debugger session, or a launcher that could not
@@ -62,6 +72,7 @@ internal static class CrashSupervisor
         string? afterCrash = Environment.GetEnvironmentVariable(CrashRelaunchPolicy.AfterCrashVariable);
         Environment.SetEnvironmentVariable(CrashRelaunchPolicy.SupervisedVariable, null);
         Environment.SetEnvironmentVariable(CrashRelaunchPolicy.AfterCrashVariable, null);
+        Supervised = true;
 
         if (CrashRelaunchPolicy.TryParseAfterCrash(afterCrash, out uint code, out int relaunch))
             FollowsCrash = (code, relaunch);
@@ -100,23 +111,34 @@ internal static class CrashSupervisor
                 int exitCode = child.ExitCode;
 
                 if (!CrashRelaunchPolicy.IsCrash(exitCode)) return true;
+                Note($"child crashed | child_pid={child.Id} | exit_code=0x{(uint)exitCode:X8}");
 
                 Thread.Sleep(CrashRelaunchPolicy.RelaunchDelay);
 
                 // Checked after the pause: the flag can rise a moment after
                 // the child dies of the shutdown itself.
-                if (IsSessionEnding()) return true;
-                if (!budget.TrySpend(DateTimeOffset.UtcNow)) return true;
+                if (IsSessionEnding())
+                {
+                    Note("no relaunch | reason=session_ending");
+                    return true;
+                }
+                if (!budget.TrySpend(DateTimeOffset.UtcNow))
+                {
+                    Note($"gave up | reason=relaunch_budget_spent | max_relaunches={CrashRelaunchPolicy.MaxRelaunches} | window_min={CrashRelaunchPolicy.RelaunchWindow.TotalMinutes}");
+                    return true;
+                }
 
                 afterCrash = CrashRelaunchPolicy.FormatAfterCrash(exitCode, budget.Granted);
+                Note($"relaunching | relaunch={budget.Granted} | max_relaunches={CrashRelaunchPolicy.MaxRelaunches}");
             }
         }
-        catch
+        catch (Exception ex)
         {
             // No diagnostics sink exists in the parent. Once a child ran, the
             // launcher just stops. Before that, this process runs Deckle itself;
             // the marker and dump variables come off so it behaves like a plain
             // launch (and the startup log says capture is off).
+            Note($"child start failed | ex_type={ex.GetType().Name} | ex_message={ex.Message} | outcome={(started ? "launcher_stops" : "runs_deckle_itself")}");
             if (started) return true;
             Environment.SetEnvironmentVariable(CrashRelaunchPolicy.SupervisedVariable, null);
             Environment.SetEnvironmentVariable(CrashRelaunchPolicy.AfterCrashVariable, null);
@@ -136,6 +158,21 @@ internal static class CrashSupervisor
         };
         foreach (string arg in args) psi.ArgumentList.Add(arg);
         return Process.Start(psi);
+    }
+
+    private static void Note(string line)
+    {
+        try
+        {
+            Directory.CreateDirectory(AppPaths.DiagnosticsDirectory);
+            File.AppendAllText(
+                Path.Combine(AppPaths.DiagnosticsDirectory, SupervisorFileName),
+                $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss.fff zzz} | launcher_pid={Environment.ProcessId} | {line}{Environment.NewLine}");
+        }
+        catch
+        {
+            // Nothing else can take the line; the launcher goes on regardless.
+        }
     }
 
     // GetSystemMetrics(SM_SHUTTINGDOWN) is nonzero while the current session

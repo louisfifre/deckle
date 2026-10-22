@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 
 namespace Deckle.Anytype;
@@ -89,9 +90,16 @@ public static class MarkdownBody
         return list;
     }
 
-    // ── internals ─────────────────────────────────────────────────────────────
+    // ── reads ─────────────────────────────────────────────────────────────────
+    //
+    // The typed reads project a body instead of returning it whole: a section
+    // under a known heading, the checklist items, the outline. They share the
+    // heading grammar above so a section a read finds is the one replace_section
+    // will edit.
 
-    static bool TryReadSection(string body, string heading, out string content)
+    // Content under the first heading whose text equals `heading` (normalized,
+    // case-insensitive), raw as Anytype returned it. False when absent.
+    public static bool TryReadSection(string body, string heading, out string content)
     {
         content = "";
         string target = NormalizeHeading(heading);
@@ -112,6 +120,180 @@ public static class MarkdownBody
         content = string.Join('\n', lines[(start + 1)..end]);
         return true;
     }
+
+    // The lines before the first heading (the whole body when it has none).
+    public static string Preamble(string body)
+    {
+        string[] lines = body.Split('\n');
+        for (int i = 0; i < lines.Length; i++)
+            if (TryHeading(lines[i], out _, out _))
+                return string.Join('\n', lines[..i]);
+        return body;
+    }
+
+    public readonly record struct Section(int Level, string Heading, int ContentChars);
+
+    // Every heading in document order with the size of the content under it, so
+    // a reader can pick a section before paying for its text.
+    public static IReadOnlyList<Section> Outline(string body)
+    {
+        var list = new List<Section>();
+        string[] lines = body.Split('\n');
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (!TryHeading(lines[i], out int level, out string text)) continue;
+            int end = SectionEnd(lines, i, level);
+            int chars = Clean(string.Join('\n', lines[(i + 1)..end])).Length;
+            list.Add(new Section(level, NormalizeHeading(text), chars));
+        }
+        return list;
+    }
+
+    public readonly record struct ChecklistItem(bool Done, string Label);
+
+    // GFM checklist items in document order, labels unescaped. An item with an
+    // empty label (the task template ships one) is skipped: it is a slot, not a
+    // subtask.
+    public static IReadOnlyList<ChecklistItem> ChecklistItems(string body)
+    {
+        var items = new List<ChecklistItem>();
+        foreach (string line in body.Split('\n'))
+        {
+            if (!TryChecklistLine(line, out int box, out string label) || label.Length == 0) continue;
+            items.Add(new ChecklistItem(line[box] != ' ', Unescape(label)));
+        }
+        return items;
+    }
+
+    // A GFM checklist line: optional indent, a list marker, `[ ]`/`[x]`/`[X]`,
+    // then the label. `boxIndex` is the position of the box character so a
+    // caller can rewrite it in place.
+    public static bool TryChecklistLine(string line, out int boxIndex, out string label)
+    {
+        boxIndex = -1;
+        label = "";
+
+        int p = 0;
+        while (p < line.Length && (line[p] == ' ' || line[p] == '\t')) p++;
+
+        if (p >= line.Length || (line[p] != '-' && line[p] != '*' && line[p] != '+'))
+            return false;
+        p++;
+
+        if (p >= line.Length || line[p] != ' ') return false;
+        p++;
+
+        if (p + 2 >= line.Length || line[p] != '[' || line[p + 2] != ']')
+            return false;
+
+        char box = line[p + 1];
+        if (box != ' ' && box != 'x' && box != 'X') return false;
+
+        boxIndex = p + 1;
+        label = line[(p + 3)..].Trim();
+        return true;
+    }
+
+    // Body text as a reader wants it: Anytype's escapes undone, trailing
+    // hard-break spaces dropped, `---` dividers and blank runs removed. The
+    // dividers are layout the template ships, not content.
+    public static string Clean(string text)
+    {
+        var kept = new List<string>();
+        foreach (string raw in text.Split('\n'))
+        {
+            string line = Unescape(raw).TrimEnd();
+            // The v2 render spells the divider « --- » with a space on each
+            // side (measured 2026-10-22), v1 bare.
+            if (line.Length == 0 || line.Trim() == "---") continue;
+            kept.Add(line);
+        }
+        return string.Join('\n', kept);
+    }
+
+    // The first line a reader would see, cleaned, with a leading heading marker
+    // stripped. Empty when the body has no text. Names an object that has none
+    // (an idea or a report is titled by what it says first).
+    public static string FirstLine(string text)
+    {
+        string clean = Clean(text);
+        if (clean.Length == 0) return "";
+        string line = clean.Split('\n')[0].Trim();
+        return line.TrimStart('#').Trim();
+    }
+
+    // The v2 markdown render opens with the object's name as a `# ` line
+    // (measured 2026-10-22 on a task; a report has no name and opens on its own
+    // first heading block, which stays). That line is the title, not body: it
+    // is dropped when it spells `name`, leaving the body as the author wrote it.
+    // An idea opens instead on a plain line holding its name, which Anytype
+    // derives from that first block (measured 2026-10-22): dropped the same way.
+    // Whether v1 ever emitted either is not established; dropping is harmless.
+    public static string DropTitle(string body, string name)
+    {
+        string wanted = NormalizeHeading(name);
+        if (wanted.Length == 0) return body;
+
+        string[] lines = body.Split('\n');
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (lines[i].Trim().Length == 0) continue;
+            if (TryHeading(lines[i], out int level, out string text)
+                && level == 1
+                && NormalizeHeading(text).Equals(wanted, StringComparison.Ordinal))
+                return string.Join('\n', lines[(i + 1)..]);
+            if (!TryHeading(lines[i], out _, out _)
+                && NormalizeHeading(lines[i]).Equals(wanted, StringComparison.Ordinal))
+                return string.Join('\n', lines[(i + 1)..]);
+            break;
+        }
+        return body;
+    }
+
+    // session_log writes each journal entry as two paragraphs: this stamp, then
+    // the text. JournalEntries finds the entries by it.
+    public const string JournalStampFormat = "yyyy-MM-dd HH:mm";
+
+    // The journal entries of a report body, oldest first, so a reader keeps the
+    // last N entries rather than the last N lines. An entry is a stamp and the
+    // lines after it up to the next stamp, read back as "stamp · first line"
+    // with any further lines below. Before the first stamp, each line is an
+    // entry of its own: reports written before the stamped form carry one
+    // bullet per entry. The « # Journal » title is not an entry.
+    public static IReadOnlyList<string> JournalEntries(string body)
+    {
+        var entries = new List<string>();
+        StringBuilder? stamped = null;
+        bool hasText = false;
+        foreach (string line in Clean(body).Split('\n'))
+        {
+            if (line.Length == 0 || line.StartsWith("# ", StringComparison.Ordinal)) continue;
+            if (IsJournalStamp(line))
+            {
+                if (stamped is not null) entries.Add(stamped.ToString());
+                stamped = new StringBuilder(line);
+                hasText = false;
+            }
+            else if (stamped is null)
+            {
+                entries.Add(line);
+            }
+            else
+            {
+                stamped.Append(hasText ? "\n" : " · ").Append(line);
+                hasText = true;
+            }
+        }
+        if (stamped is not null) entries.Add(stamped.ToString());
+        return entries;
+    }
+
+    // ── internals ─────────────────────────────────────────────────────────────
+
+    static bool IsJournalStamp(string line) =>
+        line.Length == JournalStampFormat.Length
+        && DateTime.TryParseExact(
+            line, JournalStampFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
 
     static int SectionEnd(string[] lines, int headingLine, int level)
     {
@@ -151,7 +333,7 @@ public static class MarkdownBody
         return string.Join('\n', kept);
     }
 
-    static string Unescape(string s)
+    public static string Unescape(string s)
     {
         if (s.IndexOf('\\') < 0) return s;
 

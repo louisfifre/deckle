@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using ModelContextProtocol;
@@ -50,7 +51,8 @@ internal static class McpSurfaceProtocolAdapter
             TimeToLive = TimeSpan.Zero,
             CacheScope = CacheScope.Private,
         });
-        options.Handlers.CallToolHandler = (request, ct) => CallToolAsync(tools, request, ct);
+        string surfaceName = surface.Descriptor.Name;
+        options.Handlers.CallToolHandler = (request, ct) => CallToolAsync(surfaceName, tools, request, ct);
     }
 
     private static Tool ToProtocolTool(ToolDescriptor descriptor)
@@ -88,46 +90,82 @@ internal static class McpSurfaceProtocolAdapter
     };
 
     private static async ValueTask<CallToolResult> CallToolAsync(
+        string surfaceName,
         IReadOnlyDictionary<string, PreparedTool> tools,
         RequestContext<CallToolRequestParams> request,
         CancellationToken ct)
     {
-        string? name = request.Params?.Name;
-        if (name is null)
-            throw new McpProtocolException("Missing tool name", McpErrorCode.InvalidParams);
-        if (!tools.TryGetValue(name, out PreparedTool? tool))
-            throw new McpProtocolException($"Unknown tool: {name}", McpErrorCode.InvalidParams);
-
-        JsonObject? arguments = ToJsonObject(request.Params?.Arguments);
-        if (!tool.Input.Accepts(arguments ?? new JsonObject()))
-        {
-            return ToolResult(
-                new ToolOutput("Tool input does not match the advertised JSON Schema."),
-                isError: true);
-        }
-
+        long started = Stopwatch.GetTimestamp();
+        // An unknown name is caller-supplied text, so it is logged as
+        // "unknown", never echoed; a known name is a catalog constant.
+        string toolName = "";
+        string outcome = "failed";
+        string exType = "";
         try
         {
-            ToolOutput output = await tool.Descriptor.Handler(arguments, ct).ConfigureAwait(false);
-            if (tool.Output is not null
-                && (output.StructuredContent is null || !tool.Output.Accepts(output.StructuredContent)))
+            string? name = request.Params?.Name;
+            if (name is null)
             {
+                outcome = "missing_tool_name";
+                throw new McpProtocolException("Missing tool name", McpErrorCode.InvalidParams);
+            }
+            if (!tools.TryGetValue(name, out PreparedTool? tool))
+            {
+                toolName = "unknown";
+                outcome = "unknown_tool";
+                throw new McpProtocolException($"Unknown tool: {name}", McpErrorCode.InvalidParams);
+            }
+            toolName = tool.Descriptor.Name;
+
+            JsonObject? arguments = ToJsonObject(request.Params?.Arguments);
+            if (!tool.Input.Accepts(arguments ?? new JsonObject()))
+            {
+                outcome = "input_rejected";
                 return ToolResult(
-                    new ToolOutput("Tool output does not match the advertised JSON Schema."),
+                    new ToolOutput("Tool input does not match the advertised JSON Schema."),
                     isError: true);
             }
-            return ToolResult(output, isError: false);
+
+            try
+            {
+                ToolOutput output = await tool.Descriptor.Handler(arguments, ct).ConfigureAwait(false);
+                if (tool.Output is not null
+                    && (output.StructuredContent is null || !tool.Output.Accepts(output.StructuredContent)))
+                {
+                    outcome = "output_rejected";
+                    return ToolResult(
+                        new ToolOutput("Tool output does not match the advertised JSON Schema."),
+                        isError: true);
+                }
+                outcome = "completed";
+                return ToolResult(output, isError: false);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                outcome = "cancelled";
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Catalog validation and execution errors are model-correctable tool
+                // results. Only a missing or unknown tool name is a JSON-RPC
+                // InvalidParams error.
+                outcome = "failed";
+                exType = ex.GetType().Name;
+                return ToolResult(new ToolOutput(ex.Message), isError: true);
+            }
         }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        catch (Exception ex) when (outcome == "failed")
         {
+            // Anything thrown before the handler ran (argument conversion).
+            exType = ex.GetType().Name;
             throw;
         }
-        catch (Exception ex)
+        finally
         {
-            // Catalog validation and execution errors are model-correctable tool
-            // results. Only a missing or unknown tool name is a JSON-RPC
-            // InvalidParams error.
-            return ToolResult(new ToolOutput(ex.Message), isError: true);
+            DeckleAnytypeMcpSource.Log.ToolCallCompleted(
+                surfaceName, toolName, outcome, exType,
+                Stopwatch.GetElapsedTime(started).TotalMilliseconds);
         }
     }
 
@@ -142,12 +180,31 @@ internal static class McpSurfaceProtocolAdapter
         return result;
     }
 
+    // Safety net on the text a model receives, never the normal path. Measured
+    // over 45 days of transcripts, successful reads were the context cost (get
+    // p90 5 664 chars, max 43 737; eight results over 50 KB) while errors stayed
+    // under 3 206 chars. The typed reads are designed to stay far under this
+    // limit; the cap also covers ex.Message errors.
+    private const int MaxResultChars = 8000;
+
     private static CallToolResult ToolResult(ToolOutput output, bool isError) => new()
     {
-        Content = [new TextContentBlock { Text = output.Text }],
+        // Only the text fallback is cut: StructuredContent was already
+        // validated against the output schema and is left untouched.
+        Content = [new TextContentBlock { Text = CapText(output.Text) }],
         StructuredContent = output.StructuredContent is null
             ? null
             : JsonSerializer.SerializeToElement(output.StructuredContent),
         IsError = isError ? true : null,
     };
+
+    // A cut between the two halves of a surrogate pair (an emoji, say) would
+    // leave a lone high surrogate, which is not valid UTF-16 and serializes to
+    // U+FFFD or fails; the cut steps back one char to keep the pair whole.
+    private static string CapText(string text)
+    {
+        if (text.Length <= MaxResultChars) return text;
+        int cut = char.IsHighSurrogate(text[MaxResultChars - 1]) ? MaxResultChars - 1 : MaxResultChars;
+        return $"{text[..cut]}\n[coupé : {cut} / {text.Length} caractères]";
+    }
 }

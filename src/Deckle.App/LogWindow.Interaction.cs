@@ -21,20 +21,20 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     private bool CopyToClipboard(string text)
     {
         ClipboardWriteResult result = Win32Clipboard.TryCopyText(text);
+        // No exception on either path: the reason carries the clipboard status.
         if (!result.Landed)
         {
-            DeckleAppSource.Log.LogWindowWarning();
-            DeckleAppSource.Log.LogWindowWarningDetail(
-                $"copy failed: {result.Status} ({result.ExpectedChars} chars)");
+            DeckleAppSource.Log.WindowOperationFailed(
+                "log", "clipboard_copy", App.ClipboardFailureReason(result.Status), "", "");
             return false;
         }
 
+        // The text landed but the read-back disagrees: the copy may be partial.
         if (result.Status is ClipboardWriteStatus.VerifyMissing
             or ClipboardWriteStatus.VerifyLengthMismatch)
         {
-            DeckleAppSource.Log.LogWindowWarning();
-            DeckleAppSource.Log.LogWindowWarningDetail(
-                $"copy verify {result.Status}: expected {result.ExpectedChars}, clipboard {result.ActualChars}");
+            DeckleAppSource.Log.WindowOperationFailed(
+                "log", "clipboard_verify", App.ClipboardFailureReason(result.Status), "", "");
         }
 
         return true;
@@ -113,8 +113,8 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         }
         catch (Exception ex)
         {
-            DeckleAppSource.Log.LogWindowWarning();
-            DeckleAppSource.Log.LogWindowWarningDetail($"save err: {ex.Message}");
+            DeckleAppSource.Log.WindowOperationFailed(
+                "log", "save", "exception", ex.GetType().Name, ex.Message);
         }
     }
 

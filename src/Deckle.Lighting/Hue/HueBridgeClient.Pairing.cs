@@ -24,10 +24,12 @@ public sealed partial class HueBridgeClient
         DeckleLightingSource.Log.PairingStartedDetail(
             _bridge.InternalIpAddress, (int)overallTimeout.TotalSeconds, deviceType);
 
+        int attempts = 0;
         while (DateTime.UtcNow < deadline)
         {
             ct.ThrowIfCancellationRequested();
 
+            attempts++;
             var outcome = await PairAttemptAsync(deviceType, ct).ConfigureAwait(false);
             switch (outcome)
             {
@@ -43,8 +45,7 @@ public sealed partial class HueBridgeClient
                     break;
 
                 case PairOutcome.OtherError otherError:
-                    DeckleLightingSource.Log.PairingRejected();
-                    DeckleLightingSource.Log.PairingRejectedDetail(otherError.Type, otherError.Description);
+                    DeckleLightingSource.Log.PairingRejected(otherError.Type, otherError.Description);
                     throw new HuePairingException(
                         $"Bridge refused pairing (type {otherError.Type}): {otherError.Description}");
             }
@@ -52,7 +53,7 @@ public sealed partial class HueBridgeClient
             await Task.Delay(interval, ct).ConfigureAwait(false);
         }
 
-        DeckleLightingSource.Log.PairingTimedOut();
+        DeckleLightingSource.Log.PairingTimedOut(attempts, overallTimeout.TotalSeconds);
         throw new TimeoutException(
             "Hue bridge pairing timed out. Press the link button on the bridge and try again.");
     }
@@ -72,8 +73,10 @@ public sealed partial class HueBridgeClient
         }
         catch (HttpRequestException ex)
         {
-            DeckleLightingSource.Log.BridgeUnreachable();
-            DeckleLightingSource.Log.BridgeUnreachableDetail(ex.GetType().Name, ex.Message);
+            DeckleLightingSource.Log.BridgeUnreachable(
+                ex.GetType().Name,
+                ex.Message,
+                (ex.InnerException as System.Net.Sockets.SocketException)?.NativeErrorCode ?? 0);
             throw new HueBridgeUnreachableException(
                 $"Bridge at {_bridge.InternalIpAddress} is unreachable.", ex);
         }
@@ -81,8 +84,7 @@ public sealed partial class HueBridgeClient
         // The bridge returns 200 even for "link button not pressed"; the JSON body carries the real result.
         if (!response.IsSuccessStatusCode)
         {
-            DeckleLightingSource.Log.PairingHttpError();
-            DeckleLightingSource.Log.PairingHttpErrorDetail((int)response.StatusCode, response.ReasonPhrase ?? "");
+            DeckleLightingSource.Log.PairingHttpError((int)response.StatusCode);
             throw new HttpRequestException(
                 $"Hue bridge returned {(int)response.StatusCode} on pairing.");
         }

@@ -54,7 +54,48 @@ public static class InstallPlan
     {
         var items = new List<InstallItem>();
 
-        if (context.SelectedModules.Contains(ModuleIds.Transcription))
+        // Install order: dictation first, then autocorrect, then Anytype.
+        foreach (string moduleId in ModulesInInstallOrder)
+        {
+            if (context.SelectedModules.Contains(moduleId))
+                items.AddRange(ItemsFor(context, moduleId));
+        }
+
+        return items;
+    }
+
+    // What one module costs to choose, read from the same items Build would
+    // install so the module card cannot disagree with the install. Null when
+    // the module installs nothing; 0 when everything it needs is already on
+    // disk. Independent of whether the module is currently selected: the card
+    // states the cost before the person ticks it.
+    internal static long? PendingBytesFor(SetupContext context, string moduleId)
+    {
+        IReadOnlyList<InstallItem> items = ItemsFor(context, moduleId);
+        if (items.Count == 0) return null;
+
+        long pending = 0;
+        foreach (InstallItem item in items)
+        {
+            if (!item.IsInstalled()) pending += item.SizeBytes;
+        }
+        return pending;
+    }
+
+    private static readonly string[] ModulesInInstallOrder =
+    [
+        ModuleIds.Transcription,
+        ModuleIds.Autocorrect,
+        ModuleIds.Anytype,
+    ];
+
+    // The items one module brings; empty for a module with nothing to download
+    // here.
+    private static IReadOnlyList<InstallItem> ItemsFor(SetupContext context, string moduleId)
+    {
+        var items = new List<InstallItem>();
+
+        if (moduleId == ModuleIds.Transcription)
         {
             items.Add(NativeRuntimeItem());
             // The wizard host seeds SelectedModel; the guard covers a host
@@ -62,12 +103,14 @@ public static class InstallPlan
             if (context.SelectedModel is { } model) items.Add(WhisperModelItem(model));
             items.Add(SileroItem());
         }
-
-        if (context.SelectedModules.Contains(ModuleIds.Autocorrect))
+        else if (moduleId == ModuleIds.Autocorrect)
+        {
             items.Add(CamembertItem());
-
-        if (context.SelectedModules.Contains(ModuleIds.Anytype))
+        }
+        else if (moduleId == ModuleIds.Anytype)
+        {
             items.Add(AnytypeItem());
+        }
 
         return items;
     }

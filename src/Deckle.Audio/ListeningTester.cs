@@ -17,8 +17,9 @@ namespace Deckle.Audio;
 // itself. Playback follows SpeechEngine: one CancellationTokenSource swapped
 // under a lock, so a new play (or a new take) cancels the clip in flight.
 //
-// No log of its own: MicrophoneCapture and SpeakerOutput already log their
-// milestones under [AUDIO].
+// No log of its own: MicrophoneCapture and SpeakerOutput log the take and the
+// playback on the Deckle-Audio provider, and TakeHost's RecordingPurpose tells
+// the take apart from a dictation there.
 public sealed class ListeningTester : IDisposable
 {
     // One spoken sentence: long enough for the compressor's 150 ms release to
@@ -49,7 +50,8 @@ public sealed class ListeningTester : IDisposable
 
     // Plays `samples` (16 kHz mono) on the default render device and completes
     // when the clip ends. Cancels the previous play first. Returns false only
-    // when the device could not be opened (or the tester is disposed); a play
+    // when the clip never reached the device (empty clip, device refused to
+    // open or take the buffer) or the tester is disposed; a play
     // interrupted by a newer one or by StopPlayback counts as true.
     public async Task<bool> PlayAsync(float[] samples)
     {
@@ -104,5 +106,6 @@ public sealed class ListeningTester : IDisposable
         public int AudioInputDeviceId => deviceId;
         public int MaxRecordingDurationSeconds => seconds;
         public bool MicrophoneTelemetryEnabled => false;
+        public string RecordingPurpose => "listening_test";
     }
 }

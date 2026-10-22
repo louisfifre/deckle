@@ -20,10 +20,21 @@ namespace Deckle.Shell.Tests;
 // The listener re-calls only on `MarshalQueued`, never on `MarshalCompleted`
 // (emitted later on the queue thread), so the test does not depend on when the
 // enqueued callback runs.
+//
+// The marshal detail also answers to the Windowing admission policy, which
+// fails closed until configured: each test opens it, so the instrumented path
+// the guard lives on is the one exercised.
 [Trait("Category", "regression")]
 [Trait("Category", "observability")]
-public class DispatcherQueueExtensionsTests
+public class DispatcherQueueExtensionsTests : IDisposable
 {
+    public DispatcherQueueExtensionsTests()
+        => OperationalLogAdmission.Configure(
+            static activity => activity == OperationalLogActivity.Windowing);
+
+    public void Dispose()
+        => OperationalLogAdmission.Configure(static _ => false);
+
     [Fact]
     public async Task TryEnqueueObservedDoesNotRecurseSynchronouslyOnReentrantListener()
     {

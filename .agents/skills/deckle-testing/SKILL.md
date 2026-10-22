@@ -1,6 +1,8 @@
 ---
 name: deckle-testing
 description: Use when you write a Deckle test or extend coverage, whatever its category, to test what the code does through the seams the design already has.
+metadata:
+  version: "1.0"
 ---
 
 ## Why

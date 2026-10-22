@@ -48,6 +48,13 @@ public sealed partial class StreamingPage : Page
     {
         base.OnNavigatedTo(e);
         ViewModel.Load();
+
+        // The speech-filtering fold is the page's first subject, so it opens with
+        // the page rather than hiding its four values behind a click. Set on each
+        // visit: the page is cached, and a fold left closed would stay closed.
+        foreach (UIElement child in VadHost.Children)
+            if (child is CommunityToolkit.WinUI.Controls.SettingsExpander expander)
+                expander.IsExpanded = true;
         // Load() may raise no PropertyChanged on a clean profile, so no composer
         // DirtyChanged would fire — settle the gate off the freshly-loaded values.
         GateResetAll();

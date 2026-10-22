@@ -78,8 +78,8 @@ public static class UpdateService
         {
             // Offline is a normal state for a local-first app — a failed check
             // is a warning in the narrative, never a surface the user sees.
-            DeckleSetupSource.Log.UpdateCheckFailed();
-            DeckleSetupSource.Log.UpdateCheckFailedDetail($"{ex.GetType().Name}: {ex.Message}");
+            int status = ex is System.Net.Http.HttpRequestException { StatusCode: { } code } ? (int)code : 0;
+            DeckleSetupSource.Log.UpdateCheckFailed(ex.GetType().Name, ex.Message, status);
             return null;
         }
     }

@@ -33,7 +33,12 @@ internal static class Uninstaller
             bool proceed = MessageDialog.Confirm(nint.Zero,
                 $"Remove Deckle?\n\nThis deletes the app folder:\n{installDir}",
                 "Uninstall Deckle");
-            if (!proceed) return 0;
+            if (!proceed)
+            {
+                InstallLog.MarkCancelled();
+                InstallLog.Info("Uninstall cancelled | reason=user_declined");
+                return 0;
+            }
 
             // Models are the expensive thing to lose — re-downloading is gigabytes —
             // so keeping them is the default (No), stated plainly.
@@ -44,6 +49,8 @@ internal static class Uninstaller
                     "Choose No to keep them.",
                     "Delete data and models");
         }
+        InstallLog.Info(
+            $"Uninstall confirmed | install_dir={installDir} | data_dir={dataDir} | remove_data={removeData} | custom_data_root={dataRoot is not null}");
 
         // A running Deckle keeps its image locked, so the scheduled folder delete would
         // leave binaries behind. Detection skips this very process; no retry loop — a
@@ -52,6 +59,8 @@ internal static class Uninstaller
         string[] running = RunningProcesses.FromFolder(installDir, legacyProvidersDir);
         if (running.Length > 0)
         {
+            InstallLog.Error(
+                $"Uninstall blocked | reason=app_running | count={running.Length} | processes={string.Join(",", running)}");
             MessageDialog.Error(nint.Zero,
                 $"Deckle is still running ({string.Join(", ", running)}).\n\n" +
                 "Close it, then run the uninstaller again.");
@@ -64,6 +73,8 @@ internal static class Uninstaller
             RunningProcesses.StopFromFolder(root).Select(failure => $"{root}: {failure}"))];
         if (providerFailures.Length > 0)
         {
+            InstallLog.Error(
+                $"Uninstall blocked | reason=provider_stop_failed | count={providerFailures.Length} | failures={InstallLog.Flatten(string.Join("; ", providerFailures))}");
             MessageDialog.Error(nint.Zero,
                 "Deckle could not stop its provider processes:\n\n" +
                 string.Join("\n", providerFailures) +
@@ -78,7 +89,8 @@ internal static class Uninstaller
         {
             try
             {
-                try { window.ReportMarquee("Removing Deckle…"); } catch { }
+                try { window.ReportMarquee("Removing Deckle…"); }
+                catch (Exception ex) { InstallLog.Verbose($"progress report failed | {InstallLog.Cause(ex)}"); }
 
                 // Provider cleanup is independent from shell/registry cleanup. A
                 // preceding best-effort failure must never skip these owned roots.
@@ -86,18 +98,31 @@ internal static class Uninstaller
                 string[] residuals = providerRoots.Where(Directory.Exists).ToArray();
                 if (residuals.Length > 0)
                 {
+                    InstallLog.Error(
+                        $"Uninstall failed | reason=provider_folder_residual | count={residuals.Length} | folders={string.Join(",", residuals)}");
                     providerResidual = "Deckle's provider folders could not be removed:\n" +
                         string.Join("\n", residuals);
                     return;
                 }
 
-                try { Shortcut.RemoveStartMenu("Deckle"); } catch { }
-                try { UninstallEntry.Remove(); } catch { }
+                // These three stay best-effort: the folder delete still runs, so a
+                // failure here leaves a stale shortcut, Installed-apps entry or
+                // variable behind. That residue is what a reader needs to see.
+                try { Shortcut.RemoveStartMenu("Deckle"); }
+                catch (Exception ex) { InstallLog.Warning($"Start Menu shortcut not removed | reason=remove_failed | {InstallLog.Cause(ex)}"); }
+                try { UninstallEntry.Remove(); }
+                catch (Exception ex) { InstallLog.Warning($"Installed-apps entry not removed | reason=remove_failed | {InstallLog.Cause(ex)}"); }
 
-                if (removeData) TryDeleteTree(dataDir);
+                if (removeData)
+                {
+                    TryDeleteTree(dataDir);
+                    if (Directory.Exists(dataDir))
+                        InstallLog.Warning($"Data folder not fully removed | reason=delete_failed | path={dataDir}");
+                }
                 if (dataRoot is not null)
                 {
-                    try { UserEnvironment.ClearDataRoot(); } catch { }
+                    try { UserEnvironment.ClearDataRoot(); }
+                    catch (Exception ex) { InstallLog.Warning($"Data root variable not cleared | reason=clear_failed | {InstallLog.Cause(ex)}"); }
                 }
             }
             finally { window.RequestClose(); }
@@ -136,6 +161,8 @@ internal static class Uninstaller
     {
         if (installDir.IndexOfAny(CmdMetacharacters) >= 0)
         {
+            InstallLog.Warning(
+                $"Install folder deleted in process | reason=path_has_cmd_metacharacters | path={installDir}");
             TryDeleteTree(installDir);
             return;
         }
@@ -147,14 +174,18 @@ internal static class Uninstaller
             UseShellExecute = false,
             WindowStyle = ProcessWindowStyle.Hidden,
         };
-        Process.Start(psi);
+        // UseShellExecute=false: Start returns the process or throws, never null.
+        using Process cleaner = Process.Start(psi)!;
+        InstallLog.Info($"Install folder deletion scheduled | pid={cleaner.Id} | path={installDir}");
     }
 
     private static readonly char[] CmdMetacharacters = { '"', '&', '|', '<', '>', '^', '%' };
 
+    // Callers check what is left afterwards and decide whether that residue is a
+    // Warning or an Error; the raw failure stays Verbose here.
     private static void TryDeleteTree(string dir)
     {
         try { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); }
-        catch { /* best-effort */ }
+        catch (Exception ex) { InstallLog.Verbose($"folder delete failed | path={dir} | {InstallLog.Cause(ex)}"); }
     }
 }

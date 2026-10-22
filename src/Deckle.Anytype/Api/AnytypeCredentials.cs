@@ -76,6 +76,10 @@ public sealed record AnytypeCredentials(string ApiUrl, string ApiVersion, string
 
         if (!string.IsNullOrWhiteSpace(vaultApiKey))
         {
+            // Key shape on 0.5.0: minted `--all-spaces --read-write` it serves v1
+            // and v2, scoped it serves v2 only, and this client speaks v1. A
+            // 0.3.x key (44 characters) answers 403 on `/v2/auth/whoami`; keys
+            // minted on 0.5.0 are 69 characters and stop working after a downgrade.
             DeckleAnytypeSource.Log.CredentialsResolved("headless");
             return new AnytypeCredentials(
                 BackendHealthProbe.DefaultBaseUrl, dto.api_version, vaultApiKey, dto.space_id);

@@ -70,9 +70,17 @@ public static class AnytypeObjectId
     }
 }
 
-public sealed class NameResolver(AnytypeApiClient api)
+public sealed class NameResolver(AnytypeApiClient api, AnytypeV2Client? v2 = null)
 {
+    // Same cap the v1 search used: enough candidates to list in an ambiguity message.
+    const int CandidateLimit = 20;
+
     readonly AnytypeApiClient _api = api;
+
+    // The v2 client is bound to the default space, so only that space rides on
+    // v2; an allow-listed foreign space stays on the v1 search.
+    readonly AnytypeV2Searcher? _searcher = v2 is null ? null : new AnytypeV2Searcher(v2);
+    readonly string? _v2SpaceId = v2?.SpaceId;
 
     public async Task<string> ResolveAsync(
         string selector, IReadOnlyList<string>? typeKeys, CancellationToken ct = default)
@@ -113,7 +121,10 @@ public sealed class NameResolver(AnytypeApiClient api)
         IReadOnlyList<string>? typeKeys,
         CancellationToken ct)
     {
-        var root = await _api.SearchAsync(spaceId, query, typeKeys, limit: 20, ct: ct);
+        if (_searcher is not null && spaceId == _v2SpaceId)
+            return await SearchCandidatesV2Async(query, typeKeys, ct);
+
+        var root = await _api.SearchAsync(spaceId, query, typeKeys, limit: CandidateLimit, ct: ct);
         var data = root["data"] as JsonArray;
         var result = new List<Candidate>();
         if (data is null) return result;
@@ -132,6 +143,32 @@ public sealed class NameResolver(AnytypeApiClient api)
         return result;
     }
 
+    // v2 takes ONE type per search, so several types cost one search each; the
+    // hits are merged by id. A v2 row has no snippet (measured 2026-10-22), so
+    // an object without a name, a report, reads « (sans titre) » in an
+    // ambiguity message, where v1 showed the first line of its snippet.
+    // Exact-name matching is unaffected: it only concerns named objects.
+    async Task<List<Candidate>> SearchCandidatesV2Async(
+        string query, IReadOnlyList<string>? typeKeys, CancellationToken ct)
+    {
+        IReadOnlyList<string?> types = typeKeys is { Count: > 0 } ? typeKeys : [null];
+
+        var result = new List<Candidate>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (string? type in types)
+        {
+            AnytypeV2SearchPage page = await _searcher!.SearchPageAsync(
+                new AnytypeV2SearchRequest { Type = type, Query = query }, offset: 0, CandidateLimit, ct);
+            foreach (AnytypeV2SearchRow row in page.Rows)
+                if (seen.Add(row.Id))
+                    result.Add(new Candidate(
+                        row.Id,
+                        row.Name.Length > 0 ? row.Name : "(sans titre)",
+                        row.Type,
+                        Snippet: null));
+        }
+        return result;
+    }
     // Note-layout objects (rapport) carry an empty name; their title is the
     // first line of the snippet. Mirrors the vendor helper's getDisplayName.
     static string DisplayName(JsonObject obj)

@@ -32,6 +32,7 @@ public sealed partial class ChoicesPage : Page
         setup.SetStepHeader(
             Loc.Get("Setup_StepTitle_Choices"),
             Loc.Get("Setup_StepSubtitle_Choices"));
+        setup.SetCurrentStep(SetupStep.Dictation);
         setup.SetBackEnabled(true);
         setup.SetNextLabel(Loc.Get("Setup_NextLabel_Install"));
         setup.SetNextVisible(true);
@@ -85,8 +86,7 @@ public sealed partial class ChoicesPage : Page
         }
         catch (Exception ex)
         {
-            DeckleSetupSource.Log.NativeImportFailed();
-            DeckleSetupSource.Log.NativeImportFailedDetail($"{ex.GetType().Name}: {ex.Message}");
+            DeckleSetupSource.Log.NativeImportFailed(ex.GetType().Name, ex.Message);
             NativeStatusText.Text = Loc.Format("Setup_Native_ImportFailed_Format", ex.Message);
         }
     }

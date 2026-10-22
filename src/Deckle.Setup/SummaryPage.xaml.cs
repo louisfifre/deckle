@@ -60,6 +60,7 @@ public sealed partial class SummaryPage : Page
         _setup.SetStepHeader(
             Loc.Get(ok ? "Setup_StepTitle_Summary_Success"    : "Setup_StepTitle_Summary_Failure"),
             Loc.Get(ok ? "Setup_StepSubtitle_Summary_Success" : "Setup_StepSubtitle_Summary_Failure"));
+        _setup.SetCurrentStep(SetupStep.Finish);
         _setup.SetBackEnabled(false);
         _setup.SetNextVisible(true);
         _setup.SetNextEnabled(true);
@@ -96,7 +97,7 @@ public sealed partial class SummaryPage : Page
     }
 
     // Best-effort: a failure to open Explorer is self-evident on screen, so it
-    // is swallowed rather than logged.
+    // stays a Verbose trace rather than a Warning.
     private void OnOpenDiagnosticsClick(object sender, RoutedEventArgs e)
     {
         try
@@ -108,8 +109,10 @@ public sealed partial class SummaryPage : Page
                 UseShellExecute = true,
             });
         }
-        catch
+        catch (Exception ex)
         {
+            DeckleSetupSource.Log.BestEffortFailedDetail(
+                "open_diagnostics", AppPaths.DiagnosticsDirectory, ex.GetType().Name, ex.Message);
         }
     }
 
@@ -266,12 +269,15 @@ public sealed partial class SummaryPage : Page
 
                 if (!ok)
                 {
+                    DeckleSetupSource.Log.ItemImportFailed(r.ItemId, "sha256_mismatch", "", "");
                     status.Text = Loc.Get("Setup_ImportChecksumMismatch");
                     button.IsEnabled = true;
                     return;
                 }
 
-                MarkImported(r.ItemId, r.DisplayName, new FileInfo(dest).Length);
+                long importedBytes = new FileInfo(dest).Length;
+                DeckleSetupSource.Log.ItemImported(r.ItemId, importedBytes);
+                MarkImported(r.ItemId, r.DisplayName, importedBytes);
             }
             else
             {
@@ -287,12 +293,14 @@ public sealed partial class SummaryPage : Page
 
                 if (!NativeRuntime.IsInstalled())
                 {
-                    status.Text = Loc.Format("Setup_ImportFailed_Format",
-                        string.Join(", ", NativeRuntime.GetMissing()));
+                    string missing = string.Join(", ", NativeRuntime.GetMissing());
+                    DeckleSetupSource.Log.ItemImportFailed(r.ItemId, "files_missing", "", missing);
+                    status.Text = Loc.Format("Setup_ImportFailed_Format", missing);
                     button.IsEnabled = true;
                     return;
                 }
 
+                DeckleSetupSource.Log.ItemImported(r.ItemId, 0);
                 MarkImported(r.ItemId, r.DisplayName, null);
             }
 
@@ -300,6 +308,7 @@ public sealed partial class SummaryPage : Page
         }
         catch (Exception ex)
         {
+            DeckleSetupSource.Log.ItemImportFailed(r.ItemId, "threw", ex.GetType().Name, ex.Message);
             status.Text = Loc.Format("Setup_ImportFailed_Format", ex.Message);
             button.IsEnabled = true;
         }
@@ -329,7 +338,11 @@ public sealed partial class SummaryPage : Page
     private static void TryDelete(string path)
     {
         try { if (File.Exists(path)) File.Delete(path); }
-        catch { /* best-effort cleanup */ }
+        catch (Exception ex)
+        {
+            // Best-effort: the next import overwrites the rejected copy anyway.
+            DeckleSetupSource.Log.BestEffortFailedDetail("delete_rejected_import", path, ex.GetType().Name, ex.Message);
+        }
     }
 
     private static int CountFailed(SetupContext ctx)

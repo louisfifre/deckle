@@ -18,6 +18,12 @@ public partial class App
 {
     private Deckle.Setup.SetupWindow? _updateWindow;
 
+    // Cancelled by QuitApp, so the loop's last line says it stopped rather
+    // than dying unannounced with the process.
+    private CancellationTokenSource? _updateChecksCts;
+
+    private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromHours(24);
+
     private void WireUpdater()
     {
         Settings.SettingsHost.GetAppVersion = CurrentDisplayVersion;
@@ -30,37 +36,69 @@ public partial class App
         if (!UpdateService.IsInstalledLaunch()) return;
 
         var dq = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        var cts = new CancellationTokenSource();
+        _updateChecksCts = cts;
+        CancellationToken ct = cts.Token;
+        DeckleAppSource.Log.UpdateChecksStarted((int)UpdateCheckInterval.TotalHours);
         _ = Task.Run(async () =>
         {
             // One toast per discovered version per process lifetime — a tray
             // app can run for weeks, and re-toasting a declined offer daily
             // is nagging, not surfacing. The offer stays parked in Settings.
             var prompted = new HashSet<string>(StringComparer.Ordinal);
-            while (true)
+            try
             {
-                try
+                while (true)
                 {
-                    if (Settings.SettingsService.Instance.Current.Updates.AutoCheckEnabled
-                        && await UpdateService.CheckAsync().ConfigureAwait(false) is { } update
-                        && prompted.Add(update.Version)
-                        && NotificationDispatcher.Instance is { } dispatcher)
+                    try
                     {
-                        var response = await dispatcher.PromptAsync(
-                            SetupNotifications.UpdateAvailable, new object?[] { update.Version })
-                            .ConfigureAwait(false);
-                        if (response is { ActionId: "install" }
-                            or { ActionId: NotificationResponse.BodyActionId })
-                            dq.TryEnqueue(StartUpdateFlow);
+                        if (!Settings.SettingsService.Instance.Current.Updates.AutoCheckEnabled)
+                        {
+                            DeckleAppSource.Log.UpdateCheckOutcome("disabled", "", "", "");
+                        }
+                        else if (await UpdateService.CheckAsync().ConfigureAwait(false) is not { } update)
+                        {
+                            DeckleAppSource.Log.UpdateCheckOutcome("up_to_date", "", "", "");
+                        }
+                        else if (!prompted.Add(update.Version))
+                        {
+                            DeckleAppSource.Log.UpdateCheckOutcome("already_prompted", update.Version, "", "");
+                        }
+                        else
+                        {
+                            DeckleAppSource.Log.UpdateCheckOutcome("available", update.Version, "", "");
+                            if (NotificationDispatcher.Instance is { } dispatcher)
+                            {
+                                var response = await dispatcher.PromptAsync(
+                                    SetupNotifications.UpdateAvailable, new object?[] { update.Version })
+                                    .ConfigureAwait(false);
+                                if (response is { ActionId: "install" }
+                                    or { ActionId: NotificationResponse.BodyActionId })
+                                    dq.TryEnqueue(StartUpdateFlow);
+                            }
+                        }
                     }
+                    catch (Exception ex)
+                    {
+                        // Never let the background check take the app down — the
+                        // service and the dispatcher already narrate their failures.
+                        DeckleAppSource.Log.UpdateCheckOutcome("failed", "", ex.GetType().Name, ex.Message);
+                    }
+                    await Task.Delay(UpdateCheckInterval, ct).ConfigureAwait(false);
                 }
-                catch
-                {
-                    // Never let the background check take the app down — the
-                    // service and the dispatcher already narrate their failures.
-                }
-                await Task.Delay(TimeSpan.FromHours(24)).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                DeckleAppSource.Log.UpdateChecksStopped("shutdown");
             }
         });
+    }
+
+    private void StopUpdateChecks()
+    {
+        CancellationTokenSource? cts = _updateChecksCts;
+        _updateChecksCts = null;
+        cts?.Cancel();
     }
 
     // Opens the update window on the parked release. Idempotent while one is
@@ -72,8 +110,16 @@ public partial class App
             _updateWindow.Activate();
             return;
         }
-        if (UpdateService.Available is not { } update) return;
-        if (UninstallEntry.Read() is not { } existing) return;
+        if (UpdateService.Available is not { } update)
+        {
+            DeckleAppSource.Log.UpdateFlowRefused("no_pending_update");
+            return;
+        }
+        if (UninstallEntry.Read() is not { } existing)
+        {
+            DeckleAppSource.Log.UpdateFlowRefused("install_not_registered");
+            return;
+        }
 
         var context = new SetupContext
         {
@@ -85,13 +131,29 @@ public partial class App
         _updateWindow = setup;
         setup.Body.Navigate(typeof(UpdateDownloadPage), setup);
         setup.Activate();
+        DeckleAppSource.Log.UpdateFlowStarted(update.Version);
         _ = CompleteUpdateAsync(setup);
     }
 
     private async Task CompleteUpdateAsync(Deckle.Setup.SetupWindow setup)
     {
-        bool ok = await setup.Completion;
+        var stopwatch = Stopwatch.StartNew();
+        bool ok;
+        try
+        {
+            ok = await setup.Completion;
+        }
+        catch (Exception ex)
+        {
+            // Unawaited by StartUpdateFlow: without this the failure would only
+            // surface later as an unobserved task, and the window slot would
+            // stay taken so the next request only re-activates a dead window.
+            _updateWindow = null;
+            DeckleAppSource.Log.UpdateFlowFailed(ex.GetType().Name, ex.Message, stopwatch.ElapsedMilliseconds);
+            return;
+        }
         _updateWindow = null;
+        DeckleAppSource.Log.UpdateFlowFinished(ok ? "completed" : "cancelled", stopwatch.ElapsedMilliseconds);
         // The download page spawned the new payload's --update-apply, now
         // waiting on the running-process gate — this process exits to free
         // the binaries. A cancel or failure leaves the app running untouched.
@@ -137,12 +199,14 @@ public partial class App
                 ? parsedPredecessor
                 : null;
         DeckleAppSource.Log.InstallModeEntered();
-        DeckleAppSource.Log.InstallModeEnteredDetail("update-apply", "", cleanup ?? "", "");
+        DeckleAppSource.Log.InstallModeEnteredDetail(UpdateApplyMode, "", cleanup ?? "", "");
 
         // No live install to update over — a bare exit; this process was
         // spawned programmatically, there is no user journey to land on.
         if (target is null || !File.Exists(Path.Combine(target, "Deckle.exe")))
         {
+            ReportTransactionalModeExit(
+                UpdateApplyMode, "refused", target is null ? "target_missing" : "target_not_an_install");
             Environment.Exit(1);
         }
 
@@ -175,7 +239,8 @@ public partial class App
 
         // On success Deploy spawned the updated install's --install-continue;
         // either way this temp process is done.
-        await setup.Completion;
+        bool ok = await setup.Completion;
+        ReportTransactionalModeExit(UpdateApplyMode, ok ? "completed" : "cancelled", "none");
         Environment.Exit(0);
     }
 }

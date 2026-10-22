@@ -67,32 +67,54 @@ public sealed class DeckleThemeSource : DeckleEventSource
 
 // Static probe consumed by `ActualThemeChanged` handlers to recover the origin
 // of a switch. Code that *triggers* a programmatic switch (App.ApplyTheme)
-// calls `Push(source)` just before writing `RequestedTheme` on its windows; the
-// handler calls `Consume()`, which returns the pending value and resets it to
-// null. When the handler runs without a pending value, the OS moved and the
-// caller applies the `"system"` fallback. If the app sets RequestedTheme and
-// an OS change lands in the same dispatcher tick, a system transition is
-// labelled with the app's source.
+// calls `Push(source)` just before writing `RequestedTheme` on its windows;
+// each window's handler calls `Consume()`. When it returns null, no request
+// is recent, the OS moved, and the caller applies the `"system"` fallback.
+//
+// The source stays valid for RequestWindowMs after the Push rather than being
+// cleared by the first handler: one request re-themes every open window, and
+// their handlers may run after the whole loop of writes, so a read-once value
+// labelled the first window and left the others as "system". The span also
+// bounds staleness: a push no handler read (the window was already in that
+// theme) must not label a later OS change. An OS change that lands inside the
+// span is still labelled with the app's source.
 //
 // No lock: every Push and Consume runs on the UI thread, where XAML theme
 // changes are marshalled by the framework.
 //
-// No stack: a second Push before the handler runs overwrites the first; the
+// No stack: a second Push overwrites the first and restarts the span; the
 // latest writer is the one responsible at fire time.
 public static class ThemeRequestSourceProbe
 {
+    // Long enough for the handlers of every window to run after a burst of
+    // RequestedTheme writes, short against how often a person flips the OS
+    // theme.
+    internal const long RequestWindowMs = 2000;
+
     private static string? _pending;
+    private static long _pushedAtMs;
 
     // Call just before each write to `FrameworkElement.RequestedTheme` or
     // `AppWindow.TitleBar.PreferredTheme` that may trigger an
     // ActualThemeChanged.
-    public static void Push(string source) => _pending = source;
+    public static void Push(string source) => Push(source, Environment.TickCount64);
 
-    // `null` means no Push preceded the ActualThemeChanged handler.
-    public static string? Consume()
+    internal static void Push(string source, long nowMs)
     {
-        var s = _pending;
+        _pending = source;
+        _pushedAtMs = nowMs;
+    }
+
+    // `null` means no Push within RequestWindowMs before the handler ran. The
+    // name predates the span: the value is read, not consumed, and the name
+    // stays because six window handlers outside this module call it.
+    public static string? Consume() => Consume(Environment.TickCount64);
+
+    internal static string? Consume(long nowMs)
+    {
+        if (_pending is null) return null;
+        if (nowMs - _pushedAtMs <= RequestWindowMs) return _pending;
         _pending = null;
-        return s;
+        return null;
     }
 }

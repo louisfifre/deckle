@@ -1,6 +1,8 @@
 ---
 name: deckle-interface
 description: Use when you build or change anything a person sees in a Deckle window, from a XAML page to the HUD, to render it the way Microsoft ships it, from native controls, theme resources and system materials.
+metadata:
+  version: "1.0"
 ---
 
 ## Why

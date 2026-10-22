@@ -44,6 +44,7 @@ public sealed partial class DeployPage : Page
         setup.SetStepHeader(
             Loc.Get(setup.Context.UpdateMode ? "Setup_StepTitle_UpdateApply" : "Setup_StepTitle_Deploy"),
             Loc.Get(setup.Context.UpdateMode ? "Setup_StepSubtitle_UpdateApply" : "Setup_StepSubtitle_Deploy"));
+        setup.SetCurrentStep(SetupStep.Install);
         setup.SetBackEnabled(false);
         setup.SetNextEnabled(false);
         setup.SetNextVisible(false);
@@ -70,6 +71,8 @@ public sealed partial class DeployPage : Page
 
         long startTicks = Environment.TickCount64;
         string step = "gate";
+        DeckleSetupSource.Log.DeployStarted(
+            context.UpdateMode, context.InstallDirectory, context.DataDirectory);
         try
         {
             // Running-process gate first: Windows locks a running image, so a
@@ -86,7 +89,7 @@ public sealed partial class DeployPage : Page
             string[] running = await Task.Run(() => FindRunning(context));
             if (running.Length > 0)
             {
-                DeckleSetupSource.Log.DeployBlockedByRunningApp();
+                DeckleSetupSource.Log.DeployBlockedByRunningApp(running.Length, string.Join(",", running));
                 ShowBlocked(Loc.Get("Setup_Deploy_AppRunning"));
                 return;
             }
@@ -113,8 +116,8 @@ public sealed partial class DeployPage : Page
         }
         catch (Exception ex)
         {
-            DeckleSetupSource.Log.DeployFailed();
-            DeckleSetupSource.Log.DeployFailedDetail(step, $"{ex.GetType().Name}: {ex.Message}");
+            DeckleSetupSource.Log.DeployFailed(
+                step, ex.GetType().Name, ex.Message, Environment.TickCount64 - startTicks);
             ShowBlocked(Loc.Format("Setup_Deploy_Failed_Format", ex.Message));
         }
     }
@@ -203,9 +206,7 @@ public sealed partial class DeployPage : Page
 
         // The presence choice goes into the CHOSEN data root — not through
         // ModulePresence.Save, whose path rides this temp process's AppPaths.
-        PresenceFile.SaveTo(
-            ModulePresence.FilePathUnder(context.DataDirectory),
-            [.. context.SelectedModules]);
+        ModulePresence.SaveUnder(context.DataDirectory, [.. context.SelectedModules]);
     }
 
     private void LaunchInstalled(SetupContext context)
@@ -222,6 +223,9 @@ public sealed partial class DeployPage : Page
             WorkingDirectory = context.InstallDirectory,
         };
         psi.ArgumentList.Add("--install-continue");
+        // The continuation cannot tell an update from an install by itself, and
+        // without this flag it would open as the install wizard.
+        if (context.UpdateMode) psi.ArgumentList.Add("--after-update");
         if (context.SelectedModules.Contains(ModuleIds.Transcription)
             && context.SelectedModel is { } model)
         {
@@ -236,7 +240,9 @@ public sealed partial class DeployPage : Page
         if (!PathsEqual(context.DataDirectory, InstallPaths.DefaultDataDir))
             psi.Environment[UserEnvironment.DataRootVariable] = context.DataDirectory;
 
-        Process.Start(psi);
+        // UseShellExecute=false: Start returns the child or throws, never null.
+        using Process child = Process.Start(psi)!;
+        DeckleSetupSource.Log.ChildProcessLaunchedDetail("install_continue", child.Id, appExe);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

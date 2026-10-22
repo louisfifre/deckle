@@ -21,7 +21,7 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     public const int EvtDiscoveryStartedDetail    = 2;
     public const int EvtDiscoveryFound            = 3;
     public const int EvtDiscoveryBridgeFound      = 4;
-    public const int EvtDiscoveryFailed           = 5;
+    // 5 retired.
 
     // ── EventIds — pairing ──────────────────────────────────────────────
     public const int EvtPairingStarted            = 6;
@@ -29,10 +29,10 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     public const int EvtBridgePaired              = 8;
     public const int EvtBridgePairedDetail        = 9;
     public const int EvtPairingWaiting            = 10;
-    public const int EvtPairingRejected           = 11;
-    public const int EvtPairingTimedOut           = 12;
-    public const int EvtBridgeUnreachable         = 13;
-    public const int EvtPairingHttpError          = 14;
+    // 11 retired.
+    // 12 retired.
+    // 13 retired.
+    // 14 retired.
 
     // ── EventIds — groups ───────────────────────────────────────────────
     public const int EvtListingGroups             = 15;
@@ -41,7 +41,7 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     public const int EvtGroupListed               = 18;
 
     // ── EventIds — color push ───────────────────────────────────────────
-    public const int EvtSetColorFailed            = 19;
+    // 19 retired.
     public const int EvtPushColorOff              = 20;
     public const int EvtPushColor                 = 21;
 
@@ -52,10 +52,10 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     public const int EvtEntertainmentListed       = 25;
     public const int EvtEntertainmentArea         = 26;
     public const int EvtPlacementListed           = 27;
-    public const int EvtClipV2GetFailed           = 28;
+    // 28 retired.
 
     // ── EventIds — identify ─────────────────────────────────────────────
-    public const int EvtIdentifyFailed            = 29;
+    // 29 retired.
     public const int EvtLightIdentified           = 30;
 
     // ── EventIds — lights listing ───────────────────────────────────────
@@ -70,40 +70,82 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     public const int EvtV2IdMapsFetched           = 37;
     public const int EvtEventStreamStarting       = 38;
     public const int EvtEventStreamReconnecting   = 39;
-    public const int EvtEventStreamStopped        = 40;
+    // 40 retired.
 
     // ── EventIds — appended ─────────────────────────────────────────────
     public const int EvtDiscoveryFoundDetail        = 41;
-    public const int EvtDiscoveryFailedDetail       = 42;
+    // 42 retired.
     public const int EvtBridgePairedDetail2         = 43;
-    public const int EvtPairingRejectedDetail       = 44;
-    public const int EvtBridgeUnreachableDetail     = 45;
-    public const int EvtPairingHttpErrorDetail      = 46;
-    public const int EvtSetColorFailedDetail        = 47;
-    public const int EvtClipV2GetFailedDetail       = 48;
-    public const int EvtIdentifyFailedDetail        = 49;
+    // 44 retired.
+    // 45 retired.
+    // 46 retired.
+    // 47 retired.
+    // 48 retired.
+    // 49 retired.
     public const int EvtListingLightsInGroupDetail  = 50;
     public const int EvtBridgeReturnedNoLightsDetail = 51;
-    public const int EvtEntertainmentRestFallback   = 52;
-    public const int EvtEntertainmentRestFallbackDetail = 53;
+    // 52 retired.
+    // 53 retired.
     public const int EvtEntertainmentStreamingStarting = 54;
     public const int EvtEntertainmentStreamingStartingDetail = 55;
-    public const int EvtEntertainmentTransportConnected = 56;
+    // 56 retired.
     public const int EvtEntertainmentStreamPrimed = 57;
     public const int EvtEntertainmentTransportConnecting = 58;
     public const int EvtEntertainmentPrePrimeStarting = 59;
     public const int EvtEntertainmentPrePrimeDetail = 60;
-    public const int EvtEntertainmentPrePrimeFailed = 61;
-    public const int EvtEntertainmentPrePrimeFailedDetail = 62;
+    // 61 retired.
+    // 62 retired.
     public const int EvtLocalDiscoveryStarted = 63;
     public const int EvtLocalDiscoveryStartedDetail = 64;
     public const int EvtLocalDiscoveryCompleted = 65;
     public const int EvtLocalDiscoveryCompletedDetail = 66;
-    public const int EvtLocalDiscoveryFailed = 67;
-    public const int EvtLocalDiscoveryFailedDetail = 68;
-    public const int EvtEventStreamIncident = 69;
-    public const int EvtEventStreamIncidentDetail = 70;
+    // 67 retired.
+    // 68 retired.
+    // 69 retired.
+    // 70 retired.
     public const int EvtEventStreamRecovered = 71;
     public const int EvtEventStreamRecoveryDetail = 72;
+    public const int EvtDiscoveryFailed = 73;
+    public const int EvtLocalDiscoveryFailed = 74;
+    public const int EvtPairingRejected = 75;
+    public const int EvtBridgeUnreachable = 76;
+    public const int EvtPairingHttpError = 77;
+    public const int EvtPairingTimedOut = 78;
+    public const int EvtSetColorFailed = 79;
+    public const int EvtClipV2RequestFailed = 80;
+    public const int EvtIdentifyFailed = 81;
+    public const int EvtEntertainmentRestFallback = 82;
+    public const int EvtEntertainmentPrePrimeFailed = 83;
+    public const int EvtEventStreamIncident = 84;
+    public const int EvtEventStreamStopped = 85;
+    public const int EvtEntertainmentTransportConnected = 86;
+    public const int EvtEntertainmentConnectFailed = 87;
+    public const int EvtEntertainmentConnectCancelled = 88;
+    public const int EvtEntertainmentSessionClosed = 89;
+    public const int EvtEntertainmentStreamingStopFailed = 90;
+    public const int EvtLightOutputSelected = 91;
+    public const int EvtHueStepFailedDetail = 92;
 
+    // Lighting is a supporting provider: its detail follows the Ambient
+    // activity's policy while that workflow runs, and the listener alone
+    // outside it (discovery and pairing from the settings page).
+    [NonEvent]
+    internal bool IsHueDetailEnabled(Keywords keywords)
+        => OperationalLogAdmission.IsScopedDetailEnabled(
+            OperationalLogActivity.Ambient,
+            this,
+            EventLevel.Verbose,
+            (EventKeywords)keywords);
+
+    // Best-effort cleanups and lookups whose failure must not change the
+    // outcome still leave a trace, so a recurring silent failure is findable.
+    [Event(EvtHueStepFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Resource),
+           Message = "hue step failed | step={0} | ex_type={1} | ex_message={2}")]
+    public void HueStepFailedDetail(string step, string ex_type, string ex_message)
+    {
+        if (!IsHueDetailEnabled(Keywords.Pipeline | Keywords.Resource)) return;
+        WriteEvent(EvtHueStepFailedDetail, step, ex_type, ex_message);
+    }
 }

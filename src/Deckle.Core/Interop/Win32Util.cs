@@ -5,8 +5,12 @@ namespace Deckle.Core;
 
 // ─── Win32 Helpers For Debugging ─────────────────────────────────────────────
 //
-// DescribeHwnd: produces a readable "Exe / Title / focus=Class" string to
-// diagnose focus / paste losses.
+// DescribeHwnd: produces a readable "Exe / focus=Class" string to diagnose
+// focus / paste losses. It never reads the window title: a title names what
+// the person is working on (a document, a mail subject, a page), and the
+// paste events that carry this string reach the application log. The
+// process and the focused control's class are enough to tell where a paste
+// landed.
 
 public static class Win32Util
 {
@@ -20,15 +24,6 @@ public static class Win32Util
             uint tid = NativeMethods.GetWindowThreadProcessId(hwnd, out pid);
             string exe = "?";
             try { exe = Process.GetProcessById((int)pid).ProcessName; } catch { }
-
-            int len = NativeMethods.GetWindowTextLength(hwnd);
-            string title = "";
-            if (len > 0)
-            {
-                var sb = new StringBuilder(len + 1);
-                NativeMethods.GetWindowText(hwnd, sb, sb.Capacity);
-                title = sb.ToString();
-            }
 
             string focus = "?";
             var gti = new NativeMethods.GUITHREADINFO { cbSize = System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.GUITHREADINFO>() };
@@ -44,7 +39,7 @@ public static class Win32Util
                 }
             }
 
-            return $"{exe} / \"{title}\" / focus={focus}";
+            return $"{exe} / focus={focus}";
         }
         catch (Exception ex)
         {

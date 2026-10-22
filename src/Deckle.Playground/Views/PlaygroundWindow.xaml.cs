@@ -17,7 +17,7 @@ namespace Deckle.Playground;
 // ─── Playground window shell ─────────────────────────────────────────────────
 //
 // Native TitleBar + Mica backdrop + compact NavigationView + Frame. Hosts
-// five pages : HomePage, HudPage, AmbientPage, SegmentationPage, and
+// five pages : HomePage, HudPage, AmbientPage, and
 // CorrectionApplicationPage — each owning
 // its tuning surface, ViewModel, and runtime resources. The window itself only
 // routes navigation and forwards the lifecycle calls the App makes
@@ -349,7 +349,6 @@ public sealed partial class PlaygroundWindow : Window
             "home"         => "Deckle.Playground.HomePage",
             "hud"          => "Deckle.Playground.HudPage",
             "ambient"      => "Deckle.Playground.AmbientPage",
-            "segmentation" => "Deckle.Playground.SegmentationPage",
             "correction"   => "Deckle.Playground.CorrectionApplicationPage",
             _              => "",
         };

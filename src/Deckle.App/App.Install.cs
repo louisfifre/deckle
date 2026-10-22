@@ -25,36 +25,71 @@ public partial class App
     internal static bool IsTransactionalMode(string[] args)
         => Array.Exists(args, a => Array.IndexOf(TransactionalModeFlags, a) >= 0);
 
+    // Mode names in the journal, the phases InstallModeEnteredDetail prints.
+    private const string WizardMode       = "wizard";
+    private const string ContinuationMode = "continuation";
+    private const string UpdateApplyMode  = "update-apply";
+    private const string RelocationMode   = "relocate";
+
+    private static long _transactionalModeStarted;
+
     // True when one of these modes owns the process and OnLaunched must stop.
     private bool TryEnterInstallMode()
     {
         string[] args = Environment.GetCommandLineArgs();
         if (Array.IndexOf(args, "--install") >= 0)
         {
-            _ = RunInstallWizardAsync(args);
+            _ = RunTransactionalModeAsync(WizardMode, () => RunInstallWizardAsync(args));
             return true;
         }
         if (Array.IndexOf(args, "--install-continue") >= 0)
         {
-            _ = RunInstallContinuationAsync(args);
+            _ = RunTransactionalModeAsync(ContinuationMode, () => RunInstallContinuationAsync(args));
             return true;
         }
         if (Array.IndexOf(args, "--update-apply") >= 0)
         {
             // The updater's second leg: the new payload placing itself over the
             // live install.
-            _ = RunUpdateApplyAsync(args);
+            _ = RunTransactionalModeAsync(UpdateApplyMode, () => RunUpdateApplyAsync(args));
             return true;
         }
         if (Array.IndexOf(args, "--relocate-data") >= 0)
         {
             // The data-root move: a restarted process can copy the root it no
             // longer holds open.
-            _ = RunDataRelocationAsync(args);
+            _ = RunTransactionalModeAsync(RelocationMode, () => RunDataRelocationAsync(args));
             return true;
         }
         return false;
     }
+
+    // OnLaunched cannot await a mode, so a throw inside one would stay
+    // unobserved and leave a windowless process that never exits. The net
+    // logs it and ends the process: there is no resident app to fall back on.
+    private static async Task RunTransactionalModeAsync(string mode, Func<Task> run)
+    {
+        _transactionalModeStarted = System.Diagnostics.Stopwatch.GetTimestamp();
+        try
+        {
+            await run();
+        }
+        catch (Exception ex)
+        {
+            DeckleAppSource.Log.TransactionalModeFailed(
+                mode, ex.GetType().Name, ex.Message, TransactionalModeElapsedMs());
+            DeckleAppSource.Log.CrashStackTrace(ex.ToString());
+            Environment.Exit(1);
+        }
+    }
+
+    private static long TransactionalModeElapsedMs()
+        => (long)System.Diagnostics.Stopwatch.GetElapsedTime(_transactionalModeStarted).TotalMilliseconds;
+
+    // Written before Environment.Exit or the relaunch that ends the mode:
+    // neither returns, so no finally would run after them.
+    private static void ReportTransactionalModeExit(string mode, string outcome, string reason)
+        => DeckleAppSource.Log.TransactionalModeExited(mode, outcome, reason, TransactionalModeElapsedMs());
 
     // Phase 1, the temp process. Accepted edge: the probes behind the estimate
     // bars touch AppPaths, which creates the default-root folders even when the
@@ -67,7 +102,7 @@ public partial class App
         string? stub    = ArgumentValue(args, "--stub");
         string? cleanup = ArgumentValue(args, "--cleanup");
         DeckleAppSource.Log.InstallModeEntered();
-        DeckleAppSource.Log.InstallModeEnteredDetail("wizard", stub ?? "", cleanup ?? "", "");
+        DeckleAppSource.Log.InstallModeEnteredDetail(WizardMode, stub ?? "", cleanup ?? "", "");
 
         // Prefilled from a previous install when there is one. DECKLE_DATA_ROOT
         // is a User variable, so this process, launched by the stub with the user
@@ -95,7 +130,8 @@ public partial class App
 
         // Success or cancel, this process is done: Deploy already spawned the
         // installed copy on success, and a cancel means nothing was placed.
-        await setup.Completion;
+        bool ok = await setup.Completion;
+        ReportTransactionalModeExit(WizardMode, ok ? "completed" : "cancelled", "none");
         Environment.Exit(0);
     }
 
@@ -107,11 +143,16 @@ public partial class App
 
         string? modelId = ArgumentValue(args, "--model");
         string? cleanup = ArgumentValue(args, "--cleanup");
+        bool afterUpdate = Array.IndexOf(args, "--after-update") >= 0;
         DeckleAppSource.Log.InstallModeEntered();
-        DeckleAppSource.Log.InstallModeEnteredDetail("continuation", "", cleanup ?? "", modelId ?? "");
+        DeckleAppSource.Log.InstallModeEnteredDetail(ContinuationMode, "", cleanup ?? "", modelId ?? "");
 
         var context = new SetupContext
         {
+            // An update's continuation stays an update leg: the narrow card,
+            // without the step rail or a Location step the person never saw.
+            UpdateMode     = afterUpdate,
+            ResumesInstall = !afterUpdate,
             // Without --model (an update's continuation), the configured model
             // from settings wins over the catalog default: the plan must ask
             // for what this install actually uses, not schedule the default's
@@ -126,7 +167,8 @@ public partial class App
         // Nothing left to provision skips straight to the first real run rather
         // than opening a wizard with no work to show.
         bool ok = true;
-        if (InstallPlan.HasPendingWork(context))
+        bool pendingWork = InstallPlan.HasPendingWork(context);
+        if (pendingWork)
         {
             var setup = new SetupWindow(context);
             setup.Body.Navigate(typeof(InstallingPage), setup);
@@ -142,13 +184,16 @@ public partial class App
             try { Directory.Delete(cleanup, recursive: true); }
             catch (Exception ex)
             {
-                DeckleAppSource.Log.ShutdownWarning();
-                DeckleAppSource.Log.ShutdownWarningDetail("install temp cleanup: " + ex.Message);
+                DeckleAppSource.Log.InstallTempCleanupFailed(cleanup, ex.GetType().Name, ex.Message);
             }
         }
 
         // A cancelled provisioning still leaves a complete install — the app
         // simply doesn't start now; the Start Menu entry is the way back in.
+        ReportTransactionalModeExit(
+            ContinuationMode,
+            ok ? "completed" : "cancelled",
+            pendingWork ? "none" : "nothing_to_provision");
         if (ok) RestartViaShellExecute();
         Environment.Exit(0);
     }

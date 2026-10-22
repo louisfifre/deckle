@@ -48,7 +48,8 @@ public sealed class OllamaEngine : IGenerationEngine
         string generateUrl = NormalizeGenerateUrl(_endpoint);
         var options = BuildOptions(request, stops);
 
-        DeckleLlmSource.Log.RewriteStarted();
+        // RewriteService opens and closes the rewrite milestone; the engine
+        // adds only what its transport sees.
         DeckleLlmSource.Log.RewriteStartedDetail(request.UserText.Length, request.Model, request.Label, family, FormatOptions(options));
 
         var body = new
@@ -88,8 +89,11 @@ public sealed class OllamaEngine : IGenerationEngine
             if (pollDone is not null)
             {
                 pollDone.Cancel();
+                // Per-tick failures are already in the admitted detail; what
+                // lands here escaped the probe's own catches (the timer, the
+                // URL), and the rewrite must not fail for its sake.
                 try { pollingTask!.GetAwaiter().GetResult(); }
-                catch { /* Probe failures are already present in admitted detail. */ }
+                catch (Exception ex) { DeckleLlmSource.Log.PsProbeFaulted(ex.GetType().Name, ex.Message); }
                 pollDone.Dispose();
             }
         }
@@ -106,11 +110,17 @@ public sealed class OllamaEngine : IGenerationEngine
 
             sw.Stop();
             string trimmed = PromptTemplates.StripStops(rewritten ?? "", family).Trim();
-            DeckleLlmSource.Log.RewriteCompleted();
-            DeckleLlmSource.Log.RewriteCompletedDetail(sw.ElapsedMilliseconds, request.UserText.Length, trimmed.Length, request.Label);
-            DeckleLlmSource.Log.RewriteMetrics(FormatMetrics(doc.RootElement));
 
             var m = ExtractMetrics(doc.RootElement);
+            // done_reason is "stop" or "length": a "length" answer was cut by
+            // the token budget, which no other field shows.
+            string stopReason = doc.RootElement.TryGetProperty("done_reason", out var dr) && dr.ValueKind == JsonValueKind.String
+                ? dr.GetString() ?? ""
+                : "";
+            DeckleLlmSource.Log.RewriteResponseDetail(
+                sw.ElapsedMilliseconds, request.UserText.Length, trimmed.Length, request.Label,
+                m.LoadMs, m.PromptEvalMs, m.EvalMs, m.PromptTokens, m.EvalTokens, stopReason);
+
             return new GenerationResult(
                 Text:         trimmed,
                 TotalMs:      sw.ElapsedMilliseconds,
@@ -143,7 +153,7 @@ public sealed class OllamaEngine : IGenerationEngine
                     using var resp = await _http.GetAsync(psUrl, ct);
                     if (!resp.IsSuccessStatusCode)
                     {
-                        DeckleLlmSource.Log.PsProbeUnreachableDetail((int)resp.StatusCode);
+                        DeckleLlmSource.Log.PsProbeRejectedDetail((int)resp.StatusCode);
                         continue;
                     }
 
@@ -167,35 +177,37 @@ public sealed class OllamaEngine : IGenerationEngine
                     double vramGb = sizeVram / 1e9;
 
                     // `expires_at` is Ollama's keep_alive countdown for the
-                    // resident model, rendered as "unloads in Xs" to keep it
-                    // distinct from the caller's own deadline.
-                    string unloadSuffix = "";
+                    // resident model, logged as unloads_in_s to keep it
+                    // distinct from the caller's own deadline (cap_s). 0 when
+                    // Ollama reports none or it has run out.
+                    double unloadsInS = 0;
                     if (first.TryGetProperty("expires_at", out var exp) &&
                         exp.ValueKind == JsonValueKind.String &&
                         DateTime.TryParse(exp.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var expAt))
                     {
                         var rem = expAt.ToUniversalTime() - DateTime.UtcNow;
                         if (rem.TotalSeconds > 0)
-                            unloadSuffix = $", unloads in {rem.TotalSeconds:F0}s";
+                            unloadsInS = rem.TotalSeconds;
                     }
 
-                    double waitedSeconds = requestElapsed.Elapsed.TotalSeconds;
-                    double capMinutes    = GenerationDeadline.HardCap.TotalMinutes;
-                    DeckleLlmSource.Log.OllamaBusyDetail(name, vramGb, unloadSuffix, waitedSeconds, capMinutes);
+                    DeckleLlmSource.Log.PsProbeBusyDetail(
+                        name, vramGb, unloadsInS,
+                        requestElapsed.ElapsedMilliseconds,
+                        GenerationDeadline.HardCap.TotalSeconds);
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex)
                 {
-                    DeckleLlmSource.Log.PsProbeFailedDetail(ex.GetType().Name, ex.Message);
+                    DeckleLlmSource.Log.PsProbeErrorDetail(ex.GetType().Name, ex.Message);
                 }
             }
         }
         catch (OperationCanceledException)
         {
-            // Expected: Generate cancels pollDone as soon as the main request
-            // settles.
-            DeckleCancellationSource.Log.OperationCancelled(
-                "llm-warmup", "upstream", (int)requestElapsed.ElapsedMilliseconds);
+            // Expected on every rewrite that outlives no tick or ends between
+            // two: Generate cancels pollDone as soon as the main request
+            // settles. Nothing was cancelled from the user's point of view, so
+            // nothing is logged; the rewrite milestones close the operation.
         }
     }
 
@@ -251,32 +263,6 @@ public sealed class OllamaEngine : IGenerationEngine
         return parts.Count == 0 ? "defaults" : string.Join(" ", parts);
     }
 
-    /// <summary>
-    /// Ollama reports every *_duration field in nanoseconds; load_duration is
-    /// 0 when the model is already warm.
-    /// </summary>
-    static string FormatMetrics(JsonElement root)
-    {
-        long total = GetLong(root, "total_duration");
-        long load  = GetLong(root, "load_duration");
-        long pCnt  = GetLong(root, "prompt_eval_count");
-        long pDur  = GetLong(root, "prompt_eval_duration");
-        long eCnt  = GetLong(root, "eval_count");
-        long eDur  = GetLong(root, "eval_duration");
-
-        double totalMs = total / 1e6;
-        double loadMs  = load  / 1e6;
-        double pMs     = pDur  / 1e6;
-        double eMs     = eDur  / 1e6;
-
-        double pTokPerSec = pDur > 0 ? pCnt * 1e9 / pDur : 0;
-        double eTokPerSec = eDur > 0 ? eCnt * 1e9 / eDur : 0;
-
-        return $"metrics: total={totalMs:F0}ms load={loadMs:F0}ms | "
-             + $"prompt {pCnt}tok en {pMs:F0}ms ({pTokPerSec:F1} tok/s) | "
-             + $"output {eCnt}tok en {eMs:F0}ms ({eTokPerSec:F1} tok/s)";
-    }
-
     static long GetLong(JsonElement root, string name)
     {
         if (root.TryGetProperty(name, out var prop) && prop.ValueKind == JsonValueKind.Number)
@@ -284,8 +270,9 @@ public sealed class OllamaEngine : IGenerationEngine
         return 0;
     }
 
-    // Nanoseconds to milliseconds by integer division: the logging inventory
-    // records durations as whole milliseconds.
+    // Ollama reports every *_duration field in nanoseconds (load_duration is
+    // 0 when the model is already warm). Nanoseconds to milliseconds by
+    // integer division: the logging inventory records whole milliseconds.
     private readonly record struct OllamaMetrics(
         long LoadMs, long PromptEvalMs, long EvalMs, int PromptTokens, int EvalTokens);
 

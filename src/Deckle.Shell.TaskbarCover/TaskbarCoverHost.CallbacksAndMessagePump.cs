@@ -65,6 +65,7 @@ public sealed partial class TaskbarCoverHost
         _systemSuspended     = false;
         _layoutKnown         = false;
         _layoutFailureLogged = false;
+        _bandCreateFailureLogged = false;
     }
 
     private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)

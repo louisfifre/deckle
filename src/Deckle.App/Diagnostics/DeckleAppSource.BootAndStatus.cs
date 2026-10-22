@@ -5,15 +5,6 @@ namespace Deckle.App;
 
 public sealed partial class DeckleAppSource
 {
-    [Event(EvtPathsInitialized,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Paths initialized")]
-    public void PathsInitialized()
-    {
-        if (IsEnabled()) WriteEvent(EvtPathsInitialized);
-    }
-
     [Event(EvtPathsDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -32,22 +23,18 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtStartupMilestones, milestones_text);
     }
 
+    // Several per take, so Verbose behind the transcription activity gate.
+    // status is the engine's tray text (en-US resource), never dictated text.
     [Event(EvtStatusChanged,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Status changed")]
-    public void StatusChanged()
-    {
-        if (IsEnabled()) WriteEvent(EvtStatusChanged);
-    }
-
-    [Event(EvtStatusChangedDetail,
            Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "status changed | status={0}")]
-    public void StatusChangedDetail(string status)
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "status changed | status={0} | recording={1}")]
+    public void StatusChanged(string status, bool recording)
     {
-        if (IsEnabled()) WriteEvent(EvtStatusChangedDetail, status);
+        if (!OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this, EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            return;
+        WriteEvent(EvtStatusChanged, status, recording);
     }
 
 }

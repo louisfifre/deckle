@@ -7,8 +7,20 @@ public partial class App
     private PrecisionScrollEngine? _precisionScrollEngine;
     private bool _precisionScrollRunning;
 
+    // While the switch is on but nothing runs, every settings change retries
+    // the start: the failure is reported once until a start succeeds.
+    private bool _precisionScrollFailureReported;
+
+    // Set when the module is composed. Shutdown must not reach for
+    // PrecisionScrollSettingsService.Instance on a boot that left the module
+    // out: its constructor creates the module's settings store, which an absent
+    // module must not leave behind. Not ModulePresence.IsPresent, because a
+    // presence change is adopted in place before the restart that applies it.
+    private bool _precisionScrollComposed;
+
     private void InitializePrecisionScroll()
     {
+        _precisionScrollComposed = true;
         if (_keyboardMouseHost is null) return;
 
         PrecisionScrollSettingsService.Instance.Changed += ReconcilePrecisionScroll;
@@ -30,8 +42,13 @@ public partial class App
             if (_keyboardMouseHost.Start())
             {
                 _precisionScrollRunning = _precisionScrollEngine.Start();
-                if (!_precisionScrollRunning)
+                if (_precisionScrollRunning)
                 {
+                    _precisionScrollFailureReported = false;
+                }
+                else
+                {
+                    ReportPrecisionScrollUnavailable("engine_start_failed");
                     _keyboardMouseHost.Stop();
                     _precisionScrollEngine.Dispose();
                     _precisionScrollEngine = null;
@@ -39,6 +56,9 @@ public partial class App
             }
             else
             {
+                // RawInputHost logged the cause; this line names the switch
+                // that stays on in Settings while nothing runs.
+                ReportPrecisionScrollUnavailable("host_start_failed");
                 _precisionScrollEngine.Dispose();
                 _precisionScrollEngine = null;
             }
@@ -56,8 +76,17 @@ public partial class App
         }
     }
 
+    private void ReportPrecisionScrollUnavailable(string reason)
+    {
+        if (_precisionScrollFailureReported) return;
+        _precisionScrollFailureReported = true;
+        DeckleAppSource.Log.InputConsumerUnavailable("precision-scroll", reason);
+    }
+
     private void ShutdownPrecisionScroll()
     {
+        if (!_precisionScrollComposed) return;
+
         PrecisionScrollSettingsService.Instance.Changed -= ReconcilePrecisionScroll;
         _precisionScrollEngine?.Dispose();
         _precisionScrollEngine = null;

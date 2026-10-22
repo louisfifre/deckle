@@ -49,7 +49,7 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(
             ToggleResult.Started,
             engine.RequestToggle(shouldPaste: false));
-        await backend.TwoCallsCompleted.Task.WaitAsync(
+        await backend.AllCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), testCancellation);
 
         Assert.True(engine.IsRecording);
@@ -75,10 +75,139 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(["bonjour", "Deckle"], segments.ToArray());
         Assert.Equal(2, backend.CallCount);
         Assert.Equal(1, backend.MaxConcurrentCalls);
-        Assert.All(backend.SampleCounts, count => Assert.Equal(6 * 800, count));
+        Assert.All(backend.SampleCounts, count =>
+            Assert.Equal(6 * 800 + TrailingNoisePad.PadSamples, count));
         Assert.Equal("test prompt", backend.Contexts[0].PrimingText);
         Assert.Equal("test prompt bonjour", backend.Contexts[1].PrimingText);
         Assert.False(engine.IsBusy);
+    }
+
+    // 2026-10-21: the warm-up decoded a subtitle credit on silence, and the
+    // backend primed the first utterance of the take with it.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task TheFirstUtteranceAfterTheWarmUpDoesNotContinueTheWarmUpCall()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
+        var backend = new SequencedBackend(
+            ["Sous-titrage Société Radio-Canada", "bonjour", "Deckle"],
+            modelLoaded: false);
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            backend,
+            capture,
+            new RecordingClipboardWriter());
+        var finished = new TaskCompletionSource<TranscriptionOutcome>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
+
+        Assert.Equal(
+            ToggleResult.Started,
+            engine.RequestToggle(shouldPaste: false));
+        await backend.AllCallsCompleted.Task.WaitAsync(
+            TimeSpan.FromSeconds(5), testCancellation);
+        engine.RequestToggle(shouldPaste: false);
+        await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+
+        IReadOnlyList<TranscriptionContext> contexts = backend.Contexts;
+        Assert.Equal(3, contexts.Count);
+        Assert.False(contexts[0].EmitPreamble);           // the warm-up call
+        Assert.False(contexts[0].ContinuesPreviousCall);
+        Assert.False(contexts[1].ContinuesPreviousCall);  // first utterance
+        Assert.True(contexts[2].ContinuesPreviousCall);   // second utterance
+    }
+
+    // 2026-10-21: the Stop press cancelled the capture token at once, so the
+    // last word the user was still finishing as they pressed was never recorded.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task CaptureKeepsRunningForAShortTailAfterTheStopPress()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
+        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            backend,
+            capture,
+            new RecordingClipboardWriter());
+        var finished = new TaskCompletionSource<TranscriptionOutcome>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
+
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        await backend.AllCallsCompleted.Task.WaitAsync(
+            TimeSpan.FromSeconds(5), testCancellation);
+
+        long pressTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+
+        // The press returned, the HUD would already read "transcribing", and
+        // the microphone is still listening.
+        Assert.False(capture.RecordToken.IsCancellationRequested);
+
+        // A second press inside the tail finds the engine already stopping.
+        Assert.Equal(ToggleResult.IgnoredBusy, engine.RequestToggle(shouldPaste: false));
+
+        await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+
+        // The bounds are loose on purpose: the tail is 400 ms, and a timer may
+        // fire a little early or a loaded machine a lot late.
+        TimeSpan tail = System.Diagnostics.Stopwatch.GetElapsedTime(
+            pressTimestamp, capture.StopObservedTimestamp);
+        Assert.InRange(tail, TimeSpan.FromMilliseconds(300), TimeSpan.FromSeconds(4));
+    }
+
+    // 2026-10-21: a short noise blip decoded into twelve doubtful tokens was
+    // pasted after the real sentence.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task APhantomUtteranceIsLeftOutOfTheDeliveredText()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        var backend = new SequencedBackend(
+            ["bonjour", "phantom"],
+            segments:
+            [
+                new TranscriptionSegment("bonjour", 0, 30, 0.9f, 0f, 2, 0.8f),
+                new TranscriptionSegment("phantom", 0, 30, 0.601f, 0f, 12, 0.079f),
+            ]);
+        var clipboard = new RecordingClipboardWriter();
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            backend,
+            new ScriptedMicrophoneCapture(utteranceCount: 2),
+            clipboard);
+
+        await RunOneTakeAsync(engine, backend, testCancellation);
+
+        Assert.Equal("bonjour", clipboard.Text);
+    }
+
+    // 2026-10-21: the last words were sometimes dropped when the audio ended on
+    // near-digital silence; the backend must receive a noise tail, never zeros.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task EveryUtteranceReachesTheBackendWithANoiseTailAfterItsSpeech()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            backend,
+            new ScriptedMicrophoneCapture(utteranceCount: 2),
+            new RecordingClipboardWriter());
+
+        await RunOneTakeAsync(engine, backend, testCancellation);
+
+        Assert.All(backend.ReceivedSamples, received =>
+        {
+            float[] tail = received[^TrailingNoisePad.PadSamples..];
+            Assert.Contains(tail, sample => sample != 0f);
+            var (rmsDbfs, _) = SampleLevels.Measure(tail);
+            Assert.InRange(rmsDbfs, TrailingNoisePad.TargetRmsDbfs - 1, TrailingNoisePad.TargetRmsDbfs + 1);
+        });
     }
 
     [Fact]
@@ -110,7 +239,7 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(
             ToggleResult.Started,
             engine.RequestToggle(shouldPaste: false));
-        await backend.TwoCallsCompleted.Task.WaitAsync(
+        await backend.AllCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), testCancellation);
         Assert.Equal(
             ToggleResult.Stopped,
@@ -154,7 +283,7 @@ public sealed class LiveTranscriptionPipelineTests
             engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
 
             Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
-            await backend.TwoCallsCompleted.Task.WaitAsync(
+            await backend.AllCallsCompleted.Task.WaitAsync(
                 TimeSpan.FromSeconds(5), testCancellation);
 
             // The write follows the backend call on the consumer task, so poll.
@@ -358,7 +487,7 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(
             ToggleResult.Started,
             engine.RequestToggle(shouldPaste: false));
-        await backend.TwoCallsCompleted.Task.WaitAsync(
+        await backend.AllCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), testCancellation);
         Assert.Equal(
             ToggleResult.Stopped,
@@ -449,6 +578,11 @@ public sealed class LiveTranscriptionPipelineTests
         public event Action? CaptureStarted;
         public event Action? LowAudioDetected { add { } remove { } }
 
+        // The token the engine handed to Record, and the moment the fake saw it
+        // fire (Stopwatch timestamp), so a test can tell when capture stopped.
+        public CancellationToken RecordToken { get; private set; }
+        public long StopObservedTimestamp { get; private set; }
+
         public ProbeResult Probe(int deviceId) =>
             new(true, MicErrorKind.None, 0);
 
@@ -456,6 +590,7 @@ public sealed class LiveTranscriptionPipelineTests
             IAudioRecordingHost host,
             CancellationToken cancellationToken)
         {
+            RecordToken = cancellationToken;
             CaptureStarted?.Invoke();
             var captured = new List<float>();
             for (int utterance = 0; utterance < _utteranceCount; utterance++)
@@ -475,6 +610,7 @@ public sealed class LiveTranscriptionPipelineTests
 
             if (!cancellationToken.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)))
                 throw new TimeoutException("The scripted live capture was not stopped.");
+            StopObservedTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
 
             return new CaptureResult(
                 captured.ToArray(),
@@ -492,25 +628,44 @@ public sealed class LiveTranscriptionPipelineTests
         private readonly IReadOnlyList<string> _texts;
         private readonly object _gate = new();
         private readonly List<int> _sampleCounts = new();
+        private readonly List<float[]> _lastSamples = new();
         private readonly List<TranscriptionContext> _contexts = new();
         private int _activeCalls;
         private int _callCount;
         private int _maxConcurrentCalls;
+        private volatile bool _modelLoaded;
 
-        public SequencedBackend(IReadOnlyList<string> texts) => _texts = texts;
+        // A backend created without a loaded model makes the engine prime it,
+        // and the prime's dummy call takes the first text.
+        public SequencedBackend(
+            IReadOnlyList<string> texts,
+            bool modelLoaded = true,
+            IReadOnlyList<TranscriptionSegment>? segments = null)
+        {
+            _texts = texts;
+            _modelLoaded = modelLoaded;
+            _scriptedSegments = segments;
+        }
+
+        // When set, call i reports this segment instead of a perfect one.
+        private readonly IReadOnlyList<TranscriptionSegment>? _scriptedSegments;
 
         public string Name => "test";
-        public bool IsModelLoaded => true;
+        public bool IsModelLoaded => _modelLoaded;
         public string? DetectedAccelerator => "test";
         public int CallCount => Volatile.Read(ref _callCount);
         public int MaxConcurrentCalls => Volatile.Read(ref _maxConcurrentCalls);
+        public IReadOnlyList<float[]> ReceivedSamples { get { lock (_gate) return _lastSamples.ToArray(); } }
         public IReadOnlyList<int> SampleCounts { get { lock (_gate) return _sampleCounts.ToArray(); } }
         public IReadOnlyList<TranscriptionContext> Contexts { get { lock (_gate) return _contexts.ToArray(); } }
-        public TaskCompletionSource TwoCallsCompleted { get; } = new(
+        public TaskCompletionSource AllCallsCompleted { get; } = new(
             TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public Task<ModelLoadResult> LoadModelAsync(CancellationToken ct) =>
-            Task.FromResult(new ModelLoadResult(true, 0, "test", null));
+        public Task<ModelLoadResult> LoadModelAsync(CancellationToken ct)
+        {
+            _modelLoaded = true;
+            return Task.FromResult(new ModelLoadResult(true, 0, "test", null));
+        }
 
         public void UnloadModel() { }
 
@@ -530,14 +685,17 @@ public sealed class LiveTranscriptionPipelineTests
                 lock (_gate)
                 {
                     _sampleCounts.Add(pcmSamples.Length);
+                    _lastSamples.Add(pcmSamples.ToArray());
                     _contexts.Add(context!);
                 }
 
                 await Task.Yield();
-                var segment = new TranscriptionSegment(text, 0, 10, 1f, 0f);
+                var segment = _scriptedSegments is null
+                    ? new TranscriptionSegment(text, 0, 10, 1f, 0f)
+                    : _scriptedSegments[callIndex];
                 segmentSink?.Invoke(segment);
-                if (callIndex == 1)
-                    TwoCallsCompleted.TrySetResult();
+                if (callIndex == _texts.Count - 1)
+                    AllCallsCompleted.TrySetResult();
                 return new TranscriptionResult([segment], text, 1, 0, false, 0);
             }
             finally

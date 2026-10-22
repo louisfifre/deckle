@@ -220,7 +220,7 @@ public sealed class TrayIconManager : IDisposable
 
             case TrayIconReaddOutcome.GaveUp:
                 NativeMethods.KillTimer(_hwnd, ReaddTimerId);
-                DeckleShellSource.Log.TrayIconRestoreFailed();
+                DeckleShellSource.Log.TrayIconRestoreFailed(_registration.ReaddAttempts, error);
                 break;
         }
     }
@@ -300,6 +300,7 @@ public sealed class TrayIconManager : IDisposable
         if (_hwnd != IntPtr.Zero)
         {
             NativeMethods.DestroyWindow(_hwnd);
+            DeckleShellSource.Log.TrayIconHostDestroyed(_hwnd.ToInt64());
             _hwnd = IntPtr.Zero;
         }
 

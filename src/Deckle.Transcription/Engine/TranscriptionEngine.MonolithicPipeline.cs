@@ -81,6 +81,8 @@ public sealed partial class TranscriptionEngine
 
         if (!_backend.IsModelLoaded)
         {
+            // Without this the take vanishes silently; the load cause sits on ModelUnavailable.
+            DeckleWhispSource.Log.TakeDropped("model_not_loaded");
             RaiseStatus(Loc.Get("Status_ModelNotReady"));
             RaiseFinished(TranscriptionOutcome.None);
             return null;

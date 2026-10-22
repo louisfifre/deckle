@@ -16,16 +16,38 @@ public static class CamembertReranker
     // prior (0 recovers pure-logit behaviour).
     public static ISentenceReranker? TryLoad(string modelDir, double margin, double freqPrior)
     {
+        ISentenceReranker? reranker = TryLoad(modelDir, margin, freqPrior, out Exception? error);
+        // This overload's callers cannot see the cause, so it is reported here.
+        // The session picks its own execution provider; none is chosen in code.
+        if (error is not null)
+            DeckleAutocorrectSource.Log.RerankerLoadFailure(
+                DeckleAutocorrectSource.RerankerEngines.Camembert,
+                "session_default",
+                error.GetType().FullName ?? error.GetType().Name,
+                error.Message);
+        return reranker;
+    }
+
+    // Keeps an absent model (null, no error) distinct from a present model that
+    // failed to load, so a caller can report the exact cause.
+    public static ISentenceReranker? TryLoad(
+        string modelDir,
+        double margin,
+        double freqPrior,
+        out Exception? error)
+    {
+        error = null;
         try
         {
             if (!File.Exists(Path.Combine(modelDir, "model.onnx")))
                 return null;
             return new CamembertSentenceReranker(modelDir, margin, freqPrior);
         }
-        catch
+        catch (Exception ex)
         {
             // A malformed model, a missing tokenizer file, or an OnnxRuntime load
             // failure: degrade to no contextual stage, never crash the engine.
+            error = ex;
             return null;
         }
     }

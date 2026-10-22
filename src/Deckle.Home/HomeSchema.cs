@@ -271,6 +271,8 @@ public static class HomeSchema
         return new JsonObject { ["types"] = types, ["properties"] = properties };
     }
 
+    private const int MaxReportedSchemaFailures = 6;
+
     // Tolerates surplus but fails on any compiled required property or closed
     // option the owner deleted in the app, which locks the whole surface.
     // Compile as required only what the surface cannot work without. HomeTerms
@@ -319,10 +321,19 @@ public static class HomeSchema
             }
         }
 
+        // The message travels to a model as a tool error, and a fresh or empty
+        // space can fail thousands of checks. The first failures tell the model
+        // what to repair; the remaining count tells it the size of the gap.
         if (failures.Count > 0)
+        {
+            string listed = string.Join(" ; ", failures.Take(MaxReportedSchemaFailures));
+            int remaining = failures.Count - MaxReportedSchemaFailures;
+            if (remaining > 0)
+                listed += $" ; … et {remaining} autres";
             throw new HomeSchemaException(
-                "Le schéma Home n’est pas conforme : " + string.Join(" ; ", failures)
+                "Le schéma Home n’est pas conforme : " + listed
                 + ". Compare le snapshot au manifeste canonique, préserve les anciennes coordonnées et migre explicitement les formats et valeurs avant de réessayer.");
+        }
 
         return new HomeSchemaRuntime(snapshot, FloorTypeKey(snapshot));
     }
@@ -334,7 +345,8 @@ public static class HomeSchema
         if (snapshot.Types.TryGetValue(Types.Floor, out SchemaTypeInfo? nominal))
         {
             if (nominal.Layout != "collection")
-                throw new HomeSchemaException("Le type Zone attendu doit avoir un layout collection.");
+                throw new HomeSchemaException(
+                    "Le type Zone attendu doit avoir un layout collection.", "zone_layout_invalid");
             return Types.Floor;
         }
         SchemaTypeInfo[] matches = snapshot.Types.Values.Where(type =>
@@ -344,7 +356,8 @@ public static class HomeSchema
         {
             0 => null,
             1 => matches[0].Key,
-            _ => throw new HomeSchemaException("Plusieurs types Zone correspondent : précise le schéma avant d'écrire."),
+            _ => throw new HomeSchemaException(
+                "Plusieurs types Zone correspondent : précise le schéma avant d'écrire.", "zone_type_ambiguous"),
         };
     }
 
@@ -362,4 +375,10 @@ public static class HomeSchema
     };
 }
 
-public sealed class HomeSchemaException(string message) : InvalidOperationException(message);
+// Reason is one snake_case word for the trace; the message is the French
+// guidance shown to the person or the model and names canonical keys only.
+public sealed class HomeSchemaException(string message, string reason = "schema_nonconformant")
+    : InvalidOperationException(message)
+{
+    public string Reason { get; } = reason;
+}

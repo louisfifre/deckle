@@ -22,7 +22,8 @@ public sealed partial class DeckleLightingSource
            Message = "discover start | source=cloud | url={0}")]
     public void DiscoveryStartedDetail(string url)
     {
-        if (IsEnabled()) WriteEvent(EvtDiscoveryStartedDetail, url);
+        if (!IsHueDetailEnabled(Keywords.Lifecycle)) return;
+        WriteEvent(EvtDiscoveryStartedDetail, url);
     }
 
     [Event(EvtDiscoveryFound,
@@ -40,7 +41,8 @@ public sealed partial class DeckleLightingSource
            Message = "discover result | count={0}")]
     public void DiscoveryFoundDetail(int count)
     {
-        if (IsEnabled()) WriteEvent(EvtDiscoveryFoundDetail, count);
+        if (!IsHueDetailEnabled(Keywords.Lifecycle)) return;
+        WriteEvent(EvtDiscoveryFoundDetail, count);
     }
 
     [Event(EvtDiscoveryBridgeFound,
@@ -49,25 +51,17 @@ public sealed partial class DeckleLightingSource
            Message = "discover result | bridge_id={0} | bridge_ip={1}")]
     public void DiscoveryBridgeFound(string bridge_id, string bridge_ip)
     {
-        if (IsEnabled()) WriteEvent(EvtDiscoveryBridgeFound, bridge_id, bridge_ip);
+        if (!IsHueDetailEnabled(Keywords.Lifecycle)) return;
+        WriteEvent(EvtDiscoveryBridgeFound, bridge_id, bridge_ip);
     }
 
     [Event(EvtDiscoveryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Cloud discovery failed")]
-    public void DiscoveryFailed()
+           Message = "Cloud discovery failed | ex_type={0} | ex_message={1}")]
+    public void DiscoveryFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtDiscoveryFailed);
-    }
-
-    [Event(EvtDiscoveryFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "discover failed | ex_type={0} | message={1}")]
-    public void DiscoveryFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtDiscoveryFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtDiscoveryFailed, ex_type, ex_message);
     }
 
     [Event(EvtLocalDiscoveryStarted,
@@ -85,7 +79,8 @@ public sealed partial class DeckleLightingSource
            Message = "discover start | source=mdns | service={0}")]
     public void LocalDiscoveryStartedDetail(string service)
     {
-        if (IsEnabled()) WriteEvent(EvtLocalDiscoveryStartedDetail, service);
+        if (!IsHueDetailEnabled(Keywords.Lifecycle)) return;
+        WriteEvent(EvtLocalDiscoveryStartedDetail, service);
     }
 
     [Event(EvtLocalDiscoveryCompleted,
@@ -103,25 +98,16 @@ public sealed partial class DeckleLightingSource
            Message = "discover result | source=mdns | count={0}")]
     public void LocalDiscoveryCompletedDetail(int count)
     {
-        if (IsEnabled()) WriteEvent(EvtLocalDiscoveryCompletedDetail, count);
+        if (!IsHueDetailEnabled(Keywords.Lifecycle)) return;
+        WriteEvent(EvtLocalDiscoveryCompletedDetail, count);
     }
 
     [Event(EvtLocalDiscoveryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Local Hue bridge discovery failed")]
-    public void LocalDiscoveryFailed()
+           Message = "Local Hue bridge discovery failed | ex_type={0} | ex_message={1} | win32_error={2}")]
+    public void LocalDiscoveryFailed(string ex_type, string ex_message, int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtLocalDiscoveryFailed);
+        if (IsEnabled()) WriteEvent(EvtLocalDiscoveryFailed, ex_type, ex_message, win32_error);
     }
-
-    [Event(EvtLocalDiscoveryFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "discover failed | source=mdns | ex_type={0} | message={1}")]
-    public void LocalDiscoveryFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtLocalDiscoveryFailedDetail, ex_type, message);
-    }
-
 }

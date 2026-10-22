@@ -242,13 +242,13 @@
     <value>Only level statistics in dBFS, namely minimum, percentiles (p10, p25, p50, p75, p90), maximum, and mean RMS. No audio. No transcription. No words. Nothing is sent over the network.</value>
   </data>
   <data name="MicrophoneTelemetryConsent_Body_Remind" xml:space="preserve">
-    <value>One short JSON line per recording. Small file. Useful when calibrating, then turn it off. The same data also appears in the LogWindow under [CAPTURE] for live inspection.</value>
+    <value>One short JSON line per recording. Small file. Useful when calibrating, then turn it off. The same data also appears in the log window under Audio for live inspection.</value>
   </data>
 
   <!-- ─── Engine status ──────────────────────────────────────────────
        One-shot status strings raised by TranscriptionEngine.RaiseStatus(...).
        Surfaced in the tray tooltip (capped to 127 chars by Shell) and
-       echoed to LogWindow under [STATUS]. Status_Rewriting takes the
+       echoed to LogWindow under App (StatusChanged). Status_Rewriting takes the
        active rewrite profile name as {0}. -->
 
   <!-- ─── Engine feedback ────────────────────────────────────────────

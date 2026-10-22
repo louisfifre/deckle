@@ -5,64 +5,115 @@ namespace Deckle.Hud;
 
 // EventSource provider for the Deckle.Hud module. A module cannot depend on the
 // host, so the module that emits owns its provider.
+//
+// Every Verbose event belongs to the Windowing activity: the HUD is a set of
+// window surfaces, and its per-show and per-frame detail stays out of the
+// journals unless that verbosity control admits it. Warnings, Errors and
+// recoveries always pass.
+//
+// The window show and placement incidents (a refused topmost raise, a refused
+// MoveAndResize) are not this provider's: the HUD surfaces report them through
+// `WindowingProbe`, into `DeckleWindowingSource`.
 [EventSource(Name = "Deckle-Hud")]
 public sealed class DeckleHudSource : DeckleEventSource
 {
     public static readonly DeckleHudSource Log = new();
 
-    // ── EventIds ────────────────────────────────────────────────────────
-    public const int EvtHudWarning          = 1;
+    // ── EventIds: never reused (public in the ETW manifest) ─────────────
+    // 1 retired.
     public const int EvtStateChanged        = 2;
     public const int EvtFadeInStarted       = 3;
-    public const int EvtMessageRetracted    = 4;
+    // 4 retired.
     // 5 reserved: a removed event; never reuse the id.
     public const int EvtProximityRollup     = 6;
-    public const int EvtHudWarningDetail    = 7;
-    public const int EvtRevealMaskFailed    = 8;
+    // 7 retired.
+    // 8 retired.
     // 9 reserved: a removed event; never reuse the id.
     public const int EvtRevealGeometry      = 10;
-    public const int EvtRevealMaskFailedDetail = 11;
+    // 11 retired.
     public const int EvtTranscriptPanelVisibilityChanged = 12;
+    public const int EvtHideSyncTimedOut          = 13;
+    public const int EvtRevealMaskDegraded        = 14;
+    public const int EvtRevealBuildAttemptFailed  = 15;
+    public const int EvtRevealMaskRecovered       = 16;
+    public const int EvtRevealBuildEnded          = 17;
+    public const int EvtStrokeCreationFailed      = 18;
+    public const int EvtStrokeCreationRecovered   = 19;
+    public const int EvtStrokeCreationAttemptFailed = 20;
+    // 21 retired.
+    // 22 retired.
+    public const int EvtHudDisplaySuppressed      = 23;
+    public const int EvtOverlayCardChanged        = 24;
+    public const int EvtCleanupFailed             = 25;
+    public const int EvtFadeInEnded               = 26;
 
-    [Event(EvtHudWarning,
+    // Callers test this before any measurement made only for the log.
+    [NonEvent]
+    public bool IsHudDetailEnabled(EventKeywords keywords)
+        => OperationalLogAdmission.IsDetailEnabled(
+            OperationalLogActivity.Windowing, this, EventLevel.Verbose, keywords);
+
+    // ─── Paste rendezvous ───────────────────────────────────────────────
+    //
+    // HideSync released the transcribe thread without the hide: the paste goes
+    // ahead while the HUD may still be visible, so activation can move while
+    // the keystrokes are in flight.
+    [Event(EvtHideSyncTimedOut,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "HideSync timed out")]
-    public void HudWarning()
+           Message = "Cannot hide the HUD before the paste | reason={0} | timeout_ms={1}")]
+    public void HideSyncTimedOut(string reason, int timeout_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtHudWarning);
+        if (IsEnabled()) WriteEvent(EvtHideSyncTimedOut, reason, timeout_ms);
     }
 
-    [Event(EvtHudWarningDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
-    public void HudWarningDetail(string message)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtHudWarningDetail, message);
-    }
-
-    // The digit reveal mask kept failing to build, so the face fell back to the
-    // flat-accent overlay; this records it so a degraded reveal isn't mistaken
-    // for a design choice.
-    [Event(EvtRevealMaskFailed,
+    // ─── Digit reveal mask ──────────────────────────────────────────────
+    //
+    // One incident across takes: the Warning opens once the build has failed
+    // past the transient window, carrying the last cause; the recovery closes
+    // it on the first take whose six masks build. The face shows the flat
+    // accent meanwhile, so a degraded reveal isn't mistaken for a design
+    // choice. Every `attempts` here counts the take's failed build attempts.
+    [Event(EvtRevealMaskDegraded,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Digit reveal mask failed")]
-    public void RevealMaskFailed()
+           Message = "The digit reveal fell back to the flat accent | attempts={0} | ex_type={1} | ex_message={2}")]
+    public void RevealMaskDegraded(int attempts, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtRevealMaskFailed);
+        if (IsEnabled()) WriteEvent(EvtRevealMaskDegraded, attempts, ex_type, ex_message);
     }
 
-    [Event(EvtRevealMaskFailedDetail,
+    [Event(EvtRevealMaskRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The digit reveal builds again | attempts={0}")]
+    public void RevealMaskRecovered(int attempts)
+    {
+        if (IsEnabled()) WriteEvent(EvtRevealMaskRecovered, attempts);
+    }
+
+    // One per failed vsync build attempt, up to the latch.
+    [Event(EvtRevealBuildAttemptFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "digit reveal mask failed | error={0} | message={1}")]
-    public void RevealMaskFailedDetail(string error, string message)
+           Message = "reveal build attempt failed | attempt={0} | ex_type={1} | ex_message={2}")]
+    public void RevealBuildAttemptFailed(int attempt, string ex_type, string ex_message)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtRevealMaskFailedDetail, error, message);
+        if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtRevealBuildAttemptFailed, attempt, ex_type, ex_message);
+    }
+
+    // The end of one take's build loop. `outcome`: built (six masks),
+    // latched (the retry budget ran out, flat accent for the take) or
+    // abandoned (the take left the reveal before any outcome).
+    [Event(EvtRevealBuildEnded,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "reveal build ended | outcome={0} | attempts={1}")]
+    public void RevealBuildEnded(string outcome, int attempts)
+    {
+        if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtRevealBuildEnded, outcome, attempts);
     }
 
     // The inputs of the reveal placement (conicCentre = apex − cellOffset), so
@@ -73,8 +124,80 @@ public sealed class DeckleHudSource : DeckleEventSource
            Message = "reveal geometry | cell={0}x{1} | offset={2},{3} | host={4}x{5}")]
     public void RevealGeometry(double cellW, double cellH, double offX, double offY, double hostW, double hostH)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtRevealGeometry, cellW, cellH, offX, offY, hostW, hostH);
+    }
+
+    // ─── Processing stroke ──────────────────────────────────────────────
+    //
+    // Composition refused the stroke (device lost, surface creation,
+    // expression parse); the exception still reaches the caller, which used to
+    // be the only trace. One incident: every failure is Verbose, the first one
+    // also opens the Warning, and the next successful attach or rebuild closes
+    // it. `phase`: attach (a state change) or rebuild (a settings change).
+    [Event(EvtStrokeCreationFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Cannot build the HUD processing stroke | phase={0} | variant={1} | ex_type={2} | ex_message={3}")]
+    public void StrokeCreationFailed(string phase, string variant, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtStrokeCreationFailed, phase, variant, ex_type, ex_message);
+    }
+
+    [Event(EvtStrokeCreationAttemptFailed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "stroke creation failed | phase={0} | variant={1} | ex_type={2} | ex_message={3}")]
+    public void StrokeCreationAttemptFailed(string phase, string variant, string ex_type, string ex_message)
+    {
+        if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtStrokeCreationAttemptFailed, phase, variant, ex_type, ex_message);
+    }
+
+    [Event(EvtStrokeCreationRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The HUD processing stroke builds again | failures={0}")]
+    public void StrokeCreationRecovered(int failures)
+    {
+        if (IsEnabled()) WriteEvent(EvtStrokeCreationRecovered, failures);
+    }
+
+    // A visible state or a feedback card the Overlay.Enabled setting turned
+    // away, so a feedback emitted upstream never reached the screen.
+    // `surface`: hud, overlay or transcript-panel. `severity`: 0=Info,
+    // 1=Warning, 2+=Error, -1 for a state without a message.
+    [Event(EvtHudDisplaySuppressed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "hud display suppressed | surface={0} | state={1} | severity={2} | reason={3}")]
+    public void HudDisplaySuppressed(string surface, string state, int severity, string reason)
+    {
+        if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtHudDisplaySuppressed, surface, state, severity, reason);
+    }
+
+    // `change`: shown or closed. `cards` counts the stack after the change.
+    [Event(EvtOverlayCardChanged,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "overlay card | change={0} | slot={1} | severity={2} | cards={3}")]
+    public void OverlayCardChanged(string change, int slot, int severity, int cards)
+    {
+        if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtOverlayCardChanged, change, slot, severity, cards);
+    }
+
+    // A teardown step that threw and was abandoned. `what`: overlay-expiry,
+    // overlay-shutdown.
+    [Event(EvtCleanupFailed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "cleanup failed | what={0} | ex_type={1} | ex_message={2}")]
+    public void CleanupFailed(string what, string ex_type, string ex_message)
+    {
+        if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtCleanupFailed, what, ex_type, ex_message);
     }
 
     // ─── State machine transitions ──────────────────────────────────────
@@ -88,7 +211,7 @@ public sealed class DeckleHudSource : DeckleEventSource
            Message = "state changed | from={0} | to={1} | reason={2} | alpha={3} | dpi={4}")]
     public void StateChanged(string from, string to, string reason, byte alpha, int dpi)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtStateChanged, from, to, reason, alpha, dpi);
     }
 
@@ -102,7 +225,7 @@ public sealed class DeckleHudSource : DeckleEventSource
            Message = "transcript panel | shown={0} | side={1} | utterances={2}")]
     public void TranscriptPanelVisibilityChanged(bool shown, string side, int utterances)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtTranscriptPanelVisibilityChanged, shown, side, utterances);
     }
 
@@ -116,22 +239,22 @@ public sealed class DeckleHudSource : DeckleEventSource
            Message = "fade in start | scope={0} | duration_ms={1} | from={2} | to={3}")]
     public void FadeInStarted(string scope, int duration_ms, byte from_alpha, byte to_alpha)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtFadeInStarted, scope, duration_ms, from_alpha, to_alpha);
     }
 
-    // ─── Message retract ────────────────────────────────────────────────
-    //
-    // No call site: the event only freezes the signature of a planned message
-    // retract; HudMessage is fixed at 272×78.
-    [Event(EvtMessageRetracted,
+    // The end of every FadeInStarted. `outcome`: completed (the ramp ended,
+    // or snapped to its target when animations were turned off) or cancelled
+    // (a hide, a fade-out or a new fade-in replaced it). `alpha` is the alpha
+    // the window holds at that moment.
+    [Event(EvtFadeInEnded,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "message retract | from={0}x{1} | to={2}x{3} | duration_ms={4}")]
-    public void MessageRetracted(int from_w, int from_h, int to_w, int to_h, int duration_ms)
+           Message = "fade in end | scope={0} | outcome={1} | elapsed_ms={2} | alpha={3}")]
+    public void FadeInEnded(string scope, string outcome, int elapsed_ms, byte alpha)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtMessageRetracted, from_w, from_h, to_w, to_h, duration_ms);
+        if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtFadeInEnded, scope, outcome, elapsed_ms, alpha);
     }
 
     // ─── Proximity smoothstep (per-session rollup) ──────────────────────
@@ -146,7 +269,7 @@ public sealed class DeckleHudSource : DeckleEventSource
            Message = "proximity rollup | duration_ms={0} | samples={1} | min_alpha={2} | max_alpha={3} | p50_cursor_dist_dip={4} | p95_cursor_dist_dip={5}")]
     public void ProximityRollup(int duration_ms, int samples, byte min_alpha, byte max_alpha, int p50_cursor_dist_dip, int p95_cursor_dist_dip)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        if (!IsHudDetailEnabled((EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtProximityRollup, duration_ms, samples, min_alpha, max_alpha, p50_cursor_dist_dip, p95_cursor_dist_dip);
     }
 }

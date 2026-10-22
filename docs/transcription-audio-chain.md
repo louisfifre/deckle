@@ -202,7 +202,6 @@ Where the files live:
 Where the settings are shown:
 
 - **Settings ▸ Dictation**: `src/Deckle.Transcription/ViewModels/WhisperViewModel.Settings.cs` (composed cards, including the cut curve card with its anchors and the curve editor `src/Deckle.Catalog/Composer/CurveEditor.cs`; no preset selector), plus the hand-written cards of `src/Deckle.Transcription/WhisperPage.xaml` and `src/Deckle.Transcription/WhisperPage.xaml.cs` (model, language, initial prompt).
-- **Playground ▸ Segmentation**: `src/Deckle.Playground/ViewModels/SegmentationViewModel.cs`, with the curve plot `src/Deckle.Transcription/Ui/Controls/HangoverCurveCanvas.xaml.cs` on `src/Deckle.Playground/Views/Segmentation/SegmentationPage.xaml`. Edits there wait for a Save button.
 - **Settings ▸ Recording**: `src/Deckle.Audio/RecordingViewModel.Settings.cs`, plus the microphone picker in `src/Deckle.Audio/RecordingPage.xaml.cs`.
 
 ### Transcription module — `modules/transcription/settings.json`
@@ -210,7 +209,7 @@ Where the settings are shown:
 | Parameter | Acts in | Default in code | Stored in (section) | Exposed where |
 |---|---|---|---|---|
 | `Engine.Model` | `src/Deckle.Transcription.Whisper/WhisperBackend.Model.cs` (model load) | `"ggml-base.bin"` | `engine` | Dictation (model card, `WhisperPage.xaml`) |
-| `Engine.UseGpu` | `src/Deckle.Transcription.Whisper/WhisperBackend.Model.cs` | `true` | `engine` | Dictation (`WhisperUseGpuCard`) |
+| `Engine.UseGpu` | `src/Deckle.Transcription.Whisper/Engine/WhisperContextParamsMapper.cs` (model load) | `true` | `engine` | Dictation (`WhisperUseGpuCard`) |
 | `Engine.Language` | `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs` | `"fr"` | `engine` | Dictation (`WhisperPage.xaml.cs`) |
 | `Engine.InitialPrompt` | `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs`; in Streaming, the fixed part of every prompt (`ProduceStreamingAsync`) | A French paragraph about coding a Windows app (see the file) | `engine` | Dictation (`WhisperInitialPromptCard`) |
 | `Engine.CarryInitialPrompt` | `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs` | `true` | `engine` | Not exposed |
@@ -227,17 +226,17 @@ Where the settings are shown:
 | `OutputFilters.SuppressBlank` | same | `true` | `outputFilters` | Decoding page (Output filters section, `WhisperSuppressBlankCard`) |
 | `OutputFilters.SuppressRegex` | same | `""` | `outputFilters` | Decoding page (Output filters section, `WhisperSuppressRegexCard`) |
 | `Streaming.Strategy` | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `WorkerRun` | `Monolithic` | `streaming` | Dictation (`WhisperStreamingEnabledCard` toggle: on = Streaming) |
-| `Streaming.Segmenter.ThresholdDbfs` | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` | `-45.0` | `streaming.segmenter` | Streaming page (`WhisperSegThresholdCard`, magnitude field in dBFS) and Playground |
-| `Streaming.Segmenter.HangoverMaxMs` | same | `5000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Max wait", ms) and Playground |
-| `Streaming.Segmenter.HangoverMinMs` | same | `500` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Min wait", ms) and Playground |
-| `Streaming.Segmenter.HangoverRampStartMs` | same | `15000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Ramp start", ms) and Playground |
-| `Streaming.Segmenter.HangoverRampEndMs` | same | `120000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Ramp end", ms) and Playground |
-| `Streaming.Segmenter.HangoverCurveX1` | same (via `src/Deckle.Transcription/Curves/UnitBezier.cs`) | `0.85` | `streaming.segmenter` | Streaming page (cut curve card, full-width editor, `WhisperCutCurveCard`) and Playground |
-| `Streaming.Segmenter.HangoverCurveY1` | same | `0.10` | `streaming.segmenter` | Streaming page (cut curve card) and Playground |
-| `Streaming.Segmenter.HangoverCurveX2` | same | `0.90` | `streaming.segmenter` | Streaming page (cut curve card) and Playground |
-| `Streaming.Segmenter.HangoverCurveY2` | same | `0.25` | `streaming.segmenter` | Streaming page (cut curve card) and Playground |
-| `Streaming.Segmenter.MarginMs` | same | `150` | `streaming.segmenter` | Playground only (removed from the Streaming page, 2026-10-14) |
-| `Streaming.Segmenter.MinUtteranceMs` | same | `250` | `streaming.segmenter` | Playground only (removed from the Streaming page, 2026-10-14) |
+| `Streaming.Segmenter.ThresholdDbfs` | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` | `-45.0` | `streaming.segmenter` | Streaming page (`WhisperSegThresholdCard`, magnitude field in dBFS) |
+| `Streaming.Segmenter.HangoverMaxMs` | same | `5000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Max wait", ms) |
+| `Streaming.Segmenter.HangoverMinMs` | same | `500` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Min wait", ms) |
+| `Streaming.Segmenter.HangoverRampStartMs` | same | `15000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Ramp start", ms) |
+| `Streaming.Segmenter.HangoverRampEndMs` | same | `120000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Ramp end", ms) |
+| `Streaming.Segmenter.HangoverCurveX1` | same (via `src/Deckle.Transcription/Curves/UnitBezier.cs`) | `0.85` | `streaming.segmenter` | Streaming page (cut curve card, full-width editor, `WhisperCutCurveCard`) |
+| `Streaming.Segmenter.HangoverCurveY1` | same | `0.10` | `streaming.segmenter` | Streaming page (cut curve card) |
+| `Streaming.Segmenter.HangoverCurveX2` | same | `0.90` | `streaming.segmenter` | Streaming page (cut curve card) |
+| `Streaming.Segmenter.HangoverCurveY2` | same | `0.25` | `streaming.segmenter` | Streaming page (cut curve card) |
+| `Streaming.Segmenter.MarginMs` | same | `150` | `streaming.segmenter` | Streaming page (`WhisperSegMarginCard`, seconds) |
+| `Streaming.Segmenter.MinUtteranceMs` | same | `250` | `streaming.segmenter` | Streaming page (`WhisperSegMinUtteranceCard`, seconds) |
 | `Streaming.SpeechTrim.Enabled` | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `StartSegmentedTranscription` | `true` | `streaming.speechTrim` | Streaming page (`WhisperVadEnabledCard`, the VAD group's switch, visible only when Streaming is on) |
 | `Streaming.SpeechTrim.Threshold` | `src/Deckle.Vad/SileroSpeechTimestamps.cs` (via `src/Deckle.Vad/SileroVadOptions.cs`) | `0.5` | `streaming.speechTrim` | Streaming page (`WhisperVadThresholdCard`, child of the VAD group, shown while the group is on) |
 | `Streaming.SpeechTrim.MinSpeechDurationMs` | same | `250` | `streaming.speechTrim` | Streaming page (`WhisperVadMinSpeechCard`, child of the VAD group) |

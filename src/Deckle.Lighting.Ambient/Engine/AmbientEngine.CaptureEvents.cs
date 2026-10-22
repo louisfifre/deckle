@@ -26,14 +26,14 @@ public sealed partial class AmbientEngine
         }
         else
         {
-            RecordFrameProcessingFailure();
+            RecordFrameProcessingFailure("sampler_failed");
         }
     }
 
     private void OnFrameProcessingFailed()
     {
         EnsureFrameProcessingEpisodeSession();
-        RecordFrameProcessingFailure();
+        RecordFrameProcessingFailure("capture_failed");
     }
 
     private void EnsureFrameProcessingEpisodeSession()
@@ -46,7 +46,8 @@ public sealed partial class AmbientEngine
         Interlocked.Exchange(ref _frameProcessingStopRequested, 0);
     }
 
-    private void RecordFrameProcessingFailure()
+    // reason is the cause of this failure; the milestones carry the last one.
+    private void RecordFrameProcessingFailure(string reason)
     {
         long now = Stopwatch.GetTimestamp();
         if (_frameProcessingLastFailureTicks != 0)
@@ -65,7 +66,7 @@ public sealed partial class AmbientEngine
             && activeFailureMs >= FrameProcessingIncidentDelayMs)
         {
             _frameProcessingIncidentOpen = true;
-            DeckleAmbientSource.Log.FrameProcessingIncidentOpened();
+            DeckleAmbientSource.Log.FrameProcessingIncidentOpened(reason, _frameProcessingFailures);
             DeckleAmbientSource.Log.FrameProcessingEpisodeDetail(
                 "opened", _frameProcessingFailures, activeFailureMs);
         }
@@ -76,9 +77,10 @@ public sealed partial class AmbientEngine
         {
             DeckleAmbientSource.Log.FrameProcessingEpisodeDetail(
                 "abandoned", _frameProcessingFailures, activeFailureMs);
+            int failures = _frameProcessingFailures;
             AbortStartOrStop(
                 "frame_processing_failed",
-                DeckleAmbientSource.Log.FrameProcessingFailed);
+                () => DeckleAmbientSource.Log.FrameProcessingFailed(reason, failures));
         }
     }
 
@@ -132,8 +134,7 @@ public sealed partial class AmbientEngine
         }
         catch (Exception ex)
         {
-            DeckleAmbientSource.Log.SamplerRebuildFailed();
-            DeckleAmbientSource.Log.SamplerRebuildFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.SamplerRebuildFailed(ex.GetType().Name, ex.Message);
             return;
         }
 
@@ -164,17 +165,19 @@ public sealed partial class AmbientEngine
         try { await sampler.DisposeAsync().ConfigureAwait(false); }
         catch (Exception ex)
         {
-            DeckleAmbientSource.Log.SamplerRebuildFailed();
-            DeckleAmbientSource.Log.SamplerRebuildFailedDetail(ex.GetType().Name, ex.Message);
+            // The rebuild itself succeeded; only the old textures leaked.
+            ReportReleaseFailure("superseded_sampler", ex);
         }
     }
 
     // Capture worker thread → marshal off it via Task.Run because Stop()
     // raises StateChanged whose subscribers (AmbientPage, tray) expect
     // to live on their own dispatchers, and Stop() is not designed to
-    // run synchronously on the capture's loop thread.
-    private void OnCaptureStopped()
+    // run synchronously on the capture's loop thread. reason is the Vision
+    // CaptureStopReasons value, relayed so the consequence line names the
+    // cause Vision already reported.
+    private void OnCaptureStopped(string reason)
     {
-        AbortStartOrStop("capture_lost", DeckleAmbientSource.Log.CaptureLost);
+        AbortStartOrStop("capture_lost", () => DeckleAmbientSource.Log.CaptureLost(reason));
     }
 }

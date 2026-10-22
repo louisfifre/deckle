@@ -5,24 +5,6 @@ namespace Deckle.App;
 
 public sealed partial class DeckleAppSource
 {
-    [Event(EvtAmbientPipelineState,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Ambient pipeline state changed")]
-    public void AmbientPipelineState()
-    {
-        if (IsEnabled()) WriteEvent(EvtAmbientPipelineState);
-    }
-
-    [Event(EvtAmbientPipelineStateDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "ambient pipeline state | state={0}")]
-    public void AmbientPipelineStateDetail(string state)
-    {
-        if (IsEnabled()) WriteEvent(EvtAmbientPipelineStateDetail, state);
-    }
-
     [Event(EvtAmbientMasterForcedOff,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -32,22 +14,15 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtAmbientMasterForcedOff);
     }
 
+    // The engine's own PipelineStartFailed names the failing stage; this line
+    // records the App's answer to it, which the person sees: the switch went
+    // back to off and was saved.
     [Event(EvtAmbientStartFailed,
-           Level = EventLevel.Error,
+           Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Ambient lighting could not start")]
-    public void AmbientStartFailed()
+           Message = "Ambient lighting failed to start and was switched off | {0}: {1}")]
+    public void AmbientStartFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtAmbientStartFailed);
+        if (IsEnabled()) WriteEvent(EvtAmbientStartFailed, ex_type, ex_message);
     }
-
-    [Event(EvtAmbientStartFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "ambient start failed | error={0} | message={1}")]
-    public void AmbientStartFailedDetail(string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtAmbientStartFailedDetail, ex_type, ex_message);
-    }
-
 }

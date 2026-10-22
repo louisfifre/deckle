@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Deckle.Lighting;
 
 // IMultiLightOutput backed by the Hue Entertainment v2 streaming path:
@@ -17,6 +19,9 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
 
     private bool _connected;
     private byte _sequence = 1;
+    private long _sessionStartedAt;
+    private long _framesSent;
+    private int _sendFailures;
 
     public HueEntertainmentLightOutput(
         HueBridgeClient client,
@@ -55,6 +60,8 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
 
         ct.ThrowIfCancellationRequested();
 
+        long connectStartedAt = Stopwatch.GetTimestamp();
+        string stage = "pre_prime";
         bool streamingStarted = false;
         try
         {
@@ -64,20 +71,33 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
             DeckleLightingSource.Log.EntertainmentStreamingStartingDetail(
                 _area.Id, _area.Name, _area.Channels.Count);
 
+            stage = "streaming_start";
             await _client.SetEntertainmentStreamingAsync(_area.Id, active: true, ct).ConfigureAwait(false);
             streamingStarted = true;
 
+            stage = "transport_connect";
             DeckleLightingSource.Log.EntertainmentTransportConnecting();
             await _transport.ConnectAsync(ct).ConfigureAwait(false);
-            DeckleLightingSource.Log.EntertainmentTransportConnected();
 
             _connected = true;
+            _framesSent = 0;
+            _sendFailures = 0;
 
+            stage = "prime";
             Send(BuildAllChannelColors(LightColor.Black));
             DeckleLightingSource.Log.EntertainmentStreamPrimed(_area.Id, _area.Channels.Count);
+
+            _sessionStartedAt = Stopwatch.GetTimestamp();
+            DeckleLightingSource.Log.EntertainmentTransportConnected(ElapsedMs(connectStartedAt));
         }
-        catch
+        catch (Exception ex)
         {
+            if (ex is OperationCanceledException && ct.IsCancellationRequested)
+                DeckleLightingSource.Log.EntertainmentConnectCancelled(stage, ElapsedMs(connectStartedAt));
+            else
+                DeckleLightingSource.Log.EntertainmentConnectFailed(
+                    stage, ex.GetType().Name, ex.Message, ElapsedMs(connectStartedAt));
+
             _connected = false;
             _transport.Dispose();
             if (streamingStarted)
@@ -112,8 +132,7 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
         }
         catch (Exception ex)
         {
-            DeckleLightingSource.Log.EntertainmentPrePrimeFailed();
-            DeckleLightingSource.Log.EntertainmentPrePrimeFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleLightingSource.Log.EntertainmentPrePrimeFailed(ex.GetType().Name, ex.Message);
         }
     }
 
@@ -177,7 +196,12 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
 
         _connected = false;
         _transport.Dispose();
-        await StopStreamingBestEffortAsync().ConfigureAwait(false);
+        bool stopped = await StopStreamingBestEffortAsync().ConfigureAwait(false);
+        DeckleLightingSource.Log.EntertainmentSessionClosed(
+            stopped ? "completed" : "stop_failed",
+            ElapsedMs(_sessionStartedAt),
+            _framesSent,
+            _sendFailures);
     }
 
     private void Send(IReadOnlyList<HueEntertainmentChannelColor> colors)
@@ -185,8 +209,24 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
         var frames = HueEntertainmentFrameBuilder.BuildFrames(_area.Id, colors, _sequence);
         _sequence = unchecked((byte)(_sequence + frames.Count));
         foreach (var frame in frames)
-            _transport.Send(frame);
+        {
+            try
+            {
+                _transport.Send(frame);
+            }
+            catch
+            {
+                // Counted for the session summary only; the caller's
+                // push-health episode reports the failure itself.
+                _sendFailures++;
+                throw;
+            }
+            _framesSent++;
+        }
     }
+
+    private static long ElapsedMs(long startedAt)
+        => startedAt == 0 ? 0 : (long)Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds;
 
     private HueEntertainmentChannelColor[] BuildAllChannelColors(LightColor color)
     {
@@ -207,17 +247,20 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
         return lightIds.ToArray();
     }
 
-    private async Task StopStreamingBestEffortAsync()
+    private async Task<bool> StopStreamingBestEffortAsync()
     {
         try
         {
             using var stopCts = new CancellationTokenSource(StopStreamingTimeout);
             await _client.SetEntertainmentStreamingAsync(_area.Id, active: false, stopCts.Token).ConfigureAwait(false);
+            return true;
         }
-        catch
+        catch (Exception ex)
         {
             // Best-effort cleanup. A failed stop must not hide the
             // original connect/push/dispose failure path.
+            DeckleLightingSource.Log.EntertainmentStreamingStopFailed(ex.GetType().Name, ex.Message);
+            return false;
         }
     }
 

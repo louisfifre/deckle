@@ -38,8 +38,10 @@ public sealed class SpeechSettingsService
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Speech-Save",
             jsonOptions: _jsonOptions,
-            logWarning:  msg => DeckleSpeechSource.Log.SettingsLoadWarning($"[speech] {msg}"),
-            logError:    msg => DeckleSpeechSource.Log.SettingsLoadError($"[speech] {msg}"));
+            logInfo:     msg => DeckleSpeechSource.Log.SettingsLoaded(msg),
+            logVerbose:  msg => DeckleSpeechSource.Log.SettingsLoadComplete(msg),
+            logWarning:  msg => DeckleSpeechSource.Log.SettingsLoadWarning(msg),
+            logError:    msg => DeckleSpeechSource.Log.SettingsLoadError(msg));
     }
 
     public void Save()                       => _store.Save();

@@ -45,6 +45,9 @@ public sealed class TrackpadEngine : IDisposable
     private int _dragMoves;
     private bool _traceDrag;
     private bool _injectionIncidentOpen;
+    // Counted for every drag, traced or not, so the stop milestone says how
+    // much the engine was used without Verbose admission.
+    private long _drags;
 
     public TrackpadEngine(RawInputHost host)
     {
@@ -60,22 +63,27 @@ public sealed class TrackpadEngine : IDisposable
 
     public void Start()
     {
+        bool touchpad;
         lock (_gate)
         {
             if (_running) return;
             _running = true;
-            _injectionIncidentOpen = false;
+            // No incident to reset here: Stop always ends an open one.
+            _drags = 0;
 
             ApplyThresholds();
             _host.FrameAssembled      += OnFrame;
             _host.TouchpadConnected   += OnTouchpadConnected;
             _host.TouchpadDisconnected += OnTouchpadDisconnected;
+            touchpad = _host.Touchpad is not null;
         }
-        DeckleTrackpadSource.Log.EngineStarted();
+        DeckleTrackpadSource.Log.EngineStarted(
+            TrackpadSettingsService.Instance.Current.DragSpeed, touchpad);
     }
 
     public void Stop()
     {
+        long drags;
         lock (_gate)
         {
             if (!_running) return;
@@ -87,8 +95,14 @@ public sealed class TrackpadEngine : IDisposable
 
             _graceTimer.Change(Timeout.Infinite, Timeout.Infinite);
             _recognizer.Cancel("engine-stopped");
+            // The incident cannot close by a successful injection anymore, so
+            // it is ended here; otherwise the journal would hold a Warning
+            // that never ends.
+            if (_injectionIncidentOpen)
+                EndInjectionIncident("engine_stopped");
+            drags = _drags;
         }
-        DeckleTrackpadSource.Log.EngineStopped();
+        DeckleTrackpadSource.Log.EngineStopped("completed", drags);
     }
 
     public void Dispose()
@@ -138,6 +152,7 @@ public sealed class TrackpadEngine : IDisposable
 
     private void OnDragStarted()
     {
+        _drags++;
         _traceDrag = DeckleTrackpadSource.IsInputActivityDetailEnabled(
             System.Diagnostics.Tracing.EventLevel.Verbose,
             (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Capture);
@@ -194,15 +209,20 @@ public sealed class TrackpadEngine : IDisposable
     {
         if (_injectionIncidentOpen) return;
         _injectionIncidentOpen = true;
-        DeckleTrackpadSource.Log.InjectionFailed();
-        DeckleTrackpadSource.Log.InjectionFailedDetail(action, _injector.LastError);
+        DeckleTrackpadSource.Log.InjectionFailed(action, _injector.LastError);
     }
 
     private void CloseInjectionIncident()
     {
         if (!_injectionIncidentOpen) return;
+        EndInjectionIncident("injection_succeeded");
+    }
+
+    // Caller holds _gate.
+    private void EndInjectionIncident(string reason)
+    {
         _injectionIncidentOpen = false;
-        DeckleTrackpadSource.Log.InjectionRecovered();
+        DeckleTrackpadSource.Log.InjectionIncidentEnded(reason);
     }
 
     private static void OnTapIgnored()

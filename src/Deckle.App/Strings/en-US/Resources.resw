@@ -316,13 +316,13 @@
     <value>Only level statistics in dBFS, namely minimum, percentiles (p10, p25, p50, p75, p90), maximum, and mean RMS. No audio. No transcription. No words. Nothing is sent over the network.</value>
   </data>
   <data name="MicrophoneTelemetryConsent_Body_Remind" xml:space="preserve">
-    <value>One short JSON line per recording. Small file. Useful when calibrating, then turn it off. The same data also appears in the LogWindow under [CAPTURE] for live inspection.</value>
+    <value>One short JSON line per recording. Small file. Useful when calibrating, then turn it off. The same data also appears in the log window under Audio for live inspection.</value>
   </data>
 
   <!-- ─── Engine status ──────────────────────────────────────────────
        One-shot status strings raised by TranscriptionEngine.RaiseStatus(...).
        Surfaced in the tray tooltip (capped to 127 chars by Shell) and
-       echoed to LogWindow under [STATUS]. Status_Rewriting takes the
+       echoed to LogWindow under App (StatusChanged). Status_Rewriting takes the
        active rewrite profile name as {0}. -->
   <data name="Status_LoadingModel" xml:space="preserve">
     <value>Loading model…</value>
@@ -565,15 +565,30 @@
   <data name="Setup_WindowTitle" xml:space="preserve">
     <value>Deckle Setup</value>
   </data>
+  <data name="Setup_Step_Modules_Label" xml:space="preserve">
+    <value>Modules</value>
+  </data>
+  <data name="Setup_Step_Location_Label" xml:space="preserve">
+    <value>Location</value>
+  </data>
+  <data name="Setup_Step_Dictation_Label" xml:space="preserve">
+    <value>Dictation</value>
+  </data>
+  <data name="Setup_Step_Install_Label" xml:space="preserve">
+    <value>Install</value>
+  </data>
+  <data name="Setup_Step_Finish_Label" xml:space="preserve">
+    <value>Finish</value>
+  </data>
 
   <!-- ─── Setup wizard — choices page ────────────────────────────────
        Step header text is set programmatically by ChoicesPage via
        SetStepHeader. Cards in XAML use x:Uid for header/description. -->
   <data name="Setup_StepTitle_Choices" xml:space="preserve">
-    <value>Setup</value>
+    <value>Dictation</value>
   </data>
   <data name="Setup_StepSubtitle_Choices" xml:space="preserve">
-    <value>Tell the app where to install everything, and pick the speech model you want.</value>
+    <value>Pick the speech model Dictation runs on, and check its runtime.</value>
   </data>
   <data name="Setup_NextLabel_Install" xml:space="preserve">
     <value>Install</value>
@@ -604,7 +619,7 @@
     <value>Installing</value>
   </data>
   <data name="Setup_StepSubtitle_Installing" xml:space="preserve">
-    <value>Downloading the speech runtime and model. This can take a while on a slow link.</value>
+    <value>Downloading the models and tools your modules need. This can take a while on a slow link.</value>
   </data>
   <data name="Setup_Install_Connecting" xml:space="preserve">
     <value>Connecting...</value>
@@ -931,6 +946,32 @@
   </data>
   <data name="LogWindow_ContextCopy_All" xml:space="preserve">
     <value>Copy all</value>
+  </data>
+  <!-- Notices above the log list (code-behind, Loc.Get / Loc.Format).
+       The activity names follow OperationalLogActivity; the path names the
+       Diagnostics page and its Logging details section, their only editor. -->
+  <data name="LogWindow_GatesNotice_Format" xml:space="preserve">
+    <value>Verbose detail is off for: {0}. Turn it on in Settings &gt; Diagnostics &gt; Logging details.</value>
+    <comment>{0} is a comma-separated list of activity names.</comment>
+  </data>
+  <data name="LogWindow_Activity_Ambient" xml:space="preserve">
+    <value>Ambient</value>
+  </data>
+  <data name="LogWindow_Activity_Transcription" xml:space="preserve">
+    <value>Transcription</value>
+  </data>
+  <data name="LogWindow_Activity_Autocorrect" xml:space="preserve">
+    <value>Autocorrect</value>
+  </data>
+  <data name="LogWindow_Activity_Input" xml:space="preserve">
+    <value>Input</value>
+  </data>
+  <data name="LogWindow_Activity_Windowing" xml:space="preserve">
+    <value>Windowing</value>
+  </data>
+  <data name="LogWindow_DroppedNotice_Format" xml:space="preserve">
+    <value>Entries skipped because they arrived faster than this window could show them: {0:N0}</value>
+    <comment>{0} is the number of skipped entries since the window was last cleared.</comment>
   </data>
 
   <!-- ─── Window titles (set via AppWindow.Title in code) ────────────
@@ -1308,7 +1349,7 @@
     <value>Rewrite</value>
   </data>
   <data name="Setup_Module_rewrite_Description" xml:space="preserve">
-    <value>Cleans up dictated text with a local language model. Needs Dictation</value>
+    <value>Rewrites your text with a language model</value>
   </data>
   <data name="Setup_Module_autocorrect_Label" xml:space="preserve">
     <value>Autocorrect</value>
@@ -1328,10 +1369,34 @@
   <data name="Setup_Module_trackpad_Description" xml:space="preserve">
     <value>Three-finger drag on the precision touchpad</value>
   </data>
+  <data name="Setup_Module_precision-scroll_Label" xml:space="preserve">
+    <value>Precision scrolling</value>
+  </data>
+  <data name="Setup_Module_precision-scroll_Description" xml:space="preserve">
+    <value>Smooth, touchpad-like scrolling from the mouse wheel</value>
+  </data>
+  <data name="Setup_Module_orchestration_Label" xml:space="preserve">
+    <value>Apps and games</value>
+  </data>
+  <data name="Setup_Module_orchestration_Description" xml:space="preserve">
+    <value>Turns HDR on or off while the apps and games you list are running</value>
+  </data>
   <data name="Setup_Module_anytype_Label" xml:space="preserve">
     <value>Anytype workspace</value>
   </data>
   <data name="Setup_Module_anytype_Description" xml:space="preserve">
     <value>Hosts the local Anytype backend that AI assistants read and write</value>
+  </data>
+  <data name="Setup_Module_Requires_Format" xml:space="preserve">
+    <value>{0}. Requires {1}</value>
+  </data>
+  <data name="Setup_Module_Download_Format" xml:space="preserve">
+    <value>~{0}</value>
+  </data>
+  <data name="Setup_Module_Installed" xml:space="preserve">
+    <value>Installed</value>
+  </data>
+  <data name="Setup_Module_NoDownload" xml:space="preserve">
+    <value>No download</value>
   </data>
 </root>

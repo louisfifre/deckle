@@ -38,12 +38,67 @@ public partial class App
         internal bool AutocorrectPresent { get; set; }
         internal bool AmbientPresent { get; set; }
         internal bool TrackpadPresent { get; set; }
+        internal bool PrecisionScrollPresent { get; set; }
+        internal bool OrchestrationPresent { get; set; }
         internal bool AnytypePresent { get; set; }
 
         internal void Milestone(string name)
         {
             if (TraceEnabled)
                 _milestones!.Add($"{name} +{_stopwatch!.ElapsedMilliseconds}ms");
+        }
+
+        // Every piece of the resident app composes through here, so the
+        // journal names what started, what was skipped and why, and what
+        // failed. The exception goes on as before: App.xaml.cs's net handles
+        // it, and this line is what says which module it came from. Starting
+        // goes out first so a module that hangs is still named.
+        internal void Compose(string module, Action compose)
+        {
+            DeckleAppSource.Log.ModuleStarting(module);
+            try
+            {
+                compose();
+            }
+            catch (Exception ex)
+            {
+                DeckleAppSource.Log.ModuleFailed(module, ex.GetType().Name, ex.Message);
+                throw;
+            }
+            DeckleAppSource.Log.ModuleStarted(module);
+            Milestone(module);
+        }
+
+        // For a module whose start reports failure by returning false: the
+        // boot goes on without it, so no exception, and the journal says the
+        // module refused rather than leaving a ModuleStarted that is not true.
+        internal void ComposeOrRefuse(string module, string refusalReason, Func<bool> compose)
+        {
+            DeckleAppSource.Log.ModuleStarting(module);
+            bool started;
+            try
+            {
+                started = compose();
+            }
+            catch (Exception ex)
+            {
+                DeckleAppSource.Log.ModuleFailed(module, ex.GetType().Name, ex.Message);
+                throw;
+            }
+            if (!started)
+            {
+                DeckleAppSource.Log.ModuleRefused(module, refusalReason);
+                Milestone($"{module}_refused");
+                return;
+            }
+            DeckleAppSource.Log.ModuleStarted(module);
+            Milestone(module);
+        }
+
+        internal void Skip(string module, string reason)
+        {
+            DeckleAppSource.Log.ModuleSkipped(module, reason);
+            Milestone($"{module}_skipped");
         }
 
         internal void Complete()
@@ -62,9 +117,10 @@ public partial class App
     {
         // First, before settings migration: a listener only sees events emitted
         // after it subscribes, so these ungated local sinks must exist for a
-        // failure in the very first boot step to land in errors.jsonl.
+        // failure in the very first boot step to land in journal.jsonl.
         AppDiagnosticsBootstrap.InitializeLocalSinks(AppPaths.DiagnosticsDirectory);
         DeckleAppSource.Log.AppStarting();
+        EmitRunIdentity();
         context.Milestone("diagnostics-local");
 
         // Before any module SettingsService is touched: each singleton loads its
@@ -85,6 +141,7 @@ public partial class App
                 LoggingSettingsService.Instance.Current.LogWindowingActivity,
             _ => false,
         });
+        EmitLoggingPolicy();
         context.Milestone("settings-bootstrap");
 
         // Before any module is composed or registered: every gate below reads
@@ -95,6 +152,8 @@ public partial class App
         context.AutocorrectPresent = ModulePresence.IsPresent(ModuleIds.Autocorrect);
         context.AmbientPresent = ModulePresence.IsPresent(ModuleIds.Ambient);
         context.TrackpadPresent = ModulePresence.IsPresent(ModuleIds.Trackpad);
+        context.PrecisionScrollPresent = ModulePresence.IsPresent(ModuleIds.PrecisionScroll);
+        context.OrchestrationPresent = ModulePresence.IsPresent(ModuleIds.Orchestration);
         context.AnytypePresent = ModulePresence.IsPresent(ModuleIds.Anytype);
         context.Milestone("modules");
 
@@ -108,6 +167,7 @@ public partial class App
 
         AppDiagnosticsBootstrap.InitializeOperationalSinks(AppPaths.DiagnosticsDirectory);
         AppDiagnosticsBootstrap.InitializeTelemetry(AppPaths.TelemetryDirectory);
+        AppDiagnosticsBootstrap.CompleteBoot();
         context.Milestone("diagnostics");
 
         Deckle.Diagnostics.Telemetry.TelemetryListenerBootstrap.ConfigureGates(name => name switch
@@ -153,6 +213,45 @@ public partial class App
         if (context.AutocorrectPresent)
             dispatcher.Catalog.Register(AutocorrectNotifications.All);
         context.Milestone("notifications");
+    }
+
+    private const string BuildConfiguration =
+#if DEBUG
+        "Debug";
+#else
+        "Release";
+#endif
+
+    // Right after AppStarting, while only the local sinks exist: the boot
+    // replay carries it to the later ones, and the journal has it even if the
+    // next boot step is the one that fails.
+    private static void EmitRunIdentity()
+    {
+        string[] cliArgs = Environment.GetCommandLineArgs();
+        DeckleAppSource.Log.RunIdentity(
+            version:       CurrentDisplayVersion(),
+            stage:         CurrentStage(),
+            build:         BuildConfiguration,
+            session:       DeckleEventSource.SessionId,
+            pid:           Environment.ProcessId,
+            os:            $"{Environment.OSVersion.VersionString} {System.Runtime.InteropServices.RuntimeInformation.OSArchitecture}",
+            supervised:    CrashSupervisor.Supervised,
+            follows_crash: CrashSupervisor.FollowsCrash is not null,
+            args:          string.Join(' ', cliArgs.Skip(1)));
+    }
+
+    // Once the settings are readable: the line says what the journals of this
+    // run can contain, and a flag flipped later is logged by the settings page.
+    private static void EmitLoggingPolicy()
+    {
+        var logging = LoggingSettingsService.Instance.Current;
+        DeckleAppSource.Log.LoggingPolicy(
+            ambient:         logging.LogAmbientCaptureActivity,
+            transcription:   logging.LogTranscriptionActivity,
+            autocorrect:     logging.LogAutocorrectActivity,
+            input:           logging.LogInputActivity,
+            windowing:       logging.LogWindowingActivity,
+            app_log_to_disk: logging.ApplicationLogToDisk);
     }
 }
 

@@ -104,7 +104,7 @@ public static class ExecutableLocator
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            DeckleOrchestrationSource.Log.ScanFileUnreadable(directory, ex.GetType().Name, ex.Message);
+            DeckleOrchestrationSource.Log.ScanPathSkipped(directory, ex.GetType().Name, ex.Message);
         }
     }
 
@@ -116,7 +116,7 @@ public static class ExecutableLocator
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            DeckleOrchestrationSource.Log.ScanFileUnreadable(directory, ex.GetType().Name, ex.Message);
+            DeckleOrchestrationSource.Log.ScanPathSkipped(directory, ex.GetType().Name, ex.Message);
             return [];
         }
     }

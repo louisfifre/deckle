@@ -12,29 +12,43 @@ public sealed partial class KeyboardInputHost
     {
         if (nCode >= 0)
         {
-            int message = wParam.ToInt32();
-            bool vertical = message == LowLevelMouseHookInterop.WM_MOUSEWHEEL;
-            bool horizontal = message == LowLevelMouseHookInterop.WM_MOUSEHWHEEL;
+            try
+            {
+                int message = wParam.ToInt32();
+                bool vertical = message == LowLevelMouseHookInterop.WM_MOUSEWHEEL;
+                bool horizontal = message == LowLevelMouseHookInterop.WM_MOUSEHWHEEL;
 
-            var hook = vertical || horizontal
-                ? Marshal.PtrToStructure<LowLevelMouseHookInterop.MSLLHOOKSTRUCT>(lParam)
-                : default;
+                var hook = vertical || horizontal
+                    ? Marshal.PtrToStructure<LowLevelMouseHookInterop.MSLLHOOKSTRUCT>(lParam)
+                    : default;
 
-            // A low-level hook must return promptly or Windows can silently remove
-            // it. Button consumers may persist a typing span, so their signal is
-            // queued by the router. The wheel path only classifies and offers the
-            // value to its bounded interceptor; observations are handed to the
-            // pump for correlation with Raw Input after the callback returns.
-            bool intercepted = _mouseInteractions.ObserveHookMessage(
-                message, hook);
-            if (intercepted) return new IntPtr(1);
+                // A low-level hook must return promptly or Windows can silently remove
+                // it. Button consumers may persist a typing span, so their signal is
+                // queued by the router. The wheel path only classifies and offers the
+                // value to its bounded interceptor; observations are handed to the
+                // pump for correlation with Raw Input after the callback returns.
+                bool intercepted = _mouseInteractions.ObserveHookMessage(
+                    message, hook);
+                if (intercepted) return new IntPtr(1);
+            }
+            catch (Exception ex)
+            {
+                // The callback is entered from native code; the host context is
+                // captured before the fault leaves managed code.
+                LogPumpException(ex);
+                throw;
+            }
         }
 
         return LowLevelMouseHookInterop.CallNextHookEx(_mouseHook, nCode, wParam, lParam);
     }
 
-    private void QueuePointerInteraction() => RawInputInterop.PostThreadMessage(
-        _threadId, WM_APP_POINTER_DOWN, IntPtr.Zero, IntPtr.Zero);
+    private void QueuePointerInteraction()
+    {
+        if (!RawInputInterop.PostThreadMessage(
+                _threadId, WM_APP_POINTER_DOWN, IntPtr.Zero, IntPtr.Zero))
+            NotePostFailure();
+    }
 
     private void PublishPointerInteraction()
     {

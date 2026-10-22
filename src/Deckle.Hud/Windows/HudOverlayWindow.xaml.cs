@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
@@ -52,6 +53,12 @@ public sealed partial class HudOverlayWindow : Window
     private readonly CursorMovementSignal _cursorSignal;
     private bool _proximityActive;
     private byte _proximityAlpha = MAX_ALPHA;
+
+    // True between FadeInStarted and its FadeInEnded. FadeTo replaces the
+    // pending callback, so a fade-out or a close that overtakes the fade-in
+    // would otherwise leave it without an end.
+    private bool _fadeInPending;
+    private DateTime _fadeInStartUtc;
 
     public HudOverlayWindow(CursorMovementSignal cursorSignal)
     {
@@ -188,12 +195,28 @@ public sealed partial class HudOverlayWindow : Window
     public void ShowAt(int xPx, int yPx)
     {
         var (w, h) = GetSizePx();
-        AppWindow.MoveAndResize(new Windows.Graphics.RectInt32(xPx, yPx, w, h));
+        try
+        {
+            AppWindow.MoveAndResize(new Windows.Graphics.RectInt32(xPx, yPx, w, h));
+            WindowingProbe.ReportPlacement("hud-overlay", "move_and_resize", ok: true);
+        }
+        catch (Exception ex)
+        {
+            // A refused placement must not stop the show: the card still comes
+            // up, at its previous rect, and the incident carries the failure.
+            WindowingProbe.ReportPlacementFailure("hud-overlay", "move_and_resize", ex);
+        }
+
         NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_SHOWNOACTIVATE);
-        NativeMethods.SetWindowPos(
+        bool setposOk = NativeMethods.SetWindowPos(
             _hwnd, NativeMethods.HWND_TOPMOST,
             0, 0, 0, 0,
             NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOMOVE | NativeMethods.SWP_NOACTIVATE);
+        // One incident per window kind, shared by every card: the probe keys it
+        // on (window, stage), not on the short-lived card.
+        WindowingProbe.ReportShow(
+            "hud-overlay", "setwindowpos_topmost",
+            setposOk, setposOk ? 0 : Marshal.GetLastWin32Error());
 
         // Anchor "absolute": the slot geometry lives in HudOverlayManager,
         // which emits the OverlaySlotAssigned specialization.
@@ -216,10 +239,16 @@ public sealed partial class HudOverlayWindow : Window
     {
         // 150 mirrors LayeredAlphaAnimator's private Duration.
         byte fromAlpha = _fade?.CurrentAlpha ?? 0;
+        EndFadeIn("cancelled");
         DeckleHudSource.Log.FadeInStarted("overlay", 150, fromAlpha, MAX_ALPHA);
+        // Armed before FadeTo: with animations off the animator may complete,
+        // and run the callback, before FadeTo returns.
+        _fadeInPending = true;
+        _fadeInStartUtc = DateTime.UtcNow;
 
         _fade?.FadeTo(MAX_ALPHA, onComplete: () =>
         {
+            EndFadeIn("completed");
             _proximityAlpha = MAX_ALPHA;
             BeginProximityMode();
             onComplete?.Invoke();
@@ -229,8 +258,17 @@ public sealed partial class HudOverlayWindow : Window
     // Leaves proximity mode first so it cannot fight the fade.
     public void FadeOut(Action? onComplete = null)
     {
+        EndFadeIn("cancelled");
         EndProximityMode();
         _fade?.FadeTo(0, onComplete: onComplete);
+    }
+
+    private void EndFadeIn(string outcome)
+    {
+        if (!_fadeInPending) return;
+        _fadeInPending = false;
+        int elapsedMs = (int)(DateTime.UtcNow - _fadeInStartUtc).TotalMilliseconds;
+        DeckleHudSource.Log.FadeInEnded("overlay", outcome, elapsedMs, _fade?.CurrentAlpha ?? 0);
     }
 
     // ── Proximity: cursor-distance → alpha smoothstep (the curve lives in ProximityFade) ──
@@ -280,6 +318,7 @@ public sealed partial class HudOverlayWindow : Window
     {
         SystemAnimationPreference.Instance.Changed -= OnSystemAnimationsChanged;
         EndProximityMode();
+        EndFadeIn("cancelled");
         _fade?.Cancel();
 
         if (_subclassDelegate is not null)

@@ -45,8 +45,22 @@ public sealed partial class HudChrono
     private bool _revealsFailed;
     private int  _revealBuildAttempts;
 
+    // Set once the take's build loop reached an outcome (built or latched), so
+    // StopReveal can tell an abandoned loop from a finished one.
+    private bool _revealBuildEnded;
+
+    // The degraded-reveal incident spans takes on purpose: a GPU or driver
+    // that rejects the mask does so on every take, and one Warning per take
+    // would bury the journal. Closed by the first take whose six masks build.
+    private bool _revealIncidentOpen;
+
     // Counted in vsync frames, one build attempt per frame.
     private const int MaxRevealBuildAttempts = 90;
+
+    // Past the frame or two an unrasterised glyph legitimately fails, yet short
+    // enough that a transcription under the 90-frame latch still reports a
+    // reveal that never built.
+    private const int RevealIncidentAttempts = 10;
 
     private bool RevealsPending()
     {
@@ -122,22 +136,58 @@ public sealed partial class HudChrono
 
                 DeckleHudSource.Log.RevealGeometry(cw, ch, o.X, o.Y, hostW, hostH);
             }
+
+            if (!RevealsPending()) NoteRevealsBuilt();
         }
         catch (System.Exception ex)
         {
             // Tear down any partial build (one throw fails the same way for every
             // digit) and retry on the next vsync: the reveal can start on the
             // tick a glyph is rebuilt, before its alpha mask is rasterised, and
-            // GetAlphaMask then throws for a frame or two. Only after
-            // MaxRevealBuildAttempts consecutive failures, latch the flat-accent
-            // fallback and log once, so a genuine rejection is still recorded.
+            // GetAlphaMask then throws for a frame or two. Each attempt stays
+            // Verbose; the Warning opens only once the failures outlast that
+            // transient window, and MaxRevealBuildAttempts latches the
+            // flat-accent fallback for the take.
             TearDownReveals();
-            if (++_revealBuildAttempts >= MaxRevealBuildAttempts)
+            NoteRevealBuildFailure(ex);
+        }
+    }
+
+    private void NoteRevealBuildFailure(System.Exception ex)
+    {
+        _revealBuildAttempts++;
+        string exType = ex.GetType().Name;
+        DeckleHudSource.Log.RevealBuildAttemptFailed(_revealBuildAttempts, exType, ex.Message);
+
+        if (!_revealIncidentOpen && _revealBuildAttempts >= RevealIncidentAttempts)
+        {
+            _revealIncidentOpen = true;
+            DeckleHudSource.Log.RevealMaskDegraded(_revealBuildAttempts, exType, ex.Message);
+        }
+
+        if (_revealBuildAttempts >= MaxRevealBuildAttempts)
+        {
+            _revealsFailed = true;
+            // An animation toggle rebuilds the masks mid-take; the loop it
+            // reopens has already logged its end once.
+            if (!_revealBuildEnded)
             {
-                _revealsFailed = true;
-                DeckleHudSource.Log.RevealMaskFailed();
-                DeckleHudSource.Log.RevealMaskFailedDetail(ex.GetType().Name, ex.Message);
+                _revealBuildEnded = true;
+                DeckleHudSource.Log.RevealBuildEnded("latched", _revealBuildAttempts);
             }
+        }
+    }
+
+    private void NoteRevealsBuilt()
+    {
+        if (_revealBuildEnded) return;
+        _revealBuildEnded = true;
+        DeckleHudSource.Log.RevealBuildEnded("built", _revealBuildAttempts);
+
+        if (_revealIncidentOpen)
+        {
+            _revealIncidentOpen = false;
+            DeckleHudSource.Log.RevealMaskRecovered(_revealBuildAttempts);
         }
     }
 

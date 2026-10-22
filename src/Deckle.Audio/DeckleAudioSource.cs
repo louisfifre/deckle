@@ -16,14 +16,14 @@ public sealed class DeckleAudioSource : DeckleEventSource
     private DeckleAudioSource() { }
 
     // ── EventIds: sequential from 1, never reused (public in the ETW manifest)
-    public const int EvtRecordingStarted          = 1;
-    public const int EvtCaptureStarted            = 2;
+    // 1 retired.
+    // 2 retired.
     public const int EvtEmptyBufferReceived       = 3;
     public const int EvtLowAudioDetected          = 4;
     public const int EvtCaptureLagDetected        = 5;
     public const int EvtDurationCapReached        = 6;
-    public const int EvtMicrophoneOpenFailed      = 7;
-    public const int EvtRecordingCompleted        = 8;
+    // 7 retired.
+    // 8 retired.
     public const int EvtCaptureCompleted          = 9;
     public const int EvtMicrophoneTelemetryEmpty  = 10;
     public const int EvtRecordingTailSummary      = 11;
@@ -32,66 +32,93 @@ public sealed class DeckleAudioSource : DeckleEventSource
     public const int EvtSettingsLoadComplete      = 14;
     public const int EvtSettingsLoadWarning       = 15;
     public const int EvtSettingsLoadError         = 16;
-    public const int EvtRecordingCompletedDetail  = 17;
+    // 17 retired.
     public const int EvtEmptyBufferReceivedDetail = 18;
     public const int EvtLowAudioDetectedDetail    = 19;
     public const int EvtCaptureLagDetectedDetail  = 20;
     public const int EvtDurationCapReachedDetail  = 21;
-    public const int EvtMicrophoneOpenFailedDetail = 22;
+    // 22 retired.
     public const int EvtRecordingTailSummaryDetail = 23;
-    public const int EvtSpeakerOpenFailed          = 24;
-    public const int EvtSpeakerOpenFailedDetail    = 25;
+    // 24 retired.
+    // 25 retired.
     public const int EvtAudioFileDecoded           = 26;
     public const int EvtAudioFileDecodedDetail     = 27;
-    public const int EvtAudioFileDecodeFailed      = 28;
-    public const int EvtAudioFileDecodeFailedDetail = 29;
+    // 28 retired.
+    // 29 retired.
     public const int EvtEmptyBufferRecovered       = 30;
     public const int EvtEmptyBufferEpisodeDetail   = 31;
     public const int EvtCaptureLagRecovered        = 32;
     public const int EvtCaptureLagEpisodeDetail    = 33;
+    public const int EvtRecordingStarted           = 34;
+    public const int EvtCaptureStarted             = 35;
+    public const int EvtMicrophoneOpenFailed       = 36;
+    public const int EvtMicrophoneStartFailed      = 37;
+    public const int EvtRecordingCompleted         = 38;
+    public const int EvtRecordingFailed            = 39;
+    public const int EvtNoAudioDataDetected        = 40;
+    public const int EvtAudioDataRecovered         = 41;
+    public const int EvtNoAudioDataEpisodeDetail   = 42;
+    public const int EvtPlaybackStarted            = 43;
+    public const int EvtPlaybackCompleted          = 44;
+    public const int EvtPlaybackFailed             = 45;
+    public const int EvtPlaybackStalled            = 46;
+    public const int EvtPlaybackSkipped            = 47;
+    public const int EvtAudioFileDecodeStarted     = 48;
+    public const int EvtAudioFileDecodeFailed      = 49;
+    public const int EvtAudioFileDecodeFailedDetail = 50;
+    public const int EvtAudioFileDecodeCrashed     = 51;
+    public const int EvtCaptureSettingsResolved    = 52;
+    public const int EvtCaptureReleaseFailed       = 53;
+    public const int EvtCaptureReleaseRecovered    = 54;
+    public const int EvtCaptureReleaseDetail       = 55;
+    public const int EvtCaptureDrainDetail         = 56;
 
     // ── Recording lifecycle (milestones + verbose mirrors) ──────────────
 
+    // The device and the format are in the milestone itself, not in a governed
+    // detail: "which microphone actually ran" is the first question on a
+    // machine with a wrong default device, and it must be answerable from a
+    // default log. purpose separates dictation takes from Settings tests.
     [Event(EvtRecordingStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Recording started")]
-    public void RecordingStarted()
+           Message = "Recording started | purpose={0} | device={1} | device_id={2} | default_device={3} | sample_rate={4} | channels={5} | bits_per_sample={6}")]
+    public void RecordingStarted(string purpose, string device_name, int device_id, bool default_device, int sample_rate, int channels, int bits_per_sample)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingStarted);
+        if (IsEnabled())
+            WriteEvent(EvtRecordingStarted, purpose, device_name, device_id, default_device, sample_rate, channels, bits_per_sample);
     }
 
     [Event(EvtCaptureStarted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "capture start | sample_rate=16 kHz | channels=mono")]
-    public void CaptureStarted()
+           Message = "capture start | requested_device_id={0} | buffers={1} | buffer_bytes={2} | max_recording_s={3}")]
+    public void CaptureStarted(int requested_device_id, int buffers, int buffer_bytes, int max_recording_s)
     {
         if (OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Transcription, this,
                 EventLevel.Verbose, (EventKeywords)Keywords.Capture))
-            WriteEvent(EvtCaptureStarted);
+            WriteEvent(EvtCaptureStarted, requested_device_id, buffers, buffer_bytes, max_recording_s);
     }
 
     [Event(EvtRecordingCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Recording complete")]
-    public void RecordingCompleted()
+           Message = "Recording complete | end_reason={1} | duration_s={2:F1} | purpose={0}")]
+    public void RecordingCompleted(string purpose, string end_reason, double duration_s)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingCompleted);
+        if (IsEnabled()) WriteEvent(EvtRecordingCompleted, purpose, end_reason, duration_s);
     }
 
-    [Event(EvtRecordingCompletedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "recording complete | total_sec={0:F1}")]
-    public void RecordingCompletedDetail(double total_sec)
+    // The exception still propagates to the caller, which owns the user-facing
+    // outcome; this closes the take on the Audio provider's own timeline.
+    [Event(EvtRecordingFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Message = "Recording failed | ex_type={1} | ex_message={2} | purpose={0} | elapsed_ms={3}")]
+    public void RecordingFailed(string purpose, string ex_type, string ex_message, long elapsed_ms)
     {
-        if (OperationalLogAdmission.IsScopedDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
-            WriteEvent(EvtRecordingCompletedDetail, total_sec);
+        if (IsEnabled()) WriteEvent(EvtRecordingFailed, purpose, ex_type, ex_message, elapsed_ms);
     }
 
     [Event(EvtCaptureCompleted,
@@ -104,6 +131,21 @@ public sealed class DeckleAudioSource : DeckleEventSource
                 OperationalLogActivity.Transcription, this,
                 EventLevel.Verbose, (EventKeywords)Keywords.Capture))
             WriteEvent(EvtCaptureCompleted, audio_sec, buffers, bytes, rms_avg, rms_peak, dbfs_avg);
+    }
+
+    // pending_buffers counts the headers still queued after waveInStop and the
+    // drain sleep: waveInStop returns only the current buffer, so a non-zero
+    // value is ordinary; tail_bytes is what the drain recovered.
+    [Event(EvtCaptureDrainDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "capture drain | drain_ms={0} | tail_bytes={1} | pending_buffers={2}")]
+    public void CaptureDrainDetail(long drain_ms, int tail_bytes, int pending_buffers)
+    {
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtCaptureDrainDetail, drain_ms, tail_bytes, pending_buffers);
     }
 
     // Optional per-take diagnosis. Both the sentence and its measurements are
@@ -132,7 +174,101 @@ public sealed class DeckleAudioSource : DeckleEventSource
             WriteEvent(EvtRecordingTailSummaryDetail, tail_ms, tail_dbfs);
     }
 
+    // ── Microphone open and start ───────────────────────────────────────
+
+    [Event(EvtMicrophoneOpenFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Message = "Cannot open the microphone | mmsys_err={1} | mmsys_name={2} | device={4} | device_id={3} | purpose={0}")]
+    public void MicrophoneOpenFailed(string purpose, uint mmsys_err, string mmsys_name, int device_id, string device_name)
+    {
+        if (IsEnabled()) WriteEvent(EvtMicrophoneOpenFailed, purpose, mmsys_err, mmsys_name, device_id, device_name);
+    }
+
+    // The device opened but could not be made to deliver: event creation
+    // (win32_error), header preparation, buffer queueing or waveInStart
+    // (mmsys_err). Before this event those codes were ignored and the take
+    // ran silent.
+    [Event(EvtMicrophoneStartFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Message = "Cannot start the microphone | stage={1} | mmsys_err={2} | mmsys_name={3} | win32_error={4} | device={6} | device_id={5} | purpose={0}")]
+    public void MicrophoneStartFailed(string purpose, string stage, uint mmsys_err, string mmsys_name, int win32_error, int device_id, string device_name)
+    {
+        if (IsEnabled())
+            WriteEvent(EvtMicrophoneStartFailed, purpose, stage, mmsys_err, mmsys_name, win32_error, device_id, device_name);
+    }
+
+    // waveInReset, waveInStop, waveInUnprepareHeader or waveInClose refused at
+    // the end of a take. A refused close leaves the device held by this
+    // process, so a later open can fail with MMSYSERR_ALLOCATED. One incident
+    // across takes: it opens on the first take that ends this way and closes
+    // on the first clean one, which carries how many takes failed between.
+    [Event(EvtCaptureReleaseFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "The microphone was not released cleanly | stage={0} | mmsys_err={1} | mmsys_name={2}")]
+    public void CaptureReleaseFailed(string stage, uint mmsys_err, string mmsys_name)
+    {
+        if (IsEnabled()) WriteEvent(EvtCaptureReleaseFailed, stage, mmsys_err, mmsys_name);
+    }
+
+    [Event(EvtCaptureReleaseRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "The microphone is released cleanly again | failures={0}")]
+    public void CaptureReleaseRecovered(int failures)
+    {
+        if (IsEnabled()) WriteEvent(EvtCaptureReleaseRecovered, failures);
+    }
+
+    [Event(EvtCaptureReleaseDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "capture release failed | stage={0} | mmsys_err={1} | failures={2}")]
+    public void CaptureReleaseDetail(string stage, uint mmsys_err, int failures)
+    {
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtCaptureReleaseDetail, stage, mmsys_err, failures);
+    }
+
     // ── Anomalies Captured In The waveIn Loop ───────────────────────────
+
+    // A device that opens and starts but hands back nothing: every waveIn call
+    // succeeded, so no other event says the take is empty. reason is no_buffer
+    // when no buffer came back at all, empty_buffers when buffers came back
+    // with zero bytes.
+    [Event(EvtNoAudioDataDetected,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "The microphone delivers no audio | reason={0} | waited_ms={1} | device={3} | device_id={2}")]
+    public void NoAudioDataDetected(string reason, long waited_ms, int device_id, string device_name)
+    {
+        if (IsEnabled()) WriteEvent(EvtNoAudioDataDetected, reason, waited_ms, device_id, device_name);
+    }
+
+    [Event(EvtAudioDataRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "The microphone delivers audio again | waited_ms={0}")]
+    public void AudioDataRecovered(long waited_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtAudioDataRecovered, waited_ms);
+    }
+
+    [Event(EvtNoAudioDataEpisodeDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "no audio episode | stalls={0} | longest_gap_ms={1} | recovered={2}")]
+    public void NoAudioDataEpisodeDetail(int stalls, long longest_gap_ms, bool recovered)
+    {
+        if (OperationalLogAdmission.IsScopedDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtNoAudioDataEpisodeDetail, stalls, longest_gap_ms, recovered);
+    }
 
     [Event(EvtEmptyBufferReceived,
            Level = EventLevel.Warning,
@@ -263,51 +399,79 @@ public sealed class DeckleAudioSource : DeckleEventSource
             WriteEvent(EvtDurationCapReachedDetail, audio_sec, cap_sec);
     }
 
-    [Event(EvtMicrophoneOpenFailed,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "The microphone could not be opened")]
-    public void MicrophoneOpenFailed()
+    // ── Speaker playback ────────────────────────────────────────────────
+    //
+    // One play per user action (listening test variant, read-aloud), so the
+    // lifecycle pair is Informational: a playback that never sounds must leave
+    // its device and its outcome in a default log.
+
+    [Event(EvtPlaybackStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "Playback started | device={0} | device_id={1} | sample_rate={2} | duration_ms={3}")]
+    public void PlaybackStarted(string device_name, int device_id, int sample_rate, long duration_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtMicrophoneOpenFailed);
+        if (IsEnabled()) WriteEvent(EvtPlaybackStarted, device_name, device_id, sample_rate, duration_ms);
     }
 
-    [Event(EvtMicrophoneOpenFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "microphone open failed | mmsys_err={0}")]
-    public void MicrophoneOpenFailedDetail(uint mmsys_err)
+    // outcome: completed | cancelled | failed.
+    [Event(EvtPlaybackCompleted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "Playback ended | outcome={0} | elapsed_ms={1}")]
+    public void PlaybackCompleted(string outcome, long elapsed_ms)
     {
-        if (OperationalLogAdmission.IsScopedDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)(Keywords.Capture | Keywords.Lifecycle)))
-            WriteEvent(EvtMicrophoneOpenFailedDetail, mmsys_err);
+        if (IsEnabled()) WriteEvent(EvtPlaybackCompleted, outcome, elapsed_ms);
     }
 
-    // The waveOut device could not be opened (no render device, or an
-    // exclusive-mode conflict).
-    [Event(EvtSpeakerOpenFailed,
+    // stage: create_event (win32_error) | open | prepare_header | write
+    // (mmsys_err). open covers no render device or an exclusive-mode conflict.
+    [Event(EvtPlaybackFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Push | Keywords.Lifecycle),
-           Message = "The speaker could not be opened for playback")]
-    public void SpeakerOpenFailed()
+           Message = "Cannot play on the speaker | stage={0} | mmsys_err={1} | mmsys_name={2} | win32_error={3} | device={4} | sample_rate={5}")]
+    public void PlaybackFailed(string stage, uint mmsys_err, string mmsys_name, int win32_error, string device_name, int sample_rate)
     {
-        if (IsEnabled()) WriteEvent(EvtSpeakerOpenFailed);
+        if (IsEnabled())
+            WriteEvent(EvtPlaybackFailed, stage, mmsys_err, mmsys_name, win32_error, device_name, sample_rate);
     }
 
-    [Event(EvtSpeakerOpenFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)(Keywords.Push | Keywords.Lifecycle),
-           Message = "speaker open failed | mmsys_err={0}")]
-    public void SpeakerOpenFailedDetail(uint mmsys_err)
+    // The driver had the clip long past its length without flagging it done.
+    // The wait goes on until the caller cancels; this says why nothing ended.
+    [Event(EvtPlaybackStalled,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "The speaker did not finish the clip | reason={0} | waited_ms={1} | duration_ms={2}")]
+    public void PlaybackStalled(string reason, long waited_ms, long duration_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtSpeakerOpenFailedDetail, mmsys_err);
+        if (IsEnabled()) WriteEvent(EvtPlaybackStalled, reason, waited_ms, duration_ms);
+    }
+
+    // Play returns false here, which the listening test shows as a failure
+    // like a device that would not open.
+    [Event(EvtPlaybackSkipped,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "Playback skipped | reason={0}")]
+    public void PlaybackSkipped(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtPlaybackSkipped, reason);
     }
 
     // ── Audio-file decode (file transcription) ──────────────────────────────
     //
     // The failure milestone is Warning, not Error: a bad file is an expected
-    // user outcome, not a broken device.
+    // user outcome, not a broken device. A thrown exception, the STA-thread
+    // precondition among them, is a programming or environment fault: Error.
+
+    [Event(EvtAudioFileDecodeStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "Decoding an audio file | extension={0}")]
+    public void AudioFileDecodeStarted(string extension)
+    {
+        if (IsEnabled()) WriteEvent(EvtAudioFileDecodeStarted, extension);
+    }
 
     [Event(EvtAudioFileDecoded,
            Level = EventLevel.Informational,
@@ -330,25 +494,37 @@ public sealed class DeckleAudioSource : DeckleEventSource
             WriteEvent(EvtAudioFileDecodedDetail, source, duration_sec, decoded_samples, elapsed_ms);
     }
 
+    // reason: file_not_found | unsupported_format | no_audio_track |
+    // protected_content | read_error. hr is 0 when the decision came before
+    // any Media Foundation call.
     [Event(EvtAudioFileDecodeFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "Could not decode the audio file")]
-    public void AudioFileDecodeFailed()
+           Message = "Could not decode the audio file | reason={0} | hr=0x{1:X8} | elapsed_ms={2}")]
+    public void AudioFileDecodeFailed(string reason, int hr, long elapsed_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtAudioFileDecodeFailed);
+        if (IsEnabled()) WriteEvent(EvtAudioFileDecodeFailed, reason, hr, elapsed_ms);
     }
 
     [Event(EvtAudioFileDecodeFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "audio file decode failed | status={0} | hr=0x{1:X8}")]
-    public void AudioFileDecodeFailedDetail(string status, int hr)
+           Message = "audio file decode failed | source={0}")]
+    public void AudioFileDecodeFailedDetail(string source)
     {
         if (OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Transcription, this,
                 EventLevel.Verbose, (EventKeywords)(Keywords.Capture | Keywords.Lifecycle)))
-            WriteEvent(EvtAudioFileDecodeFailedDetail, status, hr);
+            WriteEvent(EvtAudioFileDecodeFailedDetail, source);
+    }
+
+    [Event(EvtAudioFileDecodeCrashed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Message = "Audio file decoding crashed | ex_type={0} | ex_message={1} | elapsed_ms={2}")]
+    public void AudioFileDecodeCrashed(string ex_type, string ex_message, long elapsed_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtAudioFileDecodeCrashed, ex_type, ex_message, elapsed_ms);
     }
 
     // A short take with no complete RMS window is ordinary per-take detail, not
@@ -403,13 +579,17 @@ public sealed class DeckleAudioSource : DeckleEventSource
     // Exception to the "strict-typed per operation" doctrine: the
     // JsonSettingsStore<T> delegates in Deckle.Core are Action<string>, so the
     // call site cannot tell "Settings loaded" from "Settings initialized
-    // (defaults)" or "reloaded from disk". These 4 events are typed by level
-    // and keyword, not by operation.
+    // (defaults)" or "reloaded from disk". These 4 events are typed by level,
+    // not by operation, and all carry the Lifecycle keyword: Informational
+    // relays the store's milestone sentence (loaded, initialized, reloaded),
+    // Verbose its structured detail, Warning and Error its problems. The
+    // message prefix names the module so a reader knows which settings file
+    // spoke.
 
     [Event(EvtSettingsLoaded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
+           Message = "Audio settings: {0}")]
     public void SettingsLoaded(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoaded, message);
@@ -418,7 +598,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtSettingsLoadComplete,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
+           Message = "audio settings | {0}")]
     public void SettingsLoadComplete(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadComplete, message);
@@ -427,7 +607,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
+           Message = "Audio settings problem | {0}")]
     public void SettingsLoadWarning(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
@@ -436,9 +616,22 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtSettingsLoadError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
+           Message = "Audio settings failure | {0}")]
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
+    }
+
+    // The values a recording will read: the chosen device (-1 is the system
+    // default), the duration cap (0 is none) and the opt-in DSP switches.
+    // Emitted at load and after each change, at the rate a person edits them.
+    [Event(EvtCaptureSettingsResolved,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "capture settings | device_id={0} | max_recording_s={1} | preprocessing={2} | auto_calibration={3}")]
+    public void CaptureSettingsResolved(int device_id, int max_recording_s, bool preprocessing, bool auto_calibration)
+    {
+        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtCaptureSettingsResolved, device_id, max_recording_s, preprocessing, auto_calibration);
     }
 }

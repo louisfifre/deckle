@@ -30,7 +30,13 @@ public sealed partial class HueBridgeClient
         request.Headers.Add("hue-application-key", _credentials!.Username);
 
         using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            DeckleLightingSource.Log.ClipV2RequestFailed(
+                "GET", $"resource/{resourceType}", (int)response.StatusCode,
+                response.ReasonPhrase ?? "none");
+            response.EnsureSuccessStatusCode();
+        }
 
         var payload = await response.Content.ReadFromJsonAsync<HueV2ListResponse>(_jsonOptions, ct).ConfigureAwait(false);
         var map = new Dictionary<string, string>(payload?.Data?.Length ?? 0, StringComparer.Ordinal);
@@ -150,15 +156,16 @@ public sealed partial class HueBridgeClient
         using var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            DeckleLightingSource.Log.ClipV2GetFailed();
-            DeckleLightingSource.Log.ClipV2GetFailedDetail("resource/entertainment_configuration/{id}", (int)response.StatusCode);
+            DeckleLightingSource.Log.ClipV2RequestFailed(
+                "PUT", "resource/entertainment_configuration/{id}", (int)response.StatusCode,
+                response.ReasonPhrase ?? "none");
             response.EnsureSuccessStatusCode();
         }
 
         var payload = await response.Content
             .ReadFromJsonAsync<HueV2Response<object>>(_jsonOptions, ct)
             .ConfigureAwait(false);
-        ThrowIfV2Errors(payload, "resource/entertainment_configuration/{id}");
+        ThrowIfV2Errors(payload, "PUT", "resource/entertainment_configuration/{id}");
     }
 
     private static List<string> ExtractChannelServiceIds(HueV2EntertainmentChannelDto channel)
@@ -255,23 +262,22 @@ public sealed partial class HueBridgeClient
         var response = await _http.SendAsync(request, ct).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            DeckleLightingSource.Log.ClipV2GetFailed();
-            DeckleLightingSource.Log.ClipV2GetFailedDetail(path, (int)response.StatusCode);
+            DeckleLightingSource.Log.ClipV2RequestFailed(
+                "GET", path, (int)response.StatusCode, response.ReasonPhrase ?? "none");
             response.EnsureSuccessStatusCode();
         }
         var payload = await response.Content.ReadFromJsonAsync<T>(_jsonOptions, ct).ConfigureAwait(false);
         if (payload is IHueV2Response objectResponse)
-            ThrowIfV2Errors(objectResponse, path);
+            ThrowIfV2Errors(objectResponse, "GET", path);
         return payload;
     }
 
-    private static void ThrowIfV2Errors(IHueV2Response? payload, string path)
+    private static void ThrowIfV2Errors(IHueV2Response? payload, string method, string path)
     {
         if (payload?.Errors is null || payload.Errors.Count == 0) return;
 
         string message = payload.Errors[0].Description ?? "Unknown CLIP v2 error.";
-        DeckleLightingSource.Log.ClipV2GetFailed();
-        DeckleLightingSource.Log.ClipV2GetFailedDetail(path, 200);
+        DeckleLightingSource.Log.ClipV2RequestFailed(method, path, 200, message);
         throw new HttpRequestException(
             $"Hue CLIP v2 request failed: {message}",
             inner: null,

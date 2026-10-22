@@ -27,8 +27,10 @@ public sealed record PropertyDef(string Key, string Label, string Format, TagOpt
 //   • Props.ChargeReelle  = "charge_estimee_(jours)"  — MISLEADING key (named
 //     like an estimate, but it is the *real* charge field).
 //
-// Priorité is a select whose own key is an OPAQUE id, and whose tag options are
-// a mix of opaque ids and bare integer strings — both forms are below.
+// Priorité is a select whose tag options are a mix of opaque ids and bare
+// integer strings — both forms are below. Its own key is served as "priorite"
+// by v1 and v2 alike (measured 2026-10-22); the space's opaque relation id
+// 67c6d714… is still accepted on writes but never served on reads.
 //
 // Properties are space-global in Anytype, so the keys live FLAT under Props.
 // PropertiesFor() maps each type to the properties it carries, in digest order;
@@ -46,10 +48,14 @@ public static class DevSpace
 
     // ── Default templates ─────────────────────────────────────────────────────
     //
-    // The REST API does NOT apply a type's default template on creation: POST
-    // /objects builds a bare object unless the body carries `template_id`, which
-    // copies the template's block/view structure. Epic, project and task carry a
-    // template (idee and rapport have none), so their creations pass its id.
+    // On the v1 REST API an Epic created without `template_id` came out bare
+    // (no properties, no views; see ProjectGesturesBugNotes). Whether v1 ever
+    // applies a type's default template on its own is not established: the
+    // openapi only documents `template_id` as an optional "template to use", and
+    // Deckle always sends it. On v2 it is measured: POST /objects applies the
+    // type default when no `template_id` is sent (receipt `source: type_default`).
+    // Epic, project and task carry a template (idee and rapport have none), so
+    // their creations pass its id explicitly, which holds on both versions.
     public static class Templates
     {
         public const string Epic    = "bafyreiebxtbakbgodx2demmj4ukohifxxguowaiiofrn7uvibxy24tx76m";
@@ -79,7 +85,7 @@ public static class DevSpace
     public static class Props
     {
         public const string Etat              = "etat";                     // select
-        public const string Priorite          = "67c6d714341c1628147d7b1d"; // select — OPAQUE id
+        public const string Priorite          = "priorite";                 // select
         // « tag » is Anytype's auto-transversal multi_select: it re-attaches itself
         // to every object and resists deletion. It is deliberately NOT mapped onto
         // any type table below, so it stays out of every digest.
@@ -181,6 +187,18 @@ public static class DevSpace
         }
 
         public static string? NameFor(string? key) => NameOfOption(All, key);
+
+        // v2 serves a select as its option NAME (measured 2026-10-22:
+        // `"priorite":["4"]`), where v1 served the wire key. The name is the
+        // level, so the position of the matching option is the answer.
+        public static int? LevelForName(string? name)
+        {
+            if (name is null) return null;
+            for (int i = 0; i < All.Length; i++)
+                if (string.Equals(All[i].Name, name.Trim(), StringComparison.Ordinal))
+                    return i;
+            return null;
+        }
     }
 
     // ── Type de tâche (select on Props.TypeDeTache) ───────────────────────────
@@ -250,9 +268,7 @@ public static class DevSpace
     [
         new(Props.Etat, "État", "select", Etat.All),
         new(Props.Priorite, "Priorité", "select", Priority.All),
-        new(Props.Version, "Version", "text"),
         new(Props.DefinitionDeFini, "Définition de fini", "text"),
-        new(Props.DueDate, "Date cible", "date"),
         new(Props.BudgetEstime, "Budget estimé", "number"),
         new(Props.BudgetReel, "Budget réel", "number"),
         new(Props.ChargeEstimee, "Charge estimée", "number"),

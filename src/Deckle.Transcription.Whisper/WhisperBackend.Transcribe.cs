@@ -49,6 +49,9 @@ public sealed partial class WhisperBackend
     // position in the take; 0 for a standalone call.
     private double _timelineOffsetSec;
     private readonly RepetitionDetector _repetitionDetector = new();
+    // Outlives the call on purpose: it describes the native decoder context the
+    // next call would inherit.
+    private bool _previousCallFilteredText;
 
     private TranscriptionResult TranscribeSync(
         ReadOnlyMemory<float> pcmSamples,
@@ -59,8 +62,11 @@ public sealed partial class WhisperBackend
         IntPtr ctx = _ctx;
         if (ctx == IntPtr.Zero)
         {
+            // The same -1 a native failure can return: the reason tells the
+            // two apart in the log.
+            DeckleWhisperSource.Log.TranscribeFailed("no_context", -1);
             return new TranscriptionResult(
-                Array.Empty<TranscriptionSegment>(), "", 0, 0, false, -1);
+                Array.Empty<TranscriptionSegment>(), "", 0, 0, false, -1, "no_context");
         }
         if (pcmSamples.Length == 0)
         {
@@ -73,6 +79,7 @@ public sealed partial class WhisperBackend
         lock (_segmentsLock) _segmentsLocal.Clear();
         _segmentSink = segmentSink;
         _abortRequested = false;
+        _segmentCallbackFailures = 0;
         _repetitionDetector.Reset();
 
         IntPtr fullParamsPtr = WhisperPInvoke.whisper_full_default_params_by_ref(0);
@@ -88,9 +95,17 @@ public sealed partial class WhisperBackend
         wparams.print_realtime = 0;
         wparams.print_timestamps = 0;
 
+        // A segment the filter left out of the previous call is still in the
+        // native decoder context; continuing from it would prime this call with
+        // the very credit line Deckle refused to deliver.
+        bool continuesPreviousCall =
+            (context?.ContinuesPreviousCall ?? false) && !_previousCallFilteredText;
+
         var TranscriptionSettings = _host.Transcription;
         WhisperParamsMapper.NativeAllocations nativeAllocs =
-            WhisperParamsMapper.Apply(ref wparams, TranscriptionSettings, _host.ResolveModelsDirectory(), context?.PrimingText);
+            WhisperParamsMapper.Apply(
+                ref wparams, TranscriptionSettings, _host.ResolveModelsDirectory(),
+                context?.PrimingText, continuesPreviousCall);
 
         _tokenBeg = WhisperPInvoke.whisper_token_beg(ctx);
 
@@ -101,6 +116,10 @@ public sealed partial class WhisperBackend
         _abortCallback = _ => _abortRequested || ct.IsCancellationRequested;
         wparams.abort_callback = Marshal.GetFunctionPointerForDelegate(_abortCallback);
         wparams.abort_callback_user_data = IntPtr.Zero;
+
+        _encoderBeginCallback = OnEncoderBegin;
+        wparams.encoder_begin_callback = Marshal.GetFunctionPointerForDelegate(_encoderBeginCallback);
+        wparams.encoder_begin_callback_user_data = IntPtr.Zero;
 
         _timelineOffsetSec = context?.TimelineOffsetSec ?? 0;
 
@@ -129,7 +148,8 @@ public sealed partial class WhisperBackend
                     $"strategy={strategyVerbose} | temp={wparams.temperature:F2}+{wparams.temperature_inc:F2}" +
                     $" | logprob_thold={wparams.logprob_thold:F2} | entropy_thold={wparams.entropy_thold:F2}" +
                     $" | no_speech_thold={wparams.no_speech_thold:F2} | suppress_nst={wparams.suppress_nst}" +
-                    $" | carry_prompt={wparams.carry_initial_prompt} | n_threads={wparams.n_threads}");
+                    $" | carry_prompt={wparams.carry_initial_prompt} | no_context={wparams.no_context}" +
+                    $" | n_threads={wparams.n_threads}");
 
                 string prompt = context?.PrimingText ?? TranscriptionSettings.Engine.InitialPrompt;
                 bool carry = TranscriptionSettings.Engine.CarryInitialPrompt;
@@ -171,10 +191,9 @@ public sealed partial class WhisperBackend
 
         if (result != 0 && !_abortRequested)
         {
-            DeckleWhispSource.Log.TranscribeFailed();
-            DeckleWhispSource.Log.TranscribeFailedDetail(result);
+            DeckleWhisperSource.Log.TranscribeFailed("native_error", result);
             return new TranscriptionResult(
-                Array.Empty<TranscriptionSegment>(), "", totalMs, whisperInitMs, aborted, result);
+                Array.Empty<TranscriptionSegment>(), "", totalMs, whisperInitMs, aborted, result, "native_error");
         }
 
         TranscriptionSegment[] segments;
@@ -182,17 +201,41 @@ public sealed partial class WhisperBackend
         {
             segments = _segmentsLocal.ToArray();
         }
-        var sb = new System.Text.StringBuilder();
-        foreach (var seg in segments) sb.Append(seg.Text);
-        string fullText = sb.ToString().Trim();
 
-        // A hit blanks the text; the segments stay for telemetry, and an empty
-        // FullText already reads as "no text" to both the streaming consumer and
-        // the monolithic finalize.
-        if (KnownHallucinations.Matches(fullText))
+        // Every call, not only the first: what this call decoded with, and where
+        // its last segment ended against the audio it was given.
+        DeckleWhispSource.Log.TranscribeDecodeUsed(
+            _timelineOffsetSec,
+            (context?.PrimingText ?? TranscriptionSettings.Engine.InitialPrompt)?.Length ?? 0,
+            continuesPreviousCall,
+            wparams.no_context != 0,
+            wparams.temperature,
+            wparams.temperature_inc,
+            segments.Length,
+            segments.Length > 0 ? segments[^1].T1Cs / 100.0 : 0.0,
+            sampleCount / 16000.0,
+            aborted);
+
+        if (_segmentCallbackIncidentOpen && _segmentCallbackFailures == 0 && segments.Length > 0)
+        {
+            _segmentCallbackIncidentOpen = false;
+            DeckleWhisperSource.Log.SegmentCallbackRecovered();
+        }
+        // FullText is the only text every pipeline delivers, so the filter sits
+        // here once. A hit leaves its segment out of FullText; the segments stay
+        // whole for telemetry, and an empty FullText already reads as "no text"
+        // to both the streaming consumer and the monolithic finalize.
+        string fullText = KnownHallucinations.StripFrom(
+            segments, out IReadOnlyList<FilteredHallucination> filtered);
+        _previousCallFilteredText = filtered.Count > 0;
+        if (filtered.Count > 0)
         {
             DeckleWhispSource.Log.TranscribeHallucinationFiltered();
-            fullText = "";
+            foreach (FilteredHallucination hit in filtered)
+            {
+                DeckleWhispSource.Log.TranscribeHallucinationFilteredMetrics(
+                    hit.SegmentIndex + 1, segments.Length, hit.Characters, hit.Entry);
+            }
         }
 
         return new TranscriptionResult(segments, fullText, totalMs, whisperInitMs, aborted, result);
@@ -229,13 +272,13 @@ public sealed partial class WhisperBackend
                     if (id >= tokenBeg) continue;
                     float p = WhisperPInvoke.whisper_full_get_token_p(ctx, i, k);
                     sumP += p;
-                    if (detailEnabled && p < minP) minP = p;
+                    if (p < minP) minP = p;
                     textTok++;
                 }
                 float avgP = textTok > 0 ? sumP / textTok : 0f;
                 if (textTok == 0) minP = 0f;
 
-                var segment = new TranscriptionSegment(segText, t0, t1, avgP, nsp);
+                var segment = new TranscriptionSegment(segText, t0, t1, avgP, nsp, textTok, minP);
                 lock (_segmentsLock) _segmentsLocal.Add(segment);
 
                 // abort_callback is probed between decoder steps, so one more
@@ -272,14 +315,45 @@ public sealed partial class WhisperBackend
         }
         catch (Exception ex)
         {
-            DeckleWhispSource.Log.SegmentCallbackThrew();
-            DeckleWhispSource.Log.SegmentCallbackThrewDetail(ex.GetType().Name, ex.Message);
+            // A sink that throws once usually throws at every take: one Error
+            // per incident, the raw failures in the gated detail.
+            int failures = ++_segmentCallbackFailures;
+            if (!_segmentCallbackIncidentOpen)
+            {
+                _segmentCallbackIncidentOpen = true;
+                DeckleWhisperSource.Log.SegmentCallbackFailed(ex.GetType().Name, ex.Message);
+            }
+            DeckleWhisperSource.Log.SegmentCallbackFailedDetail(failures, ex.GetType().Name, ex.Message);
         }
     }
 
-    // Meant to time whisper.cpp's pre-decode setup, but it starts just before
-    // whisper_full and stops only when it returns, so it spans the whole call:
-    // whisper_init_ms is about the total and whisper_ms (total minus init) about
-    // 0. Neither is a phase breakdown.
+    // whisper.cpp encoder_begin_callback signature:
+    //   bool fn(whisper_context* ctx, whisper_state* state, void* user_data)
+    // Returning false aborts whisper_full, so this one always returns true.
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    [return: MarshalAs(UnmanagedType.I1)]
+    private delegate bool WhisperEncoderBeginCallback(IntPtr ctx, IntPtr state, IntPtr user_data);
+
+    private WhisperEncoderBeginCallback? _encoderBeginCallback;
+
+    // The first encoder pass ends whisper.cpp's pre-decode setup (mel
+    // spectrogram, VAD when enabled, state reset); later passes, one per 30 s
+    // window, must not move the mark.
+    private bool OnEncoderBegin(IntPtr ctx, IntPtr state, IntPtr user_data)
+    {
+        if (_whisperInitSw is { IsRunning: true }) _whisperInitSw.Stop();
+        return true;
+    }
+
+    // Times whisper.cpp's pre-decode setup: started just before whisper_full,
+    // stopped by the first encoder_begin_callback. whisper_init_ms is that
+    // setup and whisper_ms (total minus init) the encode and decode. A call
+    // that never reaches the encoder stops it when whisper_full returns.
     private Stopwatch? _whisperInitSw;
+
+    // Per call: reset at the top of TranscribeSync.
+    private int _segmentCallbackFailures;
+
+    // Across calls: closed by the first call whose segments all land.
+    private bool _segmentCallbackIncidentOpen;
 }

@@ -4,6 +4,16 @@ namespace Deckle.Orchestration;
 // processes of it still alive.
 public sealed record ActiveSession(AppEntry Entry, IReadOnlyList<int> ProcessIds);
 
+// Why a session ended, so a reader of the journal can tell a game quitting
+// from a settings change or a shutdown.
+public enum SessionEndReason
+{
+    Exited,
+    EntryRemoved,
+    EntryDisabled,
+    Shutdown,
+}
+
 // Turns "this process was seen" and "this process exited" into app sessions.
 // Pure: no Win32, no I/O; the runtime feeds it from its event sources.
 //
@@ -23,7 +33,7 @@ public sealed class AppSessionTracker
     private readonly object _lock = new();
     private readonly Dictionary<string, SessionState> _sessions = new(StringComparer.Ordinal);
     private readonly Dictionary<int, string> _entryIdByPid = new();
-    private readonly Queue<Action> _outbox = new();
+    private readonly Queue<Pending> _outbox = new();
     private bool _delivering;
 
     public AppSessionTracker(Func<IReadOnlyList<AppEntry>> entriesSnapshot)
@@ -38,8 +48,8 @@ public sealed class AppSessionTracker
     /// <summary>The first process of an entry was seen.</summary>
     public event Action<AppEntry, int>? SessionStarted;
 
-    /// <summary>The last process of an entry exited, or the entry was removed or disabled.</summary>
-    public event Action<AppEntry>? SessionEnded;
+    /// <summary>The last process of an entry exited, the entry was removed or disabled, or every session was ended.</summary>
+    public event Action<AppEntry, SessionEndReason>? SessionEnded;
 
     public IReadOnlyList<ActiveSession> Sessions
     {
@@ -70,13 +80,13 @@ public sealed class AppSessionTracker
             {
                 session.ProcessIds.Add(pid);
                 AppEntry joined = session.Entry;
-                _outbox.Enqueue(() => ProcessTracked?.Invoke(joined, pid));
+                _outbox.Enqueue(new Pending("process_tracked", joined.Id, () => ProcessTracked?.Invoke(joined, pid)));
             }
             else
             {
                 _sessions[entry.Id] = new SessionState(entry, pid);
-                _outbox.Enqueue(() => ProcessTracked?.Invoke(entry, pid));
-                _outbox.Enqueue(() => SessionStarted?.Invoke(entry, pid));
+                _outbox.Enqueue(new Pending("process_tracked", entry.Id, () => ProcessTracked?.Invoke(entry, pid)));
+                _outbox.Enqueue(new Pending("session_started", entry.Id, () => SessionStarted?.Invoke(entry, pid)));
             }
         }
         Deliver();
@@ -93,8 +103,7 @@ public sealed class AppSessionTracker
             if (session.ProcessIds.Count == 0)
             {
                 _sessions.Remove(entryId);
-                AppEntry ended = session.Entry;
-                _outbox.Enqueue(() => SessionEnded?.Invoke(ended));
+                EnqueueEnded(session.Entry, SessionEndReason.Exited);
             }
         }
         Deliver();
@@ -104,23 +113,49 @@ public sealed class AppSessionTracker
     public void DropSessionsNotIn(IReadOnlyList<AppEntry> entries)
     {
         ArgumentNullException.ThrowIfNull(entries);
-        var kept = new HashSet<string>(
-            entries.Where(e => e.Enabled).Select(e => e.Id), StringComparer.Ordinal);
+        // Id -> enabled. Built by hand rather than ToDictionary so a duplicated
+        // id cannot throw here; any enabled copy keeps the session.
+        var listed = new Dictionary<string, bool>(StringComparer.Ordinal);
+        foreach (AppEntry e in entries)
+        {
+            listed[e.Id] = listed.GetValueOrDefault(e.Id) || e.Enabled;
+        }
 
         lock (_lock)
         {
             foreach (SessionState session in _sessions.Values.ToList())
             {
-                if (kept.Contains(session.Entry.Id)) continue;
-
-                _sessions.Remove(session.Entry.Id);
-                foreach (int pid in session.ProcessIds) _entryIdByPid.Remove(pid);
-                AppEntry ended = session.Entry;
-                _outbox.Enqueue(() => SessionEnded?.Invoke(ended));
+                bool present = listed.TryGetValue(session.Entry.Id, out bool enabled);
+                if (present && enabled) continue;
+                EndLocked(session, present ? SessionEndReason.EntryDisabled : SessionEndReason.EntryRemoved);
             }
         }
         Deliver();
     }
+
+    // Separate from DropSessionsNotIn([]) so a shutdown is not reported as
+    // every entry having been removed.
+    public void EndAll()
+    {
+        lock (_lock)
+        {
+            foreach (SessionState session in _sessions.Values.ToList())
+            {
+                EndLocked(session, SessionEndReason.Shutdown);
+            }
+        }
+        Deliver();
+    }
+
+    private void EndLocked(SessionState session, SessionEndReason reason)
+    {
+        _sessions.Remove(session.Entry.Id);
+        foreach (int pid in session.ProcessIds) _entryIdByPid.Remove(pid);
+        EnqueueEnded(session.Entry, reason);
+    }
+
+    private void EnqueueEnded(AppEntry ended, SessionEndReason reason) =>
+        _outbox.Enqueue(new Pending("session_ended", ended.Id, () => SessionEnded?.Invoke(ended, reason)));
 
     // Single deliverer: the thread that finds nobody delivering drains the
     // queue; any other returns at once and its events are delivered in order
@@ -135,7 +170,7 @@ public sealed class AppSessionTracker
 
         while (true)
         {
-            Action next;
+            Pending next;
             lock (_lock)
             {
                 if (_outbox.Count == 0)
@@ -148,16 +183,23 @@ public sealed class AppSessionTracker
 
             try
             {
-                next();
+                next.Invoke();
             }
-            catch
+            catch (Exception ex)
             {
-                // Let the next caller resume delivery of what is still queued.
-                lock (_lock) _delivering = false;
-                throw;
+                // Contained per event: rethrowing would leave the events queued
+                // behind this one waiting for an unrelated caller, so a session
+                // end (and the restore of its rules) could be delayed
+                // indefinitely, and the exception would surface on a WMI or
+                // thread-pool thread.
+                DeckleOrchestrationSource.Log.SessionHandlerFailed(
+                    next.Kind, next.EntryId, ex.GetType().Name, ex.Message);
             }
         }
     }
+
+    // kind is the snake_case name the failure event reports.
+    private readonly record struct Pending(string Kind, string EntryId, Action Invoke);
 
     private sealed class SessionState(AppEntry entry, int firstPid)
     {

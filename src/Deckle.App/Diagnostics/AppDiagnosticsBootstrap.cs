@@ -1,6 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.Tracing;
+using System.Globalization;
 using System.IO;
+using System.Text;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Telemetry;
@@ -11,16 +14,28 @@ namespace Deckle.App;
 // consumer is a passive ILogSink registered on it, and admission already
 // happened at the producer. Phase order is load-bearing: InitializeLocalSinks
 // runs before settings migration, the operational sinks after it, and telemetry
-// registers only consented datasets under telemetry/. JSONL sinks write through
-// bounded queues, so ProcessExit crosses the Flush barrier before termination.
+// registers only consented datasets under telemetry/. The listener keeps the
+// boot history until CompleteBoot, so a sink of a later phase still starts at
+// AppStarting. JSONL sinks write through bounded queues, so every exit crosses
+// a Flush barrier before termination.
 internal static class AppDiagnosticsBootstrap
 {
+    // The journal file is the one that travels: a reader on another machine
+    // opens it first, so it holds every Warning and Error plus the tagged run
+    // milestones, whatever the verbosity controls say. It is small by design.
+    private const string JournalFileName = "journal.jsonl";
+
+    // Written when a flush could not drain at exit or at a crash: the journal
+    // itself may be the sink that failed, so the fact lives in its own file.
+    private const string FlushFailureFileName = "flush-failed.txt";
+
     private static DispatchEventListener? _dispatch;
     private static LogWindowSink? _logWindowSink;
+    private static string? _diagnosticsDirectory;
     private static bool _hudAttached;
 
     // The crash detail and stack events are Verbose, so a level predicate alone
-    // would split a crash across files; errors.jsonl allowlists them by name.
+    // would split a crash across files; the journal allowlists them by name.
     // The bare name holds while no other Deckle-* provider declares these names;
     // scope the check by provider if one ever does.
     private static readonly HashSet<string> _crashCompanions = new()
@@ -34,7 +49,7 @@ internal static class AppDiagnosticsBootstrap
     private static DispatchEventListener Dispatch => _dispatch ??= new DispatchEventListener();
 
     // A hard crash can still lose entries that had not left the bounded writer
-    // queue; explicit exits cross the Flush barrier.
+    // queue; explicit exits and the crash handlers cross the Flush barrier.
     public static void InitializeLocalSinks(string diagnosticsDirectory)
     {
         // Returns once the dispatcher exists, so this must run before any other
@@ -42,6 +57,7 @@ internal static class AppDiagnosticsBootstrap
         // per-instance rotation counters.
         if (_dispatch is not null) return;
 
+        _diagnosticsDirectory = diagnosticsDirectory;
         var dispatch = Dispatch;
 
         // setup.jsonl keeps every Deckle-Setup event, Verbose mirrors included.
@@ -53,19 +69,24 @@ internal static class AppDiagnosticsBootstrap
             predicate: static e => e.Kind == ObservationKind.Operational
                                 && e.Provider == "Deckle-Setup",
             schema:    JsonlSchema.SelfDescribing,
-            rotation:  new JsonlRotationPolicy(maxLines: 5000)));
+            // Three generations: the updater's history matters for one or two
+            // runs back, never for months.
+            rotation:  new JsonlRotationPolicy(maxLines: 5000, maxArchives: 3)));
 
-        // An Error-level setup failure lands here without its Verbose detail
-        // mirror; the cause string lives in setup.jsonl.
+        // Warning and above always pass the producer-side admission, so this
+        // file needs no setting. A milestone's cause travels in its own payload
+        // (deckle-logging): a Verbose mirror gated off never reaches here.
         dispatch.AddSink(new JsonlSink(
-            filePath:  Path.Combine(diagnosticsDirectory, "errors.jsonl"),
-            kindLabel: "error",
+            filePath:  Path.Combine(diagnosticsDirectory, JournalFileName),
+            kindLabel: "journal",
             predicate: static e => e.Kind == ObservationKind.Operational
-                && (e.Level == EventLevel.Error
-                || e.Level == EventLevel.Critical
+                && (e.Level <= EventLevel.Warning
+                || e.Journal
                 || _crashCompanions.Contains(e.EventName)),
             schema:    JsonlSchema.SelfDescribing,
-            rotation:  new JsonlRotationPolicy(maxLines: 2000)));
+            // Five generations: the journal is sparse, so this spans weeks of
+            // runs, and an incident older than that has lost its context anyway.
+            rotation:  new JsonlRotationPolicy(maxLines: 4000, maxArchives: 5)));
     }
 
     public static void InitializeOperationalSinks(string diagnosticsDirectory)
@@ -73,12 +94,12 @@ internal static class AppDiagnosticsBootstrap
         if (_logWindowSink is not null) return;
 
         var dispatch = Dispatch;
-        dispatch.AddSink(new ApplicationLogSink(diagnosticsDirectory));
+        dispatch.AddSink(new ApplicationLogSink(diagnosticsDirectory), replayBoot: true);
 
         // Buffers from boot: the lazy LogWindow attaches on first open and
         // receives the buffer as a replay.
         _logWindowSink = new LogWindowSink();
-        dispatch.AddSink(_logWindowSink);
+        dispatch.AddSink(_logWindowSink, replayBoot: true);
     }
 
     public static void InitializeTelemetry(string telemetryDirectory)
@@ -88,6 +109,10 @@ internal static class AppDiagnosticsBootstrap
             telemetryDirectory,
             validationSubdirectory: false);
     }
+
+    // After the last phase-registered sink: the boot history is released and
+    // any sink added later (the HUD feedback sink) starts from its attach.
+    public static void CompleteBoot() => _dispatch?.CompleteBoot();
 
     // UserFeedbackEmitted before this call is dropped: the sink needs the live
     // HUD surfaces, so it registers once they exist.
@@ -113,7 +138,45 @@ internal static class AppDiagnosticsBootstrap
         _logWindowSink?.ClearBuffer();
     }
 
-    // Every background JSONL writer drains the entries accepted before this call.
-    public static bool Flush() => _dispatch?.FlushSinks() ?? true;
+    // Every background JSONL writer drains the entries accepted before this
+    // call, or gives up at the deadline. True when every destination drained.
+    // A failure is also written to its own marker file, since the failing
+    // destination may be the one that would have recorded it.
+    public static bool Flush(TimeSpan timeout)
+    {
+        if (_dispatch is null) return true;
 
+        IReadOnlyList<SinkFlushFailure> failures = _dispatch.FlushSinks(timeout);
+        if (failures.Count == 0) return true;
+
+        RecordFlushFailure(failures, timeout);
+        return false;
+    }
+
+    private static void RecordFlushFailure(IReadOnlyList<SinkFlushFailure> failures, TimeSpan timeout)
+    {
+        string? directory = _diagnosticsDirectory;
+        if (directory is null) return;
+
+        try
+        {
+            var text = new StringBuilder();
+            text.Append(DateTimeOffset.Now.ToString("o", CultureInfo.InvariantCulture))
+                .Append(" session=").Append(DeckleEventSource.SessionId)
+                .Append(" timeout_ms=").Append(((int)timeout.TotalMilliseconds).ToString(CultureInfo.InvariantCulture))
+                .AppendLine();
+            foreach (SinkFlushFailure failure in failures)
+            {
+                text.Append("  ").Append(failure.Sink).Append(": ")
+                    .AppendLine(failure.Error is null
+                        ? "timed out with entries still queued"
+                        : $"{failure.Error.GetType().Name}: {failure.Error.Message}");
+            }
+            File.AppendAllText(Path.Combine(directory, FlushFailureFileName), text.ToString());
+        }
+        catch
+        {
+            // Nothing left to tell it to.
+        }
+    }
 }

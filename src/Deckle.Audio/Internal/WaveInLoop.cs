@@ -26,11 +26,17 @@ internal enum LoopExit
 // Result of Pump — separated from CaptureResult because MicrophoneCapture
 // still builds the telemetry payload and the float buffer from it. The drain
 // duration is captured here (the loop owns the post-Stop drain phase).
+// ReleaseStage names the first drain call the driver refused (stop or
+// unprepare_header), null when both went through; MicrophoneCapture adds the
+// close and owns the release incident.
 internal readonly record struct PumpResult(
     byte[]      Pcm,
+    long        TotalBytes,
     LoopExit    Exit,
     int         BuffersReceived,
-    System.TimeSpan DrainDuration);
+    System.TimeSpan DrainDuration,
+    string?     ReleaseStage,
+    uint        ReleaseErr);
 
 internal static class WaveInLoop
 {
@@ -53,12 +59,16 @@ internal static class WaveInLoop
         System.Action<float>? audioLevelCallback,
         System.Action<CaptureFrame>? frameCallback, // null = no subscriber → no float conversion
         System.Action?    onLowAudioDetected, // fires once when first 5 s lacked sustained voice
+        WaveDeviceIdentity device,            // named by the no-data warning
         CancellationToken ct)
     {
-        var allBytes = new Pcm16Buffer(initialCapacity: 16000 * 2);
+        var allBytes = new Pcm16Buffer(initialCapacity: 16000 * 2, retain: host.RetainsAudio);
 
-        DeckleAudioSource.Log.RecordingStarted();
-        DeckleAudioSource.Log.CaptureStarted();
+        // The no-data watchdog reads its own clock, independent of the detail
+        // gate, because its warning must reach a default log.
+        var dataClock = Stopwatch.StartNew();
+        CaptureDataWatchdog dataWatchdog = default;
+        bool emptyDoneSinceData = false;
 
         // Snapshot the cap at recording start so a mid-recording Settings
         // change doesn't shorten or extend a session already in progress.
@@ -105,6 +115,13 @@ internal static class WaveInLoop
         Stopwatch? diagWaitWatch = null;
         Stopwatch? diagIterWatch = null;
 
+        // Buffers come back in the order they were queued, so they are handled
+        // in that order too, from the oldest outstanding one, never by index.
+        // See WaveInBufferRing for why index order swaps chunks after a wrap.
+        var ring = new WaveInBufferRing(nBuffers);
+        Func<int, bool> isDone = i =>
+            (Marshal.PtrToStructure<WAVEHDR>(hdrPtrs[i]).dwFlags & WHDR_DONE) != 0;
+
         while (!ct.IsCancellationRequested)
         {
             bool captureDetailEnabled = OperationalLogAdmission.IsScopedDetailEnabled(
@@ -130,65 +147,70 @@ internal static class WaveInLoop
             int diagIterGc1 = captureDetailEnabled ? System.GC.CollectionCount(1) : 0;
             int diagIterGc2 = captureDetailEnabled ? System.GC.CollectionCount(2) : 0;
 
+            // At most one lap per wake, as the old index scan was: a driver that
+            // refills a requeued buffer at once must not hold the loop here, away
+            // from the cap check and the wait.
             int bufferDoneCount = 0;
-            for (int i = 0; i < nBuffers; i++)
+            bool gotData = false;
+            while (bufferDoneCount < nBuffers && ring.TakeNext(isDone, out int i))
             {
                 WAVEHDR hdr = Marshal.PtrToStructure<WAVEHDR>(hdrPtrs[i]);
-                if ((hdr.dwFlags & WHDR_DONE) != 0)
+                bufferDoneCount++;
+                if (hdr.dwBytesRecorded == 0)
                 {
-                    bufferDoneCount++;
-                    if (hdr.dwBytesRecorded == 0)
+                    emptyDoneSinceData = true;
+                    if (emptyBufferEpisode.ObserveFailure() == CaptureAnomalyTransition.Opened)
                     {
-                        if (emptyBufferEpisode.ObserveFailure() == CaptureAnomalyTransition.Opened)
-                        {
-                            DeckleAudioSource.Log.EmptyBufferReceived();
-                            if (captureDetailEnabled)
-                                DeckleAudioSource.Log.EmptyBufferReceivedDetail(i);
-                        }
+                        DeckleAudioSource.Log.EmptyBufferReceived();
+                        if (captureDetailEnabled)
+                            DeckleAudioSource.Log.EmptyBufferReceivedDetail(i);
                     }
-                    else
-                    {
-                        if (emptyBufferEpisode.ObserveSuccess() == CaptureAnomalyTransition.Recovered)
-                            DeckleAudioSource.Log.EmptyBufferRecovered();
-
-                        ReadOnlySpan<byte> data = allBytes.Append(hdr.lpData, (int)hdr.dwBytesRecorded);
-                        double bufferDbfs = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
-                        buffersReceived++;
-
-                        // 16 kHz mono PCM16 = 32 bytes per ms.
-                        int bufferMs = data.Length / 32;
-                        recordingMs += bufferMs;
-
-                        if (!userVoiceConfirmed)
-                        {
-                            if (bufferDbfs >= NormalVoiceDbfsThreshold)
-                            {
-                                healthyVoiceConsecutiveMs += bufferMs;
-                                if (healthyVoiceConsecutiveMs >= NormalVoiceSustainedMs)
-                                {
-                                    userVoiceConfirmed = true;
-                                }
-                            }
-                            else
-                            {
-                                healthyVoiceConsecutiveMs = 0;
-                            }
-                        }
-
-                        if (!lowAudioWarned && !userVoiceConfirmed && recordingMs >= WarnAfterSilenceMs)
-                        {
-                            lowAudioWarned = true;
-                            DeckleAudioSource.Log.LowAudioDetected();
-                            DeckleAudioSource.Log.LowAudioDetectedDetail(
-                                recordingMs, NormalVoiceSustainedMs, NormalVoiceDbfsThreshold);
-                            onLowAudioDetected?.Invoke();
-                        }
-                    }
-
-                    hdr.dwFlags &= ~WHDR_DONE;
-                    Marshal.StructureToPtr(hdr, hdrPtrs[i], fDeleteOld: false);
-                    NativeMethods.waveInAddBuffer(hWaveIn, hdrPtrs[i], hdrSize);
                 }
+                else
+                {
+                    if (emptyBufferEpisode.ObserveSuccess() == CaptureAnomalyTransition.Recovered)
+                        DeckleAudioSource.Log.EmptyBufferRecovered();
+
+                    ReadOnlySpan<byte> data = allBytes.Append(hdr.lpData, (int)hdr.dwBytesRecorded);
+                    double bufferDbfs = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
+                    buffersReceived++;
+                    gotData = true;
+
+                    // 16 kHz mono PCM16 = 32 bytes per ms.
+                    int bufferMs = data.Length / 32;
+                    recordingMs += bufferMs;
+
+                    if (!userVoiceConfirmed)
+                    {
+                        if (bufferDbfs >= NormalVoiceDbfsThreshold)
+                        {
+                            healthyVoiceConsecutiveMs += bufferMs;
+                            if (healthyVoiceConsecutiveMs >= NormalVoiceSustainedMs)
+                            {
+                                userVoiceConfirmed = true;
+                            }
+                        }
+                        else
+                        {
+                            healthyVoiceConsecutiveMs = 0;
+                        }
+                    }
+
+                    if (host.RetainsAudio && !lowAudioWarned && !userVoiceConfirmed && recordingMs >= WarnAfterSilenceMs)
+                    {
+                        lowAudioWarned = true;
+                        DeckleAudioSource.Log.LowAudioDetected();
+                        DeckleAudioSource.Log.LowAudioDetectedDetail(
+                            recordingMs, NormalVoiceSustainedMs, NormalVoiceDbfsThreshold);
+                        onLowAudioDetected?.Invoke();
+                    }
+                }
+
+                // Requeued right after being taken, so the queue order stays the
+                // ring order the cursor assumes.
+                hdr.dwFlags &= ~WHDR_DONE;
+                Marshal.StructureToPtr(hdr, hdrPtrs[i], fDeleteOld: false);
+                NativeMethods.waveInAddBuffer(hWaveIn, hdrPtrs[i], hdrSize);
             }
 
             // Capture lag — one incident per recording when the ring buffer is
@@ -218,6 +240,27 @@ internal static class WaveInLoop
             else if (captureLagEpisode.ObserveSuccess() == CaptureAnomalyTransition.Recovered)
             {
                 DeckleAudioSource.Log.CaptureLagRecovered();
+            }
+
+            // No-data watchdog — the one failure where every waveIn call
+            // succeeds: a driver that never completes a buffer (no_buffer), or
+            // completes them empty (empty_buffers), leaves the take silent with
+            // nothing else noticing. A dead device stops signalling the event,
+            // so the 100 ms wait above times out and the loop still lands here.
+            long dataElapsedMs = dataClock.ElapsedMilliseconds;
+            if (gotData)
+            {
+                long gapMs = dataWatchdog.MsSinceData(dataElapsedMs);
+                if (dataWatchdog.ObserveData(dataElapsedMs) == CaptureAnomalyTransition.Recovered)
+                    DeckleAudioSource.Log.AudioDataRecovered(gapMs);
+                emptyDoneSinceData = false;
+            }
+            else if (dataWatchdog.ObserveIdle(dataElapsedMs) == CaptureAnomalyTransition.Opened)
+            {
+                DeckleAudioSource.Log.NoAudioDataDetected(
+                    emptyDoneSinceData ? "empty_buffers" : "no_buffer",
+                    dataWatchdog.MsSinceData(dataElapsedMs),
+                    device.DeviceId, device.Name);
             }
 
             // Duration cap — forces a stop as if the user had pressed the
@@ -258,12 +301,19 @@ internal static class WaveInLoop
             }
         }
 
+        dataWatchdog.Close(dataClock.ElapsedMilliseconds);
+
         if (OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Transcription,
                 DeckleAudioSource.Log,
                 EventLevel.Verbose,
                 (EventKeywords)Keywords.Capture))
         {
+            if (dataWatchdog.Stalls > 0)
+            {
+                DeckleAudioSource.Log.NoAudioDataEpisodeDetail(
+                    dataWatchdog.Stalls, dataWatchdog.LongestGapMs, dataWatchdog.Recovered);
+            }
             if (emptyBufferEpisode.Occurrences > 0)
             {
                 DeckleAudioSource.Log.EmptyBufferEpisodeDetail(
@@ -282,14 +332,31 @@ internal static class WaveInLoop
         // guard sleep below is the obvious lower bound).
         var drainSw = System.Diagnostics.Stopwatch.StartNew();
 
-        NativeMethods.waveInStop(hWaveIn);
+        // The release codes were ignored before: a refused stop or unprepare
+        // is the first sign of a device this process will not let go of. Only
+        // the first refusal is kept; the later ones usually share its cause.
+        string? releaseStage = null;
+        uint releaseErr = 0;
+        uint stopErr = NativeMethods.waveInStop(hWaveIn);
+        if (stopErr != 0)
+        {
+            releaseStage = "stop";
+            releaseErr = stopErr;
+        }
         Thread.Sleep(100);
 
-        for (int i = 0; i < nBuffers; i++)
+        // Continue from the same cursor, in queue order: the partial buffer
+        // waveInStop returns can sit at a lower index than the last completed
+        // one, and it is the end of the take. Nothing is requeued here, so one
+        // lap at most bounds the walk.
+        int tailBytes = 0;
+        int taken = 0;
+        for (; taken < nBuffers && ring.TakeNext(isDone, out int i); taken++)
         {
             WAVEHDR hdr = Marshal.PtrToStructure<WAVEHDR>(hdrPtrs[i]);
-            if ((hdr.dwFlags & WHDR_DONE) != 0 && hdr.dwBytesRecorded > 0)
+            if (hdr.dwBytesRecorded > 0)
             {
+                tailBytes += (int)hdr.dwBytesRecorded;
                 ReadOnlySpan<byte> data = allBytes.Append(hdr.lpData, (int)hdr.dwBytesRecorded);
                 // Push the drained tail through the same sub-window mill so
                 // _rmsLog covers the full session (the in-loop path stops as
@@ -298,16 +365,36 @@ internal static class WaveInLoop
                 // intentionally discarded here.
                 _ = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
             }
-            NativeMethods.waveInUnprepareHeader(hWaveIn, hdrPtrs[i], hdrSize);
+        }
+
+        // The cursor stops at the first buffer the driver still holds, and
+        // FIFO means every later one is still held too: what the walk did not
+        // take is what the stop left pending.
+        int pendingBuffers = nBuffers - taken;
+
+        // Every header is unprepared, done or not: the caller frees the
+        // buffers right after.
+        for (int i = 0; i < nBuffers; i++)
+        {
+            uint unprepareErr = NativeMethods.waveInUnprepareHeader(hWaveIn, hdrPtrs[i], hdrSize);
+            if (unprepareErr != 0 && releaseStage is null)
+            {
+                releaseStage = "unprepare_header";
+                releaseErr = unprepareErr;
+            }
         }
 
         drainSw.Stop();
+        DeckleAudioSource.Log.CaptureDrainDetail(drainSw.ElapsedMilliseconds, tailBytes, pendingBuffers);
 
         return new PumpResult(
             Pcm:             allBytes.ToArray(),
-            Exit:            capHit ? LoopExit.CapHit : LoopExit.StopRequested,
+            TotalBytes:      allBytes.Count,
+            Exit:           capHit ? LoopExit.CapHit : LoopExit.StopRequested,
             BuffersReceived: buffersReceived,
-            DrainDuration:   drainSw.Elapsed);
+            DrainDuration:   drainSw.Elapsed,
+            ReleaseStage:    releaseStage,
+            ReleaseErr:      releaseErr);
     }
 
     // waveIn delivers 50ms PCM16 buffers (1600 bytes); the sub-window walker

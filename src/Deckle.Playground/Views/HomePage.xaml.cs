@@ -24,11 +24,6 @@ public sealed partial class HomePage : Page
         PlaygroundShell.NavigateTo?.Invoke("ambient");
     }
 
-    private void OnSegmentationCardClick(object sender, RoutedEventArgs e)
-    {
-        PlaygroundShell.NavigateTo?.Invoke("segmentation");
-    }
-
     private void OnCorrectionCardClick(object sender, RoutedEventArgs e)
     {
         PlaygroundShell.NavigateTo?.Invoke("correction");

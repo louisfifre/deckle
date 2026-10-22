@@ -36,21 +36,37 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtDictationRecoveredDetail, chars);
     }
 
+    // reason: unreadable (DPAPI or the disk refused the file) or empty (it
+    // unsealed to blank text). deleted=false means the same warning returns
+    // at the next launch; the store logs the delete failure's cause.
     [Event(EvtDictationRecoveryUnreadable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The interrupted dictation could not be read and was discarded")]
-    public void DictationRecoveryUnreadable()
+           Message = "The interrupted dictation could not be recovered and was discarded | reason={0} | deleted={1}")]
+    public void DictationRecoveryUnreadable(string reason, bool deleted)
     {
-        if (IsEnabled()) WriteEvent(EvtDictationRecoveryUnreadable);
+        if (IsEnabled()) WriteEvent(EvtDictationRecoveryUnreadable, reason, deleted);
     }
 
+    // reason comes from ClipboardWriteResult.Status; the clipboard writer
+    // returns no Win32 error code, so the status word is the whole cause.
     [Event(EvtDictationRecoveryClipboardFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The interrupted dictation could not be copied to the clipboard and is kept for the next launch")]
-    public void DictationRecoveryClipboardFailed()
+           Message = "The interrupted dictation could not be copied to the clipboard and is kept for the next launch | reason={0} | chars={1}")]
+    public void DictationRecoveryClipboardFailed(string reason, int chars)
     {
-        if (IsEnabled()) WriteEvent(EvtDictationRecoveryClipboardFailed);
+        if (IsEnabled()) WriteEvent(EvtDictationRecoveryClipboardFailed, reason, chars);
+    }
+
+    // The text reached the clipboard but its file could not be removed, so
+    // the next launch puts it back on the clipboard a second time.
+    [Event(EvtDictationRecoveryKept,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The recovered dictation stays on disk and will be restored again at the next launch | reason={0}")]
+    public void DictationRecoveryKept(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtDictationRecoveryKept, reason);
     }
 }

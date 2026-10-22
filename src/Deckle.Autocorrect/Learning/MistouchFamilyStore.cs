@@ -32,30 +32,64 @@ public static class MistouchFamilyStore
 {
     public const string FileName = "mistouch-families.json";
 
+    private const string StoreName = "mistouch_families";
+
     public static IReadOnlyList<MistouchFamilyRecord> Load(string path)
     {
         if (!File.Exists(path))
             return Array.Empty<MistouchFamilyRecord>();
 
+        // The tolerance keeps the boot alive; the events keep it from being
+        // silent, because an empty set here quietly disarms the corrector.
         try
         {
             using var doc = JsonDocument.Parse(File.ReadAllText(path));
             if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                DeckleAutocorrectSource.Log.LearningStoreUnreadable(
+                    StoreName, DeckleAutocorrectSource.LearningStoreReasons.NotAnArray,
+                    string.Empty, string.Empty);
                 return Array.Empty<MistouchFamilyRecord>();
+            }
 
             var records = new List<MistouchFamilyRecord>();
+            int skipped = 0;
             foreach (JsonElement item in doc.RootElement.EnumerateArray())
             {
+                // A non-object entry would make TryGetProperty throw and lose
+                // every valid record with it.
+                if (item.ValueKind != JsonValueKind.Object)
+                {
+                    skipped++;
+                    continue;
+                }
                 string signature = Str(item, "signature");
                 string kind = Str(item, "kind");
                 if (signature.Length == 0 || kind.Length == 0)
+                {
+                    skipped++;
                     continue; // an unreadable record is skipped, never fatal
+                }
                 records.Add(new MistouchFamilyRecord(signature, kind, Str(item, "punctuation")));
             }
+            DeckleAutocorrectSource.Log.LearningStoreLoaded(StoreName, records.Count, skipped);
             return records;
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            // The parser's message quotes the offending token, which is user
+            // data; the position locates the fault without it.
+            DeckleAutocorrectSource.Log.LearningStoreUnreadable(
+                StoreName, DeckleAutocorrectSource.LearningStoreReasons.MalformedJson,
+                ex.GetType().FullName ?? ex.GetType().Name,
+                $"line={ex.LineNumber} byte={ex.BytePositionInLine}");
+            return Array.Empty<MistouchFamilyRecord>();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            DeckleAutocorrectSource.Log.LearningStoreUnreadable(
+                StoreName, DeckleAutocorrectSource.LearningStoreReasons.ReadFailed,
+                ex.GetType().FullName ?? ex.GetType().Name, ex.Message);
             return Array.Empty<MistouchFamilyRecord>();
         }
     }

@@ -11,7 +11,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── deckle-interface/
 │       │   └── SKILL.md  — deckle-interface Use when you build or change anything a person sees in a Deckle window, from a…
 │       ├── deckle-logging/
-│       │   └── SKILL.md  — deckle-logging Use when you add or change an observation point in Deckle code, an event on a p…
+│       │   └── SKILL.md  — deckle-logging Use when you add or change an observation point in Deckle code, or write code t…
 │       ├── deckle-modularite/
 │       │   └── SKILL.md  — deckle-modularite Use when code is about to grow a module, add a new one, or split a file or a su…
 │       ├── deckle-nomenclature/
@@ -150,9 +150,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── reset-agent-state.ps1  — Inspect or reset local AI sessions Build a cleanup plan for the local Codex and Claude Code session data of the cu…
 │   │   │   ├── stats.ps1  — Repository statistics Walk every project under src\ and build one file inventory per Deckle module, w…
 │   │   │   ├── stop-build-servers.ps1  — Stop .NET build servers Stop the MSBuild and Roslyn build servers left behind by dotnet builds. They sh…
+│   │   │   ├── survey-anytype-v2.ps1
 │   │   │   ├── sweep-exposables.ps1  — Sweep exposable source values Text sweep of the exposables carried by the source tree. An exposable is a code…
 │   │   │   └── validate-resources.ps1  — Validate WinUI resources Read-only audit of the WinUI resource inventories. Reports missing resource key…
 │   │   ├── release/
+│   │   │   ├── build-anytype-backend.ps1  — Build the Anytype backend Rebuilds one anytype-cli release tag from source for Windows with the tantivy-g…
 │   │   │   ├── publish-app.ps1  — Prepare or publish the app release Builds the two artifacts a Deckle GitHub Release carries: the installer stub an…
 │   │   │   ├── publish-native-runtime.ps1  — Prepare or publish the native runtime Packages a versioned zip of the native DLLs that Deckle's first-run wizard down…
 │   │   │   └── README.md  — Release Prepare and publish the app and the native runtime.
@@ -330,11 +332,38 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── src/
 │   ├── Deckle.Anytype/
 │   │   ├── Api/
+│   │   │   ├── V2/
+│   │   │   │   ├── Ops/
+│   │   │   │   │   ├── AnytypeV2Block.cs
+│   │   │   │   │   ├── AnytypeV2BlockOps.cs
+│   │   │   │   │   ├── AnytypeV2BlockRef.cs
+│   │   │   │   │   ├── AnytypeV2ObjectOps.cs
+│   │   │   │   │   ├── AnytypeV2Op.cs
+│   │   │   │   │   ├── AnytypeV2OpBatch.cs
+│   │   │   │   │   ├── AnytypeV2Placement.cs
+│   │   │   │   │   ├── AnytypeV2PropertyChanges.cs
+│   │   │   │   │   ├── AnytypeV2PropertyFormat.cs
+│   │   │   │   │   ├── AnytypeV2TypeOps.cs
+│   │   │   │   │   └── AnytypeV2ViewOps.cs
+│   │   │   │   ├── AnytypeV2Client.cs
+│   │   │   │   ├── AnytypeV2Exception.cs
+│   │   │   │   ├── AnytypeV2Issue.cs
+│   │   │   │   ├── AnytypeV2ObjectDocument.cs
+│   │   │   │   ├── AnytypeV2ObjectReader.cs
+│   │   │   │   ├── AnytypeV2ObjectReadOptions.cs
+│   │   │   │   ├── AnytypeV2PropertyMap.cs
+│   │   │   │   ├── AnytypeV2Request.cs
+│   │   │   │   ├── AnytypeV2Response.cs
+│   │   │   │   ├── AnytypeV2Searcher.cs
+│   │   │   │   ├── AnytypeV2WriteOptions.cs
+│   │   │   │   ├── AnytypeV2Writer.cs
+│   │   │   │   └── AnytypeV2WriteReceipt.cs
 │   │   │   ├── AnytypeApiClient.Chats.cs
 │   │   │   ├── AnytypeApiClient.cs
 │   │   │   ├── AnytypeApiClient.Files.cs
 │   │   │   ├── AnytypeApiClient.Schema.cs
 │   │   │   ├── AnytypeCredentials.cs
+│   │   │   ├── AnytypeRequestGate.cs
 │   │   │   └── SpaceWriteLock.cs
 │   │   ├── Backend/
 │   │   │   ├── BackendEndpointTrust.cs
@@ -352,14 +381,17 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Dialogues/
 │   │   │   └── DialogueGestures.cs
 │   │   ├── Gestures/
+│   │   │   ├── BlockSections.cs
 │   │   │   ├── CollectionMembershipGestures.cs
 │   │   │   ├── DocumentGestures.cs
+│   │   │   ├── LinkedNames.cs
 │   │   │   ├── LiveTagResolver.cs
 │   │   │   ├── ManagementGestures.cs
 │   │   │   ├── MarkdownBody.cs
 │   │   │   ├── ObjectListing.cs
 │   │   │   ├── ProjectGestures.cs
 │   │   │   ├── QueryGestures.cs
+│   │   │   ├── ReadGestures.cs
 │   │   │   ├── Resolution.cs
 │   │   │   ├── SchemaAdminGestures.cs
 │   │   │   ├── SchemaApiJson.cs
@@ -381,6 +413,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Http/
 │   │   │   ├── McpClients.cs
 │   │   │   ├── McpClientTokens.cs
+│   │   │   ├── McpHostLogBridge.cs
 │   │   │   ├── McpHttpHost.cs
 │   │   │   ├── McpJsonSchemaContract.cs
 │   │   │   ├── McpRequestRateLimit.cs
@@ -417,6 +450,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AppDiagnosticsBootstrap.cs
 │   │   │   ├── AppHudFeedbackSink.cs
 │   │   │   ├── DeckleAppSource.Ambient.cs
+│   │   │   ├── DeckleAppSource.Anytype.cs
+│   │   │   ├── DeckleAppSource.Autocorrect.cs
 │   │   │   ├── DeckleAppSource.BootAndStatus.cs
 │   │   │   ├── DeckleAppSource.CommandLine.cs
 │   │   │   ├── DeckleAppSource.Crash.cs
@@ -424,7 +459,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DeckleAppSource.cs
 │   │   │   ├── DeckleAppSource.DictationRecovery.cs
 │   │   │   ├── DeckleAppSource.Hotkeys.cs
+│   │   │   ├── DeckleAppSource.Input.cs
 │   │   │   ├── DeckleAppSource.Lifecycle.cs
+│   │   │   ├── DeckleAppSource.Modules.cs
+│   │   │   ├── DeckleAppSource.Setup.cs
 │   │   │   ├── DeckleAppSource.Shutdown.cs
 │   │   │   ├── DeckleAppSource.Surfaces.cs
 │   │   │   ├── LaunchContextProbe.cs
@@ -479,6 +517,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogWindow.Chrome.cs
 │   │   ├── LogWindow.Interaction.cs
 │   │   ├── LogWindow.Model.cs
+│   │   ├── LogWindow.Notices.cs
 │   │   ├── LogWindow.xaml
 │   │   ├── LogWindow.xaml.cs
 │   │   ├── Program.cs
@@ -486,10 +525,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
 │   │   │   ├── CaptureAnomalyEpisode.cs
+│   │   │   ├── CaptureDataWatchdog.cs
 │   │   │   ├── MediaFoundationInterop.cs
 │   │   │   ├── Pcm16Buffer.cs
 │   │   │   ├── PcmBuffer.cs
 │   │   │   ├── PcmConversion.cs
+│   │   │   ├── WaveDeviceInterop.cs
+│   │   │   ├── WaveInBufferRing.cs
 │   │   │   └── WaveInLoop.cs
 │   │   ├── Preprocessing/
 │   │   │   ├── Compressor.cs
@@ -855,6 +897,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CrashRelaunchPolicy.cs
 │   │   ├── Deckle.Diagnostics.csproj
 │   │   ├── DeckleCancellationSource.cs
+│   │   ├── DeckleDiagnosticsSource.cs
 │   │   ├── DeckleEventSource.cs
 │   │   ├── DeckleNetworkSource.cs
 │   │   ├── DeckleResourceSource.cs
@@ -999,6 +1042,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── IWheelInterceptor.cs
 │   │   │   ├── KeyboardInputHost.cs
 │   │   │   ├── KeyboardInputHost.FocusHooks.cs
+│   │   │   ├── KeyboardInputHost.Health.cs
 │   │   │   ├── KeyboardInputHost.LifecycleAndWindow.cs
 │   │   │   ├── KeyboardInputHost.MouseHook.cs
 │   │   │   ├── KeyboardInputHost.RawInput.cs
@@ -1007,6 +1051,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── KeyboardKeyEvent.cs
 │   │   │   ├── MouseInteractionRouter.cs
 │   │   │   ├── MouseWheelEvent.cs
+│   │   │   ├── RepeatingIncident.cs
 │   │   │   ├── WheelEventQueue.cs
 │   │   │   └── WheelObservationBuffer.cs
 │   │   ├── Telemetry/
@@ -1094,6 +1139,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── ProgressWindow.cs
 │   │   ├── app.manifest
 │   │   ├── Deckle.Installer.csproj
+│   │   ├── InstallLog.cs
 │   │   └── Program.cs
 │   ├── Deckle.Lighting/
 │   │   ├── Hue/
@@ -1289,6 +1335,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ModuleIds.cs
 │   │   ├── ModulePresence.cs
 │   │   ├── ModuleRegistry.cs
+│   │   ├── PresenceChoice.cs
 │   │   └── PresenceFile.cs
 │   ├── Deckle.Notifications/
 │   │   ├── Catalog/
@@ -1376,14 +1423,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CorrectionApplicationEvidence.cs
 │   │   │   ├── CorrectionApplicationFixture.cs
 │   │   │   ├── CorrectionApplicationTrial.cs
+│   │   │   ├── MicrophonePreviewFailure.cs
+│   │   │   ├── MicrophonePreviewFeed.cs
 │   │   │   ├── TuningModel.cs
 │   │   │   └── UtteranceCycle.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
-│   │   │   ├── HudViewModel.cs
-│   │   │   └── SegmentationViewModel.cs
+│   │   │   └── HudViewModel.cs
 │   │   ├── Views/
 │   │   │   ├── Ambient/
 │   │   │   │   ├── AmbientPage.HdrTuning.cs
@@ -1400,14 +1448,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── Hud/
 │   │   │   │   ├── HudPage.Expanders.cs
 │   │   │   │   ├── HudPage.Gauge.cs
+│   │   │   │   ├── HudPage.Microphone.cs
 │   │   │   │   ├── HudPage.RowFactories.cs
 │   │   │   │   ├── HudPage.SectionState.cs
 │   │   │   │   ├── HudPage.Simulation.cs
 │   │   │   │   ├── HudPage.xaml
 │   │   │   │   └── HudPage.xaml.cs
-│   │   │   ├── Segmentation/
-│   │   │   │   ├── SegmentationPage.xaml
-│   │   │   │   └── SegmentationPage.xaml.cs
 │   │   │   ├── HomePage.xaml
 │   │   │   ├── HomePage.xaml.cs
 │   │   │   ├── PlaygroundWindow.xaml
@@ -1517,6 +1563,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RelocatePage.xaml.cs
 │   │   ├── SetupContext.cs
 │   │   ├── SetupNotifications.cs
+│   │   ├── SetupStep.cs
 │   │   ├── SetupWindow.xaml
 │   │   ├── SetupWindow.xaml.cs
 │   │   ├── SummaryPage.xaml
@@ -1617,10 +1664,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Engine/
 │   │   │   ├── FileTranscriptionQueue.cs
 │   │   │   ├── IAsrBackend.cs
+│   │   │   ├── PhantomUtteranceFilter.cs
 │   │   │   ├── PipelineProduction.cs
 │   │   │   ├── PreparedFileProducer.cs
 │   │   │   ├── RewriteProfileSelection.cs
+│   │   │   ├── SampleLevels.cs
 │   │   │   ├── TextMetrics.cs
+│   │   │   ├── TrailingNoisePad.cs
 │   │   │   ├── TranscriptFileWriter.cs
 │   │   │   ├── TranscriptionDelivery.cs
 │   │   │   ├── TranscriptionEngine.BatchRewrite.cs
@@ -1649,7 +1699,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SegmentedTranscriptionSession.cs
 │   │   │   ├── TranscribedUtterance.cs
 │   │   │   ├── Utterance.cs
-│   │   │   └── UtteranceProgress.cs
+│   │   │   ├── UtteranceProgress.cs
+│   │   │   └── UtteranceProgressMeter.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -1689,6 +1740,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WhisperSettingsModule.cs
 │   ├── Deckle.Transcription.Whisper/
 │   │   ├── Engine/
+│   │   │   ├── WhisperContextParamsMapper.cs
 │   │   │   └── WhisperParamsMapper.cs
 │   │   ├── Pinvoke/
 │   │   │   ├── WhisperPInvoke.cs
@@ -1698,12 +1750,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SpeechModelResolver.cs
 │   │   │   └── SpeechModels.cs
 │   │   ├── Deckle.Transcription.Whisper.csproj
+│   │   ├── DeckleWhisperSource.cs
 │   │   ├── KnownHallucinations.cs
 │   │   ├── RepetitionDetector.cs
 │   │   ├── WhisperBackend.cs
 │   │   ├── WhisperBackend.Model.cs
 │   │   ├── WhisperBackend.NativeLogging.cs
 │   │   ├── WhisperBackend.Transcribe.cs
+│   │   ├── WhisperComputeDeviceObserver.cs
 │   │   └── WhisperNativeLogCompactor.cs
 │   ├── Deckle.Vad/
 │   │   ├── Deckle.Vad.csproj
@@ -1719,9 +1773,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │       ├── CapturedFrame.cs
 │       ├── CaptureMonitor.cs
 │       ├── CapturePacer.cs
+│       ├── CaptureStopReasons.cs
 │       ├── Deckle.Vision.csproj
 │       ├── DeckleVisionSource.cs
 │       ├── FrameAnalysisHint.cs
+│       ├── FrameFailure.cs
 │       ├── FrameSampler.cs
 │       ├── FrameSampler.Process.cs
 │       ├── FrameSampler.Readback.cs
@@ -1757,8 +1813,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── deckle.en-US.experience.zip
 │   │   ├── AnytypeApiClientReplayTests.cs
 │   │   ├── AnytypeCredentialsTests.cs
+│   │   ├── AnytypeRequestGateTests.cs
 │   │   ├── AnytypeSpaceAliasesTests.cs
 │   │   ├── AnytypeUtilityGesturesTests.cs
+│   │   ├── AnytypeV2ClientTests.cs
+│   │   ├── AnytypeV2ExceptionTests.cs
+│   │   ├── AnytypeV2OpsTests.cs
+│   │   ├── AnytypeV2PropertyMapTests.cs
+│   │   ├── AnytypeV2ReadWriteTests.cs
+│   │   ├── AnytypeV2SearcherTests.cs
 │   │   ├── BackendEndpointTrustTests.cs
 │   │   ├── BackendListenerOwnerTests.cs
 │   │   ├── BackendProviderStoreBugNotes.md
@@ -1769,16 +1832,20 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── BackendSupervisorTests.cs
 │   │   ├── BackendTestFakes.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
+│   │   ├── DevSpaceBugNotes.md
 │   │   ├── DevSpaceTests.cs
 │   │   ├── DialogueGesturesTests.cs
 │   │   ├── DocumentGesturesTests.cs
+│   │   ├── FakeV2Handler.cs
 │   │   ├── LiveTagResolverTests.cs
 │   │   ├── ManagementGesturesTests.cs
 │   │   ├── MarkdownBodyTests.cs
+│   │   ├── NameResolverTests.cs
 │   │   ├── OperationRecoveryBugNotes.md
 │   │   ├── ProjectGesturesBugNotes.md
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── QueryGesturesTests.cs
+│   │   ├── ReadGesturesTests.cs
 │   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesBugNotes.md
 │   │   ├── SessionGesturesTests.cs
@@ -1786,18 +1853,23 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TaskGesturesBugNotes.md
 │   │   └── TaskGesturesTests.cs
 │   ├── Deckle.Audio.Tests/
+│   │   ├── AudioRecordingHostDefaultsTests.cs
 │   │   ├── CaptureAnomalyEpisodeTests.cs
+│   │   ├── CaptureDataWatchdogTests.cs
 │   │   ├── CaptureSettingsMigrationTests.cs
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── DeckleAudioSourceTests.cs
 │   │   ├── ListeningTakeTests.cs
 │   │   ├── MicLevelCheckTests.cs
+│   │   ├── MicrophoneErrorClassificationTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── Pcm16BufferTests.cs
 │   │   ├── PcmBufferTests.cs
 │   │   ├── PcmConversionTests.cs
-│   │   └── TranscriptionPreprocessorTests.cs
+│   │   ├── TranscriptionPreprocessorTests.cs
+│   │   ├── WaveInBufferRingBugNotes.md
+│   │   └── WaveInBufferRingTests.cs
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
@@ -1913,7 +1985,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Core.Tests.csproj
 │   │   ├── DpiTests.cs
 │   │   ├── JsonSettingsStoreTests.cs
-│   │   └── SpacingTests.cs
+│   │   ├── SpacingTests.cs
+│   │   ├── Win32UtilTests.cs
+│   │   └── WindowDescriptionBugNotes.md
 │   ├── Deckle.Diagnostics.Logging.Tests/
 │   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
 │   │   ├── LogFilterSelectionTests.cs
@@ -1931,10 +2005,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleCancellationSourceTests.cs
 │   │   ├── DeckleNetworkSourceTests.cs
 │   │   ├── DeckleResourceSourceTests.cs
+│   │   ├── DeckleSettingsUxSourceTests.cs
 │   │   ├── DeckleThemeSourceTests.cs
 │   │   ├── DeckleThreadingSourceTests.cs
 │   │   ├── DeckleWindowingSourceTests.cs
+│   │   ├── DispatchEventListenerIncidentTests.cs
 │   │   ├── DispatchEventListenerTests.cs
+│   │   ├── JsonlLineSerializerTests.cs
 │   │   ├── JsonlSinkLifecycleTests.cs
 │   │   ├── JsonlSinkRotationTests.cs
 │   │   ├── LogLineFormatterTests.cs
@@ -1986,6 +2063,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LowLevelMouseHookInteropTests.cs
 │   │   ├── MouseInteractionRouterTests.cs
 │   │   ├── MouseWheelTimestampTests.cs
+│   │   ├── RepeatingIncidentTests.cs
 │   │   ├── SyntheticTouchpadFrameBuilderTests.cs
 │   │   └── WheelObservationBufferTests.cs
 │   ├── Deckle.Input.Trackpad.Tests/
@@ -2042,6 +2120,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Modules.Tests/
 │   │   ├── Deckle.Modules.Tests.csproj
 │   │   ├── ModuleGraphTests.cs
+│   │   ├── PresenceChoiceTests.cs
 │   │   └── PresenceFileTests.cs
 │   ├── Deckle.Notifications.Tests/
 │   │   ├── Deckle.Notifications.Tests.csproj
@@ -2075,6 +2154,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HudTuningBugNotes.md
 │   │   ├── HudTuningSectionsBugNotes.md
 │   │   ├── HudViewModelTests.cs
+│   │   ├── IlReferences.cs
+│   │   ├── MicrophonePreviewFailureTests.cs
+│   │   ├── MicrophonePreviewFeedTests.cs
 │   │   ├── TuningModelTests.cs
 │   │   └── UtteranceCycleTests.cs
 │   ├── Deckle.Presets.Tests/
@@ -2087,7 +2169,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DataRootRelocatorTests.cs
 │   │   ├── DataRootTreeTests.cs
 │   │   ├── Deckle.Setup.Tests.csproj
+│   │   ├── LocMirrorBugNotes.md
 │   │   ├── PayloadDeploymentTests.cs
+│   │   ├── SetupStringMirrorTests.cs
 │   │   ├── UpdateHandoffBugNotes.md
 │   │   └── UpdatePredecessorTests.cs
 │   ├── Deckle.Shell.Foreground.Tests/
@@ -2128,6 +2212,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceTests.cs
+│   │   ├── DictationEndCaptureBugNotes.md
 │   │   ├── DictationRecoveryBugNotes.md
 │   │   ├── DictationRecoveryStoreTests.cs
 │   │   ├── EnergySegmenterTests.cs
@@ -2136,25 +2221,35 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FileTranscriptionResultTests.cs
 │   │   ├── LiveTranscriptionPipelineTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
+│   │   ├── PhantomUtteranceBugNotes.md
+│   │   ├── PhantomUtteranceFilterTests.cs
 │   │   ├── PreparedFileChannelTests.cs
 │   │   ├── RewriteAvailabilityTests.cs
 │   │   ├── RewriteProfileSelectionTests.cs
 │   │   ├── SegmentedTranscriptionSessionTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
+│   │   ├── TrailingNoisePadTests.cs
 │   │   ├── TranscriptFileWriterDiskTests.cs
 │   │   ├── TranscriptFileWriterTests.cs
 │   │   ├── TranscriptionDeliveryTests.cs
 │   │   ├── TranscriptionObservabilityContractTests.cs
 │   │   ├── TranscriptionSettingsMigrationTests.cs
 │   │   ├── UnitBezierTests.cs
-│   │   └── UtteranceProgressTests.cs
+│   │   ├── UtteranceProgressMeterTests.cs
+│   │   ├── UtteranceProgressTests.cs
+│   │   └── VadServiceIncidentTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
+│   │   ├── HallucinationBugNotes.md
 │   │   ├── KnownHallucinationsTests.cs
 │   │   ├── NativeRuntimeTests.cs
+│   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── RepetitionDetectorTests.cs
 │   │   ├── SpeechModelFilesTests.cs
 │   │   ├── SpeechModelResolverTests.cs
+│   │   ├── WhisperComputeDeviceObserverTests.cs
+│   │   ├── WhisperContextBugNotes.md
+│   │   ├── WhisperContextParamsMapperTests.cs
 │   │   ├── WhisperParamsMapperTests.cs
 │   │   └── WhisperReferenceAudioSystemTests.cs
 │   ├── Deckle.Vad.Tests/

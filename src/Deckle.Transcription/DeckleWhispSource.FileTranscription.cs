@@ -10,7 +10,9 @@ public sealed partial class DeckleWhispSource
     // The tray-driven path: one selection crosses the shared segmented consumer
     // and writes one adjacent .txt per usable file. The Media-Foundation decode
     // detail is logged by the Audio provider; these events carry only engine
-    // lifecycle, paths and content-free counts.
+    // lifecycle, paths and content-free counts. index is the file's 1-based
+    // position in its batch and files the batch size, so a reader can follow
+    // a batch file by file.
 
     [Event(EvtFileTranscriptionBatchStarted,
            Level = EventLevel.Informational,
@@ -27,9 +29,7 @@ public sealed partial class DeckleWhispSource
            Message = "file transcription batch start | files={0} | prepared_capacity={1}")]
     public void FileTranscriptionBatchStartedDetail(int files, int prepared_capacity)
     {
-        if (!OperationalLogAdmission.IsDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
+        if (!IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline)) return;
         WriteEvent(EvtFileTranscriptionBatchStartedDetail, files, prepared_capacity);
     }
 
@@ -48,10 +48,20 @@ public sealed partial class DeckleWhispSource
            Message = "file transcription batch complete | files={0} | outcome={1}")]
     public void FileTranscriptionBatchCompletedDetail(int files, string outcome)
     {
-        if (!OperationalLogAdmission.IsDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
+        if (!IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline)) return;
         WriteEvent(EvtFileTranscriptionBatchCompletedDetail, files, outcome);
+    }
+
+    // The end of a batch that did not complete. outcome (closed vocabulary):
+    // cancelled | failed. ex_type and ex_message are empty when cancelled; a
+    // failure's full cause is in the PipelineCrashed that precedes it.
+    [Event(EvtFileTranscriptionBatchAborted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "File transcription batch ended early | outcome={0} | files={1} | ex_type={2} | ex_message={3}")]
+    public void FileTranscriptionBatchAborted(string outcome, int files, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtFileTranscriptionBatchAborted, outcome, files, ex_type, ex_message);
     }
 
     [Event(EvtFileTranscriptionStarted,
@@ -66,13 +76,47 @@ public sealed partial class DeckleWhispSource
     [Event(EvtFileTranscriptionStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "file transcription start | path={0} | bytes={1}")]
-    public void FileTranscriptionStartedDetail(string path, long bytes)
+           Message = "file transcription start | index={0} | files={1} | path={2} | bytes={3}")]
+    public void FileTranscriptionStartedDetail(int index, int files, string path, long bytes)
     {
-        if (!OperationalLogAdmission.IsDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtFileTranscriptionStartedDetail, path, bytes);
+        if (!IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtFileTranscriptionStartedDetail, index, files, path, bytes);
+    }
+
+    // reason (closed vocabulary): model_not_ready (the prime failed or the
+    // model is not loaded), incomplete (an utterance could not be delivered),
+    // exception (the pipeline threw; ex_type and ex_message carry it). file is
+    // the file name without its folder.
+    [Event(EvtFileTranscriptionFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "A file could not be transcribed | index={0} | files={1} | file={2} | reason={3} | ex_type={4} | ex_message={5}")]
+    public void FileTranscriptionFailed(int index, int files, string file, string reason, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtFileTranscriptionFailed, index, files, file, reason, ex_type, ex_message);
+    }
+
+    [Event(EvtFileTranscriptionEmpty,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "A file had no audio to transcribe | index={0} | files={1} | file={2}")]
+    public void FileTranscriptionEmpty(int index, int files, string file)
+    {
+        if (IsEnabled()) WriteEvent(EvtFileTranscriptionEmpty, index, files, file);
+    }
+
+    // action (closed vocabulary): enqueued (a selection joined the queue),
+    // started (the queue handed a batch to the worker), deferred (the engine
+    // was busy, so the queue kept its batches). queued_files is the number of
+    // files still waiting after the action.
+    [Event(EvtFileQueueChanged,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "file queue changed | action={0} | files={1} | queued_files={2}")]
+    public void FileQueueChanged(string action, int files, int queued_files)
+    {
+        if (!IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtFileQueueChanged, action, files, queued_files);
     }
 
     [Event(EvtFileTranscriptionSaved,
@@ -81,9 +125,7 @@ public sealed partial class DeckleWhispSource
            Message = "Transcript saved to file")]
     public void FileTranscriptionSaved()
     {
-        if (!OperationalLogAdmission.IsDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        if (!IsTakeDetailEnabled((EventKeywords)Keywords.Push)) return;
         WriteEvent(EvtFileTranscriptionSaved);
     }
 
@@ -93,54 +135,27 @@ public sealed partial class DeckleWhispSource
            Message = "file transcription saved | path={0} | chars={1}")]
     public void FileTranscriptionSavedDetail(string path, int chars)
     {
-        if (!OperationalLogAdmission.IsDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
+        if (!IsTakeDetailEnabled((EventKeywords)Keywords.Push)) return;
         WriteEvent(EvtFileTranscriptionSavedDetail, path, chars);
     }
 
-    [Event(EvtFileTranscriptionIgnored,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "file transcription ignored | state={0}")]
-    public void FileTranscriptionIgnored(string state)
-    {
-        if (IsEnabled()) WriteEvent(EvtFileTranscriptionIgnored, state);
-    }
-
+    // status is the decoder's AudioFileDecodeStatus, or ReadError when the
+    // decoder threw; ex_type and ex_message are empty unless it threw.
     [Event(EvtFileDecodeFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The audio file could not be decoded")]
-    public void FileDecodeFailed()
+           Message = "The audio file could not be decoded | file={0} | status={1} | ex_type={2} | ex_message={3}")]
+    public void FileDecodeFailed(string file, string status, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtFileDecodeFailed);
-    }
-
-    [Event(EvtFileDecodeFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "file decode failed | status={0}")]
-    public void FileDecodeFailedDetail(string status)
-    {
-        if (IsEnabled()) WriteEvent(EvtFileDecodeFailedDetail, status);
+        if (IsEnabled()) WriteEvent(EvtFileDecodeFailed, file, status, ex_type, ex_message);
     }
 
     [Event(EvtFileTranscriptionWriteFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Saving the transcript to a file failed")]
-    public void FileTranscriptionWriteFailed()
+           Message = "Saving the transcript to a file failed | ex_type={0} | ex_message={1}")]
+    public void FileTranscriptionWriteFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtFileTranscriptionWriteFailed);
-    }
-
-    [Event(EvtFileTranscriptionWriteFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "file transcription write failed | ex_type={0} | ex_message={1}")]
-    public void FileTranscriptionWriteFailedDetail(string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtFileTranscriptionWriteFailedDetail, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtFileTranscriptionWriteFailed, ex_type, ex_message);
     }
 }

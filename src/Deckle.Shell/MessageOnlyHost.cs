@@ -91,7 +91,10 @@ public sealed class MessageOnlyHost : IDisposable
         _disposed = true;
 
         if (_hwnd != IntPtr.Zero)
+        {
             NativeMethods.DestroyWindow(_hwnd);
+            DeckleShellSource.Log.MessageOnlyHostDestroyed(_hwnd.ToInt64());
+        }
 
         if (_classAtom != 0)
             NativeMethods.UnregisterClass(ClassName, _hInstance);

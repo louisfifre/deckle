@@ -57,37 +57,20 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtPerModuleMigrationFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Per-module migration failed")]
-    public void PerModuleMigrationFailed()
+           Message = "Per-module migration failed | ex_type={0} | ex_message={1}")]
+    public void PerModuleMigrationFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtPerModuleMigrationFailed);
+        if (IsEnabled()) WriteEvent(EvtPerModuleMigrationFailed, ex_type, ex_message);
     }
 
-    [Event(EvtPerModuleMigrationFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "per-module migration failed | error={0} | message={1}")]
-    public void PerModuleMigrationFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtPerModuleMigrationFailedDetail, ex_type, message);
-    }
-
+    // key and module_id are compile-time migration names, not user data.
     [Event(EvtInjectFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not inject a key into a module file")]
-    public void InjectFailed()
+           Message = "Could not inject a key into a module file | key={0} | module_id={1} | ex_type={2} | ex_message={3}")]
+    public void InjectFailed(string key, string module_id, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtInjectFailed);
-    }
-
-    [Event(EvtInjectFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "inject failed | key={0} | module_id={1} | error={2} | message={3}")]
-    public void InjectFailedDetail(string key, string module_id, string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtInjectFailedDetail, key, module_id, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtInjectFailed, key, module_id, ex_type, ex_message);
     }
 
     [Event(EvtModuleFolderMigrated,
@@ -120,30 +103,10 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtModuleFolderRenameFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not rename a module folder")]
-    public void ModuleFolderRenameFailed()
+           Message = "Could not rename a module folder | old_id={0} | new_id={1} | ex_type={2} | ex_message={3}")]
+    public void ModuleFolderRenameFailed(string old_id, string new_id, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtModuleFolderRenameFailed);
-    }
-
-    [Event(EvtModuleFolderRenameFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "module rename failed | old=modules/{0} | new=modules/{1} | error={2}: {3}")]
-    public void ModuleFolderRenameFailedDetail(string old_id, string new_id, string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtModuleFolderRenameFailedDetail, old_id, new_id, ex_type, message);
-    }
-
-    // Ids-only mirror of ModuleFolderRenameFailed; `…Detail` (id 10) carries the
-    // full error tuple.
-    [Event(EvtModuleFolderRenameFailedDetail2,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "module rename failed | old=modules/{0} | new=modules/{1}")]
-    public void ModuleFolderRenameFailedDetail2(string old_id, string new_id)
-    {
-        if (IsEnabled()) WriteEvent(EvtModuleFolderRenameFailedDetail2, old_id, new_id);
+        if (IsEnabled()) WriteEvent(EvtModuleFolderRenameFailed, old_id, new_id, ex_type, ex_message);
     }
 
     [Event(EvtRenamedRootKey,

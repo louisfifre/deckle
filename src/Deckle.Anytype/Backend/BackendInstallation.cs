@@ -38,18 +38,23 @@ public static class BackendInstallation
     // migration must label it with this constant and never with the pin.
     internal const string LegacyBundleVersion = "0.3.6";
 
-    // The version pin (known-good, never auto-update). The release publishes no
-    // checksum manifest, so the SHA-256 is the GitHub per-asset digest pinned by
-    // ourselves. Installing the binary is only half the first run: the bot
-    // account and API key are a separate, interactive provisioning act.
+    // The version pin (known-good, never auto-update). Installing the binary is
+    // only half the first run: the bot account and API key are a separate,
+    // interactive provisioning act.
     //
-    // 0.4.0's official Windows asset links msvcrt and dies with 0xC0000374 at
-    // account open, so a fresh provisioning installs a binary known to die.
+    // The official Windows assets since 0.3.7 die with 0xC0000374 at account
+    // open (msvcrt-linked exe plus a cross-allocator free in tantivy-go, see
+    // anyproto/tantivy-go#25). Until upstream ships the fix, the pin is our own
+    // rebuild of the official tag, produced by
+    // scripts/commands/release/build-anytype-backend.ps1 and hosted as a
+    // release asset of this repository; the SHA-256 is the one that script
+    // prints. Once a release carries the fix, point this back at
+    // github.com/anyproto/anytype-cli and pin GitHub's per-asset digest.
     public static BackendBundle CurrentBundle { get; } = new(
-        Version:     "0.4.0",
-        Url:         "https://github.com/anyproto/anytype-cli/releases/download/v0.4.0/anytype-cli-v0.4.0-windows-amd64.zip",
-        Sha256:      "23a8dacda0095c80770c398f16dfde5c4b75b31cbfbaf9dc7728d12201797a14",
-        SizeBytes:   49_686_030L,
+        Version:     "0.5.0",
+        Url:         "https://github.com/louisfifre/deckle/releases/download/anytype-backend-v0.5.0/anytype-cli-v0.5.0-windows-amd64.zip",
+        Sha256:      "988760efb3fa29d378534baee71b3433fdceca72dac96362ce65d076029ceb2e",
+        SizeBytes:   51_350_092L,
         DisplayName: "Anytype backend (anytype-cli)");
 
     // False means the module stays dormant — never a boot failure — and the
@@ -64,8 +69,30 @@ public static class BackendInstallation
 
     // Copies the already verified legacy payload into an immutable version and
     // activates that copy. The running legacy image is not moved or terminated.
-    public static Task<bool> PrepareAsync(CancellationToken ct = default) =>
-        Store.MigrateLegacyAsync(LegacyBundleVersion, ct);
+    public static async Task<bool> PrepareAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            bool hadActive = Store.ResolveActiveSpec() is not null;
+            bool hasLegacy = File.Exists(Store.LegacyExecutablePath);
+            bool ready = await Store.MigrateLegacyAsync(LegacyBundleVersion, ct).ConfigureAwait(false);
+
+            string action = hadActive ? "none"
+                : !hasLegacy ? "absent"
+                : ready ? "migrated_legacy"
+                : "migration_incomplete";
+            DeckleAnytypeSource.Log.BackendInstallationChecked(
+                action, Store.ActiveVersion() ?? "", CurrentBundle.Version);
+            if (action == "migration_incomplete")
+                DeckleAnytypeSource.Log.BackendInstallationPrepareFailed("legacy_copy_incomplete", "", "");
+            return ready;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            DeckleAnytypeSource.Log.BackendInstallationPrepareFailed("exception", ex.GetType().Name, ex.Message);
+            throw;
+        }
+    }
 
     public static async Task<ProvisioningResult> ProvisionAsync(
         IProgress<Downloader.DownloadProgress> progress,
@@ -87,8 +114,13 @@ public static class BackendInstallation
         }
         finally
         {
+            // Best-effort cleanup: a leftover zip wastes disk, never correctness.
             try { if (File.Exists(zipPath)) File.Delete(zipPath); }
-            catch { /* best-effort cleanup */ }
+            catch (Exception ex)
+            {
+                DeckleAnytypeSource.Log.BackendProviderFileOperationFailed(
+                    "delete_bundle_zip", ex.GetType().Name, ex.Message);
+            }
         }
     }
 

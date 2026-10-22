@@ -1,20 +1,22 @@
 ---
 name: deckle-logging
-description: Use when you add or change an observation point in Deckle code, an event on a provider or the call that emits it, to decide what to observe and to write it so a person can read it and act on it.
+description: Use when you add or change an observation point in Deckle code, or write code that starts, skips or abandons work, to write what a person can read and act on later, from a machine they cannot reach.
+metadata:
+  version: "1.0"
 ---
 
 ## Why
 
-A person follows the running application through its log and acts on what they read. Every operational observation has to reach that log, and every line has to read as a step of the story. An observation collected for a dataset takes its own consented route, which the Diagnostics glossary defines.
+A person reads Deckle's log later, about a machine they never touched, with only what the defaults wrote to disk. From that record alone they have to see what ran, what was chosen, how each piece of work ended, and what failed and why.
 
 ## Statement
 
-Deckle observes through EventSource. Each module derives one provider from `DeckleEventSource`, and one listener, `DispatchEventListener`, gathers every provider. A new destination is one more sink on that listener.
+The record that travels is the journal written whatever the controls say: it keeps every Warning and Error, and every event that carries the Journal tag. The rest is detail, admitted by the verbosity control that `src/Deckle.Diagnostics/GLOSSARY.md` defines.
 
-Observations come in two families, written apart. A milestone is a short sentence a person reads while following the flow, such as "Loading the model" or "Cannot reach the service". It is Informational, or Warning and Error when something is wrong. Its measurements, identifiers and latencies go in a Verbose event of their own, structured and greppable, a few lines per operation. The Verbose event comes before the milestone when it carries the parameters of a decision, and after it when it details what just happened.
+Work that lasts, from the process itself down to a loop or a model load, writes its start before it begins and its end with its outcome, and an end that nothing declared reads as abandoned. Both carry the Journal tag and an identifier that pairs them in the file alone. A failure is a Warning when the work went on degraded and an Error when it stopped; it carries its cause, the step and the error, on one line. Work that does not happen says so with its reason, tagged like a start, and a fallback is a Warning naming what was asked and what was obtained.
 
-Instrument generously. Expose every observable that helps, because re-instrumenting later to chase a bug costs more. Sort at read time. The journals keep every ordinary observation, and filters lose nothing. A verbosity control is different. It refuses a governed stream of detail before every journal, and whatever tells a person how a workflow went always passes. The Diagnostics glossary, `src/Deckle.Diagnostics/GLOSSARY.md`, defines the verbosity control and the view filter.
+A degradation that repeats is one incident, closed by one recovery. A loop that runs many times a second counts, a periodic rollup carries the count, and a loop whose count stops moving shows as a Warning incident.
 
-A repeating degradation is one incident. The raw attempts stay Verbose. One visible incident opens once the threshold the operation sets is passed, and one visible recovery closes it.
+A line describes the machine: identifiers, counts, durations, paths relative to a known root, and from a provider that reads Home the error type and code. What the person said, typed, captured or keeps in Home stays out, as does any secret.
 
-Every term a person filters on, a keyword, an activity or a unit suffix, is spelled one way in every provider. A new keyword or activity joins its enum before first use, and a unit takes the suffix the other providers already use.
+Every term a person filters on is spelled one way across providers and lives in its enum.

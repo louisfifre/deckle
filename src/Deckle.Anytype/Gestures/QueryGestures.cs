@@ -5,46 +5,21 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Anytype;
 
-// Generic read/link/update/idea gestures spanning every type. Like the other
-// gesture families, each returns a terse French plain-string digest.
-public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
+// Search, link, update, archive, section edit and idea capture spanning every
+// type. Like the other gesture families, each returns a terse French
+// plain-string digest. Whole-object reads live on ReadGestures, one per need.
+public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, AnytypeV2Client v2)
 {
     readonly LiveTagResolver _liveTags = new(api);
+    readonly AnytypeV2ObjectReader _reader = new(v2);
+    readonly AnytypeV2Writer _writer = new(v2);
 
-    public async Task<string> GetAsync(string selector, string? typeKey = null, CancellationToken ct = default)
-    {
-        var started = DateTime.UtcNow;
+    // One op per deleted root plus the insert must fit a single atomic batch.
+    const int MaxBatchOps = 512;
 
-        IReadOnlyList<string>? types = typeKey is null ? null : [typeKey];
-        string id = await resolver.ResolveAsync(selector, types, ct);
-        JsonObject obj = await api.GetObjectAsync(id, ct);
-
-        string objType = QueryProp.TypeKey(obj) ?? "";
-        var sb = new StringBuilder();
-        sb.Append(QueryProp.Name(obj));
-        if (objType.Length > 0) sb.Append(" (").Append(objType).Append(')');
-
-        // Surface every mapped property the object carries a value for, in the
-        // type's digest order. A checkbox the API leaves out is an unticked one —
-        // absence is a value for a binary — so « Terminé » and « Archivé » always
-        // read, and an archived object never passes for a live one.
-        foreach (PropertyDef def in DevSpace.PropertiesFor(objType))
-        {
-            string? value = QueryProp.Render(obj, def.Key)
-                ?? (def.Format == "checkbox" ? "non" : null);
-            if (value is not null) sb.Append('\n').Append(def.Label).Append(" : ").Append(value);
-        }
-
-        // Anytype's own bin (the delete gesture), distinct from the space's
-        // « Archivé » checkbox: a binned object still answers a GET by id.
-        if (obj["archived"]?.GetValue<bool>() == true) sb.Append("\nCorbeille : oui");
-
-        string md = QueryProp.Markdown(obj);
-        if (md.Length > 0) sb.Append("\n\n").Append(md);
-
-        DeckleAnytypeSource.Log.GestureCompleted("get", Elapsed(started));
-        return sb.ToString().TrimEnd();
-    }
+    // A search preview carries this many meaningful lines: enough to tell two
+    // candidates apart, not enough to stand in for a typed read.
+    public const int PreviewLines = 3;
 
     public async Task<string> SearchAsync(
         string text,
@@ -54,6 +29,12 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
     {
         var started = DateTime.UtcNow;
 
+        // Stays on the v1 search ON PURPOSE: this tool's output needs the snippet
+        // (the « Aperçu » block with context, and the title of a nameless report
+        // through QueryProp.Name). A v2 search row is {id,name,type,properties?}
+        // with no snippet (measured 2026-10-22), so porting it would silently drop
+        // that output. Revisit only if the preview is rebuilt from a v2 markdown
+        // read per hit, which costs one request per result.
         JsonObject root = await api.SearchAsync(text, typeKeys, limit: 20, ct: ct);
         JsonArray hits = root["data"]?.AsArray() ?? [];
 
@@ -295,10 +276,17 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         return value ? $"Archivé : {name}" : $"Désarchivé : {name}";
     }
 
-    // Splices one section (MarkdownBody), PATCHes the whole document, then reads
-    // it back to confirm the intent and that no other heading was dropped. An
-    // absent or ambiguous heading throws before any write, the model-facing
-    // error channel.
+    // Replaces the blocks under one heading with block ops, then reads the
+    // document back as markdown to confirm the intent and that no other heading
+    // was dropped. An absent or ambiguous heading throws before any write, the
+    // model-facing error channel.
+    //
+    // The section is found in the block document (BlockSections: boundary rule,
+    // dividers kept) and rewritten as ONE atomic batch: a recursive delete per
+    // top-level block of the section, then the new content inserted as markdown
+    // right after the heading. Nothing else in the object is touched, so a
+    // block another writer added elsewhere survives; a write to the section
+    // itself is what If-Match guards (below).
     public async Task<string> ReplaceSectionAsync(
         string selector, string heading, string content, CancellationToken ct = default)
     {
@@ -307,47 +295,125 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
         string id = await resolver.ResolveAsync(selector, typeKeys: null, ct);
 
         using var _ = await api.AcquireWriteScopeAsync("replace_section", id, ct);
-        JsonObject obj = await api.GetObjectAsync(id, ct);
-        string body = QueryProp.Markdown(obj);
-        string name = QueryProp.Name(obj);
+        AnytypeV2ObjectDocument doc = await _reader.ReadAsync(id, ct: ct);
+        string name = NameOf(doc, selector);
 
-        MarkdownBody.SectionEdit edit = MarkdownBody.ReplaceSection(body, heading, content);
-        if (edit.Status == MarkdownBody.EditStatus.NotFound)
+        BlockSections.Located found = BlockSections.Locate(doc.Blocks, heading);
+        if (found.Outcome == BlockSections.Outcome.NotFound)
             throw new InvalidOperationException(
-                $"Section « {heading} » introuvable dans {name}. Titres présents : {HeadingList(body)}.");
-        if (edit.Status == MarkdownBody.EditStatus.Ambiguous)
+                $"Section « {heading} » introuvable dans {name}. Titres présents : {HeadingList(found.Headings)}.");
+        if (found.Outcome == BlockSections.Outcome.Ambiguous)
             throw new InvalidOperationException(
-                $"Section « {heading} » ambiguë dans {name} : {edit.MatchCount} titres portent ce texte. " +
+                $"Section « {heading} » ambiguë dans {name} : {found.MatchCount} titres portent ce texte. " +
                 "Renomme les doublons avant de l'éditer.");
 
-        JsonObject patched = await api.UpdateObjectAsync(
-            id, new JsonObject { ["markdown"] = edit.Body }, ct);
+        var ops = new List<AnytypeV2Op>(found.RootIds.Count + 1);
+        foreach (string rootId in found.RootIds)
+            ops.Add(AnytypeV2BlockOps.DeleteBlock(AnytypeV2BlockRef.ById(rootId), recursive: true));
+        if (!string.IsNullOrWhiteSpace(content))
+            ops.Add(AnytypeV2BlockOps.InsertMarkdown(AnytypeV2Placement.After(found.HeadingId), content));
 
-        // The PATCH response carries the re-rendered body when Anytype echoes it;
-        // otherwise read once more.
-        string reread = QueryProp.Markdown(patched);
-        if (reread.Length == 0)
-            reread = QueryProp.Markdown(await api.GetObjectAsync(id, ct));
+        if (ops.Count > MaxBatchOps)
+            throw new InvalidOperationException(
+                $"Section « {heading} » trop longue pour {name} : {found.RootIds.Count} blocs à remplacer " +
+                $"en une seule écriture atomique (maximum {MaxBatchOps - 1}). Rien n'a été écrit.");
+
+        // An empty section replaced by nothing has nothing to send; it still
+        // goes through the verification below.
+        if (ops.Count > 0)
+        {
+            // The ops are computed from what this read saw (which blocks are the
+            // section, where the heading is). If the object changed since, the
+            // plan may delete a block that is no longer part of the section, so
+            // the write is conditioned on the read's ETag and a 409 refuses it
+            // whole: the batch is atomic, nothing was written. A read that gave
+            // no ETag sends no condition.
+            AnytypeV2WriteOptions? options = doc.ETag is not null
+                ? new AnytypeV2WriteOptions { IfMatch = doc.ETag }
+                : null;
+            try
+            {
+                await _writer.ApplyObjectOpsAsync(id, ops, options, ct);
+            }
+            catch (AnytypeV2Exception ex) when (ex.IsStaleEtag)
+            {
+                throw new InvalidOperationException(
+                    $"{name} a changé depuis la lecture : la section « {heading} » n'a pas été remplacée " +
+                    "(l'écriture est atomique, rien n'a été écrit). Relance replace_section pour repartir de la version actuelle.");
+            }
+        }
 
         DeckleAnytypeSource.Log.GestureCompleted("replace_section", Elapsed(started));
 
-        // Guard against the splice (or Anytype's re-serialization) dropping a
-        // section: every heading the spliced document MEANT to keep must still be
-        // there. The reference is the intended body, not the original — a sub-heading
-        // inside the replaced section is removed on purpose and must not read as loss.
-        bool intent = MarkdownBody.SectionContentMatches(reread, heading, content);
-        var after = new HashSet<string>(MarkdownBody.HeadingTexts(reread), StringComparer.OrdinalIgnoreCase);
-        bool guard = MarkdownBody.HeadingTexts(edit.Body).All(after.Contains);
-
-        if (intent && guard)
-            return $"Section « {heading} » remplacée dans {name} (vérifié).";
-
-        // The PATCH committed — a full-replacement write cannot be rolled back — so
-        // the divergence is reported, not thrown: the caller learns the read-back
-        // did not confirm the intent and can re-read and retry.
-        string why = !intent ? "le contenu relu ne correspond pas à l'intention" : "une autre section a disparu";
-        return $"Section « {heading} » écrite dans {name}, mais vérification en échec : {why}.";
+        // The batch committed and cannot be rolled back, so a verification that
+        // does not confirm it is reported, not thrown: the caller learns the
+        // read-back diverged and can re-read and retry.
+        string? why = await VerifySectionAsync(id, heading, content, found.KeptHeadings, ct);
+        return why is null
+            ? $"Section « {heading} » remplacée dans {name} (vérifié)."
+            : $"Section « {heading} » écrite dans {name}, mais vérification en échec : {why}.";
     }
+
+    // Reads the object back as markdown (?format=md) and compares it with the
+    // intent through the same normalization as before the port: Anytype's escapes
+    // undone, trailing spaces and blank lines ignored. Null when confirmed,
+    // otherwise the reason.
+    //
+    // The md shape is measured on a template and the catalogue document (a JSON
+    // object whose "markdown" field holds the text, headings as "#", dividers as
+    // " --- "); NOT measured after a block write, nor on headings nested in a
+    // column. A body without that field reads as empty and fails the check
+    // instead of passing it.
+    //
+    // Dividers are removed from both sides before comparing: the divider kept
+    // before the next heading (BlockSections) sits right after the new content in
+    // the md render, and is layout, not part of what was meant to be written.
+    async Task<string?> VerifySectionAsync(
+        string id, string heading, string content, IReadOnlyList<string> keptHeadings, CancellationToken ct)
+    {
+        string reread;
+        try
+        {
+            AnytypeV2ObjectDocument md = await _reader.ReadAsync(
+                id, new AnytypeV2ObjectReadOptions { Markdown = true }, ct);
+            reread = md.Body["markdown"] is JsonValue value && value.TryGetValue(out string? text)
+                ? text ?? ""
+                : "";
+        }
+        // HttpClient's own timeout is a TaskCanceledException nobody asked for:
+        // the batch is committed all the same, so it is a failed check too.
+        catch (Exception ex) when (ex is HttpRequestException
+            || ex is TaskCanceledException && !ct.IsCancellationRequested)
+        {
+            return "la relecture a échoué";
+        }
+
+        string seen = WithoutDividers(reread);
+        bool intent = MarkdownBody.SectionContentMatches(seen, heading, WithoutDividers(content));
+
+        // Every heading outside the replaced section must still be there, and so
+        // must the ones the new content brings. A sub-heading that lived inside
+        // the replaced section is removed on purpose and is not in the reference.
+        var after = new HashSet<string>(MarkdownBody.HeadingTexts(seen), StringComparer.OrdinalIgnoreCase);
+        bool guard = keptHeadings.Concat(MarkdownBody.HeadingTexts(content)).All(after.Contains);
+
+        // A lost heading is named first: the content under it then merges into
+        // the replaced section, so the intent check fails too, but the heading
+        // is the cause and the damage outside what was asked.
+        if (intent && guard) return null;
+        return !guard ? "une autre section a disparu" : "le contenu relu ne correspond pas à l'intention";
+    }
+
+    static string WithoutDividers(string markdown)
+        => string.Join('\n', markdown.Split('\n').Where(line => line.Trim() != "---"));
+
+    // v2 serves the title as the "name" property of the read.
+    static string NameOf(AnytypeV2ObjectDocument doc, string fallback)
+        => doc.Properties?["name"] is JsonValue value
+            && value.TryGetValue(out string? name)
+            && !string.IsNullOrEmpty(name)
+                ? name
+                : fallback;
 
     public async Task<string> CreateIdeaAsync(string content, CancellationToken ct = default)
     {
@@ -390,11 +456,8 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver)
 
     // The body's headings, quoted, for the « introuvable » error — it tells the
     // model which titles actually exist so it can retry with one of them.
-    static string HeadingList(string body)
-    {
-        IReadOnlyList<string> headings = MarkdownBody.HeadingTexts(body);
-        return headings.Count > 0 ? string.Join(", ", headings.Select(h => $"« {h} »")) : "(aucun)";
-    }
+    static string HeadingList(IReadOnlyList<string> headings)
+        => headings.Count > 0 ? string.Join(", ", headings.Select(h => $"« {h} »")) : "(aucun)";
 
     async Task<JsonObject> BuildEntryAsync(string key, string format, JsonNode? value, CancellationToken ct) => format switch
     {
@@ -483,10 +546,19 @@ file static class QueryProp
         return FirstLine(obj["snippet"]?.GetValue<string>());
     }
 
-    public static string Markdown(JsonObject obj) => obj["markdown"]?.GetValue<string>() ?? "";
+    // The preview keeps lines that say something: blank lines, `---` dividers
+    // and the template's empty checklist slot are layout, not content.
+    public static string Snippet(JsonObject obj)
+    {
+        string? snippet = obj["snippet"]?.GetValue<string>();
+        if (string.IsNullOrEmpty(snippet)) return "";
 
-    public static string Snippet(JsonObject obj) =>
-        FirstLines(obj["snippet"]?.GetValue<string>(), 5);
+        var meaningful = MarkdownBody.Clean(snippet).Split('\n')
+            .Where(l => !(MarkdownBody.TryChecklistLine(l, out _, out string label) && label.Length == 0))
+            .ToList();
+        if (meaningful.Count <= QueryGestures.PreviewLines) return string.Join('\n', meaningful);
+        return string.Join('\n', meaningful.Take(QueryGestures.PreviewLines)) + " …";
+    }
 
     public static string? TypeKey(JsonObject obj) => obj["type"]?["key"]?.GetValue<string>();
 
@@ -549,27 +621,5 @@ file static class QueryProp
         if (string.IsNullOrEmpty(s)) return "";
         int nl = s.IndexOf('\n');
         return nl < 0 ? s : s[..nl];
-    }
-
-    static string FirstLines(string? value, int count)
-    {
-        if (string.IsNullOrEmpty(value)) return "";
-
-        int start = 0;
-        for (int line = 0; line < count; line++)
-        {
-            int newline = value.IndexOf('\n', start);
-            if (newline < 0) return value.TrimEnd();
-            if (line == count - 1)
-            {
-                string preview = value[..newline].TrimEnd();
-                return string.IsNullOrWhiteSpace(value[(newline + 1)..])
-                    ? preview
-                    : preview + " …";
-            }
-            start = newline + 1;
-        }
-
-        return value.TrimEnd();
     }
 }

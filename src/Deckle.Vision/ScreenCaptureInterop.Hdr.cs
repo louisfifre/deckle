@@ -71,8 +71,9 @@ internal static partial class ScreenCaptureInterop
             {
                 CreateDXGIFactory2(0, in IID_IDXGIFactory6, out factoryPtr);
             }
-            catch
+            catch (Exception ex)
             {
+                DeckleVisionSource.Log.HdrDetectionFailed(ex.HResult, ex.GetType().Name, ex.Message);
                 return fallback;
             }
 

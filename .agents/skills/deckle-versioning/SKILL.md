@@ -1,6 +1,8 @@
 ---
 name: deckle-versioning
 description: Use when you record a Deckle version, touch CHANGELOG.md or prepare release notes, to choose the bump and let the commit history write the text.
+metadata:
+  version: "1.0"
 ---
 
 ## Why

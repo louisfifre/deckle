@@ -47,6 +47,30 @@ public class SurfaceProfileStoreTests
         finally { File.Delete(path); }
     }
 
+    // Regression: a fractional threshold or a non-object entry threw past the
+    // JsonException catch and turned a tolerant load into a boot failure.
+    [Fact]
+    public void AMalformedRecordIsSkippedNeverAThrow()
+    {
+        string path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".json");
+        File.WriteAllText(path, """
+            [
+              "ChatGPT",
+              { "process": "fractional", "pauseThresholdMs": 1.5 },
+              { "process": "ChatGPT", "pauseThresholdMs": 2400 }
+            ]
+            """);
+        try
+        {
+            var records = SurfaceProfileStore.Load(path);
+
+            Assert.Equal(2, records.Count);
+            Assert.Equal(0, records[0].PauseThresholdMs); // unreadable threshold, disarmed
+            Assert.Equal(2400, records[1].PauseThresholdMs);
+        }
+        finally { File.Delete(path); }
+    }
+
     // ── The provisional qualification formula (Lab side) ───────────────────
 
     private static SurfaceProfile Profile(

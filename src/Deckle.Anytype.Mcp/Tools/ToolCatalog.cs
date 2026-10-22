@@ -18,13 +18,13 @@ public static class ToolCatalog
 {
     public static IReadOnlyList<ToolDescriptor> Build(
         SessionGestures session, TaskGestures tasks,
-        ProjectGestures projects, QueryGestures query, DocumentGestures documents)
+        ProjectGestures projects, QueryGestures query, ReadGestures reads, DocumentGestures documents)
     {
         return new ToolDescriptor[]
         {
             new(
                 "session_start",
-                "Open a work session on a task: create its journal report, return its stable report_id, and surface the task with its recent reports. Call it once before work that will modify the space; plain reads need no session. Pass the returned report_id to log.",
+                "Open a work session on a task: create its journal report and return its report_id, then the task's title, checklist and the tail of its last three reports. Call it once before work that changes the space; reads need no session. Pass the report_id to log.",
                 Schema(
                     required: [Prop("task", "string", "Anchor task, name or id.")]),
                 async (args, ct) =>
@@ -33,31 +33,43 @@ public static class ToolCatalog
 
             new(
                 "log",
-                "Append one journal line to an explicit session report. Pass the report_id returned by session_start so the write survives transport and Deckle restarts.",
+                "Append one journal line to a session report. Answers « Noté. »; the line is not echoed.",
                 Schema(
                     required:
                     [
-                        Prop("line", "string", "Journal line to append (the why of what you just did)."),
-                        Prop("report", "string", "Stable report_id returned by session_start; report names are refused."),
+                        Prop("line", "string", "Journal line to append: the why of what you just did."),
+                        Prop("report", "string", "report_id returned by session_start; report names are refused."),
                     ]),
                 async (args, ct) =>
                     await session.LogAsync(Str(args, "line"), Str(args, "report"), ct),
                 ToolExecutionContract.AdditiveRequiresDeduplicationWithStableTarget),
 
+            // ── typed reads: one per need, named by what they return ──────────
+
             new(
-                "get",
-                "Read one object in full: its properties and markdown body.",
-                Schema(
-                    required: [Prop("name_or_id", "string", "Object to read, name or id.")],
-                    optional: [Prop("type", "string", "Type key to disambiguate a name.",
-                                    oneOf: ["epic", "project", "task", "rapport", "idee", "document"])]),
-                async (args, ct) =>
-                    await query.GetAsync(Str(args, "name_or_id"), StrOpt(args, "type"), ct),
+                "task_properties",
+                "A task's id, title with its done box, and properties: type, priority, due date, project by name, Description, Définition de fini. No body.",
+                Schema(required: [Prop("task", "string", "Task, name or id.")]),
+                async (args, ct) => await reads.TaskPropertiesAsync(Str(args, "task"), ct),
+                ToolExecutionContract.ReadOnly),
+
+            new(
+                "task_checklist",
+                "A task's id, title, and its subtasks as '- [ ]' / '- [x]' lines, then the checked count.",
+                Schema(required: [Prop("task", "string", "Task, name or id.")]),
+                async (args, ct) => await reads.TaskChecklistAsync(Str(args, "task"), ct),
+                ToolExecutionContract.ReadOnly),
+
+            new(
+                "task_notes",
+                "A task's id, title, and the notes section of its body (what to know before working on it). The checklist is left out.",
+                Schema(required: [Prop("task", "string", "Task, name or id.")]),
+                async (args, ct) => await reads.TaskNotesAsync(Str(args, "task"), ct),
                 ToolExecutionContract.ReadOnly),
 
             new(
                 "project_overview",
-                "Digest a project: its header, its tasks, and its latest reports.",
+                "A project's id, title with its done box, properties, its open tasks one per line, and its last three reports with their ids.",
                 Schema(
                     required: [Prop("project", "string", "Project, name or id.")]),
                 async (args, ct) =>
@@ -65,8 +77,42 @@ public static class ToolCatalog
                 ToolExecutionContract.ReadOnly),
 
             new(
+                "report_journal",
+                "A session report's id, journal date, linked tasks by name, and its last journal entries (20 by default), with the count of earlier entries.",
+                Schema(
+                    required: [Prop("report", "string", "Report, id (from session_start, project_overview or search) or name.")],
+                    optional: [Prop("last", "integer", "How many trailing entries to return. Default 20.", minimum: 1, maximum: 200)]),
+                async (args, ct) =>
+                    await reads.ReportJournalAsync(Str(args, "report"), IntOpt(args, "last") ?? 20, ct),
+                ToolExecutionContract.ReadOnly),
+
+            new(
+                "idea_text",
+                "An idea's id, title and text.",
+                Schema(required: [Prop("idea", "string", "Idea, name or id.")]),
+                async (args, ct) => await reads.IdeaTextAsync(Str(args, "idea"), ct),
+                ToolExecutionContract.ReadOnly),
+
+            new(
+                "document_outline",
+                "A document's id, title, type, version, and its headings with each section's length in characters. Read a section with document_section.",
+                Schema(required: [Prop("document", "string", "Document, name or id.")]),
+                async (args, ct) => await reads.DocumentOutlineAsync(Str(args, "document"), ct),
+                ToolExecutionContract.ReadOnly),
+
+            new(
+                "document_section",
+                "The text under one heading of a document. Omit heading for the text before the first heading (the whole body when it has none). An unknown heading is refused with the present headings listed.",
+                Schema(
+                    required: [Prop("document", "string", "Document, name or id.")],
+                    optional: [Prop("heading", "string", "Heading text, without the leading '#'.")]),
+                async (args, ct) =>
+                    await reads.DocumentSectionAsync(Str(args, "document"), StrOpt(args, "heading"), ct),
+                ToolExecutionContract.ReadOnly),
+
+            new(
                 "create_task",
-                "Create a task under a project; it is born from the task template.",
+                "Create a task under a project from the task template. Subtasks go in checklist, what to know in notes; both fill the template's sections. Answers with the new task's id.",
                 Schema(
                     required:
                     [
@@ -77,12 +123,13 @@ public static class ToolCatalog
                     optional:
                     [
                         Prop("priority", "integer", "Priority 0-5, 5 = highest.", minimum: 0, maximum: 5),
-                        Prop("body", "string", "Markdown body; subtasks go here as inline '- [ ]' checklist items."),
+                        ArrayProp("checklist", "Subtask labels, one checklist item each."),
+                        Prop("notes", "string", "Markdown for the notes section: what to know before working on the task."),
                     ]),
                 async (args, ct) =>
                     await tasks.CreateAsync(
                         Str(args, "project"), Str(args, "name"), Str(args, "type"),
-                        IntOpt(args, "priority"), StrOpt(args, "body"), ct),
+                        IntOpt(args, "priority"), StrArrayOpt(args, "checklist"), StrOpt(args, "notes"), ct),
                 ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new(
@@ -129,14 +176,14 @@ public static class ToolCatalog
 
             new(
                 "search",
-                "Search objects by text in their name and body snippet. Compact by default: type, name and id. Pass context:true when you need to compare candidates: project/task hits then include non-empty Description and Définition de fini properties, followed by up to five snippet lines. Nameless notes and reports always use the snippet's first line as their display name.",
+                "Find objects by words in their name and body: one line per hit, type · name · id. Pass context:true to tell candidates apart: project and task hits add Description and Définition de fini, every hit adds up to three body lines. Then read the chosen object with its typed read; an epic has none, list_projects shows its projects.",
                 Schema(
                     required: [Prop("text", "string", "Free-text query.")],
                     optional:
                     [
                         ArrayProp("types", "Type keys to restrict the search; omit for any type.",
                                   itemEnum: ["epic", "project", "task", "rapport", "idee", "document"]),
-                        Prop("context", "boolean", "Include selection context: project/task Description and Définition de fini, then up to five body-snippet lines. Omit for compact identity-only results."),
+                        Prop("context", "boolean", "Add Description, Définition de fini and up to three body lines per hit. Omit for identities only."),
                     ]),
                 async (args, ct) =>
                     await query.SearchAsync(
@@ -146,7 +193,7 @@ public static class ToolCatalog
 
             new(
                 "subtask",
-                "Set an inline checklist item in a task body to the requested state; the label matches case-insensitively, and a new item is appended in that state when none matches.",
+                "Set a subtask of a task's checklist to the requested state; the label matches case-insensitively. When none matches, a new item is added to the checklist in that state.",
                 Schema(
                     required:
                     [

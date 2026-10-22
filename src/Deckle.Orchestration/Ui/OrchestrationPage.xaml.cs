@@ -152,11 +152,8 @@ public sealed partial class OrchestrationPage : Page
 
     private void ShowDuplicate(bool duplicate) => DuplicateInfo.IsOpen = duplicate;
 
-    private static void ReportFailure(string action, Exception ex)
-    {
-        DeckleOrchestrationSource.Log.PageActionFailed();
-        DeckleOrchestrationSource.Log.PageActionFailedDetail(action, ex.GetType().Name, ex.Message);
-    }
+    private static void ReportFailure(string action, Exception ex) =>
+        DeckleOrchestrationSource.Log.PageActionFailed(action, ex.GetType().Name, ex.Message);
 
     private void OnEntriesChanged(object? sender, NotifyCollectionChangedEventArgs e) =>
         RefreshEmptyState();

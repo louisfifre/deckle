@@ -10,7 +10,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtPairingStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Pairing started — press the link button on the bridge")]
+           Message = "Pairing started, waiting for the bridge link button")]
     public void PairingStarted()
     {
         if (IsEnabled()) WriteEvent(EvtPairingStarted);
@@ -22,12 +22,14 @@ public sealed partial class DeckleLightingSource
            Message = "pair start | bridge_ip={0} | timeout_sec={1} | devicetype={2}")]
     public void PairingStartedDetail(string bridge_ip, int timeout_sec, string devicetype)
     {
-        if (IsEnabled()) WriteEvent(EvtPairingStartedDetail, bridge_ip, timeout_sec, devicetype);
+        if (!IsHueDetailEnabled(Keywords.Lifecycle)) return;
+        WriteEvent(EvtPairingStartedDetail, bridge_ip, timeout_sec, devicetype);
     }
 
     [Event(EvtBridgePaired,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Bridge paired")]
     public void BridgePaired()
     {
@@ -40,7 +42,8 @@ public sealed partial class DeckleLightingSource
            Message = "pair milestone | bridge_id={0}")]
     public void BridgePairedDetail2(string bridge_id)
     {
-        if (IsEnabled()) WriteEvent(EvtBridgePairedDetail2, bridge_id);
+        if (!IsHueDetailEnabled(Keywords.Lifecycle)) return;
+        WriteEvent(EvtBridgePairedDetail2, bridge_id);
     }
 
     [Event(EvtBridgePairedDetail,
@@ -49,79 +52,55 @@ public sealed partial class DeckleLightingSource
            Message = "pair result | bridge_id={0} | username={1} | clientkey=[redacted]")]
     public void BridgePairedDetail(string bridge_id, string username_head)
     {
-        if (IsEnabled()) WriteEvent(EvtBridgePairedDetail, bridge_id, username_head);
+        if (!IsHueDetailEnabled(Keywords.Lifecycle)) return;
+        WriteEvent(EvtBridgePairedDetail, bridge_id, username_head);
     }
 
+    // error_type stays a literal: 101 (link button not pressed) is the only
+    // bridge error that keeps the poll going; every other one is rejected.
     [Event(EvtPairingWaiting,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "pair waiting | error_type=101 | next_attempt_in_ms={0}")]
     public void PairingWaiting(int next_attempt_in_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtPairingWaiting, next_attempt_in_ms);
+        if (!IsHueDetailEnabled(Keywords.Lifecycle)) return;
+        WriteEvent(EvtPairingWaiting, next_attempt_in_ms);
     }
 
     [Event(EvtPairingRejected,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Pairing rejected by the bridge")]
-    public void PairingRejected()
+           Message = "The bridge rejected pairing | error_type={0} | description={1}")]
+    public void PairingRejected(int error_type, string description)
     {
-        if (IsEnabled()) WriteEvent(EvtPairingRejected);
-    }
-
-    [Event(EvtPairingRejectedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "pair rejected | error_type={0} | description={1}")]
-    public void PairingRejectedDetail(int error_type, string description)
-    {
-        if (IsEnabled()) WriteEvent(EvtPairingRejectedDetail, error_type, description);
+        if (IsEnabled()) WriteEvent(EvtPairingRejected, error_type, description);
     }
 
     [Event(EvtPairingTimedOut,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Pairing timed out — the link button was not pressed in time")]
-    public void PairingTimedOut()
+           Message = "Pairing timed out before the link button was pressed | attempts={0} | timeout_s={1}")]
+    public void PairingTimedOut(int attempts, double timeout_s)
     {
-        if (IsEnabled()) WriteEvent(EvtPairingTimedOut);
+        if (IsEnabled()) WriteEvent(EvtPairingTimedOut, attempts, timeout_s);
     }
 
     [Event(EvtBridgeUnreachable,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Bridge unreachable during pairing")]
-    public void BridgeUnreachable()
+           Message = "The bridge was unreachable during pairing | ex_type={0} | ex_message={1} | win32_error={2}")]
+    public void BridgeUnreachable(string ex_type, string ex_message, int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtBridgeUnreachable);
-    }
-
-    [Event(EvtBridgeUnreachableDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "bridge unreachable | ex_type={0} | message={1}")]
-    public void BridgeUnreachableDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtBridgeUnreachableDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtBridgeUnreachable, ex_type, ex_message, win32_error);
     }
 
     [Event(EvtPairingHttpError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Pairing HTTP request failed")]
-    public void PairingHttpError()
+           Message = "The pairing request failed | status={0}")]
+    public void PairingHttpError(int status)
     {
-        if (IsEnabled()) WriteEvent(EvtPairingHttpError);
+        if (IsEnabled()) WriteEvent(EvtPairingHttpError, status);
     }
-
-    [Event(EvtPairingHttpErrorDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "pair http error | http_status={0} | reason={1}")]
-    public void PairingHttpErrorDetail(int http_status, string reason)
-    {
-        if (IsEnabled()) WriteEvent(EvtPairingHttpErrorDetail, http_status, reason);
-    }
-
 }

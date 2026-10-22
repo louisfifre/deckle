@@ -113,6 +113,14 @@ internal static partial class ScreenCaptureInterop
         return monitors;
     }
 
+    // For the log only: "unknown" when Windows no longer knows the handle.
+    public static string GetMonitorDeviceName(nint hMonitor)
+    {
+        var info = new MONITORINFOEXW { CbSize = Marshal.SizeOf<MONITORINFOEXW>() };
+        if (hMonitor == 0 || !GetMonitorInfoW(hMonitor, ref info)) return "unknown";
+        unsafe { return new string(info.SzDevice); }
+    }
+
     /// <summary>
     /// Returns 0 when no attached monitor has that device name; the caller
     /// falls back to <see cref="GetPrimaryMonitor"/>.

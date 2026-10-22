@@ -10,4 +10,9 @@ public interface ITextInjector
     // Corrects `current` into `target` by the minimal diff. A no-op (identical)
     // returns true; a partial/failed send returns false.
     bool Replace(string current, string target);
+
+    // The Win32 error behind the last short send, 0 when the last send went
+    // through or the implementation has none to report. A default member, so
+    // test and benchmark injectors need not grow one.
+    int LastWin32Error => 0;
 }

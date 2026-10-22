@@ -67,13 +67,19 @@ internal sealed class BackendProviderStore(
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
+            DeckleAnytypeSource.Log.BackendProviderFileOperationFailed(
+                "read_activation", ex.GetType().Name, ex.Message);
             return null;
         }
     }
 
     // "Installed" means this exact version is both present and activated. An older
     // active version, or a legacy executable alone, does not satisfy a newer pin:
-    // the install wizard must still download it.
+    // the install wizard must still download it. When the pin changes (0.3.6 to
+    // 0.5.0), the new version is extracted to versions/<version> beside the old
+    // one and active.json is repointed in one atomic replace; the old directory
+    // stays, and its executable stays trusted so a backend still running from it
+    // is recognized rather than treated as foreign.
     internal bool IsInstalled(string version) =>
         string.Equals(ActiveVersion(), version, StringComparison.OrdinalIgnoreCase);
 
@@ -167,7 +173,12 @@ internal sealed class BackendProviderStore(
         }
         finally
         {
-            try { if (File.Exists(temporary)) File.Delete(temporary); } catch { }
+            try { if (File.Exists(temporary)) File.Delete(temporary); }
+            catch (Exception ex)
+            {
+                DeckleAnytypeSource.Log.BackendProviderFileOperationFailed(
+                    "delete_activation_temp", ex.GetType().Name, ex.Message);
+            }
         }
     }
 
@@ -190,6 +201,9 @@ internal sealed class BackendProviderStore(
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
+            // An unreadable manifest reads as "not provisioned"; this keeps why.
+            DeckleAnytypeSource.Log.BackendProviderFileOperationFailed(
+                "read_activation", ex.GetType().Name, ex.Message);
             return null;
         }
     }
@@ -243,7 +257,13 @@ internal sealed class BackendProviderStore(
 
     private static void TryDelete(string path)
     {
-        try { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); } catch { }
+        // Leftover staging is harmless: activation never points into it.
+        try { if (Directory.Exists(path)) Directory.Delete(path, recursive: true); }
+        catch (Exception ex)
+        {
+            DeckleAnytypeSource.Log.BackendProviderFileOperationFailed(
+                "delete_staging", ex.GetType().Name, ex.Message);
+        }
     }
 
     private static void ValidateVersion(string version)

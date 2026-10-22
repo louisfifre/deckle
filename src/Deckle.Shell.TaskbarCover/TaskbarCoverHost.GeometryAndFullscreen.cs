@@ -65,12 +65,22 @@ public sealed partial class TaskbarCoverHost
         {
             if (!TryCreateCoverWindow(out var hwnd))
             {
-                DeckleShellTaskbarCoverSource.Log.BandCreateFailed();
-                DeckleShellTaskbarCoverSource.Log.BandCreateFailedDetail(
-                    _bands.Count, Marshal.GetLastWin32Error());
+                // Read before any log call, which can overwrite the last error.
+                int error = Marshal.GetLastWin32Error();
+                if (!_bandCreateFailureLogged)
+                {
+                    DeckleShellTaskbarCoverSource.Log.BandCreateFailed(_bands.Count, error);
+                    _bandCreateFailureLogged = true;
+                }
+                DeckleShellTaskbarCoverSource.Log.BandCreateFailedDetail(_bands.Count, error);
                 break;
             }
             _bands.Add(new CoverBand(_bands.Count, hwnd));
+        }
+        if (_bandCreateFailureLogged && _bands.Count == placements.Count)
+        {
+            DeckleShellTaskbarCoverSource.Log.BandCreateRecovered();
+            _bandCreateFailureLogged = false;
         }
 
         var approach = _requestedApproach;

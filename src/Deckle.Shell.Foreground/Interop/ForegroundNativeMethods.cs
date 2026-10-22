@@ -27,7 +27,9 @@ internal static class ForegroundNativeMethods
         IntPtr hWinEventHook, uint evt, IntPtr hwnd,
         int idObject, int idChild, uint idEventThread, uint dwmsEventTime);
 
-    [DllImport("user32.dll")]
+    // SetLastError so a failure can carry a code into the log. The API page
+    // documents no GetLastError, so a 0 there means the OS gave none.
+    [DllImport("user32.dll", SetLastError = true)]
     public static extern IntPtr SetWinEventHook(
         uint eventMin, uint eventMax, IntPtr hmodWinEventProc, WinEventProc pfnWinEventProc,
         uint idProcess, uint idThread, uint dwFlags);

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Deckle.Anytype;
 
 public enum BackendStartOutcome
@@ -17,6 +19,16 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
     private static readonly TimeSpan[] RestartBackoff =
         [TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(60)];
     private static readonly TimeSpan StableUptime = TimeSpan.FromMinutes(5);
+
+    // Three failed restarts span about 22 s of backoff: past a transient blip,
+    // early enough that the warning still explains a missing Anytype.
+    private const int RestartsFailingThreshold = 3;
+
+    // A live process does not prove a serving REST listener: a wedged serve
+    // keeps its handle while every call times out. The probe runs on real time,
+    // not IBackendTime, so the restart ladder's controlled clock stays untouched.
+    private static readonly TimeSpan HealthInterval = TimeSpan.FromSeconds(30);
+    private const int UnresponsiveThreshold = 3;
 
     private readonly IBackendReconciler _reconciler;
     private readonly IBackendHealthProbe _health;
@@ -105,7 +117,8 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
                     result.Process.Dispose();
                     return result.Outcome;
                 }
-                _watchTask = WatchAsync(result.Process, _lifetimeCts.Token);
+                IBackendProcess process = result.Process;
+                _watchTask = SuperviseAsync(ct => WatchAsync(process, ct), _lifetimeCts.Token);
             }
         }
         else if (result.Outcome is BackendStartOutcome.StartRejected or BackendStartOutcome.TimedOut)
@@ -113,38 +126,39 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
             lock (_gate)
             {
                 if (!_disposed)
-                    _watchTask = RecoverAsync(attempt: 0, _lifetimeCts.Token);
+                    _watchTask = SuperviseAsync(RecoverAsync, _lifetimeCts.Token);
             }
         }
         return result.Outcome;
     }
 
-    private async Task RecoverAsync(int attempt, CancellationToken ct)
+    // Every supervision run ends with exactly one line: stopped on Deckle's
+    // exit, gave up (logged where the decision falls), or failed with its cause.
+    // Without it a faulted watch went quiet until disposal rethrew the fault.
+    private static async Task SuperviseAsync(Func<CancellationToken, Task> body, CancellationToken ct)
     {
         try
         {
-            while (true)
-            {
-                TimeSpan delay = RestartBackoff[Math.Min(attempt, RestartBackoff.Length - 1)];
-                DeckleAnytypeSource.Log.BackendRestartScheduled(attempt + 1, delay.TotalMilliseconds);
-                await Task.Run(() => _time.Delay(delay, ct), ct).ConfigureAwait(false);
-
-                BackendReconciliationResult result = await _reconciler
-                    .ReconcileAsync("process-exit", ct)
-                    .ConfigureAwait(false);
-                if (result.Process is not null)
-                {
-                    await WatchAsync(result.Process, ct).ConfigureAwait(false);
-                    return;
-                }
-                if (result.Outcome is BackendStartOutcome.NotProvisioned or BackendStartOutcome.EndpointConflict)
-                    return;
-                attempt = Math.Min(attempt + 1, RestartBackoff.Length - 1);
-            }
+            await body(ct).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
+            // Deckle is leaving. The process is intentionally left alive.
+            DeckleAnytypeSource.Log.BackendSupervisionStopped();
         }
+        catch (Exception ex)
+        {
+            DeckleAnytypeSource.Log.BackendSupervisionFailed(ex.GetType().Name, ex.Message);
+            throw;
+        }
+    }
+
+    private async Task RecoverAsync(CancellationToken ct)
+    {
+        (IBackendProcess? process, _) = await RestartAsync(
+            "start-failed", attempt: 0, ct).ConfigureAwait(false);
+        if (process is not null)
+            await WatchAsync(process, ct).ConfigureAwait(false);
     }
 
     private async Task WatchAsync(IBackendProcess process, CancellationToken ct)
@@ -155,40 +169,137 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
         {
             while (current is not null)
             {
-                await current.WaitForExitAsync(ct).ConfigureAwait(false);
-                double uptimeSeconds = Math.Max(
-                    0, (DateTimeOffset.UtcNow - current.StartedAt).TotalSeconds);
-                DeckleAnytypeSource.Log.BackendStopped();
-                DeckleAnytypeSource.Log.BackendStoppedDetail(
-                    current.Id, current.ExitCode, uptimeSeconds);
+                await WaitForExitAsync(current, ct).ConfigureAwait(false);
+                double uptimeSeconds = BackendProcessReport.Stopped(current);
                 current.Dispose();
                 current = null;
 
                 attempt = uptimeSeconds >= StableUptime.TotalSeconds ? 0 : attempt;
-                while (current is null)
-                {
-                    TimeSpan delay = RestartBackoff[Math.Min(attempt, RestartBackoff.Length - 1)];
-                    DeckleAnytypeSource.Log.BackendRestartScheduled(attempt + 1, delay.TotalMilliseconds);
-                    await Task.Run(() => _time.Delay(delay, ct), ct).ConfigureAwait(false);
-
-                    BackendReconciliationResult result = await _reconciler
-                        .ReconcileAsync("process-exit", ct)
-                        .ConfigureAwait(false);
-                    current = result.Process;
-                    if (current is null && result.Outcome is
-                        BackendStartOutcome.NotProvisioned or BackendStartOutcome.EndpointConflict)
-                        return;
-                    attempt = Math.Min(attempt + 1, RestartBackoff.Length - 1);
-                }
+                (current, attempt) = await RestartAsync(
+                    "process-exit", attempt, ct).ConfigureAwait(false);
             }
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            // Deckle is leaving. The process is intentionally left alive.
         }
         finally
         {
             current?.Dispose();
+        }
+    }
+
+    // Reconciles on the backoff ladder until a serve runs again. Returns no
+    // process when restarting is pointless (not provisioned, endpoint conflict).
+    // A reconciliation that throws counts as one failed attempt: before, it
+    // ended supervision for the rest of the session without a word. The
+    // trigger names what opened the incident, an exit or a start that never
+    // served: labelling both "process-exit" hid a live serve stuck in login.
+    private async Task<(IBackendProcess? Process, int Attempt)> RestartAsync(
+        string trigger, int attempt, CancellationToken ct)
+    {
+        long downSince = _time.GetTimestamp();
+        int failures = 0;
+        while (true)
+        {
+            TimeSpan delay = RestartBackoff[Math.Min(attempt, RestartBackoff.Length - 1)];
+            DeckleAnytypeSource.Log.BackendRestartScheduled(attempt + 1, delay.TotalMilliseconds);
+            await Task.Run(() => _time.Delay(delay, ct), ct).ConfigureAwait(false);
+
+            BackendReconciliationResult? result = null;
+            string outcome;
+            string exType = "";
+            string exMessage = "";
+            try
+            {
+                result = await _reconciler
+                    .ReconcileAsync(trigger, ct)
+                    .ConfigureAwait(false);
+                outcome = result.Decision;
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
+            {
+                outcome = "exception";
+                exType = ex.GetType().Name;
+                exMessage = ex.Message;
+            }
+            attempt = Math.Min(attempt + 1, RestartBackoff.Length - 1);
+
+            if (result?.Process is not null)
+            {
+                DeckleAnytypeSource.Log.BackendRecovered(
+                    failures + 1, _time.GetElapsedTime(downSince).TotalSeconds);
+                return (result.Process, attempt);
+            }
+            if (result?.Outcome is BackendStartOutcome.NotProvisioned)
+            {
+                DeckleAnytypeSource.Log.BackendSupervisionGaveUp("not_provisioned");
+                return (null, attempt);
+            }
+            if (result?.Outcome is BackendStartOutcome.EndpointConflict)
+            {
+                DeckleAnytypeSource.Log.BackendSupervisionGaveUp("endpoint_conflict");
+                return (null, attempt);
+            }
+
+            failures++;
+            DeckleAnytypeSource.Log.BackendRestartAttemptFailed(failures, outcome, exType, exMessage);
+            if (failures == RestartsFailingThreshold)
+                DeckleAnytypeSource.Log.BackendRestartsFailing(failures, outcome, exType, exMessage);
+        }
+    }
+
+    private async Task WaitForExitAsync(IBackendProcess process, CancellationToken ct)
+    {
+        using var exited = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        Task monitor = MonitorHealthAsync(exited.Token);
+        try
+        {
+            await process.WaitForExitAsync(ct).ConfigureAwait(false);
+        }
+        finally
+        {
+            exited.Cancel();
+            await monitor.ConfigureAwait(false);
+        }
+    }
+
+    // One incident per streak: the Warning opens at the threshold, the
+    // Information closes it. A streak still open when the process exits is
+    // closed by BackendStopped instead.
+    private async Task MonitorHealthAsync(CancellationToken ct)
+    {
+        int failures = 0;
+        long failingSince = 0;
+        try
+        {
+            while (true)
+            {
+                await Task.Delay(HealthInterval, ct).ConfigureAwait(false);
+                BackendHealth health;
+                try
+                {
+                    health = await _health.ProbeAsync(ct).ConfigureAwait(false);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    DeckleAnytypeSource.Log.BackendHealthProbeFailed(ex.GetType().Name, ex.Message);
+                    health = new BackendHealth(false, "exception");
+                }
+
+                if (health.Healthy)
+                {
+                    if (failures >= UnresponsiveThreshold)
+                        DeckleAnytypeSource.Log.BackendResponsive(
+                            failures, Stopwatch.GetElapsedTime(failingSince).TotalSeconds);
+                    failures = 0;
+                    continue;
+                }
+
+                if (failures++ == 0) failingSince = Stopwatch.GetTimestamp();
+                if (failures == UnresponsiveThreshold)
+                    DeckleAnytypeSource.Log.BackendUnresponsive(failures, health.Reason);
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // The process exited or Deckle is leaving; the watch reports which.
         }
     }
 

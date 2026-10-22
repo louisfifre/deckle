@@ -47,7 +47,17 @@ public sealed partial class HudWindow : Window
         // Recomputed on every show: a Windows DPI scale change between two
         // dictations (125% → 150%) is reflected immediately.
         var rect = GetRectPx();
-        AppWindow.MoveAndResize(rect);
+        try
+        {
+            AppWindow.MoveAndResize(rect);
+            WindowingProbe.ReportPlacement("hud", "move_and_resize", ok: true);
+        }
+        catch (Exception ex)
+        {
+            // A refused placement must not stop the show: the HUD still comes
+            // up, at its previous rect, and the incident carries the failure.
+            WindowingProbe.ReportPlacementFailure("hud", "move_and_resize", ex);
+        }
 
         WindowingProbe.EmitWindowZOrderState(_hwnd, "hud", "before_show_noactivate");
         NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_SHOWNOACTIVATE);
@@ -60,6 +70,9 @@ public sealed partial class HudWindow : Window
             | NativeMethods.SWP_NOACTIVATE
             | NativeMethods.SWP_SHOWWINDOW);
         int setposError = setposOk ? 0 : Marshal.GetLastWin32Error();
+        // The z-order probe below is governed detail, off by default; the
+        // incident is what leaves a trace when the HUD fails to come on top.
+        WindowingProbe.ReportShow("hud", "setwindowpos_topmost", setposOk, setposError);
         WindowingProbe.EmitWindowZOrderState(
             _hwnd, "hud", "after_setwindowpos_topmost",
             setposOk, setposError);

@@ -19,6 +19,22 @@ namespace Deckle.App;
 
 public partial class App
 {
+    // Module names in the journal: the ModuleIds vocabulary for the pieces a
+    // person can leave out, plain names for the shell pieces always composed.
+    private const string SpeechModule            = "speech";
+    private const string ForegroundWatcherModule = "foreground_watcher";
+    private const string TaskbarCoverModule      = "taskbar_cover";
+    private const string InputHostModule         = "input_host";
+    private const string MouseWheelModule        = "mouse_wheel";
+
+    private const string SkipNotPresent          = "not_present";
+    private const string SkipNativeRuntimeMissing = "native_runtime_missing";
+    private const string SkipSpeechModelMissing  = "speech_model_missing";
+
+    // ForegroundWatcher.Start returns false only when its foreground hook
+    // could not be set; same spelling as the watcher's own reason.
+    private const string RefuseForegroundHookFailed = "foreground_hook_failed";
+
     private void InitializeStartupModules(StartupContext context)
     {
         // Without the native runtime and a speech model the engine is not
@@ -26,108 +42,90 @@ public partial class App
         // on demand from Settings, never as a hard gate that quits the app. The
         // WhisperBackend constructor installs the native log hook and would throw
         // DllNotFoundException without the runtime.
-        bool speechReady = context.TranscriptionPresent
-            && NativeRuntime.IsInstalled() && SpeechModels.IsAnyModelInstalled();
-        if (speechReady)
+        string? engineSkip =
+            !context.TranscriptionPresent         ? SkipNotPresent
+            : !NativeRuntime.IsInstalled()        ? SkipNativeRuntimeMissing
+            : !SpeechModels.IsAnyModelInstalled() ? SkipSpeechModelMissing
+            : null;
+        if (engineSkip is null)
         {
-            var host = new AppTranscriptionEngineHost();
-            var backend = new WhisperBackend(host);
-            _engine = new TranscriptionEngine(
-                host,
-                backend,
-                recovery: new DictationRecoveryStore(AppPaths.DictationRecoveryFilePath));
-            context.Milestone("engine");
+            context.Compose(ModuleIds.Transcription, () =>
+            {
+                var host = new AppTranscriptionEngineHost();
+                var backend = new WhisperBackend(host);
+                _engine = new TranscriptionEngine(
+                    host,
+                    backend,
+                    recovery: new DictationRecoveryStore(AppPaths.DictationRecoveryFilePath));
+            });
         }
         else
         {
-            if (context.TraceEnabled)
-                context.Milestone($"engine_skipped present={context.TranscriptionPresent} native={NativeRuntime.IsInstalled()} model={SpeechModels.IsAnyModelInstalled()}");
+            context.Skip(ModuleIds.Transcription, engineSkip);
         }
 
         // Constructed dormant: nothing calls Speak yet.
-        _speechEngine = new SpeechEngine(new ChatterboxSpeechBackend());
-        context.Milestone("speech_engine");
+        context.Compose(SpeechModule, () =>
+            _speechEngine = new SpeechEngine(new ChatterboxSpeechBackend()));
 
         // Construction does no I/O; the Ambient settings observer starts and
         // stops the engine.
         if (context.AmbientPresent)
-        {
-            _ambientEngine = new AmbientEngine(new AppAmbientEngineHost());
-            context.Milestone("ambient_engine");
-        }
+            context.Compose(ModuleIds.Ambient, () =>
+                _ambientEngine = new AmbientEngine(new AppAmbientEngineHost()));
         else
-        {
-            context.Milestone("ambient_engine_skipped");
-        }
+            context.Skip(ModuleIds.Ambient, SkipNotPresent);
 
         if (context.TrackpadPresent)
-        {
-            InitializeTrackpad();
-            context.Milestone("trackpad");
-        }
+            context.Compose(ModuleIds.Trackpad, InitializeTrackpad);
         else
-        {
-            context.Milestone("trackpad_skipped");
-        }
+            context.Skip(ModuleIds.Trackpad, SkipNotPresent);
 
         // Read by the taskbar cover and the apps and games runtime, so it must
         // exist before them. Its WinEvent hooks deliver on the thread that starts
         // it: the UI thread, which pumps once OnLaunched returns. A failed start
-        // is logged by the watcher; the app runs on without foreground changes.
-        _foregroundWatcher = new ForegroundWatcher();
-        _foregroundWatcher.Start();
-        context.Milestone("foreground_watcher");
+        // is logged by the watcher with its Win32 error and journaled here as a
+        // refusal; the app runs on without foreground changes.
+        context.ComposeOrRefuse(ForegroundWatcherModule, RefuseForegroundHookFailed, () =>
+        {
+            _foregroundWatcher = new ForegroundWatcher();
+            return _foregroundWatcher.Start();
+        });
 
-        InitializeTaskbarCover();
-        context.Milestone("taskbar_cover");
+        context.Compose(TaskbarCoverModule, InitializeTaskbarCover);
 
         // Created before its consumers, which reference-count it.
-        InitializeInputHost();
-        context.Milestone("input_host");
+        context.Compose(InputHostModule, InitializeInputHost);
 
         // The native device and worker exist only while the master switch is on.
-        InitializePrecisionScroll();
-        context.Milestone("precision_scroll");
+        if (context.PrecisionScrollPresent)
+            context.Compose(ModuleIds.PrecisionScroll, InitializePrecisionScroll);
+        else
+            context.Skip(ModuleIds.PrecisionScroll, SkipNotPresent);
 
-        // Always composed; idle (no WMI subscription, no enumeration) while no
-        // entry is enabled.
-        InitializeOrchestration();
-        context.Milestone("orchestration");
+        // Idle (no WMI subscription, no enumeration) while no entry is enabled.
+        if (context.OrchestrationPresent)
+            context.Compose(ModuleIds.Orchestration, InitializeOrchestration);
+        else
+            context.Skip(ModuleIds.Orchestration, SkipNotPresent);
 
         if (context.RewritePresent)
-        {
-            InitializeParagraphRewrite();
-            context.Milestone("paragraph_rewrite");
-        }
+            context.Compose(ModuleIds.Rewrite, InitializeParagraphRewrite);
         else
-        {
-            context.Milestone("paragraph_rewrite_skipped");
-        }
+            context.Skip(ModuleIds.Rewrite, SkipNotPresent);
 
-        InitializeMouseWheel();
-        context.Milestone("mouse_wheel");
+        context.Compose(MouseWheelModule, InitializeMouseWheel);
 
         if (context.AutocorrectPresent)
-        {
-            InitializeAutocorrect();
-            context.Milestone("autocorrect");
-        }
+            context.Compose(ModuleIds.Autocorrect, InitializeAutocorrect);
         else
-        {
-            context.Milestone("autocorrect_skipped");
-        }
+            context.Skip(ModuleIds.Autocorrect, SkipNotPresent);
 
-        // Fire-and-forget: readiness runs off the boot path, so the milestone
-        // marks dispatch, not readiness.
+        // Fire-and-forget: readiness runs off the boot path, so "started" marks
+        // the dispatch; the Anytype provider reports the backend's readiness.
         if (context.AnytypePresent)
-        {
-            StartAnytypeRuntime();
-            context.Milestone("anytype_backend");
-        }
+            context.Compose(ModuleIds.Anytype, StartAnytypeRuntime);
         else
-        {
-            context.Milestone("anytype_backend_skipped");
-        }
+            context.Skip(ModuleIds.Anytype, SkipNotPresent);
     }
 }
-

@@ -13,7 +13,159 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 ### Added
 
+- **anytype:** Typed read gestures named by what they return
+- **mcp:** Expose the typed reads and drop the whole-object get
+- **anytype:** Bound session_start, log and search
+- **mcp:** Cap tool text at 8 000 characters
+- **diagnostics:** Tag the run journal milestones
+- **diagnostics:** Name the transverse keywords in the JSONL envelope
+- **diagnostics:** Cap archived journal generations
+- **diagnostics:** Make the pipeline observe itself
+- **app:** Tag the lifecycle milestones for the journal
+- **app:** Identify the run in the journal
+- **app:** Journal the composition of every module
+- **app:** Log each failing shutdown step with its cause
+- **app:** Leave the launcher a trace of its decisions
+- **core:** Keep the settings store alive when a subscriber or the follow timer throws
+- **diagnostics:** Carry the cause on the transverse providers and bound the LogWindow queue
+- **transcription:** Carry the cause on every engine failure
+- **vad:** Gate the per-utterance detail and report a missing model
+- **speech:** End every read-aloud request with an outcome
+- **audio:** Abort a take whose device refuses to start and watch for silent capture
+- **hud:** Report show, reveal and stroke failures as incidents with their cause
+- **shell:** Fold the Win32 cause into every shell failure
+- **vision:** Stop the capture service cleanly when its loop ends on its own
+- **lighting:** Stop the ambient engine when its push loop dies
+- **autocorrect:** Contain rerank lane faults and watch the in-flight request
+- **input:** Contain worker faults and bound the host stops
+- **orchestration:** Keep the runtime alive when a pass or a callback throws
+- **anytype:** Keep supervising after a failed restart and probe the backend
+- **llm:** Make interactive rewrite failures one incident
+- **setup:** Write an installer log and bound the download
+- **settings:** Refuse an invalid backup and report migration failures
+- **app:** End every transactional mode with an outcome and log what the shell swallowed
+- **transcription:** Report a failed backend result as a skipped utterance and keep one visible failure line
+- **vision:** Carry the stop reason to the subscribers of a capture loss
+- **app:** Journal each module's start and move the app's failure lines onto the module providers
+- **transcription:** Log trim bounds and the level sent to Whisper
+- **whisper:** Log what each decode call used
+- **anytype:** Open a task session with its project and related tasks
+- **anytype:** State the opening placement rule by its intention
+- **scripts:** Survey the Anytype API v2 read-only
+- **transcription:** Add a deterministic trailing noise pad
+- **anytype:** Add a v2 transport and typed error
+- **anytype:** Add a v2 object reader
+- **anytype:** Model the v2 block, object, view and type ops
+- **anytype:** Add a v2 writer for ops batches and object creation
+- **anytype:** Expose the v2 client beside the v1 one
+- **setup:** Add a step rail and widen the wizard window
+- **anytype:** Append session_log entries through the v2 socle
+- **setup:** Show each module's download size and dependencies on its card
+- **anytype:** Move task_subtask to v2 block operations
+- **anytype:** Locate a section in a v2 block document
+- **anytype:** Port replace_section to v2 block operations
+- **anytype:** Port task_create to API v2 and keep the template body
+- **catalog:** Float the curve editor on its host and add an axis legend
+- **streaming:** Open the speech-filtering fold with the page
+- **streaming:** Show durations in seconds and say what each threshold measures
+- **streaming:** Expose the cut margin and the minimum utterance in Settings
+- **streaming:** Give the ramp anchors a 5 s grain
+- **setup:** Grey out a module until the modules it needs are checked
+- **audio:** Let a capture host keep no audio
+- **transcription:** Read the pause gauge without dictating
+- **audio:** Classify a failed capture's error code publicly
+- **playground:** Let the HUD tab name a microphone fallback
+- **modules:** Record the offered catalogue in the presence file
+- **precision-scroll:** Make precision scrolling a module the person can leave out
+- **orchestration:** Make apps and games a module the person can leave out
+- **playground:** Feed the HUD preview from the microphone
+- **playground:** Word why the microphone preview gave way
+- **playground:** Let the HUD tab preview from the microphone
+- **playground:** Name the gauge curves' axes
+- **anytype:** Read v2 property maps and priority names
+- **anytype:** Read typed markdown bodies through the v2 reader
+- **anytype:** Read task_properties and document_outline through the v2 reader
+- **anytype:** Search with server-side filters through the v2 client
+- **anytype:** Read project_overview and list_projects with server-side v2 filters
+- **anytype:** Build the session_start digest from v2 reads and a filtered search
+- **anytype:** Resolve names through the v2 search
+
+### Changed
+
+- **diagnostics:** Retire the windowing provider's unwired WindowOpenFailed
+- **diagnostics:** Take the filter bar's module names from the shared table
+- **settings:** Carry the folder action and its cause on one event
+- **hud:** Report the HUD's show and placement through the windowing probe
+- **shell:** Report the cover band and marshal stalls through the diagnostics probes
+- **llm:** Retire the kept probe events and spell the rewrite cancellation from the shared vocabulary
+- **hud:** Report the overlay and transcript panel through the windowing probe
+- **transcription:** Carry text-token count and minimum probability on segments
+- **playground:** Remove the utterance segmentation page
+- **hud:** Return the gauge to rest on one shared move
+- **hud:** Default the gauge's return to the 0.33 s Louis tuned
+- **anytype:** Share one request gate between the v1 and v2 clients
+- **anytype:** Read one page of recent reports instead of all of them
+- **anytype:** Read each linked name once and cap the reads at eight
+
+### Fixed
+
+- **anytype:** Create_task fills the template sections
+- **home:** Summarize a non-conforming schema error
+- **anytype:** Match a subtask label against the unescaped body
+- **logwindow:** Size the module column from the longest source name
+- **diagnostics:** Journal a sink's recovery
+- **wording:** Name the log window modules in place of the retired tags
+- **wording:** Name the log window modules in the other modules' texts
+- **vad:** Open one incident per trim failure and close it on recovery
+- **transcription:** Reject short low-confidence utterances decoded from noise blips
+- **scripts:** Make every Anytype v2 survey measure conclude
+- **anytype:** Name the live serve a timed-out reconciliation waited on
+- **anytype:** Label recovery after a failed start as start-failed
+- **transcription:** Pad every utterance with low-level noise before decoding
+- **anytype:** Drop version and due date from the Epic property table
+- **setup:** Keep the in-progress module selection on Back
+- **mcp:** Keep a surrogate pair whole when the tool text is cut
+- **anytype:** Name a lost heading before the content mismatch it causes
+- **anytype:** Count report tails in journal entries, not lines
+- **anytype:** Read Priorité under the key the server serves
+- **anytype:** Say in French when a subtask add meets a changed task
+- **anytype:** Count a read-back timeout as a failed check in replace_section
+- **setup:** Mirror the wizard's new strings into the app resources
+- **setup:** Describe Rewrite without naming where its model runs
+- **setup:** Open an update's provisioning as the narrow card
+- **core:** Leave the window title out of the window description
+- **anytype:** Keep the created-task message when the fill times out
+- **anytype:** Name the refused key in a v2 error message
+- **anytype:** Leave the report just created out of the session_start digest
+- **anytype:** Fill task notes under the same headings task_notes reads
+- **anytype:** Advance the search offset by the rows the server returned
+- **anytype:** Title an unnamed idea or report by its first body line
+- **anytype:** Clean the recent-report line of a project overview
+- **anytype:** Cap the 429 backoff at 30 seconds
+- **anytype:** Drop an idea's plain name line from its body
+- **anytype:** Show a report's latest entry in the project overview
+
+## [0.59.0](https://github.com/louisfifre/deckle/compare/v0.58.5...v0.59.0) — 2026-10-21
+
+### Added
+
 - **settings:** Show the release stage as the title bar subtitle
+- **transcription:** Log the compute device the whisper model runs on
+- **transcription:** Name each filtered hallucination in the log
+- **scripts:** Build a patched anytype-cli backend from a release tag
+- **scripts:** Ship the license texts inside the rebuilt backend asset
+
+### Fixed
+
+- **transcription:** Read the GPU setting at whisper context creation
+- **whisper:** Strip credit-line hallucinations per segment
+- **transcription:** Start every take clean of the previous decode
+- **transcription:** Warn when the warm-up falls back to silence
+- **transcription:** Move the hallucination and warm-up detail events to 193 and 194
+- **transcription:** Keep capturing for a short tail after the stop press
+- **audio:** Handle waveIn buffers in the order the driver filled them
+- **anytype:** Pin the patched anytype-cli 0.5.0 rebuild as the backend
+- **anytype:** Pin the backend asset that carries the license texts
 
 ## [0.58.5](https://github.com/louisfifre/deckle/compare/v0.57.0...v0.58.5) — 2026-10-20
 

@@ -92,7 +92,12 @@ internal sealed class DataRootTree : IDataRootCopier
                      .OrderByDescending(path => path.Length))
         {
             try { Directory.Delete(directory, recursive: false); }
-            catch { /* Foreign or still-open content is deliberately spared. */ }
+            catch (Exception ex)
+            {
+                // Foreign or still-open content is deliberately spared.
+                DeckleSetupSource.Log.BestEffortFailedDetail(
+                    "rollback_directory", directory, ex.GetType().Name, ex.Message);
+            }
         }
 
         if (failures.Count > 0)
@@ -133,14 +138,23 @@ internal sealed class DataRootTree : IDataRootCopier
             _temporaryFiles.Remove(partial);
             return true;
         }
-        catch
+        catch (Exception copyEx)
         {
+            // The caller retries once, then sheds or throws without the cause;
+            // this trace is where the cause of a refused copy survives.
+            DeckleSetupSource.Log.BestEffortFailedDetail(
+                "copy_file", source, copyEx.GetType().Name, copyEx.Message);
             try
             {
                 File.Delete(partial);
                 _temporaryFiles.Remove(partial);
             }
-            catch { }
+            catch (Exception deleteEx)
+            {
+                // Still in the ledger, so RollBack retries the delete.
+                DeckleSetupSource.Log.BestEffortFailedDetail(
+                    "delete_partial", partial, deleteEx.GetType().Name, deleteEx.Message);
+            }
             return false;
         }
     }
@@ -163,6 +177,8 @@ internal sealed class DataRootTree : IDataRootCopier
                 if (IsSheddable(relative)) continue;
                 throw new IOException($"Required data entry '{relative}' is a reparse point.");
             }
+            // A file that vanished between enumeration and measurement simply
+            // has nothing to copy; the live app's log rotation does this.
             try { total += new FileInfo(file).Length; }
             catch (FileNotFoundException) { }
             catch (DirectoryNotFoundException) { }

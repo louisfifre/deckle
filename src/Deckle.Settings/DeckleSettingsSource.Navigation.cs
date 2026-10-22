@@ -28,37 +28,21 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtSetupWindowOpenFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not open the setup window")]
-    public void SetupWindowOpenFailed()
+           Message = "Could not open the setup window | ex_type={0} | ex_message={1}")]
+    public void SetupWindowOpenFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtSetupWindowOpenFailed);
+        if (IsEnabled()) WriteEvent(EvtSetupWindowOpenFailed, ex_type, ex_message);
     }
 
-    [Event(EvtSetupWindowOpenFailedDetail,
+    // One event per measure, not per file: the data folder can hold thousands
+    // of files and the live app rotates logs during the walk.
+    [Event(EvtDataSizeFilesSkippedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "setup window open failed | error={0} | message={1}")]
-    public void SetupWindowOpenFailedDetail(string ex_type, string message)
+           Message = "data size files skipped | count={0} | ex_type={1} | ex_message={2}")]
+    public void DataSizeFilesSkippedDetail(int count, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtSetupWindowOpenFailedDetail, ex_type, message);
-    }
-
-    [Event(EvtWarmupRestartFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Warmup restart failed")]
-    public void WarmupRestartFailed()
-    {
-        if (IsEnabled()) WriteEvent(EvtWarmupRestartFailed);
-    }
-
-    [Event(EvtWarmupRestartFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "warmup restart failed | error={0} | message={1}")]
-    public void WarmupRestartFailedDetail(string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtWarmupRestartFailedDetail, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtDataSizeFilesSkippedDetail, count, ex_type, ex_message);
     }
 
     // ── SettingsWindow navigation ───────────────────────────────────────
@@ -203,23 +187,14 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtNavFailedThrew,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Navigation threw an exception")]
-    public void NavFailedThrew()
+           Message = "Navigation threw an exception | page={0} | ex_type={1} | ex_message={2}")]
+    public void NavFailedThrew(string page, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtNavFailedThrew);
-    }
-
-    [Event(EvtNavFailedThrewDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "navigate threw | page={0} | error={1}: {2}")]
-    public void NavFailedThrewDetail(string page_name, string ex_type, string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtNavFailedThrewDetail, page_name, ex_type, message);
+        if (IsEnabled()) WriteEvent(EvtNavFailedThrew, page, ex_type, ex_message);
     }
 
     // Verbose: a raw stack trace is opaque detail with no milestone value. It
-    // follows the NavFailedThrew milestone and its …Detail mirror.
+    // follows the NavFailedThrew milestone.
     [Event(EvtNavStackTrace,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -227,15 +202,6 @@ public sealed partial class DeckleSettingsSource
     public void NavStackTrace(string stack)
     {
         if (IsEnabled()) WriteEvent(EvtNavStackTrace, stack);
-    }
-
-    [Event(EvtItemInvoked,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "item invoked | content={0} | tag={1}")]
-    public void ItemInvoked(string item_content, string item_tag)
-    {
-        if (IsEnabled()) WriteEvent(EvtItemInvoked, item_content, item_tag);
     }
 
     [Event(EvtOpenLogsFromFooter,

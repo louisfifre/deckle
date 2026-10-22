@@ -23,24 +23,42 @@ public sealed class DeckleShellForegroundSource : DeckleEventSource
     // ID after deleting an event.
     public const int EvtWatcherStarted     = 1;
     public const int EvtWatcherStopped     = 2;
-    public const int EvtHookFailed         = 3;
-    public const int EvtHookFailedDetail   = 4;
+    // 3 retired.
+    // 4 retired.
     public const int EvtForegroundChanged  = 5;
+    public const int EvtHookFailed         = 6;
+    public const int EvtHookFailedDetail   = 7;
+    public const int EvtHookRecovered      = 8;
+    public const int EvtWatcherStartFailed = 9;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     [Event(EvtWatcherStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Watcher started")]
     public void WatcherStarted()
     {
         if (IsEnabled()) WriteEvent(EvtWatcherStarted);
     }
 
+    // reason: foreground_hook_failed, the only way Start returns false.
+    // SetWinEventHook documents no GetLastError, so win32_error may read 0.
+    [Event(EvtWatcherStartFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Watcher failed to start, fullscreen detection is off | reason={0} | win32_error={1}")]
+    public void WatcherStartFailed(string reason, int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtWatcherStartFailed, reason, win32_error);
+    }
+
     [Event(EvtWatcherStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Watcher stopped")]
     public void WatcherStopped()
     {
@@ -51,24 +69,34 @@ public sealed class DeckleShellForegroundSource : DeckleEventSource
 
     // One Warning per incident: the location hook is re-armed on every
     // foreground switch, so its failure is reported once until a later arm
-    // succeeds; every failed attempt still lands in the Verbose mirror.
+    // succeeds (HookRecovered); every failed attempt lands in the Verbose
+    // mirror. win32_error is the attempt that opened the incident.
     [Event(EvtHookFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A foreground hook failed — fullscreen detection is degraded")]
-    public void HookFailed()
+           Message = "A foreground hook failed — fullscreen detection is degraded | hook={0} | win32_error={1}")]
+    public void HookFailed(string hook, int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtHookFailed);
+        if (IsEnabled()) WriteEvent(EvtHookFailed, hook, win32_error);
     }
 
     [Event(EvtHookFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "hook failed | hook={0} | process_id={1}")]
-    public void HookFailedDetail(string hook, long process_id)
+           Message = "hook failed | hook={0} | process_id={1} | win32_error={2}")]
+    public void HookFailedDetail(string hook, long process_id, int win32_error)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtHookFailedDetail, hook, process_id);
+        WriteEvent(EvtHookFailedDetail, hook, process_id, win32_error);
+    }
+
+    [Event(EvtHookRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Foreground hook armed again, fullscreen detection is back | hook={0}")]
+    public void HookRecovered(string hook)
+    {
+        if (IsEnabled()) WriteEvent(EvtHookRecovered, hook);
     }
 
     // ── Foreground ────────────────────────────────────────────────────────────

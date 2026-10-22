@@ -66,7 +66,11 @@ public sealed class HudOverlayManager : IDisposable
 
         // Symmetric with HudWindow.SetState: Overlay disabled in Settings → no-op.
         if (!SettingsService.Instance.Current.Overlay.Enabled)
+        {
+            DeckleHudSource.Log.HudDisplaySuppressed(
+                "overlay", "Message", severity, "overlay_disabled");
             return;
+        }
 
         var window = new HudOverlayWindow(_cursorSignal);
         var hwnd = window.Hwnd;
@@ -95,7 +99,7 @@ public sealed class HudOverlayManager : IDisposable
         lifeTimer.Interval = HudWindow.FeedbackDuration(severity);
         lifeTimer.IsRepeating = false;
 
-        var entry = new OverlayEntry(window, slide, lifeTimer, newSlot);
+        var entry = new OverlayEntry(window, slide, lifeTimer, newSlot, severity);
         lifeTimer.Tick += (_, _) => OnLifeTimerTick(entry);
 
         // Window owns its fade animator so proximity updates and fade-in /
@@ -104,6 +108,7 @@ public sealed class HudOverlayManager : IDisposable
         lifeTimer.Start();
 
         _entries.Add(entry);
+        DeckleHudSource.Log.OverlayCardChanged("shown", newSlot, severity, _entries.Count);
 
         // No-op in the common append case (only the new entry changed slots,
         // and it's already at the right position). Still called for uniformity
@@ -157,10 +162,23 @@ public sealed class HudOverlayManager : IDisposable
         entry.Window.FadeOut(onComplete: () =>
         {
             entry.Slide.Cancel();
-            try { entry.Window.ForceClose(); } catch { /* already closed */ }
+            CloseCard(entry, "overlay-expiry");
             _entries.Remove(entry);
+            DeckleHudSource.Log.OverlayCardChanged(
+                "closed", entry.SlotIndex, entry.Severity, _entries.Count);
             Recompact();
         });
+    }
+
+    // A card the window already closed throws here; teardown goes on either
+    // way, but the throw stays visible in the detail log.
+    private static void CloseCard(OverlayEntry entry, string what)
+    {
+        try { entry.Window.ForceClose(); }
+        catch (Exception ex)
+        {
+            DeckleHudSource.Log.CleanupFailed(what, ex.GetType().Name, ex.Message);
+        }
     }
 
     private void Recompact()
@@ -218,11 +236,14 @@ public sealed class HudOverlayManager : IDisposable
         _mainHud.MainHudVisibilityChanged -= OnMainHudVisibilityChanged;
         SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
 
+        int remaining = _entries.Count;
         foreach (var entry in _entries)
         {
             entry.LifeTimer.Stop();
             entry.Slide.Cancel();
-            try { entry.Window.ForceClose(); } catch { /* shutting down */ }
+            CloseCard(entry, "overlay-shutdown");
+            DeckleHudSource.Log.OverlayCardChanged(
+                "closed", entry.SlotIndex, entry.Severity, --remaining);
         }
         _entries.Clear();
     }
@@ -235,16 +256,22 @@ public sealed class HudOverlayManager : IDisposable
         public int                  SlotIndex { get; set; }
         public bool                 IsExpiring { get; set; }
 
+        // Kept for the card's closing trace only; the payload text is never
+        // retained.
+        public int                  Severity  { get; }
+
         public OverlayEntry(
             HudOverlayWindow window,
             WindowSlideAnimator slide,
             DispatcherQueueTimer lifeTimer,
-            int slotIndex)
+            int slotIndex,
+            int severity)
         {
             Window    = window;
             Slide     = slide;
             LifeTimer = lifeTimer;
             SlotIndex = slotIndex;
+            Severity  = severity;
         }
     }
 }

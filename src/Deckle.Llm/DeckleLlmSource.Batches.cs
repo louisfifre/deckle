@@ -43,27 +43,22 @@ public sealed partial class DeckleLlmSource
     [Event(EvtBatchRewriteReturnedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "batch rewrite returned | batch={0} | ms={1} | in_chars={2} | out_chars={3}")]
+           Message = "batch rewrite returned | batch={0} | elapsed_ms={1} | in_chars={2} | out_chars={3}")]
     public void BatchRewriteReturnedDetail(int batch_index, long elapsed_ms, int in_chars, int out_chars)
     {
         if (IsEnabled()) WriteEvent(EvtBatchRewriteReturnedDetail, new object[] { batch_index, elapsed_ms, in_chars, out_chars });
     }
 
+    // reason: no_result (the service gave no text; its own Warning just
+    // before says why), blank (it answered whitespace), exception (it threw;
+    // ex_type and ex_message say what), task_faulted (the batch task itself
+    // faulted). ex_type and ex_message are empty unless something threw.
     [Event(EvtBatchRewriteFellBack,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A dictation batch kept its raw text")]
-    public void BatchRewriteFellBack()
+           Message = "A dictation batch kept its raw text | reason={1} | batch={0} | ex_type={2} | ex_message={3}")]
+    public void BatchRewriteFellBack(int batch_index, string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtBatchRewriteFellBack);
-    }
-
-    [Event(EvtBatchRewriteFellBackDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "batch rewrite fell back | batch={0}")]
-    public void BatchRewriteFellBackDetail(int batch_index)
-    {
-        if (IsEnabled()) WriteEvent(EvtBatchRewriteFellBackDetail, batch_index);
+        if (IsEnabled()) WriteEvent(EvtBatchRewriteFellBack, new object[] { batch_index, reason, ex_type, ex_message });
     }
 }

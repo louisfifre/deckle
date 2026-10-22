@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
@@ -43,15 +44,62 @@ public static class ConnectionRepair
                 Verb            = "runas", // elevate; one UAC prompt
             };
 
-            Process.Start(psi);
+            Process? process = Process.Start(psi);
             DeckleTrackpadSource.Log.RepairLaunched();
+            if (process is not null) WatchExit(process);
             return true;
         }
         catch (Exception ex)
         {
-            DeckleTrackpadSource.Log.RepairLaunchFailed();
-            DeckleTrackpadSource.Log.RepairLaunchFailedDetail(ex.GetType().Name, ex.Message);
+            int win32Error = ex is Win32Exception w ? w.NativeErrorCode : 0;
+            DeckleTrackpadSource.Log.RepairLaunchFailed(
+                win32Error == ErrorCancelled ? "uac_declined" : "launch_failed",
+                win32Error, ex.GetType().Name, ex.Message);
             return false;
+        }
+    }
+
+    // ERROR_CANCELLED: the user declined the UAC prompt.
+    private const int ErrorCancelled = 1223;
+
+    // Without this the log ends at "launched" and never says whether the
+    // repair worked. The script exits 0 when every step ran and 1 when it
+    // stopped on a failed step; any other code means it was cut short. Exited
+    // runs on a pool thread, after the user closes the console.
+    private static void WatchExit(Process process)
+    {
+        try
+        {
+            process.EnableRaisingEvents = true;
+            process.Exited += static (sender, _) =>
+            {
+                var exited = (Process)sender!;
+                try
+                {
+                    int code = exited.ExitCode;
+                    if (code == 0)
+                        DeckleTrackpadSource.Log.RepairCompleted(code);
+                    else
+                        DeckleTrackpadSource.Log.RepairFailed(
+                            code == 1 ? "script_failed" : "script_interrupted", code);
+                }
+                catch (Exception ex)
+                {
+                    // The outcome is only reported, never acted on: a read
+                    // failure costs the log line, nothing the user sees.
+                    DeckleTrackpadSource.Log.RepairExitUnobserved(ex.GetType().Name, ex.Message);
+                }
+                finally
+                {
+                    exited.Dispose();
+                }
+            };
+        }
+        catch (Exception ex)
+        {
+            // Watching is best effort: the repair itself already runs.
+            DeckleTrackpadSource.Log.RepairExitUnobserved(ex.GetType().Name, ex.Message);
+            process.Dispose();
         }
     }
 

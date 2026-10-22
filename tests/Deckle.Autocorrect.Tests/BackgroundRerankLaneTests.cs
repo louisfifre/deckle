@@ -1,5 +1,7 @@
+using System.Diagnostics.Tracing;
 using Deckle.Autocorrect;
 using Deckle.Core;
+using Deckle.TestSupport;
 using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
@@ -66,6 +68,80 @@ public sealed class BackgroundRerankLaneTests
         reranker.Release.SetResult();
         await disposal.WaitAsync(TimeSpan.FromSeconds(2), cancellationToken);
         Assert.True(reranker.Disposed);
+    }
+
+    // Regression: the worker's bare catch turned a throwing judge into a silent
+    // Error abstain, so a judge failing on every sentence left no trace of why.
+    [Fact]
+    public async Task ThrowingRerankerAbstainsAndReportsItsCauseOnceUntilRecovery()
+    {
+        CancellationToken cancellationToken = TestContext.Current.CancellationToken;
+        const string cause = "lane-regression: judge session lost";
+        using var listener = new TestEventListener("Deckle-Autocorrect");
+        var reranker = new ThrowOnceReranker(cause);
+        var host = new FakeKeyboardInputHost { DeferDrain = true };
+        var lane = new BackgroundRerankLane(reranker, host);
+        var delivered = new List<RerankResult>();
+        lane.ResultSink = delivered.Add;
+
+        lane.Submit(SlotRequest(epoch: 1));
+        Assert.True(SpinWait.SpinUntil(() => host.HasPendingDrain, 2_000));
+        host.Drain();
+        lane.Submit(SlotRequest(epoch: 2));
+        Assert.True(SpinWait.SpinUntil(() => host.HasPendingDrain, 2_000));
+        host.Drain();
+        await Task.Run(lane.Dispose, cancellationToken)
+            .WaitAsync(TimeSpan.FromSeconds(2), cancellationToken);
+
+        Assert.Equal(2, delivered.Count);
+        Assert.Equal(RerankOutcome.AbstainReasons.Error, delivered[0].Outcome.AbstainReason);
+        Assert.Equal(RerankOutcome.AbstainReasons.NoRule, delivered[1].Outcome.AbstainReason);
+        EventWrittenEventArgs failing = Assert.Single(listener.Events, e =>
+            e.EventId == DeckleAutocorrectSource.EvtRerankFailing
+            && PayloadValue(e, "ex_message") is cause);
+        Assert.Equal(
+            DeckleAutocorrectSource.RerankFailureSources.Inference,
+            PayloadValue(failing, "source"));
+        Assert.Equal(
+            typeof(InvalidOperationException).FullName,
+            PayloadValue(failing, "ex_type"));
+        Assert.Contains(listener.Events, e =>
+            e.EventId == DeckleAutocorrectSource.EvtRerankRecovered
+            && PayloadValue(e, "failures") is 1);
+    }
+
+    private static HistoricalSlotRerankRequest SlotRequest(int epoch) => new(
+        new[] { "une", "phrase", "assez", "longue" },
+        SlotIndex: 3,
+        Candidates: [
+            new AccentVariant("longue", 1),
+            new AccentVariant("longues", 1),
+        ],
+        Epoch: epoch);
+
+    private static object? PayloadValue(EventWrittenEventArgs ev, string name)
+    {
+        var names = ev.PayloadNames;
+        var payload = ev.Payload;
+        if (names is null || payload is null) return null;
+        for (int i = 0; i < names.Count; i++)
+            if (names[i] == name) return payload[i];
+        return null;
+    }
+
+    private sealed class ThrowOnceReranker(string message) : ISentenceReranker
+    {
+        private int _calls;
+
+        public RerankOutcome Rerank(
+            IReadOnlyList<string> sentence,
+            int slotIndex,
+            IReadOnlyList<AccentVariant> candidates)
+        {
+            if (Interlocked.Increment(ref _calls) == 1)
+                throw new InvalidOperationException(message);
+            return RerankOutcome.Abstained(RerankOutcome.AbstainReasons.NoRule);
+        }
     }
 
     private sealed class BlockingReranker : ISentenceReranker, IDisposable

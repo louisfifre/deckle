@@ -171,8 +171,7 @@ internal static class LightPlacementResolver
 
     internal static void LogCallFailed(string op, Exception ex)
     {
-        DeckleAmbientSource.Log.LightCallFailed();
-        DeckleAmbientSource.Log.LightCallFailedDetail(op, ex.GetType().Name, ex.Message);
+        DeckleAmbientSource.Log.LightCallFailed(op, ex.GetType().Name, ex.Message);
     }
 }
 

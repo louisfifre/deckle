@@ -15,6 +15,17 @@ public sealed partial class TranscriptionEngine
 {
     // ── StateMachine partial — RequestToggle + WorkerRun + state transitions ────────────────────────────────────────
 
+    // How long capture keeps running after the Stop press. The press lands
+    // while the user is still finishing the last word, and the waveIn loop
+    // would otherwise stop within one 50 ms buffer, cutting that word. The tail
+    // catches its end plus a little real trailing silence, which Whisper also
+    // ends on better than on a clipped word. The HUD has already switched to
+    // "transcribing" on the press, so the tail is hidden behind that transition.
+    // 400 ms: long enough to cover the end of a word and a breath, short enough
+    // that the added wait stays under the threshold where a stop feels laggy.
+    // Not a setting: nobody should tune it per take.
+    private const int CAPTURE_TAIL_AFTER_STOP_MS = 400;
+
     // ── Hotkey toggle entry point ───────────────────────────────────────────
     //
     // All hotkey Start/Stop traffic flows through here. The engine
@@ -51,13 +62,22 @@ public sealed partial class TranscriptionEngine
 
             // Stopped by the strategy at the backend handoff (monolithic) or
             // after the consumer drain (streaming). The CAS above makes this
-            // run at most once per recording.
+            // run at most once per recording. It starts at the press, so the
+            // capture tail below is part of the stop-to-pipeline time the log
+            // reports.
             _stopToPipelineSw = System.Diagnostics.Stopwatch.StartNew();
 
-            // Signal the capture loop to drain and return. Cancel() is safe
-            // even if Record() has already returned (the token is then
-            // unobserved).
-            try { _recordCts?.Cancel(); }
+            // Signal the capture loop to drain and return, after a short tail
+            // (see CAPTURE_TAIL_AFTER_STOP_MS). Only this user Stop press gets
+            // the tail: Dispose cancels _recordCts at once so shutdown is never
+            // delayed, and the file pipeline's token is cancelled by Dispose
+            // only. A press landing inside the tail finds the state already
+            // Stopping and is refused as IgnoredBusy above. A cap hit inside
+            // the tail is harmless: its Recording → Stopping CAS simply fails.
+            // CancelAfter is safe even if Record() has already returned or the
+            // worker has disposed the source (ObjectDisposedException caught;
+            // disposing the source also disposes its pending timer).
+            try { _recordCts?.CancelAfter(CAPTURE_TAIL_AFTER_STOP_MS); }
             catch (ObjectDisposedException) { /* worker raced our cancel */ }
             return ToggleResult.Stopped;
         }
@@ -335,6 +355,8 @@ public sealed partial class TranscriptionEngine
     private void WorkerRun()
     {
         using var activity = TranscriptionActivityScope.Open();
+        // Paired with WorkerStopped in SettleWorkerToIdle, which every exit reaches.
+        DeckleWhispSource.Log.WorkerStarted("dictation");
         CancellationTokenSource recordCts = _recordCts
             ?? throw new InvalidOperationException("Recording cancellation was not published before worker start.");
         CancellationTokenSource drainCts = _drainCts
@@ -377,8 +399,7 @@ public sealed partial class TranscriptionEngine
         }
         catch (Exception ex)
         {
-            DeckleWhispSource.Log.PipelineCrashed();
-            DeckleWhispSource.Log.PipelineCrashedDetail(ex.GetType().Name, ex.Message);
+            DeckleWhispSource.Log.PipelineCrashed(ex.GetType().Name, ex.Message);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_PipelineCrashed_Title"),
                 Loc.Get("Engine_PipelineCrashed_Body"),
@@ -387,7 +408,7 @@ public sealed partial class TranscriptionEngine
         }
         finally
         {
-            SettleWorkerToIdle(primeTask, recordCts, drainCts);
+            SettleWorkerToIdle("dictation", primeTask, recordCts, drainCts);
         }
     }
 
@@ -397,6 +418,7 @@ public sealed partial class TranscriptionEngine
     // when the model is still resident, dispose the run's cancellation tokens,
     // then emit "Ready", in that order.
     private void SettleWorkerToIdle(
+        string worker,
         Task<bool> primeTask,
         CancellationTokenSource recordCts,
         CancellationTokenSource drainCts)
@@ -410,7 +432,12 @@ public sealed partial class TranscriptionEngine
         // inference aborts; a model load in flight is not cancellable and runs
         // to completion. A load failure already surfaced its UserFeedback.
         try { primeTask.GetAwaiter().GetResult(); }
-        catch { /* prime failure already surfaced; nothing user-facing here */ }
+        catch (Exception ex)
+        {
+            // The prime failure already surfaced (WarmupFailed, UserFeedback);
+            // this records that the teardown observed it.
+            DeckleWhispSource.Log.TeardownExceptionIgnored("prime_settle", ex.GetType().Name, ex.Message);
+        }
 
         // The lifecycle lock keeps a new start out until the old worker
         // reference and its exact cancellation channels are cleared. Status
@@ -458,6 +485,7 @@ public sealed partial class TranscriptionEngine
                 ResetIdleTimer();
 
             _idleEvent.Set();
+            DeckleWhispSource.Log.WorkerStopped(worker, reachedIdle);
             if (reachedIdle)
                 RaiseStatus(Loc.Get("Status_Ready"));
         }

@@ -133,8 +133,20 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
                 var defaults = new T();
                 _postLoadMigration?.Invoke(defaults);
                 string text = JsonSerializer.Serialize(defaults, _jsonOptions);
-                File.WriteAllText(_path, text);
-                lock (_lock) _lastText = text;
+                try
+                {
+                    File.WriteAllText(_path, text);
+                    lock (_lock) _lastText = text;
+                }
+                catch (Exception writeEx) when (writeEx is IOException or UnauthorizedAccessException)
+                {
+                    // The defaults still serve this session; only the seed file
+                    // is missing, so the next launch starts from defaults again.
+                    // Kept apart from the parse fallback below, which means the
+                    // user's file was unreadable.
+                    _logWarning?.Invoke(
+                        $"Settings defaults could not be written | reason=defaults_write_failed | path={_path} | ex_type={writeEx.GetType().Name} | ex_message={writeEx.Message}");
+                }
                 _logInfo?.Invoke("Settings initialized (defaults)");
                 _logVerbose?.Invoke($"load complete | source=defaults | path={_path} | reason=file_missing");
                 return defaults;
@@ -145,7 +157,8 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
             lock (_lock) _lastText = raw;
 
             _logInfo?.Invoke(migrated ? "Settings loaded (migrated)" : "Settings loaded");
-            _logVerbose?.Invoke($"load complete | source=disk | path={_path} | bytes={raw.Length} | migrated={migrated}");
+            _logVerbose?.Invoke(
+                $"load complete | source={(migrated ? "migrated" : "disk")} | path={_path} | size_bytes={System.Text.Encoding.UTF8.GetByteCount(raw)} | migrated={migrated}");
             return parsed;
         }
         catch (Exception ex)
@@ -153,7 +166,7 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
             // The app still runs on defaults, so this is a Warning rather
             // than an Error.
             _logWarning?.Invoke(
-                $"parse failed, fallback to defaults | path={_path} | error={ex.GetType().Name}: {ex.Message}");
+                $"Settings file unreadable, using defaults | reason=parse_failed | source=corrupt_fallback | path={_path} | ex_type={ex.GetType().Name} | ex_message={ex.Message}");
             // Same treatment as the missing-file defaults above: a post-load hook
             // that stamps fresh state (e.g. a schema version) must see every fresh
             // instance, or a later save would persist pre-migration-looking data
@@ -217,6 +230,7 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
     {
         using var processMutex = new System.Threading.Mutex(initiallyOwned: false, _mutexName);
         bool acquired = false;
+        bool saved = false;
         try
         {
             try
@@ -231,12 +245,14 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
                 // inherited it (WaitOne succeeded despite the exception).
                 // Recoverable, but log it.
                 acquired = true;
-                _logWarning?.Invoke("settings mutex was abandoned (other instance crashed?) — recovering");
+                _logWarning?.Invoke(
+                    $"Settings mutex was abandoned, recovering | reason=mutex_abandoned | path={_path}");
             }
 
             if (!acquired)
             {
-                _logWarning?.Invoke("save skipped: another instance holds the settings mutex");
+                _logWarning?.Invoke(
+                    $"Settings save skipped | reason=mutex_timeout | path={_path}");
                 return;
             }
 
@@ -254,17 +270,39 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
             string tmp = _path + ".tmp";
             File.WriteAllText(tmp, json);
             File.Move(tmp, _path, overwrite: true);
+            saved = true;
 
-            _logVerbose?.Invoke("saved to disk");
-            Changed?.Invoke();
+            _logVerbose?.Invoke(
+                $"saved to disk | path={_path} | size_bytes={System.Text.Encoding.UTF8.GetByteCount(json)}");
         }
         catch (Exception ex)
         {
-            _logError?.Invoke($"save failed: {ex.GetType().Name}: {ex.Message}");
+            _logError?.Invoke(
+                $"Settings save failed | reason=write_failed | path={_path} | ex_type={ex.GetType().Name} | ex_message={ex.Message}");
         }
         finally
         {
             if (acquired) processMutex.ReleaseMutex();
+        }
+
+        // Outside the write's try: a subscriber's exception is not a failed
+        // save, and it must not hold the process mutex while it runs.
+        if (saved) RaiseChanged("save");
+    }
+
+    // Changed runs on a timer or watcher thread, where an exception escaping a
+    // subscriber would end the process; one faulty surface must not take the
+    // store, or the app, down with it.
+    private void RaiseChanged(string trigger)
+    {
+        try
+        {
+            Changed?.Invoke();
+        }
+        catch (Exception ex)
+        {
+            _logError?.Invoke(
+                $"Settings change handler failed | reason=handler_threw | trigger={trigger} | path={_path} | ex_type={ex.GetType().Name} | ex_message={ex.Message}");
         }
     }
 
@@ -282,8 +320,9 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
             _current = fresh;
         }
         if (migrated) Flush();
-        _logInfo?.Invoke("reloaded from disk");
-        Changed?.Invoke();
+        _logInfo?.Invoke("Settings reloaded from disk");
+        _logVerbose?.Invoke($"reload complete | source=explicit | path={_path} | migrated={migrated}");
+        RaiseChanged("reload");
     }
 
     // ── Following the file ────────────────────────────────────────────────
@@ -298,7 +337,7 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
         string name = System.IO.Path.GetFileName(_path);
         if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder))
         {
-            _logWarning?.Invoke($"file not followed, folder missing | path={_path}");
+            _logWarning?.Invoke($"Settings file not followed | reason=folder_missing | path={_path}");
             return null;
         }
 
@@ -312,7 +351,11 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
             watcher.Created += OnFileNotified;
             watcher.Renamed += OnFileNotified;
             watcher.Error += (_, e) =>
-                _logWarning?.Invoke($"file watcher error | path={_path} | error={e.GetException().GetType().Name}");
+            {
+                Exception error = e.GetException();
+                _logWarning?.Invoke(
+                    $"Settings file watcher failed | reason=watcher_error | path={_path} | ex_type={error.GetType().Name} | ex_message={error.Message}");
+            };
             watcher.EnableRaisingEvents = true;
             return watcher;
         }
@@ -320,7 +363,8 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
         {
             // The store still works without it: writes from outside are then
             // seen at the next launch, as before.
-            _logWarning?.Invoke($"file not followed | path={_path} | error={ex.GetType().Name}: {ex.Message}");
+            _logWarning?.Invoke(
+                $"Settings file not followed | reason=watcher_start_failed | path={_path} | ex_type={ex.GetType().Name} | ex_message={ex.Message}");
             return null;
         }
     }
@@ -342,10 +386,13 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
             if (!File.Exists(_path)) return;
             raw = File.ReadAllText(_path);
         }
-        catch (IOException ex)
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            // The writer still holds the file; the close that follows notifies again.
-            _logVerbose?.Invoke($"follow deferred, file busy | path={_path} | error={ex.GetType().Name}");
+            // The writer still holds the file (or briefly denies access while it
+            // swaps it in); the close that follows notifies again. Escaping here
+            // would end the process from the timer thread.
+            _logVerbose?.Invoke(
+                $"follow deferred, file busy | path={_path} | ex_type={ex.GetType().Name} | ex_message={ex.Message}");
             return;
         }
 
@@ -366,7 +413,7 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
             // values and wait. The warning tells the person editing by hand
             // why nothing moved.
             _logWarning?.Invoke(
-                $"file changed on disk but could not be read, keeping current values | path={_path} | error={ex.GetType().Name}: {ex.Message}");
+                $"Settings file changed but could not be read, keeping current values | reason=parse_failed | path={_path} | ex_type={ex.GetType().Name} | ex_message={ex.Message}");
             return;
         }
 
@@ -377,9 +424,9 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
         }
 
         _logInfo?.Invoke("Settings reloaded (file changed on disk)");
-        _logVerbose?.Invoke($"follow complete | source=watcher | path={_path} | bytes={raw.Length} | migrated={migrated}");
+        _logVerbose?.Invoke($"follow complete | source=watcher | path={_path} | size_bytes={System.Text.Encoding.UTF8.GetByteCount(raw)} | migrated={migrated}");
         if (migrated) Flush();
-        Changed?.Invoke();
+        RaiseChanged("follow");
     }
 
     public void Dispose()

@@ -27,9 +27,7 @@ public sealed partial class TaskbarCoverHost
                 // again. Until then, restarting would corrupt them.
                 if (!defunct.Join(TimeSpan.Zero))
                 {
-                    DeckleShellTaskbarCoverSource.Log.HostStartFailed();
-                    DeckleShellTaskbarCoverSource.Log.HostStartFailedDetail(
-                        "DefunctWorker", "previous cover thread has not exited yet");
+                    DeckleShellTaskbarCoverSource.Log.HostStartFailed("previous_worker_alive", "", "");
                     return false;
                 }
                 _defunctThread = null;
@@ -72,8 +70,8 @@ public sealed partial class TaskbarCoverHost
 
             if (!started)
             {
-                DeckleShellTaskbarCoverSource.Log.HostStartFailed();
-                DeckleShellTaskbarCoverSource.Log.HostStartFailedDetail(
+                DeckleShellTaskbarCoverSource.Log.HostStartFailed(
+                    "setup_failed",
                     startError?.GetType().Name ?? "(unknown)", startError?.Message ?? "(no message)");
                 _thread = null;
                 return false;
@@ -168,7 +166,8 @@ public sealed partial class TaskbarCoverHost
             IntPtr.Zero, _cursorHookDelegate, 0, 0, WINEVENT_OUTOFCONTEXT);
         if (_cursorHook == IntPtr.Zero)
         {
-            throw new InvalidOperationException("SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE) failed");
+            throw new InvalidOperationException(
+                $"SetWinEventHook(EVENT_OBJECT_LOCATIONCHANGE) failed (Win32 err {Marshal.GetLastWin32Error()})");
         }
 
         // The desktop reorder signal catches the taskbar restacking itself
@@ -180,10 +179,10 @@ public sealed partial class TaskbarCoverHost
             EVENT_OBJECT_REORDER, EVENT_OBJECT_REORDER,
             IntPtr.Zero, _reorderHookDelegate, 0, 0, WINEVENT_OUTOFCONTEXT);
         if (_reorderHook == IntPtr.Zero)
-            DeckleShellTaskbarCoverSource.Log.ReorderHookFailed();
+            DeckleShellTaskbarCoverSource.Log.ReorderHookFailed(Marshal.GetLastWin32Error());
 
         if (!WTSRegisterSessionNotification(_hwnd, NOTIFY_FOR_THIS_SESSION))
-            DeckleShellTaskbarCoverSource.Log.SessionNotifyFailed();
+            DeckleShellTaskbarCoverSource.Log.SessionNotifyFailed(Marshal.GetLastWin32Error());
 
         DeckleShellTaskbarCoverSource.Log.HostStarted();
         DeckleShellTaskbarCoverSource.Log.HostStartedDetail(_hwnd.ToInt64(), (int)_threadId);

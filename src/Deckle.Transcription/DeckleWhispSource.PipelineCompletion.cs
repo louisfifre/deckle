@@ -7,15 +7,6 @@ public sealed partial class DeckleWhispSource
 {
     // ── Pipeline completion ─────────────────────────────────────────────
 
-    [Event(EvtPipelineCompleted,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Done")]
-    public void PipelineCompleted()
-    {
-        if (IsEnabled()) WriteEvent(EvtPipelineCompleted);
-    }
-
     [Event(EvtPipelineCompletedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -52,25 +43,57 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtFileTranscriptionCompleted);
     }
 
-    [Event(EvtFileTranscriptionCopied,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "File transcription completed and copied to the clipboard")]
-    public void FileTranscriptionCopied()
-    {
-        if (IsEnabled()) WriteEvent(EvtFileTranscriptionCopied);
-    }
-
     [Event(EvtPipelineTimings,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "timings | audio_sec={0:F1} | model_load_ms={1} | hotkey_to_capture_ms={2} | record_drain_ms={3} | stop_to_pipeline_ms={4} | whisper_init_ms={5} | whisper_ms={6} | llm_ms={7} | clipboard_ms={8} | paste_ms={9}")]
-    public void PipelineTimings(double audio_sec, long model_load_ms, long hotkey_to_capture_ms, long record_drain_ms, long stop_to_pipeline_ms, long whisper_init_ms, long whisper_ms, long llm_ms, long clipboard_ms, long paste_ms)
+           Message = "timings | audio_s={0:F1} | model_load_ms={1} | hotkey_to_capture_ms={2} | record_drain_ms={3} | stop_to_pipeline_ms={4} | whisper_init_ms={5} | whisper_ms={6} | llm_ms={7} | clipboard_ms={8} | paste_ms={9}")]
+    public void PipelineTimings(double audio_s, long model_load_ms, long hotkey_to_capture_ms, long record_drain_ms, long stop_to_pipeline_ms, long whisper_init_ms, long whisper_ms, long llm_ms, long clipboard_ms, long paste_ms)
     {
-        if (!OperationalLogAdmission.IsDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtPipelineTimings, audio_sec, model_load_ms, hotkey_to_capture_ms, record_drain_ms, stop_to_pipeline_ms, whisper_init_ms, whisper_ms, llm_ms, clipboard_ms, paste_ms);
+        if (!IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline)) return;
+        WriteEvent(EvtPipelineTimings, audio_s, model_load_ms, hotkey_to_capture_ms, record_drain_ms, stop_to_pipeline_ms, whisper_init_ms, whisper_ms, llm_ms, clipboard_ms, paste_ms);
+    }
+
+    // The take keeps its raw transcript although a rewriting profile was
+    // active. reason (closed vocabulary): empty_result (the rewriter returned
+    // no text; its own provider logs why), copy_failed (the rewritten text
+    // could not replace the raw copy on the clipboard, so the raw text is
+    // what gets pasted).
+    [Event(EvtRewriteFellBackToRaw,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "The rewrite was not applied, the raw transcript is delivered | reason={0} | llm_ms={1}")]
+    public void RewriteFellBackToRaw(string reason, long llm_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtRewriteFellBackToRaw, reason, llm_ms);
+    }
+
+    // ── Corpus audio: one incident until a write succeeds ───────────────
+
+    [Event(EvtCorpusAudioWriteFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "The corpus audio could not be saved, corpus lines go without audio | ex_type={0} | ex_message={1}")]
+    public void CorpusAudioWriteFailed(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtCorpusAudioWriteFailed, ex_type, ex_message);
+    }
+
+    [Event(EvtCorpusAudioWriteRetryFailed,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "corpus audio write failed again | ex_type={0} | ex_message={1}")]
+    public void CorpusAudioWriteRetryFailed(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtCorpusAudioWriteRetryFailed, ex_type, ex_message);
+    }
+
+    [Event(EvtCorpusAudioWriteRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Corpus audio is saved again | failures={0}")]
+    public void CorpusAudioWriteRecovered(int failures)
+    {
+        if (IsEnabled()) WriteEvent(EvtCorpusAudioWriteRecovered, failures);
     }
 
     [Event(EvtPipelineLlmMetrics,

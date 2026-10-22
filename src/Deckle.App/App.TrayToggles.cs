@@ -16,10 +16,11 @@ public partial class App
 {
     private static IReadOnlyList<TrayToggle> BuildTrayToggles(StartupContext context)
     {
-        var toggles = new List<TrayToggle>
+        var toggles = new List<TrayToggle>();
+
+        if (context.PrecisionScrollPresent)
         {
-            // Precision scrolling and taskbar cover are always composed.
-            new(
+            toggles.Add(new(
                 "precision-scroll",
                 Loc.Get("TrayMenu_PrecisionScroll"),
                 () => PrecisionScrollSettingsService.Instance.Current.Enabled,
@@ -28,8 +29,9 @@ public partial class App
                     var s = PrecisionScrollSettingsService.Instance.Current;
                     s.Enabled = !s.Enabled;
                     PrecisionScrollSettingsService.Instance.Save();
-                }),
-        };
+                    DeckleAppSource.Log.TrayToggleChanged("precision-scroll", s.Enabled);
+                }));
+        }
 
         if (context.TrackpadPresent)
         {
@@ -42,9 +44,11 @@ public partial class App
                     var s = TrackpadSettingsService.Instance.Current;
                     s.Enabled = !s.Enabled;
                     TrackpadSettingsService.Instance.Save();
+                    DeckleAppSource.Log.TrayToggleChanged("trackpad", s.Enabled);
                 }));
         }
 
+        // Always composed, so its switch is always offered.
         toggles.Add(new(
             "taskbar-cover",
             Loc.Get("TrayMenu_TaskbarCover"),
@@ -54,6 +58,7 @@ public partial class App
                 var s = TaskbarCoverSettingsService.Instance.Current;
                 s.Enabled = !s.Enabled;
                 TaskbarCoverSettingsService.Instance.Save();
+                DeckleAppSource.Log.TrayToggleChanged("taskbar-cover", s.Enabled);
             }));
 
         if (context.AutocorrectPresent)
@@ -66,6 +71,7 @@ public partial class App
                 {
                     bool enabled = AutocorrectSettingsService.Instance.Current.Enabled;
                     AutocorrectSettingsService.Instance.SetEnabled(!enabled);
+                    DeckleAppSource.Log.TrayToggleChanged("autocorrect", !enabled);
                 }));
         }
 
@@ -81,6 +87,7 @@ public partial class App
                     var s = LlmSettingsService.Instance.Current;
                     s.Enabled = !s.Enabled;
                     LlmSettingsService.Instance.Save();
+                    DeckleAppSource.Log.TrayToggleChanged("rewrite", s.Enabled);
                 }));
         }
 
@@ -106,6 +113,7 @@ public partial class App
                     var s = AmbientSettingsService.Instance.Current;
                     s.Enabled = !s.Enabled;
                     AmbientSettingsService.Instance.Save();
+                    DeckleAppSource.Log.TrayToggleChanged("ambient", s.Enabled);
                 }),
         ];
     }

@@ -27,6 +27,7 @@ public sealed partial class OnnxSentenceScorer : ISentenceScorer, IDisposable
     private readonly int? _bosTokenId;
     private readonly string? _chatTemplate;
     private readonly string _executionProvider;
+    private int _chatTemplateFallbackReported;
 
     public string ExecutionProvider => _executionProvider;
 }

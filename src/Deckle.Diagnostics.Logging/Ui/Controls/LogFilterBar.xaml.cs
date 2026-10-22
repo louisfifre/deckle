@@ -1,6 +1,5 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics.Tracing;
-using System.Text;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Microsoft.UI.Xaml;
@@ -200,31 +199,13 @@ public sealed partial class LogFilterBar : UserControl
         _ => token.Value,
     };
 
+    // The label is the word the log column shows, so LogLineFormatter owns the
+    // naming. Only "Dictation" is localized here: the log lines stay invariant
+    // English because they land in app.jsonl.
     private static string FormatModule(string provider)
-    {
-        string name = provider.StartsWith("Deckle-", StringComparison.Ordinal)
-            ? provider[7..]
-            : provider;
-        string? normalized = name switch
-        {
-            "Whisp" => Localize("LogFilter_Module_Dictation"),
-            "Llm" => "LLM",
-            "Vad" => "VAD",
-            "AnytypeMcp" => "Anytype MCP",
-            "SettingsUx" => "Settings UX",
-            _ => null,
-        };
-        if (normalized is not null) return normalized;
-
-        var builder = new StringBuilder(name.Length + 4);
-        for (int i = 0; i < name.Length; i++)
-        {
-            if (i > 0 && char.IsUpper(name[i]) && char.IsLower(name[i - 1]))
-                builder.Append(' ');
-            builder.Append(name[i]);
-        }
-        return builder.ToString();
-    }
+        => string.Equals(provider, "Deckle-Whisp", StringComparison.Ordinal)
+            ? Localize("LogFilter_Module_Dictation")
+            : LogLineFormatter.DisplayName(provider);
 
     private static string Localize(string key) => Loc.GetFrom(ResourceLibrary, key);
 

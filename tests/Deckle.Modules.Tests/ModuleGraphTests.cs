@@ -110,4 +110,37 @@ public class ModuleGraphTests
         var uncheck = ModuleGraph.WithoutDependents(Catalog, ["ambient", "rewrite"], "rewrite");
         Assert.Contains("ambient", uncheck);
     }
+
+    [Fact]
+    public void AModuleIsCheckableOnlyOnceItsDependenciesAreChecked()
+    {
+        Assert.False(ModuleGraph.DependenciesMet(Catalog, new HashSet<string> { "ambient" }, "rewrite"));
+        Assert.True(ModuleGraph.DependenciesMet(Catalog, new HashSet<string> { "transcription" }, "rewrite"));
+        Assert.True(ModuleGraph.DependenciesMet(Catalog, new HashSet<string>(), "ambient"));
+    }
+
+    [Fact]
+    public void AnUnknownDependencyDoesNotGreyAModuleOut()
+    {
+        IReadOnlyList<ModuleDescriptor> catalog = [Module("x", "ghost")];
+
+        Assert.True(ModuleGraph.DependenciesMet(catalog, new HashSet<string>(), "x"));
+    }
+
+    [Fact]
+    public void ARecordedChoiceLosesTheModulesWhoseDependenciesItLacks()
+    {
+        IReadOnlyList<ModuleDescriptor> chain =
+        [
+            Module("a"),
+            Module("b", "a"),
+            Module("c", "b"),
+            Module("d"),
+        ];
+
+        // a is missing, so b goes, and c goes through b.
+        var result = ModuleGraph.WithoutUnmetDependencies(chain, ["b", "c", "d"]);
+
+        Assert.Equal(new HashSet<string> { "d" }, result);
+    }
 }

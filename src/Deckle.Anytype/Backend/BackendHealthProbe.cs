@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net.Http;
+using System.Net.Sockets;
 
 namespace Deckle.Anytype;
 
@@ -9,7 +10,10 @@ namespace Deckle.Anytype;
 // account login propagates the listen address, so a 200 here proves the REST
 // surface is actually serving. Since anytype-heart 0.51 this root route serves
 // the v2 OpenAPI document and v1 lives under `/v1/docs/openapi.json`; the probe
-// only needs the unauthenticated 200, so it stays valid on either. The PID is
+// only needs the unauthenticated 200, so it stays valid on either. On 0.5.0 that
+// document lists 41 `/v2` paths and no `/v1` one, yet the `/v1/*` routes still
+// answer (401 without a key, so alive): the root document does not tell which
+// API versions are served. The PID is
 // never the signal: the task process can be alive while REST is not yet bound.
 //
 // Separate from AnytypeApiClient on purpose — that client is bound to a space and
@@ -17,8 +21,12 @@ namespace Deckle.Anytype;
 // docs endpoint, a different responsibility with no credentials.
 internal interface IBackendHealthProbe : IDisposable
 {
-    Task<bool> IsHealthyAsync(CancellationToken ct = default);
+    Task<BackendHealth> ProbeAsync(CancellationToken ct = default);
 }
+
+// Reason is one snake_case word (ok, http_status, timeout, refused,
+// unreachable) so the supervisor's unresponsive warning can carry the cause.
+internal readonly record struct BackendHealth(bool Healthy, string Reason);
 
 public sealed class BackendHealthProbe : IBackendHealthProbe
 {
@@ -43,9 +51,9 @@ public sealed class BackendHealthProbe : IBackendHealthProbe
         };
     }
 
-    // Any failure — connection refused, timeout, non-200 — means "not (yet) up"
-    // and returns false; only the caller's cancellation propagates.
-    public async Task<bool> IsHealthyAsync(CancellationToken ct = default)
+    // Any failure — connection refused, timeout, non-200 — means "not (yet) up";
+    // only the caller's cancellation propagates.
+    async Task<BackendHealth> IBackendHealthProbe.ProbeAsync(CancellationToken ct)
     {
         long startTicks = Stopwatch.GetTimestamp();
         try
@@ -55,15 +63,23 @@ public sealed class BackendHealthProbe : IBackendHealthProbe
 
             double elapsedMs = Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds;
             bool healthy = response.IsSuccessStatusCode;
-            DeckleAnytypeSource.Log.BackendHealthProbed(healthy, (int)response.StatusCode, elapsedMs);
-            return healthy;
+            string reason = healthy ? "ok" : "http_status";
+            DeckleAnytypeSource.Log.BackendHealthProbed(healthy, (int)response.StatusCode, reason, elapsedMs);
+            return new BackendHealth(healthy, reason);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
         {
-            // Status 0 marks "no HTTP response".
+            // Status 0 marks "no HTTP response". A refused connection is the
+            // normal answer of a stopped backend; anything else is worth telling apart.
             double elapsedMs = Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds;
-            DeckleAnytypeSource.Log.BackendHealthProbed(false, 0, elapsedMs);
-            return false;
+            string reason = ex switch
+            {
+                TaskCanceledException => "timeout",
+                HttpRequestException { InnerException: SocketException { SocketErrorCode: SocketError.ConnectionRefused } } => "refused",
+                _ => "unreachable",
+            };
+            DeckleAnytypeSource.Log.BackendHealthProbed(false, 0, reason, elapsedMs);
+            return new BackendHealth(false, reason);
         }
     }
 

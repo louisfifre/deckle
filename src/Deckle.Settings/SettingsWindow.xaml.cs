@@ -270,7 +270,8 @@ public sealed partial class SettingsWindow : Window
     // template-binds it to its NavigationViewItemPresenter, whose LayoutRoot
     // template-binds it in turn and shows it in the Normal state, while the
     // PointerOver and Pressed states set LayoutRoot.Background themselves (WinUI
-    // generic.xaml, Windows App SDK 1.8). So the highlight shows at rest and
+    // generic.xaml, read on Windows App SDK 1.8; the presenter template is
+    // unchanged in WinUI 2.3.9 of 2.5.1). So the highlight shows at rest and
     // hover still reads, with no retemplate.
     //
     // The brush comes from Themes/RailBrushes.xaml, one theme dictionary per
@@ -562,14 +563,31 @@ public sealed partial class SettingsWindow : Window
                 DeckleSettingsSource.Log.NavCompleted();
                 DeckleSettingsSource.Log.NavCompletedDetail(pageType.Name);
                 DeckleSettingsSource.Log.NavTiming(pageType.Name, DeckleSettingsSource.NavClock.ElapsedMilliseconds);
+                ReportPageReadyOnFirstLoad(pageType.Name);
             }
         }
         catch (Exception ex)
         {
-            DeckleSettingsSource.Log.NavFailedThrew();
-            DeckleSettingsSource.Log.NavFailedThrewDetail(pageType.Name, ex.GetType().Name, ex.Message);
+            DeckleSettingsSource.Log.NavFailedThrew(pageType.Name, ex.GetType().Name, ex.Message);
             DeckleSettingsSource.Log.NavStackTrace(ex.StackTrace ?? "(no stack)");
         }
+    }
+
+    // Navigate returns before the page has run its Loaded work (ViewModel.Load,
+    // control sync), so NavTiming alone misses what the user waits for. The
+    // handler is one-shot because a cached page raises Loaded on every return,
+    // and each navigation subscribes afresh.
+    private void ReportPageReadyOnFirstLoad(string pageName)
+    {
+        if (PageFrame.Content is not FrameworkElement page) return;
+
+        void OnLoaded(object sender, RoutedEventArgs e)
+        {
+            page.Loaded -= OnLoaded;
+            DeckleSettingsSource.Log.PageReady(pageName, DeckleSettingsSource.NavClock.ElapsedMilliseconds);
+        }
+
+        page.Loaded += OnLoaded;
     }
 
     private static void SyncNavigationPane(NavigationView nav)

@@ -127,13 +127,14 @@ public sealed partial class AmbientPage
         {
             if (useCloud)
             {
-                DeckleLightingSource.Log.DiscoveryFailed();
-                DeckleLightingSource.Log.DiscoveryFailedDetail(ex.GetType().Name, ex.Message);
+                DeckleLightingSource.Log.DiscoveryFailed(ex.GetType().Name, ex.Message);
             }
             else
             {
-                DeckleLightingSource.Log.LocalDiscoveryFailed();
-                DeckleLightingSource.Log.LocalDiscoveryFailedDetail(ex.GetType().Name, ex.Message);
+                DeckleLightingSource.Log.LocalDiscoveryFailed(
+                    ex.GetType().Name,
+                    ex.Message,
+                    (ex as System.ComponentModel.Win32Exception)?.NativeErrorCode ?? 0);
             }
             SetHuePairStatus(Loc.Get("AmbientHue_Discovery_Failed"));
         }
@@ -205,8 +206,7 @@ public sealed partial class AmbientPage
         catch (Exception ex)
         {
             SetHuePairStatus(Loc.Format("AmbientHue_PairStatus_Failed_Format", ex.Message));
-            DeckleAmbientSource.Log.AmbientPagePairFailed();
-            DeckleAmbientSource.Log.AmbientPagePairFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.AmbientPagePairFailed(ex.GetType().Name, ex.Message);
         }
         finally
         {
@@ -255,8 +255,7 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            DeckleAmbientSource.Log.AmbientPageListGroupsFailed();
-            DeckleAmbientSource.Log.AmbientPageListGroupsFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.AmbientPageListGroupsFailed(ex.GetType().Name, ex.Message);
         }
         finally
         {

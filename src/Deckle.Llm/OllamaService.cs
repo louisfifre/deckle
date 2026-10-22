@@ -100,8 +100,8 @@ public sealed class OllamaService
         catch (JsonException ex)
         {
             string preview = json.Length > 200 ? json[..200] + "..." : json;
-            DeckleLlmSource.Log.ListModelsInvalidJson();
-            DeckleLlmSource.Log.ListModelsInvalidJsonDetail(ex.Message, preview);
+            DeckleLlmSource.Log.ListModelsInvalidJson(ex.GetType().Name, ex.Message);
+            DeckleLlmSource.Log.ListModelsInvalidJsonDetail(preview);
             return new();
         }
     }
@@ -127,8 +127,8 @@ public sealed class OllamaService
         catch (JsonException ex)
         {
             string preview = json.Length > 200 ? json[..200] + "..." : json;
-            DeckleLlmSource.Log.ShowModelInvalidJson();
-            DeckleLlmSource.Log.ShowModelInvalidJsonDetail(ex.Message, name, preview);
+            DeckleLlmSource.Log.ShowModelInvalidJson(name, ex.GetType().Name, ex.Message);
+            DeckleLlmSource.Log.ShowModelInvalidJsonDetail(preview);
             return null;
         }
     }

@@ -19,12 +19,12 @@ public sealed class DeckleTrackpadSourceTests : IDisposable
     }
 
     [Fact]
-    public void InjectionIncidentAndRecoveryRemainPermanent()
+    public void InjectionIncidentAndItsEndRemainPermanent()
     {
         using var listener = new TestEventListener("Deckle-Trackpad");
 
-        DeckleTrackpadSource.Log.InjectionFailed();
-        DeckleTrackpadSource.Log.InjectionRecovered();
+        DeckleTrackpadSource.Log.InjectionFailed("move", 5);
+        DeckleTrackpadSource.Log.InjectionIncidentEnded("injection_succeeded");
 
         Assert.Collection(
             listener.Events,
@@ -32,11 +32,15 @@ public sealed class DeckleTrackpadSourceTests : IDisposable
             {
                 Assert.Equal(DeckleTrackpadSource.EvtInjectionFailed, incident.EventId);
                 Assert.Equal(EventLevel.Warning, incident.Level);
+                Assert.Equal("move", incident.Payload?[0]);
+                Assert.Equal(5, incident.Payload?[1]);
             },
-            recovery =>
+            ended =>
             {
-                Assert.Equal(DeckleTrackpadSource.EvtInjectionRecovered, recovery.EventId);
-                Assert.Equal(EventLevel.Informational, recovery.Level);
+                Assert.Equal(DeckleTrackpadSource.EvtInjectionIncidentEnded, ended.EventId);
+                Assert.Equal(EventLevel.Informational, ended.Level);
+                Assert.Equal(ObservationTags.Journal, ended.Tags & ObservationTags.Journal);
+                Assert.Equal("injection_succeeded", ended.Payload?[0]);
             });
     }
 
@@ -48,10 +52,12 @@ public sealed class DeckleTrackpadSourceTests : IDisposable
         DeckleTrackpadSource.Log.DragStarted();
         DeckleTrackpadSource.Log.DragEnded("lift", 120, 8);
         DeckleTrackpadSource.Log.TapIgnored();
-        DeckleTrackpadSource.Log.EngineStarted();
+        DeckleTrackpadSource.Log.EngineStarted(1.0, true);
 
-        Assert.Single(listener.Events);
-        Assert.Equal(DeckleTrackpadSource.EvtEngineStarted, listener.Events[0].EventId);
+        var started = Assert.Single(listener.Events);
+        Assert.Equal(DeckleTrackpadSource.EvtEngineStarted, started.EventId);
+        Assert.True(started.HasKeyword(Keywords.Lifecycle));
+        Assert.Equal(ObservationTags.Journal, started.Tags & ObservationTags.Journal);
 
         OperationalLogAdmission.Configure(
             static activity => activity == OperationalLogActivity.Input);
@@ -61,7 +67,7 @@ public sealed class DeckleTrackpadSourceTests : IDisposable
 
         Assert.Collection(
             listener.Events.Skip(1),
-            started => Assert.Equal(DeckleTrackpadSource.EvtDragStarted, started.EventId),
+            dragStarted => Assert.Equal(DeckleTrackpadSource.EvtDragStarted, dragStarted.EventId),
             ended => Assert.Equal(DeckleTrackpadSource.EvtDragEnded, ended.EventId),
             tap => Assert.Equal(DeckleTrackpadSource.EvtTapIgnored, tap.EventId));
     }

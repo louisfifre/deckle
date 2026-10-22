@@ -1,10 +1,13 @@
 namespace Deckle.Anytype;
 
+// PendingProcessId names the live trusted serve a timed-out reconciliation
+// waited on without it ever serving; 0 when none was seen.
 internal sealed record BackendReconciliationResult(
     BackendStartOutcome Outcome,
     IBackendProcess? Process,
     string ReconciliationId,
-    string Decision);
+    string Decision,
+    int PendingProcessId = 0);
 
 internal interface IBackendReconciler
 {
@@ -16,6 +19,10 @@ internal interface IBackendReconciler
 // serve. Readiness is accepted only after two TCP-owner snapshots around health.
 internal sealed class BackendReconciler : IBackendReconciler
 {
+    // On 0.5.0 the serve auto-logs-in with its stored account key about 2.6 s
+    // after it starts, and the REST listener answers 200 only after that login,
+    // so a probe before then is refused by design. 20 s is several times that
+    // delay, yet short enough to surface a backend that never binds.
     private static readonly TimeSpan ReadinessTimeout = TimeSpan.FromSeconds(20);
     private static readonly TimeSpan ProbeInterval = TimeSpan.FromMilliseconds(500);
 
@@ -64,7 +71,7 @@ internal sealed class BackendReconciler : IBackendReconciler
                 _ => ReconcileProtected(id, ct),
                 ct).ConfigureAwait(false);
             DeckleAnytypeSource.Log.BackendReconciliationCompleted(
-                id, result.Decision, result.Process?.Id ?? 0,
+                id, result.Decision, result.Process?.Id ?? result.PendingProcessId,
                 _time.GetElapsedTime(started).TotalMilliseconds);
             return result;
         }
@@ -74,6 +81,15 @@ internal sealed class BackendReconciler : IBackendReconciler
                 id, _time.GetElapsedTime(started).TotalMilliseconds);
             throw;
         }
+        catch (Exception ex)
+        {
+            // Without this end the Started above dangles; the caller decides
+            // what the fault means, so it still propagates.
+            DeckleAnytypeSource.Log.BackendReconciliationFailed(
+                id, ex.GetType().Name, ex.Message,
+                _time.GetElapsedTime(started).TotalMilliseconds);
+            throw;
+        }
     }
 
     private BackendReconciliationResult ReconcileProtected(string id, CancellationToken ct)
@@ -81,6 +97,7 @@ internal sealed class BackendReconciler : IBackendReconciler
         long started = _time.GetTimestamp();
         IBackendProcess? spawned = null;
         bool spawnAttempted = false;
+        int pendingId = 0;
         try
         {
             while (_time.GetElapsedTime(started) < ReadinessTimeout)
@@ -88,8 +105,14 @@ internal sealed class BackendReconciler : IBackendReconciler
                 ct.ThrowIfCancellationRequested();
 
                 BackendListenerSnapshot first = _listener.Inspect();
+                if (first.State == BackendListenerState.Owned) pendingId = first.ProcessId;
                 if (first.State is BackendListenerState.Ambiguous or BackendListenerState.Failed)
-                    return Conflict(id, first, null);
+                    return Conflict(
+                        id, first,
+                        first.State == BackendListenerState.Ambiguous
+                            ? "listener_ambiguous"
+                            : "listener_query_failed",
+                        null);
 
                 if (first.State == BackendListenerState.Owned)
                 {
@@ -110,10 +133,7 @@ internal sealed class BackendReconciler : IBackendReconciler
                 }
                 else if (spawned is not null && spawned.HasExited)
                 {
-                    DeckleAnytypeSource.Log.BackendStopped();
-                    DeckleAnytypeSource.Log.BackendStoppedDetail(
-                        spawned.Id, spawned.ExitCode,
-                        Math.Max(0, (DateTimeOffset.UtcNow - spawned.StartedAt).TotalSeconds));
+                    BackendProcessReport.Stopped(spawned);
                     return Result(BackendStartOutcome.StartRejected, null, id, "start-rejected");
                 }
 
@@ -121,8 +141,9 @@ internal sealed class BackendReconciler : IBackendReconciler
                     _provider.TrustedExecutablePaths());
                 try
                 {
-                    bool oneIsAlive = running.Any(process => !process.HasExited);
-                    if (!oneIsAlive && spawned is null && !spawnAttempted)
+                    IBackendProcess? alive = running.FirstOrDefault(process => !process.HasExited);
+                    if (alive is not null) pendingId = alive.Id;
+                    if (alive is null && spawned is null && !spawnAttempted)
                     {
                         BackendProcessSpec? spec = _provider.ResolveActiveSpec();
                         if (spec is null)
@@ -137,6 +158,7 @@ internal sealed class BackendReconciler : IBackendReconciler
                         spawnAttempted = true;
                         if (spawned is null)
                             return Result(BackendStartOutcome.StartRejected, null, id, "start-rejected");
+                        pendingId = spawned.Id;
                     }
                 }
                 finally
@@ -147,10 +169,12 @@ internal sealed class BackendReconciler : IBackendReconciler
                 _time.Delay(ProbeInterval, ct);
             }
 
-            DeckleAnytypeSource.Log.BackendStartTimedOut();
+            // Disposing releases Deckle's handle only: the serve, if alive,
+            // keeps running and the next reconciliation waits on it again.
+            DeckleAnytypeSource.Log.BackendStartTimedOut(pendingId);
             spawned?.Dispose();
             spawned = null;
-            return Result(BackendStartOutcome.TimedOut, null, id, "timed-out");
+            return new(BackendStartOutcome.TimedOut, null, id, "timed-out", pendingId);
         }
         finally
         {
@@ -167,16 +191,16 @@ internal sealed class BackendReconciler : IBackendReconciler
         IBackendProcess? owner = spawned is not null && spawned.Id == first.ProcessId
             ? spawned
             : _processes.Open(first.ProcessId);
-        if (owner is null) return Conflict(id, first, "owner process is unreadable");
+        if (owner is null) return Conflict(id, first, "owner_unreadable", "owner process is unreadable");
 
         bool transferOwner = !ReferenceEquals(owner, spawned);
         try
         {
             if (!IsTrusted(owner.ExecutablePath))
-                return Conflict(id, first, owner.ExecutablePath);
+                return Conflict(id, first, "owner_untrusted", owner.ExecutablePath);
             if (owner.HasExited) return null;
 
-            bool healthy = _health.IsHealthyAsync(ct).GetAwaiter().GetResult();
+            bool healthy = _health.ProbeAsync(ct).GetAwaiter().GetResult().Healthy;
             BackendListenerSnapshot second = _listener.Inspect();
             DeckleAnytypeSource.Log.BackendListenerObserved(
                 id, first.ProcessId, second.ProcessId, healthy,
@@ -204,9 +228,10 @@ internal sealed class BackendReconciler : IBackendReconciler
     private BackendReconciliationResult Conflict(
         string id,
         BackendListenerSnapshot snapshot,
+        string reason,
         string? detail)
     {
-        DeckleAnytypeSource.Log.BackendEndpointConflict();
+        DeckleAnytypeSource.Log.BackendEndpointConflict(reason, snapshot.ProcessId);
         DeckleAnytypeSource.Log.BackendEndpointConflictDetail(
             id, snapshot.ProcessId, detail ?? snapshot.Error ?? snapshot.State.ToString());
         return Result(BackendStartOutcome.EndpointConflict, null, id, "endpoint-conflict");

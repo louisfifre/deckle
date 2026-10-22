@@ -49,8 +49,8 @@ public sealed class AmbientSettingsService
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Ambient-Save",
             jsonOptions: _jsonOptions,
-            logWarning:  msg => DeckleAmbientSource.Log.SettingsLoadWarning($"[ambient] {msg}"),
-            logError:    msg => DeckleAmbientSource.Log.SettingsLoadError($"[ambient] {msg}"));
+            logWarning:  msg => DeckleAmbientSource.Log.SettingsLoadWarning(msg),
+            logError:    msg => DeckleAmbientSource.Log.SettingsLoadError(msg));
 
         Presets = new PresetFamily<AmbientTuning>(
             AmbientPresets.All,

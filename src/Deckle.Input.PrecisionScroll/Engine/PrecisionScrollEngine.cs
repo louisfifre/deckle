@@ -4,6 +4,11 @@ namespace Deckle.Input.PrecisionScroll;
 
 public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
 {
+    // Long enough for an accepted gesture to play out its release, short
+    // enough that a stuck worker shows up in the journal before the user
+    // notices a frozen settings toggle.
+    private const int StopTimeoutMs = 2_000;
+
     private readonly IKeyboardInputHost _inputHost;
     private readonly WheelTickQueue _ticks = new();
     private readonly AutoResetEvent _wake = new(initialState: false);
@@ -20,6 +25,10 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
     private long _gestures;
     private long _rollovers;
 
+    // Written by the worker before it exits on its own, read by Stop after
+    // Join, which orders the two. Empty means the stop was requested.
+    private string _stopReason = "";
+
     public PrecisionScrollEngine(IKeyboardInputHost inputHost) => _inputHost = inputHost;
 
     public bool Start()
@@ -30,10 +39,11 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
 
         if (!PrecisionTouchpadInjector.TryCreate(out var injector, out int createError))
         {
-            DecklePrecisionScrollSource.Log.Unavailable();
-            DecklePrecisionScrollSource.Log.UnavailableDetail(
+            DecklePrecisionScrollSource.Log.Unavailable(
                 PrecisionTouchpadInjector.IsSupported ? "create_failed" : "api_missing",
-                createError);
+                createError,
+                "",
+                "");
             return false;
         }
 
@@ -41,8 +51,7 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
                 out _scrollDirectionReversed,
                 out int settingsError))
         {
-            DecklePrecisionScrollSource.Log.TouchpadSettingsUnavailable();
-            DecklePrecisionScrollSource.Log.TouchpadSettingsUnavailableDetail(settingsError);
+            DecklePrecisionScrollSource.Log.TouchpadSettingsUnavailable(settingsError);
             injector!.Dispose();
             return false;
         }
@@ -51,33 +60,58 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
         _detents = 0;
         _gestures = 0;
         _rollovers = 0;
+        _stopReason = "";
         Volatile.Write(ref _overflowed, 0);
         Volatile.Write(ref _runRequested, 1);
         Volatile.Write(ref _accepting, 1);
 
+        Thread? worker = null;
+        bool workerStarted = false;
         try
         {
-            _worker = new Thread(WorkerMain)
+            worker = new Thread(WorkerMain)
             {
                 IsBackground = true,
                 Name = "Deckle precision scroll",
             };
-            _worker.Start();
+            worker.Start();
+            workerStarted = true;
+            _worker = worker;
             _inputHost.SetWheelInterceptor(this);
-            DecklePrecisionScrollSource.Log.EngineStarted();
-            return true;
         }
         catch (Exception ex)
         {
             Volatile.Write(ref _accepting, 0);
             Volatile.Write(ref _runRequested, 0);
             _worker = null;
-            _injector?.Dispose();
+            if (workerStarted)
+            {
+                // The worker owns the injector once it runs and disposes it on
+                // its way out; disposing here too would race that.
+                _wake.Set();
+                worker!.Join();
+            }
+            else
+            {
+                _injector?.Dispose();
+            }
             _injector = null;
-            DecklePrecisionScrollSource.Log.Unavailable();
-            DecklePrecisionScrollSource.Log.UnavailableDetail(ex.GetType().Name, 0);
+            DecklePrecisionScrollSource.Log.Unavailable(
+                "thread_start_failed", 0, ex.GetType().Name, ex.Message);
             return false;
         }
+
+        bool interceptionAvailable = _inputHost.IsWheelInterceptionAvailable;
+        PrecisionScrollTuning tuning = Volatile.Read(ref _tuning);
+        DecklePrecisionScrollSource.Log.EngineStarted(_scrollDirectionReversed, interceptionAvailable);
+        DecklePrecisionScrollSource.Log.EngineStartedDetail(
+            tuning.DistancePerDetentMm,
+            tuning.InitialStepDurationMs,
+            tuning.QuietPeriodScale,
+            WheelTickQueue.Capacity);
+        if (!interceptionAvailable)
+            DecklePrecisionScrollSource.Log.Inactive("mouse_hook_missing");
+        return true;
     }
 
     public void SetTuning(PrecisionScrollTuning tuning) =>
@@ -112,11 +146,20 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
         _inputHost.SetWheelInterceptor(null);
         Volatile.Write(ref _runRequested, 0);
         _wake.Set();
-        worker.Join();
+        if (!worker.Join(StopTimeoutMs))
+        {
+            // Still waits: the worker owns the injector and its synthetic
+            // contact, which must be released before a restart creates another.
+            DecklePrecisionScrollSource.Log.StopSlow(StopTimeoutMs);
+            worker.Join();
+        }
 
         _worker = null;
         _injector = null;
-        DecklePrecisionScrollSource.Log.EngineStopped();
+        string reason = _stopReason;
+        DecklePrecisionScrollSource.Log.EngineStopped(
+            reason.Length == 0 ? "completed" : "failed",
+            reason);
         DecklePrecisionScrollSource.Log.EngineStoppedDetail(_detents, _gestures, _rollovers);
     }
 
@@ -143,6 +186,30 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
 
     private void WorkerMain()
     {
+        try
+        {
+            RunWorker();
+        }
+        catch (Exception ex)
+        {
+            // The worker is an optional enhancement on a background thread: an
+            // unexpected fault (the synthetic frame builder throws on an
+            // impossible layout) hands the wheel back to Windows instead of
+            // taking the whole process down with it.
+            Volatile.Write(ref _accepting, 0);
+            Volatile.Write(ref _runRequested, 0);
+            _stopReason = "worker_faulted";
+            _inputHost.SetWheelInterceptor(null);
+            DecklePrecisionScrollSource.Log.WorkerFaulted(ex.GetType().Name, ex.Message);
+        }
+        finally
+        {
+            _injector?.Dispose();
+        }
+    }
+
+    private void RunWorker()
+    {
         var gesture = new PrecisionScrollGesture();
 
         while (true)
@@ -163,8 +230,9 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
             {
                 Volatile.Write(ref _runRequested, 0);
                 running = false;
+                _stopReason = "queue_full";
                 _inputHost.SetWheelInterceptor(null);
-                DecklePrecisionScrollSource.Log.QueueOverloaded();
+                DecklePrecisionScrollSource.Log.QueueOverloaded("queue_full", WheelTickQueue.Capacity);
             }
 
             double nowMs = RawInputHost.NowMs;
@@ -174,6 +242,7 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
                 {
                     Volatile.Write(ref _accepting, 0);
                     Volatile.Write(ref _runRequested, 0);
+                    _stopReason = "injection_failed";
                     _inputHost.SetWheelInterceptor(null);
                     break;
                 }
@@ -190,8 +259,6 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
 
             _wake.WaitOne(gesture.GetWaitDurationMs(nowMs));
         }
-
-        _injector?.Dispose();
     }
 
     private bool Inject(PrecisionScrollFrame frame)
@@ -211,8 +278,7 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
         if (injected)
             return true;
 
-        DecklePrecisionScrollSource.Log.InjectionFailed();
-        DecklePrecisionScrollSource.Log.InjectionFailedDetail(
+        DecklePrecisionScrollSource.Log.InjectionFailed(
             frame.Kind switch
             {
                 PrecisionScrollFrameKind.Begin => "begin",

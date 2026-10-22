@@ -187,8 +187,8 @@ public sealed partial class TranscriptionEngine : IDisposable
     private void OpenMicrophoneIncident(string phase, uint mmsysErr)
     {
         if (Interlocked.Exchange(ref _microphoneIncidentOpen, 1) != 0) return;
-        DeckleWhispSource.Log.MicrophoneUnavailable();
-        DeckleWhispSource.Log.MicrophoneUnavailableDetail(phase, mmsysErr);
+        // MMSYSERR codes are small, so the cast keeps the value.
+        DeckleWhispSource.Log.MicrophoneUnavailable(phase, unchecked((int)mmsysErr));
     }
 
     private void CloseMicrophoneIncident()
@@ -197,11 +197,14 @@ public sealed partial class TranscriptionEngine : IDisposable
         DeckleWhispSource.Log.MicrophoneRecovered();
     }
 
-    private void OpenModelIncident(string reason)
+    private void OpenModelIncident(string reason, string exType, string exMessage)
     {
-        if (Interlocked.Exchange(ref _modelIncidentOpen, 1) != 0) return;
-        DeckleWhispSource.Log.ModelUnavailable();
-        DeckleWhispSource.Log.ModelUnavailableDetail(reason);
+        if (Interlocked.Exchange(ref _modelIncidentOpen, 1) != 0)
+        {
+            DeckleWhispSource.Log.ModelLoadRetryFailed(reason, exType, exMessage);
+            return;
+        }
+        DeckleWhispSource.Log.ModelUnavailable(reason, exType, exMessage);
     }
 
     private bool CloseModelIncident()
@@ -222,7 +225,9 @@ public sealed partial class TranscriptionEngine : IDisposable
     //                           CaptureResult.DrainDuration.
     //   _stopToPipelineSw     — RequestToggle's Stop branch → the backend
     //                           handoff (monolithic) or the end of the
-    //                           consumer drain (streaming).
+    //                           consumer drain (streaming). It includes the
+    //                           capture tail kept after the press
+    //                           (CAPTURE_TAIL_AFTER_STOP_MS).
     private System.Diagnostics.Stopwatch? _hotkeySw;
     private System.TimeSpan _recordDrainDuration;
     private System.Diagnostics.Stopwatch? _stopToPipelineSw;

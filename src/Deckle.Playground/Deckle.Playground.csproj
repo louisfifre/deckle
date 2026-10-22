@@ -14,11 +14,14 @@
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <!-- SettingsCard for the HomePage routing cards. -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
-    <!-- Win2D: the HUD and Segmentation previews draw through it. -->
+    <!-- Win2D: the HUD preview draws through it. -->
     <PackageReference Include="Microsoft.Graphics.Win2D" />
   </ItemGroup>
 
   <ItemGroup>
+    <!-- The HUD tab's live preview opens the microphone and reads the pause
+         gauge off it. -->
+    <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Composition\Deckle.Composition.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
@@ -30,7 +33,7 @@
     <ProjectReference Include="..\Deckle.Settings\Deckle.Settings.csproj" />
     <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
     <ProjectReference Include="..\Deckle.Shell.WindowChrome\Deckle.Shell.WindowChrome.csproj" />
-    <!-- Energy segmenter settings consumed by the Segmentation tuning page. -->
+    <!-- Transcription types the HUD page consumes. -->
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
   </ItemGroup>

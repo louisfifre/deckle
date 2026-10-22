@@ -149,10 +149,16 @@ public partial class App
                 ReconcileAutocorrect();
             }
         }
-        catch
+        catch (Exception ex)
         {
+            DeckleAppSource.Log.AutocorrectFailed("activate", ex.GetType().Name, ex.Message);
             try { runtime?.Dispose(); }
-            catch { /* Best-effort cleanup on an already failed activation. */ }
+            catch (Exception cleanupEx)
+            {
+                // Best-effort cleanup on an already failed activation.
+                DeckleAppSource.Log.CleanupFailed(
+                    "autocorrect_runtime", cleanupEx.GetType().Name, cleanupEx.Message);
+            }
             finally
             {
                 lock (_autocorrectLifecycleLock)

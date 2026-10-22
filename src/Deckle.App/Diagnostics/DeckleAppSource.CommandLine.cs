@@ -26,6 +26,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtInstallModeEntered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "The app was launched in install mode")]
     public void InstallModeEntered()
     {

@@ -79,8 +79,10 @@ internal static partial class HueLocalDiscovery
         }
         catch (Exception ex) when (ex is Win32Exception or DllNotFoundException or EntryPointNotFoundException)
         {
-            DeckleLightingSource.Log.LocalDiscoveryFailed();
-            DeckleLightingSource.Log.LocalDiscoveryFailedDetail(ex.GetType().Name, ex.Message);
+            DeckleLightingSource.Log.LocalDiscoveryFailed(
+                ex.GetType().Name,
+                ex.Message,
+                (ex as Win32Exception)?.NativeErrorCode ?? 0);
             return [];
         }
     }
@@ -96,8 +98,11 @@ internal static partial class HueLocalDiscovery
                 .WaitAsync(ResolveWindow, ct)
                 .ConfigureAwait(false);
         }
-        catch (TimeoutException)
+        catch (TimeoutException ex)
         {
+            // An advertised bridge that never resolves is otherwise invisible:
+            // the discovery result simply counts one bridge fewer.
+            DeckleLightingSource.Log.HueStepFailedDetail("mdns_resolve", ex.GetType().Name, ex.Message);
             await resolve.CancelAsync().ConfigureAwait(false);
             return null;
         }
@@ -182,10 +187,11 @@ internal static partial class HueLocalDiscovery
                 session.Complete(status);
             }
         }
-        catch
+        catch (Exception ex)
         {
             // Exceptions must never escape a reverse P/Invoke callback. The
             // owning discovery operation will time out or observe cancellation.
+            DeckleLightingSource.Log.HueStepFailedDetail("mdns_browse_callback", ex.GetType().Name, ex.Message);
         }
         finally
         {
@@ -193,7 +199,10 @@ internal static partial class HueLocalDiscovery
             {
                 if (recordPointer != 0) DnsRecordListFree(recordPointer, DnsFreeRecordList);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                DeckleLightingSource.Log.HueStepFailedDetail("mdns_record_free", ex.GetType().Name, ex.Message);
+            }
         }
     }
 
@@ -214,8 +223,9 @@ internal static partial class HueLocalDiscovery
             }
             session.Complete(bridge);
         }
-        catch
+        catch (Exception ex)
         {
+            DeckleLightingSource.Log.HueStepFailedDetail("mdns_resolve_callback", ex.GetType().Name, ex.Message);
             if (_sessions.TryGetValue(context, out var target) &&
                 target is ResolveSession session)
             {
@@ -228,7 +238,10 @@ internal static partial class HueLocalDiscovery
             {
                 if (instancePointer != 0) DnsServiceFreeInstance(instancePointer);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                DeckleLightingSource.Log.HueStepFailedDetail("mdns_instance_free", ex.GetType().Name, ex.Message);
+            }
         }
     }
 

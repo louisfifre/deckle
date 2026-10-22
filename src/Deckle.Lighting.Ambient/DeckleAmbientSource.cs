@@ -3,9 +3,12 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Lighting.Ambient;
 
-// Ambient module provider. Provider Name = "Deckle-Ambient": short choice to
-// keep the LogWindow [AMBIENT] tag. The low-level Hue driver keeps its
-// separate provider in Deckle.Lighting.
+// Ambient lighting provider, "Deckle-Ambient". One partial file per area:
+// pipeline lifecycle, push, capture and sampling consequences, bridge pairing
+// and endpoint recovery, light placement, UI and settings. Verbose detail
+// passes the Ambient activity admission. Screen capture reports its own
+// causes on Deckle-Vision and the low-level Hue driver on its provider in
+// Deckle.Lighting; this provider says what they mean for ambient lighting.
 [EventSource(Name = "Deckle-Ambient")]
 public sealed partial class DeckleAmbientSource : DeckleEventSource
 {
@@ -24,68 +27,68 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     // ── EventIds ─────────────────────────────────────────────────────────
     public const int EvtPipelineStarted               = 1;
     public const int EvtPipelineStartDetail           = 2;
-    public const int EvtPipelineStartFailed           = 3;
-    public const int EvtPipelineStopped               = 4;
-    public const int EvtPipelineStopDetail            = 5;
-    public const int EvtPushLoopCrashed               = 6;
-    public const int EvtStateChangedSubscriberThrew   = 7;
-    public const int EvtMultiLightFallbackNoLights    = 8;
-    public const int EvtMultiLightDriverIncompat      = 9;
+    // 3 retired.
+    // 4 retired.
+    // 5 retired.
+    // 6 retired.
+    // 7 retired.
+    // 8 retired.
+    // 9 retired.
     public const int EvtPushGroup                     = 10;
-    public const int EvtPushGroupFailed               = 11;
+    // 11 retired.
     public const int EvtPushMulti                     = 12;
-    public const int EvtPushMultiFailed               = 13;
-    public const int EvtHeartbeat                     = 14;
-    public const int EvtBridgeAutoRestoreFailed       = 15;
+    // 13 retired.
+    // 14 retired.
+    // 15 retired.
     public const int EvtBridgePairingStored           = 16;
     public const int EvtBridgeRestoreSkipped          = 17;
-    public const int EvtBridgeRestoredFromSettings    = 18;
+    // 18 retired.
     public const int EvtBridgeForgotten               = 19;
-    public const int EvtAmbientPagePairFailed         = 20;
-    public const int EvtAmbientPageListGroupsFailed   = 21;
-    public const int EvtSettingsLoaded                = 22;
-    public const int EvtSettingsLoadComplete          = 23;
+    // 20 retired.
+    // 21 retired.
+    // 22 retired.
+    // 23 retired.
     public const int EvtSettingsLoadWarning           = 24;
     public const int EvtSettingsLoadError             = 25;
-    public const int EvtAmbientSettingsPrefixed       = 26;
-    public const int EvtCaptureLost                   = 27;
+    // 26 retired.
+    // 27 retired.
     public const int EvtExternalChangeStopped         = 28;
-    public const int EvtEventStreamSetupFailed        = 29;
+    // 29 retired.
     public const int EvtPipelinePerLightConfig        = 30;
     public const int EvtExternalChangeStoppedDetail   = 31;
     public const int EvtEchoIgnored                   = 32;
     public const int EvtSamplerRebuilt                = 33;
-    public const int EvtSamplerRebuildFailed          = 34;
+    // 34 retired.
 
     // ── Appended ────────────────────────────────────────────────────────
-    public const int EvtPipelineStartFailedDetail       = 35;
-    public const int EvtPushLoopCrashedDetail           = 36;
-    public const int EvtStateChangedSubscriberThrewDetail = 37;
-    public const int EvtMultiLightDriverIncompatDetail  = 38;
-    public const int EvtPushGroupFailedDetail           = 39;
-    public const int EvtPushMultiFailedDetail           = 40;
-    public const int EvtBridgeAutoRestoreFailedDetail   = 41;
+    // 35 retired.
+    // 36 retired.
+    // 37 retired.
+    // 38 retired.
+    // 39 retired.
+    // 40 retired.
+    // 41 retired.
     public const int EvtBridgePairingStoredDetail       = 42;
     public const int EvtBridgeRestoredFromSettingsDetail = 43;
-    public const int EvtAmbientPagePairFailedDetail     = 44;
-    public const int EvtAmbientPageListGroupsFailedDetail = 45;
-    public const int EvtEventStreamSetupFailedDetail    = 46;
+    // 44 retired.
+    // 45 retired.
+    // 46 retired.
     public const int EvtSamplerRebuiltDetail            = 47;
-    public const int EvtSamplerRebuildFailedDetail      = 48;
+    // 48 retired.
     public const int EvtExternalChangeDecisionDetail    = 49;
     public const int EvtPipelineStarting                = 50;
     public const int EvtPipelineStopping                = 51;
-    public const int EvtPushIncidentOpened              = 52;
+    // 52 retired.
     public const int EvtPushRecovered                   = 53;
     public const int EvtPushEpisodeDetail               = 54;
-    public const int EvtPushRejected                    = 55;
-    public const int EvtFrameProcessingIncidentOpened   = 56;
+    // 55 retired.
+    // 56 retired.
     public const int EvtFrameProcessingRecovered        = 57;
-    public const int EvtFrameProcessingFailed           = 58;
+    // 58 retired.
     public const int EvtFrameProcessingEpisodeDetail    = 59;
     public const int EvtBridgeEndpointRecovered         = 60;
     public const int EvtBridgeEndpointRecoveredDetail   = 61;
-    public const int EvtBridgeEndpointRecoveryFailed    = 62;
+    // 62 retired.
     public const int EvtBridgeEndpointRecoveryFailedDetail = 63;
     public const int EvtPipelineRestartDetail           = 64;
 
@@ -95,8 +98,8 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtPipelineModeChangedDetail       = 67;
 
     // ── Per-light placement ──────────────────────────────────────────────
-    public const int EvtLightCallFailed                 = 68;
-    public const int EvtLightCallFailedDetail           = 69;
+    // 68 retired.
+    // 69 retired.
     public const int EvtLightsResolved                  = 70;
     public const int EvtEntertainmentAreaUsed           = 71;
     public const int EvtEntertainmentAreaUsedDetail     = 72;
@@ -106,4 +109,31 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtLightZoneUpdatedDetail          = 76;
     public const int EvtLightBrightnessChanged          = 77;
 
+    // ── Causes carried in the milestones ─────────────────────────────────
+    public const int EvtPipelineStartFailed             = 78;
+    public const int EvtPipelineStartCancelled          = 79;
+    public const int EvtPipelineStopped                 = 80;
+    public const int EvtPipelineStopDetail              = 81;
+    public const int EvtPushLoopCrashed                 = 82;
+    public const int EvtStateChangedSubscriberThrew     = 83;
+    public const int EvtMultiLightFallback              = 84;
+    public const int EvtHeartbeat                       = 85;
+    public const int EvtBridgeAutoRestoreFailed         = 86;
+    public const int EvtAmbientPagePairFailed           = 87;
+    public const int EvtAmbientPageListGroupsFailed     = 88;
+    public const int EvtEventStreamSetupFailed          = 89;
+    public const int EvtSamplerRebuildFailed            = 90;
+    public const int EvtPushIncidentOpened              = 91;
+    public const int EvtPushRejected                    = 92;
+    public const int EvtFrameProcessingIncidentOpened   = 93;
+    public const int EvtFrameProcessingFailed           = 94;
+    public const int EvtBridgeEndpointRecoveryFailed    = 95;
+    public const int EvtLightCallFailed                 = 96;
+    public const int EvtPushAttemptFailedDetail         = 97;
+    public const int EvtResourceReleaseFailed           = 98;
+    public const int EvtPipelineStepFailedDetail        = 99;
+    public const int EvtBridgeEndpointRecoveryStarting  = 100;
+    public const int EvtBridgeCandidateRejectedDetail   = 101;
+    public const int EvtBridgeRestoredFromSettings      = 102;
+    public const int EvtCaptureLost                     = 103;
 }

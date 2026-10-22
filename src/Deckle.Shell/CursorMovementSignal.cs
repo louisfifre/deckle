@@ -41,8 +41,7 @@ public sealed class CursorMovementSignal : IDisposable
                 _hwnd, _subclassDelegate, SubclassId, IntPtr.Zero))
         {
             int error = Marshal.GetLastWin32Error();
-            DeckleShellSource.Log.CursorSignalRegistrationFailed();
-            DeckleShellSource.Log.CursorSignalRegistrationFailedDetail(error);
+            DeckleShellSource.Log.CursorSignalRegistrationFailed("subclass", error);
             return;
         }
 
@@ -68,8 +67,7 @@ public sealed class CursorMovementSignal : IDisposable
             // The sink never armed: Moved will never fire and proximity fade
             // stays off. Surface it — the failure is otherwise invisible.
             int error = Marshal.GetLastWin32Error();
-            DeckleShellSource.Log.CursorSignalRegistrationFailed();
-            DeckleShellSource.Log.CursorSignalRegistrationFailedDetail(error);
+            DeckleShellSource.Log.CursorSignalRegistrationFailed("raw_input", error);
         }
     }
 
@@ -91,6 +89,8 @@ public sealed class CursorMovementSignal : IDisposable
 
         if (_rawInputRegistered)
         {
+            DeckleShellSource.Log.CursorSignalDisarmed(_hwnd.ToInt64());
+
             // RIDEV_REMOVE requires hwndTarget = NULL.
             var remove = new[]
             {

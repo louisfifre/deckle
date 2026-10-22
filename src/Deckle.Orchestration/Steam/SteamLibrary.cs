@@ -28,6 +28,7 @@ public static class SteamLibrary
         catch (Exception ex) when (ex is System.Security.SecurityException or UnauthorizedAccessException or IOException)
         {
             // Fall through to the default folder.
+            DeckleOrchestrationSource.Log.SteamPathUnreadable("registry", ex.GetType().Name, ex.Message);
         }
 
         string programFiles = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86);
@@ -91,7 +92,12 @@ public static class SteamLibrary
         {
             if (!Path.IsPathFullyQualified(root)) continue;
             string steamapps = Path.Combine(root, "steamapps");
-            if (!Directory.Exists(steamapps)) continue;
+            if (!Directory.Exists(steamapps))
+            {
+                // An unplugged drive: the answer to "why is this game missing".
+                DeckleOrchestrationSource.Log.ScanFolderMissing(steamapps);
+                continue;
+            }
 
             string[] files;
             try
@@ -105,6 +111,8 @@ public static class SteamLibrary
             }
 
             Array.Sort(files, StringComparer.OrdinalIgnoreCase);
+            int kept = 0;
+            int skipped = 0;
             foreach (string file in files)
             {
                 SteamManifest? manifest;
@@ -115,13 +123,24 @@ public static class SteamLibrary
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or FormatException)
                 {
                     LogUnreadable(file, ex);
+                    skipped++;
                     continue;
                 }
 
-                if (manifest is null || manifest.AppId == RedistributablesAppId) continue;
-                if (!Directory.Exists(manifest.InstallDirectory)) continue;
+                if (manifest is null
+                    || manifest.AppId == RedistributablesAppId
+                    || !Directory.Exists(manifest.InstallDirectory))
+                {
+                    skipped++;
+                    continue;
+                }
                 manifests.Add(manifest);
+                kept++;
             }
+
+            // One line per library rather than per manifest: a library holds
+            // hundreds of them, and the counts are what a report needs.
+            DeckleOrchestrationSource.Log.SteamLibraryScanned(root, kept, skipped);
         }
         return manifests;
     }
@@ -158,6 +177,7 @@ public static class SteamLibrary
         }
         catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
         {
+            DeckleOrchestrationSource.Log.SteamPathUnreadable("registry_value", ex.GetType().Name, ex.Message);
             return null;
         }
         return Directory.Exists(path) ? path : null;
@@ -172,5 +192,5 @@ public static class SteamLibrary
             StringComparison.OrdinalIgnoreCase);
 
     private static void LogUnreadable(string path, Exception ex) =>
-        DeckleOrchestrationSource.Log.ScanFileUnreadable(path, ex.GetType().Name, ex.Message);
+        DeckleOrchestrationSource.Log.ScanPathSkipped(path, ex.GetType().Name, ex.Message);
 }

@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Deckle.Core;
@@ -24,6 +25,7 @@ public sealed class RawInputHost : IDisposable
 {
     private const string ClassName = "DeckleInputHost";
     private const double RollupPeriodMs = 5000;
+    private const int StopTimeoutMs = 3000;
 
     private static readonly Stopwatch s_clock = Stopwatch.StartNew();
 
@@ -52,6 +54,11 @@ public sealed class RawInputHost : IDisposable
     private long _rollupOrphans, _rollupFlushes, _rollupMismatches;
 
     private volatile bool _running;
+
+    // Why the pump ended on its own (get_message_failed, exception), empty for
+    // a requested quit. Written on the input thread, read by Stop after Join.
+    private string _pumpFailure = "";
+
     private volatile TouchpadCapabilities? _touchpad;
     private volatile TouchpadDevice[] _touchpads = [];
 
@@ -94,6 +101,7 @@ public sealed class RawInputHost : IDisposable
             using var ready = new ManualResetEventSlim(false);
             Exception? startError = null;
             bool started = false;
+            _pumpFailure = "";
 
             _thread = new Thread(() =>
             {
@@ -122,9 +130,10 @@ public sealed class RawInputHost : IDisposable
 
             if (!started)
             {
-                DeckleInputSource.Log.HostStartFailed();
-                DeckleInputSource.Log.HostStartFailedDetail(
-                    startError?.GetType().Name ?? "(unknown)", startError?.Message ?? "(no message)");
+                DeckleInputSource.Log.HostStartFailed(
+                    startError?.GetType().Name ?? "(unknown)",
+                    startError?.Message ?? "(no message)",
+                    startError is Win32Exception win32 ? win32.NativeErrorCode : 0);
                 _thread = null;
                 return false;
             }
@@ -146,8 +155,19 @@ public sealed class RawInputHost : IDisposable
         }
 
         RawInputInterop.PostThreadMessage(_threadId, RawInputInterop.WM_QUIT, IntPtr.Zero, IntPtr.Zero);
-        thread.Join(TimeSpan.FromSeconds(3));
-        DeckleInputSource.Log.HostStopped();
+        if (!thread.Join(StopTimeoutMs))
+        {
+            // The thread still owns the window and the registration; the host
+            // is reported stopped because nothing more will be read from it.
+            DeckleInputSource.Log.HostStopTimedOut(DeckleInputSource.TouchpadHost, StopTimeoutMs);
+            DeckleInputSource.Log.HostStopped("failed", "stop_timed_out");
+            return;
+        }
+
+        // Join orders the input thread's last write of _pumpFailure before this read.
+        string failure = _pumpFailure;
+        _pumpFailure = "";
+        DeckleInputSource.Log.HostStopped(failure.Length == 0 ? "completed" : "failed", failure);
     }
 
     public void Dispose() => Stop();
@@ -158,10 +178,11 @@ public sealed class RawInputHost : IDisposable
     {
         _threadId = RawInputInterop.GetCurrentThreadId();
 
+        // Setup failures throw Win32Exception so Start can log the native code
+        // as its own field instead of burying it in the message.
         _hInstance = NativeMethods.GetModuleHandle(null);
         if (_hInstance == IntPtr.Zero)
-            throw new InvalidOperationException(
-                $"GetModuleHandle failed (Win32 err {Marshal.GetLastWin32Error()})");
+            throw new Win32Exception(Marshal.GetLastWin32Error(), "GetModuleHandle failed");
 
         _wndProcDelegate = WndProc;
 
@@ -175,8 +196,7 @@ public sealed class RawInputHost : IDisposable
 
         _classAtom = NativeMethods.RegisterClassEx(ref wc);
         if (_classAtom == 0)
-            throw new InvalidOperationException(
-                $"RegisterClassEx('{ClassName}') failed (Win32 err {Marshal.GetLastWin32Error()})");
+            throw new Win32Exception(Marshal.GetLastWin32Error(), $"RegisterClassEx('{ClassName}') failed");
 
         _hwnd = NativeMethods.CreateWindowEx(
             dwExStyle:    0,
@@ -193,8 +213,7 @@ public sealed class RawInputHost : IDisposable
         {
             int err = Marshal.GetLastWin32Error();
             NativeMethods.UnregisterClass(ClassName, _hInstance);
-            throw new InvalidOperationException(
-                $"CreateWindowEx(HWND_MESSAGE) failed (Win32 err {err})");
+            throw new Win32Exception(err, "CreateWindowEx(HWND_MESSAGE) failed");
         }
 
         var registration = new[]
@@ -211,24 +230,58 @@ public sealed class RawInputHost : IDisposable
                 registration, 1, (uint)Marshal.SizeOf<RAWINPUTDEVICE>()))
         {
             int err = Marshal.GetLastWin32Error();
-            DeckleInputSource.Log.RegistrationFailed();
-            DeckleInputSource.Log.RegistrationFailedDetail(err);
             TearDownWindow();
-            throw new InvalidOperationException($"RegisterRawInputDevices failed (Win32 err {err})");
+            throw new Win32Exception(err, "RegisterRawInputDevices failed");
         }
 
-        DeckleInputSource.Log.HostStarted(_hwnd.ToInt64(), (int)_threadId);
         ProbeExistingTouchpads();
+        DeckleInputSource.Log.HostStarted(_devices.Count);
+        DeckleInputSource.Log.HostStartedDetail(_hwnd.ToInt64(), (int)_threadId);
     }
 
     private void RunPump()
     {
-        while (RawInputInterop.GetMessage(out var msg, IntPtr.Zero, 0, 0) > 0)
+        try
         {
-            RawInputInterop.TranslateMessage(ref msg);
-            RawInputInterop.DispatchMessage(ref msg);
+            int result;
+            while ((result = RawInputInterop.GetMessage(out var msg, IntPtr.Zero, 0, 0)) > 0)
+            {
+                RawInputInterop.TranslateMessage(ref msg);
+                RawInputInterop.DispatchMessage(ref msg);
+            }
+
+            // -1 is GetMessage's error return; 0 is the WM_QUIT Stop posted.
+            if (result < 0)
+            {
+                int err = Marshal.GetLastWin32Error();
+                _pumpFailure = "get_message_failed";
+                DeckleInputSource.Log.InputPumpFailed(
+                    DeckleInputSource.TouchpadHost, _pumpFailure, err, "", "");
+            }
+        }
+        catch (Exception ex)
+        {
+            LogPumpException(ex);
+            throw;
         }
 
+        TearDownPump();
+    }
+
+    // A fault inside the pump is still fatal, as before; logging it here first
+    // names the host that died, which the process-wide crash handler cannot.
+    // The flag keeps a fault seen in WndProc from being logged again when it
+    // unwinds through RunPump.
+    private void LogPumpException(Exception ex)
+    {
+        if (_pumpFailure.Length != 0) return;
+        _pumpFailure = "exception";
+        DeckleInputSource.Log.InputPumpFailed(
+            DeckleInputSource.TouchpadHost, _pumpFailure, 0, ex.GetType().Name, ex.Message);
+    }
+
+    private void TearDownPump()
+    {
         var unregister = new[]
         {
             new RAWINPUTDEVICE
@@ -273,15 +326,26 @@ public sealed class RawInputHost : IDisposable
 
     private IntPtr WndProc(IntPtr hWnd, uint msg, IntPtr wParam, IntPtr lParam)
     {
-        switch (msg)
+        try
         {
-            case NativeMethods.WM_INPUT:
-                HandleInput(lParam);
-                break;
+            switch (msg)
+            {
+                case NativeMethods.WM_INPUT:
+                    HandleInput(lParam);
+                    break;
 
-            case RawInputInterop.WM_INPUT_DEVICE_CHANGE:
-                HandleDeviceChange((int)wParam, lParam);
-                break;
+                case RawInputInterop.WM_INPUT_DEVICE_CHANGE:
+                    HandleDeviceChange((int)wParam, lParam);
+                    break;
+            }
+        }
+        catch (Exception ex)
+        {
+            // Whether an exception survives the native DispatchMessage frame
+            // back to RunPump depends on the runtime (it can fail fast), so the
+            // host context is captured before it leaves managed code.
+            LogPumpException(ex);
+            throw;
         }
         return NativeMethods.DefWindowProc(hWnd, msg, wParam, lParam);
     }
@@ -325,12 +389,9 @@ public sealed class RawInputHost : IDisposable
             // The enumeration sees every HID device; non-touchpad
             // collections fail here by design and stay silent. Only an
             // actual touchpad page that could not be parsed is worth a
-            // warning — TryCreate distinguishes via the failure text.
-            if (failure is not null && !failure.StartsWith("not a touchpad collection"))
-            {
-                DeckleInputSource.Log.ParserCreateFailed();
-                DeckleInputSource.Log.ParserCreateFailedDetail(failure);
-            }
+            // warning — TryCreate distinguishes via the failure word.
+            if (failure is not null && failure != TouchpadParser.NotTouchpadCollection)
+                DeckleInputSource.Log.ParserCreateFailed(failure);
             _failedDevices.Add(hDevice);
             return false;
         }
