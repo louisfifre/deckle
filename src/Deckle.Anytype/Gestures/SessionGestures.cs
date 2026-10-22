@@ -10,8 +10,8 @@ namespace Deckle.Anytype;
 // to it, and link further tasks to the open report. Anchoring is done from the
 // report side — the rapport carries journal date + the linked task(s) in its
 // « Tâche(s) liée(s) » property; its project is derived through those tasks.
-// session_log is the first gesture on API v2 (an append at the end of the body);
-// the others still go through v1.
+// session_start (create and digest) and session_log run on API v2;
+// session_touch still goes through v1.
 public sealed class SessionGestures(
     AnytypeApiClient api,
     NameResolver resolver,
@@ -34,39 +34,34 @@ public sealed class SessionGestures(
         string taskId = await _resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
         TaskView taskView = await ReadTaskAsync(taskId, ct);
 
-        // Body first line is the title (note layout has no name).
+        // Measured on a real create (2026-10-22): the « # Journal <date> »
+        // heading stays a heading_1 block, so the report opens on its date and
+        // the first session_log finds a body and appends under it. A report is a
+        // note: it has no name, and a `name` sent anyway lands as a paragraph
+        // ahead of the heading, so none is sent. Properties are a {key: value}
+        // map; a relation takes a list of ids, the date a plain yyyy-MM-dd.
         string today = Today();
-        string body = $"# Journal {today}";
-
         var reportPayload = new JsonObject
         {
-            ["type_key"] = DevSpace.Types.Rapport,
-            ["body"] = body,
-            ["properties"] = new JsonArray(
-                DateProp(DevSpace.Props.DateDuJournal, today),
-                ObjectsProp(DevSpace.Props.TachesLiees, new[] { taskId })),
+            ["type"] = DevSpace.Types.Rapport,
+            ["markdown"] = $"# Journal {today}",
+            ["properties"] = new JsonObject
+            {
+                [DevSpace.Props.DateDuJournal] = today,
+                [DevSpace.Props.TachesLiees] = new JsonArray(taskId),
+            },
         };
 
-        // Stays on the v1 create ON PURPOSE: the real v2 create body of a report
-        // has never been measured, and every later session_log leans on its
-        // result. To port this to AnytypeV2Writer.CreateObjectAsync (type
-        // `rapport`, `date_du_journal`, `tache(s)_liee(s)` = [taskId]), check
-        // live, on a throwaway task:
-        //   1. Title block: does a first « # Journal <date> » heading in the v2
-        //      body become the note's title (as in v1, where the body then reads
-        //      back empty), stay a visible heading block, or get duplicated next
-        //      to a name the server derives? Test with name omitted and with "".
-        //   2. Empty-body guard: LogAsync writes the « # Journal <date> » heading
-        //      itself when the outline has no block. After the v2 create, read the
-        //      outline back: if the heading survived as a block the guard skips it
-        //      (fine); if it vanished the guard rewrites it (fine); if it is
-        //      doubled or the note is named by the first log line, the guard and
-        //      the create body must change together.
-        //   3. That the v2 create response carries the new object's id, and that
-        //      date and link properties are accepted in the create body.
-        JsonObject report = await _api.CreateObjectAsync(reportPayload, ct);
-        string reportId = report["id"]?.GetValue<string>()
-            ?? throw new InvalidOperationException("Le rapport créé n'a pas d'id.");
+        // No template is named, so the type's default applies if it has a live
+        // one; on the day of the measure it had none and the body was exactly
+        // the heading. The writer sends an Idempotency-Key, so a resend after a
+        // 5xx cannot open a second report. The id comes back at the root of the
+        // answer (measured).
+        AnytypeV2WriteReceipt receipt = await _writer.CreateObjectAsync(reportPayload, ct: ct);
+        string reportId = receipt.Body?["id"] is JsonValue idValue && idValue.TryGetValue(out string? created)
+            && !string.IsNullOrEmpty(created)
+                ? created
+                : throw new InvalidOperationException("Le rapport créé n'a pas d'id.");
 
         DeckleAnytypeSource.Log.SessionStarted();
         DeckleAnytypeSource.Log.SessionReportCreated(reportId);
@@ -102,15 +97,13 @@ public sealed class SessionGestures(
             new AnytypeV2ObjectReadOptions { Outline = true, Parts = AnytypeV2ObjectParts.Properties },
             ct);
 
-        // Established (v1): right after session_start the report body reads
-        // back empty, because Anytype took the creation body's first line
-        // « # Journal … » as the note's title; an entry written alone would
-        // become the note's first line, hence its display name. NOT measured:
-        // whether v2 serves that title as a block. If it does, the outline is
-        // not empty and nothing is added; if it does not, the outline is empty
-        // and the heading is written first, as in v1. « Has no block » is
-        // right either way. Also unmeasured: whether the server omits the
-        // outline of an empty body, so a missing one counts as empty.
+        // A report created on v2 opens on its « # Journal … » heading block
+        // (measured), so its outline is never empty and nothing is added. The
+        // guard is for the reports created on v1, where Anytype took that line
+        // as the note's title and the body read back empty: an entry written
+        // alone would become the note's first line, hence its display name.
+        // Not measured: whether the server omits the outline of an empty body,
+        // so a missing one counts as empty.
         bool hasBody = report.Outline is { Count: > 0 };
 
         // Two paragraphs: when the entry happened (the part that matters in a
@@ -298,12 +291,6 @@ public sealed class SessionGestures(
         foreach (string id in ids) arr.Add(JsonValue.Create(id));
         return new JsonObject { ["key"] = key, ["objects"] = arr };
     }
-
-    static JsonObject DateProp(string key, string isoDate) => new()
-    {
-        ["key"] = key,
-        ["date"] = isoDate,
-    };
 
     // ── misc ─────────────────────────────────────────────────────────────────
 
