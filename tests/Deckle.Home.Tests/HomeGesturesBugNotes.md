@@ -19,3 +19,13 @@ Regression: `HomeGesturesTests.CreatedIdeaCanBeFoundAndReadFromItsBodyExcerpt`.
 - **Recurrence cue:** an `offset += <constant>` in a paging loop, or a loop that ends only on `has_more`.
 
 Regression: `HomePagingTests.DeleteSeesAReferenceHeldBeyondTheFirstPageOfTheInventory`, `HomePagingTests.CreateRefusesACodeAlreadyHeldBeyondTheFirstPageOfTheInventory`, `HomePagingTests.TemplateLookupFindsATemplateBeyondTheFirstServedPage`, `HomePagingTests.TemplateLookupEndsWhenTheServerKeepsAnnouncingPagesItNeverServes` and `HomePagingTests.OptionLookupFindsALiveOptionBeyondTheFirstServedPage`.
+
+## A Home batch that failed half way read as if nothing had been written
+
+- **Trigger:** `create` or `update` with several items, or with collection membership, where one request fails after another went through: a refused create on the second item, a membership call refused after the objects were created, a patch refused on the second object.
+- **Observed symptom:** the caller got only the raw API failure. The earlier items already existed or were already patched, and the membership of the created objects was never applied. A caller that repeated the batch duplicated the items that carry no code (errands, ideas, devices) and re-appended text that had already been appended. Established by reproduction with a fake server that refuses the Nth request; the live API failing mid-batch was not observed.
+- **Cause:** Anytype offers no transaction. The gestures issue one request per item and per collection and let the first failure escape, so the exception said nothing of the writes before it. The collection memberships were also deferred to the very end of a create, so a failure on a later item skipped them for the objects that did exist.
+- **Violated invariant:** a gesture that has written part of its batch says so: what was written, what was interrupted and what was never attempted, so the retry covers only the rest. A failure before any write still surfaces unchanged.
+- **Recurrence cue:** a loop of independent writes with one `await` per item and no state kept about which ones went through; a "flush at the end" step after a loop that can throw.
+
+Regression: `HomePartialWriteTests.CreateReportsWhatWasCreatedWhenALaterItemFails`, `HomePartialWriteTests.CreateStillAttachesTheObjectsItCreatedBeforeItFailed`, `HomePartialWriteTests.CreateTellsTheCallerWhenOnlyTheCollectionMembershipFailed`, `HomePartialWriteTests.UpdateReportsWhichItemsWereWrittenWhenALaterOneFails` and `HomePartialWriteTests.UpdateNamesTheInterruptedItemWhenItsCollectionStepFailsAfterItsWrite`. Nothing is rolled back: a delete would be a second write that can fail the same way.

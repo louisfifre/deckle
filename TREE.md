@@ -970,6 +970,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HomeGestures.cs
 │   │   ├── HomeMcp.cs
 │   │   ├── HomeObjects.cs
+│   │   ├── HomePartialWriteException.cs
 │   │   ├── HomePropertyWriter.cs
 │   │   ├── HomeRelationEdits.cs
 │   │   ├── HomeRequests.cs
@@ -2034,6 +2035,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HomeGesturesTests.cs
 │   │   ├── HomeMcpTests.cs
 │   │   ├── HomePagingTests.cs
+│   │   ├── HomePartialWriteTests.cs
 │   │   ├── HomeRelationTests.cs
 │   │   ├── HomeSchemaAlignmentTests.cs
 │   │   ├── HomeSearchTests.cs
