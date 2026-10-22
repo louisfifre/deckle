@@ -44,12 +44,16 @@ public class SessionGesturesTests
     const string LogPath = "/v2/spaces/space-1/objects/" + NewReport;
 
     // What a v2 object read answers for the log's read: the journal date as a
-    // property and, unless the body is empty, an outline with one block.
-    static string V2Report(bool withBlock)
+    // property and, unless the body is empty, an outline holding the « # Journal »
+    // heading block a fresh v2 report opens on, then one block per type given.
+    static string V2Report(bool withBlock, params string[] moreBlockTypes)
     {
-        string outline = withBlock ? "[{\"id\":\"b1\"}]" : "[]";
+        var blocks = new JsonArray();
+        if (withBlock) blocks.Add(new JsonObject { ["id"] = "h1", ["type"] = "heading_1" });
+        for (int i = 0; i < moreBlockTypes.Length; i++)
+            blocks.Add(new JsonObject { ["id"] = $"b{i}", ["type"] = moreBlockTypes[i] });
         return "{\"properties\":{\"" + DevSpace.Props.DateDuJournal
-            + "\":\"2026-06-11T00:00:00Z\"},\"outline\":" + outline + "}";
+            + "\":\"2026-06-11T00:00:00Z\"},\"outline\":" + blocks.ToJsonString() + "}";
     }
 
     // The single PATCH the log sends, as its parsed ops array.
@@ -339,6 +343,26 @@ public class SessionGesturesTests
         Assert.False(string.IsNullOrWhiteSpace(patch.Header("Idempotency-Key")));
         // Nothing went through v1: the whole gesture is the read and the append.
         Assert.Empty(server.Requests);
+    }
+
+    // Anytype puts no space between paragraphs: without a divider, an entry's
+    // text runs straight into the next entry's stamp. Between two entries
+    // only — the first entry sits right under the heading.
+    [Theory]
+    [InlineData("paragraph")]
+    [InlineData("bulleted")]
+    public async Task LogSeparatesAnEntryFromThePreviousOneWithADivider(string earlierBlockType)
+    {
+        using var server = new FakeAnytypeServer();
+        var v2 = new FakeV2Handler()
+            .Reply(HttpStatusCode.OK, V2Report(withBlock: true, "paragraph", earlierBlockType))
+            .Reply(HttpStatusCode.OK, "{}");
+
+        await NewGestures(server, v2, new StoppedClock()).LogAsync("writes the tests", NewReport, Ct);
+
+        Assert.Equal(
+            "---\n\n2026-06-12 14:05\n\nwrites the tests",
+            LoggedOps(v2).Single()!["markdown"]!.GetValue<string>());
     }
 
     // The caller just wrote the line: echoing it back only costs context.

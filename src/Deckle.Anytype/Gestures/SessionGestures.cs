@@ -90,8 +90,9 @@ public sealed class SessionGestures(
         // overwrote whatever another writer had added since the read. An append
         // depends on nothing the read saw, so it carries no If-Match.
         //
-        // The read only tells whether the body has any block, and gives the
-        // journal date for the empty case; the outline is its cheapest shape.
+        // The read only tells whether the body has any block and whether an
+        // entry is already there, and gives the journal date for the empty
+        // case; the outline is its cheapest shape.
         AnytypeV2ObjectDocument report = await _reader.ReadAsync(
             reportId,
             new AnytypeV2ObjectReadOptions { Outline = true, Parts = AnytypeV2ObjectParts.Properties },
@@ -110,6 +111,13 @@ public sealed class SessionGestures(
         // journal read days later), then what was said.
         string stamp = _time.GetLocalNow().ToString(MarkdownBody.JournalStampFormat, CultureInfo.InvariantCulture);
         string entry = $"{stamp}\n\n{line.Trim()}";
+
+        // Anytype puts no space between paragraphs, so one entry's text ran
+        // straight into the next entry's stamp. A divider sits between two
+        // entries, never under the heading: `---` lands as a divider block
+        // (measured), and the journal readers drop it as layout.
+        if (HasEntry(report.Outline)) entry = $"---\n\n{entry}";
+
         string markdown = hasBody
             ? entry
             : $"# Journal {JournalDate(report)}\n\n{entry}";
@@ -290,6 +298,16 @@ public sealed class SessionGestures(
     }
 
     // ── misc ─────────────────────────────────────────────────────────────────
+
+    // Any block but a heading is an earlier entry (or the bullets of a report
+    // written before the stamped form). A block whose type is not served
+    // counts as one: a divider too many costs less than two entries run together.
+    static bool HasEntry(JsonArray? outline) =>
+        outline is not null
+        && outline.Any(block =>
+            block?["type"] is not JsonValue type
+            || !type.TryGetValue(out string? name)
+            || name?.StartsWith("heading", StringComparison.Ordinal) != true);
 
     // v2 serves the date as a string with a time suffix,
     // « 2026-10-22T00:00:00Z » (measured on a real report).
