@@ -100,14 +100,19 @@ public sealed class ToastChannel : INotificationChannel
         // internal expiry below settles the await on the same horizon.
         notification.Expiration = DateTimeOffset.Now + PromptLifetime;
 
+        // Tagged with the nonce so a prompt its caller abandons can be taken
+        // back from the screen and the Notification Center (below): a stale
+        // toast still offering a choice nobody awaits would mislead.
+        notification.Tag = nonce;
+
         var tcs = new TaskCompletionSource<NotificationResponse?>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         // Register the pending TCS BEFORE Show, so an activation that races the
         // show still finds its target.
         _activation.RegisterPending(nonce, tcs);
 
-        // The already-shown toast stays in the Notification Center, but its
-        // activation will be an orphan (no pending entry) and is ignored. The
+        // The already-shown toast is withdrawn; should the removal fail, its
+        // activation is an orphan (no pending entry) and is ignored. The
         // registration is disposed once the task settles, so a long-lived
         // token does not retain the closure past the prompt's life.
         if (ct.CanBeCanceled)
@@ -116,6 +121,7 @@ public sealed class ToastChannel : INotificationChannel
             {
                 _activation.RemovePending(nonce);
                 tcs.TrySetCanceled(ct);
+                _ = WithdrawAsync(nonce);
             });
             _ = tcs.Task.ContinueWith(
                 static (_, state) => ((CancellationTokenRegistration)state!).Dispose(),
@@ -147,6 +153,19 @@ public sealed class ToastChannel : INotificationChannel
         _activation.Manager.Show(notification);
 
         return tcs.Task;
+    }
+
+    // Best effort: the orphaned activation is already ignored, so a failed
+    // removal only leaves a toast whose buttons do nothing.
+    private async Task WithdrawAsync(string nonce)
+    {
+        try
+        {
+            await _activation.Manager.RemoveByTagAsync(nonce);
+        }
+        catch (Exception)
+        {
+        }
     }
 
     private static bool DetectElevated()

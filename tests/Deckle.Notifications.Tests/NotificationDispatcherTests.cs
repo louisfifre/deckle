@@ -64,6 +64,22 @@ public class NotificationDispatcherTests
     }
 
     [Fact]
+    public void CanPromptFollowsTheRegistrationAndTheChannelsLiveAvailability()
+    {
+        var channel = new FakeNotificationChannel();
+        var dispatcher = NotificationDispatcher.Initialize(channel);
+        var descriptor = Descriptors.Make("playground.can_prompt");
+
+        Assert.False(dispatcher.CanPrompt(descriptor));
+
+        dispatcher.Catalog.Register(new[] { descriptor });
+        Assert.True(dispatcher.CanPrompt(descriptor));
+
+        channel.IsAvailable = false;
+        Assert.False(dispatcher.CanPrompt(descriptor));
+    }
+
+    [Fact]
     public async Task AnUnavailableChannelReturnsNullWithoutPrompting()
     {
         var channel = new FakeNotificationChannel(isAvailable: false);

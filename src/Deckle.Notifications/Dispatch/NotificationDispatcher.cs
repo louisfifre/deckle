@@ -57,6 +57,18 @@ public sealed class NotificationDispatcher
         return dispatcher;
     }
 
+    // Whether a prompt for this descriptor would be shown right now. A caller
+    // whose answer must tell "could not ask" from "nobody answered" checks this
+    // first, since PromptAsync returns null for both. Read live, like the
+    // channel's own availability.
+    public bool CanPrompt(NotificationDescriptor descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(descriptor);
+        return Catalog.IsRegistered(descriptor.Id)
+               && _channels.TryGetValue(descriptor.Channel, out var channel)
+               && channel.IsAvailable;
+    }
+
     // Returns null for two distinct no-answer cases the narrative tells apart:
     // the notification could not be shown (no channel for the requested kind, or
     // the channel is unavailable → dropped), or it was shown but never answered
