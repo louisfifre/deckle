@@ -922,6 +922,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogLineFormatter.cs
 │   │   ├── ObservationKind.cs
 │   │   ├── OperationalLogAdmission.cs
+│   │   ├── RunMarker.cs
 │   │   ├── WindowingProbe.cs
 │   │   └── WorkId.cs
 │   ├── Deckle.Diagnostics.Logging/
@@ -2036,6 +2037,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogLineFormatterTests.cs
 │   │   ├── OperationalLogAdmissionCollection.cs
 │   │   ├── OperationalLogAdmissionTests.cs
+│   │   ├── RunMarkerTests.cs
 │   │   └── WorkIdTests.cs
 │   ├── Deckle.Home.Tests/
 │   │   ├── Deckle.Home.Tests.csproj
