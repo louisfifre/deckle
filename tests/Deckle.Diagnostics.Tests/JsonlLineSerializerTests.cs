@@ -30,6 +30,28 @@ public sealed class JsonlLineSerializerTests
         return JsonDocument.Parse(Encoding.UTF8.GetString(line.Span)).RootElement.Clone();
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SelfDescribingMarksAJournalMilestoneAndLeavesOtherRowsUntouched(bool journal)
+    {
+        var entry = new EventEntry(
+            timestamp:        DateTimeOffset.UtcNow,
+            provider:         "Deckle-SerializerTest",
+            eventName:        "Sample",
+            level:            EventLevel.Informational,
+            keywords:         EventKeywords.None,
+            kind:             ObservationKind.Operational,
+            formattedMessage: "sample",
+            payload:          new Dictionary<string, object?>(),
+            journal:          journal);
+
+        ReadOnlyMemory<byte> line = new JsonlLineSerializer().Serialize(entry, "log", JsonlSchema.SelfDescribing);
+        JsonElement root = JsonDocument.Parse(Encoding.UTF8.GetString(line.Span)).RootElement;
+
+        Assert.Equal(journal, root.TryGetProperty("journal", out JsonElement mark) && mark.GetBoolean());
+    }
+
     [Fact]
     public void SelfDescribingNamesTheTransverseKeywordsInDeclarationOrder()
     {
