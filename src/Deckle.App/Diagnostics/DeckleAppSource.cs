@@ -136,4 +136,5 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtLaunchContextDetail            = 120;
     public const int EvtPreviousRunEndedUncleanly      = 121;
     public const int EvtLegacySettingsMigrationFailed  = 122;
+    public const int EvtAnytypeRuntimeFailed           = 123;
 }
