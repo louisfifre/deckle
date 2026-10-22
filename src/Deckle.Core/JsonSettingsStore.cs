@@ -16,6 +16,10 @@ namespace Deckle.Core;
 // recognised by content and ignored, and a file caught half-written stays
 // ignored until the next notification brings a valid one.
 //
+// A file the store cannot parse at load falls back to defaults, which the
+// next save writes over it. The unreadable text is copied to "<name>.bad"
+// first, so a typo in a hand edit costs the person nothing but a restore.
+//
 // Logging is delegate-injected (logInfo / logVerbose / logWarning /
 // logError), so this class stays in Deckle.Core (the lowest-level lib,
 // no diagnostics-module dependency). Each caller passes lambdas that
@@ -41,6 +45,12 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
     /// and each one notifies; waiting lets them land as one reload.
     /// </summary>
     public static readonly TimeSpan ExternalWriteSettle = TimeSpan.FromMilliseconds(250);
+
+    /// <summary>
+    /// Appended to the settings path to name the copy of a file the store
+    /// could not read, made before defaults take its place.
+    /// </summary>
+    public const string BackupExtension = ".bad";
 
     private readonly string _path;
     private readonly string _mutexName;
@@ -165,8 +175,14 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
         {
             // The app still runs on defaults, so this is a Warning rather
             // than an Error.
+            // The defaults are written over the file on the next save, so the
+            // person's text is set aside first. A read that failed on I/O left
+            // a file that may be perfectly valid, which is no reason to copy it.
+            string backup = ex is IOException or UnauthorizedAccessException
+                ? "none"
+                : BackUpUnreadableFile();
             _logWarning?.Invoke(
-                $"Settings file unreadable, using defaults | reason=parse_failed | source=corrupt_fallback | path={_path} | ex_type={ex.GetType().Name} | ex_message={ex.Message}");
+                $"Settings file unreadable, using defaults | reason=parse_failed | source=corrupt_fallback | path={_path} | backup={backup} | ex_type={ex.GetType().Name} | ex_message={ex.Message}");
             // Same treatment as the missing-file defaults above: a post-load hook
             // that stamps fresh state (e.g. a schema version) must see every fresh
             // instance, or a later save would persist pre-migration-looking data
@@ -174,6 +190,24 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
             var fallback = new T();
             _postLoadMigration?.Invoke(fallback);
             return fallback;
+        }
+    }
+
+    // Copies the unreadable file next to itself as "<name>.bad", replacing an
+    // earlier copy: one backup, the latest damaged text. Returns the backup's
+    // path, or why there is none; a failed copy must not stop the defaults
+    // from serving the session.
+    private string BackUpUnreadableFile()
+    {
+        string backup = _path + BackupExtension;
+        try
+        {
+            File.Copy(_path, backup, overwrite: true);
+            return backup;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return $"failed:{ex.GetType().Name}";
         }
     }
 
