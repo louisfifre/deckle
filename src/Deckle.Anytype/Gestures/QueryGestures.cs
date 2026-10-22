@@ -29,6 +29,12 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
     {
         var started = DateTime.UtcNow;
 
+        // Stays on the v1 search ON PURPOSE: this tool's output needs the snippet
+        // (the « Aperçu » block with context, and the title of a nameless report
+        // through QueryProp.Name). A v2 search row is {id,name,type,properties?}
+        // with no snippet (measured 2026-10-22), so porting it would silently drop
+        // that output. Revisit only if the preview is rebuilt from a v2 markdown
+        // read per hit, which costs one request per result.
         JsonObject root = await api.SearchAsync(text, typeKeys, limit: 20, ct: ct);
         JsonArray hits = root["data"]?.AsArray() ?? [];
 
