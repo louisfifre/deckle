@@ -1356,7 +1356,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Channels/
 │   │   │   └── Toast/
 │   │   │       ├── ToastActivation.cs
-│   │   │       └── ToastChannel.cs
+│   │   │       ├── ToastChannel.cs
+│   │   │       └── ToastWithdrawIncident.cs
 │   │   ├── Dispatch/
 │   │   │   ├── INotificationChannel.cs
 │   │   │   ├── NotificationDispatcher.cs
@@ -2163,7 +2164,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Descriptors.cs
 │   │   ├── FakeNotificationChannel.cs
 │   │   ├── NotificationCatalogTests.cs
-│   │   └── NotificationDispatcherTests.cs
+│   │   ├── NotificationDispatcherTests.cs
+│   │   ├── ToastChannelBugNotes.md
+│   │   └── ToastWithdrawIncidentTests.cs
 │   ├── Deckle.Orchestration.Tests/
 │   │   ├── Fixtures/
 │   │   │   ├── appmanifest_480.acf

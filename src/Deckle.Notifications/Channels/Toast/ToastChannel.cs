@@ -27,6 +27,7 @@ public sealed class ToastChannel : INotificationChannel
     private static readonly TimeSpan PromptLifetime = TimeSpan.FromMinutes(15);
 
     private readonly ToastActivation _activation = new();
+    private readonly ToastWithdrawIncident _withdrawIncident = new();
     private readonly bool _isElevated;
 
     public ToastChannel()
@@ -166,15 +167,19 @@ public sealed class ToastChannel : INotificationChannel
     }
 
     // Best effort: the orphaned activation is already ignored, so a failed
-    // removal only leaves a toast whose buttons do nothing.
+    // removal only leaves a toast whose buttons do nothing. It is not silent
+    // though: a toast that stays on screen offering a choice nobody awaits is
+    // what the journal has to show, once per incident.
     private async Task WithdrawAsync(string nonce)
     {
         try
         {
             await _activation.Manager.RemoveByTagAsync(nonce);
+            _withdrawIncident.Succeeded();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _withdrawIncident.Failed(ex);
         }
     }
 

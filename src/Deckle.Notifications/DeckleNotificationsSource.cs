@@ -38,6 +38,8 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     public const int EvtNotificationUnansweredDetail = 16;
     public const int EvtNotificationFailed          = 17;
     // 18 retired: the Verbose mirror of NotificationFailed.
+    public const int EvtToastWithdrawFailed         = 19;
+    public const int EvtToastWithdrawRecovered      = 20;
 
     // ─── Dispatcher boot ───────────────────────────────────────────────
     [Event(EvtDispatcherInitialized,
@@ -196,5 +198,28 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     public void ToastRegistrationFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtToastRegistrationFailed, ex_type, ex_message);
+    }
+
+    // A toast that a cancelled prompt asked to take back could not be removed
+    // from the screen and the Notification Center. The degradation is one
+    // incident: ToastWithdrawIncident writes this line once and the recovery
+    // once, however many withdrawals fail in between.
+    [Event(EvtToastWithdrawFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "A toast could not be withdrawn and stays on screen | ex_type={0} | ex_message={1}")]
+    public void ToastWithdrawFailed(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtToastWithdrawFailed, ex_type, ex_message);
+    }
+
+    [Event(EvtToastWithdrawRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Push,
+           Tags = ObservationTags.Journal,
+           Message = "Toast withdrawal works again")]
+    public void ToastWithdrawRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtToastWithdrawRecovered);
     }
 }
