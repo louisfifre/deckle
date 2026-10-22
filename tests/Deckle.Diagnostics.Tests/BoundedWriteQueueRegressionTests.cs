@@ -42,4 +42,39 @@ public sealed class BoundedWriteQueueRegressionTests
             diskReleased.Set();
         }
     }
+
+    [Fact]
+    public void A_write_error_already_reported_as_recovered_is_not_rethrown_at_flush()
+    {
+        int calls = 0;
+        using var queue = new BoundedWriteQueue<string>(
+            capacity: 4,
+            write: _ =>
+            {
+                if (Interlocked.Increment(ref calls) == 1) throw new IOException("disk hiccup");
+                return ValueTask.CompletedTask;
+            },
+            flush: () => ValueTask.CompletedTask,
+            close: () => { });
+
+        queue.Enqueue("lost to the hiccup");
+        queue.Enqueue("written after the disk came back");
+
+        Assert.True(queue.TryFlush(TimeSpan.FromSeconds(5)));
+    }
+
+    [Fact]
+    public void A_write_error_with_no_recovery_is_still_rethrown_at_flush()
+    {
+        var queue = new BoundedWriteQueue<string>(
+            capacity: 4,
+            write: _ => throw new IOException("disk gone"),
+            flush: () => ValueTask.CompletedTask,
+            close: () => { });
+
+        queue.Enqueue("lost");
+
+        Assert.Throws<IOException>(() => queue.TryFlush(TimeSpan.FromSeconds(5)));
+        Assert.Throws<IOException>(queue.Dispose);
+    }
 }

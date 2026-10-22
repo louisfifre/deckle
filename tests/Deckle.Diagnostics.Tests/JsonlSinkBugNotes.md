@@ -20,3 +20,13 @@ Regression: `JsonlLineSerializerRegressionTests.A_non_finite_double_is_written_a
 - **Recurrence cue:** a shutdown that hangs past its flush budget with a sink queue at capacity.
 
 Regression: `BoundedWriteQueueRegressionTests.A_bounded_flush_returns_in_time_while_a_producer_waits_on_a_full_queue`.
+
+## A recovered write error was rethrown at flush
+
+- **Trigger:** one failed write followed by a successful one (a disk hiccup), then `Flush`, `TryFlush` or `Dispose`. Reproduced 2026-10-22 by test.
+- **Observed symptom:** the journal said `SinkRecovered`, then the shutdown flush threw the old error as if the sink were still broken.
+- **Cause (established by running the test):** the queue remembered the last write error for Flush and Dispose to rethrow, and recovery closed the incident without clearing it.
+- **Violated invariant:** an incident closed by `SinkRecovered` leaves nothing to rethrow.
+- **Recurrence cue:** a `SinkRecovered` row followed by a flush failure naming the same error type and message.
+
+Regression: `BoundedWriteQueueRegressionTests.A_write_error_already_reported_as_recovered_is_not_rethrown_at_flush`; the guard `A_write_error_with_no_recovery_is_still_rethrown_at_flush` keeps the dead-destination case loud.

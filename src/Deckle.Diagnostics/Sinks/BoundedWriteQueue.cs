@@ -16,7 +16,8 @@ namespace Deckle.Diagnostics;
 // error, which Flush and Dispose rethrow, and the item is lost. That alone
 // hides a dead destination until exit, so the queue also keeps one incident:
 // the first failed write after successes calls onFault, the first successful
-// write after failures calls onRecovered with the count. Both callbacks run
+// write after failures calls onRecovered with the count and forgets the error
+// (a destination that came back has nothing left to rethrow). Both callbacks run
 // on a thread-pool thread, never on the worker: a callback that emits an
 // event dispatches back into this very sink, and a worker that enqueues into
 // its own full channel waits on itself forever.
@@ -193,6 +194,10 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
         {
             int failures = _consecutiveFailures;
             _consecutiveFailures = 0;
+            // The incident is closed and counted in SinkRecovered; keeping its
+            // error would make a later Flush or Dispose report a fault the
+            // journal already says is over.
+            Interlocked.Exchange(ref _lastError, null);
             if (_onRecovered is not null)
             {
                 Action<int> onRecovered = _onRecovered;
