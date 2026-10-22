@@ -119,6 +119,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── taskbar-research-2026-10-17.md
 │   │   ├── taskbar-probes/
 │   │   │   ├── bar-2026-10-18-native-small-left.webp
+│   │   │   ├── clock-uia.ps1
 │   │   │   ├── explorer-restart.ps1
 │   │   │   ├── feature-flags.ps1
 │   │   │   ├── late-inject-repro.ps1
@@ -127,9 +128,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── pe-keys2.ps1
 │   │   │   ├── README.md
 │   │   │   ├── taskbar-accent.ps1
+│   │   │   ├── taskbar-icon-size-native-vertical.patch
 │   │   │   ├── taskbar-probe.ps1
 │   │   │   ├── taskbar-strings.ps1
-│   │   │   └── tray-uia.ps1
+│   │   │   ├── tray-uia.ps1
+│   │   │   ├── windhawk-build-mod.ps1
+│   │   │   └── windhawk-install-mod.ps1
 │   │   ├── research--cerveau-llm--2026-10-13.md  — Cadrage vérifié (2026-10-13) — un cerveau LLM dans Deckle.Llm : les crédits API…
 │   │   ├── research--settings-ux--2026-10-13.md  — Recherche vérifiée (2026-10-13), la direction Settings de Louis passée au cribl…
 │   │   └── research--taskbar-sans-windhawk--2026-10-08.md  — Recherche vérifiée (2026-10-08) — remplacer Windhawk par un module Deckle pour…
