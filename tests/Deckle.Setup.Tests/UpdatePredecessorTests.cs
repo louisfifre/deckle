@@ -1,3 +1,5 @@
+using System.Diagnostics.Tracing;
+using Deckle.TestSupport;
 using Xunit;
 
 namespace Deckle.Setup.Tests;
@@ -36,6 +38,27 @@ public sealed class UpdatePredecessorTests
 
         Assert.Equal(0, process.WaitCalls);
         Assert.True(process.Disposed);
+    }
+
+    // The hand-off wait that ran out means the old app was still alive: a
+    // degradation the always-on journal must keep, so a Warning, not detail.
+    [Fact]
+    [Trait("Category", "observability")]
+    public async Task A_predecessor_that_outlives_the_wait_is_reported_as_a_warning()
+    {
+        string executable = Path.GetFullPath(Path.Combine("installed", "Deckle.exe"));
+        var predecessor = new FakePredecessorProcess(executable);
+        using var listener = new TestEventListener("Deckle-Setup");
+
+        await UpdatePredecessor.WaitForExitAsync(
+            int.MaxValue, executable, new FakePredecessorProcessSource(predecessor),
+            TimeSpan.FromMilliseconds(50));
+
+        EventWrittenEventArgs timedOut = Assert.Single(
+            listener.Events, e => e.EventId == DeckleSetupSource.EvtPredecessorWaitTimedOut);
+        Assert.Equal(EventLevel.Warning, timedOut.Level);
+        Assert.Equal(int.MaxValue, timedOut.Payload?[0]);
+        Assert.Equal(50L, timedOut.Payload?[1]);
     }
 
     private sealed class FakePredecessorProcessSource(IUpdatePredecessorProcess process)

@@ -2206,6 +2206,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DataRootTreeRegressionTests.cs
 │   │   ├── DataRootTreeTests.cs
 │   │   ├── Deckle.Setup.Tests.csproj
+│   │   ├── DeckleSetupSourceTests.cs
 │   │   ├── LocMirrorBugNotes.md
 │   │   ├── PayloadDeploymentTests.cs
 │   │   ├── SetupStringMirrorTests.cs

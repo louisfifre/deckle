@@ -85,9 +85,10 @@ public sealed partial class DeckleSetupSource : DeckleEventSource
     public const int EvtRelocateInsufficientSpaceDetail = 70;
     public const int EvtRelocateCancelled          = 71;
     public const int EvtBestEffortFailedDetail     = 72;
-    public const int EvtPredecessorWaitTimedOutDetail = 73;
+    public const int EvtPredecessorWaitTimedOut    = 73;
     public const int EvtChildProcessLaunchedDetail = 74;
     public const int EvtItemImportFailed           = 75;
     public const int EvtItemImported               = 76;
+    public const int EvtRelocateFilesSkipped       = 77;
 
 }

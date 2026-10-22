@@ -54,6 +54,20 @@ public sealed partial class DeckleSetupSource
             WriteEvent(EvtRelocateCompletedDetail, copied_bytes, files, skipped, duration_ms);
     }
 
+    // Diagnostics files the live app still held were left behind: the move
+    // finished, but not whole. One line with the count, whatever the number of
+    // files, written before the completion it qualifies. Required data is never
+    // skipped; that stops the move with an Error instead.
+    [Event(EvtRelocateFilesSkipped,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The app data move left diagnostics files behind | work_id={0} | skipped={1}")]
+    public void RelocateFilesSkipped(string work_id, int skipped)
+    {
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtRelocateFilesSkipped, work_id, skipped);
+    }
+
     // ex_type is empty for a refusal decided here (insufficient_space,
     // app_still_running); it carries the exception for reason=threw.
     [Event(EvtRelocateFailed,

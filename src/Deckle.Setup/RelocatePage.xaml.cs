@@ -136,6 +136,8 @@ public sealed partial class RelocatePage : Page
                 () => relocator.Relocate(source, target, required, progress, ct), ct);
             committed = true;
 
+            if (result.SkippedFiles > 0)
+                DeckleSetupSource.Log.RelocateFilesSkipped(workId, result.SkippedFiles);
             DeckleSetupSource.Log.RelocateCompleted(workId);
             DeckleSetupSource.Log.RelocateCompletedDetail(
                 result.CopiedBytes, result.Files, result.SkippedFiles,

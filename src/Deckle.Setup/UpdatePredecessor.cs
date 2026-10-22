@@ -42,7 +42,7 @@ internal static class UpdatePredecessor
         {
             // The ordinary running-process gate remains authoritative after the
             // bounded handoff wait; timeout never authorizes payload replacement.
-            DeckleSetupSource.Log.PredecessorWaitTimedOutDetail(id, (long)timeout.TotalMilliseconds);
+            DeckleSetupSource.Log.PredecessorWaitTimedOut(id, (long)timeout.TotalMilliseconds);
         }
     }
 
