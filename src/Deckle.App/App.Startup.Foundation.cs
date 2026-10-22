@@ -198,6 +198,10 @@ public partial class App
                 AppPaths.NativeDirectory);
         }
 
+        // Read now, before any Deckle window exists, so the foreground it
+        // records is the one the launch handed over.
+        LaunchContextProbe.Emit();
+
         // After the diagnostics listeners, so the dispatcher's audit events route
         // from the first emission, and before any surface that could raise a
         // notification. A duplicate descriptor id fails the boot.

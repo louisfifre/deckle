@@ -132,4 +132,5 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtHotkeyPressIgnored             = 117;
     public const int EvtModuleStarting                 = 118;
     public const int EvtModuleRefused                  = 119;
+    public const int EvtLaunchContextDetail            = 120;
 }
