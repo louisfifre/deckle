@@ -17,13 +17,10 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // Module-local keyword bits (transverse bits 0..9 reserved in Keywords;
     // 0x400+ belongs to the provider). Gesture covers gesture/session activity
     // that is not raw network traffic; Lifecycle covers the headless backend's
-    // supervision, a distinct observable family from the API calls.
+    // supervision, a distinct observable family from the API calls, and carries the
+    // transverse Lifecycle bit so a cross-module lifecycle filter finds every line.
     private const EventKeywords Gesture   = (EventKeywords)0x400;
-    private const EventKeywords Lifecycle = (EventKeywords)0x800;
-
-    // Journal milestones also carry the transverse Lifecycle bit, so a
-    // cross-module lifecycle filter finds the backend's start, stop and failure.
-    private const EventKeywords JournalLifecycle = Lifecycle | (EventKeywords)Keywords.Lifecycle;
+    private const EventKeywords Lifecycle = (EventKeywords)0x800 | (EventKeywords)Keywords.Lifecycle;
 
     // Retired ids, never to be reused: 15 (BackendTaskRegistered), 17-18
     // (BackendTaskOperationFailed/Detail).
@@ -262,7 +259,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // so the pair is reported here rather than as a Warning every boot.
     [Event(EvtBackendInstallationChecked,
            Level = EventLevel.Informational,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "Anytype backend installation checked | action={0} | active={1} | pinned={2}")]
     public void BackendInstallationChecked(string action, string active_version, string pinned_version)
@@ -274,7 +271,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // otherwise be the first sign the provider store is broken.
     [Event(EvtBackendInstallationPrepareFailed,
            Level = EventLevel.Warning,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "The Anytype backend installation could not be prepared | reason={0} | {1}: {2}")]
     public void BackendInstallationPrepareFailed(string reason, string ex_type, string ex_message)
@@ -304,7 +301,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
 
     [Event(EvtBackendStarting,
            Level = EventLevel.Informational,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "Starting the Anytype backend | work_id={0}")]
     public void BackendStarting(string work_id)
@@ -314,7 +311,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
 
     [Event(EvtBackendReady,
            Level = EventLevel.Informational,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "The Anytype backend is ready | work_id={0}")]
     public void BackendReady(string work_id)
@@ -329,7 +326,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // as if nothing were running.
     [Event(EvtBackendStartTimedOut,
            Level = EventLevel.Warning,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "The Anytype backend did not become ready | pid={0} | work_id={1}")]
     public void BackendStartTimedOut(int pid, string work_id)
@@ -341,7 +338,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // so Deckle cannot start it. A state the user must act on.
     [Event(EvtBackendNotProvisioned,
            Level = EventLevel.Warning,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "The Anytype backend is not provisioned")]
     public void BackendNotProvisioned()
@@ -416,7 +413,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // BackendRestartAttemptStopped instead, at Verbose.
     [Event(EvtBackendStopped,
            Level = EventLevel.Warning,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "The Anytype backend stopped | exit_code={1} | exit_known={2} | pid={0} | uptime_s={3:F0} | work_id={4}")]
     public void BackendStopped(int pid, int exit_code, bool exit_known, double uptime_s, string work_id)
@@ -439,7 +436,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // spawn failures write BackendRestartAttemptSpawnFailed instead, at Verbose.
     [Event(EvtBackendSpawnFailed,
            Level = EventLevel.Error,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "The Anytype backend could not be started | reason={0} | {1}: {2}")]
     public void BackendSpawnFailed(string reason, string ex_type, string ex_message)
@@ -551,7 +548,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // owner_untrusted. The free-text detail (path, OS error) stays Verbose.
     [Event(EvtBackendEndpointConflict,
            Level = EventLevel.Warning,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "Another process owns the Anytype endpoint | reason={0} | listener_pid={1}")]
     public void BackendEndpointConflict(string reason, int listener_pid)
@@ -656,7 +653,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // reader on another machine does not take a recovered backend for a dead one.
     [Event(EvtBackendRecovered,
            Level = EventLevel.Informational,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "The Anytype backend is back | attempts={0} | downtime_s={1:F0} | work_id={2}")]
     public void BackendRecovered(int attempts, double downtime_s, string work_id)
@@ -666,7 +663,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
 
     [Event(EvtBackendSupervisionStopped,
            Level = EventLevel.Informational,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "Anytype backend supervision stopped")]
     public void BackendSupervisionStopped()
@@ -678,7 +675,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // restart the backend before Deckle itself restarts.
     [Event(EvtBackendSupervisionGaveUp,
            Level = EventLevel.Warning,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "Anytype backend supervision gave up | reason={0} | work_id={1}")]
     public void BackendSupervisionGaveUp(string reason, string work_id)
@@ -688,7 +685,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
 
     [Event(EvtBackendSupervisionFailed,
            Level = EventLevel.Error,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "Anytype backend supervision failed | {0}: {1}")]
     public void BackendSupervisionFailed(string ex_type, string ex_message)
@@ -703,7 +700,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // since one resident task runs them all.
     [Event(EvtAnytypeRuntimeFaulted,
            Level = EventLevel.Error,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "The Anytype runtime failed | phase={0} | {1}: {2}")]
     public void AnytypeRuntimeFaulted(string phase, string ex_type, string ex_message)

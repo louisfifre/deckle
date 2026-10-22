@@ -1821,6 +1821,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── McpHttpHostTests.cs
 │   │   ├── McpObservabilityTests.cs
 │   │   ├── McpToolsetTests.cs
+│   │   ├── ProviderKeywordsBugNotes.md
+│   │   ├── ProviderKeywordsTests.cs
 │   │   ├── SchemaAdminToolCatalogTests.cs
 │   │   └── ToolCatalogTests.cs
 │   ├── Deckle.Anytype.Tests/
@@ -1869,6 +1871,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── OperationRecoveryBugNotes.md
 │   │   ├── ProjectGesturesBugNotes.md
 │   │   ├── ProjectGesturesTests.cs
+│   │   ├── ProviderKeywordsBugNotes.md
+│   │   ├── ProviderKeywordsTests.cs
 │   │   ├── QueryGesturesTests.cs
 │   │   ├── ReadGesturesBugNotes.md
 │   │   ├── ReadGesturesTests.cs

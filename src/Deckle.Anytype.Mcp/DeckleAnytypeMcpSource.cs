@@ -20,14 +20,11 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
 
     // Module-local keyword bits (transverse bits 0..9 reserved in Keywords;
     // 0x400+ belongs to the provider). Lifecycle covers the host's start, stop
-    // and request admission; Tool covers the per-call lines, so a reader can
+    // and request admission, with the transverse Lifecycle bit so a cross-module
+    // lifecycle filter finds every line; Tool covers the per-call lines, so a reader can
     // keep the host's story without the traffic.
-    private const EventKeywords Lifecycle = (EventKeywords)0x400;
+    private const EventKeywords Lifecycle = (EventKeywords)0x400 | (EventKeywords)Keywords.Lifecycle;
     private const EventKeywords Tool      = (EventKeywords)0x800;
-
-    // Journal milestones also carry the transverse Lifecycle bit, so a
-    // cross-module lifecycle filter finds the host's start, stop and failure.
-    private const EventKeywords JournalLifecycle = Lifecycle | (EventKeywords)Keywords.Lifecycle;
 
     // ── EventIds ─────────────────────────────────────────────────────────
     public const int EvtHostStarted          = 1;
@@ -58,7 +55,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
 
     [Event(EvtHostStarted,
            Level = EventLevel.Informational,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "The MCP host is listening")]
     public void HostStarted()
@@ -79,7 +76,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     // or threw says so through HostStopFailed instead.
     [Event(EvtHostStopped,
            Level = EventLevel.Informational,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "The MCP host stopped")]
     public void HostStopped()
@@ -91,7 +88,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     // connect until the next start.
     [Event(EvtHostStartFailed,
            Level = EventLevel.Error,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "The MCP host could not listen | port={0} | {1}: {2}")]
     public void HostStartFailed(int port, string ex_type, string ex_message)
@@ -104,7 +101,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     // has to be built).
     [Event(EvtHostStartRefused,
            Level = EventLevel.Warning,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "The MCP host did not start | reason={0}")]
     public void HostStartRefused(string reason)
@@ -116,7 +113,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     // client is kept alive under it), stop_failed or dispose_failed.
     [Event(EvtHostStopFailed,
            Level = EventLevel.Warning,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "The MCP host did not stop cleanly | reason={0} | {1}: {2}")]
     public void HostStopFailed(string reason, string ex_type, string ex_message)
@@ -130,7 +127,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     // token_mint_failed.
     [Event(EvtHostProvisioningFailed,
            Level = EventLevel.Warning,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "The MCP host is not provisioned | reason={0} | {1}: {2}")]
     public void HostProvisioningFailed(string reason, string ex_type, string ex_message)
@@ -203,7 +200,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     // TokenVariablesPublished, which stays a Verbose count, when missing > 0.
     [Event(EvtTokenVariablesMissing,
            Level = EventLevel.Warning,
-           Keywords = JournalLifecycle,
+           Keywords = Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "MCP client tokens are missing from the vault | clients={0} | missing={1}")]
     public void TokenVariablesMissing(int clients, int missing)
