@@ -43,4 +43,21 @@ public class ManagementToolCatalogTests
         Assert.True(delete.Execution.RequiresStableTarget);
         Assert.Equal(ToolChangeKind.Destructive, delete.Execution.Change);
     }
+
+    // Linked objects are no longer refused: the preview says what links to the
+    // target and the agent is told to show it. The unreadable-links refusal stays.
+    [Fact]
+    public void DeleteIsToldToSurfaceTheLinksInsteadOfPromisingARefusalOnThem()
+    {
+        string description = BuildCatalog().Single().Description;
+
+        foreach (string text in new[] { ManagementToolCatalog.Instructions, description })
+        {
+            Assert.Contains("links", text);
+            Assert.DoesNotContain("always refuses", text);
+            Assert.DoesNotContain("Refused for any object", text);
+        }
+
+        Assert.Contains("empties those links", description);
+    }
 }

@@ -6,14 +6,15 @@ namespace Deckle.Anytype;
 // happens on the agent's say-so alone.
 //
 // A checkpoint, not a lock: it proves someone answered, and an agent that drives
-// the desktop could answer it too. The hard refusals in ManagementGestures are
-// what no judgment can bypass.
+// the desktop could answer it too. What it shows is what makes the answer
+// informed, so it carries everything the bin would change, the links included.
 public interface IDeletionApproval
 {
     Task<DeletionApprovalOutcome> RequestAsync(DeletionCandidate candidate, CancellationToken ct);
 }
 
-public sealed record DeletionCandidate(string Id, string Name, string TypeKey);
+// LinkCount is how many other objects link to the target, which the bin empties.
+public sealed record DeletionCandidate(string Id, string Name, string TypeKey, int LinkCount);
 
 // Only Approved lets the delete through. Each other outcome is its own refusal,
 // so the agent can tell the person what to do: answer, look in the notification
