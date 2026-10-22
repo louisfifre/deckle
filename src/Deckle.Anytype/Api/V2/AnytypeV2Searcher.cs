@@ -71,7 +71,9 @@ public sealed record AnytypeV2SearchRequest
 // properties the request's Fields asked for (a report's name is empty).
 public sealed record AnytypeV2SearchRow(string Id, string Name, string Type, AnytypeV2PropertyMap Properties);
 
-public sealed record AnytypeV2SearchPage(IReadOnlyList<AnytypeV2SearchRow> Rows, int Total, bool HasMore);
+// Returned counts what the server sent, including rows skipped for lack of an
+// id: the next offset advances by it, not by Rows.Count.
+public sealed record AnytypeV2SearchPage(IReadOnlyList<AnytypeV2SearchRow> Rows, int Total, bool HasMore, int Returned);
 
 // POST /v2/spaces/{id}/search. A read carried by POST: the filtering is done by
 // the server, which is the point, and the page is chosen in the query string
@@ -111,8 +113,10 @@ public sealed class AnytypeV2Searcher(AnytypeV2Client client)
             throw new HttpRequestException("Anytype API returned a non-object JSON root for a search.");
 
         var rows = new List<AnytypeV2SearchRow>();
+        int returned = 0;
         foreach (JsonNode? node in body["data"] as JsonArray ?? [])
         {
+            returned++;
             if (node is not JsonObject row) continue;
             string id = row["id"]?.GetValue<string>() ?? "";
             if (id.Length == 0) continue;
@@ -126,7 +130,8 @@ public sealed class AnytypeV2Searcher(AnytypeV2Client client)
         return new AnytypeV2SearchPage(
             rows,
             body["total"]?.GetValue<int>() ?? rows.Count,
-            body["has_more"]?.GetValue<bool>() == true);
+            body["has_more"]?.GetValue<bool>() == true,
+            returned);
     }
 
     // Every row of the request, one page after the other until has_more turns
@@ -141,8 +146,8 @@ public sealed class AnytypeV2Searcher(AnytypeV2Client client)
         {
             AnytypeV2SearchPage page = await SearchPageAsync(request, offset, PageSize, ct).ConfigureAwait(false);
             rows.AddRange(page.Rows);
-            if (!page.HasMore || page.Rows.Count == 0) break;
-            offset += page.Rows.Count;
+            if (!page.HasMore || page.Returned == 0) break;
+            offset += page.Returned;
         }
         return rows;
     }

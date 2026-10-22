@@ -122,6 +122,24 @@ public class AnytypeV2SearcherTests
         Assert.Equal(2, handler.Requests.Count);
     }
 
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task SearchAllAdvancesByTheRowsTheServerSentNotTheOnesItKept()
+    {
+        // The first page carries a row with no id: it is dropped, but the
+        // server still counted it, so the next offset is 2, not 1.
+        var handler = new FakeV2Handler()
+            .Reply(HttpStatusCode.OK, Page(true, 3, "r1", ""))
+            .Reply(HttpStatusCode.OK, Page(false, 3, "r3"));
+        using AnytypeV2Client client = ClientOver(handler);
+
+        IReadOnlyList<AnytypeV2SearchRow> rows = await new AnytypeV2Searcher(client)
+            .SearchAllAsync(new AnytypeV2SearchRequest(), Ct);
+
+        Assert.Equal(["r1", "r3"], rows.Select(r => r.Id));
+        Assert.Contains("offset=2", handler.Requests[1].PathAndQuery);
+    }
+
     // A search changes nothing, so a 5xx may be retried like a GET even though
     // it travels on a POST with no idempotency key.
     [Fact]
