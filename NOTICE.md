@@ -49,7 +49,9 @@ The following third-party packages are referenced across the projects under `src
 
 Microsoft runtime components under Microsoft license terms. They are not open source; Deckle's GPLv3 section 7 additional permission in `LICENSE` covers combining Deckle with them.
 
-- `Microsoft.WindowsAppSDK` 1.8.260317003 — Microsoft Software License Terms, Microsoft Windows App SDK — Microsoft. Read from the nuspec license file `license.txt`. The packages it pulls in (`Microsoft.WindowsAppSDK.Base`, `.Foundation`, `.InteractiveExperiences`, `.WinUI`, `.DWrite`, `.Widgets`, `.AI`, `.ML`, `.Runtime`) carry the same `license.txt`.
+- `Microsoft.WindowsAppSDK` 2.5.1 — Microsoft Software License Terms, Microsoft Windows App SDK — Microsoft. Read from the nuspec license file `license.txt`. The packages it pulls in (`Microsoft.WindowsAppSDK.Base`, `.Foundation`, `.InteractiveExperiences`, `.WinUI`, `.DWrite`, `.Widgets`, `.AI`, `.Search` 2.5.5, `.Runtime`) carry the same `license.txt`.
+- `Microsoft.WindowsAppSDK.ML` 2.1.94 — Microsoft Software License Terms, Microsoft Windows App SDK and Windows Machine Learning (ML) — Microsoft. Read from its own nuspec license file `license.txt`, which differs from the one above.
+- `Microsoft.Windows.AI.MachineLearning` 2.1.74 — Microsoft Software License Terms, Microsoft Windows ML Runtime — Microsoft. Read from the nuspec license file `license.txt`; the package also ships a `ThirdPartyNotices.txt`. Pulled in by `Microsoft.WindowsAppSDK.ML`. Only its managed projection ships with Deckle: the build strips its native files (ONNX Runtime, DirectML, the Windows ML runtime) so that the one ONNX Runtime in the process is the pinned `Microsoft.ML.OnnxRuntime.DirectML`.
 - `Microsoft.Windows.SDK.BuildTools` 10.0.26100.4654 — Microsoft Windows SDK license terms — Microsoft. Read from the nuspec `licenseUrl`, `https://aka.ms/WinSDKLicenseURL`. Its companion `Microsoft.Windows.SDK.BuildTools.MSIX` names the license file `sdk_license.txt`, titled Microsoft Software License Terms, Microsoft Windows Software Development Kit (SDK) for Windows 10.
 - `Microsoft.Graphics.Win2D` 1.4.0 — Microsoft license terms for the Win2D package — Microsoft. Read from the nuspec `licenseUrl`, `http://www.microsoft.com/web/webpi/eula/eula_win2d_10012014.htm`; the package carries no license file. Draws the HUD rewriting stroke on a Direct2D-backed composition surface.
 - `Microsoft.AI.DirectML` 1.15.4 — Microsoft Software License Terms, Microsoft DirectX Machine Learning (DirectML) — Microsoft. Read from the nuspec license file `LICENSE.txt`. Not referenced directly: `Microsoft.ML.OnnxRuntime.DirectML` depends on it, and it ships `DirectML.dll`, a Microsoft redistributable.
@@ -73,7 +75,7 @@ Other third-party packages pulled in transitively by `Deckle.App`, read from its
 
 - `CommunityToolkit.Common` 8.2.1, `CommunityToolkit.WinUI.Extensions`, `.Helpers` and `.Triggers` 8.2.250402 — MIT — nuspec license expressions.
 - `Microsoft.ML.OnnxRuntime.Managed` 1.23.0 and `Microsoft.ML.OnnxRuntimeGenAI.Managed` 0.13.0 — MIT — nuspec license files.
-- `Microsoft.Web.WebView2` 1.0.3179.45 — BSD-style license, Copyright (C) Microsoft Corporation — nuspec license file `LICENSE.txt`. Pulled in by `Microsoft.WindowsAppSDK.WinUI`.
+- `Microsoft.Web.WebView2` 1.0.3719.77 — BSD-style license, Copyright (C) Microsoft Corporation — nuspec license file `LICENSE.txt`. Pulled in by `Microsoft.WindowsAppSDK.WinUI`.
 - `Google.Protobuf` 3.30.2 — BSD-3-Clause — Google Inc. — nuspec license expression. Pulled in by `Microsoft.ML.Tokenizers`.
 - `Humanizer.Core` 3.0.10 — MIT — Claire Novotny, Mehdi Khalili — nuspec license expression. Pulled in by `JsonPointer.Net`.
 
