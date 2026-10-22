@@ -155,6 +155,31 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtLegacySettingsMigrationFailed, ex_type, ex_message);
     }
 
+    // A second instance is turned away before it may touch the journal, so it
+    // leaves its fact in second-instance.txt (App.Lifetime.cs) and the resident
+    // run copies it here at its next start. noted_at is the time the second
+    // instance wrote it, not the time of this line; fact names its pid.
+    [Event(EvtSecondInstanceRejected,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "A second Deckle was turned away | noted_at={0} | fact={1}")]
+    public void SecondInstanceRejected(string noted_at, string fact)
+    {
+        if (IsEnabled()) WriteEvent(EvtSecondInstanceRejected, noted_at, fact);
+    }
+
+    // The same facts when there are too many to read one by one (a launcher
+    // shortcut pressed over and over while Deckle runs): how many, and the span.
+    [Event(EvtSecondInstancesRejected,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Second Deckle instances were turned away | count={0} | first_at={1} | last_at={2}")]
+    public void SecondInstancesRejected(int count, string first_at, string last_at)
+    {
+        if (IsEnabled()) WriteEvent(EvtSecondInstancesRejected, count, first_at, last_at);
+    }
     [Event(EvtResidentMutexReleaseFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

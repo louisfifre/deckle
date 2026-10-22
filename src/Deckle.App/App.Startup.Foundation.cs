@@ -128,6 +128,7 @@ public partial class App
         EmitRunIdentity();
         ReportPreviousRunEnd();
         ReportLegacyLayoutMigration();
+        ReportRejectedSecondInstances();
         context.Milestone("diagnostics-local");
 
         // Before any module SettingsService is touched: each singleton loads its
@@ -271,6 +272,26 @@ public partial class App
             previous.StartedAt?.ToString("o", System.Globalization.CultureInfo.InvariantCulture) ?? "unknown");
     }
 
+    // The second instances turned away since the last start could not write to
+    // the journal, which this run holds open: they left their fact in
+    // second-instance.txt. It is copied into the journal now, one line per fact,
+    // or as one count line past MaxRejectedFactsListed, and the file is cleared.
+    private const int MaxRejectedFactsListed = 10;
+
+    private static void ReportRejectedSecondInstances()
+    {
+        var notes = NoteFile.Take(Path.Combine(AppPaths.DiagnosticsDirectory, SecondInstanceFileName));
+        if (notes.Count == 0) return;
+
+        if (notes.Count > MaxRejectedFactsListed)
+        {
+            DeckleAppSource.Log.SecondInstancesRejected(notes.Count, notes[0].At, notes[^1].At);
+            return;
+        }
+
+        foreach (NoteFile.Note note in notes)
+            DeckleAppSource.Log.SecondInstanceRejected(note.At, note.Text);
+    }
     // AppPaths moved the legacy settings layout while its static constructor
     // ran, before this process had a sink: the failure it kept is reported here.
     private static void ReportLegacyLayoutMigration()
