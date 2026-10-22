@@ -244,7 +244,7 @@ public partial class App
             args:          string.Join(' ', cliArgs.Skip(1)));
     }
 
-    // Once the settings are readable: the line says what the journals of this
+    // Once the settings are readable: the line says what the logs of this
     // run can contain, and a flag flipped later is logged by the settings page.
     private static void EmitLoggingPolicy()
     {

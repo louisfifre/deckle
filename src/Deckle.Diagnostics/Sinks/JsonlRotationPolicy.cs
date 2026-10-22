@@ -9,10 +9,10 @@ namespace Deckle.Diagnostics;
 // Generations are never renamed. They are kept up to MaxArchives and the
 // oldest go first (lowest index); with a null cap they accumulate and the user
 // prunes them by hand. The index is zero-padded so a directory listing sorts
-// in chronological order. The cap is in lines because a journal is read in
+// in chronological order. The cap is in lines because a log is read in
 // lines, not bytes.
 //
-// Scope. Only the general application journal (app.jsonl) rolls. The dataset
+// Scope. Only the operational log files (setup, journal, app) roll. The dataset
 // channels (latency, microphone, corpus) are append-only datasets with a
 // stable cross-session contract and are never given a rotation policy —
 // losing their tail would corrupt the dataset.

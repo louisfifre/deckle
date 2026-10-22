@@ -213,7 +213,7 @@ public partial class App
         _hotkeyManager = new HotkeyManager(_messageHost.Hwnd, OnHotkey, BuildHotkeyBindings());
         // Register throws only when the WM_HOTKEY subclass cannot be installed;
         // uncaught, that throw would stop the app from starting. Deckle-Shell
-        // journals that failure with its Win32 error before throwing, so only
+        // logs that failure with its Win32 error before throwing, so only
         // the person's feedback is left to give here.
         try
         {

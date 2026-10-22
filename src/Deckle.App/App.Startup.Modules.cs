@@ -84,7 +84,7 @@ public partial class App
         // Read by the taskbar cover and the apps and games runtime, so it must
         // exist before them. Its WinEvent hooks deliver on the thread that starts
         // it: the UI thread, which pumps once OnLaunched returns. A failed start
-        // is logged by the watcher with its Win32 error and journaled here as a
+        // is logged by the watcher with its Win32 error and recorded here as a
         // refusal; the app runs on without foreground changes.
         context.ComposeOrRefuse(ForegroundWatcherModule, RefuseForegroundHookFailed, () =>
         {

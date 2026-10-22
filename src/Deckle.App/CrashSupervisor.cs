@@ -30,7 +30,7 @@ internal static class CrashSupervisor
     // crash there ends the app, and the run identity line says so up front.
     internal static bool Supervised { get; private set; }
 
-    // The launcher's only trace, beside the journals in the diagnostics
+    // The launcher's only trace, beside the log files in the diagnostics
     // folder. It has no sink, and the one decision no child can report is
     // giving up: after that line there is no Deckle left to write anything.
     private const string SupervisorFileName = "supervisor.txt";
