@@ -41,9 +41,9 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     // 26 retired.
     // 27 retired.
     public const int EvtUserFeedbackEmitted       = 28;
-    public const int EvtCrashUnhandledDetail        = 29;
+    // 29 retired: the detail of CrashUnhandled, whose line now carries its cause.
     public const int EvtCrashAppDomainDetail        = 30;
-    public const int EvtCrashTaskSchedulerDetail    = 31;
+    // 31 retired: the detail of CrashTaskScheduler, same reason.
     // 32 retired.
     // 33 retired.
     // 34 retired.
@@ -82,9 +82,9 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtModuleFailed                   = 67;
     public const int EvtShutdownStepFailed             = 68;
     // 69 retired: its steps, failed and elapsed_ms moved onto ShutdownCompleted.
-    public const int EvtCrashUnhandled                 = 70;
+    // 70 retired: an unhandled exception the app survives is SurvivedException.
     public const int EvtCrashAppDomain                 = 71;
-    public const int EvtCrashTaskScheduler             = 72;
+    // 72 retired: an unobserved task exception the app survives is SurvivedException.
     public const int EvtStatusChanged                  = 73;
     public const int EvtInstallTempCleanupFailed       = 74;
     public const int EvtDataRootCleanupStarting        = 75;
@@ -140,4 +140,6 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtAnytypeRuntimeFailed           = 123;
     public const int EvtSecondInstanceRejected         = 124;
     public const int EvtSecondInstancesRejected        = 125;
+    public const int EvtSurvivedException              = 126;
+    public const int EvtSurvivedExceptionRepeated      = 127;
 }

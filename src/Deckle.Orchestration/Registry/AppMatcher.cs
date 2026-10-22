@@ -22,7 +22,8 @@ public static class AppMatcher
     // Precedence, strongest first, over enabled entries only:
     //   1. the executable path is the entry's ExecutablePath;
     //   2. the executable path lies under the entry's InstallDirectory;
-    //   3. the process name is the entry's ProcessName.
+    //   3. the process name is the entry's ProcessName, for an entry that knows
+    //      no other executable path than the process's (see NameTierAdmits).
     // Each tier is tried across all entries before the next, so a path match on
     // one entry always beats a name match on another listed earlier.
     public static AppEntry? Match(
@@ -55,10 +56,26 @@ public static class AppMatcher
         foreach (AppEntry entry in entries)
         {
             if (!entry.Enabled) continue;
-            if (string.Equals(entry.ProcessName, name, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(entry.ProcessName, name, StringComparison.OrdinalIgnoreCase)
+                && NameTierAdmits(entry, fullPath))
                 return entry;
         }
         return null;
+    }
+
+    // The name is the weakest evidence, so it decides only where nothing
+    // stronger speaks: an entry that knows no executable path, or a process
+    // whose path is unknown. An entry that knows its file and meets another
+    // file of the same name is a different program (two games shipping
+    // "game.exe"), unless the process sits inside the entry's install
+    // directory, the signature of an app that moved to a versioned folder on
+    // update. That last case is already caught by the directory tier above;
+    // it is restated here so this tier stays correct on its own.
+    private static bool NameTierAdmits(AppEntry entry, string? processPath)
+    {
+        if (processPath is null) return true;
+        if (TryFullPath(entry.ExecutablePath) is null) return true;
+        return IsUnder(processPath, entry.InstallDirectory);
     }
 
     // A candidate repeats an entry when both name the same executable or the

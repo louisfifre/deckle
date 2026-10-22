@@ -40,9 +40,7 @@ internal static class AppDiagnosticsBootstrap
     // scope the check by provider if one ever does.
     private static readonly HashSet<string> _crashCompanions = new()
     {
-        nameof(DeckleAppSource.CrashUnhandledDetail),
         nameof(DeckleAppSource.CrashAppDomainDetail),
-        nameof(DeckleAppSource.CrashTaskSchedulerDetail),
         nameof(DeckleAppSource.CrashStackTrace),
     };
 

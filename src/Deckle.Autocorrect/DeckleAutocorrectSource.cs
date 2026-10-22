@@ -352,16 +352,17 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         WriteEvent(EvtCorrectionDetail, reason, original_len, replacement_len, backspaces);
     }
 
-    // Opens the injection incident. process is the target app; win32_error is
-    // SendInput's last error, and 0 is itself a clue: UIPI blocking against an
-    // elevated window rejects the burst without setting any error.
+    // Opens the injection incident. win32_error is SendInput's last error, and 0
+    // is itself a clue: UIPI blocking against an elevated window rejects the
+    // burst without setting any error. The line names no app: an app name stays
+    // on Verbose detail events, where SurfaceChanged names the focused app.
     [Event(EvtInjectionFailing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Text injection is failing, corrections may not reach this app | process={0} | win32_error={1}")]
-    public void InjectionFailing(string process, int win32_error)
+           Message = "Text injection is failing, corrections may not reach this app | win32_error={0}")]
+    public void InjectionFailing(int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtInjectionFailing, process, win32_error);
+        if (IsEnabled()) WriteEvent(EvtInjectionFailing, win32_error);
     }
 
     [Event(EvtInjectionRecovered,

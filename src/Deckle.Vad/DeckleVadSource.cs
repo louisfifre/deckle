@@ -41,6 +41,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     public const int EvtSpeechTrimVadFileDeleteFailed       = 17;
     public const int EvtSpeechTrimFailed                    = 18;
     public const int EvtSpeechTrimBounds                    = 19;
+    public const int EvtSpeechTrimVadDownloadAttemptFailedDetail = 20;
 
     // Where the trim cut, in ms of the buffer it received. trailing_removed_ms
     // is the audio after the last detected speech sample that never reached
@@ -121,8 +122,11 @@ public sealed class DeckleVadSource : DeckleEventSource
     // Opens the "takes run untrimmed" incident, once per cause: a later take that
     // finds the VAD unusable for the same reason adds nothing. reason is one of
     // model_missing, checksum_mismatch, checksum_read_failed, load_failed,
-    // download_failed, trim_failed. ex_type is empty when no exception was
-    // thrown; ex_message then carries the failure text when there is one.
+    // download_failed, download_gave_up, trim_failed. ex_type is empty when no
+    // exception was thrown; ex_message then carries the failure text when there
+    // is one. download_failed opens on the first failed download and the retries
+    // stay inside it; download_gave_up follows once, when the last retry failed,
+    // and says the next start will try again.
     [Event(EvtSpeechTrimUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
@@ -181,6 +185,21 @@ public sealed class DeckleVadSource : DeckleEventSource
     public void SpeechTrimVadDownloadStartDetail(string url)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadStartDetail, url);
+    }
+
+    // One failed download attempt. The incident is SpeechTrimUnavailable; this is
+    // each attempt inside it, with how long the service waits before the next one
+    // (0 on the last attempt, which has no next).
+    [Event(EvtSpeechTrimVadDownloadAttemptFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "model download attempt failed | attempt={0} | attempts={1} | retry_in_s={2} | ex_type={3} | ex_message={4}")]
+    public void SpeechTrimVadDownloadAttemptFailedDetail(
+        int attempt, int attempts, long retry_in_s, string ex_type, string ex_message)
+    {
+        if (IsEnabled())
+            WriteEvent(EvtSpeechTrimVadDownloadAttemptFailedDetail,
+                attempt, attempts, retry_in_s, ex_type, PathRedaction.Redact(ex_message));
     }
 
     [Event(EvtSpeechTrimVadDownloadComplete,

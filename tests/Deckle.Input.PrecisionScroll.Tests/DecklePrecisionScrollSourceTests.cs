@@ -6,6 +6,7 @@ using Xunit;
 namespace Deckle.Input.PrecisionScroll.Tests;
 
 [Trait("Category", "observability")]
+[Collection(PrecisionScrollObservabilityCollection.Name)]
 public sealed class DecklePrecisionScrollSourceTests
 {
     [Fact]

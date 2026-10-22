@@ -6,6 +6,7 @@ namespace Deckle.Vad.Tests;
 // The VAD model path names the account that downloaded it, so a line carries it
 // under %USERPROFILE% and a reader on another machine learns the file, not the person.
 [Trait("Category", "observability")]
+[Collection(VadObservabilityCollection.Name)]
 public sealed class VadPathRedactionTests
 {
     private static string Profile => Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
