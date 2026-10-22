@@ -2009,6 +2009,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Diagnostics.Tests/
 │   │   ├── BoundedWriteQueueRegressionTests.cs
 │   │   ├── CrashDumpCaptureTests.cs
+│   │   ├── CrashRelaunchPolicyBugNotes.md
+│   │   ├── CrashRelaunchPolicyRegressionTests.cs
 │   │   ├── CrashRelaunchPolicyTests.cs
 │   │   ├── Deckle.Diagnostics.Tests.csproj
 │   │   ├── DeckleCancellationSourceTests.cs
