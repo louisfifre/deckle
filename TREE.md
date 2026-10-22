@@ -2092,6 +2092,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Install.Tests/
 │   │   ├── Deckle.Install.Tests.csproj
 │   │   ├── InstallPathsTests.cs
+│   │   ├── ReleaseResolverBugNotes.md
+│   │   ├── ReleaseResolverRegressionTests.cs
 │   │   ├── ReleaseResolverTests.cs
 │   │   └── RunningProcessesBugNotes.md
 │   ├── Deckle.Lighting.Ambient.Tests/

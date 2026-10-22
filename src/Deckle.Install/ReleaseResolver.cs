@@ -15,7 +15,10 @@ namespace Deckle.Install;
 // release chosen by GitHub, and the /releases list also contains the native
 // runtime's independent `native-v*` releases. App releases are therefore selected
 // by their strict vX.Y.Z tag and compared semantically instead of trusting either
-// GitHub's badge or API order.
+// GitHub's badge or API order. The one flag that is honored is Prerelease: a
+// release published as a prerelease is not offered to an installer or an update
+// check, whatever its tag says. Deckle publishes none today, so this only keeps
+// a future one from reaching people by accident.
 //
 // Asset names are part of the frozen release contract. A published app release
 // missing either exact asset is rejected: synthesizing a plausible URL would
@@ -65,7 +68,7 @@ public static class ReleaseResolver
     internal static ResolvedRelease ResolveLatestAppRelease(IEnumerable<GitHubRelease> releases)
     {
         GitHubRelease? latest = releases
-            .Where(r => !r.Draft && TryParseAppVersion(r.TagName, out _))
+            .Where(r => !r.Draft && !r.Prerelease && TryParseAppVersion(r.TagName, out _))
             .OrderByDescending(r => ParseAppVersion(r.TagName!))
             .FirstOrDefault();
 
