@@ -175,6 +175,47 @@ public class PresetFamilyTests
         Assert.Equal(Sharp.Id, family.Selection);
     }
 
+    // The stored id names no preset (a preset retired, a file edited by hand):
+    // the family falls back to the values, and the consumer is told which id
+    // was asked for and which selection it got, to log the degradation.
+    [Fact]
+    public void A_stored_selection_naming_no_preset_is_reported_with_the_asked_and_obtained_ids()
+    {
+        var store = new Store { Values = Sharp.Values, Selection = "retired" };
+        var reports = new List<(string Asked, string Obtained)>();
+
+        _ = new PresetFamily<Look>(Declared, Soft.Id, store, (asked, obtained) => reports.Add((asked, obtained)));
+
+        Assert.Equal([("retired", Sharp.Id)], reports);
+    }
+
+    [Fact]
+    public void A_derivation_that_lands_on_custom_is_reported_as_custom()
+    {
+        var store = new Store { Values = new Look(5, 0.5), Selection = "retired" };
+        var reports = new List<(string Asked, string Obtained)>();
+
+        _ = new PresetFamily<Look>(Declared, Soft.Id, store, (asked, obtained) => reports.Add((asked, obtained)));
+
+        Assert.Equal([("retired", PresetFamily.Custom)], reports);
+    }
+
+    // No stored selection is a file from before the selection existed, and a
+    // known id or Custom is the normal case: neither is a fallback to report.
+    [Theory]
+    [InlineData(null)]
+    [InlineData("soft")]
+    [InlineData("custom")]
+    public void Only_an_unknown_stored_selection_is_reported(string? stored)
+    {
+        var store = new Store { Values = Soft.Values, Selection = stored };
+        var reports = new List<(string Asked, string Obtained)>();
+
+        _ = new PresetFamily<Look>(Declared, Soft.Id, store, (asked, obtained) => reports.Add((asked, obtained)));
+
+        Assert.Empty(reports);
+    }
+
     [Fact]
     public void Selector_options_list_the_presets_in_order_then_custom()
     {
