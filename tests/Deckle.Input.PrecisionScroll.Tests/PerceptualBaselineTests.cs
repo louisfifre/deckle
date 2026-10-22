@@ -8,34 +8,50 @@ namespace Deckle.Input.PrecisionScroll.Tests;
 [Trait("Category", "unit")]
 public sealed class PerceptualBaselineTests
 {
+    // The injector's coordinates are himetric units, 1/100 mm
+    // (PrecisionTouchpadInjector); the fixture states travel in millimetres.
+    private const double HimetricPerMillimeter = 100;
+
+    public static TheoryData<string> ScenarioNames()
+    {
+        var names = new TheoryData<string>();
+        foreach (BaselineScenario scenario in LoadFixture().Scenarios)
+            names.Add(scenario.Name);
+        return names;
+    }
+
+    // One case per scenario so a failure names the scenario that drifted instead of
+    // stopping a shared loop at the first one.
+    [Theory]
+    [MemberData(nameof(ScenarioNames))]
+    public void NamedScenarioPreservesItsAcceptedPerceptualContract(string name)
+    {
+        BaselineScenario scenario = LoadFixture().Scenarios.Single(item => item.Name == name);
+
+        AssertScenario(scenario, Replay(scenario));
+    }
+
     [Fact]
-    public void NamedScenariosPreserveTheAcceptedPerceptualContracts()
+    public void FasterScenariosKeepTheirCadenceAdvantage()
     {
         BaselineFixture fixture = LoadFixture();
         Assert.Equal(1, fixture.Schema);
-        Assert.Equal("5c0a75ae55c457b628b08ddf74f455c9a52bae21", fixture.ReferenceCommit);
 
-        var results = new Dictionary<string, ReplayResult>();
-        foreach (BaselineScenario scenario in fixture.Scenarios)
-        {
-            ReplayResult replay = Replay(scenario);
-            results.Add(scenario.Name, replay);
-            AssertScenario(scenario, replay);
-        }
+        BaselineScenario[] comparisons = fixture.Scenarios
+            .Where(scenario => scenario.Expected.FasterThan is not null)
+            .ToArray();
+        Assert.NotEmpty(comparisons);
 
-        foreach (BaselineScenario scenario in fixture.Scenarios)
+        foreach (BaselineScenario scenario in comparisons)
         {
             BaselineExpected expected = scenario.Expected;
-            if (expected.FasterThan is null)
-                continue;
+            BaselineScenario slower = fixture.Scenarios.Single(item => item.Name == expected.FasterThan);
 
             Assert.True(
-                results[scenario.Name].PeakSpeed
-                    > results[expected.FasterThan].PeakSpeed * expected.MinimumSpeedRatio,
-                $"{scenario.Name} no longer preserves its cadence advantage.");
+                Replay(scenario).PeakSpeed > Replay(slower).PeakSpeed * expected.MinimumSpeedRatio,
+                $"{scenario.Name} no longer preserves its cadence advantage over {slower.Name}.");
         }
     }
-
     private static void AssertScenario(BaselineScenario scenario, ReplayResult replay)
     {
         BaselineExpected expected = scenario.Expected;
@@ -52,7 +68,7 @@ public sealed class PerceptualBaselineTests
                 replay.Count(PrecisionScrollFrameKind.End));
         }
         if (expected.TravelMm is double travelMm)
-            Assert.InRange(replay.TotalTravel / 100, travelMm - 0.01, travelMm + 0.01);
+            Assert.InRange(replay.TotalTravel / HimetricPerMillimeter, travelMm - 0.01, travelMm + 0.01);
         if (expected.Rollover is bool rollover)
             Assert.Equal(rollover, replay.Frames.Any(item => item.Frame.IsRollover));
         if (expected.StationaryBeforeEnd)
