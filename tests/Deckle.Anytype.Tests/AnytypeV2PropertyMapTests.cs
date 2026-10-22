@@ -68,15 +68,17 @@ public class AnytypeV2PropertyMapTests
         Assert.Equal("", map.Name);
         Assert.Null(map.Select("etat"));
         Assert.Empty(map.ObjectIds("relation_projet"));
-        Assert.False(map.Archived(null));
+        Assert.False(map.InBin);
     }
 
+    // The served key is is_archived; `archived` is only a search alias, and the
+    // space's own « Archivé » checkbox (`archive`) is not the bin.
     [Fact]
-    public void ArchivedIsReadFromThePropertiesOrFromTheRoot()
+    public void TheBinIsReadFromIsArchivedOnly()
     {
-        Assert.True(MapOf("""{"archived":true}""").Archived(null));
-        Assert.True(MapOf("{}").Archived((JsonObject)JsonNode.Parse("""{"archived":true}""")!));
-        Assert.False(MapOf("{}").Archived((JsonObject)JsonNode.Parse("""{"archived":false}""")!));
+        Assert.True(MapOf("""{"is_archived":true}""").InBin);
+        Assert.False(MapOf("""{"archived":true}""").InBin);
+        Assert.False(MapOf("""{"archive":true}""").InBin);
     }
 
     [Theory]

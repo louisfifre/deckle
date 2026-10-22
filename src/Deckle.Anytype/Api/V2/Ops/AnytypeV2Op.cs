@@ -2,9 +2,9 @@ using System.Text.Json.Nodes;
 
 namespace Deckle.Anytype;
 
-// Which PATCH endpoints accept an op. Object and type PATCH share the four view
-// ops; the rest belongs to one side, and the batch refuses a stray op before it
-// spends the shared 1 rps budget on a certain 400.
+// Which PATCH endpoints accept an op. Each modeled op belongs to one side (the
+// four view ops, which both sides take, are not modeled), and the batch refuses
+// a stray op before it spends the shared 1 rps budget on a certain 400.
 [Flags]
 public enum AnytypeV2OpScope
 {

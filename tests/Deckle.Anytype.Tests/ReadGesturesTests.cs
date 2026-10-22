@@ -165,10 +165,8 @@ public class ReadGesturesTests
     [Fact]
     public async Task TaskPropertiesFlagsAnObjectInAnytypesBinWithACorbeilleLine()
     {
-        // The v2 flag's place is not measured: the root is one of the two places read.
-        JsonObject binned = JsonNode.Parse(PropsReply(TaskId, "task", "Ma tâche"))!.AsObject();
-        binned["archived"] = true;
-        FakeV2Handler v2 = Reads(binned.ToJsonString());
+        // The shape a binned task was served in, measured live on 2026-10-22.
+        FakeV2Handler v2 = Reads(PropsReply(TaskId, "task", "Ma tâche", ("is_archived", JsonValue.Create(true))));
 
         string digest = await NewGestures(v2).TaskPropertiesAsync(TaskId, Ct);
 
