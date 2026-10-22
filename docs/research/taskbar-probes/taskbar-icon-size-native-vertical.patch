@@ -1,0 +1,42 @@
+Taskbar height and icon size (taskbar-icon-size) 1.3.10, m417z, GPLv3.
+
+On the native vertical taskbar of Windows 11 24H2 (October 2026 update, bar
+docked left or right by Windows itself, not by the taskbar-vertical mod), the
+mod leaves the bar width alone: its three GetFrameSize hooks answer only when
+the bar is horizontal. Removing that guard makes the "Taskbar height" setting
+act as the bar width. Verified on 26100.9711 on 2026-10-17: the bar went from
+48 to 44 logical pixels, every button and tray icon followed.
+
+Apply with: git apply taskbar-icon-size-native-vertical.patch in a checkout of
+ramensoftware/windhawk-mods, or edit the three lines by hand.
+
+diff --git a/mods/taskbar-icon-size.wh.cpp b/mods/taskbar-icon-size.wh.cpp
+--- a/mods/taskbar-icon-size.wh.cpp
++++ b/mods/taskbar-icon-size.wh.cpp
+@@ -789,7 +789,7 @@ double WINAPI SystemTrayController_GetFrameSize_Hook(void* pThis,
+                                                      int enumTaskbarSize) {
+     Wh_Log(L"> %d", enumTaskbarSize);
+
+-    if (!IsVerticalTaskbar() && g_taskbarHeight &&
++    if (g_taskbarHeight &&
+         (enumTaskbarSize == 1 || enumTaskbarSize == 2)) {
+         return g_taskbarHeight;
+     }
+@@ -806,7 +806,7 @@ SystemTraySecondaryController_GetFrameSize_Hook(void* pThis,
+                                                 int enumTaskbarSize) {
+     Wh_Log(L"> %d", enumTaskbarSize);
+
+-    if (!IsVerticalTaskbar() && g_taskbarHeight &&
++    if (g_taskbarHeight &&
+         (enumTaskbarSize == 1 || enumTaskbarSize == 2)) {
+         return g_taskbarHeight;
+     }
+@@ -827,7 +827,7 @@ double WINAPI TaskbarConfiguration_GetFrameSize_Hook(int enumTaskbarSize) {
+             TaskbarConfiguration_GetFrameSize_Original(enumTaskbarSize);
+     }
+
+-    if (!IsVerticalTaskbar() && g_taskbarHeight &&
++    if (g_taskbarHeight &&
+         (enumTaskbarSize == 1 || enumTaskbarSize == 2)) {
+         return g_taskbarHeight;
+     }
