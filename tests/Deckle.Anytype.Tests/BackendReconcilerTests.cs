@@ -3,6 +3,7 @@ using Xunit;
 
 namespace Deckle.Anytype.Tests;
 
+[Trait("Category", "integration")]
 public sealed class BackendReconcilerTests
 {
     static CancellationToken Ct => TestContext.Current.CancellationToken;
