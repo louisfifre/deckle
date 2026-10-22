@@ -18,12 +18,14 @@ namespace Deckle.TestSupport;
 // from `TryInitialize` is ignored: an init failure throws clearly at the first
 // WinAppSDK test site.
 //
-// `0x00010008` is WinAppSDK 1.8: bump it with the WindowsAppSDK package
-// version in Directory.Packages.props.
+// `0x00020005` is WinAppSDK 2.5, the `Release.MajorMinor` the SDK's own
+// auto-initializer passes (WindowsAppSDK-VersionInfo.cs in the Runtime
+// package): bump it with the WindowsAppSDK package version in
+// Directory.Packages.props.
 public static class WindowsAppSdkBootstrap
 {
     public static void Initialize()
     {
-        Bootstrap.TryInitialize(0x00010008, out _);
+        Bootstrap.TryInitialize(0x00020005, out _);
     }
 }
