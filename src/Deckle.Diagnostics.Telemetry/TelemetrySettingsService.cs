@@ -38,12 +38,12 @@ public sealed class TelemetrySettingsService
             AppPaths.UserDataRoot, "modules", "telemetry", "settings.json");
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
 
-        // Log callbacks left unwired: the store is silent, and a load error
-        // resets to defaults without a trace.
         _store = new JsonSettingsStore<TelemetrySettings>(
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-DiagnosticsTelemetry-Save",
-            jsonOptions: _jsonOptions);
+            jsonOptions: _jsonOptions,
+            logWarning:  DeckleDiagnosticsSource.Log.SettingsLoadWarning,
+            logError:    DeckleDiagnosticsSource.Log.SettingsLoadError);
     }
 
     public void Save()                            => _store.Save();

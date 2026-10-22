@@ -27,6 +27,8 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     public const int EvtFlushFailed        = 4;
     public const int EvtFlushTimedOut      = 5;
     public const int EvtArchivesPruned     = 6;
+    public const int EvtSettingsLoadWarning = 7;
+    public const int EvtSettingsLoadError = 8;
 
     // One incident per sink: opened by the first failure, closed by the next
     // successful write (SinkRecovered). The attempts in between are counted,
@@ -87,5 +89,24 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     public void ArchivesPruned(int pruned, string file_name, int kept)
     {
         if (IsEnabled()) WriteEvent(EvtArchivesPruned, pruned, file_name, kept);
+    }
+
+    // The settings store reports in free text; the text carries its own cause.
+    [Event(EvtSettingsLoadWarning,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The logging or telemetry settings need attention | {0}")]
+    public void SettingsLoadWarning(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
+    }
+
+    [Event(EvtSettingsLoadError,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The logging or telemetry settings could not be saved | {0}")]
+    public void SettingsLoadError(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 }
