@@ -102,41 +102,49 @@ public class SessionGesturesTests
         return array;
     }
 
-    // By default the anchor task has no past reports, so the report search
-    // answers empty and the digest skips that block. A test that wants past
-    // reports passes the search hits (and registers each report's own GET).
-    static void WireStartRoutes(FakeAnytypeServer server, JsonArray? reportHits = null)
-    {
-        server.OnGetObject(TaskId, TaskObject(TaskId, "Tâche d'ancrage"));
-        server.OnPostObject(new JsonObject { ["object"] = new JsonObject { ["id"] = NewReport } });
-        server.OnGetObject(ProjectId, ProjectObject());
-        server.OnSearch(new JsonObject { ["data"] = reportHits ?? new JsonArray() });
-    }
+    // The v2 answers session_start's digest reads, in the order they are sent:
+    // the task's properties, the task's markdown, one properties read per linked
+    // project, the report search, then one markdown read per shown report.
+    static string V2Named(string id, string type, string name, string extraProperties = "") =>
+        "{\"id\":\"" + id + "\",\"type\":\"" + type + "\",\"properties\":{\"name\":\"" + name + "\""
+        + extraProperties + "}}";
 
-    // A past report: its body, its journal date (the digest sorts on it) and the
-    // one task it is linked to.
-    static JsonObject DatedReport(string id, string date, string markdown, string taskId) => new()
+    static string V2Markdown(string id, string markdown) =>
+        new JsonObject { ["id"] = id, ["type"] = "task", ["markdown"] = markdown }.ToJsonString();
+
+    static string V2Rows(params (string Id, string Date)[] reports) => new JsonObject
     {
-        ["object"] = new JsonObject
+        ["data"] = new JsonArray(reports.Select(r => (JsonNode)new JsonObject
         {
-            ["id"] = id,
-            ["markdown"] = markdown,
-            ["properties"] = new JsonArray(
-                new JsonObject { ["key"] = DevSpace.Props.DateDuJournal, ["date"] = date },
-                new JsonObject { ["key"] = DevSpace.Props.TachesLiees, ["objects"] = Refs([taskId]) }),
-        },
-    };
+            ["id"] = r.Id,
+            ["name"] = "",
+            ["type"] = "rapport",
+            ["properties"] = new JsonObject { [DevSpace.Props.DateDuJournal] = r.Date + "T00:00:00Z" },
+        }).ToArray()),
+        ["total"] = reports.Length,
+        ["has_more"] = false,
+    }.ToJsonString();
 
-    // A search hit carries the report without the "object" wrapper.
-    static JsonObject AsHit(JsonObject report) => (JsonObject)report["object"]!.DeepClone();
+    // By default the anchor task has no past reports, so the report search
+    // answers empty and the digest skips that block.
+    static FakeV2Handler WireStartReads(FakeAnytypeServer server, string searchAnswer)
+    {
+        server.OnPostObject(new JsonObject { ["object"] = new JsonObject { ["id"] = NewReport } });
+        return new FakeV2Handler()
+            .Reply(HttpStatusCode.OK, V2Named(TaskId, "task", "Tâche d'ancrage",
+                ",\"" + DevSpace.Props.RelationProjet + "\":[\"" + ProjectId + "\"]"))
+            .Reply(HttpStatusCode.OK, V2Markdown(TaskId, "# Tâche d'ancrage\n- [x] fait\n- [ ] à faire"))
+            .Reply(HttpStatusCode.OK, V2Named(ProjectId, "project", "Mon projet"))
+            .Reply(HttpStatusCode.OK, searchAnswer);
+    }
 
     [Fact]
     public async Task StartCreatesAReportCarryingTodayAndTheAnchorTask()
     {
         using var server = new FakeAnytypeServer();
-        WireStartRoutes(server);
+        FakeV2Handler v2 = WireStartReads(server, V2Rows());
 
-        string digest = await NewGestures(server).StartAsync(TaskId, Ct);
+        string digest = await NewGestures(server, v2).StartAsync(TaskId, Ct);
 
         Assert.StartsWith($"report_id : {NewReport}\n", digest, StringComparison.Ordinal);
 
@@ -158,6 +166,21 @@ public class SessionGesturesTests
             n => n is JsonObject p && p["key"]?.GetValue<string>() == DevSpace.Props.RelationProjet);
     }
 
+    [Fact]
+    public async Task StartDigestHeadsWithTheTaskItsProjectAndItsChecklist()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = WireStartReads(server, V2Rows());
+
+        string digest = await NewGestures(server, v2).StartAsync(TaskId, Ct);
+
+        Assert.Equal(
+            $"report_id : {NewReport}\n[ ] Tâche d'ancrage · projet Mon projet\n- [x] fait\n- [ ] à faire",
+            digest);
+        // Nothing of the digest goes through v1: only the report creation does.
+        Assert.Single(server.Requests);
+    }
+
     // The digest places the session, it does not replay it: only the most recent
     // reports of the task appear, newest first, each as its date and id (the
     // handle report_journal takes) followed by the tail of its journal. A report
@@ -167,35 +190,37 @@ public class SessionGesturesTests
     {
         using var server = new FakeAnytypeServer();
 
-        // One report more than the digest shows; the oldest must drop out. Hits
-        // go in oldest first, so the newest-first order comes from the sort.
+        // One report more than the digest shows; the oldest must drop out. The
+        // server sorts, so the rows come newest first.
         int reportCount = SessionGestures.RecentReports + 1;
         string IdOf(int i) => $"bafyreiReport{i}" + new string('e', 40);
         string DateOf(int i) => $"2026-06-{i + 1:00}";
 
-        var hits = new JsonArray();
-        for (int i = 0; i < reportCount; i++)
+        var rows = new List<(string, string)>();
+        var markdowns = new List<string>();
+        for (int i = reportCount - 1; i >= 0; i--)
         {
+            rows.Add((IdOf(i), DateOf(i)));
             bool newest = i == reportCount - 1;
             string[] entries = newest
                 ? Enumerable.Range(1, SessionGestures.ReportTailEntries + 2).Select(n => $"- ligne {n}").ToArray()
                 : [$"- a{i}", $"- b{i}"];
-            JsonObject report = DatedReport(IdOf(i), DateOf(i), $"# Journal {DateOf(i)}\n" + string.Join("\n", entries), TaskId);
-            server.OnGetObject(IdOf(i), report);
-            hits.Add(AsHit(report));
+            markdowns.Add($"# Journal {DateOf(i)}\n" + string.Join("\n", entries));
         }
 
-        // A later report of ANOTHER task is never part of this task's digest.
-        const string StrangerId = "bafyreiStrangerffffffffffffffffffffffffffffffffffffff";
-        hits.Add(AsHit(DatedReport(StrangerId, "2026-07-01", "# Journal 2026-07-01\n- étranger", OtherTaskId)));
-        WireStartRoutes(server, hits);
+        FakeV2Handler v2 = WireStartReads(server, V2Rows(rows.ToArray()));
+        // Only the shown reports are read for their body.
+        for (int k = 0; k < SessionGestures.RecentReports; k++)
+            v2.Reply(HttpStatusCode.OK, V2Markdown(rows[k].Item1, markdowns[k]));
 
-        string digest = await NewGestures(server).StartAsync(TaskId, Ct);
+        string digest = await NewGestures(server, v2).StartAsync(TaskId, Ct);
 
         var expected = new List<string>
         {
             $"report_id : {NewReport}",
             "[ ] Tâche d'ancrage · projet Mon projet",
+            "- [x] fait",
+            "- [ ] à faire",
         };
         for (int i = reportCount - 1; i >= reportCount - SessionGestures.RecentReports; i--)
         {
@@ -214,14 +239,48 @@ public class SessionGesturesTests
 
         Assert.Equal(string.Join("\n", expected), digest);
         Assert.DoesNotContain(IdOf(0), digest);
-        Assert.DoesNotContain(StrangerId, digest);
+
+        // The server does the filtering and the ordering: the reports of the
+        // task only, newest first.
+        FakeV2Handler.Seen search = Assert.Single(v2.Requests, r => r.PathAndQuery.Contains("/search?"));
+        // One page, not every report of the task: the shown ones plus the slot
+        // the report just created may take.
+        Assert.EndsWith($"/search?limit={SessionGestures.RecentReports + 1}&offset=0", search.PathAndQuery);
+        JsonObject body = (JsonObject)JsonNode.Parse(search.Body!)!;
+        Assert.Equal(DevSpace.Types.Rapport, body["type"]!.GetValue<string>());
+        JsonObject filter = (JsonObject)Assert.Single((JsonArray)body["filters"]!)!;
+        Assert.Equal(DevSpace.Props.TachesLiees, filter["property"]!.GetValue<string>());
+        Assert.Equal(TaskId,((JsonArray)filter["value"]!).Single()!.GetValue<string>());
+        Assert.Equal("desc", ((JsonObject)Assert.Single((JsonArray)body["sorts"]!)!)["direction"]!.GetValue<string>());
+    }
+    // The report session_start has just created links the task too, so the
+    // search returns it first. It is the session being opened, not history: the
+    // three slots go to the previous reports.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task StartLeavesTheReportItJustCreatedOutOfTheDigest()
+    {
+        using var server = new FakeAnytypeServer();
+        string[] previous = ["bafyreiPrevaaa", "bafyreiPrevbbb", "bafyreiPrevccc"];
+        FakeV2Handler v2 = WireStartReads(server, V2Rows(
+            (NewReport, "2026-06-12"),
+            (previous[0], "2026-06-11"),
+            (previous[1], "2026-06-10"),
+            (previous[2], "2026-06-09")));
+        // Only the previous reports are read for their body.
+        foreach (string id in previous)
+            v2.Reply(HttpStatusCode.OK, V2Markdown(id, "- fait"));
+
+        string digest = await NewGestures(server, v2).StartAsync(TaskId, Ct);
+
+        Assert.DoesNotContain($"— 2026-06-12 · {NewReport}", digest);
+        foreach (string id in previous) Assert.Contains(id, digest);
     }
 
     [Fact]
     public async Task TouchAppendsTheTaskToTheCurrentReportsLinkedTasks()
     {
         using var server = new FakeAnytypeServer();
-        WireStartRoutes(server);
         server.OnGetObject(OtherTaskId, TaskObject(OtherTaskId, "Autre tâche"));
         server.OnGetObject(NewReport, ReportObject(NewReport, "# Journal", TaskId));
         server.OnPatchObject(NewReport, ReportObject(NewReport, "# Journal", TaskId, OtherTaskId));

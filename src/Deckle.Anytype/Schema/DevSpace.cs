@@ -187,6 +187,18 @@ public static class DevSpace
         }
 
         public static string? NameFor(string? key) => NameOfOption(All, key);
+
+        // v2 serves a select as its option NAME (measured 2026-10-22:
+        // `"priorite":["4"]`), where v1 served the wire key. The name is the
+        // level, so the position of the matching option is the answer.
+        public static int? LevelForName(string? name)
+        {
+            if (name is null) return null;
+            for (int i = 0; i < All.Length; i++)
+                if (string.Equals(All[i].Name, name.Trim(), StringComparison.Ordinal))
+                    return i;
+            return null;
+        }
     }
 
     // ── Type de tâche (select on Props.TypeDeTache) ───────────────────────────

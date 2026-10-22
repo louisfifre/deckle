@@ -10,25 +10,39 @@ namespace Deckle.Anytype;
 //
 // Every digest is a terse French plain-string — the LLM-facing product. One line
 // per fact, no banner, no markdown decoration beyond what carries meaning.
-public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
+//
+// Reads go through the v2 client: the lists are filtered by the server (tasks
+// by their project, reports by their tasks, projects by état) instead of paging
+// the whole space and filtering here. Creation stays on v1.
+public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver, AnytypeV2Client v2)
 {
+    // Reports shown under « Derniers rapports ».
+    const int RecentReports = 3;
+    // Length of a report's latest entry shown beside it.
+    const int LastEntryChars = 120;
+
+    readonly AnytypeV2ObjectReader _reader = new(v2);
+    readonly AnytypeV2Searcher _searcher = new(v2);
+
     public async Task<string> OverviewAsync(string project, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
 
         string projectId = await resolver.ResolveAsync(project, [DevSpace.Types.Project], ct);
-        JsonObject obj = await api.GetObjectAsync(projectId, ct);
+        AnytypeV2ObjectDocument doc = await _reader.ReadAsync(
+            projectId, new AnytypeV2ObjectReadOptions { Parts = AnytypeV2ObjectParts.Properties }, ct);
+        var props = AnytypeV2PropertyMap.Of(doc);
 
         var sb = new StringBuilder();
         sb.Append("id : ").Append(projectId).Append('\n');
-        sb.Append(PropReader.Done(obj) ? "[x] " : "[ ] ");
-        sb.Append(PropReader.Name(obj));
+        sb.Append(props.Checkbox(DevSpace.Props.Done) ? "[x] " : "[ ] ");
+        sb.Append(props.Name);
 
-        AppendHeaderFacts(sb, obj);
+        AppendHeaderFacts(sb, props);
 
         sb.Append('\n');
         IReadOnlyList<string> taskIds = await AppendTasksAsync(sb, projectId, ct);
-        await AppendRecentReportsAsync(sb, taskIds, reportCount: 3, fullBody: false, ct);
+        await AppendRecentReportsAsync(sb, taskIds, ct);
 
         DeckleAnytypeSource.Log.GestureCompleted("project_overview", Elapsed(started));
         return sb.ToString().TrimEnd();
@@ -38,19 +52,37 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
     {
         var started = DateTime.UtcNow;
 
-        IReadOnlyList<JsonObject> hits = await ObjectListing.AllOfTypesAsync(api, api.SpaceId, [DevSpace.Types.Project], ct);
-
         string? wantedEtat = state is null
             ? null
             : DevSpace.Etat.Resolve(state)
                 ?? throw new ArgumentException($"État inconnu « {state} ».", nameof(state));
 
-        var byEtat = new Dictionary<string, List<JsonObject>>(StringComparer.Ordinal);
-        foreach (JsonObject p in hits)
-        {
-            if (PropReader.Checkbox(p, DevSpace.Props.Archive)) continue;
+        // A given état is filtered by the server, by its option name (a select
+        // is addressed by name on v2). Archived projects are dropped here: the
+        // checkbox is served only when ticked, and how a filter treats its
+        // absence is not measured.
+        IReadOnlyList<AnytypeV2SearchRow> hits = await _searcher.SearchAllAsync(
+            new AnytypeV2SearchRequest
+            {
+                Type = DevSpace.Types.Project,
+                Filters = wantedEtat is null
+                    ? null
+                    : [AnytypeV2SearchFilter.In(DevSpace.Props.Etat, [DevSpace.Etat.NameFor(wantedEtat)!])],
+                Fields =
+                [
+                    DevSpace.Props.Done, DevSpace.Props.Archive, DevSpace.Props.Etat,
+                    DevSpace.Props.PhaseProjet, DevSpace.Props.Priorite,
+                ],
+            }, ct);
 
-            string etat = PropReader.Select(p, DevSpace.Props.Etat) ?? "";
+        var byEtat = new Dictionary<string, List<AnytypeV2SearchRow>>(StringComparer.Ordinal);
+        foreach (AnytypeV2SearchRow p in hits)
+        {
+            if (p.Properties.Checkbox(DevSpace.Props.Archive)) continue;
+
+            // v2 serves the option name; the order and the grouping run on keys.
+            string? etatName = p.Properties.Select(DevSpace.Props.Etat);
+            string etat = etatName is null ? "" : DevSpace.Etat.Resolve(etatName) ?? etatName;
             if (wantedEtat is not null && etat != wantedEtat) continue;
 
             (byEtat.TryGetValue(etat, out var list) ? list : byEtat[etat] = []).Add(p);
@@ -66,7 +98,7 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
             if (!byEtat.TryGetValue(etatKey, out var projects) || projects.Count == 0) continue;
 
             if (wantedEtat is null) sb.Append('\n').Append(DevSpace.Etat.NameFor(etatKey) ?? etatKey).Append('\n');
-            foreach (JsonObject p in projects) AppendProjectLine(sb, p);
+            foreach (AnytypeV2SearchRow p in projects) AppendProjectLine(sb, p);
         }
 
         if (wantedEtat is null)
@@ -74,7 +106,7 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
                 if (DevSpace.Etat.NameFor(etat) is null)
                 {
                     sb.Append('\n').Append("Sans état").Append('\n');
-                    foreach (JsonObject p in projects) AppendProjectLine(sb, p);
+                    foreach (AnytypeV2SearchRow p in projects) AppendProjectLine(sb, p);
                 }
 
         string digest = sb.ToString().Trim();
@@ -108,7 +140,7 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         JsonObject created = await api.CreateObjectAsync(payload, ct);
 
         DeckleAnytypeSource.Log.GestureCompleted("epic_create", Elapsed(started));
-        return $"Epic créé : {PropReader.Name(created)} ({DevSpace.Etat.NameFor(etatKey) ?? etatKey})";
+        return $"Epic créé : {StringOf(created, "name")} ({DevSpace.Etat.NameFor(etatKey) ?? etatKey})";
     }
 
     // Epic↔project is collection membership, not a property link.
@@ -133,7 +165,7 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         };
 
         JsonObject created = await api.CreateObjectAsync(payload, ct);
-        string projectId = PropReader.Id(created);
+        string projectId = StringOf(created, "id");
 
         var sb = new StringBuilder();
         sb.Append("Projet créé : ").Append(name);
@@ -143,7 +175,7 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
         {
             string epicId = await resolver.ResolveAsync(epic, [DevSpace.Types.Epic], ct);
             await api.AddToCollectionAsync(epicId, [projectId], ct);
-            sb.Append("\nAjouté à l'epic ").Append(PropReader.Name(await api.GetObjectAsync(epicId, ct)));
+            sb.Append("\nAjouté à l'epic ").Append(StringOf(await api.GetObjectAsync(epicId, ct), "name"));
         }
 
         DeckleAnytypeSource.Log.GestureCompleted("project_create", Elapsed(started));
@@ -152,34 +184,45 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
 
     // ── Digest building ───────────────────────────────────────────────────
 
-    static void AppendHeaderFacts(StringBuilder sb, JsonObject project)
+    static string StringOf(JsonObject obj, string key) => obj[key]?.GetValue<string>() ?? "";
+
+    static void AppendHeaderFacts(StringBuilder sb, AnytypeV2PropertyMap project)
     {
-        AppendFact(sb, "Description", PropReader.Text(project, DevSpace.Props.Description));
-        AppendFact(sb, "État", DevSpace.Etat.NameFor(PropReader.Select(project, DevSpace.Props.Etat)));
-        AppendFact(sb, "Phase", DevSpace.PhaseProjet.NameFor(PropReader.Select(project, DevSpace.Props.PhaseProjet)));
+        AppendFact(sb, "Description", project.Text(DevSpace.Props.Description));
+        // v2 serves a select as its option name, ready to show.
+        AppendFact(sb, "État", project.Select(DevSpace.Props.Etat));
+        AppendFact(sb, "Phase", project.Select(DevSpace.Props.PhaseProjet));
 
-        string? prioKey = PropReader.Select(project, DevSpace.Props.Priorite);
-        if (prioKey is not null) AppendFact(sb, "Priorité", DevSpace.Priority.LevelFor(prioKey).ToString());
+        int? level = DevSpace.Priority.LevelForName(project.Select(DevSpace.Props.Priorite));
+        if (level is not null) AppendFact(sb, "Priorité", level.ToString());
 
-        AppendFact(sb, "Version", PropReader.Text(project, DevSpace.Props.Version));
-        AppendFact(sb, "Définition de fini", PropReader.Text(project, DevSpace.Props.DefinitionDeFini));
-        AppendFact(sb, "Date cible", PropReader.Day(project, DevSpace.Props.DueDate));
+        AppendFact(sb, "Version", project.Text(DevSpace.Props.Version));
+        AppendFact(sb, "Définition de fini", project.Text(DevSpace.Props.DefinitionDeFini));
+        AppendFact(sb, "Date cible", project.Day(DevSpace.Props.DueDate));
     }
 
     // Returns every related task id for the report join, archived tasks
     // included: archiving a task does not archive the reports linked to it.
     async Task<IReadOnlyList<string>> AppendTasksAsync(StringBuilder sb, string projectId, CancellationToken ct)
     {
-        IReadOnlyList<JsonObject> hits = await ObjectListing.AllOfTypesAsync(api, api.SpaceId, [DevSpace.Types.Task], ct);
+        IReadOnlyList<AnytypeV2SearchRow> hits = await _searcher.SearchAllAsync(
+            new AnytypeV2SearchRequest
+            {
+                Type = DevSpace.Types.Task,
+                Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.RelationProjet, [projectId])],
+                Fields =
+                [
+                    DevSpace.Props.Done, DevSpace.Props.Archive,
+                    DevSpace.Props.TypeDeTache, DevSpace.Props.Priorite,
+                ],
+            }, ct);
 
         var taskIds = new List<string>();
         bool any = false;
-        foreach (JsonObject t in hits)
+        foreach (AnytypeV2SearchRow t in hits)
         {
-            if (!PropReader.ObjectRefs(t, DevSpace.Props.RelationProjet).Contains(projectId)) continue;
-
-            taskIds.Add(PropReader.Id(t));
-            if (PropReader.Checkbox(t, DevSpace.Props.Archive)) continue;
+            taskIds.Add(t.Id);
+            if (t.Properties.Checkbox(DevSpace.Props.Archive)) continue;
             if (!any) { sb.Append("Tâches :\n"); any = true; }
             AppendTaskLine(sb, t);
         }
@@ -189,60 +232,70 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
     }
 
     // Reports are joined through the tasks: the link lives on the report side
-    // (« Tâche(s) liée(s) »), the project itself has no report link.
-    async Task AppendRecentReportsAsync(StringBuilder sb, IReadOnlyList<string> taskIds, int reportCount, bool fullBody, CancellationToken ct)
+    // (« Tâche(s) liée(s) »), the project itself has no report link. The server
+    // filters on the link and sorts by journal date, most recent first. A search
+    // row carries no body, so each shown report costs one markdown read for its
+    // first line.
+    async Task AppendRecentReportsAsync(StringBuilder sb, IReadOnlyList<string> taskIds, CancellationToken ct)
     {
         if (taskIds.Count == 0) return;
-        var taskSet = new HashSet<string>(taskIds, StringComparer.Ordinal);
 
-        IReadOnlyList<JsonObject> hits = await ObjectListing.AllOfTypesAsync(api, api.SpaceId, [DevSpace.Types.Rapport], ct);
-
-        var reports = new List<JsonObject>();
-        foreach (JsonObject r in hits)
-            if (PropReader.ObjectRefs(r, DevSpace.Props.TachesLiees).Any(taskSet.Contains))
-                reports.Add(r);
-
-        // Most recent journal date first; missing dates sort last.
-        reports.Sort((a, b) => string.CompareOrdinal(
-            PropReader.Date(b, DevSpace.Props.DateDuJournal) ?? "",
-            PropReader.Date(a, DevSpace.Props.DateDuJournal) ?? ""));
+        // Sorted newest first by the server: one page of the size shown, not
+        // every report of the project.
+        AnytypeV2SearchPage page = await _searcher.SearchPageAsync(
+            new AnytypeV2SearchRequest
+            {
+                Type = DevSpace.Types.Rapport,
+                Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.TachesLiees, taskIds)],
+                Sorts = [new AnytypeV2SearchSort(DevSpace.Props.DateDuJournal, Descending: true)],
+                Fields = [DevSpace.Props.DateDuJournal],
+            }, offset: 0, limit: RecentReports, ct);
+        IReadOnlyList<AnytypeV2SearchRow> reports = page.Rows;
 
         if (reports.Count == 0) return;
 
         // Each line carries the report id: report_journal reads the rest on demand.
         sb.Append("Derniers rapports :\n");
-        foreach (JsonObject r in reports.Take(reportCount))
+        foreach (AnytypeV2SearchRow r in reports.Take(RecentReports))
         {
-            string date = PropReader.Day(r, DevSpace.Props.DateDuJournal) ?? "?";
-            string body = fullBody ? PropReader.Markdown(r) : PropReader.FirstBodyLine(r);
-            sb.Append(date).Append(" · ").Append(PropReader.Id(r)).Append(" — ").Append(body).Append('\n');
+            string date = r.Properties.Day(DevSpace.Props.DateDuJournal) ?? "?";
+            AnytypeV2ObjectDocument md = await _reader.ReadAsync(
+                r.Id, new AnytypeV2ObjectReadOptions { Markdown = true }, ct);
+            // The latest entry says where the work stopped; the « # Journal » heading
+            // would only repeat the date. Clipped, report_journal reads it whole.
+            string? last = MarkdownBody.JournalEntries(md.Body["markdown"]?.GetValue<string>() ?? "")
+                .LastOrDefault()?.Split('\n')[0];
+            sb.Append(date).Append(" · ").Append(r.Id);
+            if (last is not null)
+                sb.Append(" — ").Append(last.Length <= LastEntryChars ? last : last[..LastEntryChars] + "…");
+            sb.Append('\n');
         }
     }
 
-    static void AppendProjectLine(StringBuilder sb, JsonObject p)
+    static void AppendProjectLine(StringBuilder sb, AnytypeV2SearchRow p)
     {
-        sb.Append(PropReader.Done(p) ? "[x] " : "[ ] ");
-        sb.Append(PropReader.Name(p));
+        sb.Append(p.Properties.Checkbox(DevSpace.Props.Done) ? "[x] " : "[ ] ");
+        sb.Append(p.Name);
 
-        string? phase = DevSpace.PhaseProjet.NameFor(PropReader.Select(p, DevSpace.Props.PhaseProjet));
+        string? phase = p.Properties.Select(DevSpace.Props.PhaseProjet);
         if (phase is not null) sb.Append(" · ").Append(phase);
 
-        string? prioKey = PropReader.Select(p, DevSpace.Props.Priorite);
-        if (prioKey is not null) sb.Append(" · P").Append(DevSpace.Priority.LevelFor(prioKey));
+        int? level = DevSpace.Priority.LevelForName(p.Properties.Select(DevSpace.Props.Priorite));
+        if (level is not null) sb.Append(" · P").Append(level);
 
         sb.Append('\n');
     }
 
-    static void AppendTaskLine(StringBuilder sb, JsonObject t)
+    static void AppendTaskLine(StringBuilder sb, AnytypeV2SearchRow t)
     {
-        sb.Append(PropReader.Done(t) ? "[x] " : "[ ] ");
-        sb.Append(PropReader.Name(t));
+        sb.Append(t.Properties.Checkbox(DevSpace.Props.Done) ? "[x] " : "[ ] ");
+        sb.Append(t.Name);
 
-        string? type = DevSpace.TypeDeTache.NameFor(PropReader.Select(t, DevSpace.Props.TypeDeTache));
+        string? type = t.Properties.Select(DevSpace.Props.TypeDeTache);
         if (type is not null) sb.Append(" · ").Append(type);
 
-        string? prioKey = PropReader.Select(t, DevSpace.Props.Priorite);
-        if (prioKey is not null) sb.Append(" · P").Append(DevSpace.Priority.LevelFor(prioKey));
+        int? level = DevSpace.Priority.LevelForName(t.Properties.Select(DevSpace.Props.Priorite));
+        if (level is not null) sb.Append(" · P").Append(level);
 
         sb.Append('\n');
     }
@@ -253,83 +306,4 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver)
     }
 
     static double Elapsed(DateTime startUtc) => (DateTime.UtcNow - startUtc).TotalMilliseconds;
-}
-
-// Reads typed values out of a GET'd object's `properties` array, which the API
-// returns as [{key, format, <format>:value}]. `file`-scoped on purpose: the same
-// reader is needed across gesture files but must stay private to each, so sibling
-// files own their own copy with no shared-type collision.
-file static class PropReader
-{
-    public static string Id(JsonObject obj) => obj["id"]?.GetValue<string>() ?? "";
-
-    // Note-layout objects (rapport) carry an empty name; their title is the first
-    // snippet line. Mirrors the vendor helper's getDisplayName.
-    public static string Name(JsonObject obj)
-    {
-        string? name = obj["name"]?.GetValue<string>();
-        if (!string.IsNullOrEmpty(name)) return name;
-        return FirstLine(obj["snippet"]?.GetValue<string>());
-    }
-
-    public static string Markdown(JsonObject obj) => obj["markdown"]?.GetValue<string>() ?? "";
-
-    public static string FirstBodyLine(JsonObject obj)
-    {
-        string md = Markdown(obj);
-        return md.Length > 0 ? FirstLine(md) : FirstLine(obj["snippet"]?.GetValue<string>());
-    }
-
-    public static string? Text(JsonObject obj, string key) => Prop(obj, key)?["text"]?.GetValue<string>();
-
-    public static string? Select(JsonObject obj, string key)
-    {
-        JsonNode? sel = Prop(obj, key)?["select"];
-        // select can serialize as a bare key string or as {key, name}.
-        return sel switch
-        {
-            JsonValue v => v.GetValue<string>(),
-            JsonObject o => o["key"]?.GetValue<string>(),
-            _ => null,
-        };
-    }
-
-    public static string? Date(JsonObject obj, string key) => Prop(obj, key)?["date"]?.GetValue<string>();
-
-    // The API returns a date with a midnight time suffix; the day is the fact.
-    public static string? Day(JsonObject obj, string key)
-    {
-        string? iso = Date(obj, key);
-        return iso is { Length: >= 10 } ? iso[..10] : iso;
-    }
-
-    public static bool Checkbox(JsonObject obj, string key) => Prop(obj, key)?["checkbox"]?.GetValue<bool>() ?? false;
-
-    public static IReadOnlyList<string> ObjectRefs(JsonObject obj, string key)
-    {
-        if (Prop(obj, key)?["objects"] is not JsonArray arr) return [];
-        var ids = new List<string>(arr.Count);
-        foreach (JsonNode? n in arr)
-            if (n?.GetValue<string>() is { } id) ids.Add(id);
-        return ids;
-    }
-
-    // Read-only here; QueryGestures.CompleteAsync owns writing it.
-    public static bool Done(JsonObject obj) => Checkbox(obj, DevSpace.Props.Done);
-
-    static JsonObject? Prop(JsonObject obj, string key)
-    {
-        if (obj["properties"] is not JsonArray props) return null;
-        foreach (JsonNode? n in props)
-            if (n is JsonObject p && p["key"]?.GetValue<string>() == key)
-                return p;
-        return null;
-    }
-
-    static string FirstLine(string? s)
-    {
-        if (string.IsNullOrEmpty(s)) return "";
-        int nl = s.IndexOf('\n');
-        return nl < 0 ? s : s[..nl];
-    }
 }

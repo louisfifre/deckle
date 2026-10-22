@@ -203,10 +203,51 @@ public static class MarkdownBody
         foreach (string raw in text.Split('\n'))
         {
             string line = Unescape(raw).TrimEnd();
-            if (line.Length == 0 || line == "---") continue;
+            // The v2 render spells the divider « --- » with a space on each
+            // side (measured 2026-10-22), v1 bare.
+            if (line.Length == 0 || line.Trim() == "---") continue;
             kept.Add(line);
         }
         return string.Join('\n', kept);
+    }
+
+    // The first line a reader would see, cleaned, with a leading heading marker
+    // stripped. Empty when the body has no text. Names an object that has none
+    // (an idea or a report is titled by what it says first).
+    public static string FirstLine(string text)
+    {
+        string clean = Clean(text);
+        if (clean.Length == 0) return "";
+        string line = clean.Split('\n')[0].Trim();
+        return line.TrimStart('#').Trim();
+    }
+
+    // The v2 markdown render opens with the object's name as a `# ` line
+    // (measured 2026-10-22 on a task; a report has no name and opens on its own
+    // first heading block, which stays). That line is the title, not body: it
+    // is dropped when it spells `name`, leaving the body as the author wrote it.
+    // An idea opens instead on a plain line holding its name, which Anytype
+    // derives from that first block (measured 2026-10-22): dropped the same way.
+    // Whether v1 ever emitted either is not established; dropping is harmless.
+    public static string DropTitle(string body, string name)
+    {
+        string wanted = NormalizeHeading(name);
+        if (wanted.Length == 0) return body;
+
+        string[] lines = body.Split('\n');
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (lines[i].Trim().Length == 0) continue;
+            if (TryHeading(lines[i], out int level, out string text)
+                && level == 1
+                && NormalizeHeading(text).Equals(wanted, StringComparison.Ordinal))
+                return string.Join('\n', lines[(i + 1)..]);
+            if (!TryHeading(lines[i], out _, out _)
+                && NormalizeHeading(lines[i]).Equals(wanted, StringComparison.Ordinal))
+                return string.Join('\n', lines[(i + 1)..]);
+            break;
+        }
+        return body;
     }
 
     // session_log writes each journal entry as two paragraphs: this stamp, then

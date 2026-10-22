@@ -202,6 +202,25 @@ public class TaskGesturesTests
         Assert.Equal(ETag, SentPatch(v2).Header("If-Match"));
     }
 
+    // task_notes reads « À savoir » as well as « Details »; the fill must put
+    // the notes where that read looks.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task CreateInsertsTheNotesUnderARenamedNotesHeading()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReadThenAccept(V2Task(
+            Block("h1", "heading_2", ReadGestures.ChecklistHeading),
+            Block("h2", "heading_2", ReadGestures.NotesHeadings[0])));
+
+        await NewGestures(server, v2).CreateAsync(
+            ProjectId, "Ma tâche", type: "production", notes: "Un mot.", ct: Ct);
+
+        JsonObject op = OnlyOp(v2);
+        Assert.Equal("h2", op["after"]!.GetValue<string>());
+        Assert.Equal("Un mot.", op["markdown"]!.GetValue<string>());
+    }
+
     [Fact]
     public async Task CreateSendsChecklistAndNotesInOneBatch()
     {
@@ -321,6 +340,23 @@ public class TaskGesturesTests
 
         Assert.Contains(TaskId, error.Message);
         Assert.DoesNotContain(v2.Requests, r => r.Method == "PATCH");
+    }
+
+    // HttpClient's own timeout surfaces as a TaskCanceledException the caller
+    // did not ask for. It must not escape bare after the POST succeeded.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task CreateNamesTheCreatedTaskWhenTheFillTimesOut()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReply().Fail(new TaskCanceledException("timeout"));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server, v2).CreateAsync(
+                ProjectId, "Ma tâche", type: "production", notes: "Un mot.", ct: Ct));
+
+        Assert.Contains(TaskId, error.Message);
+        Assert.Contains("Ne la recrée pas", error.Message);
     }
 
     [Fact]

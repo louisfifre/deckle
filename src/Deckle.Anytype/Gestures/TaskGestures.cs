@@ -134,7 +134,10 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
                 : null;
             await _writer.ApplyObjectOpsAsync(id, ops, options, ct);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        // Only the caller's own cancellation escapes. HttpClient's timeout is a
+        // TaskCanceledException too: letting it through would lose the "already
+        // created" message and invite a duplicate.
+        catch (Exception ex) when (!ct.IsCancellationRequested)
         {
             string cause = ex is AnytypeV2Exception { IsStaleEtag: true }
                 ? "elle a changé entre sa lecture et l'écriture"
@@ -186,7 +189,18 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
 
         if (notes.Length > 0)
         {
-            BlockSections.Located section = BlockSections.Locate(blocks, ReadGestures.NotesHeading);
+            // The same headings task_notes reads, in the same order: a template
+            // renamed to « À savoir » must receive the notes where the read
+            // looks for them.
+            BlockSections.Located section = null!;
+            string heading = "";
+            foreach (string candidate in ReadGestures.NotesHeadings)
+            {
+                section = BlockSections.Locate(blocks, candidate);
+                heading = candidate;
+                if (section.Outcome != BlockSections.Outcome.NotFound) break;
+            }
+
             ops.Add(section.Outcome switch
             {
                 BlockSections.Outcome.Found => AnytypeV2BlockOps.InsertMarkdown(
@@ -194,7 +208,7 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
                 BlockSections.Outcome.NotFound => AnytypeV2BlockOps.InsertMarkdown(
                     AnytypeV2Placement.End, $"## {ReadGestures.NotesHeading}\n{notes}"),
                 _ => throw new InvalidOperationException(
-                    $"{section.MatchCount} titres « {ReadGestures.NotesHeading} » : la section des notes est ambiguë"),
+                    $"{section.MatchCount} titres « {heading} » : la section des notes est ambiguë"),
             });
         }
 

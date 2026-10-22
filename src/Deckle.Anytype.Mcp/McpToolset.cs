@@ -13,12 +13,12 @@ public static class McpToolset
         bool management,
         AnytypeSpaceAliases? aliases = null)
     {
-        var resolver = new NameResolver(api);
+        var resolver = new NameResolver(api, api.V2);
         var session = new SessionGestures(api, resolver, api.V2);
         var tasks = new TaskGestures(api, resolver, api.V2);
-        var projects = new ProjectGestures(api, resolver);
+        var projects = new ProjectGestures(api, resolver, api.V2);
         var query = new QueryGestures(api, resolver, api.V2);
-        var reads = new ReadGestures(api, resolver);
+        var reads = new ReadGestures(resolver, api.V2);
         var documents = new DocumentGestures(api);
         var dialogues = new DialogueGestures(api, resolver);
         var managementGestures = new ManagementGestures(api, resolver);

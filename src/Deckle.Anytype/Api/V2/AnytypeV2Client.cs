@@ -29,11 +29,15 @@ namespace Deckle.Anytype;
 //
 // Same obligations as v1: one request in flight at a time, so read-modify-write
 // gestures stay ordered and the burst stays small, and the bearer lives only in
-// the Authorization header, never in a log.
+// the Authorization header, never in a log. "At a time" holds across versions:
+// the AnytypeRequestGate is the one v1 and v2 share when AnytypeApiClient built
+// this client. Alone, it makes and owns its own gate.
 public sealed class AnytypeV2Client : IDisposable
 {
     private readonly HttpClient _http;
-    private readonly SemaphoreSlim _gate = new(1, 1);
+    private readonly AnytypeRequestGate _gate;
+    // Only the creator of a gate disposes it: a borrowed one outlives this client.
+    private readonly bool _ownsGate;
     private readonly string _spacePath;
     private readonly IBackendEndpointTrust? _endpointTrust;
 
@@ -65,13 +69,19 @@ public sealed class AnytypeV2Client : IDisposable
         return new(credentials, trust, handler: null);
     }
 
-    // The handler is the test seam: a fake one stands in for the backend.
+    // The handler is the test seam: a fake one stands in for the backend. The
+    // gate is borrowed from AnytypeApiClient when it builds this client; left
+    // null, the client makes its own and disposes it.
     internal AnytypeV2Client(
         AnytypeCredentials credentials,
         IBackendEndpointTrust? endpointTrust,
-        HttpMessageHandler? handler)
+        HttpMessageHandler? handler,
+        AnytypeRequestGate? gate = null)
     {
         ArgumentNullException.ThrowIfNull(credentials);
+
+        _gate = gate ?? new AnytypeRequestGate();
+        _ownsGate = gate is null;
 
         SpaceId = credentials.SpaceId;
         _spacePath = $"/v2/spaces/{credentials.SpaceId}";
@@ -184,6 +194,8 @@ public sealed class AnytypeV2Client : IDisposable
                         DeckleAnytypeSource.Log.ApiRequestRetriedDetail(
                             method, path, status, backoff.TotalMilliseconds);
                     }
+                    // Waited inside the gate on purpose: a 429 says the shared
+                    // budget is spent, so no other request may go out meanwhile.
                     await Task.Delay(backoff, ct).ConfigureAwait(false);
                     continue;
                 }
@@ -214,18 +226,26 @@ public sealed class AnytypeV2Client : IDisposable
 
     // The shared limiter names its wait twice: the standard Retry-After, and the
     // Ratelimit-Reset header (seconds) that only writes carry.
-    private static TimeSpan? RetryAfter(HttpResponseMessage response)
+    // The wait happens inside the gate, so a server-chosen value is capped: a
+    // huge or negative header must neither freeze every request nor throw.
+    internal static readonly TimeSpan MaxBackoff = TimeSpan.FromSeconds(30);
+
+    internal static TimeSpan? RetryAfter(HttpResponseMessage response)
+    {
+        TimeSpan? wait = RawRetryAfter(response);
+        if (wait is not { } w) return null;
+        return w < TimeSpan.Zero ? TimeSpan.Zero : w > MaxBackoff ? MaxBackoff : w;
+    }
+
+    private static TimeSpan? RawRetryAfter(HttpResponseMessage response)
     {
         RetryConditionHeaderValue? header = response.Headers.RetryAfter;
         if (header?.Delta is { } delta) return delta;
-        if (header?.Date is { } date)
-        {
-            TimeSpan delay = date - DateTimeOffset.UtcNow;
-            return delay > TimeSpan.Zero ? delay : TimeSpan.Zero;
-        }
+        if (header?.Date is { } date) return date - DateTimeOffset.UtcNow;
         return double.TryParse(
                 HeaderValue(response, "Ratelimit-Reset"),
                 NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
+                && double.IsFinite(seconds) && Math.Abs(seconds) < TimeSpan.MaxValue.TotalSeconds
             ? TimeSpan.FromSeconds(seconds)
             : null;
     }
@@ -245,6 +265,6 @@ public sealed class AnytypeV2Client : IDisposable
     public void Dispose()
     {
         _http.Dispose();
-        _gate.Dispose();
+        if (_ownsGate) _gate.Dispose();
     }
 }

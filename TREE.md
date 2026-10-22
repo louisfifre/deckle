@@ -351,8 +351,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── AnytypeV2ObjectDocument.cs
 │   │   │   │   ├── AnytypeV2ObjectReader.cs
 │   │   │   │   ├── AnytypeV2ObjectReadOptions.cs
+│   │   │   │   ├── AnytypeV2PropertyMap.cs
 │   │   │   │   ├── AnytypeV2Request.cs
 │   │   │   │   ├── AnytypeV2Response.cs
+│   │   │   │   ├── AnytypeV2Searcher.cs
 │   │   │   │   ├── AnytypeV2WriteOptions.cs
 │   │   │   │   ├── AnytypeV2Writer.cs
 │   │   │   │   └── AnytypeV2WriteReceipt.cs
@@ -361,6 +363,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AnytypeApiClient.Files.cs
 │   │   │   ├── AnytypeApiClient.Schema.cs
 │   │   │   ├── AnytypeCredentials.cs
+│   │   │   ├── AnytypeRequestGate.cs
 │   │   │   └── SpaceWriteLock.cs
 │   │   ├── Backend/
 │   │   │   ├── BackendEndpointTrust.cs
@@ -381,6 +384,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── BlockSections.cs
 │   │   │   ├── CollectionMembershipGestures.cs
 │   │   │   ├── DocumentGestures.cs
+│   │   │   ├── LinkedNames.cs
 │   │   │   ├── LiveTagResolver.cs
 │   │   │   ├── ManagementGestures.cs
 │   │   │   ├── MarkdownBody.cs
@@ -1808,12 +1812,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── deckle.en-US.experience.zip
 │   │   ├── AnytypeApiClientReplayTests.cs
 │   │   ├── AnytypeCredentialsTests.cs
+│   │   ├── AnytypeRequestGateTests.cs
 │   │   ├── AnytypeSpaceAliasesTests.cs
 │   │   ├── AnytypeUtilityGesturesTests.cs
 │   │   ├── AnytypeV2ClientTests.cs
 │   │   ├── AnytypeV2ExceptionTests.cs
 │   │   ├── AnytypeV2OpsTests.cs
+│   │   ├── AnytypeV2PropertyMapTests.cs
 │   │   ├── AnytypeV2ReadWriteTests.cs
+│   │   ├── AnytypeV2SearcherTests.cs
 │   │   ├── BackendEndpointTrustTests.cs
 │   │   ├── BackendListenerOwnerTests.cs
 │   │   ├── BackendProviderStoreBugNotes.md
@@ -1832,6 +1839,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LiveTagResolverTests.cs
 │   │   ├── ManagementGesturesTests.cs
 │   │   ├── MarkdownBodyTests.cs
+│   │   ├── NameResolverTests.cs
 │   │   ├── OperationRecoveryBugNotes.md
 │   │   ├── ProjectGesturesBugNotes.md
 │   │   ├── ProjectGesturesTests.cs
