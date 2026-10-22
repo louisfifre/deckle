@@ -2018,6 +2018,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWindowingSourceTests.cs
 │   │   ├── DispatchEventListenerBugNotes.md
 │   │   ├── DispatchEventListenerIncidentTests.cs
+│   │   ├── DispatchEventListenerRegressionTests.cs
 │   │   ├── DispatchEventListenerTests.cs
 │   │   ├── JsonlLineSerializerRegressionTests.cs
 │   │   ├── JsonlLineSerializerTests.cs

@@ -9,3 +9,13 @@
 - **Recurrence cue:** a `SinkFaulted` followed immediately by a `SinkRecovered` with a count of 1 while the sink is still failing; two `SinkFaulted` reports for one outage.
 
 Regression: `DispatchEventListenerIncidentTests.ReportsASinkFaultOnceAndItsRecoveryOnce`.
+
+## A sink fault during boot replay stayed unreported
+
+- **Trigger:** `AddSink(sink, replayBoot: true)` with a sink whose `Write` throws on the boot history. Reproduced 2026-10-22 by test.
+- **Observed symptom:** no `SinkFaulted` on `Deckle-Diagnostics` after the sink was added; the incident was opened in the slot and stayed invisible until some later event reached the dispatcher and a state change triggered a report.
+- **Cause (established by running the test):** `AddSink` ignored the value `Offer` returns when an incident opens or closes. Only `Dispatch` acted on it. The report cannot be emitted inside `AddSink`'s lock, since it dispatches back through the listener.
+- **Violated invariant:** a sink that throws is reported once, as soon as the listener knows.
+- **Recurrence cue:** a sink missing rows from the start of a run with no `SinkFaulted` in the journal, while later rows of the same sink are present.
+
+Regression: `DispatchEventListenerRegressionTests.A_sink_fault_during_boot_replay_is_reported_without_waiting_for_a_later_event`.

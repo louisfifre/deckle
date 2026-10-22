@@ -84,16 +84,27 @@ public sealed class DispatchEventListener : EventListener
     {
         if (sink is null) throw new ArgumentNullException(nameof(sink));
         var slot = new SinkSlot(sink);
+        bool reportDue = false;
+        SinkSlot[] snapshot;
         lock (_sinksLock)
         {
             if (replayBoot && _bootBuffer is not null)
             {
                 foreach (EventEntry entry in _bootBuffer)
-                    Offer(slot, entry);
+                    reportDue |= Offer(slot, entry);
             }
             _slots.Add(slot);
-            Volatile.Write(ref _snapshot, _slots.ToArray());
+            snapshot = _slots.ToArray();
+            Volatile.Write(ref _snapshot, snapshot);
         }
+
+        // A sink that threw during replay opened an incident. The report is
+        // emitted here, after the lock: it dispatches back through this
+        // listener, which takes the same lock. Left for the next live event it
+        // would stay unreported for as long as the sink is the only one failing.
+        if (!reportDue) return;
+        if (_dispatchDepth > 0) Volatile.Write(ref _reportsPending, 1);
+        else ReportIncidents(snapshot);
     }
 
     public void RemoveSink(ILogSink sink)
