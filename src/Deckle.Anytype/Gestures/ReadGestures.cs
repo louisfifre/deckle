@@ -236,6 +236,13 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
                 id, new AnytypeV2ObjectReadOptions { Markdown = true }, ct);
             markdown = MarkdownBody.DropTitle(md.Body["markdown"]?.GetValue<string>() ?? "", props.Name);
         }
+        // Ideas and reports are often created without a name: their first body
+        // line stands in for it rather than a bare "(sans titre)".
+        if (props.Name.Length == 0 && typeKey is DevSpace.Types.Idee or DevSpace.Types.Rapport)
+        {
+            string first = MarkdownBody.FirstLine(markdown);
+            if (first.Length > 0) name = first;
+        }
         return new Loaded(doc.Id ?? id, name, props, doc.Body, markdown);
     }
 

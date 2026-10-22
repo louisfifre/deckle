@@ -211,6 +211,17 @@ public static class MarkdownBody
         return string.Join('\n', kept);
     }
 
+    // The first line a reader would see, cleaned, with a leading heading marker
+    // stripped. Empty when the body has no text. Names an object that has none
+    // (an idea or a report is titled by what it says first).
+    public static string FirstLine(string text)
+    {
+        string clean = Clean(text);
+        if (clean.Length == 0) return "";
+        string line = clean.Split('\n')[0].Trim();
+        return line.TrimStart('#').Trim();
+    }
+
     // The v2 markdown render opens with the object's name as a `# ` line
     // (measured 2026-10-22 on a task; a report has no name and opens on its own
     // first heading block, which stays). That line is the title, not body: it

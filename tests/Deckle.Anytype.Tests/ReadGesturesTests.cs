@@ -574,6 +574,30 @@ public class ReadGesturesTests
         Assert.Equal($"id : {IdeaId}\nUne idée", digest);
     }
 
+    [Fact]
+    public async Task IdeaTextWithoutANameIsTitledByItsFirstBodyLine()
+    {
+        FakeV2Handler v2 = Reads(
+            PropsReply(IdeaId, "idee", ""),
+            MdReply(IdeaId, "idee", "\n## Piste\\_une   \nSuite"));
+
+        string digest = await NewGestures(v2).IdeaTextAsync(IdeaId, Ct);
+
+        Assert.Equal(Lines($"id : {IdeaId}", "Piste_une", "## Piste_une", "Suite"), digest);
+    }
+
+    [Fact]
+    public async Task IdeaTextWithoutNameOrBodyStaysSansTitre()
+    {
+        FakeV2Handler v2 = Reads(
+            PropsReply(IdeaId, "idee", ""),
+            MdReply(IdeaId, "idee", "\n"));
+
+        string digest = await NewGestures(v2).IdeaTextAsync(IdeaId, Ct);
+
+        Assert.Equal($"id : {IdeaId}\n(sans titre)", digest);
+    }
+
     // ── DocumentOutlineAsync ──────────────────────────────────────────────────
 
     // Sizes are cleaned characters: a section counts its sub-sections, which is
