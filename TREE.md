@@ -2098,6 +2098,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RunMarkerTests.cs
 │   │   ├── SinkCallbackBugNotes.md
 │   │   ├── SinkCallbackFaultTests.cs
+│   │   ├── SurvivedExceptionBugNotes.md
 │   │   ├── SurvivedExceptionLedgerTests.cs
 │   │   ├── ThreadingHotLoopCountTests.cs
 │   │   └── WorkIdTests.cs
