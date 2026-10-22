@@ -1883,6 +1883,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ManagementGesturesTests.cs
 │   │   ├── MarkdownBodyBugNotes.md
 │   │   ├── MarkdownBodyTests.cs
+│   │   ├── NameResolverBugNotes.md
 │   │   ├── NameResolverTests.cs
 │   │   ├── OperationRecoveryBugNotes.md
 │   │   ├── ProjectGesturesBugNotes.md

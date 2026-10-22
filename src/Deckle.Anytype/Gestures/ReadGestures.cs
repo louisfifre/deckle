@@ -217,7 +217,7 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
     // of its body), so the projections see only what the author wrote.
     async Task<Loaded> LoadAsync(string selector, string typeKey, bool withMarkdown, CancellationToken ct)
     {
-        string id = await resolver.ResolveAsync(selector, [typeKey], ct);
+        string id = await resolver.ResolveAsync(selector, [typeKey], NameMatch.Tolerant, ct);
         AnytypeV2ObjectDocument doc = await _reader.ReadAsync(
             id, new AnytypeV2ObjectReadOptions { Parts = AnytypeV2ObjectParts.Properties }, ct);
         var props = AnytypeV2PropertyMap.Of(doc);

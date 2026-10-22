@@ -34,6 +34,43 @@ public sealed class AmbiguousNameException : Exception
     }
 }
 
+// A write named an object by a name that no object carries exactly. The nearest
+// objects are listed (id + name + type) so the model can retry with the id of
+// the one it meant; the write itself is never attempted on a guess.
+public sealed class InexactNameException : Exception
+{
+    public string Query { get; }
+    public IReadOnlyList<Candidate> Candidates { get; }
+
+    public InexactNameException(string query, IReadOnlyList<Candidate> candidates)
+        : base(BuildMessage(query, candidates))
+    {
+        Query = query;
+        Candidates = candidates;
+    }
+
+    static string BuildMessage(string query, IReadOnlyList<Candidate> candidates)
+    {
+        var lines = candidates.Select(c =>
+            $"  {c.Id}  {c.Name} ({c.TypeKey})");
+        return $"Aucun objet ne porte exactement le nom « {query} », et une écriture ne devine pas "
+             + "un nom — relance avec l'id de l'objet voulu, parmi les plus proches :\n"
+             + string.Join("\n", lines);
+    }
+}
+
+// How strictly a name must match to resolve. A gesture that only reads can take
+// the one object a name resembles; a gesture that writes must not, because a
+// wrong guess changes the wrong object and nobody sees it happen.
+public enum NameMatch
+{
+    // A lone inexact hit is accepted (reads).
+    Tolerant,
+    // Only a name equal to the selector (case-insensitive) resolves; anything
+    // else is refused with the candidates, so the caller retries with an id (writes).
+    Exact,
+}
+
 public sealed class NotFoundException : Exception
 {
     public string Query { get; }
@@ -75,6 +112,11 @@ public sealed class NameResolver(AnytypeApiClient api, AnytypeV2Client? v2 = nul
     // Same cap the v1 search used: enough candidates to list in an ambiguity message.
     const int CandidateLimit = 20;
 
+    // An exact match reads the search page after page: a page of this many hits,
+    // up to this many hits in all (the v1 search page maximum).
+    const int ExactPageSize = AnytypeV2Searcher.PageSize;
+    const int ExactScanCeiling = AnytypeApiClient.SearchPageMax;
+
     readonly AnytypeApiClient _api = api;
 
     // The v2 client is bound to the default space, so only that space rides on
@@ -83,8 +125,8 @@ public sealed class NameResolver(AnytypeApiClient api, AnytypeV2Client? v2 = nul
     readonly string? _v2SpaceId = v2?.SpaceId;
 
     public async Task<string> ResolveAsync(
-        string selector, IReadOnlyList<string>? typeKeys, CancellationToken ct = default)
-        => await ResolveAsync(_api.SpaceId, selector, typeKeys, ct).ConfigureAwait(false);
+        string selector, IReadOnlyList<string>? typeKeys, NameMatch match, CancellationToken ct = default)
+        => await ResolveAsync(_api.SpaceId, selector, typeKeys, match, ct).ConfigureAwait(false);
 
     // Cross-space utilities resolve inside an allow-listed space alias; the
     // project-management gestures use the credentials' default space through
@@ -93,6 +135,7 @@ public sealed class NameResolver(AnytypeApiClient api, AnytypeV2Client? v2 = nul
         string spaceId,
         string selector,
         IReadOnlyList<string>? typeKeys,
+        NameMatch match,
         CancellationToken ct = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
@@ -102,7 +145,7 @@ public sealed class NameResolver(AnytypeApiClient api, AnytypeV2Client? v2 = nul
         selector = selector.Trim();
         if (AnytypeObjectId.Is(selector)) return selector;
 
-        var candidates = await SearchCandidatesAsync(spaceId, selector, typeKeys, ct);
+        var candidates = await SearchCandidatesAsync(spaceId, selector, typeKeys, match, ct);
         if (candidates.Count == 0) throw new NotFoundException(selector);
 
         var exact = candidates
@@ -111,35 +154,62 @@ public sealed class NameResolver(AnytypeApiClient api, AnytypeV2Client? v2 = nul
         if (exact.Count == 1) return exact[0].Id;
         if (exact.Count > 1) throw new AmbiguousNameException(selector, exact);
 
+        // No object carries the name. A read may take the one object it
+        // resembles; a write refuses and offers the nearest ones by id.
+        if (match == NameMatch.Exact)
+            throw new InexactNameException(selector, candidates.Take(CandidateLimit).ToList());
+
         if (candidates.Count == 1) return candidates[0].Id;
         throw new AmbiguousNameException(selector, candidates);
     }
 
+    // A tolerant read looks at one page of CandidateLimit hits: enough to take a
+    // lone hit or list the ambiguity. An exact match is a different question:
+    // the server ranks the hits, so the object named exactly can sit behind
+    // them, and a page of 20 would miss it. It reads page after page up to
+    // ExactScanCeiling hits, which a name query does not come near in practice.
+    // Past the ceiling an exact name is not seen and the write is refused with
+    // the nearest candidates: it fails closed, it never guesses.
     async Task<List<Candidate>> SearchCandidatesAsync(
         string spaceId,
         string query,
         IReadOnlyList<string>? typeKeys,
+        NameMatch match,
         CancellationToken ct)
     {
+        int pageSize = match == NameMatch.Exact ? ExactPageSize : CandidateLimit;
+        int ceiling = match == NameMatch.Exact ? ExactScanCeiling : 0;
+
         if (_searcher is not null && spaceId == _v2SpaceId)
-            return await SearchCandidatesV2Async(query, typeKeys, ct);
+            return await SearchCandidatesV2Async(query, typeKeys, pageSize, ceiling, ct);
 
-        var root = await _api.SearchAsync(spaceId, query, typeKeys, limit: CandidateLimit, ct: ct);
-        var data = root["data"] as JsonArray;
         var result = new List<Candidate>();
-        if (data is null) return result;
-
-        foreach (var node in data)
+        int offset = 0;
+        do
         {
-            if (node is not JsonObject obj) continue;
-            string id = obj["id"]?.GetValue<string>() ?? "";
-            if (id.Length == 0) continue;
-            result.Add(new Candidate(
-                id,
-                DisplayName(obj),
-                obj["type"]?["key"]?.GetValue<string>() ?? "",
-                obj["snippet"]?.GetValue<string>()));
+            var root = await _api.SearchAsync(spaceId, query, typeKeys, offset, pageSize, ct);
+            int returned = 0;
+            if (root["data"] is JsonArray data)
+                foreach (var node in data)
+                {
+                    returned++;
+                    if (node is not JsonObject obj) continue;
+                    string id = obj["id"]?.GetValue<string>() ?? "";
+                    if (id.Length == 0) continue;
+                    result.Add(new Candidate(
+                        id,
+                        DisplayName(obj),
+                        obj["type"]?["key"]?.GetValue<string>() ?? "",
+                        obj["snippet"]?.GetValue<string>()));
+                }
+
+            // The next page starts after the rows the server served, and an
+            // empty page ends the loop whatever has_more claims.
+            bool hasMore = root["pagination"]?["has_more"]?.GetValue<bool>() ?? false;
+            if (!hasMore || returned == 0) break;
+            offset += returned;
         }
+        while (offset < ceiling);
         return result;
     }
 
@@ -149,7 +219,7 @@ public sealed class NameResolver(AnytypeApiClient api, AnytypeV2Client? v2 = nul
     // ambiguity message, where v1 showed the first line of its snippet.
     // Exact-name matching is unaffected: it only concerns named objects.
     async Task<List<Candidate>> SearchCandidatesV2Async(
-        string query, IReadOnlyList<string>? typeKeys, CancellationToken ct)
+        string query, IReadOnlyList<string>? typeKeys, int pageSize, int ceiling, CancellationToken ct)
     {
         IReadOnlyList<string?> types = typeKeys is { Count: > 0 } ? typeKeys : [null];
 
@@ -157,15 +227,25 @@ public sealed class NameResolver(AnytypeApiClient api, AnytypeV2Client? v2 = nul
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (string? type in types)
         {
-            AnytypeV2SearchPage page = await _searcher!.SearchPageAsync(
-                new AnytypeV2SearchRequest { Type = type, Query = query }, offset: 0, CandidateLimit, ct);
-            foreach (AnytypeV2SearchRow row in page.Rows)
-                if (seen.Add(row.Id))
-                    result.Add(new Candidate(
-                        row.Id,
-                        row.Name.Length > 0 ? row.Name : "(sans titre)",
-                        row.Type,
-                        Snippet: null));
+            int offset = 0;
+            do
+            {
+                AnytypeV2SearchPage page = await _searcher!.SearchPageAsync(
+                    new AnytypeV2SearchRequest { Type = type, Query = query }, offset, pageSize, ct);
+                foreach (AnytypeV2SearchRow row in page.Rows)
+                    if (seen.Add(row.Id))
+                        result.Add(new Candidate(
+                            row.Id,
+                            row.Name.Length > 0 ? row.Name : "(sans titre)",
+                            row.Type,
+                            Snippet: null));
+
+                // Advance by the rows the server sent, never by the page asked
+                // for, and stop on an empty page: see AnytypeV2Searcher.SearchAllAsync.
+                if (!page.HasMore || page.Returned == 0) break;
+                offset += page.Returned;
+            }
+            while (offset < ceiling);
         }
         return result;
     }

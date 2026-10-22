@@ -50,7 +50,7 @@ public sealed class ManagementGestures(
         if (confirm)
             selector = AnytypeObjectId.Require(selector, "target");
 
-        string id = await resolver.ResolveAsync(selector, typeKeys: null, ct);
+        string id = await resolver.ResolveAsync(selector, typeKeys: null, NameMatch.Exact, ct);
         JsonObject obj = await api.GetObjectAsync(id, ct);
         string name = DisplayName(obj);
         string type = TypeKey(obj);
