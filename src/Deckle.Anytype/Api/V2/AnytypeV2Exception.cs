@@ -93,10 +93,21 @@ public sealed partial class AnytypeV2Exception : HttpRequestException
 
         string detail = apiMessage ?? Excerpt(body);
         string label = code is null ? $"{(int)status}" : $"{(int)status} {code}";
-        return new AnytypeV2Exception(
-            $"Anytype API {method} {path} failed with {label}: {detail}",
-            status, code, apiMessage, hint, issues);
+        // A validation_failed message alone ("invalid request") does not name
+        // the refused key; the issues and the hint do, so they ride in Message
+        // (what the logs and the tool answers show).
+        string message = $"Anytype API {method} {path} failed with {label}: {detail}";
+        foreach (AnytypeV2Issue issue in issues.Take(MaxIssuesInMessage))
+        {
+            message += $"; {issue.Path}: {issue.Message}";
+            if (!string.IsNullOrEmpty(issue.Hint)) message += $" ({issue.Hint})";
+        }
+        if (!string.IsNullOrEmpty(hint)) message += $"; hint: {hint}";
+
+        return new AnytypeV2Exception(message, status, code, apiMessage, hint, issues);
     }
+
+    private const int MaxIssuesInMessage = 3;
 
     private static JsonObject? TryParseEnvelope(string body)
     {

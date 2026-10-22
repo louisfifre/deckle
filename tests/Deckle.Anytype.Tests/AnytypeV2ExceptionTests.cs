@@ -30,6 +30,21 @@ public class AnytypeV2ExceptionTests
     }
 
     [Fact]
+    public void TheMessageNamesTheRefusedKeyAndTheHintsWithAtMostThreeIssues()
+    {
+        AnytypeV2Exception error = From(
+            HttpStatusCode.BadRequest,
+            """{"code":"validation_failed","message":"invalid","hint":"see docs","issues":[{"path":"properties.foo","message":"unknown key","hint":"use name"},{"path":"b","message":"m2"},{"path":"c","message":"m3"},{"path":"d","message":"m4"}]}""");
+
+        Assert.Contains("properties.foo: unknown key (use name)", error.Message);
+        Assert.Contains("b: m2", error.Message);
+        Assert.Contains("c: m3", error.Message);
+        Assert.DoesNotContain("m4", error.Message);
+        Assert.Contains("see docs", error.Message);
+        Assert.Equal(4, error.Issues.Count);
+    }
+
+    [Fact]
     public void AFailedOpIsLocatedByTheIndexInTheFirstIssuePath()
     {
         AnytypeV2Exception error = From(
