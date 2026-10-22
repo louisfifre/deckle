@@ -27,6 +27,10 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     public const int EvtFlushFailed        = 4;
     public const int EvtFlushTimedOut      = 5;
     public const int EvtArchivesPruned     = 6;
+    public const int EvtRotationFailed     = 7;
+    public const int EvtRotationRecovered  = 8;
+    public const int EvtRowUnrouted        = 9;
+    public const int EvtRowsRoutedAgain    = 10;
 
     // One incident per sink: opened by the first failure, closed by the next
     // successful write (SinkRecovered). The attempts in between are counted,
@@ -87,5 +91,54 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     public void ArchivesPruned(int pruned, string file_name, int kept)
     {
         if (IsEnabled()) WriteEvent(EvtArchivesPruned, pruned, file_name, kept);
+    }
+
+    // The file keeps taking rows, so this is a degradation: it grows past its
+    // cap, or its archive keeps old generations, until the cause goes away.
+    // One incident per sink, like SinkFaulted: the first failure is reported,
+    // the ones after it are counted, and RotationRecovered closes it. step is
+    // roll (the active file could not move into the archive), prune (an old
+    // generation could not be deleted) or count_lines (the active file could
+    // not be read, so it is taken for empty).
+    [Event(EvtRotationFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Log file {0} cannot be maintained at step {1}: {2}: {3}")]
+    public void RotationFailed(string file_name, string step, string error_type, string error_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtRotationFailed, file_name, step, error_type, error_message);
+    }
+
+    // Journal-tagged: the journal keeps the failure, so it keeps its end too.
+    [Event(EvtRotationRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Log file {0} rolls and prunes again after {1} failed attempts")]
+    public void RotationRecovered(string file_name, int failed_attempts)
+    {
+        if (IsEnabled()) WriteEvent(EvtRotationRecovered, file_name, failed_attempts);
+    }
+
+    // A routed dataset row whose path resolver returned nothing is skipped: the
+    // dataset has a hole. One incident per sink, closed by the first row that
+    // routes again, which carries the count of rows lost in between.
+    [Event(EvtRowUnrouted,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Log sink {0} skipped a row: its path resolver returned no path")]
+    public void RowUnrouted(string sink)
+    {
+        if (IsEnabled()) WriteEvent(EvtRowUnrouted, sink);
+    }
+
+    [Event(EvtRowsRoutedAgain,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Log sink {0} routes rows again after skipping {1}")]
+    public void RowsRoutedAgain(string sink, int skipped_rows)
+    {
+        if (IsEnabled()) WriteEvent(EvtRowsRoutedAgain, sink, skipped_rows);
     }
 }

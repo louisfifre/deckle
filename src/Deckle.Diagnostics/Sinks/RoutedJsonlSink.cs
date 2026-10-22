@@ -24,6 +24,9 @@ public sealed class RoutedJsonlSink : IFlushableLogSink
         new(StringComparer.OrdinalIgnoreCase);
     private readonly LinkedList<string> _leastRecentlyUsed = new();
 
+    // Rows skipped for want of a path since the last row that routed.
+    private int _unrouted;
+
     public RoutedJsonlSink(
         Func<EventEntry, string> pathResolver,
         string kindLabel,
@@ -66,7 +69,14 @@ public sealed class RoutedJsonlSink : IFlushableLogSink
     private async ValueTask WriteOnWorker(EventEntry entry)
     {
         string path = _pathResolver(entry);
-        if (string.IsNullOrWhiteSpace(path)) return;
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            // Skipped, and said once: the first row opens an incident, the
+            // others are counted for the line that closes it.
+            if (_unrouted++ == 0)
+                OffWorkerReport.Run(onWorker: true, () => DeckleDiagnosticsSource.Log.RowUnrouted(_kindLabel));
+            return;
+        }
 
         OpenFile destination = GetOrOpen(path);
         try
@@ -84,6 +94,13 @@ public sealed class RoutedJsonlSink : IFlushableLogSink
         {
             RemoveAndClose(path, destination);
             throw;
+        }
+
+        if (_unrouted > 0)
+        {
+            int skipped = _unrouted;
+            _unrouted = 0;
+            OffWorkerReport.Run(onWorker: true, () => DeckleDiagnosticsSource.Log.RowsRoutedAgain(_kindLabel, skipped));
         }
     }
 

@@ -42,3 +42,24 @@ Regression: `BoundedWriteQueueRegressionTests.A_write_error_already_reported_as_
 Fix: the serializer returns the row with its newline, written in one call, and `JsonlAppendStream.Open` closes a file that ends mid-row before appending.
 
 Regression: `JsonlSinkRegressionTests.A_row_cut_short_before_its_newline_does_not_glue_to_the_next_row`.
+
+## A file that could not roll, prune or be counted said nothing
+
+- **Trigger:** rotation maintenance that fails while writes still succeed: the archive folder cannot be created (a file sits in its place), an old generation cannot be deleted (held open, read-only), or the active file cannot be read at start. Reproduced 2026-10-22 by test, not seen yet in a real journal.
+- **Observed symptom:** nothing. A failed roll left the active file growing past its cap, a failed prune left the archive over its cap, and a failed count made the file look empty so it would not roll for another full cap of lines. The first sign was a disk filling up.
+- **Cause (established by running the test):** each step ended in a bare `catch` that returned a default, on purpose so the journal keeps writing, with no line left behind.
+- **Violated invariant:** a degradation is reported once as an incident and closed by one recovery. A sink that stops maintaining its file is a degraded sink.
+- **Recurrence cue:** a `RotationFailed` (Warning) with no `RotationRecovered` after it, on a file whose size or archive count keeps rising.
+- **Also changed, not covered by a test:** `NextGeneration` no longer swallows a listing error. It returned the number after the entries seen before the error, which could be 1, and the roll moves with overwrite, so a listing that failed midway could erase the oldest archive. The listing error now fails the roll instead. No existing seam makes `Directory.EnumerateFiles` fail after `CreateDirectory` succeeded.
+
+Regression: `JsonlSinkMaintenanceTests.A_roll_that_cannot_happen_is_reported_once_and_its_recovery_once`, `An_old_generation_that_cannot_be_deleted_is_reported`, `An_active_file_that_cannot_be_counted_is_reported`.
+
+## A routed row without a path was skipped silently
+
+- **Trigger:** `RoutedJsonlSink` whose path resolver returns an empty path, which `TelemetryListenerBootstrap` does when a corpus event lacks `bucket` or `tier`. Reproduced 2026-10-22 by test with a resolver written for it; not seen in a real run, where the producer is expected to always set both.
+- **Observed symptom:** the row was dropped with no trace, so a dataset with holes looked complete.
+- **Cause (established by running the test):** `WriteOnWorker` returned on a blank path.
+- **Violated invariant:** work that does not happen says so, with its reason.
+- **Recurrence cue:** a `RowUnrouted` Warning, and a `RowsRoutedAgain` carrying the count of rows lost.
+
+Regression: `RoutedJsonlSinkRegressionTests.Rows_without_a_path_are_reported_once_and_counted_when_routing_resumes`.

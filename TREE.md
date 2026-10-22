@@ -897,6 +897,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── JsonlSchema.cs
 │   │   │   ├── JsonlSink.cs
 │   │   │   ├── LogWindowSink.cs
+│   │   │   ├── OffWorkerReport.cs
 │   │   │   └── RoutedJsonlSink.cs
 │   │   ├── CrashDumpCapture.cs
 │   │   ├── CrashRelaunchBudget.cs
@@ -2034,12 +2035,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── JsonlLineSerializerTests.cs
 │   │   ├── JsonlSinkBugNotes.md
 │   │   ├── JsonlSinkLifecycleTests.cs
+│   │   ├── JsonlSinkMaintenanceTests.cs
 │   │   ├── JsonlSinkRegressionTests.cs
 │   │   ├── JsonlSinkRotationTests.cs
 │   │   ├── LogLineFormatterTests.cs
 │   │   ├── NoteFileTests.cs
 │   │   ├── OperationalLogAdmissionCollection.cs
 │   │   ├── OperationalLogAdmissionTests.cs
+│   │   ├── RoutedJsonlSinkRegressionTests.cs
 │   │   ├── RunMarkerTests.cs
 │   │   └── WorkIdTests.cs
 │   ├── Deckle.Home.Tests/
