@@ -910,6 +910,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleCancellationSource.cs
 │   │   ├── DeckleDiagnosticsSource.cs
 │   │   ├── DeckleEventSource.cs
+│   │   ├── DeckleHotLoopSource.cs
 │   │   ├── DeckleNetworkSource.cs
 │   │   ├── DeckleResourceSource.cs
 │   │   ├── DeckleSettingsUxSource.cs
@@ -925,6 +926,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ILogWindowSink.cs
 │   │   ├── Keywords.cs
 │   │   ├── LogLineFormatter.cs
+│   │   ├── LoopPulse.cs
 │   │   ├── NoteFile.cs
 │   │   ├── ObservationKind.cs
 │   │   ├── OperationalLogAdmission.cs
@@ -2080,6 +2082,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── JsonlSinkRegressionTests.cs
 │   │   ├── JsonlSinkRotationTests.cs
 │   │   ├── LogLineFormatterTests.cs
+│   │   ├── LoopPulseTests.cs
 │   │   ├── NoteFileTests.cs
 │   │   ├── OperationalLogAdmissionCollection.cs
 │   │   ├── OperationalLogAdmissionTests.cs
