@@ -75,6 +75,9 @@ public sealed class DeckleVisionSource : DeckleEventSource
     public const int EvtCaptureCleanupFailed            = 58;
     public const int EvtHdrDetectionFailed              = 59;
     public const int EvtMonitorNotFound                 = 60;
+    public const int EvtCaptureAccessIncident           = 61;
+    public const int EvtCaptureAccessRecovered          = 62;
+    public const int EvtCaptureIncidentAbandoned        = 63;
 
     // Capture-loop detail belongs to the Ambient workflow while it runs; the
     // scoped form leaves it ungoverned outside that workflow.
@@ -155,11 +158,11 @@ public sealed class DeckleVisionSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtMonitorNotFound, requested);
     }
 
+    // The loop's failure is already reported by CaptureLoopCrashed; this is the
+    // wait on its task throwing during the stop.
     [Event(EvtCaptureLoopWaitFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-    // The loop's failure is already reported by CaptureLoopCrashed; this is the
-    // wait on its task throwing during the stop.
            Message = "capture loop wait threw, continuing shutdown | ex_type={0} | ex_message={1}")]
     public void CaptureLoopWaitFailed(string ex_type, string ex_message)
     {
@@ -198,11 +201,11 @@ public sealed class DeckleVisionSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtScreenCaptureStoppedDetail, frames, duration_ms, fps_avg);
     }
 
+    // A release that threw leaves a GPU or COM resource held after the stop, the
+    // same fault Ambient reports as ResourceReleaseFailed.
     [Event(EvtCaptureCleanupFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-    // A release that threw leaves a GPU or COM resource held after the stop, the
-    // same fault Ambient reports as ResourceReleaseFailed.
            Message = "cleanup step failed | step={0} | ex_type={1} | ex_message={2}")]
     public void CaptureCleanupFailed(string step, string ex_type, string ex_message)
     {
@@ -290,6 +293,40 @@ public sealed class DeckleVisionSource : DeckleEventSource
     public void AcquireFrameRecovered(int failures, long duration_ms)
     {
         if (IsEnabled()) WriteEvent(EvtAcquireFrameRecovered, failures, duration_ms);
+    }
+
+    // cause is a CaptureLossCauses value. losses counts the losses since the
+    // window opened, window_ms is how long they took.
+    [Event(EvtCaptureAccessIncident,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "Screen capture keeps losing the display and reopening it | cause={0} | losses={1} | window_ms={2}")]
+    public void CaptureAccessIncident(string cause, int losses, long window_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtCaptureAccessIncident, cause, losses, window_ms);
+    }
+
+    [Event(EvtCaptureAccessRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
+           Message = "Screen capture holds the display again | losses={0} | duration_ms={1}")]
+    public void CaptureAccessRecovered(int losses, long duration_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtCaptureAccessRecovered, losses, duration_ms);
+    }
+
+    // The capture loop ended with one of its incidents still open. incident is a
+    // CaptureIncidentKinds value; count is the failures, attempts or losses the
+    // incident had gathered.
+    [Event(EvtCaptureIncidentAbandoned,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Tags = ObservationTags.Journal,
+           Message = "Screen capture stopped with an incident still open | incident={0} | count={1} | duration_ms={2}")]
+    public void CaptureIncidentAbandoned(string incident, int count, long duration_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtCaptureIncidentAbandoned, incident, count, duration_ms);
     }
 
     [Event(EvtTextureQueryFailedDetail,

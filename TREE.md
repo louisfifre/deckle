@@ -1779,6 +1779,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── VadService.cs
 │   └── Deckle.Vision/
 │       ├── CapturedFrame.cs
+│       ├── CaptureIncidents.cs
 │       ├── CaptureMonitor.cs
 │       ├── CapturePacer.cs
 │       ├── CaptureStopReasons.cs
@@ -2289,6 +2290,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   └── SileroSpeechTimestampsTests.cs
 │   ├── Deckle.Vision.Tests/
+│   │   ├── CaptureIncidentsBugNotes.md
+│   │   ├── CaptureIncidentsTests.cs
 │   │   ├── CapturePacerTests.cs
 │   │   ├── ContentPeakReleaseTests.cs
 │   │   ├── Deckle.Vision.Tests.csproj
