@@ -1843,6 +1843,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AnytypeApiClientBugNotes.md
 │   │   ├── AnytypeApiClientReplayTests.cs
 │   │   ├── AnytypeCredentialsTests.cs
+│   │   ├── AnytypePathRedactionTests.cs
 │   │   ├── AnytypeRequestGateTests.cs
 │   │   ├── AnytypeSpaceAliasesTests.cs
 │   │   ├── AnytypeUtilityGesturesTests.cs

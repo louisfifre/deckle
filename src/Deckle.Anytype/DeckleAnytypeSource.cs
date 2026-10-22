@@ -131,7 +131,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public void ApiRequestFailed(
         string method, int status_code, string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtApiRequestFailed, method, status_code, reason, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtApiRequestFailed, method, status_code, reason, ex_type, PathRedaction.Redact(ex_message));
     }
 
     [Event(EvtApiRequestFailedDetail,
@@ -276,7 +276,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Message = "The Anytype backend installation could not be prepared | reason={0} | {1}: {2}")]
     public void BackendInstallationPrepareFailed(string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendInstallationPrepareFailed, reason, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtBackendInstallationPrepareFailed, reason, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // A provider-store file operation failed and the store fell back (no active
@@ -288,7 +288,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Message = "backend provider file operation failed | operation={0} | ex_type={1} | ex_message={2}")]
     public void BackendProviderFileOperationFailed(string operation, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendProviderFileOperationFailed, operation, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtBackendProviderFileOperationFailed, operation, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // ── Backend lifecycle ─────────────────────────────────────────────────
@@ -365,7 +365,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Message = "backend health probe failed | ex_type={0} | ex_message={1}")]
     public void BackendHealthProbeFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendHealthProbeFailed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtBackendHealthProbeFailed, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // The watched serve still holds its process but stopped answering health
@@ -429,7 +429,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Message = "backend process query failed | pid={0} | operation={1} | ex_type={2} | ex_message={3}")]
     public void BackendProcessQueryFailed(int pid, string operation, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendProcessQueryFailed, pid, operation, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtBackendProcessQueryFailed, pid, operation, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // reason: start_returned_null or exception. Inside a restart incident the
@@ -441,7 +441,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Message = "The Anytype backend could not be started | reason={0} | {1}: {2}")]
     public void BackendSpawnFailed(string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendSpawnFailed, reason, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtBackendSpawnFailed, reason, ex_type, PathRedaction.Redact(ex_message));
     }
 
     [Event(EvtBackendSpawnFailedDetail,
@@ -450,7 +450,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Message = "backend spawn failed | executable={0}")]
     public void BackendSpawnFailedDetail(string executable)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendSpawnFailedDetail, executable);
+        if (IsEnabled()) WriteEvent(EvtBackendSpawnFailedDetail, PathRedaction.Redact(executable));
     }
 
     [Event(EvtBackendReconciliationStarted,
@@ -507,7 +507,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     {
         if (IsEnabled()) WriteEvent(
             EvtBackendListenerObserved, reconciliation_id, expected_pid,
-            listener_pid, healthy, executable);
+            listener_pid, healthy, PathRedaction.Redact(executable));
     }
 
     [Event(EvtBackendReconciliationCompleted,
@@ -541,7 +541,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
         string reconciliation_id, string ex_type, string ex_message, double duration_ms)
     {
         if (IsEnabled()) WriteEvent(
-            EvtBackendReconciliationFailed, reconciliation_id, ex_type, ex_message, duration_ms);
+            EvtBackendReconciliationFailed, reconciliation_id, ex_type, PathRedaction.Redact(ex_message), duration_ms);
     }
 
     // reason: listener_ambiguous, listener_query_failed, owner_unreadable or
@@ -564,7 +564,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
         string reconciliation_id, int listener_pid, string detail)
     {
         if (IsEnabled()) WriteEvent(
-            EvtBackendEndpointConflictDetail, reconciliation_id, listener_pid, detail);
+            EvtBackendEndpointConflictDetail, reconciliation_id, listener_pid, PathRedaction.Redact(detail));
     }
 
     // ── Backend supervision ───────────────────────────────────────────────
@@ -617,7 +617,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Message = "backend restart attempt could not start | reason={0} | {1}: {2}")]
     public void BackendRestartAttemptSpawnFailed(string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendRestartAttemptSpawnFailed, reason, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtBackendRestartAttemptSpawnFailed, reason, ex_type, PathRedaction.Redact(ex_message));
     }
 
     [Event(EvtBackendRestartScheduled,
@@ -635,7 +635,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Message = "backend restart attempt failed | attempt={0} | outcome={1} | ex_type={2} | ex_message={3} | work_id={4}")]
     public void BackendRestartAttemptFailed(int attempt, string outcome, string ex_type, string ex_message, string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendRestartAttemptFailed, attempt, outcome, ex_type, ex_message, work_id);
+        if (IsEnabled()) WriteEvent(EvtBackendRestartAttemptFailed, attempt, outcome, ex_type, PathRedaction.Redact(ex_message), work_id);
     }
 
     // last_outcome is the reconciliation decision of the last attempt
@@ -646,7 +646,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Message = "The Anytype backend keeps failing to restart | last_outcome={1} | {2}: {3} | attempts={0} | work_id={4}")]
     public void BackendRestartsFailing(int attempts, string last_outcome, string ex_type, string ex_message, string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendRestartsFailing, attempts, last_outcome, ex_type, ex_message, work_id);
+        if (IsEnabled()) WriteEvent(EvtBackendRestartsFailing, attempts, last_outcome, ex_type, PathRedaction.Redact(ex_message), work_id);
     }
 
     // Journal: it closes a BackendStopped the journal already holds, so a
@@ -690,7 +690,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Message = "Anytype backend supervision failed | {0}: {1}")]
     public void BackendSupervisionFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendSupervisionFailed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtBackendSupervisionFailed, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // ── Anytype runtime ───────────────────────────────────────────────────
@@ -705,7 +705,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Message = "The Anytype runtime failed | phase={0} | {1}: {2}")]
     public void AnytypeRuntimeFaulted(string phase, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtAnytypeRuntimeFaulted, phase, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtAnytypeRuntimeFaulted, phase, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // Which provisioning world the credentials resolved to: "headless" (the
