@@ -217,8 +217,9 @@ public sealed class DeckleVisionSource : DeckleEventSource
     // One line per loop, whatever the exit: outcome is cancelled or failed,
     // reason as on ScreenCaptureStopped.
     [Event(EvtCaptureLoopEnded,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+           Tags = ObservationTags.Journal,
            Message = "capture loop ended | outcome={0} | reason={1} | frames={2} | elapsed_ms={3}")]
     public void CaptureLoopEnded(string outcome, string reason, long frames, long elapsed_ms)
     {
