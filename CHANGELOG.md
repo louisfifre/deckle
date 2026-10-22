@@ -91,6 +91,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **setup:** Mirror the wizard's new strings into the app resources
 - **setup:** Describe Rewrite without naming where its model runs
 - **setup:** Open an update's provisioning as the narrow card
+- **core:** Leave the window title out of the window description
 
 ## [0.59.0](https://github.com/louisfifre/deckle/compare/v0.58.5...v0.59.0) — 2026-10-21
 
