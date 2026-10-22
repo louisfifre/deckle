@@ -7,6 +7,7 @@ using Xunit;
 namespace Deckle.Autocorrect.Tests;
 
 [Trait("Category", "unit")]
+[Collection(AutocorrectObservabilityCollection.Name)]
 public sealed class BackgroundRerankLaneTests
 {
     [Fact]

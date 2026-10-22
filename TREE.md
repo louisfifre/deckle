@@ -1881,7 +1881,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AccentIndexTests.cs
 │   │   ├── AnticipationLeadOracleTests.cs
 │   │   ├── AnticipationTransactionJoinTests.cs
-│   │   ├── AssemblyInfo.cs
 │   │   ├── AutocorrectBenchmarkTests.cs
 │   │   ├── AutocorrectDecisionMapTests.cs
 │   │   ├── AutocorrectEngineBackspaceTests.cs
