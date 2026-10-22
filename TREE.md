@@ -1305,6 +1305,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ModuleIds.cs
 │   │   ├── ModulePresence.cs
 │   │   ├── ModuleRegistry.cs
+│   │   ├── PresenceChoice.cs
 │   │   └── PresenceFile.cs
 │   ├── Deckle.Notifications/
 │   │   ├── Catalog/
@@ -2075,6 +2076,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Modules.Tests/
 │   │   ├── Deckle.Modules.Tests.csproj
 │   │   ├── ModuleGraphTests.cs
+│   │   ├── PresenceChoiceTests.cs
 │   │   └── PresenceFileTests.cs
 │   ├── Deckle.Notifications.Tests/
 │   │   ├── Deckle.Notifications.Tests.csproj

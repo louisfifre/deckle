@@ -11,8 +11,16 @@ public partial class App
     // the start: the failure is reported once until a start succeeds.
     private bool _precisionScrollFailureReported;
 
+    // Set when the module is composed. Shutdown must not reach for
+    // PrecisionScrollSettingsService.Instance on a boot that left the module
+    // out: its constructor creates the module's settings store, which an absent
+    // module must not leave behind. Not ModulePresence.IsPresent, because a
+    // presence change is adopted in place before the restart that applies it.
+    private bool _precisionScrollComposed;
+
     private void InitializePrecisionScroll()
     {
+        _precisionScrollComposed = true;
         if (_keyboardMouseHost is null) return;
 
         PrecisionScrollSettingsService.Instance.Changed += ReconcilePrecisionScroll;
@@ -77,6 +85,8 @@ public partial class App
 
     private void ShutdownPrecisionScroll()
     {
+        if (!_precisionScrollComposed) return;
+
         PrecisionScrollSettingsService.Instance.Changed -= ReconcilePrecisionScroll;
         _precisionScrollEngine?.Dispose();
         _precisionScrollEngine = null;

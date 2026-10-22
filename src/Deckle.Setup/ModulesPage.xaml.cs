@@ -195,7 +195,7 @@ public sealed partial class ModulesPage : Page
         // Install mode: the choice is NOT persisted from here — AppPaths froze
         // on the default data root in this temp process, while the user may
         // still pick a custom one on the next page. The Deploy step writes
-        // presence.json into the chosen root via PresenceFile.SaveTo.
+        // presence.json into the chosen root via ModulePresence.SaveUnder.
         if (_setup.Context.InstallMode)
         {
             _setup.Body.Navigate(typeof(FoldersPage), _setup);

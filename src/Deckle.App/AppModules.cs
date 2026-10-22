@@ -52,6 +52,20 @@ internal static class AppModules
 
         ModuleRegistry.Register(new ModuleDescriptor
         {
+            Id = ModuleIds.PrecisionScroll,
+            Glyph = Glyphs.Mouse,
+            Order = 550,
+        });
+
+        ModuleRegistry.Register(new ModuleDescriptor
+        {
+            Id = ModuleIds.Orchestration,
+            Glyph = Glyphs.Games,
+            Order = 560,
+        });
+
+        ModuleRegistry.Register(new ModuleDescriptor
+        {
             Id = ModuleIds.Anytype,
             Glyph = Glyphs.List,
             Order = 600,
