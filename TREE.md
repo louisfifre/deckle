@@ -1944,7 +1944,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DpiTests.cs
 │   │   ├── JsonSettingsStoreTests.cs
 │   │   ├── SpacingTests.cs
-│   │   └── Win32UtilTests.cs
+│   │   ├── Win32UtilTests.cs
+│   │   └── WindowDescriptionBugNotes.md
 │   ├── Deckle.Diagnostics.Logging.Tests/
 │   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
 │   │   ├── LogFilterSelectionTests.cs
