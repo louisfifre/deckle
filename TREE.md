@@ -2002,6 +2002,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LoggingSettingsTests.cs
 │   │   ├── LogTransferTests.cs
 │   │   ├── OperationalSinkRoutingTests.cs
+│   │   ├── RangeObservableCollectionBugNotes.md
+│   │   ├── RangeObservableCollectionRegressionTests.cs
 │   │   └── RangeObservableCollectionTests.cs
 │   ├── Deckle.Diagnostics.Telemetry.Tests/
 │   │   ├── Deckle.Diagnostics.Telemetry.Tests.csproj

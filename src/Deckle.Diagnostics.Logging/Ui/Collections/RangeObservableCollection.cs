@@ -13,9 +13,15 @@ public sealed class RangeObservableCollection<T> : ObservableCollection<T>
     {
         ArgumentNullException.ThrowIfNull(items);
 
+        // Read the source to the end before touching the list: a projection
+        // that reads this very collection lazily would find it already emptied,
+        // and a source that throws midway would leave a half-filled list with
+        // no notification.
+        List<T> snapshot = [.. items];
+
         CheckReentrancy();
         Items.Clear();
-        foreach (T item in items) Items.Add(item);
+        foreach (T item in snapshot) Items.Add(item);
 
         OnPropertyChanged(new PropertyChangedEventArgs(nameof(Count)));
         OnPropertyChanged(new PropertyChangedEventArgs("Item[]"));
