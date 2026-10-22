@@ -79,6 +79,8 @@ public static class AppPaths
     {
         if (string.IsNullOrWhiteSpace(moduleId))
             throw new ArgumentException("Module id must not be empty.", nameof(moduleId));
+        if (!ModuleDirectoryName.IsSingleSegment(moduleId))
+            throw new ArgumentException("Module id must be a single folder name.", nameof(moduleId));
 
         string dir = Path.Combine(ModulesDirectory, moduleId);
         Directory.CreateDirectory(dir);

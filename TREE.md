@@ -883,7 +883,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── ProvisioningResult.cs
 │   │   ├── Paths/
 │   │   │   ├── AppPaths.cs
-│   │   │   └── DefaultDataRoot.cs
+│   │   │   ├── DefaultDataRoot.cs
+│   │   │   └── ModuleDirectoryName.cs
 │   │   ├── CorpusPaths.cs
 │   │   ├── Deckle.Core.csproj
 │   │   └── JsonSettingsStore.cs
@@ -1999,6 +2000,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Core.Tests.csproj
 │   │   ├── DpiTests.cs
 │   │   ├── JsonSettingsStoreTests.cs
+│   │   ├── ModuleDirectoryNameTests.cs
 │   │   ├── SpacingTests.cs
 │   │   ├── Win32UtilTests.cs
 │   │   └── WindowDescriptionBugNotes.md
