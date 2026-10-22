@@ -11,7 +11,15 @@ namespace Deckle.Vad.Tests;
 [Trait("Category", "unit")]
 public class SileroSpeechTimestampsTests
 {
-    private const int W = 512;
+    // The expected sample counts below are written out as multiples of this window
+    // on purpose: the literals are the frame math the header documents, and tying
+    // W to production keeps a window-size change from silently shifting them.
+    private const int W = SileroSpeechTimestamps.WindowSamples;
+
+    // The documented hysteresis (SileroVadOptions.Threshold): release = Threshold -
+    // 0.15, floored at 0.01. Named once so the edge test reads as the contract.
+    private const float ReleaseHysteresis = 0.15f;
+    private const float ReleaseFloor = 0.01f;
 
     // Builds a probability sequence from (value, repeat-count) runs.
     private static float[] Probs(params (float value, int count)[] runs)
@@ -163,8 +171,8 @@ public class SileroSpeechTimestampsTests
     {
         // p == the release threshold is NOT silence (close uses p < negThreshold),
         // so it sits in the dead-band and bridges the span. Pins the < edge against
-        // a <= regression. Mirror prod's negThreshold so a retune tracks here too.
-        float release = MathF.Max(SileroVadOptions.Default.Threshold - 0.15f, 0.01f);
+        // a <= regression. The formula is the documented contract of Threshold, so a retune tracks here too.
+        float release = MathF.Max(SileroVadOptions.Default.Threshold - ReleaseHysteresis, ReleaseFloor);
         var segs = Compute(Probs((0.9f, 10), (release, 3), (0.9f, 10)));
         Assert.Single(segs);
         Assert.Equal((0, 11776), segs[0]);
