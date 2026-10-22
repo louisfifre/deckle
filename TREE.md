@@ -2022,6 +2022,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CrashRelaunchPolicyTests.cs
 │   │   ├── Deckle.Diagnostics.Tests.csproj
 │   │   ├── DeckleCancellationSourceTests.cs
+│   │   ├── DeckleNetworkSourceBugNotes.md
 │   │   ├── DeckleNetworkSourceTests.cs
 │   │   ├── DeckleResourceSourceTests.cs
 │   │   ├── DeckleSettingsUxSourceTests.cs
