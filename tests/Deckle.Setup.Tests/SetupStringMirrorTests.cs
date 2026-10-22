@@ -19,8 +19,13 @@ public sealed class SetupStringMirrorTests
 
         // x:Uid keys carry a property after a dot and resolve against the
         // module's own map; only the dotless code keys go through Loc.Get.
-        var drift = setup
-            .Where(entry => !entry.Key.Contains('.'))
+        var codeKeys = setup.Where(entry => !entry.Key.Contains('.')).ToList();
+
+        // The guard is empty-proof: no code key at all would make the drift
+        // check below pass without having compared anything.
+        Assert.NotEmpty(codeKeys);
+
+        var drift = codeKeys
             .Where(entry => !app.TryGetValue(entry.Key, out string? mirror) || mirror != entry.Value)
             .Select(entry => entry.Key)
             .ToList();
@@ -43,7 +48,9 @@ public sealed class SetupStringMirrorTests
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Directory.Packages.props")))
             dir = dir.Parent;
-        Assert.SkipWhen(dir is null, "Could not locate the repo root (Directory.Packages.props).");
-        return dir!.FullName;
+        // A guard that cannot find the tree it guards must fail, not skip: a skip
+        // would let the drift it exists to catch go through unseen.
+        Assert.NotNull(dir);
+        return dir.FullName;
     }
 }
