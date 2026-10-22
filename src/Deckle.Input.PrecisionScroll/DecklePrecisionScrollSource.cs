@@ -30,6 +30,8 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     public const int EvtQueueOverloaded = 18;
     public const int EvtInactive = 19;
     public const int EvtStopSlow = 20;
+    public const int EvtSettingsLoadWarning = 21;
+    public const int EvtSettingsLoadError = 22;
 
     [Event(EvtEngineStarted,
            Level = EventLevel.Informational,
@@ -147,5 +149,24 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     public void StopSlow(int timeout_ms)
     {
         if (IsEnabled()) WriteEvent(EvtStopSlow, timeout_ms);
+    }
+
+    // The settings store reports in free text; the text carries its own cause.
+    [Event(EvtSettingsLoadWarning,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The precision scrolling settings need attention | {0}")]
+    public void SettingsLoadWarning(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
+    }
+
+    [Event(EvtSettingsLoadError,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The precision scrolling settings could not be saved | {0}")]
+    public void SettingsLoadError(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 }
