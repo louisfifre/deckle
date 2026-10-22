@@ -231,6 +231,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtRecordingStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "Frame recording started")]
     public void RecordingStarted()
     {
@@ -251,6 +252,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtRecordingStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "Frame recording stopped | outcome={0} | frames={1}")]
     public void RecordingStopped(string outcome, long frames)
     {
@@ -430,6 +432,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtWheelRecordingStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "Wheel recording started")]
     public void WheelRecordingStarted()
     {
@@ -448,6 +451,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtWheelRecordingStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "Wheel recording stopped | outcome={0} | events={1}")]
     public void WheelRecordingStopped(string outcome, long events)
     {

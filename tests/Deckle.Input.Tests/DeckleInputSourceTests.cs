@@ -81,6 +81,38 @@ public class DeckleInputSourceTests : IDisposable
     }
 
     [Fact]
+    public void RecordingSessionsTravelInTheJournalFromStartToOutcome()
+    {
+        using var listener = new TestEventListener("Deckle-Input");
+
+        DeckleInputSource.Log.RecordingStarted();
+        DeckleInputSource.Log.RecordingStopped("failed", 7);
+        DeckleInputSource.Log.WheelRecordingStarted();
+        DeckleInputSource.Log.WheelRecordingStopped("completed", 3);
+
+        Assert.Collection(listener.Events,
+            frameStart => AssertJournal(frameStart, DeckleInputSource.EvtRecordingStarted),
+            frameStop =>
+            {
+                AssertJournal(frameStop, DeckleInputSource.EvtRecordingStopped);
+                Assert.Equal("failed", frameStop.Payload?[0]);
+                Assert.Equal(7L, frameStop.Payload?[1]);
+            },
+            wheelStart => AssertJournal(wheelStart, DeckleInputSource.EvtWheelRecordingStarted),
+            wheelStop =>
+            {
+                AssertJournal(wheelStop, DeckleInputSource.EvtWheelRecordingStopped);
+                Assert.Equal("completed", wheelStop.Payload?[0]);
+            });
+    }
+
+    private static void AssertJournal(EventWrittenEventArgs e, int eventId)
+    {
+        Assert.Equal(eventId, e.EventId);
+        Assert.Equal(ObservationTags.Journal, e.Tags & ObservationTags.Journal);
+    }
+
+    [Fact]
     public void PumpFailureIsAnErrorCarryingItsCause()
     {
         using var listener = new TestEventListener("Deckle-Input");
