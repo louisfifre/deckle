@@ -84,35 +84,51 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
     }
 
     // False when the deadline passed before the marker was reached: the
-    // entries stay queued and the worker keeps draining them. A deadline is
-    // also applied to the enqueue of the marker itself, since a full channel
-    // behind a stuck disk would otherwise block the caller before any wait.
+    // entries stay queued and the worker keeps draining them. The deadline
+    // covers the whole call, in three places where a stuck disk would
+    // otherwise hold the caller: taking the lifetime lock (a producer blocked
+    // on a full channel holds it while it waits for room), enqueuing the
+    // marker, and waiting for the worker to reach it.
     public bool TryFlush(TimeSpan timeout)
     {
+        var clock = System.Diagnostics.Stopwatch.StartNew();
         var completed = new TaskCompletionSource<bool>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         bool markerQueued;
 
-        lock (_lifetimeLock)
+        if (!Monitor.TryEnter(_lifetimeLock, timeout))
+            return false;
+        try
         {
             markerQueued = _accepting;
             if (markerQueued)
             {
                 ValueTask enqueue = _items.Writer.WriteAsync(WorkItem.ForFlush(completed));
                 if (!enqueue.IsCompleted
-                    && !enqueue.AsTask().Wait(timeout))
+                    && !enqueue.AsTask().Wait(Remaining(timeout, clock)))
                 {
                     return false;
                 }
             }
         }
+        finally
+        {
+            Monitor.Exit(_lifetimeLock);
+        }
 
         bool drained = markerQueued
-            ? completed.Task.Wait(timeout)
-            : _worker.Wait(timeout);
+            ? completed.Task.Wait(Remaining(timeout, clock))
+            : _worker.Wait(Remaining(timeout, clock));
 
         ThrowLastError();
         return drained;
+    }
+
+    private static TimeSpan Remaining(TimeSpan timeout, System.Diagnostics.Stopwatch clock)
+    {
+        if (timeout == Timeout.InfiniteTimeSpan) return timeout;
+        TimeSpan left = timeout - clock.Elapsed;
+        return left > TimeSpan.Zero ? left : TimeSpan.Zero;
     }
 
     public void Dispose()

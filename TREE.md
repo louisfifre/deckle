@@ -2006,6 +2006,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Diagnostics.Telemetry.Tests.csproj
 │   │   └── TelemetryListenerBootstrapTests.cs
 │   ├── Deckle.Diagnostics.Tests/
+│   │   ├── BoundedWriteQueueRegressionTests.cs
 │   │   ├── CrashDumpCaptureTests.cs
 │   │   ├── CrashRelaunchPolicyTests.cs
 │   │   ├── Deckle.Diagnostics.Tests.csproj
