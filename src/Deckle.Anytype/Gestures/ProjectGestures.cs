@@ -238,14 +238,17 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver,
     {
         if (taskIds.Count == 0) return;
 
-        IReadOnlyList<AnytypeV2SearchRow> reports = await _searcher.SearchAllAsync(
+        // Sorted newest first by the server: one page of the size shown, not
+        // every report of the project.
+        AnytypeV2SearchPage page = await _searcher.SearchPageAsync(
             new AnytypeV2SearchRequest
             {
                 Type = DevSpace.Types.Rapport,
                 Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.TachesLiees, taskIds)],
                 Sorts = [new AnytypeV2SearchSort(DevSpace.Props.DateDuJournal, Descending: true)],
                 Fields = [DevSpace.Props.DateDuJournal],
-            }, ct);
+            }, offset: 0, limit: RecentReports, ct);
+        IReadOnlyList<AnytypeV2SearchRow> reports = page.Rows;
 
         if (reports.Count == 0) return;
 

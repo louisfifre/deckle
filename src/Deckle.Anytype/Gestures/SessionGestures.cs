@@ -239,20 +239,22 @@ public sealed class SessionGestures(
     public const int ReportTailEntries = 5;
 
     // The server filters on the report's link to the task and sorts by journal
-    // date, newest first (the structured form measured on 2026-10-22); every
-    // page is read, but only the first RecentReports are shown.
+    // date, newest first (the structured form measured on 2026-10-22), so one
+    // page of the size shown is all the digest needs: a task can carry a long
+    // history of reports, and paging through it all to keep three was waste.
     async Task<IReadOnlyList<AnytypeV2SearchRow>> ReportsForTaskAsync(string taskId, CancellationToken ct)
     {
         if (taskId.Length == 0) return [];
 
-        return await _searcher.SearchAllAsync(
+        AnytypeV2SearchPage page = await _searcher.SearchPageAsync(
             new AnytypeV2SearchRequest
             {
                 Type = DevSpace.Types.Rapport,
                 Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.TachesLiees, [taskId])],
                 Sorts = [new AnytypeV2SearchSort(DevSpace.Props.DateDuJournal, Descending: true)],
                 Fields = [DevSpace.Props.DateDuJournal],
-            }, ct);
+            }, offset: 0, limit: RecentReports, ct);
+        return page.Rows;
     }
 
     async Task<List<string>> ResolveNamesAsync(IReadOnlyList<string> ids, CancellationToken ct)

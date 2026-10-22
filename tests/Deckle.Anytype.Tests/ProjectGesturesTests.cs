@@ -171,6 +171,8 @@ public class ProjectGesturesTests
         Assert.Equal(DevSpace.Props.RelationProjet, taskFilter["property"]!.GetValue<string>());
         Assert.Equal(ProjectId, ((JsonArray)taskFilter["value"]!).Single()!.GetValue<string>());
 
+        // One page of the size shown, not every report of the project.
+        Assert.EndsWith("/search?limit=3&offset=0", handler.Requests[2].PathAndQuery);
         JsonObject reports = SearchBody(handler.Requests[2]);
         Assert.Equal(DevSpace.Types.Rapport, reports["type"]!.GetValue<string>());
         JsonObject reportFilter = (JsonObject)Assert.Single((JsonArray)reports["filters"]!)!;

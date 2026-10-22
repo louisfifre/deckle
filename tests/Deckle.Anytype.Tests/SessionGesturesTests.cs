@@ -243,11 +243,13 @@ public class SessionGesturesTests
         // The server does the filtering and the ordering: the reports of the
         // task only, newest first.
         FakeV2Handler.Seen search = Assert.Single(v2.Requests, r => r.PathAndQuery.Contains("/search?"));
+        // One page of the size shown, not every report of the task.
+        Assert.EndsWith($"/search?limit={SessionGestures.RecentReports}&offset=0", search.PathAndQuery);
         JsonObject body = (JsonObject)JsonNode.Parse(search.Body!)!;
         Assert.Equal(DevSpace.Types.Rapport, body["type"]!.GetValue<string>());
         JsonObject filter = (JsonObject)Assert.Single((JsonArray)body["filters"]!)!;
         Assert.Equal(DevSpace.Props.TachesLiees, filter["property"]!.GetValue<string>());
-        Assert.Equal(TaskId, ((JsonArray)filter["value"]!).Single()!.GetValue<string>());
+        Assert.Equal(TaskId,((JsonArray)filter["value"]!).Single()!.GetValue<string>());
         Assert.Equal("desc", ((JsonObject)Assert.Single((JsonArray)body["sorts"]!)!)["direction"]!.GetValue<string>());
     }
     [Fact]
