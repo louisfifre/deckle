@@ -2156,6 +2156,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── OrchestrationObservabilityCollection.cs
 │   │   ├── ProfileTransactionTests.cs
 │   │   ├── ScanOnDiskTests.cs
+│   │   ├── SteamLibraryScanEdgeCaseTests.cs
 │   │   └── SteamLibraryTests.cs
 │   ├── Deckle.Playground.Tests/
 │   │   ├── CorrectionApplicationEvidenceTests.cs
