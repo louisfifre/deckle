@@ -292,8 +292,10 @@ public static class MarkdownBody
     // lines after it up to the next stamp, read back as "stamp · first line"
     // with any further lines below. Before the first stamp, each line is an
     // entry of its own: reports written before the stamped form carry one
-    // bullet per entry. The « # Journal » title is not an entry.
-
+    // bullet per entry. The « # Journal » title is not an entry, but only that
+    // line: an entry whose text opens with « # » (a quoted shell comment, a
+    // markdown title) reads back as a heading line and stays an entry. The
+    // title is always written first, so it can only precede the first stamp.
     public static IReadOnlyList<string> JournalEntries(string body)
     {
         var entries = new List<string>();
@@ -301,7 +303,7 @@ public static class MarkdownBody
         bool hasText = false;
         foreach (string line in Clean(body).Split('\n'))
         {
-            if (line.Length == 0 || line.StartsWith("# ", StringComparison.Ordinal)) continue;
+            if (line.Length == 0 || (stamped is null && IsJournalTitle(line))) continue;
             if (IsJournalStamp(line))
             {
                 if (stamped is not null) entries.Add(stamped.ToString());
@@ -324,6 +326,10 @@ public static class MarkdownBody
 
     // ── internals ─────────────────────────────────────────────────────────────
 
+
+    static bool IsJournalTitle(string line) =>
+        line.Equals("# Journal", StringComparison.Ordinal)
+        || line.StartsWith("# Journal ", StringComparison.Ordinal);
 
     static bool IsJournalStamp(string line) =>
         line.Length == JournalStampFormat.Length

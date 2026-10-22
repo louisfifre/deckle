@@ -1844,6 +1844,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FakeV2Handler.cs
 │   │   ├── LiveTagResolverTests.cs
 │   │   ├── ManagementGesturesTests.cs
+│   │   ├── MarkdownBodyBugNotes.md
 │   │   ├── MarkdownBodyTests.cs
 │   │   ├── NameResolverTests.cs
 │   │   ├── OperationRecoveryBugNotes.md

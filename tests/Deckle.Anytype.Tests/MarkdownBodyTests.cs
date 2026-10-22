@@ -402,6 +402,19 @@ public class MarkdownBodyTests
 
     [Fact]
     [Trait("Category", "regression")]
+    public void JournalEntriesKeepAnEntryWhoseTextOpensWithAHash()
+    {
+        string body =
+            "# Journal 2026-07-21\n" +
+            "2026-07-21 10:00\n\n# note\n\n" +
+            "2026-07-21 11:00\n\npremière\n\n# suite en titre";
+
+        Assert.Equal(
+            ["2026-07-21 10:00 · # note", "2026-07-21 11:00 · première\n# suite en titre"],
+            MarkdownBody.JournalEntries(body));
+    }
+    [Fact]
+    [Trait("Category", "regression")]
     public void ReplaceSectionOfACrlfBodyKeepsEveryLineEndingCrlf()
     {
         MarkdownBody.SectionEdit edit = MarkdownBody.ReplaceSection(
