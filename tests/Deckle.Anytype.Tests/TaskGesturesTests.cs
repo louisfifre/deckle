@@ -791,6 +791,11 @@ internal sealed class FakeAnytypeServer : IDisposable
     public void OnSearch(JsonObject response) =>
         _routes.Add(new("POST", $"{SpacePath}/search", 200, response.ToJsonString()));
 
+    // The v2 search the client built from these credentials reaches: same
+    // listener, /v2 prefix.
+    public void OnV2Search(JsonObject response) =>
+        _routes.Add(new("POST", $"/v2/spaces/{Space}/search", 200, response.ToJsonString()));
+
     // Raw JSON payload for the list-add route — the live endpoint answers a bare
     // JSON string, which a JsonObject-based registration could not express.
     public void OnPostListObjects(string listId, string rawJson) =>

@@ -90,6 +90,10 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Read project_overview and list_projects with server-side v2 filters
 - **anytype:** Build the session_start digest from v2 reads and a filtered search
 - **anytype:** Resolve names through the v2 search
+- **notifications:** Ask whether a prompt can show and withdraw an abandoned toast
+- **anytype:** Refuse to bin reports and linked objects, and wait for the person's approval
+- **anytype:** Ask the bin approval through a Windows notification
+- **anytype:** Tell agents when to archive and when to bin
 
 ### Changed
 
