@@ -7,6 +7,7 @@ using Xunit;
 namespace Deckle.Input.Tests;
 
 [Trait("Category", "observability")]
+[Collection(InputObservabilityCollection.Name)]
 public class DeckleInputSourceTests : IDisposable
 {
     public DeckleInputSourceTests()
