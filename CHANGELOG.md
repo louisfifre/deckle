@@ -53,12 +53,35 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** State the opening placement rule by its intention
 - **scripts:** Survey the Anytype API v2 read-only
 - **transcription:** Add a deterministic trailing noise pad
+- **anytype:** Add a v2 transport and typed error
+- **anytype:** Add a v2 object reader
+- **anytype:** Model the v2 block, object, view and type ops
+- **anytype:** Add a v2 writer for ops batches and object creation
+- **anytype:** Expose the v2 client beside the v1 one
 - **setup:** Add a step rail and widen the wizard window
+- **anytype:** Append session_log entries through the v2 socle
 - **setup:** Show each module's download size and dependencies on its card
+- **anytype:** Move task_subtask to v2 block operations
+- **anytype:** Locate a section in a v2 block document
+- **anytype:** Port replace_section to v2 block operations
+- **anytype:** Port task_create to API v2 and keep the template body
+- **catalog:** Float the curve editor on its host and add an axis legend
+- **streaming:** Open the speech-filtering fold with the page
+- **streaming:** Show durations in seconds and say what each threshold measures
+- **streaming:** Expose the cut margin and the minimum utterance in Settings
+- **streaming:** Give the ramp anchors a 5 s grain
 - **setup:** Grey out a module until the modules it needs are checked
+- **audio:** Let a capture host keep no audio
+- **transcription:** Read the pause gauge without dictating
+- **audio:** Classify a failed capture's error code publicly
+- **playground:** Let the HUD tab name a microphone fallback
 - **modules:** Record the offered catalogue in the presence file
 - **precision-scroll:** Make precision scrolling a module the person can leave out
 - **orchestration:** Make apps and games a module the person can leave out
+- **playground:** Feed the HUD preview from the microphone
+- **playground:** Word why the microphone preview gave way
+- **playground:** Let the HUD tab preview from the microphone
+- **playground:** Name the gauge curves' axes
 
 ### Changed
 
@@ -70,6 +93,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **llm:** Retire the kept probe events and spell the rewrite cancellation from the shared vocabulary
 - **hud:** Report the overlay and transcript panel through the windowing probe
 - **transcription:** Carry text-token count and minimum probability on segments
+- **playground:** Remove the utterance segmentation page
+- **hud:** Return the gauge to rest on one shared move
+- **hud:** Default the gauge's return to the 0.33 s Louis tuned
 
 ### Fixed
 
@@ -89,6 +115,11 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Drop version and due date from the Epic property table
 - **setup:** Keep the in-progress module selection on Back
 - **mcp:** Keep a surrogate pair whole when the tool text is cut
+- **anytype:** Name a lost heading before the content mismatch it causes
+- **anytype:** Count report tails in journal entries, not lines
+- **anytype:** Read Priorité under the key the server serves
+- **anytype:** Say in French when a subtask add meets a changed task
+- **anytype:** Count a read-back timeout as a failed check in replace_section
 - **setup:** Mirror the wizard's new strings into the app resources
 - **setup:** Describe Rewrite without naming where its model runs
 - **setup:** Open an update's provisioning as the narrow card
