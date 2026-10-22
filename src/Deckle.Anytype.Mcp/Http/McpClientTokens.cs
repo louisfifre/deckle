@@ -91,6 +91,8 @@ public sealed class McpClientTokens
         }
 
         DeckleAnytypeMcpSource.Log.TokenVariablesPublished(_clients.Count, published, unchanged, missing);
+        if (missing > 0)
+            DeckleAnytypeMcpSource.Log.TokenVariablesMissing(_clients.Count, missing);
     }
 
     // The length pre-check short-circuits an obvious mismatch, but two

@@ -1809,13 +1809,16 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── tests/
 │   ├── Deckle.Anytype.Mcp.Tests/
 │   │   ├── AnytypeUtilityToolCatalogTests.cs
+│   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
 │   │   ├── DialogueToolCatalogTests.cs
 │   │   ├── FakeSecretVault.cs
 │   │   ├── JournalClosersTests.cs
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensTests.cs
+│   │   ├── McpHostBugNotes.md
 │   │   ├── McpHttpHostTests.cs
+│   │   ├── McpObservabilityTests.cs
 │   │   ├── McpToolsetTests.cs
 │   │   ├── SchemaAdminToolCatalogTests.cs
 │   │   └── ToolCatalogTests.cs

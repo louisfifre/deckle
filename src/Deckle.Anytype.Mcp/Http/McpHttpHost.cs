@@ -76,7 +76,10 @@ public sealed class McpHttpHost : IAsyncDisposable
             if (_started)
                 return true;
             if (_disposeTask is not null)
+            {
+                DeckleAnytypeMcpSource.Log.HostStartRefused("disposed");
                 return false;
+            }
 
             WebApplication application = BuildApplication();
             try

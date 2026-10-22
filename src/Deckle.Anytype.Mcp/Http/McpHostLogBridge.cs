@@ -12,22 +12,60 @@ namespace Deckle.Anytype.Mcp;
 internal sealed class McpHostLogBridge : ILoggerProvider
 {
     // Keyed by category and event name: the first occurrence is the Warning,
-    // repeats stay Verbose with their running count.
-    private readonly ConcurrentDictionary<string, int> _occurrences = new(StringComparer.Ordinal);
+    // repeats stay Verbose with their running count, and the journal gets the count
+    // at every power of ten and once more when the host's logging closes.
+    private readonly ConcurrentDictionary<string, Problem> _problems = new(StringComparer.Ordinal);
+
+    // Mutated only through the dictionary's AddOrUpdate, which may run its factory
+    // more than once under contention: the record is immutable and replaced.
+    private sealed record Problem(string Category, string EventName, string ExType, int Occurrences, int Counted);
 
     public ILogger CreateLogger(string categoryName) => new Logger(this, categoryName);
 
-    public void Dispose() { }
+    // The host disposes its service provider, and with it this provider, when it
+    // stops: the last chance to say how often each problem happened.
+    public void Dispose()
+    {
+        foreach (Problem problem in _problems.Values)
+        {
+            if (problem.Occurrences > 1 && problem.Occurrences != problem.Counted)
+            {
+                DeckleAnytypeMcpSource.Log.HostInternalLogCounted(
+                    problem.Category, problem.EventName, problem.Occurrences, problem.ExType);
+            }
+        }
+    }
 
     private void Write(string category, EventId eventId, LogLevel level, Exception? exception)
     {
         string eventName = eventId.Name ?? eventId.Id.ToString(System.Globalization.CultureInfo.InvariantCulture);
         string exType = exception?.GetType().Name ?? "";
-        int occurrences = _occurrences.AddOrUpdate(category + "|" + eventName, 1, (_, count) => count + 1);
-        if (occurrences == 1)
+        Problem problem = _problems.AddOrUpdate(
+            category + "|" + eventName,
+            _ => new Problem(category, eventName, exType, 1, 0),
+            (_, known) => known with { Occurrences = known.Occurrences + 1 });
+        if (problem.Occurrences == 1)
+        {
             DeckleAnytypeMcpSource.Log.HostInternalLog(category, eventName, level.ToString(), exType);
-        else
-            DeckleAnytypeMcpSource.Log.HostInternalLogRepeated(category, eventName, occurrences, exType);
+            return;
+        }
+
+        DeckleAnytypeMcpSource.Log.HostInternalLogRepeated(category, eventName, problem.Occurrences, exType);
+        if (IsPowerOfTen(problem.Occurrences))
+        {
+            DeckleAnytypeMcpSource.Log.HostInternalLogCounted(category, eventName, problem.Occurrences, exType);
+            _problems.TryUpdate(
+                category + "|" + eventName,
+                problem with { Counted = problem.Occurrences },
+                problem);
+        }
+    }
+
+    private static bool IsPowerOfTen(int value)
+    {
+        if (value < 10) return false;
+        while (value % 10 == 0) value /= 10;
+        return value == 1;
     }
 
     private sealed class Logger(McpHostLogBridge owner, string category) : ILogger

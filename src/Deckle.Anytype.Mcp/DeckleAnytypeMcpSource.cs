@@ -48,6 +48,11 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     public const int EvtTokenVariablesPublished = 16;
     public const int EvtHostInternalLog       = 17;
     public const int EvtHostInternalLogRepeated = 18;
+    public const int EvtToolCallStarted       = 19;
+    public const int EvtToolCallFailed        = 20;
+    public const int EvtHostStartRefused      = 21;
+    public const int EvtHostInternalLogCounted = 22;
+    public const int EvtTokenVariablesMissing = 23;
 
     // ── Host lifecycle ────────────────────────────────────────────────────
 
@@ -92,6 +97,19 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     public void HostStartFailed(int port, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtHostStartFailed, port, ex_type, ex_message);
+    }
+
+    // Start was asked of a host that cannot start: nothing was bound and no client
+    // can connect. reason: disposed (the host was already disposed; a new host
+    // has to be built).
+    [Event(EvtHostStartRefused,
+           Level = EventLevel.Warning,
+           Keywords = JournalLifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "The MCP host did not start | reason={0}")]
+    public void HostStartRefused(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtHostStartRefused, reason);
     }
 
     // reason: drain_timeout (a tool call outlived the shutdown budget; the API
@@ -143,6 +161,20 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtHostInternalLogRepeated, category, event_name, occurrences, ex_type);
     }
 
+    // The running count of one framework problem, in the journal: written when the
+    // count reaches 10, 100, 1000... and once more when the host's logging closes
+    // if the count moved since, so the journal shows how often a problem the
+    // Warning announced once kept happening.
+    [Event(EvtHostInternalLogCounted,
+           Level = EventLevel.Informational,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "The MCP host problem kept happening | category={0} | event_name={1} | occurrences={2} | ex_type={3}")]
+    public void HostInternalLogCounted(string category, string event_name, int occurrences, string ex_type)
+    {
+        if (IsEnabled()) WriteEvent(EvtHostInternalLogCounted, category, event_name, occurrences, ex_type);
+    }
+
     // ── Client tokens ─────────────────────────────────────────────────────
 
     // Counts only: a token never leaves the vault through the trace.
@@ -164,6 +196,19 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     public void TokenVariablesPublished(int clients, int published, int unchanged, int missing)
     {
         if (IsEnabled()) WriteEvent(EvtTokenVariablesPublished, clients, published, unchanged, missing);
+    }
+
+    // A client whose vault token is absent keeps a stale environment variable and
+    // is refused with unknown-bearer until the token exists again. Written next to
+    // TokenVariablesPublished, which stays a Verbose count, when missing > 0.
+    [Event(EvtTokenVariablesMissing,
+           Level = EventLevel.Warning,
+           Keywords = JournalLifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "MCP client tokens are missing from the vault | clients={0} | missing={1}")]
+    public void TokenVariablesMissing(int clients, int missing)
+    {
+        if (IsEnabled()) WriteEvent(EvtTokenVariablesMissing, clients, missing);
     }
 
     // ── Requests ──────────────────────────────────────────────────────────
@@ -202,17 +247,44 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtRequestRejectionsEnded, rejected);
     }
 
-    // One line per tool call: which tool, how it ended and how long it took.
-    // Never the arguments, never the result, never an exception message (it can
-    // quote Anytype content); ex_type names the failure. outcome: completed,
-    // input_rejected, output_rejected, failed, cancelled, unknown_tool,
-    // missing_tool_name. The rate limiter bounds the volume.
+    // A tool call is short and the rate limiter bounds how many a client makes, so
+    // its start stays Verbose and the journal keeps its failures; the work_id of
+    // the start comes back on the call's end, whichever event writes it. An unknown
+    // tool name is caller text and reads "unknown", a missing one reads "".
+    [Event(EvtToolCallStarted,
+           Level = EventLevel.Verbose,
+           Keywords = Tool,
+           Message = "mcp tool call started | surface={0} | tool={1} | work_id={2}")]
+    public void ToolCallStarted(string surface, string tool, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtToolCallStarted, surface, tool, work_id);
+    }
+
+    // The end of a call that gave the client what it asked for, or that the client
+    // withdrew. Never the arguments, never the result, never an exception message
+    // (it can quote Anytype content). outcome: completed or cancelled; a call that
+    // failed ends in ToolCallFailed.
     [Event(EvtToolCallCompleted,
            Level = EventLevel.Informational,
            Keywords = Tool,
-           Message = "MCP tool call finished | outcome={2} | surface={0} | tool={1} | ex_type={3} | elapsed_ms={4:F1}")]
-    public void ToolCallCompleted(string surface, string tool, string outcome, string ex_type, double elapsed_ms)
+           Message = "MCP tool call finished | outcome={2} | surface={0} | tool={1} | ex_type={3} | elapsed_ms={4:F1} | work_id={5}")]
+    public void ToolCallCompleted(string surface, string tool, string outcome, string ex_type, double elapsed_ms, string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtToolCallCompleted, surface, tool, outcome, ex_type, elapsed_ms);
+        if (IsEnabled()) WriteEvent(EvtToolCallCompleted, surface, tool, outcome, ex_type, elapsed_ms, work_id);
+    }
+
+    // The end of a call the client got an error for. The cause is a type and, for an
+    // Anytype API refusal, its status and machine code: never the exception message,
+    // which the client receives in the tool result and which can quote Anytype
+    // content. outcome: input_rejected, output_rejected, failed, unknown_tool,
+    // missing_tool_name. status_code is 0 and error_code "none" when the cause
+    // carries none.
+    [Event(EvtToolCallFailed,
+           Level = EventLevel.Warning,
+           Keywords = Tool,
+           Message = "MCP tool call failed | outcome={2} | surface={0} | tool={1} | ex_type={3} | status_code={4} | error_code={5} | elapsed_ms={6:F1} | work_id={7}")]
+    public void ToolCallFailed(string surface, string tool, string outcome, string ex_type, int status_code, string error_code, double elapsed_ms, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtToolCallFailed, surface, tool, outcome, ex_type, status_code, error_code, elapsed_ms, work_id);
     }
 }
