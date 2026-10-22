@@ -1832,12 +1832,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AnytypeV2PropertyMapTests.cs
 │   │   ├── AnytypeV2ReadWriteTests.cs
 │   │   ├── AnytypeV2SearcherTests.cs
+│   │   ├── AssemblyInfo.cs
 │   │   ├── BackendEndpointTrustTests.cs
 │   │   ├── BackendListenerOwnerTests.cs
 │   │   ├── BackendProviderStoreBugNotes.md
 │   │   ├── BackendProviderStoreTests.cs
 │   │   ├── BackendReconcilerTests.cs
 │   │   ├── BackendReconciliationLeaseTests.cs
+│   │   ├── BackendRestartIncidentTests.cs
 │   │   ├── BackendSupervisionBugNotes.md
 │   │   ├── BackendSupervisorTests.cs
 │   │   ├── BackendTestFakes.cs

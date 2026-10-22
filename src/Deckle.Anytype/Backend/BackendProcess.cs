@@ -19,7 +19,9 @@ internal interface IBackendProcessHost
 {
     IReadOnlyList<IBackendProcess> FindRunning(IReadOnlyCollection<string> executablePaths);
     IBackendProcess? Open(int processId);
-    IBackendProcess? Spawn(BackendProcessSpec spec);
+    // inRestart is true for an attempt of the restart ladder: its spawn failure
+    // belongs to the incident already open and is written at Verbose.
+    IBackendProcess? Spawn(BackendProcessSpec spec, bool inRestart);
 }
 
 // The process boundary is deliberately separate from reconciliation. The host
@@ -93,7 +95,7 @@ internal sealed class BackendProcessHost : IBackendProcessHost
         }
     }
 
-    public IBackendProcess? Spawn(BackendProcessSpec spec)
+    public IBackendProcess? Spawn(BackendProcessSpec spec, bool inRestart)
     {
         ArgumentNullException.ThrowIfNull(spec);
         try
@@ -110,18 +112,29 @@ internal sealed class BackendProcessHost : IBackendProcessHost
             });
             if (process is null)
             {
-                DeckleAnytypeSource.Log.BackendSpawnFailed("start_returned_null", "", "");
-                DeckleAnytypeSource.Log.BackendSpawnFailedDetail(spec.ExecutablePath);
+                ReportSpawnFailed(inRestart, "start_returned_null", "", "", spec);
                 return null;
             }
             return new BackendProcess(process, spec.ExecutablePath);
         }
         catch (Exception ex)
         {
-            DeckleAnytypeSource.Log.BackendSpawnFailed("exception", ex.GetType().Name, ex.Message);
-            DeckleAnytypeSource.Log.BackendSpawnFailedDetail(spec.ExecutablePath);
+            ReportSpawnFailed(inRestart, "exception", ex.GetType().Name, ex.Message, spec);
             return null;
         }
+    }
+
+    // A first start that cannot spawn is an Error the journal keeps. The same
+    // failure on every rung of the ladder is the incident already open, so it
+    // stays Verbose and the streak is marked once by BackendRestartsFailing.
+    private static void ReportSpawnFailed(
+        bool inRestart, string reason, string exType, string exMessage, BackendProcessSpec spec)
+    {
+        if (inRestart)
+            DeckleAnytypeSource.Log.BackendRestartAttemptSpawnFailed(reason, exType, exMessage);
+        else
+            DeckleAnytypeSource.Log.BackendSpawnFailed(reason, exType, exMessage);
+        DeckleAnytypeSource.Log.BackendSpawnFailedDetail(spec.ExecutablePath);
     }
 }
 
@@ -129,16 +142,34 @@ internal static class BackendProcessReport
 {
     // One reading of the exited process for the reconciler and the supervisor
     // alike. Returns the uptime in seconds, -1 when the start time is unreadable.
-    internal static double Stopped(IBackendProcess process)
+    // The Warning that the journal keeps: a first start that died, or the
+    // serve whose death opens a restart incident. workId pairs it with what it
+    // ends.
+    internal static double Stopped(IBackendProcess process, string workId)
+    {
+        (double uptimeSeconds, int? exitCode) = Read(process);
+        DeckleAnytypeSource.Log.BackendStopped(
+            process.Id, exitCode ?? 0, exitCode.HasValue, uptimeSeconds, workId);
+        return uptimeSeconds;
+    }
+
+    // The same reading for a serve that an attempt of the ladder spawned and
+    // that died again: part of the incident already open, so Verbose.
+    internal static double AttemptStopped(IBackendProcess process, string workId)
+    {
+        (double uptimeSeconds, int? exitCode) = Read(process);
+        DeckleAnytypeSource.Log.BackendRestartAttemptStopped(
+            process.Id, exitCode ?? 0, exitCode.HasValue, uptimeSeconds, workId);
+        return uptimeSeconds;
+    }
+
+    private static (double UptimeSeconds, int? ExitCode) Read(IBackendProcess process)
     {
         DateTimeOffset? started = process.StartedAt;
         double uptimeSeconds = started is { } at
             ? Math.Max(0, (DateTimeOffset.UtcNow - at).TotalSeconds)
             : -1;
-        int? exitCode = process.ExitCode;
-        DeckleAnytypeSource.Log.BackendStopped(
-            process.Id, exitCode ?? 0, exitCode.HasValue, uptimeSeconds);
-        return uptimeSeconds;
+        return (uptimeSeconds, process.ExitCode);
     }
 }
 

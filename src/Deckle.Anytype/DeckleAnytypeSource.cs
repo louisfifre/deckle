@@ -86,6 +86,10 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public const int EvtBackendHealthProbeFailed      = 58;
     public const int EvtDeleteRefused                 = 59;
     public const int EvtObjectBinned                  = 60;
+    public const int EvtBackendRestartAttemptStarting = 61;
+    public const int EvtBackendRestartAttemptStopped  = 62;
+    public const int EvtBackendRestartAttemptTimedOut = 63;
+    public const int EvtBackendRestartAttemptSpawnFailed = 64;
 
     // ── HTTP transport ──────────────────────────────────────────────────
 
@@ -268,20 +272,20 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = JournalLifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Starting the Anytype backend")]
-    public void BackendStarting()
+           Message = "Starting the Anytype backend | work_id={0}")]
+    public void BackendStarting(string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendStarting);
+        if (IsEnabled()) WriteEvent(EvtBackendStarting, work_id);
     }
 
     [Event(EvtBackendReady,
            Level = EventLevel.Informational,
            Keywords = JournalLifecycle,
            Tags = ObservationTags.Journal,
-           Message = "The Anytype backend is ready")]
-    public void BackendReady()
+           Message = "The Anytype backend is ready | work_id={0}")]
+    public void BackendReady(string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendReady);
+        if (IsEnabled()) WriteEvent(EvtBackendReady, work_id);
     }
 
     // Warning: the start was requested but the backend never answered in time —
@@ -293,10 +297,10 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = JournalLifecycle,
            Tags = ObservationTags.Journal,
-           Message = "The Anytype backend did not become ready | pid={0}")]
-    public void BackendStartTimedOut(int pid)
+           Message = "The Anytype backend did not become ready | pid={0} | work_id={1}")]
+    public void BackendStartTimedOut(int pid, string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendStartTimedOut, pid);
+        if (IsEnabled()) WriteEvent(EvtBackendStartTimedOut, pid, work_id);
     }
 
     // Warning: the backend binary is not on disk — provisioning has not run,
@@ -372,15 +376,18 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // false means the code could not be read (adopted handle without query
     // rights) and exit_code is then meaningless; uptime answers the
     // crash-loop-or-one-off question, and is -1 when the start time was
-    // unreadable.
+    // unreadable. work_id pairs the stop with what it ends: the start that
+    // wrote BackendStarting, or the restart incident this stop opens.
+    // Inside a restart incident the attempts that die write
+    // BackendRestartAttemptStopped instead, at Verbose.
     [Event(EvtBackendStopped,
            Level = EventLevel.Warning,
            Keywords = JournalLifecycle,
            Tags = ObservationTags.Journal,
-           Message = "The Anytype backend stopped | exit_code={1} | exit_known={2} | pid={0} | uptime_s={3:F0}")]
-    public void BackendStopped(int pid, int exit_code, bool exit_known, double uptime_s)
+           Message = "The Anytype backend stopped | exit_code={1} | exit_known={2} | pid={0} | uptime_s={3:F0} | work_id={4}")]
+    public void BackendStopped(int pid, int exit_code, bool exit_known, double uptime_s, string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendStopped, pid, exit_code, exit_known, uptime_s);
+        if (IsEnabled()) WriteEvent(EvtBackendStopped, pid, exit_code, exit_known, uptime_s, work_id);
     }
 
     // A Process accessor failed. Mostly the expected race of a serve exiting
@@ -394,7 +401,8 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtBackendProcessQueryFailed, pid, operation, ex_type, ex_message);
     }
 
-    // reason: start_returned_null or exception.
+    // reason: start_returned_null or exception. Inside a restart incident the
+    // spawn failures write BackendRestartAttemptSpawnFailed instead, at Verbose.
     [Event(EvtBackendSpawnFailed,
            Level = EventLevel.Error,
            Keywords = JournalLifecycle,
@@ -530,9 +538,56 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
 
     // ── Backend supervision ───────────────────────────────────────────────
     //
-    // One restart incident: BackendStopped (or a failed initial start) opens
-    // it, each attempt stays Verbose, BackendRestartsFailing marks a streak
-    // past the threshold once, and BackendRecovered closes it.
+    // One restart incident, one work_id. BackendStopped (or a start that never
+    // served, whose id is the start's own) opens it. Every attempt of the
+    // ladder stays Verbose: the reconciler writes the BackendRestartAttempt*
+    // events below instead of the journal-tagged Starting, Stopped, StartTimedOut
+    // and SpawnFailed lines it writes for a first start. BackendRestartsFailing
+    // marks a streak past the threshold once, and BackendRecovered, or
+    // BackendSupervisionGaveUp when restarting is pointless, closes it.
+
+    // The ladder is about to spawn a serve. Verbose twin of BackendStarting.
+    [Event(EvtBackendRestartAttemptStarting,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend restart attempt starting | work_id={0}")]
+    public void BackendRestartAttemptStarting(string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendRestartAttemptStarting, work_id);
+    }
+
+    // The serve an attempt spawned exited before serving. Verbose twin of
+    // BackendStopped, with the same facts.
+    [Event(EvtBackendRestartAttemptStopped,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend restart attempt stopped | exit_code={1} | exit_known={2} | pid={0} | uptime_s={3:F0} | work_id={4}")]
+    public void BackendRestartAttemptStopped(int pid, int exit_code, bool exit_known, double uptime_s, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendRestartAttemptStopped, pid, exit_code, exit_known, uptime_s, work_id);
+    }
+
+    // An attempt waited its window and the backend never answered. Verbose
+    // twin of BackendStartTimedOut.
+    [Event(EvtBackendRestartAttemptTimedOut,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend restart attempt timed out | pid={0} | work_id={1}")]
+    public void BackendRestartAttemptTimedOut(int pid, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendRestartAttemptTimedOut, pid, work_id);
+    }
+
+    // An attempt could not even start the process. Verbose twin of
+    // BackendSpawnFailed; reason is start_returned_null or exception.
+    [Event(EvtBackendRestartAttemptSpawnFailed,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "backend restart attempt could not start | reason={0} | {1}: {2}")]
+    public void BackendRestartAttemptSpawnFailed(string reason, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendRestartAttemptSpawnFailed, reason, ex_type, ex_message);
+    }
 
     [Event(EvtBackendRestartScheduled,
            Level = EventLevel.Verbose,
@@ -546,10 +601,10 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendRestartAttemptFailed,
            Level = EventLevel.Verbose,
            Keywords = Lifecycle,
-           Message = "backend restart attempt failed | attempt={0} | outcome={1} | ex_type={2} | ex_message={3}")]
-    public void BackendRestartAttemptFailed(int attempt, string outcome, string ex_type, string ex_message)
+           Message = "backend restart attempt failed | attempt={0} | outcome={1} | ex_type={2} | ex_message={3} | work_id={4}")]
+    public void BackendRestartAttemptFailed(int attempt, string outcome, string ex_type, string ex_message, string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendRestartAttemptFailed, attempt, outcome, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtBackendRestartAttemptFailed, attempt, outcome, ex_type, ex_message, work_id);
     }
 
     // last_outcome is the reconciliation decision of the last attempt
@@ -557,10 +612,10 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendRestartsFailing,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
-           Message = "The Anytype backend keeps failing to restart | last_outcome={1} | {2}: {3} | attempts={0}")]
-    public void BackendRestartsFailing(int attempts, string last_outcome, string ex_type, string ex_message)
+           Message = "The Anytype backend keeps failing to restart | last_outcome={1} | {2}: {3} | attempts={0} | work_id={4}")]
+    public void BackendRestartsFailing(int attempts, string last_outcome, string ex_type, string ex_message, string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendRestartsFailing, attempts, last_outcome, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtBackendRestartsFailing, attempts, last_outcome, ex_type, ex_message, work_id);
     }
 
     // Journal: it closes a BackendStopped the journal already holds, so a
@@ -569,10 +624,10 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = JournalLifecycle,
            Tags = ObservationTags.Journal,
-           Message = "The Anytype backend is back | attempts={0} | downtime_s={1:F0}")]
-    public void BackendRecovered(int attempts, double downtime_s)
+           Message = "The Anytype backend is back | attempts={0} | downtime_s={1:F0} | work_id={2}")]
+    public void BackendRecovered(int attempts, double downtime_s, string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendRecovered, attempts, downtime_s);
+        if (IsEnabled()) WriteEvent(EvtBackendRecovered, attempts, downtime_s, work_id);
     }
 
     [Event(EvtBackendSupervisionStopped,
@@ -591,10 +646,10 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = JournalLifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Anytype backend supervision gave up | reason={0}")]
-    public void BackendSupervisionGaveUp(string reason)
+           Message = "Anytype backend supervision gave up | reason={0} | work_id={1}")]
+    public void BackendSupervisionGaveUp(string reason, string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendSupervisionGaveUp, reason);
+        if (IsEnabled()) WriteEvent(EvtBackendSupervisionGaveUp, reason, work_id);
     }
 
     [Event(EvtBackendSupervisionFailed,
