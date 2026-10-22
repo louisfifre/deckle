@@ -243,7 +243,7 @@ public partial class App
             os:            $"{Environment.OSVersion.VersionString} {System.Runtime.InteropServices.RuntimeInformation.OSArchitecture}",
             supervised:    CrashSupervisor.Supervised,
             follows_crash: CrashSupervisor.FollowsCrash is not null,
-            args:          string.Join(' ', cliArgs.Skip(1)));
+            switches:      CommandLineSwitches.Names(cliArgs.Skip(1)));
     }
 
     // Marks this run in progress and, when the previous run left its mark behind,

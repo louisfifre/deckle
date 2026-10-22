@@ -899,6 +899,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LogWindowSink.cs
 │   │   │   ├── OffWorkerReport.cs
 │   │   │   └── RoutedJsonlSink.cs
+│   │   ├── CommandLineSwitches.cs
 │   │   ├── CrashDumpCapture.cs
 │   │   ├── CrashRelaunchBudget.cs
 │   │   ├── CrashRelaunchPolicy.cs
@@ -2014,6 +2015,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── TelemetryListenerBootstrapTests.cs
 │   ├── Deckle.Diagnostics.Tests/
 │   │   ├── BoundedWriteQueueRegressionTests.cs
+│   │   ├── CommandLineSwitchesTests.cs
 │   │   ├── CrashDumpCaptureTests.cs
 │   │   ├── CrashRelaunchPolicyBugNotes.md
 │   │   ├── CrashRelaunchPolicyRegressionTests.cs
