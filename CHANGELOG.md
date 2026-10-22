@@ -82,6 +82,13 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Word why the microphone preview gave way
 - **playground:** Let the HUD tab preview from the microphone
 - **playground:** Name the gauge curves' axes
+- **anytype:** Read v2 property maps and priority names
+- **anytype:** Read typed markdown bodies through the v2 reader
+- **anytype:** Read task_properties and document_outline through the v2 reader
+- **anytype:** Search with server-side filters through the v2 client
+- **anytype:** Read project_overview and list_projects with server-side v2 filters
+- **anytype:** Build the session_start digest from v2 reads and a filtered search
+- **anytype:** Resolve names through the v2 search
 
 ### Changed
 
@@ -96,6 +103,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **playground:** Remove the utterance segmentation page
 - **hud:** Return the gauge to rest on one shared move
 - **hud:** Default the gauge's return to the 0.33 s Louis tuned
+- **anytype:** Share one request gate between the v1 and v2 clients
+- **anytype:** Read one page of recent reports instead of all of them
+- **anytype:** Read each linked name once and cap the reads at eight
 
 ### Fixed
 
@@ -124,6 +134,16 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **setup:** Describe Rewrite without naming where its model runs
 - **setup:** Open an update's provisioning as the narrow card
 - **core:** Leave the window title out of the window description
+- **anytype:** Keep the created-task message when the fill times out
+- **anytype:** Name the refused key in a v2 error message
+- **anytype:** Leave the report just created out of the session_start digest
+- **anytype:** Fill task notes under the same headings task_notes reads
+- **anytype:** Advance the search offset by the rows the server returned
+- **anytype:** Title an unnamed idea or report by its first body line
+- **anytype:** Clean the recent-report line of a project overview
+- **anytype:** Cap the 429 backoff at 30 seconds
+- **anytype:** Drop an idea's plain name line from its body
+- **anytype:** Show a report's latest entry in the project overview
 
 ## [0.59.0](https://github.com/louisfifre/deckle/compare/v0.58.5...v0.59.0) — 2026-10-21
 
