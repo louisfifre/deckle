@@ -150,7 +150,17 @@ public sealed class ToastChannel : INotificationChannel
             TaskContinuationOptions.ExecuteSynchronously,
             TaskScheduler.Default);
 
+        // A token cancelled after the check at the top runs its callback inline
+        // at Register, before the toast exists: the withdrawal then removes
+        // nothing and the Show below would put up a prompt with no pending
+        // entry, whose buttons do nothing. A prompt already settled is not shown.
+        if (tcs.Task.IsCompleted) return tcs.Task;
+
         _activation.Manager.Show(notification);
+
+        // The same cancellation can still land between the check and the Show;
+        // the toast is on screen by now, so the withdrawal can take it back.
+        if (tcs.Task.IsCompleted) _ = WithdrawAsync(nonce);
 
         return tcs.Task;
     }
