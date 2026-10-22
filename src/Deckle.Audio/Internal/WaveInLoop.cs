@@ -60,6 +60,7 @@ internal static class WaveInLoop
         System.Action<CaptureFrame>? frameCallback, // null = no subscriber → no float conversion
         System.Action?    onLowAudioDetected, // fires once when first 5 s lacked sustained voice
         WaveDeviceIdentity device,            // named by the no-data warning
+        string            workId,             // pairs the anomaly summary with the recording
         CancellationToken ct)
     {
         var allBytes = new Pcm16Buffer(initialCapacity: 16000 * 2, retain: host.RetainsAudio);
@@ -101,6 +102,7 @@ internal static class WaveInLoop
         bool lowAudioWarned            = false;
         CaptureAnomalyEpisode emptyBufferEpisode = default;
         CaptureAnomalyEpisode captureLagEpisode = default;
+        int lagMaxBuffersReady = 0;
 
         // diagLastIterMs / diagLastIterGcN hold the PREVIOUS iteration's body
         // cost (duration + per-generation GC count), measured around the scan
@@ -217,7 +219,7 @@ internal static class WaveInLoop
             // really under pressure. With 4 buffers × 50 ms and a
             // 100 ms wait, finding 1-2 buffers WHDR_DONE per iteration is
             // normal; 3+ means the consumer fell at least 150 ms behind the
-            // producer. Repetition contributes only to the terminal detail.
+            // producer. Repetition contributes only to the terminal summary.
             //
             // The detail fields decode the cause:
             //   iter         — iteration index when the lag fires (low → cold-start)
@@ -226,9 +228,10 @@ internal static class WaveInLoop
             //   gcN          — collections during that lagging iteration (non-zero, esp. gen2 → a STW pause caused it; all zero → inline work did)
             if (bufferDoneCount >= 3)
             {
+                if (bufferDoneCount > lagMaxBuffersReady) lagMaxBuffersReady = bufferDoneCount;
                 if (captureLagEpisode.ObserveFailure() == CaptureAnomalyTransition.Opened)
                 {
-                    DeckleAudioSource.Log.CaptureLagDetected();
+                    DeckleAudioSource.Log.CaptureLagDetected(bufferDoneCount, bufferDoneCount * 50);
                     if (captureDetailEnabled)
                     {
                         DeckleAudioSource.Log.CaptureLagDetectedDetail(
@@ -303,27 +306,18 @@ internal static class WaveInLoop
 
         dataWatchdog.Close(dataClock.ElapsedMilliseconds);
 
-        if (OperationalLogAdmission.IsScopedDetailEnabled(
-                OperationalLogActivity.Transcription,
-                DeckleAudioSource.Log,
-                EventLevel.Verbose,
-                (EventKeywords)Keywords.Capture))
+        // The count of what went wrong in this recording, written whatever the
+        // verbosity: the warnings above are at most one each, so without this
+        // line a recording that ended mid-anomaly shows no end to it.
+        if (dataWatchdog.Stalls > 0
+            || emptyBufferEpisode.Occurrences > 0
+            || captureLagEpisode.Occurrences > 0)
         {
-            if (dataWatchdog.Stalls > 0)
-            {
-                DeckleAudioSource.Log.NoAudioDataEpisodeDetail(
-                    dataWatchdog.Stalls, dataWatchdog.LongestGapMs, dataWatchdog.Recovered);
-            }
-            if (emptyBufferEpisode.Occurrences > 0)
-            {
-                DeckleAudioSource.Log.EmptyBufferEpisodeDetail(
-                    emptyBufferEpisode.Occurrences, emptyBufferEpisode.Recovered);
-            }
-            if (captureLagEpisode.Occurrences > 0)
-            {
-                DeckleAudioSource.Log.CaptureLagEpisodeDetail(
-                    captureLagEpisode.Occurrences, captureLagEpisode.Recovered);
-            }
+            DeckleAudioSource.Log.RecordingAnomaliesSummary(
+                dataWatchdog.Stalls, dataWatchdog.LongestGapMs, dataWatchdog.Recovered,
+                emptyBufferEpisode.Occurrences, emptyBufferEpisode.Recovered,
+                captureLagEpisode.Occurrences, captureLagEpisode.Recovered,
+                lagMaxBuffersReady, recordingMs, workId);
         }
 
         // Drain phase starts here — measured separately from the in-loop
