@@ -387,13 +387,12 @@ public class SessionGesturesTests
             LoggedOps(v2).Single()!["markdown"]!.GetValue<string>());
     }
 
-    // The v2 read shape of a date is not measured: when the property is not
-    // a string, the journal date is read the way v1 does.
+    // A report that lost its journal date still gets a dated heading: today's,
+    // from the gesture's own clock, without a second read.
     [Fact]
-    public async Task LogReadsTheJournalDateThroughV1WhenV2GivesNone()
+    public async Task LogDatesTheHeadingTodayWhenTheReportHasNoJournalDate()
     {
         using var server = new FakeAnytypeServer();
-        server.OnGetObject(NewReport, ReportObject(NewReport, "", TaskId));
         var v2 = new FakeV2Handler()
             .Reply(HttpStatusCode.OK, "{\"properties\":{},\"outline\":[]}")
             .Reply(HttpStatusCode.OK, "{}");
@@ -401,9 +400,10 @@ public class SessionGesturesTests
         await NewGestures(server, v2, new StoppedClock()).LogAsync("writes the tests", NewReport, Ct);
 
         Assert.StartsWith(
-            "# Journal 2026-06-11\n\n",
+            "# Journal 2026-06-12\n\n",
             LoggedOps(v2).Single()!["markdown"]!.GetValue<string>(),
             StringComparison.Ordinal);
+        Assert.Empty(server.Requests);
     }
 
     [Fact]

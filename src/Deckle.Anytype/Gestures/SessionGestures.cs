@@ -112,7 +112,7 @@ public sealed class SessionGestures(
         string entry = $"{stamp}\n\n{line.Trim()}";
         string markdown = hasBody
             ? entry
-            : $"# Journal {await JournalDateAsync(report, reportId, ct)}\n\n{entry}";
+            : $"# Journal {JournalDate(report)}\n\n{entry}";
 
         await _writer.ApplyObjectOpsAsync(
             reportId,
@@ -280,9 +280,6 @@ public sealed class SessionGestures(
         return ids;
     }
 
-    static string? ReadDate(JsonObject obj, string key) =>
-        FindProp(obj, key)?["date"]?.GetValue<string>();
-
     // ── property write helpers (API array shape) ──────────────────────────────
 
     static JsonObject ObjectsProp(string key, IReadOnlyList<string> ids)
@@ -294,26 +291,14 @@ public sealed class SessionGestures(
 
     // ── misc ─────────────────────────────────────────────────────────────────
 
-    // The API may return « Date du journal » with a time suffix.
-    string JournalDate(JsonObject report)
-    {
-        string? iso = ReadDate(report, DevSpace.Props.DateDuJournal);
-        return iso is { Length: >= 10 } ? iso[..10] : Today();
-    }
-
-    // v2 serves properties as a map keyed by property key. How a date comes
-    // back there is not measured, so a string is read when it is one, and
-    // otherwise the date is read the way v1 does, from the v1 object.
-    async Task<string> JournalDateAsync(
-        AnytypeV2ObjectDocument report, string reportId, CancellationToken ct)
-    {
-        if (report.Properties?[DevSpace.Props.DateDuJournal] is JsonValue value
+    // v2 serves the date as a string with a time suffix,
+    // « 2026-10-22T00:00:00Z » (measured on a real report).
+    string JournalDate(AnytypeV2ObjectDocument report) =>
+        report.Properties?[DevSpace.Props.DateDuJournal] is JsonValue value
             && value.TryGetValue(out string? iso)
-            && iso is { Length: >= 10 })
-            return iso[..10];
-
-        return JournalDate(await _api.GetObjectAsync(reportId, ct));
-    }
+            && iso is { Length: >= 10 }
+                ? iso[..10]
+                : Today();
 
     string Today() =>
         _time.GetLocalNow().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
