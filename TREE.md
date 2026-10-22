@@ -2186,6 +2186,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── SecretVaultTests.cs
 │   ├── Deckle.Setup.Tests/
 │   │   ├── DataRootRelocatorTests.cs
+│   │   ├── DataRootTreeBugNotes.md
+│   │   ├── DataRootTreeRegressionTests.cs
 │   │   ├── DataRootTreeTests.cs
 │   │   ├── Deckle.Setup.Tests.csproj
 │   │   ├── LocMirrorBugNotes.md

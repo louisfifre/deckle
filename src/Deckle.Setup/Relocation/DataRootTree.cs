@@ -197,7 +197,13 @@ internal sealed class DataRootTree : IDataRootCopier
             foreach (string entry in Directory.EnumerateFileSystemEntries(directory))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                FileAttributes attributes = File.GetAttributes(entry);
+                // The listing can name an entry the live app has since removed
+                // (log rotation does); one that is gone has nothing to copy.
+                FileAttributes attributes;
+                try { attributes = File.GetAttributes(entry); }
+                catch (FileNotFoundException) { continue; }
+                catch (DirectoryNotFoundException) { continue; }
+
                 string relative = Path.GetRelativePath(source, entry);
                 bool reparsePoint = (attributes & FileAttributes.ReparsePoint) != 0;
                 if (reparsePoint)
