@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Net;
 using System.Text.Json.Nodes;
 using Deckle.Anytype;
@@ -59,9 +58,6 @@ public class SessionGesturesTests
         Assert.Equal(LogPath, patch.PathAndQuery);
         return (JsonArray)JsonNode.Parse(patch.Body!)!["ops"]!;
     }
-
-    static string Today() =>
-        DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
     static JsonObject TaskObject(string id, string name) => new()
     {
@@ -144,7 +140,7 @@ public class SessionGesturesTests
         using var server = new FakeAnytypeServer();
         FakeV2Handler v2 = WireStartReads(server, V2Rows());
 
-        string digest = await NewGestures(server, v2).StartAsync(TaskId, Ct);
+        string digest = await NewGestures(server, v2, new StoppedClock()).StartAsync(TaskId, Ct);
 
         Assert.StartsWith($"report_id : {NewReport}\n", digest, StringComparison.Ordinal);
 
@@ -153,9 +149,9 @@ public class SessionGesturesTests
 
         var props = (JsonArray)create["properties"]!;
         JsonObject dateProp = FindProp(props, DevSpace.Props.DateDuJournal);
-        Assert.Equal(Today(), dateProp["date"]!.GetValue<string>());
-        // Independent of the Today() mirror: the wire date stays ISO yyyy-MM-dd.
-        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", dateProp["date"]!.GetValue<string>());
+        // The wire date is the stopped clock's day in ISO yyyy-MM-dd, whatever
+        // the zone or the hour of the machine running the test.
+        Assert.Equal("2026-06-12", dateProp["date"]!.GetValue<string>());
 
         JsonObject taskProp = FindProp(props, DevSpace.Props.TachesLiees);
         Assert.Equal(TaskId, ((JsonArray)taskProp["objects"]!).Single()!.GetValue<string>());
