@@ -414,6 +414,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtPlaybackStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
+           Tags = ObservationTags.Journal,
            Message = "Playback started | device={0} | device_id={1} | sample_rate={2} | duration_ms={3}")]
     public void PlaybackStarted(string device_name, int device_id, int sample_rate, long duration_ms)
     {
@@ -424,6 +425,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtPlaybackCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
+           Tags = ObservationTags.Journal,
            Message = "Playback ended | outcome={0} | elapsed_ms={1}")]
     public void PlaybackCompleted(string outcome, long elapsed_ms)
     {

@@ -96,6 +96,31 @@ public sealed class DeckleAudioSourceTests : IDisposable
         Assert.Equal(150, PayloadOf(line, "behind_ms"));
     }
 
+    // One play per user action: the device it opened and the outcome it ended with
+    // both reach the journal, so a playback that never sounds is readable from the file.
+    [Fact]
+    public void APlaybackTravelsInTheJournalFromItsDeviceToItsOutcome()
+    {
+        using var listener = new TestEventListener("Deckle-Audio");
+
+        DeckleAudioSource.Log.PlaybackStarted("Speakers", 0, 24000, 1500);
+        DeckleAudioSource.Log.PlaybackCompleted("cancelled", 400);
+
+        Assert.Collection(
+            listener.Events,
+            started =>
+            {
+                Assert.Equal(DeckleAudioSource.EvtPlaybackStarted, started.EventId);
+                Assert.True(ObservationTags.IsJournal(started.Tags));
+            },
+            ended =>
+            {
+                Assert.Equal(DeckleAudioSource.EvtPlaybackCompleted, ended.EventId);
+                Assert.True(ObservationTags.IsJournal(ended.Tags));
+                Assert.Equal("cancelled", PayloadOf(ended, "outcome"));
+            });
+    }
+
     private static void AssertJournalLine(EventWrittenEventArgs e, int eventId, string workId)
     {
         Assert.Equal(eventId, e.EventId);
