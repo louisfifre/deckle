@@ -112,6 +112,7 @@ public sealed class JsonSettingsStoreTests
     // and keep following.
     [Fact]
     [Trait("Category", "integration")]
+    [Trait("Category", "regression")]
     public void AThrowingChangedHandlerDoesNotStopTheStoreFollowing()
     {
         using var temp = new TempStore();
