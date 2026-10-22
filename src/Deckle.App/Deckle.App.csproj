@@ -17,7 +17,7 @@
          Windows App SDK ML is not used, so its automatic ONNX Runtime
          initialization must not compete with the host's runtime. -->
     <DisableWindowsAppSDKMLAutoInitialize>true</DisableWindowsAppSDKMLAutoInitialize>
-    <Version>0.66.0</Version>
+    <Version>0.66.2</Version>
     <!-- The release stage the running build belongs to (Alpha, then Beta),
          shown as the Settings title bar subtitle. Deliberately apart from
          <Version>: the tag, the changelog and the update check all read the

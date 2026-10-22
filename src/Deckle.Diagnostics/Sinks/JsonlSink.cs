@@ -189,7 +189,7 @@ public sealed class JsonlSink : IFlushableLogSink
     private string ArchiveDirectory() =>
         Path.Combine(Path.GetDirectoryName(_filePath) ?? string.Empty, "archive");
 
-    // Deletes the oldest generations beyond MaxArchives. Never throws: a journal
+    // Deletes the oldest generations beyond MaxArchives. Never throws: a log
     // that cannot trim itself must still keep writing, so a failure leaves the
     // remaining files alone and opens the maintenance incident. Returns whether
     // the pruning went through, which is what closes that incident.

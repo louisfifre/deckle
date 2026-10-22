@@ -8,6 +8,9 @@
 		},
 		{
 			"path": "../../worktrees"
+		},
+		{
+			"path": "../../skills"
 		}
 	],
 	"settings": {

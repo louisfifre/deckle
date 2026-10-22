@@ -75,7 +75,7 @@ public sealed partial class HudWindow : Window
     {
         // A listener that attaches mid-session is picked up at the next show.
         // Asked through the Windowing admission, not the bare listener level:
-        // the always-on journal listener enables every level, which would
+        // the always-on dispatch listener enables every level, which would
         // otherwise arm this per-move collection on every show.
         _proximityRollupEnabled = DeckleHudSource.Log.IsHudDetailEnabled(
             (EventKeywords)Keywords.Heartbeat);

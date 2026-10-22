@@ -3,7 +3,7 @@ using System.Diagnostics.Tracing;
 namespace Deckle.Diagnostics;
 
 // Declares which observability stream owns an EventSource event. Operational
-// observations feed human journals; Dataset observations feed only their
+// observations feed the operational log stream; Dataset observations feed only their
 // purpose-specific, consented telemetry route. The two are intentionally
 // exclusive: a fact needed in both places is emitted twice with two contracts.
 public enum ObservationKind

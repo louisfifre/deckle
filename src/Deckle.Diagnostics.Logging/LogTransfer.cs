@@ -10,7 +10,7 @@ public enum LogTransferScope
 }
 
 // Resolves one chronological snapshot for both Copy and Save. Filtered is
-// evaluated against the full in-memory journal at invocation time, not against
+// evaluated against the full in-memory log at invocation time, not against
 // the viewport or a debounce-stale projection.
 public static class LogTransferScopeResolver
 {

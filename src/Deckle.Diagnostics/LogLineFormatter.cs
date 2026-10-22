@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Deckle.Diagnostics;
 
-// Canonical live-journal rendering shared by the LogWindow and the
+// Canonical log-line rendering shared by the LogWindow and the
 // app.jsonl writer, so the window and the file never diverge.
 public static class LogLineFormatter
 {

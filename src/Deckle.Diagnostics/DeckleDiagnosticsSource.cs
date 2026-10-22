@@ -5,7 +5,7 @@ namespace Deckle.Diagnostics;
 // Cross-cutting sub-provider: the observability pipeline watching itself.
 // A sink that throws, a flush that fails or times out, an archive pruned, a
 // boot replay that overflowed: each is a fact about the log, not about a
-// module, and a reader who finds a hole in a journal needs it beside the hole.
+// module, and a reader who finds a hole in a log needs it beside the hole.
 //
 // Every event here carries its cause in its own payload: this provider is
 // the one place where a Verbose mirror cannot be trusted to reach any file.

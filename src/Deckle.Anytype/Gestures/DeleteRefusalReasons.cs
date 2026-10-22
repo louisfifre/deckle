@@ -4,9 +4,6 @@ namespace Deckle.Anytype;
 // did not happen.
 internal static class DeleteRefusalReasons
 {
-    // A session's report is never binned.
-    public const string Rapport = "rapport";
-
     // Another object links to the target.
     public const string Referenced = "referenced";
 

@@ -21,11 +21,12 @@ namespace Deckle.Anytype;
 //   • second call (confirm:true) — asks the person through IDeletionApproval
 //     (a toast the agent does not answer in the chat), then commits.
 //
-// Both calls refuse, whatever anyone says, a rapport (a session's trace is
-// never binned) and an object another object links to (a chantier still
-// holding its tasks, a task a rapport cites): the bin would empty those links
-// without a word. The links are read again after the person's answer, so a
-// link added while the toast waited still stops the delete.
+// Both calls refuse, whatever anyone says, an object another object links to
+// (a chantier still holding its tasks, a task a rapport cites): the bin would
+// empty those links without a word. A rapport is an object like any other
+// here: it goes to the bin only when nothing links to it. The links are read
+// again after the person's answer, so a link added while the toast waited
+// still stops the delete.
 //
 // The id returned by the preview IS the confirmation handle: confirming with
 // that id pins the commit to exactly what was shown, with no server-side token
@@ -99,13 +100,6 @@ public sealed class ManagementGestures(
 
     async Task RefuseIfFencedAsync(string id, string name, string type, CancellationToken ct)
     {
-        if (type == DevSpace.Types.Rapport)
-        {
-            DeckleAnytypeSource.Log.DeleteRefused(DeleteRefusalReasons.Rapport, type, id, "", "");
-            throw new InvalidOperationException(
-                "Refusé : un rapport ne va jamais à la corbeille, il garde la trace d'une session. Rien n'a bougé.");
-        }
-
         BacklinkCount count = await CountBacklinksAsync(id, ct);
         if (count.Count is not { } backlinks)
         {

@@ -58,7 +58,7 @@ public sealed partial class DeckleAppSource
             WriteEvent(EvtRunIdentity, version, stage, build, session, pid, os, supervised, follows_crash, switches);
     }
 
-    // What the journals of this run can contain: a reader who finds no
+    // What the logs of this run can contain: a reader who finds no
     // transcription detail learns here that the activity was off, not that
     // nothing happened.
     [Event(EvtLoggingPolicy,

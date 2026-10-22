@@ -11,7 +11,7 @@ public enum JsonlSchema
     PayloadOnly,
 
     // { timestamp, kind, session, provider, event, level, source, message, line, payload }.
-    // Used by the general app.jsonl journal so the persisted line carries the
+    // Used by the operational log files so the persisted line carries the
     // same identity the live LogWindow renders. `message` is null when the
     // provider declared no Message template.
     SelfDescribing,

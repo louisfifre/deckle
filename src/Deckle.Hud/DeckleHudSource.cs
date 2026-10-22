@@ -8,7 +8,7 @@ namespace Deckle.Hud;
 //
 // Every Verbose event belongs to the Windowing activity: the HUD is a set of
 // window surfaces, and its per-show and per-frame detail stays out of the
-// journals unless that verbosity control admits it. Warnings, Errors and
+// log stream unless that verbosity control admits it. Warnings, Errors and
 // recoveries always pass.
 //
 // The window show and placement incidents (a refused topmost raise, a refused
