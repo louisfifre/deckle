@@ -134,7 +134,10 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
                 : null;
             await _writer.ApplyObjectOpsAsync(id, ops, options, ct);
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        // Only the caller's own cancellation escapes. HttpClient's timeout is a
+        // TaskCanceledException too: letting it through would lose the "already
+        // created" message and invite a duplicate.
+        catch (Exception ex) when (!ct.IsCancellationRequested)
         {
             string cause = ex is AnytypeV2Exception { IsStaleEtag: true }
                 ? "elle a changé entre sa lecture et l'écriture"

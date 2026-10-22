@@ -323,6 +323,23 @@ public class TaskGesturesTests
         Assert.DoesNotContain(v2.Requests, r => r.Method == "PATCH");
     }
 
+    // HttpClient's own timeout surfaces as a TaskCanceledException the caller
+    // did not ask for. It must not escape bare after the POST succeeded.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task CreateNamesTheCreatedTaskWhenTheFillTimesOut()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReply().Fail(new TaskCanceledException("timeout"));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server, v2).CreateAsync(
+                ProjectId, "Ma tâche", type: "production", notes: "Un mot.", ct: Ct));
+
+        Assert.Contains(TaskId, error.Message);
+        Assert.Contains("Ne la recrée pas", error.Message);
+    }
+
     [Fact]
     [Trait("Category", "regression")]
     public async Task CreateRefusesAnUnknownTypeBeforeAnyRequest()
