@@ -2120,7 +2120,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DataRootRelocatorTests.cs
 │   │   ├── DataRootTreeTests.cs
 │   │   ├── Deckle.Setup.Tests.csproj
+│   │   ├── LocMirrorBugNotes.md
 │   │   ├── PayloadDeploymentTests.cs
+│   │   ├── SetupStringMirrorTests.cs
 │   │   ├── UpdateHandoffBugNotes.md
 │   │   └── UpdatePredecessorTests.cs
 │   ├── Deckle.Shell.Foreground.Tests/
