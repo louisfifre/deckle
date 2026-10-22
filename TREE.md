@@ -2140,6 +2140,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleInputSourceTests.cs
 │   │   ├── FocusEventCoalescerTests.cs
 │   │   ├── InputObservabilityCollection.cs
+│   │   ├── InputPathRedactionTests.cs
 │   │   ├── LowLevelMouseHookInteropTests.cs
 │   │   ├── MouseInteractionRouterTests.cs
 │   │   ├── MouseWheelTimestampTests.cs
