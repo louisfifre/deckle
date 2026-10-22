@@ -1935,6 +1935,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectEngineLifecycleTests.cs
 │   │   ├── AutocorrectEngineMistouchTests.cs
 │   │   ├── AutocorrectEngineObservabilityTests.cs
+│   │   ├── AutocorrectHotLoopCountTests.cs
 │   │   ├── AutocorrectKeyboardQualityTests.cs
 │   │   ├── AutocorrectLexiconArtifactsTests.cs
 │   │   ├── AutocorrectObservabilityCollection.cs

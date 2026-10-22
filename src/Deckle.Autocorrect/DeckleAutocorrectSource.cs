@@ -325,6 +325,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "surface | process={0} | editable={1} | password={2} | enrolled={3} | {4}")]
     public void SurfaceChanged(string process, bool editable, bool password, bool enrolled, string probe)
     {
+        HotLoops.AutocorrectSurfaceChanged.Tick();
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Capture)) return;
         WriteEvent(EvtSurfaceChanged, process, editable, password, enrolled, probe);
     }
