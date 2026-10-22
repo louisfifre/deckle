@@ -361,6 +361,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AnytypeApiClient.Files.cs
 │   │   │   ├── AnytypeApiClient.Schema.cs
 │   │   │   ├── AnytypeCredentials.cs
+│   │   │   ├── AnytypeRequestGate.cs
 │   │   │   └── SpaceWriteLock.cs
 │   │   ├── Backend/
 │   │   │   ├── BackendEndpointTrust.cs
@@ -1808,6 +1809,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       └── deckle.en-US.experience.zip
 │   │   ├── AnytypeApiClientReplayTests.cs
 │   │   ├── AnytypeCredentialsTests.cs
+│   │   ├── AnytypeRequestGateTests.cs
 │   │   ├── AnytypeSpaceAliasesTests.cs
 │   │   ├── AnytypeUtilityGesturesTests.cs
 │   │   ├── AnytypeV2ClientTests.cs

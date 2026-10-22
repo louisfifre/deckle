@@ -14,10 +14,12 @@ namespace Deckle.Anytype;
 // method takes/returns a JsonNode and the gestures layer owns the payload
 // shapes. Two robustness obligations:
 //
-//   • Serialize all calls through a SemaphoreSlim. The API tolerates ~1 rps
-//     sustained with a burst of 60; one in-flight request at a time keeps us
-//     well inside that envelope and makes ordering deterministic for the
-//     read-modify-write gestures (markdown PATCH is a full replacement).
+//   • Serialize all calls through the AnytypeRequestGate. The API tolerates ~1
+//     rps sustained with a burst of 60, counted over every client of the
+//     backend; one in-flight request at a time keeps us well inside that
+//     envelope and makes ordering deterministic for the read-modify-write
+//     gestures (markdown PATCH is a full replacement). The gate is shared with
+//     the v2 client this one builds, so the two versions form a single stream.
 //   • Retry once on 429, and on 5xx only when the exact request is safe to
 //     replay, honoring Retry-After when present. A create may have committed
 //     before a 5xx and must surface that ambiguity instead of duplicating.
@@ -31,7 +33,8 @@ public sealed partial class AnytypeApiClient : IDisposable
     private enum RequestReplaySafety { Unsafe, Safe }
 
     private readonly HttpClient _http;
-    private readonly SemaphoreSlim _gate = new(1, 1);
+    // Created and owned here; the v2 client only borrows it (see Dispose).
+    private readonly AnytypeRequestGate _gate = new();
     private readonly string _spacePath;
     private readonly SpaceWriteLock _writeLock;
     private readonly IBackendEndpointTrust? _endpointTrust;
@@ -71,6 +74,16 @@ public sealed partial class AnytypeApiClient : IDisposable
     internal AnytypeApiClient(
         AnytypeCredentials credentials,
         IBackendEndpointTrust? endpointTrust)
+        : this(credentials, endpointTrust, handler: null)
+    {
+    }
+
+    // The handler is the test seam, as on AnytypeV2Client; the v2 client built
+    // from this one rides the same handler.
+    internal AnytypeApiClient(
+        AnytypeCredentials credentials,
+        IBackendEndpointTrust? endpointTrust,
+        HttpMessageHandler? handler)
     {
         ArgumentNullException.ThrowIfNull(credentials);
 
@@ -80,7 +93,8 @@ public sealed partial class AnytypeApiClient : IDisposable
         // is accepted there (see AnytypeCredentials.Resolve).
         _spacePath = $"/v1/spaces/{credentials.SpaceId}";
 
-        _http = new HttpClient { BaseAddress = new Uri(credentials.ApiUrl) };
+        _http = handler is null ? new HttpClient() : new HttpClient(handler);
+        _http.BaseAddress = new Uri(credentials.ApiUrl);
         _http.DefaultRequestHeaders.Add("Anytype-Version", credentials.ApiVersion);
         _http.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", credentials.ApiKey);
@@ -92,15 +106,17 @@ public sealed partial class AnytypeApiClient : IDisposable
 
         // Built on first use, from the same credentials and the same endpoint
         // proof, so a gesture that has moved to v2 never carries its own copy.
+        // It borrows this client's gate so both versions pace as one stream.
         _v2 = new Lazy<AnytypeV2Client>(
-            () => new AnytypeV2Client(credentials, endpointTrust, handler: null));
+            () => new AnytypeV2Client(credentials, endpointTrust, handler, _gate));
     }
 
     // The v2 transport that rides beside this client. The MCP surfaces hand
     // their gestures this one object, so moving a gesture to v2 needs no new
     // plumbing through the host; this client's Dispose releases it. Both
-    // transports share the backend's 1 rps limiter, and the write scope above
-    // still orders Deckle's own writes whichever version performs them.
+    // transports share the backend's 1 rps limiter and, with it, one request
+    // gate, and the write scope above still orders Deckle's own writes
+    // whichever version performs them.
     public AnytypeV2Client V2 => _v2.Value;
 
     // Exclusive write access to the space across every host process. A mutating
@@ -417,6 +433,9 @@ public sealed partial class AnytypeApiClient : IDisposable
                         DeckleAnytypeSource.Log.ApiRequestRetriedDetail(
                             method.Method, path, status, backoff.TotalMilliseconds);
                     }
+                    // Waited inside the gate on purpose: a 429 says the shared
+                    // budget is spent, so no other request, v1 or v2, may go
+                    // out meanwhile.
                     await Task.Delay(backoff, ct).ConfigureAwait(false);
                     continue;
                 }
@@ -483,6 +502,7 @@ public sealed partial class AnytypeApiClient : IDisposable
     {
         if (_v2.IsValueCreated) _v2.Value.Dispose();
         _http.Dispose();
+        // Last: the v2 client above only borrowed the gate.
         _gate.Dispose();
     }
 }
