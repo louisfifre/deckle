@@ -10,13 +10,13 @@ namespace Deckle.Autocorrect.Tests;
 // round-trips into a SentenceRecord, closure and timing default when absent, the
 // history PROPERTY's presence is surfaced apart from its value, and malformed or
 // partial lines are skipped rather than fatal.
-[Trait("Category", "unit")]
 public sealed class CorpusReaderTests
 {
     private const string WellFormed =
         """{"timestamp":"2026-07-03T14:30:45.1+02:00","kind":"autocorrect_text","session":"s1","payload":{"process":"WINWORD.EXE","typed":"je vais a la banque.","final":"je vais à la banque.","history":"#2=a»sentence:à","closure":"sentence","timing":"0,340,1220,90,110"}}""";
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ParsesThePayloadIntoARecord()
     {
         Assert.True(CorpusReader.TryParse(WellFormed, out CorpusEntry entry));
@@ -30,6 +30,7 @@ public sealed class CorpusReaderTests
     }
 
     [Theory]
+    [Trait("Category", "unit")]
     [InlineData("")]
     [InlineData("   ")]
     [InlineData("not json at all")]
@@ -39,6 +40,7 @@ public sealed class CorpusReaderTests
         Assert.False(CorpusReader.TryParse(line, out _));
 
     [Fact]
+    [Trait("Category", "unit")]
     public void CarriesTheClosureThatEndedTheRun()
     {
         const string enterClosed =
@@ -52,6 +54,7 @@ public sealed class CorpusReaderTests
     // the history PROPERTY was absent, which the alignment reads as « a writer that
     // predated the field », not « a sentence with no corrections ».
     [Fact]
+    [Trait("Category", "unit")]
     public void LegacyLineDefaultsClosureAndFlagsHistoryAbsent()
     {
         const string legacy =
@@ -65,6 +68,7 @@ public sealed class CorpusReaderTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void EmptyHistoryPropertyStillCountsAsPresent()
     {
         const string emptyHistory =
@@ -76,6 +80,7 @@ public sealed class CorpusReaderTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void StreamsOnlyTheValidLinesOfAFile()
     {
         string path = Path.Combine(Path.GetTempPath(), $"deckle-corpus-{System.Guid.NewGuid():N}.jsonl");

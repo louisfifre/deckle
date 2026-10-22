@@ -7,9 +7,10 @@ using Xunit;
 
 namespace Deckle.Speech.Tests;
 
-// Options() mirrors SpeechSettingsService's serializer options. The store runs
-// on a temp file so the test never touches the real settings file or the
-// singleton.
+// The store runs on a temp file so the test never touches the settings file of
+// the singleton. Options() is a copy of SpeechSettingsService's serializer
+// options (they are private), so the round trip covers SpeechSettings through
+// the generic store, not the service itself.
 public class SpeechSettingsTests
 {
     private static JsonSerializerOptions Options() => new()
@@ -30,20 +31,20 @@ public class SpeechSettingsTests
     }
 
     [Fact]
-    [Trait("Category", "unit")]
+    [Trait("Category", "integration")]
     public void Persistence_RoundTripsThroughStore()
     {
         string path = Path.Combine(Path.GetTempPath(), $"deckle-speech-test-{Guid.NewGuid():N}.json");
         const string mutex = "Deckle-Speech-Test-Save";
         try
         {
-            var store = new JsonSettingsStore<SpeechSettings>(path, mutex, Options());
+            using var store = new JsonSettingsStore<SpeechSettings>(path, mutex, Options());
             store.Current.Enabled = true;
             store.Current.Voice = SpeechVoice.Jessica;
             store.Current.Temperature = 0.7;
             store.Flush();
 
-            var reloaded = new JsonSettingsStore<SpeechSettings>(path, mutex, Options());
+            using var reloaded = new JsonSettingsStore<SpeechSettings>(path, mutex, Options());
             Assert.True(reloaded.Current.Enabled);
             Assert.Equal(SpeechVoice.Jessica, reloaded.Current.Voice);
             Assert.Equal(0.7, reloaded.Current.Temperature, 3);

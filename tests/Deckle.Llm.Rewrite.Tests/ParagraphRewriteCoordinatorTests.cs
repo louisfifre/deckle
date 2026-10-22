@@ -1,5 +1,7 @@
+using System.Diagnostics.Tracing;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
+using Deckle.TestSupport;
 using Xunit;
 
 namespace Deckle.Llm.Rewrite.Tests;
@@ -26,24 +28,30 @@ public sealed class ParagraphRewriteCoordinatorTests
         Assert.Equal("Ça marche.", observed.Rewritten);
     }
 
+    // A silent outcome cannot be awaited on OfferReady, which never fires. The
+    // coordinator logs one ParagraphOfferSettled line per request whatever
+    // became of it, so the test waits for that line (a positive signal) and
+    // only then checks that no offer went out, instead of sleeping and hoping.
     [Theory]
-    [InlineData("Ca marche", "Ca marche")]
-    [InlineData("Ca marche", "Le système fonctionne")]
-    public void IdentityAndRejectedRewriteStaySilent(string original, string rewritten)
+    [InlineData("Ca marche", "Ca marche", "identity")]
+    [InlineData("Ca marche", "Le système fonctionne", "gate_rejected")]
+    public void IdentityAndRejectedRewriteStaySilent(string original, string rewritten, string outcome)
     {
+        using var listener = new TestEventListener("Deckle-Llm");
         using var coordinator = CoordinatorReturning(rewritten);
         using var offered = new ManualResetEventSlim();
         coordinator.OfferReady += _ => offered.Set();
 
         coordinator.Request(original);
+        AwaitSettled(listener, outcome);
 
-        Assert.False(offered.Wait(
-            TimeSpan.FromMilliseconds(250), TestContext.Current.CancellationToken));
+        Assert.False(offered.IsSet);
     }
 
     [Fact]
     public void InputMutationSuppressesALateResult()
     {
+        using var listener = new TestEventListener("Deckle-Llm");
         using var release = new ManualResetEventSlim();
         using var service = new BlockingRewriteService("Ça marche.", release);
         using var coordinator = new ParagraphRewriteCoordinator(service);
@@ -56,9 +64,20 @@ public sealed class ParagraphRewriteCoordinatorTests
 
         coordinator.Invalidate();
         release.Set();
+        AwaitSettled(listener, "stale");
 
-        Assert.False(offered.Wait(
-            TimeSpan.FromMilliseconds(250), TestContext.Current.CancellationToken));
+        Assert.False(offered.IsSet);
+    }
+
+    static void AwaitSettled(TestEventListener listener, string outcome)
+    {
+        bool Settled() => listener.Events.Any(e =>
+            e.EventId == DeckleLlmSource.EvtParagraphOfferSettled
+            && e.Payload![e.PayloadNames!.IndexOf("outcome")] as string == outcome);
+
+        Assert.True(
+            SpinWait.SpinUntil(Settled, TimeSpan.FromSeconds(5)),
+            $"No ParagraphOfferSettled with outcome '{outcome}' was logged.");
     }
 
     private static ParagraphRewriteCoordinator CoordinatorReturning(string rewritten)

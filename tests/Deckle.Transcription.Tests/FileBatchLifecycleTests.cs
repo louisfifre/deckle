@@ -64,11 +64,21 @@ public sealed class FileBatchLifecycleTests
         engine.FileTranscriptionStarted += engine.Dispose;
 
         engine.EnqueueFileTranscriptions([MissingPath("disposed")]);
+
+        // The start subscriber runs synchronously inside the enqueue, so the
+        // disposal has already happened here: nothing to wait for. On the
+        // fixed path no worker thread is ever created.
+        Assert.True(backend.Disposed);
+
+        // The regression would be a worker started after that disposal, and a
+        // thread that does not exist leaves nothing to signal. The only way
+        // to catch it is to give it time to finish, so this delay is a
+        // detector for the bug (a slow machine can only make it pass
+        // vacuously, never fail), not a wait the fixed path depends on.
         await Task.Delay(
             TimeSpan.FromMilliseconds(250),
             TestContext.Current.CancellationToken);
 
-        Assert.True(backend.Disposed);
         Assert.Equal(0, Volatile.Read(ref finishes));
         Assert.False(engine.IsBusy);
     }

@@ -7,7 +7,7 @@ namespace Deckle.Diagnostics.Tests;
 
 [Trait("Category", "observability")]
 [Collection(OperationalLogAdmissionCollection.Name)]
-public class DeckleWindowingSourceTests
+public class DeckleWindowingSourceTests : IDisposable
 {
     public DeckleWindowingSourceTests()
     {
@@ -15,18 +15,28 @@ public class DeckleWindowingSourceTests
             activity => activity == OperationalLogActivity.Windowing);
     }
 
+    public void Dispose()
+        => OperationalLogAdmission.Configure(static _ => false);
+
     [Fact]
     public void DisabledWindowingAdmissionPreventsProducerEmission()
     {
+        using var listener = new TestEventListener("Deckle-Windowing");
+
+        // Positive control: with Windowing admitted (the constructor opens it)
+        // the same call is observed, so the empty result below can only come
+        // from the closed admission and not from a silent provider.
+        DeckleWindowingSource.Log.WindowResizeFrame(
+            "settings", 1, 800, 600, 16, 2);
+        Assert.Single(listener.Events);
+
         OperationalLogAdmission.Configure(static _ => false);
         try
         {
-            using var listener = new TestEventListener("Deckle-Windowing");
-
             DeckleWindowingSource.Log.WindowResizeFrame(
-                "settings", 1, 800, 600, 16, 2);
+                "settings", 2, 800, 600, 16, 2);
 
-            Assert.Empty(listener.Events);
+            Assert.Single(listener.Events);
         }
         finally
         {

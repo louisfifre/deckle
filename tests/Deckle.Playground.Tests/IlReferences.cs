@@ -55,8 +55,7 @@ internal static class IlReferences
             foreach (var method in methods)
             {
                 byte[]? il;
-                try { il = method.GetMethodBody()?.GetILAsByteArray(); }
-                catch (Exception) { continue; }
+                il = method.GetMethodBody()?.GetILAsByteArray();
                 if (il is null) continue;
 
                 for (int at = 0; at < il.Length;)
@@ -101,7 +100,7 @@ internal static class IlReferences
             return instruction.Method.Module.ResolveField(
                 instruction.Token, TypeArguments(instruction.Method), MethodArguments(instruction.Method));
         }
-        catch (Exception) { return null; }
+        catch (Exception ex) { throw Unresolved(instruction, ex); }
     }
 
     private static MethodBase? ResolveMethod(Instruction instruction)
@@ -111,8 +110,15 @@ internal static class IlReferences
             return instruction.Method.Module.ResolveMethod(
                 instruction.Token, TypeArguments(instruction.Method), MethodArguments(instruction.Method));
         }
-        catch (Exception) { return null; }
+        catch (Exception ex) { throw Unresolved(instruction, ex); }
     }
+
+    // A token the scanner cannot resolve is an instruction it cannot judge. Skipping
+    // it would let a "never writes X" guard pass for the one write it failed to
+    // read, so the scan stops and names the instruction instead.
+    private static InvalidOperationException Unresolved(Instruction instruction, Exception inner)
+        => new($"IL scan cannot resolve token 0x{instruction.Token:X8} ({instruction.OpCode.Name}) in "
+            + $"{instruction.Method.DeclaringType?.FullName}.{instruction.Method.Name}.", inner);
 
     private static Type[]? TypeArguments(MethodBase method)
         => method.DeclaringType is { IsGenericType: true } type ? type.GetGenericArguments() : null;

@@ -1904,6 +1904,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ListeningTakeTests.cs
 │   │   ├── MicLevelCheckBugNotes.md
 │   │   ├── MicLevelCheckTests.cs
+│   │   ├── MicrophoneCalibrationCalculatorTests.cs
 │   │   ├── MicrophoneErrorClassificationTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
@@ -1918,8 +1919,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AccentIndexTests.cs
 │   │   ├── AnticipationLeadOracleTests.cs
 │   │   ├── AnticipationTransactionJoinTests.cs
-│   │   ├── AssemblyInfo.cs
-│   │   ├── AutocorrectBenchmarkTests.cs
 │   │   ├── AutocorrectDecisionMapTests.cs
 │   │   ├── AutocorrectEngineBackspaceTests.cs
 │   │   ├── AutocorrectEngineCaretRecoveryTests.cs
@@ -1933,6 +1932,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectEngineObservabilityTests.cs
 │   │   ├── AutocorrectKeyboardQualityTests.cs
 │   │   ├── AutocorrectLexiconArtifactsTests.cs
+│   │   ├── AutocorrectObservabilityCollection.cs
 │   │   ├── AutocorrectSentenceTypingScenarioTests.cs
 │   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── AutocorrectTypingScenarioTests.cs
@@ -1979,6 +1979,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── PersonalWordAdmissionTests.cs
+│   │   ├── ProbeBenchmarkSupportTests.cs
 │   │   ├── QwenAdapterCompatibilityProtocolTests.cs
 │   │   ├── QwenAdapterCompatibilityTests.cs
 │   │   ├── ReplayRunnerTests.cs
@@ -1986,7 +1987,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SentenceAlignmentTests.cs
 │   │   ├── SentenceBatchExperimentTests.cs
 │   │   ├── SentenceCalibrationTests.cs
-│   │   ├── SentenceCanonicalLatencyTests.cs
+│   │   ├── SentenceCanonicalLatencyCommandTests.cs
 │   │   ├── SentenceCorpusTests.cs
 │   │   ├── SentenceDecisionInventoryTests.cs
 │   │   ├── SentenceOrderAblationTests.cs
@@ -2136,6 +2137,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Input.Tests.csproj
 │   │   ├── DeckleInputSourceTests.cs
 │   │   ├── FocusEventCoalescerTests.cs
+│   │   ├── InputObservabilityCollection.cs
 │   │   ├── LowLevelMouseHookInteropTests.cs
 │   │   ├── MouseInteractionRouterTests.cs
 │   │   ├── MouseWheelTimestampTests.cs
@@ -2148,7 +2150,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleTrackpadSourceTests.cs
 │   │   ├── ThreeFingerDragRecognizerBugNotes.md
 │   │   ├── ThreeFingerDragRecognizerTests.cs
-│   │   └── TrackpadObservabilityBugNotes.md
+│   │   ├── TrackpadObservabilityBugNotes.md
+│   │   └── TrackpadObservabilityCollection.cs
 │   ├── Deckle.Install.Tests/
 │   │   ├── Deckle.Install.Tests.csproj
 │   │   ├── InstallPathsTests.cs
@@ -2164,6 +2167,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientHeartbeatWindowTests.cs
 │   │   ├── AmbientHueChangeAttributorTests.cs
 │   │   ├── AmbientNearBlackTests.cs
+│   │   ├── AmbientObservabilityCollection.cs
 │   │   ├── AmbientPresetsTests.cs
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
@@ -2243,8 +2247,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── KeyValuesReaderTests.cs
 │   │   ├── OrchestrationBugNotes.md
 │   │   ├── OrchestrationIncidentTests.cs
+│   │   ├── OrchestrationObservabilityCollection.cs
 │   │   ├── ProfileTransactionTests.cs
 │   │   ├── ScanOnDiskTests.cs
+│   │   ├── SteamLibraryScanEdgeCaseTests.cs
 │   │   └── SteamLibraryTests.cs
 │   ├── Deckle.Playground.Tests/
 │   │   ├── CorrectionApplicationEvidenceTests.cs
@@ -2300,6 +2306,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── GlobalHotkeyBindingsTests.cs
 │   │   ├── JournalClosersTests.cs
 │   │   ├── ResizeGestureTests.cs
+│   │   ├── ShellObservabilityCollection.cs
 │   │   ├── TrayIconBugNotes.md
 │   │   ├── TrayIconFallbackObservabilityTests.cs
 │   │   └── TrayIconRegistrationTests.cs
@@ -2310,6 +2317,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── TrayWindowOwnershipTests.cs
 │   ├── Deckle.Speech.Tests/
 │   │   ├── Deckle.Speech.Tests.csproj
+│   │   ├── IsolatedDataRoot.cs
 │   │   ├── SpeechEngineBugNotes.md
 │   │   ├── SpeechEngineTests.cs
 │   │   └── SpeechSettingsTests.cs

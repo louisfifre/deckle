@@ -6,6 +6,7 @@ using Xunit;
 namespace Deckle.Input.Trackpad.Tests;
 
 [Trait("Category", "observability")]
+[Collection(TrackpadObservabilityCollection.Name)]
 public sealed class DeckleTrackpadSourceTests : IDisposable
 {
     public DeckleTrackpadSourceTests()

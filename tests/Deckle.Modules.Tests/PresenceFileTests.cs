@@ -11,7 +11,7 @@ namespace Deckle.Modules.Tests;
 // reads back as is, both degradations (missing file, corrupt file) read as "no
 // choice", the all-present fallback the app applies above, and a file written
 // before the catalogue grew keeps reading as the choice it was.
-[Trait("Category", "unit")]
+[Trait("Category", "integration")]
 public class PresenceFileTests : IDisposable
 {
     // What a version-1 file knew of, written as the strings those files hold, so

@@ -10,6 +10,7 @@ namespace Deckle.Autocorrect.Tests;
 // point where the corpus reaches the provider. Distinct word forms ("bonjour") keep
 // these clear of the leak-assertion words the observability suite uses.
 [Trait("Category", "integration")]
+[Collection(AutocorrectObservabilityCollection.Name)]
 public sealed class AutocorrectEngineCorpusTests
 {
     [Fact]

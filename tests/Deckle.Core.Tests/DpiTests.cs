@@ -17,6 +17,8 @@ public sealed class DpiTests
         Assert.Equal(scale, Dpi.ScaleOf(dpi));
     }
 
+    // A literal DIP figure on purpose: re-tuning a Spacing step must not break
+    // a test about the conversion.
     [Theory]
     [InlineData(1.0,  64)]
     [InlineData(1.25, 80)]
@@ -24,7 +26,9 @@ public sealed class DpiTests
     [InlineData(2.5,  160)]
     public void AStepOfTheScaleLandsOnWholePixels(double dpiScale, int pixels)
     {
-        Assert.Equal(pixels, Dpi.ToPixels(Spacing.Large, dpiScale));
+        const int SixtyFourDips = 64;
+
+        Assert.Equal(pixels, Dpi.ToPixels(SixtyFourDips, dpiScale));
     }
 
     [Fact]

@@ -8,6 +8,7 @@ using Xunit;
 namespace Deckle.Lighting.Ambient.Tests;
 
 [Trait("Category", "observability")]
+[Collection(AmbientObservabilityCollection.Name)]
 public class DeckleAmbientSourceTests
 {
     public DeckleAmbientSourceTests()

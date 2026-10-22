@@ -1,6 +1,6 @@
-using System.Collections.Concurrent;
 using System.Diagnostics.Tracing;
 using Deckle.Diagnostics;
+using Deckle.TestSupport;
 using Xunit;
 
 namespace Deckle.Audio.Tests;
@@ -105,28 +105,4 @@ public sealed class DeckleAudioSourceTests : IDisposable
 
     private static object? PayloadOf(EventWrittenEventArgs e, string name)
         => e.Payload![e.PayloadNames!.IndexOf(name)];
-
-    private sealed class TestEventListener : EventListener
-    {
-        private readonly string _providerName;
-        private readonly ConcurrentQueue<EventWrittenEventArgs> _events = new();
-
-        public TestEventListener(string providerName)
-        {
-            _providerName = providerName;
-            foreach (EventSource source in EventSource.GetSources())
-                OnEventSourceCreated(source);
-        }
-
-        public IReadOnlyCollection<EventWrittenEventArgs> Events => _events.ToArray();
-
-        protected override void OnEventSourceCreated(EventSource eventSource)
-        {
-            if (eventSource.Name == _providerName)
-                EnableEvents(eventSource, EventLevel.Verbose, EventKeywords.All);
-        }
-
-        protected override void OnEventWritten(EventWrittenEventArgs eventData)
-            => _events.Enqueue(eventData);
-    }
 }

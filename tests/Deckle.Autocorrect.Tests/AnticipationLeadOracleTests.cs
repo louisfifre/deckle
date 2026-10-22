@@ -6,10 +6,10 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-[Trait("Category", "unit")]
 public sealed class AnticipationLeadOracleTests
 {
     [Fact]
+    [Trait("Category", "unit")]
     public void ReconstructsRepairsAndCountsOnlyFirstContiguousTerminalGesture()
     {
         string[] lines =
@@ -30,6 +30,7 @@ public sealed class AnticipationLeadOracleTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ComputesCurrentQwenReadinessAsAnOracleUpperBound()
     {
         string[] lines =
@@ -51,6 +52,7 @@ public sealed class AnticipationLeadOracleTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void InvalidTimingDoesNotInventAZeroGap()
     {
         AnticipationLeadAnalysis report = AnticipationLeadOracle.Analyze(
@@ -63,6 +65,7 @@ public sealed class AnticipationLeadOracleTests
     }
 
     [Theory]
+    [Trait("Category", "unit")]
     [InlineData("1e1000")]
     [InlineData("999999999999999999999999999999")]
     public void MalformedNumericPayloadIsCountedInsteadOfAborting(string erased)
@@ -78,6 +81,7 @@ public sealed class AnticipationLeadOracleTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void ExactBytePrefixIgnoresGrowingSuffixAndEmitsNoTypedText()
     {
         string secret = "private-secret.";
@@ -110,6 +114,7 @@ public sealed class AnticipationLeadOracleTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void MidLinePrefixFailsTheStablePrefixGate()
     {
         string line = Run("private.", 0, "enter", Timing(8, terminalGap: 1200)) + "\n";
@@ -130,6 +135,7 @@ public sealed class AnticipationLeadOracleTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void RequestedPrefixLongerThanSourceIsRejected()
     {
         string path = WriteTemporaryStream("{}\n");

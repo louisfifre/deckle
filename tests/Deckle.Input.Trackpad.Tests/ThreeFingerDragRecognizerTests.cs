@@ -74,7 +74,7 @@ public class ThreeFingerDragRecognizerTests
 
         r.ProcessFrame(Frame(1, (1, 0, 0, true), (2, 0, 0, true), (3, 0, 0, true)));
         r.ProcessFrame(Frame(2, (1, 60, 0, true), (2, 60, 0, true), (3, 60, 0, true)));
-        rec.Moves.Clear(); // on isole le delta post-démarrage
+        rec.Moves.Clear(); // isolate the post-start delta
         r.ProcessFrame(Frame(3, (1, 70, 20, true), (2, 70, 20, true), (3, 70, 20, true)));
 
         var move = Assert.Single(rec.Moves);

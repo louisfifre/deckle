@@ -22,8 +22,9 @@ public sealed class SentenceRewriteTests
         Assert.Equal(SentenceRewrite.Label, engine.Request.Label);
         Assert.Equal(SentenceRewrite.Model, engine.Request.Model);
         Assert.Equal(0, engine.Request.Temperature);
-        Assert.Contains("Aucun synonyme", engine.Request.SystemPrompt);
-        Assert.Contains("renvoie-la identique", engine.Request.SystemPrompt);
+        // The prompt's wording is tuned freely; the test only pins that the
+        // request carries it, not what it says.
+        Assert.Equal(SentenceRewrite.SystemPrompt, engine.Request.SystemPrompt);
     }
 
     [Fact]

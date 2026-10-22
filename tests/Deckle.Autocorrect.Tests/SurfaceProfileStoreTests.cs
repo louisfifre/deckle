@@ -10,10 +10,10 @@ namespace Deckle.Autocorrect.Tests;
 // (tolerant — a missing or corrupt artifact disarms the pause pass, never a
 // boot failure) and the Lab render that writes it (qualified surfaces only,
 // the provisional threshold formula quarantined in one place).
-[Trait("Category", "unit")]
 public class SurfaceProfileStoreTests
 {
     [Fact]
+    [Trait("Category", "integration")]
     public void LoadsProfilesAndClampsNegativeThresholds()
     {
         string path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".json");
@@ -36,6 +36,7 @@ public class SurfaceProfileStoreTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void AMissingOrCorruptFileDisarmsEverything()
     {
         Assert.Empty(SurfaceProfileStore.Load(
@@ -50,6 +51,7 @@ public class SurfaceProfileStoreTests
     // Regression: a fractional threshold or a non-object entry threw past the
     // JsonException catch and turned a tolerant load into a boot failure.
     [Fact]
+    [Trait("Category", "integration")]
     public void AMalformedRecordIsSkippedNeverAThrow()
     {
         string path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName() + ".json");
@@ -80,6 +82,7 @@ public class SurfaceProfileStoreTests
         TimedSentences: timed, Gaps: new GapStats(timed * 5, 200, 400, 800, p99, p99 * 2));
 
     [Fact]
+    [Trait("Category", "unit")]
     public void AnEnterHeavySurfaceWithEnoughDataEarnsItsP99Bar()
     {
         Assert.Equal(2400, SurfaceProfiler.ProvisionalPauseThresholdMs(
@@ -87,6 +90,7 @@ public class SurfaceProfileStoreTests
     }
 
     [Theory]
+    [Trait("Category", "unit")]
     [InlineData(10, 40, 45)] // sentence-ender dominates — the closure arrives in time
     [InlineData(40, 10, 10)] // too few timed sentences to trust the statistics
     public void AnUnqualifiedSurfaceStaysDisarmed(int enter, int sentence, int timed)
@@ -96,6 +100,7 @@ public class SurfaceProfileStoreTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void TheLiveJsonCarriesQualifiedSurfacesOnly()
     {
         var profiles = new[]

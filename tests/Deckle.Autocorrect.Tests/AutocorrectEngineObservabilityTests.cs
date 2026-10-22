@@ -11,6 +11,7 @@ namespace Deckle.Autocorrect.Tests;
 // are presence-based and scan ALL captured events, so they hold even if another
 // engine test emits concurrently.
 [Trait("Category", "observability")]
+[Collection(AutocorrectObservabilityCollection.Name)]
 public sealed class AutocorrectEngineObservabilityTests
 {
     public AutocorrectEngineObservabilityTests()

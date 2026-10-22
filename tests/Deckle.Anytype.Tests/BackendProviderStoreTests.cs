@@ -5,6 +5,7 @@ using Xunit;
 
 namespace Deckle.Anytype.Tests;
 
+[Trait("Category", "integration")]
 public sealed class BackendProviderStoreTests
 {
     static CancellationToken Ct => TestContext.Current.CancellationToken;

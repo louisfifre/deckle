@@ -23,6 +23,44 @@ public sealed class HueEntertainmentLightOutputTests
     }
 
     [Fact]
+    [Trait("Category", "regression")]
+    public async Task ConnectAsyncStopsStreamingWithALiveTokenWhenCancelledAfterStart()
+    {
+        // The caller cancels while the transport connects, after streaming was started
+        // on the bridge. The stop that undoes it must not reuse that cancelled token,
+        // or the bridge keeps streaming with nobody listening.
+        using var cts = new CancellationTokenSource();
+        var client = new FakeEntertainmentClient();
+        var transport = new FakeEntertainmentTransport
+        {
+            OnConnect = cts.Cancel,
+            ConnectException = new OperationCanceledException(),
+        };
+        var output = new HueEntertainmentLightOutput(client, CreateArea(), transport);
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => output.ConnectAsync(cts.Token));
+
+        Assert.Equal(1, client.StartCount);
+        Assert.Equal(1, client.StopCount);
+        Assert.False(client.LastStopTokenWasCancelled);
+    }
+
+    [Fact]
+    public async Task DisposeAsyncSwallowsAFailedStopAndStillClosesTheTransport()
+    {
+        var client = new FakeEntertainmentClient { StopException = new InvalidOperationException("bridge gone") };
+        var transport = new FakeEntertainmentTransport();
+        var output = new HueEntertainmentLightOutput(client, CreateArea(), transport);
+        await output.ConnectAsync(TestContext.Current.CancellationToken);
+
+        await output.DisposeAsync();
+
+        Assert.Equal(1, client.StopCount);
+        Assert.True(transport.Disposed);
+        Assert.False(output.IsConnected);
+    }
+
+    [Fact]
     public async Task ConnectAsyncDoesNotStartStreamingWhenCancelledBeforeStart()
     {
         var client = new FakeEntertainmentClient();
@@ -243,6 +281,7 @@ public sealed class HueEntertainmentLightOutputTests
         public bool IsPaired => true;
         public List<string>? Events { get; init; }
         public Exception? SetLightColorException { get; init; }
+        public Exception? StopException { get; init; }
         public List<string> PrePrimedLightIds { get; } = [];
         public List<LightColor> PrePrimedColors { get; } = [];
         public int StartCount { get; private set; }
@@ -264,6 +303,8 @@ public sealed class HueEntertainmentLightOutputTests
                 StopCount++;
                 LastStopTokenWasCancelled = ct.IsCancellationRequested;
                 Events?.Add("stop");
+                if (StopException is not null)
+                    return Task.FromException(StopException);
             }
 
             return Task.CompletedTask;
@@ -290,11 +331,14 @@ public sealed class HueEntertainmentLightOutputTests
     private sealed class FakeEntertainmentTransport : IHueEntertainmentTransport
     {
         public Exception? ConnectException { get; init; }
+        public Action? OnConnect { get; init; }
         public List<string>? Events { get; init; }
         public List<byte[]> SentPayloads { get; } = [];
+        public bool Disposed { get; private set; }
 
         public Task ConnectAsync(CancellationToken ct)
         {
+            OnConnect?.Invoke();
             if (ConnectException is not null)
                 return Task.FromException(ConnectException);
 
@@ -308,8 +352,6 @@ public sealed class HueEntertainmentLightOutputTests
             SentPayloads.Add(payload);
         }
 
-        public void Dispose()
-        {
-        }
+        public void Dispose() => Disposed = true;
     }
 }

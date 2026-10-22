@@ -27,6 +27,7 @@ public sealed class UpdatePredecessorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public async Task Reused_pid_with_another_image_is_not_a_predecessor()
     {
         string expected = Path.GetFullPath(Path.Combine("installed", "Deckle.exe"));

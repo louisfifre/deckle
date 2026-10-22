@@ -3,9 +3,16 @@ using Xunit;
 
 namespace Deckle.Anytype.Tests;
 
+[Trait("Category", "integration")]
 public sealed class BackendReconcilerTests
 {
     static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    // The shipped readiness window and probe cadence (private to BackendReconciler,
+    // so mirrored here on purpose): the reconciler polls once per interval until the
+    // window closes. A retune of either is a contract change this test should flag.
+    private const int ReadinessTimeoutMs = 20_000;
+    private const int ProbeIntervalMs = 500;
 
     [Fact]
     [Trait("Category", "regression")]
@@ -160,7 +167,7 @@ public sealed class BackendReconcilerTests
         Assert.Equal(BackendStartOutcome.TimedOut, result.Outcome);
         Assert.Null(result.Process);
         Assert.Equal(0, processes.SpawnCount);
-        Assert.Equal(40, time.DelayCalls);
+        Assert.Equal(ReadinessTimeoutMs / ProbeIntervalMs, time.DelayCalls);
     }
 
     [Fact]

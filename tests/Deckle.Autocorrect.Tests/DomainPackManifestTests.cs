@@ -9,7 +9,6 @@ namespace Deckle.Autocorrect.Tests;
 // in a manifest beside the forms, so the product to guard is that the two agree
 // — a manifest quoting a count the artifact does not carry would state a
 // falsehood in the settings page, and nothing else would notice.
-[Trait("Category", "unit")]
 public class DomainPackManifestTests
 {
     // The test binaries copy the module's Data/ next to themselves, so the
@@ -18,6 +17,7 @@ public class DomainPackManifestTests
         Path.Combine(AppContext.BaseDirectory, "Data");
 
     [Fact]
+    [Trait("Category", "integration")]
     public void EveryShippedPackShipsItsManifest()
     {
         foreach (DomainPack pack in DomainPack.Shipped)
@@ -32,6 +32,7 @@ public class DomainPackManifestTests
     // and the artifact by the same run; if a pack is ever rebuilt without its
     // manifest, or edited by hand, this is what says so.
     [Fact]
+    [Trait("Category", "integration")]
     public void ManifestShippedFormsMatchesTheArtifact()
     {
         foreach (DomainPack pack in DomainPack.Shipped)
@@ -47,6 +48,7 @@ public class DomainPackManifestTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void ManifestIdentifiesThePackItShipsWith()
     {
         foreach (DomainPack pack in DomainPack.Shipped)
@@ -62,6 +64,7 @@ public class DomainPackManifestTests
     // forms are withheld from the artifact, so the pack ships less than it
     // mined. Shipping one would be a fabrication slip, not a user-facing state.
     [Fact]
+    [Trait("Category", "integration")]
     public void ShippedPacksHaveNoFormLeftPendingJudgment()
     {
         foreach (DomainPack pack in DomainPack.Shipped)
@@ -76,6 +79,7 @@ public class DomainPackManifestTests
     // Absence is a miss, never a throw: a build without the manifest shows no
     // figures and still corrects.
     [Fact]
+    [Trait("Category", "integration")]
     public void TryLoad_ReturnsNullWhenNoManifestShips()
     {
         var absent = new DomainPack("fr-nothing", "computing", "fr");

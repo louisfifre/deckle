@@ -13,7 +13,6 @@ public sealed class CaptureDataWatchdogTests
     private const int T = CaptureDataWatchdog.ThresholdMs;
 
     [Fact]
-    [Trait("Category", "regression")]
     public void SilenceShorterThanTheThresholdOpensNothing()
     {
         CaptureDataWatchdog watchdog = default;
@@ -24,7 +23,6 @@ public sealed class CaptureDataWatchdogTests
     }
 
     [Fact]
-    [Trait("Category", "regression")]
     public void ADeviceThatNeverDeliversOpensTheIncidentAtTheThreshold()
     {
         CaptureDataWatchdog watchdog = default;
@@ -35,7 +33,6 @@ public sealed class CaptureDataWatchdogTests
     }
 
     [Fact]
-    [Trait("Category", "regression")]
     public void ALongSilenceOpensOnlyOneIncident()
     {
         CaptureDataWatchdog watchdog = default;
@@ -47,7 +44,6 @@ public sealed class CaptureDataWatchdogTests
     }
 
     [Fact]
-    [Trait("Category", "regression")]
     public void FirstAudioAfterAStallClosesTheIncident()
     {
         CaptureDataWatchdog watchdog = default;
@@ -59,7 +55,6 @@ public sealed class CaptureDataWatchdogTests
     }
 
     [Fact]
-    [Trait("Category", "regression")]
     public void DataWithoutAStallNeverReportsARecovery()
     {
         CaptureDataWatchdog watchdog = default;
@@ -72,7 +67,6 @@ public sealed class CaptureDataWatchdogTests
     }
 
     [Fact]
-    [Trait("Category", "regression")]
     public void ASecondStallCountsWithoutReopeningTheIncident()
     {
         CaptureDataWatchdog watchdog = default;
@@ -86,7 +80,6 @@ public sealed class CaptureDataWatchdogTests
     }
 
     [Fact]
-    [Trait("Category", "regression")]
     public void LongestGapIncludesAStallStillRunningAtStop()
     {
         CaptureDataWatchdog watchdog = default;

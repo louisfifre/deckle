@@ -11,6 +11,7 @@ namespace Deckle.Autocorrect.Tests;
 // model may judge only a closed sentence; forward typing extends the exact tail,
 // while navigation/edit gestures or any unknown mutation expire the verdict.
 [Trait("Category", "unit")]
+[Collection(AutocorrectObservabilityCollection.Name)]
 public class SentenceRerankCoordinatorTests
 {
     private static AccentVariant[] LaLà() =>

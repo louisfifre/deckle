@@ -16,7 +16,8 @@ public sealed class LogLineFormatterTests
         Assert.Equal("12:34:56.789", parts.Timestamp);
         Assert.Equal("Vision", parts.Source);
         Assert.Equal("Capture started", parts.Message);
-        Assert.Equal(LogLineFormatter.Format(entry), parts.Text);
+        Assert.Equal("12:34:56.789 [Vision] Capture started", parts.Text);
+        Assert.Equal(parts.Text, LogLineFormatter.Format(entry));
     }
 
     [Fact]
@@ -58,6 +59,9 @@ public sealed class LogLineFormatterTests
     [InlineData("Deckle-PrecisionScroll", "Precision Scroll")]
     [InlineData("Deckle-Lighting.Ambient", "Lighting Ambient")]
     [InlineData("Deckle-Audio", "Audio")]
+    [InlineData("Deckle-Vad", "VAD")]
+    [InlineData("Deckle-SettingsUx", "Settings UX")]
+    [InlineData("Deckle-", "Deckle-")]
     [InlineData("Microsoft-Windows-DotNETRuntime", "Microsoft-Windows-DotNETRuntime")]
     public void Display_name_reads_as_a_module_name(string provider, string expected)
     {
@@ -69,6 +73,7 @@ public sealed class LogLineFormatterTests
     [InlineData("Deckle-App", "APP")]
     [InlineData("Deckle-Whisp", "WHISP")]
     [InlineData("Deckle-PrecisionScroll", "PRECISIONSCROLL")]
+    [InlineData("Microsoft-Windows-DotNETRuntime", "MICROSOFT-WINDOWS-DOTNETRUNTIME")]
     public void Jsonl_source_token_keeps_its_machine_vocabulary(string provider, string expected)
     {
         Assert.Equal(expected, LogLineFormatter.MapSource(provider));
