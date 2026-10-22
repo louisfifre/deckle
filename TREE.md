@@ -2163,10 +2163,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SentenceBoundaryTests.cs
 │   │   └── SentenceRewriteTests.cs
 │   ├── Deckle.Modules.Tests/
+│   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Modules.Tests.csproj
 │   │   ├── ModuleGraphTests.cs
+│   │   ├── PresenceBugNotes.md
 │   │   ├── PresenceChoiceTests.cs
-│   │   └── PresenceFileTests.cs
+│   │   ├── PresenceFileTests.cs
+│   │   └── PresenceObservabilityTests.cs
 │   ├── Deckle.Notifications.Tests/
 │   │   ├── Deckle.Notifications.Tests.csproj
 │   │   ├── DeckleNotificationsSourceTests.cs
