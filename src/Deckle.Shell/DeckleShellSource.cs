@@ -67,6 +67,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     public const int EvtCursorSignalDisarmed               = 54;
     public const int EvtTrayIconHostDestroyed              = 55;
     public const int EvtWindowSubclassFailed               = 56;
+    public const int EvtTrayIconFallback                   = 57;
 
     // ── Tray icon ───────────────────────────────────────────────────────
 
@@ -127,6 +128,19 @@ public sealed class DeckleShellSource : DeckleEventSource
     public void TrayIconRestoreFailed(int attempts, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtTrayIconRestoreFailed, attempts, win32_error);
+    }
+
+    // The tray shows the generic application icon instead of Deckle's own.
+    // state: idle or recording (the icon asked for). reason: asset_missing (the
+    // .ico is not next to the exe) or load_failed (the file is there but
+    // Windows refused it; win32_error says why, 0 when the file is missing).
+    [Event(EvtTrayIconFallback,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The tray icon fell back to the generic application icon | state={0} | reason={1} | win32_error={2}")]
+    public void TrayIconFallback(string state, string reason, int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtTrayIconFallback, state, reason, win32_error);
     }
 
     // ── Message-only host ───────────────────────────────────────────────

@@ -2256,6 +2256,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── JournalClosersTests.cs
 │   │   ├── ResizeGestureTests.cs
 │   │   ├── TrayIconBugNotes.md
+│   │   ├── TrayIconFallbackObservabilityTests.cs
 │   │   └── TrayIconRegistrationTests.cs
 │   ├── Deckle.Shell.TrayMenu.Tests/
 │   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
