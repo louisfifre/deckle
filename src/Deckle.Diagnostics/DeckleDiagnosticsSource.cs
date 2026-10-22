@@ -31,6 +31,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     public const int EvtRotationRecovered  = 8;
     public const int EvtRowUnrouted        = 9;
     public const int EvtRowsRoutedAgain    = 10;
+    public const int EvtMessageTemplateBroken = 11;
 
     // One incident per sink: opened by the first failure, closed by the next
     // successful write (SinkRecovered). The attempts in between are counted,
@@ -140,5 +141,19 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     public void RowsRoutedAgain(string sink, int skipped_rows)
     {
         if (IsEnabled()) WriteEvent(EvtRowsRoutedAgain, sink, skipped_rows);
+    }
+
+    // An event whose Message template cannot be formatted from its payload (a
+    // placeholder with no argument, a malformed brace). Its rows still reach
+    // every sink with their payload, only the rendered sentence is missing, so
+    // this is a degradation. Reported once per provider and event: the template
+    // is fixed in code, so every emission would fail the same way.
+    [Event(EvtMessageTemplateBroken,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Event {1} of {0} has a message template that cannot be formatted: {2}")]
+    public void MessageTemplateBroken(string provider, string event_name, string error_type)
+    {
+        if (IsEnabled()) WriteEvent(EvtMessageTemplateBroken, provider, event_name, error_type);
     }
 }

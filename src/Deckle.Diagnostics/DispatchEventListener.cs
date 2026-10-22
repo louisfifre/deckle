@@ -52,6 +52,9 @@ public sealed class DispatchEventListener : EventListener
     // report it; the next top-level dispatch does.
     private int _reportsPending;
 
+    // Provider/event pairs whose Message template already failed once.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _brokenTemplates = new();
+
     [ThreadStatic]
     private static int _dispatchDepth;
 
@@ -161,7 +164,7 @@ public sealed class DispatchEventListener : EventListener
         bool booting = Volatile.Read(ref _bootBuffer) is not null;
         if (snapshot.Length == 0 && !booting) return;
 
-        var entry = BuildEntry(eventData);
+        var entry = BuildEntry(eventData, out Exception? templateError);
 
         if (booting)
         {
@@ -179,6 +182,21 @@ public sealed class DispatchEventListener : EventListener
         }
 
         Dispatch(entry, snapshot);
+
+        // After the row, so the report reads as its consequence in the journal.
+        if (templateError is not null) ReportBrokenTemplate(entry, templateError);
+    }
+
+    // A template that cannot be formatted is a defect of the provider, not of
+    // one emission: the same event would fail on every call. Naming the pair
+    // once is enough, and the dedupe is also what bounds the recursion, since
+    // this report dispatches back through OnEventWritten.
+    private void ReportBrokenTemplate(EventEntry entry, Exception error)
+    {
+        if (!_brokenTemplates.TryAdd($"{entry.Provider}/{entry.EventName}", 0)) return;
+
+        DeckleDiagnosticsSource.Log.MessageTemplateBroken(
+            entry.Provider, entry.EventName, error.GetType().Name);
     }
 
     private void Dispatch(EventEntry entry, SinkSlot[] snapshot)
@@ -279,8 +297,9 @@ public sealed class DispatchEventListener : EventListener
     // The payload keys are the [Event] parameter names (snake_case by Deckle
     // convention); the formatted message is null when the provider declared no
     // Message template.
-    private static EventEntry BuildEntry(EventWrittenEventArgs e)
+    private static EventEntry BuildEntry(EventWrittenEventArgs e, out Exception? templateError)
     {
+        templateError = null;
         var names = e.PayloadNames;
         var values = e.Payload;
         int count = names is null ? 0 : names.Count;
@@ -306,10 +325,12 @@ public sealed class DispatchEventListener : EventListener
                 for (int i = 0; i < values.Count; i++) arr[i] = values[i];
                 formatted = string.Format(System.Globalization.CultureInfo.InvariantCulture, e.Message, arr);
             }
-            catch
+            catch (Exception ex)
             {
                 // A malformed template must not break the pipeline; leave
-                // formatted null and let sinks render the raw payload.
+                // formatted null and let sinks render the raw payload. The
+                // caller reports it, once per event.
+                templateError = ex;
             }
         }
 
