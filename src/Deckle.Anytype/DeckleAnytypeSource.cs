@@ -215,21 +215,27 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     }
 
     // A move to the bin is the one gesture that hides an object from every later
-    // read, so both of its ends are told at Info. reason: rapport, referenced,
-    // references_unreadable, declined, unanswered or approval_unavailable. The
-    // object's name stays out: it is the person's content, the id is enough.
+    // read, so both of its ends travel in the journal: the move that did not
+    // happen says why, the move that did says what. reason: DeleteRefusalReasons.
+    // ex_type and cause tell why the references could not be read and are empty
+    // for every other reason; the cause is an error code or a closed word, never
+    // the server's text. The object's name stays out: it is the person's content,
+    // the id is enough.
     [Event(EvtDeleteRefused,
            Level = EventLevel.Informational,
            Keywords = Gesture,
-           Message = "A move to the Anytype bin was refused | reason={0} | type={1} | object_id={2}")]
-    public void DeleteRefused(string reason, string type_key, string object_id)
+           Tags = ObservationTags.Journal,
+           Message = "A move to the Anytype bin was refused | reason={0} | type={1} | object_id={2} | {3}: {4}")]
+    public void DeleteRefused(
+        string reason, string type_key, string object_id, string ex_type, string cause)
     {
-        if (IsEnabled()) WriteEvent(EvtDeleteRefused, reason, type_key, object_id);
+        if (IsEnabled()) WriteEvent(EvtDeleteRefused, reason, type_key, object_id, ex_type, cause);
     }
 
     [Event(EvtObjectBinned,
            Level = EventLevel.Informational,
            Keywords = Gesture,
+           Tags = ObservationTags.Journal,
            Message = "An object was moved to the Anytype bin | type={0} | object_id={1}")]
     public void ObjectBinned(string type_key, string object_id)
     {

@@ -387,6 +387,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Gestures/
 │   │   │   ├── BlockSections.cs
 │   │   │   ├── CollectionMembershipGestures.cs
+│   │   │   ├── DeleteRefusalReasons.cs
 │   │   │   ├── DeletionApproval.cs
 │   │   │   ├── DocumentGestures.cs
 │   │   │   ├── LinkedNames.cs
@@ -1847,6 +1848,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── BackendSupervisionBugNotes.md
 │   │   ├── BackendSupervisorTests.cs
 │   │   ├── BackendTestFakes.cs
+│   │   ├── BinJournalTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceBugNotes.md
 │   │   ├── DevSpaceTests.cs
@@ -1855,6 +1857,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FakeV2Handler.cs
 │   │   ├── JournalClosersTests.cs
 │   │   ├── LiveTagResolverTests.cs
+│   │   ├── ManagementGesturesBugNotes.md
 │   │   ├── ManagementGesturesTests.cs
 │   │   ├── MarkdownBodyTests.cs
 │   │   ├── NameResolverTests.cs
