@@ -932,6 +932,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── OperationalLogAdmission.cs
 │   │   ├── PathRedaction.cs
 │   │   ├── RunMarker.cs
+│   │   ├── SurvivedExceptionLedger.cs
 │   │   ├── WindowingProbe.cs
 │   │   └── WorkId.cs
 │   ├── Deckle.Diagnostics.Logging/
@@ -2096,6 +2097,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RunMarkerTests.cs
 │   │   ├── SinkCallbackBugNotes.md
 │   │   ├── SinkCallbackFaultTests.cs
+│   │   ├── SurvivedExceptionLedgerTests.cs
 │   │   ├── ThreadingHotLoopCountTests.cs
 │   │   └── WorkIdTests.cs
 │   ├── Deckle.Home.Tests/
