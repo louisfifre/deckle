@@ -69,6 +69,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtPersonalDictionaryReset = 50;
     public const int EvtSentenceJudgeFeatureUnavailable = 51;
     public const int EvtDomainPackManifestUnreadable = 52;
+    public const int EvtSettingsLoadWarning = 53;
+    public const int EvtSettingsLoadError = 54;
 
     [Event(EvtCaretSentenceRecovery,
            Level = EventLevel.Verbose,
@@ -718,5 +720,24 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public void EnrollmentSuggested(string process)
     {
         if (IsEnabled()) WriteEvent(EvtEnrollmentSuggested, process);
+    }
+
+    // The settings store reports in free text; the text carries its own cause.
+    [Event(EvtSettingsLoadWarning,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The autocorrect settings need attention | {0}")]
+    public void SettingsLoadWarning(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
+    }
+
+    [Event(EvtSettingsLoadError,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The autocorrect settings could not be saved | {0}")]
+    public void SettingsLoadError(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 }

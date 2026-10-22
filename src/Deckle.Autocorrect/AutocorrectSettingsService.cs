@@ -40,12 +40,12 @@ public sealed class AutocorrectSettingsService
             AppPaths.UserDataRoot, "modules", "autocorrect", "settings.json");
         Directory.CreateDirectory(System.IO.Path.GetDirectoryName(path)!);
 
-        // Logging callbacks stay null: the persistence layer takes no
-        // EventSource dependency.
         _store = new JsonSettingsStore<AutocorrectSettings>(
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Autocorrect-Save",
-            jsonOptions: _jsonOptions);
+            jsonOptions: _jsonOptions,
+            logWarning:  DeckleAutocorrectSource.Log.SettingsLoadWarning,
+            logError:    DeckleAutocorrectSource.Log.SettingsLoadError);
     }
 
     public void Save()                            => _store.Save();
