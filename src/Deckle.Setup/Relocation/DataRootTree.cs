@@ -10,6 +10,10 @@ internal sealed class DataRootTree : IDataRootCopier
     private readonly HashSet<string> _createdDirectories = new(StringComparer.OrdinalIgnoreCase);
     private readonly Func<string, string, bool>? _copyFile;
 
+    // Why the last copy attempt was refused, so the error that stops the move
+    // can say it; null when the attempt succeeded or the copier gave no cause.
+    private Exception? _lastCopyFailure;
+
     public DataRootTree() { }
 
     internal DataRootTree(Func<string, string, bool> copyFile) => _copyFile = copyFile;
@@ -42,6 +46,7 @@ internal sealed class DataRootTree : IDataRootCopier
             string destination = Path.Combine(target, relative);
             EnsureDirectory(Path.GetDirectoryName(destination)!, target);
 
+            _lastCopyFailure = null;
             bool copiedFile = CopyFile(file, destination) || CopyFile(file, destination);
             if (!copiedFile)
             {
@@ -51,7 +56,12 @@ internal sealed class DataRootTree : IDataRootCopier
                     continue;
                 }
 
-                throw new IOException($"Could not copy required data file '{relative}'.");
+                // The error type and code, never the OS text: that text repeats
+                // an absolute path, and this message reaches the journal.
+                string cause = _lastCopyFailure is { } failure
+                    ? $": {failure.GetType().Name} 0x{failure.HResult:X8}"
+                    : "";
+                throw new IOException($"Could not copy required data file '{relative}'{cause}.");
             }
 
             _createdFiles.Add(destination);
@@ -140,8 +150,10 @@ internal sealed class DataRootTree : IDataRootCopier
         }
         catch (Exception copyEx)
         {
-            // The caller retries once, then sheds or throws without the cause;
-            // this trace is where the cause of a refused copy survives.
+            // The caller retries once, then sheds or throws. A required file's
+            // error carries the cause (_lastCopyFailure); this trace keeps the
+            // full detail of every attempt for whoever raises the verbosity.
+            _lastCopyFailure = copyEx;
             DeckleSetupSource.Log.BestEffortFailedDetail(
                 "copy_file", source, copyEx.GetType().Name, copyEx.Message);
             try

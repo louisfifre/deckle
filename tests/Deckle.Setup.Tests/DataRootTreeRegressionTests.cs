@@ -37,6 +37,31 @@ public sealed class DataRootTreeRegressionTests : IDisposable
         Assert.True(File.Exists(Path.Combine(target, "a.txt")));
     }
 
+    // The caller retries once and then throws; the cause of the refusal used to
+    // be known only to a Verbose line, so the Error that stops the move said
+    // which file but never why. The message now names the error type and code
+    // (not the OS text, which repeats an absolute path).
+    [Fact]
+    public void A_required_file_that_cannot_be_copied_names_the_cause_in_the_error()
+    {
+        string source = Path.Combine(_root, "source");
+        string target = Path.Combine(_root, "target");
+        Directory.CreateDirectory(source);
+        string locked = Path.Combine(source, "settings.json");
+        File.WriteAllText(locked, "settings");
+
+        // Held open without sharing: File.Copy cannot read it.
+        using var hold = new FileStream(locked, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
+        var tree = new DataRootTree();
+
+        IOException error = Assert.Throws<IOException>(() => tree.Copy(
+            source, target, totalBytes: 8, progress: null, CancellationToken.None));
+
+        Assert.Contains("settings.json", error.Message, StringComparison.Ordinal);
+        Assert.Contains(nameof(IOException), error.Message, StringComparison.Ordinal);
+        Assert.Contains("0x", error.Message, StringComparison.Ordinal);
+    }
+
     public void Dispose()
     {
         try { Directory.Delete(_root, recursive: true); } catch { }
