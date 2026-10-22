@@ -243,8 +243,9 @@ public class SessionGesturesTests
         // The server does the filtering and the ordering: the reports of the
         // task only, newest first.
         FakeV2Handler.Seen search = Assert.Single(v2.Requests, r => r.PathAndQuery.Contains("/search?"));
-        // One page of the size shown, not every report of the task.
-        Assert.EndsWith($"/search?limit={SessionGestures.RecentReports}&offset=0", search.PathAndQuery);
+        // One page, not every report of the task: the shown ones plus the slot
+        // the report just created may take.
+        Assert.EndsWith($"/search?limit={SessionGestures.RecentReports + 1}&offset=0", search.PathAndQuery);
         JsonObject body = (JsonObject)JsonNode.Parse(search.Body!)!;
         Assert.Equal(DevSpace.Types.Rapport, body["type"]!.GetValue<string>());
         JsonObject filter = (JsonObject)Assert.Single((JsonArray)body["filters"]!)!;
@@ -252,6 +253,30 @@ public class SessionGesturesTests
         Assert.Equal(TaskId,((JsonArray)filter["value"]!).Single()!.GetValue<string>());
         Assert.Equal("desc", ((JsonObject)Assert.Single((JsonArray)body["sorts"]!)!)["direction"]!.GetValue<string>());
     }
+    // The report session_start has just created links the task too, so the
+    // search returns it first. It is the session being opened, not history: the
+    // three slots go to the previous reports.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task StartLeavesTheReportItJustCreatedOutOfTheDigest()
+    {
+        using var server = new FakeAnytypeServer();
+        string[] previous = ["bafyreiPrevaaa", "bafyreiPrevbbb", "bafyreiPrevccc"];
+        FakeV2Handler v2 = WireStartReads(server, V2Rows(
+            (NewReport, "2026-06-12"),
+            (previous[0], "2026-06-11"),
+            (previous[1], "2026-06-10"),
+            (previous[2], "2026-06-09")));
+        // Only the previous reports are read for their body.
+        foreach (string id in previous)
+            v2.Reply(HttpStatusCode.OK, V2Markdown(id, "- fait"));
+
+        string digest = await NewGestures(server, v2).StartAsync(TaskId, Ct);
+
+        Assert.DoesNotContain($"— 2026-06-12 · {NewReport}", digest);
+        foreach (string id in previous) Assert.Contains(id, digest);
+    }
+
     [Fact]
     public async Task TouchAppendsTheTaskToTheCurrentReportsLinkedTasks()
     {
