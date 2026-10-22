@@ -37,14 +37,10 @@ public sealed class ApplicationLogSink : IFlushableLogSink
         ArgumentNullException.ThrowIfNull(entry);
         if (entry.Kind != ObservationKind.Operational) return false;
 
-        try
-        {
-            return _isEnabled() && _recordingFilter(entry);
-        }
-        catch
-        {
-            return false;
-        }
+        // A reader or filter that throws is not "disabled": the dispatcher
+        // contains the exception and reports this sink as an incident, so a
+        // log that stopped recording says why instead of just going quiet.
+        return _isEnabled() && _recordingFilter(entry);
     }
 
     public void Write(EventEntry entry) => _sink.Write(entry);

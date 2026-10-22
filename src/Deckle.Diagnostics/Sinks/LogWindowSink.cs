@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 
 namespace Deckle.Diagnostics;
@@ -55,11 +56,18 @@ public sealed class LogWindowSink : ILogSink
             snapshot = Volatile.Read(ref _sinkSnapshot);
         }
 
+        // One failing surface must not starve the others, so each is tried; the
+        // first failure is then handed to the dispatcher, which contains it and
+        // reports this sink as an incident (SinkFaulted, then SinkRecovered).
+        Exception? firstFailure = null;
         foreach (var sink in snapshot)
         {
             try { sink.Write(entry); }
-            catch { /* A UI sink must never crash the dispatcher. */ }
+            catch (Exception ex) { firstFailure ??= ex; }
         }
+
+        if (firstFailure is not null)
+            ExceptionDispatchInfo.Capture(firstFailure).Throw();
     }
 
     // Attaches a UI sink and replays the buffered history since boot. Replay and
@@ -70,13 +78,14 @@ public sealed class LogWindowSink : ILogSink
     {
         if (sink is null) throw new ArgumentNullException(nameof(sink));
 
+        Exception? replayFailure = null;
         lock (_lock)
         {
             for (int i = 0; i < _bufferCount; i++)
             {
                 EventEntry entry = _buffer[(_bufferStart + i) % BufferCapacity]!;
                 try { sink.Write(entry); }
-                catch { /* A UI sink must never crash the sink. */ }
+                catch (Exception ex) { replayFailure ??= ex; }
             }
 
             ILogWindowSink[] current = Volatile.Read(ref _sinkSnapshot);
@@ -84,6 +93,16 @@ public sealed class LogWindowSink : ILogSink
             Array.Copy(current, next, current.Length);
             next[^1] = sink;
             Volatile.Write(ref _sinkSnapshot, next);
+        }
+
+        // Attaching goes on (the surface may only have choked on one entry),
+        // but a history that did not replay in full is said once. Reported
+        // outside the lock: the event dispatches back into Write, which takes
+        // it, and the buffer must not move while the replay loop reads it.
+        if (replayFailure is not null)
+        {
+            DeckleDiagnosticsSource.Log.SinkFaulted(
+                nameof(LogWindowSink), replayFailure.GetType().Name, replayFailure.Message);
         }
     }
 

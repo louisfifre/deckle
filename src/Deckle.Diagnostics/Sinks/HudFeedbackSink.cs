@@ -40,18 +40,14 @@ public sealed class HudFeedbackSink : ILogSink
 
     public void Write(EventEntry entry)
     {
-        try
-        {
-            int severity = entry.Payload.TryGetValue("severity", out var s) && s is int si ? si : 0;
-            string title = entry.Payload.TryGetValue("title", out var t) ? t as string ?? string.Empty : string.Empty;
-            string body  = entry.Payload.TryGetValue("body",  out var b) ? b as string ?? string.Empty : string.Empty;
-            int role     = entry.Payload.TryGetValue("role",  out var r) && r is int ri ? ri : 0;
+        // The payload reads below fall back to defaults, so a malformed
+        // emission cannot throw here. A receiver that does throw reaches the
+        // dispatcher, which contains it and reports this sink as an incident.
+        int severity = entry.Payload.TryGetValue("severity", out var s) && s is int si ? si : 0;
+        string title = entry.Payload.TryGetValue("title", out var t) ? t as string ?? string.Empty : string.Empty;
+        string body  = entry.Payload.TryGetValue("body",  out var b) ? b as string ?? string.Empty : string.Empty;
+        int role     = entry.Payload.TryGetValue("role",  out var r) && r is int ri ? ri : 0;
 
-            _sink.Write(new FeedbackEntry(title, body, severity, role));
-        }
-        catch
-        {
-            // A malformed feedback emission must not crash the dispatcher.
-        }
+        _sink.Write(new FeedbackEntry(title, body, severity, role));
     }
 }
