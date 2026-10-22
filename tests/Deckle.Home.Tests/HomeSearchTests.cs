@@ -4,6 +4,7 @@ using Xunit;
 
 namespace Deckle.Home.Tests;
 
+[Trait("Category", "integration")]
 public sealed class HomeSearchTests
 {
     private static HomeSearchFilter Filter() => new(null, null, null, null, null, null);
