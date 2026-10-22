@@ -116,17 +116,41 @@ public class ManagementGesturesTests
     }
 
     [Fact]
-    public async Task ARapportIsRefusedFromThePreviewOnWithoutAskingThePerson()
+    public async Task AnUnlinkedRapportIsPreviewedThenBinnedAfterApproval()
     {
         using var server = new FakeAnytypeServer();
         server.OnGetObject(ObjId, Obj(DevSpace.Types.Rapport));
+        server.OnV2Search(Backlinks()); // served again for every links read
+        server.OnDeleteObject(ObjId, new JsonObject());
+        var approval = new FakeApproval(DeletionApprovalOutcome.Approved);
+        ManagementGestures gestures = NewGestures(server, approval);
+
+        string preview = await gestures.DeleteAsync(ObjId, ct: Ct);
+
+        Assert.Contains(ObjId, preview);
+        Assert.False(Deleted(server));
+        Assert.Equal(0, approval.Asked);
+
+        string digest = await gestures.DeleteAsync(ObjId, confirm: true, ct: Ct);
+
+        Assert.Equal(1, approval.Asked);
+        Assert.Contains(server.Requests,
+            r => r.Method == "DELETE" && r.Path.EndsWith($"/objects/{ObjId}"));
+        Assert.Contains("corbeille", digest);
+    }
+
+    [Fact]
+    public async Task ARapportAnotherObjectLinksToIsRefusedLikeAnyObject()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ObjId, Obj(DevSpace.Types.Rapport));
+        server.OnV2Search(Backlinks(OtherId));
         server.OnDeleteObject(ObjId, new JsonObject());
         var approval = new FakeApproval(DeletionApprovalOutcome.Approved);
 
-        var error = await Assert.ThrowsAsync<InvalidOperationException>(
+        await Assert.ThrowsAsync<InvalidOperationException>(
             () => NewGestures(server, approval).DeleteAsync(ObjId, confirm: true, ct: Ct));
 
-        Assert.Contains("rapport", error.Message);
         Assert.Equal(0, approval.Asked);
         Assert.False(Deleted(server));
     }
