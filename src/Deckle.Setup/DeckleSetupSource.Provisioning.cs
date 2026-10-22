@@ -62,9 +62,11 @@ public sealed partial class DeckleSetupSource
             WriteEvent(EvtItemDownloadFailed, item_id, reason, ex_type, ex_message, duration_ms);
     }
 
+    // A cancelled download is a normal end, journaled like its failed sibling.
     [Event(EvtItemCancelled,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "A setup item download was cancelled")]
     public void ItemCancelled()
     {
