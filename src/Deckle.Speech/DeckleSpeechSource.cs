@@ -63,6 +63,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     [Event(EvtReadAloudRequested,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
+           Tags = ObservationTags.Journal,
            Message = "Read aloud requested")]
     public void ReadAloudRequested()
     {
@@ -124,6 +125,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     [Event(EvtReadAloudEnded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
+           Tags = ObservationTags.Journal,
            Message = "Read aloud ended | outcome={0} | reason={1} | elapsed_ms={2}")]
     public void ReadAloudEnded(string outcome, string reason, long elapsed_ms)
     {
