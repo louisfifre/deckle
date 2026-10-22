@@ -1873,6 +1873,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DocumentGesturesTests.cs
 │   │   ├── FakeV2Handler.cs
 │   │   ├── JournalClosersTests.cs
+│   │   ├── ListingPagingBugNotes.md
 │   │   ├── ListingPagingTests.cs
 │   │   ├── LiveTagResolverTests.cs
 │   │   ├── ManagementGesturesBugNotes.md
