@@ -88,6 +88,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **transcription:** Pad every utterance with low-level noise before decoding
 - **anytype:** Drop version and due date from the Epic property table
 - **setup:** Keep the in-progress module selection on Back
+- **mcp:** Keep a surrogate pair whole when the tool text is cut
 - **setup:** Mirror the wizard's new strings into the app resources
 - **setup:** Describe Rewrite without naming where its model runs
 - **setup:** Open an update's provisioning as the narrow card
