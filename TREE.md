@@ -1108,6 +1108,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── PrecisionScrollViewModel.Tuning.cs
 │   │   ├── Deckle.Input.PrecisionScroll.csproj
 │   │   ├── DecklePrecisionScrollSource.cs
+│   │   ├── PrecisionScrollRuntime.cs
 │   │   ├── PrecisionScrollSettings.cs
 │   │   ├── PrecisionScrollSettingsModule.cs
 │   │   ├── PrecisionScrollSettingsService.cs
@@ -2141,7 +2142,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Input.PrecisionScroll.Tests.csproj
 │   │   ├── DecklePrecisionScrollSourceTests.cs
 │   │   ├── PerceptualBaselineTests.cs
+│   │   ├── PrecisionScrollBugNotes.md
 │   │   ├── PrecisionScrollGestureTests.cs
+│   │   ├── PrecisionScrollObservabilityCollection.cs
+│   │   ├── PrecisionScrollRuntimeTests.cs
 │   │   ├── PrecisionScrollTuningTests.cs
 │   │   └── WheelTickQueueTests.cs
 │   ├── Deckle.Input.Tests/

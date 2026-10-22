@@ -32,6 +32,9 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     public const int EvtStopSlow = 20;
     public const int EvtSettingsLoadWarning = 21;
     public const int EvtSettingsLoadError = 22;
+    public const int EvtRestartScheduledDetail = 23;
+    public const int EvtFellBackToNativeWheel = 24;
+    public const int EvtFallbackRecovered = 25;
 
     [Event(EvtEngineStarted,
            Level = EventLevel.Informational,
@@ -102,8 +105,9 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtTouchpadSettingsUnavailable, win32_error);
     }
 
-    // Error, not Warning: a refused frame ends the worker, so precision
-    // scrolling is off until the setting is toggled or the app restarts.
+    // Error, not Warning: a refused frame ends the worker and the wheel goes
+    // native. PrecisionScrollRuntime then restarts it once; when that one stops
+    // too, FellBackToNativeWheel says it stays off.
     [Event(EvtInjectionFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
@@ -149,6 +153,47 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     public void StopSlow(int timeout_ms)
     {
         if (IsEnabled()) WriteEvent(EvtStopSlow, timeout_ms);
+    }
+
+    // The worker ended on its own and the runtime will start it again once,
+    // after delay_ms. reason is the engine's: queue_full, injection_failed or
+    // worker_faulted. The engine's own line already told the journal why it ended.
+    [Event(EvtRestartScheduledDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "precision scrolling restart scheduled | reason={0} | delay_ms={1}")]
+    public void RestartScheduledDetail(string reason, long delay_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtRestartScheduledDetail, reason, delay_ms);
+    }
+
+    // Opens the incident "the wheel is native although the switch is on": the
+    // restart did not hold or could not start. It stays down, with no further
+    // attempt, until the person toggles the switch. reason is the engine's
+    // (queue_full, injection_failed, worker_faulted) or restart_failed when the
+    // restart itself could not start.
+    [Event(EvtFellBackToNativeWheel,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Precision scrolling stopped again and stays off, the wheel scrolls natively | reason={0}")]
+    public void FellBackToNativeWheel(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtFellBackToNativeWheel, reason);
+    }
+
+    // Closes the incident FellBackToNativeWheel opened, when the person
+    // switches the feature off. Only that closes it: once the wheel stays
+    // native nothing restarts the engine, so no start can end the incident
+    // before the person acts.
+    [Event(EvtFallbackRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Precision scrolling no longer stays off, the person toggled it | previous_reason={0}")]
+    public void FallbackRecovered(string previous_reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtFallbackRecovered, previous_reason);
     }
 
     // The settings store reports in free text; the text carries its own cause.
