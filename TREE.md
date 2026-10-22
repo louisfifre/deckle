@@ -2181,6 +2181,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientHueChangeAttributorTests.cs
 │   │   ├── AmbientNearBlackTests.cs
 │   │   ├── AmbientObservabilityCollection.cs
+│   │   ├── AmbientPresetSelectionLogTests.cs
 │   │   ├── AmbientPresetsTests.cs
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
