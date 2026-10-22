@@ -1,10 +1,13 @@
 using Deckle.App;
+using Deckle.Core;
+using Deckle.Diagnostics;
 
 namespace Deckle.App;
 
 public partial class App
 {
     private const string ResidentMutexName = @"Local\Deckle.Resident";
+    private const string SecondInstanceFileName = "second-instance.txt";
     private Mutex? _residentMutex;
 
     // Read by ReportCrashDumpCapture: ownership is taken before any sink
@@ -37,6 +40,15 @@ public partial class App
         return true;
     }
 
+    // A rejected second instance has no sink and may not install one: the
+    // resident run holds the journal open for writing, so the fact goes to a
+    // small file of its own, beside the launcher's.
+    private static void NoteSecondInstanceRejected() =>
+        NoteFile.Append(
+            Path.Combine(AppPaths.DiagnosticsDirectory, SecondInstanceFileName),
+            $"pid={Environment.ProcessId} | another Deckle is resident, this one exits",
+            DateTimeOffset.Now);
+
     private void ReleaseResidentOwnership()
     {
         Mutex? mutex = _residentMutex;
@@ -55,7 +67,8 @@ public partial class App
 
     private void QuitApp(Action? restart = null)
     {
-        DeckleAppSource.Log.ShutdownRequested();
+        string workId = WorkId.Next();
+        DeckleAppSource.Log.ShutdownRequested(workId);
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         int steps = 0;
         int failed = 0;
@@ -110,12 +123,25 @@ public partial class App
         // Restart only after every resident service has stopped and the ownership
         // gate is released. Spawning earlier lets the successor reject itself
         // against this still-running process, then leaves no Deckle behind.
+        // The run mark goes first: the successor writes its own once it owns
+        // the gate, and must not find this run's mark still there.
+        MarkRunEnded();
         ReleaseResidentOwnership();
         if (restart is not null)
-            TryShutdown("restart_spawn", restart);
+        {
+            // Not a TryShutdown step: a successor that cannot start leaves the
+            // user with no Deckle, which is an Error that says so, where a
+            // failed teardown step is only a Warning.
+            steps++;
+            try { restart(); }
+            catch (Exception ex)
+            {
+                failed++;
+                DeckleAppSource.Log.RelaunchFailed(ex.GetType().Name, ex.Message);
+            }
+        }
 
-        DeckleAppSource.Log.ShutdownStepsDetail(steps, failed, stopwatch.ElapsedMilliseconds);
-        DeckleAppSource.Log.ShutdownCompleted();
+        DeckleAppSource.Log.ShutdownCompleted(workId, steps, failed, stopwatch.ElapsedMilliseconds);
         Environment.Exit(0);
     }
 
@@ -167,15 +193,10 @@ public partial class App
                     WorkingDirectory = Path.GetDirectoryName(exePath) ?? "",
                 };
                 DeckleAppSource.Log.PostBuildShellExecute(exePath);
-                try
-                {
-                    var child = System.Diagnostics.Process.Start(psi);
-                    DeckleAppSource.Log.RestartSpawned(child?.Id ?? 0);
-                }
-                catch (Exception ex)
-                {
-                    DeckleAppSource.Log.PostBuildRelaunchFailed(ex.GetType().Name, ex.Message);
-                }
+                // A start that throws reaches QuitApp, which reports it for
+                // every restart path alike.
+                var child = System.Diagnostics.Process.Start(psi);
+                DeckleAppSource.Log.RestartSpawned(child?.Id ?? 0);
             });
         }
     }

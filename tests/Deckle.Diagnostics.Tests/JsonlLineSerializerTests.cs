@@ -30,6 +30,28 @@ public sealed class JsonlLineSerializerTests
         return JsonDocument.Parse(Encoding.UTF8.GetString(line.Span)).RootElement.Clone();
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SelfDescribingMarksAJournalMilestoneAndLeavesOtherRowsUntouched(bool journal)
+    {
+        var entry = new EventEntry(
+            timestamp:        DateTimeOffset.UtcNow,
+            provider:         "Deckle-SerializerTest",
+            eventName:        "Sample",
+            level:            EventLevel.Informational,
+            keywords:         EventKeywords.None,
+            kind:             ObservationKind.Operational,
+            formattedMessage: "sample",
+            payload:          new Dictionary<string, object?>(),
+            journal:          journal);
+
+        ReadOnlyMemory<byte> line = new JsonlLineSerializer().Serialize(entry, "log", JsonlSchema.SelfDescribing);
+        JsonElement root = JsonDocument.Parse(Encoding.UTF8.GetString(line.Span)).RootElement;
+
+        Assert.Equal(journal, root.TryGetProperty("journal", out JsonElement mark) && mark.GetBoolean());
+    }
+
     [Fact]
     public void SelfDescribingNamesTheTransverseKeywordsInDeclarationOrder()
     {
@@ -66,6 +88,26 @@ public sealed class JsonlLineSerializerTests
         JsonElement root = Serialize((EventKeywords)(1L << 10), JsonlSchema.SelfDescribing);
 
         Assert.Equal(string.Empty, root.GetProperty("keywords").GetString());
+    }
+
+    [Fact]
+    public void ALoneSurrogateIsReplacedRatherThanLosingTheRow()
+    {
+        var entry = new EventEntry(
+            timestamp:        DateTimeOffset.UtcNow,
+            provider:         "Deckle-SerializerTest",
+            eventName:        "Sample",
+            level:            EventLevel.Informational,
+            keywords:         EventKeywords.None,
+            kind:             ObservationKind.Operational,
+            formattedMessage: "msg\uDC00end",
+            payload:          new Dictionary<string, object?> { ["value"] = "before\uD800after" });
+
+        ReadOnlyMemory<byte> line = new JsonlLineSerializer().Serialize(entry, "log", JsonlSchema.SelfDescribing);
+        JsonElement root = JsonDocument.Parse(Encoding.UTF8.GetString(line.Span)).RootElement;
+
+        Assert.Equal("before�after", root.GetProperty("payload").GetProperty("value").GetString());
+        Assert.Equal("msg�end", root.GetProperty("message").GetString());
     }
 
     [Fact]

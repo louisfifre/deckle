@@ -80,7 +80,7 @@ public class DeckleNotificationsSourceTests
     }
 
     [Fact]
-    public async Task ADroppedPromptEmitsWarningWithTheReasonDetail()
+    public async Task ADroppedPromptEmitsWarningCarryingTheNotificationAndTheReason()
     {
         var dispatcher = NotificationDispatcher.Initialize(
             new FakeNotificationChannel(isAvailable: false));
@@ -93,11 +93,11 @@ public class DeckleNotificationsSourceTests
         var dropped = Single(listener, DeckleNotificationsSource.EvtNotificationDropped);
         Assert.Equal(EventLevel.Warning, dropped.Level);
         Assert.True(dropped.HasKeyword(Keywords.Push));
-
-        var droppedDetail = Single(listener, DeckleNotificationsSource.EvtNotificationDroppedDetail);
-        Assert.Equal(EventLevel.Verbose, droppedDetail.Level);
-        Assert.Equal("playground.dropped", droppedDetail.Payload?[0]); // notification_id
-        Assert.Equal("channel_unavailable", droppedDetail.Payload?[1]); // reason
+        // The journal keeps Warnings whatever the verbosity, so the line itself
+        // names the notification and the reason.
+        Assert.Equal(["notification_id", "reason"], dropped.PayloadNames);
+        Assert.Equal("playground.dropped", dropped.Payload?[0]);
+        Assert.Equal("channel_unavailable", dropped.Payload?[1]);
 
         Assert.DoesNotContain(listener.Events,
             e => e.EventId == DeckleNotificationsSource.EvtNotificationShown);
@@ -115,8 +115,8 @@ public class DeckleNotificationsSourceTests
         using var listener = new TestEventListener("Deckle-Notifications");
         await dispatcher.PromptAsync(descriptor, ct: TestContext.Current.CancellationToken);
 
-        var droppedDetail = Single(listener, DeckleNotificationsSource.EvtNotificationDroppedDetail);
-        Assert.Equal("no_channel", droppedDetail.Payload?[1]); // reason
+        var dropped = Single(listener, DeckleNotificationsSource.EvtNotificationDropped);
+        Assert.Equal("no_channel", dropped.Payload?[1]); // reason
     }
 
     [Fact]
@@ -211,16 +211,15 @@ public class DeckleNotificationsSourceTests
         Assert.Equal(EventLevel.Warning, failed.Level);
         Assert.True(failed.HasKeyword(Keywords.Push));
 
-        var failedDetail = Single(listener, DeckleNotificationsSource.EvtNotificationFailedDetail);
-        Assert.Equal(EventLevel.Verbose, failedDetail.Level);
-        Assert.True(failedDetail.HasKeyword(Keywords.Push));
-        Assert.Equal("playground.failed_obs", failedDetail.Payload?[0]); // notification_id
-        Assert.Equal("boom", failedDetail.Payload?[1]);                  // error
+        // The cause rides on the Warning the journal keeps, not on a Verbose mirror.
+        Assert.Equal(["notification_id", "ex_type", "ex_message"], failed.PayloadNames);
+        Assert.Equal("playground.failed_obs", failed.Payload?[0]);
+        Assert.Equal("InvalidOperationException", failed.Payload?[1]);
+        Assert.Equal("boom", failed.Payload?[2]);
 
         AssertOrdered(listener,
             DeckleNotificationsSource.EvtNotificationShown,
-            DeckleNotificationsSource.EvtNotificationFailed,
-            DeckleNotificationsSource.EvtNotificationFailedDetail);
+            DeckleNotificationsSource.EvtNotificationFailed);
 
         Assert.DoesNotContain(listener.Events,
             e => e.EventId == DeckleNotificationsSource.EvtNotificationResponded);

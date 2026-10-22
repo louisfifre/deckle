@@ -81,7 +81,7 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtModuleSkipped                  = 66;
     public const int EvtModuleFailed                   = 67;
     public const int EvtShutdownStepFailed             = 68;
-    public const int EvtShutdownStepsDetail            = 69;
+    // 69 retired: its steps, failed and elapsed_ms moved onto ShutdownCompleted.
     public const int EvtCrashUnhandled                 = 70;
     public const int EvtCrashAppDomain                 = 71;
     public const int EvtCrashTaskScheduler             = 72;
@@ -90,7 +90,7 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtDataRootCleanupStarting        = 75;
     public const int EvtDataRootCleanupFinished        = 76;
     public const int EvtDataRootCleanupFailed          = 77;
-    public const int EvtPostBuildRelaunchFailed        = 78;
+    public const int EvtRelaunchFailed                 = 78;
     public const int EvtRestartSettingsFlushFailed     = 79;
     public const int EvtRestartSpawnSkipped            = 80;
     public const int EvtRestartSpawned                 = 81;
@@ -102,7 +102,8 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtDictationRecoveryUnreadable    = 87;
     public const int EvtDictationRecoveryClipboardFailed = 88;
     public const int EvtDictationRecoveryKept          = 89;
-    public const int EvtSecondInstanceRejected         = 90;
+    // 90 retired: a rejected second instance has no sink, so the fact is a
+    // line in second-instance.txt (App.Lifetime.cs).
     public const int EvtResidentMutexAbandoned         = 91;
     public const int EvtResidentMutexReleaseFailed     = 92;
     public const int EvtTransactionalModeExited        = 93;
@@ -133,4 +134,7 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtModuleStarting                 = 118;
     public const int EvtModuleRefused                  = 119;
     public const int EvtLaunchContextDetail            = 120;
+    public const int EvtPreviousRunEndedUncleanly      = 121;
+    public const int EvtLegacySettingsMigrationFailed  = 122;
+    public const int EvtAnytypeRuntimeFailed           = 123;
 }

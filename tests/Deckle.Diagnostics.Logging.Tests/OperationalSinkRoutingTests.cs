@@ -81,6 +81,31 @@ public sealed class OperationalSinkRoutingTests
     }
 
     [Fact]
+    [Trait("Category", "regression")]
+    public void ApplicationLogDoesNotTakeAFailingSettingsReadForADisabledLog()
+    {
+        string root = Path.Combine(
+            AppContext.BaseDirectory,
+            "application-log-throws-" + Guid.NewGuid().ToString("N"));
+        var sink = new ApplicationLogSink(
+            root,
+            () => throw new InvalidOperationException("settings unreadable"));
+
+        try
+        {
+            // The dispatcher contains this and opens a sink incident; false
+            // here would keep the log silent with nothing to say why.
+            Assert.Throws<InvalidOperationException>(
+                () => sink.Wants(Entry("row", ObservationKind.Operational)));
+        }
+        finally
+        {
+            sink.Dispose();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void LogWindowRejectsDatasetEntriesBeforeBuffering()
     {
         var sink = new LogWindowSink();

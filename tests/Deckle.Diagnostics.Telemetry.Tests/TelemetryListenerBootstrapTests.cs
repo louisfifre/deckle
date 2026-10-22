@@ -74,6 +74,43 @@ public sealed class TelemetryListenerBootstrapTests
     }
 
     [Fact]
+    [Trait("Category", "regression")]
+    public void AConsentReaderThatThrowsWritesNothingAndIsReportedAsASinkIncident()
+    {
+        string root = Path.Combine(
+            AppContext.BaseDirectory,
+            "telemetry-gate-throws-" + Guid.NewGuid().ToString("N"));
+        string latency = Path.Combine(root, "latency.jsonl");
+        string failure = "consent store unreadable " + Guid.NewGuid().ToString("N");
+
+        TelemetryListenerBootstrap.ShutDown();
+        using var dispatch = new DispatchEventListener();
+        using var reports = new TestEventListener("Deckle-Diagnostics");
+        try
+        {
+            TelemetryListenerBootstrap.Configure(
+                dispatch, root, validationSubdirectory: false);
+            TelemetryListenerBootstrap.ConfigureGates(
+                _ => throw new InvalidOperationException(failure));
+
+            TestTelemetrySource.Log.LatencyRecorded("unreadable consent");
+            dispatch.FlushSinks();
+
+            // Closed, as when no reader is wired: nothing reaches the disk.
+            Assert.False(File.Exists(latency) && new FileInfo(latency).Length > 0);
+            // And said: the dispatcher names the sink and the cause.
+            Assert.Contains(
+                reports.Events,
+                e => e.EventName == "SinkFaulted" && Equals(e.Payload?[2], failure));
+        }
+        finally
+        {
+            TelemetryListenerBootstrap.ShutDown();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
     public void DatasetConsentDefaultsClosed()
     {
         string root = Path.Combine(

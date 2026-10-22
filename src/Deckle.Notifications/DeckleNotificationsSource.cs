@@ -28,16 +28,18 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     public const int EvtNotificationResponded       = 6;
     public const int EvtNotificationRespondedDetail = 7;
     public const int EvtNotificationDropped         = 8;
-    public const int EvtNotificationDroppedDetail   = 9;
+    // 9 retired: the Verbose mirror of NotificationDropped.
     public const int EvtPromptCancelled             = 10;
     public const int EvtToastsUnavailable           = 11;
     public const int EvtToastRegistrationFailed     = 12;
-    public const int EvtToastRegistrationFailedDetail = 13;
+    // 13 retired: the Verbose mirror of ToastRegistrationFailed.
     public const int EvtNotificationCancelled       = 14;
     public const int EvtNotificationUnanswered      = 15;
     public const int EvtNotificationUnansweredDetail = 16;
     public const int EvtNotificationFailed          = 17;
-    public const int EvtNotificationFailedDetail    = 18;
+    // 18 retired: the Verbose mirror of NotificationFailed.
+    public const int EvtToastWithdrawFailed         = 19;
+    public const int EvtToastWithdrawRecovered      = 20;
 
     // ─── Dispatcher boot ───────────────────────────────────────────────
     [Event(EvtDispatcherInitialized,
@@ -111,23 +113,18 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     }
 
     // ─── Dropped ───────────────────────────────────────────────────────
+    // The Warning carries the notification and the reason itself: the journal
+    // keeps Warnings whatever the verbosity, so a line that said only "dropped"
+    // left a reader unable to tell which notification, or why. reason:
+    // no_channel (none registered for the kind) or channel_unavailable.
+    // Id 9 was the Verbose mirror of this line and is retired.
     [Event(EvtNotificationDropped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A notification was dropped because no channel could show it")]
-    public void NotificationDropped()
+           Message = "A notification was dropped because no channel could show it | notification_id={0} | reason={1}")]
+    public void NotificationDropped(string notification_id, string reason)
     {
-        if (IsEnabled()) WriteEvent(EvtNotificationDropped);
-    }
-
-    [Event(EvtNotificationDroppedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "notification dropped | notification_id={0} | reason={1}")]
-    public void NotificationDroppedDetail(string notification_id, string reason)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
-        WriteEvent(EvtNotificationDroppedDetail, notification_id, reason);
+        if (IsEnabled()) WriteEvent(EvtNotificationDropped, notification_id, reason);
     }
 
     // ─── Cancellation (Verbose-only) ───────────────────────────────────
@@ -172,23 +169,15 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     }
 
     // ─── Failed (a channel threw while delivering) ─────────────────────
+    // Id 18 was the Verbose mirror carrying the cause and is retired: the
+    // cause belongs on the line the journal keeps.
     [Event(EvtNotificationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A notification channel failed to deliver")]
-    public void NotificationFailed()
+           Message = "A notification channel failed to deliver | notification_id={0} | ex_type={1} | ex_message={2}")]
+    public void NotificationFailed(string notification_id, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtNotificationFailed);
-    }
-
-    [Event(EvtNotificationFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "notification failed | notification_id={0} | error={1}")]
-    public void NotificationFailedDetail(string notification_id, string error)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
-        WriteEvent(EvtNotificationFailedDetail, notification_id, error);
+        if (IsEnabled()) WriteEvent(EvtNotificationFailed, notification_id, ex_type, ex_message);
     }
 
     // ─── Toast channel failure modes ───────────────────────────────────
@@ -201,22 +190,36 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtToastsUnavailable);
     }
 
+    // Id 13 was the Verbose mirror carrying the cause and is retired.
     [Event(EvtToastRegistrationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Toast notification registration failed")]
-    public void ToastRegistrationFailed()
+           Message = "Toast notification registration failed | ex_type={0} | ex_message={1}")]
+    public void ToastRegistrationFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtToastRegistrationFailed);
+        if (IsEnabled()) WriteEvent(EvtToastRegistrationFailed, ex_type, ex_message);
     }
 
-    [Event(EvtToastRegistrationFailedDetail,
-           Level = EventLevel.Verbose,
+    // A toast that a cancelled prompt asked to take back could not be removed
+    // from the screen and the Notification Center. The degradation is one
+    // incident: ToastWithdrawIncident writes this line once and the recovery
+    // once, however many withdrawals fail in between.
+    [Event(EvtToastWithdrawFailed,
+           Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "toast registration failed | error={0}")]
-    public void ToastRegistrationFailedDetail(string error)
+           Message = "A toast could not be withdrawn and stays on screen | ex_type={0} | ex_message={1}")]
+    public void ToastWithdrawFailed(string ex_type, string ex_message)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
-        WriteEvent(EvtToastRegistrationFailedDetail, error);
+        if (IsEnabled()) WriteEvent(EvtToastWithdrawFailed, ex_type, ex_message);
+    }
+
+    [Event(EvtToastWithdrawRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Push,
+           Tags = ObservationTags.Journal,
+           Message = "Toast withdrawal works again")]
+    public void ToastWithdrawRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtToastWithdrawRecovered);
     }
 }

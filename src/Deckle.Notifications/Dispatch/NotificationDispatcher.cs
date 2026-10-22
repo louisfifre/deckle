@@ -91,12 +91,8 @@ public sealed class NotificationDispatcher
 
         if (!_channels.TryGetValue(descriptor.Channel, out var channel) || !channel.IsAvailable)
         {
-            DeckleNotificationsSource.Log.NotificationDropped();
-            if (DeckleNotificationsSource.Log.IsEnabled())
-            {
-                var reason = channel is null ? "no_channel" : "channel_unavailable";
-                DeckleNotificationsSource.Log.NotificationDroppedDetail(descriptor.Id, reason);
-            }
+            DeckleNotificationsSource.Log.NotificationDropped(
+                descriptor.Id, channel is null ? "no_channel" : "channel_unavailable");
             return null;
         }
 
@@ -148,11 +144,8 @@ public sealed class NotificationDispatcher
         {
             // Without this catch the exception escapes with NotificationShown as
             // the last trace and the step never closes.
-            DeckleNotificationsSource.Log.NotificationFailed();
-            if (DeckleNotificationsSource.Log.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
-            {
-                DeckleNotificationsSource.Log.NotificationFailedDetail(descriptor.Id, ex.Message);
-            }
+            DeckleNotificationsSource.Log.NotificationFailed(
+                descriptor.Id, ex.GetType().Name, ex.Message);
             throw;
         }
     }

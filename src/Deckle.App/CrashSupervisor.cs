@@ -107,11 +107,18 @@ internal static class CrashSupervisor
                     ?? throw new InvalidOperationException("Process.Start returned no process.");
                 started = true;
 
+                // Each child's run is lasting work: its start and its end share
+                // an id, so supervisor.txt reads on its own. A start with no end
+                // means the launcher itself went down with its child.
+                string workId = WorkId.Next();
+                Note($"child started | {WorkId.FieldName}={workId} | child_pid={child.Id} | relaunch={budget.Granted}");
+
                 child.WaitForExit();
                 int exitCode = child.ExitCode;
 
-                if (!CrashRelaunchPolicy.IsCrash(exitCode)) return true;
-                Note($"child crashed | child_pid={child.Id} | exit_code=0x{(uint)exitCode:X8}");
+                bool crashed = CrashRelaunchPolicy.IsCrash(exitCode);
+                Note($"child ended | {WorkId.FieldName}={workId} | child_pid={child.Id} | exit_code=0x{(uint)exitCode:X8} | outcome={(crashed ? "crash" : "exit")}");
+                if (!crashed) return true;
 
                 Thread.Sleep(CrashRelaunchPolicy.RelaunchDelay);
 
@@ -160,20 +167,14 @@ internal static class CrashSupervisor
         return Process.Start(psi);
     }
 
+    // Capped like every sinkless trace (NoteFile): a launcher that runs for
+    // months, now that it also notes each start and end, cannot grow this file
+    // without bound. A line that cannot be written is dropped there.
     private static void Note(string line)
-    {
-        try
-        {
-            Directory.CreateDirectory(AppPaths.DiagnosticsDirectory);
-            File.AppendAllText(
-                Path.Combine(AppPaths.DiagnosticsDirectory, SupervisorFileName),
-                $"{DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss.fff zzz} | launcher_pid={Environment.ProcessId} | {line}{Environment.NewLine}");
-        }
-        catch
-        {
-            // Nothing else can take the line; the launcher goes on regardless.
-        }
-    }
+        => NoteFile.Append(
+            Path.Combine(AppPaths.DiagnosticsDirectory, SupervisorFileName),
+            $"launcher_pid={Environment.ProcessId} | {line}",
+            DateTimeOffset.Now);
 
     // GetSystemMetrics(SM_SHUTTINGDOWN) is nonzero while the current session
     // is shutting down (documented on Learn). A child that dies in a shutdown

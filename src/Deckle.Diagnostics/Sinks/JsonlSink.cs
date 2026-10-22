@@ -16,10 +16,15 @@ namespace Deckle.Diagnostics;
 // gone) is reported once as a sink incident on Deckle-Diagnostics, named by
 // its file, and closed by the next line that lands; the other sinks carry the
 // report. The queue's own comment says why those reports leave the worker.
+//
+// Rotation, pruning and line counting never stop the writes: a failure leaves
+// the file growing or the archive unpruned. That is a second incident of the
+// same shape (RotationFailed once, the attempts counted, RotationRecovered when
+// a roll and its prune go through), so the journal says that a file stopped
+// rolling instead of leaving a disk to fill up unexplained.
 public sealed class JsonlSink : IFlushableLogSink
 {
     private const int DefaultQueueCapacity = 1024;
-    private static readonly byte[] NewLine = [(byte)'\n'];
 
     private readonly string _filePath;
     private readonly Func<EventEntry, bool> _predicate;
@@ -32,6 +37,10 @@ public sealed class JsonlSink : IFlushableLogSink
     // Worker-thread-owned state.
     private FileStream? _stream;
     private long _linesWritten;
+
+    // Failed maintenance attempts of the open incident. Owned by the constructor
+    // until the queue exists, by the worker after.
+    private int _maintenanceFailures;
 
     public JsonlSink(
         string filePath,
@@ -59,7 +68,9 @@ public sealed class JsonlSink : IFlushableLogSink
             // An archive left oversized by an earlier run (or by a cap lowered
             // since) is trimmed at start, not only at the next roll.
             PruneArchives(onWorker: false);
-            _linesWritten = CountLines(_filePath);
+            _linesWritten = CountLines(_filePath, out Exception? countError);
+            if (countError is not null)
+                ReportMaintenanceFailure("count_lines", countError, onWorker: false);
         }
 
         string sinkName = Path.GetFileName(_filePath);
@@ -92,9 +103,10 @@ public sealed class JsonlSink : IFlushableLogSink
                 RollFiles();
 
             FileStream stream = EnsureStream();
-            ReadOnlyMemory<byte> json = _serializer.Serialize(entry, _kindLabel, _schema);
-            await stream.WriteAsync(json).ConfigureAwait(false);
-            await stream.WriteAsync(NewLine).ConfigureAwait(false);
+            // One write for the row and its newline: two writes could be torn
+            // between them, leaving an unterminated row.
+            ReadOnlyMemory<byte> line = _serializer.Serialize(entry, _kindLabel, _schema);
+            await stream.WriteAsync(line).ConfigureAwait(false);
             await stream.FlushAsync().ConfigureAwait(false);
             _linesWritten++;
         }
@@ -107,13 +119,7 @@ public sealed class JsonlSink : IFlushableLogSink
 
     private FileStream EnsureStream()
     {
-        return _stream ??= new FileStream(
-            _filePath,
-            FileMode.Append,
-            FileAccess.Write,
-            FileShare.Read,
-            bufferSize: 4096,
-            FileOptions.Asynchronous | FileOptions.SequentialScan);
+        return _stream ??= JsonlAppendStream.Open(_filePath);
     }
 
     private ValueTask FlushOnWorker() => _stream is null
@@ -146,31 +152,56 @@ public sealed class JsonlSink : IFlushableLogSink
 
             _linesWritten = 0;
         }
-        catch
+        catch (Exception ex)
         {
-            _linesWritten = CountLines(_filePath);
+            // The file is where it was, so its count is what the next attempt
+            // needs. A count that fails too belongs to the same incident.
+            _linesWritten = CountLines(_filePath, out _);
+            ReportMaintenanceFailure("roll", ex, onWorker: true);
             return;
         }
 
         // Only after a roll that worked: a failed move must not delete history.
-        PruneArchives(onWorker: true);
+        if (PruneArchives(onWorker: true))
+            ReportMaintenanceRecovered(onWorker: true);
     }
+
+    private void ReportMaintenanceFailure(string step, Exception error, bool onWorker)
+    {
+        if (_maintenanceFailures++ > 0) return;
+
+        string fileName = Path.GetFileName(_filePath);
+        OffWorkerReport.Run(onWorker, () => DeckleDiagnosticsSource.Log.RotationFailed(
+            fileName, step, error.GetType().Name, error.Message));
+    }
+
+    private void ReportMaintenanceRecovered(bool onWorker)
+    {
+        int failures = _maintenanceFailures;
+        if (failures == 0) return;
+        _maintenanceFailures = 0;
+
+        string fileName = Path.GetFileName(_filePath);
+        OffWorkerReport.Run(onWorker, () => DeckleDiagnosticsSource.Log.RotationRecovered(fileName, failures));
+    }
+
 
     private string ArchiveDirectory() =>
         Path.Combine(Path.GetDirectoryName(_filePath) ?? string.Empty, "archive");
 
     // Deletes the oldest generations beyond MaxArchives. Never throws: a journal
     // that cannot trim itself must still keep writing, so a failure leaves the
-    // remaining files alone.
-    private void PruneArchives(bool onWorker)
+    // remaining files alone and opens the maintenance incident. Returns whether
+    // the pruning went through, which is what closes that incident.
+    private bool PruneArchives(bool onWorker)
     {
         int? cap = _rotation?.MaxArchives;
-        if (cap is null) return;
+        if (cap is null) return true;
 
         try
         {
             string archiveDirectory = ArchiveDirectory();
-            if (!Directory.Exists(archiveDirectory)) return;
+            if (!Directory.Exists(archiveDirectory)) return true;
 
             string fileName = Path.GetFileName(_filePath);
             List<(int Number, string Path)> generations =
@@ -181,9 +212,10 @@ public sealed class JsonlSink : IFlushableLogSink
             generations.Sort(static (a, b) => a.Number.CompareTo(b.Number));
 
             int excess = generations.Count - cap.Value;
-            if (excess <= 0) return;
+            if (excess <= 0) return true;
 
             int pruned = 0;
+            Exception? deleteError = null;
             for (int i = 0; i < excess; i++)
             {
                 try
@@ -191,47 +223,43 @@ public sealed class JsonlSink : IFlushableLogSink
                     File.Delete(generations[i].Path);
                     pruned++;
                 }
-                catch
+                catch (Exception ex)
                 {
                     // Stop at the first failure so the survivors stay the
                     // newest contiguous run; the next roll tries again.
+                    deleteError = ex;
                     break;
                 }
             }
 
-            if (pruned == 0) return;
+            if (pruned > 0)
+            {
+                int kept = generations.Count - pruned;
+                OffWorkerReport.Run(onWorker, () => DeckleDiagnosticsSource.Log.ArchivesPruned(pruned, fileName, kept));
+            }
 
-            int kept = generations.Count - pruned;
-            if (onWorker)
-            {
-                // Emitting on the worker would dispatch back into this sink's
-                // own bounded queue; with the queue full the worker would wait
-                // on itself. A pool thread breaks that cycle.
-                _ = Task.Run(() =>
-                {
-                    try { DeckleDiagnosticsSource.Log.ArchivesPruned(pruned, fileName, kept); }
-                    catch { }
-                });
-            }
-            else
-            {
-                DeckleDiagnosticsSource.Log.ArchivesPruned(pruned, fileName, kept);
-            }
+            if (deleteError is null) return true;
+            ReportMaintenanceFailure("prune", deleteError, onWorker);
+            return false;
         }
-        catch { }
+        catch (Exception ex)
+        {
+            ReportMaintenanceFailure("prune", ex, onWorker);
+            return false;
+        }
     }
 
+    // A listing that fails is not read as "no generation yet": the next number
+    // would restart at 1 and the move, which overwrites, would erase the oldest
+    // archive. The failure goes up to the roll, which reports it and leaves
+    // the active file where it is.
     private static int NextGeneration(string archiveDirectory, string fileName)
     {
         int max = 0;
-        try
+        foreach ((int number, _) in EnumerateGenerations(archiveDirectory, fileName))
         {
-            foreach ((int number, _) in EnumerateGenerations(archiveDirectory, fileName))
-            {
-                if (number > max) max = number;
-            }
+            if (number > max) max = number;
         }
-        catch { }
 
         return max + 1;
     }
@@ -257,8 +285,12 @@ public sealed class JsonlSink : IFlushableLogSink
         }
     }
 
-    private static long CountLines(string path)
+    // A file that cannot be read counts as empty, so the sink goes on writing;
+    // the error is handed back for the caller to report, because an unreadable
+    // file taken for an empty one would never roll.
+    private static long CountLines(string path, out Exception? error)
     {
+        error = null;
         try
         {
             if (!File.Exists(path)) return 0;
@@ -274,8 +306,9 @@ public sealed class JsonlSink : IFlushableLogSink
             }
             return count;
         }
-        catch
+        catch (Exception ex)
         {
+            error = ex;
             return 0;
         }
     }

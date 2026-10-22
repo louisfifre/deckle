@@ -99,6 +99,9 @@ public partial class App : Microsoft.UI.Xaml.Application
         AppDomain.CurrentDomain.ProcessExit += (_, _) =>
         {
             DeckleAppSource.Log.ProcessExit();
+            // Catch-all for an exit that did not go through QuitApp. A process
+            // killed from outside never gets here, which is what the mark is for.
+            MarkRunEnded();
             AppDiagnosticsBootstrap.Flush(ExitFlushDeadline);
         };
     }
@@ -115,7 +118,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // exempt because they coordinate overlapping processes by design.
         if (!TryAcquireResidentOwnership())
         {
-            DeckleAppSource.Log.SecondInstanceRejected();
+            NoteSecondInstanceRejected();
             Exit();
             return;
         }

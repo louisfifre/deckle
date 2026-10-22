@@ -75,6 +75,41 @@ public sealed class DataRootRelocatorTests
         Assert.Equal(0, copier.RollBackCalls);
     }
 
+    // Two undo steps can fail in the same rollback. The caller reads one
+    // exception to learn what state the machine is left in, so both must reach it.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void A_failed_restore_and_a_failed_cleanup_are_both_reported()
+    {
+        var copier = new FakeCopier { RollBackFailure = new IOException("target locked") };
+        var selection = new FakeSelection("old") { RestoreFailure = new InvalidOperationException("registry") };
+        var launcher = new FakeLauncher { Failure = new InvalidOperationException("launch") };
+        var relocator = new DataRootRelocator(copier, selection, launcher);
+
+        var thrown = Assert.Throws<AggregateException>(() => Relocate(relocator));
+
+        Assert.Equal(3, thrown.InnerExceptions.Count);
+        Assert.Equal("launch", thrown.InnerExceptions[0].Message);
+        Assert.Equal("registry", thrown.InnerExceptions[1].Message);
+        Assert.Equal("target locked", thrown.InnerExceptions[2].Message);
+    }
+
+    [Fact]
+    public void A_failed_cleanup_alone_is_reported_beside_the_failure_that_caused_it()
+    {
+        var copier = new FakeCopier { RollBackFailure = new IOException("target locked") };
+        var selection = new FakeSelection("old");
+        var launcher = new FakeLauncher { Failure = new InvalidOperationException("launch") };
+        var relocator = new DataRootRelocator(copier, selection, launcher);
+
+        var thrown = Assert.Throws<AggregateException>(() => Relocate(relocator));
+
+        Assert.Equal(2, thrown.InnerExceptions.Count);
+        Assert.Equal("launch", thrown.InnerExceptions[0].Message);
+        Assert.Equal("target locked", thrown.InnerExceptions[1].Message);
+        Assert.Equal("old", selection.Current);
+    }
+
     private static DataRootCopyResult Relocate(DataRootRelocator relocator) =>
         relocator.Relocate("source", "target", 42, progress: null, CancellationToken.None);
 
@@ -83,6 +118,7 @@ public sealed class DataRootRelocatorTests
         public DataRootCopyResult Result = new(42, 1, 0);
         public Exception? Failure;
         public int RollBackCalls;
+        public Exception? RollBackFailure;
 
         public DataRootCopyResult Copy(
             string source,
@@ -95,13 +131,18 @@ public sealed class DataRootRelocatorTests
             return Result;
         }
 
-        public void RollBack(string target, string source) => RollBackCalls++;
+        public void RollBack(string target, string source)
+        {
+            RollBackCalls++;
+            if (RollBackFailure is not null) throw RollBackFailure;
+        }
     }
 
     private sealed class FakeSelection(string? current) : IDataRootSelection
     {
         public string? Current = current;
         public Exception? SelectFailure;
+        public Exception? RestoreFailure;
         public int SelectCalls;
         public int RestoreCalls;
 
@@ -117,6 +158,7 @@ public sealed class DataRootRelocatorTests
         public void Restore(string? previous)
         {
             RestoreCalls++;
+            if (RestoreFailure is not null) throw RestoreFailure;
             Current = previous;
         }
     }

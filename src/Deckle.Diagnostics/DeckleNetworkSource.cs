@@ -3,7 +3,7 @@ using System.Diagnostics.Tracing;
 namespace Deckle.Diagnostics;
 
 // Cross-cutting sub-provider: machine network state transitions. Capturing
-// connectivity (presence / absence, profile, NIC counts) allows correlating
+// connectivity (presence / absence, link medium, NIC counts) allows correlating
 // HTTP failures in any module (Hue REST, Ollama, Anytype) with an OS-level
 // outage or profile switch instead of looking for the cause in the business
 // provider.
@@ -36,23 +36,25 @@ public sealed class DeckleNetworkSource : DeckleEventSource
     public const int EvtNetworkStatusChanged      = 1;
     public const int EvtNetworkConnectivityChanged = 2;
     public const int EvtNetworkQueryFailed        = 3;
+    public const int EvtNetworkQueryRecovered     = 4;
 
     // Emitted once at boot to capture the initial state, then on each
     // NetworkStatusChanged broadcast by Windows.
     //   - connected : true if profile.ConnectivityLevel >= InternetAccess.
-    //   - profile   : profile name ("Wi-Fi …", "Ethernet …", "(none)" if no
-    //                 active profile).
+    //   - medium    : the kind of link carrying the internet route, from the
+    //                 closed NetworkMedium vocabulary. The profile name stays
+    //                 out: a Wi-Fi name identifies a place.
     //   - ipv4_count / ipv6_count : number of IP hostnames in each family
     //                 (across all interfaces), useful to spot a VPN switch or
-    //                 NIC loss.
+    //                 NIC loss; -1 when the enumeration failed.
     [Event(EvtNetworkStatusChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Network,
-           Message = "network status changed | connected={0} | profile={1} | ipv4={2} | ipv6={3}")]
-    public void NetworkStatusChanged(bool connected, string profile, int ipv4_count, int ipv6_count)
+           Message = "network status changed | connected={0} | medium={1} | ipv4={2} | ipv6={3}")]
+    public void NetworkStatusChanged(bool connected, string medium, int ipv4_count, int ipv6_count)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Network)) return;
-        WriteEvent(EvtNetworkStatusChanged, connected, profile, ipv4_count, ipv6_count);
+        WriteEvent(EvtNetworkStatusChanged, connected, medium, ipv4_count, ipv6_count);
     }
 
     // One line per connectivity flip, plus the boot state (previous_state=
@@ -71,17 +73,88 @@ public sealed class DeckleNetworkSource : DeckleEventSource
         WriteEvent(EvtNetworkConnectivityChanged, previous_state, state, reason);
     }
 
-    // A WinRT network query threw. The emitter keeps its best-effort fallback
-    // (no profile, zero counters) and records why here. `stage` is the query:
-    // "connection_profile", "connectivity_level", "host_names".
+    // A WinRT network query threw, so the machine's connectivity could not be
+    // read: a degradation, not an offline state. The emitter then leaves the
+    // last known connectivity untouched, and the journal says here why it saw
+    // nothing. `stage` is the query: "connection_profile", "connectivity_level",
+    // "medium", "host_names". One incident per stage, through
+    // NetworkQueryIncidents, closed by NetworkQueryRecovered.
     [Event(EvtNetworkQueryFailed,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Network,
            Message = "network query failed | stage={0} | ex_type={1} | hr=0x{2:X8} | ex_message={3}")]
     public void NetworkQueryFailed(string stage, string ex_type, int hr, string ex_message)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Network)) return;
+        if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Network)) return;
         WriteEvent(EvtNetworkQueryFailed, stage, ex_type, hr, ex_message);
+    }
+
+    // The query that failed answers again.
+    [Event(EvtNetworkQueryRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Network,
+           Tags = ObservationTags.Journal,
+           Message = "network query recovered | stage={0}")]
+    public void NetworkQueryRecovered(string stage)
+    {
+        if (!IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Network)) return;
+        WriteEvent(EvtNetworkQueryRecovered, stage);
+    }
+}
+
+// The closed `medium` vocabulary of the status snapshot, from the IANA
+// interface type of the adapter that carries the internet route
+// (NetworkAdapter.IanaInterfaceType). Types outside the three named families
+// (a VPN tunnel, a virtual switch, a loopback) read as "other".
+public static class NetworkMedium
+{
+    public const string Ethernet = "ethernet";
+    public const string Wifi     = "wifi";
+    public const string Cellular = "cellular";
+    public const string Other    = "other";
+    public const string None     = "none";
+    public const string Unknown  = "unknown";
+
+    // IANAifType-MIB: 6 ethernetCsmacd, 71 ieee80211, 243 and 244 the two
+    // wireless WAN (mobile broadband) types.
+    public static string FromInterfaceType(uint ianaInterfaceType) => ianaInterfaceType switch
+    {
+        6          => Ethernet,
+        71         => Wifi,
+        243 or 244 => Cellular,
+        _          => Other,
+    };
+}
+
+// Reports a failing network query once and its recovery once. The OS broadcasts
+// a change many times, and a query that keeps throwing would otherwise write a
+// Warning for each of them.
+public sealed class NetworkQueryIncidents
+{
+    public static readonly NetworkQueryIncidents Shared = new();
+
+    private readonly object _gate = new();
+    private readonly HashSet<string> _failing = new(StringComparer.Ordinal);
+
+    // Emitted under the lock so a failure and the recovery that follows it
+    // reach the journal in the order they happened.
+    public void Failed(string stage, Exception ex)
+    {
+        ArgumentNullException.ThrowIfNull(ex);
+        lock (_gate)
+        {
+            if (!_failing.Add(stage)) return;
+            DeckleNetworkSource.Log.NetworkQueryFailed(stage, ex.GetType().Name, ex.HResult, ex.Message);
+        }
+    }
+
+    public void Succeeded(string stage)
+    {
+        lock (_gate)
+        {
+            if (_failing.Remove(stage))
+                DeckleNetworkSource.Log.NetworkQueryRecovered(stage);
+        }
     }
 }
 

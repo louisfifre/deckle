@@ -9,6 +9,7 @@ namespace Deckle.Diagnostics.Tests;
 // bounded flush. Every assertion reads what Deckle-Diagnostics emitted, since
 // that is what a reader of the journal would see.
 [Trait("Category", "observability")]
+[Collection(DiagnosticsProviderCollection.Name)]
 public sealed class DispatchEventListenerIncidentTests
 {
     [EventSource(Name = "Deckle-DispatchIncidentTests")]

@@ -9,6 +9,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Core;
+using Deckle.Diagnostics;
 using Deckle.Install;
 
 namespace Deckle.Setup;
@@ -78,6 +79,8 @@ public sealed partial class RelocatePage : Page
         string source = Path.GetFullPath(AppPaths.UserDataRoot);
         string target = Path.GetFullPath(_context.DataDirectory);
 
+        // One id per attempt: a Retry is a new attempt with its own start and end.
+        string workId = WorkId.Next();
         string step = "check";
         bool committed = false;
         try
@@ -85,7 +88,7 @@ public sealed partial class RelocatePage : Page
             SetMarquee(Loc.Get("Setup_Relocate_Checking"));
             long required = await Task.Run(() => DataRootTree.MeasureBytes(source), ct);
 
-            DeckleSetupSource.Log.RelocateStarted();
+            DeckleSetupSource.Log.RelocateStarted(workId);
             DeckleSetupSource.Log.RelocateStartedDetail(source, target, required);
 
             // The authoritative space gate — the Settings pre-check ran in
@@ -95,7 +98,7 @@ public sealed partial class RelocatePage : Page
             {
                 DeckleSetupSource.Log.RelocateInsufficientSpaceDetail(
                     drive.Name, required, drive.AvailableFreeSpace);
-                Fail(step, "insufficient_space", null,
+                Fail(workId, step, "insufficient_space", null,
                     Loc.Format("Setup_Relocate_InsufficientSpace_Format",
                         drive.Name, FormatBytes(required), FormatBytes(drive.AvailableFreeSpace)));
                 return;
@@ -115,7 +118,7 @@ public sealed partial class RelocatePage : Page
             }
             if (running.Length > 0)
             {
-                Fail(step, "app_still_running", null, Loc.Get("Setup_Deploy_AppRunning"));
+                Fail(workId, step, "app_still_running", null, Loc.Get("Setup_Deploy_AppRunning"));
                 return;
             }
 
@@ -133,7 +136,9 @@ public sealed partial class RelocatePage : Page
                 () => relocator.Relocate(source, target, required, progress, ct), ct);
             committed = true;
 
-            DeckleSetupSource.Log.RelocateCompleted();
+            if (result.SkippedFiles > 0)
+                DeckleSetupSource.Log.RelocateFilesSkipped(workId, result.SkippedFiles);
+            DeckleSetupSource.Log.RelocateCompleted(workId);
             DeckleSetupSource.Log.RelocateCompletedDetail(
                 result.CopiedBytes, result.Files, result.SkippedFiles,
                 Environment.TickCount64 - startTicks);
@@ -143,21 +148,21 @@ public sealed partial class RelocatePage : Page
         catch (OperationCanceledException)
         {
             // DataRootRelocator already rolled back every pre-handoff change.
-            DeckleSetupSource.Log.RelocateCancelled(step);
+            DeckleSetupSource.Log.RelocateCancelled(workId, step);
         }
         catch (Exception ex)
         {
             // The child owns the target after a successful handoff. A local UI
             // or logging failure must not report the committed move as failed.
             if (committed) return;
-            Fail(step, "threw", ex, ex.Message);
+            Fail(workId, step, "threw", ex, ex.Message);
         }
     }
 
-    private void Fail(string step, string reason, Exception? ex, string display)
+    private void Fail(string workId, string step, string reason, Exception? ex, string display)
     {
         DeckleSetupSource.Log.RelocateFailed(
-            reason, step, ex?.GetType().Name ?? "", ex?.Message ?? "");
+            workId, reason, step, ex?.GetType().Name ?? "", ex?.Message ?? "");
         RelocateProgress.Visibility = Visibility.Collapsed;
         StatusText.Text = "";
         ErrorBar.Message = Loc.Format("Setup_Relocate_Failed_Format", display);

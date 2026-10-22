@@ -883,7 +883,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── ProvisioningResult.cs
 │   │   ├── Paths/
 │   │   │   ├── AppPaths.cs
-│   │   │   └── DefaultDataRoot.cs
+│   │   │   ├── DefaultDataRoot.cs
+│   │   │   └── ModuleDirectoryName.cs
 │   │   ├── CorpusPaths.cs
 │   │   ├── Deckle.Core.csproj
 │   │   └── JsonSettingsStore.cs
@@ -891,12 +892,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Sinks/
 │   │   │   ├── BoundedWriteQueue.cs
 │   │   │   ├── HudFeedbackSink.cs
+│   │   │   ├── JsonlAppendStream.cs
 │   │   │   ├── JsonlLineSerializer.cs
 │   │   │   ├── JsonlRotationPolicy.cs
 │   │   │   ├── JsonlSchema.cs
 │   │   │   ├── JsonlSink.cs
 │   │   │   ├── LogWindowSink.cs
+│   │   │   ├── OffWorkerReport.cs
 │   │   │   └── RoutedJsonlSink.cs
+│   │   ├── CommandLineSwitches.cs
 │   │   ├── CrashDumpCapture.cs
 │   │   ├── CrashRelaunchBudget.cs
 │   │   ├── CrashRelaunchPolicy.cs
@@ -919,9 +923,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ILogWindowSink.cs
 │   │   ├── Keywords.cs
 │   │   ├── LogLineFormatter.cs
+│   │   ├── NoteFile.cs
 │   │   ├── ObservationKind.cs
 │   │   ├── OperationalLogAdmission.cs
-│   │   └── WindowingProbe.cs
+│   │   ├── RunMarker.cs
+│   │   ├── WindowingProbe.cs
+│   │   └── WorkId.cs
 │   ├── Deckle.Diagnostics.Logging/
 │   │   ├── Strings/
 │   │   │   └── en-US/
@@ -1350,7 +1357,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Channels/
 │   │   │   └── Toast/
 │   │   │       ├── ToastActivation.cs
-│   │   │       └── ToastChannel.cs
+│   │   │       ├── ToastChannel.cs
+│   │   │       └── ToastWithdrawIncident.cs
 │   │   ├── Dispatch/
 │   │   │   ├── INotificationChannel.cs
 │   │   │   ├── NotificationDispatcher.cs
@@ -1988,9 +1996,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Chrono.Tests.csproj
 │   │   └── DeckleChronoSourceTests.cs
 │   ├── Deckle.Core.Tests/
+│   │   ├── AppPathsLegacyMigrationTests.cs
 │   │   ├── Deckle.Core.Tests.csproj
 │   │   ├── DpiTests.cs
 │   │   ├── JsonSettingsStoreTests.cs
+│   │   ├── ModuleDirectoryNameTests.cs
 │   │   ├── SpacingTests.cs
 │   │   ├── Win32UtilTests.cs
 │   │   └── WindowDescriptionBugNotes.md
@@ -2000,30 +2010,49 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LoggingSettingsTests.cs
 │   │   ├── LogTransferTests.cs
 │   │   ├── OperationalSinkRoutingTests.cs
+│   │   ├── RangeObservableCollectionBugNotes.md
+│   │   ├── RangeObservableCollectionRegressionTests.cs
 │   │   └── RangeObservableCollectionTests.cs
 │   ├── Deckle.Diagnostics.Telemetry.Tests/
 │   │   ├── Deckle.Diagnostics.Telemetry.Tests.csproj
 │   │   └── TelemetryListenerBootstrapTests.cs
 │   ├── Deckle.Diagnostics.Tests/
+│   │   ├── BoundedWriteQueueRegressionTests.cs
+│   │   ├── CommandLineSwitchesTests.cs
 │   │   ├── CrashDumpCaptureTests.cs
+│   │   ├── CrashRelaunchPolicyBugNotes.md
+│   │   ├── CrashRelaunchPolicyRegressionTests.cs
 │   │   ├── CrashRelaunchPolicyTests.cs
 │   │   ├── Deckle.Diagnostics.Tests.csproj
 │   │   ├── DeckleCancellationSourceTests.cs
+│   │   ├── DeckleNetworkSourceBugNotes.md
 │   │   ├── DeckleNetworkSourceTests.cs
 │   │   ├── DeckleResourceSourceTests.cs
 │   │   ├── DeckleSettingsUxSourceTests.cs
 │   │   ├── DeckleThemeSourceTests.cs
 │   │   ├── DeckleThreadingSourceTests.cs
 │   │   ├── DeckleWindowingSourceTests.cs
+│   │   ├── DiagnosticsProviderCollection.cs
 │   │   ├── DispatchEventListenerBugNotes.md
 │   │   ├── DispatchEventListenerIncidentTests.cs
+│   │   ├── DispatchEventListenerRegressionTests.cs
 │   │   ├── DispatchEventListenerTests.cs
+│   │   ├── JsonlLineSerializerRegressionTests.cs
 │   │   ├── JsonlLineSerializerTests.cs
+│   │   ├── JsonlSinkBugNotes.md
 │   │   ├── JsonlSinkLifecycleTests.cs
+│   │   ├── JsonlSinkMaintenanceTests.cs
+│   │   ├── JsonlSinkRegressionTests.cs
 │   │   ├── JsonlSinkRotationTests.cs
 │   │   ├── LogLineFormatterTests.cs
+│   │   ├── NoteFileTests.cs
 │   │   ├── OperationalLogAdmissionCollection.cs
-│   │   └── OperationalLogAdmissionTests.cs
+│   │   ├── OperationalLogAdmissionTests.cs
+│   │   ├── RoutedJsonlSinkRegressionTests.cs
+│   │   ├── RunMarkerTests.cs
+│   │   ├── SinkCallbackBugNotes.md
+│   │   ├── SinkCallbackFaultTests.cs
+│   │   └── WorkIdTests.cs
 │   ├── Deckle.Home.Tests/
 │   │   ├── Deckle.Home.Tests.csproj
 │   │   ├── FakeHomeAnytypeServer.cs
@@ -2080,6 +2109,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Install.Tests/
 │   │   ├── Deckle.Install.Tests.csproj
 │   │   ├── InstallPathsTests.cs
+│   │   ├── ReleaseResolverBugNotes.md
+│   │   ├── ReleaseResolverRegressionTests.cs
 │   │   ├── ReleaseResolverTests.cs
 │   │   └── RunningProcessesBugNotes.md
 │   ├── Deckle.Lighting.Ambient.Tests/
@@ -2135,7 +2166,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Descriptors.cs
 │   │   ├── FakeNotificationChannel.cs
 │   │   ├── NotificationCatalogTests.cs
-│   │   └── NotificationDispatcherTests.cs
+│   │   ├── NotificationDispatcherTests.cs
+│   │   ├── ToastChannelBugNotes.md
+│   │   └── ToastWithdrawIncidentTests.cs
 │   ├── Deckle.Orchestration.Tests/
 │   │   ├── Fixtures/
 │   │   │   ├── appmanifest_480.acf
@@ -2173,9 +2206,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Security.Tests.csproj
 │   │   └── SecretVaultTests.cs
 │   ├── Deckle.Setup.Tests/
+│   │   ├── DataRootRelocatorBugNotes.md
 │   │   ├── DataRootRelocatorTests.cs
+│   │   ├── DataRootTreeBugNotes.md
+│   │   ├── DataRootTreeRegressionTests.cs
 │   │   ├── DataRootTreeTests.cs
 │   │   ├── Deckle.Setup.Tests.csproj
+│   │   ├── DeckleSetupSourceTests.cs
 │   │   ├── LocMirrorBugNotes.md
 │   │   ├── PayloadDeploymentTests.cs
 │   │   ├── SetupStringMirrorTests.cs
