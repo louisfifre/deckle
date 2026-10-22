@@ -74,4 +74,27 @@ public class MicLevelCheckTests
 
         Assert.False(a.HasSignal);
     }
+
+    // A muted or dead microphone delivers a buffer of exact zeros: nothing was
+    // heard, so the check gives no verdict instead of recommending a lift that
+    // would only amplify nothing.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void ADigitallySilentCaptureHasNoSignalAndNoRecommendation()
+    {
+        var a = MicLevelCheck.Assess(new float[16_000], AtTarget());
+
+        Assert.False(a.HasSignal);
+        Assert.Equal(PreprocessingAdvice.NotNeeded, a.Advice);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AVeryQuietButNonZeroCaptureStillHasASignal()
+    {
+        var a = MicLevelCheck.Assess(SineAtDbfs(-80.0), AtTarget());
+
+        Assert.True(a.HasSignal);
+        Assert.Equal(PreprocessingAdvice.Recommended, a.Advice);
+    }
 }
