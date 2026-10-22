@@ -65,8 +65,26 @@ semantic duplicate detector inside the server.
 
 `worksite_overview` follows direct task attachments. `complete` marks a task done
 or closes a worksite and reports remaining tasks. Products use `needed` (Prendre)
-instead. `delete` keeps its recoverable-bin preview/confirmation and reference
-guards. These seven shared operations plus the 28 typed commands make 35 tools.
+instead. `delete` keeps its recoverable-bin preview/confirmation by id and its
+reference guards, and also asks the person: after the confirming call, Deckle
+shows the same Windows notification as the Anytype delete and waits up to 60
+seconds. Only a "move to bin" answer lets the delete through; a refusal, no
+answer in time, or no way to show the notification (notifications off, Deckle
+elevated, a host with none) refuses it and nothing moves. The reference guard is
+checked again after the answer, under the write scope, so a link added while
+the notification waited still stops the delete. Each refusal and each completed
+move is told in the journal with its reason and the object's type key, never its
+name or id. These seven shared operations plus the 28 typed commands make 35
+tools.
+
+## Selecting objects
+
+A read (`get`, `search` filters, `worksite_overview`) takes the one object a
+selector partly matches. A write (`update`, `complete`, `delete`, relation
+targets, collection memberships) does not: it resolves an id, a code or a name
+given in full, and a partial name is refused with the nearest candidates by id,
+so the call is repeated with the id. A write never lands on an object that was
+only guessed.
 
 ## Remaining boundaries
 

@@ -119,7 +119,7 @@ internal sealed class HomePropertyWriter(
         foreach (JsonNode? item in Enumerate(value))
         {
             string selector = Text(item, property.Name);
-            result.Add(HomeObjectJson.Id(objects.Resolve(selector, allowedTypes)));
+            result.Add(HomeObjectJson.Id(objects.Resolve(selector, NameMatch.Exact, allowedTypes)));
         }
         return result;
     }
@@ -131,7 +131,7 @@ internal sealed class HomePropertyWriter(
                 "Le type Zone n'existe pas encore dans l'espace Anytype : crée-le dans "
                 + "l'app (layout Collection) avant de poser une relation Zone.");
 
-        JsonObject target = objects.ResolveCollection(selector);
+        JsonObject target = objects.ResolveCollection(selector, NameMatch.Exact);
         if (!string.Equals(HomeObjectJson.TypeKey(target), schema.FloorTypeKey, StringComparison.Ordinal))
             throw new InvalidOperationException(
                 $"« {HomeObjectIndex.Display(target)} » n'est pas une Zone : "

@@ -979,6 +979,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HomeBodyEditor.cs
 │   │   ├── HomeCode.cs
 │   │   ├── HomeCollectionWriter.cs
+│   │   ├── HomeDeleteRefusalReasons.cs
 │   │   ├── HomeGestures.cs
 │   │   ├── HomeMcp.cs
 │   │   ├── HomeObjects.cs
@@ -2100,6 +2101,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Home.Tests/
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Home.Tests.csproj
+│   │   ├── FakeDeletionApproval.cs
 │   │   ├── FakeHomeAnytypeServer.cs
 │   │   ├── HomeBodyTests.cs
 │   │   ├── HomeCodeTests.cs

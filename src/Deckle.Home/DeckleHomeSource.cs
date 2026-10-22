@@ -21,6 +21,8 @@ public sealed class DeckleHomeSource : DeckleEventSource
     public const int EvtSchemaAttemptFailed = 5;
     public const int EvtSchemaReady = 6;
     public const int EvtGesturePartiallyApplied = 7;
+    public const int EvtDeleteRefused = 8;
+    public const int EvtObjectBinned = 9;
 
     [Event(EvtGestureCompleted,
            Level = EventLevel.Verbose,
@@ -77,6 +79,31 @@ public sealed class DeckleHomeSource : DeckleEventSource
     public void GesturePartiallyApplied(string gesture, int applied, int not_attempted, string ex_type)
     {
         if (IsEnabled()) WriteEvent(EvtGesturePartiallyApplied, gesture, applied, not_attempted, ex_type);
+    }
+
+    // A move to the bin that was asked for and did not happen. reason:
+    // HomeDeleteRefusalReasons. The type key only: neither the name nor the id
+    // of a Home object travels in a payload.
+    [Event(EvtDeleteRefused,
+           Level = EventLevel.Informational,
+           Keywords = Gesture,
+           Tags = ObservationTags.Journal,
+           Message = "A Home object was not moved to the bin | reason={0} | type_key={1}")]
+    public void DeleteRefused(string reason, string type_key)
+    {
+        if (IsEnabled()) WriteEvent(EvtDeleteRefused, reason, type_key);
+    }
+
+    // The move that did happen: the object no longer shows in any later read,
+    // so the journal says it went, though not which object.
+    [Event(EvtObjectBinned,
+           Level = EventLevel.Informational,
+           Keywords = Gesture,
+           Tags = ObservationTags.Journal,
+           Message = "A Home object was moved to the bin | type_key={0}")]
+    public void ObjectBinned(string type_key)
+    {
+        if (IsEnabled()) WriteEvent(EvtObjectBinned, type_key);
     }
 
     // Once per runtime: the schema was read and validated. after_failures > 0

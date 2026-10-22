@@ -10,8 +10,10 @@ public class HomeGesturesTests
 {
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    private static HomeGestures Gestures(FakeHomeAnytypeServer server) =>
-        new(new AnytypeApiClient(server.Credentials), FakeHomeAnytypeServer.HomeSpace);
+    private static HomeGestures Gestures(FakeHomeAnytypeServer server, IDeletionApproval? approval = null) =>
+        new(new AnytypeApiClient(server.Credentials), FakeHomeAnytypeServer.HomeSpace, approval);
+
+    private static FakeDeletionApproval Approving() => new(DeletionApprovalOutcome.Approved);
 
     [Fact]
     public async Task CreatePointDerivesRoomAndCategoryAndStoresTheCodeProperty()
@@ -257,7 +259,7 @@ public class HomeGesturesTests
         string preview = await Gestures(server).DeleteAsync("ZZ-PS01", confirm: false, Ct);
         Assert.Contains("point-1", preview);
 
-        string result = await Gestures(server).DeleteAsync("point-1", confirm: true, Ct);
+        string result = await Gestures(server, Approving()).DeleteAsync("point-1", confirm: true, Ct);
         Assert.Contains("corbeille", result);
         Assert.Contains(server.Requests, request => request.Method == "DELETE");
     }
@@ -729,10 +731,10 @@ public class HomeGesturesTests
             FakeHomeAnytypeServer.Todo("todo-1", "Déposer le lavabo fictif", "site-1", done: true));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Gestures(server).DeleteAsync("site-1", confirm: true, Ct));
+            Gestures(server, Approving()).DeleteAsync("site-1", confirm: true, Ct));
         Assert.Contains("encore référencé", error.Message);
 
-        string digest = await Gestures(server).DeleteAsync("todo-1", confirm: true, Ct);
+        string digest = await Gestures(server, Approving()).DeleteAsync("todo-1", confirm: true, Ct);
         Assert.Contains("corbeille", digest);
     }
 
