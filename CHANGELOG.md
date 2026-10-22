@@ -53,6 +53,12 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** State the opening placement rule by its intention
 - **scripts:** Survey the Anytype API v2 read-only
 - **transcription:** Add a deterministic trailing noise pad
+- **setup:** Add a step rail and widen the wizard window
+- **setup:** Show each module's download size and dependencies on its card
+- **setup:** Grey out a module until the modules it needs are checked
+- **modules:** Record the offered catalogue in the presence file
+- **precision-scroll:** Make precision scrolling a module the person can leave out
+- **orchestration:** Make apps and games a module the person can leave out
 
 ### Changed
 
@@ -81,6 +87,10 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Label recovery after a failed start as start-failed
 - **transcription:** Pad every utterance with low-level noise before decoding
 - **anytype:** Drop version and due date from the Epic property table
+- **setup:** Keep the in-progress module selection on Back
+- **setup:** Mirror the wizard's new strings into the app resources
+- **setup:** Describe Rewrite without naming where its model runs
+- **setup:** Open an update's provisioning as the narrow card
 
 ## [0.59.0](https://github.com/louisfifre/deckle/compare/v0.58.5...v0.59.0) — 2026-10-21
 
