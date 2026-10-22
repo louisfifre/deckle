@@ -351,6 +351,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── AnytypeV2ObjectDocument.cs
 │   │   │   │   ├── AnytypeV2ObjectReader.cs
 │   │   │   │   ├── AnytypeV2ObjectReadOptions.cs
+│   │   │   │   ├── AnytypeV2PropertyMap.cs
 │   │   │   │   ├── AnytypeV2Request.cs
 │   │   │   │   ├── AnytypeV2Response.cs
 │   │   │   │   ├── AnytypeV2WriteOptions.cs
@@ -1815,6 +1816,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AnytypeV2ClientTests.cs
 │   │   ├── AnytypeV2ExceptionTests.cs
 │   │   ├── AnytypeV2OpsTests.cs
+│   │   ├── AnytypeV2PropertyMapTests.cs
 │   │   ├── AnytypeV2ReadWriteTests.cs
 │   │   ├── BackendEndpointTrustTests.cs
 │   │   ├── BackendListenerOwnerTests.cs
