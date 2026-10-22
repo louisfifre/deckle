@@ -476,7 +476,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LogEntryRow.xaml
 │   │   │   ├── LogEntryRow.xaml.cs
 │   │   │   ├── LogEntryTemplateSelector.cs
-│   │   │   └── NetworkStatusEmitter.cs
+│   │   │   ├── NetworkStatusEmitter.cs
+│   │   │   └── SurvivedExceptionReporter.cs
 │   │   ├── Engine/
 │   │   │   ├── AppAmbientEngineHost.cs
 │   │   │   └── AppTranscriptionEngineHost.cs

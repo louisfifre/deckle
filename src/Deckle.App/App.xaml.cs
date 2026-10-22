@@ -58,17 +58,22 @@ public partial class App : Microsoft.UI.Xaml.Application
         // handler vanishes silently. Events raised before OnLaunched registers
         // the sinks are dropped.
         //
-        // Each net drains the JSONL writers with a deadline: the process may
-        // die right after the handler returns, and a crash line that stays in
-        // a queue is the line a reader needed most. The deadline keeps a stuck
-        // disk from turning a crash into a hang.
+        // The nets that end the process drain the JSONL writers with a deadline:
+        // the process may die right after the handler returns, and a crash line
+        // that stays in a queue is the line a reader needed most. The deadline
+        // keeps a stuck disk from turning a crash into a hang.
+        //
+        // The two nets that mark the exception handled or observed let the app
+        // live, so they report a survived exception (one incident per exception
+        // type and site) instead of a crash. The UI one still drains when it
+        // opens an incident, to keep the cause on disk if the app dies right
+        // after; a repeat does not, or a fault on every frame would stall the
+        // UI thread for the deadline each time.
         this.UnhandledException += (_, e) =>
         {
-            DeckleAppSource.Log.CrashUnhandled(e.Exception.GetType().Name, e.Exception.Message);
-            DeckleAppSource.Log.CrashUnhandledDetail(e.Exception.GetType().Name, e.Exception.Message);
-            DeckleAppSource.Log.CrashStackTrace(e.Exception.StackTrace ?? "(no stack)");
             e.Handled = true;
-            AppDiagnosticsBootstrap.Flush(CrashFlushDeadline);
+            if (SurvivedExceptionReporter.Report(SurvivedExceptionOrigin.UiThread, e.Exception))
+                AppDiagnosticsBootstrap.Flush(CrashFlushDeadline);
         };
         AppDomain.CurrentDomain.UnhandledException += (_, e) =>
         {
@@ -82,14 +87,13 @@ public partial class App : Microsoft.UI.Xaml.Application
         };
         TaskScheduler.UnobservedTaskException += (_, e) =>
         {
-            // The AggregateException's own type and message say nothing: the
-            // milestone names the first inner exception, and the full text
-            // (every inner exception with its stack) goes to the stack line.
+            // The AggregateException's own type and message say nothing: each
+            // inner exception is its own incident, by its own type and site.
             var inner = e.Exception.Flatten().InnerExceptions;
-            Exception first = inner.Count > 0 ? inner[0] : e.Exception;
-            DeckleAppSource.Log.CrashTaskScheduler(first.GetType().Name, first.Message, inner.Count);
-            DeckleAppSource.Log.CrashTaskSchedulerDetail(e.Exception.GetType().Name, e.Exception.Message);
-            DeckleAppSource.Log.CrashStackTrace(e.Exception.ToString());
+            if (inner.Count == 0)
+                SurvivedExceptionReporter.Report(SurvivedExceptionOrigin.UnobservedTask, e.Exception);
+            foreach (Exception ex in inner)
+                SurvivedExceptionReporter.Report(SurvivedExceptionOrigin.UnobservedTask, ex);
             e.SetObserved();
         };
 
