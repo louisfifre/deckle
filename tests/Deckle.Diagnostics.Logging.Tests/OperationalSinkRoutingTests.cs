@@ -1,5 +1,6 @@
 using System.Diagnostics.Tracing;
 using Deckle.Diagnostics;
+using Deckle.TestSupport;
 using Xunit;
 
 namespace Deckle.Diagnostics.Logging.Tests;
@@ -33,7 +34,7 @@ public sealed class OperationalSinkRoutingTests
             sink.Flush();
 
             Assert.True(File.Exists(path));
-            string jsonl = File.ReadAllText(path);
+            string jsonl = SharedFileReader.ReadAllText(path);
             Assert.Contains("admitted", jsonl);
             Assert.DoesNotContain("before-enable", jsonl);
             Assert.DoesNotContain("dataset", jsonl);

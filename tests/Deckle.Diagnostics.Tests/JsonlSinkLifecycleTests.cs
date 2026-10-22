@@ -1,6 +1,7 @@
 using System.Diagnostics.Tracing;
 using System.Text.Json;
 using Deckle.Diagnostics;
+using Deckle.TestSupport;
 using Xunit;
 
 namespace Deckle.Diagnostics.Tests;
@@ -20,7 +21,7 @@ public sealed class JsonlSinkLifecycleTests
             for (int i = 0; i < 200; i++) sink.Write(Entry(i));
             sink.Flush();
 
-            int[] values = File.ReadLines(path)
+            int[] values = SharedFileReader.ReadAllLines(path)
                 .Select(line => JsonDocument.Parse(line).RootElement
                     .GetProperty("payload").GetProperty("n").GetInt32())
                 .ToArray();
@@ -45,7 +46,7 @@ public sealed class JsonlSinkLifecycleTests
             for (int i = 0; i < 50; i++) sink.Write(Entry(i));
             sink.Dispose();
 
-            Assert.Equal(50, File.ReadLines(path).Count());
+            Assert.Equal(50, SharedFileReader.ReadAllLines(path).Count());
         }
         finally
         {
@@ -73,9 +74,9 @@ public sealed class JsonlSinkLifecycleTests
             sink.Flush();
 
             Assert.InRange(sink.OpenFileCount, 1, 2);
-            Assert.Equal(2, File.ReadLines(Path.Combine(directory, "0.jsonl")).Count());
+            Assert.Equal(2, SharedFileReader.ReadAllLines(Path.Combine(directory, "0.jsonl")).Count());
             for (int i = 1; i < 6; i++)
-                Assert.Single(File.ReadLines(Path.Combine(directory, $"{i}.jsonl")));
+                Assert.Single(SharedFileReader.ReadAllLines(Path.Combine(directory, $"{i}.jsonl")));
         }
         finally
         {

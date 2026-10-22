@@ -1,6 +1,7 @@
 using System.Diagnostics.Tracing;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Telemetry;
+using Deckle.TestSupport;
 using Xunit;
 
 namespace Deckle.Diagnostics.Telemetry.Tests;
@@ -61,7 +62,7 @@ public sealed class TelemetryListenerBootstrapTests
             dispatch.FlushSinks();
 
             Assert.True(File.Exists(latency));
-            string jsonl = File.ReadAllText(latency);
+            string jsonl = SharedFileReader.ReadAllText(latency);
             Assert.Contains("dataset", jsonl);
             Assert.DoesNotContain("operational", jsonl);
         }
