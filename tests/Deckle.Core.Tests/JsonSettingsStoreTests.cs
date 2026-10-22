@@ -145,6 +145,47 @@ public sealed class JsonSettingsStoreTests
         Assert.Equal(2, temp.Store.Current.Value);
     }
 
+    // The debounce window is 300 ms; a change made just before the app closes
+    // must reach the disk when the store is disposed.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void DisposingTheStoreWritesAPendingDebouncedSave()
+    {
+        using var temp = new TempStore();
+
+        temp.Store.Replace(new Sample { Value = 42 });
+        temp.Store.Dispose();
+
+        Assert.Equal(42, JsonSerializer.Deserialize<Sample>(
+            File.ReadAllText(temp.FilePath), Options())!.Value);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void ASaveAfterDisposeIsStillWritten()
+    {
+        using var temp = new TempStore();
+        temp.Store.Dispose();
+
+        temp.Store.Replace(new Sample { Value = 8 });
+
+        Assert.Equal(8, JsonSerializer.Deserialize<Sample>(
+            File.ReadAllText(temp.FilePath), Options())!.Value);
+    }
+
+    [Fact]
+    [Trait("Category", "integration")]
+    public void DisposingWithNothingPendingLeavesTheFileAlone()
+    {
+        using var temp = new TempStore("{ \"value\": 5 }");
+        string before = File.ReadAllText(temp.FilePath);
+
+        temp.Store.Dispose();
+        temp.Store.Dispose();
+
+        Assert.Equal(before, File.ReadAllText(temp.FilePath));
+    }
+
     // Changed is raised from the follow timer's thread, where a subscriber's
     // exception used to escape and end the process; the store must survive it
     // and keep following.

@@ -68,6 +68,11 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
     private readonly FileSystemWatcher? _watcher;
     private T _current;
 
+    // True from a Save until the write that serializes its change; Dispose
+    // uses it to know whether a debounced save is still waiting.
+    private bool _savePending;
+    private int _disposed;
+
     // The file's text as the store last wrote or read it. A notification
     // whose content matches is the store's own write (or one already seen)
     // and is not a reload. Content, not timestamps: the atomic temp + Move
@@ -239,6 +244,14 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
     /// </summary>
     public void Save()
     {
+        lock (_lock) _savePending = true;
+        // A disposed store has no timer left to wait on, and the caller's
+        // change would be dropped without a trace; write it now instead.
+        if (Volatile.Read(ref _disposed) != 0)
+        {
+            Flush();
+            return;
+        }
         _debounceTimer.Change(300, System.Threading.Timeout.Infinite);
     }
 
@@ -294,6 +307,7 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
             lock (_lock)
             {
                 json = JsonSerializer.Serialize(_current, _jsonOptions);
+                _savePending = false;
                 // Recorded before the write lands, so the watcher's read of
                 // the finished file matches whatever order the two threads run in.
                 _lastText = json;
@@ -311,6 +325,8 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
         }
         catch (Exception ex)
         {
+            // The change never reached the disk, so it is still owed.
+            lock (_lock) _savePending = true;
             _logError?.Invoke(
                 $"Settings save failed | reason=write_failed | path={_path} | ex_type={ex.GetType().Name} | ex_message={ex.Message}");
         }
@@ -463,14 +479,30 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
         RaiseChanged("follow");
     }
 
+    /// <summary>
+    /// Stops following the file and writes a save still waiting out its
+    /// debounce, so a change made just before shutdown is not lost.
+    /// </summary>
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+
         if (_watcher is not null)
         {
             _watcher.EnableRaisingEvents = false;
             _watcher.Dispose();
         }
+
+        // Disposing a timer does not wait for a callback already running, and
+        // that callback may be the very write that clears the pending flag.
+        // Waiting for it before looking at the flag keeps the two from racing.
+        using var timersStopped = new ManualResetEvent(initialState: false);
         _followTimer.Dispose();
-        _debounceTimer.Dispose();
+        if (_debounceTimer.Dispose(timersStopped))
+            timersStopped.WaitOne(TimeSpan.FromSeconds(5));
+
+        bool owed;
+        lock (_lock) owed = _savePending;
+        if (owed) Flush();
     }
 }
