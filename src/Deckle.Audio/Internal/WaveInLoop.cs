@@ -31,6 +31,7 @@ internal enum LoopExit
 // close and owns the release incident.
 internal readonly record struct PumpResult(
     byte[]      Pcm,
+    long        TotalBytes,
     LoopExit    Exit,
     int         BuffersReceived,
     System.TimeSpan DrainDuration,
@@ -61,7 +62,7 @@ internal static class WaveInLoop
         WaveDeviceIdentity device,            // named by the no-data warning
         CancellationToken ct)
     {
-        var allBytes = new Pcm16Buffer(initialCapacity: 16000 * 2);
+        var allBytes = new Pcm16Buffer(initialCapacity: 16000 * 2, retain: host.RetainsAudio);
 
         // The no-data watchdog reads its own clock, independent of the detail
         // gate, because its warning must reach a default log.
@@ -195,7 +196,7 @@ internal static class WaveInLoop
                         }
                     }
 
-                    if (!lowAudioWarned && !userVoiceConfirmed && recordingMs >= WarnAfterSilenceMs)
+                    if (host.RetainsAudio && !lowAudioWarned && !userVoiceConfirmed && recordingMs >= WarnAfterSilenceMs)
                     {
                         lowAudioWarned = true;
                         DeckleAudioSource.Log.LowAudioDetected();
@@ -388,7 +389,8 @@ internal static class WaveInLoop
 
         return new PumpResult(
             Pcm:             allBytes.ToArray(),
-            Exit:            capHit ? LoopExit.CapHit : LoopExit.StopRequested,
+            TotalBytes:      allBytes.Count,
+            Exit:           capHit ? LoopExit.CapHit : LoopExit.StopRequested,
             BuffersReceived: buffersReceived,
             DrainDuration:   drainSw.Elapsed,
             ReleaseStage:    releaseStage,

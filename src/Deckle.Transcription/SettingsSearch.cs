@@ -172,11 +172,22 @@ public static class SettingsSearch
             Keywords = ["vad", "silero", "silence", "trim", "threshold", "padding"],
         },
 
-        // Silence threshold (composed field).
+        // Speech level (composed field): the segmenter's loudness threshold.
         new SettingSearchEntry
         {
             LabelKey = "WhisperSegThresholdCard",
-            Keywords = ["dbfs", "level", "sensitivity", "cut"],
+            Keywords = ["silence", "threshold", "dbfs", "level", "sensitivity", "cut"],
+        },
+
+        new SettingSearchEntry
+        {
+            LabelKey = "WhisperSegMarginCard",
+            Keywords = ["pause", "silence", "end", "clip", "cut", "trailing"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "WhisperSegMinUtteranceCard",
+            Keywords = ["blip", "noise", "short", "word", "drop", "cough"],
         },
 
         // "Cut curve" — the curve block with the four hangover anchors in its legend.

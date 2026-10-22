@@ -72,9 +72,6 @@
   <data name="PlaygroundNavAmbient.Content" xml:space="preserve">
     <value>Ambient lighting</value>
   </data>
-  <data name="PlaygroundNavSegmentation.Content" xml:space="preserve">
-    <value>Utterance segmentation</value>
-  </data>
   <data name="PlaygroundNavCorrection.Content" xml:space="preserve">
     <value>Delayed correction</value>
   </data>
@@ -96,12 +93,6 @@
   </data>
   <data name="PlaygroundHomeAmbientCard.Description" xml:space="preserve">
     <value>Screen capture, zone sampling, colour processing, Hue REST output. Live preview + per-light swatches.</value>
-  </data>
-  <data name="PlaygroundHomeSegmentationCard.Header" xml:space="preserve">
-    <value>Utterance segmentation</value>
-  </data>
-  <data name="PlaygroundHomeSegmentationCard.Description" xml:space="preserve">
-    <value>Shape the dynamic-hangover curve that decides where the streaming transcriber cuts one utterance from the next. Live plot + Save / Revert / Reset.</value>
   </data>
   <data name="PlaygroundHomeCorrectionCard.Header" xml:space="preserve">
     <value>Delayed correction</value>
@@ -190,12 +181,6 @@
     <value>Screen capture, Hue bridge, and the analysis pipeline that pushes the averaged screen colour to your lights.</value>
   </data>
 
-  <data name="PlaygroundSegmentationHeader.Text" xml:space="preserve">
-    <value>Utterance segmentation</value>
-  </data>
-  <data name="PlaygroundSegmentationSubheader.Text" xml:space="preserve">
-    <value>Shape the dynamic-hangover curve that decides where the streaming transcriber cuts one utterance from the next. Edits stay local until you save.</value>
-  </data>
 
   <!-- Notifications test surface (HomePage). x:Uid bindings : the section
        header is a TextBlock (.Text), the action a Button (.Content) — distinct

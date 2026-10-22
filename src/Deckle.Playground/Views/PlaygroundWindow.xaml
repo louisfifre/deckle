@@ -52,12 +52,6 @@
                         <FontIcon Glyph="{StaticResource Icon.Lightbulb}" />
                     </NavigationViewItem.Icon>
                 </NavigationViewItem>
-                <NavigationViewItem x:Uid="PlaygroundNavSegmentation"
-                                    Tag="Deckle.Playground.SegmentationPage">
-                    <NavigationViewItem.Icon>
-                        <FontIcon Glyph="{StaticResource Icon.Speech}" />
-                    </NavigationViewItem.Icon>
-                </NavigationViewItem>
                 <NavigationViewItem x:Uid="PlaygroundNavCorrection"
                                     Tag="Deckle.Playground.CorrectionApplicationPage">
                     <NavigationViewItem.Icon>

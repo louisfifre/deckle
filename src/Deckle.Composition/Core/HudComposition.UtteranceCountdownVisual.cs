@@ -24,18 +24,14 @@ public static partial class HudComposition
     public sealed class UtteranceCountdownVisual : IDisposable
     {
         // The gauge's motions and course come from the config: the follow
-        // and retreat durations, the retreat's curve, and the course the
-        // capture's linear progress runs through. Their defaults are the
-        // Windows "fast" duration and "fast out, slow in" curve; the
-        // design-system holder of named durations and curves, once it
-        // exists, is where those defaults belong.
+        // duration, the one return to rest (retreat) with its duration and
+        // curve, and the course the capture's linear progress runs through.
+        // The design-system holder of named durations and curves, once it
+        // exists, is where their defaults belong.
         private readonly TimeSpan _followDuration;
         private readonly TimeSpan _retreatDuration;
         private readonly Vector2 _retreatEaseControlPoint1;
         private readonly Vector2 _retreatEaseControlPoint2;
-        private readonly TimeSpan _cutDuration;
-        private readonly Vector2 _cutEaseControlPoint1;
-        private readonly Vector2 _cutEaseControlPoint2;
         private readonly UtteranceCountdownCourse _course;
         private readonly Vector2 _courseEaseControlPoint1;
         private readonly Vector2 _courseEaseControlPoint2;
@@ -61,9 +57,6 @@ public static partial class HudComposition
             _retreatDuration = TimeSpan.FromSeconds(Math.Max(0.016, countdown.RetreatSeconds));
             _retreatEaseControlPoint1 = new Vector2(countdown.RetreatEaseP1X, countdown.RetreatEaseP1Y);
             _retreatEaseControlPoint2 = new Vector2(countdown.RetreatEaseP2X, countdown.RetreatEaseP2Y);
-            _cutDuration = TimeSpan.FromSeconds(Math.Max(0.016, countdown.CutSeconds));
-            _cutEaseControlPoint1 = new Vector2(countdown.CutEaseP1X, countdown.CutEaseP1Y);
-            _cutEaseControlPoint2 = new Vector2(countdown.CutEaseP2X, countdown.CutEaseP2Y);
             _course = UtteranceCountdownCourse.Of(countdown);
             _courseEaseControlPoint1 = new Vector2(countdown.CourseEaseP1X, countdown.CourseEaseP1Y);
             _courseEaseControlPoint2 = new Vector2(countdown.CourseEaseP2X, countdown.CourseEaseP2Y);
@@ -112,12 +105,8 @@ public static partial class HudComposition
         }
 
         // `progress` is the capture's linear progress through the pause; the
-        // course turns it into the value the mask reads. `release` only
-        // matters for a move to rest: which of the two it is.
-        public void SetProgress(
-            float progress,
-            bool interpolate = false,
-            UtteranceCountdownRelease release = UtteranceCountdownRelease.Retreat)
+        // course turns it into the value the mask reads.
+        public void SetProgress(float progress, bool interpolate = false)
         {
             if (_disposed) return;
 
@@ -139,22 +128,20 @@ public static partial class HudComposition
             // sample would lurch — fast then slow, fast then slow. Reaching
             // full at a cut is the same move; the completion hold outlasts it.
             //
-            // A move to rest is one of two: speech resuming retreats on the
-            // retreat's duration and curve; a cut's hold ending releases on
-            // the cut's, shorter and accelerating. The container opacity
-            // expression keeps the visual shown while Value > 0 and hides it
-            // when either lands.
+            // A move to rest is one move, whatever sends the gauge there:
+            // speech resuming, or a cut's hold ending (the state keeps the
+            // value at 1 until the hold is over). It runs on the retreat's
+            // duration and curve. The container opacity expression keeps the
+            // visual shown while Value > 0 and hides it when the move lands.
             bool rest = value == 0f;
-            bool cut = rest && release == UtteranceCountdownRelease.Cut;
             using CompositionEasingFunction easing = rest
                 ? _compositor.CreateCubicBezierEasingFunction(
-                    cut ? _cutEaseControlPoint1 : _retreatEaseControlPoint1,
-                    cut ? _cutEaseControlPoint2 : _retreatEaseControlPoint2)
+                    _retreatEaseControlPoint1, _retreatEaseControlPoint2)
                 : _compositor.CreateLinearEasingFunction();
             using var move = _compositor.CreateScalarKeyFrameAnimation();
             move.InsertExpressionKeyFrame(0f, "this.CurrentValue");
             move.InsertKeyFrame(1f, value, easing);
-            move.Duration = cut ? _cutDuration : rest ? _retreatDuration : _followDuration;
+            move.Duration = rest ? _retreatDuration : _followDuration;
             _progress.StartAnimation("Value", move);
         }
 

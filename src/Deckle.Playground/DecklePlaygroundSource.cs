@@ -5,8 +5,9 @@ using Deckle.Diagnostics;
 namespace Deckle.Playground;
 
 // Playground provider: window navigation and page timing, plus the Ambient
-// tab's capture, Hue and zone interactions. The AmbientViewModel the Ambient
-// tab binds logs its own edits on Deckle-Ambient.
+// tab's capture, Hue and zone interactions and the HUD tab's microphone
+// preview. The AmbientViewModel the Ambient tab binds logs its own edits on
+// Deckle-Ambient.
 [EventSource(Name = "Deckle-Playground")]
 public sealed class DecklePlaygroundSource : DeckleEventSource
 {
@@ -44,6 +45,8 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     // ── Page navigation timing (structured-verbose, ms) ──
     public const int EvtNavTiming                    = 23;
     public const int EvtPageReady                    = 24;
+    // ── HUD tab microphone preview ──
+    public const int EvtMicrophonePreviewFellBack    = 25;
 
     // ── Navigation (PlaygroundWindow) ───────────────────────────────────────
 
@@ -108,6 +111,24 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtPageReady, page, ready_ms);
+    }
+
+    // ── HUD tab: live microphone preview ────────────────────────────────────
+
+    // The HUD tab asked for the microphone and got the simulation instead. The
+    // capture's own failure events (Deckle-Audio, tagged purpose=playground)
+    // carry the device detail; this one names what was asked and what was
+    // obtained, so a reader of the journal does not take it for a dictation
+    // that failed. cause: in-use, not-detected, unavailable or exception.
+    // mmsys_err is 0 and ex_type empty when the cause does not carry them.
+    [Event(EvtMicrophonePreviewFellBack,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "The HUD preview fell back from the microphone to the simulation | cause={0} | mmsys_err={1} | ex_type={2}")]
+    public void MicrophonePreviewFellBack(string cause, uint mmsys_err, string ex_type)
+    {
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtMicrophonePreviewFellBack, cause, mmsys_err, ex_type);
     }
 
     // ── ViewModel setters (tuning sliders) ──────────────────────────────────

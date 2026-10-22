@@ -169,11 +169,16 @@ public sealed partial class HudPage
     // The handles stay inside the frame, as the Ambient's do: a handle let
     // out by a quarter was lost beyond the plot's edge (Louis, 2026-10-15),
     // and the renderer clamps the course's output to [0, 1] anyway.
-    private void AddCurveRow(StackPanel stack, string label, CurvePoints points, Action<CurvePoints> setter)
+    // The axis legend says what x and y mean beside the fields, so the plot
+    // itself carries no words (Louis, 2026-10-22).
+    private void AddCurveRow(StackPanel stack, string label, string xLegend, string yLegend,
+        CurvePoints points, Action<CurvePoints> setter)
     {
         var editor = new CurveEditor
         {
             Points = points,
+            XAxisLegend = xLegend,
+            YAxisLegend = yLegend,
             Margin = new Thickness(0, 0, 0, 8),
         };
         AutomationProperties.SetName(editor, label);
