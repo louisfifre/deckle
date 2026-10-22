@@ -18,6 +18,8 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver,
 {
     // Reports shown under « Derniers rapports ».
     const int RecentReports = 3;
+    // Length of a report's latest entry shown beside it.
+    const int LastEntryChars = 120;
 
     readonly AnytypeV2ObjectReader _reader = new(v2);
     readonly AnytypeV2Searcher _searcher = new(v2);
@@ -259,9 +261,14 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver,
             string date = r.Properties.Day(DevSpace.Props.DateDuJournal) ?? "?";
             AnytypeV2ObjectDocument md = await _reader.ReadAsync(
                 r.Id, new AnytypeV2ObjectReadOptions { Markdown = true }, ct);
-            // Cleaned first: a render can open on blank lines, escapes or a divider.
-            string body = MarkdownBody.FirstLine(md.Body["markdown"]?.GetValue<string>() ?? "");
-            sb.Append(date).Append(" · ").Append(r.Id).Append(" — ").Append(body).Append('\n');
+            // The latest entry says where the work stopped; the « # Journal » heading
+            // would only repeat the date. Clipped, report_journal reads it whole.
+            string? last = MarkdownBody.JournalEntries(md.Body["markdown"]?.GetValue<string>() ?? "")
+                .LastOrDefault()?.Split('\n')[0];
+            sb.Append(date).Append(" · ").Append(r.Id);
+            if (last is not null)
+                sb.Append(" — ").Append(last.Length <= LastEntryChars ? last : last[..LastEntryChars] + "…");
+            sb.Append('\n');
         }
     }
 

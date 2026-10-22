@@ -155,15 +155,17 @@ public class ProjectGesturesTests
             .Reply(HttpStatusCode.OK, ProjectRead())
             .Reply(HttpStatusCode.OK, SearchPage(false, TaskRow(ActiveTaskId, "Tâche active")))
             .Reply(HttpStatusCode.OK, SearchPage(false, ReportRow()))
-            // Opens on blank lines, a divider and an escape: the line shown is the cleaned one.
-            .Reply(HttpStatusCode.OK, Markdown("\n---\n# Journal\\_2026-07-27   \nSuite"));
+            // Opens on blank lines, a divider and the heading: the line shown is the
+            // latest entry, cleaned.
+            .Reply(HttpStatusCode.OK, Markdown(
+                "\n---\n# Journal 2026-07-27   \n2026-07-27 10:00\n\nancienne\n\n2026-07-27 11:30   \n\nmodule\\_X fini   \n\nsuite"));
 
         string digest = await NewReader(handler).OverviewAsync(ProjectId, Ct);
 
         Assert.Equal(
             $"id : {ProjectId}\n[ ] Refonte Anytype\nÉtat : Ouvert\nPriorité : 4\n"
             + $"Tâches :\n[ ] Tâche active · P2\n"
-            + $"Derniers rapports :\n2026-07-27 · {ReportId} — Journal_2026-07-27",
+            + $"Derniers rapports :\n2026-07-27 · {ReportId} — 2026-07-27 11:30 · module_X fini",
             digest);
 
         FakeV2Handler.Seen tasks = handler.Requests[1];
