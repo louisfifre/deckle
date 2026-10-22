@@ -386,6 +386,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Gestures/
 │   │   │   ├── BlockSections.cs
 │   │   │   ├── CollectionMembershipGestures.cs
+│   │   │   ├── DeletionApproval.cs
 │   │   │   ├── DocumentGestures.cs
 │   │   │   ├── LinkedNames.cs
 │   │   │   ├── LiveTagResolver.cs

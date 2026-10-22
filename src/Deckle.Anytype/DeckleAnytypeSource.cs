@@ -84,6 +84,8 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public const int EvtBackendProcessQueryFailed     = 56;
     public const int EvtApiTransportRecovered         = 57;
     public const int EvtBackendHealthProbeFailed      = 58;
+    public const int EvtDeleteRefused                 = 59;
+    public const int EvtObjectBinned                  = 60;
 
     // ── HTTP transport ──────────────────────────────────────────────────
 
@@ -177,6 +179,28 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public void SessionReportCreated(string report_id)
     {
         if (IsEnabled()) WriteEvent(EvtSessionReportCreated, report_id);
+    }
+
+    // A move to the bin is the one gesture that hides an object from every later
+    // read, so both of its ends are told at Info. reason: rapport, referenced,
+    // references_unreadable, declined, unanswered or approval_unavailable. The
+    // object's name stays out: it is the person's content, the id is enough.
+    [Event(EvtDeleteRefused,
+           Level = EventLevel.Informational,
+           Keywords = Gesture,
+           Message = "A move to the Anytype bin was refused | reason={0} | type={1} | object_id={2}")]
+    public void DeleteRefused(string reason, string type_key, string object_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtDeleteRefused, reason, type_key, object_id);
+    }
+
+    [Event(EvtObjectBinned,
+           Level = EventLevel.Informational,
+           Keywords = Gesture,
+           Message = "An object was moved to the Anytype bin | type={0} | object_id={1}")]
+    public void ObjectBinned(string type_key, string object_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtObjectBinned, type_key, object_id);
     }
 
     // Two waiters naming the same target are a real concurrent edit, visible by
