@@ -27,8 +27,13 @@ public sealed partial class AmbientEngine
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (IsRunning) return;
 
+        // One id for the whole run: Starting, Started or its failure, then
+        // Stopping and Stopped all carry it.
+        string runId = WorkId.Next();
+        _runId = runId;
+
         SetState(AmbientEngineState.Starting);
-        DeckleAmbientSource.Log.PipelineStarting();
+        DeckleAmbientSource.Log.PipelineStarting(runId);
         long startRequestedAt = Stopwatch.GetTimestamp();
 
         // Wait for the deferred cleanup spun by the previous Stop()
@@ -82,7 +87,7 @@ public sealed partial class AmbientEngine
         }
         catch (Exception ex)
         {
-            DeckleAmbientSource.Log.PipelineStartFailed(validationReason, ex.GetType().Name, ex.Message);
+            DeckleAmbientSource.Log.PipelineStartFailed(runId, validationReason, ex.GetType().Name, ex.Message);
             SetState(AmbientEngineState.Error);
             SetState(AmbientEngineState.Off);
             throw;
@@ -288,27 +293,29 @@ public sealed partial class AmbientEngine
             CommitRunningOrThrow();
             SetState(AmbientEngineState.Running);
             DeckleAmbientSource.Log.PipelineStartDetail(
+                runId,
                 _capture!.IsRunning ? "running" : "stopped",
+                _sampler!.GridCols,
+                _sampler.GridRows);
+            DeckleAmbientSource.Log.PipelineStarted(
+                runId,
                 _output!.GetType().Name,
                 _multiLightActive ? "multi" : "group",
                 _multiLights?.Count ?? 0,
                 _pushRateHz,
-                _sampler!.GridCols,
-                _sampler.GridRows,
                 _sampler.IsHdr ? "on" : "off");
-            DeckleAmbientSource.Log.PipelineStarted();
         }
         catch (Exception ex)
         {
             if (ex is OperationCanceledException && ct.IsCancellationRequested)
             {
                 long elapsedMs = (Stopwatch.GetTimestamp() - startRequestedAt) * 1000 / Stopwatch.Frequency;
-                DeckleAmbientSource.Log.PipelineStartCancelled(elapsedMs);
+                DeckleAmbientSource.Log.PipelineStartCancelled(runId, elapsedMs);
             }
             else
             {
                 DeckleAmbientSource.Log.PipelineStartFailed(
-                    _startAbortReason ?? "exception", ex.GetType().Name, ex.Message);
+                    runId, _startAbortReason ?? "exception", ex.GetType().Name, ex.Message);
             }
 
             CancelRunBestEffort();
@@ -322,6 +329,7 @@ public sealed partial class AmbientEngine
             }
 
             await DisposeOwnedDepsAsync().ConfigureAwait(false);
+            AbandonOpenIncidents(runId);
             _cts?.Dispose();
             _cts = null;
             SetState(AmbientEngineState.Error);
@@ -448,8 +456,13 @@ public sealed partial class AmbientEngine
         if (!IsRunning) return;
         if (Interlocked.Exchange(ref _stopRequested, 1) == 1) return;
 
+        // Read once: a new StartAsync may replace _runId while the cleanup below
+        // is still running, and Stopped must carry the id of the run it ends.
+        string runId = _runId;
+        string stopReason = _stopReason;
+
         SetState(AmbientEngineState.Stopping);
-        DeckleAmbientSource.Log.PipelineStopping();
+        DeckleAmbientSource.Log.PipelineStopping(runId, stopReason);
 
         CancelRunBestEffort();
         IsRunning = false;
@@ -480,6 +493,7 @@ public sealed partial class AmbientEngine
                 if (pushTask is not null)
                     await AwaitPipelineStepAsync(pushTask, "push_loop").ConfigureAwait(false);
                 failure = await DisposeOwnedDepsAsync().ConfigureAwait(false);
+                AbandonOpenIncidents(runId);
             }
             catch (Exception ex)
             {
@@ -488,15 +502,14 @@ public sealed partial class AmbientEngine
             finally
             {
                 double durationS = (Stopwatch.GetTimestamp() - _startTimestamp) / (double)Stopwatch.Frequency;
-                DeckleAmbientSource.Log.PipelineStopDetail(
-                    _multiLightActive ? "multi" : "group",
-                    _pushedCount,
-                    _droppedCount);
                 AmbientCaptureGate.SetActive(false);
                 DeckleAmbientSource.Log.PipelineStopped(
-                    _stopReason,
+                    runId,
+                    stopReason,
                     failure is null ? "completed" : "failed",
                     durationS,
+                    _pushedCount,
+                    _droppedCount,
                     failure?.GetType().Name ?? "none",
                     failure?.Message ?? "none");
                 SetState(AmbientEngineState.Off);

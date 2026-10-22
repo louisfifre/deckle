@@ -2102,6 +2102,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientPresetsTests.cs
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
+│   │   ├── AmbientRunBugNotes.md
+│   │   ├── AmbientRunJournalTests.cs
 │   │   ├── AmbientStartSettingsTests.cs
 │   │   ├── CredentialPayloadTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj

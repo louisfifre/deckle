@@ -80,7 +80,12 @@ public sealed partial class AmbientEngine
             int failures = _frameProcessingFailures;
             AbortStartOrStop(
                 "frame_processing_failed",
-                () => DeckleAmbientSource.Log.FrameProcessingFailed(reason, failures));
+                () =>
+                {
+                    DeckleAmbientSource.Log.FrameProcessingFailed(reason, failures);
+                    // The failure is this incident's end; the stop must not close it again.
+                    _frameProcessingIncidentEnded = true;
+                });
         }
     }
 
@@ -106,6 +111,7 @@ public sealed partial class AmbientEngine
         _frameProcessingActiveFailureTicks = 0;
         _frameProcessingFailures = 0;
         _frameProcessingIncidentOpen = false;
+        _frameProcessingIncidentEnded = false;
     }
 
     // Capture worker thread — raised from inside TryRecreateDuplication

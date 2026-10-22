@@ -83,6 +83,8 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private long _frameProcessingActiveFailureTicks;
     private int _frameProcessingFailures;
     private bool _frameProcessingIncidentOpen;
+    // FrameProcessingFailed was written: that Error is the incident's end.
+    private bool _frameProcessingIncidentEnded;
     private int _frameProcessingStopRequested;
 
     // Snapshotted at StartAsync : the loop shape and the per-light state
@@ -96,13 +98,17 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private long _startTimestamp;
     private bool _disposed;
 
-    // Reason tag read by Stop() when emitting PipelineStopDetail. Internal
+    // Reason tag read by Stop() when emitting PipelineStopping and PipelineStopped. Internal
     // triggers set it before they post Stop() to the thread pool ; the
     // toggle path leaves "user". StartAsync resets it so an internal stop
     // doesn't leak into the next session's log.
     private string _stopReason = "user";
     private string? _startAbortReason;
     private int _stopRequested;
+
+    // Pairs the journal's start and end of one run (WorkId). Set when
+    // StartAsync begins; Stop() copies it before its cleanup runs.
+    private string _runId = "";
 
     // Serialises an upstream abort against the Starting → Running switch:
     // without it a push-loop crash could land after the last start check
@@ -307,24 +313,40 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private void AbortStartOrStop(string reason, Action log)
     {
         bool stopNow;
+        string? ignoredWhy = null;
         lock (_lifecycleLock)
         {
             var state = _state;
             if (state == AmbientEngineState.Off || state == AmbientEngineState.Stopping)
-                return;
-            if (_abortRequested) return;
-            _abortRequested = true;
+                ignoredWhy = "already_stopping";
+            else if (_abortRequested)
+                ignoredWhy = "abort_pending";
 
-            _stopReason = reason;
-            stopNow = IsRunning;
-            if (!stopNow) _startAbortReason = reason;
+            if (ignoredWhy is null)
+            {
+                _abortRequested = true;
+                _stopReason = reason;
+                stopNow = IsRunning;
+                if (!stopNow) _startAbortReason = reason;
+            }
+            else
+            {
+                stopNow = false;
+            }
+        }
+
+        if (ignoredWhy is not null)
+        {
+            // The first abort of a run owns the consequence line; this one
+            // leaves a trace of the cause it carried instead of vanishing.
+            DeckleAmbientSource.Log.PipelineAbortIgnoredDetail(reason, ignoredWhy);
+            return;
         }
 
         log();
 
         if (stopNow) Task.Run(Stop);
     }
-
     private void ThrowIfStartAbortRequested()
     {
         if (_startAbortReason is { } reason)
