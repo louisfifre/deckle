@@ -5,6 +5,7 @@ using Xunit;
 namespace Deckle.Diagnostics.Tests;
 
 [Trait("Category", "regression")]
+[Collection(DiagnosticsProviderCollection.Name)]
 public sealed class DispatchEventListenerRegressionTests
 {
     [EventSource(Name = "Deckle-DispatchRegressionTests")]
