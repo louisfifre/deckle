@@ -148,24 +148,69 @@ public sealed partial class HomeGestures
                 collections));
         }
 
+        // Creation is one request per item, then one per collection: Anytype
+        // offers no transaction, so a failure part way leaves the space with
+        // the items already created. The caller is told which ones (see
+        // HomePartialWriteException) instead of being left to repeat a batch
+        // whose first items now exist.
         var memberships = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-        foreach ((string _, JsonObject payload, IReadOnlyList<string> collections) in prepared)
+        var created = new List<string>();
+        string? failedItem = null;
+        try
         {
-            JsonObject created = await _api.CreateObjectAsync(_spaceId, payload, ct).ConfigureAwait(false);
-            string createdId = HomeObjectJson.Id(created);
-            if (collections.Count > 0 && createdId.Length == 0)
-                throw new InvalidOperationException(
-                    "Anytype n’a pas renvoyé l’id de l’objet créé ; son appartenance ne peut pas être appliquée.");
-
-            foreach (string collectionId in collections)
+            foreach ((string display, JsonObject payload, IReadOnlyList<string> collections) in prepared)
             {
-                if (!memberships.TryGetValue(collectionId, out List<string>? objectIds))
-                    memberships[collectionId] = objectIds = [];
-                objectIds.Add(createdId);
+                failedItem = display;
+                JsonObject createdObject = await _api.CreateObjectAsync(_spaceId, payload, ct).ConfigureAwait(false);
+                failedItem = null;
+                string createdId = HomeObjectJson.Id(createdObject);
+                created.Add(createdId.Length > 0 ? $"{display} (id {createdId})" : display);
+                if (collections.Count > 0 && createdId.Length == 0)
+                    throw new InvalidOperationException(
+                        "Anytype n’a pas renvoyé l’id de l’objet créé ; son appartenance ne peut pas être appliquée.");
+
+                foreach (string collectionId in collections)
+                {
+                    if (!memberships.TryGetValue(collectionId, out List<string>? objectIds))
+                        memberships[collectionId] = objectIds = [];
+                    objectIds.Add(createdId);
+                }
             }
         }
+        catch (Exception ex) when (created.Count > 0 && ex is not OperationCanceledException)
+        {
+            // Attach what was created before giving up, so the objects that
+            // exist are at least where the caller wanted them; a failure of
+            // this second attempt only changes what the message reports.
+            HomeMembershipState membership = HomeMembershipState.NotRequested;
+            if (memberships.Count > 0)
+            {
+                membership = HomeMembershipState.Unconfirmed;
+                try
+                {
+                    await collectionWriter.AddAsync(memberships, ct).ConfigureAwait(false);
+                    membership = HomeMembershipState.Applied;
+                }
+                catch (Exception flush) when (flush is not OperationCanceledException) { }
+            }
 
-        await collectionWriter.AddAsync(memberships, ct).ConfigureAwait(false);
+            // failedItem is set only while a create request is in flight; a
+            // failure after it (a missing id) leaves that item created.
+            string[] notAttempted = prepared.Skip(created.Count + (failedItem is null ? 0 : 1))
+                .Select(item => item.Display).ToArray();
+            throw Report(HomePartialWriteException.ForCreate(
+                type, created, failedItem, notAttempted, membership, prepared.Count, ex));
+        }
+
+        try
+        {
+            await collectionWriter.AddAsync(memberships, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (memberships.Count > 0 && ex is not OperationCanceledException)
+        {
+            throw Report(HomePartialWriteException.ForCreate(
+                type, created, null, [], HomeMembershipState.Unconfirmed, prepared.Count, ex));
+        }
 
         DeckleHomeSource.Log.GestureCompleted("create", Elapsed(started));
         return "Créé :\n" + string.Join("\n", prepared.Select(item => $"- {type} · {item.Display}"));
@@ -262,35 +307,79 @@ public sealed partial class HomeGestures
                 removeFromCollections));
         }
 
+        // One patch per item, then its collection steps, one request each:
+        // no transaction, so a failure part way leaves the earlier items
+        // written. Once a write has gone through, a failure is reported as a
+        // HomePartialWriteException naming what was applied (see there).
         var verificationFailures = new List<string>();
-        foreach ((
-            string id,
-            string display,
-            JsonObject payload,
-            IReadOnlyList<string> addToCollections,
-            IReadOnlyList<string> removeFromCollections) in prepared)
+        var applied = new List<string>();
+        bool wrote = false;
+        string? stage = null;
+        int position = 0;
+        try
         {
-            if (payload.Count > 0)
+            foreach ((
+                string id,
+                string display,
+                JsonObject payload,
+                IReadOnlyList<string> addToCollections,
+                IReadOnlyList<string> removeFromCollections) in prepared)
             {
-                JsonObject updated = HomeObjectJson.Unwrap(
-                    await _api.UpdateObjectAsync(_spaceId, id, payload, ct).ConfigureAwait(false));
-                if (payload["markdown"] is JsonValue intended)
+                if (payload.Count > 0)
                 {
-                    if (updated["markdown"] is not JsonValue)
-                        updated = HomeObjectJson.Unwrap(
-                            await _api.GetObjectAsync(_spaceId, id, ct).ConfigureAwait(false));
-                    if (!HomeBodyEditor.Matches(intended.GetValue<string>(), HomeObjectJson.String(updated, "markdown")))
-                        verificationFailures.Add(display);
+                    stage = "propriétés, nom ou corps";
+                    JsonObject updated = HomeObjectJson.Unwrap(
+                        await _api.UpdateObjectAsync(_spaceId, id, payload, ct).ConfigureAwait(false));
+                    wrote = true;
+                    if (payload["markdown"] is JsonValue intended)
+                    {
+                        if (updated["markdown"] is not JsonValue)
+                            updated = HomeObjectJson.Unwrap(
+                                await _api.GetObjectAsync(_spaceId, id, ct).ConfigureAwait(false));
+                        if (!HomeBodyEditor.Matches(intended.GetValue<string>(), HomeObjectJson.String(updated, "markdown")))
+                            verificationFailures.Add(display);
+                    }
                 }
+                stage = "ajout aux collections";
+                foreach (string collectionId in addToCollections)
+                {
+                    await collectionWriter.AddAsync([collectionId], id, ct).ConfigureAwait(false);
+                    wrote = true;
+                }
+                stage = "retrait des collections";
+                foreach (string collectionId in removeFromCollections)
+                {
+                    await collectionWriter.RemoveAsync([collectionId], id, ct).ConfigureAwait(false);
+                    wrote = true;
+                }
+                applied.Add(display);
+                position++;
             }
-            await collectionWriter.AddAsync(addToCollections, id, ct).ConfigureAwait(false);
-            await collectionWriter.RemoveAsync(removeFromCollections, id, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (wrote && ex is not OperationCanceledException)
+        {
+            throw Report(HomePartialWriteException.ForUpdate(
+                applied,
+                prepared[position].Display,
+                stage,
+                prepared.Skip(position + 1).Select(item => item.Display).ToArray(),
+                ex));
         }
 
         DeckleHomeSource.Log.GestureCompleted("update", Elapsed(started));
         return "Mis à jour :\n" + string.Join("\n", prepared.Select(item => "- " + item.Display))
             + (verificationFailures.Count == 0 ? "" : "\nÉcriture effectuée, mais le corps relu diffère pour : "
                 + string.Join(", ", verificationFailures) + ". Relis avant toute nouvelle écriture.");
+    }
+
+    // One Warning per partly applied batch, counts only: the item names are
+    // Home content and stay in the exception the caller receives.
+    private static HomePartialWriteException Report(HomePartialWriteException partial)
+    {
+        DeckleHomeSource.Log.GesturePartiallyApplied(
+            partial.Gesture, partial.Applied.Count, partial.NotApplied.Count,
+            partial.InnerException?.GetType().Name ?? "");
+        return partial;
     }
 
     public async Task<string> GetAsync(string selector, CancellationToken ct = default)
@@ -516,13 +605,17 @@ public sealed partial class HomeGestures
         {
             JsonObject root = await _api.ListTemplatesAsync(_spaceId, typeId, offset, PageLimit, ct)
                 .ConfigureAwait(false);
+            int returned = 0;
             foreach (JsonObject value in (root["data"] as JsonArray ?? []).OfType<JsonObject>())
             {
+                returned++;
                 string id = HomeObjectJson.String(value, "id");
                 if (id.Length > 0) result.Add((id, HomeObjectJson.String(value, "name")));
             }
-            if (root["pagination"]?["has_more"]?.GetValue<bool>() != true) break;
-            offset += PageLimit;
+            // Advance by the rows served and stop on an empty page, so a
+            // listing that keeps announcing more cannot loop forever.
+            if (root["pagination"]?["has_more"]?.GetValue<bool>() != true || returned == 0) break;
+            offset += returned;
         }
         return result;
     }

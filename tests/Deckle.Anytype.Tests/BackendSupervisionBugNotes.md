@@ -53,3 +53,15 @@
 - **Violated invariant:** A line describes the machine with paths relative to a known root. The path of a program outside Deckle's catalog has no such root, so its file name is the most the log keeps.
 - **Recurrence cue:** An event written with an `ExecutablePath` or other absolute path of a process Deckle does not own.
 - **Regression coverage:** `BackendOwnerPathTests.AnUntrustedEndpointOwnerIsNamedByItsFileNameAlone`. The trusted-owner path of `BackendListenerObserved` is changed the same way but not asserted separately.
+
+## A failed read of the listener table ended supervision for the session
+
+- **Trigger:** `GetExtendedTcpTable` returned an error (or kept changing size) during a reconciliation, even once.
+- **Observed symptom:** the reconciliation reported an endpoint conflict, and the supervisor, which treats a conflict as final, gave up restarting the backend until Deckle restarted. Established by reproduction with a scripted listener whose first inspection fails; whether the call fails in practice, and why, was not observed.
+- **Cause:** `Failed` (the table could not be read) was mapped to the same outcome as `Ambiguous` (several processes own the endpoint). The first says nothing about the endpoint; the second is a verdict on it.
+- **Violated invariant:** only a conclusion about the endpoint (an owner that is untrusted, unreadable or ambiguous) is a conflict; a failure to observe is retried, and stays a retryable outcome when it persists.
+- **Recurrence cue:** an error state of an observation folded into the verdict states of what is observed, or a terminal outcome decided from a single sample.
+
+A persistent failure now ends as `TimedOut` with the cause in its decision, so the supervisor keeps backing off and its journal line says the table could not be read. Nothing is spawned while the owner is unknown.
+
+Regression: `BackendReconcilerTests.Transient_listener_inspection_failure_is_inspected_again` and `BackendReconcilerTests.Persistent_listener_inspection_failure_stays_retryable_and_spawns_nothing`.

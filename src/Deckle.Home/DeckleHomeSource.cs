@@ -20,6 +20,7 @@ public sealed class DeckleHomeSource : DeckleEventSource
     public const int EvtSchemaUnavailable = 4;
     public const int EvtSchemaAttemptFailed = 5;
     public const int EvtSchemaReady = 6;
+    public const int EvtGesturePartiallyApplied = 7;
 
     [Event(EvtGestureCompleted,
            Level = EventLevel.Verbose,
@@ -65,6 +66,17 @@ public sealed class DeckleHomeSource : DeckleEventSource
     public void SchemaRejectedDetail(string reason, int failed_checks)
     {
         if (IsEnabled()) WriteEvent(EvtSchemaRejectedDetail, reason, failed_checks);
+    }
+
+    // A batch create or update failed after some of its writes went through.
+    // Counts and the error type only: the item names are Home content.
+    [Event(EvtGesturePartiallyApplied,
+           Level = EventLevel.Warning,
+           Keywords = Gesture,
+           Message = "A Home batch was only partly applied | gesture={0} | applied={1} | not_attempted={2} | ex_type={3}")]
+    public void GesturePartiallyApplied(string gesture, int applied, int not_attempted, string ex_type)
+    {
+        if (IsEnabled()) WriteEvent(EvtGesturePartiallyApplied, gesture, applied, not_attempted, ex_type);
     }
 
     // Once per runtime: the schema was read and validated. after_failures > 0

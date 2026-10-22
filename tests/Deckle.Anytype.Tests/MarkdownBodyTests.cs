@@ -347,4 +347,113 @@ public class MarkdownBodyTests
     {
         Assert.Equal("module_X * \\q", MarkdownBody.Unescape("module\\_X \\* \\q"));
     }
-}
+
+    // ── regressions: code fences, journal lines opening with « # », CRLF ──────
+
+    const string FencedBody =
+        "## A\n```sh\n# not a heading\n- [ ] not a task\n```\n## B\nx";
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AHashLineInsideACodeFenceIsNotAHeading()
+    {
+        Assert.Equal(["A", "B"], MarkdownBody.Outline(FencedBody).Select(s => s.Heading));
+        Assert.Equal(["A", "B"], MarkdownBody.HeadingTexts(FencedBody));
+        Assert.Equal("```\n# code\n```\ntexte", MarkdownBody.Preamble("```\n# code\n```\ntexte\n## A"));
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void ReplaceSectionCarriesAFenceAndItsHashLinesAlongWithTheSection()
+    {
+        MarkdownBody.SectionEdit edit = MarkdownBody.ReplaceSection(FencedBody, "A", "neuf");
+
+        Assert.Equal(MarkdownBody.EditStatus.Replaced, edit.Status);
+        Assert.Equal("## A\nneuf\n## B\nx", edit.Body);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void TryReadSectionReturnsTheWholeFenceUnderItsHeading()
+    {
+        Assert.True(MarkdownBody.TryReadSection(FencedBody, "A", out string content));
+        Assert.Equal("```sh\n# not a heading\n- [ ] not a task\n```", content);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AChecklistLineInsideACodeFenceIsNotASubtask()
+    {
+        Assert.Empty(MarkdownBody.ChecklistItems(FencedBody));
+        Assert.Contains("- [ ] not a task", MarkdownBody.WithoutChecklistLines(FencedBody));
+        Assert.DoesNotContain("- [ ] vrai", MarkdownBody.WithoutChecklistLines("- [ ] vrai\ntexte"));
+    }
+
+    [Theory]
+    [InlineData("~~~\n# code\n~~~\n## B", 1)]
+    [InlineData("````\n```\n# code\n```\n````\n## B", 1)]
+    [InlineData("```\n# code (fence never closed)", 0)]
+    [InlineData("```` \n# code\n```\n## still code\n````\n## B", 1)]
+    [InlineData("a ```not a fence``` b\n# vrai titre", 1)]
+    public void AFenceClosesOnlyOnAMatchingRunAndAnUnclosedOneRunsToTheEnd(string body, int headings)
+    {
+        Assert.Equal(headings, MarkdownBody.Outline(body).Count);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void JournalEntriesKeepAnEntryWhoseTextOpensWithAHash()
+    {
+        string body =
+            "# Journal 2026-07-21\n" +
+            "2026-07-21 10:00\n\n# note\n\n" +
+            "2026-07-21 11:00\n\npremière\n\n# suite en titre";
+
+        Assert.Equal(
+            ["2026-07-21 10:00 · # note", "2026-07-21 11:00 · première\n# suite en titre"],
+            MarkdownBody.JournalEntries(body));
+    }
+    [Fact]
+    [Trait("Category", "regression")]
+    public void ReplaceSectionOfACrlfBodyKeepsEveryLineEndingCrlf()
+    {
+        MarkdownBody.SectionEdit edit = MarkdownBody.ReplaceSection(
+            "## A\r\nold\r\n## B\r\nz\r\n", "A", "new\nsecond");
+
+        Assert.Equal("## A\r\nnew\r\nsecond\r\n## B\r\nz\r\n", edit.Body);
+    }
+
+    [Fact]
+    public void ReplaceSectionOfACrlfBodyEndingInTheSectionAddsNoStrayCarriageReturn()
+    {
+        MarkdownBody.SectionEdit edit = MarkdownBody.ReplaceSection("## A\r\nold", "A", "new\nsecond");
+
+        Assert.Equal("## A\r\nnew\r\nsecond", edit.Body);
+    }
+
+    [Fact]
+    public void ReplaceSectionOfALfBodyStaysLf()
+    {
+        Assert.Equal(
+            "## A\nnew\nsecond\n## B",
+            MarkdownBody.ReplaceSection("## A\nold\n## B", "A", "new\r\nsecond").Body);
+    }
+
+    [Theory]
+    [InlineData("## A ##", "A")]
+    [InlineData("## A ##   ", "A")]
+    [InlineData("## C#", "C#")]
+    [InlineData("## A\\#", "A\\#")]
+    [InlineData("## ##", "")]
+    public void ClosingAtxHashesAreNotPartOfTheHeadingText(string line, string text)
+    {
+        Assert.Equal([text], MarkdownBody.HeadingTexts(line));
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AHeadingWithClosingHashesIsFoundByItsText()
+    {
+        Assert.True(MarkdownBody.TryReadSection("## A ##\ncorps", "A", out string content));
+        Assert.Equal("corps", content);
+    }}

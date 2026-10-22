@@ -979,6 +979,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HomeGestures.cs
 │   │   ├── HomeMcp.cs
 │   │   ├── HomeObjects.cs
+│   │   ├── HomePartialWriteException.cs
 │   │   ├── HomePropertyWriter.cs
 │   │   ├── HomeRelationEdits.cs
 │   │   ├── HomeRequests.cs
@@ -1823,6 +1824,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FakeSecretVault.cs
 │   │   ├── JournalClosersTests.cs
 │   │   ├── ManagementToolCatalogTests.cs
+│   │   ├── McpClientTokensBugNotes.md
 │   │   ├── McpClientTokensTests.cs
 │   │   ├── McpHostBugNotes.md
 │   │   ├── McpHttpHostTests.cs
@@ -1873,6 +1875,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LiveTagResolverTests.cs
 │   │   ├── ManagementGesturesBugNotes.md
 │   │   ├── ManagementGesturesTests.cs
+│   │   ├── MarkdownBodyBugNotes.md
 │   │   ├── MarkdownBodyTests.cs
 │   │   ├── NameResolverTests.cs
 │   │   ├── OperationRecoveryBugNotes.md
@@ -1886,6 +1889,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesBugNotes.md
 │   │   ├── SessionGesturesTests.cs
+│   │   ├── SpaceWriteLockBugNotes.md
 │   │   ├── SpaceWriteLockTests.cs
 │   │   ├── TaskGesturesBugNotes.md
 │   │   └── TaskGesturesTests.cs
@@ -2089,6 +2093,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HomeGesturesBugNotes.md
 │   │   ├── HomeGesturesTests.cs
 │   │   ├── HomeMcpTests.cs
+│   │   ├── HomePagingTests.cs
+│   │   ├── HomePartialWriteTests.cs
 │   │   ├── HomeRelationTests.cs
 │   │   ├── HomeSchemaAlignmentTests.cs
 │   │   ├── HomeSchemaBugNotes.md
