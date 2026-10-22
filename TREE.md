@@ -891,6 +891,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Sinks/
 │   │   │   ├── BoundedWriteQueue.cs
 │   │   │   ├── HudFeedbackSink.cs
+│   │   │   ├── JsonlAppendStream.cs
 │   │   │   ├── JsonlLineSerializer.cs
 │   │   │   ├── JsonlRotationPolicy.cs
 │   │   │   ├── JsonlSchema.cs
@@ -2025,6 +2026,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── JsonlLineSerializerTests.cs
 │   │   ├── JsonlSinkBugNotes.md
 │   │   ├── JsonlSinkLifecycleTests.cs
+│   │   ├── JsonlSinkRegressionTests.cs
 │   │   ├── JsonlSinkRotationTests.cs
 │   │   ├── LogLineFormatterTests.cs
 │   │   ├── OperationalLogAdmissionCollection.cs

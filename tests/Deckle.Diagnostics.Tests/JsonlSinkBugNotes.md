@@ -30,3 +30,15 @@ Regression: `BoundedWriteQueueRegressionTests.A_bounded_flush_returns_in_time_wh
 - **Recurrence cue:** a `SinkRecovered` row followed by a flush failure naming the same error type and message.
 
 Regression: `BoundedWriteQueueRegressionTests.A_write_error_already_reported_as_recovered_is_not_rethrown_at_flush`; the guard `A_write_error_with_no_recovery_is_still_rethrown_at_flush` keeps the dead-destination case loud.
+
+## A torn row glued to the next one
+
+- **Trigger:** a file that ends in the middle of a row (process killed or disk full during a write), then the sink appends. The tear is injected by test by writing a half row without newline; the real tear between the old two-step write (row, then newline) cannot be injected through an existing seam.
+- **Observed symptom:** the next row starts on the torn line, so a JSONL reader loses both the torn row and the new one.
+- **Cause (established by running the test):** rows were appended as bytes then a separate newline, and the open did not look at how the file ended.
+- **Violated invariant:** every row starts on a line of its own.
+- **Recurrence cue:** a JSONL line that does not parse and holds two `"timestamp"` keys.
+
+Fix: the serializer returns the row with its newline, written in one call, and `JsonlAppendStream.Open` closes a file that ends mid-row before appending.
+
+Regression: `JsonlSinkRegressionTests.A_row_cut_short_before_its_newline_does_not_glue_to_the_next_row`.

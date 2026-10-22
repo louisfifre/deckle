@@ -19,7 +19,6 @@ namespace Deckle.Diagnostics;
 public sealed class JsonlSink : IFlushableLogSink
 {
     private const int DefaultQueueCapacity = 1024;
-    private static readonly byte[] NewLine = [(byte)'\n'];
 
     private readonly string _filePath;
     private readonly Func<EventEntry, bool> _predicate;
@@ -92,9 +91,10 @@ public sealed class JsonlSink : IFlushableLogSink
                 RollFiles();
 
             FileStream stream = EnsureStream();
-            ReadOnlyMemory<byte> json = _serializer.Serialize(entry, _kindLabel, _schema);
-            await stream.WriteAsync(json).ConfigureAwait(false);
-            await stream.WriteAsync(NewLine).ConfigureAwait(false);
+            // One write for the row and its newline: two writes could be torn
+            // between them, leaving an unterminated row.
+            ReadOnlyMemory<byte> line = _serializer.Serialize(entry, _kindLabel, _schema);
+            await stream.WriteAsync(line).ConfigureAwait(false);
             await stream.FlushAsync().ConfigureAwait(false);
             _linesWritten++;
         }
@@ -107,13 +107,7 @@ public sealed class JsonlSink : IFlushableLogSink
 
     private FileStream EnsureStream()
     {
-        return _stream ??= new FileStream(
-            _filePath,
-            FileMode.Append,
-            FileAccess.Write,
-            FileShare.Read,
-            bufferSize: 4096,
-            FileOptions.Asynchronous | FileOptions.SequentialScan);
+        return _stream ??= JsonlAppendStream.Open(_filePath);
     }
 
     private ValueTask FlushOnWorker() => _stream is null

@@ -7,7 +7,8 @@ namespace Deckle.Diagnostics;
 
 // Shared JSONL encoding for fixed and routed sinks. The writer thread reuses
 // one ArrayBufferWriter, so the returned memory is valid only until the next
-// Serialize call; a complete line is serialized before any I/O.
+// Serialize call; a complete line, newline included, is serialized before any
+// I/O.
 internal sealed class JsonlLineSerializer
 {
     private readonly ArrayBufferWriter<byte> _buffer = new(512);
@@ -48,6 +49,9 @@ internal sealed class JsonlLineSerializer
         writer.WriteEndObject();
         writer.WriteEndObject();
         writer.Flush();
+        // The terminator belongs to the line: a sink writes it in one call, so
+        // a row can never be left without its newline by a failure in between.
+        _buffer.Write("\n"u8);
 
         return _buffer.WrittenMemory;
     }

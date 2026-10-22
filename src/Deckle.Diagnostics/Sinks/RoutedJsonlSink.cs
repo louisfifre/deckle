@@ -11,7 +11,6 @@ public sealed class RoutedJsonlSink : IFlushableLogSink
 {
     private const int DefaultQueueCapacity = 1024;
     private const int DefaultMaxOpenFiles = 16;
-    private static readonly byte[] NewLine = [(byte)'\n'];
 
     private readonly Func<EventEntry, string> _pathResolver;
     private readonly Func<EventEntry, bool> _predicate;
@@ -72,12 +71,13 @@ public sealed class RoutedJsonlSink : IFlushableLogSink
         OpenFile destination = GetOrOpen(path);
         try
         {
-            ReadOnlyMemory<byte> json = _serializer.Serialize(
+            // The serialized line ends with its newline: one write, so no
+            // failure can fall between a row and its terminator.
+            ReadOnlyMemory<byte> line = _serializer.Serialize(
                 entry,
                 _kindLabel,
                 JsonlSchema.PayloadOnly);
-            await destination.Stream.WriteAsync(json).ConfigureAwait(false);
-            await destination.Stream.WriteAsync(NewLine).ConfigureAwait(false);
+            await destination.Stream.WriteAsync(line).ConfigureAwait(false);
             await destination.Stream.FlushAsync().ConfigureAwait(false);
         }
         catch
@@ -104,13 +104,7 @@ public sealed class RoutedJsonlSink : IFlushableLogSink
             Directory.CreateDirectory(parent);
 
         var node = new LinkedListNode<string>(path);
-        var stream = new FileStream(
-            path,
-            FileMode.Append,
-            FileAccess.Write,
-            FileShare.Read,
-            bufferSize: 4096,
-            FileOptions.Asynchronous | FileOptions.SequentialScan);
+        FileStream stream = JsonlAppendStream.Open(path);
         var opened = new OpenFile(stream, node);
         _leastRecentlyUsed.AddFirst(node);
         _openFiles.Add(path, opened);
