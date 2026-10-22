@@ -50,6 +50,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     public const int EvtRepairFailed             = 26;
     public const int EvtActFailed                = 27;
     public const int EvtRepairExitUnobserved     = 28;
+    public const int EvtPrimaryReleaseFailed     = 29;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -122,6 +123,19 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtInjectionFailed, action, win32_error);
     }
 
+    // The synthetic primary button could not be released, so Windows may still
+    // see it held. Written for each such drag end, also while the injection
+    // incident is open: the incident's opener names the first failing action,
+    // and a release is the one whose failure outlasts the drag.
+    [Event(EvtPrimaryReleaseFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Push,
+           Message = "The mouse button could not be released after a drag | win32_error={0}")]
+    public void PrimaryReleaseFailed(int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtPrimaryReleaseFailed, win32_error);
+    }
+
     // reason: injection_succeeded (the path recovered) or engine_stopped (the
     // engine ended the incident, not a recovery). The journal keeps the
     // Warning, so it keeps its end too.
@@ -140,6 +154,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtGesturesNeutralized,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
+           Tags = ObservationTags.Journal,
            Message = "Windows three-finger gestures neutralized")]
     public void GesturesNeutralized()
     {
@@ -158,6 +173,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtGesturesRestored,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
+           Tags = ObservationTags.Journal,
            Message = "Windows three-finger gestures restored")]
     public void GesturesRestored()
     {
@@ -189,6 +205,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtRepairLaunched,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Connection repair script launched")]
     public void RepairLaunched()
     {
@@ -208,6 +225,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtRepairCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Connection repair script completed | exit_code={0}")]
     public void RepairCompleted(int exit_code)
     {
