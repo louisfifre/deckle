@@ -198,11 +198,17 @@ public sealed class DispatchEventListener : EventListener
     // Returns true when that state changed (an incident opened or closed), so
     // the caller knows a report is due; the report itself is emitted later,
     // outside any per-slot lock.
+    //
+    // Only a Write that returned closes an incident. An entry the sink does not
+    // want proves nothing about its health, and the fault report itself is such
+    // an entry: it dispatches back through here, and counting it as a success
+    // would close the incident the same instant it opened.
     private static bool Offer(SinkSlot slot, EventEntry entry)
     {
         try
         {
-            if (slot.Sink.Wants(entry)) slot.Sink.Write(entry);
+            if (!slot.Sink.Wants(entry)) return false;
+            slot.Sink.Write(entry);
         }
         catch (Exception ex)
         {

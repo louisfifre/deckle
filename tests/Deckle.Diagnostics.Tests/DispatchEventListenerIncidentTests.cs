@@ -76,8 +76,11 @@ public sealed class DispatchEventListenerIncidentTests
         TestSource.Log.ValueObserved("back");
         TestSource.Log.ValueObserved("still fine");
 
+        // Deckle-Diagnostics is process-wide: the JsonlSink tests running in
+        // parallel report their own faults there, so keep only this sink's.
         var incident = reports.Events
-            .Where(e => e.EventSource.Name == "Deckle-Diagnostics")
+            .Where(e => e.EventSource.Name == "Deckle-Diagnostics"
+                && Equals(e.Payload?[0], nameof(FailingSink)))
             .Select(e => (e.EventName, Payload: e.Payload!.ToArray()))
             .ToArray();
 
