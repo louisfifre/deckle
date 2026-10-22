@@ -44,6 +44,9 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         _objects.AddRange(values);
     }
 
+    // Puts the schema back to the compiled manifest, as when the person repairs the space.
+    public void RestoreSchema() => _schemaManifest = HomeSchema.CreateRequiredSchemaManifest();
+
     public void RemoveSchemaProperty(string key)
     {
         JsonArray properties = (JsonArray)_schemaManifest["properties"]!;

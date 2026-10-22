@@ -34,44 +34,49 @@ public sealed class DeckleHomeSource : DeckleEventSource
     // waits on that read, so a streak of failures is one Warning, not one per
     // gesture. reason: a schema reason (schema_nonconformant,
     // zone_layout_invalid, zone_type_ambiguous), http_status, transport or
-    // exception. No ex_message: an HTTP error message quotes the server's
-    // reply, and a schema message goes to the Verbose detail below.
+    // exception. work_id names the incident; SchemaReady closes it with the
+    // same id. No ex_message: an HTTP error message quotes the server's reply,
+    // and a schema message lists what the space holds, so a provider that reads
+    // Home logs the error type and its code, nothing else.
     [Event(EvtSchemaUnavailable,
            Level = EventLevel.Warning,
            Keywords = Gesture,
-           Message = "The Home schema is not ready | reason={0} | ex_type={1} | status={2}")]
-    public void SchemaUnavailable(string reason, string ex_type, int status_code)
+           Message = "The Home schema is not ready | work_id={0} | reason={1} | ex_type={2} | status={3}")]
+    public void SchemaUnavailable(string work_id, string reason, string ex_type, int status_code)
     {
-        if (IsEnabled()) WriteEvent(EvtSchemaUnavailable, reason, ex_type, status_code);
+        if (IsEnabled()) WriteEvent(EvtSchemaUnavailable, work_id, reason, ex_type, status_code);
     }
 
     [Event(EvtSchemaAttemptFailed,
            Level = EventLevel.Verbose,
            Keywords = Gesture,
-           Message = "home schema read failed | reason={0} | ex_type={1} | status={2} | failures={3}")]
-    public void SchemaAttemptFailed(string reason, string ex_type, int status_code, int failures)
+           Message = "home schema read failed | work_id={0} | reason={1} | ex_type={2} | status={3} | failures={4}")]
+    public void SchemaAttemptFailed(string work_id, string reason, string ex_type, int status_code, int failures)
     {
-        if (IsEnabled()) WriteEvent(EvtSchemaAttemptFailed, reason, ex_type, status_code, failures);
+        if (IsEnabled()) WriteEvent(EvtSchemaAttemptFailed, work_id, reason, ex_type, status_code, failures);
     }
 
-    // The schema message names canonical keys only, never space content.
+    // How far the space is from the schema, as a count: the number of checks
+    // that failed. Which ones is what the person reads in the tool error.
     [Event(EvtSchemaRejectedDetail,
            Level = EventLevel.Verbose,
            Keywords = Gesture,
-           Message = "home schema rejected | reason={0}")]
-    public void SchemaRejectedDetail(string reason)
+           Message = "home schema rejected | reason={0} | failed_checks={1}")]
+    public void SchemaRejectedDetail(string reason, int failed_checks)
     {
-        if (IsEnabled()) WriteEvent(EvtSchemaRejectedDetail, reason);
+        if (IsEnabled()) WriteEvent(EvtSchemaRejectedDetail, reason, failed_checks);
     }
 
     // Once per runtime: the schema was read and validated. after_failures > 0
-    // closes the incident SchemaUnavailable opened.
+    // closes the incident SchemaUnavailable opened, with its work_id; a first
+    // read that succeeds has no incident and an empty work_id.
     [Event(EvtSchemaReady,
            Level = EventLevel.Informational,
            Keywords = Gesture,
-           Message = "The Home schema is ready | after_failures={0} | elapsed_ms={1:F0}")]
-    public void SchemaReady(int after_failures, double elapsed_ms)
+           Tags = ObservationTags.Journal,
+           Message = "The Home schema is ready | work_id={0} | after_failures={1} | elapsed_ms={2:F0}")]
+    public void SchemaReady(string work_id, int after_failures, double elapsed_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtSchemaReady, after_failures, elapsed_ms);
+        if (IsEnabled()) WriteEvent(EvtSchemaReady, work_id, after_failures, elapsed_ms);
     }
 }

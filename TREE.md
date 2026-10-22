@@ -2043,6 +2043,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── OperationalLogAdmissionTests.cs
 │   │   └── WorkIdTests.cs
 │   ├── Deckle.Home.Tests/
+│   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Home.Tests.csproj
 │   │   ├── FakeHomeAnytypeServer.cs
 │   │   ├── HomeBodyTests.cs
@@ -2052,6 +2053,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HomeMcpTests.cs
 │   │   ├── HomeRelationTests.cs
 │   │   ├── HomeSchemaAlignmentTests.cs
+│   │   ├── HomeSchemaBugNotes.md
+│   │   ├── HomeSchemaIncidentTests.cs
 │   │   ├── HomeSearchTests.cs
 │   │   ├── HomeToolCatalogTests.cs
 │   │   └── HomeTypedToolCatalogTests.cs
