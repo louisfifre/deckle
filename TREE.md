@@ -2209,6 +2209,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── TrayWindowOwnershipTests.cs
 │   ├── Deckle.Speech.Tests/
 │   │   ├── Deckle.Speech.Tests.csproj
+│   │   ├── SpeechEngineBugNotes.md
 │   │   ├── SpeechEngineTests.cs
 │   │   └── SpeechSettingsTests.cs
 │   ├── Deckle.TestSupport/
