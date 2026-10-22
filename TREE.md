@@ -1092,6 +1092,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── RawInputHost.cs
 │   ├── Deckle.Input.PrecisionScroll/
 │   │   ├── Engine/
+│   │   │   ├── IPrecisionScrollEngine.cs
 │   │   │   ├── PrecisionScrollEngine.cs
 │   │   │   ├── PrecisionScrollGesture.cs
 │   │   │   └── WheelTickQueue.cs
