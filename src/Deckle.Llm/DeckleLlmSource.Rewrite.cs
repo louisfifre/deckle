@@ -164,6 +164,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
            Message = "The rewriter answers again | caller={0} | provider={1} | failures={2}")]
     public void RewriteRecovered(string caller, string provider, int failures)
     {

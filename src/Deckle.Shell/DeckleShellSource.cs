@@ -112,6 +112,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtTrayIconRestored,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Taskbar recreated, tray icon added again")]
     public void TrayIconRestored()
     {

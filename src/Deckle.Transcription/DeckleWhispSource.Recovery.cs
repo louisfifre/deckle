@@ -34,6 +34,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtDictationRecoveryWriteRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
            Message = "The dictation recovery copy is saved again | failures={0}")]
     public void DictationRecoveryWriteRecovered(int failures)
     {

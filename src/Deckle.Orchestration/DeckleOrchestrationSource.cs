@@ -502,6 +502,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtReconcileRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "Detection caught up with the app list again")]
     public void ReconcileRecovered()
     {
@@ -596,6 +597,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtDisplayQueryRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Windowing,
+           Tags = ObservationTags.Journal,
            Message = "The monitor list can be read again")]
     public void DisplayQueryRecovered()
     {

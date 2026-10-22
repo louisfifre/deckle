@@ -216,6 +216,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtCaptureReleaseRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "The microphone is released cleanly again | failures={0}")]
     public void CaptureReleaseRecovered(int failures)
     {
@@ -252,6 +253,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtAudioDataRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "The microphone delivers audio again | waited_ms={0}")]
     public void AudioDataRecovered(long waited_ms)
     {
@@ -294,6 +296,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtEmptyBufferRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "Capture buffers recovered")]
     public void EmptyBufferRecovered()
     {
@@ -360,6 +363,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtCaptureLagRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "The capture loop recovered")]
     public void CaptureLagRecovered()
     {

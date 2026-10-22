@@ -33,6 +33,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtFrameProcessingRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
            Message = "Frame processing recovered")]
     public void FrameProcessingRecovered()
     {

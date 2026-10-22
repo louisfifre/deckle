@@ -174,6 +174,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEventStreamRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
            Message = "Hue event monitoring restored")]
     public void EventStreamRecovered()
     {

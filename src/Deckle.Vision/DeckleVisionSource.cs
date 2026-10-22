@@ -281,6 +281,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtAcquireFrameRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "Screen capture reads frames again | failures={0} | duration_ms={1}")]
     public void AcquireFrameRecovered(int failures, long duration_ms)
     {
@@ -383,6 +384,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtDuplicationRecreateRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "Screen capture recovered")]
     public void DuplicationRecreateRecovered()
     {

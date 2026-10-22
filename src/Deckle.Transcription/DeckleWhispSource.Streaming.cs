@@ -53,6 +53,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtUtterancesRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
            Message = "Utterances transcribe again | skipped={0}")]
     public void UtterancesRecovered(int skipped)
     {

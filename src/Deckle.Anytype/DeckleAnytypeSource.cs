@@ -144,6 +144,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtApiTransportRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Network,
+           Tags = ObservationTags.Journal,
            Message = "The Anytype API answers again | failed_requests={0} | downtime_s={1:F0}")]
     public void ApiTransportRecovered(int failed_requests, double downtime_s)
     {
@@ -346,6 +347,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendResponsive,
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "The Anytype backend answers again | failed_probes={0} | downtime_s={1:F0}")]
     public void BackendResponsive(int failed_probes, double downtime_s)
     {
@@ -447,6 +449,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendReconciliationLeaseWaitEnded,
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "The Anytype backend lease was released | waited_ms={1:F0} | abandoned={2} | reconciliation_id={0}")]
     public void BackendReconciliationLeaseWaitEnded(
         string reconciliation_id, double waited_ms, bool abandoned)

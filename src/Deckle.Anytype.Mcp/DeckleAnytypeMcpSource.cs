@@ -195,6 +195,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtRequestRejectionsEnded,
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "MCP requests are admitted again | rejected={0}")]
     public void RequestRejectionsEnded(int rejected)
     {

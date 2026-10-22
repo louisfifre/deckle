@@ -103,6 +103,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgeEndpointRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Bridge endpoint recovered")]
     public void BridgeEndpointRecovered()
     {
