@@ -332,6 +332,30 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── src/
 │   ├── Deckle.Anytype/
 │   │   ├── Api/
+│   │   │   ├── V2/
+│   │   │   │   ├── Ops/
+│   │   │   │   │   ├── AnytypeV2Block.cs
+│   │   │   │   │   ├── AnytypeV2BlockOps.cs
+│   │   │   │   │   ├── AnytypeV2BlockRef.cs
+│   │   │   │   │   ├── AnytypeV2ObjectOps.cs
+│   │   │   │   │   ├── AnytypeV2Op.cs
+│   │   │   │   │   ├── AnytypeV2OpBatch.cs
+│   │   │   │   │   ├── AnytypeV2Placement.cs
+│   │   │   │   │   ├── AnytypeV2PropertyChanges.cs
+│   │   │   │   │   ├── AnytypeV2PropertyFormat.cs
+│   │   │   │   │   ├── AnytypeV2TypeOps.cs
+│   │   │   │   │   └── AnytypeV2ViewOps.cs
+│   │   │   │   ├── AnytypeV2Client.cs
+│   │   │   │   ├── AnytypeV2Exception.cs
+│   │   │   │   ├── AnytypeV2Issue.cs
+│   │   │   │   ├── AnytypeV2ObjectDocument.cs
+│   │   │   │   ├── AnytypeV2ObjectReader.cs
+│   │   │   │   ├── AnytypeV2ObjectReadOptions.cs
+│   │   │   │   ├── AnytypeV2Request.cs
+│   │   │   │   ├── AnytypeV2Response.cs
+│   │   │   │   ├── AnytypeV2WriteOptions.cs
+│   │   │   │   ├── AnytypeV2Writer.cs
+│   │   │   │   └── AnytypeV2WriteReceipt.cs
 │   │   │   ├── AnytypeApiClient.Chats.cs
 │   │   │   ├── AnytypeApiClient.cs
 │   │   │   ├── AnytypeApiClient.Files.cs
@@ -354,6 +378,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Dialogues/
 │   │   │   └── DialogueGestures.cs
 │   │   ├── Gestures/
+│   │   │   ├── BlockSections.cs
 │   │   │   ├── CollectionMembershipGestures.cs
 │   │   │   ├── DocumentGestures.cs
 │   │   │   ├── LiveTagResolver.cs
@@ -1393,14 +1418,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CorrectionApplicationEvidence.cs
 │   │   │   ├── CorrectionApplicationFixture.cs
 │   │   │   ├── CorrectionApplicationTrial.cs
+│   │   │   ├── MicrophonePreviewFailure.cs
+│   │   │   ├── MicrophonePreviewFeed.cs
 │   │   │   ├── TuningModel.cs
 │   │   │   └── UtteranceCycle.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
-│   │   │   ├── HudViewModel.cs
-│   │   │   └── SegmentationViewModel.cs
+│   │   │   └── HudViewModel.cs
 │   │   ├── Views/
 │   │   │   ├── Ambient/
 │   │   │   │   ├── AmbientPage.HdrTuning.cs
@@ -1417,14 +1443,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── Hud/
 │   │   │   │   ├── HudPage.Expanders.cs
 │   │   │   │   ├── HudPage.Gauge.cs
+│   │   │   │   ├── HudPage.Microphone.cs
 │   │   │   │   ├── HudPage.RowFactories.cs
 │   │   │   │   ├── HudPage.SectionState.cs
 │   │   │   │   ├── HudPage.Simulation.cs
 │   │   │   │   ├── HudPage.xaml
 │   │   │   │   └── HudPage.xaml.cs
-│   │   │   ├── Segmentation/
-│   │   │   │   ├── SegmentationPage.xaml
-│   │   │   │   └── SegmentationPage.xaml.cs
 │   │   │   ├── HomePage.xaml
 │   │   │   ├── HomePage.xaml.cs
 │   │   │   ├── PlaygroundWindow.xaml
@@ -1670,7 +1694,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SegmentedTranscriptionSession.cs
 │   │   │   ├── TranscribedUtterance.cs
 │   │   │   ├── Utterance.cs
-│   │   │   └── UtteranceProgress.cs
+│   │   │   ├── UtteranceProgress.cs
+│   │   │   └── UtteranceProgressMeter.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -1785,6 +1810,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AnytypeCredentialsTests.cs
 │   │   ├── AnytypeSpaceAliasesTests.cs
 │   │   ├── AnytypeUtilityGesturesTests.cs
+│   │   ├── AnytypeV2ClientTests.cs
+│   │   ├── AnytypeV2ExceptionTests.cs
+│   │   ├── AnytypeV2OpsTests.cs
+│   │   ├── AnytypeV2ReadWriteTests.cs
 │   │   ├── BackendEndpointTrustTests.cs
 │   │   ├── BackendListenerOwnerTests.cs
 │   │   ├── BackendProviderStoreBugNotes.md
@@ -1795,9 +1824,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── BackendSupervisorTests.cs
 │   │   ├── BackendTestFakes.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
+│   │   ├── DevSpaceBugNotes.md
 │   │   ├── DevSpaceTests.cs
 │   │   ├── DialogueGesturesTests.cs
 │   │   ├── DocumentGesturesTests.cs
+│   │   ├── FakeV2Handler.cs
 │   │   ├── LiveTagResolverTests.cs
 │   │   ├── ManagementGesturesTests.cs
 │   │   ├── MarkdownBodyTests.cs
@@ -1813,6 +1844,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TaskGesturesBugNotes.md
 │   │   └── TaskGesturesTests.cs
 │   ├── Deckle.Audio.Tests/
+│   │   ├── AudioRecordingHostDefaultsTests.cs
 │   │   ├── CaptureAnomalyEpisodeTests.cs
 │   │   ├── CaptureDataWatchdogTests.cs
 │   │   ├── CaptureSettingsMigrationTests.cs
@@ -1820,6 +1852,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleAudioSourceTests.cs
 │   │   ├── ListeningTakeTests.cs
 │   │   ├── MicLevelCheckTests.cs
+│   │   ├── MicrophoneErrorClassificationTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── Pcm16BufferTests.cs
@@ -2112,6 +2145,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HudTuningBugNotes.md
 │   │   ├── HudTuningSectionsBugNotes.md
 │   │   ├── HudViewModelTests.cs
+│   │   ├── IlReferences.cs
+│   │   ├── MicrophonePreviewFailureTests.cs
+│   │   ├── MicrophonePreviewFeedTests.cs
 │   │   ├── TuningModelTests.cs
 │   │   └── UtteranceCycleTests.cs
 │   ├── Deckle.Presets.Tests/
@@ -2190,6 +2226,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TranscriptionObservabilityContractTests.cs
 │   │   ├── TranscriptionSettingsMigrationTests.cs
 │   │   ├── UnitBezierTests.cs
+│   │   ├── UtteranceProgressMeterTests.cs
 │   │   ├── UtteranceProgressTests.cs
 │   │   └── VadServiceIncidentTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
