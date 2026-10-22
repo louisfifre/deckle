@@ -123,6 +123,74 @@
     </Content>
   </ItemGroup>
 
+  <!-- AppNotificationManager.Register() LoadLibrary's
+       Microsoft.WindowsAppRuntime.Insights.Resource.dll from beside the
+       executable (WindowsAppRuntimeInsights.h); without it Register() throws
+       "Unable to load resource dll", toasts are unavailable and
+       NotificationInvoked never fires. Windows App SDK 1.8 extracted the whole
+       runtime MSIX into the output of a self-contained app, which brought the DLL
+       along. 2.x only copies runtimes-framework\win-<platform>\native from its
+       component packages (AddMicrosoftWindowsAppSDKPayloadFilesFromComponents)
+       and never opens the MSIX, where this DLL is the one entry that lives at
+       the archive root. Upstream: microsoft/WindowsAppSDK#6774. Restore exactly
+       that entry; drop these targets once the SDK ships the DLL again.
+
+       The MSIX is located from the package itself: the Runtime package's props
+       expose its folder (MicrosoftWindowsAppSDKPackageDir), under which the
+       framework MSIX sits in tools\MSIX\win10-<platform>, so an SDK bump needs no
+       edit here. (WinAppSDKPackageName, which names it, is not set in
+       self-contained mode, hence the glob.) A missing MSIX or entry fails the
+       build, so a layout change can never silently drop the DLL again. The extraction is incremental on the MSIX, and the item is declared
+       before AssignTargetPaths like the SDK's own payload target so both build
+       and publish copy it. -->
+  <Target Name="ResolveWindowsAppRuntimeInsightsResource"
+          DependsOnTargets="GetWindowsAppSDKNativePlatform">
+    <PropertyGroup>
+      <_InsightsResourceName>Microsoft.WindowsAppRuntime.Insights.Resource.dll</_InsightsResourceName>
+      <_InsightsMsixDir>$(MicrosoftWindowsAppSDKPackageDir)tools\MSIX\win10-$(NativePlatform)\</_InsightsMsixDir>
+      <_InsightsExtractDir>$(IntermediateOutputPath)WindowsAppRuntimeInsights\</_InsightsExtractDir>
+      <_InsightsResourcePath>$(_InsightsExtractDir)$(_InsightsResourceName)</_InsightsResourcePath>
+    </PropertyGroup>
+    <!-- Next to the framework MSIX sit the Main, Singleton and DDLM ones; only
+         Microsoft.WindowsAppRuntime.<major>.msix holds the DLL. -->
+    <ItemGroup>
+      <_InsightsMsixCandidate Include="$(_InsightsMsixDir)Microsoft.WindowsAppRuntime.*.msix" />
+      <_InsightsRuntimeMsixItem Include="@(_InsightsMsixCandidate)"
+                                Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(Filename)', '^Microsoft\.WindowsAppRuntime\.\d+$'))" />
+    </ItemGroup>
+    <Error Condition="'@(_InsightsRuntimeMsixItem->Count())' != '1'"
+           Text="Expected exactly one framework MSIX (Microsoft.WindowsAppRuntime.&lt;major&gt;.msix) in '$(_InsightsMsixDir)', found @(_InsightsRuntimeMsixItem->Count()): cannot restore $(_InsightsResourceName), toast notifications would fail to register. The Windows App SDK package layout changed." />
+    <PropertyGroup>
+      <_InsightsRuntimeMsix>@(_InsightsRuntimeMsixItem)</_InsightsRuntimeMsix>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="ExtractWindowsAppRuntimeInsightsResource"
+          DependsOnTargets="ResolveWindowsAppRuntimeInsightsResource"
+          Inputs="$(_InsightsRuntimeMsix)"
+          Outputs="$(_InsightsResourcePath)">
+    <Unzip SourceFiles="$(_InsightsRuntimeMsix)"
+           DestinationFolder="$(_InsightsExtractDir)"
+           Include="$(_InsightsResourceName)"
+           OverwriteReadOnlyFiles="true" />
+    <Error Condition="!Exists('$(_InsightsResourcePath)')"
+           Text="$(_InsightsResourceName) is not an entry of '$(_InsightsRuntimeMsix)': toast notifications would fail to register. The Windows App SDK package layout changed." />
+    <!-- Unzip keeps the entry's own timestamp, older than the MSIX, which would
+         make the Outputs check above fail on every build. -->
+    <Touch Files="$(_InsightsResourcePath)" />
+  </Target>
+
+  <Target Name="AddWindowsAppRuntimeInsightsResource"
+          BeforeTargets="AssignTargetPaths"
+          DependsOnTargets="ExtractWindowsAppRuntimeInsightsResource">
+    <ItemGroup>
+      <None Include="$(_InsightsResourcePath)"
+            Link="$(_InsightsResourceName)"
+            CopyToOutputDirectory="PreserveNewest"
+            CopyToPublishDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
+
   <!-- The autocorrect lexicons must sit flat under Data/ beside the executable,
        where App.Autocorrect loads them. Transitive Content from
        Deckle.Autocorrect lands under "Deckle.Autocorrect\Data\"
