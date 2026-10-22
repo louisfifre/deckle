@@ -174,9 +174,11 @@ public sealed partial class DeckleLightingSource
         if (IsEnabled()) WriteEvent(EvtEntertainmentConnectFailed, stage, ex_type, ex_message, elapsed_ms);
     }
 
+    // A cancelled opening is a normal end, journaled like its failed sibling.
     [Event(EvtEntertainmentConnectCancelled,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
+           Tags = ObservationTags.Journal,
            Message = "Hue Entertainment session opening cancelled | stage={0} | elapsed_ms={1}")]
     public void EntertainmentConnectCancelled(string stage, long elapsed_ms)
     {

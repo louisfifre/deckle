@@ -2205,6 +2205,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HueLocalDiscoveryRegressionTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs
 │   │   ├── JournalClosersTests.cs
+│   │   ├── LightingCancellationJournalTests.cs
 │   │   └── LightingObservabilityCollection.cs
 │   ├── Deckle.Llm.Rewrite.Tests/
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
