@@ -1857,6 +1857,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesBugNotes.md
 │   │   ├── SessionGesturesTests.cs
+│   │   ├── SpaceWriteLockBugNotes.md
 │   │   ├── SpaceWriteLockTests.cs
 │   │   ├── TaskGesturesBugNotes.md
 │   │   └── TaskGesturesTests.cs
