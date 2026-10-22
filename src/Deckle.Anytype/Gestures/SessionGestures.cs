@@ -183,8 +183,8 @@ public sealed class SessionGestures(
         string? typeName = task.Props.Select(DevSpace.Props.TypeDeTache);
         string? type = typeName is null ? null : DevSpace.TypeDeTache.Resolve(typeName) ?? typeName;
         string? priority = task.Props.Select(DevSpace.Props.Priorite);
-        string project = (await ResolveNamesAsync(task.Props.ObjectIds(DevSpace.Props.RelationProjet), ct))
-            is { Count: > 0 } projects ? string.Join(", ", projects) : "—";
+        string project = await LinkedNames.JoinAsync(
+            _reader, task.Props.ObjectIds(DevSpace.Props.RelationProjet), ct) ?? "—";
 
         var header = new List<string>
         {
@@ -261,18 +261,6 @@ public sealed class SessionGestures(
         return page.Rows;
     }
 
-    async Task<List<string>> ResolveNamesAsync(IReadOnlyList<string> ids, CancellationToken ct)
-    {
-        var names = new List<string>(ids.Count);
-        foreach (string id in ids)
-        {
-            AnytypeV2ObjectDocument doc = await _reader.ReadAsync(
-                id, new AnytypeV2ObjectReadOptions { Parts = AnytypeV2ObjectParts.Properties }, ct);
-            string name = AnytypeV2PropertyMap.Of(doc).Name;
-            names.Add(name.Length > 0 ? name : "(sans titre)");
-        }
-        return names;
-    }
     // ── property read helpers (raw API property-array shape) ──────────────────
     // GetObjectAsync returns the inner object node with `properties` as an array
     // of { key, format, <format>: value } — the C# client does not flatten it.

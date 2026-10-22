@@ -384,6 +384,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── BlockSections.cs
 │   │   │   ├── CollectionMembershipGestures.cs
 │   │   │   ├── DocumentGestures.cs
+│   │   │   ├── LinkedNames.cs
 │   │   │   ├── LiveTagResolver.cs
 │   │   │   ├── ManagementGestures.cs
 │   │   │   ├── MarkdownBody.cs

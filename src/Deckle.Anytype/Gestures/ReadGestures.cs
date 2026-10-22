@@ -284,22 +284,9 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
 
     static string? JoinOrNull(IReadOnlyList<string> names) => names.Count > 0 ? string.Join(", ", names) : null;
     // Links are rendered by name: an id tells a reader nothing, and v2 serves
-    // only ids. One properties read per link is the price; links are few on
-    // every type. An untitled linked object reads « (sans titre) »: v1 fell back
-    // on the object's snippet, which a properties-only v2 read does not carry.
-    async Task<string?> NamesAsync(IReadOnlyList<string> ids, CancellationToken ct)
-    {
-        if (ids.Count == 0) return null;
-        var names = new List<string>(ids.Count);
-        foreach (string id in ids)
-        {
-            AnytypeV2ObjectDocument linked = await _reader.ReadAsync(
-                id, new AnytypeV2ObjectReadOptions { Parts = AnytypeV2ObjectParts.Properties }, ct);
-            string name = AnytypeV2PropertyMap.Of(linked).Name;
-            names.Add(name.Length > 0 ? name : "(sans titre)");
-        }
-        return string.Join(", ", names);
-    }
+    // only ids.
+    Task<string?> NamesAsync(IReadOnlyList<string> ids, CancellationToken ct) =>
+        LinkedNames.JoinAsync(_reader, ids, ct);
 
     static void AppendFact(StringBuilder sb, string label, string? value)
     {

@@ -515,6 +515,24 @@ public class ReadGesturesTests
         Assert.Contains("Tâches liées : (sans titre)", digest.Split('\n'));
     }
 
+    // A relation can hold many links and every name costs a request: a repeated
+    // id is read once, and past eight reads the rest is only counted.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ReportJournalReadsADuplicatedLinkOnceAndCapsTheNameReads()
+    {
+        string[] ids = Enumerable.Range(1, 10).Select(i => $"bafyreiLink{i}").ToArray();
+        string[] linked = [.. ids, ids[0]];
+        var replies = new List<string> { ReportProps(linked), ReportMd("# Journal 2026-07-21") };
+        replies.AddRange(ids.Take(LinkedNames.MaxReads).Select((id, i) => PropsReply(id, "task", $"T{i + 1}")));
+        FakeV2Handler v2 = Reads([.. replies]);
+
+        string digest = await NewGestures(v2).ReportJournalAsync(ReportId, ct: Ct);
+
+        Assert.Contains("Tâches liées : T1, T2, T3, T4, T5, T6, T7, T8, +2", digest.Split('\n'));
+        Assert.Equal(2 + LinkedNames.MaxReads, v2.Requests.Count);
+    }
+
     [Theory]
     [InlineData(0)]
     [InlineData(-3)]
