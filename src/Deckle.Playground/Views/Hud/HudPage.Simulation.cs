@@ -95,8 +95,19 @@ public sealed partial class HudPage
     // Playground reads it and never writes it. No row rebuilds the preview:
     // the timer reads the fields on every tick, and a rebuild would restart
     // the take, its clock and its gauge.
-    private void AddSpeechSimulationRows(StackPanel stack)
+    //
+    // Under the source row: Microphone shows none of these, the preview then
+    // follows the real sound and the real gauge.
+    private void AddSpeechSimulationRows(StackPanel section)
     {
+        // The rows below belong to the simulation source alone: they sit in
+        // their own panel, which the source row (HudPage.Microphone.cs) shows
+        // or hides in place. Same spacing as the section, so they read as its
+        // direct rows.
+        var stack = new StackPanel { Spacing = 4 };
+        AddPreviewSourceRows(section, stack);
+        section.Children.Add(stack);
+
         // Range 0.05: the default window reads everything above 0.025
         // (−32 dBFS) as full level, so a wider slider spent most of its
         // travel on values that all look the same. Step 0.001: silence sits

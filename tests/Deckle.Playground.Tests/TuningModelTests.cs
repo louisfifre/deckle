@@ -1,4 +1,5 @@
 using System.Reflection;
+using Deckle.Audio;
 using Deckle.Composition;
 using Xunit;
 using static Deckle.Composition.HudComposition;
@@ -155,16 +156,40 @@ public class TuningModelTests
     }
 
     // The live HUD maps every audio sample through AudioLevelMapper's statics,
-    // which the Playground must never write: its assembly references no
-    // Deckle.Audio type at all.
+    // which the Playground must never write. Its Microphone preview does
+    // reference Deckle.Audio, so the guard reads the instructions rather than
+    // the references: no Playground code stores to a mapper static, takes its
+    // address, or calls a mapper method that returns nothing (Apply is the
+    // writer today). Both lists come from the mapper itself, so a knob or a
+    // writer added later is covered without editing the test.
     [Fact]
     [Trait("Category", "regression")]
-    public void ThePlaygroundTouchesNoAudioType()
+    public void ThePlaygroundNeverWritesTheAudioLevelMapping()
     {
-        var references = typeof(HudViewModel).Assembly
-            .GetReferencedAssemblies()
-            .Select(reference => reference.Name);
+        var mapper = typeof(AudioLevelMapper);
+        var statics = mapper.GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(field => !field.IsInitOnly && !field.IsLiteral)
+            .Select(field => $"{mapper.FullName}.{field.Name}")
+            .ToList();
+        var writers = mapper.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly)
+            .Where(method => method.ReturnType == typeof(void))
+            .Select(method => $"{mapper.FullName}.{method.Name}")
+            .ToList();
+        Assert.NotEmpty(statics);
+        Assert.NotEmpty(writers);
 
-        Assert.DoesNotContain("Deckle.Audio", references);
+        // The scan is not vacuous: it finds every static, and a writer, where
+        // they really are written, inside Deckle.Audio.
+        var audioWrites = IlReferences.StaticFieldWrites(mapper.Assembly);
+        var audioCalls = IlReferences.MethodCalls(mapper.Assembly);
+        Assert.All(statics, name => Assert.Contains(name, audioWrites));
+        Assert.Contains(audioCalls, call => writers.Contains(call));
+
+        var playground = typeof(HudViewModel).Assembly;
+        var written = IlReferences.StaticFieldWrites(playground).Intersect(statics).ToList();
+        var called = IlReferences.MethodCalls(playground).Intersect(writers).ToList();
+
+        Assert.True(written.Count == 0 && called.Count == 0,
+            "The Playground writes the live audio mapping: " + string.Join(", ", written.Concat(called)));
     }
 }

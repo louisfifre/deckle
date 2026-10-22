@@ -85,6 +85,7 @@ public sealed partial class HudPage : Page
         if (this.Content is FrameworkElement root)
         {
             root.Loaded += OnPageLoaded;
+            root.Unloaded += OnPageUnloaded;
         }
     }
 
@@ -175,6 +176,8 @@ public sealed partial class HudPage : Page
     {
         SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
         HudSettingsService.Instance.Changed -= OnHudSettingsChanged;
+        // The device first: nothing below may keep it open if it throws.
+        StopMicrophone();
         StopSpeechSimulation();
         CancelTransition();
         _rebuildDebounce.Stop();
@@ -261,6 +264,11 @@ public sealed partial class HudPage : Page
     {
         CancelTransition();
         SnapshotCountdownReplay();
+        // A microphone the preview no longer needs closes before the state it
+        // feeds changes: its gauge resets while the chrono still listens, and
+        // no level lands on the next state. One it still needs stays open
+        // through the rebuild and restarts its take below.
+        if (!WantsMicrophone()) StopMicrophone();
         ChronoPreview.ApplyState(HudState.Hidden);
         ElementCompositionPreview.SetElementChildVisual(NakedPreviewHost, null);
         _nakedPreview?.Dispose();
@@ -340,7 +348,11 @@ public sealed partial class HudPage : Page
             case HudState.Rewriting:    ChronoPreview.StopClock();  break;
         }
 
-        if (currentTarget == HudTarget.Recording)
+        // After ApplyState, so the first gauge lands on a chrono that is
+        // listening for it.
+        if (WantsMicrophone())
+            StartMicrophone();
+        else if (currentTarget == HudTarget.Recording)
             StartSpeechSimulation();
     }
 

@@ -44,6 +44,11 @@ internal sealed class EnergySegmenter
 
     private readonly Action<Utterance> _onUtterance;
 
+    // False for a segmenter that is not cutting a dictation (the live pause
+    // gauge in the Playground): its cuts would otherwise read in the detailed
+    // log exactly like the cuts of a take.
+    private readonly bool _logsDetail;
+
     // Derived from settings once, in frame units.
     private readonly float _rmsThreshold;       // linear RMS at/above which a frame is voiced
     private readonly int   _hangoverMaxFrames;  // hangover at utterance start
@@ -67,9 +72,11 @@ internal sealed class EnergySegmenter
     private long _totalFrames; // monotonic frame counter since construction (for timing)
     private int  _nextIndex;   // emission order counter
 
-    public EnergySegmenter(EnergySegmenterSettings settings, Action<Utterance> onUtterance)
+    public EnergySegmenter(
+        EnergySegmenterSettings settings, Action<Utterance> onUtterance, bool logsDetail = true)
     {
         _onUtterance = onUtterance;
+        _logsDetail = logsDetail;
 
         // dBFS → linear once, so the per-frame test is a plain comparison (no log).
         _rmsThreshold      = (float)Math.Pow(10.0, settings.ThresholdDbfs / 20.0);
@@ -183,8 +190,11 @@ internal sealed class EnergySegmenter
         int keptCount    = Math.Min(_frames.Count, voicedExtent + _marginFrames);
         if (voicedExtent < _minVoicedFrames)
         {
-            DeckleWhispSource.Log.SegmenterBlipDropped(
-                voicedExtent, (int)Math.Round(voicedExtent * FrameMs));
+            if (_logsDetail)
+            {
+                DeckleWhispSource.Log.SegmenterBlipDropped(
+                    voicedExtent, (int)Math.Round(voicedExtent * FrameMs));
+            }
             return; // blip — dropped
         }
 
@@ -198,9 +208,12 @@ internal sealed class EnergySegmenter
         int index = _nextIndex++;
         _onUtterance(new Utterance(Concat(frameCount), index, startSec, endSec, endedOnSilence));
 
-        DeckleWhispSource.Log.SegmenterUtteranceEmitted(
-            index, voicedFrames, frameCount, startSec, endSec,
-            (int)Math.Round(hangoverUsedFrames * FrameMs));
+        if (_logsDetail)
+        {
+            DeckleWhispSource.Log.SegmenterUtteranceEmitted(
+                index, voicedFrames, frameCount, startSec, endSec,
+                (int)Math.Round(hangoverUsedFrames * FrameMs));
+        }
     }
 
     internal SegmenterSnapshot Snapshot()
