@@ -928,6 +928,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── NoteFile.cs
 │   │   ├── ObservationKind.cs
 │   │   ├── OperationalLogAdmission.cs
+│   │   ├── PathRedaction.cs
 │   │   ├── RunMarker.cs
 │   │   ├── WindowingProbe.cs
 │   │   └── WorkId.cs
@@ -2080,6 +2081,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── NoteFileTests.cs
 │   │   ├── OperationalLogAdmissionCollection.cs
 │   │   ├── OperationalLogAdmissionTests.cs
+│   │   ├── PathRedactionTests.cs
 │   │   ├── RoutedJsonlSinkRegressionTests.cs
 │   │   ├── RunMarkerTests.cs
 │   │   ├── SinkCallbackBugNotes.md
