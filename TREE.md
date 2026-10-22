@@ -1392,6 +1392,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CorrectionApplicationEvidence.cs
 │   │   │   ├── CorrectionApplicationFixture.cs
 │   │   │   ├── CorrectionApplicationTrial.cs
+│   │   │   ├── MicrophonePreviewFailure.cs
+│   │   │   ├── MicrophonePreviewFeed.cs
 │   │   │   ├── TuningModel.cs
 │   │   │   └── UtteranceCycle.cs
 │   │   ├── Strings/
@@ -2111,6 +2113,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HudTuningSectionsBugNotes.md
 │   │   ├── HudViewModelTests.cs
 │   │   ├── IlReferences.cs
+│   │   ├── MicrophonePreviewFeedTests.cs
 │   │   ├── TuningModelTests.cs
 │   │   └── UtteranceCycleTests.cs
 │   ├── Deckle.Presets.Tests/
