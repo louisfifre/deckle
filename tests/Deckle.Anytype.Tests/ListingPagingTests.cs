@@ -33,6 +33,111 @@ public class ListingPagingTests
             ["name"] = $"Collection {i}",
         });
 
+    static IEnumerable<JsonObject> Types(int count) =>
+        Enumerable.Range(0, count).Select(i => new JsonObject
+        {
+            ["object"] = "type",
+            ["id"] = $"type-id-{i:D4}",
+            ["key"] = $"type_{i:D4}",
+            ["name"] = $"Type {i}",
+            ["plural_name"] = $"Types {i}",
+            ["layout"] = "basic",
+        });
+
+    static IEnumerable<JsonObject> Properties(int count) =>
+        Enumerable.Range(0, count).Select(i => new JsonObject
+        {
+            ["object"] = "property",
+            ["id"] = $"prop-id-{i:D4}",
+            ["key"] = $"prop_{i:D4}",
+            ["name"] = $"Property {i}",
+            ["format"] = "select",
+        });
+
+    static IEnumerable<JsonObject> Tags(int count) =>
+        Enumerable.Range(0, count).Select(i => new JsonObject
+        {
+            ["object"] = "tag",
+            ["id"] = $"tag-id-{i:D4}",
+            ["key"] = $"option_{i:D4}",
+            ["name"] = $"Option {i}",
+            ["color"] = "grey",
+        });
+
+    static JsonObject EmptyPageClaimingMore() => new()
+    {
+        ["data"] = new JsonArray(),
+        ["pagination"] = new JsonObject { ["has_more"] = true },
+    };
+
+    static JsonObject EmptyList() => new()
+    {
+        ["data"] = new JsonArray(),
+        ["pagination"] = new JsonObject { ["has_more"] = false },
+    };
+
+    static SchemaSnapshotReader NewReader(FakeAnytypeServer server) =>
+        new(new AnytypeApiClient(server.Credentials));
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ASchemaSnapshotReadsEveryTypeWhenTheServerCapsThePage()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnPagedListTypes(Types(Rows), ServerPageCap);
+        server.OnListProperties(EmptyList());
+
+        SchemaSnapshot snapshot = await NewReader(server).ReadAsync(FakeAnytypeServer.Space, ct: Ct);
+
+        Assert.Equal(Rows, snapshot.Types.Count);
+        Assert.Contains("type_0090", snapshot.Types.Keys);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ASchemaSnapshotReadsEveryPropertyWhenTheServerCapsThePage()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyList());
+        server.OnPagedListProperties(Properties(Rows), ServerPageCap);
+
+        SchemaSnapshot snapshot = await NewReader(server).ReadAsync(FakeAnytypeServer.Space, ct: Ct);
+
+        Assert.Equal(Rows, snapshot.Properties.Count);
+        Assert.Contains("prop_0090", snapshot.Properties.Keys);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ASchemaSnapshotReadsEveryTagWhenTheServerCapsThePage()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyList());
+        server.OnPagedListProperties(Properties(3), ServerPageCap);
+        server.OnPagedListPropertyTags("prop-id-0001", Tags(Rows), ServerPageCap);
+
+        SchemaSnapshot snapshot = await NewReader(server)
+            .ReadAsync(FakeAnytypeServer.Space, ["prop_0001"], Ct);
+
+        IReadOnlyDictionary<string, SchemaTagInfo> tags = snapshot.TagsByProperty["prop_0001"];
+        Assert.Equal(Enumerable.Range(0, Rows).Select(i => $"option_{i:D4}"), tags.Keys.Where(k => k.StartsWith("option_")).Order());
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ASchemaSnapshotStopsOnAnEmptyPageEvenIfTheServerStillClaimsMore()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyPageClaimingMore());
+        server.OnListProperties(EmptyList());
+
+        SchemaSnapshot snapshot = await NewReader(server)
+            .ReadAsync(FakeAnytypeServer.Space, ct: Bounded());
+
+        Assert.Empty(snapshot.Types);
+        Assert.Single(server.Requests, r => r.Path.EndsWith("/types"));
+    }
+
     [Fact]
     [Trait("Category", "regression")]
     public async Task AnObjectListingReadsEveryRowWhenTheServerCapsThePage()
