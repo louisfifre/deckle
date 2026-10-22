@@ -42,8 +42,9 @@ public sealed record McpSurfaceDescriptor(string Name, string Title, string Inst
         + "validation, so the estimate/actual delta stays readable. Select "
         + "options are applied, never created: new options come from the user, "
         + "in Anytype. Names "
-        + "resolve to objects; an ambiguous name returns candidate ids so you "
-        + "can retry with one.");
+        + "resolve to objects: a read takes the one object a name resembles, a "
+        + "write needs the exact name or the id; an ambiguous or inexact name "
+        + "returns candidate ids so you can retry with one.");
 
     public static readonly McpSurfaceDescriptor Dialogues = new(
         "deckle-anytype-dialogues",
