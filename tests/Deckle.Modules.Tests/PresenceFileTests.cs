@@ -14,12 +14,12 @@ namespace Deckle.Modules.Tests;
 [Trait("Category", "unit")]
 public class PresenceFileTests : IDisposable
 {
-    // What a version-1 file knew of; asserted against the production ids so a
-    // renamed id breaks here instead of silently changing what old files mean.
+    // What a version-1 file knew of, written as the strings those files hold, so
+    // a changed id value breaks here instead of silently changing what old files
+    // mean.
     private static readonly string[] Version1Catalogue =
     [
-        ModuleIds.Transcription, ModuleIds.Rewrite, ModuleIds.Autocorrect,
-        ModuleIds.Ambient, ModuleIds.Trackpad, ModuleIds.Anytype,
+        "transcription", "rewrite", "autocorrect", "ambient", "trackpad", "anytype",
     ];
 
     private readonly string _dir = Path.Combine(
