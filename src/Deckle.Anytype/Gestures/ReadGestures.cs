@@ -87,8 +87,7 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
             if (MarkdownBody.TryReadSection(body, heading, out string content)) { source = content; break; }
         // Checklist lines are dropped wherever they sit: task_checklist owns
         // them, and a task written outside the template mixes both.
-        string notes = string.Join('\n', (source ?? body).Split('\n')
-            .Where(l => !MarkdownBody.TryChecklistLine(l, out _, out _))
+        string notes = string.Join('\n', MarkdownBody.WithoutChecklistLines(source ?? body).Split('\n')
             .Where(l => !IsHeading(l, ChecklistHeading)));
 
         string clean = MarkdownBody.Clean(notes);

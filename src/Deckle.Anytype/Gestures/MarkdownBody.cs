@@ -40,11 +40,12 @@ public static class MarkdownBody
     {
         string target = NormalizeHeading(heading);
         string[] lines = body.Split('\n');
+        var headings = ScanHeadings(lines);
 
         int matchLine = -1, matchLevel = 0, matchCount = 0;
         for (int i = 0; i < lines.Length; i++)
         {
-            if (!TryHeading(lines[i], out int level, out string text)) continue;
+            if (headings[i] is not (int level, string text)) continue;
             if (!NormalizeHeading(text).Equals(target, StringComparison.OrdinalIgnoreCase)) continue;
 
             matchCount++;
@@ -54,7 +55,7 @@ public static class MarkdownBody
         if (matchCount == 0) return new(EditStatus.NotFound, body, 0);
         if (matchCount > 1) return new(EditStatus.Ambiguous, body, matchCount);
 
-        int end = SectionEnd(lines, matchLine, matchLevel);
+        int end = SectionEnd(headings, matchLine, matchLevel);
 
         // The blank line(s) before the next heading separate the two sections — they
         // belong to the layout, not to this section's content. Back the replaced
@@ -66,7 +67,20 @@ public static class MarkdownBody
 
         var rebuilt = new List<string>(lines.Length);
         rebuilt.AddRange(lines[..(matchLine + 1)]);
-        if (content.Length > 0) rebuilt.AddRange(content.Split('\n'));
+        if (content.Length > 0)
+        {
+            // The body keeps its own line ending: a CRLF body gets CRLF content,
+            // so a splice never leaves a document with both. Only the lines that
+            // a later line follows carry the CR; a last line with nothing after
+            // it ends the document and gets none.
+            string[] added = content.Replace("\r\n", "\n").Split('\n');
+            bool crlf = body.Contains("\r\n", StringComparison.Ordinal);
+            for (int i = 0; i < added.Length; i++)
+            {
+                bool followed = i < added.Length - 1 || contentEnd < lines.Length;
+                rebuilt.Add(crlf && followed ? added[i] + "\r" : added[i]);
+            }
+        }
         rebuilt.AddRange(lines[contentEnd..]);
 
         return new(EditStatus.Replaced, string.Join('\n', rebuilt), 1);
@@ -84,8 +98,8 @@ public static class MarkdownBody
     public static IReadOnlyList<string> HeadingTexts(string body)
     {
         var list = new List<string>();
-        foreach (string line in body.Split('\n'))
-            if (TryHeading(line, out _, out string text))
+        foreach (var heading in ScanHeadings(body.Split('\n')))
+            if (heading is (_, string text))
                 list.Add(NormalizeHeading(text));
         return list;
     }
@@ -104,11 +118,12 @@ public static class MarkdownBody
         content = "";
         string target = NormalizeHeading(heading);
         string[] lines = body.Split('\n');
+        var headings = ScanHeadings(lines);
 
         int start = -1, level = 0;
         for (int i = 0; i < lines.Length; i++)
         {
-            if (TryHeading(lines[i], out int l, out string text)
+            if (headings[i] is (int l, string text)
                 && NormalizeHeading(text).Equals(target, StringComparison.OrdinalIgnoreCase))
             {
                 start = i; level = l; break;
@@ -116,7 +131,7 @@ public static class MarkdownBody
         }
         if (start < 0) return false;
 
-        int end = SectionEnd(lines, start, level);
+        int end = SectionEnd(headings, start, level);
         content = string.Join('\n', lines[(start + 1)..end]);
         return true;
     }
@@ -125,8 +140,9 @@ public static class MarkdownBody
     public static string Preamble(string body)
     {
         string[] lines = body.Split('\n');
+        var headings = ScanHeadings(lines);
         for (int i = 0; i < lines.Length; i++)
-            if (TryHeading(lines[i], out _, out _))
+            if (headings[i] is not null)
                 return string.Join('\n', lines[..i]);
         return body;
     }
@@ -139,10 +155,11 @@ public static class MarkdownBody
     {
         var list = new List<Section>();
         string[] lines = body.Split('\n');
+        var headings = ScanHeadings(lines);
         for (int i = 0; i < lines.Length; i++)
         {
-            if (!TryHeading(lines[i], out int level, out string text)) continue;
-            int end = SectionEnd(lines, i, level);
+            if (headings[i] is not (int level, string text)) continue;
+            int end = SectionEnd(headings, i, level);
             int chars = Clean(string.Join('\n', lines[(i + 1)..end])).Length;
             list.Add(new Section(level, NormalizeHeading(text), chars));
         }
@@ -157,12 +174,28 @@ public static class MarkdownBody
     public static IReadOnlyList<ChecklistItem> ChecklistItems(string body)
     {
         var items = new List<ChecklistItem>();
-        foreach (string line in body.Split('\n'))
+        string[] lines = body.Split('\n');
+        bool[] fenced = FenceMask(lines);
+        for (int i = 0; i < lines.Length; i++)
         {
-            if (!TryChecklistLine(line, out int box, out string label) || label.Length == 0) continue;
+            string line = lines[i];
+            if (fenced[i] || !TryChecklistLine(line, out int box, out string label) || label.Length == 0) continue;
             items.Add(new ChecklistItem(line[box] != ' ', Unescape(label)));
         }
         return items;
+    }
+
+    // The text without its checklist lines, for a reader that has the checklist
+    // from elsewhere. A `- [ ]` line inside a code fence is code, so it stays.
+    public static string WithoutChecklistLines(string text)
+    {
+        string[] lines = text.Split('\n');
+        bool[] fenced = FenceMask(lines);
+        var kept = new List<string>(lines.Length);
+        for (int i = 0; i < lines.Length; i++)
+            if (fenced[i] || !TryChecklistLine(lines[i], out _, out _))
+                kept.Add(lines[i]);
+        return string.Join('\n', kept);
     }
 
     // A GFM checklist line: optional indent, a list marker, `[ ]`/`[x]`/`[X]`,
@@ -260,6 +293,7 @@ public static class MarkdownBody
     // with any further lines below. Before the first stamp, each line is an
     // entry of its own: reports written before the stamped form carry one
     // bullet per entry. The « # Journal » title is not an entry.
+
     public static IReadOnlyList<string> JournalEntries(string body)
     {
         var entries = new List<string>();
@@ -290,19 +324,74 @@ public static class MarkdownBody
 
     // ── internals ─────────────────────────────────────────────────────────────
 
+
     static bool IsJournalStamp(string line) =>
         line.Length == JournalStampFormat.Length
         && DateTime.TryParseExact(
             line, JournalStampFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
 
-    static int SectionEnd(string[] lines, int headingLine, int level)
+    static int SectionEnd((int Level, string Text)?[] headings, int headingLine, int level)
     {
-        for (int i = headingLine + 1; i < lines.Length; i++)
-            if (TryHeading(lines[i], out int l, out _) && l <= level) return i;
-        return lines.Length;
+        for (int i = headingLine + 1; i < headings.Length; i++)
+            if (headings[i] is (int l, _) && l <= level) return i;
+        return headings.Length;
     }
 
-    // A CommonMark ATX heading; "#text" (no space) is not a heading.
+    // The heading of each line, or null when it is none. A line inside a code
+    // fence is code, whatever it starts with: a `# comment` in a shell block is
+    // not a heading, so it neither opens nor closes a section.
+    static (int Level, string Text)?[] ScanHeadings(string[] lines)
+    {
+        bool[] fenced = FenceMask(lines);
+        var headings = new (int Level, string Text)?[lines.Length];
+        for (int i = 0; i < lines.Length; i++)
+            if (!fenced[i] && TryHeading(lines[i], out int level, out string text))
+                headings[i] = (level, text);
+        return headings;
+    }
+
+    // Marks every line that belongs to a fenced code block, fences included. A
+    // fence is three or more backticks or tildes after at most three spaces; it
+    // closes on a run of the same character at least as long with nothing after
+    // it, and an unclosed fence runs to the end of the document (CommonMark).
+    // A backtick fence whose info string holds a backtick is inline code, not a
+    // fence.
+    static bool[] FenceMask(string[] lines)
+    {
+        var mask = new bool[lines.Length];
+        char fence = '\0';
+        int fenceLength = 0;
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string line = lines[i].TrimEnd('\r');
+            int p = 0;
+            while (p < line.Length && p < 3 && line[p] == ' ') p++;
+            int run = 0;
+            char c = p < line.Length ? line[p] : '\0';
+            if (c is '`' or '~')
+                while (p + run < line.Length && line[p + run] == c) run++;
+
+            if (fence == '\0')
+            {
+                if (run >= 3 && !(c == '`' && line.IndexOf('`', p + run) >= 0))
+                {
+                    fence = c;
+                    fenceLength = run;
+                    mask[i] = true;
+                }
+                continue;
+            }
+
+            mask[i] = true;
+            if (c == fence && run >= fenceLength && line[(p + run)..].Trim().Length == 0)
+                fence = '\0';
+        }
+        return mask;
+    }
+
+    // A CommonMark ATX heading; "#text" (no space) is not a heading. An optional
+    // closing run of `#` (« ## Title ## ») is not part of the text, but a `#`
+    // glued to the last word (« ## C# ») is.
     static bool TryHeading(string line, out int level, out string text)
     {
         level = 0; text = "";
@@ -313,13 +402,21 @@ public static class MarkdownBody
         int hashes = 0;
         while (p < line.Length && line[p] == '#') { hashes++; p++; }
         if (hashes is < 1 or > 6) return false;
-        if (p < line.Length && line[p] != ' ') return false;
+        if (p < line.Length && line[p] != ' ' && line[p] != '\r') return false;
 
         level = hashes;
-        text = line[p..].Trim();
+        text = StripClosingHashes(line[p..].Trim());
         return true;
     }
 
+    static string StripClosingHashes(string text)
+    {
+        int end = text.Length;
+        while (end > 0 && text[end - 1] == '#') end--;
+        if (end == text.Length) return text;
+        if (end == 0) return "";
+        return text[end - 1] is ' ' or '\t' ? text[..end].TrimEnd() : text;
+    }
     static string NormalizeHeading(string s) => Unescape(s).Trim();
 
     static string NormalizeBlock(string s)
