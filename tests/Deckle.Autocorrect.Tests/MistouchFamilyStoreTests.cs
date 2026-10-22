@@ -8,7 +8,7 @@ namespace Deckle.Autocorrect.Tests;
 // discipline. These pin the tolerance contract: a missing or corrupt file is
 // an empty set (the corrector stays inert), an unreadable record is skipped,
 // never a boot failure.
-[Trait("Category", "unit")]
+[Trait("Category", "integration")]
 public class MistouchFamilyStoreTests
 {
     private static string WriteTemp(string content)

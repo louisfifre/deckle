@@ -8,7 +8,6 @@ namespace Deckle.Autocorrect.Tests;
 // The typo corrector acts only on NON-words, and only when a common French word
 // sits one edit away (two in the far tier) and clearly dominates. Edits
 // modelled: deletion, transposition, keyboard-adjacent substitution, insertion.
-[Trait("Category", "unit")]
 public class ConservativeTypoCorrectorTests
 {
     // Frequencies per million, Lexique scale. ballet/billet are the synthetic
@@ -32,6 +31,7 @@ public class ConservativeTypoCorrectorTests
     // ── Corrections that earned it ──────────────────────────────────────────
 
     [Fact]
+    [Trait("Category", "unit")]
     public void CorrectsTransposition()
     {
         var d = Corrector().Evaluate("bonjuor", []);
@@ -42,6 +42,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ComposesATranspositionWithMissingDiacritics()
     {
         FrequencyLexicon french = FrequencyLexicon.LoadTsv(new StringReader(
@@ -57,6 +58,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void CorrectsMissingLetter()
     {
         var d = Corrector().Evaluate("bonjor", []);
@@ -66,6 +68,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void CorrectsAdjacentSubstitution()
     {
         var d = Corrector().Evaluate("bobjour", []);
@@ -75,6 +78,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void PreservesSentenceInitialCase()
     {
         // No left context means sentence-initial, so the capital is not a name.
@@ -84,6 +88,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void DominantNeighbourWins()
     {
         // ballet 2000 vs billet 100: ratio 20 clears the 5× near bar.
@@ -96,12 +101,14 @@ public class ConservativeTypoCorrectorTests
     // ── Conservativity: the cases left alone ────────────────────────────────
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ValidFrenchWordIsNeverTouched()
     {
         Assert.Null(Corrector().Evaluate("chat", []));
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void NonAdjacentSubstitutionOnAShortWordIsNotAPlausibleSlip()
     {
         // "zhat" → "chat" needs z→c, but z and c do not touch on QWERTY, so it is
@@ -111,6 +118,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void AmbiguousNeighboursAreLeftAlone()
     {
         // "bllet" is one insertion from both ballet (100) and billet (100):
@@ -119,6 +127,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void AmbiguousOneKeyNeighboursBecomeAClosedSentenceCandidateSet()
     {
         var corrector = Corrector("peu\t1586.96\npu\t366.22\npur\t44.59\n");
@@ -131,6 +140,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void CoherentHorizontalHandOffsetIsAContextualCandidateOnly()
     {
         var corrector = Corrector("qui\t9000\n");
@@ -142,6 +152,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ShortTwoSlipFaultIsAContextualCandidateOnly()
     {
         var corrector = Corrector("mieux\t900\n");
@@ -153,6 +164,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RareNeighbourBelowFloorIsLeftAlone()
     {
         // "obscru" → obscur, but obscur (1.5) sits under the 2/million floor:
@@ -161,6 +173,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ShortWordIsLeftAlone()
     {
         // "ch" is below MinWordLength, too little signal, even though "chat" is
@@ -169,6 +182,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ProperNounMidSentenceIsLeftAlone()
     {
         // A capitalised token mid-utterance is a name, not a typo to fix.
@@ -176,6 +190,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void EnglishShapedTokenIsCorrectedWithoutTheGlobalEnglishSeed()
     {
         var d = Corrector().Evaluate("mode", []);
@@ -186,6 +201,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ValidEnglishWordIsNotFrenchified()
     {
         // The bilingual guard works by membership, whatever the English frequency.
@@ -194,6 +210,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void PrimaryLexiconCanComeFromTheFrequencyInterface()
     {
         var french = new StubFrequencyLexicon(new()
@@ -208,6 +225,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void AdoptedWordShieldsItself()
     {
         var personal = new StubPersonal(adopted: new() { "bonjuor" });
@@ -215,12 +233,14 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void DigitBearingTokenIsLeftAlone()
     {
         Assert.Null(Corrector().Evaluate("bonj0ur", []));
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void PackagedLexiconPrefersTheDeduplicatedFrenchVerb()
     {
         string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
@@ -242,6 +262,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Theory]
+    [Trait("Category", "integration")]
     [InlineData("pru", "peu")]
     [InlineData("qio", "qui")]
     [InlineData("miru", "mieux")]
@@ -264,12 +285,14 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void CamelCaseIdentifierIsLeftAlone()
     {
         Assert.Null(Corrector().Evaluate("onKeyDown", []));
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void GibberishWithNoNeighbourIsLeftAlone()
     {
         Assert.Null(Corrector().Evaluate("zzzzz", []));
@@ -278,6 +301,7 @@ public class ConservativeTypoCorrectorTests
     // ── The far tier: two edits, stricter bar ───────────────────────────────
 
     [Fact]
+    [Trait("Category", "unit")]
     public void CorrectsTwoEditFault()
     {
         var d = Corrector().Evaluate("bonjuro", []);
@@ -287,6 +311,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void TwoEditFaultOnShortWordIsLeftAlone()
     {
         // "xonde" is two edits from "monde" (delete x, insert m), but at five
@@ -295,6 +320,7 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RelaxedDominanceResolvesAModerateRatio()
     {
         // ballet 600 vs billet 100: ratio 6 clears the 5× near bar.

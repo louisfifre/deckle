@@ -8,7 +8,6 @@ namespace Deckle.Autocorrect.Tests;
 // The offline pair-model trainer: it must find the ambiguous slots (a/à), count
 // the chosen variant per previous word, keep prev inside the sentence, prune
 // the thin tail, and round-trip through gz TSV without loss.
-[Trait("Category", "unit")]
 public class PairModelTrainerTests
 {
     // Minimal lexicon: only the a/à slot is ambiguous (à carries the diacritic,
@@ -31,6 +30,7 @@ public class PairModelTrainerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void CountsBareFormPerPreviousWord()
     {
         var model = Train(new TrainerOptions { MinPairCount = 1 });
@@ -39,6 +39,7 @@ public class PairModelTrainerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void CountsAccentedFormPerPreviousWord()
     {
         var model = Train(new TrainerOptions { MinPairCount = 1 });
@@ -47,6 +48,7 @@ public class PairModelTrainerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void UnigramTotalsAggregateAcrossPrevs()
     {
         var model = Train(new TrainerOptions { MinPairCount = 1 });
@@ -56,6 +58,7 @@ public class PairModelTrainerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void PrevDoesNotCrossSentenceBoundary()
     {
         var model = Train(new TrainerOptions { MinPairCount = 1 });
@@ -67,6 +70,7 @@ public class PairModelTrainerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void OnlyAmbiguousSlotsAreCounted()
     {
         var model = Train(new TrainerOptions { MinPairCount = 1 });
@@ -75,6 +79,7 @@ public class PairModelTrainerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void MinPairCountPrunesThinBigramsButKeepsUnigram()
     {
         // The shipped default floor must sit above the fabricated count-2 bigrams,
@@ -89,6 +94,7 @@ public class PairModelTrainerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ReportCountsSentencesTokensAndOccurrences()
     {
         var model = Train(new TrainerOptions { MinPairCount = 1 });
@@ -101,6 +107,7 @@ public class PairModelTrainerTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void SaveLoadRoundTripsEqualRows()
     {
         var model = Train(new TrainerOptions { MinPairCount = 1 });
@@ -121,6 +128,7 @@ public class PairModelTrainerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void MaxPrevPerSlotKeepsTheHeaviestPrevs()
     {
         // Three distinct prevs for "à", with counts 5 / 4 / 3 (all clear the
@@ -138,6 +146,7 @@ public class PairModelTrainerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void CountsTrigramContextWithoutDisturbingLowerOrders()
     {
         // "à" follows "va", itself preceded by "ne", in two sentences → the
@@ -153,6 +162,7 @@ public class PairModelTrainerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void MaxOrderTwoEmitsNoTrigramRows()
     {
         const string corpus = "il ne va à paris. il ne va à lyon.";
