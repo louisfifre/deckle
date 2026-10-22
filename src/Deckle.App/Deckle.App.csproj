@@ -25,9 +25,10 @@
          nowhere else; the ItemGroup below bakes it into the assembly. -->
     <DeckleStage>Alpha</DeckleStage>
     <!-- Forces the Publish pipeline to generate/copy Deckle.pri into PublishDir.
-         Without this, in unpackaged + WindowsAppSDK 1.8, the .pri doesn't land in
+         Without this, in unpackaged + WindowsAppSDK 1.8, the .pri didn't land in
          publish\ and all compiled XAML resources (.xbf embedded in .pri since 1.8)
-         become unreachable. Cf. microsoft/WindowsAppSDK#3451. -->
+         became unreachable. Cf. microsoft/WindowsAppSDK#3451. Observed on 1.8;
+         not re-checked on 2.5.1, so the property stays. -->
     <EnableMsixTooling>true</EnableMsixTooling>
     <!-- Program.cs owns Main: the crash dump capture is decided before XAML
          hosts anything. -->

@@ -12,7 +12,8 @@
     pointer because it leads somewhere (2026-10-14).
 
     Which key paints what, read in WinUI 1.8.260224000's generic.xaml
-    (DefaultBreadcrumbBarItemStyle): a parent segment rests in the item's own
+    (DefaultBreadcrumbBarItemStyle; the Breadcrumb styles are identical in
+    WinUI 2.3.9, which ships with Windows App SDK 2.5.1): a parent segment rests in the item's own
     Foreground, which the item style sets to BreadcrumbBarForegroundBrush, and
     the inner PART_ItemButton binds that Foreground as a local value, so the
     button style's BreadcrumbBarNormalForegroundBrush setter never wins and the

@@ -7,7 +7,7 @@ namespace Deckle.Shell.WindowChrome;
 
 // ─── Caption-inset correction ─────────────────────────────────────────────────
 //
-// The WinAppSDK 1.8 TitleBar control stamps its two padding columns with the
+// The WinAppSDK TitleBar control (read on 1.8, unchanged on 2.5.1) stamps its two padding columns with the
 // AppWindowTitleBar insets' RAW PHYSICAL pixels (UpdatePadding in microsoft-ui-xaml
 // TitleBar.cpp: GridLengthHelper::FromPixels(RightInset()), no scale division), so
 // at 150/200 % display scale the bar reserves 1.5–2× the room the caption buttons
