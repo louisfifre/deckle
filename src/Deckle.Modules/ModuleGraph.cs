@@ -3,12 +3,13 @@ namespace Deckle.Modules;
 // ── ModuleGraph ───────────────────────────────────────────────────────────────
 //
 // The cascade rules of the module selector, as pure set arithmetic over the
-// catalogue's DependsOn edges: checking a module pulls in everything it needs,
-// unchecking one expels everything that needs it, and a module whose needs are
-// not all checked cannot be checked. The walks are transitive and cycle-safe (a
-// visited set bounds them), and they leave the rest of the selection untouched —
-// the UI hands in the current selection and renders the returned one, holding
-// no cascade logic of its own.
+// catalogue's DependsOn edges. A module whose needs are not all checked cannot
+// be checked, and unchecking one expels everything that needs it. Checking
+// still closes the selection over what the module needs, so a caller that
+// skips the greying cannot record a module without its dependencies. The walks
+// are transitive and cycle-safe (a visited set bounds them), and they leave the
+// rest of the selection untouched — the UI hands in the current selection and
+// renders the returned one, holding no cascade logic of its own.
 public static class ModuleGraph
 {
     // Dependency ids the catalogue does not know are skipped: a stale edge must
