@@ -59,6 +59,7 @@ public sealed partial class TranscriptionEngine
 
         // 1 Hz heartbeat: 20 × 50 ms frames per tick. recordSw starts on the
         // first frame the heartbeat admits and feeds the recording_sec field.
+        // The tick is counted whether or not the detail is admitted (see below).
         Stopwatch? recordSw = null;
         int hbFrames = 0;
         float lastRmsLinear = 0f;
@@ -67,6 +68,16 @@ public sealed partial class TranscriptionEngine
         {
             session.Push(f);
             UtteranceProgressChanged?.Invoke(session.Progress);
+
+            // The heartbeat is counted before the admission gate: the stall watch
+            // of the loop reads this count, and a watch that only worked while the
+            // Verbose detail was on would be blind exactly when nobody looks.
+            bool heartbeat = ++hbFrames >= 20;
+            if (heartbeat)
+            {
+                hbFrames = 0;
+                HotLoops.WhispStreamingHeartbeat.Tick();
+            }
 
             if (!OperationalLogAdmission.IsDetailEnabled(
                     OperationalLogActivity.Transcription,
@@ -79,9 +90,8 @@ public sealed partial class TranscriptionEngine
 
             recordSw ??= Stopwatch.StartNew();
             lastRmsLinear = f.Rms;
-            if (++hbFrames >= 20)
+            if (heartbeat)
             {
-                hbFrames = 0;
                 var snap = session.Snapshot();
                 double rmsDbfs = lastRmsLinear > 1e-6f
                     ? 20.0 * Math.Log10(lastRmsLinear)
@@ -104,6 +114,10 @@ public sealed partial class TranscriptionEngine
         UtteranceProgressChanged?.Invoke(session.Progress);
         _capture.Frame += OnFrame;
 
+        // Frames are expected for as long as Record runs, no longer: the drain
+        // that follows has no frames, and its silence is not a stall.
+        IDisposable heartbeatArmed = HotLoops.WhispStreamingHeartbeat.Arm();
+
         CaptureResult capture;
         try
         {
@@ -118,6 +132,7 @@ public sealed partial class TranscriptionEngine
                 // ran inside it, on this same thread). Flush the open utterance, then
                 // seal the channel so the consumer's ReadAllAsync completes.
                 _capture.Frame -= OnFrame;
+                heartbeatArmed.Dispose();
                 try { session.Complete(); }
                 finally { UtteranceProgressChanged?.Invoke(default); }
             }
