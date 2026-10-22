@@ -270,7 +270,8 @@ public sealed partial class SettingsWindow : Window
     // template-binds it to its NavigationViewItemPresenter, whose LayoutRoot
     // template-binds it in turn and shows it in the Normal state, while the
     // PointerOver and Pressed states set LayoutRoot.Background themselves (WinUI
-    // generic.xaml, Windows App SDK 1.8). So the highlight shows at rest and
+    // generic.xaml, read on Windows App SDK 1.8; the presenter template is
+    // unchanged in WinUI 2.3.9 of 2.5.1). So the highlight shows at rest and
     // hover still reads, with no retemplate.
     //
     // The brush comes from Themes/RailBrushes.xaml, one theme dictionary per
