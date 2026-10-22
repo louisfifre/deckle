@@ -179,7 +179,7 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            DecklePlaygroundSource.Log.HueCallFailed();
+            DecklePlaygroundSource.Log.HueCallFailed("list groups", ex.GetType().Name);
             DecklePlaygroundSource.Log.HueCallFailedDetail("list groups", $"{ex.GetType().Name}: {ex.Message}");
         }
         finally
@@ -226,7 +226,7 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            DecklePlaygroundSource.Log.HueCallFailed();
+            DecklePlaygroundSource.Log.HueCallFailed("select group", ex.GetType().Name);
             DecklePlaygroundSource.Log.HueCallFailedDetail("select group", $"{ex.GetType().Name}: {ex.Message}");
             SetHueColorButtonsEnabled(false);
             SetPipelineNotReady();
@@ -254,7 +254,7 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            DecklePlaygroundSource.Log.HueCallFailed();
+            DecklePlaygroundSource.Log.HueCallFailed("push colour", ex.GetType().Name);
             DecklePlaygroundSource.Log.HueCallFailedDetail("push colour", $"{ex.GetType().Name}: {ex.Message}");
         }
     }
@@ -288,7 +288,7 @@ public sealed partial class AmbientPage
         catch (OperationCanceledException) { /* expected */ }
         catch (Exception ex)
         {
-            DecklePlaygroundSource.Log.HueCallFailed();
+            DecklePlaygroundSource.Log.HueCallFailed("test rotation", ex.GetType().Name);
             DecklePlaygroundSource.Log.HueCallFailedDetail("test rotation", $"{ex.GetType().Name}: {ex.Message}");
         }
         finally

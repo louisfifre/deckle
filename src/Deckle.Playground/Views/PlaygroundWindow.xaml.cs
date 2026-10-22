@@ -278,7 +278,7 @@ public sealed partial class PlaygroundWindow : Window
         if (args.SelectedItem is not NavigationViewItem item) return;
         if (item.Tag is not string tag)
         {
-            DecklePlaygroundSource.Log.NavigationRejected();
+            DecklePlaygroundSource.Log.NavigationRejected("no_tag");
             DecklePlaygroundSource.Log.NavigationRejectedDetail("no_tag", item.Content?.ToString() ?? "");
             return;
         }
@@ -286,7 +286,7 @@ public sealed partial class PlaygroundWindow : Window
         var pageType = Type.GetType(tag);
         if (pageType is null)
         {
-            DecklePlaygroundSource.Log.NavigationFailed();
+            DecklePlaygroundSource.Log.NavigationFailed(tag, "type_not_found");
             DecklePlaygroundSource.Log.NavigationFailedDetail(tag, "type_not_found", "");
             return;
         }
@@ -301,7 +301,7 @@ public sealed partial class PlaygroundWindow : Window
             bool ok = PageFrame.Navigate(pageType, null, new EntranceNavigationTransitionInfo());
             if (!ok)
             {
-                DecklePlaygroundSource.Log.NavigationFailed();
+                DecklePlaygroundSource.Log.NavigationFailed(pageType.Name, "frame_returned_false");
                 DecklePlaygroundSource.Log.NavigationFailedDetail(pageType.Name, "frame_returned_false", "");
                 return;
             }
@@ -329,7 +329,7 @@ public sealed partial class PlaygroundWindow : Window
         }
         catch (Exception ex)
         {
-            DecklePlaygroundSource.Log.NavigationFailed();
+            DecklePlaygroundSource.Log.NavigationFailed(pageType.Name, ex.GetType().Name);
             DecklePlaygroundSource.Log.NavigationFailedDetail(pageType.Name, "exception", $"{ex.GetType().Name}: {ex.Message}");
         }
     }

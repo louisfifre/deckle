@@ -17,7 +17,8 @@ public sealed partial class AmbientEngine
         return elapsedMs >= 30_000 ? 5000 : 1000;
     }
 
-    private void OnPushFailed(Exception ex)
+    // internal: the tests drive the push-health episode without a bridge.
+    internal void OnPushFailed(Exception ex)
     {
         _pushConsecutiveFailures++;
         if (_pushFailureStartTimestamp == 0)
@@ -39,6 +40,8 @@ public sealed partial class AmbientEngine
             AbortStartOrStop("push_rejected", () =>
             {
                 DeckleAmbientSource.Log.PushRejected(status, failureType, failureMessage);
+                // The rejection is this incident's end; the stop must not close it again.
+                _pushIncidentOpen = false;
                 DeckleAmbientSource.Log.PushEpisodeDetail(
                     "terminal", failures, durationMs, failureType, failureMessage);
             });
@@ -59,7 +62,7 @@ public sealed partial class AmbientEngine
         }
     }
 
-    private void OnPushSucceeded()
+    internal void OnPushSucceeded()
     {
         if (_pushConsecutiveFailures == 0) return;
 
@@ -75,6 +78,31 @@ public sealed partial class AmbientEngine
         }
 
         ResetPushFailureEpisode();
+    }
+
+    // Called once the run's loops and capture are gone, so no producer can
+    // still touch the episodes. An incident the run opened and never saw
+    // recover is closed here, once. The terminal events (PushRejected,
+    // FrameProcessingFailed) end their incident themselves and mark it, so they
+    // never double up with this one.
+    internal void AbandonOpenIncidents(string runId)
+    {
+        if (_pushIncidentOpen)
+        {
+            DeckleAmbientSource.Log.PipelineIncidentAbandoned(
+                runId, AmbientIncidentKinds.PushFailures,
+                _pushConsecutiveFailures, PushFailureDurationMs());
+        }
+        ResetPushFailureEpisode();
+
+        if (_frameProcessingIncidentOpen && !_frameProcessingIncidentEnded)
+        {
+            DeckleAmbientSource.Log.PipelineIncidentAbandoned(
+                runId, AmbientIncidentKinds.FrameProcessing,
+                _frameProcessingFailures,
+                _frameProcessingActiveFailureTicks * 1000L / Stopwatch.Frequency);
+        }
+        ResetFrameProcessingEpisode();
     }
 
     private long PushFailureDurationMs()

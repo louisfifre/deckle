@@ -21,18 +21,27 @@ public sealed partial class DeckleAmbientSource
 
     // reason = sampler_failed (the sampler rejected a frame) | capture_failed
     // (the capture reported a frame-processing failure), the last cause seen.
+    // The cause_* fields are that failure's own record, as the sampler or the
+    // capture kept it: the stage that failed (texture_query, frame_consumer,
+    // sampler_map, sampler_process, or unknown when none was kept), its hr and
+    // its exception. Without them the line says a frame failed and never why.
     [Event(EvtFrameProcessingIncidentOpened,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Frame processing is failing, Ambient lighting is waiting to recover | reason={0} | failures={1}")]
-    public void FrameProcessingIncidentOpened(string reason, int failures)
+           Message = "Frame processing is failing, Ambient lighting is waiting to recover | reason={0} | failures={1} | cause_stage={2} | cause_hr=0x{3:X8} | cause_ex_type={4} | cause_ex_message={5}")]
+    public void FrameProcessingIncidentOpened(
+        string reason, int failures,
+        string cause_stage, int cause_hr, string cause_ex_type, string cause_ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtFrameProcessingIncidentOpened, reason, failures);
+        if (IsEnabled())
+            WriteEvent(EvtFrameProcessingIncidentOpened, reason, failures,
+                cause_stage, cause_hr, cause_ex_type, cause_ex_message);
     }
 
     [Event(EvtFrameProcessingRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
            Message = "Frame processing recovered")]
     public void FrameProcessingRecovered()
     {
@@ -42,10 +51,14 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtFrameProcessingFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
-           Message = "Frame processing did not recover, Ambient lighting is stopping | reason={0} | failures={1}")]
-    public void FrameProcessingFailed(string reason, int failures)
+           Message = "Frame processing did not recover, Ambient lighting is stopping | reason={0} | failures={1} | cause_stage={2} | cause_hr=0x{3:X8} | cause_ex_type={4} | cause_ex_message={5}")]
+    public void FrameProcessingFailed(
+        string reason, int failures,
+        string cause_stage, int cause_hr, string cause_ex_type, string cause_ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtFrameProcessingFailed, reason, failures);
+        if (IsEnabled())
+            WriteEvent(EvtFrameProcessingFailed, reason, failures,
+                cause_stage, cause_hr, cause_ex_type, cause_ex_message);
     }
 
     [Event(EvtFrameProcessingEpisodeDetail,

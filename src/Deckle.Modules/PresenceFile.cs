@@ -52,7 +52,12 @@ public static class PresenceFile
         try
         {
             var payload = JsonSerializer.Deserialize<Payload>(File.ReadAllText(path), _options);
-            if (payload?.Present is null) return null;
+            if (payload?.Present is null)
+            {
+                DeckleModulesSource.Log.PresenceLoadFailed(
+                    DeckleModulesSource.PresenceLoadFailureReasons.PresentListMissing);
+                return null;
+            }
 
             // Keyed on the field being absent, not on the version number: a file
             // that lacks "known" cannot say what was offered, whatever it claims.
@@ -62,8 +67,7 @@ public static class PresenceFile
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
-            DeckleModulesSource.Log.PresenceLoadFailed();
-            DeckleModulesSource.Log.PresenceLoadFailedDetail(ex.GetType().Name, ex.Message, path);
+            DeckleModulesSource.Log.PresenceLoadFailed(ex.GetType().Name);
             return null;
         }
     }

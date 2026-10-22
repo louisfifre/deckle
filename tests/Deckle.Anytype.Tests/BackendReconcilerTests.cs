@@ -161,7 +161,7 @@ public sealed class BackendReconcilerTests
                 ? new FakeBackendProcess(processId, executablePath)
                 : null;
 
-        public IBackendProcess? Spawn(BackendProcessSpec spec)
+        public IBackendProcess? Spawn(BackendProcessSpec spec, bool inRestart)
         {
             Interlocked.Increment(ref _spawnCount);
             _running = true;

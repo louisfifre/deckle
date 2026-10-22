@@ -150,6 +150,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtLayoutQueryRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Windowing,
+           Tags = ObservationTags.Journal,
            Message = "Taskbar location recovered")]
     public void LayoutQueryRecovered()
     {
@@ -171,6 +172,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtBandCreateRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Windowing,
+           Tags = ObservationTags.Journal,
            Message = "Every taskbar has its band again")]
     public void BandCreateRecovered()
     {

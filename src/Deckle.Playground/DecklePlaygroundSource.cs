@@ -53,11 +53,11 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtNavigationRejected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A navigation request was rejected")]
-    public void NavigationRejected()
+           Message = "A navigation request was rejected | reason={0}")]
+    public void NavigationRejected(string reason)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtNavigationRejected);
+            WriteEvent(EvtNavigationRejected, reason);
     }
 
     [Event(EvtNavigationRejectedDetail,
@@ -73,11 +73,11 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtNavigationFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Navigating to a page failed")]
-    public void NavigationFailed()
+           Message = "Navigating to a page failed | page={0} | reason={1}")]
+    public void NavigationFailed(string page, string reason)
     {
         if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtNavigationFailed);
+            WriteEvent(EvtNavigationFailed, page, reason);
     }
 
     [Event(EvtNavigationFailedDetail,
@@ -180,11 +180,11 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtScreenCaptureStartFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Starting the screen capture failed")]
-    public void ScreenCaptureStartFailed()
+           Message = "Starting the screen capture failed | ex_type={0}")]
+    public void ScreenCaptureStartFailed(string ex_type)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Capture))
-            WriteEvent(EvtScreenCaptureStartFailed);
+            WriteEvent(EvtScreenCaptureStartFailed, ex_type);
     }
 
     [Event(EvtScreenCaptureStartFailedDetail,
@@ -202,11 +202,11 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtHueCallFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A Hue bridge call failed")]
-    public void HueCallFailed()
+           Message = "A Hue bridge call failed | op={0} | ex_type={1}")]
+    public void HueCallFailed(string op, string ex_type)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Push))
-            WriteEvent(EvtHueCallFailed);
+            WriteEvent(EvtHueCallFailed, op, ex_type);
     }
 
     [Event(EvtHueCallFailedDetail,

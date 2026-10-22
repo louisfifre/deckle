@@ -364,6 +364,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtInjectionRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
+           Tags = ObservationTags.Journal,
            Message = "Text injection recovered")]
     public void InjectionRecovered()
     {
@@ -474,6 +475,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankStallRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
            Message = "Contextual correction resumed after a stall | elapsed_ms={0}")]
     public void RerankStallRecovered(long elapsed_ms)
     {
@@ -494,6 +496,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
            Message = "Contextual correction recovered | failures={0}")]
     public void RerankRecovered(int failures)
     {
@@ -570,6 +573,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtCaretRecoveryRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
            Message = "Caret sentence recovery recovered | failures={0}")]
     public void CaretRecoveryRecovered(int failures)
     {

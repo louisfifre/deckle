@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Deckle.Audio;
 using Deckle.Catalog;
 using Deckle.Core;
+using Deckle.Diagnostics;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Deckle.Transcription;
@@ -27,7 +28,13 @@ public sealed partial class TranscriptionEngine
     private bool LoadModel(bool silentStatus = false)
     {
         if (!silentStatus) RaiseStatus(Loc.Get("Status_LoadingModel"));
-        DeckleWhispSource.Log.ModelLoading();
+        string workId = WorkId.Next();
+        // While the incident is open every take retries the load; only the
+        // first attempt opens a journal pair.
+        if (Volatile.Read(ref _modelIncidentOpen) != 0)
+            DeckleWhispSource.Log.ModelLoadRetrying(workId);
+        else
+            DeckleWhispSource.Log.ModelLoading(workId);
 
         ModelLoadResult result;
         try
@@ -39,7 +46,7 @@ public sealed partial class TranscriptionEngine
         }
         catch (Exception ex)
         {
-            OpenModelIncident("load_exception", ex.GetType().Name, ex.Message);
+            OpenModelIncident(workId, "load_exception", ex.GetType().Name, ex.Message);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_ModelLoadFailed_Title"),
                 Loc.Get("Engine_ModelLoadFailed_Body"),
@@ -50,7 +57,7 @@ public sealed partial class TranscriptionEngine
 
         if (!result.Success)
         {
-            OpenModelIncident(result.ErrorReason ?? "load_failed", "", "");
+            OpenModelIncident(workId, result.ErrorReason ?? "load_failed", "", "");
             if (result.ErrorReason == "file_not_found")
             {
                 EmitUserFeedback(FB_ERROR,
@@ -71,10 +78,11 @@ public sealed partial class TranscriptionEngine
 
         _modelLoadMs = result.LoadDurationMs;
 
-        if (CloseModelIncident())
-            DeckleWhispSource.Log.ModelRecovered();
+        string device = result.Accelerator ?? "unknown";
+        if (CloseModelIncident() is { } incidentId)
+            DeckleWhispSource.Log.ModelRecovered(incidentId, result.LoadDurationMs, device);
         else
-            DeckleWhispSource.Log.ModelLoaded();
+            DeckleWhispSource.Log.ModelLoaded(workId, result.LoadDurationMs, device);
 
         if (!silentStatus) RaiseStatus(Loc.Get("Status_Ready"));
         return true;
@@ -263,36 +271,37 @@ public sealed partial class TranscriptionEngine
         if (_backend.IsModelLoaded) return true;
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        DeckleWhispSource.Log.WarmupStart();
+        string warmupId = WorkId.Next();
+        DeckleWhispSource.Log.WarmupStart(warmupId);
 
         // Every exit after WarmupStart closes it: completed, cancelled or failed.
         try
         {
-            return RunPrime(ct, sw);
+            return RunPrime(ct, sw, warmupId);
         }
         catch (OperationCanceledException)
         {
-            DeckleWhispSource.Log.WarmupCancelled(sw.ElapsedMilliseconds);
+            DeckleWhispSource.Log.WarmupCancelled(warmupId, sw.ElapsedMilliseconds);
             throw;
         }
         catch (Exception ex)
         {
-            DeckleWhispSource.Log.WarmupFailed("prime_exception", ex.GetType().Name, ex.Message, sw.ElapsedMilliseconds);
+            DeckleWhispSource.Log.WarmupFailed(warmupId, "prime_exception", ex.GetType().Name, ex.Message, sw.ElapsedMilliseconds);
             throw;
         }
     }
 
-    private bool RunPrime(CancellationToken ct, System.Diagnostics.Stopwatch sw)
+    private bool RunPrime(CancellationToken ct, System.Diagnostics.Stopwatch sw, string warmupId)
     {
         if (!EnsureModelLoaded(silentStatus: true))
         {
             // LoadModel already carries the cause on ModelUnavailable.
-            DeckleWhispSource.Log.WarmupFailed("model_load_failed", "", "", sw.ElapsedMilliseconds);
+            DeckleWhispSource.Log.WarmupFailed(warmupId, "model_load_failed", "", "", sw.ElapsedMilliseconds);
             return false;
         }
         if (ct.IsCancellationRequested)
         {
-            DeckleWhispSource.Log.WarmupCancelled(sw.ElapsedMilliseconds);
+            DeckleWhispSource.Log.WarmupCancelled(warmupId, sw.ElapsedMilliseconds);
             return false;
         }
 
@@ -322,18 +331,18 @@ public sealed partial class TranscriptionEngine
             // Dispose fired the drain token during the prime: abandon quietly.
             // Any other exception is a genuine prime failure and propagates
             // through the gate to the pipeline that awaits it.
-            DeckleWhispSource.Log.WarmupCancelled(sw.ElapsedMilliseconds);
+            DeckleWhispSource.Log.WarmupCancelled(warmupId, sw.ElapsedMilliseconds);
             return false;
         }
 
         if (ct.IsCancellationRequested)
         {
-            DeckleWhispSource.Log.WarmupCancelled(sw.ElapsedMilliseconds);
+            DeckleWhispSource.Log.WarmupCancelled(warmupId, sw.ElapsedMilliseconds);
             return false;
         }
 
         _primeMs = sw.ElapsedMilliseconds;
-        DeckleWhispSource.Log.WarmupComplete();
+        DeckleWhispSource.Log.WarmupComplete(warmupId, _primeMs);
         return true;
     }
 

@@ -343,6 +343,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     [Event(EvtSegmentCallbackRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
            Message = "The segment callback works again")]
     public void SegmentCallbackRecovered()
     {

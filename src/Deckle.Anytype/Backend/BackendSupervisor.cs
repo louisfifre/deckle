@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Deckle.Diagnostics;
 
 namespace Deckle.Anytype;
 
@@ -106,7 +107,7 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
     private async Task<BackendStartOutcome> InitializeAsync(CancellationToken lifetimeToken)
     {
         BackendReconciliationResult result = await _reconciler
-            .ReconcileAsync("startup", lifetimeToken)
+            .ReconcileAsync(BackendTriggers.Startup, lifetimeToken)
             .ConfigureAwait(false);
         if (result.Process is not null)
         {
@@ -126,7 +127,12 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
             lock (_gate)
             {
                 if (!_disposed)
-                    _watchTask = SuperviseAsync(RecoverAsync, _lifetimeCts.Token);
+                {
+                    // The incident shares the id of the start that opened it.
+                    string startId = result.ReconciliationId;
+                    _watchTask = SuperviseAsync(
+                        ct => RecoverAsync(startId, ct), _lifetimeCts.Token);
+                }
             }
         }
         return result.Outcome;
@@ -153,10 +159,10 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
         }
     }
 
-    private async Task RecoverAsync(CancellationToken ct)
+    private async Task RecoverAsync(string incidentId, CancellationToken ct)
     {
         (IBackendProcess? process, _) = await RestartAsync(
-            "start-failed", attempt: 0, ct).ConfigureAwait(false);
+            BackendTriggers.StartFailed, attempt: 0, incidentId, ct).ConfigureAwait(false);
         if (process is not null)
             await WatchAsync(process, ct).ConfigureAwait(false);
     }
@@ -170,13 +176,16 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
             while (current is not null)
             {
                 await WaitForExitAsync(current, ct).ConfigureAwait(false);
-                double uptimeSeconds = BackendProcessReport.Stopped(current);
+                // The death opens an incident; its id travels on every line
+                // that follows until the backend is back or supervision ends.
+                string incidentId = WorkId.Next();
+                double uptimeSeconds = BackendProcessReport.Stopped(current, incidentId);
                 current.Dispose();
                 current = null;
 
                 attempt = uptimeSeconds >= StableUptime.TotalSeconds ? 0 : attempt;
                 (current, attempt) = await RestartAsync(
-                    "process-exit", attempt, ct).ConfigureAwait(false);
+                    BackendTriggers.ProcessExit, attempt, incidentId, ct).ConfigureAwait(false);
             }
         }
         finally
@@ -192,7 +201,7 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
     // trigger names what opened the incident, an exit or a start that never
     // served: labelling both "process-exit" hid a live serve stuck in login.
     private async Task<(IBackendProcess? Process, int Attempt)> RestartAsync(
-        string trigger, int attempt, CancellationToken ct)
+        string trigger, int attempt, string incidentId, CancellationToken ct)
     {
         long downSince = _time.GetTimestamp();
         int failures = 0;
@@ -224,24 +233,24 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
             if (result?.Process is not null)
             {
                 DeckleAnytypeSource.Log.BackendRecovered(
-                    failures + 1, _time.GetElapsedTime(downSince).TotalSeconds);
+                    failures + 1, _time.GetElapsedTime(downSince).TotalSeconds, incidentId);
                 return (result.Process, attempt);
             }
             if (result?.Outcome is BackendStartOutcome.NotProvisioned)
             {
-                DeckleAnytypeSource.Log.BackendSupervisionGaveUp("not_provisioned");
+                DeckleAnytypeSource.Log.BackendSupervisionGaveUp("not_provisioned", incidentId);
                 return (null, attempt);
             }
             if (result?.Outcome is BackendStartOutcome.EndpointConflict)
             {
-                DeckleAnytypeSource.Log.BackendSupervisionGaveUp("endpoint_conflict");
+                DeckleAnytypeSource.Log.BackendSupervisionGaveUp("endpoint_conflict", incidentId);
                 return (null, attempt);
             }
 
             failures++;
-            DeckleAnytypeSource.Log.BackendRestartAttemptFailed(failures, outcome, exType, exMessage);
+            DeckleAnytypeSource.Log.BackendRestartAttemptFailed(failures, outcome, exType, exMessage, incidentId);
             if (failures == RestartsFailingThreshold)
-                DeckleAnytypeSource.Log.BackendRestartsFailing(failures, outcome, exType, exMessage);
+                DeckleAnytypeSource.Log.BackendRestartsFailing(failures, outcome, exType, exMessage, incidentId);
         }
     }
 

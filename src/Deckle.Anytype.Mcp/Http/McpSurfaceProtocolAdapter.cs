@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Deckle.Diagnostics;
 using ModelContextProtocol;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -96,26 +97,31 @@ internal static class McpSurfaceProtocolAdapter
         CancellationToken ct)
     {
         long started = Stopwatch.GetTimestamp();
+        string workId = WorkId.Next();
+        string? name = request.Params?.Name;
+        PreparedTool? tool = null;
         // An unknown name is caller-supplied text, so it is logged as
         // "unknown", never echoed; a known name is a catalog constant.
-        string toolName = "";
+        string toolName = name is null
+            ? ""
+            : tools.TryGetValue(name, out tool) ? tool.Descriptor.Name : "unknown";
         string outcome = "failed";
         string exType = "";
+        int statusCode = 0;
+        string errorCode = "none";
+        DeckleAnytypeMcpSource.Log.ToolCallStarted(surfaceName, toolName, workId);
         try
         {
-            string? name = request.Params?.Name;
             if (name is null)
             {
                 outcome = "missing_tool_name";
                 throw new McpProtocolException("Missing tool name", McpErrorCode.InvalidParams);
             }
-            if (!tools.TryGetValue(name, out PreparedTool? tool))
+            if (tool is null)
             {
-                toolName = "unknown";
                 outcome = "unknown_tool";
                 throw new McpProtocolException($"Unknown tool: {name}", McpErrorCode.InvalidParams);
             }
-            toolName = tool.Descriptor.Name;
 
             JsonObject? arguments = ToJsonObject(request.Params?.Arguments);
             if (!tool.Input.Accepts(arguments ?? new JsonObject()))
@@ -152,6 +158,13 @@ internal static class McpSurfaceProtocolAdapter
                 // InvalidParams error.
                 outcome = "failed";
                 exType = ex.GetType().Name;
+                // The message goes to the client in the tool result; the log gets
+                // the type and, for an API refusal, the status and machine code.
+                if (ex is AnytypeV2Exception refusal)
+                {
+                    statusCode = refusal.Status;
+                    errorCode = refusal.LogCode;
+                }
                 return ToolResult(new ToolOutput(ex.Message), isError: true);
             }
         }
@@ -163,9 +176,17 @@ internal static class McpSurfaceProtocolAdapter
         }
         finally
         {
-            DeckleAnytypeMcpSource.Log.ToolCallCompleted(
-                surfaceName, toolName, outcome, exType,
-                Stopwatch.GetElapsedTime(started).TotalMilliseconds);
+            double elapsedMs = Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+            if (outcome is "completed" or "cancelled")
+            {
+                DeckleAnytypeMcpSource.Log.ToolCallCompleted(
+                    surfaceName, toolName, outcome, exType, elapsedMs, workId);
+            }
+            else
+            {
+                DeckleAnytypeMcpSource.Log.ToolCallFailed(
+                    surfaceName, toolName, outcome, exType, statusCode, errorCode, elapsedMs, workId);
+            }
         }
     }
 

@@ -101,15 +101,16 @@ public sealed class ManagementGestures(
     {
         if (type == DevSpace.Types.Rapport)
         {
-            DeckleAnytypeSource.Log.DeleteRefused("rapport", type, id);
+            DeckleAnytypeSource.Log.DeleteRefused(DeleteRefusalReasons.Rapport, type, id, "", "");
             throw new InvalidOperationException(
                 "Refusé : un rapport ne va jamais à la corbeille, il garde la trace d'une session. Rien n'a bougé.");
         }
 
-        int? backlinks = await CountBacklinksAsync(id, ct);
-        if (backlinks is null)
+        BacklinkCount count = await CountBacklinksAsync(id, ct);
+        if (count.Count is not { } backlinks)
         {
-            DeckleAnytypeSource.Log.DeleteRefused("references_unreadable", type, id);
+            DeckleAnytypeSource.Log.DeleteRefused(
+                DeleteRefusalReasons.ReferencesUnreadable, type, id, count.ExType, count.Cause);
             throw new InvalidOperationException(
                 $"Refusé : impossible de lire ce qui pointe vers « {name} » (recherche Anytype en échec, ou objet "
                 + "absent de la recherche). Sans cette vérification, rien ne part à la corbeille. Rien n'a bougé.");
@@ -117,7 +118,7 @@ public sealed class ManagementGestures(
 
         if (backlinks > 0)
         {
-            DeckleAnytypeSource.Log.DeleteRefused("referenced", type, id);
+            DeckleAnytypeSource.Log.DeleteRefused(DeleteRefusalReasons.Referenced, type, id, "", "");
             throw new InvalidOperationException(
                 $"Refusé : {backlinks} autre(s) objet(s) pointent vers « {name} » ({type}) ; la corbeille "
                 + "viderait ces liens sans bruit. Rien n'a bougé. " + Alternative(type));
@@ -127,8 +128,10 @@ public sealed class ManagementGestures(
     // What links to the object, the object itself left out. Null when it
     // cannot be told: a failed search, or no row for the id (the search never
     // lists a binned object). Unknown is refused like referenced: the check
-    // exists to stop a bin, never to let one through by default.
-    async Task<int?> CountBacklinksAsync(string id, CancellationToken ct)
+    // exists to stop a bin, never to let one through by default. An unknown count
+    // says why, as an error type and code or as not_listed, so the refusal that
+    // follows is not a mystery.
+    async Task<BacklinkCount> CountBacklinksAsync(string id, CancellationToken ct)
     {
         try
         {
@@ -141,30 +144,39 @@ public sealed class ManagementGestures(
                 offset: 0, limit: 1, ct);
 
             AnytypeV2SearchRow? row = page.Rows.FirstOrDefault(r => r.Id == id);
-            return row?.Properties.ObjectIds("backlinks").Count(link => link != id);
+            return row is null
+                ? new BacklinkCount(null, "", DeleteRefusalCauses.NotListed)
+                : new BacklinkCount(row.Properties.ObjectIds("backlinks").Count(link => link != id), "", "");
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            return null;
+            return new BacklinkCount(
+                null, ex.GetType().Name,
+                ex is AnytypeV2Exception v2
+                    ? ApiFailureIncidents.BoundedCode(v2.Code)
+                    : DeleteRefusalCauses.SearchFailed);
         }
     }
+
+    // The references of an object, or why they could not be read.
+    readonly record struct BacklinkCount(int? Count, string ExType, string Cause);
 
     static InvalidOperationException Refusal(DeletionApprovalOutcome outcome, string type, string id, string name)
     {
         (string reason, string message) = outcome switch
         {
-            DeletionApprovalOutcome.Declined => ("declined",
+            DeletionApprovalOutcome.Declined => (DeleteRefusalReasons.Declined,
                 $"Refusé : la personne a répondu non à la notification Windows pour « {name} ». Rien n'a bougé."),
-            DeletionApprovalOutcome.Unanswered => ("unanswered",
+            DeletionApprovalOutcome.Unanswered => (DeleteRefusalReasons.Unanswered,
                 $"Refusé : pas de réponse à la notification Windows en {ApprovalWindow.TotalSeconds:F0} s (elle a pu "
                 + "arriver dans le centre de notifications sans s'afficher). Rien n'a bougé ; redemande à la personne "
                 + "avant de réessayer."),
-            _ => ("approval_unavailable",
+            _ => (DeleteRefusalReasons.ApprovalUnavailable,
                 "Refusé : Deckle ne peut pas demander la seconde validation (notifications Windows désactivées, "
                 + "Deckle lancé en administrateur, ou hôte sans notification). Rien n'a bougé ; la personne peut "
                 + "mettre l'objet à la corbeille elle-même dans Anytype."),
         };
-        DeckleAnytypeSource.Log.DeleteRefused(reason, type, id);
+        DeckleAnytypeSource.Log.DeleteRefused(reason, type, id, "", "");
         return new InvalidOperationException(message);
     }
 

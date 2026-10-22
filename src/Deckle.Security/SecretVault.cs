@@ -123,7 +123,7 @@ public sealed class SecretVault : ISecretVault
 
             if (!acquired)
                 throw new SecretVaultException(
-                    $"Timed out acquiring the vault lock for {_path}; another instance may be writing.");
+                    $"Timed out acquiring the vault lock for {UserProfilePath.Mask(_path)}; another instance may be writing.");
 
             Dictionary<string, string> secrets = Load();
             if (mutate(secrets))
@@ -150,7 +150,7 @@ public sealed class SecretVault : ISecretVault
         }
         catch (Exception ex)
         {
-            throw new SecretVaultException($"Could not read the secret vault at {_path}.", ex);
+            throw new SecretVaultException($"Could not read the secret vault at {UserProfilePath.Mask(_path)}.", ex);
         }
 
         byte[] plain;
@@ -161,7 +161,7 @@ public sealed class SecretVault : ISecretVault
         catch (CryptographicException ex)
         {
             throw new SecretVaultException(
-                $"The secret vault at {_path} could not be decrypted — it may have been written by a different Windows account, or it is corrupt.",
+                $"The secret vault at {UserProfilePath.Mask(_path)} could not be decrypted — it may have been written by a different Windows account, or it is corrupt.",
                 ex);
         }
 
@@ -172,7 +172,7 @@ public sealed class SecretVault : ISecretVault
         }
         catch (JsonException ex)
         {
-            throw new SecretVaultException($"The secret vault at {_path} holds unreadable data.", ex);
+            throw new SecretVaultException($"The secret vault at {UserProfilePath.Mask(_path)} holds unreadable data.", ex);
         }
     }
 
@@ -190,7 +190,7 @@ public sealed class SecretVault : ISecretVault
         }
         catch (CryptographicException ex)
         {
-            throw new SecretVaultException($"Could not encrypt the secret vault for {_path}.", ex);
+            throw new SecretVaultException($"Could not encrypt the secret vault for {UserProfilePath.Mask(_path)}.", ex);
         }
 
         try
@@ -202,7 +202,7 @@ public sealed class SecretVault : ISecretVault
         }
         catch (Exception ex)
         {
-            throw new SecretVaultException($"Could not write the secret vault at {_path}.", ex);
+            throw new SecretVaultException($"Could not write the secret vault at {UserProfilePath.Mask(_path)}.", ex);
         }
     }
 

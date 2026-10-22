@@ -45,6 +45,35 @@ public sealed class DeckleTrackpadSourceTests : IDisposable
     }
 
     [Fact]
+    [Trait("Category", "regression")]
+    public void ASystemSettingChangeAndTheRepairScriptReachTheJournalOnSuccessToo()
+    {
+        using var listener = new TestEventListener("Deckle-Trackpad");
+
+        DeckleTrackpadSource.Log.GesturesNeutralized();
+        DeckleTrackpadSource.Log.GesturesRestored();
+        DeckleTrackpadSource.Log.RepairLaunched();
+        DeckleTrackpadSource.Log.RepairCompleted(0);
+
+        Assert.Equal(4, listener.Events.Count);
+        Assert.All(listener.Events, e => Assert.Equal(ObservationTags.Journal, e.Tags & ObservationTags.Journal));
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AFailedButtonReleaseIsAWarningWithItsWin32Error()
+    {
+        using var listener = new TestEventListener("Deckle-Trackpad");
+
+        DeckleTrackpadSource.Log.PrimaryReleaseFailed(5);
+
+        var warning = Assert.Single(listener.Events);
+        Assert.Equal(DeckleTrackpadSource.EvtPrimaryReleaseFailed, warning.EventId);
+        Assert.Equal(EventLevel.Warning, warning.Level);
+        Assert.Equal(5, warning.Payload?[0]);
+    }
+
+    [Fact]
     public void GestureDetailsFollowInputActivityWhileLifecycleRemainsAdmitted()
     {
         using var listener = new TestEventListener("Deckle-Trackpad");

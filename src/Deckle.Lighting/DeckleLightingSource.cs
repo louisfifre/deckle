@@ -27,7 +27,8 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     public const int EvtPairingStarted            = 6;
     public const int EvtPairingStartedDetail      = 7;
     public const int EvtBridgePaired              = 8;
-    public const int EvtBridgePairedDetail        = 9;
+    // 9: retired ID, never reused. It carried the head of the application key,
+    // a credential; the bridge id lives on BridgePairedDetail2.
     public const int EvtPairingWaiting            = 10;
     // 11 retired.
     // 12 retired.
@@ -125,6 +126,7 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     public const int EvtEntertainmentStreamingStopFailed = 90;
     public const int EvtLightOutputSelected = 91;
     public const int EvtHueStepFailedDetail = 92;
+    public const int EvtEventStreamIncidentAbandoned = 93;
 
     // Lighting is a supporting provider: its detail follows the Ambient
     // activity's policy while that workflow runs, and the listener alone

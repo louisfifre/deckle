@@ -1,4 +1,5 @@
 using System.Diagnostics.Tracing;
+using Deckle.Diagnostics;
 using Deckle.Orchestration;
 using Deckle.TestSupport;
 using Xunit;
@@ -46,11 +47,14 @@ public sealed class DeckleOrchestrationSourceTests
         OrchestrationRuntime.LogSessionStarted(entry, pid: 4242);
 
         Assert.Collection(
-            Only(listener, DeckleOrchestrationSource.EvtSessionStarted, DeckleOrchestrationSource.EvtSessionStartedDetail),
+            ForEntry(listener, entry, DeckleOrchestrationSource.EvtSessionStarted, DeckleOrchestrationSource.EvtSessionStartedDetail),
             e =>
             {
                 Assert.Equal(DeckleOrchestrationSource.EvtSessionStarted, e.EventId);
                 Assert.Equal(EventLevel.Informational, e.Level);
+                Assert.True(TravelsInTheJournal(e));
+                Assert.Equal(entry.Id, e.Payload![0]);
+                Assert.Equal(4242, e.Payload[1]);
             },
             e =>
             {
@@ -71,12 +75,14 @@ public sealed class DeckleOrchestrationSourceTests
         OrchestrationRuntime.LogSessionEnded(entry, SessionEndReason.EntryDisabled);
 
         Assert.Collection(
-            Only(listener, DeckleOrchestrationSource.EvtSessionEnded, DeckleOrchestrationSource.EvtSessionEndedDetail),
+            ForEntry(listener, entry, DeckleOrchestrationSource.EvtSessionEnded, DeckleOrchestrationSource.EvtSessionEndedDetail),
             e =>
             {
                 Assert.Equal(DeckleOrchestrationSource.EvtSessionEnded, e.EventId);
                 Assert.Equal(EventLevel.Informational, e.Level);
-                Assert.Equal("entry_disabled", e.Payload![0]);
+                Assert.True(TravelsInTheJournal(e));
+                Assert.Equal(entry.Id, e.Payload![0]);
+                Assert.Equal("entry_disabled", e.Payload[1]);
             },
             e =>
             {
@@ -156,6 +162,9 @@ public sealed class DeckleOrchestrationSourceTests
             {
                 Assert.Equal(DeckleOrchestrationSource.EvtProfileApplied, e.EventId);
                 Assert.Equal(EventLevel.Informational, e.Level);
+                Assert.True(TravelsInTheJournal(e));
+                Assert.Equal(entry.Id, e.Payload![0]);
+                Assert.Equal(1, e.Payload[1]);
             },
             e =>
             {
@@ -206,23 +215,17 @@ public sealed class DeckleOrchestrationSourceTests
             e => Equals(e.Payload?[0], entry.Id));
     }
 
-    // Rule events from other tests share the provider and the event ids. The
-    // ProfileApplied milestone has no payload, so it is kept when the detail
-    // right after it names this entry.
+    // Events from other tests share the provider and the event ids; the milestone
+    // and its detail both name the entry they are about, so each is kept by it.
     private static IReadOnlyList<EventWrittenEventArgs> ForEntry(
-        TestEventListener listener, AppEntry entry, int milestoneId, int detailId)
-    {
-        var events = listener.Events.ToList();
-        var kept = new List<EventWrittenEventArgs>();
-        for (int i = 0; i < events.Count; i++)
-        {
-            if (events[i].EventId != detailId || !Equals(events[i].Payload?[0], entry.Id)) continue;
-            int milestone = events.FindLastIndex(i, e => e.EventId == milestoneId);
-            if (milestone >= 0) kept.Add(events[milestone]);
-            kept.Add(events[i]);
-        }
-        return kept;
-    }
+        TestEventListener listener, AppEntry entry, int milestoneId, int detailId) =>
+        listener.Events
+            .Where(e => (e.EventId == milestoneId || e.EventId == detailId)
+                && Equals(e.Payload?[0], entry.Id))
+            .ToList();
+
+    private static bool TravelsInTheJournal(EventWrittenEventArgs e) =>
+        e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Journal) != 0;
 
     // Other test classes of this project run in parallel and emit on the same
     // provider; each test asserts only on the events it is about.

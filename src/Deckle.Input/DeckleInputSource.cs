@@ -87,6 +87,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     public const int EvtWheelRecordingStoppedDetail = 55;
     public const int EvtWheelRecordingFailed       = 56;
     public const int EvtRecordingSizeUnavailable   = 57;
+    public const int EvtTouchpadEnumerationFailed  = 58;
 
     // ── Raw input host lifecycle ─────────────────────────────────────────
 
@@ -183,6 +184,18 @@ public sealed class DeckleInputSource : DeckleEventSource
     public void TouchpadRemoved()
     {
         if (IsEnabled()) WriteEvent(EvtTouchpadRemoved);
+    }
+
+    // The boot probe could not list the HID devices at all, so "touchpads=0" in
+    // the host's start line means "unknown" and not "none". step is count or list;
+    // win32_error is the last error of the failing call.
+    [Event(EvtTouchpadEnumerationFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "The touchpad probe could not list the input devices | step={0} | win32_error={1}")]
+    public void TouchpadEnumerationFailed(string step, int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtTouchpadEnumerationFailed, step, win32_error);
     }
 
     // reason is one of TouchpadParser's snake_case failure words.

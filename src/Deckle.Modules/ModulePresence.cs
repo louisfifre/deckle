@@ -59,7 +59,7 @@ public static class ModulePresence
         }
         DeckleModulesSource.Log.PresenceSaved();
         DeckleModulesSource.Log.PresenceSavedDetail(
-            string.Join(",", present), string.Join(",", known), FilePath);
+            string.Join(",", present), string.Join(",", known));
     }
 
     // Save into a root this process did not resolve, for the installer

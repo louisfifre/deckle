@@ -68,6 +68,12 @@ public sealed partial class HueBridgeClient
         }
         finally
         {
+            if (episode.TryAbandon(out HueEventStreamObservation open))
+            {
+                DeckleLightingSource.Log.EventStreamIncidentAbandoned(
+                    (long)open.Duration.TotalMilliseconds, open.FailureCount);
+            }
+
             DeckleLightingSource.Log.EventStreamStopped(
                 failure is null ? "cancelled" : "failed",
                 (long)System.Diagnostics.Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds,

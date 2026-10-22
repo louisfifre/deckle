@@ -160,7 +160,7 @@ public sealed partial class TranscriptionEngine
         catch (OperationCanceledException)
         {
             DeckleWhispSource.Log.TranscribeSkipped("disposed");
-            RaiseFinished(TranscriptionOutcome.None);
+            FinishTake(TranscriptionOutcome.None, TakeEndReasons.StateLost);
             return null;
         }
 
@@ -173,7 +173,7 @@ public sealed partial class TranscriptionEngine
             var (title, body) = LocalizeMicError(MicErrorKind.Unavailable, capture.MmsysErr);
             OpenMicrophoneIncident("capture", capture.MmsysErr);
             EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
-            RaiseFinished(TranscriptionOutcome.None);
+            FinishTake(TranscriptionOutcome.None, TakeEndReasons.MicrophoneError);
             return null;
         }
 
@@ -190,7 +190,7 @@ public sealed partial class TranscriptionEngine
             != (int)PipelineState.Stopping)
         {
             DeckleWhispSource.Log.TranscribeSkipped(((PipelineState)Volatile.Read(ref _state)).ToString());
-            RaiseFinished(TranscriptionOutcome.None);
+            FinishTake(TranscriptionOutcome.None, TakeEndReasons.StateLost);
             return null;
         }
 
@@ -215,7 +215,7 @@ public sealed partial class TranscriptionEngine
         if (string.IsNullOrWhiteSpace(consumed.Text))
         {
             RaiseStatus(Loc.Get("Status_Ready"));
-            RaiseFinished(TranscriptionOutcome.None);
+            FinishTake(TranscriptionOutcome.None, TakeEndReasons.NoText);
             return null;
         }
 

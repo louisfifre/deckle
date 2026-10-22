@@ -46,6 +46,11 @@ public sealed partial class AnytypeV2Exception : HttpRequestException
     // Null when the body is not an envelope (an HTML page from a proxy).
     public string? Code { get; }
 
+    // The machine code in a shape a log line can carry: a short snake_case word,
+    // "none" without an envelope, "unrecognized" for anything else. Never the
+    // server's text.
+    public string LogCode => ApiFailureIncidents.BoundedCode(Code);
+
     public string? ApiMessage { get; }
 
     public string? Hint { get; }

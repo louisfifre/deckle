@@ -183,6 +183,7 @@ public sealed partial class TranscriptionEngine : IDisposable
     // successful backend load for the model.
     private int _microphoneIncidentOpen;
     private int _modelIncidentOpen;
+    private string _modelIncidentWorkId = "";
 
     private void OpenMicrophoneIncident(string phase, uint mmsysErr)
     {
@@ -197,18 +198,23 @@ public sealed partial class TranscriptionEngine : IDisposable
         DeckleWhispSource.Log.MicrophoneRecovered();
     }
 
-    private void OpenModelIncident(string reason, string exType, string exMessage)
+    private void OpenModelIncident(string workId, string reason, string exType, string exMessage)
     {
         if (Interlocked.Exchange(ref _modelIncidentOpen, 1) != 0)
         {
-            DeckleWhispSource.Log.ModelLoadRetryFailed(reason, exType, exMessage);
+            DeckleWhispSource.Log.ModelLoadRetryFailed(workId, reason, exType, exMessage);
             return;
         }
-        DeckleWhispSource.Log.ModelUnavailable(reason, exType, exMessage);
+        // Loads run one at a time under _idleUnloadLock, so no other attempt
+        // reads this between the exchange above and here.
+        _modelIncidentWorkId = workId;
+        DeckleWhispSource.Log.ModelUnavailable(workId, reason, exType, exMessage);
     }
 
-    private bool CloseModelIncident()
-        => Interlocked.Exchange(ref _modelIncidentOpen, 0) != 0;
+    // The id of the load whose failure opened the incident, which its recovery
+    // repeats so the file pairs the two; null when no incident was open.
+    private string? CloseModelIncident()
+        => Interlocked.Exchange(ref _modelIncidentOpen, 0) != 0 ? _modelIncidentWorkId : null;
 
     private System.Diagnostics.Stopwatch? _recordingSw;
 

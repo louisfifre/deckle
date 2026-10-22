@@ -46,9 +46,9 @@ public sealed class DeckleAudioSource : DeckleEventSource
     // 28 retired.
     // 29 retired.
     public const int EvtEmptyBufferRecovered       = 30;
-    public const int EvtEmptyBufferEpisodeDetail   = 31;
+    // 31 retired: the per-take anomaly counts are RecordingAnomaliesSummary.
     public const int EvtCaptureLagRecovered        = 32;
-    public const int EvtCaptureLagEpisodeDetail    = 33;
+    // 33 retired: see 31.
     public const int EvtRecordingStarted           = 34;
     public const int EvtCaptureStarted             = 35;
     public const int EvtMicrophoneOpenFailed       = 36;
@@ -57,7 +57,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     public const int EvtRecordingFailed            = 39;
     public const int EvtNoAudioDataDetected        = 40;
     public const int EvtAudioDataRecovered         = 41;
-    public const int EvtNoAudioDataEpisodeDetail   = 42;
+    // 42 retired: see 31.
     public const int EvtPlaybackStarted            = 43;
     public const int EvtPlaybackCompleted          = 44;
     public const int EvtPlaybackFailed             = 45;
@@ -72,6 +72,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     public const int EvtCaptureReleaseRecovered    = 54;
     public const int EvtCaptureReleaseDetail       = 55;
     public const int EvtCaptureDrainDetail         = 56;
+    public const int EvtRecordingAnomaliesSummary  = 57;
 
     // ── Recording lifecycle (milestones + verbose mirrors) ──────────────
 
@@ -79,14 +80,20 @@ public sealed class DeckleAudioSource : DeckleEventSource
     // detail: "which microphone actually ran" is the first question on a
     // machine with a wrong default device, and it must be answerable from a
     // default log. purpose separates dictation takes from Settings tests.
+    //
+    // A recording is lasting work: its start and its end travel in the journal
+    // and share a work_id, so the file alone shows a recording that never
+    // ended. The no-data, empty-buffer and lag warnings that fall between them
+    // belong to it by position, and RecordingAnomaliesSummary closes their count.
     [Event(EvtRecordingStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Recording started | purpose={0} | device={1} | device_id={2} | default_device={3} | sample_rate={4} | channels={5} | bits_per_sample={6}")]
-    public void RecordingStarted(string purpose, string device_name, int device_id, bool default_device, int sample_rate, int channels, int bits_per_sample)
+           Tags = ObservationTags.Journal,
+           Message = "Recording started | purpose={0} | device={1} | device_id={2} | default_device={3} | sample_rate={4} | channels={5} | bits_per_sample={6} | work_id={7}")]
+    public void RecordingStarted(string purpose, string device_name, int device_id, bool default_device, int sample_rate, int channels, int bits_per_sample, string work_id)
     {
         if (IsEnabled())
-            WriteEvent(EvtRecordingStarted, purpose, device_name, device_id, default_device, sample_rate, channels, bits_per_sample);
+            WriteEvent(EvtRecordingStarted, purpose, device_name, device_id, default_device, sample_rate, channels, bits_per_sample, work_id);
     }
 
     [Event(EvtCaptureStarted,
@@ -104,10 +111,11 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtRecordingCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Recording complete | end_reason={1} | duration_s={2:F1} | purpose={0}")]
-    public void RecordingCompleted(string purpose, string end_reason, double duration_s)
+           Tags = ObservationTags.Journal,
+           Message = "Recording complete | end_reason={1} | duration_s={2:F1} | purpose={0} | work_id={3}")]
+    public void RecordingCompleted(string purpose, string end_reason, double duration_s, string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingCompleted, purpose, end_reason, duration_s);
+        if (IsEnabled()) WriteEvent(EvtRecordingCompleted, purpose, end_reason, duration_s, work_id);
     }
 
     // The exception still propagates to the caller, which owns the user-facing
@@ -115,10 +123,10 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtRecordingFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "Recording failed | ex_type={1} | ex_message={2} | purpose={0} | elapsed_ms={3}")]
-    public void RecordingFailed(string purpose, string ex_type, string ex_message, long elapsed_ms)
+           Message = "Recording failed | ex_type={1} | ex_message={2} | purpose={0} | elapsed_ms={3} | work_id={4}")]
+    public void RecordingFailed(string purpose, string ex_type, string ex_message, long elapsed_ms, string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingFailed, purpose, ex_type, ex_message, elapsed_ms);
+        if (IsEnabled()) WriteEvent(EvtRecordingFailed, purpose, ex_type, ex_message, elapsed_ms, work_id);
     }
 
     [Event(EvtCaptureCompleted,
@@ -216,6 +224,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtCaptureReleaseRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "The microphone is released cleanly again | failures={0}")]
     public void CaptureReleaseRecovered(int failures)
     {
@@ -252,22 +261,11 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtAudioDataRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "The microphone delivers audio again | waited_ms={0}")]
     public void AudioDataRecovered(long waited_ms)
     {
         if (IsEnabled()) WriteEvent(EvtAudioDataRecovered, waited_ms);
-    }
-
-    [Event(EvtNoAudioDataEpisodeDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "no audio episode | stalls={0} | longest_gap_ms={1} | recovered={2}")]
-    public void NoAudioDataEpisodeDetail(int stalls, long longest_gap_ms, bool recovered)
-    {
-        if (OperationalLogAdmission.IsScopedDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
-            WriteEvent(EvtNoAudioDataEpisodeDetail, stalls, longest_gap_ms, recovered);
     }
 
     [Event(EvtEmptyBufferReceived,
@@ -294,22 +292,11 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtEmptyBufferRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "Capture buffers recovered")]
     public void EmptyBufferRecovered()
     {
         if (IsEnabled()) WriteEvent(EvtEmptyBufferRecovered);
-    }
-
-    [Event(EvtEmptyBufferEpisodeDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "empty buffer episode | occurrences={0} | recovered={1}")]
-    public void EmptyBufferEpisodeDetail(int occurrences, bool recovered)
-    {
-        if (OperationalLogAdmission.IsScopedDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
-            WriteEvent(EvtEmptyBufferEpisodeDetail, occurrences, recovered);
     }
 
     [Event(EvtLowAudioDetected,
@@ -333,18 +320,22 @@ public sealed class DeckleAudioSource : DeckleEventSource
             WriteEvent(EvtLowAudioDetectedDetail, recording_ms, min_sustained_ms, dbfs_threshold);
     }
 
-    // gc0/gc1/gc2 are the collections that happened DURING the lagging
-    // iteration (the one whose body caused the pile-up), not a running total
-    // since recording start — so a non-zero value indicts that GC directly.
+    // buffers_ready is how many 50 ms buffers were waiting when the loop woke
+    // (3 or more is the threshold) and behind_ms is the audio they hold, the
+    // least the consumer had fallen behind by. The first lag of a recording
+    // opens the incident; later ones only count in RecordingAnomaliesSummary.
     [Event(EvtCaptureLagDetected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "The capture loop fell behind the microphone")]
-    public void CaptureLagDetected()
+           Message = "The capture loop fell behind the microphone | buffers_ready={0} | behind_ms={1}")]
+    public void CaptureLagDetected(int buffers_ready, int behind_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtCaptureLagDetected);
+        if (IsEnabled()) WriteEvent(EvtCaptureLagDetected, buffers_ready, behind_ms);
     }
 
+    // gc0/gc1/gc2 are the collections that happened DURING the lagging
+    // iteration (the one whose body caused the pile-up), not a running total
+    // since recording start — so a non-zero value indicts that GC directly.
     [Event(EvtCaptureLagDetectedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
@@ -360,22 +351,37 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtCaptureLagRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "The capture loop recovered")]
     public void CaptureLagRecovered()
     {
         if (IsEnabled()) WriteEvent(EvtCaptureLagRecovered);
     }
 
-    [Event(EvtCaptureLagEpisodeDetail,
-           Level = EventLevel.Verbose,
+    // One line per recording that met any of the three anomalies above, written
+    // when the loop ends and whatever the verbosity: a recording that ends while
+    // an anomaly is still open leaves the Warning in the journal and no closer,
+    // so this is the line that says how far it went. A recording with none of
+    // them writes nothing. *_recovered is false when the anomaly was still open
+    // at the end (and when its own count is 0); lag_max_buffers_ready is the
+    // worst pile-up seen.
+    [Event(EvtRecordingAnomaliesSummary,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "capture lag episode | occurrences={0} | recovered={1}")]
-    public void CaptureLagEpisodeDetail(int occurrences, bool recovered)
+           Tags = ObservationTags.Journal,
+           Message = "Recording anomalies | no_data_stalls={0} | no_data_longest_gap_ms={1} | no_data_recovered={2} | empty_buffer_occurrences={3} | empty_buffer_recovered={4} | lag_occurrences={5} | lag_recovered={6} | lag_max_buffers_ready={7} | recording_ms={8} | work_id={9}")]
+    public void RecordingAnomaliesSummary(
+        int no_data_stalls, long no_data_longest_gap_ms, bool no_data_recovered,
+        int empty_buffer_occurrences, bool empty_buffer_recovered,
+        int lag_occurrences, bool lag_recovered, int lag_max_buffers_ready,
+        int recording_ms, string work_id)
     {
-        if (OperationalLogAdmission.IsScopedDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
-            WriteEvent(EvtCaptureLagEpisodeDetail, occurrences, recovered);
+        if (IsEnabled())
+            WriteEvent(EvtRecordingAnomaliesSummary,
+                no_data_stalls, no_data_longest_gap_ms, no_data_recovered,
+                empty_buffer_occurrences, empty_buffer_recovered,
+                lag_occurrences, lag_recovered, lag_max_buffers_ready,
+                recording_ms, work_id);
     }
 
     [Event(EvtDurationCapReached,

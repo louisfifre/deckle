@@ -37,7 +37,7 @@ public static class ProfileTransaction
 
         // Rules that found the system already as wanted changed nothing: the
         // milestone would claim a change that a restore will never undo.
-        if (restores.Count > 0) DeckleOrchestrationSource.Log.ProfileApplied();
+        if (restores.Count > 0) DeckleOrchestrationSource.Log.ProfileApplied(entry.Id, restores.Count);
         DeckleOrchestrationSource.Log.ProfileAppliedDetail(entry.Id, string.Join(",", applied), restores.Count);
         return new AppliedProfile(entry.Id, applied, restores);
     }

@@ -165,15 +165,12 @@ public sealed partial class WhisperBackend
 
         if (resolution.InstalledFallbackFileName is { } installed)
         {
-            DeckleWhispSource.Log.ModelFallback();
-            DeckleWhispSource.Log.ModelFallbackDetail(
-                resolution.ConfiguredFileName,
-                installed);
+            DeckleWhispSource.Log.ModelFallback(resolution.ConfiguredFileName, installed);
         }
 
         if (resolution.IgnoredEnvironmentPath is { } ignored)
         {
-            DeckleWhispSource.Log.ModelPathEnvIgnored();
+            DeckleWhispSource.Log.ModelPathEnvIgnored(Path.GetFileName(resolution.Path));
             DeckleWhispSource.Log.ModelPathEnvIgnoredDetail(ignored, resolution.Path);
         }
         return resolution.Path;

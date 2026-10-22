@@ -19,12 +19,11 @@ public sealed partial class ScreenCaptureService
     // stops at once. A false return without cancellation has already
     // reported its terminal milestone; abandonReason names it for the
     // loop's exit line and the stopped milestone.
-    private bool TryRecreateDuplication(CancellationToken ct, out string abandonReason)
+    private bool TryRecreateDuplication(
+        CancellationToken ct, CaptureIncidents incidents, out string abandonReason)
     {
         abandonReason = CaptureStopReasons.Requested;
         int attempt = 0;
-        long incidentStartedTicks = 0;
-        bool incidentOpen = false;
         while (!ct.IsCancellationRequested && _duplicationPtr == 0)
         {
             attempt++;
@@ -88,17 +87,14 @@ public sealed partial class ScreenCaptureService
                 DeckleVisionSource.Log.DuplicationRecreated(
                     attempt, _lastSize.Width, _lastSize.Height);
 
-                if (incidentOpen)
+                if (incidents.RecreateOpen)
                 {
                     DeckleVisionSource.Log.DuplicationRecreateRecovered();
-                    if (incidentStartedTicks != 0)
-                    {
-                        long durationMs = (Stopwatch.GetTimestamp() - incidentStartedTicks)
-                            * 1000L / Stopwatch.Frequency;
-                        DeckleVisionSource.Log.DuplicationRecreateEpisodeDetail(
-                            "recovered", attempt - 1, durationMs);
-                    }
+                    DeckleVisionSource.Log.DuplicationRecreateEpisodeDetail(
+                        "recovered", attempt - 1,
+                        incidents.RecreateElapsedMs(Stopwatch.GetTimestamp()));
                 }
+                incidents.RecreateEnded();
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -112,10 +108,7 @@ public sealed partial class ScreenCaptureService
                     DeckleVisionSource.Log,
                     EventLevel.Verbose,
                     (EventKeywords)Keywords.Capture);
-                if (detailOpen && incidentStartedTicks == 0)
-                {
-                    incidentStartedTicks = Stopwatch.GetTimestamp();
-                }
+                incidents.RecreateFailed(attempt, Stopwatch.GetTimestamp());
 
                 bool fatalDevice = IsFatalDeviceFailure(ex.HResult);
                 bool expected = IsExpectedRecreateFailure(ex.HResult);
@@ -124,7 +117,7 @@ public sealed partial class ScreenCaptureService
                 {
                     DeckleVisionSource.Log.DuplicationRecreateAttemptFailed(
                         attempt, ex.HResult, ex.GetType().Name, ex.Message);
-                    incidentOpen = true;
+                    incidents.RecreateOpened();
                 }
 
                 if (detailOpen)
@@ -147,13 +140,13 @@ public sealed partial class ScreenCaptureService
                         abandonReason = CaptureStopReasons.RecreateAbandoned;
                     }
 
-                    if (incidentOpen && incidentStartedTicks != 0)
+                    if (incidents.RecreateOpen)
                     {
-                        long durationMs = (Stopwatch.GetTimestamp() - incidentStartedTicks)
-                            * 1000L / Stopwatch.Frequency;
                         DeckleVisionSource.Log.DuplicationRecreateEpisodeDetail(
-                            "abandoned", attempt, durationMs);
+                            "abandoned", attempt,
+                            incidents.RecreateElapsedMs(Stopwatch.GetTimestamp()));
                     }
+                    incidents.RecreateEnded();
                     return false;
                 }
 
