@@ -40,7 +40,9 @@ public sealed class McpClientTokens
     // Invalidated by EnsureMinted so a first-boot mint is picked up in-process.
     private volatile IReadOnlyList<(McpClientProfile Client, byte[] Token)>? _snapshot;
 
-    // Mint any client bearer the vault is still missing. Idempotent: a token already
+    // Mint any client bearer the vault is still missing, or holds only as an empty
+    // entry (an entry with no value authenticates nobody, and the client would stay
+    // locked out while every boot looked fine). Idempotent: a token already
     // present is left untouched, so provisioning that runs on every boot only writes
     // on the very first one. A fresh token is 32 random bytes in base64url without
     // padding — URL-safe so it rides an Authorization header and a shell env var
@@ -50,7 +52,7 @@ public sealed class McpClientTokens
         int minted = 0;
         foreach (var client in _clients)
         {
-            if (!_vault.Contains(client.TokenSecretName))
+            if (!_vault.TryGet(client.TokenSecretName, out string? existing) || string.IsNullOrWhiteSpace(existing))
             {
                 _vault.Set(client.TokenSecretName, Mint());
                 minted++;
@@ -123,7 +125,7 @@ public sealed class McpClientTokens
         var entries = new List<(McpClientProfile, byte[])>(_clients.Count);
         foreach (var client in _clients)
         {
-            if (_vault.TryGet(client.TokenSecretName, out string? token) && !string.IsNullOrEmpty(token))
+            if (_vault.TryGet(client.TokenSecretName, out string? token) && !string.IsNullOrWhiteSpace(token))
                 entries.Add((client, Encoding.UTF8.GetBytes(token)));
         }
         return entries;

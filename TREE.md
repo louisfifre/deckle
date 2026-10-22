@@ -1807,6 +1807,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DialogueToolCatalogTests.cs
 │   │   ├── FakeSecretVault.cs
 │   │   ├── ManagementToolCatalogTests.cs
+│   │   ├── McpClientTokensBugNotes.md
 │   │   ├── McpClientTokensTests.cs
 │   │   ├── McpHttpHostTests.cs
 │   │   ├── McpToolsetTests.cs
