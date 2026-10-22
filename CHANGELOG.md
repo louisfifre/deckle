@@ -106,6 +106,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Share one request gate between the v1 and v2 clients
 - **anytype:** Read one page of recent reports instead of all of them
 - **anytype:** Read each linked name once and cap the reads at eight
+- **anytype:** Drop the unused v2 view ops
 
 ### Fixed
 
@@ -144,6 +145,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Cap the 429 backoff at 30 seconds
 - **anytype:** Drop an idea's plain name line from its body
 - **anytype:** Show a report's latest entry in the project overview
+- **anytype:** Read the bin flag under is_archived
 
 ## [0.59.0](https://github.com/louisfifre/deckle/compare/v0.58.5...v0.59.0) — 2026-10-21
 
