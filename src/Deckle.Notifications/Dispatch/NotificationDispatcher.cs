@@ -96,7 +96,7 @@ public sealed class NotificationDispatcher
             return null;
         }
 
-        DeckleNotificationsSource.Log.NotificationShown();
+        DeckleNotificationsSource.Log.NotificationShown(descriptor.Id);
         if (DeckleNotificationsSource.Log.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
         {
             DeckleNotificationsSource.Log.NotificationShownDetail(
@@ -111,7 +111,7 @@ public sealed class NotificationDispatcher
             // at Info.
             if (response is null)
             {
-                DeckleNotificationsSource.Log.NotificationUnanswered();
+                DeckleNotificationsSource.Log.NotificationUnanswered(descriptor.Id);
                 if (DeckleNotificationsSource.Log.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
                 {
                     DeckleNotificationsSource.Log.NotificationUnansweredDetail(
@@ -120,7 +120,7 @@ public sealed class NotificationDispatcher
                 return null;
             }
 
-            DeckleNotificationsSource.Log.NotificationResponded();
+            DeckleNotificationsSource.Log.NotificationResponded(descriptor.Id);
             if (DeckleNotificationsSource.Log.IsEnabled())
             {
                 DeckleNotificationsSource.Log.NotificationRespondedDetail(
@@ -133,7 +133,7 @@ public sealed class NotificationDispatcher
         {
             // Closing Info for the step NotificationShown opened: cancellation
             // is caller-initiated and benign, so Info, not Warning.
-            DeckleNotificationsSource.Log.NotificationCancelled();
+            DeckleNotificationsSource.Log.NotificationCancelled(descriptor.Id);
             if (DeckleNotificationsSource.Log.IsEnabled())
             {
                 DeckleNotificationsSource.Log.PromptCancelled(descriptor.Id);

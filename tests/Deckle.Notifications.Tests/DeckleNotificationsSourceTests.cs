@@ -225,6 +225,59 @@ public class DeckleNotificationsSourceTests
             e => e.EventId == DeckleNotificationsSource.EvtNotificationResponded);
     }
 
+    // A prompt waits on a person, so it is lasting work: its start and each way it
+    // can end reach the journal carrying the notification id that pairs them.
+    [Fact]
+    public async Task AnAnsweredPromptTravelsInTheJournalFromShownToResponded()
+    {
+        var dispatcher = NotificationDispatcher.Initialize(
+            new FakeNotificationChannel(cannedResponse: new NotificationResponse("ok", null)));
+        var descriptor = Descriptors.Make("playground.journal_answered");
+        dispatcher.Catalog.Register(new[] { descriptor });
+
+        using var listener = new TestEventListener("Deckle-Notifications");
+        await dispatcher.PromptAsync(descriptor, ct: TestContext.Current.CancellationToken);
+
+        AssertJournalWithId(listener, DeckleNotificationsSource.EvtNotificationShown, descriptor.Id);
+        AssertJournalWithId(listener, DeckleNotificationsSource.EvtNotificationResponded, descriptor.Id);
+    }
+
+    [Fact]
+    public async Task AnUnansweredPromptTravelsInTheJournalFromShownToUnanswered()
+    {
+        var dispatcher = NotificationDispatcher.Initialize(
+            new FakeNotificationChannel(returnsNull: true));
+        var descriptor = Descriptors.Make("playground.journal_unanswered");
+        dispatcher.Catalog.Register(new[] { descriptor });
+
+        using var listener = new TestEventListener("Deckle-Notifications");
+        await dispatcher.PromptAsync(descriptor, ct: TestContext.Current.CancellationToken);
+
+        AssertJournalWithId(listener, DeckleNotificationsSource.EvtNotificationShown, descriptor.Id);
+        AssertJournalWithId(listener, DeckleNotificationsSource.EvtNotificationUnanswered, descriptor.Id);
+    }
+
+    [Fact]
+    public async Task ACancelledPromptTravelsInTheJournalFromShownToCancelled()
+    {
+        var channel = new FakeNotificationChannel
+        {
+            PendingCompletion = new TaskCompletionSource<NotificationResponse?>(),
+        };
+        var dispatcher = NotificationDispatcher.Initialize(channel);
+        var descriptor = Descriptors.Make("playground.journal_cancelled");
+        dispatcher.Catalog.Register(new[] { descriptor });
+
+        using var listener = new TestEventListener("Deckle-Notifications");
+        using var cts = new CancellationTokenSource();
+        var prompt = dispatcher.PromptAsync(descriptor, ct: cts.Token);
+        cts.Cancel();
+        await Assert.ThrowsAsync<TaskCanceledException>(() => prompt);
+
+        AssertJournalWithId(listener, DeckleNotificationsSource.EvtNotificationShown, descriptor.Id);
+        AssertJournalWithId(listener, DeckleNotificationsSource.EvtNotificationCancelled, descriptor.Id);
+    }
+
     [Fact]
     public void RegisteringDescriptorsEmitsTheCatalogAuditWithItsIdsAndCount()
     {
@@ -253,6 +306,13 @@ public class DeckleNotificationsSourceTests
     // assertion robust to that without serializing the run.
     private static EventWrittenEventArgs Single(TestEventListener listener, int eventId)
         => Assert.Single(listener.Events, e => e.EventId == eventId);
+
+    private static void AssertJournalWithId(TestEventListener listener, int eventId, string notificationId)
+    {
+        var line = Assert.Single(listener.Events,
+            e => e.EventId == eventId && (string?)e.Payload?[0] == notificationId);
+        Assert.True(ObservationTags.IsJournal(line.Tags));
+    }
 
     private static void AssertOrdered(TestEventListener listener, params int[] eventIds)
     {

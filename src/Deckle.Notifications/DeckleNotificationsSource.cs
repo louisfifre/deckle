@@ -73,13 +73,18 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     }
 
     // ─── Show ──────────────────────────────────────────────────────────
+    // The start of a prompt that waits on a person: it ends with exactly one of
+    // NotificationResponded, NotificationUnanswered, NotificationCancelled or
+    // NotificationFailed. notification_id (a catalog id, never the text shown)
+    // pairs them in the file alone.
     [Event(EvtNotificationShown,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Showing a notification")]
-    public void NotificationShown()
+           Tags = ObservationTags.Journal,
+           Message = "Showing a notification | notification_id={0}")]
+    public void NotificationShown(string notification_id)
     {
-        if (IsEnabled()) WriteEvent(EvtNotificationShown);
+        if (IsEnabled()) WriteEvent(EvtNotificationShown, notification_id);
     }
 
     [Event(EvtNotificationShownDetail,
@@ -96,10 +101,11 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtNotificationResponded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A notification was answered")]
-    public void NotificationResponded()
+           Tags = ObservationTags.Journal,
+           Message = "A notification was answered | notification_id={0}")]
+    public void NotificationResponded(string notification_id)
     {
-        if (IsEnabled()) WriteEvent(EvtNotificationResponded);
+        if (IsEnabled()) WriteEvent(EvtNotificationResponded, notification_id);
     }
 
     [Event(EvtNotificationRespondedDetail,
@@ -142,20 +148,22 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtNotificationCancelled,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A notification prompt was cancelled")]
-    public void NotificationCancelled()
+           Tags = ObservationTags.Journal,
+           Message = "A notification prompt was cancelled | notification_id={0}")]
+    public void NotificationCancelled(string notification_id)
     {
-        if (IsEnabled()) WriteEvent(EvtNotificationCancelled);
+        if (IsEnabled()) WriteEvent(EvtNotificationCancelled, notification_id);
     }
 
     // ─── Unanswered (the prompt ended without an answer) ───────────────
     [Event(EvtNotificationUnanswered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A notification went unanswered")]
-    public void NotificationUnanswered()
+           Tags = ObservationTags.Journal,
+           Message = "A notification went unanswered | notification_id={0}")]
+    public void NotificationUnanswered(string notification_id)
     {
-        if (IsEnabled()) WriteEvent(EvtNotificationUnanswered);
+        if (IsEnabled()) WriteEvent(EvtNotificationUnanswered, notification_id);
     }
 
     [Event(EvtNotificationUnansweredDetail,
