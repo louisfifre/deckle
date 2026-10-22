@@ -2201,6 +2201,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DispatcherQueueExtensionsTests.cs
 │   │   ├── GlobalHotkeyBindingsTests.cs
 │   │   ├── ResizeGestureTests.cs
+│   │   ├── ShellObservabilityCollection.cs
 │   │   ├── TrayIconBugNotes.md
 │   │   └── TrayIconRegistrationTests.cs
 │   ├── Deckle.Shell.TrayMenu.Tests/
