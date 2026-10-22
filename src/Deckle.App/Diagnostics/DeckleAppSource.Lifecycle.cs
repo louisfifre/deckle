@@ -92,10 +92,10 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Shutdown completed")]
-    public void ShutdownCompleted()
+           Message = "Shutdown completed | work_id={0} | steps={1} | failed={2} | elapsed_ms={3}")]
+    public void ShutdownCompleted(string work_id, int steps, int failed, long elapsed_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtShutdownCompleted);
+        if (IsEnabled()) WriteEvent(EvtShutdownCompleted, work_id, steps, failed, elapsed_ms);
     }
 
 }

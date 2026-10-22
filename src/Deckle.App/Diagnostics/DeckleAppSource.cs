@@ -81,7 +81,7 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtModuleSkipped                  = 66;
     public const int EvtModuleFailed                   = 67;
     public const int EvtShutdownStepFailed             = 68;
-    public const int EvtShutdownStepsDetail            = 69;
+    // 69 retired: its steps, failed and elapsed_ms moved onto ShutdownCompleted.
     public const int EvtCrashUnhandled                 = 70;
     public const int EvtCrashAppDomain                 = 71;
     public const int EvtCrashTaskScheduler             = 72;
@@ -90,7 +90,7 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtDataRootCleanupStarting        = 75;
     public const int EvtDataRootCleanupFinished        = 76;
     public const int EvtDataRootCleanupFailed          = 77;
-    public const int EvtPostBuildRelaunchFailed        = 78;
+    public const int EvtRelaunchFailed                 = 78;
     public const int EvtRestartSettingsFlushFailed     = 79;
     public const int EvtRestartSpawnSkipped            = 80;
     public const int EvtRestartSpawned                 = 81;

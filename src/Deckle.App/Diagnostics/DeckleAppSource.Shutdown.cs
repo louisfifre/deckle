@@ -9,10 +9,10 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Shutdown requested")]
-    public void ShutdownRequested()
+           Message = "Shutdown requested | work_id={0}")]
+    public void ShutdownRequested(string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtShutdownRequested);
+        if (IsEnabled()) WriteEvent(EvtShutdownRequested, work_id);
     }
 
     // One line per failing step, cause included: the journal says which
@@ -24,15 +24,6 @@ public sealed partial class DeckleAppSource
     public void ShutdownStepFailed(string step, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtShutdownStepFailed, step, ex_type, ex_message);
-    }
-
-    [Event(EvtShutdownStepsDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "shutdown steps | steps={0} | failed={1} | elapsed_ms={2}")]
-    public void ShutdownStepsDetail(int steps, int failed, long elapsed_ms)
-    {
-        if (IsEnabled()) WriteEvent(EvtShutdownStepsDetail, steps, failed, elapsed_ms);
     }
 
     [Event(EvtRestartRequested,
@@ -84,15 +75,17 @@ public sealed partial class DeckleAppSource
     }
 
     // The process exits right after this line, so the user is left with no
-    // Deckle: the journal must say why.
-    [Event(EvtPostBuildRelaunchFailed,
+    // Deckle: the journal must say why. Every restart path ends here when its
+    // successor cannot start (settings restart, tray restart, post-build), not
+    // only the post-build one the event was first written for.
+    [Event(EvtRelaunchFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "Cannot relaunch Deckle | {0}: {1}")]
-    public void PostBuildRelaunchFailed(string ex_type, string ex_message)
+    public void RelaunchFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtPostBuildRelaunchFailed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtRelaunchFailed, ex_type, ex_message);
     }
 
     [Event(EvtRestartSpawnSkipped,

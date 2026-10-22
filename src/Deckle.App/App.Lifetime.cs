@@ -67,7 +67,8 @@ public partial class App
 
     private void QuitApp(Action? restart = null)
     {
-        DeckleAppSource.Log.ShutdownRequested();
+        string workId = WorkId.Next();
+        DeckleAppSource.Log.ShutdownRequested(workId);
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         int steps = 0;
         int failed = 0;
@@ -127,10 +128,20 @@ public partial class App
         MarkRunEnded();
         ReleaseResidentOwnership();
         if (restart is not null)
-            TryShutdown("restart_spawn", restart);
+        {
+            // Not a TryShutdown step: a successor that cannot start leaves the
+            // user with no Deckle, which is an Error that says so, where a
+            // failed teardown step is only a Warning.
+            steps++;
+            try { restart(); }
+            catch (Exception ex)
+            {
+                failed++;
+                DeckleAppSource.Log.RelaunchFailed(ex.GetType().Name, ex.Message);
+            }
+        }
 
-        DeckleAppSource.Log.ShutdownStepsDetail(steps, failed, stopwatch.ElapsedMilliseconds);
-        DeckleAppSource.Log.ShutdownCompleted();
+        DeckleAppSource.Log.ShutdownCompleted(workId, steps, failed, stopwatch.ElapsedMilliseconds);
         Environment.Exit(0);
     }
 
@@ -182,15 +193,10 @@ public partial class App
                     WorkingDirectory = Path.GetDirectoryName(exePath) ?? "",
                 };
                 DeckleAppSource.Log.PostBuildShellExecute(exePath);
-                try
-                {
-                    var child = System.Diagnostics.Process.Start(psi);
-                    DeckleAppSource.Log.RestartSpawned(child?.Id ?? 0);
-                }
-                catch (Exception ex)
-                {
-                    DeckleAppSource.Log.PostBuildRelaunchFailed(ex.GetType().Name, ex.Message);
-                }
+                // A start that throws reaches QuitApp, which reports it for
+                // every restart path alike.
+                var child = System.Diagnostics.Process.Start(psi);
+                DeckleAppSource.Log.RestartSpawned(child?.Id ?? 0);
             });
         }
     }
