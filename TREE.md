@@ -920,6 +920,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ILogWindowSink.cs
 │   │   ├── Keywords.cs
 │   │   ├── LogLineFormatter.cs
+│   │   ├── NoteFile.cs
 │   │   ├── ObservationKind.cs
 │   │   ├── OperationalLogAdmission.cs
 │   │   ├── RunMarker.cs
@@ -2035,6 +2036,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── JsonlSinkRegressionTests.cs
 │   │   ├── JsonlSinkRotationTests.cs
 │   │   ├── LogLineFormatterTests.cs
+│   │   ├── NoteFileTests.cs
 │   │   ├── OperationalLogAdmissionCollection.cs
 │   │   ├── OperationalLogAdmissionTests.cs
 │   │   ├── RunMarkerTests.cs
