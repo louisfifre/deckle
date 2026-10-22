@@ -98,6 +98,7 @@ internal sealed class BackendReconciler : IBackendReconciler
         IBackendProcess? spawned = null;
         bool spawnAttempted = false;
         int pendingId = 0;
+        string? inspectionError = null;
         try
         {
             while (_time.GetElapsedTime(started) < ReadinessTimeout)
@@ -105,14 +106,23 @@ internal sealed class BackendReconciler : IBackendReconciler
                 ct.ThrowIfCancellationRequested();
 
                 BackendListenerSnapshot first = _listener.Inspect();
+
+                // A failed read of the TCP table says nothing about who owns the
+                // endpoint (it can fail for a moment under load), so it is no
+                // conflict: the supervisor gives up for the session on a
+                // conflict. Look again until the window closes, and spawn
+                // nothing meanwhile, since the listener may well be owned.
+                if (first.State == BackendListenerState.Failed)
+                {
+                    inspectionError = first.Error ?? "listener inspection failed";
+                    _time.Delay(ProbeInterval, ct);
+                    continue;
+                }
+
+                inspectionError = null;
                 if (first.State == BackendListenerState.Owned) pendingId = first.ProcessId;
-                if (first.State is BackendListenerState.Ambiguous or BackendListenerState.Failed)
-                    return Conflict(
-                        id, first,
-                        first.State == BackendListenerState.Ambiguous
-                            ? "listener_ambiguous"
-                            : "listener_query_failed",
-                        null);
+                if (first.State == BackendListenerState.Ambiguous)
+                    return Conflict(id, first, "listener_ambiguous", null);
 
                 if (first.State == BackendListenerState.Owned)
                 {
@@ -174,7 +184,12 @@ internal sealed class BackendReconciler : IBackendReconciler
             DeckleAnytypeSource.Log.BackendStartTimedOut(pendingId);
             spawned?.Dispose();
             spawned = null;
-            return new(BackendStartOutcome.TimedOut, null, id, "timed-out", pendingId);
+            // The cause rides the decision, so the supervisor's journal line for the
+            // failed attempt says the table could not be read, not that a serve was slow.
+            string decision = inspectionError is null
+                ? "timed-out"
+                : $"listener_query_failed: {inspectionError}";
+            return new(BackendStartOutcome.TimedOut, null, id, decision, pendingId);
         }
         finally
         {

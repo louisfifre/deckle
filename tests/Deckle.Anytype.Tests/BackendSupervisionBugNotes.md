@@ -36,3 +36,15 @@
 - **Violated invariant:** A journal line describes the machine. A reconciliation that waited on a live serve names that serve, and a reconciliation names what opened its incident. The anti-duplicate rule still holds: a live trusted serve is never joined by a second one.
 - **Recurrence cue:** A `timed-out` reconciliation with `pid=0` while `anytype.exe` is alive, a recovery labelled `process-exit` with no `BackendStopped` before it, or retries that repeat forever with no change in the process list. Deckle still has no bounded policy for a serve that stays alive and unready, so retries cannot recover from this state by themselves; only ending that serve does. Separately, a non-elevated Deckle cannot read an elevated orphan (`Access is denied`), treats it as absent and spawns duplicates that exit with code `1`.
 - **Regression coverage:** `BackendReconcilerTests.Timed_out_reconciliation_names_the_live_serve_it_waited_on` asserts that the timed-out result names the live serve's PID and leaves it running. `BackendSupervisorTests.Recovery_after_a_start_that_never_served_is_not_reported_as_a_process_exit` asserts the recovery's trigger is `start-failed`. No test covers ending a wedged serve, because Deckle has no such policy yet.
+
+## A failed read of the listener table ended supervision for the session
+
+- **Trigger:** `GetExtendedTcpTable` returned an error (or kept changing size) during a reconciliation, even once.
+- **Observed symptom:** the reconciliation reported an endpoint conflict, and the supervisor, which treats a conflict as final, gave up restarting the backend until Deckle restarted. Established by reproduction with a scripted listener whose first inspection fails; whether the call fails in practice, and why, was not observed.
+- **Cause:** `Failed` (the table could not be read) was mapped to the same outcome as `Ambiguous` (several processes own the endpoint). The first says nothing about the endpoint; the second is a verdict on it.
+- **Violated invariant:** only a conclusion about the endpoint (an owner that is untrusted, unreadable or ambiguous) is a conflict; a failure to observe is retried, and stays a retryable outcome when it persists.
+- **Recurrence cue:** an error state of an observation folded into the verdict states of what is observed, or a terminal outcome decided from a single sample.
+
+A persistent failure now ends as `TimedOut` with the cause in its decision, so the supervisor keeps backing off and its journal line says the table could not be read. Nothing is spawned while the owner is unknown.
+
+Regression: `BackendReconcilerTests.Transient_listener_inspection_failure_is_inspected_again` and `BackendReconcilerTests.Persistent_listener_inspection_failure_stays_retryable_and_spawns_nothing`.
