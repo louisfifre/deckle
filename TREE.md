@@ -2384,7 +2384,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WhisperReferenceAudioSystemTests.cs
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj
-│   │   └── SileroSpeechTimestampsTests.cs
+│   │   ├── SileroSpeechTimestampsTests.cs
+│   │   └── VadPathRedactionTests.cs
 │   ├── Deckle.Vision.Tests/
 │   │   ├── CaptureIncidentsBugNotes.md
 │   │   ├── CaptureIncidentsTests.cs
