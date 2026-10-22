@@ -1990,6 +1990,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Core.Tests/
 │   │   ├── Deckle.Core.Tests.csproj
 │   │   ├── DpiTests.cs
+│   │   ├── JsonSettingsStoreBugNotes.md
 │   │   ├── JsonSettingsStoreTests.cs
 │   │   ├── SpacingTests.cs
 │   │   ├── Win32UtilTests.cs
