@@ -7,22 +7,27 @@ namespace Deckle.Anytype.Tests;
 // Integration tests for ManagementGestures.DeleteAsync over the shared
 // FakeAnytypeServer. They pin the two-step contract: the first (preview) call
 // looks the target up and sends NO DELETE; only the confirmed call, once the
-// person approved and nothing links to the object, moves it to the bin.
+// person approved and the object's links are still the ones shown, moves it to
+// the bin. Links never refuse; links that cannot be read, or that moved while
+// the person answered, do.
 // Selector is a bafy* id so the resolver short-circuits.
 [Trait("Category", "integration")]
 public class ManagementGesturesTests
 {
     const string ObjId = "bafyreiObjaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const string OtherId = "bafyreiOthbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+    const string ThirdId = "bafyreiThrccccccccccccccccccccccccccccccccccccccccccccccc";
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     sealed class FakeApproval(DeletionApprovalOutcome outcome) : IDeletionApproval
     {
         public int Asked { get; private set; }
+        public DeletionCandidate? Candidate { get; private set; }
 
         public Task<DeletionApprovalOutcome> RequestAsync(DeletionCandidate candidate, CancellationToken ct)
         {
             Asked++;
+            Candidate = candidate;
             return Task.FromResult(outcome);
         }
     }
@@ -140,11 +145,81 @@ public class ManagementGesturesTests
     }
 
     [Fact]
-    public async Task ARapportAnotherObjectLinksToIsRefusedLikeAnyObject()
+    public async Task ARapportAnotherObjectLinksToIsPreviewedWithItsLinkThenBinnedLikeAnyObject()
     {
         using var server = new FakeAnytypeServer();
         server.OnGetObject(ObjId, Obj(DevSpace.Types.Rapport));
-        server.OnV2Search(Backlinks(OtherId));
+        server.OnV2Search(Backlinks(OtherId)); // served again for every links read
+        server.OnDeleteObject(ObjId, new JsonObject());
+        var approval = new FakeApproval(DeletionApprovalOutcome.Approved);
+        ManagementGestures gestures = NewGestures(server, approval);
+
+        string preview = await gestures.DeleteAsync(ObjId, ct: Ct);
+
+        Assert.Contains("1 autre objet pointe vers celui-ci", preview);
+        Assert.False(Deleted(server));
+        Assert.Equal(0, approval.Asked);
+
+        await gestures.DeleteAsync(ObjId, confirm: true, ct: Ct);
+
+        Assert.Equal(1, approval.Asked);
+        Assert.True(Deleted(server));
+    }
+
+    [Fact]
+    public async Task ALinkedObjectIsPreviewedWithTheLinkCountAndArchiveIsOffered()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ObjId, Obj());
+        server.OnV2Search(Backlinks(OtherId, ThirdId, ObjId)); // the self-link is not counted
+        server.OnDeleteObject(ObjId, new JsonObject());
+        var approval = new FakeApproval(DeletionApprovalOutcome.Approved);
+
+        string preview = await NewGestures(server, approval).DeleteAsync(ObjId, ct: Ct);
+
+        Assert.Contains("2 autres objets pointent vers celui-ci", preview);
+        Assert.Contains("videra ces liens", preview);
+        Assert.Contains("archive", preview);
+        Assert.Contains(ObjId, preview);
+        Assert.False(Deleted(server));
+        Assert.Equal(0, approval.Asked);
+    }
+
+    [Fact]
+    public async Task ALinkedObjectIsBinnedAfterApprovalAndTheToastCarriesTheLinkCount()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ObjId, Obj());
+        server.OnV2Search(Backlinks(OtherId, ThirdId)); // unchanged for every links read
+        server.OnDeleteObject(ObjId, new JsonObject());
+        var approval = new FakeApproval(DeletionApprovalOutcome.Approved);
+
+        string digest = await NewGestures(server, approval).DeleteAsync(ObjId, confirm: true, ct: Ct);
+
+        Assert.Equal(2, approval.Candidate?.LinkCount);
+        Assert.True(Deleted(server));
+        Assert.Contains("corbeille", digest);
+    }
+
+    [Fact]
+    public async Task AnUnlinkedObjectIsPreviewedWithoutALinksWarning()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ObjId, Obj());
+        server.OnV2Search(Backlinks());
+
+        string preview = await NewGestures(server).DeleteAsync(ObjId, ct: Ct);
+
+        Assert.DoesNotContain("pointe", preview);
+        Assert.DoesNotContain("Attention", preview);
+    }
+
+    [Fact]
+    public async Task UnreadableLinksRefuseTheConfirmedDeleteBeforeAskingThePerson()
+    {
+        // No v2 search route: the fake answers 404, as a failing search would.
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ObjId, Obj());
         server.OnDeleteObject(ObjId, new JsonObject());
         var approval = new FakeApproval(DeletionApprovalOutcome.Approved);
 
@@ -156,43 +231,44 @@ public class ManagementGesturesTests
     }
 
     [Fact]
-    public async Task AnObjectAnotherObjectLinksToIsRefusedAndArchiveIsOffered()
+    public async Task UnreadableLinksRefuseThePreviewToo()
     {
         using var server = new FakeAnytypeServer();
         server.OnGetObject(ObjId, Obj());
-        server.OnV2Search(Backlinks(OtherId));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).DeleteAsync(ObjId, ct: Ct));
+
+        Assert.False(Deleted(server));
+    }
+
+    [Fact]
+    public async Task ALinkAddedWhileThePersonAnsweredRefusesTheDeleteAndAsksForANewPreview()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ObjId, Obj());
+        server.OnV2Search(Backlinks(OtherId));           // shown on the toast
+        server.OnV2Search(Backlinks(OtherId, ThirdId)); // read again after the approval
         server.OnDeleteObject(ObjId, new JsonObject());
         var approval = new FakeApproval(DeletionApprovalOutcome.Approved);
 
         var error = await Assert.ThrowsAsync<InvalidOperationException>(
             () => NewGestures(server, approval).DeleteAsync(ObjId, confirm: true, ct: Ct));
 
-        Assert.Contains("archive", error.Message);
-        Assert.Equal(0, approval.Asked);
+        Assert.Equal(1, approval.Candidate?.LinkCount);
+        Assert.Equal(1, approval.Asked);
+        Assert.Contains("1 → 2", error.Message);
+        Assert.Contains("aperçu", error.Message);
         Assert.False(Deleted(server));
     }
 
     [Fact]
-    public async Task UnreadableLinksRefuseTheDelete()
-    {
-        // No v2 search route: the fake answers 404, as a failing search would.
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(ObjId, Obj());
-        server.OnDeleteObject(ObjId, new JsonObject());
-
-        await Assert.ThrowsAsync<InvalidOperationException>(
-            () => NewGestures(server).DeleteAsync(ObjId, confirm: true, ct: Ct));
-
-        Assert.False(Deleted(server));
-    }
-
-    [Fact]
-    public async Task ALinkAddedWhileThePersonAnsweredStillRefusesTheDelete()
+    public async Task ALinkRemovedWhileThePersonAnsweredAlsoRefusesTheDelete()
     {
         using var server = new FakeAnytypeServer();
         server.OnGetObject(ObjId, Obj());
-        server.OnV2Search(Backlinks());        // before the toast
-        server.OnV2Search(Backlinks(OtherId)); // read again after the approval
+        server.OnV2Search(Backlinks(OtherId));
+        server.OnV2Search(Backlinks());
         server.OnDeleteObject(ObjId, new JsonObject());
         var approval = new FakeApproval(DeletionApprovalOutcome.Approved);
 
@@ -202,7 +278,6 @@ public class ManagementGesturesTests
         Assert.Equal(1, approval.Asked);
         Assert.False(Deleted(server));
     }
-
     [Fact]
     [Trait("Category", "regression")]
     public async Task ConfirmedCallRejectsANameInsteadOfThePreviewedIdWithoutDeleting()
