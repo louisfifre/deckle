@@ -146,6 +146,19 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtResidentMutexAbandoned);
     }
 
+    // The run marker found the previous run still marked in progress: that run
+    // never reached its orderly end (a kill, a power loss, a crash). Unlike
+    // ResidentMutexAbandoned, it also covers an end the mutex cannot see, and it
+    // names the run so its own lines can be found in the file.
+    [Event(EvtPreviousRunEndedUncleanly,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The previous run did not end in an orderly way | previous_session={0} | previous_pid={1} | previous_started={2}")]
+    public void PreviousRunEndedUncleanly(string previous_session, int previous_pid, string previous_started)
+    {
+        if (IsEnabled()) WriteEvent(EvtPreviousRunEndedUncleanly, previous_session, previous_pid, previous_started);
+    }
+
     [Event(EvtResidentMutexReleaseFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

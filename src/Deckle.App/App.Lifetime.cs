@@ -110,6 +110,9 @@ public partial class App
         // Restart only after every resident service has stopped and the ownership
         // gate is released. Spawning earlier lets the successor reject itself
         // against this still-running process, then leaves no Deckle behind.
+        // The run mark goes first: the successor writes its own once it owns
+        // the gate, and must not find this run's mark still there.
+        MarkRunEnded();
         ReleaseResidentOwnership();
         if (restart is not null)
             TryShutdown("restart_spawn", restart);

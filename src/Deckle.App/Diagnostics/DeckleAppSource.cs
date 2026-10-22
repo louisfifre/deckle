@@ -133,4 +133,5 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtModuleStarting                 = 118;
     public const int EvtModuleRefused                  = 119;
     public const int EvtLaunchContextDetail            = 120;
+    public const int EvtPreviousRunEndedUncleanly      = 121;
 }
