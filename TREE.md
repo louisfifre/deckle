@@ -1881,7 +1881,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AccentIndexTests.cs
 │   │   ├── AnticipationLeadOracleTests.cs
 │   │   ├── AnticipationTransactionJoinTests.cs
-│   │   ├── AutocorrectBenchmarkTests.cs
 │   │   ├── AutocorrectDecisionMapTests.cs
 │   │   ├── AutocorrectEngineBackspaceTests.cs
 │   │   ├── AutocorrectEngineCaretRecoveryTests.cs
@@ -1941,6 +1940,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── PersonalWordAdmissionTests.cs
+│   │   ├── ProbeBenchmarkSupportTests.cs
 │   │   ├── QwenAdapterCompatibilityProtocolTests.cs
 │   │   ├── QwenAdapterCompatibilityTests.cs
 │   │   ├── ReplayRunnerTests.cs
@@ -1948,7 +1948,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SentenceAlignmentTests.cs
 │   │   ├── SentenceBatchExperimentTests.cs
 │   │   ├── SentenceCalibrationTests.cs
-│   │   ├── SentenceCanonicalLatencyTests.cs
+│   │   ├── SentenceCanonicalLatencyCommandTests.cs
 │   │   ├── SentenceCorpusTests.cs
 │   │   ├── SentenceDecisionInventoryTests.cs
 │   │   ├── SentenceOrderAblationTests.cs
