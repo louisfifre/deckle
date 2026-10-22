@@ -259,7 +259,8 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver,
             string date = r.Properties.Day(DevSpace.Props.DateDuJournal) ?? "?";
             AnytypeV2ObjectDocument md = await _reader.ReadAsync(
                 r.Id, new AnytypeV2ObjectReadOptions { Markdown = true }, ct);
-            string body = FirstLine(md.Body["markdown"]?.GetValue<string>());
+            // Cleaned first: a render can open on blank lines, escapes or a divider.
+            string body = MarkdownBody.FirstLine(md.Body["markdown"]?.GetValue<string>() ?? "");
             sb.Append(date).Append(" · ").Append(r.Id).Append(" — ").Append(body).Append('\n');
         }
     }
@@ -295,13 +296,6 @@ public sealed class ProjectGestures(AnytypeApiClient api, NameResolver resolver,
     static void AppendFact(StringBuilder sb, string label, string? value)
     {
         if (!string.IsNullOrWhiteSpace(value)) sb.Append('\n').Append(label).Append(" : ").Append(value);
-    }
-
-    static string FirstLine(string? s)
-    {
-        if (string.IsNullOrEmpty(s)) return "";
-        int nl = s.IndexOf('\n');
-        return nl < 0 ? s : s[..nl];
     }
 
     static double Elapsed(DateTime startUtc) => (DateTime.UtcNow - startUtc).TotalMilliseconds;
