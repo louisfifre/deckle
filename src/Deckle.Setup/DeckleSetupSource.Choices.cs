@@ -54,7 +54,7 @@ public sealed partial class DeckleSetupSource
     public void ChoicesConfirmedDetail(string location, string model)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtChoicesConfirmedDetail, location, model);
+            WriteEvent(EvtChoicesConfirmedDetail, PathRedaction.Redact(location), model);
     }
 
 }

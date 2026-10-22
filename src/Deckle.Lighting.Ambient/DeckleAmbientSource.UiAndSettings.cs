@@ -76,4 +76,17 @@ public sealed partial class DeckleAmbientSource
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
-}
+
+    // The settings file stores the selected tuning preset by id. An id that
+    // names no preset (one retired by an update, or a hand-edited file) is
+    // replaced by the selection the stored values match, so the tuning on screen
+    // can differ from the one the person chose. Both ids are declared preset
+    // ids or "custom", never user content.
+    [Event(EvtPresetSelectionReplaced,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A stored Ambient preset names no preset, the selection was derived from the values | asked={0} | obtained={1}")]
+    public void PresetSelectionReplaced(string asked, string obtained)
+    {
+        if (IsEnabled()) WriteEvent(EvtPresetSelectionReplaced, asked, obtained);
+    }}

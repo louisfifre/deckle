@@ -103,7 +103,7 @@ public sealed class DeckleVadSource : DeckleEventSource
            Message = "model loaded | model_path={0}")]
     public void SpeechTrimVadLoadedDetail(string model_path)
     {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadLoadedDetail, model_path);
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadLoadedDetail, PathRedaction.Redact(model_path));
     }
 
     // Wall-clock for the VAD load: SHA-256 verify + ONNX session construction,
@@ -130,7 +130,7 @@ public sealed class DeckleVadSource : DeckleEventSource
            Message = "Speech trim is off, takes run untrimmed | reason={0} | ex_type={1} | ex_message={2}")]
     public void SpeechTrimUnavailable(string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimUnavailable, reason, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimUnavailable, reason, ex_type, PathRedaction.Redact(ex_message));
     }
 
     [Event(EvtSpeechTrimUnavailableDetail,
@@ -139,7 +139,7 @@ public sealed class DeckleVadSource : DeckleEventSource
            Message = "speech trim unavailable | reason={0} | model_path={1}")]
     public void SpeechTrimUnavailableDetail(string reason, string model_path)
     {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimUnavailableDetail, reason, model_path);
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimUnavailableDetail, reason, PathRedaction.Redact(model_path));
     }
 
     // Closes the incident SpeechTrimUnavailable opened, so the journal never
@@ -162,7 +162,7 @@ public sealed class DeckleVadSource : DeckleEventSource
            Message = "model delete failed | model_path={0} | ex_type={1} | ex_message={2}")]
     public void SpeechTrimVadFileDeleteFailed(string model_path, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadFileDeleteFailed, model_path, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadFileDeleteFailed, PathRedaction.Redact(model_path), ex_type, PathRedaction.Redact(ex_message));
     }
 
     [Event(EvtSpeechTrimVadDownloadStart,
@@ -198,7 +198,7 @@ public sealed class DeckleVadSource : DeckleEventSource
            Message = "model download complete | model_path={0}")]
     public void SpeechTrimVadDownloadCompleteDetail(string model_path)
     {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadCompleteDetail, model_path);
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadCompleteDetail, PathRedaction.Redact(model_path));
     }
 
     // The raw per-utterance failure; the visible incident is SpeechTrimUnavailable
@@ -210,7 +210,7 @@ public sealed class DeckleVadSource : DeckleEventSource
            Message = "speech trim failed | utterance_index={0} | ex_type={1} | ex_message={2}")]
     public void SpeechTrimFailed(int utterance_index, string ex_type, string ex_message)
     {
-        if (IsTrimDetailEnabled()) WriteEvent(EvtSpeechTrimFailed, utterance_index, ex_type, ex_message);
+        if (IsTrimDetailEnabled()) WriteEvent(EvtSpeechTrimFailed, utterance_index, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // The raw per-take attempt; the visible incident is SpeechTrimUnavailable,

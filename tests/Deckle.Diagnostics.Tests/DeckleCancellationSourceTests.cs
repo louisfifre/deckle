@@ -6,12 +6,13 @@ using Xunit;
 namespace Deckle.Diagnostics.Tests;
 
 // Pins the Lifecycle keyword: moving cancellations to a dedicated keyword must
-// be a deliberate change.
+// be a deliberate change. A cancellation is a normal end, so it is Informational
+// and travels in the journal, never a Warning.
 [Trait("Category", "observability")]
 public class DeckleCancellationSourceTests
 {
     [Fact]
-    public void OperationCancelledEmitsVerboseOnLifecycleKeyword()
+    public void OperationCancelledIsAJournalInformationalOnLifecycleKeyword()
     {
         using var listener = new TestEventListener("Deckle-Cancellation");
 
@@ -20,7 +21,8 @@ public class DeckleCancellationSourceTests
 
         var ev = Assert.Single(listener.Events);
         Assert.Equal(DeckleCancellationSource.EvtOperationCancelled, ev.EventId);
-        Assert.Equal(EventLevel.Verbose, ev.Level);
+        Assert.Equal(EventLevel.Informational, ev.Level);
+        Assert.Equal(ObservationTags.Journal, ev.Tags & ObservationTags.Journal);
         Assert.True(ev.HasKeyword(Keywords.Lifecycle));
         Assert.Equal("whisp-transcribe", ev.Payload?[0]);
         Assert.Equal("user", ev.Payload?[1]);

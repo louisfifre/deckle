@@ -243,7 +243,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "frame recording | path={0}")]
     public void RecordingStartedDetail(string path)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingStartedDetail, path);
+        if (IsEnabled()) WriteEvent(EvtRecordingStartedDetail, PathRedaction.Redact(path));
     }
 
     // Closes every armed session, including one that never saw a frame
@@ -263,7 +263,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "frame recording closed | path={0} | duration_s={1} | bytes={2}")]
     public void RecordingStoppedDetail(string path, double duration_s, long bytes)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingStoppedDetail, path, duration_s, bytes);
+        if (IsEnabled()) WriteEvent(EvtRecordingStoppedDetail, PathRedaction.Redact(path), duration_s, bytes);
     }
 
     [Event(EvtRecordingFailed,
@@ -272,7 +272,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "Frame recording encountered an error | ex_type={0} | ex_message={1}")]
     public void RecordingFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingFailed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtRecordingFailed, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // The file size only decorates the closing line; a failed stat must not
@@ -283,7 +283,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "recording size unavailable | recording={0} | ex_type={1} | ex_message={2}")]
     public void RecordingSizeUnavailable(string recording, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingSizeUnavailable, recording, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtRecordingSizeUnavailable, recording, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // ── Keyboard host lifecycle ──────────────────────────────────────────
@@ -442,7 +442,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "wheel recording | path={0}")]
     public void WheelRecordingStartedDetail(string path)
     {
-        if (IsEnabled()) WriteEvent(EvtWheelRecordingStartedDetail, path);
+        if (IsEnabled()) WriteEvent(EvtWheelRecordingStartedDetail, PathRedaction.Redact(path));
     }
 
     [Event(EvtWheelRecordingStopped,
@@ -460,7 +460,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "wheel recording closed | path={0} | duration_s={1} | bytes={2}")]
     public void WheelRecordingStoppedDetail(string path, double duration_s, long bytes)
     {
-        if (IsEnabled()) WriteEvent(EvtWheelRecordingStoppedDetail, path, duration_s, bytes);
+        if (IsEnabled()) WriteEvent(EvtWheelRecordingStoppedDetail, PathRedaction.Redact(path), duration_s, bytes);
     }
 
     [Event(EvtWheelRecordingFailed,
@@ -469,7 +469,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "Wheel recording encountered an error | ex_type={0} | ex_message={1}")]
     public void WheelRecordingFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtWheelRecordingFailed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtWheelRecordingFailed, ex_type, PathRedaction.Redact(ex_message));
     }
 
     [Event(EvtWheelDeviceObserved,

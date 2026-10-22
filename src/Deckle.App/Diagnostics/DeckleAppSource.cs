@@ -103,7 +103,8 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtDictationRecoveryClipboardFailed = 88;
     public const int EvtDictationRecoveryKept          = 89;
     // 90 retired: a rejected second instance has no sink, so the fact is a
-    // line in second-instance.txt (App.Lifetime.cs).
+    // line in second-instance.txt (App.Lifetime.cs), which the resident run
+    // copies into the journal at its next start (124, 125).
     public const int EvtResidentMutexAbandoned         = 91;
     public const int EvtResidentMutexReleaseFailed     = 92;
     public const int EvtTransactionalModeExited        = 93;
@@ -137,4 +138,6 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtPreviousRunEndedUncleanly      = 121;
     public const int EvtLegacySettingsMigrationFailed  = 122;
     public const int EvtAnytypeRuntimeFailed           = 123;
+    public const int EvtSecondInstanceRejected         = 124;
+    public const int EvtSecondInstancesRejected        = 125;
 }
