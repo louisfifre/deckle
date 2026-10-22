@@ -27,7 +27,9 @@ public static class PresenceFile
     // The catalogue a version-1 file was written against. That shape had no
     // "known", and these six were the whole offer then; a module added since is
     // not in this list, so a file written before it existed keeps it present.
-    // Frozen on purpose: it is a fact about old files, not the current catalogue.
+    // A fixed list, never read from the registry: it is a fact about old files,
+    // not the current catalogue. It names the ids through ModuleIds, whose
+    // values are the strings those files hold.
     private static readonly string[] _legacyKnown =
     [
         ModuleIds.Transcription,
@@ -67,8 +69,9 @@ public static class PresenceFile
     }
 
     // Write-then-rename, so a crash never leaves a half-written choice. Always
-    // the current shape: a version-1 file is read as it stands and only replaced
-    // when the person next saves.
+    // the current shape: a version-1 file is read as it stands and replaced at
+    // the next write, which a change in the module selector and every install
+    // or update make.
     public static void SaveTo(
         string path, IReadOnlyCollection<string> present, IReadOnlyCollection<string> known)
     {
