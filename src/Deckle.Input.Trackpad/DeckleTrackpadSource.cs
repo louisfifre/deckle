@@ -51,6 +51,8 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     public const int EvtActFailed                = 27;
     public const int EvtRepairExitUnobserved     = 28;
     public const int EvtPrimaryReleaseFailed     = 29;
+    public const int EvtSettingsLoadWarning = 30;
+    public const int EvtSettingsLoadError = 31;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -262,5 +264,24 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     public void ActFailed(string act, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtActFailed, act, ex_type, ex_message);
+    }
+
+    // The settings store reports in free text; the text carries its own cause.
+    [Event(EvtSettingsLoadWarning,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The trackpad settings need attention | {0}")]
+    public void SettingsLoadWarning(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
+    }
+
+    [Event(EvtSettingsLoadError,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The trackpad settings could not be saved | {0}")]
+    public void SettingsLoadError(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 }

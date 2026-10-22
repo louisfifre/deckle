@@ -88,6 +88,8 @@ public sealed class DeckleInputSource : DeckleEventSource
     public const int EvtWheelRecordingFailed       = 56;
     public const int EvtRecordingSizeUnavailable   = 57;
     public const int EvtTouchpadEnumerationFailed  = 58;
+    public const int EvtSettingsLoadWarning = 59;
+    public const int EvtSettingsLoadError = 60;
 
     // ── Raw input host lifecycle ─────────────────────────────────────────
 
@@ -477,5 +479,24 @@ public sealed class DeckleInputSource : DeckleEventSource
     public void WheelDeviceObserved(int dev, string name, uint vendor_id, uint product_id)
     {
         if (IsEnabled()) WriteEvent(EvtWheelDeviceObserved, dev, name, vendor_id, product_id);
+    }
+
+    // The settings store reports in free text; the text carries its own cause.
+    [Event(EvtSettingsLoadWarning,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The mouse wheel settings need attention | {0}")]
+    public void SettingsLoadWarning(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
+    }
+
+    [Event(EvtSettingsLoadError,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The mouse wheel settings could not be saved | {0}")]
+    public void SettingsLoadError(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 }

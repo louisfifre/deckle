@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Threading;
 using Deckle.Core;
 
 namespace Deckle.Diagnostics.Logging;
@@ -14,8 +15,10 @@ namespace Deckle.Diagnostics.Logging;
 // emission. JsonSettingsStore keeps an in-memory snapshot, so access cost is
 // negligible.
 //
-// The store's log callbacks are left unwired: it is silent, and a load error
-// resets to defaults without a trace.
+// The store reports through DeckleDiagnosticsSource. A report made while the
+// store is still loading (a damaged file at boot) is handed to the thread pool:
+// the sinks read this service's Current, and reading it from inside its own
+// construction would re-enter the Lazy and fault it for good.
 public sealed class LoggingSettingsService
 {
     private static readonly Lazy<LoggingSettingsService> _instance =
@@ -49,7 +52,15 @@ public sealed class LoggingSettingsService
         _store = new JsonSettingsStore<LoggingSettings>(
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Logging-Save",
-            jsonOptions: _jsonOptions);
+            jsonOptions: _jsonOptions,
+            logWarning:  msg => Report(msg, DeckleDiagnosticsSource.Log.SettingsLoadWarning),
+            logError:    msg => Report(msg, DeckleDiagnosticsSource.Log.SettingsLoadError));
+    }
+
+    private void Report(string message, Action<string> emit)
+    {
+        if (_store is null) ThreadPool.QueueUserWorkItem(_ => emit(message));
+        else emit(message);
     }
 
     public void Save()                          => _store.Save();

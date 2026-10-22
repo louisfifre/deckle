@@ -32,11 +32,14 @@ public sealed class SpeechEngine : IDisposable
 
     public void Speak(string? text)
     {
-        if (_disposed || string.IsNullOrWhiteSpace(text)) return;
+        if (string.IsNullOrWhiteSpace(text)) return;
 
         CancellationToken ct;
         lock (_lock)
         {
+            // Checked under the lock Dispose takes to set the flag: a Speak
+            // cannot start a request on a backend Dispose is about to release.
+            if (_disposed) return;
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = new CancellationTokenSource();
@@ -156,10 +159,10 @@ public sealed class SpeechEngine : IDisposable
 
     public void Dispose()
     {
-        if (_disposed) return;
-        Volatile.Write(ref _disposed, true);
         lock (_lock)
         {
+            if (_disposed) return;
+            Volatile.Write(ref _disposed, true);
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;

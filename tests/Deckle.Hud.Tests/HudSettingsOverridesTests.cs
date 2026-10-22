@@ -109,6 +109,20 @@ public class HudSettingsOverridesTests
         Assert.Equal(new ConicArcStrokeConfig { InsetDip = -5f }, effective);
     }
 
+    // A hand-edited value, or a field whose type changed in code, must cost
+    // that one field its override, not the HUD its whole configuration (the
+    // callers have no try/catch around Apply).
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AValueOfTheWrongTypeIsIgnoredAndTheOtherOverridesStillApply()
+    {
+        var stored = new JsonObject { ["strokeThickness"] = "abc", ["insetDip"] = -5f };
+
+        var effective = ConfigOverrides.Apply(new ConicArcStrokeConfig(), stored, Options);
+
+        Assert.Equal(new ConicArcStrokeConfig { InsetDip = -5f }, effective);
+    }
+
     // The gauge's cut once had its own move (cutSeconds, cutEase*) beside the
     // retreat's. The Retreat* keys became the one return, so a file written
     // before still applies them, ignores the Cut* keys it carries, and loses

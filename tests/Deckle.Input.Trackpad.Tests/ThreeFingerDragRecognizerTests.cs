@@ -152,6 +152,29 @@ public class ThreeFingerDragRecognizerTests
         Assert.Equal(10, move.dx, precision: 6);
     }
 
+    // Four-finger gestures belong to Windows: a fourth finger landing while the
+    // drag waits out its grace window ends it at once, exactly as it does in
+    // the Dragging phase, instead of resuming the drag for one more frame.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void FourFingersDuringGraceEndTheDragInsteadOfResumingIt()
+    {
+        var r = new ThreeFingerDragRecognizer { StartThresholdUnits = 50, GraceDelayMs = 100 };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(1, (1, 0, 0, true), (2, 0, 0, true), (3, 0, 0, true)));
+        r.ProcessFrame(Frame(10, (1, 60, 0, true), (2, 60, 0, true), (3, 60, 0, true)));
+        r.ProcessFrame(Frame(20, (1, 60, 0, true), (2, 60, 0, true))); // grace, deadline 120
+        rec.Moves.Clear();
+
+        r.ProcessFrame(Frame(50,
+            (1, 60, 0, true), (2, 60, 0, true), (3, 60, 0, true), (4, 999, 999, true)));
+
+        Assert.Equal(DragPhase.Idle, r.Phase);
+        Assert.Equal(new[] { "fourth-finger" }, rec.Ended.ToArray());
+        Assert.Empty(rec.Moves);
+    }
+
     [Fact]
     public void GraceFrameAfterDeadlineEndsDragAsExpired()
     {

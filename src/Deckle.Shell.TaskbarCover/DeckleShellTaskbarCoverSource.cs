@@ -55,6 +55,8 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public const int EvtSessionNotifyFailed     = 33;
     public const int EvtBandCreateFailed        = 34;
     public const int EvtBandCreateRecovered     = 35;
+    public const int EvtSettingsLoadWarning = 36;
+    public const int EvtSettingsLoadError = 37;
 
     // ── Host lifecycle ────────────────────────────────────────────────────────
 
@@ -331,5 +333,24 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     public void SessionNotifyFailed(int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtSessionNotifyFailed, win32_error);
+    }
+
+    // The settings store reports in free text; the text carries its own cause.
+    [Event(EvtSettingsLoadWarning,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar cover settings need attention | {0}")]
+    public void SettingsLoadWarning(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
+    }
+
+    [Event(EvtSettingsLoadError,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar cover settings could not be saved | {0}")]
+    public void SettingsLoadError(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 }

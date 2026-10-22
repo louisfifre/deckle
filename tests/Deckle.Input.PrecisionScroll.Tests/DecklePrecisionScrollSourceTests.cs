@@ -58,4 +58,30 @@ public sealed class DecklePrecisionScrollSourceTests
         Assert.Equal("InvalidOperationException", faulted.Payload?[0]);
         Assert.Equal("boom", faulted.Payload?[1]);
     }
+
+    // The settings store reports in free text. A damaged file at load is a
+    // Warning (degraded, defaults in use) and a failed write an Error.
+    [Fact]
+    public void ADamagedSettingsFileSurfacesAsAWarningAndAFailedWriteAsAnError()
+    {
+        using var listener = new TestEventListener("Deckle-PrecisionScroll");
+
+        DecklePrecisionScrollSource.Log.SettingsLoadWarning("reason=parse_failed");
+        DecklePrecisionScrollSource.Log.SettingsLoadError("reason=write_failed");
+
+        Assert.Collection(
+            listener.Events,
+            warning =>
+            {
+                Assert.Equal(DecklePrecisionScrollSource.EvtSettingsLoadWarning, warning.EventId);
+                Assert.Equal(EventLevel.Warning, warning.Level);
+                Assert.Equal("reason=parse_failed", warning.Payload?[0]);
+            },
+            error =>
+            {
+                Assert.Equal(DecklePrecisionScrollSource.EvtSettingsLoadError, error.EventId);
+                Assert.Equal(EventLevel.Error, error.Level);
+                Assert.Equal("reason=write_failed", error.Payload?[0]);
+            });
+    }
 }

@@ -40,6 +40,8 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
             path: filePath,
             mutexName: "Deckle-Autocorrect-PersonalDictionary",
             jsonOptions: JsonOptions,
+            logWarning: DeckleAutocorrectSource.Log.SettingsLoadWarning,
+            logError: DeckleAutocorrectSource.Log.SettingsLoadError,
             postLoadMigration: MigrateAndRevalidate);
     }
 

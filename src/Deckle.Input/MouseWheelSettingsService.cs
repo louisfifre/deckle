@@ -36,7 +36,9 @@ public sealed class MouseWheelSettingsService
         _store = new JsonSettingsStore<MouseWheelSettings>(
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-MouseWheel-Save",
-            jsonOptions: _jsonOptions);
+            jsonOptions: _jsonOptions,
+            logWarning:  DeckleInputSource.Log.SettingsLoadWarning,
+            logError:    DeckleInputSource.Log.SettingsLoadError);
     }
 
     public void Save()                            => _store.Save();

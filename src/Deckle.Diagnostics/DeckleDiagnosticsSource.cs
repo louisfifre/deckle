@@ -32,6 +32,8 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     public const int EvtRowUnrouted        = 9;
     public const int EvtRowsRoutedAgain    = 10;
     public const int EvtMessageTemplateBroken = 11;
+    public const int EvtSettingsLoadWarning = 12;
+    public const int EvtSettingsLoadError = 13;
 
     // One incident per sink: opened by the first failure, closed by the next
     // successful write (SinkRecovered). The attempts in between are counted,
@@ -155,5 +157,24 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     public void MessageTemplateBroken(string provider, string event_name, string error_type)
     {
         if (IsEnabled()) WriteEvent(EvtMessageTemplateBroken, provider, event_name, error_type);
+    }
+
+    // The settings store reports in free text; the text carries its own cause.
+    [Event(EvtSettingsLoadWarning,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The logging or telemetry settings need attention | {0}")]
+    public void SettingsLoadWarning(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
+    }
+
+    [Event(EvtSettingsLoadError,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The logging or telemetry settings could not be saved | {0}")]
+    public void SettingsLoadError(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 }

@@ -46,6 +46,8 @@ public sealed class DeckleHudSource : DeckleEventSource
     public const int EvtOverlayCardChanged        = 24;
     public const int EvtCleanupFailed             = 25;
     public const int EvtFadeInEnded               = 26;
+    public const int EvtSettingsLoadWarning = 27;
+    public const int EvtSettingsLoadError = 28;
 
     // Callers test this before any measurement made only for the log.
     [NonEvent]
@@ -273,5 +275,24 @@ public sealed class DeckleHudSource : DeckleEventSource
     {
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtProximityRollup, duration_ms, samples, min_alpha, max_alpha, p50_cursor_dist_dip, p95_cursor_dist_dip);
+    }
+
+    // The settings store reports in free text; the text carries its own cause.
+    [Event(EvtSettingsLoadWarning,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The HUD settings need attention | {0}")]
+    public void SettingsLoadWarning(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
+    }
+
+    [Event(EvtSettingsLoadError,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The HUD settings could not be saved | {0}")]
+    public void SettingsLoadError(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 }
