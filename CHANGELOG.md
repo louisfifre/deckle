@@ -97,6 +97,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Create the session report through v2
 - **anytype:** Separate journal entries with a divider
 - **anytype:** Let delete bin a report that nothing links to
+- **anytype:** Preview what links to an object before delete bins it
+- **anytype:** Tell agents that delete shows the links and bins any object
+- **anytype:** State the links the bin empties on the approval toast
 
 ### Changed
 
