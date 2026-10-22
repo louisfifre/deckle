@@ -2121,6 +2121,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HueCredentialVaultTests.cs
 │   │   ├── HueEntertainmentFrameBuilderTests.cs
 │   │   ├── HueEntertainmentLightOutputTests.cs
+│   │   ├── HueEventStreamBugNotes.md
 │   │   ├── HueEventStreamEpisodeTests.cs
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   ├── HueLocalDiscoveryRegressionTests.cs

@@ -181,6 +181,19 @@ public sealed partial class DeckleLightingSource
         if (IsEnabled()) WriteEvent(EvtEventStreamRecovered);
     }
 
+    // The other close of EventStreamIncident: the subscriber was stopped while
+    // the incident was still open, so no reconnection will ever restore it.
+    // Without this line the journal would hold a Warning that never ends.
+    [Event(EvtEventStreamIncidentAbandoned,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
+           Message = "Hue event monitoring stopped while it was unavailable | duration_ms={0} | failures={1}")]
+    public void EventStreamIncidentAbandoned(long duration_ms, int failures)
+    {
+        if (IsEnabled()) WriteEvent(EvtEventStreamIncidentAbandoned, duration_ms, failures);
+    }
+
     [Event(EvtEventStreamRecoveryDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,

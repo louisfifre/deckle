@@ -126,6 +126,7 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     public const int EvtEntertainmentStreamingStopFailed = 90;
     public const int EvtLightOutputSelected = 91;
     public const int EvtHueStepFailedDetail = 92;
+    public const int EvtEventStreamIncidentAbandoned = 93;
 
     // Lighting is a supporting provider: its detail follows the Ambient
     // activity's policy while that workflow runs, and the listener alone

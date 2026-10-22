@@ -13,7 +13,8 @@ public sealed class JournalClosersTests
     [Fact]
     public void DeckleLightingSourceRecoveryClosersTravelInTheJournal()
     {
-        IReadOnlyList<string> outside = ProviderManifest.ClosersOutsideTheJournal(typeof(DeckleLightingSource));
+        IReadOnlyList<string> outside = ProviderManifest.ClosersOutsideTheJournal(
+            typeof(DeckleLightingSource), nameof(DeckleLightingSource.EventStreamIncidentAbandoned));
 
         Assert.Empty(outside);
     }

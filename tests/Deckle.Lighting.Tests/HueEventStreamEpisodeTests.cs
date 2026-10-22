@@ -51,6 +51,35 @@ public sealed class HueEventStreamEpisodeTests
         Assert.False(episode.TryRecover(out _));
     }
 
+    // 2026-10: a subscriber stopped while its incident was open left the journal
+    // with a Warning that never ended.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void StoppingWhileTheIncidentIsOpenClosesItOnce()
+    {
+        var time = new TestTimeProvider();
+        var episode = new HueEventStreamEpisode(time);
+        HueEventStreamLoss loss = episode.RecordLoss(new HttpRequestException("offline"));
+        time.Advance(HueEventStreamEpisode.IncidentDelay);
+        Assert.True(episode.TryOpenIncident(loss.Generation, out _));
+
+        time.Advance(TimeSpan.FromSeconds(1));
+
+        Assert.True(episode.TryAbandon(out HueEventStreamObservation open));
+        Assert.Equal(TimeSpan.FromSeconds(6), open.Duration);
+        Assert.False(episode.TryAbandon(out _));
+        Assert.False(episode.TryRecover(out _));
+    }
+
+    [Fact]
+    public void StoppingDuringABriefLossHasNothingToClose()
+    {
+        var episode = new HueEventStreamEpisode(new TestTimeProvider());
+        episode.RecordLoss(new HttpRequestException("offline"));
+
+        Assert.False(episode.TryAbandon(out _));
+    }
+
     private sealed class TestTimeProvider : TimeProvider
     {
         private long _timestamp;
