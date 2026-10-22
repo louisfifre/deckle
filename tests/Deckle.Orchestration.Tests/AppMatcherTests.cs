@@ -54,6 +54,58 @@ public sealed class AppMatcherTests
     }
 
     [Fact]
+    [Trait("Category", "regression")]
+    public void ProcessNameDoesNotMatchAnEntryWhoseKnownPathIsAnotherFile()
+    {
+        // Two different games can both ship "game.exe"; the entry of the first
+        // must not claim the second.
+        var gameA = Entry(processName: "game", executablePath: @"C:\Games\A\game.exe");
+
+        Assert.Null(AppMatcher.Match([gameA], "game", @"C:\Games\B\game.exe"));
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void ProcessNamePicksTheEntryWithoutAPathWhenAnotherNamesAnotherFile()
+    {
+        var gameA = Entry(processName: "game", executablePath: @"C:\Games\A\game.exe");
+        var byNameOnly = Entry(processName: "game");
+
+        Assert.Same(byNameOnly, AppMatcher.Match([gameA, byNameOnly], "game", @"C:\Games\B\game.exe"));
+    }
+
+    [Fact]
+    public void ProcessNameStillMatchesAnEntryWithAPathWhenTheProcessPathIsUnknown()
+    {
+        var gameA = Entry(processName: "game", executablePath: @"C:\Games\A\game.exe");
+
+        Assert.Same(gameA, AppMatcher.Match([gameA], "game", executablePath: null));
+    }
+
+    [Fact]
+    public void AppMovedToAVersionedFolderStillMatchesThroughItsInstallDirectory()
+    {
+        var entry = Entry(
+            processName: "foo",
+            executablePath: @"C:\Games\Foo\1.0\foo.exe",
+            installDirectory: @"C:\Games\Foo");
+
+        Assert.Same(entry, AppMatcher.Match([entry], "foo", @"C:\Games\Foo\1.1\foo.exe"));
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AppMovedOutsideItsInstallDirectoryDoesNotMatchByName()
+    {
+        var entry = Entry(
+            processName: "foo",
+            executablePath: @"C:\Games\Foo\1.0\foo.exe",
+            installDirectory: @"C:\Games\Foo");
+
+        Assert.Null(AppMatcher.Match([entry], "foo", @"D:\Elsewhere\foo.exe"));
+    }
+
+    [Fact]
     public void MatchingIgnoresCase()
     {
         var byPath = Entry(processName: "x", executablePath: GameExe);

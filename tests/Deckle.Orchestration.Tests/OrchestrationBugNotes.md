@@ -30,3 +30,14 @@
 - Recurrence cue: two Warnings of the same event with no `Recovered` line between them.
 - Guard: `OrchestrationIncidentTests.AForegroundSubscriberThatKeepsFailingIsOneWarningThenOneRecovery` and `AnExitHandlerThatKeepsFailingIsOneWarningAndItsSuccessIsTheRecovery`. The second reaches `ProcessExitWatch` through a process id that no process has, which makes the exit be reported inline.
 - Interpretation: the foreground incident is shared by every delivery of one monitor and the exit incident by every exit of one watch, so two different subscribers failing alternately would read as one incident. This is a simplification, not measured.
+
+## The process-name tier matched an entry whose known executable was another file
+
+- Trigger: two registry entries for two different programs that ship the same executable name (two games with a `game.exe`), one of them running.
+- Symptom: the entry of the program that was not running got the session, so its rules were applied to the wrong program.
+- Cause: after the executable-path tier and the install-directory tier found nothing, the process-name tier compared the name alone and never looked at the path the entry already knew.
+- Violated invariant: the name is the weakest evidence and decides only where nothing stronger speaks; an entry that knows its file does not claim another file.
+- Fix: the name tier admits an entry only when it knows no executable path, when the process path is unknown, or when the process lies inside the entry's install directory (an app moved to a versioned folder on update).
+- Recurrence cue: a session started for an entry whose `ExecutablePath` is not the path of the process that triggered it.
+- Guard: `AppMatcherTests.ProcessNameDoesNotMatchAnEntryWhoseKnownPathIsAnotherFile`, `ProcessNamePicksTheEntryWithoutAPathWhenAnotherNamesAnotherFile` and `AppMovedOutsideItsInstallDirectoryDoesNotMatchByName`; `AppMovedToAVersionedFolderStillMatchesThroughItsInstallDirectory` pins the case the fix must keep.
+- Interpretation: an entry with a path and a process whose path could not be read still matches by name. That was kept on purpose, since an unreadable path proves nothing against the entry; it was not measured how often that happens.
