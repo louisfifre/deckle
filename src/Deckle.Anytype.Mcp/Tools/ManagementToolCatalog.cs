@@ -15,16 +15,21 @@ public static class ManagementToolCatalog
     // consumer (and a small model) learns when the bin is the right gesture and
     // the two-step delete contract up front. The chat OK is a rule of conduct the
     // server cannot check; the toast and the refusals are what it enforces.
+    // delete bins any object, so its safety is a confirmation that says what is
+    // binned: the preview and the toast both state the links the bin would empty.
     public const string Instructions =
         "Management tools are mounted. archive and delete answer two different wishes. "
         + "archive ticks « Archivé »: the object had a life and should only stop showing; it is the normal gesture. "
         + "delete moves an object to Anytype's restorable bin: only for what should never have existed "
         + "(a duplicate, a botched creation). A binned object vanishes from every search, so a wrong bin goes unnoticed. "
-        + "delete runs in two steps pinned by id: a first call previews the target without deleting it; "
-        + "show it to the person and wait for their explicit OK in the conversation, for that object only; "
-        + "then call again with the previewed id and confirm:true. Deckle then asks the person once more "
-        + "through a Windows notification and bins only if they accept. "
-        + "delete always refuses any object another object links to; do not look for a way around it.";
+        + "delete can bin any object, whatever its type and whatever links to it; the safety is the confirmation. "
+        + "delete runs in two steps pinned by id: a first call previews the target without deleting it, "
+        + "and says how many other objects link to it and that the bin empties those links; "
+        + "show the whole preview to the person, links included, and wait for their explicit OK in the conversation, "
+        + "for that object only; then call again with the previewed id and confirm:true. Deckle then asks the person "
+        + "once more through a Windows notification that repeats the links, and bins only if they accept. "
+        + "If the links cannot be read, or their number changes while the person decides, delete refuses "
+        + "and nothing is binned: preview again rather than looking for a way around it.";
 
     public static IReadOnlyList<ToolDescriptor> Build(ManagementGestures management)
     {
@@ -32,7 +37,7 @@ public static class ManagementToolCatalog
         {
             new(
                 "delete",
-                "Move an object that should never have existed (a duplicate, a botched creation) to Anytype's restorable bin; to only stop seeing an object, use archive instead. Two steps, pinned by id: call it once with the target (name or id) to PREVIEW what would be binned (its name, type and id) without deleting anything; get the person's explicit OK in the conversation; then call it again with that id as target and confirm:true. The confirming call waits up to 60 s for the person to accept a Windows notification. Refused for any object another object links to.",
+                "Move an object that should never have existed (a duplicate, a botched creation) to Anytype's restorable bin; to only stop seeing an object, use archive instead. Any object can be binned, whatever its type and whatever links to it. Two steps, pinned by id: call it once with the target (name or id) to PREVIEW what would be binned (its name, type and id, and how many other objects link to it, since the bin empties those links) without deleting anything; show the whole preview to the person and get their explicit OK in the conversation; then call it again with that id as target and confirm:true. The confirming call waits up to 60 s for the person to accept a Windows notification that repeats the links. Refused when the links cannot be read, or when their number changed while the person decided: preview again.",
                 Schema(
                     required: [Prop("target", "string", "Object to move to trash, name or id.")],
                     optional: [Prop("confirm", "boolean", "Pass true ONLY on the second call, with target set to the id the preview returned, to commit. Omit for the preview.")]),
