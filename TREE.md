@@ -2117,6 +2117,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
+│   │   ├── HudHotLoopCountTests.cs
 │   │   ├── HudSettingsOverridesTests.cs
 │   │   ├── JournalClosersTests.cs
 │   │   ├── OverlayCardBugNotes.md

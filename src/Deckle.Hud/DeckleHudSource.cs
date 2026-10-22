@@ -127,6 +127,7 @@ public sealed class DeckleHudSource : DeckleEventSource
            Message = "reveal geometry | cell={0}x{1} | offset={2},{3} | host={4}x{5}")]
     public void RevealGeometry(double cellW, double cellH, double offX, double offY, double hostW, double hostH)
     {
+        HotLoops.HudRevealGeometry.Tick();
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtRevealGeometry, cellW, cellH, offX, offY, hostW, hostH);
     }
@@ -215,6 +216,7 @@ public sealed class DeckleHudSource : DeckleEventSource
            Message = "state changed | from={0} | to={1} | reason={2} | alpha={3} | dpi={4}")]
     public void StateChanged(string from, string to, string reason, byte alpha, int dpi)
     {
+        HotLoops.HudStateChanged.Tick();
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtStateChanged, from, to, reason, alpha, dpi);
     }
