@@ -156,8 +156,10 @@ public sealed class DeckleVisionSource : DeckleEventSource
     }
 
     [Event(EvtCaptureLoopWaitFailed,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
+    // The loop's failure is already reported by CaptureLoopCrashed; this is the
+    // wait on its task throwing during the stop.
            Message = "capture loop wait threw, continuing shutdown | ex_type={0} | ex_message={1}")]
     public void CaptureLoopWaitFailed(string ex_type, string ex_message)
     {
@@ -197,8 +199,10 @@ public sealed class DeckleVisionSource : DeckleEventSource
     }
 
     [Event(EvtCaptureCleanupFailed,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
+    // A release that threw leaves a GPU or COM resource held after the stop, the
+    // same fault Ambient reports as ResourceReleaseFailed.
            Message = "cleanup step failed | step={0} | ex_type={1} | ex_message={2}")]
     public void CaptureCleanupFailed(string step, string ex_type, string ex_message)
     {
