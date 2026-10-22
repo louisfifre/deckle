@@ -16,8 +16,17 @@ namespace Deckle.Anytype;
 // same way everywhere; dates are trimmed to their day, object links are
 // rendered by name, a checkbox is shown only when ticked, since a reader takes
 // silence as « non ».
-public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver)
+//
+// Reads go through the v2 reader. Its shapes were measured live on 2026-10-22:
+// `?include=properties` gives the title, the type and the typed properties,
+// `?format=md` gives only {etag, id, type, markdown} — no title, no property —
+// so a read that needs both (every typed read does: the title and the done box
+// head each answer) makes two requests, properties first so a wrong type is
+// refused before the body is paid for. Name resolution stays on v1 for now.
+public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver, AnytypeV2Client v2)
 {
+    readonly AnytypeV2ObjectReader _reader = new(v2);
+
     // The task template's two sections. The notes heading is the template's
     // today; « À savoir » is the name proposed for it. Both are read so the
     // template can be renamed in Anytype (the REST API cannot write templates)
@@ -44,12 +53,12 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver)
     public async Task<string> TaskChecklistAsync(string task, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
-        JsonObject obj = await ReadAsync(task, DevSpace.Types.Task, ct);
+        Loaded obj = await LoadAsync(task, DevSpace.Types.Task, withMarkdown: true, ct);
 
         var sb = new StringBuilder();
-        AppendIdentity(sb, obj, done: ReadProp.Checkbox(obj, DevSpace.Props.Done));
+        AppendIdentity(sb, obj, done: obj.Props.Checkbox(DevSpace.Props.Done));
 
-        IReadOnlyList<MarkdownBody.ChecklistItem> items = MarkdownBody.ChecklistItems(ReadProp.Markdown(obj));
+        IReadOnlyList<MarkdownBody.ChecklistItem> items = MarkdownBody.ChecklistItems(obj.Markdown);
         foreach (MarkdownBody.ChecklistItem item in items)
             sb.Append('\n').Append(item.Done ? "- [x] " : "- [ ] ").Append(item.Label);
         sb.Append(items.Count == 0
@@ -66,12 +75,12 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver)
     public async Task<string> TaskNotesAsync(string task, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
-        JsonObject obj = await ReadAsync(task, DevSpace.Types.Task, ct);
+        Loaded obj = await LoadAsync(task, DevSpace.Types.Task, withMarkdown: true, ct);
 
         var sb = new StringBuilder();
-        AppendIdentity(sb, obj, done: ReadProp.Checkbox(obj, DevSpace.Props.Done));
+        AppendIdentity(sb, obj, done: obj.Props.Checkbox(DevSpace.Props.Done));
 
-        string body = ReadProp.Markdown(obj);
+        string body = obj.Markdown;
         string? source = null;
         foreach (string heading in NotesHeadings)
             if (MarkdownBody.TryReadSection(body, heading, out string content)) { source = content; break; }
@@ -96,14 +105,14 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver)
     {
         var started = DateTime.UtcNow;
         if (last < 1) throw new ArgumentException("last doit valoir au moins 1.", nameof(last));
-        JsonObject obj = await ReadAsync(report, DevSpace.Types.Rapport, ct);
+        Loaded obj = await LoadAsync(report, DevSpace.Types.Rapport, withMarkdown: true, ct);
 
         var sb = new StringBuilder();
-        sb.Append("id : ").Append(ReadProp.Id(obj));
-        AppendFact(sb, "Date du journal", ReadProp.Day(obj, DevSpace.Props.DateDuJournal));
-        AppendFact(sb, "Tâches liées", await NamesAsync(ReadProp.ObjectRefs(obj, DevSpace.Props.TachesLiees), ct));
+        sb.Append("id : ").Append(obj.Id);
+        AppendFact(sb, "Date du journal", obj.Props.Day(DevSpace.Props.DateDuJournal));
+        AppendFact(sb, "Tâches liées", await NamesAsync(obj.Props.ObjectIds(DevSpace.Props.TachesLiees), ct));
 
-        IReadOnlyList<string> entries = MarkdownBody.JournalEntries(ReadProp.Markdown(obj));
+        IReadOnlyList<string> entries = MarkdownBody.JournalEntries(obj.Markdown);
         int skipped = Math.Max(0, entries.Count - last);
         if (skipped > 0) sb.Append($"\n… {skipped} entrée(s) avant");
         foreach (string entry in entries.Skip(skipped)) sb.Append('\n').Append(entry);
@@ -118,13 +127,13 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver)
     public async Task<string> IdeaTextAsync(string idea, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
-        JsonObject obj = await ReadAsync(idea, DevSpace.Types.Idee, ct);
+        Loaded obj = await LoadAsync(idea, DevSpace.Types.Idee, withMarkdown: true, ct);
 
         var sb = new StringBuilder();
         AppendIdentity(sb, obj, done: null);
-        string text = MarkdownBody.Clean(ReadProp.Markdown(obj));
+        string text = MarkdownBody.Clean(obj.Markdown);
         if (text.Length > 0) sb.Append('\n').Append(text);
-        if (ReadProp.Checkbox(obj, DevSpace.Props.Archive)) sb.Append("\nArchivé : oui");
+        if (obj.Props.Checkbox(DevSpace.Props.Archive)) sb.Append("\nArchivé : oui");
 
         DeckleAnytypeSource.Log.GestureCompleted("idea_text", Elapsed(started));
         return sb.ToString();
@@ -160,8 +169,8 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver)
     public async Task<string> DocumentSectionAsync(string document, string? heading = null, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
-        JsonObject obj = await ReadAsync(document, DevSpace.Types.Document, ct);
-        string body = ReadProp.Markdown(obj);
+        Loaded obj = await LoadAsync(document, DevSpace.Types.Document, withMarkdown: true, ct);
+        string body = obj.Markdown;
 
         var sb = new StringBuilder();
         AppendIdentity(sb, obj, done: null);
@@ -185,7 +194,7 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver)
         {
             IReadOnlyList<string> present = MarkdownBody.HeadingTexts(body);
             throw new InvalidOperationException(
-                $"Section « {heading} » introuvable dans {ReadProp.Name(obj)}. Titres présents : "
+                $"Section « {heading} » introuvable dans {obj.Name}. Titres présents : "
                 + (present.Count > 0 ? string.Join(", ", present.Select(h => $"« {h} »")) : "(aucun)") + ".");
         }
 
@@ -209,13 +218,50 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver)
         return obj;
     }
 
-    // `id : …` then the title, prefixed with the done box when the type has one.
-    static void AppendIdentity(StringBuilder sb, JsonObject obj, bool? done)
+    // An object as the typed reads need it: identity and properties from one v2
+    // read, the body from a second when the gesture projects it.
+    sealed record Loaded(string Id, string Name, AnytypeV2PropertyMap Props, JsonObject Root, string Markdown);
+
+    // Properties first: they carry the type, so a wrong-typed selector is
+    // refused before the body is read. The markdown comes back without the
+    // `# <title>` line the v2 render opens with (a task's name is not a block
+    // of its body), so the projections see only what the author wrote.
+    async Task<Loaded> LoadAsync(string selector, string typeKey, bool withMarkdown, CancellationToken ct)
     {
-        sb.Append("id : ").Append(ReadProp.Id(obj));
+        string id = await resolver.ResolveAsync(selector, [typeKey], ct);
+        AnytypeV2ObjectDocument doc = await _reader.ReadAsync(
+            id, new AnytypeV2ObjectReadOptions { Parts = AnytypeV2ObjectParts.Properties }, ct);
+        var props = AnytypeV2PropertyMap.Of(doc);
+        string name = props.Name.Length > 0 ? props.Name : "(sans titre)";
+
+        string actual = doc.Body["type"]?.GetValue<string>() ?? "";
+        if (actual.Length > 0 && actual != typeKey)
+            throw new InvalidOperationException(
+                $"{name} est un objet {actual}, pas {typeKey} : lis-le avec la lecture de son type.");
+
+        string markdown = "";
+        if (withMarkdown)
+        {
+            AnytypeV2ObjectDocument md = await _reader.ReadAsync(
+                id, new AnytypeV2ObjectReadOptions { Markdown = true }, ct);
+            markdown = MarkdownBody.DropTitle(md.Body["markdown"]?.GetValue<string>() ?? "", props.Name);
+        }
+        return new Loaded(doc.Id ?? id, name, props, doc.Body, markdown);
+    }
+
+    // `id : …` then the title, prefixed with the done box when the type has one.
+    static void AppendIdentity(StringBuilder sb, Loaded obj, bool? done) =>
+        AppendIdentity(sb, obj.Id, obj.Name, done);
+
+    static void AppendIdentity(StringBuilder sb, JsonObject obj, bool? done) =>
+        AppendIdentity(sb, ReadProp.Id(obj), ReadProp.Name(obj), done);
+
+    static void AppendIdentity(StringBuilder sb, string id, string name, bool? done)
+    {
+        sb.Append("id : ").Append(id);
         sb.Append('\n');
         if (done is bool d) sb.Append(d ? "[x] " : "[ ] ");
-        sb.Append(ReadProp.Name(obj));
+        sb.Append(name);
     }
 
     // Every mapped property with a value, in the type's digest order. Done is
@@ -240,14 +286,21 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver)
         if (obj["archived"]?.GetValue<bool>() == true) AppendFact(sb, "Corbeille", "oui");
     }
 
-    // Links are rendered by name: an id tells a reader nothing. One GET per link
-    // is the price; links are few on every type.
+    // Links are rendered by name: an id tells a reader nothing, and v2 serves
+    // only ids. One properties read per link is the price; links are few on
+    // every type. An untitled linked object reads « (sans titre) »: v1 fell back
+    // on the object's snippet, which a properties-only v2 read does not carry.
     async Task<string?> NamesAsync(IReadOnlyList<string> ids, CancellationToken ct)
     {
         if (ids.Count == 0) return null;
         var names = new List<string>(ids.Count);
         foreach (string id in ids)
-            names.Add(ReadProp.Name(await api.GetObjectAsync(id, ct)));
+        {
+            AnytypeV2ObjectDocument linked = await _reader.ReadAsync(
+                id, new AnytypeV2ObjectReadOptions { Parts = AnytypeV2ObjectParts.Properties }, ct);
+            string name = AnytypeV2PropertyMap.Of(linked).Name;
+            names.Add(name.Length > 0 ? name : "(sans titre)");
+        }
         return string.Join(", ", names);
     }
 

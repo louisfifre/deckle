@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.Json.Nodes;
 using Deckle.Anytype;
 using Xunit;
@@ -24,8 +25,52 @@ public class ReadGesturesTests
     static ReadGestures NewGestures(FakeAnytypeServer server)
     {
         var client = new AnytypeApiClient(server.Credentials);
-        return new ReadGestures(client, new NameResolver(client));
+        return new ReadGestures(client, new NameResolver(client), client.V2);
     }
+
+    // The v2 reads: the replies are queued in the order the gesture asks them
+    // (properties, then markdown, then one properties read per linked name).
+    static ReadGestures NewGestures(FakeV2Handler v2)
+    {
+        var credentials = new AnytypeCredentials("http://127.0.0.1:31012", "2025-11-08", "test-bearer", "space-1");
+        var client = new AnytypeApiClient(credentials);
+        return new ReadGestures(client, new NameResolver(client), new AnytypeV2Client(credentials, null, v2));
+    }
+
+    // v1 object reads with the linked names read over v2 (the v1 half goes with task_properties).
+    static ReadGestures NewGestures(FakeAnytypeServer server, FakeV2Handler v2)
+    {
+        var credentials = new AnytypeCredentials("http://127.0.0.1:31012", "2025-11-08", "test-bearer", "space-1");
+        var client = new AnytypeApiClient(server.Credentials);
+        return new ReadGestures(client, new NameResolver(client), new AnytypeV2Client(credentials, null, v2));
+    }
+
+    static FakeV2Handler Reads(params string[] replies)
+    {
+        var handler = new FakeV2Handler();
+        foreach (string json in replies) handler.Reply(HttpStatusCode.OK, json);
+        return handler;
+    }
+
+    // include=properties: properties keyed by property key, the name among them
+    // (measured 2026-10-22; the values below are synthetic).
+    static string PropsReply(string id, string type, string name, params (string Key, JsonNode Value)[] properties)
+    {
+        var props = new JsonObject { ["name"] = name };
+        foreach ((string key, JsonNode value) in properties) props[key] = value;
+        return new JsonObject { ["id"] = id, ["type"] = type, ["properties"] = props }.ToJsonString();
+    }
+
+    // format=md: the markdown only, no name and no properties.
+    static string MdReply(string id, string type, string markdown) =>
+        new JsonObject { ["etag"] = "etag-1", ["id"] = id, ["type"] = type, ["markdown"] = markdown }.ToJsonString();
+
+    static (string Key, JsonNode Value) Flag(string key) => (key, JsonValue.Create(true));
+
+    static (string Key, JsonNode Value) Str(string key, string value) => (key, JsonValue.Create(value));
+
+    static (string Key, JsonNode Value) Ids(string key, params string[] ids) =>
+        (key, new JsonArray(ids.Select(i => (JsonNode)JsonValue.Create(i)).ToArray()));
 
     // A GET response: the object under the "object" wrapper, as the API sends it.
     static JsonObject Wrap(string id, string name, string typeKey, string markdown, params JsonObject[] properties)
@@ -97,6 +142,7 @@ public class ReadGesturesTests
 
     static string Lines(params string[] lines) => string.Join("\n", lines);
 
+
     // ── TaskPropertiesAsync ───────────────────────────────────────────────────
 
     // The properties are given in a shuffled order on purpose: the digest order
@@ -124,9 +170,9 @@ public class ReadGesturesTests
             NumberProp(DevSpace.Props.ChargeReelle, 1.5),
             MultiSelectProp(DevSpace.Props.Tag, "urgent"),
             CheckboxProp(DevSpace.Props.Archive, true)));
-        server.OnGetObject(ProjectId, Wrap(ProjectId, "Deckle", DevSpace.Types.Project, ""));
+        FakeV2Handler v2 = Reads(PropsReply(ProjectId, "project", "Deckle"));
 
-        string digest = await NewGestures(server).TaskPropertiesAsync(TaskId, Ct);
+        string digest = await NewGestures(server, v2).TaskPropertiesAsync(TaskId, Ct);
 
         Assert.Equal(
             Lines(
@@ -147,7 +193,8 @@ public class ReadGesturesTests
             digest);
 
         // The task, then the one project link: one GET per link, nothing else.
-        Assert.Equal(2, server.Requests.Count(r => r.Method == "GET"));
+        Assert.Equal(1, server.Requests.Count(r => r.Method == "GET"));
+        Assert.Single(v2.Requests);
     }
 
     // The key is written out because it is the promise: the server serves
@@ -187,15 +234,15 @@ public class ReadGesturesTests
     {
         using var server = new FakeAnytypeServer();
         server.OnGetObject(TaskId, TaskOf("", ObjectsProp(DevSpace.Props.RelationProjet, ProjectId, OtherTaskId)));
-        server.OnGetObject(ProjectId, Wrap(ProjectId, "Deckle", DevSpace.Types.Project, ""));
-        server.OnGetObject(OtherTaskId, Wrap(OtherTaskId, "Autre chantier", DevSpace.Types.Project, ""));
+        FakeV2Handler v2 = Reads(PropsReply(ProjectId, "project", "Deckle"), PropsReply(OtherTaskId, "project", "Autre chantier"));
 
-        string digest = await NewGestures(server).TaskPropertiesAsync(TaskId, Ct);
+        string digest = await NewGestures(server, v2).TaskPropertiesAsync(TaskId, Ct);
 
         Assert.Equal(
             Lines($"id : {TaskId}", "[ ] Ma tâche", "Projet(s) lié(s) : Deckle, Autre chantier"),
             digest);
-        Assert.Equal(3, server.Requests.Count(r => r.Method == "GET"));
+        Assert.Equal(1, server.Requests.Count(r => r.Method == "GET"));
+        Assert.Equal(2, v2.Requests.Count);
     }
 
     [Fact]
@@ -245,11 +292,12 @@ public class ReadGesturesTests
     [Fact]
     public async Task TaskChecklistListsTheItemsThenTheCheckedCount()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(TaskId, TaskOf(
-            $"## {ReadGestures.ChecklistHeading}\n---\n- [x] fait\n- [ ] module\\_X à relire   \n- [ ] \n## {ReadGestures.NotesHeading}\n---"));
+        FakeV2Handler v2 = Reads(
+            PropsReply(TaskId, "task", "Ma tâche"),
+            MdReply(TaskId, "task",
+                $"## {ReadGestures.ChecklistHeading}\n---\n- [x] fait\n- [ ] module\\_X à relire   \n- [ ] \n## {ReadGestures.NotesHeading}\n---"));
 
-        string digest = await NewGestures(server).TaskChecklistAsync(TaskId, Ct);
+        string digest = await NewGestures(v2).TaskChecklistAsync(TaskId, Ct);
 
         Assert.Equal(
             Lines(
@@ -261,14 +309,71 @@ public class ReadGesturesTests
             digest);
     }
 
+    // The v2 reads, as asked: the properties first (title, type, done), then
+    // the markdown rendering, each by its own query.
+    [Fact]
+    public async Task ATypedReadAsksTheV2PropertiesThenTheMarkdown()
+    {
+        FakeV2Handler v2 = Reads(
+            PropsReply(TaskId, "task", "Ma tâche"),
+            MdReply(TaskId, "task", "- [ ] une"));
+
+        await NewGestures(v2).TaskChecklistAsync(TaskId, Ct);
+
+        Assert.Equal(2, v2.Requests.Count);
+        Assert.Equal($"/v2/spaces/space-1/objects/{TaskId}", v2.Requests[0].PathAndQuery.Split('?')[0]);
+        Assert.Contains("include=properties", v2.Requests[0].PathAndQuery);
+        Assert.DoesNotContain("format=md", v2.Requests[0].PathAndQuery);
+        Assert.Contains("format=md", v2.Requests[1].PathAndQuery);
+    }
+
+    // The v2 markdown of a task opens with its name as a `# ` line and writes the
+    // divider as « --- » and every line with three trailing spaces (measured
+    // 2026-10-22): none of it may reach a reader.
+    [Fact]
+    public async Task TheV2MarkdownRenderIsReadAsTheBodyTheAuthorWrote()
+    {
+        FakeV2Handler v2 = Reads(
+            PropsReply(TaskId, "task", "Ma tâche"),
+            MdReply(TaskId, "task",
+                "# Ma tâche   \n --- \n## Sous-tâches   \n- [x] fait   \n- [ ] reste   \n## Details   \n --- \nUne note.   \n"));
+
+        string notes = await NewGestures(v2).TaskNotesAsync(TaskId, Ct);
+        FakeV2Handler v2b = Reads(
+            PropsReply(TaskId, "task", "Ma tâche"),
+            MdReply(TaskId, "task",
+                "# Ma tâche   \n --- \n## Sous-tâches   \n- [x] fait   \n- [ ] reste   \n## Details   \n --- \nUne note.   \n"));
+        string checklist = await NewGestures(v2b).TaskChecklistAsync(TaskId, Ct);
+
+        Assert.Equal($"id : {TaskId}\n[ ] Ma tâche\nUne note.", notes);
+        Assert.Equal(
+            Lines($"id : {TaskId}", "[ ] Ma tâche", "- [x] fait", "- [ ] reste", "Cochées : 1 / 2"),
+            checklist);
+    }
+
+    // A task written outside the template has no notes heading, so its notes are
+    // the body: the title line must not be taken for one of them.
+    [Fact]
+    public async Task TheTitleLineIsNotTakenForANoteInATaskWithoutTheTemplate()
+    {
+        FakeV2Handler v2 = Reads(
+            PropsReply(TaskId, "task", "Ma tâche"),
+            MdReply(TaskId, "task", "# Ma tâche   \nTexte libre.   \n"));
+
+        string digest = await NewGestures(v2).TaskNotesAsync(TaskId, Ct);
+
+        Assert.Equal($"id : {TaskId}\n[ ] Ma tâche\nTexte libre.", digest);
+    }
+
     [Fact]
     public async Task TaskChecklistWithOnlyTheTemplateSlotSaysThereAreNoSubtasks()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(TaskId, TaskOf(
-            $"## {ReadGestures.ChecklistHeading}\n---\n- [ ] \n## {ReadGestures.NotesHeading}\n---"));
+        FakeV2Handler v2 = Reads(
+            PropsReply(TaskId, "task", "Ma tâche"),
+            MdReply(TaskId, "task",
+                $"## {ReadGestures.ChecklistHeading}\n---\n- [ ] \n## {ReadGestures.NotesHeading}\n---"));
 
-        string digest = await NewGestures(server).TaskChecklistAsync(TaskId, Ct);
+        string digest = await NewGestures(v2).TaskChecklistAsync(TaskId, Ct);
 
         Assert.Equal($"id : {TaskId}\n[ ] Ma tâche\nAucune sous-tâche.", digest);
     }
@@ -276,14 +381,30 @@ public class ReadGesturesTests
     [Fact]
     public async Task TaskChecklistOfADoneTaskCarriesTheCheckedBoxInItsTitle()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(TaskId, TaskOf("- [x] seule", CheckboxProp(DevSpace.Props.Done, true)));
+        FakeV2Handler v2 = Reads(
+            PropsReply(TaskId, "task", "Ma tâche", Flag(DevSpace.Props.Done)),
+            MdReply(TaskId, "task", "- [x] seule"));
 
-        string digest = await NewGestures(server).TaskChecklistAsync(TaskId, Ct);
+        string digest = await NewGestures(v2).TaskChecklistAsync(TaskId, Ct);
 
         Assert.Equal(
             Lines($"id : {TaskId}", "[x] Ma tâche", "- [x] seule", "Cochées : 1 / 1"),
             digest);
+    }
+
+    // The typed read refuses another type before paying for the body.
+    [Fact]
+    public async Task TaskChecklistOfAProjectThrowsNamingTheActualTypeWithoutReadingTheBody()
+    {
+        FakeV2Handler v2 = Reads(PropsReply(TaskId, "project", "Deckle"));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(v2).TaskChecklistAsync(TaskId, Ct));
+
+        Assert.Equal(
+            "Deckle est un objet project, pas task : lis-le avec la lecture de son type.",
+            error.Message);
+        Assert.Single(v2.Requests);
     }
 
     // ── TaskNotesAsync ────────────────────────────────────────────────────────
@@ -293,12 +414,13 @@ public class ReadGesturesTests
     [Fact]
     public async Task TaskNotesReturnsTheCleanedTextUnderTheNotesHeadingOnly()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(TaskId, TaskOf(
-            $"## {ReadGestures.ChecklistHeading}\n---\n- [ ] une étape\n" +
-            $"## {ReadGestures.NotesHeading}\n---\nAttention au cache.   \nLigne\\_deux\n\n## Autre\nhors notes"));
+        FakeV2Handler v2 = Reads(
+            PropsReply(TaskId, "task", "Ma tâche"),
+            MdReply(TaskId, "task",
+                $"## {ReadGestures.ChecklistHeading}\n---\n- [ ] une étape\n" +
+                $"## {ReadGestures.NotesHeading}\n---\nAttention au cache.   \nLigne\\_deux\n\n## Autre\nhors notes"));
 
-        string digest = await NewGestures(server).TaskNotesAsync(TaskId, Ct);
+        string digest = await NewGestures(v2).TaskNotesAsync(TaskId, Ct);
 
         Assert.Equal(
             Lines($"id : {TaskId}", "[ ] Ma tâche", "Attention au cache.", "Ligne_deux"),
@@ -310,11 +432,12 @@ public class ReadGesturesTests
     [Fact]
     public async Task TaskNotesAlsoReadsTheAlternativeNotesHeading()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(TaskId, TaskOf(
-            $"## {ReadGestures.ChecklistHeading}\n- [ ] une étape\n## À savoir\nUne note."));
+        FakeV2Handler v2 = Reads(
+            PropsReply(TaskId, "task", "Ma tâche"),
+            MdReply(TaskId, "task",
+                $"## {ReadGestures.ChecklistHeading}\n- [ ] une étape\n## À savoir\nUne note."));
 
-        string digest = await NewGestures(server).TaskNotesAsync(TaskId, Ct);
+        string digest = await NewGestures(v2).TaskNotesAsync(TaskId, Ct);
 
         Assert.Equal($"id : {TaskId}\n[ ] Ma tâche\nUne note.", digest);
     }
@@ -322,11 +445,12 @@ public class ReadGesturesTests
     [Fact]
     public async Task TaskNotesWithAnEmptyNotesSectionSaysThereAreNoNotes()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(TaskId, TaskOf(
-            $"## {ReadGestures.ChecklistHeading}\n- [ ] une étape\n## {ReadGestures.NotesHeading}\n---\n"));
+        FakeV2Handler v2 = Reads(
+            PropsReply(TaskId, "task", "Ma tâche"),
+            MdReply(TaskId, "task",
+                $"## {ReadGestures.ChecklistHeading}\n- [ ] une étape\n## {ReadGestures.NotesHeading}\n---\n"));
 
-        string digest = await NewGestures(server).TaskNotesAsync(TaskId, Ct);
+        string digest = await NewGestures(v2).TaskNotesAsync(TaskId, Ct);
 
         Assert.Equal($"id : {TaskId}\n[ ] Ma tâche\nAucune note.", digest);
     }
@@ -336,11 +460,12 @@ public class ReadGesturesTests
     [Fact]
     public async Task TaskNotesWithoutANotesHeadingFallsBackToTheNonChecklistLines()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(TaskId, TaskOf(
-            $"Texte libre.\n- [x] fait\n## {ReadGestures.ChecklistHeading}\nAutre ligne"));
+        FakeV2Handler v2 = Reads(
+            PropsReply(TaskId, "task", "Ma tâche"),
+            MdReply(TaskId, "task",
+                $"Texte libre.\n- [x] fait\n## {ReadGestures.ChecklistHeading}\nAutre ligne"));
 
-        string digest = await NewGestures(server).TaskNotesAsync(TaskId, Ct);
+        string digest = await NewGestures(v2).TaskNotesAsync(TaskId, Ct);
 
         Assert.Equal($"id : {TaskId}\n[ ] Ma tâche\nTexte libre.\nAutre ligne", digest);
     }
@@ -348,20 +473,25 @@ public class ReadGesturesTests
     [Fact]
     public async Task TaskNotesOfAnEmptyBodySaysThereAreNoNotes()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(TaskId, TaskOf(""));
+        FakeV2Handler v2 = Reads(
+            PropsReply(TaskId, "task", "Ma tâche"),
+            MdReply(TaskId, "task", ""));
 
-        string digest = await NewGestures(server).TaskNotesAsync(TaskId, Ct);
+        string digest = await NewGestures(v2).TaskNotesAsync(TaskId, Ct);
 
         Assert.Equal($"id : {TaskId}\n[ ] Ma tâche\nAucune note.", digest);
     }
 
     // ── ReportJournalAsync ────────────────────────────────────────────────────
 
-    static JsonObject ReportOf(string markdown, params string[] linkedTaskIds) => Wrap(
-        ReportId, "Journal 2026-07-21", DevSpace.Types.Rapport, markdown,
-        DateProp(DevSpace.Props.DateDuJournal, "2026-07-21T00:00:00Z"),
-        ObjectsProp(DevSpace.Props.TachesLiees, linkedTaskIds));
+    // A report has no name on v2 (`name` is empty, measured 2026-10-22); its
+    // markdown opens on its first heading block, « # Journal <date> ».
+    static string ReportProps(params string[] linkedTaskIds) => PropsReply(
+        ReportId, "rapport", "",
+        Str(DevSpace.Props.DateDuJournal, "2026-07-21T00:00:00Z"),
+        linkedTaskIds.Length == 0 ? Str("tag", "") : Ids(DevSpace.Props.TachesLiees, linkedTaskIds));
+
+    static string ReportMd(string markdown) => MdReply(ReportId, "rapport", markdown);
 
     static string[] Entries(int count) =>
         Enumerable.Range(1, count).Select(i => $"- entrée {i}").ToArray();
@@ -369,12 +499,13 @@ public class ReadGesturesTests
     [Fact]
     public async Task ReportJournalShowsTheLastTwentyEntriesByDefaultAndCountsTheOlderOnes()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(ReportId, ReportOf("# Journal 2026-07-21\n" + Lines(Entries(25)), TaskId, OtherTaskId));
-        server.OnGetObject(TaskId, Wrap(TaskId, "Tâche A", DevSpace.Types.Task, ""));
-        server.OnGetObject(OtherTaskId, Wrap(OtherTaskId, "Tâche B", DevSpace.Types.Task, ""));
+        FakeV2Handler v2 = Reads(
+            ReportProps(TaskId, OtherTaskId),
+            ReportMd("# Journal 2026-07-21\n" + Lines(Entries(25))),
+            PropsReply(TaskId, "task", "Tâche A"),
+            PropsReply(OtherTaskId, "task", "Tâche B"));
 
-        string digest = await NewGestures(server).ReportJournalAsync(ReportId, ct: Ct);
+        string digest = await NewGestures(v2).ReportJournalAsync(ReportId, ct: Ct);
 
         Assert.Equal(
             Lines(
@@ -387,15 +518,18 @@ public class ReadGesturesTests
                 }
                 .Concat(Entries(25).Skip(5)).ToArray()),
             digest);
+        // The report's properties and body, then one properties read per link.
+        Assert.Equal(4, v2.Requests.Count);
     }
 
     [Fact]
     public async Task ReportJournalHonoursAnExplicitLastAndExcludesTheTitleHeading()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(ReportId, ReportOf("# Journal 2026-07-21\n" + Lines(Entries(4))));
+        FakeV2Handler v2 = Reads(
+            ReportProps(),
+            ReportMd("# Journal 2026-07-21   \n" + Lines(Entries(4))));
 
-        string digest = await NewGestures(server).ReportJournalAsync(ReportId, last: 2, ct: Ct);
+        string digest = await NewGestures(v2).ReportJournalAsync(ReportId, last: 2, ct: Ct);
 
         Assert.Equal(
             Lines(
@@ -413,12 +547,13 @@ public class ReadGesturesTests
     [Fact]
     public async Task ReportJournalCountsAStampedEntryAsOneEntryWithItsText()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(ReportId, ReportOf(
-            "# Journal 2026-07-21\n- ancienne\n2026-07-21 10:00   \n\npremière   \n\n" +
-            "2026-07-21 11:30\n\nseconde\n\nsuite"));
+        FakeV2Handler v2 = Reads(
+            ReportProps(),
+            ReportMd(
+                "# Journal 2026-07-21\n- ancienne\n2026-07-21 10:00   \n\npremière   \n\n" +
+                "2026-07-21 11:30\n\nseconde\n\nsuite"));
 
-        string digest = await NewGestures(server).ReportJournalAsync(ReportId, last: 2, ct: Ct);
+        string digest = await NewGestures(v2).ReportJournalAsync(ReportId, last: 2, ct: Ct);
 
         Assert.Equal(
             Lines(
@@ -436,10 +571,11 @@ public class ReadGesturesTests
     [Fact]
     public async Task ReportJournalOfAShortBodyShowsEveryCleanedLineWithoutAMarker()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(ReportId, ReportOf("# Journal 2026-07-21\n\n- module\\_X ok   \n---\n- fin"));
+        FakeV2Handler v2 = Reads(
+            ReportProps(),
+            ReportMd("# Journal 2026-07-21\n\n- module\\_X ok   \n---\n- fin"));
 
-        string digest = await NewGestures(server).ReportJournalAsync(ReportId, last: 2, ct: Ct);
+        string digest = await NewGestures(v2).ReportJournalAsync(ReportId, last: 2, ct: Ct);
 
         Assert.Equal(
             Lines($"id : {ReportId}", "Date du journal : 2026-07-21", "- module_X ok", "- fin"),
@@ -452,14 +588,28 @@ public class ReadGesturesTests
     [InlineData("# Journal 2026-07-21")]
     public async Task ReportJournalWithNoEntriesSaysTheJournalIsEmpty(string markdown)
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(ReportId, ReportOf(markdown));
+        FakeV2Handler v2 = Reads(ReportProps(), ReportMd(markdown));
 
-        string digest = await NewGestures(server).ReportJournalAsync(ReportId, ct: Ct);
+        string digest = await NewGestures(v2).ReportJournalAsync(ReportId, ct: Ct);
 
         Assert.Equal(
             Lines($"id : {ReportId}", "Date du journal : 2026-07-21", "Journal vide."),
             digest);
+    }
+
+    // v2 serves links as ids only, and a properties read does not carry a
+    // snippet: a linked object without a title reads « (sans titre) ».
+    [Fact]
+    public async Task ReportJournalNamesAnUntitledLinkedObjectSansTitre()
+    {
+        FakeV2Handler v2 = Reads(
+            ReportProps(TaskId),
+            ReportMd("# Journal 2026-07-21"),
+            PropsReply(TaskId, "task", ""));
+
+        string digest = await NewGestures(v2).ReportJournalAsync(ReportId, ct: Ct);
+
+        Assert.Contains("Tâches liées : (sans titre)", digest.Split('\n'));
     }
 
     [Theory]
@@ -467,12 +617,12 @@ public class ReadGesturesTests
     [InlineData(-3)]
     public async Task ReportJournalRefusesALastBelowOneBeforeAnyRequest(int last)
     {
-        using var server = new FakeAnytypeServer();
+        var v2 = new FakeV2Handler();
 
         await Assert.ThrowsAsync<ArgumentException>(
-            () => NewGestures(server).ReportJournalAsync(ReportId, last, Ct));
+            () => NewGestures(v2).ReportJournalAsync(ReportId, last, Ct));
 
-        Assert.Empty(server.Requests);
+        Assert.Empty(v2.Requests);
     }
 
     // ── IdeaTextAsync ─────────────────────────────────────────────────────────
@@ -480,13 +630,11 @@ public class ReadGesturesTests
     [Fact]
     public async Task IdeaTextReturnsTheTitleThenTheCleanedTextAndTheArchivedFlag()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(IdeaId, Wrap(
-            IdeaId, "Une idée", DevSpace.Types.Idee,
-            "Texte de l'idée.\n\nSuite\\_x   \n---",
-            CheckboxProp(DevSpace.Props.Archive, true)));
+        FakeV2Handler v2 = Reads(
+            PropsReply(IdeaId, "idee", "Une idée", Flag(DevSpace.Props.Archive)),
+            MdReply(IdeaId, "idee", "# Une idée   \nTexte de l'idée.\n\nSuite\\_x   \n---"));
 
-        string digest = await NewGestures(server).IdeaTextAsync(IdeaId, Ct);
+        string digest = await NewGestures(v2).IdeaTextAsync(IdeaId, Ct);
 
         Assert.Equal(
             Lines($"id : {IdeaId}", "Une idée", "Texte de l'idée.", "Suite_x", "Archivé : oui"),
@@ -496,12 +644,11 @@ public class ReadGesturesTests
     [Fact]
     public async Task IdeaTextWithNoBodyAndNoArchiveIsJustItsIdentity()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(IdeaId, Wrap(
-            IdeaId, "Une idée", DevSpace.Types.Idee, "",
-            CheckboxProp(DevSpace.Props.Archive, false)));
+        FakeV2Handler v2 = Reads(
+            PropsReply(IdeaId, "idee", "Une idée"),
+            MdReply(IdeaId, "idee", "# Une idée   \n"));
 
-        string digest = await NewGestures(server).IdeaTextAsync(IdeaId, Ct);
+        string digest = await NewGestures(v2).IdeaTextAsync(IdeaId, Ct);
 
         Assert.Equal($"id : {IdeaId}\nUne idée", digest);
     }
@@ -564,6 +711,10 @@ public class ReadGesturesTests
 
     const string SectionBody = "Intro courte.\n\n## Alpha\nabc\\_d   \n---\n### Sous\nxy\n## Beta\\_bis\n---\n";
 
+    static FakeV2Handler DocReads(string markdown) => Reads(
+        PropsReply(DocId, "document", "Doc"),
+        MdReply(DocId, "document", markdown));
+
     // No heading, a null, an empty or a blank one all mean the preamble.
     [Theory]
     [InlineData(null)]
@@ -571,10 +722,17 @@ public class ReadGesturesTests
     [InlineData("   ")]
     public async Task DocumentSectionWithoutAHeadingReadsThePreamble(string? heading)
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(DocId, DocOf(SectionBody));
+        string text = await NewGestures(DocReads(SectionBody)).DocumentSectionAsync(DocId, heading, Ct);
 
-        string text = await NewGestures(server).DocumentSectionAsync(DocId, heading, Ct);
+        Assert.Equal($"id : {DocId}\nDoc\nIntro courte.", text);
+    }
+
+    // The v2 render opens a document with its title as a level-1 heading: kept,
+    // it would be the whole body's only section and hide the preamble.
+    [Fact]
+    public async Task DocumentSectionReadsThePreambleAfterTheV2TitleLine()
+    {
+        string text = await NewGestures(DocReads("# Doc   \n" + SectionBody)).DocumentSectionAsync(DocId, null, Ct);
 
         Assert.Equal($"id : {DocId}\nDoc\nIntro courte.", text);
     }
@@ -584,10 +742,7 @@ public class ReadGesturesTests
     [Fact]
     public async Task DocumentSectionReadsTheCleanedTextUnderTheHeadingSubSectionsIncluded()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(DocId, DocOf(SectionBody));
-
-        string text = await NewGestures(server).DocumentSectionAsync(DocId, "Alpha", Ct);
+        string text = await NewGestures(DocReads(SectionBody)).DocumentSectionAsync(DocId, "Alpha", Ct);
 
         Assert.Equal(
             Lines($"id : {DocId}", "Doc", "## Alpha", "abc_d", "### Sous", "xy"),
@@ -597,10 +752,7 @@ public class ReadGesturesTests
     [Fact]
     public async Task DocumentSectionFindsAnEscapedHeadingFromItsNaturalSpelling()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(DocId, DocOf("## Beta\\_bis\ncorps"));
-
-        string text = await NewGestures(server).DocumentSectionAsync(DocId, "Beta_bis", Ct);
+        string text = await NewGestures(DocReads("## Beta\\_bis\ncorps")).DocumentSectionAsync(DocId, "Beta_bis", Ct);
 
         Assert.Equal($"id : {DocId}\nDoc\n## Beta_bis\ncorps", text);
     }
@@ -609,11 +761,8 @@ public class ReadGesturesTests
     [Fact]
     public async Task DocumentSectionWithAnUnknownHeadingThrowsListingThePresentHeadings()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(DocId, DocOf(SectionBody));
-
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => NewGestures(server).DocumentSectionAsync(DocId, "Zeta", Ct));
+            () => NewGestures(DocReads(SectionBody)).DocumentSectionAsync(DocId, "Zeta", Ct));
 
         Assert.Equal(
             "Section « Zeta » introuvable dans Doc. Titres présents : « Alpha », « Sous », « Beta_bis ».",
@@ -623,11 +772,8 @@ public class ReadGesturesTests
     [Fact]
     public async Task DocumentSectionWithAnUnknownHeadingInAHeadinglessBodySaysThereAreNone()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(DocId, DocOf("Texte seul."));
-
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => NewGestures(server).DocumentSectionAsync(DocId, "Zeta", Ct));
+            () => NewGestures(DocReads("Texte seul.")).DocumentSectionAsync(DocId, "Zeta", Ct));
 
         Assert.Equal(
             "Section « Zeta » introuvable dans Doc. Titres présents : (aucun).",
@@ -637,10 +783,7 @@ public class ReadGesturesTests
     [Fact]
     public async Task DocumentSectionWithNothingUnderItsHeadingSaysTheSectionIsEmpty()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(DocId, DocOf(SectionBody));
-
-        string text = await NewGestures(server).DocumentSectionAsync(DocId, "Beta_bis", Ct);
+        string text = await NewGestures(DocReads(SectionBody)).DocumentSectionAsync(DocId, "Beta_bis", Ct);
 
         Assert.Equal($"id : {DocId}\nDoc\n## Beta_bis\nSection vide.", text);
     }
@@ -649,10 +792,7 @@ public class ReadGesturesTests
     [Fact]
     public async Task DocumentSectionReadingThePreambleOfABodyThatOpensOnAHeadingSaysTheSectionIsEmpty()
     {
-        using var server = new FakeAnytypeServer();
-        server.OnGetObject(DocId, DocOf("## Alpha\nabc"));
-
-        string text = await NewGestures(server).DocumentSectionAsync(DocId, null, Ct);
+        string text = await NewGestures(DocReads("## Alpha\nabc")).DocumentSectionAsync(DocId, null, Ct);
 
         Assert.Equal($"id : {DocId}\nDoc\nSection vide.", text);
     }

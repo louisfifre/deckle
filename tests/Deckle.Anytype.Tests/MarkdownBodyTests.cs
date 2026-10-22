@@ -286,6 +286,29 @@ public class MarkdownBodyTests
         Assert.Equal("", MarkdownBody.Clean("\n---\n   \n"));
     }
 
+    // The v2 render spells the divider with a space on each side.
+    [Fact]
+    public void CleanDropsTheSpacedDividerOfTheV2Render()
+    {
+        Assert.Equal("a\nb", MarkdownBody.Clean("a   \n --- \nb   \n"));
+    }
+
+    [Fact]
+    public void DropTitleRemovesTheLeadingLevelOneHeadingThatSpellsTheName()
+    {
+        Assert.Equal(" --- \ncorps", MarkdownBody.DropTitle("# Ma tâche   \n --- \ncorps", "Ma tâche"));
+    }
+
+    [Theory]
+    [InlineData("# Autre\ncorps", "Ma tâche")]
+    [InlineData("## Ma tâche\ncorps", "Ma tâche")]
+    [InlineData("corps\n# Ma tâche", "Ma tâche")]
+    [InlineData("# Journal 2026-07-21\ncorps", "")]
+    public void DropTitleLeavesABodyWhoseFirstLineIsNotTheTitle(string body, string name)
+    {
+        Assert.Equal(body, MarkdownBody.DropTitle(body, name));
+    }
+
     // ── JournalEntries: the unit a report tail counts ─────────────────────────
 
     [Fact]

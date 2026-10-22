@@ -39,7 +39,7 @@ public class ToolCatalogTests
             new TaskGestures(client, resolver, client.V2),
             new ProjectGestures(client, resolver),
             new QueryGestures(client, resolver, client.V2),
-            new ReadGestures(client, resolver),
+            new ReadGestures(client, resolver, client.V2),
             new DocumentGestures(client));
     }
 
