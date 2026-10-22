@@ -288,6 +288,40 @@ public class McpHttpHostTests
         Assert.NotEqual(HttpStatusCode.Unauthorized, absent.StatusCode);
     }
 
+    // A browser page can send any Origin to a loopback listener, so the check must
+    // read the parsed host, not look for the word "localhost" in the string.
+    [Theory]
+    [InlineData("null")]
+    [InlineData("http://localhost.evil.example")]
+    [InlineData("http://evil.example/localhost")]
+    [InlineData("http://127.0.0.1.evil.example")]
+    [InlineData("ftp://localhost")]
+    [InlineData("localhost")]
+    public async Task LookalikeAndOpaqueOriginsAre403(string origin)
+    {
+        await using var harness = Harness.Start();
+
+        using HttpResponseMessage response = await harness.Http.SendAsync(
+            Post(harness.BaseUrl, harness.Bearers[McpClients.Claude.Id], "{}", origin), Ct);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("http://localhost")]
+    [InlineData("http://LOCALHOST:3000")]
+    [InlineData("https://127.0.0.1:8443")]
+    public async Task LocalOriginsPassTheSecurityBoundary(string origin)
+    {
+        await using var harness = Harness.Start();
+
+        using HttpResponseMessage response = await harness.Http.SendAsync(
+            Post(harness.BaseUrl, harness.Bearers[McpClients.Claude.Id], "{}", origin), Ct);
+
+        Assert.NotEqual(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.NotEqual(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
     [Theory]
     [InlineData("GET")]
     [InlineData("DELETE")]
