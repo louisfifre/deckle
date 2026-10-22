@@ -2208,6 +2208,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── IlReferences.cs
 │   │   ├── MicrophonePreviewFailureTests.cs
 │   │   ├── MicrophonePreviewFeedTests.cs
+│   │   ├── PlaygroundFailureBugNotes.md
+│   │   ├── PlaygroundFailureObservabilityTests.cs
 │   │   ├── TuningModelTests.cs
 │   │   └── UtteranceCycleTests.cs
 │   ├── Deckle.Presets.Tests/
