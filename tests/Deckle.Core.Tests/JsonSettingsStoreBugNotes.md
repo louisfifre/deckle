@@ -19,3 +19,13 @@
 - **Violated invariant:** a change handed to the store reaches the disk, however late in the process it arrives.
 - **Recurrence cue:** a `Dispose` that releases a debounce or batching timer without asking whether work is queued behind it.
 - **Regression coverage:** `JsonSettingsStoreTests.DisposingTheStoreWritesAPendingDebouncedSave` and `ASaveAfterDisposeIsStillWritten` (regression).
+
+## A follow read that raced the store's own save put older values back
+
+- **Trigger:** an external write to the settings file, then a save by the store itself (a toggle flipped in the UI) landing inside the window between the follow timer's file read and its apply.
+- **Observed symptom:** none observed. Found by a code audit of FollowFile. Reasoned, not reproduced: the window is a few milliseconds wide behind a 250 ms settle timer, so the exact interleaving cannot be forced through the store's public surface.
+- **Cause:** FollowFile compared the text it read against _lastText before parsing, then applied the parsed value without checking again. A Flush finishing in between wrote newer text and updated _lastText, and the stale read then replaced _current with the older values; the next save would have written them back to disk.
+- **Resolution (2026-10-22):** FollowFile records _lastText before it reads the file and, under the same lock that applies the result, drops the read if _lastText has moved. The store's own write notifies the watcher again, so a fresh read follows.
+- **Violated invariant:** a read of the file never replaces newer values the store itself wrote.
+- **Recurrence cue:** a read-then-apply sequence whose guard runs before a slow step instead of at the moment of the swap.
+- **Regression coverage:** none. The two threads cannot be interleaved deterministically without a hook inside the store that exists only for the test; the fix rests on reading. The existing follow tests (AWriteFromOutsideReplacesCurrentAndRaisesChanged, ItsOwnWriteKeepsTheInMemoryInstance) pin that the guard does not block the ordinary paths.

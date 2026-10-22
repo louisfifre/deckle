@@ -428,6 +428,12 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
 
     private void FollowFile()
     {
+        // What this store last wrote, taken before the read. A save that lands
+        // while the read is in flight changes it, and the text read is then
+        // older than the store's own newest write.
+        string? writtenBeforeRead;
+        lock (_lock) writtenBeforeRead = _lastText;
+
         string raw;
         try
         {
@@ -469,6 +475,12 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
 
         lock (_lock)
         {
+            // A save finished between the read and here: the file now holds
+            // the store's own newer text, and applying the stale read would
+            // put the older values back in memory (and on disk at the next
+            // save). The save's own notification schedules a fresh read.
+            if (!string.Equals(_lastText, writtenBeforeRead, StringComparison.Ordinal)) return;
+
             _current = parsed;
             _lastText = raw;
         }
