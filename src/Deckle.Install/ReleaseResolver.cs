@@ -109,11 +109,25 @@ public static class ReleaseResolver
         return version;
     }
 
-    private static GitHubAsset FindRequiredAsset(GitHubRelease release, string expectedName) =>
-        release.Assets?.SingleOrDefault(a =>
-            string.Equals(a.Name, expectedName, StringComparison.Ordinal))
-        ?? throw new InvalidOperationException(
-            $"Release {release.TagName} is missing required asset {expectedName}.");
+    // Exactly one asset of that name, or the release is refused. Two of the same
+    // name would leave the choice of payload to the API's order, and the failure
+    // has to say which release and which file, not a bare LINQ message.
+    private static GitHubAsset FindRequiredAsset(GitHubRelease release, string expectedName)
+    {
+        GitHubAsset[] matches = (release.Assets ?? [])
+            .Where(a => string.Equals(a.Name, expectedName, StringComparison.Ordinal))
+            .Take(2)
+            .ToArray();
+
+        return matches.Length switch
+        {
+            1 => matches[0],
+            0 => throw new InvalidOperationException(
+                $"Release {release.TagName} is missing required asset {expectedName}."),
+            _ => throw new InvalidOperationException(
+                $"Release {release.TagName} lists required asset {expectedName} more than once."),
+        };
+    }
 
     private static string RequireAssetUrl(GitHubAsset asset, string name) =>
         !string.IsNullOrWhiteSpace(asset.BrowserDownloadUrl)
