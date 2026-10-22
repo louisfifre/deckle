@@ -5,6 +5,7 @@ using Xunit;
 
 namespace Deckle.Hud.Tests;
 
+[Trait("Category", "unit")]
 public sealed class UtteranceCountdownGeometryTests
 {
     private const float Tolerance = 0.0001f;
