@@ -226,8 +226,9 @@ public static class MarkdownBody
     // (measured 2026-10-22 on a task; a report has no name and opens on its own
     // first heading block, which stays). That line is the title, not body: it
     // is dropped when it spells `name`, leaving the body as the author wrote it.
-    // Whether v1 ever emitted it is not established; dropping it is harmless
-    // either way.
+    // An idea opens instead on a plain line holding its name, which Anytype
+    // derives from that first block (measured 2026-10-22): dropped the same way.
+    // Whether v1 ever emitted either is not established; dropping is harmless.
     public static string DropTitle(string body, string name)
     {
         string wanted = NormalizeHeading(name);
@@ -240,6 +241,9 @@ public static class MarkdownBody
             if (TryHeading(lines[i], out int level, out string text)
                 && level == 1
                 && NormalizeHeading(text).Equals(wanted, StringComparison.Ordinal))
+                return string.Join('\n', lines[(i + 1)..]);
+            if (!TryHeading(lines[i], out _, out _)
+                && NormalizeHeading(lines[i]).Equals(wanted, StringComparison.Ordinal))
                 return string.Join('\n', lines[(i + 1)..]);
             break;
         }

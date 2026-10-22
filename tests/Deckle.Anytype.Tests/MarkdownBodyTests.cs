@@ -299,8 +299,15 @@ public class MarkdownBodyTests
         Assert.Equal(" --- \ncorps", MarkdownBody.DropTitle("# Ma tâche   \n --- \ncorps", "Ma tâche"));
     }
 
+    [Fact]
+    public void DropTitleRemovesALeadingPlainLineThatSpellsTheName()
+    {
+        Assert.Equal("Idée longue…\ncorps", MarkdownBody.DropTitle("Idée…   \nIdée longue…\ncorps", "Idée…"));
+    }
+
     [Theory]
     [InlineData("# Autre\ncorps", "Ma tâche")]
+    [InlineData("Autre\ncorps", "Ma tâche")]
     [InlineData("## Ma tâche\ncorps", "Ma tâche")]
     [InlineData("corps\n# Ma tâche", "Ma tâche")]
     [InlineData("# Journal 2026-07-21\ncorps", "")]
