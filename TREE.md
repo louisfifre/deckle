@@ -2404,7 +2404,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   ├── SileroSpeechTimestampsTests.cs
-│   │   └── VadPathRedactionTests.cs
+│   │   ├── VadBugNotes.md
+│   │   ├── VadObservabilityCollection.cs
+│   │   ├── VadPathRedactionTests.cs
+│   │   └── VadServiceDownloadRetryTests.cs
 │   ├── Deckle.Vision.Tests/
 │   │   ├── CaptureIncidentsBugNotes.md
 │   │   ├── CaptureIncidentsTests.cs
