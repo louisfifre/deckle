@@ -43,7 +43,7 @@ public sealed class SetupContext
     // extracted the new payload into rides the same forwarding chain.
     public string? CleanupDirectory { get; set; }
 
-    // True in the installed process that carries on after Deploy
+    // True in the installed process that carries on after an install's Deploy
     // (`--install-continue`). It has no InstallMode flag of its own, since it
     // runs as a regular install, yet the person went through the Location step
     // in the previous process: the step rail needs this to keep showing it as
@@ -52,12 +52,13 @@ public sealed class SetupContext
 
     // ── Update mode (the wizard as updater) ─────────────────────────────────
     //
-    // True on the two legs of an in-app update: the running app's download
-    // page (fetch + verify + extract + handoff), and the new payload's
+    // True on the three legs of an in-app update: the running app's download
+    // page (fetch + verify + extract + handoff), the new payload's
     // `--update-apply` process, which runs DeployPage over the live install —
     // same gate/copy/integrate steps, folders and modules taken as they are
-    // instead of asked. PendingUpdate carries the release the check resolved;
-    // it is only read on the download leg.
+    // instead of asked — and the installed process that provisions after it
+    // (`--install-continue --after-update`). PendingUpdate carries the release
+    // the check resolved; it is only read on the download leg.
     public bool UpdateMode { get; init; }
     public UpdateService.AvailableUpdate? PendingUpdate { get; init; }
 

@@ -143,12 +143,16 @@ public partial class App
 
         string? modelId = ArgumentValue(args, "--model");
         string? cleanup = ArgumentValue(args, "--cleanup");
+        bool afterUpdate = Array.IndexOf(args, "--after-update") >= 0;
         DeckleAppSource.Log.InstallModeEntered();
         DeckleAppSource.Log.InstallModeEnteredDetail(ContinuationMode, "", cleanup ?? "", modelId ?? "");
 
         var context = new SetupContext
         {
-            ResumesInstall = true,
+            // An update's continuation stays an update leg: the narrow card,
+            // without the step rail or a Location step the person never saw.
+            UpdateMode     = afterUpdate,
+            ResumesInstall = !afterUpdate,
             // Without --model (an update's continuation), the configured model
             // from settings wins over the catalog default: the plan must ask
             // for what this install actually uses, not schedule the default's

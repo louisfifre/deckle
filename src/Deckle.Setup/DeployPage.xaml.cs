@@ -225,6 +225,9 @@ public sealed partial class DeployPage : Page
             WorkingDirectory = context.InstallDirectory,
         };
         psi.ArgumentList.Add("--install-continue");
+        // The continuation cannot tell an update from an install by itself, and
+        // without this flag it would open as the install wizard.
+        if (context.UpdateMode) psi.ArgumentList.Add("--after-update");
         if (context.SelectedModules.Contains(ModuleIds.Transcription)
             && context.SelectedModel is { } model)
         {
