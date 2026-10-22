@@ -55,6 +55,9 @@ public sealed class LoopPulse
 
     public string Loop { get; }
 
+    // Ticks since the process started; a test reads it, the rollup reads the difference.
+    public long Total => Interlocked.Read(ref _count);
+
     public void Tick() => Interlocked.Increment(ref _count);
 
     // The loop is expected to tick for as long as the returned scope lives. Nested

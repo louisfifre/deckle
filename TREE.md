@@ -2091,6 +2091,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RunMarkerTests.cs
 │   │   ├── SinkCallbackBugNotes.md
 │   │   ├── SinkCallbackFaultTests.cs
+│   │   ├── ThreadingHotLoopCountTests.cs
 │   │   └── WorkIdTests.cs
 │   ├── Deckle.Home.Tests/
 │   │   ├── AssemblyInfo.cs
