@@ -202,10 +202,19 @@ internal sealed class HomeObjectIndex
         return partial.Length switch
         {
             1 => partial[0],
-            0 => throw new InvalidOperationException($"Aucun objet Home trouvé pour « {selector} »."),
+            0 => throw new InvalidOperationException(NotFoundMessage(selector, allowedTypes)),
             _ => throw Ambiguous(selector, partial),
         };
     }
+
+    // A selector that matches nothing among the allowed types may still name an
+    // object of another type, so the refusal says which types were searched:
+    // the caller then reads "wrong type" instead of "unknown object".
+    private static string NotFoundMessage(string selector, IReadOnlyCollection<string>? allowedTypes) =>
+        allowedTypes is null
+            ? $"Aucun objet Home trouvé pour « {selector} »."
+            : $"Aucun objet Home trouvé pour « {selector} » parmi les objets de type "
+              + $"{string.Join(" ou ", allowedTypes.Select(type => $"« {type} »"))}.";
 
     public JsonObject ResolveCollection(string selector)
     {
