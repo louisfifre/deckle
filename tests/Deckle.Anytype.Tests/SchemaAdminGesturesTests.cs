@@ -75,6 +75,31 @@ public class SchemaAdminGesturesTests
         ["color"] = "grey",
     };
 
+    static JsonObject OtherType() => new()
+    {
+        ["id"] = "type-autre",
+        ["key"] = "autre",
+        ["name"] = "Autre",
+        ["plural_name"] = "Autres",
+        ["layout"] = "basic",
+        ["properties"] = new JsonArray(),
+    };
+
+    static JsonObject OtherProperty() => new()
+    {
+        ["id"] = "prop-autre",
+        ["key"] = "autre_propriete",
+        ["name"] = "Autre propriété",
+        ["format"] = "text",
+    };
+
+    static JsonObject OtherTag() => new()
+    {
+        ["id"] = "tag-autre",
+        ["name"] = "Autre",
+        ["color"] = "grey",
+    };
+
     static JsonObject Manifest() => new()
     {
         ["properties"] = new JsonArray
@@ -203,9 +228,11 @@ public class SchemaAdminGesturesTests
     public async Task PreviewReadsEveryPaginatedSchemaPage()
     {
         using var server = new FakeAnytypeServer();
-        server.OnListTypes(Page(new JsonArray(), hasMore: true));
+        // Each first page carries a row of its own: an empty page that still
+        // claims more is a stuck server, not a page to follow.
+        server.OnListTypes(Page(new JsonArray { OtherType() }, hasMore: true));
         server.OnListTypes(Page(new JsonArray { ExistingType(properties: new JsonArray { "prop-etat" }) }));
-        server.OnListProperties(Page(new JsonArray(), hasMore: true));
+        server.OnListProperties(Page(new JsonArray { OtherProperty() }, hasMore: true));
         server.OnListProperties(Page(new JsonArray { ExistingProperty() }));
         server.OnListPropertyTags("prop-etat", EmptyList());
 
@@ -222,7 +249,7 @@ public class SchemaAdminGesturesTests
         using var server = new FakeAnytypeServer();
         server.OnListTypes(EmptyList());
         server.OnListProperties(Page(new JsonArray { ExistingProperty() }));
-        server.OnListPropertyTags("prop-etat", Page(new JsonArray(), hasMore: true));
+        server.OnListPropertyTags("prop-etat", Page(new JsonArray { OtherTag() }, hasMore: true));
         server.OnListPropertyTags("prop-etat", Page(new JsonArray { ExistingTag() }));
 
         string digest = await NewGestures(server).PreviewAsync("home", Manifest(), Ct);

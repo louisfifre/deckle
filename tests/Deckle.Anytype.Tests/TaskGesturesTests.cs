@@ -718,6 +718,9 @@ public class TaskGesturesTests
 //   • listens on a loopback port leased from LoopbackHttpListenerLease,
 //   • answers the n-th request to a (method, path) with the n-th canned
 //     response registered for it, repeating the last one,
+//   • serves a list registered through OnPaged* from the offset and limit of
+//     the query, under an optional page ceiling the way the real server
+//     does, so an exhaustive read can be tested against a capped page,
 //   • records every received request (method, path, query, body) so a test
 //     can assert on the exact payload the gesture sent.
 //
@@ -737,6 +740,8 @@ internal sealed class FakeAnytypeServer : IDisposable
     readonly Task _loop;
 
     sealed record Route(string Method, string Path, int Status, string Json);
+    sealed record Pager(string Method, string Path, IReadOnlyList<JsonNode> Rows, int? PageCap);
+    readonly List<Pager> _pagers = new();
     // Query is the raw query string ("?offset=0&limit=1000"), empty when absent.
     public readonly record struct Received(string Method, string Path, string Query, string Body);
 
@@ -812,6 +817,56 @@ internal sealed class FakeAnytypeServer : IDisposable
     public void OnPostPropertyTag(string propertyId, JsonObject response) =>
         _routes.Add(new("POST", $"{SpacePath}/properties/{propertyId}/tags", 201, response.ToJsonString()));
 
+    // ── Paged lists ───────────────────────────────────────────────────────────
+    //
+    // A list the way the live API serves it: from the query's offset, at most
+    // its limit and at most pageCap rows (the server ceiling a client cannot
+    // see), with pagination.has_more telling the truth about what remains. The
+    // canned routes above ignore the query, so only these can tell a loop that
+    // advances by the rows it received from one that advances by what it asked.
+    // A pager answers before any canned route of the same method and path.
+    public void OnPagedSearch(IEnumerable<JsonObject> rows, int? pageCap = null) =>
+        OnPaged("POST", $"{SpacePath}/search", rows, pageCap);
+
+    public void OnPagedListTypes(IEnumerable<JsonObject> rows, int? pageCap = null) =>
+        OnPaged("GET", $"{SpacePath}/types", rows, pageCap);
+
+    public void OnPagedListProperties(IEnumerable<JsonObject> rows, int? pageCap = null) =>
+        OnPaged("GET", $"{SpacePath}/properties", rows, pageCap);
+
+    public void OnPagedListPropertyTags(string propertyId, IEnumerable<JsonObject> rows, int? pageCap = null) =>
+        OnPaged("GET", $"{SpacePath}/properties/{propertyId}/tags", rows, pageCap);
+
+    void OnPaged(string method, string path, IEnumerable<JsonObject> rows, int? pageCap) =>
+        _pagers.Add(new Pager(method, path, rows.Cast<JsonNode>().ToArray(), pageCap));
+
+    JsonObject? ServePage(string method, string path, string query)
+    {
+        Pager? pager = _pagers.FirstOrDefault(p => p.Method == method && p.Path == path);
+        if (pager is null) return null;
+
+        var parameters = System.Web.HttpUtility.ParseQueryString(query);
+        int offset = int.TryParse(parameters["offset"], out int parsedOffset) ? Math.Max(parsedOffset, 0) : 0;
+        int limit = int.TryParse(parameters["limit"], out int parsedLimit) && parsedLimit > 0
+            ? parsedLimit
+            : int.MaxValue;
+        if (pager.PageCap is int cap) limit = Math.Min(limit, cap);
+
+        var page = new JsonArray();
+        foreach (JsonNode row in pager.Rows.Skip(offset).Take(limit)) page.Add(row.DeepClone());
+        return new JsonObject
+        {
+            ["data"] = page,
+            ["pagination"] = new JsonObject
+            {
+                ["total"] = pager.Rows.Count,
+                ["offset"] = offset,
+                ["limit"] = limit,
+                ["has_more"] = offset + page.Count < pager.Rows.Count,
+            },
+        };
+    }
+
     // ── Request introspection ─────────────────────────────────────────────────
 
     // A missing call is a test failure, not null.
@@ -843,9 +898,10 @@ internal sealed class FakeAnytypeServer : IDisposable
                 body = await reader.ReadToEndAsync();
             _received.Enqueue(new Received(method, path, url.Query, body));
 
-            Route? route = NextRoute(method, path);
-            byte[] payload = Encoding.UTF8.GetBytes(route?.Json ?? "{}");
-            ctx.Response.StatusCode = route?.Status ?? 404;
+            JsonObject? paged = ServePage(method, path, url.Query);
+            Route? route = paged is null ? NextRoute(method, path) : null;
+            byte[] payload = Encoding.UTF8.GetBytes(paged?.ToJsonString() ?? route?.Json ?? "{}");
+            ctx.Response.StatusCode = paged is not null ? 200 : route?.Status ?? 404;
             ctx.Response.ContentType = "application/json";
             ctx.Response.ContentLength64 = payload.Length;
             await ctx.Response.OutputStream.WriteAsync(payload);
