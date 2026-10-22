@@ -2380,6 +2380,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── WhisperContextBugNotes.md
 │   │   ├── WhisperContextParamsMapperTests.cs
 │   │   ├── WhisperParamsMapperTests.cs
+│   │   ├── WhisperPathRedactionTests.cs
 │   │   └── WhisperReferenceAudioSystemTests.cs
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj

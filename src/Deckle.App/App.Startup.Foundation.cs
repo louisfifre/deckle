@@ -118,6 +118,11 @@ public partial class App
         // First, before settings migration: a listener only sees events emitted
         // after it subscribes, so these ungated local sinks must exist for a
         // failure in the very first boot step to land in journal.jsonl.
+        // Before the first event: a provider hides the data root in the paths
+        // it writes (PathRedaction), and Diagnostics cannot resolve it alone
+        // since it sits below Deckle.Core. A root registered late would let the
+        // first lines of the journal carry it in clear.
+        PathRedaction.AddRoot(PathRedaction.DataRootToken, AppPaths.UserDataRoot);
         AppDiagnosticsBootstrap.InitializeLocalSinks(AppPaths.DiagnosticsDirectory);
         DeckleAppSource.Log.AppStarting();
         EmitRunIdentity();
