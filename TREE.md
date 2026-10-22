@@ -395,6 +395,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── ManagementGestures.cs
 │   │   │   ├── MarkdownBody.cs
 │   │   │   ├── ObjectListing.cs
+│   │   │   ├── PagedRead.cs
 │   │   │   ├── ProjectGestures.cs
 │   │   │   ├── QueryGestures.cs
 │   │   │   ├── ReadGestures.cs
@@ -1872,6 +1873,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DocumentGesturesTests.cs
 │   │   ├── FakeV2Handler.cs
 │   │   ├── JournalClosersTests.cs
+│   │   ├── ListingPagingTests.cs
 │   │   ├── LiveTagResolverTests.cs
 │   │   ├── ManagementGesturesBugNotes.md
 │   │   ├── ManagementGesturesTests.cs
