@@ -1896,6 +1896,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AutocorrectEngineObservabilityTests.cs
 │   │   ├── AutocorrectKeyboardQualityTests.cs
 │   │   ├── AutocorrectLexiconArtifactsTests.cs
+│   │   ├── AutocorrectObservabilityCollection.cs
 │   │   ├── AutocorrectSentenceTypingScenarioTests.cs
 │   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── AutocorrectTypingScenarioTests.cs
