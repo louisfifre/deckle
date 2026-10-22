@@ -1418,6 +1418,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── Hud/
 │   │   │   │   ├── HudPage.Expanders.cs
 │   │   │   │   ├── HudPage.Gauge.cs
+│   │   │   │   ├── HudPage.Microphone.cs
 │   │   │   │   ├── HudPage.RowFactories.cs
 │   │   │   │   ├── HudPage.SectionState.cs
 │   │   │   │   ├── HudPage.Simulation.cs
