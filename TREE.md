@@ -354,6 +354,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── AnytypeV2PropertyMap.cs
 │   │   │   │   ├── AnytypeV2Request.cs
 │   │   │   │   ├── AnytypeV2Response.cs
+│   │   │   │   ├── AnytypeV2Searcher.cs
 │   │   │   │   ├── AnytypeV2WriteOptions.cs
 │   │   │   │   ├── AnytypeV2Writer.cs
 │   │   │   │   └── AnytypeV2WriteReceipt.cs
@@ -1818,6 +1819,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AnytypeV2OpsTests.cs
 │   │   ├── AnytypeV2PropertyMapTests.cs
 │   │   ├── AnytypeV2ReadWriteTests.cs
+│   │   ├── AnytypeV2SearcherTests.cs
 │   │   ├── BackendEndpointTrustTests.cs
 │   │   ├── BackendListenerOwnerTests.cs
 │   │   ├── BackendProviderStoreBugNotes.md
