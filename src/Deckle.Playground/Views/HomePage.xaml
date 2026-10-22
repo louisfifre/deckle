@@ -39,11 +39,6 @@
                                            HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightbulb}}"
                                            IsClickEnabled="True"
                                            Click="OnAmbientCardClick" />
-                    <controls:SettingsCard x:Name="HomeSegmentationCard"
-                                           x:Uid="PlaygroundHomeSegmentationCard"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Speech}}"
-                                           IsClickEnabled="True"
-                                           Click="OnSegmentationCardClick" />
                     <controls:SettingsCard x:Name="HomeCorrectionCard"
                                            x:Uid="PlaygroundHomeCorrectionCard"
                                            HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Autocorrect}}"
