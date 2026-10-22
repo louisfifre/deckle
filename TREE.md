@@ -2033,6 +2033,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HomeGesturesBugNotes.md
 │   │   ├── HomeGesturesTests.cs
 │   │   ├── HomeMcpTests.cs
+│   │   ├── HomePagingTests.cs
 │   │   ├── HomeRelationTests.cs
 │   │   ├── HomeSchemaAlignmentTests.cs
 │   │   ├── HomeSearchTests.cs

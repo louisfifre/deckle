@@ -155,9 +155,11 @@ internal sealed class HomePropertyWriter(
         {
             JsonObject root = await api.ListPropertyTagsForSpaceAsync(
                 spaceId, property.Id, offset, limit, ct).ConfigureAwait(false);
+            int returned = 0;
             if (root["data"] is JsonArray data)
                 foreach (JsonNode? node in data)
                 {
+                    returned++;
                     if (node is not JsonObject raw) continue;
                     JsonObject value = HomeObjectJson.Unwrap(raw);
                     string key = HomeObjectJson.String(value, "key");
@@ -166,8 +168,10 @@ internal sealed class HomePropertyWriter(
                     string color = HomeObjectJson.String(value, "color");
                     result[id.Length > 0 ? id : key + "\0" + name] = new SchemaTagInfo(id, key, name, color);
                 }
-            if (!(root["pagination"]?["has_more"]?.GetValue<bool>() ?? false)) break;
-            offset += limit;
+            // Advance by the rows served, never by the limit asked for, and
+            // stop on an empty page: see HomeObjectIndex.LoadAsync.
+            if (!(root["pagination"]?["has_more"]?.GetValue<bool>() ?? false) || returned == 0) break;
+            offset += returned;
         }
         return result.Values.ToArray();
     }

@@ -516,13 +516,17 @@ public sealed partial class HomeGestures
         {
             JsonObject root = await _api.ListTemplatesAsync(_spaceId, typeId, offset, PageLimit, ct)
                 .ConfigureAwait(false);
+            int returned = 0;
             foreach (JsonObject value in (root["data"] as JsonArray ?? []).OfType<JsonObject>())
             {
+                returned++;
                 string id = HomeObjectJson.String(value, "id");
                 if (id.Length > 0) result.Add((id, HomeObjectJson.String(value, "name")));
             }
-            if (root["pagination"]?["has_more"]?.GetValue<bool>() != true) break;
-            offset += PageLimit;
+            // Advance by the rows served and stop on an empty page, so a
+            // listing that keeps announcing more cannot loop forever.
+            if (root["pagination"]?["has_more"]?.GetValue<bool>() != true || returned == 0) break;
+            offset += returned;
         }
         return result;
     }

@@ -143,14 +143,23 @@ internal sealed class HomeObjectIndex
         {
             JsonObject root = await api.ListObjectsAsync(spaceId, offset, PageLimit, ct)
                 .ConfigureAwait(false);
+            int returned = 0;
             if (root["data"] is JsonArray data)
                 foreach (JsonNode? node in data)
+                {
+                    returned++;
                     if (node is JsonObject value)
                         objects.Add(HomeObjectJson.Unwrap(value));
+                }
 
+            // The next page starts after the rows the server actually served,
+            // not after the limit asked for: a server may cap a page below it,
+            // and a stride of PageLimit would then skip the rows in between.
+            // An empty page ends the loop whatever has_more claims, so a server
+            // that lost its place cannot hold the read forever.
             bool hasMore = root["pagination"]?["has_more"]?.GetValue<bool>() ?? false;
-            if (!hasMore) break;
-            offset += PageLimit;
+            if (!hasMore || returned == 0) break;
+            offset += returned;
         }
         return new HomeObjectIndex(objects);
     }
