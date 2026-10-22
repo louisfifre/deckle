@@ -57,8 +57,8 @@ public sealed class DeckleWhispSourceTests : IDisposable
 
         DeckleWhispSource.Log.MicrophoneUnavailable("probe", 2);
         DeckleWhispSource.Log.MicrophoneRecovered();
-        DeckleWhispSource.Log.ModelUnavailable("file_not_found", "", "");
-        DeckleWhispSource.Log.ModelRecovered();
+        DeckleWhispSource.Log.ModelUnavailable("w1", "file_not_found", "", "");
+        DeckleWhispSource.Log.ModelRecovered("w2", 1200, "CPU");
 
         Assert.Collection(
             listener.Events,

@@ -2290,7 +2290,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── UnitBezierTests.cs
 │   │   ├── UtteranceProgressMeterTests.cs
 │   │   ├── UtteranceProgressTests.cs
-│   │   └── VadServiceIncidentTests.cs
+│   │   ├── VadServiceIncidentTests.cs
+│   │   ├── WhispModelLifecycleBugNotes.md
+│   │   └── WhispModelLifecycleTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
 │   │   ├── HallucinationBugNotes.md

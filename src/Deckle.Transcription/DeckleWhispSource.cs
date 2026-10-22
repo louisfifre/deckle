@@ -184,7 +184,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     // 163 retired.
     // 164 retired.
     public const int EvtModelFallback                    = 165;
-    public const int EvtModelFallbackDetail              = 166;
+    // 166 retired: its configured and installed names moved into EvtModelFallback.
     public const int EvtTranscriptionCorrelation         = 167;
 
     public const int EvtTranscribePromptConfigured       = 168;
@@ -262,6 +262,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtTranscribeDecodeUsed             = 240;
     public const int EvtTakeStarted                      = 241;
     public const int EvtTakeEnded                        = 242;
+    public const int EvtModelLoadRetrying                = 243;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // Bits 0x400+ are provider-local (Deckle.Diagnostics.Keywords). No live
