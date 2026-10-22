@@ -1805,6 +1805,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
 │   │   ├── DialogueToolCatalogTests.cs
 │   │   ├── FakeSecretVault.cs
+│   │   ├── JournalClosersTests.cs
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensTests.cs
 │   │   ├── McpHttpHostTests.cs
@@ -1842,6 +1843,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DialogueGesturesTests.cs
 │   │   ├── DocumentGesturesTests.cs
 │   │   ├── FakeV2Handler.cs
+│   │   ├── JournalClosersTests.cs
 │   │   ├── LiveTagResolverTests.cs
 │   │   ├── ManagementGesturesTests.cs
 │   │   ├── MarkdownBodyTests.cs
@@ -1865,6 +1867,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CaptureSettingsMigrationTests.cs
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── DeckleAudioSourceTests.cs
+│   │   ├── JournalClosersTests.cs
 │   │   ├── ListeningTakeTests.cs
 │   │   ├── MicLevelCheckTests.cs
 │   │   ├── MicrophoneErrorClassificationTests.cs
@@ -1927,6 +1930,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HarvestDataTests.cs
 │   │   ├── HarvestFilterTests.cs
 │   │   ├── InjectionPlanTests.cs
+│   │   ├── JournalClosersTests.cs
 │   │   ├── KeyDecoderTests.cs
 │   │   ├── MarginCalibrationTests.cs
 │   │   ├── MistouchFamilyCorrectorTests.cs
@@ -2043,6 +2047,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── HudSettingsOverridesTests.cs
+│   │   ├── JournalClosersTests.cs
 │   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
 │   │   ├── TranscriptHistoryTests.cs
@@ -2097,6 +2102,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
 │   │   ├── DeckleAmbientSourceTests.cs
 │   │   ├── HueEndpointResolverTests.cs
+│   │   ├── JournalClosersTests.cs
 │   │   └── LightPlacementResolverTests.cs
 │   ├── Deckle.Lighting.Tests/
 │   │   ├── BugExamples/
@@ -2111,6 +2117,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   ├── HueLocalDiscoveryRegressionTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs
+│   │   ├── JournalClosersTests.cs
 │   │   └── LightingObservabilityCollection.cs
 │   ├── Deckle.Llm.Rewrite.Tests/
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
@@ -2149,6 +2156,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ExecutableLocatorTests.cs
 │   │   ├── Fixture.cs
 │   │   ├── ForegroundChangeMappingTests.cs
+│   │   ├── JournalClosersTests.cs
 │   │   ├── KeyValuesReaderTests.cs
 │   │   ├── ProfileTransactionTests.cs
 │   │   ├── ScanOnDiskTests.cs
@@ -2183,18 +2191,21 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── UpdatePredecessorTests.cs
 │   ├── Deckle.Shell.Foreground.Tests/
 │   │   ├── Deckle.Shell.Foreground.Tests.csproj
-│   │   └── FullscreenGeometryTests.cs
+│   │   ├── FullscreenGeometryTests.cs
+│   │   └── JournalClosersTests.cs
 │   ├── Deckle.Shell.TaskbarCover.Tests/
 │   │   ├── CoverGeometryTests.cs
 │   │   ├── CoverStackingTests.cs
 │   │   ├── CoverSuppressionTests.cs
 │   │   ├── Deckle.Shell.TaskbarCover.Tests.csproj
+│   │   ├── JournalClosersTests.cs
 │   │   ├── TaskbarCoverBugNotes.md
 │   │   └── TaskbarPlacementTests.cs
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   ├── DispatcherQueueExtensionsTests.cs
 │   │   ├── GlobalHotkeyBindingsTests.cs
+│   │   ├── JournalClosersTests.cs
 │   │   ├── ResizeGestureTests.cs
 │   │   ├── TrayIconBugNotes.md
 │   │   └── TrayIconRegistrationTests.cs
@@ -2211,6 +2222,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.TestSupport.csproj
 │   │   ├── EventArgsExtensions.cs
 │   │   ├── LoopbackHttpListenerLease.cs
+│   │   ├── ProviderManifest.cs
 │   │   ├── SharedFileReader.cs
 │   │   ├── TestEventListener.cs
 │   │   ├── WindowsAppSdkBootstrap.cs
@@ -2227,6 +2239,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs
 │   │   ├── FileTranscriptionResultTests.cs
+│   │   ├── JournalClosersTests.cs
 │   │   ├── LiveTranscriptionPipelineTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── PhantomUtteranceBugNotes.md
@@ -2249,6 +2262,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
 │   │   ├── HallucinationBugNotes.md
+│   │   ├── JournalClosersTests.cs
 │   │   ├── KnownHallucinationsTests.cs
 │   │   ├── NativeRuntimeTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
@@ -2267,7 +2281,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CapturePacerTests.cs
 │   │   ├── ContentPeakReleaseTests.cs
 │   │   ├── Deckle.Vision.Tests.csproj
-│   │   └── DeckleVisionSourceTests.cs
+│   │   ├── DeckleVisionSourceTests.cs
+│   │   └── JournalClosersTests.cs
 │   ├── Directory.Build.props
 │   └── GLOSSARY.md  — glossary-deckle-tests Test taxonomy. It names the four categories inside the automatic scope (unit, i…
 ├── .editorconfig
