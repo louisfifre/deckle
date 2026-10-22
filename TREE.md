@@ -921,7 +921,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogLineFormatter.cs
 │   │   ├── ObservationKind.cs
 │   │   ├── OperationalLogAdmission.cs
-│   │   └── WindowingProbe.cs
+│   │   ├── WindowingProbe.cs
+│   │   └── WorkId.cs
 │   ├── Deckle.Diagnostics.Logging/
 │   │   ├── Strings/
 │   │   │   └── en-US/
@@ -2023,7 +2024,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── JsonlSinkRotationTests.cs
 │   │   ├── LogLineFormatterTests.cs
 │   │   ├── OperationalLogAdmissionCollection.cs
-│   │   └── OperationalLogAdmissionTests.cs
+│   │   ├── OperationalLogAdmissionTests.cs
+│   │   └── WorkIdTests.cs
 │   ├── Deckle.Home.Tests/
 │   │   ├── Deckle.Home.Tests.csproj
 │   │   ├── FakeHomeAnytypeServer.cs
