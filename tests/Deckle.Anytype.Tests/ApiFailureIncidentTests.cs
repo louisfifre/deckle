@@ -121,6 +121,25 @@ public sealed class ApiFailureIncidentTests
 
     [Fact]
     [Trait("Category", "regression")]
+    public async Task ARateLimitThatSurvivesItsRetryReachesTheJournalWithoutVerboseTracing()
+    {
+        using var listener = new TestEventListener("Deckle-Anytype");
+        var handler = new FakeV2Handler()
+            .Reply(HttpStatusCode.TooManyRequests, """{"code":"rate_limited"}""", ("Retry-After", "0"))
+            .Reply(HttpStatusCode.TooManyRequests, """{"code":"rate_limited"}""", ("Retry-After", "0"));
+        using AnytypeV2Client client = ClientOver(handler);
+
+        await Refused(client, Get());
+
+        EventWrittenEventArgs failed = Assert.Single(
+            listener.Events.Where(TravelsInTheJournal),
+            e => e.EventId == DeckleAnytypeSource.EvtApiRequestFailed);
+        Assert.Equal("429", Field(failed, "status_code"));
+        Assert.Equal(2, handler.Requests.Count);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
     public async Task AStaleVersionTheCallerWillRetryIsNotAnError()
     {
         using var listener = new TestEventListener("Deckle-Anytype");
