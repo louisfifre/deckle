@@ -190,16 +190,16 @@ public sealed class DeckleHudSource : DeckleEventSource
         WriteEvent(EvtOverlayCardChanged, change, slot, severity, cards);
     }
 
-    // A teardown step that threw and was abandoned. `what`: overlay-expiry,
-    // overlay-shutdown.
+    // A teardown step that threw and was abandoned: the overlay card may stay on
+    // screen with nothing left tracking it, so this is a Warning, not detail.
+    // `what`: overlay-expiry, overlay-shutdown.
     [Event(EvtCleanupFailed,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "cleanup failed | what={0} | ex_type={1} | ex_message={2}")]
+           Message = "Cannot close an overlay card | what={0} | ex_type={1} | ex_message={2}")]
     public void CleanupFailed(string what, string ex_type, string ex_message)
     {
-        if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtCleanupFailed, what, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtCleanupFailed, what, ex_type, ex_message);
     }
 
     // ─── State machine transitions ──────────────────────────────────────

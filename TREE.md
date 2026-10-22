@@ -2074,6 +2074,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── HudSettingsOverridesTests.cs
 │   │   ├── JournalClosersTests.cs
+│   │   ├── OverlayCardBugNotes.md
+│   │   ├── OverlayCardCloseObservabilityTests.cs
 │   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
 │   │   ├── TranscriptHistoryTests.cs
