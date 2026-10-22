@@ -7,12 +7,13 @@ namespace Deckle.Anytype.Tests;
 [Trait("Category", "unit")]
 public class AnytypeV2OpsTests
 {
-    // The 18 ops GET /v2/schemas serves. The wire names are the promise here.
+    // The ops GET /v2/schemas serves, minus the four view ops (update_view,
+    // insert_view, move_view, delete_view), left unmodeled because no gesture
+    // edits a view. The wire names are the promise here.
     private static readonly string[] ServedKinds =
     [
         "set_properties", "set_type", "update_block", "replace_subtree", "insert_blocks",
         "move_block", "delete_block", "replace_text", "set_cell", "add_items", "remove_items",
-        "update_view", "insert_view", "move_view", "delete_view",
         "add_property", "remove_property", "move_property",
     ];
 
@@ -30,10 +31,6 @@ public class AnytypeV2OpsTests
         yield return AnytypeV2BlockOps.SetCell("t1", "r1", "c1", JsonValue.Create("v"));
         yield return AnytypeV2ObjectOps.AddItems(["o1"]);
         yield return AnytypeV2ObjectOps.RemoveItems(["o1"]);
-        yield return AnytypeV2ViewOps.UpdateView(columns: new JsonObject { ["status"] = new JsonObject { ["hidden"] = false } });
-        yield return AnytypeV2ViewOps.InsertView("Board");
-        yield return AnytypeV2ViewOps.MoveView("v1", AnytypeV2Placement.Start);
-        yield return AnytypeV2ViewOps.DeleteView("v1");
         yield return AnytypeV2TypeOps.AddProperty("Season", AnytypeV2PropertyFormat.Select);
         yield return AnytypeV2TypeOps.RemoveProperty("Season");
         yield return AnytypeV2TypeOps.MoveProperty("Season", AnytypeV2Placement.Start);
@@ -96,9 +93,8 @@ public class AnytypeV2OpsTests
     }
 
     [Fact]
-    public void ViewsAndPropertiesHaveNoContainerToGoInside()
+    public void APropertyHasNoContainerToGoInside()
     {
-        Assert.Throws<ArgumentException>(() => AnytypeV2ViewOps.MoveView("v1", AnytypeV2Placement.Inside("b1")));
         Assert.Throws<ArgumentException>(() => AnytypeV2TypeOps.MoveProperty("p", AnytypeV2Placement.Inside("b1")));
     }
 
@@ -202,13 +198,10 @@ public class AnytypeV2OpsTests
     {
         AnytypeV2Op blockOp = AnytypeV2BlockOps.DeleteBlock(AnytypeV2BlockRef.ById("b1"));
         AnytypeV2Op typeOp = AnytypeV2TypeOps.RemoveProperty("p");
-        AnytypeV2Op viewOp = AnytypeV2ViewOps.DeleteView("v1");
 
         ArgumentException wrongEndpoint = Assert.Throws<ArgumentException>(() =>
             AnytypeV2OpBatch.ToBody([blockOp], AnytypeV2OpScope.Type));
         Assert.Contains("ops[0]", wrongEndpoint.Message);
         Assert.Throws<ArgumentException>(() => AnytypeV2OpBatch.ToBody([typeOp], AnytypeV2OpScope.Object));
-        AnytypeV2OpBatch.ToBody([viewOp], AnytypeV2OpScope.Object);
-        AnytypeV2OpBatch.ToBody([viewOp], AnytypeV2OpScope.Type);
     }
 }

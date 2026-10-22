@@ -343,8 +343,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   │   ├── AnytypeV2Placement.cs
 │   │   │   │   │   ├── AnytypeV2PropertyChanges.cs
 │   │   │   │   │   ├── AnytypeV2PropertyFormat.cs
-│   │   │   │   │   ├── AnytypeV2TypeOps.cs
-│   │   │   │   │   └── AnytypeV2ViewOps.cs
+│   │   │   │   │   └── AnytypeV2TypeOps.cs
 │   │   │   │   ├── AnytypeV2Client.cs
 │   │   │   │   ├── AnytypeV2Exception.cs
 │   │   │   │   ├── AnytypeV2Issue.cs
