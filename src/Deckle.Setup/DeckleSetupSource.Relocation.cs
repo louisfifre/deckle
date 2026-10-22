@@ -7,17 +7,20 @@ public sealed partial class DeckleSetupSource
 {
     // ── Data-root relocation ──────────────────────────────────────────────────
     // The move is the whole job of a --relocate-data run: its start, completion
-    // and cancel go to the journal; a failure is a Warning, which it keeps.
+    // and cancel go to the journal, and a failure is an Error, which the journal
+    // keeps: the folder stays where it was and the run stops. All four carry the
+    // work_id of one attempt (a retry is a new attempt), so a start with no end
+    // reads as abandoned.
 
     [Event(EvtRelocateStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Moving the app data folder")]
-    public void RelocateStarted()
+           Message = "Moving the app data folder | work_id={0}")]
+    public void RelocateStarted(string work_id)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtRelocateStarted);
+            WriteEvent(EvtRelocateStarted, work_id);
     }
 
     [Event(EvtRelocateStartedDetail,
@@ -34,11 +37,11 @@ public sealed partial class DeckleSetupSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "The app data folder moved")]
-    public void RelocateCompleted()
+           Message = "The app data folder moved | work_id={0}")]
+    public void RelocateCompleted(string work_id)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtRelocateCompleted);
+            WriteEvent(EvtRelocateCompleted, work_id);
     }
 
     [Event(EvtRelocateCompletedDetail,
@@ -54,13 +57,13 @@ public sealed partial class DeckleSetupSource
     // ex_type is empty for a refusal decided here (insufficient_space,
     // app_still_running); it carries the exception for reason=threw.
     [Event(EvtRelocateFailed,
-           Level = EventLevel.Warning,
+           Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The app data move failed | reason={0} | step={1} | ex_type={2} | ex_message={3}")]
-    public void RelocateFailed(string reason, string step, string ex_type, string ex_message)
+           Message = "The app data move failed | work_id={0} | reason={1} | step={2} | ex_type={3} | ex_message={4}")]
+    public void RelocateFailed(string work_id, string reason, string step, string ex_type, string ex_message)
     {
-        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtRelocateFailed, reason, step, ex_type, ex_message);
+        if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtRelocateFailed, work_id, reason, step, ex_type, ex_message);
     }
 
     [Event(EvtRelocateInsufficientSpaceDetail,
@@ -77,10 +80,10 @@ public sealed partial class DeckleSetupSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "The app data move was cancelled | reason=window_closed | step={0}")]
-    public void RelocateCancelled(string step)
+           Message = "The app data move was cancelled | work_id={0} | reason=window_closed | step={1}")]
+    public void RelocateCancelled(string work_id, string step)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtRelocateCancelled, step);
+            WriteEvent(EvtRelocateCancelled, work_id, step);
     }
 }

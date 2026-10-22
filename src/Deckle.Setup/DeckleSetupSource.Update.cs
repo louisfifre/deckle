@@ -60,16 +60,18 @@ public sealed partial class DeckleSetupSource
     }
 
     // The download is the update pipeline of this run: start, completion and
-    // cancel go to the journal; a failure is a Warning, which it keeps anyway.
+    // cancel go to the journal, and a failure is an Error, which it keeps: the
+    // update does not happen. All four carry the work_id of one attempt (a retry
+    // is a new attempt), so a start with no end reads as abandoned.
     [Event(EvtUpdateDownloadStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Downloading the Deckle update")]
-    public void UpdateDownloadStarted()
+           Message = "Downloading the Deckle update | work_id={0}")]
+    public void UpdateDownloadStarted(string work_id)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtUpdateDownloadStarted);
+            WriteEvent(EvtUpdateDownloadStarted, work_id);
     }
 
     [Event(EvtUpdateDownloadStartedDetail,
@@ -86,35 +88,35 @@ public sealed partial class DeckleSetupSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "The Deckle update was downloaded | version={0} | size_bytes={1} | duration_ms={2}")]
-    public void UpdateDownloadCompleted(string version, long size_bytes, long duration_ms)
+           Message = "The Deckle update was downloaded | work_id={0} | version={1} | size_bytes={2} | duration_ms={3}")]
+    public void UpdateDownloadCompleted(string work_id, string version, long size_bytes, long duration_ms)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtUpdateDownloadCompleted, version, size_bytes, duration_ms);
+            WriteEvent(EvtUpdateDownloadCompleted, work_id, version, size_bytes, duration_ms);
     }
 
     [Event(EvtUpdateDownloadCancelled,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "The update download was cancelled | reason=window_closed | step={0}")]
-    public void UpdateDownloadCancelled(string step)
+           Message = "The update download was cancelled | work_id={0} | reason=window_closed | step={1}")]
+    public void UpdateDownloadCancelled(string work_id, string step)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtUpdateDownloadCancelled, step);
+            WriteEvent(EvtUpdateDownloadCancelled, work_id, step);
     }
 
     // reason names the failure; ex_type is empty when no exception was thrown
     // (a download the shared Downloader reported failed, a payload without
     // Deckle.exe), and ex_message then carries that report.
     [Event(EvtUpdateDownloadFailed,
-           Level = EventLevel.Warning,
+           Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The update download failed | reason={0} | step={1} | ex_type={2} | ex_message={3}")]
-    public void UpdateDownloadFailed(string reason, string step, string ex_type, string ex_message)
+           Message = "The update download failed | work_id={0} | reason={1} | step={2} | ex_type={3} | ex_message={4}")]
+    public void UpdateDownloadFailed(string work_id, string reason, string step, string ex_type, string ex_message)
     {
-        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtUpdateDownloadFailed, reason, step, ex_type, ex_message);
+        if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtUpdateDownloadFailed, work_id, reason, step, ex_type, ex_message);
     }
 
     [Event(EvtUpdateHandoff,
