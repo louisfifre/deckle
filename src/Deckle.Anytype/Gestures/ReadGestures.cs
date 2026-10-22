@@ -284,9 +284,9 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
         }
 
         // Anytype's own bin, distinct from the space's « Archivé » checkbox: a
-        // binned object still answers a GET by id. The v2 flag's place (root or
-        // properties) was not measured; the map looks in both.
-        if (props.Archived(obj.Root)) AppendFact(sb, "Corbeille", "oui");
+        // binned object still answers a GET by id, while every v2 search leaves
+        // it out unless asked.
+        if (props.InBin) AppendFact(sb, "Corbeille", "oui");
     }
 
     static string? JoinOrNull(IReadOnlyList<string> names) => names.Count > 0 ? string.Join(", ", names) : null;

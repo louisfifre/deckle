@@ -17,8 +17,7 @@ namespace Deckle.Anytype;
 //   • text is a string.
 //
 // Not measured: number, multi_select and files values (read here by analogy
-// with select and objects, tolerantly), and whether a binned object carries an
-// `archived` flag (see Archived).
+// with select and objects, tolerantly).
 public sealed class AnytypeV2PropertyMap(JsonObject? properties)
 {
     public static AnytypeV2PropertyMap Of(AnytypeV2ObjectDocument document) => new(document.Properties);
@@ -58,11 +57,11 @@ public sealed class AnytypeV2PropertyMap(JsonObject? properties)
 
     public int Count(string key) => Value(key) is JsonArray array ? array.Count : 0;
 
-    // True when the object is in Anytype's bin. Whether v2 serves the flag, and
-    // where, is not measured: a live object was never seen carrying it, so it is
-    // read from the properties and from the root, and absent means not binned.
-    public bool Archived(JsonObject? root) =>
-        Checkbox("archived") || (root?["archived"] is JsonValue v && v.TryGetValue(out bool b) && b);
+    // True when the object is in Anytype's bin. Measured live on 2026-10-22: a
+    // GET of a binned object serves `"is_archived": true` among its properties,
+    // nothing at the root, and the key is absent otherwise. Not to be confused
+    // with the space's own « Archivé » checkbox (DevSpace.Props.Archive).
+    public bool InBin => Checkbox("is_archived");
 
     private JsonNode? Value(string key) => properties is not null && properties.TryGetPropertyValue(key, out JsonNode? n) ? n : null;
 

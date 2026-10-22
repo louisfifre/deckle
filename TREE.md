@@ -1844,6 +1844,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ProjectGesturesBugNotes.md
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── QueryGesturesTests.cs
+│   │   ├── ReadGesturesBugNotes.md
 │   │   ├── ReadGesturesTests.cs
 │   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesBugNotes.md

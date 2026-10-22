@@ -78,7 +78,10 @@ public sealed record AnytypeV2SearchPage(IReadOnlyList<AnytypeV2SearchRow> Rows,
 // POST /v2/spaces/{id}/search. A read carried by POST: the filtering is done by
 // the server, which is the point, and the page is chosen in the query string
 // (`limit`, `offset`), never in the body. Measured live on 2026-10-22: rows
-// carry no snippet and no markdown.
+// carry no snippet and no markdown, and objects in Anytype's bin are left out
+// unless a filter asks for `archived = true` (none of 54 binned objects showed
+// in a listing by type or a full-text search on its exact name), so no caller
+// filters the bin. That filter key is refused (400) once a type is named.
 public sealed class AnytypeV2Searcher(AnytypeV2Client client)
 {
     // The v1 search served up to 1000 per page. The v2 ceiling was not
