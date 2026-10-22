@@ -2224,6 +2224,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
 │   │   ├── RewriteDiffGateTests.cs
 │   │   ├── RewriteFailureMessageTests.cs
+│   │   ├── RewriteJournalTests.cs
 │   │   ├── RewriteServiceFeedbackTests.cs
 │   │   ├── SentenceBoundaryTests.cs
 │   │   └── SentenceRewriteTests.cs

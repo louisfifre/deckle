@@ -18,6 +18,7 @@ public static class HotLoops
     public static readonly LoopPulse HudRevealGeometry = new("hud_reveal_geometry", watchesStall: false);
     public static readonly LoopPulse HudStateChanged = new("hud_state_changed", watchesStall: false);
     public static readonly LoopPulse AudioCaptureLag = new("audio_capture_lag", watchesStall: false);
+    public static readonly LoopPulse LlmInteractiveRewrite = new("llm_interactive_rewrite", watchesStall: false);
 }
 
 // Counts the ticks of one loop and, once a minute, turns the count into a
