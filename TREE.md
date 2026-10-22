@@ -2090,6 +2090,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientHeartbeatWindowTests.cs
 │   │   ├── AmbientHueChangeAttributorTests.cs
 │   │   ├── AmbientNearBlackTests.cs
+│   │   ├── AmbientObservabilityCollection.cs
 │   │   ├── AmbientPresetsTests.cs
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
