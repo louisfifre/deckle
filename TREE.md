@@ -1364,6 +1364,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Detection/
 │   │   │   ├── AppSessionTracker.cs
 │   │   │   ├── DetectionStatus.cs
+│   │   │   ├── FailureIncident.cs
 │   │   │   ├── ForegroundChange.cs
 │   │   │   ├── ForegroundChangeMapping.cs
 │   │   │   ├── IForegroundMonitor.cs
@@ -2188,6 +2189,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ForegroundChangeMappingTests.cs
 │   │   ├── JournalClosersTests.cs
 │   │   ├── KeyValuesReaderTests.cs
+│   │   ├── OrchestrationBugNotes.md
+│   │   ├── OrchestrationIncidentTests.cs
 │   │   ├── ProfileTransactionTests.cs
 │   │   ├── ScanOnDiskTests.cs
 │   │   └── SteamLibraryTests.cs

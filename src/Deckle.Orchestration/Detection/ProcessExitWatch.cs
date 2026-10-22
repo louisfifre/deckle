@@ -17,6 +17,10 @@ public sealed class ProcessExitWatch : IDisposable
     // later refusal gets the Verbose detail.
     private static int _unavailableReported;
 
+    // One Warning opens the incident of a callback that keeps throwing; the
+    // next exit that is handled closes it.
+    private readonly FailureIncident _callbackIncident = new();
+
     private readonly object _gate = new();
     private readonly Dictionary<int, Registration> _watches = new();
     private bool _disposed;
@@ -110,15 +114,19 @@ public sealed class ProcessExitWatch : IDisposable
     // the resident process; on the inline path it would surface in the
     // caller of Watch for an exit nobody asked it to handle. Contained on
     // both, so one faulty handler costs one session end, not the app.
-    private static void NotifyExited(int pid, Action<int> onExited)
+    private void NotifyExited(int pid, Action<int> onExited)
     {
         try
         {
             onExited(pid);
+            if (_callbackIncident.Close()) DeckleOrchestrationSource.Log.ExitWatchCallbackRecovered();
         }
         catch (Exception ex)
         {
-            DeckleOrchestrationSource.Log.ExitWatchCallbackFailed(pid, ex.GetType().Name, ex.Message);
+            if (_callbackIncident.Open())
+                DeckleOrchestrationSource.Log.ExitWatchCallbackFailed(pid, ex.GetType().Name, ex.Message);
+            else
+                DeckleOrchestrationSource.Log.ExitWatchCallbackFailedDetail(pid, ex.GetType().Name, ex.Message);
         }
     }
 

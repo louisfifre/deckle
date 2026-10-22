@@ -30,6 +30,8 @@ public sealed class WatcherForegroundMonitor : IForegroundMonitor, IDisposable
     // Hooking thread only.
     private readonly HashSet<int> _deniedPidsLogged = [];
 
+    private readonly FailureIncident _deliveryIncident = new();
+
     private ForegroundChange? _current;
     private bool _disposed;
 
@@ -69,12 +71,26 @@ public sealed class WatcherForegroundMonitor : IForegroundMonitor, IDisposable
         // A subscriber failure must not end the resident process, as in WmiProcessStartSource.
         ThreadPool.QueueUserWorkItem(_ =>
         {
-            try { ForegroundChanged?.Invoke(change); }
+            try
+            {
+                ForegroundChanged?.Invoke(change);
+                if (_deliveryIncident.Close()) DeckleOrchestrationSource.Log.ForegroundDeliveryRecovered();
+            }
             catch (Exception ex)
             {
-                DeckleOrchestrationSource.Log.ForegroundDeliveryFailed(change.ProcessId, ex.GetType().Name, ex.Message);
+                LogDeliveryFailed(_deliveryIncident, change.ProcessId, ex);
             }
         });
+    }
+
+    // One Warning opens the incident; the failures that follow, one per focus
+    // change while the subscriber stays broken, only get the Verbose detail.
+    internal static void LogDeliveryFailed(FailureIncident incident, int pid, Exception ex)
+    {
+        if (incident.Open())
+            DeckleOrchestrationSource.Log.ForegroundDeliveryFailed(pid, ex.GetType().Name, ex.Message);
+        else
+            DeckleOrchestrationSource.Log.ForegroundDeliveryFailedDetail(pid, ex.GetType().Name, ex.Message);
     }
 
     // Once per process: an F11 toggle or a monitor move of the same window

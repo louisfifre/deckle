@@ -352,13 +352,13 @@ public sealed class OrchestrationRuntime : IDisposable
     // Internal so the observability test checks the exact pair a session emits.
     internal static void LogSessionStarted(AppEntry entry, int pid)
     {
-        DeckleOrchestrationSource.Log.SessionStarted();
+        DeckleOrchestrationSource.Log.SessionStarted(entry.Id, pid);
         DeckleOrchestrationSource.Log.SessionStartedDetail(entry.Id, entry.DisplayName, entry.ProcessName, pid);
     }
 
     internal static void LogSessionEnded(AppEntry entry, SessionEndReason reason)
     {
-        DeckleOrchestrationSource.Log.SessionEnded(ReasonName(reason));
+        DeckleOrchestrationSource.Log.SessionEnded(entry.Id, ReasonName(reason));
         DeckleOrchestrationSource.Log.SessionEndedDetail(entry.Id, entry.DisplayName);
     }
 
