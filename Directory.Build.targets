@@ -7,4 +7,36 @@
     <IsRidAgnostic>true</IsRidAgnostic>
   </PropertyGroup>
 
+  <!-- One ONNX Runtime in every Deckle process: the pinned NuGet build (1.23.0,
+       see Directory.Packages.props), which matches ONNX Runtime GenAI 0.13.
+       Since Windows App SDK 2.0, Windows ML ships as the NuGet package
+       Microsoft.Windows.AI.MachineLearning (pulled in by Microsoft.WindowsAppSDK.ML),
+       and in self-contained mode (Deckle.App) its natives are plain NuGet
+       copy-local files: a second onnxruntime.dll (1.24), DirectML.dll and the
+       Windows ML DLL. The SDK then keeps the higher onnxruntime.dll file version
+       for the root output and the deps.json, so the GenAI judge would run on a
+       runtime it was not built for. Deckle does not use Windows ML, so drop the
+       package's native assets before the copy-local step; its managed projection
+       stays.
+
+       Same shape as the _SuppressWindowsMLNativeCopyLocal target that
+       Microsoft.WindowsAppSDK.ML ships for framework-dependent apps (the test
+       projects), which is skipped in self-contained mode and leaves the
+       RuntimeTargets items, hence the deps.json entries, in place. The only
+       Microsoft switch left that reaches it, WindowsAppSDKMLPassthroughOnnxRuntime,
+       is documented as incompatible with WindowsAppSDKSelfContained, so it is
+       not used. A no-op in projects that do not resolve the package.
+
+       Replaces the Windows App SDK 1.8 exclusion of the MSIX DirectML.dll, whose
+       hook (AddMicrosoftWindowsAppSDKPayloadFilesFromMsix) no longer exists. -->
+  <Target Name="ExcludeWindowsMLNativeAssets"
+          AfterTargets="ResolveLockFileCopyLocalFiles"
+          BeforeTargets="_CopyFilesMarkedCopyLocal">
+    <ItemGroup>
+      <NativeCopyLocalItems Remove="@(NativeCopyLocalItems)" Condition="'%(NativeCopyLocalItems.NuGetPackageId)' == 'Microsoft.Windows.AI.MachineLearning'" />
+      <RuntimeTargetsCopyLocalItems Remove="@(RuntimeTargetsCopyLocalItems)" Condition="'%(RuntimeTargetsCopyLocalItems.NuGetPackageId)' == 'Microsoft.Windows.AI.MachineLearning' and '%(RuntimeTargetsCopyLocalItems.AssetType)' == 'native'" />
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.NuGetPackageId)' == 'Microsoft.Windows.AI.MachineLearning' and '%(ReferenceCopyLocalPaths.AssetType)' == 'native'" />
+    </ItemGroup>
+  </Target>
+
 </Project>

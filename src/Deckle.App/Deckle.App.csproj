@@ -137,19 +137,4 @@
           DestinationFiles="@(_AutocorrectLexicon->'$(OutDir)Data\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true" />
   </Target>
-
-  <!-- Windows App SDK 1.8 self-contained deployment contributes its own
-       DirectML.dll through MsixContent. Deckle already publishes the DirectML
-       version required by ONNX Runtime GenAI, and the two files share the same
-       output path. Use Windows App SDK's exclusion hook before its payload is
-       promoted to None/ResolvedFileToPublish; removing the resolved item later
-       is too late for the .NET SDK's duplicate-output check. -->
-  <Target Name="ExcludeWindowsAppSDKDirectMLRuntime"
-          BeforeTargets="AddMicrosoftWindowsAppSDKPayloadFilesFromMsix"
-          DependsOnTargets="GetExtractMicrosoftWindowsAppSDKMsixFilesInputs"
-          Condition="'$(WindowsAppSDKSelfContained)' == 'true'">
-    <ItemGroup>
-      <MicrosoftWindowsAppSDKFilesExcluded Include="$(MicrosoftWindowsAppSDKMsixContent)\DirectML.dll" />
-    </ItemGroup>
-  </Target>
 </Project>
