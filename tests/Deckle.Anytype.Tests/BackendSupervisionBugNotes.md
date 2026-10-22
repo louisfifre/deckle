@@ -44,3 +44,12 @@
 - **Violated invariant:** A degradation that repeats is one incident: one line opens it, one marks a streak past the threshold, one closes it, and all carry the same id. The attempts of the ladder are detail.
 - **Recurrence cue:** An event written from the reconciler without looking at its trigger, or a new journal-tagged event on a path the ladder runs again; a `BackendRestartsFailing` or `BackendRecovered` without `work_id`.
 - **Regression coverage:** `BackendRestartIncidentTests.ARestartAttemptWhoseServeDiesAgainWritesNoJournalLine` pins that a reconciliation triggered by the ladder writes no journal-kept line. `ABackendThatRejectsTenRestartsLeavesOneIncidentInTheJournal` and `ADeathThatEndsInAGiveUpClosesTheIncidentWithItsId` pin the one-opener, one-mark, one-closer shape and the shared id. `AFirstStartWhoseServeDiesPairsItsStartAndItsStopInTheJournal` keeps the first start in the journal. The 280-line count and the real ladder timing are not reproduced; the reconciliation runs against fakes.
+
+## A foreign endpoint owner was logged with its full path
+
+- **Trigger:** A program that is not a trusted Anytype provider holds the REST endpoint when the reconciler adopts or spawns.
+- **Observed symptom:** The conflict detail and the listener observation carried the owner's full executable path, which embeds the Windows user name (a reading of the code, not a captured journal).
+- **Cause:** Both events were given `owner.ExecutablePath` unchanged.
+- **Violated invariant:** A line describes the machine with paths relative to a known root. The path of a program outside Deckle's catalog has no such root, so its file name is the most the log keeps.
+- **Recurrence cue:** An event written with an `ExecutablePath` or other absolute path of a process Deckle does not own.
+- **Regression coverage:** `BackendOwnerPathTests.AnUntrustedEndpointOwnerIsNamedByItsFileNameAlone`. The trusted-owner path of `BackendListenerObserved` is changed the same way but not asserted separately.

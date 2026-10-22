@@ -90,6 +90,8 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public const int EvtBackendRestartAttemptStopped  = 62;
     public const int EvtBackendRestartAttemptTimedOut = 63;
     public const int EvtBackendRestartAttemptSpawnFailed = 64;
+    public const int EvtApiRefusalsEnded              = 65;
+    public const int EvtApiRequestSuperseded          = 66;
 
     // ── HTTP transport ──────────────────────────────────────────────────
 
@@ -121,9 +123,10 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     }
 
     // The cause travels on the milestone because errors.jsonl keeps it and
-    // drops the Verbose detail. reason: http_status, transport, timeout or
-    // untrusted_endpoint. The server's error text stays in the detail below:
-    // it is free text from the backend, not a bounded cause.
+    // drops the Verbose detail. reason: ApiFailureReasons. A repeating failure
+    // writes this line once, when it starts: transport and timeout failures
+    // until the backend answers (ApiTransportRecovered), identical refusals
+    // until another request ends the run (ApiRefusalsEnded).
     [Event(EvtApiRequestFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Network,
@@ -141,6 +144,31 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public void ApiRequestFailedDetail(string method, string path, int status_code, string error)
     {
         if (IsEnabled()) WriteEvent(EvtApiRequestFailedDetail, method, path, status_code, error);
+    }
+
+    // Closes a run of identical refusals ApiRequestFailed(reason=http_status|
+    // untrusted_endpoint) opened. The server's error text stays out of the log
+    // (it is free text, and the detail above carries the machine code instead).
+    // A run of one is already told by its opening line and writes nothing here.
+    [Event(EvtApiRefusalsEnded,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Network,
+           Tags = ObservationTags.Journal,
+           Message = "A run of refused Anytype API requests ended | reason={0} | status={1} | refused_requests={2} | duration_s={3:F0}")]
+    public void ApiRefusalsEnded(string reason, int status_code, int refused_requests, double duration_s)
+    {
+        if (IsEnabled()) WriteEvent(EvtApiRefusalsEnded, reason, status_code, refused_requests, duration_s);
+    }
+
+    // A write refused because the version it carried is stale. The caller re-reads
+    // and retries, so this is the protocol working, not a failure.
+    [Event(EvtApiRequestSuperseded,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Network,
+           Message = "api write superseded | method={0} | path={1} | status={2} | code={3}")]
+    public void ApiRequestSuperseded(string method, string path, int status_code, string code)
+    {
+        if (IsEnabled()) WriteEvent(EvtApiRequestSuperseded, method, path, status_code, code);
     }
 
     // Closes the transport incident ApiRequestFailed(reason=transport|timeout)

@@ -367,6 +367,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── AnytypeApiClient.Schema.cs
 │   │   │   ├── AnytypeCredentials.cs
 │   │   │   ├── AnytypeRequestGate.cs
+│   │   │   ├── ApiFailureIncidents.cs
 │   │   │   └── SpaceWriteLock.cs
 │   │   ├── Backend/
 │   │   │   ├── BackendEndpointTrust.cs
@@ -1821,6 +1822,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── Experiences/
 │   │   │       ├── deckle.en-US.experience.fixture.json
 │   │   │       └── deckle.en-US.experience.zip
+│   │   ├── AnytypeApiClientBugNotes.md
 │   │   ├── AnytypeApiClientReplayTests.cs
 │   │   ├── AnytypeCredentialsTests.cs
 │   │   ├── AnytypeRequestGateTests.cs
@@ -1832,6 +1834,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AnytypeV2PropertyMapTests.cs
 │   │   ├── AnytypeV2ReadWriteTests.cs
 │   │   ├── AnytypeV2SearcherTests.cs
+│   │   ├── ApiFailureIncidentTests.cs
 │   │   ├── AssemblyInfo.cs
 │   │   ├── BackendEndpointTrustTests.cs
 │   │   ├── BackendListenerOwnerTests.cs
