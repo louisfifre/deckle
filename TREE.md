@@ -2110,6 +2110,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HudTuningBugNotes.md
 │   │   ├── HudTuningSectionsBugNotes.md
 │   │   ├── HudViewModelTests.cs
+│   │   ├── IlReferences.cs
 │   │   ├── TuningModelTests.cs
 │   │   └── UtteranceCycleTests.cs
 │   ├── Deckle.Presets.Tests/
