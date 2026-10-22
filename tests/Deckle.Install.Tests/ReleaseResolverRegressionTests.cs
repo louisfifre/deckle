@@ -52,6 +52,85 @@ public sealed class ReleaseResolverRegressionTests
         Assert.Contains("Deckle-v0.13.9.zip", error.Message, StringComparison.Ordinal);
     }
 
+    // The listing mixes the app's releases with the native runtime's `native-v*`
+    // ones, newest first, and GitHub serves it by pages. When enough native
+    // releases are newer than the newest app release, that app release sits on a
+    // later page: reading page one alone finds none and the installer refuses.
+    [Fact]
+    public async Task The_newest_app_release_is_found_on_a_later_page()
+    {
+        var pages = new Dictionary<int, GitHubRelease[]>
+        {
+            [1] = [.. Enumerable.Range(0, ReleaseResolver.PageSize).Select(i => Release($"native-v1.{i}.0", prerelease: false))],
+            [2] = [Release("v0.13.7", prerelease: false), Release("v0.13.6", prerelease: false)],
+        };
+
+        var resolved = await ReleaseResolver.ResolveLatestAsync(
+            (page, _) => Task.FromResult(pages.GetValueOrDefault(page, [])), CancellationToken.None);
+
+        Assert.Equal("v0.13.7", resolved.Tag);
+    }
+
+    // The page that holds an app release ends the search: the pages after it are
+    // never asked for.
+    [Fact]
+    public async Task The_search_stops_at_the_first_page_holding_an_app_release()
+    {
+        var asked = new List<int>();
+        var pages = new Dictionary<int, GitHubRelease[]>
+        {
+            [1] = [.. Enumerable.Range(0, ReleaseResolver.PageSize).Select(i => Release($"native-v1.{i}.0", prerelease: false))],
+            [2] = [Release("v0.13.7", prerelease: false)],
+            [3] = [Release("v0.13.6", prerelease: false)],
+        };
+
+        await ReleaseResolver.ResolveLatestAsync(
+            (page, _) => { asked.Add(page); return Task.FromResult(pages.GetValueOrDefault(page, [])); },
+            CancellationToken.None);
+
+        Assert.Equal([1, 2], asked);
+    }
+
+    // A listing that holds no app release at all ends on a short page, with the
+    // same refusal as before.
+    [Fact]
+    public async Task A_listing_without_any_app_release_is_refused_once_it_runs_out()
+    {
+        var asked = new List<int>();
+        var pages = new Dictionary<int, GitHubRelease[]>
+        {
+            [1] = [.. Enumerable.Range(0, ReleaseResolver.PageSize).Select(i => Release($"native-v1.{i}.0", prerelease: false))],
+            [2] = [Release("native-v0.9.0", prerelease: false)],
+        };
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => ReleaseResolver.ResolveLatestAsync(
+            (page, _) => { asked.Add(page); return Task.FromResult(pages.GetValueOrDefault(page, [])); },
+            CancellationToken.None));
+
+        Assert.Contains("No published Deckle app release", error.Message, StringComparison.Ordinal);
+        Assert.Equal([1, 2], asked);
+    }
+
+    // The loop has a ceiling: a listing that only ever returns full pages of
+    // native releases cannot keep the installer asking for ever.
+    [Fact]
+    public async Task The_search_gives_up_at_the_page_cap()
+    {
+        int asked = 0;
+
+        var error = await Assert.ThrowsAsync<InvalidOperationException>(() => ReleaseResolver.ResolveLatestAsync(
+            (_, _) =>
+            {
+                asked++;
+                return Task.FromResult(Enumerable.Range(0, ReleaseResolver.PageSize)
+                    .Select(i => Release($"native-v1.{i}.0", prerelease: false)).ToArray());
+            },
+            CancellationToken.None));
+
+        Assert.Equal(ReleaseResolver.MaxPages, asked);
+        Assert.Contains("No published Deckle app release", error.Message, StringComparison.Ordinal);
+    }
+
     private static GitHubRelease Release(string tag, bool prerelease) => new()
     {
         TagName = tag,

@@ -29,20 +29,55 @@ public static class ReleaseResolver
     // (unlike publish-app.ps1 which resolves it from the live git remote).
     private const string Repo = "louisfifre/deckle";
 
+    // GitHub's largest page. The listing is asked in pages of this size.
+    internal const int PageSize = 100;
+
+    // Ceiling on the pages one resolution reads (1,000 releases): the installer
+    // must not ask for ever if the listing never shows an app release.
+    internal const int MaxPages = 10;
+
     private static readonly HttpClient s_http = CreateClient();
 
     public sealed record ResolvedRelease(string Tag, string ZipUrl, string Sha256Url, long ZipSize);
 
-    public static async Task<ResolvedRelease> ResolveLatestAsync(CancellationToken ct)
+    public static Task<ResolvedRelease> ResolveLatestAsync(CancellationToken ct) =>
+        ResolveLatestAsync(FetchPageAsync, ct);
+
+    // The seam: how a page of the listing is fetched is a parameter, so a test
+    // feeds pages without a network.
+    //
+    // Why pages: the listing is newest first and also holds the native runtime's
+    // `native-v*` releases, so a run of newer native releases can push every app
+    // release off the first page. The search reads page after page and resolves
+    // within the first page that holds an app release; it ends on a page shorter
+    // than PageSize (the listing is exhausted) or at MaxPages. It leans on the
+    // API listing newest first: a lower version created after a higher one could
+    // hide it on a later page, which the release flow does not produce.
+    internal static async Task<ResolvedRelease> ResolveLatestAsync(
+        Func<int, CancellationToken, Task<GitHubRelease[]>> fetchPage, CancellationToken ct)
     {
-        string api = $"https://api.github.com/repos/{Repo}/releases";
+        for (int page = 1; page <= MaxPages; page++)
+        {
+            GitHubRelease[] releases = await fetchPage(page, ct).ConfigureAwait(false);
+            if (releases.Any(IsPublishedAppRelease))
+                return ResolveLatestAppRelease(releases);
+            if (releases.Length < PageSize)
+                break;
+        }
+
+        throw new InvalidOperationException("No published Deckle app release found on GitHub.");
+    }
+
+    private static async Task<GitHubRelease[]> FetchPageAsync(int page, CancellationToken ct)
+    {
+        string api = $"https://api.github.com/repos/{Repo}/releases?per_page={PageSize}&page={page}";
 
         await using Stream stream = await s_http.GetStreamAsync(api, ct).ConfigureAwait(false);
         GitHubRelease[]? releases = await JsonSerializer
             .DeserializeAsync(stream, ReleaseJsonContext.Default.GitHubReleaseArray, ct)
             .ConfigureAwait(false);
 
-        return ResolveLatestAppRelease(releases ?? []);
+        return releases ?? [];
     }
 
     // Fetches and parses the payload's .sha256 sidecar — `<hex> *<filename>`
@@ -68,7 +103,7 @@ public static class ReleaseResolver
     internal static ResolvedRelease ResolveLatestAppRelease(IEnumerable<GitHubRelease> releases)
     {
         GitHubRelease? latest = releases
-            .Where(r => !r.Draft && !r.Prerelease && TryParseAppVersion(r.TagName, out _))
+            .Where(IsPublishedAppRelease)
             .OrderByDescending(r => ParseAppVersion(r.TagName!))
             .FirstOrDefault();
 
@@ -86,6 +121,9 @@ public static class ReleaseResolver
             RequireAssetUrl(shaAsset, shaName),
             zipAsset.Size);
     }
+
+    private static bool IsPublishedAppRelease(GitHubRelease release) =>
+        !release.Draft && !release.Prerelease && TryParseAppVersion(release.TagName, out _);
 
     private static bool TryParseAppVersion(string? tag, out Version version)
     {
