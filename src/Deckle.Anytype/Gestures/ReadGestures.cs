@@ -22,8 +22,9 @@ namespace Deckle.Anytype;
 // `?format=md` gives only {etag, id, type, markdown} — no title, no property —
 // so a read that needs both (every typed read does: the title and the done box
 // head each answer) makes two requests, properties first so a wrong type is
-// refused before the body is paid for. Name resolution stays on v1 for now.
-public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver, AnytypeV2Client v2)
+// refused before the body is paid for. Only name resolution (NameResolver)
+// stays on v1.
+public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
 {
     readonly AnytypeV2ObjectReader _reader = new(v2);
 
@@ -40,10 +41,10 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver, An
     public async Task<string> TaskPropertiesAsync(string task, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
-        JsonObject obj = await ReadAsync(task, DevSpace.Types.Task, ct);
+        Loaded obj = await LoadAsync(task, DevSpace.Types.Task, withMarkdown: false, ct);
 
         var sb = new StringBuilder();
-        AppendIdentity(sb, obj, done: ReadProp.Checkbox(obj, DevSpace.Props.Done));
+        AppendIdentity(sb, obj, done: obj.Props.Checkbox(DevSpace.Props.Done));
         await AppendPropertiesAsync(sb, obj, DevSpace.Types.Task, ct);
 
         DeckleAnytypeSource.Log.GestureCompleted("task_properties", Elapsed(started));
@@ -146,13 +147,13 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver, An
     public async Task<string> DocumentOutlineAsync(string document, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
-        JsonObject obj = await ReadAsync(document, DevSpace.Types.Document, ct);
+        Loaded obj = await LoadAsync(document, DevSpace.Types.Document, withMarkdown: true, ct);
 
         var sb = new StringBuilder();
         AppendIdentity(sb, obj, done: null);
         await AppendPropertiesAsync(sb, obj, DevSpace.Types.Document, ct);
 
-        string body = ReadProp.Markdown(obj);
+        string body = obj.Markdown;
         int preamble = MarkdownBody.Clean(MarkdownBody.Preamble(body)).Length;
         if (preamble > 0) sb.Append($"\nPréambule : {preamble} car.");
         IReadOnlyList<MarkdownBody.Section> outline = MarkdownBody.Outline(body);
@@ -207,17 +208,6 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver, An
 
     // ── shared rendering ─────────────────────────────────────────────────────
 
-    async Task<JsonObject> ReadAsync(string selector, string typeKey, CancellationToken ct)
-    {
-        string id = await resolver.ResolveAsync(selector, [typeKey], ct);
-        JsonObject obj = await api.GetObjectAsync(id, ct);
-        string actual = ReadProp.TypeKey(obj) ?? "";
-        if (actual.Length > 0 && actual != typeKey)
-            throw new InvalidOperationException(
-                $"{ReadProp.Name(obj)} est un objet {actual}, pas {typeKey} : lis-le avec la lecture de son type.");
-        return obj;
-    }
-
     // An object as the typed reads need it: identity and properties from one v2
     // read, the body from a second when the gesture projects it.
     sealed record Loaded(string Id, string Name, AnytypeV2PropertyMap Props, JsonObject Root, string Markdown);
@@ -253,9 +243,6 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver, An
     static void AppendIdentity(StringBuilder sb, Loaded obj, bool? done) =>
         AppendIdentity(sb, obj.Id, obj.Name, done);
 
-    static void AppendIdentity(StringBuilder sb, JsonObject obj, bool? done) =>
-        AppendIdentity(sb, ReadProp.Id(obj), ReadProp.Name(obj), done);
-
     static void AppendIdentity(StringBuilder sb, string id, string name, bool? done)
     {
         sb.Append("id : ").Append(id);
@@ -266,26 +253,36 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver, An
 
     // Every mapped property with a value, in the type's digest order. Done is
     // already in the title box; a checkbox shows only when ticked.
-    async Task AppendPropertiesAsync(StringBuilder sb, JsonObject obj, string typeKey, CancellationToken ct)
+    async Task AppendPropertiesAsync(StringBuilder sb, Loaded obj, string typeKey, CancellationToken ct)
     {
+        AnytypeV2PropertyMap props = obj.Props;
         foreach (PropertyDef def in DevSpace.PropertiesFor(typeKey))
         {
             if (def.Key == DevSpace.Props.Done) continue;
+            // v2 serves a select as its option name and a multi-select as the
+            // names, ready to show (measured 2026-10-22 on the task's état and
+            // livrables); the number and files shapes were not measured.
             string? value = def.Format switch
             {
-                "objects" => await NamesAsync(ReadProp.ObjectRefs(obj, def.Key), ct),
-                "date" => ReadProp.Day(obj, def.Key),
-                "checkbox" => ReadProp.Checkbox(obj, def.Key) ? "oui" : null,
-                _ => ReadProp.Render(obj, def.Key),
+                "objects" => await NamesAsync(props.ObjectIds(def.Key), ct),
+                "date" => props.Day(def.Key),
+                "checkbox" => props.Checkbox(def.Key) ? "oui" : null,
+                "number" => props.Number(def.Key),
+                "select" => props.Select(def.Key),
+                "multi_select" => JoinOrNull(props.Names(def.Key)),
+                "files" => props.Count(def.Key) is > 0 and int n ? $"{n} fichier(s)" : null,
+                _ => props.Text(def.Key),
             };
             AppendFact(sb, def.Label, value);
         }
 
         // Anytype's own bin, distinct from the space's « Archivé » checkbox: a
-        // binned object still answers a GET by id.
-        if (obj["archived"]?.GetValue<bool>() == true) AppendFact(sb, "Corbeille", "oui");
+        // binned object still answers a GET by id. The v2 flag's place (root or
+        // properties) was not measured; the map looks in both.
+        if (props.Archived(obj.Root)) AppendFact(sb, "Corbeille", "oui");
     }
 
+    static string? JoinOrNull(IReadOnlyList<string> names) => names.Count > 0 ? string.Join(", ", names) : null;
     // Links are rendered by name: an id tells a reader nothing, and v2 serves
     // only ids. One properties read per link is the price; links are few on
     // every type. An untitled linked object reads « (sans titre) »: v1 fell back
@@ -317,91 +314,4 @@ public sealed class ReadGestures(AnytypeApiClient api, NameResolver resolver, An
     }
 
     static double Elapsed(DateTime startUtc) => (DateTime.UtcNow - startUtc).TotalMilliseconds;
-}
-
-// Reads typed values out of a GET'd object's `properties` array
-// ([{key, format, <format>:value}]). `file`-scoped so each gesture file owns its
-// own copy with no shared-type collision (see QueryGestures for the twin).
-file static class ReadProp
-{
-    public static string Id(JsonObject obj) => obj["id"]?.GetValue<string>() ?? "";
-
-    public static string Name(JsonObject obj)
-    {
-        string? name = obj["name"]?.GetValue<string>();
-        if (!string.IsNullOrEmpty(name)) return name;
-        string? snippet = obj["snippet"]?.GetValue<string>();
-        if (string.IsNullOrEmpty(snippet)) return "(sans titre)";
-        int nl = snippet.IndexOf('\n');
-        return nl < 0 ? snippet : snippet[..nl];
-    }
-
-    public static string Markdown(JsonObject obj) => obj["markdown"]?.GetValue<string>() ?? "";
-
-    public static string? TypeKey(JsonObject obj) => obj["type"]?["key"]?.GetValue<string>();
-
-    public static bool Checkbox(JsonObject obj, string key) =>
-        Prop(obj, key)?["checkbox"]?.GetValue<bool>() ?? false;
-
-    // The API returns a date with a midnight time suffix; the day is the fact.
-    public static string? Day(JsonObject obj, string key)
-    {
-        string? iso = Prop(obj, key)?["date"]?.GetValue<string>();
-        return iso is { Length: >= 10 } ? iso[..10] : null;
-    }
-
-    public static IReadOnlyList<string> ObjectRefs(JsonObject obj, string key)
-    {
-        if (Prop(obj, key)?["objects"] is not JsonArray arr) return [];
-        var ids = new List<string>(arr.Count);
-        foreach (JsonNode? n in arr)
-        {
-            string? id = n is JsonObject o ? o["id"]?.GetValue<string>() : n?.GetValue<string>();
-            if (!string.IsNullOrEmpty(id)) ids.Add(id);
-        }
-        return ids;
-    }
-
-    public static string? Render(JsonObject obj, string key)
-    {
-        JsonObject? p = Prop(obj, key);
-        if (p is null) return null;
-
-        if (p["text"] is JsonValue t) { string s = t.GetValue<string>(); return s.Length > 0 ? s : null; }
-        if (p["number"] is JsonValue n) return n.GetValue<double>().ToString(System.Globalization.CultureInfo.InvariantCulture);
-        if (p["select"] is { } sel) return SelectName(sel);
-        if (p["multi_select"] is JsonArray ms) return ms.Count > 0 ? string.Join(", ", MultiNames(ms)) : null;
-        if (p["files"] is JsonArray f) return f.Count > 0 ? $"{f.Count} fichier(s)" : null;
-        return null;
-    }
-
-    static string? SelectName(JsonNode sel) => sel switch
-    {
-        JsonValue v => DevSpace.TagName(v.GetValue<string>()) ?? v.GetValue<string>(),
-        JsonObject o => o["name"]?.GetValue<string>() ?? o["key"]?.GetValue<string>(),
-        _ => null,
-    };
-
-    static IEnumerable<string> MultiNames(JsonArray ms)
-    {
-        foreach (JsonNode? n in ms)
-        {
-            string? name = n switch
-            {
-                JsonValue v => DevSpace.TagName(v.GetValue<string>()) ?? v.GetValue<string>(),
-                JsonObject o => o["name"]?.GetValue<string>() ?? o["key"]?.GetValue<string>(),
-                _ => null,
-            };
-            if (name is not null) yield return name;
-        }
-    }
-
-    static JsonObject? Prop(JsonObject obj, string key)
-    {
-        if (obj["properties"] is not JsonArray props) return null;
-        foreach (JsonNode? n in props)
-            if (n is JsonObject p && p["key"]?.GetValue<string>() == key)
-                return p;
-        return null;
-    }
 }

@@ -18,7 +18,7 @@ public static class McpToolset
         var tasks = new TaskGestures(api, resolver, api.V2);
         var projects = new ProjectGestures(api, resolver);
         var query = new QueryGestures(api, resolver, api.V2);
-        var reads = new ReadGestures(api, resolver, api.V2);
+        var reads = new ReadGestures(resolver, api.V2);
         var documents = new DocumentGestures(api);
         var dialogues = new DialogueGestures(api, resolver);
         var managementGestures = new ManagementGestures(api, resolver);
