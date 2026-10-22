@@ -203,7 +203,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtFileTranscriptionBatchStarted    = 181;
     public const int EvtFileTranscriptionBatchStartedDetail = 182;
     public const int EvtFileTranscriptionBatchCompleted  = 183;
-    public const int EvtFileTranscriptionBatchCompletedDetail = 184;
+    // 184: retired ID, never reused.
     // 185 retired.
     // 186 retired.
     // 187 retired.
@@ -260,6 +260,8 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtUtterancePhantomRejected         = 238;
     public const int EvtUtteranceSentToBackend           = 239;
     public const int EvtTranscribeDecodeUsed             = 240;
+    public const int EvtTakeStarted                      = 241;
+    public const int EvtTakeEnded                        = 242;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // Bits 0x400+ are provider-local (Deckle.Diagnostics.Keywords). No live

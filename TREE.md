@@ -1691,6 +1691,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── TranscriptionEngine.Recovery.cs
 │   │   │   ├── TranscriptionEngine.StateMachine.cs
 │   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
+│   │   │   ├── TranscriptionEngine.Take.cs
 │   │   │   ├── TranscriptionEngine.Telemetry.cs
 │   │   │   └── TranscriptionEngine.Utterances.cs
 │   │   ├── Recovery/
@@ -1728,6 +1729,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleWhispSource.Recovery.cs
 │   │   ├── DeckleWhispSource.Segments.cs
 │   │   ├── DeckleWhispSource.Streaming.cs
+│   │   ├── DeckleWhispSource.Take.cs
 │   │   ├── DeckleWhispSource.Telemetry.cs
 │   │   ├── DeckleWhispSource.Transcribe.cs
 │   │   ├── DeckleWhispSource.Ui.cs

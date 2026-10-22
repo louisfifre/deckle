@@ -36,10 +36,11 @@ public sealed partial class TranscriptionEngine
         string abortExType = "";
         string abortExMessage = "";
         DeckleWhispSource.Log.WorkerStarted("file");
+        string batchId = WorkId.Next();
 
         try
         {
-            DeckleWhispSource.Log.FileTranscriptionBatchStarted();
+            DeckleWhispSource.Log.FileTranscriptionBatchStarted(batchId, files);
             DeckleWhispSource.Log.FileTranscriptionBatchStartedDetail(
                 batch.AudioFilePaths.Count,
                 PreparedFileProducer.Capacity);
@@ -70,10 +71,7 @@ public sealed partial class TranscriptionEngine
 
             decodeProducer.GetAwaiter().GetResult();
             batchCompleted = true;
-            DeckleWhispSource.Log.FileTranscriptionBatchCompleted();
-            DeckleWhispSource.Log.FileTranscriptionBatchCompletedDetail(
-                files,
-                batchOutcome.ToString());
+            DeckleWhispSource.Log.FileTranscriptionBatchCompleted(batchId, files, batchOutcome.ToString());
             RaiseFinished(batchOutcome);
         }
         catch (OperationCanceledException)
@@ -81,6 +79,7 @@ public sealed partial class TranscriptionEngine
             abortOutcome = "cancelled";
             DeckleCancellationSource.Log.OperationCancelled(
                 CancelledOperations.FileTranscriptionBatch, CancellationReasons.Upstream, -1);
+            EndTake(TakeOutcomes.Abandoned, TakeEndReasons.Cancelled);
             RaiseFinished(TranscriptionOutcome.None);
         }
         catch (Exception ex)
@@ -92,12 +91,13 @@ public sealed partial class TranscriptionEngine
                 Loc.Get("Engine_PipelineCrashed_Title"),
                 Loc.Get("Engine_PipelineCrashed_Body"),
                 FB_REPLACEMENT);
+            EndTake(TakeOutcomes.Failed, TakeEndReasons.PipelineCrashed);
             RaiseFinished(TranscriptionOutcome.None);
         }
         finally
         {
             if (!batchCompleted)
-                DeckleWhispSource.Log.FileTranscriptionBatchAborted(abortOutcome, files, abortExType, abortExMessage);
+                DeckleWhispSource.Log.FileTranscriptionBatchAborted(batchId, abortOutcome, files, abortExType, abortExMessage);
 
             // Observe the producer before disposing the token it reads. A failed
             // or cancelled producer may already have been observed above; the
@@ -172,6 +172,7 @@ public sealed partial class TranscriptionEngine
 
             _transcriptionId = Guid.NewGuid().ToString("N");
             DeckleWhispSource.Log.TranscriptionCorrelation(_transcriptionId);
+            BeginTake(TakeKinds.File);
             DeckleWhispSource.Log.FileTranscriptionStarted();
             if (OperationalLogAdmission.IsDetailEnabled(
                     OperationalLogActivity.Transcription,
@@ -203,6 +204,9 @@ public sealed partial class TranscriptionEngine
                     TranscriptionDelivery.AdjacentFile(prepared.SourcePath),
                     announceCompletion: false);
                 recordOutcome(outcome);
+                EndTake(
+                    TakeOutcomeName(outcome, TakeEndReasons.WriteFailed),
+                    outcome == TranscriptionOutcome.None ? TakeEndReasons.WriteFailed : TakeEndReasons.Delivered);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -219,6 +223,7 @@ public sealed partial class TranscriptionEngine
                     Loc.Get("Engine_TranscriptionFailed_Title"),
                     Loc.Get("Engine_TranscriptionFailed_Body"),
                     FB_OVERLAY);
+                EndTake(TakeOutcomes.Failed, TakeEndReasons.TranscriptionFailed);
             }
         }
     }
@@ -237,6 +242,7 @@ public sealed partial class TranscriptionEngine
             // The load cause sits on ModelUnavailable; this names the file it cost.
             DeckleWhispSource.Log.FileTranscriptionFailed(prepared.Index, files, file, "model_not_ready", "", "");
             RaiseStatus(Loc.Get("Status_ModelNotReady"));
+            EndTake(TakeOutcomes.Failed, TakeEndReasons.ModelNotReady);
             return null;
         }
 
@@ -276,6 +282,7 @@ public sealed partial class TranscriptionEngine
                 Loc.Get("Engine_TranscriptionFailed_Title"),
                 Loc.Get("Engine_TranscriptionFailed_Body"),
                 FB_OVERLAY);
+            EndTake(TakeOutcomes.Failed, TakeEndReasons.Incomplete);
             return null;
         }
 
@@ -287,7 +294,10 @@ public sealed partial class TranscriptionEngine
             fullText.Length);
 
         if (string.IsNullOrWhiteSpace(fullText))
+        {
+            EndTake(TakeOutcomes.None, TakeEndReasons.NoText);
             return null;
+        }
 
         ReadOnlyMemory<float> backendAudio =
             consumed.BackendAudio ?? prepared.Audio;

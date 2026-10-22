@@ -90,10 +90,10 @@ public sealed class DeckleWhispSourceTests : IDisposable
     {
         using var listener = new TestEventListener("Deckle-Whisp");
 
-        DeckleWhispSource.Log.FileTranscriptionBatchStarted();
+        DeckleWhispSource.Log.FileTranscriptionBatchStarted("w1", 3);
         DeckleWhispSource.Log.FileTranscriptionBatchStartedDetail(3, 1);
-        DeckleWhispSource.Log.FileTranscriptionBatchCompleted();
-        DeckleWhispSource.Log.FileTranscriptionBatchCompletedDetail(
+        DeckleWhispSource.Log.FileTranscriptionBatchCompleted(
+            "w1",
             3,
             TranscriptionOutcome.SavedToFile.ToString());
 
