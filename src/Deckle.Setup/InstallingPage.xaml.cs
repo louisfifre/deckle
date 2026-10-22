@@ -40,6 +40,7 @@ public sealed partial class InstallingPage : Page
         setup.SetStepHeader(
             Loc.Get("Setup_StepTitle_Installing"),
             Loc.Get("Setup_StepSubtitle_Installing"));
+        setup.SetCurrentStep(SetupStep.Install);
         setup.SetBackEnabled(false);
         setup.SetNextEnabled(false);
         setup.SetNextVisible(false);

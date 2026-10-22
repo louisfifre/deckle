@@ -60,6 +60,7 @@ public sealed partial class SummaryPage : Page
         _setup.SetStepHeader(
             Loc.Get(ok ? "Setup_StepTitle_Summary_Success"    : "Setup_StepTitle_Summary_Failure"),
             Loc.Get(ok ? "Setup_StepSubtitle_Summary_Success" : "Setup_StepSubtitle_Summary_Failure"));
+        _setup.SetCurrentStep(SetupStep.Finish);
         _setup.SetBackEnabled(false);
         _setup.SetNextVisible(true);
         _setup.SetNextEnabled(true);

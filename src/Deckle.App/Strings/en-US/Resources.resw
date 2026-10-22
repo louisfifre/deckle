@@ -565,15 +565,30 @@
   <data name="Setup_WindowTitle" xml:space="preserve">
     <value>Deckle Setup</value>
   </data>
+  <data name="Setup_Step_Modules_Label" xml:space="preserve">
+    <value>Modules</value>
+  </data>
+  <data name="Setup_Step_Location_Label" xml:space="preserve">
+    <value>Location</value>
+  </data>
+  <data name="Setup_Step_Dictation_Label" xml:space="preserve">
+    <value>Dictation</value>
+  </data>
+  <data name="Setup_Step_Install_Label" xml:space="preserve">
+    <value>Install</value>
+  </data>
+  <data name="Setup_Step_Finish_Label" xml:space="preserve">
+    <value>Finish</value>
+  </data>
 
   <!-- ─── Setup wizard — choices page ────────────────────────────────
        Step header text is set programmatically by ChoicesPage via
        SetStepHeader. Cards in XAML use x:Uid for header/description. -->
   <data name="Setup_StepTitle_Choices" xml:space="preserve">
-    <value>Setup</value>
+    <value>Dictation</value>
   </data>
   <data name="Setup_StepSubtitle_Choices" xml:space="preserve">
-    <value>Tell the app where to install everything, and pick the speech model you want.</value>
+    <value>Pick the speech model Dictation runs on, and check its runtime.</value>
   </data>
   <data name="Setup_NextLabel_Install" xml:space="preserve">
     <value>Install</value>
@@ -604,7 +619,7 @@
     <value>Installing</value>
   </data>
   <data name="Setup_StepSubtitle_Installing" xml:space="preserve">
-    <value>Downloading the speech runtime and model. This can take a while on a slow link.</value>
+    <value>Downloading the models and tools your modules need. This can take a while on a slow link.</value>
   </data>
   <data name="Setup_Install_Connecting" xml:space="preserve">
     <value>Connecting...</value>
@@ -1334,7 +1349,7 @@
     <value>Rewrite</value>
   </data>
   <data name="Setup_Module_rewrite_Description" xml:space="preserve">
-    <value>Cleans up dictated text with a local language model. Needs Dictation</value>
+    <value>Rewrites your text with a language model</value>
   </data>
   <data name="Setup_Module_autocorrect_Label" xml:space="preserve">
     <value>Autocorrect</value>
@@ -1359,5 +1374,17 @@
   </data>
   <data name="Setup_Module_anytype_Description" xml:space="preserve">
     <value>Hosts the local Anytype backend that AI assistants read and write</value>
+  </data>
+  <data name="Setup_Module_Requires_Format" xml:space="preserve">
+    <value>{0}. Requires {1}</value>
+  </data>
+  <data name="Setup_Module_Download_Format" xml:space="preserve">
+    <value>~{0}</value>
+  </data>
+  <data name="Setup_Module_Installed" xml:space="preserve">
+    <value>Installed</value>
+  </data>
+  <data name="Setup_Module_NoDownload" xml:space="preserve">
+    <value>No download</value>
   </data>
 </root>

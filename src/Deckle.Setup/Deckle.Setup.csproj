@@ -25,6 +25,8 @@
     <!-- Presence catalogue — the module selector (ModulesPage) reads the
          registry and records the choice through ModulePresence. -->
     <ProjectReference Include="..\Deckle.Modules\Deckle.Modules.csproj" />
+    <!-- WindowChrome: shared TitleBar caption-inset correction. -->
+    <ProjectReference Include="..\Deckle.Shell.WindowChrome\Deckle.Shell.WindowChrome.csproj" />
     <!-- Windows-integration primitives shared with the download stub — the
          install-mode pages (Folders/Deploy) place the app, register it in
          Installed apps, and write DECKLE_DATA_ROOT through them; the update

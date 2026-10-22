@@ -44,6 +44,7 @@ public sealed partial class DeployPage : Page
         setup.SetStepHeader(
             Loc.Get(setup.Context.UpdateMode ? "Setup_StepTitle_UpdateApply" : "Setup_StepTitle_Deploy"),
             Loc.Get(setup.Context.UpdateMode ? "Setup_StepSubtitle_UpdateApply" : "Setup_StepSubtitle_Deploy"));
+        setup.SetCurrentStep(SetupStep.Install);
         setup.SetBackEnabled(false);
         setup.SetNextEnabled(false);
         setup.SetNextVisible(false);
@@ -224,6 +225,9 @@ public sealed partial class DeployPage : Page
             WorkingDirectory = context.InstallDirectory,
         };
         psi.ArgumentList.Add("--install-continue");
+        // The continuation cannot tell an update from an install by itself, and
+        // without this flag it would open as the install wizard.
+        if (context.UpdateMode) psi.ArgumentList.Add("--after-update");
         if (context.SelectedModules.Contains(ModuleIds.Transcription)
             && context.SelectedModel is { } model)
         {
