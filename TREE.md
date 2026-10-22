@@ -477,7 +477,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── LogEntryRow.xaml
 │   │   │   ├── LogEntryRow.xaml.cs
 │   │   │   ├── LogEntryTemplateSelector.cs
-│   │   │   └── NetworkStatusEmitter.cs
+│   │   │   ├── NetworkStatusEmitter.cs
+│   │   │   └── SurvivedExceptionReporter.cs
 │   │   ├── Engine/
 │   │   │   ├── AppAmbientEngineHost.cs
 │   │   │   └── AppTranscriptionEngineHost.cs
@@ -933,6 +934,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── OperationalLogAdmission.cs
 │   │   ├── PathRedaction.cs
 │   │   ├── RunMarker.cs
+│   │   ├── SurvivedExceptionLedger.cs
 │   │   ├── WindowingProbe.cs
 │   │   └── WorkId.cs
 │   ├── Deckle.Diagnostics.Logging/
@@ -980,6 +982,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HomeBodyEditor.cs
 │   │   ├── HomeCode.cs
 │   │   ├── HomeCollectionWriter.cs
+│   │   ├── HomeDeleteRefusalReasons.cs
 │   │   ├── HomeGestures.cs
 │   │   ├── HomeMcp.cs
 │   │   ├── HomeObjects.cs
@@ -1093,6 +1096,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── RawInputHost.cs
 │   ├── Deckle.Input.PrecisionScroll/
 │   │   ├── Engine/
+│   │   │   ├── IPrecisionScrollEngine.cs
 │   │   │   ├── PrecisionScrollEngine.cs
 │   │   │   ├── PrecisionScrollGesture.cs
 │   │   │   └── WheelTickQueue.cs
@@ -1108,6 +1112,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── PrecisionScrollViewModel.Tuning.cs
 │   │   ├── Deckle.Input.PrecisionScroll.csproj
 │   │   ├── DecklePrecisionScrollSource.cs
+│   │   ├── PrecisionScrollRuntime.cs
 │   │   ├── PrecisionScrollSettings.cs
 │   │   ├── PrecisionScrollSettingsModule.cs
 │   │   ├── PrecisionScrollSettingsService.cs
@@ -1886,6 +1891,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ManagementGesturesTests.cs
 │   │   ├── MarkdownBodyBugNotes.md
 │   │   ├── MarkdownBodyTests.cs
+│   │   ├── NameResolverBugNotes.md
 │   │   ├── NameResolverTests.cs
 │   │   ├── OperationRecoveryBugNotes.md
 │   │   ├── PagedReadJournalTests.cs
@@ -2098,17 +2104,22 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── RunMarkerTests.cs
 │   │   ├── SinkCallbackBugNotes.md
 │   │   ├── SinkCallbackFaultTests.cs
+│   │   ├── SurvivedExceptionBugNotes.md
+│   │   ├── SurvivedExceptionLedgerTests.cs
 │   │   ├── ThreadingHotLoopCountTests.cs
 │   │   └── WorkIdTests.cs
 │   ├── Deckle.Home.Tests/
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Home.Tests.csproj
+│   │   ├── FakeDeletionApproval.cs
 │   │   ├── FakeHomeAnytypeServer.cs
 │   │   ├── HomeBodyTests.cs
 │   │   ├── HomeCodeTests.cs
+│   │   ├── HomeDeleteApprovalTests.cs
 │   │   ├── HomeGesturesBugNotes.md
 │   │   ├── HomeGesturesTests.cs
 │   │   ├── HomeMcpTests.cs
+│   │   ├── HomeNameMatchTests.cs
 │   │   ├── HomePagingTests.cs
 │   │   ├── HomePartialWriteTests.cs
 │   │   ├── HomeRelationTests.cs
@@ -2144,7 +2155,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Input.PrecisionScroll.Tests.csproj
 │   │   ├── DecklePrecisionScrollSourceTests.cs
 │   │   ├── PerceptualBaselineTests.cs
+│   │   ├── PrecisionScrollBugNotes.md
 │   │   ├── PrecisionScrollGestureTests.cs
+│   │   ├── PrecisionScrollObservabilityCollection.cs
+│   │   ├── PrecisionScrollRuntimeTests.cs
 │   │   ├── PrecisionScrollTuningTests.cs
 │   │   └── WheelTickQueueTests.cs
 │   ├── Deckle.Input.Tests/
@@ -2265,6 +2279,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ForegroundChangeMappingTests.cs
 │   │   ├── JournalClosersTests.cs
 │   │   ├── KeyValuesReaderTests.cs
+│   │   ├── OrchestrationAppNameTests.cs
 │   │   ├── OrchestrationBugNotes.md
 │   │   ├── OrchestrationIncidentTests.cs
 │   │   ├── OrchestrationObservabilityCollection.cs
@@ -2346,6 +2361,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.TestSupport/
 │   │   ├── Deckle.TestSupport.csproj
 │   │   ├── EventArgsExtensions.cs
+│   │   ├── JournalledPayloads.cs
 │   │   ├── LoopbackHttpListenerLease.cs
 │   │   ├── ProviderManifest.cs
 │   │   ├── SharedFileReader.cs
@@ -2377,6 +2393,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TrailingNoisePadTests.cs
 │   │   ├── TranscriptFileWriterDiskTests.cs
 │   │   ├── TranscriptFileWriterTests.cs
+│   │   ├── TranscriptionAppNameTests.cs
 │   │   ├── TranscriptionDeliveryTests.cs
 │   │   ├── TranscriptionObservabilityContractTests.cs
 │   │   ├── TranscriptionSettingsMigrationTests.cs
@@ -2405,7 +2422,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   ├── SileroSpeechTimestampsTests.cs
-│   │   └── VadPathRedactionTests.cs
+│   │   ├── VadBugNotes.md
+│   │   ├── VadObservabilityCollection.cs
+│   │   ├── VadPathRedactionTests.cs
+│   │   └── VadServiceDownloadRetryTests.cs
 │   ├── Deckle.Vision.Tests/
 │   │   ├── CaptureIncidentsBugNotes.md
 │   │   ├── CaptureIncidentsTests.cs
