@@ -122,6 +122,7 @@ public partial class App
         DeckleAppSource.Log.AppStarting();
         EmitRunIdentity();
         ReportPreviousRunEnd();
+        ReportLegacyLayoutMigration();
         context.Milestone("diagnostics-local");
 
         // Before any module SettingsService is touched: each singleton loads its
@@ -263,6 +264,15 @@ public partial class App
             previous.Session,
             previous.Pid,
             previous.StartedAt?.ToString("o", System.Globalization.CultureInfo.InvariantCulture) ?? "unknown");
+    }
+
+    // AppPaths moved the legacy settings layout while its static constructor
+    // ran, before this process had a sink: the failure it kept is reported here.
+    private static void ReportLegacyLayoutMigration()
+    {
+        if (AppPaths.LegacyLayoutMigrationFailure is not { } failure) return;
+
+        DeckleAppSource.Log.LegacySettingsMigrationFailed(failure.GetType().Name, failure.Message);
     }
 
     // Idempotent and limited to this run's own mark, so it can be called from

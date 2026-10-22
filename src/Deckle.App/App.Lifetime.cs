@@ -1,10 +1,13 @@
 using Deckle.App;
+using Deckle.Core;
+using Deckle.Diagnostics;
 
 namespace Deckle.App;
 
 public partial class App
 {
     private const string ResidentMutexName = @"Local\Deckle.Resident";
+    private const string SecondInstanceFileName = "second-instance.txt";
     private Mutex? _residentMutex;
 
     // Read by ReportCrashDumpCapture: ownership is taken before any sink
@@ -36,6 +39,15 @@ public partial class App
         _residentMutex = mutex;
         return true;
     }
+
+    // A rejected second instance has no sink and may not install one: the
+    // resident run holds the journal open for writing, so the fact goes to a
+    // small file of its own, beside the launcher's.
+    private static void NoteSecondInstanceRejected() =>
+        NoteFile.Append(
+            Path.Combine(AppPaths.DiagnosticsDirectory, SecondInstanceFileName),
+            $"pid={Environment.ProcessId} | another Deckle is resident, this one exits",
+            DateTimeOffset.Now);
 
     private void ReleaseResidentOwnership()
     {

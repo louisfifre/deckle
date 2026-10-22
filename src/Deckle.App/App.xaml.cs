@@ -118,7 +118,7 @@ public partial class App : Microsoft.UI.Xaml.Application
         // exempt because they coordinate overlapping processes by design.
         if (!TryAcquireResidentOwnership())
         {
-            DeckleAppSource.Log.SecondInstanceRejected();
+            NoteSecondInstanceRejected();
             Exit();
             return;
         }

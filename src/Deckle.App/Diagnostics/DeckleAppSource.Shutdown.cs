@@ -126,16 +126,6 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtRestartSettingsFlushFailed, ex_type, ex_message);
     }
 
-    [Event(EvtSecondInstanceRejected,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
-           Message = "Another Deckle is resident")]
-    public void SecondInstanceRejected()
-    {
-        if (IsEnabled()) WriteEvent(EvtSecondInstanceRejected);
-    }
-
     [Event(EvtResidentMutexAbandoned,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -157,6 +147,19 @@ public sealed partial class DeckleAppSource
     public void PreviousRunEndedUncleanly(string previous_session, int previous_pid, string previous_started)
     {
         if (IsEnabled()) WriteEvent(EvtPreviousRunEndedUncleanly, previous_session, previous_pid, previous_started);
+    }
+
+    // AppPaths moves the legacy settings layout in its static constructor,
+    // before any sink exists, and keeps the failure for this report. The app
+    // went on against the new layout, so settings left in the old place read as
+    // defaults: a degradation, not a stop.
+    [Event(EvtLegacySettingsMigrationFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The legacy settings layout could not be moved | ex_type={0} | ex_message={1}")]
+    public void LegacySettingsMigrationFailed(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtLegacySettingsMigrationFailed, ex_type, ex_message);
     }
 
     [Event(EvtResidentMutexReleaseFailed,
