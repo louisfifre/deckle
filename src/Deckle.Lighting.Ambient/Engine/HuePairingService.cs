@@ -149,7 +149,7 @@ public sealed class HuePairingService : IDisposable
         CommitPairing(candidate, bridge, creds);
 
         DeckleAmbientSource.Log.BridgePairingStored();
-        DeckleAmbientSource.Log.BridgePairingStoredDetail(bridge.Id, creds.UsernameHead);
+        DeckleAmbientSource.Log.BridgePairingStoredDetail(bridge.Id);
 
         BridgeChanged?.Invoke();
         return creds;

@@ -33,6 +33,22 @@ public static class ProviderManifest
         return events;
     }
 
+    // Every payload name a provider declares, as "EventName.parameter". Payload
+    // names are the method's parameter names, so a rule on what a line may carry
+    // (no credential, no raw path) can be checked here without raising an event.
+    public static IReadOnlyList<string> PayloadNamesOf(Type sourceType)
+    {
+        var names = new List<string>();
+        foreach (MethodInfo method in sourceType.GetMethods(
+                     BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly))
+        {
+            if (method.GetCustomAttribute<EventAttribute>() is null) continue;
+            foreach (ParameterInfo parameter in method.GetParameters())
+                names.Add($"{method.Name}.{parameter.Name}");
+        }
+        return names;
+    }
+
     // Names of the closing events that do not carry the Journal tag: every event
     // named *Recovered, plus the provider's other closers listed by name. A
     // listed name that matches no event is reported too, so the list cannot

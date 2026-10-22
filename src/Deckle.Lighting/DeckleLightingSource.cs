@@ -27,7 +27,8 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     public const int EvtPairingStarted            = 6;
     public const int EvtPairingStartedDetail      = 7;
     public const int EvtBridgePaired              = 8;
-    public const int EvtBridgePairedDetail        = 9;
+    // 9: retired ID, never reused. It carried the head of the application key,
+    // a credential; the bridge id lives on BridgePairedDetail2.
     public const int EvtPairingWaiting            = 10;
     // 11 retired.
     // 12 retired.

@@ -37,7 +37,6 @@ public sealed partial class HueBridgeClient
                     _credentials = success.Credentials;
                     DeckleLightingSource.Log.BridgePaired();
                     DeckleLightingSource.Log.BridgePairedDetail2(_bridge.Id);
-                    DeckleLightingSource.Log.BridgePairedDetail(_bridge.Id, _credentials.UsernameHead);
                     return _credentials;
 
                 case PairOutcome.LinkButtonNotPressed:

@@ -29,11 +29,11 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgePairingStoredDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "bridge pairing stored | bridge_id={0} | username_head={1}")]
-    public void BridgePairingStoredDetail(string bridge_id, string username_head)
+           Message = "bridge pairing stored | bridge_id={0}")]
+    public void BridgePairingStoredDetail(string bridge_id)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtBridgePairingStoredDetail, bridge_id, username_head);
+        WriteEvent(EvtBridgePairingStoredDetail, bridge_id);
     }
 
     [Event(EvtBridgeRestoreSkipped,

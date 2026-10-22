@@ -2103,17 +2103,21 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── AmbientStartSettingsTests.cs
+│   │   ├── CredentialPayloadTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
 │   │   ├── DeckleAmbientSourceTests.cs
+│   │   ├── HueCredentialPayloadBugNotes.md
 │   │   ├── HueEndpointResolverTests.cs
 │   │   ├── JournalClosersTests.cs
 │   │   └── LightPlacementResolverTests.cs
 │   ├── Deckle.Lighting.Tests/
 │   │   ├── BugExamples/
 │   │   │   └── dns-sd-pending-status-lifetime.json
+│   │   ├── CredentialPayloadTests.cs
 │   │   ├── Deckle.Lighting.Tests.csproj
 │   │   ├── DeckleLightingSourceTests.cs
 │   │   ├── HueBridgeClientIdentityTests.cs
+│   │   ├── HueCredentialPayloadBugNotes.md
 │   │   ├── HueCredentialVaultTests.cs
 │   │   ├── HueEntertainmentFrameBuilderTests.cs
 │   │   ├── HueEntertainmentLightOutputTests.cs
