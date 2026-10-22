@@ -228,6 +228,7 @@ internal static class WaveInLoop
             //   gcN          — collections during that lagging iteration (non-zero, esp. gen2 → a STW pause caused it; all zero → inline work did)
             if (bufferDoneCount >= 3)
             {
+                HotLoops.AudioCaptureLag.Tick();
                 if (bufferDoneCount > lagMaxBuffersReady) lagMaxBuffersReady = bufferDoneCount;
                 if (captureLagEpisode.ObserveFailure() == CaptureAnomalyTransition.Opened)
                 {
