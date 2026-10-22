@@ -20,6 +20,8 @@ namespace Deckle.Anytype;
 // sees the owner's latest hand-curated set.
 public sealed class LiveTagResolver(AnytypeApiClient api)
 {
+    const int PageLimit = 100;
+
     readonly AnytypeApiClient _api = api;
 
     Dictionary<string, string>? _propertyIds;
@@ -62,13 +64,10 @@ public sealed class LiveTagResolver(AnytypeApiClient api)
     async Task<Dictionary<string, string>> LoadPropertyIdsAsync(CancellationToken ct)
     {
         var map = new Dictionary<string, string>(StringComparer.Ordinal);
-        int offset = 0;
-        const int limit = 100;
-        while (true)
+        await foreach (JsonObject root in PagedRead.PagesAsync(
+            (offset, token) => _api.ListPropertiesAsync(offset, PageLimit, token), ct).ConfigureAwait(false))
         {
-            JsonObject root = await _api.ListPropertiesAsync(offset, limit, ct).ConfigureAwait(false);
-            JsonArray data = root["data"]?.AsArray() ?? [];
-            foreach (JsonNode? node in data)
+            foreach (JsonNode? node in root["data"]?.AsArray() ?? [])
             {
                 if (node is not JsonObject p) continue;
                 string? key = p["key"]?.GetValue<string>();
@@ -76,8 +75,6 @@ public sealed class LiveTagResolver(AnytypeApiClient api)
                 if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(id))
                     map[key] = id;
             }
-            if (!HasMore(root)) break;
-            offset += limit;
         }
         return map;
     }
@@ -86,13 +83,11 @@ public sealed class LiveTagResolver(AnytypeApiClient api)
         string propertyId, CancellationToken ct)
     {
         var options = new List<(string, string)>();
-        int offset = 0;
-        const int limit = 100;
-        while (true)
+        await foreach (JsonObject root in PagedRead.PagesAsync(
+            (offset, token) => _api.ListPropertyTagsAsync(propertyId, offset, PageLimit, token), ct)
+            .ConfigureAwait(false))
         {
-            JsonObject root = await _api.ListPropertyTagsAsync(propertyId, offset, limit, ct).ConfigureAwait(false);
-            JsonArray data = root["data"]?.AsArray() ?? [];
-            foreach (JsonNode? node in data)
+            foreach (JsonNode? node in root["data"]?.AsArray() ?? [])
             {
                 if (node is not JsonObject t) continue;
                 string? key = t["key"]?.GetValue<string>();
@@ -100,12 +95,7 @@ public sealed class LiveTagResolver(AnytypeApiClient api)
                 string name = t["name"]?.GetValue<string>() ?? key;
                 options.Add((key, name));
             }
-            if (!HasMore(root)) break;
-            offset += limit;
         }
         return options;
     }
-
-    static bool HasMore(JsonObject root) =>
-        root["pagination"]?["has_more"]?.GetValue<bool>() ?? false;
 }
