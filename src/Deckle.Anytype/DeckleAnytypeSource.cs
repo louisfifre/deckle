@@ -98,6 +98,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Message = "api request | method={0} | path={1}")]
     public void ApiRequestStarted(string method, string path)
     {
+        HotLoops.AnytypeApiRequest.Tick();
         if (IsEnabled()) WriteEvent(EvtApiRequestStarted, method, path);
     }
 
@@ -354,6 +355,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Message = "backend health probed | healthy={0} | status={1} | reason={2} | ms={3:F1}")]
     public void BackendHealthProbed(bool healthy, int status_code, string reason, double duration_ms)
     {
+        HotLoops.AnytypeHealthProbe.Tick();
         if (IsEnabled()) WriteEvent(EvtBackendHealthProbed, healthy, status_code, reason, duration_ms);
     }
 

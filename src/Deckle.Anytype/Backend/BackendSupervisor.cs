@@ -276,6 +276,10 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
     {
         int failures = 0;
         long failingSince = 0;
+        // A probe is due every 30 s for as long as this watch runs: two quiet
+        // rollup windows in a row mean the watch itself is stuck, which no
+        // BackendHealthProbed line could ever say.
+        using IDisposable armed = HotLoops.AnytypeHealthProbe.Arm();
         try
         {
             while (true)
