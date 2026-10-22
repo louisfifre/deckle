@@ -6,6 +6,7 @@ using Xunit;
 namespace Deckle.Orchestration.Tests;
 
 [Trait("Category", "observability")]
+[Collection(OrchestrationObservabilityCollection.Name)]
 public sealed class DeckleOrchestrationSourceTests
 {
     [Fact]

@@ -2150,6 +2150,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Fixture.cs
 │   │   ├── ForegroundChangeMappingTests.cs
 │   │   ├── KeyValuesReaderTests.cs
+│   │   ├── OrchestrationObservabilityCollection.cs
 │   │   ├── ProfileTransactionTests.cs
 │   │   ├── ScanOnDiskTests.cs
 │   │   └── SteamLibraryTests.cs
