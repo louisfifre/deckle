@@ -2206,6 +2206,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Security.Tests.csproj
 │   │   └── SecretVaultTests.cs
 │   ├── Deckle.Setup.Tests/
+│   │   ├── DataRootRelocatorBugNotes.md
 │   │   ├── DataRootRelocatorTests.cs
 │   │   ├── DataRootTreeBugNotes.md
 │   │   ├── DataRootTreeRegressionTests.cs
