@@ -85,7 +85,7 @@ public sealed partial class HudPage
             "x is the pause's time, y the light's reach. A first handle low and right " +
             "starts slow, a second handle high and right brakes only at the end. " +
             "The dashed diagonal is a plain lerp."));
-        AddCurveRow(gauge, "Course",
+        AddCurveRow(gauge, "Course", "Pause time", "Light's reach",
             new(_countdownConfig.CourseEaseP1X, _countdownConfig.CourseEaseP1Y,
                 _countdownConfig.CourseEaseP2X, _countdownConfig.CourseEaseP2Y),
             points => _countdownConfig = _countdownConfig with
@@ -103,7 +103,7 @@ public sealed partial class HudPage
             value => _countdownConfig = _countdownConfig with { FollowSeconds = value }, rebuild: true);
         AddFloatRow(gauge, "Retreat (s)", 0.02, 2, 0.01, _countdownConfig.RetreatSeconds,
             value => _countdownConfig = _countdownConfig with { RetreatSeconds = value }, rebuild: true);
-        AddCurveRow(gauge, "Retreat ease",
+        AddCurveRow(gauge, "Retreat ease", "Retreat time", "Way back to rest",
             new(_countdownConfig.RetreatEaseP1X, _countdownConfig.RetreatEaseP1Y,
                 _countdownConfig.RetreatEaseP2X, _countdownConfig.RetreatEaseP2Y),
             points => _countdownConfig = _countdownConfig with

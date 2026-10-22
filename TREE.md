@@ -1393,14 +1393,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── CorrectionApplicationEvidence.cs
 │   │   │   ├── CorrectionApplicationFixture.cs
 │   │   │   ├── CorrectionApplicationTrial.cs
+│   │   │   ├── MicrophonePreviewFailure.cs
+│   │   │   ├── MicrophonePreviewFeed.cs
 │   │   │   ├── TuningModel.cs
 │   │   │   └── UtteranceCycle.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
-│   │   │   ├── HudViewModel.cs
-│   │   │   └── SegmentationViewModel.cs
+│   │   │   └── HudViewModel.cs
 │   │   ├── Views/
 │   │   │   ├── Ambient/
 │   │   │   │   ├── AmbientPage.HdrTuning.cs
@@ -1417,14 +1418,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── Hud/
 │   │   │   │   ├── HudPage.Expanders.cs
 │   │   │   │   ├── HudPage.Gauge.cs
+│   │   │   │   ├── HudPage.Microphone.cs
 │   │   │   │   ├── HudPage.RowFactories.cs
 │   │   │   │   ├── HudPage.SectionState.cs
 │   │   │   │   ├── HudPage.Simulation.cs
 │   │   │   │   ├── HudPage.xaml
 │   │   │   │   └── HudPage.xaml.cs
-│   │   │   ├── Segmentation/
-│   │   │   │   ├── SegmentationPage.xaml
-│   │   │   │   └── SegmentationPage.xaml.cs
 │   │   │   ├── HomePage.xaml
 │   │   │   ├── HomePage.xaml.cs
 │   │   │   ├── PlaygroundWindow.xaml
@@ -1670,7 +1669,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── SegmentedTranscriptionSession.cs
 │   │   │   ├── TranscribedUtterance.cs
 │   │   │   ├── Utterance.cs
-│   │   │   └── UtteranceProgress.cs
+│   │   │   ├── UtteranceProgress.cs
+│   │   │   └── UtteranceProgressMeter.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -1813,6 +1813,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TaskGesturesBugNotes.md
 │   │   └── TaskGesturesTests.cs
 │   ├── Deckle.Audio.Tests/
+│   │   ├── AudioRecordingHostDefaultsTests.cs
 │   │   ├── CaptureAnomalyEpisodeTests.cs
 │   │   ├── CaptureDataWatchdogTests.cs
 │   │   ├── CaptureSettingsMigrationTests.cs
@@ -1820,6 +1821,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleAudioSourceTests.cs
 │   │   ├── ListeningTakeTests.cs
 │   │   ├── MicLevelCheckTests.cs
+│   │   ├── MicrophoneErrorClassificationTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── Pcm16BufferTests.cs
@@ -2110,6 +2112,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HudTuningBugNotes.md
 │   │   ├── HudTuningSectionsBugNotes.md
 │   │   ├── HudViewModelTests.cs
+│   │   ├── IlReferences.cs
+│   │   ├── MicrophonePreviewFailureTests.cs
+│   │   ├── MicrophonePreviewFeedTests.cs
 │   │   ├── TuningModelTests.cs
 │   │   └── UtteranceCycleTests.cs
 │   ├── Deckle.Presets.Tests/
@@ -2188,6 +2193,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── TranscriptionObservabilityContractTests.cs
 │   │   ├── TranscriptionSettingsMigrationTests.cs
 │   │   ├── UnitBezierTests.cs
+│   │   ├── UtteranceProgressMeterTests.cs
 │   │   ├── UtteranceProgressTests.cs
 │   │   └── VadServiceIncidentTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
