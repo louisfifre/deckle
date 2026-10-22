@@ -94,6 +94,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Refuse to bin reports and linked objects, and wait for the person's approval
 - **anytype:** Ask the bin approval through a Windows notification
 - **anytype:** Tell agents when to archive and when to bin
+- **anytype:** Create the session report through v2
+- **anytype:** Separate journal entries with a divider
 
 ### Changed
 
@@ -112,6 +114,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Read one page of recent reports instead of all of them
 - **anytype:** Read each linked name once and cap the reads at eight
 - **anytype:** Drop the unused v2 view ops
+- **anytype:** Read the journal date from v2 alone in session_log
 
 ### Fixed
 
