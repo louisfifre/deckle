@@ -718,6 +718,9 @@ public class TaskGesturesTests
 //   • listens on a loopback port leased from LoopbackHttpListenerLease,
 //   • answers the n-th request to a (method, path) with the n-th canned
 //     response registered for it, repeating the last one,
+//   • serves a list registered through OnPaged* from the offset and limit of
+//     the query, under an optional page ceiling the way the real server
+//     does, so an exhaustive read can be tested against a capped page,
 //   • records every received request (method, path, query, body) so a test
 //     can assert on the exact payload the gesture sent.
 //
