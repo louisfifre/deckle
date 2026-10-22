@@ -193,6 +193,24 @@ public class AnytypeV2ClientTests
         Assert.Empty(handler.Requests);
     }
 
+    [Theory]
+    [Trait("Category", "regression")]
+    [InlineData("Retry-After", "86400", 30)]
+    [InlineData("Retry-After", "2", 2)]
+    [InlineData("Ratelimit-Reset", "3600", 30)]
+    [InlineData("Ratelimit-Reset", "-5", 0)]
+    [InlineData("Ratelimit-Reset", "1e300", null)]
+    public void TheServersWaitIsCappedBeforeItHoldsTheGate(string header, string value, int? expectedSeconds)
+    {
+        using var response = new HttpResponseMessage(HttpStatusCode.TooManyRequests);
+        if (header == "Retry-After") response.Headers.RetryAfter = new(TimeSpan.FromSeconds(double.Parse(value)));
+        else response.Headers.TryAddWithoutValidation(header, value);
+
+        TimeSpan? wait = AnytypeV2Client.RetryAfter(response);
+
+        Assert.Equal(expectedSeconds is { } s ? TimeSpan.FromSeconds(s) : null, wait);
+    }
+
     [Fact]
     public async Task ATrustedEndpointIsServedNormally()
     {

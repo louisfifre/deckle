@@ -226,18 +226,26 @@ public sealed class AnytypeV2Client : IDisposable
 
     // The shared limiter names its wait twice: the standard Retry-After, and the
     // Ratelimit-Reset header (seconds) that only writes carry.
-    private static TimeSpan? RetryAfter(HttpResponseMessage response)
+    // The wait happens inside the gate, so a server-chosen value is capped: a
+    // huge or negative header must neither freeze every request nor throw.
+    internal static readonly TimeSpan MaxBackoff = TimeSpan.FromSeconds(30);
+
+    internal static TimeSpan? RetryAfter(HttpResponseMessage response)
+    {
+        TimeSpan? wait = RawRetryAfter(response);
+        if (wait is not { } w) return null;
+        return w < TimeSpan.Zero ? TimeSpan.Zero : w > MaxBackoff ? MaxBackoff : w;
+    }
+
+    private static TimeSpan? RawRetryAfter(HttpResponseMessage response)
     {
         RetryConditionHeaderValue? header = response.Headers.RetryAfter;
         if (header?.Delta is { } delta) return delta;
-        if (header?.Date is { } date)
-        {
-            TimeSpan delay = date - DateTimeOffset.UtcNow;
-            return delay > TimeSpan.Zero ? delay : TimeSpan.Zero;
-        }
+        if (header?.Date is { } date) return date - DateTimeOffset.UtcNow;
         return double.TryParse(
                 HeaderValue(response, "Ratelimit-Reset"),
                 NumberStyles.Float, CultureInfo.InvariantCulture, out double seconds)
+                && double.IsFinite(seconds) && Math.Abs(seconds) < TimeSpan.MaxValue.TotalSeconds
             ? TimeSpan.FromSeconds(seconds)
             : null;
     }
