@@ -107,6 +107,12 @@ public class McpHttpHostTests
                         new JsonObject { ["type"] = "object", ["additionalProperties"] = false },
                         (_, _) => Task.FromResult(new string('x', 20_000)),
                         ToolExecutionContract.ReadOnly),
+                    new ToolDescriptor(
+                        "flood-emoji",
+                        "Returns a text whose cap falls inside a surrogate pair.",
+                        new JsonObject { ["type"] = "object", ["additionalProperties"] = false },
+                        (_, _) => Task.FromResult(new string('x', 7_999) + "😀" + new string('x', 12_000)),
+                        ToolExecutionContract.ReadOnly),
                 ],
                 new McpSurfaceDescriptor("structured", "Structured", "Test surface."))),
         "mcp-token-structured",
@@ -479,6 +485,20 @@ public class McpHttpHostTests
         Assert.Equal(8000 + Marker.Length, text.Text.Length);
         Assert.EndsWith(Marker, text.Text, StringComparison.Ordinal);
         Assert.Equal(new string('x', 8000), text.Text[..8000]);
+    }
+
+    [Fact]
+    public async Task OversizedToolTextIsNeverCutInsideASurrogatePair()
+    {
+        await using var harness = Harness.Start(StructuredClient);
+        await using McpClient client = await ConnectAsync(
+            harness, StructuredClient.Id, ModernProtocol);
+
+        CallToolResult result = await client.CallToolAsync(
+            "flood-emoji", new Dictionary<string, object?>(), cancellationToken: Ct);
+
+        TextContentBlock text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content));
+        Assert.Equal(new string('x', 7_999) + "\n[coupé : 7999 / 20001 caractères]", text.Text);
     }
 
     [Fact]
