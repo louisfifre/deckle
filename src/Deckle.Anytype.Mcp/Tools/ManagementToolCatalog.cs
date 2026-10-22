@@ -24,7 +24,7 @@ public static class ManagementToolCatalog
         + "show it to the person and wait for their explicit OK in the conversation, for that object only; "
         + "then call again with the previewed id and confirm:true. Deckle then asks the person once more "
         + "through a Windows notification and bins only if they accept. "
-        + "delete always refuses a rapport and any object another object links to; do not look for a way around it.";
+        + "delete always refuses any object another object links to; do not look for a way around it.";
 
     public static IReadOnlyList<ToolDescriptor> Build(ManagementGestures management)
     {
@@ -32,7 +32,7 @@ public static class ManagementToolCatalog
         {
             new(
                 "delete",
-                "Move an object that should never have existed (a duplicate, a botched creation) to Anytype's restorable bin; to only stop seeing an object, use archive instead. Two steps, pinned by id: call it once with the target (name or id) to PREVIEW what would be binned (its name, type and id) without deleting anything; get the person's explicit OK in the conversation; then call it again with that id as target and confirm:true. The confirming call waits up to 60 s for the person to accept a Windows notification. Refused for a rapport and for any object another object links to.",
+                "Move an object that should never have existed (a duplicate, a botched creation) to Anytype's restorable bin; to only stop seeing an object, use archive instead. Two steps, pinned by id: call it once with the target (name or id) to PREVIEW what would be binned (its name, type and id) without deleting anything; get the person's explicit OK in the conversation; then call it again with that id as target and confirm:true. The confirming call waits up to 60 s for the person to accept a Windows notification. Refused for any object another object links to.",
                 Schema(
                     required: [Prop("target", "string", "Object to move to trash, name or id.")],
                     optional: [Prop("confirm", "boolean", "Pass true ONLY on the second call, with target set to the id the preview returned, to commit. Omit for the preview.")]),

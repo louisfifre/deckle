@@ -182,7 +182,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     }
 
     // A move to the bin is the one gesture that hides an object from every later
-    // read, so both of its ends are told at Info. reason: rapport, referenced,
+    // read, so both of its ends are told at Info. reason: referenced,
     // references_unreadable, declined, unanswered or approval_unavailable. The
     // object's name stays out: it is the person's content, the id is enough.
     [Event(EvtDeleteRefused,
