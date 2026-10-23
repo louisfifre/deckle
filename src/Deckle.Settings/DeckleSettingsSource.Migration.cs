@@ -57,7 +57,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtPerModuleMigrationFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Per-module migration failed\nex_type={0} | ex_message={1}")]
+           Message = "Splitting the settings into one file per module failed, so some module settings may read as defaults\nex_type={0} | ex_message={1}")]
     public void PerModuleMigrationFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPerModuleMigrationFailed, ex_type, ex_message);
@@ -67,7 +67,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtInjectFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not inject a key into a module file\nkey={0} | module_id={1} | ex_type={2} | ex_message={3}")]
+           Message = "A setting could not be moved into its module file, so it may read as its default\nkey={0} | module_id={1} | ex_type={2} | ex_message={3}")]
     public void InjectFailed(string key, string module_id, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtInjectFailed, key, module_id, ex_type, ex_message);
@@ -103,7 +103,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtModuleFolderRenameFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not rename a module folder\nold_id={0} | new_id={1} | ex_type={2} | ex_message={3}")]
+           Message = "A module settings folder could not be renamed, so its settings may read as defaults\nold_id={0} | new_id={1} | ex_type={2} | ex_message={3}")]
     public void ModuleFolderRenameFailed(string old_id, string new_id, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtModuleFolderRenameFailed, old_id, new_id, ex_type, ex_message);

@@ -10,7 +10,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtBackupSkippedSourceMissing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Backup skipped because the source file is missing")]
+           Message = "The settings backup was skipped because the settings file is missing")]
     public void BackupSkippedSourceMissing()
     {
         if (IsEnabled()) WriteEvent(EvtBackupSkippedSourceMissing);
@@ -46,7 +46,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtBackupFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Backup failed\nex_type={0} | ex_message={1}")]
+           Message = "The settings backup could not be created\nex_type={0} | ex_message={1}")]
     public void BackupFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtBackupFailed, ex_type, ex_message);
@@ -55,7 +55,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtBackupListFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not list the backups\nex_type={0} | ex_message={1}")]
+           Message = "The settings backups could not be listed, so none are offered for restore\nex_type={0} | ex_message={1}")]
     public void BackupListFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtBackupListFailed, ex_type, ex_message);
@@ -64,7 +64,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtRestoreSkippedSnapshotMissing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Restore skipped because the snapshot is missing")]
+           Message = "The settings restore was skipped because the backup is missing, so the settings did not change")]
     public void RestoreSkippedSnapshotMissing()
     {
         if (IsEnabled()) WriteEvent(EvtRestoreSkippedSnapshotMissing);
@@ -103,7 +103,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtRestoreFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Restore failed\nreason={0} | ex_type={1} | ex_message={2}")]
+           Message = "Restoring the settings backup failed\nreason={0} | ex_type={1} | ex_message={2}")]
     public void RestoreFailed(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRestoreFailed, reason, ex_type, ex_message);

@@ -10,7 +10,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtSetupWizardHookNotWired,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The setup wizard hook is not wired")]
+           Message = "The setup button in Settings did nothing because the app did not connect it")]
     public void SetupWizardHookNotWired()
     {
         if (IsEnabled()) WriteEvent(EvtSetupWizardHookNotWired);
@@ -28,7 +28,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtSetupWindowOpenFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not open the setup window\nex_type={0} | ex_message={1}")]
+           Message = "The setup window could not be opened\nex_type={0} | ex_message={1}")]
     public void SetupWindowOpenFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtSetupWindowOpenFailed, ex_type, ex_message);
@@ -68,7 +68,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtNavImpossibleNoTag,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A navigation item has no destination tag")]
+           Message = "A Settings menu item names no page, so selecting it does nothing")]
     public void NavImpossibleNoTag()
     {
         if (IsEnabled()) WriteEvent(EvtNavImpossibleNoTag);
@@ -86,7 +86,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtNavFailedTypeNotFound,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A navigation target page type was not found")]
+           Message = "The page a Settings menu item names does not exist, so it did not open")]
     public void NavFailedTypeNotFound()
     {
         if (IsEnabled()) WriteEvent(EvtNavFailedTypeNotFound);
@@ -131,7 +131,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtNavFailedFrameRejected,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Navigation was rejected by the frame")]
+           Message = "The Settings window refused to open a page")]
     public void NavFailedFrameRejected()
     {
         if (IsEnabled()) WriteEvent(EvtNavFailedFrameRejected);
@@ -187,7 +187,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtNavFailedThrew,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Navigation threw an exception\npage={0} | ex_type={1} | ex_message={2}")]
+           Message = "Opening a Settings page failed on an error\npage={0} | ex_type={1} | ex_message={2}")]
     public void NavFailedThrew(string page, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtNavFailedThrew, page, ex_type, ex_message);
