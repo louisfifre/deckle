@@ -3,7 +3,7 @@ using Deckle.Diagnostics;
 namespace Deckle.Diagnostics.Logging;
 
 // The optional on-disk mirror of the admitted operational stream. Its fixed
-// destination is diagnostics/app.jsonl; telemetry datasets have their own
+// destination is diagnostics/trace.jsonl; telemetry datasets have their own
 // roots and sinks. The enabled reader and recording filter are evaluated for
 // every future entry so settings changes apply without rebuilding the sink.
 public sealed class ApplicationLogSink : IFlushableLogSink
@@ -23,7 +23,7 @@ public sealed class ApplicationLogSink : IFlushableLogSink
             ?? (static () => LoggingSettingsService.Instance.Current.ApplicationLogToDisk);
         _recordingFilter = recordingFilter ?? (static _ => true);
         _sink = new JsonlSink(
-            filePath: Path.Combine(diagnosticsDirectory, "app.jsonl"),
+            filePath: Path.Combine(diagnosticsDirectory, DiagnosticsFiles.Trace),
             kindLabel: "log",
             predicate: static _ => true,
             schema: JsonlSchema.SelfDescribing,

@@ -155,6 +155,30 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtLegacySettingsMigrationFailed, ex_type, ex_message);
     }
 
+    // The log and the trace took their current names at this start, on an
+    // install that still had the pre-v0.69 ones (journal.jsonl, app.jsonl).
+    // Said once, so a reader of an older log knows where its history went.
+    [Event(EvtLegacyLogFilesRenamed,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Log files from an earlier version took their current names")]
+    public void LegacyLogFilesRenamed(int files)
+    {
+        if (IsEnabled()) WriteEvent(EvtLegacyLogFilesRenamed, files);
+    }
+
+    // A legacy log file could not take its current name. The new file starts
+    // empty beside it and the older history stays under the old name.
+    [Event(EvtLegacyLogFileRenameFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A log file from an earlier version kept its old name, so its history stays apart\nfile={0} | renamed={1} | ex_type={2} | ex_message={3}")]
+    public void LegacyLogFileRenameFailed(string file, int renamed, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtLegacyLogFileRenameFailed, file, renamed, ex_type, ex_message);
+    }
+
     // A second instance is turned away before it may touch the journal, so it
     // leaves its fact in second-instance.txt (App.Lifetime.cs) and the resident
     // run copies it here at its next start. noted_at is the time the second

@@ -142,4 +142,6 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtSecondInstancesRejected        = 125;
     public const int EvtSurvivedException              = 126;
     public const int EvtSurvivedExceptionRepeated      = 127;
+    public const int EvtLegacyLogFilesRenamed          = 128;
+    public const int EvtLegacyLogFileRenameFailed      = 129;
 }

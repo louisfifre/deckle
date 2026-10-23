@@ -38,13 +38,13 @@ public sealed class JsonlSinkRotationTests
     }
 
     private static string Generation(string dir, int n) =>
-        Path.Combine(dir, "archive", $"app.jsonl.{n:D4}");
+        Path.Combine(dir, "archive", $"trace.jsonl.{n:D4}");
 
     [Fact]
     public void RollsByLineCountIntoArchiveSubfolderWithPaddedIndex()
     {
         string dir = NewTempDir("roll");
-        string active = Path.Combine(dir, "app.jsonl");
+        string active = Path.Combine(dir, "trace.jsonl");
 
         var sink = NewSink(active, maxLines: 3);
         try
@@ -70,7 +70,7 @@ public sealed class JsonlSinkRotationTests
     public void KeepsAllGenerationsMonotonicallyWithoutRenaming()
     {
         string dir = NewTempDir("keep");
-        string active = Path.Combine(dir, "app.jsonl");
+        string active = Path.Combine(dir, "trace.jsonl");
 
         // maxLines=1: five lines yield four generations, and .0001 still holds
         // the very first line, so nothing was renamed or overwritten.
@@ -100,7 +100,7 @@ public sealed class JsonlSinkRotationTests
     public void PrunesOldestGenerationsBeyondTheCapAndKeepsNumberingMonotonic()
     {
         string dir = NewTempDir("prune");
-        string active = Path.Combine(dir, "app.jsonl");
+        string active = Path.Combine(dir, "trace.jsonl");
 
         // maxLines=1: five lines roll into .0001..0004. With a cap of 2 the
         // oldest go first, so only the two newest generations survive.
@@ -142,7 +142,7 @@ public sealed class JsonlSinkRotationTests
     public void PrunesAnOversizedArchiveAtConstruction()
     {
         string dir = NewTempDir("prune-start");
-        string active = Path.Combine(dir, "app.jsonl");
+        string active = Path.Combine(dir, "trace.jsonl");
         Directory.CreateDirectory(Path.Combine(dir, "archive"));
         for (int n = 1; n <= 5; n++)
             File.WriteAllText(Generation(dir, n), "{}\n");
@@ -173,7 +173,7 @@ public sealed class JsonlSinkRotationTests
     public void ReSeedsLineCountFromExistingActiveFileOnConstruction()
     {
         string dir = NewTempDir("reseed");
-        string active = Path.Combine(dir, "app.jsonl");
+        string active = Path.Combine(dir, "trace.jsonl");
 
         // A prior session already wrote 3 lines. A fresh sink capped at 3 must
         // re-count them at construction and roll on the first new line, not
@@ -201,7 +201,7 @@ public sealed class JsonlSinkRotationTests
     public void ContinuesGenerationNumberingAcrossSinkRestart()
     {
         string dir = NewTempDir("restart");
-        string active = Path.Combine(dir, "app.jsonl");
+        string active = Path.Combine(dir, "trace.jsonl");
 
         var first = NewSink(active, maxLines: 1);
         first.Write(Line(0));

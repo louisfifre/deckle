@@ -14,7 +14,7 @@ public sealed class OperationalSinkRoutingTests
         string root = Path.Combine(
             AppContext.BaseDirectory,
             "application-log-" + Guid.NewGuid().ToString("N"));
-        string path = Path.Combine(root, "app.jsonl");
+        string path = Path.Combine(root, "trace.jsonl");
         bool enabled = false;
         var sink = new ApplicationLogSink(root, () => enabled);
 

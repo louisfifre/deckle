@@ -38,7 +38,7 @@ internal sealed class JsonlLineSerializer
             writer.WriteString("level", entry.Level.ToString());
             writer.WriteString("keywords", TransverseKeywordNames(entry));
             writer.WriteString("source", LogLineFormatter.MapSource(entry.Provider));
-            // Only when set: app.jsonl mixes the milestones the journal keeps
+            // Only when set: trace.jsonl mixes the milestones the journal keeps
             // with plain detail, and a reader needs to tell them apart. Rows
             // without the mark read exactly as they did before.
             if (entry.Journal) writer.WriteBoolean("journal", true);

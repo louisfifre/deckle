@@ -5,7 +5,7 @@ using System.Text;
 namespace Deckle.Diagnostics;
 
 // Canonical log-line rendering shared by the LogWindow and the
-// app.jsonl writer, so the window and the file never diverge.
+// trace.jsonl writer, so the window and the file never diverge.
 public static class LogLineFormatter
 {
     private const string ProviderPrefix = "Deckle-";
@@ -39,7 +39,7 @@ public static class LogLineFormatter
     public static string Format(EventEntry entry) => GetParts(entry).Text;
 
     // The name a person reads in the module column and the text line. It is
-    // invariant English on purpose: the same line lands in app.jsonl.
+    // invariant English on purpose: the same line lands in trace.jsonl.
     public static string DisplayName(string providerName)
     {
         ArgumentNullException.ThrowIfNull(providerName);
@@ -72,7 +72,7 @@ public static class LogLineFormatter
         return builder.ToString().TrimEnd();
     }
 
-    // The stable machine token of the app.jsonl "source" field. It stays
+    // The stable machine token of the trace.jsonl "source" field. It stays
     // apart from DisplayName so a reader parsing that field keeps the
     // vocabulary it already greps for.
     public static string MapSource(string providerName)

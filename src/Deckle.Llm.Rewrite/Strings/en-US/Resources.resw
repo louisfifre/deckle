@@ -171,7 +171,7 @@
 
   <!-- Corpus consent — text+rewrite JSONL appended per profile. -->
 
-  <!-- Application log consent — full app.jsonl mirror of every log line. -->
+  <!-- Application log consent — full trace.jsonl mirror of every log line. -->
 
   <!-- Audio corpus consent — raw WAV next to the text JSONL, per profile. -->
 

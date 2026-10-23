@@ -608,7 +608,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     // These two DELIBERATELY carry text: the typed word, its left context, and the
     // candidate forms with their scores. They are routed solely to the opt-in
     // autocorrect.decisions.jsonl sink (gated by AutocorrectDecisions, off by
-    // default) and excluded from app.jsonl. The synchronous decision and its
+    // default) and excluded from trace.jsonl. The synchronous decision and its
     // deferred reranker verdict share `id`, so the two lines join. CorrectionTrace
     // renders the flat fields.
 
@@ -656,7 +656,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     // are SentenceCorpus.SentenceRecord's. The heaviest text capture in the module,
     // a verbatim record of typed input: routed solely to the opt-in
     // autocorrect.text.jsonl sink (gated by AutocorrectText, off by default) and
-    // excluded from app.jsonl.
+    // excluded from trace.jsonl.
 
     [Event(EvtAutocorrectText,
            Level = EventLevel.Verbose,
@@ -676,7 +676,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     // fields and replay contract are TypingStream's. Verbatim typed input: routed
     // solely to the opt-in autocorrect.stream.jsonl sink under the SAME consent
     // envelope as the typed-sentence corpus (gated by AutocorrectText, off by
-    // default) and excluded from app.jsonl. Password surfaces never reach the
+    // default) and excluded from trace.jsonl. Password surfaces never reach the
     // stream: the engine gates them before decoding.
 
     [Event(EvtAutocorrectStream,

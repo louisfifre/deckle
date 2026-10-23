@@ -117,7 +117,7 @@ public partial class App
     {
         // First, before settings migration: a listener only sees events emitted
         // after it subscribes, so these ungated local sinks must exist for a
-        // failure in the very first boot step to land in journal.jsonl.
+        // failure in the very first boot step to land in log.jsonl.
         // Before the first event: a provider hides the data root in the paths
         // it writes (PathRedaction), and Diagnostics cannot resolve it alone
         // since it sits below Deckle.Core. A root registered late would let the
@@ -128,6 +128,7 @@ public partial class App
         EmitRunIdentity();
         ReportPreviousRunEnd();
         ReportLegacyLayoutMigration();
+        ReportLegacyLogFileRename();
         ReportRejectedSecondInstances();
         context.Milestone("diagnostics-local");
 
@@ -299,6 +300,22 @@ public partial class App
         if (AppPaths.LegacyLayoutMigrationFailure is not { } failure) return;
 
         DeckleAppSource.Log.LegacySettingsMigrationFailed(failure.GetType().Name, failure.Message);
+    }
+
+    // InitializeLocalSinks renamed the legacy log files before the sinks
+    // opened them, when no sink could say so yet: it is reported here.
+    private static void ReportLegacyLogFileRename()
+    {
+        if (AppDiagnosticsBootstrap.LegacyFileRename is not { } rename) return;
+
+        if (rename.Failure is { } failure)
+        {
+            DeckleAppSource.Log.LegacyLogFileRenameFailed(
+                rename.FailedFile ?? "unknown", rename.Renamed, failure.GetType().Name, failure.Message);
+            return;
+        }
+        if (rename.Renamed > 0)
+            DeckleAppSource.Log.LegacyLogFilesRenamed(rename.Renamed);
     }
 
     // Idempotent and limited to this run's own mark, so it can be called from

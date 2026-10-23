@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Deckle.Catalog;
 using Deckle.Core;
+using Deckle.Diagnostics;
 
 namespace Deckle.Settings;
 
@@ -15,7 +16,7 @@ internal static class ApplicationLogConsentDialog
 {
     public static async Task<bool> ShowAsync(XamlRoot root)
     {
-        string where = Path.Combine(AppPaths.DiagnosticsDirectory, "app.jsonl");
+        string where = Path.Combine(AppPaths.DiagnosticsDirectory, DiagnosticsFiles.Trace);
 
         var body = new StackPanel { Spacing = 12 };
 

@@ -1,12 +1,12 @@
 namespace Deckle.Diagnostics.Logging;
 
 // Operational-log settings, persisted by LoggingSettingsService: producer-side
-// admission gates plus the app.jsonl opt-in. The LogWindow view filter is a
+// admission gates plus the trace.jsonl opt-in. The LogWindow view filter is a
 // separate, process-lifetime selection and never belongs here.
 public sealed class LoggingSettings
 {
     // Optional disk mirror of admitted operational observations. Its path is
-    // fixed by the Logging module at diagnostics/app.jsonl; telemetry settings
+    // fixed by the Logging module at diagnostics/trace.jsonl; telemetry settings
     // and storage overrides never redirect it.
     public bool ApplicationLogToDisk { get; set; } = false;
 

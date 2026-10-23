@@ -4,8 +4,8 @@ namespace Deckle.Diagnostics;
 
 // Line-count rolling policy for a JsonlSink destination. When the
 // active file reaches MaxLines, it is rolled into a monotonically-numbered
-// generation under an `archive/` subfolder (app.jsonl → archive/app.jsonl.0001
-// → archive/app.jsonl.0002 → …) and writing resumes on a fresh active file.
+// generation under an `archive/` subfolder (trace.jsonl → archive/trace.jsonl.0001
+// → archive/trace.jsonl.0002 → …) and writing resumes on a fresh active file.
 // Generations are never renamed. They are kept up to MaxArchives and the
 // oldest go first (lowest index); with a null cap they accumulate and the user
 // prunes them by hand. The index is zero-padded so a directory listing sorts
