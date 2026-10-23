@@ -63,7 +63,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtHideSyncTimedOut,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Cannot hide the HUD before the paste | reason={0} | timeout_ms={1}")]
+           Message = "Cannot hide the HUD before the paste\nreason={0} | timeout_ms={1}")]
     public void HideSyncTimedOut(string reason, int timeout_ms)
     {
         if (IsEnabled()) WriteEvent(EvtHideSyncTimedOut, reason, timeout_ms);
@@ -79,7 +79,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtRevealMaskDegraded,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The digit reveal fell back to the flat accent | attempts={0} | ex_type={1} | ex_message={2}")]
+           Message = "The digit reveal fell back to the flat accent\nattempts={0} | ex_type={1} | ex_message={2}")]
     public void RevealMaskDegraded(int attempts, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRevealMaskDegraded, attempts, ex_type, ex_message);
@@ -89,7 +89,7 @@ public sealed class DeckleHudSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The digit reveal builds again | attempts={0}")]
+           Message = "The digit reveal builds again")]
     public void RevealMaskRecovered(int attempts)
     {
         if (IsEnabled()) WriteEvent(EvtRevealMaskRecovered, attempts);
@@ -99,7 +99,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtRevealBuildAttemptFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "reveal build attempt failed | attempt={0} | ex_type={1} | ex_message={2}")]
+           Message = "attempt={0} | ex_type={1} | ex_message={2}")]
     public void RevealBuildAttemptFailed(int attempt, string ex_type, string ex_message)
     {
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
@@ -112,7 +112,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtRevealBuildEnded,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "reveal build ended | outcome={0} | attempts={1}")]
+           Message = "outcome={0} | attempts={1}")]
     public void RevealBuildEnded(string outcome, int attempts)
     {
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
@@ -124,7 +124,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtRevealGeometry,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "reveal geometry | cell={0}x{1} | offset={2},{3} | host={4}x{5}")]
+           Message = "cell={0}x{1} | offset={2},{3} | host={4}x{5}")]
     public void RevealGeometry(double cellW, double cellH, double offX, double offY, double hostW, double hostH)
     {
         HotLoops.HudRevealGeometry.Tick();
@@ -142,7 +142,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtStrokeCreationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Cannot build the HUD processing stroke | phase={0} | variant={1} | ex_type={2} | ex_message={3}")]
+           Message = "Cannot build the HUD processing stroke\nphase={0} | variant={1} | ex_type={2} | ex_message={3}")]
     public void StrokeCreationFailed(string phase, string variant, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtStrokeCreationFailed, phase, variant, ex_type, ex_message);
@@ -151,7 +151,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtStrokeCreationAttemptFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "stroke creation failed | phase={0} | variant={1} | ex_type={2} | ex_message={3}")]
+           Message = "phase={0} | variant={1} | ex_type={2} | ex_message={3}")]
     public void StrokeCreationAttemptFailed(string phase, string variant, string ex_type, string ex_message)
     {
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
@@ -162,7 +162,7 @@ public sealed class DeckleHudSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The HUD processing stroke builds again | failures={0}")]
+           Message = "The HUD processing stroke builds again")]
     public void StrokeCreationRecovered(int failures)
     {
         if (IsEnabled()) WriteEvent(EvtStrokeCreationRecovered, failures);
@@ -175,7 +175,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtHudDisplaySuppressed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "hud display suppressed | surface={0} | state={1} | severity={2} | reason={3}")]
+           Message = "surface={0} | state={1} | severity={2} | reason={3}")]
     public void HudDisplaySuppressed(string surface, string state, int severity, string reason)
     {
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
@@ -186,7 +186,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtOverlayCardChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "overlay card | change={0} | slot={1} | severity={2} | cards={3}")]
+           Message = "change={0} | slot={1} | severity={2} | cards={3}")]
     public void OverlayCardChanged(string change, int slot, int severity, int cards)
     {
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
@@ -199,7 +199,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtCleanupFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Cannot close an overlay card | what={0} | ex_type={1} | ex_message={2}")]
+           Message = "Cannot close an overlay card\nwhat={0} | ex_type={1} | ex_message={2}")]
     public void CleanupFailed(string what, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtCleanupFailed, what, ex_type, ex_message);
@@ -213,7 +213,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtStateChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "state changed | from={0} | to={1} | reason={2} | alpha={3} | dpi={4}")]
+           Message = "from={0} | to={1} | reason={2} | alpha={3} | dpi={4}")]
     public void StateChanged(string from, string to, string reason, byte alpha, int dpi)
     {
         HotLoops.HudStateChanged.Tick();
@@ -228,7 +228,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtTranscriptPanelVisibilityChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "transcript panel | shown={0} | side={1} | utterances={2}")]
+           Message = "shown={0} | side={1} | utterances={2}")]
     public void TranscriptPanelVisibilityChanged(bool shown, string side, int utterances)
     {
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
@@ -242,7 +242,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtFadeInStarted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "fade in start | scope={0} | duration_ms={1} | from={2} | to={3}")]
+           Message = "scope={0} | duration_ms={1} | from={2} | to={3}")]
     public void FadeInStarted(string scope, int duration_ms, byte from_alpha, byte to_alpha)
     {
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
@@ -256,7 +256,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtFadeInEnded,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "fade in end | scope={0} | outcome={1} | elapsed_ms={2} | alpha={3}")]
+           Message = "scope={0} | outcome={1} | elapsed_ms={2} | alpha={3}")]
     public void FadeInEnded(string scope, string outcome, int elapsed_ms, byte alpha)
     {
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
@@ -272,7 +272,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtProximityRollup,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "proximity rollup | duration_ms={0} | samples={1} | min_alpha={2} | max_alpha={3} | p50_cursor_dist_dip={4} | p95_cursor_dist_dip={5}")]
+           Message = "duration_ms={0} | samples={1} | min_alpha={2} | max_alpha={3} | p50_cursor_dist_dip={4} | p95_cursor_dist_dip={5}")]
     public void ProximityRollup(int duration_ms, int samples, byte min_alpha, byte max_alpha, int p50_cursor_dist_dip, int p95_cursor_dist_dip)
     {
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Heartbeat)) return;
@@ -283,7 +283,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The HUD settings need attention | {0}")]
+           Message = "The HUD settings store worked around a problem\ndetail={0}")]
     public void SettingsLoadWarning(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
@@ -292,7 +292,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtSettingsLoadError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The HUD settings could not be saved | {0}")]
+           Message = "The HUD settings could not be saved or applied\ndetail={0}")]
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
