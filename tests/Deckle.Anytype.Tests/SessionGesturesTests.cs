@@ -192,6 +192,25 @@ public class SessionGesturesTests
         Assert.Equal($"report_id : {NewReport}\nTâche d'ancrage · —", answer);
     }
 
+    // The project name is a check for the person, not part of the report: a
+    // project read that fails still opens the report on its task.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task OpenReportStillOpensWhenTheProjectCannotBeRead()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = new FakeV2Handler()
+            .Reply(HttpStatusCode.OK, V2Named(TaskId, "task", "Tâche d'ancrage",
+                ",\"" + DevSpace.Props.RelationProjet + "\":[\"" + ProjectId + "\"]"))
+            .Reply(HttpStatusCode.NotFound, "{\"message\":\"object not found\"}")
+            .Reply(HttpStatusCode.Created, "{\"id\":\"" + NewReport + "\"}");
+
+        string answer = await NewGestures(server, v2).OpenReportAsync(TaskId, Ct);
+
+        Assert.Equal($"report_id : {NewReport}\nTâche d'ancrage · (projet non lu)", answer);
+        Assert.Single(v2.Requests, r => r.Method == "POST");
+    }
+
     // Like log with a report: a name resolved by « a single hit wins » could
     // open the report on a task nobody meant, so only an id is taken, and a
     // name is refused before any request.

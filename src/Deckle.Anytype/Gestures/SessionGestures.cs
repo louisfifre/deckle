@@ -52,8 +52,20 @@ public sealed class SessionGestures(
             throw new InvalidOperationException(
                 $"{taskName} est un objet {actual}, pas une tâche : un rapport s'ouvre sur une tâche.");
 
-        string project = await LinkedNames.JoinAsync(
-            _reader, taskProps.ObjectIds(DevSpace.Props.RelationProjet), ct) ?? "—";
+        // The project name only helps the person check the task; a report
+        // belongs to its task, not to the project. So a project read that fails
+        // does not stop the report: the line says the name was not read, and
+        // the failed request is already journaled by the client.
+        string project;
+        try
+        {
+            project = await LinkedNames.JoinAsync(
+                _reader, taskProps.ObjectIds(DevSpace.Props.RelationProjet), ct) ?? "—";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
+        {
+            project = "(projet non lu)";
+        }
 
         // Measured on a real create (2026-10-22): the « # Journal <date> »
         // heading stays a heading_1 block, so the report opens on its date and
