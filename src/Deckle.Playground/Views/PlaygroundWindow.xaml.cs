@@ -37,6 +37,11 @@ public sealed partial class PlaygroundWindow : Window
 {
     private readonly IntPtr _hwnd;
 
+    // The App owns the other windows, so it hands these in, as it does for
+    // SettingsWindow.OnShowLogsRequested.
+    public Action? OnShowSettingsRequested { get; set; }
+    public Action? OnShowLogsRequested { get; set; }
+
     // Icons shared with tray / LogWindow / SettingsWindow via IconAssets.
     // Swapping the .ico on disk propagates everywhere.
     private BitmapImage? _iconIdle;
@@ -179,6 +184,14 @@ public sealed partial class PlaygroundWindow : Window
             "playground", _lastTheme.ToString(), to.ToString(), source);
         _lastTheme = to;
     }
+
+    // ── Title bar commands ──────────────────────────────────────────────────
+
+    private void OnSettingsButtonClick(object sender, RoutedEventArgs e)
+        => OnShowSettingsRequested?.Invoke();
+
+    private void OnLogsButtonClick(object sender, RoutedEventArgs e)
+        => OnShowLogsRequested?.Invoke();
 
     // ── Lifecycle surface (called by App) ───────────────────────────────────
 

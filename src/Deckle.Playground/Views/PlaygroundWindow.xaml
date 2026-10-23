@@ -21,6 +21,30 @@
             <TitleBar.IconSource>
                 <ImageIconSource x:Name="AppTitleBarIcon" />
             </TitleBar.IconSource>
+            <TitleBar.RightHeader>
+                <!-- Same lateral commands as SettingsWindow and LogWindow: each
+                     of the three windows carries the two others here. -->
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Button x:Name="SettingsButton"
+                            x:Uid="PlaygroundSettingsButton"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            VerticalAlignment="Center"
+                            MinWidth="36"
+                            Padding="8,4"
+                            Click="OnSettingsButtonClick">
+                        <FontIcon Glyph="{StaticResource Icon.Settings}" FontSize="16" />
+                    </Button>
+                    <Button x:Name="LogsButton"
+                            x:Uid="PlaygroundLogsButton"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            VerticalAlignment="Center"
+                            MinWidth="36"
+                            Padding="8,4"
+                            Click="OnLogsButtonClick">
+                        <FontIcon Glyph="{StaticResource Icon.Logs}" FontSize="16" />
+                    </Button>
+                </StackPanel>
+            </TitleBar.RightHeader>
         </TitleBar>
 
         <!-- Each Tag is the fully-qualified Page type name, resolved by

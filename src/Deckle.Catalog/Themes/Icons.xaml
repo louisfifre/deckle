@@ -40,6 +40,9 @@
     <x:String x:Key="Icon.Taskbar">&#xE90E;</x:String>
     <x:String x:Key="Icon.Diagnostics">&#xE9D9;</x:String>
     <x:String x:Key="Icon.Logs">&#xEC7A;</x:String>
+    <!-- Segoe Fluent "Puzzle" (EA86) — the Playground, where pipelines are
+         tuned live. -->
+    <x:String x:Key="Icon.Playground">&#xEA86;</x:String>
 
     <!-- ─── Common semantic concepts ─────────────────────────────── -->
     <x:String x:Key="Icon.Shortcut">&#xE765;</x:String>

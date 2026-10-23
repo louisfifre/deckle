@@ -137,6 +137,31 @@
                     </Button>
                 </Grid>
             </TitleBar.Content>
+            <TitleBar.RightHeader>
+                <!-- Lateral commands, so RightHeader; the central Content slot
+                     holds the search. Settings opens on the Diagnostics page,
+                     the editor of what this window may show. -->
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Button x:Name="SettingsButton"
+                            x:Uid="LogWindowSettingsButton"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            VerticalAlignment="Center"
+                            MinWidth="36"
+                            Padding="8,4"
+                            Click="OnSettingsButtonClick">
+                        <FontIcon Glyph="{StaticResource Icon.Settings}" FontSize="16" />
+                    </Button>
+                    <Button x:Name="PlaygroundButton"
+                            x:Uid="LogWindowPlaygroundButton"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            VerticalAlignment="Center"
+                            MinWidth="36"
+                            Padding="8,4"
+                            Click="OnPlaygroundButtonClick">
+                        <FontIcon Glyph="{StaticResource Icon.Playground}" FontSize="16" />
+                    </Button>
+                </StackPanel>
+            </TitleBar.RightHeader>
         </TitleBar>
 
         <CommandBar Grid.Row="1"
@@ -243,16 +268,9 @@
                  so its margin only counts while it shows. Messages are set in
                  LogWindow.Notices.cs, where they are formatted. -->
             <StackPanel Grid.Row="0">
-                <!-- Explains an absence the view filter cannot: the verbosity
-                     controls refuse detail before any sink. Their only editor
-                     is the Diagnostics page, so the bar names it, never a toggle. -->
-                <InfoBar x:Name="GatesInfoBar"
-                         Severity="Informational"
-                         IsClosable="True"
-                         IsOpen="False"
-                         catalog:InfoBarLayout.CollapseWhenClosed="True"
-                         Margin="12,0,12,8"
-                         CloseButtonClick="OnGatesInfoBarCloseButtonClick" />
+                <!-- No bar for verbosity controls that are off: the Settings
+                     button in the title bar opens their editor, the Diagnostics
+                     page, where each control carries its description. -->
                 <InfoBar x:Name="DroppedEntriesInfoBar"
                          Severity="Informational"
                          IsClosable="True"

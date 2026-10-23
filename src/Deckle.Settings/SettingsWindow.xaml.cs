@@ -32,6 +32,7 @@ public sealed partial class SettingsWindow : Window
     private readonly IntPtr _hwnd;
 
     public Action? OnShowLogsRequested { get; set; }
+    public Action? OnShowPlaygroundRequested { get; set; }
 
     private readonly List<NavigationViewItem> _moduleNavItems = new();
 
@@ -499,6 +500,12 @@ public sealed partial class SettingsWindow : Window
     {
         DeckleSettingsSource.Log.OpenLogsFromFooter();
         OnShowLogsRequested?.Invoke();
+    }
+
+    private void OnPlaygroundButtonClick(object sender, RoutedEventArgs e)
+    {
+        DeckleSettingsSource.Log.OpenPlaygroundFromFooter();
+        OnShowPlaygroundRequested?.Invoke();
     }
 
     // ── NavigationView: pane sync by DisplayMode ─────────────────────────

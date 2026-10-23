@@ -103,17 +103,29 @@
                 </Grid>
             </TitleBar.Content>
             <TitleBar.RightHeader>
-                <!-- A lateral command, so RightHeader; the central Content slot
-                     holds the search. -->
-                <Button x:Name="LogsButton"
-                        x:Uid="SettingsLogsButton"
-                        Style="{StaticResource SubtleButtonStyle}"
-                        VerticalAlignment="Center"
-                        MinWidth="36"
-                        Padding="8,4"
-                        Click="OnLogsButtonClick">
-                    <FontIcon Glyph="{StaticResource Icon.Logs}" FontSize="16" />
-                </Button>
+                <!-- Lateral commands, so RightHeader; the central Content slot
+                     holds the search. Each of the three windows (Settings, Logs,
+                     Playground) carries the two others here. -->
+                <StackPanel Orientation="Horizontal" Spacing="4">
+                    <Button x:Name="LogsButton"
+                            x:Uid="SettingsLogsButton"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            VerticalAlignment="Center"
+                            MinWidth="36"
+                            Padding="8,4"
+                            Click="OnLogsButtonClick">
+                        <FontIcon Glyph="{StaticResource Icon.Logs}" FontSize="16" />
+                    </Button>
+                    <Button x:Name="PlaygroundButton"
+                            x:Uid="SettingsPlaygroundButton"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            VerticalAlignment="Center"
+                            MinWidth="36"
+                            Padding="8,4"
+                            Click="OnPlaygroundButtonClick">
+                        <FontIcon Glyph="{StaticResource Icon.Playground}" FontSize="16" />
+                    </Button>
+                </StackPanel>
             </TitleBar.RightHeader>
         </TitleBar>
 

@@ -35,6 +35,11 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     private readonly IntPtr _hwnd;
     private bool _isVisible;
 
+    // The App owns the other windows, so it hands these in, as it does for
+    // SettingsWindow.OnShowLogsRequested.
+    public Action? OnShowSettingsRequested { get; set; }
+    public Action? OnShowPlaygroundRequested { get; set; }
+
     private BitmapImage? _iconIdle;
     private BitmapImage? _iconRecording;
     private string? _iconIdlePath;
@@ -63,7 +68,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         LogItems.ItemsSource = _visible;
         FilterBar.Selection = _filterSelection;
         UpdateFiltersToggleLabel();
-        AttachNotices();
 
         LoadAppIcons();
         AppTitleBarIcon.ImageSource = _iconIdle;
@@ -105,7 +109,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         {
             _isVisible = false;
             FilterBar.Detach();
-            DetachNotices();
         };
 
         SizeChanged += OnWindowSizeChanged;
@@ -163,6 +166,12 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     }
 
     private void OnClearClick(object sender, RoutedEventArgs e) => ClearAll();
+
+    private void OnSettingsButtonClick(object sender, RoutedEventArgs e)
+        => OnShowSettingsRequested?.Invoke();
+
+    private void OnPlaygroundButtonClick(object sender, RoutedEventArgs e)
+        => OnShowPlaygroundRequested?.Invoke();
 
     private void OnWrapToggleClick(object sender, RoutedEventArgs e)
     {

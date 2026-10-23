@@ -26,6 +26,8 @@ public static class Glyphs
     public const string Mouse = "";
     public const string Diagnostics = "";
     public const string Logs = "";
+    // Segoe Fluent "Puzzle" (EA86) — the Playground.
+    public const string Playground = "";
 
     // Segoe Fluent "Spelling" (F87B) — proofing / autocorrect.
     public const string Autocorrect = "";

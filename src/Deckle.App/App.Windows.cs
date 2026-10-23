@@ -14,7 +14,14 @@ public partial class App
             // Not gated: one Stopwatch per window per process, and the provider
             // declares this milestone ungoverned.
             var sw = Stopwatch.StartNew();
-            var window = CreateWindowOrLog("log", () => new LogWindow());
+            // Settings opens on the Diagnostics page: it edits the verbosity
+            // controls that decide what this window may show.
+            var window = CreateWindowOrLog("log", () => new LogWindow
+            {
+                OnShowSettingsRequested = () => ShowSettingsWindowLazy(
+                    Diagnostics.Logging.DiagnosticsSettingsModule.PageTag),
+                OnShowPlaygroundRequested = ShowPlaygroundLazy,
+            });
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Log);
             window.AppWindow.Closing += (_, _) =>
                 SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.Log);
@@ -42,7 +49,8 @@ public partial class App
             var sw = Stopwatch.StartNew();
             var window = CreateWindowOrLog("settings", () => new Settings.SettingsWindow
             {
-                OnShowLogsRequested = () => ShowLogWindowLazy(),
+                OnShowLogsRequested = ShowLogWindowLazy,
+                OnShowPlaygroundRequested = ShowPlaygroundLazy,
             });
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Settings);
             window.AppWindow.Closing += (_, _) =>
@@ -67,7 +75,11 @@ public partial class App
             // Not gated: one Stopwatch per window per process, and the provider
             // declares this milestone ungoverned.
             var sw = Stopwatch.StartNew();
-            var window = CreateWindowOrLog("playground", () => new PlaygroundWindow());
+            var window = CreateWindowOrLog("playground", () => new PlaygroundWindow
+            {
+                OnShowSettingsRequested = () => ShowSettingsWindowLazy(),
+                OnShowLogsRequested = ShowLogWindowLazy,
+            });
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Playground);
             window.AppWindow.Closing += (_, _) =>
                 SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.Playground);

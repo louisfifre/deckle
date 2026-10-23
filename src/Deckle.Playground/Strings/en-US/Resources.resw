@@ -62,6 +62,19 @@
   <data name="PlaygroundTitleBar.Title" xml:space="preserve">
     <value>Deckle Playground</value>
   </data>
+  <!-- Title bar commands (icon-only Buttons): tooltip + accessible name. -->
+  <data name="PlaygroundSettingsButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="PlaygroundSettingsButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="PlaygroundLogsButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Logs</value>
+  </data>
+  <data name="PlaygroundLogsButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Logs</value>
+  </data>
 
   <data name="PlaygroundNavHome.Content" xml:space="preserve">
     <value>Home</value>
