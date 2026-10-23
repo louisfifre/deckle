@@ -83,7 +83,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     [Event(EvtWindowPositioned,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "window positioned | window={0} | hmon=0x{1:X} | dpi={2} | anchor={3} | pos={4},{5} size={6},{7}")]
+           Message = "window={0} | hmon=0x{1:X} | dpi={2} | anchor={3} | pos_x={4} | pos_y={5} | size_w={6} | size_h={7}")]
     public void WindowPositioned(
         string window, long hmon, int dpi, string anchor,
         int pos_x, int pos_y, int size_w, int size_h)
@@ -98,7 +98,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     [Event(EvtOverlaySlotAssigned,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "overlay slot | slot={0} | hmon=0x{1:X} | pos={2},{3} size={4},{5}")]
+           Message = "slot={0} | hmon=0x{1:X} | pos_x={2} | pos_y={3} | size_w={4} | size_h={5}")]
     public void OverlaySlotAssigned(
         int slot, long hmon,
         int pos_x, int pos_y, int size_w, int size_h)
@@ -115,7 +115,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     [Event(EvtPopupAnchored,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "popup anchored | popup={0} | parent_rect={1} | pos={2},{3} size={4},{5}")]
+           Message = "popup={0} | parent_rect={1} | pos_x={2} | pos_y={3} | size_w={4} | size_h={5}")]
     public void PopupAnchored(
         string popup, string parent_rect,
         int pos_x, int pos_y, int size_w, int size_h)
@@ -136,7 +136,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     [Event(EvtWindowZOrderState,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "z-order state | window={0} | stage={1} | visible={2} | topmost={3} | previous_visible={4} | previous_topmost={5} | foreground_pid={6} | foreground_class={7} | previous_hwnd=0x{8:X} | previous_pid={9} | previous_class={10} | visible_above_count={11} | first_visible_above_pid={12} | first_visible_above_class={13} | first_visible_above_topmost={14} | occluding_above_count={15} | first_occluding_above_pid={16} | first_occluding_above_class={17} | first_occluding_above_topmost={18} | setpos_ok={19} | last_error={20}")]
+           Message = "window={0} | stage={1} | visible={2} | topmost={3} | previous_visible={4} | previous_topmost={5} | foreground_pid={6} | foreground_class={7} | previous_hwnd=0x{8:X} | previous_pid={9} | previous_class={10} | visible_above_count={11} | first_visible_above_pid={12} | first_visible_above_class={13} | first_visible_above_topmost={14} | occluding_above_count={15} | first_occluding_above_pid={16} | first_occluding_above_class={17} | first_occluding_above_topmost={18} | setpos_ok={19} | last_error={20}")]
     public void WindowZOrderState(
         string window, string stage,
         bool visible, bool topmost,
@@ -181,7 +181,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     [Event(EvtWindowResizeSettled,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "resize settled | window={0} | trigger={1} | frames={2} | duration_ms={3}")]
+           Message = "window={0} | trigger={1} | frames={2} | duration_ms={3}")]
     public void WindowResizeSettled(string window, string trigger, int frames, long duration_ms)
     {
         if (!IsWindowingDetailEnabled()) return;
@@ -197,7 +197,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     [Event(EvtWindowResizeFrame,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "resize frame | window={0} | frame={1} | size={2},{3} | since_prev_ms={4} | relayout_ms={5}")]
+           Message = "window={0} | frame={1} | size={2},{3} | since_prev_ms={4} | relayout_ms={5}")]
     public void WindowResizeFrame(
         string window, int frame, int size_w, int size_h, long since_prev_ms, long relayout_ms)
     {
@@ -216,7 +216,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     [Event(EvtWindowLoadComplete,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "window load complete | window={0} | load_ms={1}")]
+           Message = "window={0} | load_ms={1}")]
     public void WindowLoadComplete(string window, long load_ms)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
@@ -234,7 +234,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     [Event(EvtWindowShowFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "A window failed to show | window={0} | stage={1} | hr=0x{2:X8} | win32_error={3} | ex_type={4} | ex_message={5}")]
+           Message = "A window failed to show\nwindow={0} | stage={1} | hr=0x{2:X8} | win32_error={3} | ex_type={4} | ex_message={5}")]
     public void WindowShowFailed(
         string window, string stage, int hr, int win32_error, string ex_type, string ex_message)
     {
@@ -245,7 +245,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     [Event(EvtWindowPlacementFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "A window could not be placed | window={0} | stage={1} | hr=0x{2:X8} | win32_error={3} | ex_type={4} | ex_message={5}")]
+           Message = "A window could not be placed\nwindow={0} | stage={1} | hr=0x{2:X8} | win32_error={3} | ex_type={4} | ex_message={5}")]
     public void WindowPlacementFailed(
         string window, string stage, int hr, int win32_error, string ex_type, string ex_message)
     {
@@ -259,7 +259,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     [Event(EvtWindowFailureRepeated,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "window failure repeated | window={0} | stage={1} | failures={2} | hr=0x{3:X8} | win32_error={4}")]
+           Message = "window={0} | stage={1} | failures={2} | hr=0x{3:X8} | win32_error={4}")]
     public void WindowFailureRepeated(string window, string stage, int failures, int hr, int win32_error)
     {
         if (!IsWindowingDetailEnabled()) return;
@@ -272,7 +272,7 @@ public sealed class DeckleWindowingSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Windowing,
            Tags = ObservationTags.Milestone,
-           Message = "A window shows and places again | window={0} | stage={1} | failures={2}")]
+           Message = "A window shows and places again")]
     public void WindowFailureRecovered(string window, string stage, int failures)
     {
         if (!IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Windowing)) return;

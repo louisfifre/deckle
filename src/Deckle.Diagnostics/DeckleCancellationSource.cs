@@ -43,7 +43,7 @@ public sealed class DeckleCancellationSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "operation cancelled | operation={0} | reason={1} | age_ms={2}")]
+           Message = "operation cancelled")]
     public void OperationCancelled(string operation, string reason, int age_ms)
     {
         if (!IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle)) return;
