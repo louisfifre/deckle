@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Net;
 using System.Text.Json.Nodes;
 using Deckle.Anytype;
@@ -64,9 +63,6 @@ public class SessionGesturesTests
         return (JsonArray)JsonNode.Parse(patch.Body!)!["ops"]!;
     }
 
-    static string Today() =>
-        DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-
     static JsonObject TaskObject(string id, string name) => new()
     {
         ["object"] = new JsonObject
@@ -107,9 +103,9 @@ public class SessionGesturesTests
     }
 
     // The v2 answers session_start's requests, in the order they are sent: the
-    // task's properties, the task's markdown, the report create, one properties
-    // read per linked project, the report search, then one markdown read per
-    // shown report.
+    // task's properties, the task's markdown, one properties read per linked
+    // project, the report search, one markdown read per shown report, then the
+    // report create, last (ThenCreate).
     static string V2Named(string id, string type, string name, string extraProperties = "") =>
         "{\"id\":\"" + id + "\",\"type\":\"" + type + "\",\"properties\":{\"name\":\"" + name + "\""
         + extraProperties + "}}";
@@ -132,24 +128,26 @@ public class SessionGesturesTests
 
     // By default the anchor task has no past reports, so the report search
     // answers empty and the digest skips that block.
-    static FakeV2Handler WireStartReads(string searchAnswer, string? createAnswer = null) =>
+    static FakeV2Handler WireStartReads(string searchAnswer) =>
         new FakeV2Handler()
             .Reply(HttpStatusCode.OK, V2Named(TaskId, "task", "Tâche d'ancrage",
                 ",\"" + DevSpace.Props.RelationProjet + "\":[\"" + ProjectId + "\"]"))
             .Reply(HttpStatusCode.OK, V2Markdown(TaskId, "# Tâche d'ancrage\n- [x] fait\n- [ ] à faire"))
-            // The shape of a real create's answer (measured): id and etag at the root.
-            .Reply(HttpStatusCode.Created,
-                createAnswer ?? "{\"id\":\"" + NewReport + "\",\"type\":\"rapport\",\"etag\":\"1ea04e49\"}")
             .Reply(HttpStatusCode.OK, V2Named(ProjectId, "project", "Mon projet"))
             .Reply(HttpStatusCode.OK, searchAnswer);
+
+    // The shape of a real create's answer (measured): id and etag at the root.
+    static FakeV2Handler ThenCreate(FakeV2Handler v2, string? createAnswer = null) =>
+        v2.Reply(HttpStatusCode.Created,
+            createAnswer ?? "{\"id\":\"" + NewReport + "\",\"type\":\"rapport\",\"etag\":\"1ea04e49\"}");
 
     [Fact]
     public async Task StartCreatesAReportCarryingTodayAndTheAnchorTask()
     {
         using var server = new FakeAnytypeServer();
-        FakeV2Handler v2 = WireStartReads(V2Rows());
+        FakeV2Handler v2 = ThenCreate(WireStartReads(V2Rows()));
 
-        string digest = await NewGestures(server, v2).StartAsync(TaskId, Ct);
+        string digest = await NewGestures(server, v2, new StoppedClock()).StartAsync(TaskId, Ct);
 
         Assert.StartsWith($"report_id : {NewReport}\n", digest, StringComparison.Ordinal);
 
@@ -157,14 +155,13 @@ public class SessionGesturesTests
         Assert.Equal(DevSpace.Types.Rapport, create["type"]!.GetValue<string>());
         // The heading opens the body; a report is a note and is sent no name,
         // which would land as a paragraph ahead of it.
-        Assert.Equal($"# Journal {Today()}", create["markdown"]!.GetValue<string>());
+        Assert.Equal("# Journal 2026-06-12", create["markdown"]!.GetValue<string>());
         Assert.False(create.ContainsKey("name"));
 
         var props = (JsonObject)create["properties"]!;
-        string date = props[DevSpace.Props.DateDuJournal]!.GetValue<string>();
-        Assert.Equal(Today(), date);
-        // Independent of the Today() mirror: the wire date stays ISO yyyy-MM-dd.
-        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", date);
+        // The wire date is the stopped clock's day in ISO yyyy-MM-dd, whatever
+        // the zone or the hour of the machine running the test.
+        Assert.Equal("2026-06-12", props[DevSpace.Props.DateDuJournal]!.GetValue<string>());
 
         Assert.Equal(TaskId, ((JsonArray)props[DevSpace.Props.TachesLiees]!).Single()!.GetValue<string>());
 
@@ -183,7 +180,7 @@ public class SessionGesturesTests
     public async Task StartFailsWhenTheCreateAnswerCarriesNoId()
     {
         using var server = new FakeAnytypeServer();
-        FakeV2Handler v2 = WireStartReads(V2Rows(), createAnswer: "{\"type\":\"rapport\"}");
+        FakeV2Handler v2 = ThenCreate(WireStartReads(V2Rows()), "{\"type\":\"rapport\"}");
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => NewGestures(server, v2).StartAsync(TaskId, Ct));
@@ -193,7 +190,7 @@ public class SessionGesturesTests
     public async Task StartDigestHeadsWithTheTaskItsProjectAndItsChecklist()
     {
         using var server = new FakeAnytypeServer();
-        FakeV2Handler v2 = WireStartReads(V2Rows());
+        FakeV2Handler v2 = ThenCreate(WireStartReads(V2Rows()));
 
         string digest = await NewGestures(server, v2).StartAsync(TaskId, Ct);
 
@@ -235,6 +232,7 @@ public class SessionGesturesTests
         // Only the shown reports are read for their body.
         for (int k = 0; k < SessionGestures.RecentReports; k++)
             v2.Reply(HttpStatusCode.OK, V2Markdown(rows[k].Item1, markdowns[k]));
+        ThenCreate(v2);
 
         string digest = await NewGestures(server, v2).StartAsync(TaskId, Ct);
 
@@ -266,9 +264,8 @@ public class SessionGesturesTests
         // The server does the filtering and the ordering: the reports of the
         // task only, newest first.
         FakeV2Handler.Seen search = Assert.Single(v2.Requests, r => r.PathAndQuery.Contains("/search?"));
-        // One page, not every report of the task: the shown ones plus the slot
-        // the report just created may take.
-        Assert.EndsWith($"/search?limit={SessionGestures.RecentReports + 1}&offset=0", search.PathAndQuery);
+        // One page, not every report of the task: the shown ones.
+        Assert.EndsWith($"/search?limit={SessionGestures.RecentReports}&offset=0", search.PathAndQuery);
         JsonObject body = (JsonObject)JsonNode.Parse(search.Body!)!;
         Assert.Equal(DevSpace.Types.Rapport, body["type"]!.GetValue<string>());
         JsonObject filter = (JsonObject)Assert.Single((JsonArray)body["filters"]!)!;
@@ -276,30 +273,28 @@ public class SessionGesturesTests
         Assert.Equal(TaskId,((JsonArray)filter["value"]!).Single()!.GetValue<string>());
         Assert.Equal("desc", ((JsonObject)Assert.Single((JsonArray)body["sorts"]!)!)["direction"]!.GetValue<string>());
     }
-    // The report session_start has just created links the task too, so the
-    // search returns it first. It is the session being opened, not history: the
-    // three slots go to the previous reports.
+    // session_start reads everything the digest needs before it creates the
+    // report: a read that fails leaves nothing behind, so the caller's retry
+    // does not stack a second, empty report on the same task.
     [Fact]
     [Trait("Category", "regression")]
-    public async Task StartLeavesTheReportItJustCreatedOutOfTheDigest()
+    public async Task StartCreatesNoReportWhenTheDigestCannotBeRead()
     {
         using var server = new FakeAnytypeServer();
-        string[] previous = ["bafyreiPrevaaa", "bafyreiPrevbbb", "bafyreiPrevccc"];
-        FakeV2Handler v2 = WireStartReads(V2Rows(
-            (NewReport, "2026-06-12"),
-            (previous[0], "2026-06-11"),
-            (previous[1], "2026-06-10"),
-            (previous[2], "2026-06-09")));
-        // Only the previous reports are read for their body.
-        foreach (string id in previous)
-            v2.Reply(HttpStatusCode.OK, V2Markdown(id, "- fait"));
+        // The search of the task's past reports is the read that fails; a create
+        // answer is queued behind it, so only the order can keep it unsent.
+        var v2 = new FakeV2Handler()
+            .Reply(HttpStatusCode.OK, V2Named(TaskId, "task", "Tâche d'ancrage"))
+            .Reply(HttpStatusCode.OK, V2Markdown(TaskId, "# Tâche d'ancrage"))
+            .Reply(HttpStatusCode.BadRequest, "{\"message\":\"search refused\"}");
+        ThenCreate(v2);
 
-        string digest = await NewGestures(server, v2).StartAsync(TaskId, Ct);
+        await Assert.ThrowsAnyAsync<Exception>(
+            () => NewGestures(server, v2).StartAsync(TaskId, Ct));
 
-        Assert.DoesNotContain($"— 2026-06-12 · {NewReport}", digest);
-        foreach (string id in previous) Assert.Contains(id, digest);
+        Assert.DoesNotContain(v2.Requests,
+            r => r.Method == "POST" && r.PathAndQuery == "/v2/spaces/space-1/objects");
     }
-
     [Fact]
     public async Task TouchAppendsTheTaskToTheCurrentReportsLinkedTasks()
     {

@@ -265,9 +265,11 @@ public sealed class TrayIconManager : IDisposable
 
     // Returns (hIcon, owned): owned=true if loaded from file (DestroyIcon
     // required), owned=false if shared system icon (DO NOT call DestroyIcon).
-    private static (IntPtr hIcon, bool owned) LoadIconFromFile(bool active)
+    internal static (IntPtr hIcon, bool owned) LoadIconFromFile(bool active)
     {
         string? path = IconAssets.ResolvePath(recording: active);
+        string reason = "asset_missing";
+        int error = 0;
         if (path is not null)
         {
             IntPtr hIcon = NativeMethods.LoadImage(
@@ -277,10 +279,15 @@ public sealed class TrayIconManager : IDisposable
 
             if (hIcon != IntPtr.Zero)
                 return (hIcon, owned: true);
+
+            reason = "load_failed";
+            error = Marshal.GetLastWin32Error();
         }
 
         // The shared IDI_APPLICATION icon keeps the tray item visible when the
-        // assets were not copied.
+        // assets were not copied; the tray then shows the wrong mark, so the
+        // fallback is a Warning, not a silence.
+        DeckleShellSource.Log.TrayIconFallback(active ? "recording" : "idle", reason, error);
         const nint IDI_APPLICATION = 32512;
         return (NativeMethods.LoadIcon(IntPtr.Zero, new IntPtr(IDI_APPLICATION)), owned: false);
     }

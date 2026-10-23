@@ -190,7 +190,10 @@ public sealed class TrackpadEngine : IDisposable
         if (_injector.ReleasePrimary())
             CloseInjectionIncident();
         else
+        {
             LogInjectionFailure("release");
+            DeckleTrackpadSource.Log.PrimaryReleaseFailed(_injector.LastError);
+        }
         if (_traceDrag && DeckleTrackpadSource.IsInputActivityDetailEnabled(
                 System.Diagnostics.Tracing.EventLevel.Verbose,
                 (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Capture))

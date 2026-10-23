@@ -25,9 +25,8 @@ public sealed record HueBridge(
 public sealed record HueCredentials(string Username, string ClientKey)
 {
     /// <summary>First 8 characters of the username followed by `...`,
-    /// for safe display in logs and diagnostic UI. Length is fixed so
-    /// the value never accidentally reveals the full token through a
-    /// formatter that truncates differently.</summary>
+    /// for the diagnostic UI only. It is never written to a log: even a
+    /// prefix of the application key is part of a credential.</summary>
     public string UsernameHead => Username.Length <= 8
         ? Username
         : string.Concat(Username.AsSpan(0, 8), "...");

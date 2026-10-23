@@ -31,8 +31,18 @@ public sealed class SessionGestures(
     {
         long t0 = Stopwatch.GetTimestamp();
 
-        string taskId = await _resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
+        // The start creates a report on this task, so the name must be exact.
+        string taskId = await _resolver.ResolveAsync(
+            task, new[] { DevSpace.Types.Task }, NameMatch.Exact, ct);
         TaskView taskView = await ReadTaskAsync(taskId, ct);
+
+        // Every read the digest needs comes BEFORE the create. The create is the
+        // last remote call, so a read that fails leaves no report behind: the
+        // caller retries the whole gesture, and a report created first would be
+        // stacked under a second one on the same task (and the failed call never
+        // gave its id back). The digest therefore cannot mention the new report,
+        // which also makes the old filter on it unnecessary.
+        string digest = await BuildStartDigestAsync(taskId, taskView, ct);
 
         // Measured on a real create (2026-10-22): the « # Journal <date> »
         // heading stays a heading_1 block, so the report opens on its date and
@@ -66,7 +76,6 @@ public sealed class SessionGestures(
         DeckleAnytypeSource.Log.SessionStarted();
         DeckleAnytypeSource.Log.SessionReportCreated(reportId);
 
-        string digest = await BuildStartDigestAsync(taskId, taskView, reportId, ct);
         DeckleAnytypeSource.Log.GestureCompleted("session_start", Elapsed(t0));
         return $"report_id : {reportId}\n{digest}";
     }
@@ -141,8 +150,9 @@ public sealed class SessionGestures(
         long t0 = Stopwatch.GetTimestamp();
 
         string reportId = await _resolver.ResolveAsync(
-            report, new[] { DevSpace.Types.Rapport }, ct);
-        string taskId = await _resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
+            report, new[] { DevSpace.Types.Rapport }, NameMatch.Exact, ct);
+        string taskId = await _resolver.ResolveAsync(
+            task, new[] { DevSpace.Types.Task }, NameMatch.Exact, ct);
         JsonObject taskObj = await _api.GetObjectAsync(taskId, ct);
 
         await AppendTaskToReportAsync(reportId, taskId, ct);
@@ -174,7 +184,7 @@ public sealed class SessionGestures(
     // ── digest ───────────────────────────────────────────────────────────────
 
     async Task<string> BuildStartDigestAsync(
-        string taskId, TaskView task, string newReportId, CancellationToken ct)
+        string taskId, TaskView task, CancellationToken ct)
     {
         var sb = new StringBuilder();
 
@@ -204,7 +214,7 @@ public sealed class SessionGestures(
         // it does not replay it (report_journal does, on demand, by the id
         // given here).
         foreach (AnytypeV2SearchRow row in (await ReportsForTaskAsync(taskId, ct))
-            .Where(r => r.Id != newReportId).Take(RecentReports))
+            .Take(RecentReports))
         {
             string date = row.Properties.Day(DevSpace.Props.DateDuJournal) ?? Today();
             sb.Append($"\n— {date} · {row.Id}");
@@ -245,8 +255,6 @@ public sealed class SessionGestures(
     // date, newest first (the structured form measured on 2026-10-22), so one
     // page of the size shown is all the digest needs: a task can carry a long
     // history of reports, and paging through it all to keep three was waste.
-    // One more than shown is asked: the report session_start has just created
-    // links this task too, so it can be the newest row, and the digest skips it.
     async Task<IReadOnlyList<AnytypeV2SearchRow>> ReportsForTaskAsync(string taskId, CancellationToken ct)
     {
         if (taskId.Length == 0) return [];
@@ -258,7 +266,7 @@ public sealed class SessionGestures(
                 Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.TachesLiees, [taskId])],
                 Sorts = [new AnytypeV2SearchSort(DevSpace.Props.DateDuJournal, Descending: true)],
                 Fields = [DevSpace.Props.DateDuJournal],
-            }, offset: 0, limit: RecentReports + 1, ct);
+            }, offset: 0, limit: RecentReports, ct);
         return page.Rows;
     }
 

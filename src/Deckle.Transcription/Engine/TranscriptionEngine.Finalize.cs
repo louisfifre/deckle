@@ -59,7 +59,9 @@ public sealed partial class TranscriptionEngine
                 isFileRun: true,
                 recordingDurationSec);
             if (announceCompletion)
-                RaiseFinished(fileDelivery.Outcome);
+                FinishTake(
+                    fileDelivery.Outcome,
+                    fileDelivery.Outcome == TranscriptionOutcome.None ? TakeEndReasons.WriteFailed : null);
             return fileDelivery.Outcome;
         }
 
@@ -78,7 +80,7 @@ public sealed partial class TranscriptionEngine
             if (announceCompletion)
                 RaiseStatus(Loc.Get("Status_Ready"));
             if (announceCompletion)
-                RaiseFinished(TranscriptionOutcome.None);
+                FinishTake(TranscriptionOutcome.None, TakeEndReasons.CopyFailed);
             return TranscriptionOutcome.None;
         }
 
@@ -99,7 +101,7 @@ public sealed partial class TranscriptionEngine
             isFileRun,
             recordingDurationSec);
         if (announceCompletion)
-            RaiseFinished(delivered.Outcome);
+            FinishTake(delivered.Outcome);
         return delivered.Outcome;
     }
 

@@ -3,7 +3,7 @@ using System.Text.Json.Nodes;
 namespace Deckle.Anytype;
 
 // Every object of the given types in a space, read through the search endpoint
-// one full page at a time until pagination.has_more turns false. The exhaustive
+// one page at a time (see PagedRead) until pagination.has_more turns false. The exhaustive
 // read the listing gestures share — a project's tasks, a task's reports, the
 // project list, a space's collections — before they filter client-side. A
 // single page silently drops the least recently modified objects once the space
@@ -16,17 +16,13 @@ internal static class ObjectListing
         AnytypeApiClient api, string spaceId, IReadOnlyList<string> typeKeys, CancellationToken ct)
     {
         var objects = new List<JsonObject>();
-        int offset = 0;
-        while (true)
+        await foreach (JsonObject root in PagedRead.PagesAsync(
+            "object_listing", (offset, token) => api.SearchAsync(
+                spaceId, string.Empty, typeKeys, offset, AnytypeApiClient.SearchPageMax, token), ct)
+            .ConfigureAwait(false))
         {
-            JsonObject root = await api.SearchAsync(
-                    spaceId, string.Empty, typeKeys, offset, AnytypeApiClient.SearchPageMax, ct)
-                .ConfigureAwait(false);
             foreach (JsonNode? node in root["data"]?.AsArray() ?? [])
                 if (node is JsonObject obj) objects.Add(obj);
-
-            if (root["pagination"]?["has_more"]?.GetValue<bool>() != true) break;
-            offset += AnytypeApiClient.SearchPageMax;
         }
         return objects;
     }

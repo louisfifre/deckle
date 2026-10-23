@@ -46,15 +46,6 @@ public sealed partial class DeckleLightingSource
         WriteEvent(EvtBridgePairedDetail2, bridge_id);
     }
 
-    [Event(EvtBridgePairedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "pair result | bridge_id={0} | username={1} | clientkey=[redacted]")]
-    public void BridgePairedDetail(string bridge_id, string username_head)
-    {
-        if (!IsHueDetailEnabled(Keywords.Lifecycle)) return;
-        WriteEvent(EvtBridgePairedDetail, bridge_id, username_head);
-    }
 
     // error_type stays a literal: 101 (link button not pressed) is the only
     // bridge error that keeps the poll going; every other one is rejected.

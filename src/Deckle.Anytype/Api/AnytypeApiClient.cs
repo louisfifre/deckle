@@ -40,11 +40,9 @@ public sealed partial class AnytypeApiClient : IDisposable
     private readonly IBackendEndpointTrust? _endpointTrust;
     private readonly Lazy<AnytypeV2Client> _v2;
 
-    // One transport incident across calls: the first unanswered request logs
-    // the Error, the next ones stay Verbose, the first answer closes it. Only
+    // The failure incidents across calls (no answer, a run of refusals). Only
     // touched inside _gate, so no further synchronization.
-    private int _transportFailures;
-    private long _transportFailingSince;
+    private readonly ApiFailureIncidents _incidents = new();
 
     // DefaultBackoff applies when the response omits Retry-After; small because
     // the gate already paces traffic.
@@ -363,10 +361,8 @@ public sealed partial class AnytypeApiClient : IDisposable
             {
                 if (_endpointTrust is not null && !_endpointTrust.IsTrusted())
                 {
-                    DeckleAnytypeSource.Log.ApiRequestFailed(
-                        method.Method, 0, "untrusted_endpoint", "", "");
-                    DeckleAnytypeSource.Log.ApiRequestFailedDetail(
-                        method.Method, path, 0, "endpoint owner is not a trusted provider");
+                    _incidents.Refused(
+                        method.Method, path, 0, ApiFailureReasons.UntrustedEndpoint, "owner_untrusted");
                     throw new InvalidOperationException(
                         "The Anytype endpoint is not owned by a trusted Deckle provider; the request was not sent.");
                 }
@@ -390,26 +386,12 @@ public sealed partial class AnytypeApiClient : IDisposable
                 {
                     // A TaskCanceledException the caller did not ask for is
                     // HttpClient's own timeout.
-                    string reason = ex is TaskCanceledException ? "timeout" : "transport";
-                    if (_transportFailures++ == 0)
-                    {
-                        _transportFailingSince = Stopwatch.GetTimestamp();
-                        DeckleAnytypeSource.Log.ApiRequestFailed(
-                            method.Method, 0, reason, ex.GetType().Name, ex.Message);
-                    }
-                    DeckleAnytypeSource.Log.ApiRequestFailedDetail(
-                        method.Method, path, 0, $"{ex.GetType().Name}: {ex.Message}");
+                    _incidents.TransportFailed(method.Method, path, ex);
                     throw;
                 }
                 using HttpResponseMessage response = sent;
 
-                if (_transportFailures > 0)
-                {
-                    DeckleAnytypeSource.Log.ApiTransportRecovered(
-                        _transportFailures,
-                        Stopwatch.GetElapsedTime(_transportFailingSince).TotalSeconds);
-                    _transportFailures = 0;
-                }
+                _incidents.Answered();
 
                 double elapsedMs = traceRequest
                     ? Stopwatch.GetElapsedTime(startTicks).TotalMilliseconds
@@ -418,6 +400,7 @@ public sealed partial class AnytypeApiClient : IDisposable
 
                 if (response.IsSuccessStatusCode)
                 {
+                    _incidents.Succeeded();
                     if (traceRequest)
                         DeckleAnytypeSource.Log.ApiRequestCompleted(method.Method, path, status, elapsedMs);
                     if (!parseBody) return new JsonObject();
@@ -440,12 +423,11 @@ public sealed partial class AnytypeApiClient : IDisposable
                     continue;
                 }
 
-                // The server message is API error text, never key material, so
-                // it may be logged — in the Verbose detail only: it is free text
-                // the milestone cannot bound, and the status already says why.
+                // The server message is API error text. It rides in the exception for
+                // the caller and stays out of the log: it is free text the log cannot
+                // bound, and a v1 refusal carries no machine code to log instead.
                 string errorBody = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-                DeckleAnytypeSource.Log.ApiRequestFailed(method.Method, status, "http_status", "", "");
-                DeckleAnytypeSource.Log.ApiRequestFailedDetail(method.Method, path, status, Excerpt(errorBody));
+                _incidents.Refused(method.Method, path, status, ApiFailureReasons.HttpStatus, null);
                 throw new HttpRequestException(
                     $"Anytype API {method.Method} {path} failed with {status}: {Excerpt(errorBody)}",
                     null, response.StatusCode);

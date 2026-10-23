@@ -54,8 +54,35 @@ public sealed partial class DeckleLlmSource
         if (IsEnabled()) WriteEvent(EvtRewriteSkippedNoProviderDetail, profile, provider);
     }
 
-    [Event(EvtRewriteStarted,
+    // The start and the end of one transcript rewrite: lasting work, so both
+    // are in the journal and share a work_id. A rewrite that fails or times out
+    // ends with RewriteUnavailable or RewriteTimeout instead, which carry the
+    // same work_id (and are Warnings, so the journal keeps them anyway).
+    [Event(EvtTranscriptRewriteStarted,
            Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
+           Message = "Rewriting the transcript | provider={0} | engine={1} | model={2} | work_id={3}")]
+    public void TranscriptRewriteStarted(string provider, string engine, string model, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtTranscriptRewriteStarted, provider, engine, model, work_id);
+    }
+
+    [Event(EvtTranscriptRewriteCompleted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
+           Message = "Transcript rewrite complete | provider={0} | elapsed_ms={1} | work_id={2}")]
+    public void TranscriptRewriteCompleted(string provider, long elapsed_ms, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtTranscriptRewriteCompleted, provider, elapsed_ms, work_id);
+    }
+
+    // The three lines below belong to the interactive rewrites (paragraph,
+    // sentence): detail, not journal. They fire on every pause in typing and
+    // none of them is lasting work worth a pair in the file.
+    [Event(EvtRewriteStarted,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Message = "Rewriting | caller={0} | provider={1} | engine={2} | model={3}")]
     public void RewriteStarted(string caller, string provider, string engine, string model)
@@ -95,7 +122,7 @@ public sealed partial class DeckleLlmSource
     }
 
     [Event(EvtRewriteCompleted,
-           Level = EventLevel.Informational,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Message = "Rewrite complete | caller={0} | provider={1} | elapsed_ms={2}")]
     public void RewriteCompleted(string caller, string provider, long elapsed_ms)
@@ -105,9 +132,10 @@ public sealed partial class DeckleLlmSource
 
     // An interactive rewrite whose caller withdrew it: the offer deadline
     // passed, or a keystroke made the paragraph stale. Expected, so not a
-    // Warning, but it still closes the rewrite it started.
+    // Warning, and Verbose like the Started it closes: a cancellation is a
+    // normal end, and this one happens on every keystroke that outruns a model.
     [Event(EvtRewriteCancelled,
-           Level = EventLevel.Informational,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Message = "Rewrite cancelled by its caller | caller={0} | provider={1} | elapsed_ms={2}")]
     public void RewriteCancelled(string caller, string provider, long elapsed_ms)
@@ -118,27 +146,29 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteTimeout,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Rewrite timed out | caller={0} | provider={1} | model={2} | elapsed_ms={3} | cap_s={4:F0}")]
-    public void RewriteTimeout(string caller, string provider, string model, long elapsed_ms, double cap_s)
+           Message = "Rewrite timed out | caller={0} | provider={1} | model={2} | elapsed_ms={3} | cap_s={4:F0} | work_id={5}")]
+    public void RewriteTimeout(string caller, string provider, string model, long elapsed_ms, double cap_s, string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtRewriteTimeout, new object[] { caller, provider, model, elapsed_ms, cap_s });
+        if (IsEnabled()) WriteEvent(EvtRewriteTimeout, new object[] { caller, provider, model, elapsed_ms, cap_s, work_id });
     }
 
     // reason is the failure class RewriteFailureMessage.ReasonOf derives,
     // the same reading the overlay card words for the user. status is the
-    // HTTP status when the server answered, 0 when it never did.
+    // HTTP status when the server answered, 0 when it never did. work_id pairs
+    // the line with the TranscriptRewriteStarted it ends; an interactive
+    // rewrite has no such start and passes an empty string.
     [Event(EvtRewriteUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Rewriter unavailable | reason={3} | caller={0} | provider={1} | model={2} | status={4} | ex_type={5} | ex_message={6}")]
+           Message = "Rewriter unavailable | reason={3} | caller={0} | provider={1} | model={2} | status={4} | ex_type={5} | ex_message={6} | work_id={7}")]
     public void RewriteUnavailable(
         string caller, string provider, string model,
-        string reason, int status, string ex_type, string ex_message)
+        string reason, int status, string ex_type, string ex_message, string work_id)
     {
         if (IsEnabled())
             WriteEvent(EvtRewriteUnavailable, new object[]
             {
-                caller, provider, model, reason, status, ex_type, ex_message,
+                caller, provider, model, reason, status, ex_type, ex_message, work_id,
             });
     }
 
@@ -164,6 +194,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
            Message = "The rewriter answers again | caller={0} | provider={1} | failures={2}")]
     public void RewriteRecovered(string caller, string provider, int failures)
     {

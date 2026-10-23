@@ -27,7 +27,7 @@ public sealed partial class DeckleLlmSource
            Message = "{0}")]
     public void SettingsLoadComplete(string message)
     {
-        if (IsEnabled()) WriteEvent(EvtSettingsLoadComplete, message);
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadComplete, PathRedaction.Redact(message));
     }
 
     [Event(EvtSettingsLoadWarning,

@@ -10,6 +10,7 @@ namespace Deckle.Hud.Tests;
 // desaturated wheel once carried a dark red band into the countdown gauge
 // (bug note beside this file). The wheel itself is baked by the clamping
 // conversion, so a hue past the sRGB gamut darkens rather than bleaches.
+[Trait("Category", "unit")]
 public sealed class ConicPaletteTests
 {
     [Fact]

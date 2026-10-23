@@ -195,7 +195,12 @@ public partial class App
                 }
             }
 
-            DeckleAppSource.Log.AnytypeRuntimeEnded(endOutcome, endReason, endExType, endExMessage);
+            // A stop on a failure is an Error; a shutdown or a missing
+            // provisioning is only an end.
+            if (endOutcome == "failed")
+                DeckleAppSource.Log.AnytypeRuntimeFailed(endReason, endExType, endExMessage);
+            else
+                DeckleAppSource.Log.AnytypeRuntimeEnded(endOutcome, endReason, endExType, endExMessage);
 
             GC.KeepAlive(host);
             GC.KeepAlive(api);

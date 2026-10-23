@@ -76,7 +76,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
            Message = "native runtime | path={0} | size_bytes={1} | file_version={2} | modified={3}")]
     public void NativeRuntimeLoadedDetail(string path, long size_bytes, string file_version, string modified)
     {
-        if (IsEnabled()) WriteEvent(EvtNativeRuntimeLoadedDetail, path, size_bytes, file_version, modified);
+        if (IsEnabled()) WriteEvent(EvtNativeRuntimeLoadedDetail, PathRedaction.Redact(path), size_bytes, file_version, modified);
     }
 
     // Read after the first model init, when ggml has already registered its
@@ -100,7 +100,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
            Message = "native runtime probe failed | probe={0} | ex_type={1} | ex_message={2}")]
     public void NativeRuntimeProbeFailed(string probe, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtNativeRuntimeProbeFailed, probe, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtNativeRuntimeProbeFailed, probe, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // ── Native log hook ─────────────────────────────────────────────────
@@ -114,7 +114,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
            Message = "The whisper.cpp log hook could not be installed | ex_type={0} | ex_message={1}")]
     public void LogHookUnavailable(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtLogHookUnavailable, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtLogHookUnavailable, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // Once per process: a handler that throws on one line usually throws on
@@ -125,7 +125,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
            Message = "A whisper.cpp log line could not be handled | ex_type={0} | ex_message={1}")]
     public void LogHookLineFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtLogHookLineFailed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtLogHookLineFailed, ex_type, PathRedaction.Redact(ex_message));
     }
 
     [Event(EvtLogHookLineFailedDetail,
@@ -139,7 +139,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
                 this,
                 EventLevel.Verbose,
                 (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtLogHookLineFailedDetail, failures, ex_type, ex_message);
+        WriteEvent(EvtLogHookLineFailedDetail, failures, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // One per native line outside the init phases the compactor folds: the
@@ -156,7 +156,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
                 this,
                 EventLevel.Verbose,
                 (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtNativeLogLine, level, line);
+        WriteEvent(EvtNativeLogLine, level, PathRedaction.Redact(line));
     }
 
     // The native line is the cause, so it travels in the payload. whisper.cpp
@@ -167,7 +167,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
            Message = "whisper.cpp reported a warning | message={0}")]
     public void NativeLogWarning(string message)
     {
-        if (IsEnabled()) WriteEvent(EvtNativeLogWarning, message);
+        if (IsEnabled()) WriteEvent(EvtNativeLogWarning, PathRedaction.Redact(message));
     }
 
     [Event(EvtNativeLogError,
@@ -176,7 +176,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
            Message = "whisper.cpp reported an error | message={0}")]
     public void NativeLogError(string message)
     {
-        if (IsEnabled()) WriteEvent(EvtNativeLogError, message);
+        if (IsEnabled()) WriteEvent(EvtNativeLogError, PathRedaction.Redact(message));
     }
 
     // ── Model load ──────────────────────────────────────────────────────
@@ -200,7 +200,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
            Message = "model load start | path={0} | file_mb={1:F1} | gpu_device={2} | flash_attn={3} | log_hook={4}")]
     public void ModelLoadStartingDetail(string path, double file_mb, int gpu_device, bool flash_attn, bool log_hook)
     {
-        if (IsEnabled()) WriteEvent(EvtModelLoadStartingDetail, path, file_mb, gpu_device, flash_attn, log_hook);
+        if (IsEnabled()) WriteEvent(EvtModelLoadStartingDetail, PathRedaction.Redact(path), file_mb, gpu_device, flash_attn, log_hook);
     }
 
     // Once per incident: the engine retries the load at every take, and its
@@ -226,7 +226,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
            Message = "model load failed | reason={0} | path={1} | elapsed_ms={2} | use_gpu={3} | failed_device={4}")]
     public void ModelLoadFailedDetail(string reason, string path, long elapsed_ms, bool use_gpu, string failed_device)
     {
-        if (IsEnabled()) WriteEvent(EvtModelLoadFailedDetail, reason, path, elapsed_ms, use_gpu, failed_device);
+        if (IsEnabled()) WriteEvent(EvtModelLoadFailedDetail, reason, PathRedaction.Redact(path), elapsed_ms, use_gpu, failed_device);
     }
 
     // The compute device of a freshly loaded context. The device name tells a
@@ -323,7 +323,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
            Message = "The segment callback failed, segments may be missing | ex_type={0} | ex_message={1}")]
     public void SegmentCallbackFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtSegmentCallbackFailed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtSegmentCallbackFailed, ex_type, PathRedaction.Redact(ex_message));
     }
 
     [Event(EvtSegmentCallbackFailedDetail,
@@ -337,12 +337,13 @@ public sealed class DeckleWhisperSource : DeckleEventSource
                 this,
                 EventLevel.Verbose,
                 (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtSegmentCallbackFailedDetail, failures, ex_type, ex_message);
+        WriteEvent(EvtSegmentCallbackFailedDetail, failures, ex_type, PathRedaction.Redact(ex_message));
     }
 
     [Event(EvtSegmentCallbackRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
            Message = "The segment callback works again")]
     public void SegmentCallbackRecovered()
     {
@@ -359,7 +360,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
            Message = "model file probe failed | path={0} | ex_type={1} | ex_message={2}")]
     public void ModelFileProbeFailed(string path, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtModelFileProbeFailed, path, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtModelFileProbeFailed, PathRedaction.Redact(path), ex_type, PathRedaction.Redact(ex_message));
     }
 
     // ── Native runtime install ──────────────────────────────────────────
@@ -395,7 +396,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
            Message = "Could not install the whisper.cpp runtime | reason={0} | version={1} | ex_type={2} | ex_message={3}")]
     public void NativeRuntimeProvisionFailed(string reason, string version, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtNativeRuntimeProvisionFailed, reason, version, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtNativeRuntimeProvisionFailed, reason, version, ex_type, PathRedaction.Redact(ex_message));
     }
 
     [Event(EvtNativeRuntimeProvisionFailedDetail,
@@ -436,6 +437,6 @@ public sealed class DeckleWhisperSource : DeckleEventSource
            Message = "native runtime cleanup failed | path={0} | ex_type={1} | ex_message={2}")]
     public void NativeRuntimeCleanupFailed(string path, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtNativeRuntimeCleanupFailed, path, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtNativeRuntimeCleanupFailed, PathRedaction.Redact(path), ex_type, PathRedaction.Redact(ex_message));
     }
 }

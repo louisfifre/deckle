@@ -7,6 +7,9 @@ namespace Deckle.Input.PrecisionScroll.Tests;
 [Trait("Category", "unit")]
 public sealed class PrecisionScrollGestureTests
 {
+    // Injector coordinates are himetric units, 1/100 mm (PrecisionTouchpadInjector).
+    private const double HimetricPerMillimeter = 100;
+
     [Fact]
     public void OneDetentProducesOneContinuousRecognizableGesture()
     {
@@ -16,7 +19,7 @@ public sealed class PrecisionScrollGestureTests
 
         Assert.Equal(1, replay.Count(PrecisionScrollFrameKind.Begin));
         Assert.Equal(1, replay.Count(PrecisionScrollFrameKind.End));
-        double expectedTravel = tuning.DistancePerDetentMm * 100;
+        double expectedTravel = tuning.DistancePerDetentMm * HimetricPerMillimeter;
         Assert.InRange(
             replay.TotalTravel,
             expectedTravel - 1,
@@ -261,12 +264,18 @@ public sealed class PrecisionScrollGestureTests
         public int EndAtMs => Frames.Last(item =>
             item.Frame.Kind == PrecisionScrollFrameKind.End).AtMs;
 
+        // Throws when the replay holds no terminal segment (the last Move before an
+        // End): a missing segment must fail the test, not read as a speed of 0 and
+        // satisfy "settles to zero" vacuously.
         public double TerminalSpeed => Segments()
             .Where(segment => segment.Terminal)
             .Select(segment => segment.Speed)
-            .LastOrDefault();
+            .Last();
 
-        public double TerminalToPeakSpeedRatio => PeakSpeed == 0 ? 0 : TerminalSpeed / PeakSpeed;
+        // Throws when nothing moved, for the same reason: 0 / 0 is not "settled".
+        public double TerminalToPeakSpeedRatio => PeakSpeed == 0
+            ? throw new InvalidOperationException("The replay produced no motion.")
+            : TerminalSpeed / PeakSpeed;
 
         public int Count(PrecisionScrollFrameKind kind) =>
             Frames.Count(item => item.Frame.Kind == kind);

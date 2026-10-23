@@ -15,7 +15,10 @@ namespace Deckle.Install;
 // release chosen by GitHub, and the /releases list also contains the native
 // runtime's independent `native-v*` releases. App releases are therefore selected
 // by their strict vX.Y.Z tag and compared semantically instead of trusting either
-// GitHub's badge or API order.
+// GitHub's badge or API order. The one flag that is honored is Prerelease: a
+// release published as a prerelease is not offered to an installer or an update
+// check, whatever its tag says. Deckle publishes none today, so this only keeps
+// a future one from reaching people by accident.
 //
 // Asset names are part of the frozen release contract. A published app release
 // missing either exact asset is rejected: synthesizing a plausible URL would
@@ -26,20 +29,55 @@ public static class ReleaseResolver
     // (unlike publish-app.ps1 which resolves it from the live git remote).
     private const string Repo = "louisfifre/deckle";
 
+    // GitHub's largest page. The listing is asked in pages of this size.
+    internal const int PageSize = 100;
+
+    // Ceiling on the pages one resolution reads (1,000 releases): the installer
+    // must not ask for ever if the listing never shows an app release.
+    internal const int MaxPages = 10;
+
     private static readonly HttpClient s_http = CreateClient();
 
     public sealed record ResolvedRelease(string Tag, string ZipUrl, string Sha256Url, long ZipSize);
 
-    public static async Task<ResolvedRelease> ResolveLatestAsync(CancellationToken ct)
+    public static Task<ResolvedRelease> ResolveLatestAsync(CancellationToken ct) =>
+        ResolveLatestAsync(FetchPageAsync, ct);
+
+    // The seam: how a page of the listing is fetched is a parameter, so a test
+    // feeds pages without a network.
+    //
+    // Why pages: the listing is newest first and also holds the native runtime's
+    // `native-v*` releases, so a run of newer native releases can push every app
+    // release off the first page. The search reads page after page and resolves
+    // within the first page that holds an app release; it ends on a page shorter
+    // than PageSize (the listing is exhausted) or at MaxPages. It leans on the
+    // API listing newest first: a lower version created after a higher one could
+    // hide it on a later page, which the release flow does not produce.
+    internal static async Task<ResolvedRelease> ResolveLatestAsync(
+        Func<int, CancellationToken, Task<GitHubRelease[]>> fetchPage, CancellationToken ct)
     {
-        string api = $"https://api.github.com/repos/{Repo}/releases";
+        for (int page = 1; page <= MaxPages; page++)
+        {
+            GitHubRelease[] releases = await fetchPage(page, ct).ConfigureAwait(false);
+            if (releases.Any(IsPublishedAppRelease))
+                return ResolveLatestAppRelease(releases);
+            if (releases.Length < PageSize)
+                break;
+        }
+
+        throw new InvalidOperationException("No published Deckle app release found on GitHub.");
+    }
+
+    private static async Task<GitHubRelease[]> FetchPageAsync(int page, CancellationToken ct)
+    {
+        string api = $"https://api.github.com/repos/{Repo}/releases?per_page={PageSize}&page={page}";
 
         await using Stream stream = await s_http.GetStreamAsync(api, ct).ConfigureAwait(false);
         GitHubRelease[]? releases = await JsonSerializer
             .DeserializeAsync(stream, ReleaseJsonContext.Default.GitHubReleaseArray, ct)
             .ConfigureAwait(false);
 
-        return ResolveLatestAppRelease(releases ?? []);
+        return releases ?? [];
     }
 
     // Fetches and parses the payload's .sha256 sidecar — `<hex> *<filename>`
@@ -65,7 +103,7 @@ public static class ReleaseResolver
     internal static ResolvedRelease ResolveLatestAppRelease(IEnumerable<GitHubRelease> releases)
     {
         GitHubRelease? latest = releases
-            .Where(r => !r.Draft && TryParseAppVersion(r.TagName, out _))
+            .Where(IsPublishedAppRelease)
             .OrderByDescending(r => ParseAppVersion(r.TagName!))
             .FirstOrDefault();
 
@@ -83,6 +121,9 @@ public static class ReleaseResolver
             RequireAssetUrl(shaAsset, shaName),
             zipAsset.Size);
     }
+
+    private static bool IsPublishedAppRelease(GitHubRelease release) =>
+        !release.Draft && !release.Prerelease && TryParseAppVersion(release.TagName, out _);
 
     private static bool TryParseAppVersion(string? tag, out Version version)
     {
@@ -106,11 +147,25 @@ public static class ReleaseResolver
         return version;
     }
 
-    private static GitHubAsset FindRequiredAsset(GitHubRelease release, string expectedName) =>
-        release.Assets?.SingleOrDefault(a =>
-            string.Equals(a.Name, expectedName, StringComparison.Ordinal))
-        ?? throw new InvalidOperationException(
-            $"Release {release.TagName} is missing required asset {expectedName}.");
+    // Exactly one asset of that name, or the release is refused. Two of the same
+    // name would leave the choice of payload to the API's order, and the failure
+    // has to say which release and which file, not a bare LINQ message.
+    private static GitHubAsset FindRequiredAsset(GitHubRelease release, string expectedName)
+    {
+        GitHubAsset[] matches = (release.Assets ?? [])
+            .Where(a => string.Equals(a.Name, expectedName, StringComparison.Ordinal))
+            .Take(2)
+            .ToArray();
+
+        return matches.Length switch
+        {
+            1 => matches[0],
+            0 => throw new InvalidOperationException(
+                $"Release {release.TagName} is missing required asset {expectedName}."),
+            _ => throw new InvalidOperationException(
+                $"Release {release.TagName} lists required asset {expectedName} more than once."),
+        };
+    }
 
     private static string RequireAssetUrl(GitHubAsset asset, string name) =>
         !string.IsNullOrWhiteSpace(asset.BrowserDownloadUrl)

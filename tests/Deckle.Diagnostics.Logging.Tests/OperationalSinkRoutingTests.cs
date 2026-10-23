@@ -1,5 +1,6 @@
 using System.Diagnostics.Tracing;
 using Deckle.Diagnostics;
+using Deckle.TestSupport;
 using Xunit;
 
 namespace Deckle.Diagnostics.Logging.Tests;
@@ -33,7 +34,7 @@ public sealed class OperationalSinkRoutingTests
             sink.Flush();
 
             Assert.True(File.Exists(path));
-            string jsonl = File.ReadAllText(path);
+            string jsonl = SharedFileReader.ReadAllText(path);
             Assert.Contains("admitted", jsonl);
             Assert.DoesNotContain("before-enable", jsonl);
             Assert.DoesNotContain("dataset", jsonl);
@@ -74,6 +75,31 @@ public sealed class OperationalSinkRoutingTests
         finally
         {
             LogWindowFilterSession.Selection.Clear();
+            sink.Dispose();
+            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void ApplicationLogDoesNotTakeAFailingSettingsReadForADisabledLog()
+    {
+        string root = Path.Combine(
+            AppContext.BaseDirectory,
+            "application-log-throws-" + Guid.NewGuid().ToString("N"));
+        var sink = new ApplicationLogSink(
+            root,
+            () => throw new InvalidOperationException("settings unreadable"));
+
+        try
+        {
+            // The dispatcher contains this and opens a sink incident; false
+            // here would keep the log silent with nothing to say why.
+            Assert.Throws<InvalidOperationException>(
+                () => sink.Wants(Entry("row", ObservationKind.Operational)));
+        }
+        finally
+        {
             sink.Dispose();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }

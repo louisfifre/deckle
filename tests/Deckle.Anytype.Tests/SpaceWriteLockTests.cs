@@ -58,4 +58,16 @@ public class SpaceWriteLockTests : IDisposable
         Assert.NotNull(again);
         again.Dispose();
     }
-}
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task AcquireSurfacesAFailureThatIsNotAnotherWriterHoldingTheLock()
+    {
+        // A missing module directory fails the open with a DirectoryNotFoundException,
+        // an IOException that no waiting can cure. Retrying it as contention would
+        // hold the gesture forever and log nothing.
+        var sut = new SpaceWriteLock(Path.Combine(_dir, "absent"));
+
+        await Assert.ThrowsAsync<DirectoryNotFoundException>(() =>
+            sut.AcquireAsync("update", "obj-1", Ct).WaitAsync(TimeSpan.FromSeconds(5), Ct));
+    }}

@@ -56,7 +56,7 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            DecklePlaygroundSource.Log.ScreenCaptureStartFailed();
+            DecklePlaygroundSource.Log.ScreenCaptureStartFailed(ex.GetType().Name);
             DecklePlaygroundSource.Log.ScreenCaptureStartFailedDetail($"{ex.GetType().Name}: {ex.Message}");
             ScreenCaptureStatusText.Text = $"Failed: {ex.Message}";
             ScreenCaptureStatusDot.Fill = GetThemeBrush("SystemFillColorCriticalBrush");

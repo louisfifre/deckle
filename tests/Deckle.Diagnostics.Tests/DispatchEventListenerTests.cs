@@ -54,11 +54,15 @@ public sealed class DispatchEventListenerTests
         Assert.Equal("Value before", received.FormattedMessage);
     }
 
+    // The dispatcher listens to every Deckle-* source of the process, and the
+    // other test classes of this assembly run in parallel and emit on theirs.
+    // A sink that wanted everything would collect their events too, so it
+    // wants only this class's source.
     private sealed class CollectingSink : ILogSink
     {
         public List<EventEntry> Entries { get; } = [];
 
-        public bool Wants(EventEntry entry) => true;
+        public bool Wants(EventEntry entry) => entry.Provider == "Deckle-DispatchTests";
 
         public void Write(EventEntry entry) => Entries.Add(entry);
     }

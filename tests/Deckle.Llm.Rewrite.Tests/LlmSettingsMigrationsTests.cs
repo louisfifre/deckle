@@ -89,4 +89,84 @@ public sealed class LlmSettingsMigrationsTests
         Assert.Equal(profile.Id, settings.ActiveProfileId);
         Assert.Equal("Renamed", settings.ActiveProfileName);
     }
-}
+
+    // The headline contract (the class header): a repair never deletes a legacy
+    // rule and never clears the active profile, even when nothing it points at
+    // exists any more.
+    [Fact]
+    public void OrphanReferencesAreLeftUntouchedAndNothingIsDeleted()
+    {
+        var settings = new LlmSettings();
+        LlmSettingsMigrations.RepairProfileReferences(settings);
+        settings.ActiveProfileId = "gone";
+        settings.ActiveProfileName = "Deleted profile";
+        settings.AutoRewriteRules = [new AutoRewriteRule { MinDurationSeconds = 30, ProfileId = "gone", ProfileName = "Deleted profile" }];
+        settings.AutoRewriteRulesByWords = [new AutoRewriteRuleByWords { MinWordCount = 50, ProfileId = "gone", ProfileName = "Deleted profile" }];
+
+        bool mutated = LlmSettingsMigrations.RepairProfileReferences(settings);
+
+        Assert.False(mutated);
+        Assert.Equal("gone", settings.ActiveProfileId);
+        Assert.Equal("Deleted profile", settings.ActiveProfileName);
+        AutoRewriteRule rule = Assert.Single(settings.AutoRewriteRules);
+        Assert.Equal((30, "gone", "Deleted profile"), (rule.MinDurationSeconds, rule.ProfileId, rule.ProfileName));
+        AutoRewriteRuleByWords byWords = Assert.Single(settings.AutoRewriteRulesByWords);
+        Assert.Equal((50, "gone", "Deleted profile"), (byWords.MinWordCount, byWords.ProfileId, byWords.ProfileName));
+    }
+
+    [Fact]
+    public void ProfilesWithoutAnIdGetADistinctStableOne()
+    {
+        var settings = new LlmSettings();
+        foreach (RewriteProfile profile in settings.Profiles) profile.Id = "";
+
+        bool mutated = LlmSettingsMigrations.RepairProfileReferences(settings);
+
+        Assert.True(mutated);
+        Assert.All(settings.Profiles, profile => Assert.False(string.IsNullOrWhiteSpace(profile.Id)));
+        Assert.Equal(settings.Profiles.Count, settings.Profiles.Select(profile => profile.Id).Distinct().Count());
+        Assert.False(LlmSettingsMigrations.RepairProfileReferences(settings));
+    }
+
+    [Fact]
+    public void ARuleKnownOnlyByNameIsPairedWithTheProfileIdIgnoringCase()
+    {
+        var settings = new LlmSettings();
+        LlmSettingsMigrations.RepairProfileReferences(settings);
+        RewriteProfile profile = settings.Profiles[0];
+        settings.AutoRewriteRules = [new AutoRewriteRule { ProfileId = "", ProfileName = profile.Name.ToUpperInvariant() }];
+
+        bool mutated = LlmSettingsMigrations.RepairProfileReferences(settings);
+
+        Assert.True(mutated);
+        Assert.Equal(profile.Id, settings.AutoRewriteRules[0].ProfileId);
+    }
+
+    [Fact]
+    public void TheIdWinsOverAStaleNameOnARule()
+    {
+        var settings = new LlmSettings();
+        LlmSettingsMigrations.RepairProfileReferences(settings);
+        RewriteProfile first = settings.Profiles[0];
+        RewriteProfile second = settings.Profiles[1];
+        settings.AutoRewriteRulesByWords = [new AutoRewriteRuleByWords { ProfileId = first.Id, ProfileName = second.Name }];
+
+        bool mutated = LlmSettingsMigrations.RepairProfileReferences(settings);
+
+        Assert.True(mutated);
+        Assert.Equal(first.Id, settings.AutoRewriteRulesByWords[0].ProfileId);
+        Assert.Equal(first.Name, settings.AutoRewriteRulesByWords[0].ProfileName);
+    }
+
+    [Fact]
+    public void AnEmptyActiveProfileStaysEmptyAndRepairIsIdempotent()
+    {
+        var settings = new LlmSettings();
+        LlmSettingsMigrations.RepairProfileReferences(settings);
+        settings.ActiveProfileId = null;
+        settings.ActiveProfileName = null;
+
+        Assert.False(LlmSettingsMigrations.RepairProfileReferences(settings));
+        Assert.Null(settings.ActiveProfileId);
+        Assert.Null(settings.ActiveProfileName);
+    }}

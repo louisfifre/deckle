@@ -18,12 +18,11 @@ public sealed partial class ScreenCaptureService
         bool failed = false;
         string exitReason = CaptureStopReasons.Requested;
 
-        // Generic AcquireNextFrame failures form one incident: raw attempts
-        // stay Verbose, the threshold opens one Warning with the last hr,
-        // the next readable frame closes it.
-        int acquireFailures = 0;
-        long acquireFailuresStartTicks = 0;
-        bool acquireIncidentOpen = false;
+        // The incidents this loop can leave open: generic AcquireNextFrame
+        // failures, a duplication that keeps being lost, a recreate that keeps
+        // failing. Each opens one Warning, ends on one journal line, and the
+        // finally below closes whatever the exit finds still open.
+        var incidents = new CaptureIncidents(AcquireFailureIncidentThreshold, Stopwatch.Frequency);
 
         // Heartbeat accumulators, allocated lazily and filled only while the
         // Verbose|Heartbeat gate is open, so a session with no listener
@@ -50,7 +49,7 @@ public sealed partial class ScreenCaptureService
                 // it has already reported.
                 if (_duplicationPtr == 0)
                 {
-                    bool recreated = TryRecreateDuplication(ct, out string abandonReason);
+                    bool recreated = TryRecreateDuplication(ct, incidents, out string abandonReason);
                     if (ct.IsCancellationRequested) break;
                     if (!recreated)
                     {
@@ -116,7 +115,9 @@ public sealed partial class ScreenCaptureService
                 {
                     // Static screen: normal, not an error, and proof the
                     // duplication answers again.
-                    CloseAcquireIncident();
+                    long timeoutTicks = Stopwatch.GetTimestamp();
+                    incidents.AcquireReadable(timeoutTicks);
+                    incidents.Healthy(timeoutTicks);
                     continue;
                 }
 
@@ -126,6 +127,7 @@ public sealed partial class ScreenCaptureService
                     // Desktop switch, mode change, DWM on/off, fullscreen
                     // exclusive swap.
                     DeckleVisionSource.Log.AccessLostRecovering();
+                    incidents.AccessLost(CaptureLossCauses.AccessLost, Stopwatch.GetTimestamp());
                     ReleaseDuplicationForRecreate();
                     continue;
                 }
@@ -138,6 +140,7 @@ public sealed partial class ScreenCaptureService
                     // session disconnect (RDP, "switch user"): transient, the
                     // recreate succeeds once the interactive desktop is back.
                     DeckleVisionSource.Log.SecureDesktopRecovering(hr);
+                    incidents.AccessLost(CaptureLossCauses.SecureDesktop, Stopwatch.GetTimestamp());
                     ReleaseDuplicationForRecreate();
                     continue;
                 }
@@ -190,15 +193,9 @@ public sealed partial class ScreenCaptureService
                 if (hr != 0)
                 {
                     invalidCallRecoveryAttempts = 0;
-                    if (acquireFailures == 0) acquireFailuresStartTicks = Stopwatch.GetTimestamp();
-                    acquireFailures++;
                     // Any other error is treated as transient: back off, retry.
                     DeckleVisionSource.Log.AcquireFrameFailed(hr, ErrorBackoffMs);
-                    if (!acquireIncidentOpen && acquireFailures >= AcquireFailureIncidentThreshold)
-                    {
-                        acquireIncidentOpen = true;
-                        DeckleVisionSource.Log.AcquireFrameIncident(hr, acquireFailures);
-                    }
+                    incidents.AcquireFailed(hr, Stopwatch.GetTimestamp());
                     if (desktopResourcePtr != 0) Marshal.Release(desktopResourcePtr);
                     try { Task.Delay(ErrorBackoffMs, ct).Wait(ct); }
                     catch (OperationCanceledException)
@@ -213,7 +210,9 @@ public sealed partial class ScreenCaptureService
                     continue;
                 }
 
-                CloseAcquireIncident();
+                long readableTicks = Stopwatch.GetTimestamp();
+                incidents.AcquireReadable(readableTicks);
+                incidents.Healthy(readableTicks);
 
                 // The heartbeat counts every acquired frame; delivered marks
                 // the ones the consumer processed without throwing.
@@ -351,6 +350,7 @@ public sealed partial class ScreenCaptureService
         {
             if (!failed) exitReason = CaptureStopReasons.Requested;
             _loopExitReason = exitReason;
+            incidents.AbandonOpen(Stopwatch.GetTimestamp());
             DeckleVisionSource.Log.CaptureLoopEnded(
                 failed ? "failed" : "cancelled",
                 exitReason,
@@ -373,20 +373,6 @@ public sealed partial class ScreenCaptureService
                         "stopped", ex.GetType().Name, ex.Message);
                 }
             }
-        }
-
-        void CloseAcquireIncident()
-        {
-            if (acquireFailures == 0) return;
-            if (acquireIncidentOpen)
-            {
-                DeckleVisionSource.Log.AcquireFrameRecovered(
-                    acquireFailures,
-                    (Stopwatch.GetTimestamp() - acquireFailuresStartTicks) * 1000L / Stopwatch.Frequency);
-            }
-            acquireFailures = 0;
-            acquireFailuresStartTicks = 0;
-            acquireIncidentOpen = false;
         }
     }
 

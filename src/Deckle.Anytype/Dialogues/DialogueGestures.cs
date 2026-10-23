@@ -32,7 +32,7 @@ public sealed class DialogueGestures(AnytypeApiClient api, NameResolver resolver
         string? taskId = null;
         if (!string.IsNullOrWhiteSpace(task))
         {
-            taskId = await _resolver.ResolveAsync(task, [DevSpace.Types.Task], ct);
+            taskId = await _resolver.ResolveAsync(task, [DevSpace.Types.Task], NameMatch.Exact, ct);
             await _api.UpdateObjectAsync(
                 chatId,
                 new JsonObject
@@ -109,7 +109,8 @@ public sealed class DialogueGestures(AnytypeApiClient api, NameResolver resolver
     }
 
     async Task<string> ResolveChatAsync(string selector, CancellationToken ct) =>
-        await _resolver.ResolveAsync(Required(selector, nameof(selector)), [DevSpace.Types.Chat], ct);
+        await _resolver.ResolveAsync(
+            Required(selector, nameof(selector)), [DevSpace.Types.Chat], NameMatch.Tolerant, ct);
 
     static JsonObject MessagePayload(string speaker, string text) => new()
     {

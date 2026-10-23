@@ -84,7 +84,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
         var started = DateTime.UtcNow;
 
         string id = await resolver.ResolveAsync(
-            selector, [DevSpace.Types.Project, DevSpace.Types.Task], ct);
+            selector, [DevSpace.Types.Project, DevSpace.Types.Task], NameMatch.Exact, ct);
 
         using var _ = await api.AcquireWriteScopeAsync("complete", id, ct);
         JsonObject obj = await api.GetObjectAsync(id, ct);
@@ -122,7 +122,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
     {
         var started = DateTime.UtcNow;
 
-        string sourceId = await resolver.ResolveAsync(source, typeKeys: null, ct);
+        string sourceId = await resolver.ResolveAsync(source, typeKeys: null, NameMatch.Exact, ct);
 
         using var _ = await api.AcquireWriteScopeAsync("link", sourceId, ct);
         JsonObject sourceObj = await api.GetObjectAsync(sourceId, ct);
@@ -136,7 +136,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
         var collectionAdds = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         foreach (string t in targets)
         {
-            string targetId = await resolver.ResolveAsync(t, typeKeys: null, ct);
+            string targetId = await resolver.ResolveAsync(t, typeKeys: null, NameMatch.Exact, ct);
             JsonObject targetObj = await api.GetObjectAsync(targetId, ct);
             string targetType = QueryProp.TypeKey(targetObj) ?? "";
 
@@ -250,7 +250,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
     {
         var started = DateTime.UtcNow;
 
-        string id = await resolver.ResolveAsync(selector, typeKeys: null, ct);
+        string id = await resolver.ResolveAsync(selector, typeKeys: null, NameMatch.Exact, ct);
 
         using var _ = await api.AcquireWriteScopeAsync("archive", id, ct);
         JsonObject obj = await api.GetObjectAsync(id, ct);
@@ -292,7 +292,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
     {
         var started = DateTime.UtcNow;
 
-        string id = await resolver.ResolveAsync(selector, typeKeys: null, ct);
+        string id = await resolver.ResolveAsync(selector, typeKeys: null, NameMatch.Exact, ct);
 
         using var _ = await api.AcquireWriteScopeAsync("replace_section", id, ct);
         AnytypeV2ObjectDocument doc = await _reader.ReadAsync(id, ct: ct);

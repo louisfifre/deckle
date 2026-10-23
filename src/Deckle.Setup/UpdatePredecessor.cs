@@ -42,7 +42,14 @@ internal static class UpdatePredecessor
         {
             // The ordinary running-process gate remains authoritative after the
             // bounded handoff wait; timeout never authorizes payload replacement.
-            DeckleSetupSource.Log.PredecessorWaitTimedOutDetail(id, (long)timeout.TotalMilliseconds);
+            DeckleSetupSource.Log.PredecessorWaitTimedOut(id, (long)timeout.TotalMilliseconds);
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            // The handle could not be waited on, so the hand-off was not
+            // observed. Same stance as the timeout: the gate decides, and the
+            // update must not die on a wait that is only a courtesy.
+            DeckleSetupSource.Log.PredecessorWaitFailed(id, ex.GetType().Name, ex.HResult);
         }
     }
 

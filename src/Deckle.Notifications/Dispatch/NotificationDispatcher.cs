@@ -91,16 +91,12 @@ public sealed class NotificationDispatcher
 
         if (!_channels.TryGetValue(descriptor.Channel, out var channel) || !channel.IsAvailable)
         {
-            DeckleNotificationsSource.Log.NotificationDropped();
-            if (DeckleNotificationsSource.Log.IsEnabled())
-            {
-                var reason = channel is null ? "no_channel" : "channel_unavailable";
-                DeckleNotificationsSource.Log.NotificationDroppedDetail(descriptor.Id, reason);
-            }
+            DeckleNotificationsSource.Log.NotificationDropped(
+                descriptor.Id, channel is null ? "no_channel" : "channel_unavailable");
             return null;
         }
 
-        DeckleNotificationsSource.Log.NotificationShown();
+        DeckleNotificationsSource.Log.NotificationShown(descriptor.Id);
         if (DeckleNotificationsSource.Log.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
         {
             DeckleNotificationsSource.Log.NotificationShownDetail(
@@ -115,7 +111,7 @@ public sealed class NotificationDispatcher
             // at Info.
             if (response is null)
             {
-                DeckleNotificationsSource.Log.NotificationUnanswered();
+                DeckleNotificationsSource.Log.NotificationUnanswered(descriptor.Id);
                 if (DeckleNotificationsSource.Log.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
                 {
                     DeckleNotificationsSource.Log.NotificationUnansweredDetail(
@@ -124,7 +120,7 @@ public sealed class NotificationDispatcher
                 return null;
             }
 
-            DeckleNotificationsSource.Log.NotificationResponded();
+            DeckleNotificationsSource.Log.NotificationResponded(descriptor.Id);
             if (DeckleNotificationsSource.Log.IsEnabled())
             {
                 DeckleNotificationsSource.Log.NotificationRespondedDetail(
@@ -137,7 +133,7 @@ public sealed class NotificationDispatcher
         {
             // Closing Info for the step NotificationShown opened: cancellation
             // is caller-initiated and benign, so Info, not Warning.
-            DeckleNotificationsSource.Log.NotificationCancelled();
+            DeckleNotificationsSource.Log.NotificationCancelled(descriptor.Id);
             if (DeckleNotificationsSource.Log.IsEnabled())
             {
                 DeckleNotificationsSource.Log.PromptCancelled(descriptor.Id);
@@ -148,11 +144,8 @@ public sealed class NotificationDispatcher
         {
             // Without this catch the exception escapes with NotificationShown as
             // the last trace and the step never closes.
-            DeckleNotificationsSource.Log.NotificationFailed();
-            if (DeckleNotificationsSource.Log.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
-            {
-                DeckleNotificationsSource.Log.NotificationFailedDetail(descriptor.Id, ex.Message);
-            }
+            DeckleNotificationsSource.Log.NotificationFailed(
+                descriptor.Id, ex.GetType().Name, ex.Message);
             throw;
         }
     }

@@ -40,7 +40,7 @@ public sealed class AppliedProfile
 
         // A partial restore already raised RuleRestoreFailed for each undo
         // that threw; the milestone would tell the journal all is back.
-        if (restored == _restores.Count) DeckleOrchestrationSource.Log.ProfileRestored();
+        if (restored == _restores.Count) DeckleOrchestrationSource.Log.ProfileRestored(EntryId, restored);
         DeckleOrchestrationSource.Log.ProfileRestoredDetail(EntryId, restored, _restores.Count);
     }
 

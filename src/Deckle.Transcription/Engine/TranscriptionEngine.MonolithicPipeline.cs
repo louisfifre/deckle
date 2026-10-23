@@ -30,7 +30,7 @@ public sealed partial class TranscriptionEngine
             var (title, body) = LocalizeMicError(MicErrorKind.Unavailable, capture.MmsysErr);
             OpenMicrophoneIncident("capture", capture.MmsysErr);
             EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
-            RaiseFinished(TranscriptionOutcome.None);
+            FinishTake(TranscriptionOutcome.None, TakeEndReasons.MicrophoneError);
             return null;
         }
 
@@ -66,7 +66,7 @@ public sealed partial class TranscriptionEngine
             != (int)PipelineState.Stopping)
         {
             DeckleWhispSource.Log.TranscribeSkipped(((PipelineState)Volatile.Read(ref _state)).ToString());
-            RaiseFinished(TranscriptionOutcome.None);
+            FinishTake(TranscriptionOutcome.None, TakeEndReasons.StateLost);
             return null;
         }
 
@@ -84,14 +84,14 @@ public sealed partial class TranscriptionEngine
             // Without this the take vanishes silently; the load cause sits on ModelUnavailable.
             DeckleWhispSource.Log.TakeDropped("model_not_loaded");
             RaiseStatus(Loc.Get("Status_ModelNotReady"));
-            RaiseFinished(TranscriptionOutcome.None);
+            FinishTake(TranscriptionOutcome.None, TakeEndReasons.ModelNotLoaded);
             return null;
         }
 
         if (audio.Length == 0)
         {
             DeckleWhispSource.Log.TranscribeEmpty();
-            RaiseFinished(TranscriptionOutcome.None);
+            FinishTake(TranscriptionOutcome.None, TakeEndReasons.EmptyAudio);
             return null;
         }
 
@@ -126,7 +126,7 @@ public sealed partial class TranscriptionEngine
         if (string.IsNullOrWhiteSpace(fullText))
         {
             RaiseStatus(Loc.Get("Status_Ready"));
-            RaiseFinished(TranscriptionOutcome.None);
+            FinishTake(TranscriptionOutcome.None, TakeEndReasons.NoText);
             return null;
         }
 

@@ -29,16 +29,24 @@ public sealed class DeckleCancellationSource : DeckleEventSource
     // IDs are public in the ETW manifest; never reuse an id after deleting an event.
     public const int EvtOperationCancelled = 1;
 
-    // Verbose because one user Stop cascades into several OCEs on worker
-    // threads. Keyword `Lifecycle` because the provider itself carries the
-    // cancellation nature; no keyword bit is spent on it.
+    // A cancellation is a normal end of work, not a failure, so it is
+    // Informational, never Warning or Error: a person who pressed Stop must not
+    // read an incident in the journal. It carries the Journal tag because the
+    // always-on journal is the one record a reader on another machine gets, and
+    // without this line a take that stops reads as work that vanished: the
+    // operation, the reason and the age say why it ended. One Stop can cascade
+    // into several of these on worker threads; each names its own operation,
+    // so the cascade reads as the chain it was. Keyword `Lifecycle` because the
+    // provider itself carries the cancellation nature; no keyword bit is spent
+    // on it.
     [Event(EvtOperationCancelled,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "operation cancelled | operation={0} | reason={1} | age_ms={2}")]
     public void OperationCancelled(string operation, string reason, int age_ms)
     {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        if (!IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtOperationCancelled, operation, reason, age_ms);
     }
 }

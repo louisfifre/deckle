@@ -11,7 +11,7 @@ public sealed partial class DeckleAppSource
            Message = "paths | root={0} | settings={1} | telemetry={2} | models={3} | native={4}")]
     public void PathsDetail(string root, string settings, string telemetry, string models, string native)
     {
-        if (IsEnabled()) WriteEvent(EvtPathsDetail, root, settings, telemetry, models, native);
+        if (IsEnabled()) WriteEvent(EvtPathsDetail, PathRedaction.Redact(root), PathRedaction.Redact(settings), PathRedaction.Redact(telemetry), PathRedaction.Redact(models), PathRedaction.Redact(native));
     }
 
     [Event(EvtStartupMilestones,

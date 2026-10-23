@@ -66,18 +66,22 @@ internal sealed class DataRootRelocator(
         }
         catch (Exception failure)
         {
-            Exception? rollbackFailure = null;
+            // Each undo step that fails is kept: the caller reads this one
+            // exception to learn what state the machine is left in (a root
+            // still selected, files still on disk), so dropping the second
+            // failure would hide half of it.
+            var failures = new List<Exception> { failure };
             if (selectionCaptured && targetSelected)
             {
                 try { selection.Restore(previous); }
-                catch (Exception ex) { rollbackFailure = ex; }
+                catch (Exception ex) { failures.Add(ex); }
             }
 
             try { copier.RollBack(target, source); }
-            catch (Exception ex) { rollbackFailure ??= ex; }
+            catch (Exception ex) { failures.Add(ex); }
 
-            if (rollbackFailure is not null)
-                throw new AggregateException(failure, rollbackFailure);
+            if (failures.Count > 1)
+                throw new AggregateException(failures);
 
             ExceptionDispatchInfo.Capture(failure).Throw();
             throw;

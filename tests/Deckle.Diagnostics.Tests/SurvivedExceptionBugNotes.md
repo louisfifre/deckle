@@ -1,0 +1,12 @@
+# Survived exception bug notes
+
+## A survived exception was logged as a crash, once per occurrence
+
+- Trigger: an exception reaches the UI framework's unhandled-exception net (the app marks it handled) or the task scheduler's unobserved-task net (the app marks it observed), and keeps coming back: an event handler that throws on every frame, a faulted task nobody awaits that is created on every tick.
+- Symptom: the app is still up, but the log reads as a series of crashes. `CrashUnhandled` and `CrashTaskScheduler` were Errors, written once per occurrence with a Verbose mirror and a stack trace, so a fault on every frame filled the journal, and the UI net drained the log writers with a 2 s deadline each time, on the UI thread.
+- Cause: the nets decided the process lives (`Handled = true`, `SetObserved()`) but the lines still described a crash, and nothing remembered that the same exception had already been reported.
+- Violated invariant: a failure is a Warning when work went on degraded, and a repeating degradation is one incident.
+- Fix: `SurvivedExceptionLedger` counts occurrences per origin, exception type and throwing site. The first one writes a Warning (`SurvivedException`) with the cause on one line and the stack beside it; the next ones write a Verbose `SurvivedExceptionRepeated` with the running count. Only the first drains the writers. The exception that ends the process (`AppDomain.UnhandledException`) stays an Error with the crash dump and the supervisor untouched. Ids 29, 31, 70 and 72 are retired.
+- Recurrence cue: a run of `Unhandled exception caught` or `An unobserved task exception was caught` Error lines with the app still answering, or a UI that stutters for the length of the flush deadline each time a handler throws.
+- Guard: `SurvivedExceptionLedgerTests`. The regression pair shows that the second and later occurrences do not open an incident, also under concurrent calls.
+- Interpretation: the incident key leaves the message out on purpose, because a message that carries a number or a name would make every occurrence look new; two different causes thrown by the same method as the same exception type are therefore one incident, and the stack on the opening line is the first one's. The wiring in `Deckle.App` (event levels, journal allowlist, the flush) has no test: `Deckle.App` is a WinUI executable that no test project references, so only the ledger is covered.

@@ -24,8 +24,7 @@ namespace Deckle.Shell.Tests;
 // The marshal detail also answers to the Windowing admission policy, which
 // fails closed until configured: each test opens it, so the instrumented path
 // the guard lives on is the one exercised.
-[Trait("Category", "regression")]
-[Trait("Category", "observability")]
+[Collection(ShellObservabilityCollection.Name)]
 public class DispatcherQueueExtensionsTests : IDisposable
 {
     public DispatcherQueueExtensionsTests()
@@ -36,6 +35,8 @@ public class DispatcherQueueExtensionsTests : IDisposable
         => OperationalLogAdmission.Configure(static _ => false);
 
     [Fact]
+    [Trait("Category", "observability")]
+    [Trait("Category", "regression")]
     public async Task TryEnqueueObservedDoesNotRecurseSynchronouslyOnReentrantListener()
     {
         var controller = DispatcherQueueController.CreateOnDedicatedThread();
@@ -70,7 +71,7 @@ public class DispatcherQueueExtensionsTests : IDisposable
     // behind a gate must run High → Normal → Low (FIFO within a level). An
     // ignored priority would keep arrival order.
     [Fact]
-    [Trait("Category", "observability")]
+    [Trait("Category", "integration")]
     public async Task TryEnqueueObservedHonorsPriorityParameter()
     {
         var controller = DispatcherQueueController.CreateOnDedicatedThread();
@@ -128,7 +129,7 @@ public class DispatcherQueueExtensionsTests : IDisposable
     // delegates to it, so losing priority there would break the Settings
     // pages' Low-priority coordination whenever Verbose is off.
     [Fact]
-    [Trait("Category", "observability")]
+    [Trait("Category", "integration")]
     public async Task TryEnqueueOrLogHonorsPriorityParameter()
     {
         var controller = DispatcherQueueController.CreateOnDedicatedThread();
@@ -167,13 +168,17 @@ public class DispatcherQueueExtensionsTests : IDisposable
 
     // Calls `TryEnqueueObserved` again on each `MarshalQueued`.
     // `MarshalQueuedCount` counts the `MarshalQueued` events seen on the
-    // caller's thread: the value the guard must bound to 1.
+    // caller's thread: the value the guard must bound to 1. EventListener
+    // delivery is synchronous on the writing thread, so events written from
+    // any other thread (another test, a runtime worker) are not the caller's
+    // and are ignored.
     private sealed class ReentrantThreadingListener : EventListener
     {
         private const string ProviderName = "Deckle-Threading";
 
         private readonly DispatcherQueue _queue;
         private readonly int _maxReentry;
+        private readonly int _ownerThreadId = Environment.CurrentManagedThreadId;
         private int _reentryCount;
         public int MarshalQueuedCount;
         public bool HitMaxReentry;
@@ -203,6 +208,7 @@ public class DispatcherQueueExtensionsTests : IDisposable
         {
             if (e.EventSource.Name != ProviderName) return;
             if (e.EventId != DeckleThreadingSource.EvtMarshalQueued) return;
+            if (Environment.CurrentManagedThreadId != _ownerThreadId) return;
 
             Interlocked.Increment(ref MarshalQueuedCount);
 

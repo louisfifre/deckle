@@ -6,7 +6,7 @@ namespace Deckle.Autocorrect.Tests;
 
 // Personal vocabulary adoption: clean recurrence across distinct days, explicit
 // suppressions, category-sensitive protection, and persistence/migration.
-[Trait("Category", "unit")]
+[Trait("Category", "integration")]
 public sealed class PersonalDictionaryTests : IDisposable
 {
     private readonly string _path;

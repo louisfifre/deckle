@@ -116,6 +116,26 @@ public class McpClientTokensTests
         Assert.Same(custom, tokens.Authenticate(token));
     }
 
+    [Fact]
+    [Trait("Category", "regression")]
+    public void EnsureMintedReplacesAnEmptyVaultEntry()
+    {
+        var vault = new FakeSecretVault();
+        vault.Set(McpClients.Claude.TokenSecretName, "");
+        vault.Set(McpClients.Codex.TokenSecretName, "   ");
+        var tokens = new McpClientTokens(vault);
+
+        tokens.EnsureMinted();
+
+        // An entry that exists but holds nothing authenticates nobody, so leaving it
+        // would lock the client out for good while every boot reported success.
+        foreach (var client in McpClients.All)
+        {
+            Assert.True(vault.TryGet(client.TokenSecretName, out string? token));
+            Assert.False(string.IsNullOrWhiteSpace(token));
+            Assert.Same(client, tokens.Authenticate(token));
+        }
+    }
     [Theory]
     [InlineData(null)]
     [InlineData("")]

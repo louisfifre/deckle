@@ -113,7 +113,7 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtPipelineStartFailed             = 78;
     public const int EvtPipelineStartCancelled          = 79;
     public const int EvtPipelineStopped                 = 80;
-    public const int EvtPipelineStopDetail              = 81;
+    // 81: retired ID, never reused. Its pushed / dropped totals moved onto PipelineStopped.
     public const int EvtPushLoopCrashed                 = 82;
     public const int EvtStateChangedSubscriberThrew     = 83;
     public const int EvtMultiLightFallback              = 84;
@@ -136,4 +136,7 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtBridgeCandidateRejectedDetail   = 101;
     public const int EvtBridgeRestoredFromSettings      = 102;
     public const int EvtCaptureLost                     = 103;
+    public const int EvtPipelineIncidentAbandoned       = 104;
+    public const int EvtPipelineAbortIgnoredDetail      = 105;
+    public const int EvtPresetSelectionReplaced         = 106;
 }

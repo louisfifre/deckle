@@ -87,13 +87,8 @@ public sealed class DeckleSettingsUxSource : DeckleEventSource
             WriteEvent(EvtFolderActionFailed, action, ex_type, hr, ScrubUserProfile(ex_message));
     }
 
-    internal static string ScrubUserProfile(string text)
-    {
-        string profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        return string.IsNullOrEmpty(profile)
-            ? text
-            : text.Replace(profile, "%USERPROFILE%", StringComparison.OrdinalIgnoreCase);
-    }
+    // Kept for the callers that read it by this name; the rule lives in PathRedaction.
+    internal static string ScrubUserProfile(string text) => PathRedaction.Redact(text);
 }
 
 // Decides which setting values may reach the log verbatim. Allowlist, not

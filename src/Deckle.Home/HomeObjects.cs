@@ -121,6 +121,7 @@ internal static class HomeObjectJson
 internal sealed class HomeObjectIndex
 {
     private const int PageLimit = 1000;
+    private const int MaxInexactCandidates = 20;
     private readonly IReadOnlyList<JsonObject> _objects;
     private readonly IReadOnlyDictionary<string, JsonObject> _byId;
 
@@ -143,14 +144,23 @@ internal sealed class HomeObjectIndex
         {
             JsonObject root = await api.ListObjectsAsync(spaceId, offset, PageLimit, ct)
                 .ConfigureAwait(false);
+            int returned = 0;
             if (root["data"] is JsonArray data)
                 foreach (JsonNode? node in data)
+                {
+                    returned++;
                     if (node is JsonObject value)
                         objects.Add(HomeObjectJson.Unwrap(value));
+                }
 
+            // The next page starts after the rows the server actually served,
+            // not after the limit asked for: a server may cap a page below it,
+            // and a stride of PageLimit would then skip the rows in between.
+            // An empty page ends the loop whatever has_more claims, so a server
+            // that lost its place cannot hold the read forever.
             bool hasMore = root["pagination"]?["has_more"]?.GetValue<bool>() ?? false;
-            if (!hasMore) break;
-            offset += PageLimit;
+            if (!hasMore || returned == 0) break;
+            offset += returned;
         }
         return new HomeObjectIndex(objects);
     }
@@ -177,7 +187,11 @@ internal sealed class HomeObjectIndex
     public bool ContainsCode(string code) =>
         _objects.Any(value => string.Equals(HomeObjectJson.Code(value), code, StringComparison.OrdinalIgnoreCase));
 
-    public JsonObject Resolve(string selector, IReadOnlyCollection<string>? allowedTypes = null)
+    // A read (Tolerant) takes the one object a selector partly matches. A write
+    // (Exact) never does: it resolves an id, a code or a name given in full, and
+    // lists the nearest objects by id when only a part matched, so the caller
+    // retries with the id instead of changing an object that was guessed.
+    public JsonObject Resolve(string selector, NameMatch match, IReadOnlyCollection<string>? allowedTypes = null)
     {
         if (string.IsNullOrWhiteSpace(selector))
             throw new ArgumentException("Le sélecteur d’objet ne peut pas être vide.", nameof(selector));
@@ -199,17 +213,25 @@ internal sealed class HomeObjectIndex
         JsonObject[] partial = pool.Where(value =>
                 Display(value).Contains(selector, StringComparison.OrdinalIgnoreCase))
             .ToArray();
-        return partial.Length switch
-        {
-            1 => partial[0],
-            0 => throw new InvalidOperationException($"Aucun objet Home trouvé pour « {selector} »."),
-            _ => throw Ambiguous(selector, partial),
-        };
+        if (partial.Length == 0)
+            throw new InvalidOperationException(NotFoundMessage(selector, allowedTypes));
+        if (match == NameMatch.Exact)
+            throw Inexact(selector, partial);
+        return partial.Length == 1 ? partial[0] : throw Ambiguous(selector, partial);
     }
 
-    public JsonObject ResolveCollection(string selector)
+    // A selector that matches nothing among the allowed types may still name an
+    // object of another type, so the refusal says which types were searched:
+    // the caller then reads "wrong type" instead of "unknown object".
+    private static string NotFoundMessage(string selector, IReadOnlyCollection<string>? allowedTypes) =>
+        allowedTypes is null
+            ? $"Aucun objet Home trouvé pour « {selector} »."
+            : $"Aucun objet Home trouvé pour « {selector} » parmi les objets de type "
+              + $"{string.Join(" ou ", allowedTypes.Select(type => $"« {type} »"))}.";
+
+    public JsonObject ResolveCollection(string selector, NameMatch match)
     {
-        JsonObject value = Resolve(selector);
+        JsonObject value = Resolve(selector, match);
         if (!string.Equals(HomeObjectJson.Layout(value), "collection", StringComparison.Ordinal))
             throw new InvalidOperationException(
                 $"« {Display(value)} » n’est pas une collection Anytype. "
@@ -249,6 +271,12 @@ internal sealed class HomeObjectIndex
         if (markdown.Length > 0) builder.Append("\n\n").Append(markdown);
         return builder.ToString();
     }
+
+    private static InvalidOperationException Inexact(string selector, IReadOnlyList<JsonObject> values) =>
+        new($"Aucun objet Home ne porte exactement « {selector} », et une écriture ne devine pas un objet — "
+            + "relance avec l’id de l’objet voulu, parmi les plus proches :\n"
+            + string.Join("\n", values.Take(MaxInexactCandidates).Select(value =>
+                $"- {HomeObjectJson.Id(value)} · {Display(value)} ({HomeObjectJson.TypeKey(value)})")));
 
     private static InvalidOperationException Ambiguous(string selector, IReadOnlyList<JsonObject> values) =>
         new($"« {selector} » correspond à plusieurs objets Home :\n"

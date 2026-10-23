@@ -14,7 +14,7 @@ namespace Deckle.Anytype.Mcp.Tests;
 // Public transport contracts over a real loopback Kestrel listener. Protocol
 // behavior is driven through the official SDK client; raw HTTP is reserved for
 // Deckle's own boundary (path, method, Origin, bearer and body limit).
-[Trait("Category", "unit")]
+[Trait("Category", "integration")]
 public class McpHttpHostTests
 {
     private const string ModernProtocol = "2026-07-28";
@@ -120,6 +120,10 @@ public class McpHttpHostTests
 
     private sealed class Harness : IAsyncDisposable
     {
+        private const int FirstEphemeralPort = 49152;
+        private const int EphemeralPortCount = 16384;
+        private const int MaxBindAttempts = 32;
+
         private readonly AnytypeApiClient _api;
         private readonly McpClientTokens _tokens;
         private readonly McpRequestRateLimit _requestRateLimit;
@@ -169,8 +173,12 @@ public class McpHttpHostTests
             var api = new AnytypeApiClient(new AnytypeCredentials(
                 "http://127.0.0.1:1", "2025-11-08", "dummy-key", "dummy-space"));
 
-            for (int port = 34611; port < 34651; port++)
+            // A random draw in the ephemeral range, retried on a failed bind: a
+            // fixed range collides with a running Deckle (which owns the
+            // production port) and with test processes running in parallel.
+            for (int attempt = 0; attempt < MaxBindAttempts; attempt++)
             {
+                int port = Random.Shared.Next(FirstEphemeralPort, FirstEphemeralPort + EphemeralPortCount);
                 var host = new McpHttpHost(api, tokens, port, requestRateLimit);
                 if (host.Start())
                     return new Harness(host, api, tokens, port, bearers, requestRateLimit);
@@ -278,6 +286,40 @@ public class McpHttpHostTests
             Post(harness.BaseUrl, bearer, "{}"), Ct);
         Assert.NotEqual(HttpStatusCode.Forbidden, absent.StatusCode);
         Assert.NotEqual(HttpStatusCode.Unauthorized, absent.StatusCode);
+    }
+
+    // A browser page can send any Origin to a loopback listener, so the check must
+    // read the parsed host, not look for the word "localhost" in the string.
+    [Theory]
+    [InlineData("null")]
+    [InlineData("http://localhost.evil.example")]
+    [InlineData("http://evil.example/localhost")]
+    [InlineData("http://127.0.0.1.evil.example")]
+    [InlineData("ftp://localhost")]
+    [InlineData("localhost")]
+    public async Task LookalikeAndOpaqueOriginsAre403(string origin)
+    {
+        await using var harness = Harness.Start();
+
+        using HttpResponseMessage response = await harness.Http.SendAsync(
+            Post(harness.BaseUrl, harness.Bearers[McpClients.Claude.Id], "{}", origin), Ct);
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Theory]
+    [InlineData("http://localhost")]
+    [InlineData("http://LOCALHOST:3000")]
+    [InlineData("https://127.0.0.1:8443")]
+    public async Task LocalOriginsPassTheSecurityBoundary(string origin)
+    {
+        await using var harness = Harness.Start();
+
+        using HttpResponseMessage response = await harness.Http.SendAsync(
+            Post(harness.BaseUrl, harness.Bearers[McpClients.Claude.Id], "{}", origin), Ct);
+
+        Assert.NotEqual(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.NotEqual(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Theory]

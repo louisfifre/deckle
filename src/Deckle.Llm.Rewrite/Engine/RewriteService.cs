@@ -138,7 +138,11 @@ public class RewriteService : IRewriteService
 
         // Started before the engine runs, so a failure the engine raises
         // before any request (a missing key) still closes a rewrite it opened.
-        DeckleLlmSource.Log.RewriteStarted(TranscriptCaller, profile.ProviderId, EngineName(engine), profile.Model);
+        // One work_id pairs this start with whichever end follows: the
+        // completion, the timeout or the failure.
+        string workId = WorkId.Next();
+        DeckleLlmSource.Log.TranscriptRewriteStarted(
+            profile.ProviderId, EngineName(engine), profile.Model, workId);
         var sw = System.Diagnostics.Stopwatch.StartNew();
         using var cts = new CancellationTokenSource(GenerationDeadline.HardCap);
         try
@@ -154,7 +158,7 @@ public class RewriteService : IRewriteService
                 RepeatPenalty: profile.RepeatPenalty);
             GenerationResult result = engine.Generate(request, cts.Token);
             sw.Stop();
-            DeckleLlmSource.Log.RewriteCompleted(TranscriptCaller, profile.ProviderId, sw.ElapsedMilliseconds);
+            DeckleLlmSource.Log.TranscriptRewriteCompleted(profile.ProviderId, sw.ElapsedMilliseconds, workId);
             return result;
         }
         catch (OperationCanceledException) when (cts.IsCancellationRequested)
@@ -164,7 +168,7 @@ public class RewriteService : IRewriteService
                 CancelledOperations.LlmRewrite, CancellationReasons.Timeout, (int)sw.ElapsedMilliseconds);
             DeckleLlmSource.Log.RewriteTimeout(
                 TranscriptCaller, profile.ProviderId, profile.Model,
-                sw.ElapsedMilliseconds, GenerationDeadline.HardCap.TotalSeconds);
+                sw.ElapsedMilliseconds, GenerationDeadline.HardCap.TotalSeconds, workId);
             // severity 1 = Warning, role 1 = Overlay.
             DeckleLlmSource.Log.UserFeedbackEmitted(
                 severity: 1,
@@ -179,7 +183,7 @@ public class RewriteService : IRewriteService
             DeckleLlmSource.Log.RewriteUnavailable(
                 TranscriptCaller, profile.ProviderId, profile.Model,
                 RewriteFailureMessage.ReasonOf(ex), RewriteFailureMessage.StatusOf(ex),
-                ex.GetType().Name, ex.Message);
+                ex.GetType().Name, ex.Message, workId);
             var failure = RewriteFailureMessage.ForException(profile, _findProvider(profile.ProviderId), ex);
             DeckleLlmSource.Log.UserFeedbackEmitted(
                 severity: 1,
@@ -231,6 +235,9 @@ public class RewriteService : IRewriteService
         Func<GenerationRequest> buildRequest,
         CancellationToken cancellationToken)
     {
+        // Counted for the 60 s rollup before anything can return: the journal sees
+        // how many paragraph and sentence rewrites ran, not one line for each.
+        HotLoops.LlmInteractiveRewrite.Tick();
         IGenerationEngine? engine = _engines.Resolve(providerId);
         if (engine is null)
         {
@@ -270,7 +277,7 @@ public class RewriteService : IRewriteService
             int failures = CountInteractiveFailure();
             if (failures == 1)
                 DeckleLlmSource.Log.RewriteUnavailable(
-                    caller, providerId, model, reason, status, ex.GetType().Name, ex.Message);
+                    caller, providerId, model, reason, status, ex.GetType().Name, ex.Message, work_id: string.Empty);
             else
                 DeckleLlmSource.Log.RewriteAttemptFailed(
                     caller, providerId, model, reason, status, ex.GetType().Name, ex.Message, failures);

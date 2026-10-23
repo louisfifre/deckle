@@ -30,11 +30,11 @@ public sealed class LoggingSettingsTests
 
         try
         {
-            var store = new JsonSettingsStore<LoggingSettings>(path, mutex, Options());
+            using var store = new JsonSettingsStore<LoggingSettings>(path, mutex, Options());
             store.Current.LogInputActivity = true;
             store.Flush();
 
-            var reloaded = new JsonSettingsStore<LoggingSettings>(path, mutex, Options());
+            using var reloaded = new JsonSettingsStore<LoggingSettings>(path, mutex, Options());
             Assert.True(reloaded.Current.LogInputActivity);
         }
         finally

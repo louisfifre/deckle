@@ -46,6 +46,8 @@ public sealed class DeckleHudSource : DeckleEventSource
     public const int EvtOverlayCardChanged        = 24;
     public const int EvtCleanupFailed             = 25;
     public const int EvtFadeInEnded               = 26;
+    public const int EvtSettingsLoadWarning = 27;
+    public const int EvtSettingsLoadError = 28;
 
     // Callers test this before any measurement made only for the log.
     [NonEvent]
@@ -86,6 +88,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtRevealMaskRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "The digit reveal builds again | attempts={0}")]
     public void RevealMaskRecovered(int attempts)
     {
@@ -124,6 +127,7 @@ public sealed class DeckleHudSource : DeckleEventSource
            Message = "reveal geometry | cell={0}x{1} | offset={2},{3} | host={4}x{5}")]
     public void RevealGeometry(double cellW, double cellH, double offX, double offY, double hostW, double hostH)
     {
+        HotLoops.HudRevealGeometry.Tick();
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtRevealGeometry, cellW, cellH, offX, offY, hostW, hostH);
     }
@@ -157,6 +161,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtStrokeCreationRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "The HUD processing stroke builds again | failures={0}")]
     public void StrokeCreationRecovered(int failures)
     {
@@ -188,16 +193,16 @@ public sealed class DeckleHudSource : DeckleEventSource
         WriteEvent(EvtOverlayCardChanged, change, slot, severity, cards);
     }
 
-    // A teardown step that threw and was abandoned. `what`: overlay-expiry,
-    // overlay-shutdown.
+    // A teardown step that threw and was abandoned: the overlay card may stay on
+    // screen with nothing left tracking it, so this is a Warning, not detail.
+    // `what`: overlay-expiry, overlay-shutdown.
     [Event(EvtCleanupFailed,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "cleanup failed | what={0} | ex_type={1} | ex_message={2}")]
+           Message = "Cannot close an overlay card | what={0} | ex_type={1} | ex_message={2}")]
     public void CleanupFailed(string what, string ex_type, string ex_message)
     {
-        if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtCleanupFailed, what, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtCleanupFailed, what, ex_type, ex_message);
     }
 
     // ─── State machine transitions ──────────────────────────────────────
@@ -211,6 +216,7 @@ public sealed class DeckleHudSource : DeckleEventSource
            Message = "state changed | from={0} | to={1} | reason={2} | alpha={3} | dpi={4}")]
     public void StateChanged(string from, string to, string reason, byte alpha, int dpi)
     {
+        HotLoops.HudStateChanged.Tick();
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtStateChanged, from, to, reason, alpha, dpi);
     }
@@ -271,5 +277,24 @@ public sealed class DeckleHudSource : DeckleEventSource
     {
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtProximityRollup, duration_ms, samples, min_alpha, max_alpha, p50_cursor_dist_dip, p95_cursor_dist_dip);
+    }
+
+    // The settings store reports in free text; the text carries its own cause.
+    [Event(EvtSettingsLoadWarning,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The HUD settings need attention | {0}")]
+    public void SettingsLoadWarning(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
+    }
+
+    [Event(EvtSettingsLoadError,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The HUD settings could not be saved | {0}")]
+    public void SettingsLoadError(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 }

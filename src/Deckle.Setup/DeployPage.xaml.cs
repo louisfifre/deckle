@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Anytype;
 using Deckle.Catalog;
+using Deckle.Diagnostics;
 using Deckle.Install;
 using Deckle.Modules;
 
@@ -70,9 +71,11 @@ public sealed partial class DeployPage : Page
         var context = _context;
 
         long startTicks = Environment.TickCount64;
+        // One id per attempt: a Retry is a new attempt with its own start and end.
+        string workId = WorkId.Next();
         string step = "gate";
         DeckleSetupSource.Log.DeployStarted(
-            context.UpdateMode, context.InstallDirectory, context.DataDirectory);
+            workId, context.UpdateMode, context.InstallDirectory, context.DataDirectory);
         try
         {
             // Running-process gate first: Windows locks a running image, so a
@@ -89,7 +92,7 @@ public sealed partial class DeployPage : Page
             string[] running = await Task.Run(() => FindRunning(context));
             if (running.Length > 0)
             {
-                DeckleSetupSource.Log.DeployBlockedByRunningApp(running.Length, string.Join(",", running));
+                DeckleSetupSource.Log.DeployBlockedByRunningApp(workId, running.Length, string.Join(",", running));
                 ShowBlocked(Loc.Get("Setup_Deploy_AppRunning"));
                 return;
             }
@@ -107,7 +110,7 @@ public sealed partial class DeployPage : Page
             SetStatus(Loc.Get("Setup_Deploy_Launching"));
             LaunchInstalled(context);
 
-            DeckleSetupSource.Log.DeployCompleted();
+            DeckleSetupSource.Log.DeployCompleted(workId);
             DeckleSetupSource.Log.DeployCompletedDetail(
                 context.InstallDirectory, context.DataDirectory,
                 copiedBytes, Environment.TickCount64 - startTicks);
@@ -117,7 +120,7 @@ public sealed partial class DeployPage : Page
         catch (Exception ex)
         {
             DeckleSetupSource.Log.DeployFailed(
-                step, ex.GetType().Name, ex.Message, Environment.TickCount64 - startTicks);
+                workId, step, ex.GetType().Name, ex.Message, Environment.TickCount64 - startTicks);
             ShowBlocked(Loc.Format("Setup_Deploy_Failed_Format", ex.Message));
         }
     }

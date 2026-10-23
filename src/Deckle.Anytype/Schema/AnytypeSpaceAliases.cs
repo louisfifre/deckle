@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Deckle.Core;
+using Deckle.Security;
 
 namespace Deckle.Anytype;
 
@@ -45,7 +46,7 @@ public sealed class AnytypeSpaceAliases
             catch (JsonException ex)
             {
                 throw new InvalidOperationException(
-                    $"Anytype space aliases at {path} are not valid JSON: {ex.Message}");
+                    $"Anytype space aliases at {UserProfilePath.Mask(path)} are not valid JSON: {ex.Message}");
             }
 
             if (dto?.aliases is not null)

@@ -41,11 +41,9 @@ public sealed class AnytypeV2Client : IDisposable
     private readonly string _spacePath;
     private readonly IBackendEndpointTrust? _endpointTrust;
 
-    // One transport incident across calls: the first unanswered request logs
-    // the Error, the next ones stay Verbose, the first answer closes it. Only
+    // The failure incidents across calls (no answer, a run of refusals). Only
     // touched inside _gate, so no further synchronization.
-    private int _transportFailures;
-    private long _transportFailingSince;
+    private readonly ApiFailureIncidents _incidents = new();
 
     private const int MaxRetries = 1;
     private static readonly TimeSpan DefaultBackoff = TimeSpan.FromSeconds(1);
@@ -107,9 +105,8 @@ public sealed class AnytypeV2Client : IDisposable
             {
                 if (_endpointTrust is not null && !_endpointTrust.IsTrusted())
                 {
-                    DeckleAnytypeSource.Log.ApiRequestFailed(method, 0, "untrusted_endpoint", "", "");
-                    DeckleAnytypeSource.Log.ApiRequestFailedDetail(
-                        method, path, 0, "endpoint owner is not a trusted provider");
+                    _incidents.Refused(
+                        method, path, 0, ApiFailureReasons.UntrustedEndpoint, "owner_untrusted");
                     throw new InvalidOperationException(
                         "The Anytype endpoint is not owned by a trusted Deckle provider; the request was not sent.");
                 }
@@ -143,31 +140,18 @@ public sealed class AnytypeV2Client : IDisposable
                 {
                     // A TaskCanceledException the caller did not ask for is
                     // HttpClient's own timeout.
-                    string reason = ex is TaskCanceledException ? "timeout" : "transport";
-                    if (_transportFailures++ == 0)
-                    {
-                        _transportFailingSince = Stopwatch.GetTimestamp();
-                        DeckleAnytypeSource.Log.ApiRequestFailed(
-                            method, 0, reason, ex.GetType().Name, ex.Message);
-                    }
-                    DeckleAnytypeSource.Log.ApiRequestFailedDetail(
-                        method, path, 0, $"{ex.GetType().Name}: {ex.Message}");
+                    _incidents.TransportFailed(method, path, ex);
                     throw;
                 }
                 using HttpResponseMessage response = sent;
 
-                if (_transportFailures > 0)
-                {
-                    DeckleAnytypeSource.Log.ApiTransportRecovered(
-                        _transportFailures,
-                        Stopwatch.GetElapsedTime(_transportFailingSince).TotalSeconds);
-                    _transportFailures = 0;
-                }
+                _incidents.Answered();
 
                 int status = (int)response.StatusCode;
 
                 if (response.IsSuccessStatusCode)
                 {
+                    _incidents.Succeeded();
                     if (traceRequest)
                     {
                         DeckleAnytypeSource.Log.ApiRequestCompleted(
@@ -200,14 +184,16 @@ public sealed class AnytypeV2Client : IDisposable
                     continue;
                 }
 
-                // The envelope is API error text, never key material. It rides
-                // in the exception; the log keeps the Verbose detail the v1
-                // client keeps, since the status already says why.
+                // The envelope is API error text. It rides in the exception for the
+                // caller; the log keeps its machine code and nothing else, because
+                // the message, the issues and the hint are free text.
                 string errorBody = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
                 AnytypeV2Exception failure = AnytypeV2Exception.From(
                     method, path, response.StatusCode, errorBody);
-                DeckleAnytypeSource.Log.ApiRequestFailed(method, status, "http_status", "", "");
-                DeckleAnytypeSource.Log.ApiRequestFailedDetail(method, path, status, failure.Message);
+                if (failure.IsStaleEtag)
+                    _incidents.Superseded(method, path, status, failure.Code);
+                else
+                    _incidents.Refused(method, path, status, ApiFailureReasons.HttpStatus, failure.Code);
                 throw failure;
             }
         }

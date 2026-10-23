@@ -26,7 +26,7 @@ public sealed class SentenceBoundaryTests
 
     [Theory]
     [InlineData("Il a dit « oui. » et puis", "Il a dit « oui. »", "et puis")]
-    [InlineData("Il a dit « oui. » et puis", "Il a dit « oui. »", "et puis")]
+    [InlineData("Il a dit « oui ? » et puis", "Il a dit « oui ? »", "et puis")]
     [InlineData("He said \"yes.\" and then", "He said \"yes.\"", "and then")]
     [InlineData("Voilà (enfin !) donc", "Voilà (enfin !)", "donc")]
     public void TerminatorFollowedByAClosingMarkEndsAfterTheMark(

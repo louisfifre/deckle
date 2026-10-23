@@ -57,16 +57,34 @@ public sealed partial class DeckleSetupSource
             WriteEvent(EvtBestEffortFailedDetail, operation, path, ex_type, ex_message);
     }
 
-    // The bounded wait for the app that started an update ran out; the
-    // running-process gate that follows decides, so this is only context.
-    [Event(EvtPredecessorWaitTimedOutDetail,
-           Level = EventLevel.Verbose,
+    // The bounded wait for the app that started an update ran out. The
+    // running-process gate that follows still decides whether the payload is
+    // replaced, but the hand-off did not happen as designed: the old app was
+    // still alive after the wait, the likely cause of a blocked update that
+    // follows. A degradation, so a Warning, which the journal keeps.
+    [Event(EvtPredecessorWaitTimedOut,
+           Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "predecessor wait timed out | pid={0} | timeout_ms={1}")]
-    public void PredecessorWaitTimedOutDetail(int pid, long timeout_ms)
+           Message = "The previous app was still running after the hand-off wait | pid={0} | timeout_ms={1}")]
+    public void PredecessorWaitTimedOut(int pid, long timeout_ms)
     {
-        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtPredecessorWaitTimedOutDetail, pid, timeout_ms);
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPredecessorWaitTimedOut, pid, timeout_ms);
+    }
+
+    // The wait itself failed (the OS refused the handle, or the process object
+    // was no longer usable), so the hand-off was not waited for at all. Like the
+    // timeout, the running-process gate that follows still decides, and the
+    // update goes on; the Warning names the error so a blocked update that
+    // follows can be traced back to it.
+    [Event(EvtPredecessorWaitFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The wait for the previous app failed | pid={0} | ex_type={1} | hresult={2}")]
+    public void PredecessorWaitFailed(int pid, string ex_type, int hresult)
+    {
+        if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtPredecessorWaitFailed, pid, ex_type, hresult);
     }
 
     // The pid ties this process's journal to the child's: install-continue and

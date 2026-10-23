@@ -6,9 +6,30 @@ using Xunit;
 
 namespace Deckle.Vision.Tests;
 
+// Shares Deckle-Vision with the other class that listens to it: a listener sees every
+// emission of the process-wide provider, so the two classes never run side by side.
+[Collection("Vision observability")]
 [Trait("Category", "observability")]
 public class DeckleVisionSourceTests
 {
+    // The loop ends on its own (device lost, crash) before any Stop() asks: its end,
+    // with the outcome and the frames it produced, must reach the journal beside the
+    // session start it closes.
+    [Fact]
+    public void TheCaptureLoopEndTravelsInTheJournalWithItsOutcome()
+    {
+        using var listener = new TestEventListener("Deckle-Vision");
+
+        DeckleVisionSource.Log.CaptureLoopEnded("failed", "device_lost", 1200, 20000);
+
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal(DeckleVisionSource.EvtCaptureLoopEnded, ev.EventId);
+        Assert.True(ObservationTags.IsJournal(ev.Tags));
+        Assert.Equal("failed", ev.Payload?[0]);
+        Assert.Equal("device_lost", ev.Payload?[1]);
+        Assert.Equal(1200L, ev.Payload?[2]);
+    }
+
     [Fact]
     public void HeartbeatEmitsVerboseOnHeartbeatKeyword()
     {

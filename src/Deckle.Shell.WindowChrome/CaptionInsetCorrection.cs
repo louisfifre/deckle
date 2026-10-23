@@ -27,12 +27,34 @@ public static class CaptionInsetCorrection
     /// scale and size changes for the window's whole lifetime.</summary>
     public static void Attach(TitleBar titleBar, AppWindow appWindow)
     {
+        // Loaded fires again each time the bar is re-attached to the tree, and a
+        // handler added on every pass piled up on the XamlRoot, each one running
+        // Correct on every change and keeping the bar alive. One handler, held in
+        // a local, is moved to the current root on Loaded and dropped on Unloaded.
+        // The root is remembered because XamlRoot is already null by Unloaded.
+        XamlRoot? subscribedRoot = null;
+
+        void OnRootChanged(XamlRoot sender, XamlRootChangedEventArgs args) =>
+            Correct(titleBar, appWindow);
+
+        void Unsubscribe()
+        {
+            if (subscribedRoot is null) return;
+            subscribedRoot.Changed -= OnRootChanged;
+            subscribedRoot = null;
+        }
+
         titleBar.Loaded += (_, _) =>
         {
             Correct(titleBar, appWindow);
+            Unsubscribe();
             if (titleBar.XamlRoot is { } root)
-                root.Changed += (_, _) => Correct(titleBar, appWindow);
+            {
+                root.Changed += OnRootChanged;
+                subscribedRoot = root;
+            }
         };
+        titleBar.Unloaded += (_, _) => Unsubscribe();
     }
 
     private static void Correct(TitleBar titleBar, AppWindow appWindow)

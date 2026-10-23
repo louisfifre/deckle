@@ -21,7 +21,7 @@ public sealed partial class DeckleAppSource
            Message = "crash dump capture | folder={0} | type={1} | retained={2}")]
     public void CrashDumpCaptureArmedDetail(string folder, string dump_type, int retained)
     {
-        if (IsEnabled()) WriteEvent(EvtCrashDumpCaptureArmedDetail, folder, dump_type, retained);
+        if (IsEnabled()) WriteEvent(EvtCrashDumpCaptureArmedDetail, PathRedaction.Redact(folder), dump_type, retained);
     }
 
     [Event(EvtCrashDumpCaptureOff,

@@ -9,10 +9,10 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Shutdown requested")]
-    public void ShutdownRequested()
+           Message = "Shutdown requested | work_id={0}")]
+    public void ShutdownRequested(string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtShutdownRequested);
+        if (IsEnabled()) WriteEvent(EvtShutdownRequested, work_id);
     }
 
     // One line per failing step, cause included: the journal says which
@@ -24,15 +24,6 @@ public sealed partial class DeckleAppSource
     public void ShutdownStepFailed(string step, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtShutdownStepFailed, step, ex_type, ex_message);
-    }
-
-    [Event(EvtShutdownStepsDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "shutdown steps | steps={0} | failed={1} | elapsed_ms={2}")]
-    public void ShutdownStepsDetail(int steps, int failed, long elapsed_ms)
-    {
-        if (IsEnabled()) WriteEvent(EvtShutdownStepsDetail, steps, failed, elapsed_ms);
     }
 
     [Event(EvtRestartRequested,
@@ -84,15 +75,17 @@ public sealed partial class DeckleAppSource
     }
 
     // The process exits right after this line, so the user is left with no
-    // Deckle: the journal must say why.
-    [Event(EvtPostBuildRelaunchFailed,
+    // Deckle: the journal must say why. Every restart path ends here when its
+    // successor cannot start (settings restart, tray restart, post-build), not
+    // only the post-build one the event was first written for.
+    [Event(EvtRelaunchFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
            Message = "Cannot relaunch Deckle | {0}: {1}")]
-    public void PostBuildRelaunchFailed(string ex_type, string ex_message)
+    public void RelaunchFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtPostBuildRelaunchFailed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtRelaunchFailed, ex_type, ex_message);
     }
 
     [Event(EvtRestartSpawnSkipped,
@@ -126,16 +119,6 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtRestartSettingsFlushFailed, ex_type, ex_message);
     }
 
-    [Event(EvtSecondInstanceRejected,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
-           Message = "Another Deckle is resident")]
-    public void SecondInstanceRejected()
-    {
-        if (IsEnabled()) WriteEvent(EvtSecondInstanceRejected);
-    }
-
     [Event(EvtResidentMutexAbandoned,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -146,6 +129,57 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtResidentMutexAbandoned);
     }
 
+    // The run marker found the previous run still marked in progress: that run
+    // never reached its orderly end (a kill, a power loss, a crash). Unlike
+    // ResidentMutexAbandoned, it also covers an end the mutex cannot see, and it
+    // names the run so its own lines can be found in the file.
+    [Event(EvtPreviousRunEndedUncleanly,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The previous run did not end in an orderly way | previous_session={0} | previous_pid={1} | previous_started={2}")]
+    public void PreviousRunEndedUncleanly(string previous_session, int previous_pid, string previous_started)
+    {
+        if (IsEnabled()) WriteEvent(EvtPreviousRunEndedUncleanly, previous_session, previous_pid, previous_started);
+    }
+
+    // AppPaths moves the legacy settings layout in its static constructor,
+    // before any sink exists, and keeps the failure for this report. The app
+    // went on against the new layout, so settings left in the old place read as
+    // defaults: a degradation, not a stop.
+    [Event(EvtLegacySettingsMigrationFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The legacy settings layout could not be moved | ex_type={0} | ex_message={1}")]
+    public void LegacySettingsMigrationFailed(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtLegacySettingsMigrationFailed, ex_type, ex_message);
+    }
+
+    // A second instance is turned away before it may touch the journal, so it
+    // leaves its fact in second-instance.txt (App.Lifetime.cs) and the resident
+    // run copies it here at its next start. noted_at is the time the second
+    // instance wrote it, not the time of this line; fact names its pid.
+    [Event(EvtSecondInstanceRejected,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "A second Deckle was turned away | noted_at={0} | fact={1}")]
+    public void SecondInstanceRejected(string noted_at, string fact)
+    {
+        if (IsEnabled()) WriteEvent(EvtSecondInstanceRejected, noted_at, fact);
+    }
+
+    // The same facts when there are too many to read one by one (a launcher
+    // shortcut pressed over and over while Deckle runs): how many, and the span.
+    [Event(EvtSecondInstancesRejected,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Second Deckle instances were turned away | count={0} | first_at={1} | last_at={2}")]
+    public void SecondInstancesRejected(int count, string first_at, string last_at)
+    {
+        if (IsEnabled()) WriteEvent(EvtSecondInstancesRejected, count, first_at, last_at);
+    }
     [Event(EvtResidentMutexReleaseFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

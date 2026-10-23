@@ -87,8 +87,7 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
             if (MarkdownBody.TryReadSection(body, heading, out string content)) { source = content; break; }
         // Checklist lines are dropped wherever they sit: task_checklist owns
         // them, and a task written outside the template mixes both.
-        string notes = string.Join('\n', (source ?? body).Split('\n')
-            .Where(l => !MarkdownBody.TryChecklistLine(l, out _, out _))
+        string notes = string.Join('\n', MarkdownBody.WithoutChecklistLines(source ?? body).Split('\n')
             .Where(l => !IsHeading(l, ChecklistHeading)));
 
         string clean = MarkdownBody.Clean(notes);
@@ -218,7 +217,7 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
     // of its body), so the projections see only what the author wrote.
     async Task<Loaded> LoadAsync(string selector, string typeKey, bool withMarkdown, CancellationToken ct)
     {
-        string id = await resolver.ResolveAsync(selector, [typeKey], ct);
+        string id = await resolver.ResolveAsync(selector, [typeKey], NameMatch.Tolerant, ct);
         AnytypeV2ObjectDocument doc = await _reader.ReadAsync(
             id, new AnytypeV2ObjectReadOptions { Parts = AnytypeV2ObjectParts.Properties }, ct);
         var props = AnytypeV2PropertyMap.Of(doc);

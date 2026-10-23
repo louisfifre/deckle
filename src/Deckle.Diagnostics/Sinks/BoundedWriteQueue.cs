@@ -16,7 +16,8 @@ namespace Deckle.Diagnostics;
 // error, which Flush and Dispose rethrow, and the item is lost. That alone
 // hides a dead destination until exit, so the queue also keeps one incident:
 // the first failed write after successes calls onFault, the first successful
-// write after failures calls onRecovered with the count. Both callbacks run
+// write after failures calls onRecovered with the count and forgets the error
+// (a destination that came back has nothing left to rethrow). Both callbacks run
 // on a thread-pool thread, never on the worker: a callback that emits an
 // event dispatches back into this very sink, and a worker that enqueues into
 // its own full channel waits on itself forever.
@@ -84,35 +85,51 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
     }
 
     // False when the deadline passed before the marker was reached: the
-    // entries stay queued and the worker keeps draining them. A deadline is
-    // also applied to the enqueue of the marker itself, since a full channel
-    // behind a stuck disk would otherwise block the caller before any wait.
+    // entries stay queued and the worker keeps draining them. The deadline
+    // covers the whole call, in three places where a stuck disk would
+    // otherwise hold the caller: taking the lifetime lock (a producer blocked
+    // on a full channel holds it while it waits for room), enqueuing the
+    // marker, and waiting for the worker to reach it.
     public bool TryFlush(TimeSpan timeout)
     {
+        var clock = System.Diagnostics.Stopwatch.StartNew();
         var completed = new TaskCompletionSource<bool>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         bool markerQueued;
 
-        lock (_lifetimeLock)
+        if (!Monitor.TryEnter(_lifetimeLock, timeout))
+            return false;
+        try
         {
             markerQueued = _accepting;
             if (markerQueued)
             {
                 ValueTask enqueue = _items.Writer.WriteAsync(WorkItem.ForFlush(completed));
                 if (!enqueue.IsCompleted
-                    && !enqueue.AsTask().Wait(timeout))
+                    && !enqueue.AsTask().Wait(Remaining(timeout, clock)))
                 {
                     return false;
                 }
             }
         }
+        finally
+        {
+            Monitor.Exit(_lifetimeLock);
+        }
 
         bool drained = markerQueued
-            ? completed.Task.Wait(timeout)
-            : _worker.Wait(timeout);
+            ? completed.Task.Wait(Remaining(timeout, clock))
+            : _worker.Wait(Remaining(timeout, clock));
 
         ThrowLastError();
         return drained;
+    }
+
+    private static TimeSpan Remaining(TimeSpan timeout, System.Diagnostics.Stopwatch clock)
+    {
+        if (timeout == Timeout.InfiniteTimeSpan) return timeout;
+        TimeSpan left = timeout - clock.Elapsed;
+        return left > TimeSpan.Zero ? left : TimeSpan.Zero;
     }
 
     public void Dispose()
@@ -177,6 +194,10 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
         {
             int failures = _consecutiveFailures;
             _consecutiveFailures = 0;
+            // The incident is closed and counted in SinkRecovered; keeping its
+            // error would make a later Flush or Dispose report a fault the
+            // journal already says is over.
+            Interlocked.Exchange(ref _lastError, null);
             if (_onRecovered is not null)
             {
                 Action<int> onRecovered = _onRecovered;

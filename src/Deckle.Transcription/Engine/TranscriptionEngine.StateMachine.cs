@@ -376,6 +376,7 @@ public sealed partial class TranscriptionEngine
 
             _transcriptionId = System.Guid.NewGuid().ToString("N");
             DeckleWhispSource.Log.TranscriptionCorrelation(_transcriptionId);
+            BeginTake(TakeKinds.Dictation);
 
             // The selected strategy owns capture, the backend call(s), and every
             // state transition through to Transcribing. It returns null when it
@@ -404,7 +405,7 @@ public sealed partial class TranscriptionEngine
                 Loc.Get("Engine_PipelineCrashed_Title"),
                 Loc.Get("Engine_PipelineCrashed_Body"),
                 FB_REPLACEMENT);
-            RaiseFinished(TranscriptionOutcome.None);
+            FinishTake(TranscriptionOutcome.None, TakeEndReasons.PipelineCrashed);
         }
         finally
         {
@@ -451,6 +452,11 @@ public sealed partial class TranscriptionEngine
         // every attempt re-reads _state, sees Disposed, and bails out.
         // Disposed must persist past the worker's exit; a "Ready" emitted
         // after Dispose would re-arm the tray on a half-shut-down engine.
+        // The take's end is declared on every normal path; one that was not
+        // (a path that returns without raising Finished) is closed here, so the
+        // journal never holds a start without its end.
+        EndTake(TakeOutcomes.Abandoned, TakeEndReasons.WorkerExit);
+
         bool reachedIdle;
         lock (_lifecycleLock)
         {

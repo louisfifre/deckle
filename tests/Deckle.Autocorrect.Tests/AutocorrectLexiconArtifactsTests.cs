@@ -8,7 +8,7 @@ namespace Deckle.Autocorrect.Tests;
 // The live engine must never treat the historical full English list as the
 // protected-literal tier. Only the restricted globish seed artifact activates
 // the global-English guard.
-[Trait("Category", "unit")]
+[Trait("Category", "integration")]
 public sealed class AutocorrectLexiconArtifactsTests : IDisposable
 {
     private const string LegacyFullEnglishFileName = "lexicon-en.tsv.gz";

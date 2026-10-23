@@ -2,4 +2,7 @@
   <PropertyGroup>
     <RootNamespace>Deckle.Core</RootNamespace>
   </PropertyGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Core.Tests" />
+  </ItemGroup>
 </Project>

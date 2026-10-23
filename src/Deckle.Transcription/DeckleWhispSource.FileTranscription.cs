@@ -14,13 +14,17 @@ public sealed partial class DeckleWhispSource
     // position in its batch and files the batch size, so a reader can follow
     // a batch file by file.
 
+    // The batch is lasting work: this start and its one end (Completed or
+    // Aborted) travel in the journal and share `work_id`. The files of the
+    // batch are the takes TakeStarted and TakeEnded record, one each.
     [Event(EvtFileTranscriptionBatchStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "File transcription batch started")]
-    public void FileTranscriptionBatchStarted()
+           Tags = ObservationTags.Journal,
+           Message = "File transcription batch started | work_id={0} | files={1}")]
+    public void FileTranscriptionBatchStarted(string work_id, int files)
     {
-        if (IsEnabled()) WriteEvent(EvtFileTranscriptionBatchStarted);
+        if (IsEnabled()) WriteEvent(EvtFileTranscriptionBatchStarted, work_id, files);
     }
 
     [Event(EvtFileTranscriptionBatchStartedDetail,
@@ -33,23 +37,17 @@ public sealed partial class DeckleWhispSource
         WriteEvent(EvtFileTranscriptionBatchStartedDetail, files, prepared_capacity);
     }
 
+    // outcome is the batch's TranscriptionOutcome name (None, ClipboardOnly,
+    // SavedToFile): SavedToFile when at least one file was written. Event id
+    // 184 (the Verbose twin that repeated these two values) is retired.
     [Event(EvtFileTranscriptionBatchCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "File transcription batch completed")]
-    public void FileTranscriptionBatchCompleted()
+           Tags = ObservationTags.Journal,
+           Message = "File transcription batch completed | work_id={0} | files={1} | outcome={2}")]
+    public void FileTranscriptionBatchCompleted(string work_id, int files, string outcome)
     {
-        if (IsEnabled()) WriteEvent(EvtFileTranscriptionBatchCompleted);
-    }
-
-    [Event(EvtFileTranscriptionBatchCompletedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "file transcription batch complete | files={0} | outcome={1}")]
-    public void FileTranscriptionBatchCompletedDetail(int files, string outcome)
-    {
-        if (!IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtFileTranscriptionBatchCompletedDetail, files, outcome);
+        if (IsEnabled()) WriteEvent(EvtFileTranscriptionBatchCompleted, work_id, files, outcome);
     }
 
     // The end of a batch that did not complete. outcome (closed vocabulary):
@@ -58,10 +56,11 @@ public sealed partial class DeckleWhispSource
     [Event(EvtFileTranscriptionBatchAborted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "File transcription batch ended early | outcome={0} | files={1} | ex_type={2} | ex_message={3}")]
-    public void FileTranscriptionBatchAborted(string outcome, int files, string ex_type, string ex_message)
+           Tags = ObservationTags.Journal,
+           Message = "File transcription batch ended early | work_id={0} | outcome={1} | files={2} | ex_type={3} | ex_message={4}")]
+    public void FileTranscriptionBatchAborted(string work_id, string outcome, int files, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtFileTranscriptionBatchAborted, outcome, files, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtFileTranscriptionBatchAborted, work_id, outcome, files, ex_type, ex_message);
     }
 
     [Event(EvtFileTranscriptionStarted,

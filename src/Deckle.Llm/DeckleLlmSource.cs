@@ -15,10 +15,14 @@ namespace Deckle.Llm;
 // journal that keeps only Warnings and Errors still says why; its Verbose
 // mirror, when it has one, keeps the long extras (JSON previews).
 //
-// Rewrite milestones (started, then completed, cancelled, timed out or
-// unavailable) belong to RewriteService, which sees every exit path; the
-// engines only add the Verbose request and response detail of their
-// transport. Prompt and completion text never enter a payload: counts,
+// Rewrite milestones belong to RewriteService, which sees every exit path;
+// the engines only add the Verbose request and response detail of their
+// transport. Only the transcript rewrite of a take is lasting work: it writes
+// TranscriptRewriteStarted, then TranscriptRewriteCompleted, RewriteTimeout or
+// RewriteUnavailable, all carrying one work_id, and the first and last are in
+// the journal. The paragraph and sentence rewrites run on every pause in
+// typing: their Started, Completed and Cancelled lines are Verbose detail and
+// the journal sees them as a 60 s count (LoopPulse). Prompt and completion text never enter a payload: counts,
 // models, providers and timings only.
 //
 // The Ollama /api/ps probe exists only to enrich admitted Transcription
@@ -113,5 +117,7 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     public const int EvtParagraphOfferSettled        = 78;
     public const int EvtParagraphRewriteFailed       = 79;
     public const int EvtProviderKeyReadFailedDetail  = 80;
+    public const int EvtTranscriptRewriteStarted     = 81;
+    public const int EvtTranscriptRewriteCompleted   = 82;
 
 }

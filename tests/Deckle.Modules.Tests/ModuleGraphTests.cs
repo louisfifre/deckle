@@ -105,10 +105,38 @@ public class ModuleGraphTests
     public void TheRestOfTheSelectionIsUntouched()
     {
         var check = ModuleGraph.WithDependencies(Catalog, ["ambient"], "transcription");
-        Assert.Contains("ambient", check);
+        Assert.Equal(new HashSet<string> { "ambient", "transcription" }, check);
 
         var uncheck = ModuleGraph.WithoutDependents(Catalog, ["ambient", "rewrite"], "rewrite");
-        Assert.Contains("ambient", uncheck);
+        Assert.Equal(new HashSet<string> { "ambient" }, uncheck);
+    }
+
+    // Checking only ever adds modules the catalogue knows, while unchecking
+    // removes whatever id it is given: a stale recorded id can always be cleared
+    // but never created.
+    [Fact]
+    public void AnUnknownIdCannotBeCheckedButCanBeUnchecked()
+    {
+        var check = ModuleGraph.WithDependencies(Catalog, ["ambient"], "ghost");
+        Assert.Equal(new HashSet<string> { "ambient" }, check);
+
+        var uncheck = ModuleGraph.WithoutDependents(Catalog, ["ambient", "ghost"], "ghost");
+        Assert.Equal(new HashSet<string> { "ambient" }, uncheck);
+    }
+
+    [Fact]
+    public void ARecordedChoiceOverACycleKeepsBothOrNeither()
+    {
+        IReadOnlyList<ModuleDescriptor> cyclic =
+        [
+            Module("a", "b"),
+            Module("b", "a"),
+        ];
+
+        Assert.Equal(
+            new HashSet<string> { "a", "b" },
+            ModuleGraph.WithoutUnmetDependencies(cyclic, ["a", "b"]));
+        Assert.Empty(ModuleGraph.WithoutUnmetDependencies(cyclic, ["a"]));
     }
 
     [Fact]

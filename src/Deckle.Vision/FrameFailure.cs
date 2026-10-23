@@ -5,4 +5,8 @@ namespace Deckle.Vision;
 // per-frame details stay Verbose and governed. Stage is texture_query,
 // frame_consumer, sampler_map or sampler_process; Hr is 0 and the exception
 // fields empty when the stage threw nothing.
-public sealed record FrameFailure(string Stage, int Hr, string ExType, string ExMessage);
+public sealed record FrameFailure(string Stage, int Hr, string ExType, string ExMessage)
+{
+    // What a consumer reports when a frame was dropped and no cause was kept.
+    public static readonly FrameFailure Unknown = new("unknown", 0, "", "");
+}

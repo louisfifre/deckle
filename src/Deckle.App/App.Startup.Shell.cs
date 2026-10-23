@@ -123,7 +123,7 @@ public partial class App
             {
                 AmbientSettingsService.Instance.Current.Enabled = false;
                 AmbientSettingsService.Instance.Save();
-                DeckleAppSource.Log.AmbientMasterForcedOff();
+                DeckleAppSource.Log.AmbientMasterForcedOff("boot_policy");
             }
 
             AmbientSettingsService.Instance.Changed += OnAmbientSettingsChanged;

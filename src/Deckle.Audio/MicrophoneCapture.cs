@@ -125,6 +125,9 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
     {
         string purpose = host.RecordingPurpose;
         int configuredDevice = host.AudioInputDeviceId;
+        // Pairs RecordingStarted, RecordingCompleted or RecordingFailed and the
+        // anomaly summary of this recording in the journal.
+        string workId = WorkId.Next();
         var startClock = System.Diagnostics.Stopwatch.StartNew();
 
         // The module-local declaration keeps the last error. A failed creation
@@ -241,7 +244,7 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
             // No RecordingStarted was emitted, so this is the take's only
             // trace; the caller still receives the exception.
             DeckleAudioSource.Log.RecordingFailed(
-                purpose, ex.GetType().Name, ex.Message, startClock.ElapsedMilliseconds);
+                purpose, ex.GetType().Name, ex.Message, startClock.ElapsedMilliseconds, workId);
             ReleaseAfterFailedStart(hWaveIn, hEvent, hdrPtrs, bufPtrs, prepared, hdrSize);
             throw;
         }
@@ -257,7 +260,7 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
 
         DeckleAudioSource.Log.RecordingStarted(
             purpose, device.Name, device.DeviceId, device.IsDefault,
-            (int)wfx.nSamplesPerSec, wfx.nChannels, wfx.wBitsPerSample);
+            (int)wfx.nSamplesPerSec, wfx.nChannels, wfx.wBitsPerSample, workId);
 
         // From here every exit releases the device in the finally and closes
         // the take with exactly one end: RecordingFailed on a throw (rethrown),
@@ -288,12 +291,13 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
                 frameCallback:       Frame is null ? null : frame => Frame?.Invoke(frame),
                 onLowAudioDetected:  () => LowAudioDetected?.Invoke(),
                 device:              device,
+                workId:              workId,
                 ct:                  ct);
         }
         catch (System.Exception ex)
         {
             DeckleAudioSource.Log.RecordingFailed(
-                purpose, ex.GetType().Name, ex.Message, takeClock.ElapsedMilliseconds);
+                purpose, ex.GetType().Name, ex.Message, takeClock.ElapsedMilliseconds, workId);
             throw;
         }
         finally
@@ -323,7 +327,7 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
         double totalSec = pump.TotalBytes / 32000.0;
 
         DeckleAudioSource.Log.RecordingCompleted(
-            purpose, pump.Exit == LoopExit.CapHit ? "cap_hit" : "stop_requested", totalSec);
+            purpose, pump.Exit == LoopExit.CapHit ? "cap_hit" : "stop_requested", totalSec, workId);
 
         if (host.RetainsAudio && OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Transcription,

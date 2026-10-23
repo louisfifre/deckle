@@ -43,7 +43,7 @@ internal sealed class FakeBackendProcessHost : IBackendProcessHost
     public IBackendProcess? Open(int processId) =>
         Opened.TryGetValue(processId, out FakeBackendProcess? process) ? process : null;
 
-    public IBackendProcess? Spawn(BackendProcessSpec spec)
+    public IBackendProcess? Spawn(BackendProcessSpec spec, bool inRestart)
     {
         SpawnCount++;
         return SpawnResult;

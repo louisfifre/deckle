@@ -1,8 +1,11 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.Tracing;
 using Deckle.Audio;
 using Deckle.Catalog;
 using Deckle.Core;
+using Deckle.Diagnostics;
 using Deckle.Diagnostics.Telemetry;
+using Deckle.TestSupport;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Deckle.Transcription;
@@ -10,6 +13,9 @@ using Xunit;
 
 namespace Deckle.Transcription.Tests;
 
+// In the observability collection because the take-journal tests listen to the
+// provider process-wide: no other suite may write Whisp events meanwhile.
+[Collection(OperationalObservabilityCollection.Name)]
 [Trait("Category", "integration")]
 public sealed class LiveTranscriptionPipelineTests
 {
@@ -152,11 +158,16 @@ public sealed class LiveTranscriptionPipelineTests
 
         await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
 
-        // The bounds are loose on purpose: the tail is 400 ms, and a timer may
-        // fire a little early or a loaded machine a lot late.
+        // Only the floor is asserted: the tail is 400 ms (a private constant of
+        // the engine), and a timer may fire a little early, so 300 ms still
+        // tells "kept listening" from "cancelled at once". A ceiling would only
+        // measure how loaded the machine is; "the capture does stop" is already
+        // what the bounded wait on `finished` above proves.
         TimeSpan tail = System.Diagnostics.Stopwatch.GetElapsedTime(
             pressTimestamp, capture.StopObservedTimestamp);
-        Assert.InRange(tail, TimeSpan.FromMilliseconds(300), TimeSpan.FromSeconds(4));
+        Assert.True(
+            tail >= TimeSpan.FromMilliseconds(300),
+            $"The capture stopped {tail.TotalMilliseconds:F0} ms after the press.");
     }
 
     // 2026-10-21: a short noise blip decoded into twelve doubtful tokens was
@@ -468,6 +479,95 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal("[" + rawTake + "]", clipboard.Text);
     }
 
+    [Fact]
+    [Trait("Category", "observability")]
+    public async Task ADeliveredTakeWritesOneJournalStartAndOneEndSharingTheirWorkId()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        using var listener = new TestEventListener("Deckle-Whisp");
+        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            backend,
+            new ScriptedMicrophoneCapture(utteranceCount: 2),
+            new RecordingClipboardWriter());
+
+        await RunOneTakeAsync(engine, backend, testCancellation);
+
+        EventWrittenEventArgs started = Assert.Single(
+            listener.Events, e => e.EventName == nameof(DeckleWhispSource.TakeStarted));
+        EventWrittenEventArgs ended = Assert.Single(
+            listener.Events, e => e.EventName == nameof(DeckleWhispSource.TakeEnded));
+        Assert.Equal(PayloadOf(started, "work_id"), PayloadOf(ended, "work_id"));
+        Assert.StartsWith("w", (string)PayloadOf(started, "work_id")!);
+        Assert.Equal(TakeKinds.Dictation, PayloadOf(started, "kind"));
+        Assert.False(string.IsNullOrEmpty((string?)PayloadOf(started, "transcription_id")));
+        Assert.Equal(TakeOutcomes.ClipboardOnly, PayloadOf(ended, "outcome"));
+        Assert.Equal(TakeEndReasons.Delivered, PayloadOf(ended, "reason"));
+    }
+
+    [Fact]
+    [Trait("Category", "observability")]
+    public async Task ATakeWithoutSpeechEndsInTheJournalAsNoneBecauseOfNoText()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        using var listener = new TestEventListener("Deckle-Whisp");
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            new SequencedBackend([]),
+            new ScriptedMicrophoneCapture(utteranceCount: 0),
+            new RecordingClipboardWriter());
+        var finished = new TaskCompletionSource<TranscriptionOutcome>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var ready = new TaskCompletionSource(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        engine.StatusChanged += status =>
+        {
+            if (status == Loc.Get("Status_Ready"))
+                ready.TrySetResult();
+        };
+        engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
+
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(
+            TranscriptionOutcome.None,
+            await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation));
+        await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+
+        EventWrittenEventArgs started = Assert.Single(
+            listener.Events, e => e.EventName == nameof(DeckleWhispSource.TakeStarted));
+        EventWrittenEventArgs ended = Assert.Single(
+            listener.Events, e => e.EventName == nameof(DeckleWhispSource.TakeEnded));
+        Assert.Equal(PayloadOf(started, "work_id"), PayloadOf(ended, "work_id"));
+        Assert.Equal(TakeOutcomes.None, PayloadOf(ended, "outcome"));
+        Assert.Equal(TakeEndReasons.NoText, PayloadOf(ended, "reason"));
+    }
+
+    [Fact]
+    [Trait("Category", "observability")]
+    public void TheTakeAndFileBatchEventsTravelInTheJournal()
+    {
+        string[] lifecycle =
+        [
+            nameof(DeckleWhispSource.TakeStarted),
+            nameof(DeckleWhispSource.TakeEnded),
+            nameof(DeckleWhispSource.FileTranscriptionBatchStarted),
+            nameof(DeckleWhispSource.FileTranscriptionBatchCompleted),
+            nameof(DeckleWhispSource.FileTranscriptionBatchAborted),
+        ];
+
+        string[] outsideTheJournal = ProviderManifest.EventsOf(typeof(DeckleWhispSource))
+            .Where(declared => lifecycle.Contains(declared.Name)
+                && !ObservationTags.IsJournal(declared.Tags))
+            .Select(declared => declared.Name)
+            .ToArray();
+
+        Assert.Empty(outsideTheJournal);
+    }
+
+    private static object? PayloadOf(EventWrittenEventArgs e, string name) =>
+        e.Payload![e.PayloadNames!.IndexOf(name)];
     // Starts a take, stops it once the backend has transcribed both scripted
     // utterances, and waits until the engine is back to Ready.
     private static async Task RunOneTakeAsync(

@@ -21,7 +21,7 @@ public sealed class DeckleModulesSource : DeckleEventSource
     public const int EvtPresenceSaved             = 4;
     public const int EvtPresenceSavedDetail       = 5;
     public const int EvtPresenceLoadFailed        = 6;
-    public const int EvtPresenceLoadFailedDetail  = 7;
+    // 7 retired.
 
     // Plumbing detail with ids ⇒ Verbose, no milestone (it fires once per
     // module at every boot).
@@ -64,27 +64,30 @@ public sealed class DeckleModulesSource : DeckleEventSource
     [Event(EvtPresenceSavedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "module selection saved | present={0} | known={1} | path={2}")]
-    public void PresenceSavedDetail(string present, string known, string path)
+           Message = "module selection saved | present={0} | known={1}")]
+    public void PresenceSavedDetail(string present, string known)
     {
-        if (IsEnabled()) WriteEvent(EvtPresenceSavedDetail, present, known, path);
+        if (IsEnabled()) WriteEvent(EvtPresenceSavedDetail, present, known);
     }
 
+    // The presence file could not be used, so every module counts as present:
+    // the Warning names what was asked (the file) and what was obtained. reason
+    // is an exception type or a value of PresenceLoadFailureReasons; neither the
+    // exception message nor the path is written, since framework messages quote
+    // the absolute path under the user's profile.
     [Event(EvtPresenceLoadFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not read the module presence file")]
-    public void PresenceLoadFailed()
+           Tags = ObservationTags.Journal,
+           Message = "The module presence file could not be used, so every module counts as present | reason={0}")]
+    public void PresenceLoadFailed(string reason)
     {
-        if (IsEnabled()) WriteEvent(EvtPresenceLoadFailed);
+        if (IsEnabled()) WriteEvent(EvtPresenceLoadFailed, reason);
     }
 
-    [Event(EvtPresenceLoadFailedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "presence load failed | error={0} | message={1} | path={2}")]
-    public void PresenceLoadFailedDetail(string ex_type, string message, string path)
+    public static class PresenceLoadFailureReasons
     {
-        if (IsEnabled()) WriteEvent(EvtPresenceLoadFailedDetail, ex_type, message, path);
+        // Valid JSON, but no "present" list: nothing says which modules were chosen.
+        public const string PresentListMissing = "present_list_missing";
     }
 }
