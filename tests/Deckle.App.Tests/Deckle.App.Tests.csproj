@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The suite that owns Deckle.App, the WinUI 3 host. It references the app
+       project directly, like the other suites reference their module: the SDK
+       accepts an executable as a reference, and the WinUI build of the app runs
+       as part of this one. The tests reach the host's internal types through
+       the app's InternalsVisibleTo, and the Windows App SDK runtime comes up
+       through the shared WindowsAppSdkModuleInitializer, as in every suite.
+       No window or XAML is created: what is tested here is plain code that
+       happens to live in the host. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.App\Deckle.App.csproj" />
+  </ItemGroup>
+</Project>

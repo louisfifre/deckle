@@ -9,4 +9,4 @@
 - **Recurrence cue:** a sink or surface with no rows after some point and no `SinkFaulted` naming it. `LogWindowSink` still tries every surface before it hands the first failure on, so one broken surface does not starve the others.
 - **Not covered:** the shutdown path of `TelemetryListenerBootstrap.ShutDown`, which now emits `FlushFailed` when a dataset sink cannot dispose. `BoundedWriteQueue.Dispose` gives no seam to make it fail from a test.
 
-Regression: `SinkCallbackFaultTests`, `OperationalSinkRoutingTests.ApplicationLogDoesNotTakeAFailingSettingsReadForADisabledLog`, `TelemetryListenerBootstrapTests.AConsentReaderThatThrowsWritesNothingAndIsReportedAsASinkIncident`.
+Regression: `SinkCallbackFaultTests`, `HudFeedbackSinkTests` (in `Deckle.App.Tests` since the sink moved to the host), `OperationalSinkRoutingTests.ApplicationLogDoesNotTakeAFailingSettingsReadForADisabledLog`, `TelemetryListenerBootstrapTests.AConsentReaderThatThrowsWritesNothingAndIsReportedAsASinkIncident`.

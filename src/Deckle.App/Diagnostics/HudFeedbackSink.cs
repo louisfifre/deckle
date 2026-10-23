@@ -1,7 +1,11 @@
-namespace Deckle.Diagnostics;
+using Deckle.Diagnostics;
+
+namespace Deckle.App;
 
 // Flashes the canonical UserFeedback emission on the HUD. A passive ILogSink,
-// never its own EventListener: the dispatcher stays the sole listener.
+// never its own EventListener: the dispatcher stays the sole listener. It
+// lives in the host, beside AppHudFeedbackSink, its only receiver: only the
+// app knows there is a HUD, so Deckle.Diagnostics names none.
 //
 // A single well-known event name — "UserFeedbackEmitted" — drives this sink;
 // any provider that wants to flash a message on the HUD declares that event
@@ -24,7 +28,7 @@ namespace Deckle.Diagnostics;
 //
 // A producer that wants the HUD to react emits UserFeedbackEmitted in addition
 // to its milestone; this sink ignores every other event.
-public sealed class HudFeedbackSink : ILogSink
+internal sealed class HudFeedbackSink : ILogSink
 {
     public const string CanonicalEventName = "UserFeedbackEmitted";
 

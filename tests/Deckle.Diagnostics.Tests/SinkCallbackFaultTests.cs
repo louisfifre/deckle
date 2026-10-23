@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Deckle.Diagnostics.Tests;
 
-// The UI-facing sinks call code they do not own (a log window, the HUD). A
+// The UI-facing sinks call code they do not own (a log window). A
 // failure there used to be swallowed on the spot, so the surface just went
 // quiet. It now leaves the sink, where the dispatcher contains it and opens a
 // sink incident.
@@ -44,19 +44,11 @@ public sealed class SinkCallbackFaultTests
         Assert.Throws<InvalidOperationException>(() => sink.Write(Entry("live")));
     }
 
-    [Fact]
-    public void A_failing_hud_receiver_is_handed_to_the_dispatcher()
-    {
-        var sink = new HudFeedbackSink(new ThrowingHud());
-
-        Assert.Throws<InvalidOperationException>(() => sink.Write(Entry("feedback")));
-    }
-
     private static EventEntry Entry(string message)
         => new(
             DateTimeOffset.UtcNow,
             "Deckle-Tests",
-            HudFeedbackSink.CanonicalEventName,
+            "LogWindowRow",
             EventLevel.Informational,
             EventKeywords.None,
             ObservationKind.Operational,
@@ -75,10 +67,5 @@ public sealed class SinkCallbackFaultTests
         public string Message { get; } = message;
 
         public void Write(EventEntry entry) => throw new InvalidOperationException(Message);
-    }
-
-    private sealed class ThrowingHud : IHudFeedbackSink
-    {
-        public void Write(FeedbackEntry entry) => throw new InvalidOperationException("hud down");
     }
 }

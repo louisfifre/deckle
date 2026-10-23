@@ -473,6 +473,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DeckleAppSource.Setup.cs
 │   │   │   ├── DeckleAppSource.Shutdown.cs
 │   │   │   ├── DeckleAppSource.Surfaces.cs
+│   │   │   ├── HudFeedbackSink.cs
+│   │   │   ├── IHudFeedbackSink.cs
 │   │   │   ├── LaunchContextProbe.cs
 │   │   │   ├── LogEntry.cs
 │   │   │   ├── LogEntryRow.xaml
@@ -896,7 +898,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Diagnostics/
 │   │   ├── Sinks/
 │   │   │   ├── BoundedWriteQueue.cs
-│   │   │   ├── HudFeedbackSink.cs
 │   │   │   ├── JsonlAppendStream.cs
 │   │   │   ├── JsonlLineSerializer.cs
 │   │   │   ├── JsonlRotationPolicy.cs
@@ -924,7 +925,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── EventEntry.cs
 │   │   ├── GLOSSARY.md  — glossary-deckle-diagnostics Observability vocabulary for the Diagnostics family, .Logging and .Telemetry in…
 │   │   ├── IFlushableLogSink.cs
-│   │   ├── IHudFeedbackSink.cs
 │   │   ├── ILogSink.cs
 │   │   ├── ILogWindowSink.cs
 │   │   ├── Keywords.cs
@@ -1910,6 +1910,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SpaceWriteLockTests.cs
 │   │   ├── TaskGesturesBugNotes.md
 │   │   └── TaskGesturesTests.cs
+│   ├── Deckle.App.Tests/
+│   │   ├── Deckle.App.Tests.csproj
+│   │   └── HudFeedbackSinkTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── AudioPathRedactionTests.cs
 │   │   ├── AudioRecordingHostDefaultsTests.cs
