@@ -947,28 +947,20 @@
   <data name="LogWindow_ContextCopy_All" xml:space="preserve">
     <value>Copy all</value>
   </data>
-  <!-- Notices above the log list (code-behind, Loc.Get / Loc.Format).
-       The activity names follow OperationalLogActivity; the path names the
-       Diagnostics page and its Logging details section, their only editor. -->
-  <data name="LogWindow_GatesNotice_Format" xml:space="preserve">
-    <value>Verbose detail is off for: {0}. Turn it on in Settings &gt; Diagnostics &gt; Logging details.</value>
-    <comment>{0} is a comma-separated list of activity names.</comment>
+  <!-- Title bar commands (icon-only Buttons): tooltip + accessible name. -->
+  <data name="LogWindowSettingsButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Settings</value>
   </data>
-  <data name="LogWindow_Activity_Ambient" xml:space="preserve">
-    <value>Ambient</value>
+  <data name="LogWindowSettingsButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Settings</value>
   </data>
-  <data name="LogWindow_Activity_Transcription" xml:space="preserve">
-    <value>Transcription</value>
+  <data name="LogWindowPlaygroundButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Playground</value>
   </data>
-  <data name="LogWindow_Activity_Autocorrect" xml:space="preserve">
-    <value>Autocorrect</value>
+  <data name="LogWindowPlaygroundButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Playground</value>
   </data>
-  <data name="LogWindow_Activity_Input" xml:space="preserve">
-    <value>Input</value>
-  </data>
-  <data name="LogWindow_Activity_Windowing" xml:space="preserve">
-    <value>Windowing</value>
-  </data>
+  <!-- Notice above the log list (code-behind, Loc.Format). -->
   <data name="LogWindow_DroppedNotice_Format" xml:space="preserve">
     <value>Entries skipped because they arrived faster than this window could show them: {0:N0}</value>
     <comment>{0} is the number of skipped entries since the window was last cleared.</comment>
