@@ -53,7 +53,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtNavigationRejected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A navigation request was rejected | reason={0}")]
+           Message = "A navigation request was rejected\nreason={0}")]
     public void NavigationRejected(string reason)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
@@ -63,7 +63,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtNavigationRejectedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "nav rejected | reason={0} | item={1}")]
+           Message = "reason={0} | item={1}")]
     public void NavigationRejectedDetail(string reason, string item)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -73,7 +73,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtNavigationFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Navigating to a page failed | page={0} | reason={1}")]
+           Message = "Navigating to a page failed\npage={0} | reason={1}")]
     public void NavigationFailed(string page, string reason)
     {
         if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))
@@ -83,7 +83,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtNavigationFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "nav failed | page={0} | reason={1} | error={2}")]
+           Message = "page={0} | reason={1} | error={2}")]
     public void NavigationFailedDetail(string page, string reason, string error)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -94,7 +94,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtNavTiming,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "nav timing | page={0} | duration_ms={1}")]
+           Message = "page={0} | duration_ms={1}")]
     public void NavTiming(string page, long duration_ms)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -106,7 +106,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtPageReady,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "page ready | page={0} | ready_ms={1}")]
+           Message = "page={0} | ready_ms={1}")]
     public void PageReady(string page, long ready_ms)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -124,7 +124,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtMicrophonePreviewFellBack,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "The HUD preview fell back from the microphone to the simulation | cause={0} | mmsys_err={1} | ex_type={2}")]
+           Message = "The HUD preview fell back from the microphone to the simulation\ncause={0} | mmsys_err={1} | ex_type={2}")]
     public void MicrophonePreviewFellBack(string cause, uint mmsys_err, string ex_type)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Capture))
@@ -136,7 +136,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtTuningChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "tuning changed | setting={0} | value={1}")]
+           Message = "setting={0} | value={1}")]
     public void TuningChanged(string setting, string value)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -158,7 +158,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtPipelineModeChangedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "pipeline mode | mode={0}")]
+           Message = "mode={0}")]
     public void PipelineModeChangedDetail(string mode)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
@@ -170,7 +170,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtScreenCaptureToggled,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "playground toggle | running={0}")]
+           Message = "running={0}")]
     public void ScreenCaptureToggled(bool running)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Capture))
@@ -180,7 +180,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtScreenCaptureStartFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Starting the screen capture failed | ex_type={0}")]
+           Message = "Starting the screen capture failed\nex_type={0}")]
     public void ScreenCaptureStartFailed(string ex_type)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Capture))
@@ -190,7 +190,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtScreenCaptureStartFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "screen capture start | error={0}")]
+           Message = "error={0}")]
     public void ScreenCaptureStartFailedDetail(string error)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Capture))
@@ -202,7 +202,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtHueCallFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A Hue bridge call failed | op={0} | ex_type={1}")]
+           Message = "A Hue bridge call failed\nop={0} | ex_type={1}")]
     public void HueCallFailed(string op, string ex_type)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Push))
@@ -212,7 +212,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtHueCallFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "hue call failed | op={0} | error={1}")]
+           Message = "op={0} | error={1}")]
     public void HueCallFailedDetail(string op, string error)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
@@ -232,7 +232,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtEntertainmentAreaUsedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "ent area source | name={0} | lights={1}")]
+           Message = "name={0} | lights={1}")]
     public void EntertainmentAreaUsedDetail(string name, int lights)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push))
@@ -244,7 +244,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtResolveLights,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "resolve lights | group_id={0} | group_name={1} | from_group={2}")]
+           Message = "group_id={0} | group_name={1} | from_group={2}")]
     public void ResolveLights(string group_id, string group_name, int from_group)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
@@ -254,7 +254,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtMatchEntertainmentArea,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "match ent area | result={0} | ent_id={1} | name={2} | overlap={3}")]
+           Message = "result={0} | ent_id={1} | name={2} | overlap={3}")]
     public void MatchEntertainmentArea(string result, string ent_id, string name, int overlap)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
@@ -264,7 +264,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtZoneSuggested,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "zone suggest | id={0} | zone={1} | ent_name={2} | x={3:F2} | y={4:F2} | z={5:F2}")]
+           Message = "id={0} | zone={1} | ent_name={2} | x={3:F2} | y={4:F2} | z={5:F2}")]
     public void ZoneSuggested(string id, string zone, string ent_name, double x, double y, double z)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
@@ -284,7 +284,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     [Event(EvtLightZoneUpdatedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "zone assign | id={0} | zone={1}")]
+           Message = "id={0} | zone={1}")]
     public void LightZoneUpdatedDetail(string id, string zone)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
