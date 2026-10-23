@@ -62,7 +62,7 @@ public sealed class DeckleThreadingSource : DeckleEventSource
     [Event(EvtMarshalQueued,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Threading,
-           Message = "marshal queued | operation={0} | caller={1} | queue_depth={2}")]
+           Message = "operation={0} | caller={1} | queue_depth={2}")]
     public void MarshalQueued(string operation, string caller, int queue_depth)
     {
         HotLoops.ThreadingMarshal.Tick();
@@ -78,7 +78,7 @@ public sealed class DeckleThreadingSource : DeckleEventSource
     [Event(EvtMarshalCompleted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Threading,
-           Message = "marshal completed | operation={0} | caller={1} | wait_ms={2} | run_ms={3}")]
+           Message = "operation={0} | caller={1} | wait_ms={2} | run_ms={3}")]
     public void MarshalCompleted(string operation, string caller, int wait_ms, int run_ms)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Threading)) return;
@@ -95,7 +95,7 @@ public sealed class DeckleThreadingSource : DeckleEventSource
     [Event(EvtMarshalStalled,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Threading,
-           Message = "The UI thread ran a queued callback late | operation={0} | caller={1} | waited_ms={2} | threshold_ms={3}")]
+           Message = "The UI thread was blocked, so Deckle's windows stopped responding for a while\noperation={0} | caller={1} | waited_ms={2} | threshold_ms={3}")]
     public void MarshalStalled(string operation, string caller, int waited_ms, int threshold_ms)
     {
         if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Threading)) return;
@@ -107,7 +107,7 @@ public sealed class DeckleThreadingSource : DeckleEventSource
     [Event(EvtMarshalStallRepeated,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Threading,
-           Message = "marshal stall repeated | operation={0} | caller={1} | waited_ms={2} | stalls={3}")]
+           Message = "operation={0} | caller={1} | waited_ms={2} | stalls={3}")]
     public void MarshalStallRepeated(string operation, string caller, int waited_ms, int stalls)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Threading)) return;
@@ -121,7 +121,7 @@ public sealed class DeckleThreadingSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Threading,
            Tags = ObservationTags.Milestone,
-           Message = "The UI thread is responsive again | stalls={0} | worst_wait_ms={1} | duration_ms={2}")]
+           Message = "The UI thread is responsive again")]
     public void MarshalStallRecovered(int stalls, int worst_wait_ms, long duration_ms)
     {
         if (!IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Threading)) return;
@@ -138,7 +138,7 @@ public sealed class DeckleThreadingSource : DeckleEventSource
     [Event(EvtDispatcherEnqueueRejected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Threading,
-           Message = "A dispatcher enqueue was rejected")]
+           Message = "Work for the UI thread was refused because its queue has shut down, so it did not run")]
     public void DispatcherEnqueueRejected()
     {
         if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Threading)) return;
@@ -148,7 +148,7 @@ public sealed class DeckleThreadingSource : DeckleEventSource
     [Event(EvtDispatcherEnqueueRejectedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Threading,
-           Message = "dispatcher enqueue rejected | caller_source={0} | reason={1}")]
+           Message = "caller_source={0} | reason={1}")]
     public void DispatcherEnqueueRejectedDetail(string caller_source, string reason)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Threading)) return;

@@ -42,7 +42,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtSinkFaulted,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Log sink {0} failed: {1}: {2}")]
+           Message = "A log sink failed to write, so its rows are lost until it writes again\nsink={0} | error_type={1} | error_message={2}")]
     public void SinkFaulted(string sink, string error_type, string error_message)
     {
         if (IsEnabled()) WriteEvent(EvtSinkFaulted, sink, error_type, error_message);
@@ -52,7 +52,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Log sink {0} writes again after {1} failed writes")]
+           Message = "A log sink writes again")]
     public void SinkRecovered(string sink, int failed_writes)
     {
         if (IsEnabled()) WriteEvent(EvtSinkRecovered, sink, failed_writes);
@@ -63,7 +63,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtBootReplayOverflow,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Boot replay buffer dropped {0} events past its capacity of {1}")]
+           Message = "The boot replay buffer was full, so early events were dropped\ndropped={0} | capacity={1}")]
     public void BootReplayOverflow(int dropped, int capacity)
     {
         if (IsEnabled()) WriteEvent(EvtBootReplayOverflow, dropped, capacity);
@@ -72,7 +72,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtFlushFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Log sink {0} could not flush: {1}: {2}")]
+           Message = "A log sink could not flush, so its last rows may be missing from disk\nsink={0} | error_type={1} | error_message={2}")]
     public void FlushFailed(string sink, string error_type, string error_message)
     {
         if (IsEnabled()) WriteEvent(EvtFlushFailed, sink, error_type, error_message);
@@ -81,7 +81,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtFlushTimedOut,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Log sink {0} did not flush within {1} ms")]
+           Message = "A log sink did not flush in time, so its last rows may be missing from disk\nsink={0} | timeout_ms={1}")]
     public void FlushTimedOut(string sink, int timeout_ms)
     {
         if (IsEnabled()) WriteEvent(EvtFlushTimedOut, sink, timeout_ms);
@@ -90,7 +90,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtArchivesPruned,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Pruned {0} archived generations of {1}, keeping {2}")]
+           Message = "Old log archives were pruned")]
     public void ArchivesPruned(int pruned, string file_name, int kept)
     {
         if (IsEnabled()) WriteEvent(EvtArchivesPruned, pruned, file_name, kept);
@@ -106,7 +106,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtRotationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Log file {0} cannot be maintained at step {1}: {2}: {3}")]
+           Message = "A log file could not be rolled or pruned, so the log takes more disk than its cap\nfile_name={0} | step={1} | error_type={2} | error_message={3}")]
     public void RotationFailed(string file_name, string step, string error_type, string error_message)
     {
         if (IsEnabled()) WriteEvent(EvtRotationFailed, file_name, step, error_type, error_message);
@@ -117,7 +117,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Log file {0} rolls and prunes again after {1} failed attempts")]
+           Message = "A log file rolls and prunes again")]
     public void RotationRecovered(string file_name, int failed_attempts)
     {
         if (IsEnabled()) WriteEvent(EvtRotationRecovered, file_name, failed_attempts);
@@ -129,7 +129,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtRowUnrouted,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Log sink {0} skipped a row: its path resolver returned no path")]
+           Message = "A log sink had no file for a row and skipped it, so the dataset has a gap\nsink={0}")]
     public void RowUnrouted(string sink)
     {
         if (IsEnabled()) WriteEvent(EvtRowUnrouted, sink);
@@ -139,7 +139,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Log sink {0} routes rows again after skipping {1}")]
+           Message = "A log sink routes rows again")]
     public void RowsRoutedAgain(string sink, int skipped_rows)
     {
         if (IsEnabled()) WriteEvent(EvtRowsRoutedAgain, sink, skipped_rows);
@@ -153,7 +153,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtMessageTemplateBroken,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Event {1} of {0} has a message template that cannot be formatted: {2}")]
+           Message = "An event's message template cannot be formatted\nevent_name={1} | provider={0} | error_type={2}")]
     public void MessageTemplateBroken(string provider, string event_name, string error_type)
     {
         if (IsEnabled()) WriteEvent(EvtMessageTemplateBroken, provider, event_name, error_type);
@@ -163,7 +163,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The logging or telemetry settings need attention | {0}")]
+           Message = "The logging and telemetry settings store worked around a problem\ndetail={0}")]
     public void SettingsLoadWarning(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
@@ -172,7 +172,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtSettingsLoadError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The logging or telemetry settings could not be saved | {0}")]
+           Message = "The logging and telemetry settings could not be saved or applied\ndetail={0}")]
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);

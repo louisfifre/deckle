@@ -4,33 +4,13 @@ using Xunit;
 namespace Deckle.Playground.Tests;
 
 // Every template of this suite's providers follows the shape of its level, as
-// TemplateDoctrine states it. The list names the templates that do not yet, each
-// with its reason; an entry that outlives its breach fails the test too, so the
-// list only shrinks.
+// TemplateDoctrine states it. The list names the templates that cannot, each
+// with its reason; an entry that outlives its breach fails the test too.
 [Trait("Category", "observability")]
 public sealed class MessageTemplateDoctrineTests
 {
     private static readonly Dictionary<string, string> KnownBreaches = new(StringComparer.Ordinal)
     {
-        { "DecklePlaygroundSource.EntertainmentAreaUsedDetail", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.HueCallFailed", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.HueCallFailedDetail", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.LightZoneUpdatedDetail", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.MatchEntertainmentArea", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.MicrophonePreviewFellBack", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.NavigationFailed", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.NavigationFailedDetail", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.NavigationRejected", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.NavigationRejectedDetail", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.NavTiming", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.PageReady", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.PipelineModeChangedDetail", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.ResolveLights", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.ScreenCaptureStartFailed", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.ScreenCaptureStartFailedDetail", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.ScreenCaptureToggled", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.TuningChanged", TemplateDoctrine.PreDoctrine },
-        { "DecklePlaygroundSource.ZoneSuggested", TemplateDoctrine.PreDoctrine },
     };
 
     [Fact]

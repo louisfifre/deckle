@@ -75,7 +75,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtCaretSentenceRecovery,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "caret sentence recovery | outcome={0} | boundary={1} | text_len={2}")]
+           Message = "outcome={0} | boundary={1} | text_len={2}")]
     public void CaretSentenceRecovery(string outcome, string boundary, int text_len)
     {
         if (IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
@@ -111,7 +111,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Autocorrect failed to arm | reason={0}")]
+           Message = "Autocorrect could not start, so typing is not corrected\nreason={0}")]
     public void EngineStartFailed(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtEngineStartFailed, reason);
@@ -128,7 +128,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtLexiconLoadComplete,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "lexicon load complete | load_ms={0} | entries={1}")]
+           Message = "load_ms={0} | entries={1}")]
     public void LexiconLoadComplete(long load_ms, int entries)
     {
         if (IsEnabled()) WriteEvent(EvtLexiconLoadComplete, load_ms, entries);
@@ -141,7 +141,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtDomainPackMerged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "domain pack merged | pack={0} | forms={1}")]
+           Message = "pack={0} | forms={1}")]
     public void DomainPackMerged(string pack, int forms)
     {
         if (IsEnabled()) WriteEvent(EvtDomainPackMerged, pack, forms);
@@ -166,7 +166,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Autocorrect contextual stage | engine={0} | load_ms={1}")]
+           Message = "Autocorrect contextual stage")]
     public void RerankerStatus(string engine, long load_ms)
     {
         if (IsEnabled()) WriteEvent(EvtRerankerStatus, engine, load_ms);
@@ -180,7 +180,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Contextual correction model failed to load | engine={0} | provider={1} | {2}: {3}")]
+           Message = "The contextual correction model failed to load, so contextual correction is off\nengine={0} | provider={1} | ex_type={2} | ex_message={3}")]
     public void RerankerLoadFailure(string engine, string provider, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRerankerLoadFailure, engine, provider, ex_type, ex_message);
@@ -192,7 +192,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtSentenceJudgeLoaded,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "sentence judge loaded | model={0} | provider={1} | margin={2} | vocab_size={3} | retried={4}")]
+           Message = "model={0} | provider={1} | margin={2} | vocab_size={3} | retried={4}")]
     public void SentenceJudgeLoaded(string model, string provider, double margin, int vocab_size, bool retried)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -204,7 +204,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtSentenceJudgeFeatureUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Sentence judge runs without a calibrated prompt feature | feature={0} | {1}: {2}")]
+           Message = "The sentence judge runs without a calibrated prompt feature\nfeature={0} | ex_type={1} | ex_message={2}")]
     public void SentenceJudgeFeatureUnavailable(string feature, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtSentenceJudgeFeatureUnavailable, feature, ex_type, ex_message);
@@ -221,7 +221,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankerLoadRetried,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "reranker load retried | provider={0} | ex_type={1} | ex_message={2}")]
+           Message = "provider={0} | ex_type={1} | ex_message={2}")]
     public void RerankerLoadRetried(string provider, string ex_type, string ex_message)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -242,7 +242,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtPersonalDictionarySanitized,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "personal dictionary sanitized | removed={0}")]
+           Message = "removed={0}")]
     public void PersonalDictionarySanitized(int removed)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -255,7 +255,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtPersonalDictionaryReset,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Personal dictionary reset to a new schema | from_version={0} | to_version={1} | words={2} | suppressions={3}")]
+           Message = "The personal dictionary was reset for a new format, so learned words and suppressions are lost\nfrom_version={0} | to_version={1} | words={2} | suppressions={3}")]
     public void PersonalDictionaryReset(int from_version, int to_version, int words, int suppressions)
     {
         if (IsEnabled()) WriteEvent(EvtPersonalDictionaryReset, from_version, to_version, words, suppressions);
@@ -267,7 +267,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtSystemLanguagesFallback,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "System language list unavailable, using the UI culture | fallback={0} | {1}: {2}")]
+           Message = "The system language list is unavailable, so the UI language is used\nfallback={0} | ex_type={1} | ex_message={2}")]
     public void SystemLanguagesFallback(string fallback, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtSystemLanguagesFallback, fallback, ex_type, ex_message);
@@ -281,7 +281,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtLearningStoreUnreadable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Learning store unreadable, its feature stays inert | store={0} | reason={1} | {2}: {3}")]
+           Message = "A learning store is unreadable, so its feature stays inert\nstore={0} | reason={1} | ex_type={2} | ex_message={3}")]
     public void LearningStoreUnreadable(string store, string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtLearningStoreUnreadable, store, reason, ex_type, ex_message);
@@ -290,7 +290,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtLearningStoreLoaded,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "learning store loaded | store={0} | records_read={1} | records_skipped={2}")]
+           Message = "store={0} | records_read={1} | records_skipped={2}")]
     public void LearningStoreLoaded(string store, int records_read, int records_skipped)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -303,7 +303,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtDomainPackManifestUnreadable,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "domain pack manifest unreadable | pack={0} | {1}: {2}")]
+           Message = "pack={0} | ex_type={1} | ex_message={2}")]
     public void DomainPackManifestUnreadable(string pack, string ex_type, string ex_message)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -322,7 +322,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtSurfaceChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "surface | process={0} | editable={1} | password={2} | enrolled={3} | {4}")]
+           Message = "process={0} | editable={1} | password={2} | enrolled={3} | probe={4}")]
     public void SurfaceChanged(string process, bool editable, bool password, bool enrolled, string probe)
     {
         HotLoops.AutocorrectSurfaceChanged.Tick();
@@ -333,9 +333,9 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     // ── Corrections ──────────────────────────────────────────────────────
 
     [Event(EvtCorrectionApplied,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Corrected a word")]
+           Message = "A word was corrected")]
     public void CorrectionApplied()
     {
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
@@ -345,7 +345,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtCorrectionDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "correction | reason={0} | original_len={1} | replacement_len={2} | backspaces={3}")]
+           Message = "reason={0} | original_len={1} | replacement_len={2} | backspaces={3}")]
     public void CorrectionDetail(string reason, int original_len, int replacement_len, int backspaces)
     {
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
@@ -359,7 +359,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtInjectionFailing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Text injection is failing, corrections may not reach this app | win32_error={0}")]
+           Message = "Text injection is failing, corrections may not reach this app\nwin32_error={0}")]
     public void InjectionFailing(int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtInjectionFailing, win32_error);
@@ -378,7 +378,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtInjectionEpisodeDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "injection episode | outcome={0} | failures={1} | backspaces={2} | text_len={3}")]
+           Message = "outcome={0} | failures={1} | backspaces={2} | text_len={3}")]
     public void InjectionEpisodeDetail(
         string outcome, int failures, int backspaces, int text_len)
     {
@@ -401,7 +401,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankSlotPending,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "rerank slot pending | candidates={0} | word_len={1}")]
+           Message = "candidates={0} | word_len={1}")]
     public void RerankSlotPending(int candidates, int word_len)
     {
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
@@ -415,7 +415,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankSubmitted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "rerank submitted | slot={0} (-1=whole_sentence) | context_words={1}")]
+           Message = "slot={0} | context_words={1}")]
     public void RerankSubmitted(int slot, int context_words)
     {
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
@@ -432,7 +432,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankVerdict,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "rerank verdict | outcome={0} | reason={1}")]
+           Message = "outcome={0} | reason={1}")]
     public void RerankVerdict(string outcome, string reason)
     {
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
@@ -446,7 +446,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtSentenceStageAbandoned,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "sentence stage abandoned | reason={0} | pending_slots={1} | in_flight={2}")]
+           Message = "reason={0} | pending_slots={1} | in_flight={2}")]
     public void SentenceStageAbandoned(string reason, int pending_slots, bool in_flight)
     {
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
@@ -465,7 +465,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankStalled,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Contextual correction stalled, later sentences wait | age_ms={0} | reason={1}")]
+           Message = "Contextual correction stalled, later sentences wait\nage_ms={0} | reason={1}")]
     public void RerankStalled(long age_ms, string reason)
     {
         if (IsEnabled()) WriteEvent(EvtRerankStalled, age_ms, reason);
@@ -480,7 +480,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "Contextual correction resumed after a stall | elapsed_ms={0}")]
+           Message = "Contextual correction resumed after a stall")]
     public void RerankStallRecovered(long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtRerankStallRecovered, elapsed_ms);
@@ -491,7 +491,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankFailing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Contextual correction is failing | source={0} | {1}: {2} | hr={3} | consecutive={4}")]
+           Message = "Contextual correction keeps failing, so sentences are not corrected in context\nsource={0} | ex_type={1} | ex_message={2} | hr={3} | consecutive={4}")]
     public void RerankFailing(string source, string ex_type, string ex_message, int hr, int consecutive)
     {
         if (IsEnabled()) WriteEvent(EvtRerankFailing, source, ex_type, ex_message, hr, consecutive);
@@ -501,7 +501,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "Contextual correction recovered | failures={0}")]
+           Message = "Contextual correction recovered")]
     public void RerankRecovered(int failures)
     {
         if (IsEnabled()) WriteEvent(EvtRerankRecovered, failures);
@@ -512,7 +512,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankFailureDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "rerank failure | source={0} | ex_type={1} | ex_message={2} | hr={3} | consecutive={4}")]
+           Message = "source={0} | ex_type={1} | ex_message={2} | hr={3} | consecutive={4}")]
     public void RerankFailureDetail(string source, string ex_type, string ex_message, int hr, int consecutive)
     {
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
@@ -531,7 +531,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankLaneStarted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "rerank lane started | whole_sentence={0} | caret_verification={1}")]
+           Message = "whole_sentence={0} | caret_verification={1}")]
     public void RerankLaneStarted(bool whole_sentence, bool caret_verification)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -545,7 +545,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankLaneStopped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "rerank lane stopped | outcome={0} | duration_ms={1} | dropped_requests={2}")]
+           Message = "outcome={0} | duration_ms={1} | dropped_requests={2}")]
     public void RerankLaneStopped(string outcome, long duration_ms, int dropped_requests)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -557,7 +557,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankWorkerFaulted,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Contextual correction worker stopped on an error | {0}: {1} | hr={2}")]
+           Message = "The contextual correction worker stopped on an error, so contextual correction is off until Deckle restarts\nex_type={0} | ex_message={1} | hr={2}")]
     public void RerankWorkerFaulted(string ex_type, string ex_message, int hr)
     {
         if (IsEnabled()) WriteEvent(EvtRerankWorkerFaulted, ex_type, ex_message, hr);
@@ -568,7 +568,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtCaretRecoveryFailing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Caret sentence recovery is failing | {0}: {1}")]
+           Message = "Reading the text at the caret keeps failing, so autocorrect cannot recover the current sentence\nex_type={0} | ex_message={1}")]
     public void CaretRecoveryFailing(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtCaretRecoveryFailing, ex_type, ex_message);
@@ -578,7 +578,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "Caret sentence recovery recovered | failures={0}")]
+           Message = "Caret sentence recovery recovered")]
     public void CaretRecoveryRecovered(int failures)
     {
         if (IsEnabled()) WriteEvent(EvtCaretRecoveryRecovered, failures);
@@ -587,7 +587,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtExternalMutationBurst,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "external mutation | outcome={0} | backspaces={1} | text_units={2}")]
+           Message = "outcome={0} | backspaces={1} | text_units={2}")]
     public void ExternalMutationBurst(string outcome, int backspaces, int text_units)
     {
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
@@ -616,7 +616,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Level = EventLevel.Verbose,
            Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "decision | {1} → {3} | {4}/{5}")]
+           Message = "word={1} | outcome={3} | stage={4} | reason={5}")]
     public void AutocorrectDecisionRecorded(
         long   id,
         string word,
@@ -637,7 +637,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Level = EventLevel.Verbose,
            Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "rerank | {1} → {3} | {2} | {5}")]
+           Message = "word={1} | chosen={3} | outcome={2} | margin={5}")]
     public void AutocorrectRerankRecorded(
         long   id,
         string word,
@@ -662,7 +662,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Level = EventLevel.Verbose,
            Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "text | {0} | {1} | {4}")]
+           Message = "process={0} | typed={1} | closure={4}")]
     public void AutocorrectTextRecorded(
         string process, string typed, string final, string history, string closure, string timing)
     {
@@ -683,7 +683,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Level = EventLevel.Verbose,
            Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "stream | {0} | {1} | erased={2} | {3}")]
+           Message = "process={0} | text={1} | erased={2} | closure={3}")]
     public void AutocorrectStreamRecorded(
         string process, string text, int erased, string closure, string timing)
     {
@@ -696,7 +696,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtLearningSignal,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "learning | signal={0}")]
+           Message = "signal={0}")]
     public void LearningSignal(string signal)
     {
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
@@ -708,7 +708,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtActivityRollup,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "autocorrect activity | commits={0} | corrections={1} | re_edited={2} | learning_signals={3} | gated_surfaces={4}")]
+           Message = "commits={0} | corrections={1} | re_edited={2} | learning_signals={3} | gated_surfaces={4}")]
     public void ActivityRollup(int commits, int corrections, int re_edited, int learning_signals, int gated_surfaces)
     {
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
@@ -720,7 +720,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtEnrollmentSuggested,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "enrollment suggested | process={0}")]
+           Message = "enrollment suggested")]
     // Once per process name per session: a milestone, not activity detail, so
     // it stays out of the activity admission gate.
     public void EnrollmentSuggested(string process)
@@ -732,7 +732,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The autocorrect settings need attention | {0}")]
+           Message = "The autocorrect settings store worked around a problem\ndetail={0}")]
     public void SettingsLoadWarning(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
@@ -741,7 +741,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtSettingsLoadError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The autocorrect settings could not be saved | {0}")]
+           Message = "The autocorrect settings could not be saved or applied\ndetail={0}")]
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);

@@ -43,9 +43,12 @@ public static class LogTransferText
         ArgumentNullException.ThrowIfNull(entries);
         ArgumentNullException.ThrowIfNull(getCompleteText);
 
+        // A two-line row carries "\n" inside its text while AppendLine ends
+        // each row with the platform newline; one ending for the whole block
+        // keeps a saved file from mixing the two.
         var text = new StringBuilder();
         foreach (T entry in entries)
-            text.AppendLine(getCompleteText(entry));
+            text.AppendLine(getCompleteText(entry).ReplaceLineEndings());
         return text.ToString();
     }
 }

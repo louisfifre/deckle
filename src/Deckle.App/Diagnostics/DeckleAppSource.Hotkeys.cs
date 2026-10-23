@@ -17,7 +17,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtHotkeyStartDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "dictation started | hotkey={0}")]
+           Message = "hotkey={0}")]
     public void HotkeyStartDetail(string hotkey_label)
     {
         if (!OperationalLogAdmission.IsDetailEnabled(
@@ -41,7 +41,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtHotkeyRegistrationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Cannot register the hotkey | action={0} | chord={1} | reason={2} | win32_error={3}")]
+           Message = "A hotkey could not be registered, so its shortcut does nothing\naction={0} | chord={1} | reason={2} | win32_error={3}")]
     public void HotkeyRegistrationFailed(string action, string chord, string reason, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyRegistrationFailed, action, chord, reason, win32_error);
@@ -52,7 +52,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtHotkeyPressIgnored,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Dictation hotkey ignored | reason={0}")]
+           Message = "Dictation hotkey ignored")]
     public void HotkeyPressIgnored(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyPressIgnored, reason);
@@ -63,7 +63,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtHotkeyRegistrationFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "hotkey registration failed | action={0} | id={1} | modifiers=0x{2:X} | scancode=0x{3:X} | win32_error={4}")]
+           Message = "action={0} | id={1} | modifiers=0x{2:X} | scancode=0x{3:X} | win32_error={4}")]
     public void HotkeyRegistrationFailedDetail(string action, int id, uint modifiers, uint scancode, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyRegistrationFailedDetail, action, id, modifiers, scancode, win32_error);
@@ -81,7 +81,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtHotkeyToggleDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "hotkey toggle | toggle={0}")]
+           Message = "toggle={0}")]
     public void HotkeyToggleDetail(string toggle)
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyToggleDetail, toggle);

@@ -10,7 +10,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtSettingsModuleRegistered,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "settings module registered | id={0} | tag={1}")]
+           Message = "id={0} | tag={1}")]
     public void SettingsModuleRegistered(string id, string tag)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsModuleRegistered, id, tag);
@@ -19,7 +19,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtSettingsModuleUnregistered,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "settings module unregistered | id={0}")]
+           Message = "id={0}")]
     public void SettingsModuleUnregistered(string id)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsModuleUnregistered, id);
@@ -28,7 +28,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtSettingsModuleParentMissing,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "settings module skipped | reason=parent-not-registered | id={0} | parent={1}")]
+           Message = "id={0} | parent_id={1}")]
     public void SettingsModuleParentMissing(string id, string parent_id)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsModuleParentMissing, id, parent_id);
@@ -39,7 +39,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtSearchEntrySkipped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "search entry skipped | reason=header-unresolved | page={0} | key={1}")]
+           Message = "page_tag={0} | label_key={1}")]
     public void SearchEntrySkipped(string page_tag, string label_key)
     {
         if (IsEnabled()) WriteEvent(EvtSearchEntrySkipped, page_tag, label_key);
@@ -50,7 +50,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtSearchExecuted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "search executed | query_len={0} | hits={1}")]
+           Message = "query_len={0} | hits={1}")]
     public void SearchExecuted(int query_len, int hits)
     {
         if (IsEnabled()) WriteEvent(EvtSearchExecuted, query_len, hits);
@@ -68,7 +68,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtSearchNavigatedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "search navigation | page={0} | card={1}")]
+           Message = "page={0} | card={1}")]
     public void SearchNavigatedDetail(string page_tag, string card_tag)
     {
         if (IsEnabled()) WriteEvent(EvtSearchNavigatedDetail, page_tag, card_tag);
@@ -79,7 +79,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtTitleBarLayout,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "titlebar layout | bar={0} | zone={1} | box={2} | logs_x={3} | logs_w={4} | inset_r={5} | mode={6}")]
+           Message = "bar={0} | zone={1} | box={2} | logs_x={3} | logs_w={4} | inset_r={5} | mode={6}")]
     public void TitleBarLayout(int bar_w, int zone_w, int box_w, int logs_x, int logs_w, int inset_r, string mode)
     {
         if (IsEnabled()) WriteEvent(EvtTitleBarLayout, bar_w, zone_w, box_w, logs_x, logs_w, inset_r, mode);
@@ -88,7 +88,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtSearchPresentationChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "search presentation | from={0} | to={1} | zone={2}")]
+           Message = "from={0} | to={1} | zone={2}")]
     public void SearchPresentationChanged(string from, string to, int zone_w)
     {
         if (IsEnabled()) WriteEvent(EvtSearchPresentationChanged, from, to, zone_w);
@@ -97,7 +97,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtSearchFocusReleased,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "search focus released | via={0}")]
+           Message = "via={0}")]
     public void SearchFocusReleased(string via)
     {
         if (IsEnabled()) WriteEvent(EvtSearchFocusReleased, via);

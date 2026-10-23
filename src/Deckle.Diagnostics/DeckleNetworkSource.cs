@@ -50,7 +50,7 @@ public sealed class DeckleNetworkSource : DeckleEventSource
     [Event(EvtNetworkStatusChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Network,
-           Message = "network status changed | connected={0} | medium={1} | ipv4={2} | ipv6={3}")]
+           Message = "connected={0} | medium={1} | ipv4={2} | ipv6={3}")]
     public void NetworkStatusChanged(bool connected, string medium, int ipv4_count, int ipv6_count)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Network)) return;
@@ -66,7 +66,7 @@ public sealed class DeckleNetworkSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Network | Keywords.Lifecycle),
            Tags = ObservationTags.Milestone,
-           Message = "Network connectivity changed | previous_state={0} | state={1} | reason={2}")]
+           Message = "Network connectivity changed")]
     public void NetworkConnectivityChanged(string previous_state, string state, string reason)
     {
         if (!IsEnabled(EventLevel.Informational, (EventKeywords)(Keywords.Network | Keywords.Lifecycle))) return;
@@ -82,7 +82,7 @@ public sealed class DeckleNetworkSource : DeckleEventSource
     [Event(EvtNetworkQueryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Network,
-           Message = "network query failed | stage={0} | ex_type={1} | hr=0x{2:X8} | ex_message={3}")]
+           Message = "A network query failed, so the connection state stays at its last known value\nstage={0} | ex_type={1} | hr=0x{2:X8} | ex_message={3}")]
     public void NetworkQueryFailed(string stage, string ex_type, int hr, string ex_message)
     {
         if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Network)) return;
@@ -94,7 +94,7 @@ public sealed class DeckleNetworkSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Network,
            Tags = ObservationTags.Milestone,
-           Message = "network query recovered | stage={0}")]
+           Message = "network query recovered")]
     public void NetworkQueryRecovered(string stage)
     {
         if (!IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Network)) return;

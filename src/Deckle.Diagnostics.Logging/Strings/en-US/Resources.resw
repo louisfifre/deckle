@@ -114,14 +114,16 @@
   <data name="DiagnosticsPageTelemetrySection.Caption" xml:space="preserve">
     <value>What Deckle records on this device for tuning and bug reports; nothing is sent anywhere.</value>
   </data>
+  <!-- The person reads "trace" for diagnostics\trace.jsonl (GLOSSARY.md); the
+       keys keep their ApplicationLog and AppLog names. -->
   <data name="DiagnosticsPageApplicationLogSection.Title" xml:space="preserve">
-    <value>Application log</value>
+    <value>Trace</value>
   </data>
   <data name="GeneralAppLogCard.Header" xml:space="preserve">
-    <value>Application log</value>
+    <value>Keep a trace on disk</value>
   </data>
   <data name="GeneralAppLogCard.Description" xml:space="preserve">
-    <value>Every log line goes to diagnostics\trace.jsonl, rotated every 8,000 lines into diagnostics\archive.</value>
+    <value>Every log line goes to diagnostics\trace.jsonl. Every 8,000 lines, the file moves to diagnostics\archive, which keeps the last 10.</value>
   </data>
   <data name="TelemetryMouseWheelCard.Header" xml:space="preserve">
     <value>Record wheel events</value>
@@ -154,7 +156,7 @@
     <value>Diagnostics folder</value>
   </data>
   <data name="DiagnosticsFilesCard.Description" xml:space="preserve">
-    <value>The setup log, the error log and the application log. Open it when you report a problem.</value>
+    <value>The setup log, the error log and the trace. Open it when you report a problem.</value>
   </data>
 
   <!-- Shared log filter bar. The live Log Window and the trace.jsonl settings

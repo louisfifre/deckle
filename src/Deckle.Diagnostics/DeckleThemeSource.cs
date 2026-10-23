@@ -57,7 +57,7 @@ public sealed class DeckleThemeSource : DeckleEventSource
     [Event(EvtThemeChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Theme,
-           Message = "theme changed | surface={0} | from={1} | to={2} | source={3}")]
+           Message = "surface={0} | from={1} | to={2} | source={3}")]
     public void ThemeChanged(string surface, string from, string to, string source)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Theme)) return;

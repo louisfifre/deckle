@@ -13,7 +13,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Ambient master toggle forced OFF at boot | reason={0}")]
+           Message = "Ambient master toggle forced OFF at boot")]
     public void AmbientMasterForcedOff(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtAmbientMasterForcedOff, reason);
@@ -25,7 +25,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtAmbientStartFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Ambient lighting failed to start and was switched off | {0}: {1}")]
+           Message = "Ambient lighting failed to start and was switched off\nex_type={0} | ex_message={1}")]
     public void AmbientStartFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAmbientStartFailed, ex_type, ex_message);

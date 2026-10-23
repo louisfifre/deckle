@@ -52,7 +52,7 @@ public sealed partial class DiagnosticsPage : Page
         _loggingComposer.Compose(ViewModel.LoggingSettings);
     }
 
-    // ── Composed Application log section ──────────────────────────────────────
+    // ── Composed Trace section ────────────────────────────────────────────────
     private SettingsComposer? _applicationLogComposer;
 
     private void ComposeApplicationLogSection()

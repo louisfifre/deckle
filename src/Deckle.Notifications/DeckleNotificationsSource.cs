@@ -54,7 +54,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtDispatcherInitializedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "dispatcher init | channels={0} | channel_count={1}")]
+           Message = "channels={0} | channel_count={1}")]
     public void DispatcherInitializedDetail(string channels, int channel_count)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
@@ -65,7 +65,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtCatalogRegistered,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "catalog registered | notification_ids={0} | descriptor_count={1}")]
+           Message = "notification_ids={0} | descriptor_count={1}")]
     public void CatalogRegistered(string notification_ids, int descriptor_count)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
@@ -81,7 +81,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
            Tags = ObservationTags.Milestone,
-           Message = "Showing a notification | notification_id={0}")]
+           Message = "Showing a notification")]
     public void NotificationShown(string notification_id)
     {
         if (IsEnabled()) WriteEvent(EvtNotificationShown, notification_id);
@@ -90,7 +90,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtNotificationShownDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "notification shown | notification_id={0} | channel={1} | severity={2}")]
+           Message = "notification_id={0} | channel={1} | severity={2}")]
     public void NotificationShownDetail(string notification_id, string channel, string severity)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
@@ -102,7 +102,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
            Tags = ObservationTags.Milestone,
-           Message = "A notification was answered | notification_id={0}")]
+           Message = "A notification was answered")]
     public void NotificationResponded(string notification_id)
     {
         if (IsEnabled()) WriteEvent(EvtNotificationResponded, notification_id);
@@ -111,7 +111,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtNotificationRespondedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "notification responded | notification_id={0} | action_id={1} | has_text_input={2}")]
+           Message = "notification_id={0} | action_id={1} | has_text_input={2}")]
     public void NotificationRespondedDetail(string notification_id, string action_id, int has_text_input)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
@@ -127,7 +127,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtNotificationDropped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A notification was dropped because no channel could show it | notification_id={0} | reason={1}")]
+           Message = "A notification was dropped because no channel could show it\nnotification_id={0} | reason={1}")]
     public void NotificationDropped(string notification_id, string reason)
     {
         if (IsEnabled()) WriteEvent(EvtNotificationDropped, notification_id, reason);
@@ -137,7 +137,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtPromptCancelled,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "prompt cancelled | notification_id={0}")]
+           Message = "notification_id={0}")]
     public void PromptCancelled(string notification_id)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
@@ -149,7 +149,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
            Tags = ObservationTags.Milestone,
-           Message = "A notification prompt was cancelled | notification_id={0}")]
+           Message = "A notification prompt was cancelled")]
     public void NotificationCancelled(string notification_id)
     {
         if (IsEnabled()) WriteEvent(EvtNotificationCancelled, notification_id);
@@ -160,7 +160,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
            Tags = ObservationTags.Milestone,
-           Message = "A notification went unanswered | notification_id={0}")]
+           Message = "A notification went unanswered")]
     public void NotificationUnanswered(string notification_id)
     {
         if (IsEnabled()) WriteEvent(EvtNotificationUnanswered, notification_id);
@@ -169,7 +169,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtNotificationUnansweredDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "notification unanswered | notification_id={0} | channel={1}")]
+           Message = "notification_id={0} | channel={1}")]
     public void NotificationUnansweredDetail(string notification_id, string channel)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
@@ -182,7 +182,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtNotificationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A notification channel failed to deliver | notification_id={0} | ex_type={1} | ex_message={2}")]
+           Message = "A notification channel failed to deliver, so the notification may not have shown\nnotification_id={0} | ex_type={1} | ex_message={2}")]
     public void NotificationFailed(string notification_id, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtNotificationFailed, notification_id, ex_type, ex_message);
@@ -192,7 +192,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtToastsUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Toast notifications are unavailable in an elevated process")]
+           Message = "Deckle runs as administrator, so its notifications cannot show as toasts")]
     public void ToastsUnavailable()
     {
         if (IsEnabled()) WriteEvent(EvtToastsUnavailable);
@@ -202,7 +202,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtToastRegistrationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Toast notification registration failed | ex_type={0} | ex_message={1}")]
+           Message = "Toast notifications could not be registered with Windows, so toasts may not show\nex_type={0} | ex_message={1}")]
     public void ToastRegistrationFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtToastRegistrationFailed, ex_type, ex_message);
@@ -215,7 +215,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtToastWithdrawFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A toast could not be withdrawn and stays on screen | ex_type={0} | ex_message={1}")]
+           Message = "A toast could not be withdrawn and stays on screen\nex_type={0} | ex_message={1}")]
     public void ToastWithdrawFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtToastWithdrawFailed, ex_type, ex_message);

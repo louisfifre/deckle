@@ -13,7 +13,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtInputConsumerUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "An input module could not start | consumer={0} | reason={1}")]
+           Message = "An input feature that is switched on could not start, so it does not work\nconsumer={0} | reason={1}")]
     public void InputConsumerUnavailable(string consumer, string reason)
     {
         if (IsEnabled()) WriteEvent(EvtInputConsumerUnavailable, consumer, reason);

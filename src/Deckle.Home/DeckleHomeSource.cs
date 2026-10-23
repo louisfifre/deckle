@@ -27,7 +27,7 @@ public sealed class DeckleHomeSource : DeckleEventSource
     [Event(EvtGestureCompleted,
            Level = EventLevel.Verbose,
            Keywords = Gesture,
-           Message = "home gesture complete | gesture={0} | ms={1:F1}")]
+           Message = "gesture={0} | ms={1:F1}")]
     public void GestureCompleted(string gesture, double duration_ms)
     {
         if (IsEnabled()) WriteEvent(EvtGestureCompleted, gesture, duration_ms);
@@ -44,7 +44,7 @@ public sealed class DeckleHomeSource : DeckleEventSource
     [Event(EvtSchemaUnavailable,
            Level = EventLevel.Warning,
            Keywords = Gesture,
-           Message = "The Home schema is not ready | work_id={0} | reason={1} | ex_type={2} | status={3}")]
+           Message = "The Home schema could not be read, so Home actions wait until it can\nwork_id={0} | reason={1} | ex_type={2} | status={3}")]
     public void SchemaUnavailable(string work_id, string reason, string ex_type, int status_code)
     {
         if (IsEnabled()) WriteEvent(EvtSchemaUnavailable, work_id, reason, ex_type, status_code);
@@ -53,7 +53,7 @@ public sealed class DeckleHomeSource : DeckleEventSource
     [Event(EvtSchemaAttemptFailed,
            Level = EventLevel.Verbose,
            Keywords = Gesture,
-           Message = "home schema read failed | work_id={0} | reason={1} | ex_type={2} | status={3} | failures={4}")]
+           Message = "work_id={0} | reason={1} | ex_type={2} | status={3} | failures={4}")]
     public void SchemaAttemptFailed(string work_id, string reason, string ex_type, int status_code, int failures)
     {
         if (IsEnabled()) WriteEvent(EvtSchemaAttemptFailed, work_id, reason, ex_type, status_code, failures);
@@ -64,7 +64,7 @@ public sealed class DeckleHomeSource : DeckleEventSource
     [Event(EvtSchemaRejectedDetail,
            Level = EventLevel.Verbose,
            Keywords = Gesture,
-           Message = "home schema rejected | reason={0} | failed_checks={1}")]
+           Message = "reason={0} | failed_checks={1}")]
     public void SchemaRejectedDetail(string reason, int failed_checks)
     {
         if (IsEnabled()) WriteEvent(EvtSchemaRejectedDetail, reason, failed_checks);
@@ -75,7 +75,7 @@ public sealed class DeckleHomeSource : DeckleEventSource
     [Event(EvtGesturePartiallyApplied,
            Level = EventLevel.Warning,
            Keywords = Gesture,
-           Message = "A Home batch was only partly applied | gesture={0} | applied={1} | not_attempted={2} | ex_type={3}")]
+           Message = "A Home batch was only partly applied, so some of its changes are missing\ngesture={0} | applied={1} | not_attempted={2} | ex_type={3}")]
     public void GesturePartiallyApplied(string gesture, int applied, int not_attempted, string ex_type)
     {
         if (IsEnabled()) WriteEvent(EvtGesturePartiallyApplied, gesture, applied, not_attempted, ex_type);
@@ -88,7 +88,7 @@ public sealed class DeckleHomeSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = Gesture,
            Tags = ObservationTags.Milestone,
-           Message = "A Home object was not moved to the bin | reason={0} | type_key={1}")]
+           Message = "A Home object was not moved to the bin")]
     public void DeleteRefused(string reason, string type_key)
     {
         if (IsEnabled()) WriteEvent(EvtDeleteRefused, reason, type_key);
@@ -100,7 +100,7 @@ public sealed class DeckleHomeSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = Gesture,
            Tags = ObservationTags.Milestone,
-           Message = "A Home object was moved to the bin | type_key={0}")]
+           Message = "A Home object was moved to the bin")]
     public void ObjectBinned(string type_key)
     {
         if (IsEnabled()) WriteEvent(EvtObjectBinned, type_key);
@@ -113,7 +113,7 @@ public sealed class DeckleHomeSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = Gesture,
            Tags = ObservationTags.Milestone,
-           Message = "The Home schema is ready | work_id={0} | after_failures={1} | elapsed_ms={2:F0}")]
+           Message = "The Home schema is ready")]
     public void SchemaReady(string work_id, int after_failures, double elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtSchemaReady, work_id, after_failures, elapsed_ms);

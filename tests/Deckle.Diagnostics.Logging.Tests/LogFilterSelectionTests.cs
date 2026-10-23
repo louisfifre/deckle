@@ -17,6 +17,22 @@ public sealed class LogFilterSelectionTests
     }
 
     [Fact]
+    public void LogWindowOpensWithEverySeverityButVerboseChecked()
+    {
+        LogFilterSelection selection = LogWindowFilterSession.CreateInitialSelection();
+
+        Assert.Equal(
+            [EventLevel.Informational, EventLevel.Warning, EventLevel.Error, EventLevel.Critical],
+            LogFilterSelection.SeverityOrder.Where(level => selection.Contains(Severity(level))));
+        Assert.Empty(selection.Modules);
+        Assert.Empty(selection.Categories);
+        Assert.False(selection.Matches(Entry(
+            "Deckle-Vision", EventLevel.Verbose, Keywords.Capture)));
+        Assert.True(selection.Matches(Entry(
+            "Deckle-Vision", EventLevel.LogAlways, Keywords.Capture)));
+    }
+
+    [Fact]
     public void ValuesInsideOneDimensionAreOrCombined()
     {
         var selection = new LogFilterSelection();

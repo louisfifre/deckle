@@ -49,7 +49,7 @@ public sealed class DeckleShellForegroundSource : DeckleEventSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Watcher failed to start, fullscreen detection is off | reason={0} | win32_error={1}")]
+           Message = "The foreground watcher failed to start, so fullscreen detection is off\nreason={0} | win32_error={1}")]
     public void WatcherStartFailed(string reason, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtWatcherStartFailed, reason, win32_error);
@@ -74,7 +74,7 @@ public sealed class DeckleShellForegroundSource : DeckleEventSource
     [Event(EvtHookFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A foreground hook failed — fullscreen detection is degraded | hook={0} | win32_error={1}")]
+           Message = "A foreground hook failed — fullscreen detection is degraded\nhook={0} | win32_error={1}")]
     public void HookFailed(string hook, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtHookFailed, hook, win32_error);
@@ -83,7 +83,7 @@ public sealed class DeckleShellForegroundSource : DeckleEventSource
     [Event(EvtHookFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "hook failed | hook={0} | process_id={1} | win32_error={2}")]
+           Message = "hook={0} | process_id={1} | win32_error={2}")]
     public void HookFailedDetail(string hook, long process_id, int win32_error)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -94,7 +94,7 @@ public sealed class DeckleShellForegroundSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Foreground hook armed again, fullscreen detection is back | hook={0}")]
+           Message = "Foreground hook armed again, fullscreen detection is back")]
     public void HookRecovered(string hook)
     {
         if (IsEnabled()) WriteEvent(EvtHookRecovered, hook);
@@ -105,7 +105,7 @@ public sealed class DeckleShellForegroundSource : DeckleEventSource
     [Event(EvtForegroundChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "foreground | process_name={0} | fullscreen={1} | reason={2}")]
+           Message = "process_name={0} | fullscreen={1} | reason={2}")]
     public void ForegroundChanged(string process_name, string fullscreen, string reason)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;

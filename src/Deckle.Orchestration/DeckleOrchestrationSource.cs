@@ -97,7 +97,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The apps and games settings need attention | {0}")]
+           Message = "The apps and games settings store worked around a problem\ndetail={0}")]
     public void SettingsLoadWarning(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
@@ -106,7 +106,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtSettingsLoadError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The apps and games settings could not be saved | {0}")]
+           Message = "The apps and games settings could not be saved or applied\ndetail={0}")]
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
@@ -124,7 +124,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtEntryAddedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "registry entry added | entry_id={0} | display_name={1} | source={2} | process_name={3}")]
+           Message = "entry_id={0} | display_name={1} | source={2} | process_name={3}")]
     public void EntryAddedDetail(string entry_id, string display_name, string source, string process_name)
     {
         if (IsEnabled()) WriteEvent(EvtEntryAddedDetail, entry_id, display_name, source, process_name);
@@ -142,7 +142,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtEntryRemovedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "registry entry removed | entry_id={0}")]
+           Message = "entry_id={0}")]
     public void EntryRemovedDetail(string entry_id)
     {
         if (IsEnabled()) WriteEvent(EvtEntryRemovedDetail, entry_id);
@@ -153,7 +153,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtPageActionFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "An action on the apps and games page failed | action={0} | ex_type={1} | ex_message={2}")]
+           Message = "An action on the apps and games page failed and did nothing\naction={0} | ex_type={1} | ex_message={2}")]
     public void PageActionFailed(string action, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPageActionFailed, action, ex_type, ex_message);
@@ -162,9 +162,9 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     // Neither the SteamPath registry value nor the default install folder led
     // to Steam; the scan goes on with the chosen folders only.
     [Event(EvtSteamNotFound,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "steam not found | checked=registry_steam_path,program_files_x86")]
+           Message = "Steam is not installed, so its games are not scanned")]
     public void SteamNotFound()
     {
         if (IsEnabled()) WriteEvent(EvtSteamNotFound);
@@ -175,7 +175,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtSteamPathUnreadable,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "steam path unreadable | source={0} | ex_type={1} | ex_message={2}")]
+           Message = "source={0} | ex_type={1} | ex_message={2}")]
     public void SteamPathUnreadable(string source, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtSteamPathUnreadable, source, ex_type, ex_message);
@@ -184,7 +184,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtScanStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Scanning Steam and the chosen folders | scan_folders={0}")]
+           Message = "Scanning Steam and the chosen folders")]
     public void ScanStarted(int scan_folders)
     {
         if (IsEnabled()) WriteEvent(EvtScanStarted, scan_folders);
@@ -202,7 +202,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtScanCompletedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "scan completed | steam_found={0} | folder_found={1} | added={2}")]
+           Message = "steam_found={0} | folder_found={1} | added={2}")]
     public void ScanCompletedDetail(int steam_found, int folder_found, int added)
     {
         if (IsEnabled()) WriteEvent(EvtScanCompletedDetail, steam_found, folder_found, added);
@@ -214,7 +214,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtScanFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "scan failed | ex_type={0} | ex_message={1}")]
+           Message = "ex_type={0} | ex_message={1}")]
     public void ScanFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtScanFailed, ex_type, ex_message);
@@ -225,7 +225,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtSteamLibraryScanned,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "steam library scanned | library={0} | manifests={1} | skipped={2}")]
+           Message = "library={0} | manifests={1} | skipped={2}")]
     public void SteamLibraryScanned(string library, int manifests, int skipped)
     {
         if (IsEnabled()) WriteEvent(EvtSteamLibraryScanned, library, manifests, skipped);
@@ -237,7 +237,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtScanFolderMissing,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "scan folder missing | folder={0}")]
+           Message = "folder={0}")]
     public void ScanFolderMissing(string folder)
     {
         if (IsEnabled()) WriteEvent(EvtScanFolderMissing, folder);
@@ -248,7 +248,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtScanPathSkipped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "scan path skipped | path={0} | ex_type={1} | ex_message={2}")]
+           Message = "path={0} | ex_type={1} | ex_message={2}")]
     public void ScanPathSkipped(string path, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtScanPathSkipped, path, ex_type, ex_message);
@@ -283,7 +283,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtProcessTraceLost,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Process start events stopped — apps are noticed only when they come to the foreground | status={0}")]
+           Message = "Process start events stopped — apps are noticed only when they come to the foreground\nstatus={0}")]
     public void ProcessTraceLost(string status)
     {
         if (IsEnabled()) WriteEvent(EvtProcessTraceLost, status);
@@ -295,7 +295,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtProcessTraceUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Process start events are unavailable until Deckle restarts — apps are noticed only when they come to the foreground | elevated={0} | ex_type={1} | ex_message={2} | hr={3}")]
+           Message = "Process start events are unavailable until Deckle restarts — apps are noticed only when they come to the foreground\nelevated={0} | ex_type={1} | ex_message={2} | hr={3}")]
     public void ProcessTraceUnavailable(bool elevated, string ex_type, string ex_message, int hr)
     {
         if (IsEnabled()) WriteEvent(EvtProcessTraceUnavailable, elevated, ex_type, ex_message, hr);
@@ -304,7 +304,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtProcessTraceUnavailableDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "process trace unavailable | ex_type={0} | ex_message={1} | hr={2}")]
+           Message = "ex_type={0} | ex_message={1} | hr={2}")]
     public void ProcessTraceUnavailableDetail(string ex_type, string ex_message, int hr)
     {
         if (IsEnabled()) WriteEvent(EvtProcessTraceUnavailableDetail, ex_type, ex_message, hr);
@@ -314,7 +314,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtProcessTraceStopFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "process trace stop failed | ex_type={0} | ex_message={1}")]
+           Message = "ex_type={0} | ex_message={1}")]
     public void ProcessTraceStopFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtProcessTraceStopFailed, ex_type, ex_message);
@@ -325,7 +325,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtExitWatchUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "An app cannot be watched for exit — its rules will stay applied until Deckle restarts | pid={0} | win32_error={1}")]
+           Message = "An app cannot be watched for exit — its rules will stay applied until Deckle restarts\npid={0} | win32_error={1}")]
     public void ExitWatchUnavailable(int pid, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtExitWatchUnavailable, pid, win32_error);
@@ -334,7 +334,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtExitWatchUnavailableDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "exit watch unavailable | pid={0} | win32_error={1}")]
+           Message = "pid={0} | win32_error={1}")]
     public void ExitWatchUnavailableDetail(int pid, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtExitWatchUnavailableDetail, pid, win32_error);
@@ -348,7 +348,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtExitWatchCallbackFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "A process exit could not be handled — its app's rules may stay applied | pid={0} | ex_type={1} | ex_message={2}")]
+           Message = "A process exit could not be handled — its app's rules may stay applied\npid={0} | ex_type={1} | ex_message={2}")]
     public void ExitWatchCallbackFailed(int pid, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtExitWatchCallbackFailed, pid, ex_type, ex_message);
@@ -357,7 +357,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtExitWatchCallbackFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "process exit not handled | pid={0} | ex_type={1} | ex_message={2}")]
+           Message = "pid={0} | ex_type={1} | ex_message={2}")]
     public void ExitWatchCallbackFailedDetail(int pid, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtExitWatchCallbackFailedDetail, pid, ex_type, ex_message);
@@ -380,7 +380,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtProcessTraceEventDropped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "A process start event was dropped | stage={0} | ex_type={1} | ex_message={2}")]
+           Message = "A process start event was dropped, so that app is noticed only if it comes to the foreground\nstage={0} | ex_type={1} | ex_message={2}")]
     public void ProcessTraceEventDropped(string stage, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtProcessTraceEventDropped, stage, ex_type, ex_message);
@@ -389,7 +389,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtProcessTraceEventDroppedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "process start event dropped | stage={0} | ex_type={1} | ex_message={2}")]
+           Message = "stage={0} | ex_type={1} | ex_message={2}")]
     public void ProcessTraceEventDroppedDetail(string stage, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtProcessTraceEventDroppedDetail, stage, ex_type, ex_message);
@@ -400,7 +400,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtProcessQuerySkipped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "process skipped | stage={0} | pid={1} | ex_type={2} | ex_message={3}")]
+           Message = "stage={0} | pid={1} | ex_type={2} | ex_message={3}")]
     public void ProcessQuerySkipped(string stage, int pid, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtProcessQuerySkipped, stage, pid, ex_type, ex_message);
@@ -413,7 +413,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Watching for listed apps | enabled_entries={0} | elevated={1} | foreground_monitor={2}")]
+           Message = "Watching for listed apps")]
     public void RuntimeStarted(int enabled_entries, bool elevated, bool foreground_monitor)
     {
         if (IsEnabled()) WriteEvent(EvtRuntimeStarted, enabled_entries, elevated, foreground_monitor);
@@ -433,7 +433,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtDetectionStatusChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "detection status changed | process_trace={0} | foreground_monitor={1}")]
+           Message = "process_trace={0} | foreground_monitor={1}")]
     public void DetectionStatusChanged(bool process_trace, bool foreground_monitor)
     {
         if (IsEnabled()) WriteEvent(EvtDetectionStatusChanged, process_trace, foreground_monitor);
@@ -447,7 +447,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
            Tags = ObservationTags.Milestone,
-           Message = "An app session started | entry_id={0} | pid={1}")]
+           Message = "An app session started")]
     public void SessionStarted(string entry_id, int pid)
     {
         if (IsEnabled()) WriteEvent(EvtSessionStarted, entry_id, pid);
@@ -456,7 +456,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtSessionStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "app session started | entry_id={0} | display_name={1} | process_name={2} | pid={3}")]
+           Message = "entry_id={0} | display_name={1} | process_name={2} | pid={3}")]
     public void SessionStartedDetail(string entry_id, string display_name, string process_name, int pid)
     {
         if (IsEnabled()) WriteEvent(EvtSessionStartedDetail, entry_id, display_name, process_name, pid);
@@ -468,7 +468,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
            Tags = ObservationTags.Milestone,
-           Message = "An app session ended | entry_id={0} | reason={1}")]
+           Message = "An app session ended")]
     public void SessionEnded(string entry_id, string reason)
     {
         if (IsEnabled()) WriteEvent(EvtSessionEnded, entry_id, reason);
@@ -477,7 +477,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtSessionEndedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "app session ended | entry_id={0} | display_name={1}")]
+           Message = "entry_id={0} | display_name={1}")]
     public void SessionEndedDetail(string entry_id, string display_name)
     {
         if (IsEnabled()) WriteEvent(EvtSessionEndedDetail, entry_id, display_name);
@@ -489,7 +489,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtSessionHandlerFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "An app session event could not be handled | kind={0} | entry_id={1} | ex_type={2} | ex_message={3}")]
+           Message = "An app session event could not be handled\nkind={0} | entry_id={1} | ex_type={2} | ex_message={3}")]
     public void SessionHandlerFailed(string kind, string entry_id, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtSessionHandlerFailed, kind, entry_id, ex_type, ex_message);
@@ -501,7 +501,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtReconcileDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "reconcile | enabled_entries={0} | process_trace={1} | processes_seen={2}")]
+           Message = "enabled_entries={0} | process_trace={1} | processes_seen={2}")]
     public void ReconcileDetail(int enabled_entries, bool process_trace, int processes_seen)
     {
         if (IsEnabled()) WriteEvent(EvtReconcileDetail, enabled_entries, process_trace, processes_seen);
@@ -515,7 +515,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtReconcileFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Detection could not catch up with the app list | ex_type={0} | ex_message={1} | site={2}")]
+           Message = "Detection could not catch up with the app list\nex_type={0} | ex_message={1} | site={2}")]
     public void ReconcileFailed(string ex_type, string ex_message, string site)
     {
         if (IsEnabled()) WriteEvent(EvtReconcileFailed, ex_type, ex_message, site);
@@ -524,7 +524,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtReconcileFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "reconcile failed | ex_type={0} | ex_message={1} | site={2}")]
+           Message = "ex_type={0} | ex_message={1} | site={2}")]
     public void ReconcileFailedDetail(string ex_type, string ex_message, string site)
     {
         if (IsEnabled()) WriteEvent(EvtReconcileFailedDetail, ex_type, ex_message, site);
@@ -547,7 +547,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
            Tags = ObservationTags.Milestone,
-           Message = "App rules applied | entry_id={0} | changes={1}")]
+           Message = "App rules applied")]
     public void ProfileApplied(string entry_id, int changes)
     {
         if (IsEnabled()) WriteEvent(EvtProfileApplied, entry_id, changes);
@@ -558,7 +558,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtProfileAppliedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "app rules applied | entry_id={0} | effects={1} | changes={2}")]
+           Message = "entry_id={0} | effects={1} | changes={2}")]
     public void ProfileAppliedDetail(string entry_id, string effects, int changes)
     {
         if (IsEnabled()) WriteEvent(EvtProfileAppliedDetail, entry_id, effects, changes);
@@ -570,7 +570,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
            Tags = ObservationTags.Milestone,
-           Message = "App rules restored | entry_id={0} | restored={1}")]
+           Message = "App rules restored")]
     public void ProfileRestored(string entry_id, int restored)
     {
         if (IsEnabled()) WriteEvent(EvtProfileRestored, entry_id, restored);
@@ -579,7 +579,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtProfileRestoredDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "app rules restored | entry_id={0} | restored={1} | total={2}")]
+           Message = "entry_id={0} | restored={1} | total={2}")]
     public void ProfileRestoredDetail(string entry_id, int restored, int total)
     {
         if (IsEnabled()) WriteEvent(EvtProfileRestoredDetail, entry_id, restored, total);
@@ -590,7 +590,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtRuleApplyFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "App rules could not be applied — the app runs without them | entry_id={0} | effect={1} | ex_type={2} | ex_message={3}")]
+           Message = "App rules could not be applied — the app runs without them\nentry_id={0} | effect={1} | ex_type={2} | ex_message={3}")]
     public void RuleApplyFailed(string entry_id, string effect, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRuleApplyFailed, entry_id, effect, ex_type, ex_message);
@@ -600,7 +600,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtRuleRestoreFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A rule could not be restored | entry_id={0} | effect={1} | ex_type={2} | ex_message={3}")]
+           Message = "A rule could not be undone, so what it changed stays changed\nentry_id={0} | effect={1} | ex_type={2} | ex_message={3}")]
     public void RuleRestoreFailed(string entry_id, string effect, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRuleRestoreFailed, entry_id, effect, ex_type, ex_message);
@@ -613,7 +613,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtDisplayQueryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "The monitor list could not be read — HDR rules are skipped | win32_error={0}")]
+           Message = "The monitor list could not be read — HDR rules are skipped\nwin32_error={0}")]
     public void DisplayQueryFailed(int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtDisplayQueryFailed, win32_error);
@@ -622,7 +622,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtDisplayQueryFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "display query failed | win32_error={0}")]
+           Message = "win32_error={0}")]
     public void DisplayQueryFailedDetail(int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtDisplayQueryFailedDetail, win32_error);
@@ -643,7 +643,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtHdrStateChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "hdr switched | device={0} | old_state={1} | new_state={2} | api={3}")]
+           Message = "device={0} | old_state={1} | new_state={2} | api={3}")]
     public void HdrStateChanged(string device, bool old_state, bool new_state, string api)
     {
         if (IsEnabled()) WriteEvent(EvtHdrStateChanged, device, old_state, new_state, api);
@@ -652,7 +652,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtHdrSetFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "HDR could not be switched on a monitor | device={0} | win32_error={1} | api={2}")]
+           Message = "HDR could not be switched on a monitor, so it stays as it was\ndevice={0} | win32_error={1} | api={2}")]
     public void HdrSetFailed(string device, int win32_error, string api)
     {
         if (IsEnabled()) WriteEvent(EvtHdrSetFailed, device, win32_error, api);
@@ -664,7 +664,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtHdrRuleSkipped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "hdr rule skipped | device={0} | reason={1}")]
+           Message = "device={0} | reason={1}")]
     public void HdrRuleSkipped(string device, string reason)
     {
         if (IsEnabled()) WriteEvent(EvtHdrRuleSkipped, device, reason);
@@ -676,7 +676,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtForegroundPathUnavailable,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "foreground image path unavailable | pid={0} | process_name={1}")]
+           Message = "pid={0} | process_name={1}")]
     public void ForegroundPathUnavailable(int pid, string process_name)
     {
         if (IsEnabled()) WriteEvent(EvtForegroundPathUnavailable, pid, process_name);
@@ -690,7 +690,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtForegroundDeliveryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "A foreground change could not be delivered | pid={0} | ex_type={1} | ex_message={2}")]
+           Message = "A foreground change could not be delivered\npid={0} | ex_type={1} | ex_message={2}")]
     public void ForegroundDeliveryFailed(int pid, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtForegroundDeliveryFailed, pid, ex_type, ex_message);
@@ -699,7 +699,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtForegroundDeliveryFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "foreground change not delivered | pid={0} | ex_type={1} | ex_message={2}")]
+           Message = "pid={0} | ex_type={1} | ex_message={2}")]
     public void ForegroundDeliveryFailedDetail(int pid, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtForegroundDeliveryFailedDetail, pid, ex_type, ex_message);

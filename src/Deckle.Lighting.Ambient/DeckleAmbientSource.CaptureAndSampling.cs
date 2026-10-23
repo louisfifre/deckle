@@ -13,7 +13,7 @@ public sealed partial class DeckleAmbientSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Screen capture stopped, Ambient lighting is stopping | reason={0}")]
+           Message = "Screen capture stopped, Ambient lighting is stopping")]
     public void CaptureLost(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtCaptureLost, reason);
@@ -28,7 +28,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtFrameProcessingIncidentOpened,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Frame processing is failing, Ambient lighting is waiting to recover | reason={0} | failures={1} | cause_stage={2} | cause_hr=0x{3:X8} | cause_ex_type={4} | cause_ex_message={5}")]
+           Message = "Frame processing is failing, Ambient lighting is waiting to recover\nreason={0} | failures={1} | cause_stage={2} | cause_hr=0x{3:X8} | cause_ex_type={4} | cause_ex_message={5}")]
     public void FrameProcessingIncidentOpened(
         string reason, int failures,
         string cause_stage, int cause_hr, string cause_ex_type, string cause_ex_message)
@@ -51,7 +51,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtFrameProcessingFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
-           Message = "Frame processing did not recover, Ambient lighting is stopping | reason={0} | failures={1} | cause_stage={2} | cause_hr=0x{3:X8} | cause_ex_type={4} | cause_ex_message={5}")]
+           Message = "Frame processing did not recover, Ambient lighting is stopping\nreason={0} | failures={1} | cause_stage={2} | cause_hr=0x{3:X8} | cause_ex_type={4} | cause_ex_message={5}")]
     public void FrameProcessingFailed(
         string reason, int failures,
         string cause_stage, int cause_hr, string cause_ex_type, string cause_ex_message)
@@ -64,7 +64,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtFrameProcessingEpisodeDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "frame processing episode | outcome={0} | failures={1} | active_failure_ms={2}")]
+           Message = "outcome={0} | failures={1} | active_failure_ms={2}")]
     public void FrameProcessingEpisodeDetail(string outcome, int failures, long active_failure_ms)
     {
         if (!OperationalLogAdmission.IsDetailEnabled(
@@ -85,7 +85,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtEventStreamSetupFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Hue event stream setup failed, external light change detection is disabled this session | ex_type={0} | ex_message={1}")]
+           Message = "Hue event stream setup failed, external light change detection is disabled this session\nex_type={0} | ex_message={1}")]
     public void EventStreamSetupFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtEventStreamSetupFailed, ex_type, ex_message);
@@ -94,7 +94,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtExternalChangeStoppedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "external change | v1_id={0} | resource_type={1} | age_ms={2} | on={3} | bri={4} | xy={5}")]
+           Message = "v1_id={0} | resource_type={1} | age_ms={2} | on={3} | bri={4} | xy={5}")]
     public void ExternalChangeStoppedDetail(string v1_id, string resource_type, int age_ms, string on, string bri, string xy)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -104,7 +104,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtExternalChangeDecisionDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "external decision | v1_id={0} | resource_type={1} | age_ms={2} | event_on={3} | pushed_on={4} | event_bri={5} | pushed_bri={6} | event_xy={7} | pushed_xy={8} | delta_xy={9} | mismatch={10}")]
+           Message = "v1_id={0} | resource_type={1} | age_ms={2} | event_on={3} | pushed_on={4} | event_bri={5} | pushed_bri={6} | event_xy={7} | pushed_xy={8} | delta_xy={9} | mismatch={10}")]
     public void ExternalChangeDecisionDetail(
         string v1_id,
         string resource_type,
@@ -137,7 +137,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtEchoIgnored,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "echo ignored | v1_id={0} | resource_type={1} | age_ms={2} | match=state")]
+           Message = "v1_id={0} | resource_type={1} | age_ms={2}")]
     public void EchoIgnored(string v1_id, string resource_type, int age_ms)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -147,7 +147,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPipelinePerLightConfig,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "light cfg | id={0} | name={1} | zone={2} | brightness={3:F2} | controlled={4}")]
+           Message = "id={0} | name={1} | zone={2} | brightness={3:F2} | controlled={4}")]
     public void PipelinePerLightConfig(string id, string name, string zone, double brightness, bool controlled)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -169,7 +169,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtSamplerRebuiltDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "sampler rebuilt | mode={0}")]
+           Message = "mode={0}")]
     public void SamplerRebuiltDetail(string mode)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -179,7 +179,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtSamplerRebuildFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Frame sampler rebuild failed after a capture renegotiation, output may stay frozen until restart | ex_type={0} | ex_message={1}")]
+           Message = "Frame sampler rebuild failed after a capture renegotiation, output may stay frozen until restart\nex_type={0} | ex_message={1}")]
     public void SamplerRebuildFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtSamplerRebuildFailed, ex_type, ex_message);
@@ -190,7 +190,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPushLoopCrashed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
-           Message = "Ambient lighting push loop crashed, the pipeline is stopping | ex_type={0} | ex_message={1}")]
+           Message = "Ambient lighting push loop crashed, the pipeline is stopping\nex_type={0} | ex_message={1}")]
     public void PushLoopCrashed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPushLoopCrashed, ex_type, ex_message);
@@ -199,7 +199,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtStateChangedSubscriberThrew,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A state-change subscriber threw | ex_type={0} | ex_message={1}")]
+           Message = "A state-change subscriber threw\nex_type={0} | ex_message={1}")]
     public void StateChangedSubscriberThrew(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtStateChangedSubscriberThrew, ex_type, ex_message);
@@ -209,7 +209,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtMultiLightFallback,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Multi-light requested but unavailable, falling back to group push | reason={0} | output={1}")]
+           Message = "Multi-light requested but unavailable, falling back to group push\nreason={0} | output={1}")]
     public void MultiLightFallback(string reason, string output)
     {
         if (IsEnabled()) WriteEvent(EvtMultiLightFallback, reason, output);

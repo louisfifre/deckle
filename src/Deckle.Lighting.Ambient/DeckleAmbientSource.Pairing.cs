@@ -10,7 +10,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgeAutoRestoreFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Bridge auto-restore at boot failed, the user will need to re-pair | ex_type={0} | ex_message={1}")]
+           Message = "The Hue bridge could not be restored at startup, so it must be paired again\nex_type={0} | ex_message={1}")]
     public void BridgeAutoRestoreFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtBridgeAutoRestoreFailed, ex_type, ex_message);
@@ -29,7 +29,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgePairingStoredDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "bridge pairing stored | bridge_id={0}")]
+           Message = "bridge_id={0}")]
     public void BridgePairingStoredDetail(string bridge_id)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -37,9 +37,9 @@ public sealed partial class DeckleAmbientSource
     }
 
     [Event(EvtBridgeRestoreSkipped,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "restore skipped | reason=no_persisted_identity")]
+           Message = "No Hue bridge was paired, so none is restored")]
     public void BridgeRestoreSkipped()
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -52,7 +52,7 @@ public sealed partial class DeckleAmbientSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Bridge restored from settings | client_key_present={0}")]
+           Message = "Bridge restored from settings")]
     public void BridgeRestoredFromSettings(bool client_key_present)
     {
         if (IsEnabled()) WriteEvent(EvtBridgeRestoredFromSettings, client_key_present);
@@ -61,7 +61,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgeRestoredFromSettingsDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "bridge restored from settings | bridge_id={0} | bridge_ip={1}")]
+           Message = "bridge_id={0} | bridge_ip={1}")]
     public void BridgeRestoredFromSettingsDetail(string bridge_id, string bridge_ip)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -82,7 +82,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgeEndpointRecoveryStarting,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "bridge endpoint recovery starting | reason={0} | ex_type={1} | ex_message={2}")]
+           Message = "reason={0} | ex_type={1} | ex_message={2}")]
     public void BridgeEndpointRecoveryStarting(string reason, string ex_type, string ex_message)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -93,7 +93,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgeCandidateRejectedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "bridge candidate rejected | candidate_ip={0} | reason={1} | ex_type={2} | ex_message={3}")]
+           Message = "candidate_ip={0} | reason={1} | ex_type={2} | ex_message={3}")]
     public void BridgeCandidateRejectedDetail(string candidate_ip, string reason, string ex_type, string ex_message)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -113,7 +113,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgeEndpointRecoveredDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "bridge endpoint recovered | bridge_id={0} | old_ip={1} | new_ip={2} | identity_migrated={3}")]
+           Message = "bridge_id={0} | old_ip={1} | new_ip={2} | identity_migrated={3}")]
     public void BridgeEndpointRecoveredDetail(
         string bridge_id,
         string old_ip,
@@ -130,7 +130,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgeEndpointRecoveryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Bridge endpoint recovery failed | reason={0} | ex_type={1} | ex_message={2}")]
+           Message = "The Hue bridge could not be found at a new address, so Ambient lighting cannot reach it\nreason={0} | ex_type={1} | ex_message={2}")]
     public void BridgeEndpointRecoveryFailed(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtBridgeEndpointRecoveryFailed, reason, ex_type, ex_message);
@@ -139,7 +139,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgeEndpointRecoveryFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "bridge endpoint recovery failed | bridge_id={0} | bridge_ip={1} | candidates={2} | valid={3} | cause={4}")]
+           Message = "bridge_id={0} | bridge_ip={1} | candidates={2} | valid={3} | cause={4}")]
     public void BridgeEndpointRecoveryFailedDetail(
         string bridge_id,
         string bridge_ip,

@@ -13,7 +13,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtSurvivedException,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "An exception was caught and the app keeps running | origin={0} | {1} at {2}: {3}")]
+           Message = "An exception was caught and the app keeps running\norigin={0} | ex_type={1} | site={2} | ex_message={3}")]
     public void SurvivedException(string origin, string ex_type, string site, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtSurvivedException, origin, ex_type, site, ex_message);
@@ -24,7 +24,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtSurvivedExceptionRepeated,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A survived exception happened again | origin={0} | {1} at {2} | occurrences={3}")]
+           Message = "origin={0} | ex_type={1} | site={2} | occurrences={3}")]
     public void SurvivedExceptionRepeated(string origin, string ex_type, string site, int occurrences)
     {
         if (IsEnabled()) WriteEvent(EvtSurvivedExceptionRepeated, origin, ex_type, site, occurrences);
@@ -35,7 +35,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtCrashAppDomain,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Unhandled exception caught on the AppDomain | {0}: {1}")]
+           Message = "An unhandled exception is ending Deckle\nex_type={0} | ex_message={1}")]
     public void CrashAppDomain(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtCrashAppDomain, ex_type, ex_message);
@@ -44,7 +44,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtCrashAppDomainDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "appdomain unhandled exception | error={0} | message={1}")]
+           Message = "error={0} | message={1}")]
     public void CrashAppDomainDetail(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtCrashAppDomainDetail, ex_type, ex_message);
@@ -53,7 +53,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtCrashStackTrace,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "crash stack trace | stack={0}")]
+           Message = "stack={0}")]
     public void CrashStackTrace(string stack_trace)
     {
         if (IsEnabled()) WriteEvent(EvtCrashStackTrace, stack_trace);

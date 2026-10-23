@@ -33,7 +33,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtDictationRecoveredDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "dictation recovered | chars={0}")]
+           Message = "chars={0}")]
     public void DictationRecoveredDetail(int chars)
     {
         if (IsEnabled()) WriteEvent(EvtDictationRecoveredDetail, chars);
@@ -45,7 +45,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtDictationRecoveryUnreadable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The interrupted dictation could not be recovered and was discarded | reason={0} | deleted={1}")]
+           Message = "The interrupted dictation could not be recovered and was discarded\nreason={0} | deleted={1}")]
     public void DictationRecoveryUnreadable(string reason, bool deleted)
     {
         if (IsEnabled()) WriteEvent(EvtDictationRecoveryUnreadable, reason, deleted);
@@ -56,7 +56,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtDictationRecoveryClipboardFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The interrupted dictation could not be copied to the clipboard and is kept for the next launch | reason={0} | chars={1}")]
+           Message = "The interrupted dictation could not be copied to the clipboard and is kept for the next launch\nreason={0} | chars={1}")]
     public void DictationRecoveryClipboardFailed(string reason, int chars)
     {
         if (IsEnabled()) WriteEvent(EvtDictationRecoveryClipboardFailed, reason, chars);
@@ -67,7 +67,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtDictationRecoveryKept,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The recovered dictation stays on disk and will be restored again at the next launch | reason={0}")]
+           Message = "The recovered dictation stays on disk and will be restored again at the next launch\nreason={0}")]
     public void DictationRecoveryKept(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtDictationRecoveryKept, reason);

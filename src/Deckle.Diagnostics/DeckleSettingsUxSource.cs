@@ -38,7 +38,7 @@ public sealed class DeckleSettingsUxSource : DeckleEventSource
     [Event(EvtSettingChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "setting changed | setting={0} | value={1}")]
+           Message = "setting={0} | value={1}")]
     public void SettingChanged(string setting, string value)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -59,7 +59,7 @@ public sealed class DeckleSettingsUxSource : DeckleEventSource
     [Event(EvtSectionResetDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "section reset | section={0}")]
+           Message = "section={0}")]
     public void SectionResetDetail(string section)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -80,7 +80,7 @@ public sealed class DeckleSettingsUxSource : DeckleEventSource
     [Event(EvtFolderActionFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A folder action failed | action={0} | ex_type={1} | hr=0x{2:X8} | ex_message={3}")]
+           Message = "A folder action from Settings failed and did not happen\naction={0} | ex_type={1} | hr=0x{2:X8} | ex_message={3}")]
     public void FolderActionFailed(string action, string ex_type, int hr, string ex_message)
     {
         if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))

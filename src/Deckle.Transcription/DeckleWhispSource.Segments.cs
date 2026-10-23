@@ -10,7 +10,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtSegmentRecognized,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "segment recognized | index={0} | start_s={1:F1} | end_s={2:F1} | duration_s={3:F1} | no_speech={4:F3} | avg_p={5:F3} | min_p={6:F3} | text_tokens={7} | tokens={8} | chars={9}")]
+           Message = "index={0} | start_s={1:F1} | end_s={2:F1} | duration_s={3:F1} | no_speech={4:F3} | avg_p={5:F3} | min_p={6:F3} | text_tokens={7} | tokens={8} | chars={9}")]
     public void SegmentRecognized(
         int index,
         double start_s,

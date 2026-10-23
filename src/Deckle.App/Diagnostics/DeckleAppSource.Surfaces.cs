@@ -10,7 +10,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtUserFeedbackEmitted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "{1}: {2}")]
+           Message = "A message was shown on screen")]
     public void UserFeedbackEmitted(int severity, string title, string body, int role)
     {
         if (IsEnabled()) WriteEvent(EvtUserFeedbackEmitted, severity, title, body, role);
@@ -23,7 +23,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtWindowOperationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "A window step failed | window={0} | operation={1} | reason={2} | {3}: {4}")]
+           Message = "A window step failed, and the window works on\nwindow={0} | operation={1} | reason={2} | ex_type={3} | ex_message={4}")]
     public void WindowOperationFailed(string window, string operation, string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtWindowOperationFailed, window, operation, reason, ex_type, ex_message);
@@ -34,7 +34,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Window created | window={0}")]
+           Message = "Window created")]
     public void WindowCreated(string window)
     {
         if (IsEnabled()) WriteEvent(EvtWindowCreated, window);
@@ -44,7 +44,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtWindowOpenFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Cannot open the window | window={0} | {1}: {2}")]
+           Message = "A window could not be opened\nwindow={0} | ex_type={1} | ex_message={2}")]
     public void WindowOpenFailed(string window, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtWindowOpenFailed, window, ex_type, ex_message);
@@ -55,7 +55,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtFileTranscriptionEntryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Cannot start file transcription | {0}: {1}")]
+           Message = "File transcription could not start, so no file is transcribed\nex_type={0} | ex_message={1}")]
     public void FileTranscriptionEntryFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtFileTranscriptionEntryFailed, ex_type, ex_message);
@@ -65,7 +65,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtTrayToggleChanged,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Module switched | toggle={0} | enabled={1}")]
+           Message = "Module switched")]
     public void TrayToggleChanged(string toggle, bool enabled)
     {
         if (IsEnabled()) WriteEvent(EvtTrayToggleChanged, toggle, enabled);
@@ -75,7 +75,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtThemeApplied,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Theme,
-           Message = "theme applied | theme={0} | source={1} | windows={2}")]
+           Message = "theme={0} | source={1} | windows={2}")]
     public void ThemeApplied(string theme, string source, int windows)
     {
         if (IsEnabled()) WriteEvent(EvtThemeApplied, theme, source, windows);
@@ -84,7 +84,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtThemeUnknown,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Theme,
-           Message = "Unknown theme name, the system theme is used | name={0}")]
+           Message = "Unknown theme name, the system theme is used\nname={0}")]
     public void ThemeUnknown(string name)
     {
         if (IsEnabled()) WriteEvent(EvtThemeUnknown, name);

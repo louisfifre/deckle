@@ -73,7 +73,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtHostStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "host started | hwnd=0x{0:X} | thread_id={1}")]
+           Message = "hwnd=0x{0:X} | thread_id={1}")]
     public void HostStartedDetail(long hwnd, int thread_id)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -87,7 +87,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The host failed to start — the taskbar stays uncovered | reason={0} | ex_type={1} | ex_message={2}")]
+           Message = "The taskbar cover failed to start, so the taskbar stays uncovered\nreason={0} | ex_type={1} | ex_message={2}")]
     public void HostStartFailed(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtHostStartFailed, reason, ex_type, ex_message);
@@ -107,7 +107,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The cover thread did not exit in time — restart refused until it does")]
+           Message = "The taskbar cover thread did not stop in time, so the cover cannot restart until it does")]
     public void HostStopTimedOut()
     {
         if (IsEnabled()) WriteEvent(EvtHostStopTimedOut);
@@ -116,9 +116,9 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     // ── Taskbar layout ────────────────────────────────────────────────────────
 
     [Event(EvtLayoutRebuilt,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "Layout rebuilt")]
+           Message = "The taskbar cover layout was rebuilt")]
     public void LayoutRebuilt()
     {
         if (IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing))
@@ -133,7 +133,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtLayoutRebuiltDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "layout | band={0} | taskbars={1} | edge={2} | rect=({3},{4})-({5},{6}) | scale={7}% | reason={8}")]
+           Message = "band={0} | taskbars={1} | edge={2} | rect=({3},{4})-({5},{6}) | scale={7}% | reason={8}")]
     public void LayoutRebuiltDetail(int band, int taskbars, string edge, int left, int top, int right, int bottom, int scalePercent, string reason)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
@@ -165,7 +165,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtBandCreateFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "A band window could not be created — that taskbar stays uncovered | band={0} | win32_error={1}")]
+           Message = "A band window could not be created — that taskbar stays uncovered\nband={0} | win32_error={1}")]
     public void BandCreateFailed(int band, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtBandCreateFailed, band, win32_error);
@@ -184,7 +184,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtBandCreateFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "band create failed | band={0} | win32_error={1}")]
+           Message = "band={0} | win32_error={1}")]
     public void BandCreateFailedDetail(int band, int win32_error)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
@@ -199,7 +199,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtCoverShown,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "cover shown | band={0} | reason={1}")]
+           Message = "band={0} | reason={1}")]
     public void CoverShown(int band, string reason)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -209,7 +209,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtCoverHidden,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "cover hidden | band={0} | reason={1}")]
+           Message = "band={0} | reason={1}")]
     public void CoverHidden(int band, string reason)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -222,7 +222,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtCoverRestacked,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "cover restacked above its taskbar | band={0} | reason={1}")]
+           Message = "band={0} | reason={1}")]
     public void CoverRestacked(int band, string reason)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Windowing)) return;
@@ -232,9 +232,9 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     // ── Gates ─────────────────────────────────────────────────────────────────
 
     [Event(EvtCoverSuppressed,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A fullscreen app is foreground — the cover on its screen stands down")]
+           Message = "The taskbar cover stands down for a fullscreen app")]
     public void CoverSuppressed()
     {
         if (IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -244,7 +244,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtCoverSuppressedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "suppressed | band={0} | stage={1}")]
+           Message = "band={0} | stage={1}")]
     public void CoverSuppressedDetail(int band, string stage)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -252,9 +252,9 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     }
 
     [Event(EvtCoverUnsuppressed,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The fullscreen app is gone — the cover on its screen is back")]
+           Message = "The taskbar cover is back after the fullscreen app left")]
     public void CoverUnsuppressed()
     {
         if (IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -264,7 +264,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtCoverUnsuppressedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "unsuppressed | band={0}")]
+           Message = "band={0}")]
     public void CoverUnsuppressedDetail(int band)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -272,9 +272,9 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     }
 
     [Event(EvtSystemSuspended,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Parked for sleep or session lock")]
+           Message = "The taskbar cover is parked for sleep or lock")]
     public void SystemSuspended()
     {
         if (IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -284,7 +284,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtSystemSuspendedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "suspended | reason={0}")]
+           Message = "reason={0}")]
     public void SystemSuspendedDetail(string reason)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -292,9 +292,9 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     }
 
     [Event(EvtSystemResumed,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Resumed from sleep or unlock")]
+           Message = "The taskbar cover resumed after sleep or unlock")]
     public void SystemResumed()
     {
         if (IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -304,7 +304,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtSystemResumedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "resumed | reason={0}")]
+           Message = "reason={0}")]
     public void SystemResumedDetail(string reason)
     {
         if (!IsWindowingDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -320,7 +320,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtReorderHookFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The desktop reorder hook failed — a taskbar restacked above the cover is only caught later | win32_error={0}")]
+           Message = "The desktop reorder hook failed — a taskbar restacked above the cover is only caught later\nwin32_error={0}")]
     public void ReorderHookFailed(int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtReorderHookFailed, win32_error);
@@ -329,7 +329,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtSessionNotifyFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Session change notifications unavailable — the cover will not pause on lock | win32_error={0}")]
+           Message = "Session change notifications unavailable — the cover will not pause on lock\nwin32_error={0}")]
     public void SessionNotifyFailed(int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtSessionNotifyFailed, win32_error);
@@ -339,7 +339,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The taskbar cover settings need attention | {0}")]
+           Message = "The taskbar cover settings store worked around a problem\ndetail={0}")]
     public void SettingsLoadWarning(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
@@ -348,7 +348,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtSettingsLoadError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The taskbar cover settings could not be saved | {0}")]
+           Message = "The taskbar cover settings could not be saved or applied\ndetail={0}")]
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);

@@ -66,7 +66,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtHostStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = Lifecycle,
-           Message = "mcp host listening | url={0}")]
+           Message = "url={0}")]
     public void HostStartedDetail(string url)
     {
         if (IsEnabled()) WriteEvent(EvtHostStartedDetail, url);
@@ -90,7 +90,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
            Level = EventLevel.Error,
            Keywords = Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The MCP host could not listen | port={0} | {1}: {2}")]
+           Message = "The Anytype MCP host could not listen on its port, so assistants cannot reach Anytype\nport={0} | ex_type={1} | ex_message={2}")]
     public void HostStartFailed(int port, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtHostStartFailed, port, ex_type, ex_message);
@@ -103,7 +103,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The MCP host did not start | reason={0}")]
+           Message = "The Anytype MCP host refused to start, so assistants cannot reach Anytype\nreason={0}")]
     public void HostStartRefused(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtHostStartRefused, reason);
@@ -115,7 +115,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The MCP host did not stop cleanly | reason={0} | {1}: {2}")]
+           Message = "The Anytype MCP host did not stop cleanly\nreason={0} | ex_type={1} | ex_message={2}")]
     public void HostStopFailed(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtHostStopFailed, reason, ex_type, ex_message);
@@ -129,7 +129,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The MCP host is not provisioned | reason={0} | {1}: {2}")]
+           Message = "The Anytype MCP host could not be set up, so assistants cannot reach Anytype\nreason={0} | ex_type={1} | ex_message={2}")]
     public void HostProvisioningFailed(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtHostProvisioningFailed, reason, ex_type, ex_message);
@@ -141,7 +141,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtHostInternalLog,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
-           Message = "The MCP host reported a problem | event_name={1} | category={0} | level={2} | ex_type={3}")]
+           Message = "The web server behind the Anytype MCP host reported a problem\nevent_name={1} | category={0} | level={2} | ex_type={3}")]
     public void HostInternalLog(string category, string event_name, string log_level, string ex_type)
     {
         if (IsEnabled()) WriteEvent(EvtHostInternalLog, category, event_name, log_level, ex_type);
@@ -152,7 +152,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtHostInternalLogRepeated,
            Level = EventLevel.Verbose,
            Keywords = Lifecycle,
-           Message = "mcp host problem repeated | category={0} | event_name={1} | occurrences={2} | ex_type={3}")]
+           Message = "category={0} | event_name={1} | occurrences={2} | ex_type={3}")]
     public void HostInternalLogRepeated(string category, string event_name, int occurrences, string ex_type)
     {
         if (IsEnabled()) WriteEvent(EvtHostInternalLogRepeated, category, event_name, occurrences, ex_type);
@@ -166,7 +166,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The MCP host problem kept happening | category={0} | event_name={1} | occurrences={2} | ex_type={3}")]
+           Message = "The MCP host problem kept happening")]
     public void HostInternalLogCounted(string category, string event_name, int occurrences, string ex_type)
     {
         if (IsEnabled()) WriteEvent(EvtHostInternalLogCounted, category, event_name, occurrences, ex_type);
@@ -178,7 +178,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtTokensMinted,
            Level = EventLevel.Verbose,
            Keywords = Lifecycle,
-           Message = "mcp client tokens checked | clients={0} | minted={1}")]
+           Message = "clients={0} | minted={1}")]
     public void TokensMinted(int clients, int minted)
     {
         if (IsEnabled()) WriteEvent(EvtTokensMinted, clients, minted);
@@ -189,7 +189,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtTokenVariablesPublished,
            Level = EventLevel.Verbose,
            Keywords = Lifecycle,
-           Message = "mcp client token variables published | clients={0} | published={1} | unchanged={2} | missing={3}")]
+           Message = "clients={0} | published={1} | unchanged={2} | missing={3}")]
     public void TokenVariablesPublished(int clients, int published, int unchanged, int missing)
     {
         if (IsEnabled()) WriteEvent(EvtTokenVariablesPublished, clients, published, unchanged, missing);
@@ -202,7 +202,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "MCP client tokens are missing from the vault | clients={0} | missing={1}")]
+           Message = "Some assistants have no Anytype token in the vault, so the MCP host refuses them\nclients={0} | missing={1}")]
     public void TokenVariablesMissing(int clients, int missing)
     {
         if (IsEnabled()) WriteEvent(EvtTokenVariablesMissing, clients, missing);
@@ -219,7 +219,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtRequestRejected,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
-           Message = "An MCP request was rejected | reason={0} | status={1}")]
+           Message = "The Anytype MCP host refused a request before running it\nreason={0} | status={1}")]
     public void RequestRejected(string reason, int status_code)
     {
         if (IsEnabled()) WriteEvent(EvtRequestRejected, reason, status_code);
@@ -228,7 +228,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtRequestRejectedDetail,
            Level = EventLevel.Verbose,
            Keywords = Lifecycle,
-           Message = "mcp request rejected | reason={0} | status={1}")]
+           Message = "reason={0} | status={1}")]
     public void RequestRejectedDetail(string reason, int status_code)
     {
         if (IsEnabled()) WriteEvent(EvtRequestRejectedDetail, reason, status_code);
@@ -238,7 +238,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "MCP requests are admitted again | rejected={0}")]
+           Message = "MCP requests are admitted again")]
     public void RequestRejectionsEnded(int rejected)
     {
         if (IsEnabled()) WriteEvent(EvtRequestRejectionsEnded, rejected);
@@ -251,7 +251,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtToolCallStarted,
            Level = EventLevel.Verbose,
            Keywords = Tool,
-           Message = "mcp tool call started | surface={0} | tool={1} | work_id={2}")]
+           Message = "surface={0} | tool={1} | work_id={2}")]
     public void ToolCallStarted(string surface, string tool, string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtToolCallStarted, surface, tool, work_id);
@@ -264,7 +264,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtToolCallCompleted,
            Level = EventLevel.Informational,
            Keywords = Tool,
-           Message = "MCP tool call finished | outcome={2} | surface={0} | tool={1} | ex_type={3} | elapsed_ms={4:F1} | work_id={5}")]
+           Message = "MCP tool call finished")]
     public void ToolCallCompleted(string surface, string tool, string outcome, string ex_type, double elapsed_ms, string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtToolCallCompleted, surface, tool, outcome, ex_type, elapsed_ms, work_id);
@@ -279,7 +279,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtToolCallFailed,
            Level = EventLevel.Warning,
            Keywords = Tool,
-           Message = "MCP tool call failed | outcome={2} | surface={0} | tool={1} | ex_type={3} | status_code={4} | error_code={5} | elapsed_ms={6:F1} | work_id={7}")]
+           Message = "An Anytype tool call failed, and the assistant received the error\noutcome={2} | surface={0} | tool={1} | ex_type={3} | status_code={4} | error_code={5} | elapsed_ms={6:F1} | work_id={7}")]
     public void ToolCallFailed(string surface, string tool, string outcome, string ex_type, int status_code, string error_code, double elapsed_ms, string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtToolCallFailed, surface, tool, outcome, ex_type, status_code, error_code, elapsed_ms, work_id);

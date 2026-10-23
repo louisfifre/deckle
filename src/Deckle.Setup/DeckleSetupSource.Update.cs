@@ -30,7 +30,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtUpdateCheckDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "update check | installed={0} | latest={1} | newer={2}")]
+           Message = "installed={0} | latest={1} | newer={2}")]
     public void UpdateCheckDetail(string installed, string latest, bool newer)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -42,7 +42,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtUpdateCheckFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The update check could not complete | ex_type={0} | ex_message={1} | status={2}")]
+           Message = "The update check could not complete, so no new version is known\nex_type={0} | ex_message={1} | status={2}")]
     public void UpdateCheckFailed(string ex_type, string ex_message, int status)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
@@ -52,7 +52,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtUpdateCheckSkippedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "update check skipped | reason={0}")]
+           Message = "reason={0}")]
     public void UpdateCheckSkippedDetail(string reason)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -67,7 +67,7 @@ public sealed partial class DeckleSetupSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Downloading the Deckle update | work_id={0}")]
+           Message = "Downloading the Deckle update")]
     public void UpdateDownloadStarted(string work_id)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
@@ -77,7 +77,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtUpdateDownloadStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "update download | version={0} | url={1} | size_bytes={2}")]
+           Message = "version={0} | url={1} | size_bytes={2}")]
     public void UpdateDownloadStartedDetail(string version, string url, long size_bytes)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -88,7 +88,7 @@ public sealed partial class DeckleSetupSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The Deckle update was downloaded | work_id={0} | version={1} | size_bytes={2} | duration_ms={3}")]
+           Message = "The Deckle update was downloaded")]
     public void UpdateDownloadCompleted(string work_id, string version, long size_bytes, long duration_ms)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
@@ -99,7 +99,7 @@ public sealed partial class DeckleSetupSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The update download was cancelled | work_id={0} | reason=window_closed | step={1}")]
+           Message = "The update download was cancelled because its window was closed")]
     public void UpdateDownloadCancelled(string work_id, string step)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
@@ -112,7 +112,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtUpdateDownloadFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The update download failed | work_id={0} | reason={1} | step={2} | ex_type={3} | ex_message={4}")]
+           Message = "The update download failed, so the update is not installed\nwork_id={0} | reason={1} | step={2} | ex_type={3} | ex_message={4}")]
     public void UpdateDownloadFailed(string work_id, string reason, string step, string ex_type, string ex_message)
     {
         if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))
@@ -132,7 +132,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtUpdateHandoffDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "update handoff | exe={0} | cleanup={1}")]
+           Message = "exe={0} | cleanup={1}")]
     public void UpdateHandoffDetail(string exe, string cleanup)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))

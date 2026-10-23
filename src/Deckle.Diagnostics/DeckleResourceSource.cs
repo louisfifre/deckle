@@ -59,7 +59,7 @@ public sealed class DeckleResourceSource : DeckleEventSource
     [Event(EvtResourceAcquired,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Resource,
-           Message = "resource acquired | kind={0} | handle=0x{1:X} | size_bytes={2} | owner={3}")]
+           Message = "kind={0} | handle=0x{1:X} | size_bytes={2} | owner={3}")]
     public void ResourceAcquired(string kind, long handle, int size_bytes, string owner)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Resource)) return;
@@ -71,7 +71,7 @@ public sealed class DeckleResourceSource : DeckleEventSource
     [Event(EvtResourceReleased,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Resource,
-           Message = "resource released | kind={0} | handle=0x{1:X} | age_ms={2} | owner={3}")]
+           Message = "kind={0} | handle=0x{1:X} | age_ms={2} | owner={3}")]
     public void ResourceReleased(string kind, long handle, int age_ms, string owner)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Resource)) return;

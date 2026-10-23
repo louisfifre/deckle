@@ -28,7 +28,7 @@ public sealed class DeckleModulesSource : DeckleEventSource
     [Event(EvtModuleRegistered,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "module registered | id={0} | order={1} | deps={2}")]
+           Message = "id={0} | order={1} | deps={2}")]
     public void ModuleRegistered(string id, int order, string deps)
     {
         if (IsEnabled()) WriteEvent(EvtModuleRegistered, id, order, deps);
@@ -46,7 +46,7 @@ public sealed class DeckleModulesSource : DeckleEventSource
     [Event(EvtPresenceLoadedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "module presence loaded | mode={0} | present={1} | known={2}")]
+           Message = "mode={0} | present={1} | known={2}")]
     public void PresenceLoadedDetail(string mode, string present, string known)
     {
         if (IsEnabled()) WriteEvent(EvtPresenceLoadedDetail, mode, present, known);
@@ -64,7 +64,7 @@ public sealed class DeckleModulesSource : DeckleEventSource
     [Event(EvtPresenceSavedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "module selection saved | present={0} | known={1}")]
+           Message = "present={0} | known={1}")]
     public void PresenceSavedDetail(string present, string known)
     {
         if (IsEnabled()) WriteEvent(EvtPresenceSavedDetail, present, known);
@@ -79,7 +79,7 @@ public sealed class DeckleModulesSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The module presence file could not be used, so every module counts as present | reason={0}")]
+           Message = "The module presence file could not be used, so every module counts as present\nreason={0}")]
     public void PresenceLoadFailed(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtPresenceLoadFailed, reason);

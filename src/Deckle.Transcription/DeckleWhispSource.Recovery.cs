@@ -16,7 +16,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtDictationRecoveryWriteFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Saving the dictation recovery copy failed, the dictation goes on without it | ex_type={0} | ex_message={1}")]
+           Message = "Saving the dictation recovery copy failed, the dictation goes on without it\nex_type={0} | ex_message={1}")]
     public void DictationRecoveryWriteFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtDictationRecoveryWriteFailed, ex_type, ex_message);
@@ -25,7 +25,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtDictationRecoveryWriteRetryFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "recovery write failed again | ex_type={0} | ex_message={1}")]
+           Message = "ex_type={0} | ex_message={1}")]
     public void DictationRecoveryWriteRetryFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtDictationRecoveryWriteRetryFailed, ex_type, ex_message);
@@ -35,7 +35,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "The dictation recovery copy is saved again | failures={0}")]
+           Message = "The dictation recovery copy is saved again")]
     public void DictationRecoveryWriteRecovered(int failures)
     {
         if (IsEnabled()) WriteEvent(EvtDictationRecoveryWriteRecovered, failures);
@@ -45,7 +45,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtDictationRecoveryReadFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "recovery read failed | ex_type={0} | ex_message={1}")]
+           Message = "ex_type={0} | ex_message={1}")]
     public void DictationRecoveryReadFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtDictationRecoveryReadFailed, ex_type, ex_message);
@@ -54,7 +54,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtDictationRecoveryDeleteFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Deleting the dictation recovery copy failed | ex_type={0} | ex_message={1}")]
+           Message = "The dictation recovery copy could not be deleted, so it may be restored at the next launch\nex_type={0} | ex_message={1}")]
     public void DictationRecoveryDeleteFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtDictationRecoveryDeleteFailed, ex_type, ex_message);

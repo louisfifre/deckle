@@ -8,16 +8,16 @@ public sealed partial class DeckleAppSource
     [Event(EvtCmdLineSettingsFlag,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "--settings flag detected | page={0}")]
+           Message = "page={0}")]
     public void CmdLineSettingsFlag(string page_tag)
     {
         if (IsEnabled()) WriteEvent(EvtCmdLineSettingsFlag, page_tag);
     }
 
     [Event(EvtCmdLinePostBuildFlag,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "--post-build flag detected | scheduling shell-execute relaunch in 800ms")]
+           Message = "A post-build flag asks for a clean relaunch")]
     public void CmdLinePostBuildFlag()
     {
         if (IsEnabled()) WriteEvent(EvtCmdLinePostBuildFlag);
@@ -36,7 +36,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtInstallModeEnteredDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "install mode | phase={0} | stub={1} | cleanup={2} | model={3}")]
+           Message = "phase={0} | stub={1} | cleanup={2} | model={3}")]
     public void InstallModeEnteredDetail(string phase, string stub, string cleanup, string model)
     {
         if (IsEnabled()) WriteEvent(EvtInstallModeEnteredDetail, phase, stub, cleanup, model);

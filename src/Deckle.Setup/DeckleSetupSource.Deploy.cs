@@ -20,7 +20,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtFoldersChosenDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "folders chosen | app={0} | data={1}")]
+           Message = "app={0} | data={1}")]
     public void FoldersChosenDetail(string app, string data)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -35,7 +35,7 @@ public sealed partial class DeckleSetupSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Placing Deckle | work_id={0} | update_mode={1} | app={2} | data={3}")]
+           Message = "Placing Deckle")]
     public void DeployStarted(string work_id, bool update_mode, string app, string data)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
@@ -46,7 +46,7 @@ public sealed partial class DeckleSetupSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Deckle was placed and registered | work_id={0}")]
+           Message = "Deckle was placed and registered")]
     public void DeployCompleted(string work_id)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
@@ -56,7 +56,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtDeployCompletedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "deploy ok | app={0} | data={1} | bytes={2} | dur_ms={3}")]
+           Message = "app={0} | data={1} | bytes={2} | dur_ms={3}")]
     public void DeployCompletedDetail(string app, string data, long bytes, long dur_ms)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -66,7 +66,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtDeployFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Placing Deckle failed | work_id={0} | step={1} | ex_type={2} | ex_message={3} | duration_ms={4}")]
+           Message = "Installing Deckle's files failed, so the install stopped\nwork_id={0} | step={1} | ex_type={2} | ex_message={3} | duration_ms={4}")]
     public void DeployFailed(string work_id, string step, string ex_type, string ex_message, long duration_ms)
     {
         if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))
@@ -79,7 +79,7 @@ public sealed partial class DeckleSetupSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The install is blocked by a running Deckle | work_id={0} | reason=app_running | count={1} | processes={2}")]
+           Message = "The install is blocked because Deckle is running\nwork_id={0} | count={1} | processes={2}")]
     public void DeployBlockedByRunningApp(string work_id, int count, string processes)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))

@@ -111,6 +111,29 @@ public sealed class JsonlLineSerializerTests
     }
 
     [Fact]
+    public void ATwoLineMessageStaysOneRowWithItsBreakEscaped()
+    {
+        var entry = new EventEntry(
+            timestamp:        DateTimeOffset.UtcNow,
+            provider:         "Deckle-SerializerTest",
+            eventName:        "Sample",
+            level:            EventLevel.Warning,
+            keywords:         EventKeywords.None,
+            kind:             ObservationKind.Operational,
+            formattedMessage: "Something failed\nreason=x",
+            payload:          new Dictionary<string, object?> { ["reason"] = "x" });
+
+        ReadOnlyMemory<byte> line = new JsonlLineSerializer().Serialize(entry, "log", JsonlSchema.SelfDescribing);
+        ReadOnlySpan<byte> bytes = line.Span;
+
+        // The sink counts rows by raw line feeds, so only the terminator may be one.
+        Assert.Equal(bytes.Length - 1, bytes.IndexOf((byte)'\n'));
+        JsonElement root = JsonDocument.Parse(Encoding.UTF8.GetString(bytes)).RootElement;
+        Assert.Equal("Something failed\nreason=x", root.GetProperty("message").GetString());
+        Assert.Contains("Something failed\n", root.GetProperty("line").GetString());
+    }
+
+    [Fact]
     public void PayloadOnlyHasNoKeywordsField()
     {
         JsonElement root = Serialize(

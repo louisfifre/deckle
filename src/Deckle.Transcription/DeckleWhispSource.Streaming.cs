@@ -19,7 +19,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtStreamingDrainedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "streaming complete | utterances={0} | audio_s={1:F1} | whisper_ms={2} | words={3} | n_seg={4}")]
+           Message = "utterances={0} | audio_s={1:F1} | whisper_ms={2} | words={3} | n_seg={4}")]
     public void StreamingDrainedDetail(int n_utterances, double audio_s, long whisper_ms, int words, int n_seg)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
@@ -34,7 +34,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtUtteranceSkipped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "An utterance failed and dictation continued | index={0} | ex_type={1} | ex_message={2}")]
+           Message = "An utterance could not be transcribed, and dictation went on without it\nindex={0} | ex_type={1} | ex_message={2}")]
     public void UtteranceSkipped(int index, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtUtteranceSkipped, index, ex_type, ex_message);
@@ -43,7 +43,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtUtteranceSkippedRepeat,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "utterance skipped again | index={0} | ex_type={1} | ex_message={2}")]
+           Message = "index={0} | ex_type={1} | ex_message={2}")]
     public void UtteranceSkippedRepeat(int index, string ex_type, string ex_message)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
@@ -54,7 +54,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "Utterances transcribe again | skipped={0}")]
+           Message = "Utterances transcribe again")]
     public void UtterancesRecovered(int skipped)
     {
         if (IsEnabled()) WriteEvent(EvtUtterancesRecovered, skipped);
@@ -65,7 +65,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtUtterancesDiscarded,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Utterances were discarded without transcription | reason={0} | discarded={1}")]
+           Message = "Some speech was discarded without transcription, so its text is missing\nreason={0} | discarded={1}")]
     public void UtterancesDiscarded(string reason, int discarded)
     {
         if (IsEnabled()) WriteEvent(EvtUtterancesDiscarded, reason, discarded);
@@ -79,7 +79,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "Utterance rejected as a phantom | index={0} | reason={1} | audio_ms={2} | text_tokens={3} | tokens_per_s={4:F1} | avg_p={5:F3} | min_p={6:F3}")]
+           Message = "Utterance rejected as a phantom")]
     public void UtterancePhantomRejected(
         int index, string reason, int audio_ms, int text_tokens,
         double tokens_per_s, double avg_p, double min_p)
@@ -95,7 +95,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtUtteranceSentToBackend,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "utterance sent to backend | index={0} | audio_ms={1} | rms_dbfs={2:F1} | peak_dbfs={3:F1} | pad_ms={4}")]
+           Message = "index={0} | audio_ms={1} | rms_dbfs={2:F1} | peak_dbfs={3:F1} | pad_ms={4}")]
     public void UtteranceSentToBackend(int index, int audio_ms, double rms_dbfs, double peak_dbfs, int pad_ms)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
@@ -107,7 +107,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtSegmenterUtteranceEmitted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "utterance cut | index={0} | voiced_frames={1} | kept_frames={2} | start_s={3:F2} | end_s={4:F2} | hangover_used_ms={5}")]
+           Message = "index={0} | voiced_frames={1} | kept_frames={2} | start_s={3:F2} | end_s={4:F2} | hangover_used_ms={5}")]
     public void SegmenterUtteranceEmitted(int index, int voiced_frames, int kept_frames, double start_s, double end_s, int hangover_used_ms)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
@@ -118,7 +118,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtStreamingHeartbeat,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "heartbeat | state={0,-8} | rms_dbfs={1,6:F1} | utterance_ms={2,6} | hangover_required_ms={3,5} | backlog={4,3} | emitted={5,3} | recording_s={6,5}")]
+           Message = "state={0,-8} | rms_dbfs={1,6:F1} | utterance_ms={2,6} | hangover_required_ms={3,5} | backlog={4,3} | emitted={5,3} | recording_s={6,5}")]
     public void StreamingHeartbeat(string state, double rms_dbfs, int utterance_ms, int hangover_required_ms, int backlog, int emitted, int recording_s)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Heartbeat))
@@ -140,7 +140,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtSegmenterSettingsSnapshot,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "segmenter | threshold_dbfs={0:F1} | hangover_max_ms={1} | hangover_min_ms={2} | ramp_start_ms={3} | ramp_end_ms={4} | curve=({5:F2},{6:F2},{7:F2},{8:F2}) | margin_ms={9} | min_utterance_ms={10}")]
+           Message = "threshold_dbfs={0:F1} | hangover_max_ms={1} | hangover_min_ms={2} | ramp_start_ms={3} | ramp_end_ms={4} | curve=({5:F2},{6:F2},{7:F2},{8:F2}) | margin_ms={9} | min_utterance_ms={10}")]
     public void SegmenterSettingsSnapshot(
         double threshold_dbfs,
         int hangover_max_ms,
@@ -175,7 +175,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtSegmenterBlipDropped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "blip dropped | voiced_frames={0} | voiced_ms={1}")]
+           Message = "voiced_frames={0} | voiced_ms={1}")]
     public void SegmenterBlipDropped(int voiced_frames, int voiced_ms)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
@@ -187,7 +187,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtConsumerUtterance,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "utterance #{0} consumed | whisper_ms={1} | words={2} | seg={3} | backlog_after={4} | aborted={5}")]
+           Message = "index={0} | whisper_ms={1} | words={2} | segments={3} | backlog_after={4} | aborted={5}")]
     public void ConsumerUtterance(int index, long whisper_ms, int words, int segments, int backlog_after, bool aborted)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))

@@ -21,7 +21,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "File transcription batch started | work_id={0} | files={1}")]
+           Message = "File transcription batch started")]
     public void FileTranscriptionBatchStarted(string work_id, int files)
     {
         if (IsEnabled()) WriteEvent(EvtFileTranscriptionBatchStarted, work_id, files);
@@ -30,7 +30,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtFileTranscriptionBatchStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "file transcription batch start | files={0} | prepared_capacity={1}")]
+           Message = "files={0} | prepared_capacity={1}")]
     public void FileTranscriptionBatchStartedDetail(int files, int prepared_capacity)
     {
         if (!IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline)) return;
@@ -44,7 +44,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "File transcription batch completed | work_id={0} | files={1} | outcome={2}")]
+           Message = "File transcription batch completed")]
     public void FileTranscriptionBatchCompleted(string work_id, int files, string outcome)
     {
         if (IsEnabled()) WriteEvent(EvtFileTranscriptionBatchCompleted, work_id, files, outcome);
@@ -57,7 +57,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "File transcription batch ended early | work_id={0} | outcome={1} | files={2} | ex_type={3} | ex_message={4}")]
+           Message = "File transcription batch ended early")]
     public void FileTranscriptionBatchAborted(string work_id, string outcome, int files, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtFileTranscriptionBatchAborted, work_id, outcome, files, ex_type, ex_message);
@@ -75,7 +75,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtFileTranscriptionStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "file transcription start | index={0} | files={1} | path={2} | bytes={3}")]
+           Message = "index={0} | files={1} | path={2} | bytes={3}")]
     public void FileTranscriptionStartedDetail(int index, int files, string path, long bytes)
     {
         if (!IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline)) return;
@@ -89,7 +89,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtFileTranscriptionFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A file could not be transcribed | index={0} | files={1} | file={2} | reason={3} | ex_type={4} | ex_message={5}")]
+           Message = "A file could not be transcribed\nindex={0} | files={1} | file={2} | reason={3} | ex_type={4} | ex_message={5}")]
     public void FileTranscriptionFailed(int index, int files, string file, string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtFileTranscriptionFailed, index, files, file, reason, ex_type, ex_message);
@@ -98,7 +98,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtFileTranscriptionEmpty,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A file had no audio to transcribe | index={0} | files={1} | file={2}")]
+           Message = "A file had no audio to transcribe\nindex={0} | files={1} | file={2}")]
     public void FileTranscriptionEmpty(int index, int files, string file)
     {
         if (IsEnabled()) WriteEvent(EvtFileTranscriptionEmpty, index, files, file);
@@ -111,7 +111,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtFileQueueChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "file queue changed | action={0} | files={1} | queued_files={2}")]
+           Message = "action={0} | files={1} | queued_files={2}")]
     public void FileQueueChanged(string action, int files, int queued_files)
     {
         if (!IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline)) return;
@@ -119,9 +119,9 @@ public sealed partial class DeckleWhispSource
     }
 
     [Event(EvtFileTranscriptionSaved,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Transcript saved to file")]
+           Message = "The transcript was saved to a file")]
     public void FileTranscriptionSaved()
     {
         if (!IsTakeDetailEnabled((EventKeywords)Keywords.Push)) return;
@@ -131,7 +131,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtFileTranscriptionSavedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "file transcription saved | path={0} | chars={1}")]
+           Message = "path={0} | chars={1}")]
     public void FileTranscriptionSavedDetail(string path, int chars)
     {
         if (!IsTakeDetailEnabled((EventKeywords)Keywords.Push)) return;
@@ -143,7 +143,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtFileDecodeFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The audio file could not be decoded | file={0} | status={1} | ex_type={2} | ex_message={3}")]
+           Message = "The audio file could not be decoded\nfile={0} | status={1} | ex_type={2} | ex_message={3}")]
     public void FileDecodeFailed(string file, string status, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtFileDecodeFailed, file, status, ex_type, ex_message);
@@ -152,7 +152,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtFileTranscriptionWriteFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Saving the transcript to a file failed | ex_type={0} | ex_message={1}")]
+           Message = "Saving the transcript to a file failed\nex_type={0} | ex_message={1}")]
     public void FileTranscriptionWriteFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtFileTranscriptionWriteFailed, ex_type, ex_message);

@@ -23,7 +23,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtLaunchContextDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "launch context | ancestry={0} | elevated={1} | foreground_image={2} | foreground_class={3} | foreground_is_ancestor={4} | foreground_lock_timeout_ms={5}")]
+           Message = "ancestry={0} | elevated={1} | foreground_image={2} | foreground_class={3} | foreground_is_ancestor={4} | foreground_lock_timeout_ms={5}")]
     public void LaunchContextDetail(
         string ancestry, bool elevated,
         string foreground_image, string foreground_class,
@@ -65,7 +65,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Logging policy | ambient={0} | transcription={1} | autocorrect={2} | input={3} | windowing={4} | app_log_to_disk={5}")]
+           Message = "Logging policy")]
     public void LoggingPolicy(
         bool ambient,
         bool transcription,
@@ -92,7 +92,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Shutdown completed | work_id={0} | steps={1} | failed={2} | elapsed_ms={3}")]
+           Message = "Shutdown completed")]
     public void ShutdownCompleted(string work_id, int steps, int failed, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtShutdownCompleted, work_id, steps, failed, elapsed_ms);

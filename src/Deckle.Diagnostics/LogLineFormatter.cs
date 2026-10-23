@@ -33,8 +33,15 @@ public static class LogLineFormatter
         return new LogLineParts(
             entry.Timestamp.ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture),
             DisplayName(entry.Provider),
-            entry.FormattedMessage ?? entry.EventName);
+            Normalize(entry.FormattedMessage ?? entry.EventName));
     }
+
+    // A Warning or an Error reads as a sentence, a line break, then its pairs
+    // (TemplateDoctrine). The break is "\n" whatever produced it, so the
+    // window, the copied text and the "line" field of trace.jsonl split the
+    // row at the same place.
+    private static string Normalize(string message)
+        => message.Contains('\r') ? message.ReplaceLineEndings("\n") : message;
 
     public static string Format(EventEntry entry) => GetParts(entry).Text;
 
@@ -97,5 +104,17 @@ public readonly record struct LogLineParts(
     string Source,
     string Message)
 {
-    public string Text => string.Concat(Timestamp, " [", Source, "] ", Message);
+    // Every line after the first is indented to where the message starts, so
+    // in a copied or saved log the pairs of a two-line row sit under its
+    // sentence and the timestamp column stays readable.
+    public string Text
+    {
+        get
+        {
+            string prefix = string.Concat(Timestamp, " [", Source, "] ");
+            if (!Message.Contains('\n'))
+                return prefix + Message;
+            return prefix + Message.Replace("\n", "\n" + new string(' ', prefix.Length), StringComparison.Ordinal);
+        }
+    }
 }

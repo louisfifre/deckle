@@ -27,7 +27,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteSkippedNoModelDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "rewrite skipped no model | profile={0}")]
+           Message = "profile={0}")]
     public void RewriteSkippedNoModelDetail(string profile)
     {
         if (IsEnabled()) WriteEvent(EvtRewriteSkippedNoModelDetail, profile);
@@ -39,7 +39,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteSkippedNoProvider,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A rewrite was skipped because its provider is missing or disabled — check Settings → LLM | reason={1} | caller={0}")]
+           Message = "A rewrite was skipped because its provider is missing or disabled — check Settings → LLM\nreason={1} | caller={0}")]
     public void RewriteSkippedNoProvider(string caller, string reason)
     {
         if (IsEnabled()) WriteEvent(EvtRewriteSkippedNoProvider, caller, reason);
@@ -48,7 +48,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteSkippedNoProviderDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "rewrite skipped no provider | profile={0} | provider={1}")]
+           Message = "profile={0} | provider={1}")]
     public void RewriteSkippedNoProviderDetail(string profile, string provider)
     {
         if (IsEnabled()) WriteEvent(EvtRewriteSkippedNoProviderDetail, profile, provider);
@@ -62,7 +62,7 @@ public sealed partial class DeckleLlmSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "Rewriting the transcript | provider={0} | engine={1} | model={2} | work_id={3}")]
+           Message = "Rewriting the transcript")]
     public void TranscriptRewriteStarted(string provider, string engine, string model, string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtTranscriptRewriteStarted, provider, engine, model, work_id);
@@ -72,7 +72,7 @@ public sealed partial class DeckleLlmSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "Transcript rewrite complete | provider={0} | elapsed_ms={1} | work_id={2}")]
+           Message = "Transcript rewrite complete")]
     public void TranscriptRewriteCompleted(string provider, long elapsed_ms, string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtTranscriptRewriteCompleted, provider, elapsed_ms, work_id);
@@ -84,7 +84,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteStarted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Rewriting | caller={0} | provider={1} | engine={2} | model={3}")]
+           Message = "caller={0} | provider={1} | engine={2} | model={3}")]
     public void RewriteStarted(string caller, string provider, string engine, string model)
     {
         if (IsEnabled()) WriteEvent(EvtRewriteStarted, new object[] { caller, provider, engine, model });
@@ -93,7 +93,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "request | chars={0} | model={1} | profile={2} | family={3} | {4}")]
+           Message = "chars={0} | model={1} | profile={2} | family={3} | options={4}")]
     public void RewriteStartedDetail(int chars, string model, string profile, string family, string options)
     {
         if (IsEnabled()) WriteEvent(EvtRewriteStartedDetail, chars, model, profile, family, options);
@@ -106,7 +106,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteResponseDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "rewrite response | elapsed_ms={0} | in_chars={1} | out_chars={2} | profile={3} | load_ms={4} | prompt_eval_ms={5} | eval_ms={6} | prompt_tokens={7} | eval_tokens={8} | stop_reason={9}")]
+           Message = "elapsed_ms={0} | in_chars={1} | out_chars={2} | profile={3} | load_ms={4} | prompt_eval_ms={5} | eval_ms={6} | prompt_tokens={7} | eval_tokens={8} | stop_reason={9}")]
     public void RewriteResponseDetail(
         long elapsed_ms, int in_chars, int out_chars, string profile,
         long load_ms, long prompt_eval_ms, long eval_ms,
@@ -124,7 +124,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteCompleted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Rewrite complete | caller={0} | provider={1} | elapsed_ms={2}")]
+           Message = "caller={0} | provider={1} | elapsed_ms={2}")]
     public void RewriteCompleted(string caller, string provider, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtRewriteCompleted, new object[] { caller, provider, elapsed_ms });
@@ -137,7 +137,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteCancelled,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Rewrite cancelled by its caller | caller={0} | provider={1} | elapsed_ms={2}")]
+           Message = "caller={0} | provider={1} | elapsed_ms={2}")]
     public void RewriteCancelled(string caller, string provider, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtRewriteCancelled, new object[] { caller, provider, elapsed_ms });
@@ -146,7 +146,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteTimeout,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Rewrite timed out | caller={0} | provider={1} | model={2} | elapsed_ms={3} | cap_s={4:F0} | work_id={5}")]
+           Message = "A rewrite timed out, so the text was not rewritten\ncaller={0} | provider={1} | model={2} | elapsed_ms={3} | cap_s={4:F0} | work_id={5}")]
     public void RewriteTimeout(string caller, string provider, string model, long elapsed_ms, double cap_s, string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtRewriteTimeout, new object[] { caller, provider, model, elapsed_ms, cap_s, work_id });
@@ -160,7 +160,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Rewriter unavailable | reason={3} | caller={0} | provider={1} | model={2} | status={4} | ex_type={5} | ex_message={6} | work_id={7}")]
+           Message = "A rewrite failed at its provider, so the text was not rewritten\nreason={3} | caller={0} | provider={1} | model={2} | status={4} | ex_type={5} | ex_message={6} | work_id={7}")]
     public void RewriteUnavailable(
         string caller, string provider, string model,
         string reason, int status, string ex_type, string ex_message, string work_id)
@@ -179,7 +179,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteAttemptFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "rewrite attempt failed | reason={3} | caller={0} | provider={1} | model={2} | status={4} | ex_type={5} | ex_message={6} | failures={7}")]
+           Message = "reason={3} | caller={0} | provider={1} | model={2} | status={4} | ex_type={5} | ex_message={6} | failures={7}")]
     public void RewriteAttemptFailed(
         string caller, string provider, string model,
         string reason, int status, string ex_type, string ex_message, int failures)
@@ -195,7 +195,7 @@ public sealed partial class DeckleLlmSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "The rewriter answers again | caller={0} | provider={1} | failures={2}")]
+           Message = "The rewriter answers again")]
     public void RewriteRecovered(string caller, string provider, int failures)
     {
         if (IsEnabled()) WriteEvent(EvtRewriteRecovered, new object[] { caller, provider, failures });
@@ -210,7 +210,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtParagraphOfferSettled,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "paragraph offer settled | outcome={0} | revision={1} | edits={2} | rejected_edits={3}")]
+           Message = "outcome={0} | revision={1} | edits={2} | rejected_edits={3}")]
     public void ParagraphOfferSettled(string outcome, long revision, int edits, int rejected_edits)
     {
         if (IsEnabled()) WriteEvent(EvtParagraphOfferSettled, new object[] { outcome, revision, edits, rejected_edits });
@@ -219,7 +219,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtParagraphRewriteFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A paragraph offer could not be prepared | ex_type={0} | ex_message={1}")]
+           Message = "A paragraph rewrite offer could not be prepared, so none is shown\nex_type={0} | ex_message={1}")]
     public void ParagraphRewriteFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtParagraphRewriteFailed, ex_type, ex_message);

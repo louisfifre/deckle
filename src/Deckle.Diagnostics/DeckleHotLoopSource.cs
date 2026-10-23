@@ -35,7 +35,7 @@ public sealed class DeckleHotLoopSource : DeckleEventSource
     [Event(EvtLoopRollup,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "loop rollup | loop={0} | count={1} | window_s={2}")]
+           Message = "loop rollup")]
     public void LoopRollup(string loop, long count, int window_s)
     {
         if (!IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Heartbeat)) return;
@@ -49,7 +49,7 @@ public sealed class DeckleHotLoopSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Tags = ObservationTags.Milestone,
-           Message = "A loop that should be running stopped ticking | loop={0} | window_s={1} | total={2}")]
+           Message = "A loop that should be running stopped ticking\nloop={0} | window_s={1} | total={2}")]
     public void LoopStalled(string loop, int window_s, long total)
     {
         if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Heartbeat)) return;
@@ -62,7 +62,7 @@ public sealed class DeckleHotLoopSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Heartbeat,
            Tags = ObservationTags.Milestone,
-           Message = "A stalled loop is settled | loop={0} | reason={1} | stalled_s={2}")]
+           Message = "A stalled loop is settled")]
     public void LoopRecovered(string loop, string reason, int stalled_s)
     {
         if (!IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Heartbeat)) return;

@@ -47,7 +47,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Module {0} failed to start | {1}: {2}")]
+           Message = "A module failed to start, so its features are unavailable\nmodule={0} | ex_type={1} | ex_message={2}")]
     public void ModuleFailed(string module, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtModuleFailed, module, ex_type, ex_message);
@@ -60,7 +60,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Module {0} refused to start | reason={1}")]
+           Message = "A module declined to start, so its features are unavailable\nmodule={0} | reason={1}")]
     public void ModuleRefused(string module, string reason)
     {
         if (IsEnabled()) WriteEvent(EvtModuleRefused, module, reason);

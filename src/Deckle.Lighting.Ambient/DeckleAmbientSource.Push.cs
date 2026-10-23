@@ -10,7 +10,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPushGroup,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "push | mode=group | rgb={0},{1},{2} | off={3} | push_ms={4:F1}")]
+           Message = "r={0} | g={1} | b={2} | off={3} | push_ms={4:F1}")]
     public void PushGroup(int r, int g, int b, bool off, double push_ms)
     {
         if (!OperationalLogAdmission.IsDetailEnabled(
@@ -22,7 +22,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPushMulti,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "push | mode=multi | lights={0}/{1} | colors={2} | push_ms={3:F1}")]
+           Message = "pushed_lights={0} | total_lights={1} | colors={2} | push_ms={3:F1}")]
     public void PushMulti(int pushed_lights, int total_lights, string colors, double push_ms)
     {
         if (!OperationalLogAdmission.IsDetailEnabled(
@@ -36,7 +36,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPushAttemptFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "push attempt failed | failures={0} | retry_delay_ms={1} | ex_type={2} | ex_message={3}")]
+           Message = "failures={0} | retry_delay_ms={1} | ex_type={2} | ex_message={3}")]
     public void PushAttemptFailedDetail(int failures, int retry_delay_ms, string ex_type, string ex_message)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
@@ -46,7 +46,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPushIncidentOpened,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Hue bridge pushes are failing, Ambient lighting is retrying | failures={0} | ex_type={1} | ex_message={2}")]
+           Message = "Hue bridge pushes are failing, Ambient lighting is retrying\nfailures={0} | ex_type={1} | ex_message={2}")]
     public void PushIncidentOpened(int failures, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPushIncidentOpened, failures, ex_type, ex_message);
@@ -67,7 +67,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPushRejected,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Hue rejected Ambient lighting, the pipeline is stopping | status={0} | ex_type={1} | ex_message={2}")]
+           Message = "Hue rejected Ambient lighting, the pipeline is stopping\nstatus={0} | ex_type={1} | ex_message={2}")]
     public void PushRejected(int status, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPushRejected, status, ex_type, ex_message);
@@ -76,7 +76,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPushEpisodeDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "push episode | outcome={0} | failures={1} | duration_ms={2} | ex_type={3} | ex_message={4}")]
+           Message = "outcome={0} | failures={1} | duration_ms={2} | ex_type={3} | ex_message={4}")]
     public void PushEpisodeDetail(
         string outcome, int failures, long duration_ms, string ex_type, string ex_message)
     {
@@ -88,7 +88,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtHeartbeat,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "heartbeat | mode={0} | period_s={1:F1} | target_hz={2} | effective_hz={3:F1} | ticks={4} | pushed={5} | dropped={6} | skipped_slots={7} | unmapped_lights={8} | push_failures={9} | push_avg_ms={10:F1} | push_p95_ms={11:F1} | push_max_ms={12:F1}")]
+           Message = "mode={0} | period_s={1:F1} | target_hz={2} | effective_hz={3:F1} | ticks={4} | pushed={5} | dropped={6} | skipped_slots={7} | unmapped_lights={8} | push_failures={9} | push_avg_ms={10:F1} | push_p95_ms={11:F1} | push_max_ms={12:F1}")]
     public void Heartbeat(
         string mode,
         double period_s,

@@ -15,14 +15,15 @@ namespace Deckle.App;
 //
 //     [Event(<id>, Level = EventLevel.Informational,
 //            Keywords = (EventKeywords)…,
-//            Message = "{1}: {2}")]
+//            Message = "A message was shown on screen")]
 //     public void UserFeedbackEmitted(int severity, string title, string body, int role)
 //     {
 //         if (IsEnabled()) WriteEvent(<id>, severity, title, body, role);
 //     }
 //
 // The payload is keyed by the [Event] parameter names, so the fields are read
-// by name, not by positional index. Severity / Role pass as int because
+// by name, not by positional index, and the Informational template stays a
+// sentence that shows neither title nor body. Severity / Role pass as int because
 // EventSource cannot serialise arbitrary user enums; the host reads them as
 // severity 0/1/2 = Info/Warning/Error and role 0/1 = Replacement/Overlay.
 //

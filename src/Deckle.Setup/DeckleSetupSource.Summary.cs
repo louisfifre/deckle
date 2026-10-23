@@ -20,7 +20,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtSummaryShownDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "summary | success={0} | items={1}")]
+           Message = "success={0} | items={1}")]
     public void SummaryShownDetail(bool success, int items)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -33,7 +33,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtItemImported,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A setup item was imported by hand | item_id={0} | size_bytes={1}")]
+           Message = "A setup item was imported by hand")]
     public void ItemImported(string item_id, long size_bytes)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
@@ -45,7 +45,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtItemImportFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Importing a setup item failed | item_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
+           Message = "Importing a setup item failed\nitem_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
     public void ItemImportFailed(string item_id, string reason, string ex_type, string ex_message)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))

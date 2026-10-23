@@ -42,7 +42,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Speech engine started | backend={0} | accelerator={1}")]
+           Message = "Speech engine started")]
     public void SpeechEngineStarted(string backend, string accelerator)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechEngineStarted, backend, accelerator);
@@ -73,7 +73,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     [Event(EvtReadAloudRequestedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "read aloud | chars={0} | voice={1} | temperature={2:F2}")]
+           Message = "chars={0} | voice={1} | temperature={2:F2}")]
     public void ReadAloudRequestedDetail(int chars, string voice, double temperature)
     {
         if (IsEnabled()) WriteEvent(EvtReadAloudRequestedDetail, chars, voice, temperature);
@@ -84,9 +84,9 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     // Skeleton-only: the placeholder backend emits a tone instead of speech.
     // Drops out when the real Chatterbox ONNX decode lands.
     [Event(EvtStubSynthesis,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "synthesis | backend=stub | placeholder_tone")]
+           Message = "Speech synthesis is a stub, so a placeholder tone plays")]
     public void StubSynthesis()
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
@@ -96,7 +96,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     [Event(EvtSpeechSynthesisFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Speech synthesis failed | ex_type={0} | ex_message={1}")]
+           Message = "Speech synthesis failed, so nothing was read aloud\nex_type={0} | ex_message={1}")]
     public void SpeechSynthesisFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechSynthesisFailed, ex_type, ex_message);
@@ -110,7 +110,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     [Event(EvtSpeechPlaybackFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Audio playback failed | reason={0} | ex_type={1} | ex_message={2}")]
+           Message = "The synthesized speech could not play, so nothing was heard\nreason={0} | ex_type={1} | ex_message={2}")]
     public void SpeechPlaybackFailed(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechPlaybackFailed, reason, ex_type, ex_message);
@@ -126,7 +126,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
            Tags = ObservationTags.Milestone,
-           Message = "Read aloud ended | outcome={0} | reason={1} | elapsed_ms={2}")]
+           Message = "Read aloud ended")]
     public void ReadAloudEnded(string outcome, string reason, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtReadAloudEnded, outcome, reason, elapsed_ms);
@@ -135,7 +135,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     [Event(EvtReadAloudCompleteDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "read aloud finished | samples={0} | duration_ms={1} | sample_rate={2}")]
+           Message = "samples={0} | duration_ms={1} | sample_rate={2}")]
     public void ReadAloudCompleteDetail(int samples, long duration_ms, int sample_rate)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
@@ -150,7 +150,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     [Event(EvtSettingsLoaded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Speech settings | {0}")]
+           Message = "The speech settings were loaded")]
     public void SettingsLoaded(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoaded, message);
@@ -159,7 +159,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     [Event(EvtSettingsLoadComplete,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "speech settings | {0}")]
+           Message = "detail={0}")]
     public void SettingsLoadComplete(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadComplete, PathRedaction.Redact(message));
@@ -168,7 +168,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Speech settings warning | {0}")]
+           Message = "The speech settings store worked around a problem\ndetail={0}")]
     public void SettingsLoadWarning(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
@@ -177,7 +177,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     [Event(EvtSettingsLoadError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Speech settings error | {0}")]
+           Message = "The speech settings could not be saved or applied\ndetail={0}")]
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);

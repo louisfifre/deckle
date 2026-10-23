@@ -10,7 +10,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardGlobalAlloc,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "GlobalAlloc | bytes={0} | hMem={1}")]
+           Message = "bytes={0} | h_mem={1}")]
     public void ClipboardGlobalAlloc(int bytes, long h_mem)
     {
         if (IsEnabled()) WriteEvent(EvtClipboardGlobalAlloc, bytes, h_mem);
@@ -19,7 +19,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardAllocFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Allocating clipboard memory failed")]
+           Message = "Clipboard memory could not be allocated, so the text was not copied")]
     public void ClipboardAllocFailed()
     {
         if (IsEnabled()) WriteEvent(EvtClipboardAllocFailed);
@@ -28,7 +28,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardAllocFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "global alloc failed | bytes={0}")]
+           Message = "bytes={0}")]
     public void ClipboardAllocFailedDetail(int bytes)
     {
         if (IsEnabled()) WriteEvent(EvtClipboardAllocFailedDetail, bytes);
@@ -37,7 +37,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardOpen,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "OpenClipboard | ok={0}")]
+           Message = "ok={0}")]
     public void ClipboardOpen(bool ok)
     {
         if (IsEnabled()) WriteEvent(EvtClipboardOpen, ok);
@@ -46,7 +46,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardOpenFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Opening the clipboard failed")]
+           Message = "The clipboard could not be opened, so the text was not copied")]
     public void ClipboardOpenFailed()
     {
         if (IsEnabled()) WriteEvent(EvtClipboardOpenFailed);
@@ -55,7 +55,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardSetDataFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Writing to the clipboard failed")]
+           Message = "The text could not be written to the clipboard, so it was not copied")]
     public void ClipboardSetDataFailed()
     {
         if (IsEnabled()) WriteEvent(EvtClipboardSetDataFailed);
@@ -64,7 +64,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardVerifyMissing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Clipboard verification found no text")]
+           Message = "The clipboard held no text after the copy, so the paste may be empty")]
     public void ClipboardVerifyMissing()
     {
         if (IsEnabled()) WriteEvent(EvtClipboardVerifyMissing);
@@ -73,7 +73,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardVerifyMismatch,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Clipboard verification found the wrong text")]
+           Message = "The clipboard held other text after the copy, so the paste may be wrong")]
     public void ClipboardVerifyMismatch()
     {
         if (IsEnabled()) WriteEvent(EvtClipboardVerifyMismatch);
@@ -82,16 +82,16 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardVerifyMismatchDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "verify mismatch | expected_chars={0} | actual_chars={1}")]
+           Message = "expected_chars={0} | actual_chars={1}")]
     public void ClipboardVerifyMismatchDetail(int expected_chars, int actual_chars)
     {
         if (IsEnabled()) WriteEvent(EvtClipboardVerifyMismatchDetail, expected_chars, actual_chars);
     }
 
     [Event(EvtClipboardCopied,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Copied to clipboard")]
+           Message = "The transcript was copied to the clipboard")]
     public void ClipboardCopied()
     {
         if (!OperationalLogAdmission.IsDetailEnabled(
@@ -103,7 +103,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardCopyComplete,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "copy complete | chars={0} | bytes={1}")]
+           Message = "chars={0} | bytes={1}")]
     public void ClipboardCopyComplete(int chars, int bytes)
     {
         if (IsEnabled()) WriteEvent(EvtClipboardCopyComplete, chars, bytes);
@@ -112,9 +112,9 @@ public sealed partial class DeckleWhispSource
     // ── Paste ───────────────────────────────────────────────────────────
 
     [Event(EvtPasteHidSync,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "HUD hidden (HideSync) — ready to paste")]
+           Message = "The HUD is hidden before the paste")]
     public void PasteHidSync()
     {
         if (IsEnabled()) WriteEvent(EvtPasteHidSync);
@@ -123,7 +123,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPasteForeground,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "foreground at paste: {0}")]
+           Message = "foreground_descriptor={0}")]
     public void PasteForeground(string foreground_descriptor)
     {
         if (IsEnabled()) WriteEvent(EvtPasteForeground, foreground_descriptor);
@@ -150,7 +150,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPasteUiaDiag,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "UIA: {0}")]
+           Message = "uia_diag={0}")]
     public void PasteUiaDiag(string uia_diag)
     {
         if (IsEnabled()) WriteEvent(EvtPasteUiaDiag, uia_diag);
@@ -177,7 +177,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPasteSendInputPartialDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "send input partial | sent={0} | total={1}")]
+           Message = "sent={0} | total={1}")]
     public void PasteSendInputPartialDetail(int sent, int total)
     {
         if (IsEnabled()) WriteEvent(EvtPasteSendInputPartialDetail, sent, total);
@@ -195,7 +195,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPasteSent,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Ctrl+V sent to {0}")]
+           Message = "foreground_descriptor={0}")]
     public void PasteSent(string foreground_descriptor)
     {
         if (IsEnabled()) WriteEvent(EvtPasteSent, foreground_descriptor);

@@ -21,7 +21,7 @@ public sealed class DeckleLlmSourceTests : IDisposable
         using var listener = new TestEventListener("Deckle-Llm");
 
         DeckleLlmSource.Log.PsProbeRejectedDetail(503);
-        DeckleLlmSource.Log.PsProbeEmpty();
+        DeckleLlmSource.Log.PsProbeEmpty(1_200);
         DeckleLlmSource.Log.PsProbeBusyDetail("model", 3.5, 0, 60_000, 900);
         DeckleLlmSource.Log.PsProbeErrorDetail("HttpRequestException", "offline");
 
@@ -36,7 +36,7 @@ public sealed class DeckleLlmSourceTests : IDisposable
         using var listener = new TestEventListener("Deckle-Llm");
 
         DeckleLlmSource.Log.PsProbeRejectedDetail(503);
-        DeckleLlmSource.Log.PsProbeEmpty();
+        DeckleLlmSource.Log.PsProbeEmpty(1_200);
         DeckleLlmSource.Log.PsProbeBusyDetail("model", 3.5, 0, 60_000, 900);
         DeckleLlmSource.Log.PsProbeErrorDetail("HttpRequestException", "offline");
 

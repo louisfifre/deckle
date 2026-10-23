@@ -51,6 +51,10 @@
                    TextWrapping="NoWrap"
                    ToolTipService.ToolTip="{Binding SourceText}" />
 
+        <!-- A Warning or an Error carries "\n" between its sentence and its pairs
+             (LogLineFormatter), and a TextBlock breaks there whatever its wrapping, so
+             the row grows to two lines while the three columns on its left stay on the
+             first one. -->
         <TextBlock Grid.Column="3"
                    Text="{Binding MessageText}"
                    FontFamily="Consolas"

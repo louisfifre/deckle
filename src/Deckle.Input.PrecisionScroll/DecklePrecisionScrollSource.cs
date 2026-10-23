@@ -40,7 +40,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Precision scrolling enabled | direction_reversed={0} | mouse_hook={1}")]
+           Message = "Precision scrolling enabled")]
     public void EngineStarted(bool direction_reversed, bool mouse_hook)
     {
         if (IsEnabled()) WriteEvent(EvtEngineStarted, direction_reversed, mouse_hook);
@@ -49,7 +49,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtEngineStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "precision scrolling tuning | distance_per_detent_mm={0} | initial_step_duration_ms={1} | quiet_period_scale={2} | queue_capacity={3}")]
+           Message = "distance_per_detent_mm={0} | initial_step_duration_ms={1} | quiet_period_scale={2} | queue_capacity={3}")]
     public void EngineStartedDetail(
         double distance_per_detent_mm,
         double initial_step_duration_ms,
@@ -68,7 +68,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Precision scrolling disabled | outcome={0} | reason={1}")]
+           Message = "Precision scrolling disabled")]
     public void EngineStopped(string outcome, string reason)
     {
         if (IsEnabled()) WriteEvent(EvtEngineStopped, outcome, reason);
@@ -77,7 +77,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtEngineStoppedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "precision scrolling closed | detents={0} | gestures={1} | rollovers={2}")]
+           Message = "detents={0} | gestures={1} | rollovers={2}")]
     public void EngineStoppedDetail(long detents, long gestures, long rollovers)
     {
         if (IsEnabled()) WriteEvent(EvtEngineStoppedDetail, detents, gestures, rollovers);
@@ -89,7 +89,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Precision scrolling is unavailable | reason={0} | win32_error={1} | ex_type={2} | ex_message={3}")]
+           Message = "Precision scrolling could not start, so the wheel scrolls natively\nreason={0} | win32_error={1} | ex_type={2} | ex_message={3}")]
     public void Unavailable(string reason, int win32_error, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtUnavailable, reason, win32_error, ex_type, ex_message);
@@ -99,7 +99,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Touchpad direction could not be read | win32_error={0}")]
+           Message = "The touchpad scroll direction could not be read, so precision scrolling did not start\nwin32_error={0}")]
     public void TouchpadSettingsUnavailable(int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtTouchpadSettingsUnavailable, win32_error);
@@ -111,7 +111,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtInjectionFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Touchpad injection failed, precision scrolling stopped | action={0} | win32_error={1}")]
+           Message = "Windows refused a touchpad frame, so precision scrolling stopped and the wheel scrolls natively\naction={0} | win32_error={1}")]
     public void InjectionFailed(string action, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtInjectionFailed, action, win32_error);
@@ -120,7 +120,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtWorkerFaulted,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Precision scrolling stopped on an unexpected error | ex_type={0} | ex_message={1}")]
+           Message = "Precision scrolling stopped on an unexpected error, so the wheel scrolls natively\nex_type={0} | ex_message={1}")]
     public void WorkerFaulted(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtWorkerFaulted, ex_type, ex_message);
@@ -129,7 +129,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtQueueOverloaded,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Precision scrolling stopped to protect input latency | reason={0} | queue_capacity={1}")]
+           Message = "Precision scrolling stopped to protect input latency, so the wheel scrolls natively\nreason={0} | queue_capacity={1}")]
     public void QueueOverloaded(string reason, int queue_capacity)
     {
         if (IsEnabled()) WriteEvent(EvtQueueOverloaded, reason, queue_capacity);
@@ -140,7 +140,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtInactive,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Precision scrolling cannot intercept the wheel | reason={0}")]
+           Message = "Precision scrolling cannot intercept the wheel, so the wheel scrolls natively\nreason={0}")]
     public void Inactive(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtInactive, reason);
@@ -149,7 +149,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtStopSlow,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Precision scrolling is slow to stop | timeout_ms={0}")]
+           Message = "Precision scrolling is slow to stop\ntimeout_ms={0}")]
     public void StopSlow(int timeout_ms)
     {
         if (IsEnabled()) WriteEvent(EvtStopSlow, timeout_ms);
@@ -161,7 +161,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtRestartScheduledDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "precision scrolling restart scheduled | reason={0} | delay_ms={1}")]
+           Message = "reason={0} | delay_ms={1}")]
     public void RestartScheduledDetail(string reason, long delay_ms)
     {
         if (IsEnabled()) WriteEvent(EvtRestartScheduledDetail, reason, delay_ms);
@@ -176,7 +176,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Precision scrolling stopped again and stays off, the wheel scrolls natively | reason={0}")]
+           Message = "Precision scrolling stopped again after its restart, so the wheel scrolls natively until the switch is turned off and on\nreason={0}")]
     public void FellBackToNativeWheel(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtFellBackToNativeWheel, reason);
@@ -190,7 +190,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Precision scrolling no longer stays off, the person toggled it | previous_reason={0}")]
+           Message = "Precision scrolling no longer stays off, the person toggled it")]
     public void FallbackRecovered(string previous_reason)
     {
         if (IsEnabled()) WriteEvent(EvtFallbackRecovered, previous_reason);
@@ -200,7 +200,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The precision scrolling settings need attention | {0}")]
+           Message = "The precision scrolling settings store worked around a problem\ndetail={0}")]
     public void SettingsLoadWarning(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
@@ -209,7 +209,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtSettingsLoadError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The precision scrolling settings could not be saved | {0}")]
+           Message = "The precision scrolling settings could not be saved or applied\ndetail={0}")]
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
