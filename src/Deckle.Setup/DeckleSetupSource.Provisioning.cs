@@ -12,7 +12,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtItemStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Installing a setup item | item_id={0} | size_bytes={1}")]
+           Message = "Installing a setup item")]
     public void ItemStarted(string item_id, long size_bytes)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
@@ -22,7 +22,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtItemSkippedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "item skipped | item_id={0} | reason={1}")]
+           Message = "item_id={0} | reason={1}")]
     public void ItemSkippedDetail(string item_id, string reason)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -42,7 +42,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtItemInstalledDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "item ok | id={0} | bytes={1} | dur_ms={2} | sha256={3}")]
+           Message = "id={0} | bytes={1} | dur_ms={2} | sha256={3}")]
     public void ItemInstalledDetail(string id, long bytes, long dur_ms, string sha256)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -55,7 +55,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtItemDownloadFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A setup item failed to install | item_id={0} | reason={1} | ex_type={2} | ex_message={3} | duration_ms={4}")]
+           Message = "A setup item failed to install\nitem_id={0} | reason={1} | ex_type={2} | ex_message={3} | duration_ms={4}")]
     public void ItemDownloadFailed(string item_id, string reason, string ex_type, string ex_message, long duration_ms)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
@@ -77,7 +77,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtItemCancelledDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "item cancelled | id={0}")]
+           Message = "id={0}")]
     public void ItemCancelledDetail(string id)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))

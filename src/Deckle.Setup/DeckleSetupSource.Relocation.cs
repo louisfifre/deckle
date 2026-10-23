@@ -16,7 +16,7 @@ public sealed partial class DeckleSetupSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Moving the app data folder | work_id={0}")]
+           Message = "Moving the app data folder")]
     public void RelocateStarted(string work_id)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
@@ -26,7 +26,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtRelocateStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "relocate | from={0} | to={1} | bytes={2}")]
+           Message = "from={0} | to={1} | bytes={2}")]
     public void RelocateStartedDetail(string from, string to, long bytes)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -37,7 +37,7 @@ public sealed partial class DeckleSetupSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The app data folder moved | work_id={0}")]
+           Message = "The app data folder moved")]
     public void RelocateCompleted(string work_id)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
@@ -47,7 +47,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtRelocateCompletedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "relocate done | copied_bytes={0} | files={1} | skipped={2} | duration_ms={3}")]
+           Message = "copied_bytes={0} | files={1} | skipped={2} | duration_ms={3}")]
     public void RelocateCompletedDetail(long copied_bytes, int files, int skipped, long duration_ms)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -61,7 +61,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtRelocateFilesSkipped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The app data move left diagnostics files behind | work_id={0} | skipped={1}")]
+           Message = "The app data move left diagnostics files behind\nwork_id={0} | skipped={1}")]
     public void RelocateFilesSkipped(string work_id, int skipped)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
@@ -73,7 +73,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtRelocateFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The app data move failed | work_id={0} | reason={1} | step={2} | ex_type={3} | ex_message={4}")]
+           Message = "The app data move failed\nwork_id={0} | reason={1} | step={2} | ex_type={3} | ex_message={4}")]
     public void RelocateFailed(string work_id, string reason, string step, string ex_type, string ex_message)
     {
         if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))
@@ -83,7 +83,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtRelocateInsufficientSpaceDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "relocate space short | drive={0} | required_bytes={1} | free_bytes={2}")]
+           Message = "drive={0} | required_bytes={1} | free_bytes={2}")]
     public void RelocateInsufficientSpaceDetail(string drive, long required_bytes, long free_bytes)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -94,7 +94,7 @@ public sealed partial class DeckleSetupSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The app data move was cancelled | work_id={0} | reason=window_closed | step={1}")]
+           Message = "The app data move was cancelled because its window was closed")]
     public void RelocateCancelled(string work_id, string step)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))

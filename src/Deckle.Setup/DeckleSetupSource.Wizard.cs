@@ -34,7 +34,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtWindowClosingDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "setup window closing | success={0}")]
+           Message = "success={0}")]
     public void WindowClosingDetail(bool success)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -50,7 +50,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtBestEffortFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "best effort failed | operation={0} | path={1} | ex_type={2} | ex_message={3}")]
+           Message = "operation={0} | path={1} | ex_type={2} | ex_message={3}")]
     public void BestEffortFailedDetail(string operation, string path, string ex_type, string ex_message)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -65,7 +65,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtPredecessorWaitTimedOut,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The previous app was still running after the hand-off wait | pid={0} | timeout_ms={1}")]
+           Message = "The previous app was still running after the hand-off wait\npid={0} | timeout_ms={1}")]
     public void PredecessorWaitTimedOut(int pid, long timeout_ms)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
@@ -80,7 +80,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtPredecessorWaitFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The wait for the previous app failed | pid={0} | ex_type={1} | hresult={2}")]
+           Message = "The wait for the previous app failed\npid={0} | ex_type={1} | hresult={2}")]
     public void PredecessorWaitFailed(int pid, string ex_type, int hresult)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
@@ -92,7 +92,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtChildProcessLaunchedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "child process launched | role={0} | pid={1} | exe={2}")]
+           Message = "role={0} | pid={1} | exe={2}")]
     public void ChildProcessLaunchedDetail(string role, int pid, string exe)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))

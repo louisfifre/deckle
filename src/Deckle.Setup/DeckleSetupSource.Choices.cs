@@ -20,7 +20,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtNativeSourcePickedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "native source | source={0} | copied={1}")]
+           Message = "source={0} | copied={1}")]
     public void NativeSourcePickedDetail(string source, int copied)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -30,7 +30,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtNativeImportFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Importing the native runtime failed | ex_type={0} | ex_message={1}")]
+           Message = "Importing the native runtime failed\nex_type={0} | ex_message={1}")]
     public void NativeImportFailed(string ex_type, string ex_message)
     {
         if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))
@@ -50,7 +50,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtChoicesConfirmedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "choices confirmed | location={0} | model={1}")]
+           Message = "location={0} | model={1}")]
     public void ChoicesConfirmedDetail(string location, string model)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
