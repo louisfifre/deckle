@@ -1861,6 +1861,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AnytypePathRedactionTests.cs
 │   │   ├── AnytypeRequestGateTests.cs
 │   │   ├── AnytypeSpaceAliasesTests.cs
+│   │   ├── AnytypeUserIncidentCollection.cs
 │   │   ├── AnytypeUtilityGesturesTests.cs
 │   │   ├── AnytypeV2ClientTests.cs
 │   │   ├── AnytypeV2ExceptionTests.cs
@@ -1881,6 +1882,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── BackendSupervisionBugNotes.md
 │   │   ├── BackendSupervisorTests.cs
 │   │   ├── BackendTestFakes.cs
+│   │   ├── BackendUserIncidentTests.cs
 │   │   ├── BinLogTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceBugNotes.md
