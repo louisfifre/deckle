@@ -21,6 +21,18 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Wire the Settings, Logs and Playground windows to one another
 - **diagnostics:** Line up a warning's pairs under its sentence in the text line
 - **logging:** Open the log window with Verbose rows hidden
+- **diagnostics:** Hold the user incidents that are open now
+- **precision-scroll:** Report the fallback to the native wheel as a user incident
+- **transcription:** Report an unavailable microphone or Whisper model as a user incident
+- **vad:** Report a speech-trim model that cannot be had as a user incident
+- **anytype:** Report a backend Deckle cannot bring back as a user incident
+- **lighting:** Report a Hue event stream that stays lost as a user incident
+- **ambient:** Report lights that stopped following the screen as a user incident
+- **notifications:** Report the toasts an elevated Deckle loses as a user incident
+- **shell:** Give the tray icon a dot for an open user incident
+- **app:** Report a transcription engine that cannot start as a user incident
+- **app:** Show open user incidents on the tray icon and in its menu
+- **settings:** Explain on General why an elevated Deckle shows no notifications
 
 ### Changed
 
