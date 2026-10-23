@@ -17,7 +17,7 @@ public sealed partial class DeckleAmbientSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Ambient lighting starting | work_id={0}")]
+           Message = "Ambient lighting starting")]
     public void PipelineStarting(string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtPipelineStarting, work_id);
@@ -30,7 +30,7 @@ public sealed partial class DeckleAmbientSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Ambient lighting started | work_id={0} | output={1} | shape={2} | lights={3} | push_hz={4} | hdr={5}")]
+           Message = "Ambient lighting started")]
     public void PipelineStarted(string work_id, string output, string shape, int lights, int push_hz, string hdr)
     {
         if (IsEnabled()) WriteEvent(EvtPipelineStarted, work_id, output, shape, lights, push_hz, hdr);
@@ -39,7 +39,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPipelineStartDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "start | work_id={0} | source={1} | sampler_grid={2}x{3}")]
+           Message = "work_id={0} | source={1} | sampler_grid={2}x{3}")]
     public void PipelineStartDetail(string work_id, string source, int grid_cols, int grid_rows)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -52,7 +52,7 @@ public sealed partial class DeckleAmbientSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Ambient lighting failed to start | work_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
+           Message = "Ambient lighting failed to start\nwork_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
     public void PipelineStartFailed(string work_id, string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPipelineStartFailed, work_id, reason, ex_type, ex_message);
@@ -64,7 +64,7 @@ public sealed partial class DeckleAmbientSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Ambient lighting start cancelled | work_id={0} | elapsed_ms={1}")]
+           Message = "Ambient lighting start cancelled")]
     public void PipelineStartCancelled(string work_id, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtPipelineStartCancelled, work_id, elapsed_ms);
@@ -76,7 +76,7 @@ public sealed partial class DeckleAmbientSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Ambient lighting stopping | work_id={0} | reason={1}")]
+           Message = "Ambient lighting stopping")]
     public void PipelineStopping(string work_id, string reason)
     {
         if (IsEnabled()) WriteEvent(EvtPipelineStopping, work_id, reason);
@@ -91,7 +91,7 @@ public sealed partial class DeckleAmbientSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Ambient lighting stopped | work_id={0} | reason={1} | outcome={2} | duration_s={3:F1} | pushed={4} | dropped={5} | ex_type={6} | ex_message={7}")]
+           Message = "Ambient lighting stopped")]
     public void PipelineStopped(
         string work_id, string reason, string outcome, double duration_s,
         long pushed, long dropped, string ex_type, string ex_message)
@@ -107,7 +107,7 @@ public sealed partial class DeckleAmbientSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Ambient lighting stopped with an incident still open | work_id={0} | incident={1} | failures={2} | duration_ms={3}")]
+           Message = "Ambient lighting stopped with an incident still open")]
     public void PipelineIncidentAbandoned(string work_id, string incident, int failures, long duration_ms)
     {
         if (IsEnabled()) WriteEvent(EvtPipelineIncidentAbandoned, work_id, incident, failures, duration_ms);
@@ -119,7 +119,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPipelineAbortIgnoredDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "abort ignored | reason={0} | why={1}")]
+           Message = "reason={0} | why={1}")]
     public void PipelineAbortIgnoredDetail(string reason, string why)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -130,7 +130,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtResourceReleaseFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Lifecycle | Keywords.Resource),
-           Message = "An Ambient lighting resource could not be released | component={0} | ex_type={1} | ex_message={2}")]
+           Message = "An Ambient lighting resource could not be released\ncomponent={0} | ex_type={1} | ex_message={2}")]
     public void ResourceReleaseFailed(string component, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtResourceReleaseFailed, component, ex_type, ex_message);
@@ -141,7 +141,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPipelineStepFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "pipeline step failed | step={0} | ex_type={1} | ex_message={2}")]
+           Message = "step={0} | ex_type={1} | ex_message={2}")]
     public void PipelineStepFailedDetail(string step, string ex_type, string ex_message)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -154,7 +154,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPipelineRestartDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "restart | settings={0}")]
+           Message = "settings={0}")]
     public void PipelineRestartDetail(string settings)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;

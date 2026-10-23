@@ -10,7 +10,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtLightCallFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A call to the Hue bridge for the light list failed | op={0} | ex_type={1} | ex_message={2}")]
+           Message = "A call to the Hue bridge for the light list failed\nop={0} | ex_type={1} | ex_message={2}")]
     public void LightCallFailed(string op, string ex_type, string ex_message)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Push))
@@ -20,7 +20,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtLightsResolved,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "resolve lights | group_id={0} | group_name={1} | from_group={2}")]
+           Message = "group_id={0} | group_name={1} | from_group={2}")]
     public void LightsResolved(string group_id, string group_name, int from_group)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
@@ -40,7 +40,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtEntertainmentAreaUsedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "ent area source | name={0} | lights={1}")]
+           Message = "name={0} | lights={1}")]
     public void EntertainmentAreaUsedDetail(string name, int lights)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
@@ -50,7 +50,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtEntertainmentAreaMatched,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "match ent area | result={0} | ent_id={1} | name={2} | overlap={3}")]
+           Message = "result={0} | ent_id={1} | name={2} | overlap={3}")]
     public void EntertainmentAreaMatched(string result, string ent_id, string name, int overlap)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
@@ -60,7 +60,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtZoneSuggested,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "zone suggest | id={0} | zone={1} | ent_name={2} | x={3:F2} | y={4:F2} | z={5:F2}")]
+           Message = "id={0} | zone={1} | ent_name={2} | x={3:F2} | y={4:F2} | z={5:F2}")]
     public void ZoneSuggested(string id, string zone, string ent_name, double x, double y, double z)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
@@ -80,7 +80,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtLightZoneUpdatedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "zone assign | id={0} | zone={1}")]
+           Message = "id={0} | zone={1}")]
     public void LightZoneUpdatedDetail(string id, string zone)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
@@ -90,7 +90,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtLightBrightnessChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "light brightness | id={0} | value={1:F2}")]
+           Message = "id={0} | value={1:F2}")]
     public void LightBrightnessChanged(string id, double value)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;

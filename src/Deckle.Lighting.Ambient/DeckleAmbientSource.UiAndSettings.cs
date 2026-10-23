@@ -10,7 +10,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtAmbientPagePairFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Pairing from Settings failed | ex_type={0} | ex_message={1}")]
+           Message = "Pairing from Settings failed\nex_type={0} | ex_message={1}")]
     public void AmbientPagePairFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAmbientPagePairFailed, ex_type, ex_message);
@@ -19,7 +19,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtAmbientPageListGroupsFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Listing groups from Settings failed | ex_type={0} | ex_message={1}")]
+           Message = "Listing groups from Settings failed\nex_type={0} | ex_message={1}")]
     public void AmbientPageListGroupsFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAmbientPageListGroupsFailed, ex_type, ex_message);
@@ -30,7 +30,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtTuningChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "tuning changed | setting={0} | value={1}")]
+           Message = "setting={0} | value={1}")]
     public void TuningChanged(string setting, string value)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
@@ -50,7 +50,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPipelineModeChangedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "pipeline mode | mode={0}")]
+           Message = "mode={0}")]
     public void PipelineModeChangedDetail(string mode)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
@@ -62,7 +62,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The Ambient settings store reported a problem | detail={0}")]
+           Message = "The Ambient settings store reported a problem\ndetail={0}")]
     public void SettingsLoadWarning(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
@@ -71,7 +71,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtSettingsLoadError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The Ambient settings store failed | detail={0}")]
+           Message = "The Ambient settings store failed\ndetail={0}")]
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
@@ -85,7 +85,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPresetSelectionReplaced,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A stored Ambient preset names no preset, the selection was derived from the values | asked={0} | obtained={1}")]
+           Message = "A stored Ambient preset names no preset, the selection was derived from the values\nasked={0} | obtained={1}")]
     public void PresetSelectionReplaced(string asked, string obtained)
     {
         if (IsEnabled()) WriteEvent(EvtPresetSelectionReplaced, asked, obtained);
