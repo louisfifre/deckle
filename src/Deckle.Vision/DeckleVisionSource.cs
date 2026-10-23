@@ -163,7 +163,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtCaptureLoopWaitFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "capture loop wait threw, continuing shutdown\nex_type={0} | ex_message={1}")]
+           Message = "The screen capture loop failed while stopping, and the stop went on\nex_type={0} | ex_message={1}")]
     public void CaptureLoopWaitFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtCaptureLoopWaitFailed, ex_type, ex_message);
@@ -206,7 +206,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtCaptureCleanupFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "cleanup step failed\nstep={0} | ex_type={1} | ex_message={2}")]
+           Message = "A screen capture resource could not be released and may stay held\nstep={0} | ex_type={1} | ex_message={2}")]
     public void CaptureCleanupFailed(string step, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtCaptureCleanupFailed, step, ex_type, ex_message);
