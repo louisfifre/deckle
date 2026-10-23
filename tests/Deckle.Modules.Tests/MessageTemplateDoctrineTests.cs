@@ -4,18 +4,13 @@ using Xunit;
 namespace Deckle.Modules.Tests;
 
 // Every template of this suite's providers follows the shape of its level, as
-// TemplateDoctrine states it. The list names the templates that do not yet, each
-// with its reason; an entry that outlives its breach fails the test too, so the
-// list only shrinks.
+// TemplateDoctrine states it. The list names the templates that cannot, each
+// with its reason; an entry that outlives its breach fails the test too.
 [Trait("Category", "observability")]
 public sealed class MessageTemplateDoctrineTests
 {
     private static readonly Dictionary<string, string> KnownBreaches = new(StringComparer.Ordinal)
     {
-        { "DeckleModulesSource.ModuleRegistered", TemplateDoctrine.PreDoctrine },
-        { "DeckleModulesSource.PresenceLoadedDetail", TemplateDoctrine.PreDoctrine },
-        { "DeckleModulesSource.PresenceLoadFailed", TemplateDoctrine.PreDoctrine },
-        { "DeckleModulesSource.PresenceSavedDetail", TemplateDoctrine.PreDoctrine },
     };
 
     [Fact]
