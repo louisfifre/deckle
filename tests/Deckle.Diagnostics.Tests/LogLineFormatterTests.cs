@@ -21,6 +21,28 @@ public sealed class LogLineFormatterTests
     }
 
     [Fact]
+    public void Two_line_message_keeps_its_break_and_indents_the_pairs_in_the_text()
+    {
+        var entry = Entry(formattedMessage: "The microphone is unavailable\nphase=probe | mmsys_err=4");
+
+        LogLineParts parts = LogLineFormatter.GetParts(entry);
+
+        string prefix = "12:34:56.789 [Vision] ";
+        Assert.Equal("The microphone is unavailable\nphase=probe | mmsys_err=4", parts.Message);
+        Assert.Equal(
+            prefix + "The microphone is unavailable\n" + new string(' ', prefix.Length) + "phase=probe | mmsys_err=4",
+            parts.Text);
+    }
+
+    [Fact]
+    public void Carriage_return_line_feed_becomes_a_single_line_feed()
+    {
+        var entry = Entry(formattedMessage: "The microphone is unavailable\r\nphase=probe");
+
+        Assert.Equal("The microphone is unavailable\nphase=probe", LogLineFormatter.GetParts(entry).Message);
+    }
+
+    [Fact]
     public void Event_name_is_used_when_no_message_was_formatted()
     {
         var entry = Entry(formattedMessage: null);
