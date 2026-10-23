@@ -1913,7 +1913,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── TaskGesturesTests.cs
 │   ├── Deckle.App.Tests/
 │   │   ├── Deckle.App.Tests.csproj
-│   │   └── HudFeedbackSinkTests.cs
+│   │   ├── DictationRecoveryBugNotes.md
+│   │   ├── HudFeedbackSinkTests.cs
+│   │   └── MilestoneClosersTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── AudioPathRedactionTests.cs
 │   │   ├── AudioRecordingHostDefaultsTests.cs
