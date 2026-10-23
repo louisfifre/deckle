@@ -126,6 +126,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Preview what links to an object before delete bins it
 - **anytype:** Tell agents that delete shows the links and bins any object
 - **anytype:** State the links the bin empties on the approval toast
+- **anytype:** Replace session_start with a minimal open_report
 
 ### Changed
 
@@ -285,6 +286,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **precision-scroll:** Restart a worker that stopped on its own, once
 - **diagnostics:** Count survived exceptions once per type and site
 - **app:** Report a survived exception as one warning per incident
+- **anytype:** Point open_report's task id to the reads that give it
+- **anytype:** Open the report even when its task's project cannot be read
 
 ## [0.59.0](https://github.com/louisfifre/deckle/compare/v0.58.5...v0.59.0) — 2026-10-21
 
