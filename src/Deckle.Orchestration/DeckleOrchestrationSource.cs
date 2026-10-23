@@ -153,7 +153,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtPageActionFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "An action on the apps and games page failed\naction={0} | ex_type={1} | ex_message={2}")]
+           Message = "An action on the apps and games page failed and did nothing\naction={0} | ex_type={1} | ex_message={2}")]
     public void PageActionFailed(string action, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPageActionFailed, action, ex_type, ex_message);
@@ -380,7 +380,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtProcessTraceEventDropped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "A process start event was dropped\nstage={0} | ex_type={1} | ex_message={2}")]
+           Message = "A process start event was dropped, so that app is noticed only if it comes to the foreground\nstage={0} | ex_type={1} | ex_message={2}")]
     public void ProcessTraceEventDropped(string stage, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtProcessTraceEventDropped, stage, ex_type, ex_message);
@@ -600,7 +600,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtRuleRestoreFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A rule could not be restored\nentry_id={0} | effect={1} | ex_type={2} | ex_message={3}")]
+           Message = "A rule could not be undone, so what it changed stays changed\nentry_id={0} | effect={1} | ex_type={2} | ex_message={3}")]
     public void RuleRestoreFailed(string entry_id, string effect, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRuleRestoreFailed, entry_id, effect, ex_type, ex_message);
@@ -652,7 +652,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtHdrSetFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "HDR could not be switched on a monitor\ndevice={0} | win32_error={1} | api={2}")]
+           Message = "HDR could not be switched on a monitor, so it stays as it was\ndevice={0} | win32_error={1} | api={2}")]
     public void HdrSetFailed(string device, int win32_error, string api)
     {
         if (IsEnabled()) WriteEvent(EvtHdrSetFailed, device, win32_error, api);
