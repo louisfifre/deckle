@@ -111,7 +111,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The whisper.cpp log hook could not be installed\nex_type={0} | ex_message={1}")]
+           Message = "The whisper.cpp log hook could not be installed, so its messages and the compute device are unknown\nex_type={0} | ex_message={1}")]
     public void LogHookUnavailable(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtLogHookUnavailable, ex_type, PathRedaction.Redact(ex_message));
@@ -393,7 +393,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Could not install the whisper.cpp runtime\nreason={0} | version={1} | ex_type={2} | ex_message={3}")]
+           Message = "The whisper.cpp runtime could not be installed, so transcription cannot run\nreason={0} | version={1} | ex_type={2} | ex_message={3}")]
     public void NativeRuntimeProvisionFailed(string reason, string version, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtNativeRuntimeProvisionFailed, reason, version, ex_type, PathRedaction.Redact(ex_message));
