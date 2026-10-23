@@ -30,7 +30,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtNativeImportFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Importing the native runtime failed\nex_type={0} | ex_message={1}")]
+           Message = "Importing the native runtime failed, so it is still missing\nex_type={0} | ex_message={1}")]
     public void NativeImportFailed(string ex_type, string ex_message)
     {
         if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))

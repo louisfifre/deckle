@@ -66,7 +66,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtDeployFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Placing Deckle failed\nwork_id={0} | step={1} | ex_type={2} | ex_message={3} | duration_ms={4}")]
+           Message = "Installing Deckle's files failed, so the install stopped\nwork_id={0} | step={1} | ex_type={2} | ex_message={3} | duration_ms={4}")]
     public void DeployFailed(string work_id, string step, string ex_type, string ex_message, long duration_ms)
     {
         if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))

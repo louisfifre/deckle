@@ -42,7 +42,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtUpdateCheckFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The update check could not complete\nex_type={0} | ex_message={1} | status={2}")]
+           Message = "The update check could not complete, so no new version is known\nex_type={0} | ex_message={1} | status={2}")]
     public void UpdateCheckFailed(string ex_type, string ex_message, int status)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
@@ -112,7 +112,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtUpdateDownloadFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The update download failed\nwork_id={0} | reason={1} | step={2} | ex_type={3} | ex_message={4}")]
+           Message = "The update download failed, so the update is not installed\nwork_id={0} | reason={1} | step={2} | ex_type={3} | ex_message={4}")]
     public void UpdateDownloadFailed(string work_id, string reason, string step, string ex_type, string ex_message)
     {
         if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))
