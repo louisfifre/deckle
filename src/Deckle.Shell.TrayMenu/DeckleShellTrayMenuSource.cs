@@ -55,9 +55,9 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     [Event(EvtHostConstructed,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Host constructed")]
+           Message = "The tray menu host was created")]
     public void HostConstructed()
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -67,7 +67,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtHostConstructedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "host constructed | owner_hwnd=0x{0:X}")]
+           Message = "owner_hwnd=0x{0:X}")]
     public void HostConstructedDetail(long owner_hwnd)
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -77,7 +77,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtFlyoutBuilt,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "menu flyout built | items={0}")]
+           Message = "items={0}")]
     public void FlyoutBuilt(int items)
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -85,9 +85,9 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     }
 
     [Event(EvtDisposed,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Host disposed")]
+           Message = "The tray menu host was released")]
     public void Disposed()
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -99,7 +99,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtFrameLoaded,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Frame.Loaded fired | already_loaded={0}")]
+           Message = "already_loaded={0}")]
     public void FrameLoaded(bool already_loaded)
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -109,7 +109,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtCarrierStyleFinalized,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "anchor style finalized | style_before=0x{0:X} style_after=0x{1:X}")]
+           Message = "style_before=0x{0:X} | style_after=0x{1:X}")]
     public void CarrierStyleFinalized(long style_before, long style_after)
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -119,7 +119,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtWindowActivated,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Window.Activated | state={0} is_visible={1}")]
+           Message = "state={0} | is_visible={1}")]
     public void WindowActivated(string state, bool is_visible)
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -131,7 +131,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtActivationMovedToOwnedPopup,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "activation moved to an owned popup | target_hwnd=0x{0:X}")]
+           Message = "target_hwnd=0x{0:X}")]
     public void ActivationMovedToOwnedPopup(long target_hwnd)
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -141,9 +141,9 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     // ── Show pipeline (per opening) ───────────────────────────────────────────
 
     [Event(EvtShowRequested,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Menu requested")]
+           Message = "The tray menu was requested")]
     public void ShowRequested()
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -151,9 +151,9 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     }
 
     [Event(EvtFlyoutShownAt,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Menu shown")]
+           Message = "The tray menu opened")]
     public void FlyoutShownAt()
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -166,7 +166,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtFlyoutShownAtDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "menu shown | window={0} side={1} anchor=({2},{3})-({4},{5})")]
+           Message = "window={0} | side={1} | anchor_left={2} | anchor_top={3} | anchor_right={4} | anchor_bottom={5}")]
     public void FlyoutShownAtDetail(
         string window, string side, int anchor_left, int anchor_top, int anchor_right, int anchor_bottom)
     {
@@ -175,9 +175,9 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     }
 
     [Event(EvtShowIgnoredAfterDismiss,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The menu stays closed after the click that dismissed it")]
+           Message = "The tray menu stays closed after the click that dismissed it")]
     public void ShowIgnoredAfterDismiss()
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -187,7 +187,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtShowIgnoredAfterDismissDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "show ignored after dismiss | ms_since_dismiss={0} guard_ms={1}")]
+           Message = "ms_since_dismiss={0} | guard_ms={1}")]
     public void ShowIgnoredAfterDismissDetail(long ms_since_dismiss, long guard_ms)
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -197,9 +197,9 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     // ── Dismiss & interactions ────────────────────────────────────────────────
 
     [Event(EvtHidden,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Menu hidden")]
+           Message = "The tray menu closed")]
     public void Hidden()
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -211,7 +211,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtHiddenDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "hidden | reason={0}")]
+           Message = "reason={0}")]
     public void HiddenDetail(string reason)
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -221,7 +221,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtFlyoutClosed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Flyout.Closed | is_visible={0}")]
+           Message = "is_visible={0}")]
     public void FlyoutClosed(bool is_visible)
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -229,9 +229,9 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     }
 
     [Event(EvtItemClicked,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A menu item was clicked")]
+           Message = "A tray menu item was clicked")]
     public void ItemClicked()
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
@@ -242,7 +242,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     [Event(EvtItemClickedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "item clicked | id={0}")]
+           Message = "id={0}")]
     public void ItemClickedDetail(string id)
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
