@@ -30,7 +30,7 @@ public sealed partial class TranscriptionEngine
         if (!silentStatus) RaiseStatus(Loc.Get("Status_LoadingModel"));
         string workId = WorkId.Next();
         // While the incident is open every take retries the load; only the
-        // first attempt opens a journal pair.
+        // first attempt opens a log pair.
         if (Volatile.Read(ref _modelIncidentOpen) != 0)
             DeckleWhispSource.Log.ModelLoadRetrying(workId);
         else

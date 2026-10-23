@@ -91,7 +91,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     [Event(EvtSpeechTrimVadLoaded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Silero VAD loaded")]
     public void SpeechTrimVadLoaded()
     {
@@ -130,7 +130,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     [Event(EvtSpeechTrimUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Speech trim is off, takes run untrimmed | reason={0} | ex_type={1} | ex_message={2}")]
     public void SpeechTrimUnavailable(string reason, string ex_type, string ex_message)
     {
@@ -146,12 +146,12 @@ public sealed class DeckleVadSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtSpeechTrimUnavailableDetail, reason, PathRedaction.Redact(model_path));
     }
 
-    // Closes the incident SpeechTrimUnavailable opened, so the journal never
+    // Closes the incident SpeechTrimUnavailable opened, so the log never
     // shows a degradation without its end.
     [Event(EvtSpeechTrimRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Speech trim is back on | previous_reason={0}")]
     public void SpeechTrimRecovered(string previous_reason)
     {

@@ -267,11 +267,11 @@ public sealed class DeckleWindowingSource : DeckleEventSource
     }
 
     // Closes the incident at the first success of the same (window, stage).
-    // Journal-tagged: the journal keeps the Warning, so it keeps its end too.
+    // Milestone-tagged: the log keeps the Warning, so it keeps its end too.
     [Event(EvtWindowFailureRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "A window shows and places again | window={0} | stage={1} | failures={2}")]
     public void WindowFailureRecovered(string window, string stage, int failures)
     {

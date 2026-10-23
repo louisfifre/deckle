@@ -7,7 +7,7 @@ namespace Deckle.Playground.Tests;
 
 // The Playground's Warning and Error events used to say that something failed and
 // nothing else, with the page, the operation and the error type in a Verbose
-// detail no default log keeps. These tests hold the journal line to carrying
+// detail no default log keeps. These tests hold the log line to carrying
 // its own cause. The events are picked by their payload, since other tests of
 // this project emit on the same provider.
 [Trait("Category", "observability")]
@@ -23,7 +23,7 @@ public sealed class PlaygroundFailureObservabilityTests
 
     [Fact]
     [Trait("Category", "regression")]
-    public void ANavigationThatFailedNamesItsPageAndItsReasonInTheJournal()
+    public void ANavigationThatFailedNamesItsPageAndItsReasonInTheLog()
     {
         using var listener = new TestEventListener(Provider);
 
@@ -38,7 +38,7 @@ public sealed class PlaygroundFailureObservabilityTests
 
     [Fact]
     [Trait("Category", "regression")]
-    public void ARejectedNavigationNamesItsReasonInTheJournal()
+    public void ARejectedNavigationNamesItsReasonInTheLog()
     {
         using var listener = new TestEventListener(Provider);
 
@@ -52,7 +52,7 @@ public sealed class PlaygroundFailureObservabilityTests
 
     [Fact]
     [Trait("Category", "regression")]
-    public void AHueCallThatFailedNamesItsOperationAndItsErrorTypeInTheJournal()
+    public void AHueCallThatFailedNamesItsOperationAndItsErrorTypeInTheLog()
     {
         using var listener = new TestEventListener(Provider);
 
@@ -66,7 +66,7 @@ public sealed class PlaygroundFailureObservabilityTests
 
     [Fact]
     [Trait("Category", "regression")]
-    public void AScreenCaptureThatFailedToStartNamesItsErrorTypeInTheJournal()
+    public void AScreenCaptureThatFailedToStartNamesItsErrorTypeInTheLog()
     {
         using var listener = new TestEventListener(Provider);
 

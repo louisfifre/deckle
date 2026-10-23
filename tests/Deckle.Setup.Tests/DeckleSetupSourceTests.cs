@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Deckle.Setup.Tests;
 
-// Pins what the journal keeps of a relocation that finished without part of the
+// Pins what the log keeps of a relocation that finished without part of the
 // diagnostics: the level and the pairing id, which a reader filters on.
 [Trait("Category", "observability")]
 public sealed class DeckleSetupSourceTests

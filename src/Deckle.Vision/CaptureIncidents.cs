@@ -26,7 +26,7 @@ public static class CaptureLossCauses
 }
 
 // The incidents of one capture loop. Each is a degradation that repeats, so it
-// writes one Warning when it opens and one journal line when it ends, and the
+// writes one Warning when it opens and one log line when it ends, and the
 // loop's exit closes whatever is still open: an incident that nothing declared
 // over reads as abandoned. Time comes in as a tick count so the rules can be
 // exercised without waiting.

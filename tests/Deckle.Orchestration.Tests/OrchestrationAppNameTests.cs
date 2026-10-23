@@ -6,7 +6,7 @@ using Xunit;
 namespace Deckle.Orchestration.Tests;
 
 // An application or process name is Verbose detail, never part of what the
-// journal keeps. The journal outlives the session and says which program the
+// log keeps. The log outlives the session and says which program the
 // person was using, so a name belongs on the detail event that can be switched
 // off and nowhere else.
 [Trait("Category", "observability")]
@@ -15,16 +15,16 @@ public sealed class OrchestrationAppNameTests
     private const string Provider = "Deckle-Orchestration";
 
     [Fact]
-    public void NoEventThatTravelsInTheJournalDeclaresAnAppOrProcessName()
+    public void NoEventThatTravelsInTheLogDeclaresAnAppOrProcessName()
     {
-        Assert.Empty(JournalledPayloads.AppNamesInTheJournal(typeof(DeckleOrchestrationSource)));
+        Assert.Empty(LoggedPayloads.AppNamesInTheLog(typeof(DeckleOrchestrationSource)));
     }
 
     [Fact]
-    public void TheNamesStayOnVerboseDetailEventsThatTheJournalDoesNotKeep()
+    public void TheNamesStayOnVerboseDetailEventsThatTheLogDoesNotKeep()
     {
-        var carrying = JournalledPayloads
-            .Carrying(typeof(DeckleOrchestrationSource), JournalledPayloads.AppNameFields)
+        var carrying = LoggedPayloads
+            .Carrying(typeof(DeckleOrchestrationSource), LoggedPayloads.AppNameFields)
             .Select(c => c.Event)
             .DistinctBy(e => e.Name)
             .ToArray();
@@ -35,12 +35,12 @@ public sealed class OrchestrationAppNameTests
         Assert.All(carrying, e =>
         {
             Assert.Equal(EventLevel.Verbose, e.Level);
-            Assert.False(JournalledPayloads.Travels(e), $"{e.Name} travels in the journal.");
+            Assert.False(LoggedPayloads.Travels(e), $"{e.Name} travels in the log.");
         });
     }
 
     [Fact]
-    public void AStartedSessionNamesNoAppOnAnyEventTheJournalKeeps()
+    public void AStartedSessionNamesNoAppOnAnyEventTheLogKeeps()
     {
         using var listener = new TestEventListener(Provider);
         var entry = new AppEntry
@@ -52,12 +52,12 @@ public sealed class OrchestrationAppNameTests
         OrchestrationRuntime.LogSessionStarted(entry, pid: 4343);
         OrchestrationRuntime.LogSessionEnded(entry, SessionEndReason.EntryDisabled);
 
-        var journalled = listener.Events
-            .Where(e => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Journal) != 0)
+        var logged = listener.Events
+            .Where(e => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Milestone) != 0)
             .Where(e => Equals(e.Payload?[0], entry.Id))
             .ToArray();
-        Assert.NotEmpty(journalled);
-        foreach (EventWrittenEventArgs e in journalled)
+        Assert.NotEmpty(logged);
+        foreach (EventWrittenEventArgs e in logged)
         {
             foreach (object? value in e.Payload!)
             {

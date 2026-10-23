@@ -145,7 +145,7 @@ public sealed class VadService : IDisposable
     // The caller runs the loaded VAD itself, so it reports each trim's outcome
     // here: the trim failures of successive takes are one incident, opened by
     // the first and closed by the next trim that succeeds. Each failure stays
-    // a Verbose attempt; only the opening reaches the journal.
+    // a Verbose attempt; only the opening reaches the log.
     public void ReportTrimFailure(int utteranceIndex, Exception ex)
     {
         DeckleVadSource.Log.SpeechTrimFailed(utteranceIndex, ex.GetType().Name, ex.Message);

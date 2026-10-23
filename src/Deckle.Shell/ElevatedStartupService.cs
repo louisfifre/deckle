@@ -165,7 +165,7 @@ public static class ElevatedStartupService
     }
 
     // ERROR_CANCELLED (1223) from a runas start is the person declining the
-    // UAC prompt, a choice rather than a fault, so the journal names it apart.
+    // UAC prompt, a choice rather than a fault, so the log names it apart.
     private static string FailureReason(Exception ex) =>
         ex is Win32Exception { NativeErrorCode: 1223 } ? "uac_declined" : "exception";
 

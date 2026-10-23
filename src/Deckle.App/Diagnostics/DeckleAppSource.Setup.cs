@@ -16,7 +16,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtTransactionalModeExited,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Install mode ended | mode={0} | outcome={1} | reason={2} | duration_ms={3}")]
     public void TransactionalModeExited(string mode, string outcome, string reason, long duration_ms)
     {
@@ -26,7 +26,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtTransactionalModeFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Install mode failed | mode={0} | {1}: {2} | duration_ms={3}")]
     public void TransactionalModeFailed(string mode, string ex_type, string ex_message, long duration_ms)
     {
@@ -46,12 +46,12 @@ public sealed partial class DeckleAppSource
     // ── Relocated data root cleanup ─────────────────────────────────────
     //
     // A recursive delete of a whole data root: Warning before it runs, so the
-    // journal names the folder even if the process dies mid-delete.
+    // log names the folder even if the process dies mid-delete.
 
     [Event(EvtDataRootCleanupStarting,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Deleting the previous data root | path={0}")]
     public void DataRootCleanupStarting(string path)
     {
@@ -63,7 +63,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtDataRootCleanupFinished,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Previous data root cleanup ended | outcome={0} | reason={1} | elapsed_ms={2}")]
     public void DataRootCleanupFinished(string outcome, string reason, long elapsed_ms)
     {
@@ -73,7 +73,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtDataRootCleanupFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The previous data root could not be fully deleted | {0}: {1} | elapsed_ms={2}")]
     public void DataRootCleanupFailed(string ex_type, string ex_message, long elapsed_ms)
     {
@@ -115,7 +115,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtUpdateFlowStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Update started | version={0}")]
     public void UpdateFlowStarted(string version)
     {
@@ -138,7 +138,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtUpdateFlowFinished,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Update window closed | outcome={0} | duration_ms={1}")]
     public void UpdateFlowFinished(string outcome, long duration_ms)
     {
@@ -148,7 +148,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtUpdateFlowFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The update failed | {0}: {1} | duration_ms={2}")]
     public void UpdateFlowFailed(string ex_type, string ex_message, long duration_ms)
     {

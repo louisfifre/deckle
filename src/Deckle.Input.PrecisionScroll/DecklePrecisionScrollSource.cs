@@ -39,7 +39,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtEngineStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Precision scrolling enabled | direction_reversed={0} | mouse_hook={1}")]
     public void EngineStarted(bool direction_reversed, bool mouse_hook)
     {
@@ -67,7 +67,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtEngineStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Precision scrolling disabled | outcome={0} | reason={1}")]
     public void EngineStopped(string outcome, string reason)
     {
@@ -88,7 +88,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Precision scrolling is unavailable | reason={0} | win32_error={1} | ex_type={2} | ex_message={3}")]
     public void Unavailable(string reason, int win32_error, string ex_type, string ex_message)
     {
@@ -98,7 +98,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtTouchpadSettingsUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Touchpad direction could not be read | win32_error={0}")]
     public void TouchpadSettingsUnavailable(int win32_error)
     {
@@ -157,7 +157,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
 
     // The worker ended on its own and the runtime will start it again once,
     // after delay_ms. reason is the engine's: queue_full, injection_failed or
-    // worker_faulted. The engine's own line already told the journal why it ended.
+    // worker_faulted. The engine's own line already told the log why it ended.
     [Event(EvtRestartScheduledDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -175,7 +175,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtFellBackToNativeWheel,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Precision scrolling stopped again and stays off, the wheel scrolls natively | reason={0}")]
     public void FellBackToNativeWheel(string reason)
     {
@@ -189,7 +189,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtFallbackRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Precision scrolling no longer stays off, the person toggled it | previous_reason={0}")]
     public void FallbackRecovered(string previous_reason)
     {

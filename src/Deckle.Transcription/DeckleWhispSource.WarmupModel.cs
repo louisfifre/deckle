@@ -77,13 +77,13 @@ public sealed partial class DeckleWhispSource
     //
     // WarmupStart always ends with WarmupComplete, WarmupCancelled or
     // WarmupFailed: EnsurePrimed emits one on every exit, thrown ones included.
-    // The pair travels in the journal and shares `work_id`, which is not the id
+    // The pair travels in the log and shares `work_id`, which is not the id
     // of the model load the warmup triggers: that load is its own work.
 
     [Event(EvtWarmupStart,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Warmup start | work_id={0}")]
     public void WarmupStart(string work_id)
     {
@@ -93,7 +93,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWarmupComplete,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Warmup complete | work_id={0} | elapsed_ms={1}")]
     public void WarmupComplete(string work_id, long elapsed_ms)
     {
@@ -104,7 +104,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWarmupCancelled,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Warmup cancelled | work_id={0} | elapsed_ms={1}")]
     public void WarmupCancelled(string work_id, long elapsed_ms)
     {
@@ -145,13 +145,13 @@ public sealed partial class DeckleWhispSource
     // ModelLoaded or ModelUnavailable closes it, sharing `work_id`. While the
     // "no transcription" incident is open every take retries the load, and
     // only the first failure is told: those retries start with
-    // ModelLoadRetrying instead, which stays out of the journal like their
+    // ModelLoadRetrying instead, which stays out of the log like their
     // ModelLoadRetryFailed end. The success that ends the incident is
     // ModelRecovered, which repeats the id of the ModelUnavailable it closes.
     [Event(EvtModelLoading,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Loading model | work_id={0}")]
     public void ModelLoading(string work_id)
     {
@@ -183,7 +183,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelUnavailable,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The transcription model is unavailable | work_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
     public void ModelUnavailable(string work_id, string reason, string ex_type, string ex_message)
     {
@@ -207,7 +207,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Transcription model availability recovered | work_id={0} | load_ms={1} | device={2}")]
     public void ModelRecovered(string work_id, long load_ms, string device)
     {
@@ -217,7 +217,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelLoaded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Model loaded | work_id={0} | load_ms={1} | device={2}")]
     public void ModelLoaded(string work_id, long load_ms, string device)
     {

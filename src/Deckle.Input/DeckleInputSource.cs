@@ -93,12 +93,12 @@ public sealed class DeckleInputSource : DeckleEventSource
 
     // ── Raw input host lifecycle ─────────────────────────────────────────
 
-    // Emitted once the boot probe has run, so the run journal states how
+    // Emitted once the boot probe has run, so the run log states how
     // many touchpads the host found without any verbosity turned on.
     [Event(EvtHostStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Raw input host started | touchpads={0}")]
     public void HostStarted(int touchpads)
     {
@@ -120,7 +120,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtHostStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Raw input host stopped | outcome={0} | reason={1}")]
     public void HostStopped(string outcome, string reason)
     {
@@ -130,7 +130,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtHostStartFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Raw input host failed to start | ex_type={0} | ex_message={1} | win32_error={2}")]
     public void HostStartFailed(string ex_type, string ex_message, int win32_error)
     {
@@ -231,7 +231,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtRecordingStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Frame recording started")]
     public void RecordingStarted()
     {
@@ -252,7 +252,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtRecordingStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Frame recording stopped | outcome={0} | frames={1}")]
     public void RecordingStopped(string outcome, long frames)
     {
@@ -295,7 +295,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtKeyboardHostStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Keyboard input host started | mouse_hook={0}")]
     public void KeyboardHostStarted(bool mouse_hook)
     {
@@ -314,7 +314,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtKeyboardHostStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Keyboard input host stopped | outcome={0} | reason={1}")]
     public void KeyboardHostStopped(string outcome, string reason)
     {
@@ -324,7 +324,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtKeyboardHostStartFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Keyboard input host failed to start | ex_type={0} | ex_message={1} | win32_error={2}")]
     public void KeyboardHostStartFailed(string ex_type, string ex_message, int win32_error)
     {
@@ -394,7 +394,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtMouseHookSilenceEnded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Mouse wheel hook receives input again | reason={0} | unpaired={1}")]
     public void MouseHookSilenceEnded(string reason, int unpaired)
     {
@@ -418,7 +418,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtInputRelayRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Keyboard input host relays input again | reason={0} | occurrences={1}")]
     public void InputRelayRecovered(string reason, int occurrences)
     {
@@ -432,7 +432,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtWheelRecordingStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Wheel recording started")]
     public void WheelRecordingStarted()
     {
@@ -451,7 +451,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtWheelRecordingStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Wheel recording stopped | outcome={0} | events={1}")]
     public void WheelRecordingStopped(string outcome, long events)
     {

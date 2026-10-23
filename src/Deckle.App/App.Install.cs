@@ -25,7 +25,7 @@ public partial class App
     internal static bool IsTransactionalMode(string[] args)
         => Array.Exists(args, a => Array.IndexOf(TransactionalModeFlags, a) >= 0);
 
-    // Mode names in the journal, the phases InstallModeEnteredDetail prints.
+    // Mode names in the log, the phases InstallModeEnteredDetail prints.
     private const string WizardMode       = "wizard";
     private const string ContinuationMode = "continuation";
     private const string UpdateApplyMode  = "update-apply";

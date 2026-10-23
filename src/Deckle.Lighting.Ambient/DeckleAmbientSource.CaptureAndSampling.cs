@@ -12,7 +12,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtCaptureLost,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Screen capture stopped, Ambient lighting is stopping | reason={0}")]
     public void CaptureLost(string reason)
     {
@@ -41,7 +41,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtFrameProcessingRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Frame processing recovered")]
     public void FrameProcessingRecovered()
     {

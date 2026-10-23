@@ -1,7 +1,7 @@
 namespace Deckle.Diagnostics;
 
 // What a run identity line may say about its command line. The line travels
-// with the journal to another machine, and a command line can carry a path
+// with the log to another machine, and a command line can carry a path
 // under the user's profile or a value typed for a switch, so only the switch
 // names are kept: what the process was asked to do, never what it was given.
 public static class CommandLineSwitches

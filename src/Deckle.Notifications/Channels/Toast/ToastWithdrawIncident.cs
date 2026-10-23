@@ -13,7 +13,7 @@ public sealed class ToastWithdrawIncident
     private bool _failing;
 
     // Emitted under the lock so a failure and the recovery that follows it
-    // reach the journal in the order they happened.
+    // reach the log in the order they happened.
     public void Failed(Exception ex)
     {
         ArgumentNullException.ThrowIfNull(ex);

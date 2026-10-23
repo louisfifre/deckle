@@ -16,7 +16,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPipelineStarting,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Ambient lighting starting | work_id={0}")]
     public void PipelineStarting(string work_id)
     {
@@ -29,7 +29,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPipelineStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Ambient lighting started | work_id={0} | output={1} | shape={2} | lights={3} | push_hz={4} | hdr={5}")]
     public void PipelineStarted(string work_id, string output, string shape, int lights, int push_hz, string hdr)
     {
@@ -51,7 +51,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPipelineStartFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Ambient lighting failed to start | work_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
     public void PipelineStartFailed(string work_id, string reason, string ex_type, string ex_message)
     {
@@ -59,11 +59,11 @@ public sealed partial class DeckleAmbientSource
     }
 
     // A start the caller cancelled is not a failure: it ends the Starting
-    // milestone without raising an Error in the journal.
+    // milestone without raising an Error in the log.
     [Event(EvtPipelineStartCancelled,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Ambient lighting start cancelled | work_id={0} | elapsed_ms={1}")]
     public void PipelineStartCancelled(string work_id, long elapsed_ms)
     {
@@ -75,7 +75,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPipelineStopping,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Ambient lighting stopping | work_id={0} | reason={1}")]
     public void PipelineStopping(string work_id, string reason)
     {
@@ -90,7 +90,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPipelineStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Ambient lighting stopped | work_id={0} | reason={1} | outcome={2} | duration_s={3:F1} | pushed={4} | dropped={5} | ex_type={6} | ex_message={7}")]
     public void PipelineStopped(
         string work_id, string reason, string outcome, double duration_s,
@@ -106,7 +106,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPipelineIncidentAbandoned,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Ambient lighting stopped with an incident still open | work_id={0} | incident={1} | failures={2} | duration_ms={3}")]
     public void PipelineIncidentAbandoned(string work_id, string incident, int failures, long duration_ms)
     {

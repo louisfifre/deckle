@@ -49,7 +49,7 @@ public partial class App
         }
 
         // Every piece of the resident app composes through here, so the
-        // journal names what started, what was skipped and why, and what
+        // log names what started, what was skipped and why, and what
         // failed. The exception goes on as before: App.xaml.cs's net handles
         // it, and this line is what says which module it came from. Starting
         // goes out first so a module that hangs is still named.
@@ -70,7 +70,7 @@ public partial class App
         }
 
         // For a module whose start reports failure by returning false: the
-        // boot goes on without it, so no exception, and the journal says the
+        // boot goes on without it, so no exception, and the log says the
         // module refused rather than leaving a ModuleStarted that is not true.
         internal void ComposeOrRefuse(string module, string refusalReason, Func<bool> compose)
         {
@@ -121,7 +121,7 @@ public partial class App
         // Before the first event: a provider hides the data root in the paths
         // it writes (PathRedaction), and Diagnostics cannot resolve it alone
         // since it sits below Deckle.Core. A root registered late would let the
-        // first lines of the journal carry it in clear.
+        // first lines of the log carry it in clear.
         PathRedaction.AddRoot(PathRedaction.DataRootToken, AppPaths.UserDataRoot);
         AppDiagnosticsBootstrap.InitializeLocalSinks(AppPaths.DiagnosticsDirectory);
         DeckleAppSource.Log.AppStarting();
@@ -236,7 +236,7 @@ public partial class App
 #endif
 
     // Right after AppStarting, while only the local sinks exist: the boot
-    // replay carries it to the later ones, and the journal has it even if the
+    // replay carries it to the later ones, and the log has it even if the
     // next boot step is the one that fails.
     private static void EmitRunIdentity()
     {
@@ -274,8 +274,8 @@ public partial class App
     }
 
     // The second instances turned away since the last start could not write to
-    // the journal, which this run holds open: they left their fact in
-    // second-instance.txt. It is copied into the journal now, one line per fact,
+    // the log, which this run holds open: they left their fact in
+    // second-instance.txt. It is copied into the log now, one line per fact,
     // or as one count line past MaxRejectedFactsListed, and the file is cleared.
     private const int MaxRejectedFactsListed = 10;
 

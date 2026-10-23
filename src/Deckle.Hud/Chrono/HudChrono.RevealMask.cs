@@ -51,7 +51,7 @@ public sealed partial class HudChrono
 
     // The degraded-reveal incident spans takes on purpose: a GPU or driver
     // that rejects the mask does so on every take, and one Warning per take
-    // would bury the journal. Closed by the first take whose six masks build.
+    // would bury the log. Closed by the first take whose six masks build.
     private bool _revealIncidentOpen;
 
     // Counted in vsync frames, one build attempt per frame.

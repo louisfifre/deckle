@@ -33,7 +33,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtWindowCreated,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Window created | window={0}")]
     public void WindowCreated(string window)
     {

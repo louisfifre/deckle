@@ -55,7 +55,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtPushRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Hue bridge pushes recovered")]
     public void PushRecovered()
     {

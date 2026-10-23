@@ -19,7 +19,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgePairingStored,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Bridge pairing stored")]
     public void BridgePairingStored()
     {
@@ -51,7 +51,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgeRestoredFromSettings,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Bridge restored from settings | client_key_present={0}")]
     public void BridgeRestoredFromSettings(bool client_key_present)
     {
@@ -103,7 +103,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgeEndpointRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Bridge endpoint recovered")]
     public void BridgeEndpointRecovered()
     {

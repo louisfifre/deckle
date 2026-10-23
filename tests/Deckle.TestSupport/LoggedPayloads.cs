@@ -3,15 +3,15 @@ using Deckle.Diagnostics;
 
 namespace Deckle.TestSupport;
 
-// ── JournalledPayloads ────────────────────────────────────────────────────────
+// ── LoggedPayloads ────────────────────────────────────────────────────────
 //
 // Answers "which events of this provider declare a payload with one of these
-// names, and do they travel in the journal?" straight from the [Event]
+// names, and do they travel in the log?" straight from the [Event]
 // attributes. It backs the rule that an application or process name stays on a
-// Verbose detail event and never rides a Warning, an Error or a journalled
-// milestone: the journal outlives the session, and a name read there says which
+// Verbose detail event and never rides a Warning, an Error or a logged
+// milestone: the log outlives the session, and a name read there says which
 // program the person was using.
-public static class JournalledPayloads
+public static class LoggedPayloads
 {
     // The payload names under which the providers carry the name of an
     // application or of a process. A new provider that names an app under
@@ -26,13 +26,13 @@ public static class JournalledPayloads
         "exe_name",
     ];
 
-    // The journal keeps every Warning and Error and every event tagged Journal.
-    // This is the same predicate the app's journal sink applies.
+    // The log keeps every Warning and Error and every event tagged Milestone.
+    // This is the same predicate the app's log sink applies.
     public static bool Travels(ProviderManifest.DeclaredEvent declared)
-        => declared.Level <= EventLevel.Warning || ObservationTags.IsJournal(declared.Tags);
+        => declared.Level <= EventLevel.Warning || ObservationTags.IsMilestone(declared.Tags);
 
     // "EventName.field" for each declared event that carries one of the fields,
-    // with whether the event travels in the journal.
+    // with whether the event travels in the log.
     public static IReadOnlyList<(string Payload, ProviderManifest.DeclaredEvent Event)> Carrying(
         Type sourceType, IEnumerable<string> fields)
     {
@@ -51,8 +51,8 @@ public static class JournalledPayloads
     }
 
     // The payloads that break the rule: an app or process name on an event that
-    // travels in the journal. Empty when the provider keeps to it.
-    public static IReadOnlyList<string> AppNamesInTheJournal(Type sourceType)
+    // travels in the log. Empty when the provider keeps to it.
+    public static IReadOnlyList<string> AppNamesInTheLog(Type sourceType)
         => [.. Carrying(sourceType, AppNameFields)
             .Where(c => Travels(c.Event))
             .Select(c => c.Payload)];

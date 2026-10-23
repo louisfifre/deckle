@@ -8,10 +8,10 @@ using Xunit;
 namespace Deckle.Anytype.Tests;
 
 // A list read that meets an empty page while the server still claims more rows
-// survives, but its result may be short. That degradation reaches the journal as
+// survives, but its result may be short. That degradation reaches the log as
 // a Warning that names the read and the offset, and nothing the rows hold.
 [Trait("Category", "observability")]
-public sealed class PagedReadJournalTests
+public sealed class PagedReadLogTests
 {
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -45,7 +45,7 @@ public sealed class PagedReadJournalTests
         EventWrittenEventArgs warning = Assert.Single(
             listener.Events, e => e.EventId == DeckleAnytypeSource.EvtPagedReadEndedOnEmptyPage);
         Assert.Equal(EventLevel.Warning, warning.Level);
-        Assert.NotEqual((EventTags)0, warning.Tags & ObservationTags.Journal);
+        Assert.NotEqual((EventTags)0, warning.Tags & ObservationTags.Milestone);
         Assert.Equal("object_listing", Field(warning, "read"));
         Assert.Equal("3", Field(warning, "offset"));
         Assert.DoesNotContain("Nom privé", warning.Message + string.Join(' ', warning.Payload!));

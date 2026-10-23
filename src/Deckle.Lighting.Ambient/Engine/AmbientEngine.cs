@@ -106,7 +106,7 @@ public sealed partial class AmbientEngine : IAsyncDisposable
     private string? _startAbortReason;
     private int _stopRequested;
 
-    // Pairs the journal's start and end of one run (WorkId). Set when
+    // Pairs the log's start and end of one run (WorkId). Set when
     // StartAsync begins; Stop() copies it before its cleanup runs.
     private string _runId = "";
 

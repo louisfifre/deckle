@@ -362,7 +362,7 @@ public sealed class OrchestrationRuntime : IDisposable
         DeckleOrchestrationSource.Log.SessionEndedDetail(entry.Id, entry.DisplayName);
     }
 
-    // EventSource payloads take no enums; the journal reads snake_case words.
+    // EventSource payloads take no enums; the log reads snake_case words.
     private static string ReasonName(SessionEndReason reason) => reason switch
     {
         SessionEndReason.Exited => "exited",

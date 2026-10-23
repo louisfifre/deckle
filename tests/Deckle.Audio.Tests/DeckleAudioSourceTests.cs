@@ -52,7 +52,7 @@ public sealed class DeckleAudioSourceTests : IDisposable
     }
 
     [Fact]
-    public void RecordingStartAndEndShareOneWorkIdInTheJournal()
+    public void RecordingStartAndEndShareOneWorkIdInTheLog()
     {
         using var listener = new TestEventListener("Deckle-Audio");
 
@@ -61,8 +61,8 @@ public sealed class DeckleAudioSourceTests : IDisposable
 
         Assert.Collection(
             listener.Events,
-            e => AssertJournalLine(e, DeckleAudioSource.EvtRecordingStarted, "w1"),
-            e => AssertJournalLine(e, DeckleAudioSource.EvtRecordingCompleted, "w1"));
+            e => AssertMilestoneLine(e, DeckleAudioSource.EvtRecordingStarted, "w1"),
+            e => AssertMilestoneLine(e, DeckleAudioSource.EvtRecordingCompleted, "w1"));
     }
 
     [Fact]
@@ -77,7 +77,7 @@ public sealed class DeckleAudioSourceTests : IDisposable
             recording_ms: 1800, work_id: "w7");
 
         EventWrittenEventArgs line = Assert.Single(listener.Events);
-        AssertJournalLine(line, DeckleAudioSource.EvtRecordingAnomaliesSummary, "w7");
+        AssertMilestoneLine(line, DeckleAudioSource.EvtRecordingAnomaliesSummary, "w7");
         Assert.Equal(3, PayloadOf(line, "lag_occurrences"));
         Assert.Equal(false, PayloadOf(line, "lag_recovered"));
         Assert.Equal(4, PayloadOf(line, "lag_max_buffers_ready"));
@@ -97,9 +97,9 @@ public sealed class DeckleAudioSourceTests : IDisposable
     }
 
     // One play per user action: the device it opened and the outcome it ended with
-    // both reach the journal, so a playback that never sounds is readable from the file.
+    // both reach the log, so a playback that never sounds is readable from the file.
     [Fact]
-    public void APlaybackTravelsInTheJournalFromItsDeviceToItsOutcome()
+    public void APlaybackTravelsInTheLogFromItsDeviceToItsOutcome()
     {
         using var listener = new TestEventListener("Deckle-Audio");
 
@@ -111,20 +111,20 @@ public sealed class DeckleAudioSourceTests : IDisposable
             started =>
             {
                 Assert.Equal(DeckleAudioSource.EvtPlaybackStarted, started.EventId);
-                Assert.True(ObservationTags.IsJournal(started.Tags));
+                Assert.True(ObservationTags.IsMilestone(started.Tags));
             },
             ended =>
             {
                 Assert.Equal(DeckleAudioSource.EvtPlaybackCompleted, ended.EventId);
-                Assert.True(ObservationTags.IsJournal(ended.Tags));
+                Assert.True(ObservationTags.IsMilestone(ended.Tags));
                 Assert.Equal("cancelled", PayloadOf(ended, "outcome"));
             });
     }
 
-    private static void AssertJournalLine(EventWrittenEventArgs e, int eventId, string workId)
+    private static void AssertMilestoneLine(EventWrittenEventArgs e, int eventId, string workId)
     {
         Assert.Equal(eventId, e.EventId);
-        Assert.True(ObservationTags.IsJournal(e.Tags));
+        Assert.True(ObservationTags.IsMilestone(e.Tags));
         Assert.Equal(workId, PayloadOf(e, "work_id"));
     }
 

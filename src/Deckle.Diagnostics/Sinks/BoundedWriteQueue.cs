@@ -196,7 +196,7 @@ internal sealed class BoundedWriteQueue<T> : IDisposable where T : class
             _consecutiveFailures = 0;
             // The incident is closed and counted in SinkRecovered; keeping its
             // error would make a later Flush or Dispose report a fault the
-            // journal already says is over.
+            // log already says is over.
             Interlocked.Exchange(ref _lastError, null);
             if (_onRecovered is not null)
             {

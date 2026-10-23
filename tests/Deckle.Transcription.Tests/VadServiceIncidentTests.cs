@@ -27,16 +27,16 @@ public sealed class VadServiceIncidentTests : IDisposable
         vadService.ReportTrimFailure(1, new InvalidOperationException("second take"));
         vadService.ReportTrimSucceeded();
 
-        var journal = listener.Events
+        var logged = listener.Events
             .Where(static e => e.EventId is DeckleVadSource.EvtSpeechTrimUnavailable
                                          or DeckleVadSource.EvtSpeechTrimRecovered)
             .ToList();
         Assert.Collection(
-            journal,
+            logged,
             e => Assert.Equal(DeckleVadSource.EvtSpeechTrimUnavailable, e.EventId),
             e => Assert.Equal(DeckleVadSource.EvtSpeechTrimRecovered, e.EventId));
 
         // The recovery names the cause the opening reported.
-        Assert.Equal(journal[0].Payload![0], journal[1].Payload![0]);
+        Assert.Equal(logged[0].Payload![0], logged[1].Payload![0]);
     }
 }

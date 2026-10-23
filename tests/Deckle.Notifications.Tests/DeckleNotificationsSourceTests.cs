@@ -93,7 +93,7 @@ public class DeckleNotificationsSourceTests
         var dropped = Single(listener, DeckleNotificationsSource.EvtNotificationDropped);
         Assert.Equal(EventLevel.Warning, dropped.Level);
         Assert.True(dropped.HasKeyword(Keywords.Push));
-        // The journal keeps Warnings whatever the verbosity, so the line itself
+        // The log keeps Warnings whatever the verbosity, so the line itself
         // names the notification and the reason.
         Assert.Equal(["notification_id", "reason"], dropped.PayloadNames);
         Assert.Equal("playground.dropped", dropped.Payload?[0]);
@@ -211,7 +211,7 @@ public class DeckleNotificationsSourceTests
         Assert.Equal(EventLevel.Warning, failed.Level);
         Assert.True(failed.HasKeyword(Keywords.Push));
 
-        // The cause rides on the Warning the journal keeps, not on a Verbose mirror.
+        // The cause rides on the Warning the log keeps, not on a Verbose mirror.
         Assert.Equal(["notification_id", "ex_type", "ex_message"], failed.PayloadNames);
         Assert.Equal("playground.failed_obs", failed.Payload?[0]);
         Assert.Equal("InvalidOperationException", failed.Payload?[1]);
@@ -226,46 +226,46 @@ public class DeckleNotificationsSourceTests
     }
 
     // A prompt waits on a person, so it is lasting work: its start and each way it
-    // can end reach the journal carrying the notification id that pairs them.
+    // can end reach the log carrying the notification id that pairs them.
     [Fact]
-    public async Task AnAnsweredPromptTravelsInTheJournalFromShownToResponded()
+    public async Task AnAnsweredPromptTravelsInTheLogFromShownToResponded()
     {
         var dispatcher = NotificationDispatcher.Initialize(
             new FakeNotificationChannel(cannedResponse: new NotificationResponse("ok", null)));
-        var descriptor = Descriptors.Make("playground.journal_answered");
+        var descriptor = Descriptors.Make("playground.log_answered");
         dispatcher.Catalog.Register(new[] { descriptor });
 
         using var listener = new TestEventListener("Deckle-Notifications");
         await dispatcher.PromptAsync(descriptor, ct: TestContext.Current.CancellationToken);
 
-        AssertJournalWithId(listener, DeckleNotificationsSource.EvtNotificationShown, descriptor.Id);
-        AssertJournalWithId(listener, DeckleNotificationsSource.EvtNotificationResponded, descriptor.Id);
+        AssertMilestoneWithId(listener, DeckleNotificationsSource.EvtNotificationShown, descriptor.Id);
+        AssertMilestoneWithId(listener, DeckleNotificationsSource.EvtNotificationResponded, descriptor.Id);
     }
 
     [Fact]
-    public async Task AnUnansweredPromptTravelsInTheJournalFromShownToUnanswered()
+    public async Task AnUnansweredPromptTravelsInTheLogFromShownToUnanswered()
     {
         var dispatcher = NotificationDispatcher.Initialize(
             new FakeNotificationChannel(returnsNull: true));
-        var descriptor = Descriptors.Make("playground.journal_unanswered");
+        var descriptor = Descriptors.Make("playground.log_unanswered");
         dispatcher.Catalog.Register(new[] { descriptor });
 
         using var listener = new TestEventListener("Deckle-Notifications");
         await dispatcher.PromptAsync(descriptor, ct: TestContext.Current.CancellationToken);
 
-        AssertJournalWithId(listener, DeckleNotificationsSource.EvtNotificationShown, descriptor.Id);
-        AssertJournalWithId(listener, DeckleNotificationsSource.EvtNotificationUnanswered, descriptor.Id);
+        AssertMilestoneWithId(listener, DeckleNotificationsSource.EvtNotificationShown, descriptor.Id);
+        AssertMilestoneWithId(listener, DeckleNotificationsSource.EvtNotificationUnanswered, descriptor.Id);
     }
 
     [Fact]
-    public async Task ACancelledPromptTravelsInTheJournalFromShownToCancelled()
+    public async Task ACancelledPromptTravelsInTheLogFromShownToCancelled()
     {
         var channel = new FakeNotificationChannel
         {
             PendingCompletion = new TaskCompletionSource<NotificationResponse?>(),
         };
         var dispatcher = NotificationDispatcher.Initialize(channel);
-        var descriptor = Descriptors.Make("playground.journal_cancelled");
+        var descriptor = Descriptors.Make("playground.log_cancelled");
         dispatcher.Catalog.Register(new[] { descriptor });
 
         using var listener = new TestEventListener("Deckle-Notifications");
@@ -274,8 +274,8 @@ public class DeckleNotificationsSourceTests
         cts.Cancel();
         await Assert.ThrowsAsync<TaskCanceledException>(() => prompt);
 
-        AssertJournalWithId(listener, DeckleNotificationsSource.EvtNotificationShown, descriptor.Id);
-        AssertJournalWithId(listener, DeckleNotificationsSource.EvtNotificationCancelled, descriptor.Id);
+        AssertMilestoneWithId(listener, DeckleNotificationsSource.EvtNotificationShown, descriptor.Id);
+        AssertMilestoneWithId(listener, DeckleNotificationsSource.EvtNotificationCancelled, descriptor.Id);
     }
 
     [Fact]
@@ -307,11 +307,11 @@ public class DeckleNotificationsSourceTests
     private static EventWrittenEventArgs Single(TestEventListener listener, int eventId)
         => Assert.Single(listener.Events, e => e.EventId == eventId);
 
-    private static void AssertJournalWithId(TestEventListener listener, int eventId, string notificationId)
+    private static void AssertMilestoneWithId(TestEventListener listener, int eventId, string notificationId)
     {
         var line = Assert.Single(listener.Events,
             e => e.EventId == eventId && (string?)e.Payload?[0] == notificationId);
-        Assert.True(ObservationTags.IsJournal(line.Tags));
+        Assert.True(ObservationTags.IsMilestone(line.Tags));
     }
 
     private static void AssertOrdered(TestEventListener listener, params int[] eventIds)

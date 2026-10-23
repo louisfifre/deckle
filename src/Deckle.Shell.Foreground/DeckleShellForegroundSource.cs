@@ -36,7 +36,7 @@ public sealed class DeckleShellForegroundSource : DeckleEventSource
     [Event(EvtWatcherStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Watcher started")]
     public void WatcherStarted()
     {
@@ -48,7 +48,7 @@ public sealed class DeckleShellForegroundSource : DeckleEventSource
     [Event(EvtWatcherStartFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Watcher failed to start, fullscreen detection is off | reason={0} | win32_error={1}")]
     public void WatcherStartFailed(string reason, int win32_error)
     {
@@ -58,7 +58,7 @@ public sealed class DeckleShellForegroundSource : DeckleEventSource
     [Event(EvtWatcherStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Watcher stopped")]
     public void WatcherStopped()
     {
@@ -93,7 +93,7 @@ public sealed class DeckleShellForegroundSource : DeckleEventSource
     [Event(EvtHookRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Foreground hook armed again, fullscreen detection is back | hook={0}")]
     public void HookRecovered(string hook)
     {

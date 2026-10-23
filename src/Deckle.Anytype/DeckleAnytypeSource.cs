@@ -152,7 +152,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtApiRefusalsEnded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Network,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "A run of refused Anytype API requests ended | reason={0} | status={1} | refused_requests={2} | duration_s={3:F0}")]
     public void ApiRefusalsEnded(string reason, int status_code, int refused_requests, double duration_s)
     {
@@ -175,7 +175,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtApiTransportRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Network,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Anytype API answers again | failed_requests={0} | downtime_s={1:F0}")]
     public void ApiTransportRecovered(int failed_requests, double downtime_s)
     {
@@ -214,7 +214,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     }
 
     // A move to the bin is the one gesture that hides an object from every later
-    // read, so both of its ends travel in the journal: the move that did not
+    // read, so both of its ends travel in the log: the move that did not
     // happen says why, the move that did says what. reason: DeleteRefusalReasons.
     // ex_type and cause tell why the references could not be read and are empty
     // for every other reason; the cause is an error code or a closed word, never
@@ -223,7 +223,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtDeleteRefused,
            Level = EventLevel.Informational,
            Keywords = Gesture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "A move to the Anytype bin was refused | reason={0} | type={1} | object_id={2} | {3}: {4}")]
     public void DeleteRefused(
         string reason, string type_key, string object_id, string ex_type, string cause)
@@ -234,7 +234,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtObjectBinned,
            Level = EventLevel.Informational,
            Keywords = Gesture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "An object was moved to the Anytype bin | type={0} | object_id={1}")]
     public void ObjectBinned(string type_key, string object_id)
     {
@@ -248,7 +248,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtPagedReadEndedOnEmptyPage,
            Level = EventLevel.Warning,
            Keywords = Gesture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "An Anytype list read stopped on an empty page although the server claims more rows | read={0} | offset={1}")]
     public void PagedReadEndedOnEmptyPage(string read, int offset)
     {
@@ -276,7 +276,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendInstallationChecked,
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Anytype backend installation checked | action={0} | active={1} | pinned={2}")]
     public void BackendInstallationChecked(string action, string active_version, string pinned_version)
     {
@@ -288,7 +288,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendInstallationPrepareFailed,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Anytype backend installation could not be prepared | reason={0} | {1}: {2}")]
     public void BackendInstallationPrepareFailed(string reason, string ex_type, string ex_message)
     {
@@ -318,7 +318,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendStarting,
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Starting the Anytype backend | work_id={0}")]
     public void BackendStarting(string work_id)
     {
@@ -328,7 +328,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendReady,
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Anytype backend is ready | work_id={0}")]
     public void BackendReady(string work_id)
     {
@@ -338,12 +338,12 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // Warning: the start was requested but the backend never answered in time —
     // a degradation a human would want to notice (the backend will be absent).
     // pid is the live serve the window waited on, 0 when none was seen: a
-    // wedged serve outlives every retry, and without its pid the journal read
+    // wedged serve outlives every retry, and without its pid the log read
     // as if nothing were running.
     [Event(EvtBackendStartTimedOut,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Anytype backend did not become ready | pid={0} | work_id={1}")]
     public void BackendStartTimedOut(int pid, string work_id)
     {
@@ -355,7 +355,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendNotProvisioned,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Anytype backend is not provisioned")]
     public void BackendNotProvisioned()
     {
@@ -399,7 +399,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendResponsive,
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Anytype backend answers again | failed_probes={0} | downtime_s={1:F0}")]
     public void BackendResponsive(int failed_probes, double downtime_s)
     {
@@ -431,7 +431,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendStopped,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Anytype backend stopped | exit_code={1} | exit_known={2} | pid={0} | uptime_s={3:F0} | work_id={4}")]
     public void BackendStopped(int pid, int exit_code, bool exit_known, double uptime_s, string work_id)
     {
@@ -454,7 +454,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendSpawnFailed,
            Level = EventLevel.Error,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Anytype backend could not be started | reason={0} | {1}: {2}")]
     public void BackendSpawnFailed(string reason, string ex_type, string ex_message)
     {
@@ -505,7 +505,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendReconciliationLeaseWaitEnded,
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Anytype backend lease was released | waited_ms={1:F0} | abandoned={2} | reconciliation_id={0}")]
     public void BackendReconciliationLeaseWaitEnded(
         string reconciliation_id, double waited_ms, bool abandoned)
@@ -566,7 +566,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendEndpointConflict,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Another process owns the Anytype endpoint | reason={0} | listener_pid={1}")]
     public void BackendEndpointConflict(string reason, int listener_pid)
     {
@@ -589,7 +589,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // One restart incident, one work_id. BackendStopped (or a start that never
     // served, whose id is the start's own) opens it. Every attempt of the
     // ladder stays Verbose: the reconciler writes the BackendRestartAttempt*
-    // events below instead of the journal-tagged Starting, Stopped, StartTimedOut
+    // events below instead of the Milestone-tagged Starting, Stopped, StartTimedOut
     // and SpawnFailed lines it writes for a first start. BackendRestartsFailing
     // marks a streak past the threshold once, and BackendRecovered, or
     // BackendSupervisionGaveUp when restarting is pointless, closes it.
@@ -666,12 +666,12 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtBackendRestartsFailing, attempts, last_outcome, ex_type, PathRedaction.Redact(ex_message), work_id);
     }
 
-    // Journal: it closes a BackendStopped the journal already holds, so a
+    // Milestone: it closes a BackendStopped the log already holds, so a
     // reader on another machine does not take a recovered backend for a dead one.
     [Event(EvtBackendRecovered,
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Anytype backend is back | attempts={0} | downtime_s={1:F0} | work_id={2}")]
     public void BackendRecovered(int attempts, double downtime_s, string work_id)
     {
@@ -681,7 +681,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendSupervisionStopped,
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Anytype backend supervision stopped")]
     public void BackendSupervisionStopped()
     {
@@ -693,7 +693,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendSupervisionGaveUp,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Anytype backend supervision gave up | reason={0} | work_id={1}")]
     public void BackendSupervisionGaveUp(string reason, string work_id)
     {
@@ -703,7 +703,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendSupervisionFailed,
            Level = EventLevel.Error,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Anytype backend supervision failed | {0}: {1}")]
     public void BackendSupervisionFailed(string ex_type, string ex_message)
     {
@@ -718,7 +718,7 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtAnytypeRuntimeFaulted,
            Level = EventLevel.Error,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Anytype runtime failed | phase={0} | {1}: {2}")]
     public void AnytypeRuntimeFaulted(string phase, string ex_type, string ex_message)
     {

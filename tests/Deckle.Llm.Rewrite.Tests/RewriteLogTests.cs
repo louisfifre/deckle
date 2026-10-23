@@ -7,17 +7,17 @@ using Xunit;
 
 namespace Deckle.Llm.Rewrite.Tests;
 
-// A rewrite of a take is lasting work: the journal must hold its start and its
+// A rewrite of a take is lasting work: the log must hold its start and its
 // end under one work_id, so a reader of the file alone can tell a rewrite that
 // finished from one that never did. The paragraph and sentence rewrites run on
 // every pause in typing and stay detail, counted once a minute.
 [Trait("Category", "observability")]
-public sealed class RewriteJournalTests
+public sealed class RewriteLogTests
 {
     [Fact]
-    public void ACompletedTranscriptRewriteJournalsItsStartAndItsEndUnderOneWorkId()
+    public void ACompletedTranscriptRewriteLogsItsStartAndItsEndUnderOneWorkId()
     {
-        const string provider = "journal-completed";
+        const string provider = "log-completed";
         var service = new RewriteService(new SingleEngine(provider, new AnsweringEngine()));
         using var listener = new TestEventListener("Deckle-Llm");
 
@@ -30,14 +30,14 @@ public sealed class RewriteJournalTests
         Assert.Equal(workId, Field(completed, WorkId.FieldName));
         Assert.Equal(EventLevel.Informational, started.Level);
         Assert.Equal(EventLevel.Informational, completed.Level);
-        Assert.True(IsJournal(DeckleLlmSource.EvtTranscriptRewriteStarted));
-        Assert.True(IsJournal(DeckleLlmSource.EvtTranscriptRewriteCompleted));
+        Assert.True(IsMilestone(DeckleLlmSource.EvtTranscriptRewriteStarted));
+        Assert.True(IsMilestone(DeckleLlmSource.EvtTranscriptRewriteCompleted));
     }
 
     [Fact]
     public void AFailedTranscriptRewriteEndsWithTheWarningThatCarriesTheStartsWorkId()
     {
-        const string provider = "journal-failed";
+        const string provider = "log-failed";
         var service = new RewriteService(new SingleEngine(provider, new ThrowingEngine()));
         using var listener = new TestEventListener("Deckle-Llm");
 
@@ -60,9 +60,9 @@ public sealed class RewriteJournalTests
         service.RewriteSentence("Phrase.", TestContext.Current.CancellationToken);
 
         Assert.True(HotLoops.LlmInteractiveRewrite.Total >= before + 1);
-        Assert.False(IsJournal(DeckleLlmSource.EvtRewriteStarted));
-        Assert.False(IsJournal(DeckleLlmSource.EvtRewriteCompleted));
-        Assert.False(IsJournal(DeckleLlmSource.EvtRewriteCancelled));
+        Assert.False(IsMilestone(DeckleLlmSource.EvtRewriteStarted));
+        Assert.False(IsMilestone(DeckleLlmSource.EvtRewriteCompleted));
+        Assert.False(IsMilestone(DeckleLlmSource.EvtRewriteCancelled));
         Assert.Equal(EventLevel.Verbose, LevelOf(DeckleLlmSource.EvtRewriteStarted));
         Assert.Equal(EventLevel.Verbose, LevelOf(DeckleLlmSource.EvtRewriteCompleted));
         Assert.Equal(EventLevel.Verbose, LevelOf(DeckleLlmSource.EvtRewriteCancelled));
@@ -81,8 +81,8 @@ public sealed class RewriteJournalTests
     static string Field(EventWrittenEventArgs e, string name) =>
         (string)e.Payload![e.PayloadNames!.IndexOf(name)]!;
 
-    static bool IsJournal(int eventId) =>
-        ObservationTags.IsJournal(ProviderManifest.EventsOf(typeof(DeckleLlmSource)).Single(d => d.Id == eventId).Tags);
+    static bool IsMilestone(int eventId) =>
+        ObservationTags.IsMilestone(ProviderManifest.EventsOf(typeof(DeckleLlmSource)).Single(d => d.Id == eventId).Tags);
 
     static EventLevel LevelOf(int eventId) =>
         ProviderManifest.EventsOf(typeof(DeckleLlmSource)).Single(d => d.Id == eventId).Level;

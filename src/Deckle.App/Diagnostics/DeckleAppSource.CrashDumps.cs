@@ -8,7 +8,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtCrashDumpCaptureArmed,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Crash dump capture is armed")]
     public void CrashDumpCaptureArmed()
     {
@@ -45,7 +45,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtCrashDumpFound,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "A crash dump from an earlier run is waiting")]
     public void CrashDumpFound()
     {
@@ -61,12 +61,12 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtCrashDumpFoundDetail, path, size_bytes, written_at);
     }
 
-    // A process relaunch: journal readers look for it to split one session
+    // A process relaunch: log readers look for it to split one session
     // into the run that crashed and the run that followed.
     [Event(EvtCrashRelaunched,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Deckle was relaunched after it crashed | previous_exit_code={0} | relaunch={1} | max_relaunches={2}")]
     public void CrashRelaunched(string previous_exit_code, int relaunch, int max_relaunches)
     {

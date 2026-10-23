@@ -20,7 +20,7 @@ namespace Deckle.App;
 // a Flush barrier before termination.
 internal static class AppDiagnosticsBootstrap
 {
-    // Written when a flush could not drain at exit or at a crash: the journal
+    // Written when a flush could not drain at exit or at a crash: the log
     // itself may be the sink that failed, so the fact lives in its own file.
     private const string FlushFailureFileName = "flush-failed.txt";
 
@@ -33,7 +33,7 @@ internal static class AppDiagnosticsBootstrap
     public static LegacyFileRename? LegacyFileRename { get; private set; }
 
     // The crash detail and stack events are Verbose, so a level predicate alone
-    // would split a crash across files; the journal allowlists them by name.
+    // would split a crash across files; the log allowlists them by name.
     // The bare name holds while no other Deckle-* provider declares these names;
     // scope the check by provider if one ever does.
     private static readonly HashSet<string> _crashCompanions = new()
@@ -80,13 +80,13 @@ internal static class AppDiagnosticsBootstrap
         // (deckle-logging): a Verbose mirror gated off never reaches here.
         dispatch.AddSink(new JsonlSink(
             filePath:  Path.Combine(diagnosticsDirectory, DiagnosticsFiles.Log),
-            kindLabel: "journal",
+            kindLabel: "log",
             predicate: static e => e.Kind == ObservationKind.Operational
                 && (e.Level <= EventLevel.Warning
-                || e.Journal
+                || e.Milestone
                 || _crashCompanions.Contains(e.EventName)),
             schema:    JsonlSchema.SelfDescribing,
-            // Five generations: the journal is sparse, so this spans weeks of
+            // Five generations: the log is sparse, so this spans weeks of
             // runs, and an incident older than that has lost its context anyway.
             rotation:  new JsonlRotationPolicy(maxLines: 4000, maxArchives: 5)));
     }

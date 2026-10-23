@@ -118,7 +118,7 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     // The HUD tab asked for the microphone and got the simulation instead. The
     // capture's own failure events (Deckle-Audio, tagged purpose=playground)
     // carry the device detail; this one names what was asked and what was
-    // obtained, so a reader of the journal does not take it for a dictation
+    // obtained, so a reader of the log does not take it for a dictation
     // that failed. cause: in-use, not-detected, unavailable or exception.
     // mmsys_err is 0 and ex_type empty when the cause does not carry them.
     [Event(EvtMicrophonePreviewFellBack,

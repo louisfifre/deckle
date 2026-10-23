@@ -5,18 +5,18 @@ using Xunit;
 
 namespace Deckle.Lighting.Ambient.Tests;
 
-// A run of Ambient lighting is one piece of lasting work: its journal lines
+// A run of Ambient lighting is one piece of lasting work: its log lines
 // share a work_id, its end carries the totals, and an incident it opened is
 // closed when the run stops.
 [Trait("Category", "observability")]
-public sealed class AmbientRunJournalTests
+public sealed class AmbientRunLogTests
 {
     private sealed class Host : IAmbientEngineHost
     {
         public AmbientSettings Ambient { get; } = new();
     }
 
-    public AmbientRunJournalTests()
+    public AmbientRunLogTests()
         => OperationalLogAdmission.Configure(
             activity => activity == OperationalLogActivity.Ambient);
 
@@ -40,7 +40,7 @@ public sealed class AmbientRunJournalTests
         foreach (var declared in ProviderManifest.EventsOf(typeof(DeckleAmbientSource))
                      .Where(e => milestones.Contains(e.Name)))
         {
-            Assert.True(ObservationTags.IsJournal(declared.Tags), $"{declared.Name} must travel in the journal.");
+            Assert.True(ObservationTags.IsMilestone(declared.Tags), $"{declared.Name} must travel in the log.");
         }
 
         IReadOnlyList<string> payloads = ProviderManifest.PayloadNamesOf(typeof(DeckleAmbientSource));

@@ -5,14 +5,14 @@ using Xunit;
 
 namespace Deckle.Lighting.Tests;
 
-// A cancelled opening is a normal end: Informational, and in the journal so the
-// journal shows how the attempt ended without it being a warning.
+// A cancelled opening is a normal end: Informational, and in the log so the
+// log shows how the attempt ended without it being a warning.
 [Trait("Category", "observability")]
 [Collection(LightingObservabilityCollection.Name)]
-public sealed class LightingCancellationJournalTests
+public sealed class LightingCancellationLogTests
 {
     [Fact]
-    public void ACancelledEntertainmentOpeningIsInformationalAndJournaled()
+    public void ACancelledEntertainmentOpeningIsInformationalAndAMilestone()
     {
         using var listener = new TestEventListener("Deckle-Lighting");
 
@@ -20,6 +20,6 @@ public sealed class LightingCancellationJournalTests
 
         var ev = Assert.Single(listener.Events, e => e.EventId == DeckleLightingSource.EvtEntertainmentConnectCancelled);
         Assert.Equal(EventLevel.Informational, ev.Level);
-        Assert.Equal(ObservationTags.Journal, ev.Tags & ObservationTags.Journal);
+        Assert.Equal(ObservationTags.Milestone, ev.Tags & ObservationTags.Milestone);
     }
 }

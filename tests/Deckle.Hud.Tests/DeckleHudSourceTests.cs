@@ -63,8 +63,8 @@ public sealed class DeckleHudSourceTests : IDisposable
     }
 
     // Regression: HUD detail used the bare listener level, which the
-    // always-on journal listener satisfies, so per-show and per-frame detail
-    // reached the journal whatever the Windowing verbosity said.
+    // always-on log listener satisfies, so per-show and per-frame detail
+    // reached the log whatever the Windowing verbosity said.
     [Fact]
     public void HudDetailIsRejectedWhileWindowingDetailIsOff()
     {

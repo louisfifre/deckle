@@ -61,7 +61,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtEngineStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Three-finger drag enabled | drag_speed={0} | touchpad={1}")]
     public void EngineStarted(double drag_speed, bool touchpad)
     {
@@ -71,7 +71,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtEngineStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Three-finger drag disabled | outcome={0} | drags={1}")]
     public void EngineStopped(string outcome, long drags)
     {
@@ -139,12 +139,12 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     }
 
     // reason: injection_succeeded (the path recovered) or engine_stopped (the
-    // engine ended the incident, not a recovery). The journal keeps the
+    // engine ended the incident, not a recovery). The log keeps the
     // Warning, so it keeps its end too.
     [Event(EvtInjectionIncidentEnded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Mouse injection incident ended | reason={0}")]
     public void InjectionIncidentEnded(string reason)
     {
@@ -156,7 +156,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtGesturesNeutralized,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Windows three-finger gestures neutralized")]
     public void GesturesNeutralized()
     {
@@ -175,7 +175,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtGesturesRestored,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Windows three-finger gestures restored")]
     public void GesturesRestored()
     {
@@ -207,7 +207,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtRepairLaunched,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Connection repair script launched")]
     public void RepairLaunched()
     {
@@ -227,7 +227,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtRepairCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Connection repair script completed | exit_code={0}")]
     public void RepairCompleted(int exit_code)
     {

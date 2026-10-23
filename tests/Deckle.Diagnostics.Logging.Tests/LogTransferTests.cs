@@ -20,7 +20,7 @@ public sealed class LogTransferTests
     }
 
     [Fact]
-    public void Filtered_EvaluatesTheFullJournal()
+    public void Filtered_EvaluatesTheFullLog()
     {
         IReadOnlyList<string> result = LogTransferScopeResolver.Resolve(
             LogTransferScope.Filtered,
@@ -32,7 +32,7 @@ public sealed class LogTransferTests
     }
 
     [Fact]
-    public void Selection_PreservesJournalOrder()
+    public void Selection_PreservesLogOrder()
     {
         IReadOnlyList<string> result = LogTransferScopeResolver.Resolve(
             LogTransferScope.Selection,

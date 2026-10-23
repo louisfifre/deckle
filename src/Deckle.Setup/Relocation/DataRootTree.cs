@@ -57,7 +57,7 @@ internal sealed class DataRootTree : IDataRootCopier
                 }
 
                 // The error type and code, never the OS text: that text repeats
-                // an absolute path, and this message reaches the journal.
+                // an absolute path, and this message reaches the log.
                 string cause = _lastCopyFailure is { } failure
                     ? $": {failure.GetType().Name} 0x{failure.HResult:X8}"
                     : "";

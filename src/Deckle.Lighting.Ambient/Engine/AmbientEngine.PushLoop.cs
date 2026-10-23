@@ -160,7 +160,7 @@ public sealed partial class AmbientEngine
         catch (Exception ex)
         {
             // Logged before the abort so a crash during Stopping, which the
-            // abort ignores, still reaches the journal.
+            // abort ignores, still reaches the log.
             DeckleAmbientSource.Log.PushLoopCrashed(ex.GetType().Name, ex.Message);
 
             // The loop is the only producer of pushes; a dead loop under a

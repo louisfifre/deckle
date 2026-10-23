@@ -169,7 +169,7 @@ public sealed class ToastChannel : INotificationChannel
     // Best effort: the orphaned activation is already ignored, so a failed
     // removal only leaves a toast whose buttons do nothing. It is not silent
     // though: a toast that stays on screen offering a choice nobody awaits is
-    // what the journal has to show, once per incident.
+    // what the log has to show, once per incident.
     private async Task WithdrawAsync(string nonce)
     {
         try

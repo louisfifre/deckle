@@ -111,7 +111,7 @@ public sealed partial class KeyboardInputHost
             TrackRollup(nowMs);
     }
 
-    // Incidents end with the host that observed them, so the journal never
+    // Incidents end with the host that observed them, so the log never
     // holds a Warning without its end.
     private void CloseHealthIncidents()
     {

@@ -7,7 +7,7 @@ namespace Deckle.Diagnostics.Tests;
 
 // The listener watching its own sinks: boot replay, sink incidents and the
 // bounded flush. Every assertion reads what Deckle-Diagnostics emitted, since
-// that is what a reader of the journal would see.
+// that is what a reader of the log would see.
 [Trait("Category", "observability")]
 [Collection(DiagnosticsProviderCollection.Name)]
 public sealed class DispatchEventListenerIncidentTests

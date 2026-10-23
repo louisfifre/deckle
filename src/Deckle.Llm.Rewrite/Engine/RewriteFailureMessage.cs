@@ -100,7 +100,7 @@ public readonly record struct RewriteFailureMessage(string Title, string Body)
     }
 
     // The failure class the log records, read from the same seam shape as
-    // the card above so the journal and the overlay agree on why. A short
+    // the card above so the log and the overlay agree on why. A short
     // fixed word a filter can match, never free text.
     public static string ReasonOf(Exception exception)
     {

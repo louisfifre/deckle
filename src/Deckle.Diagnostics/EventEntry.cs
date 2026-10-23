@@ -8,8 +8,8 @@ namespace Deckle.Diagnostics;
 // `Provider` is the EventSource Name (e.g. "Deckle-Chrono"), `EventName` the
 // method name on the provider. `FormattedMessage` is null when the provider
 // declared no Message template; LogLineFormatter then falls back to the
-// event name. `Journal` is the ObservationTags.Journal mark: a milestone the
-// always-on journal file keeps whatever its level.
+// event name. `Milestone` is the ObservationTags.Milestone mark: a milestone the
+// always-on log file keeps whatever its level.
 public sealed class EventEntry
 {
     public System.DateTimeOffset Timestamp { get; }
@@ -18,7 +18,7 @@ public sealed class EventEntry
     public EventLevel Level { get; }
     public EventKeywords Keywords { get; }
     public ObservationKind Kind { get; }
-    public bool Journal { get; }
+    public bool Milestone { get; }
     public string? FormattedMessage { get; }
     public IReadOnlyDictionary<string, object?> Payload { get; }
 
@@ -31,7 +31,7 @@ public sealed class EventEntry
         ObservationKind kind,
         string? formattedMessage,
         IReadOnlyDictionary<string, object?> payload,
-        bool journal = false)
+        bool milestone = false)
     {
         Timestamp = timestamp;
         Provider = provider;
@@ -39,7 +39,7 @@ public sealed class EventEntry
         Level = level;
         Keywords = keywords;
         Kind = kind;
-        Journal = journal;
+        Milestone = milestone;
         FormattedMessage = formattedMessage;
         Payload = payload;
     }

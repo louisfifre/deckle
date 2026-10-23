@@ -37,7 +37,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
 
     // One incident per sink: opened by the first failure, closed by the next
     // successful write (SinkRecovered). The attempts in between are counted,
-    // never emitted. SinkRecovered is Journal-tagged: the journal keeps the
+    // never emitted. SinkRecovered is Milestone-tagged: the log keeps the
     // failure, so it keeps its end too.
     [Event(EvtSinkFaulted,
            Level = EventLevel.Error,
@@ -51,7 +51,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtSinkRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Log sink {0} writes again after {1} failed writes")]
     public void SinkRecovered(string sink, int failed_writes)
     {
@@ -112,11 +112,11 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtRotationFailed, file_name, step, error_type, error_message);
     }
 
-    // Journal-tagged: the journal keeps the failure, so it keeps its end too.
+    // Milestone-tagged: the log keeps the failure, so it keeps its end too.
     [Event(EvtRotationRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Log file {0} rolls and prunes again after {1} failed attempts")]
     public void RotationRecovered(string file_name, int failed_attempts)
     {
@@ -138,7 +138,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtRowsRoutedAgain,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Log sink {0} routes rows again after skipping {1}")]
     public void RowsRoutedAgain(string sink, int skipped_rows)
     {

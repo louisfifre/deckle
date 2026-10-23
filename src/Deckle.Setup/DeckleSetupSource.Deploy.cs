@@ -28,13 +28,13 @@ public sealed partial class DeckleSetupSource
     }
 
     // Deploy is the install or update pipeline of this run: its start and its
-    // completion go to the journal so the run's story says it was attempted.
+    // completion go to the log so the run's story says it was attempted.
     // Start, completion, failure and block carry the work_id of one attempt (a
     // retry is a new attempt), so a start with no end reads as abandoned.
     [Event(EvtDeployStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Placing Deckle | work_id={0} | update_mode={1} | app={2} | data={3}")]
     public void DeployStarted(string work_id, bool update_mode, string app, string data)
     {
@@ -45,7 +45,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtDeployCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Deckle was placed and registered | work_id={0}")]
     public void DeployCompleted(string work_id)
     {
@@ -74,11 +74,11 @@ public sealed partial class DeckleSetupSource
     }
 
     // The attempt ends here with nothing placed, which is how work that does
-    // not happen reads in the journal: tagged like a start, with its reason.
+    // not happen reads in the log: tagged like a start, with its reason.
     [Event(EvtDeployBlockedByRunningApp,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The install is blocked by a running Deckle | work_id={0} | reason=app_running | count={1} | processes={2}")]
     public void DeployBlockedByRunningApp(string work_id, int count, string processes)
     {

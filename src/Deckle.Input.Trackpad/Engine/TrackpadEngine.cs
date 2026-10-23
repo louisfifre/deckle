@@ -96,7 +96,7 @@ public sealed class TrackpadEngine : IDisposable
             _graceTimer.Change(Timeout.Infinite, Timeout.Infinite);
             _recognizer.Cancel("engine-stopped");
             // The incident cannot close by a successful injection anymore, so
-            // it is ended here; otherwise the journal would hold a Warning
+            // it is ended here; otherwise the log would hold a Warning
             // that never ends.
             if (_injectionIncidentOpen)
                 EndInjectionIncident("engine_stopped");

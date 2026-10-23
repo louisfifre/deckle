@@ -8,10 +8,10 @@ using Xunit;
 namespace Deckle.Anytype.Tests;
 
 // The move to the bin hides an object from every later read, so both of its ends
-// are in the journal that survives a default configuration: the move that did not
+// are in the log that survives a default configuration: the move that did not
 // happen with its reason, the move that did.
 [Trait("Category", "observability")]
-public sealed class BinJournalTests
+public sealed class BinLogTests
 {
     const string ObjId = "bafyreiObjaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const string OtherId = "bafyreiOthbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
@@ -59,12 +59,12 @@ public sealed class BinJournalTests
     static string Field(EventWrittenEventArgs e, string name)
         => Convert.ToString(e.Payload![e.PayloadNames!.IndexOf(name)])!;
 
-    static bool TravelsInTheJournal(EventWrittenEventArgs e)
-        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Journal) != 0;
+    static bool TravelsInTheLog(EventWrittenEventArgs e)
+        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Milestone) != 0;
 
     [Fact]
     [Trait("Category", "regression")]
-    public async Task ARefusedBinTellsItsReasonInTheJournal()
+    public async Task ARefusedBinTellsItsReasonInTheLog()
     {
         using var listener = new TestEventListener("Deckle-Anytype");
         using var server = new FakeAnytypeServer();
@@ -75,7 +75,7 @@ public sealed class BinJournalTests
             () => NewGestures(server, DeletionApprovalOutcome.Declined).DeleteAsync(ObjId, confirm: true, ct: Ct));
 
         EventWrittenEventArgs refused = Assert.Single(
-            listener.Events.Where(TravelsInTheJournal),
+            listener.Events.Where(TravelsInTheLog),
             e => e.EventId == DeckleAnytypeSource.EvtDeleteRefused);
         Assert.Equal(DeleteRefusalReasons.Declined, Field(refused, "reason"));
         Assert.Equal(ObjId, Field(refused, "object_id"));
@@ -119,7 +119,7 @@ public sealed class BinJournalTests
 
     [Fact]
     [Trait("Category", "regression")]
-    public async Task ABinThatHappenedIsInTheJournal()
+    public async Task ABinThatHappenedIsInTheLog()
     {
         using var listener = new TestEventListener("Deckle-Anytype");
         using var server = new FakeAnytypeServer();
@@ -130,7 +130,7 @@ public sealed class BinJournalTests
         await NewGestures(server, DeletionApprovalOutcome.Approved).DeleteAsync(ObjId, confirm: true, ct: Ct);
 
         EventWrittenEventArgs binned = Assert.Single(
-            listener.Events.Where(TravelsInTheJournal),
+            listener.Events.Where(TravelsInTheLog),
             e => e.EventId == DeckleAnytypeSource.EvtObjectBinned);
         Assert.Equal(ObjId, Field(binned, "object_id"));
     }

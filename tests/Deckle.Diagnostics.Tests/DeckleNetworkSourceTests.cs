@@ -40,7 +40,7 @@ public class DeckleNetworkSourceTests
         Assert.Equal(0, ev.Payload?[3]);
     }
 
-    // A Wi-Fi name can identify a place, and the journal travels to another
+    // A Wi-Fi name can identify a place, and the log travels to another
     // machine: the snapshot says the kind of link, never the name of the network.
     [Fact]
     public void NetworkStatusChangedHasNoFieldThatCouldHoldANetworkName()
@@ -90,7 +90,7 @@ public class NetworkQueryIncidentsTests
     }
 
     [Fact]
-    public void The_recovery_of_a_failed_stage_is_one_journal_milestone()
+    public void The_recovery_of_a_failed_stage_is_one_milestone()
     {
         using var listener = new TestEventListener("Deckle-Network");
         var incidents = new NetworkQueryIncidents();
@@ -103,7 +103,7 @@ public class NetworkQueryIncidentsTests
         var recovered = listener.Events[1];
         Assert.Equal(DeckleNetworkSource.EvtNetworkQueryRecovered, recovered.EventId);
         Assert.Equal("connectivity_level", recovered.Payload?[0]);
-        Assert.True((recovered.Tags & ObservationTags.Journal) != 0);
+        Assert.True((recovered.Tags & ObservationTags.Milestone) != 0);
     }
 
     [Fact]

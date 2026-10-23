@@ -12,7 +12,7 @@ namespace Deckle.Diagnostics;
 // in chronological order. The cap is in lines because a log is read in
 // lines, not bytes.
 //
-// Scope. Only the operational log files (setup, journal, app) roll. The dataset
+// Scope. Only the operational log files (setup, log, trace) roll. The dataset
 // channels (latency, microphone, corpus) are append-only datasets with a
 // stable cross-session contract and are never given a rotation policy —
 // losing their tail would corrupt the dataset.

@@ -59,11 +59,11 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     // ("unknown" for a build without whisper_version), bundle the release
     // this app expects: a hand-imported runtime can differ. The whole identity
     // travels in the payload, since a Verbose mirror would stay out of the
-    // journal a reader on another machine gets.
+    // log a reader on another machine gets.
     [Event(EvtNativeRuntimeLoaded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Loaded the whisper.cpp runtime | version={0} | bundle={1}")]
     public void NativeRuntimeLoaded(string version, string bundle)
     {
@@ -110,7 +110,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     [Event(EvtLogHookUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The whisper.cpp log hook could not be installed | ex_type={0} | ex_message={1}")]
     public void LogHookUnavailable(string ex_type, string ex_message)
     {
@@ -187,7 +187,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     [Event(EvtModelLoadStarting,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Loading the Whisper model {0} | use_gpu={1} | runtime={2}")]
     public void ModelLoadStarting(string model, bool use_gpu, string runtime)
     {
@@ -234,7 +234,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     [Event(EvtModelOnGpu,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Whisper model runs on the GPU: {0} | device={1}")]
     public void ModelOnGpu(string device_name, string device)
     {
@@ -244,7 +244,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     [Event(EvtModelOnCpu,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Whisper model runs on the CPU, as the settings ask")]
     public void ModelOnCpu()
     {
@@ -259,7 +259,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     [Event(EvtModelGpuUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The GPU could not be used, the Whisper model runs on the CPU | reason={0} | device={1}")]
     public void ModelGpuUnavailable(string reason, string device)
     {
@@ -273,7 +273,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     [Event(EvtModelDeviceUnknown,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Whisper compute device is unknown | reason={0}")]
     public void ModelDeviceUnknown(string reason)
     {
@@ -343,7 +343,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     [Event(EvtSegmentCallbackRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The segment callback works again")]
     public void SegmentCallbackRecovered()
     {
@@ -379,7 +379,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     [Event(EvtNativeRuntimeProvisionEnded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The whisper.cpp runtime install ended | version={0} | outcome={1} | extracted={2} | elapsed_ms={3}")]
     public void NativeRuntimeProvisionEnded(string version, string outcome, int extracted, long elapsed_ms)
     {
@@ -392,7 +392,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     [Event(EvtNativeRuntimeProvisionFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Could not install the whisper.cpp runtime | reason={0} | version={1} | ex_type={2} | ex_message={3}")]
     public void NativeRuntimeProvisionFailed(string reason, string version, string ex_type, string ex_message)
     {
@@ -413,7 +413,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     [Event(EvtNativeRuntimeCopied,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Copied the whisper.cpp runtime from a folder | copied={0} | missing={1}")]
     public void NativeRuntimeCopied(int copied, int missing)
     {

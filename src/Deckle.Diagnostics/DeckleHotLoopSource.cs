@@ -12,7 +12,7 @@ namespace Deckle.Diagnostics;
 // window held. LoopStalled opens one Warning incident when a loop that should
 // be running ticked zero times in a window, and LoopRecovered closes it, once,
 // when the count moves again or the loop is no longer expected to run. Both
-// travel in the journal; the rollup does not, because a loop that works needs
+// travel in the log; the rollup does not, because a loop that works needs
 // no line in the one record a reader on another machine gets.
 //
 // The `loop` vocabulary is the pulses of HotLoops (LoopPulse.cs): a call site
@@ -48,7 +48,7 @@ public sealed class DeckleHotLoopSource : DeckleEventSource
     [Event(EvtLoopStalled,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "A loop that should be running stopped ticking | loop={0} | window_s={1} | total={2}")]
     public void LoopStalled(string loop, int window_s, long total)
     {
@@ -61,7 +61,7 @@ public sealed class DeckleHotLoopSource : DeckleEventSource
     [Event(EvtLoopRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "A stalled loop is settled | loop={0} | reason={1} | stalled_s={2}")]
     public void LoopRecovered(string loop, string reason, int stalled_s)
     {

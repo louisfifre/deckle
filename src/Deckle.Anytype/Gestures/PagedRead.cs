@@ -18,7 +18,7 @@ namespace Deckle.Anytype;
 internal static class PagedRead
 {
     // read is a closed identifier of the list being read (object_listing,
-    // schema_types, ...), the one a person greps in the journal.
+    // schema_types, ...), the one a person greps in the log.
     public static async IAsyncEnumerable<JsonObject> PagesAsync(
         string read,
         Func<int, CancellationToken, Task<JsonObject>> readPage,

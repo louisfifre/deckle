@@ -26,7 +26,7 @@ namespace Deckle.Playground;
 //
 // When it fails. The feed reports an open that did not work, or a capture that
 // ended on its own, from its capture thread. The page then moves to the
-// simulation, says why in the tab and writes one Warning to the journal. The
+// simulation, says why in the tab and writes one Warning to the log. The
 // default is Microphone: nothing probes the device before Play, so the
 // fallback happens at the first Start that cannot open it.
 public sealed partial class HudPage

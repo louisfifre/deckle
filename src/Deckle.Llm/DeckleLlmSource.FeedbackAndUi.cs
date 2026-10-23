@@ -22,7 +22,7 @@ public sealed partial class DeckleLlmSource
     // ── LlmPage UI failures ─────────────────────────────────────────────
     //
     // Each line carries its exception in its own payload: these fire rarely
-    // and a journal that keeps only Warnings and Errors must still say why.
+    // and a log that keeps only Warnings and Errors must still say why.
 
     [Event(EvtPageNavigatedToFailed,
            Level = EventLevel.Error,

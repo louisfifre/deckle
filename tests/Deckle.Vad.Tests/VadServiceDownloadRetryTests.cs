@@ -124,14 +124,14 @@ public sealed class VadServiceDownloadRetryTests : IDisposable
     }
 
     [Fact]
-    public void TheAttemptDetailsStayVerboseAndOutOfTheJournal()
+    public void TheAttemptDetailsStayVerboseAndOutOfTheLog()
     {
-        // The attempts are the incident's detail: Verbose and out of the journal,
+        // The attempts are the incident's detail: Verbose and out of the log,
         // so a flaky network cannot fill it.
         var declared = ProviderManifest.EventsOf(typeof(DeckleVadSource))
             .Single(e => e.Id == DeckleVadSource.EvtSpeechTrimVadDownloadAttemptFailedDetail);
         Assert.Equal(EventLevel.Verbose, declared.Level);
-        Assert.False(JournalledPayloads.Travels(declared));
+        Assert.False(LoggedPayloads.Travels(declared));
     }
 
     private VadService NewService(FakeDownloads downloads, List<TimeSpan> waits)

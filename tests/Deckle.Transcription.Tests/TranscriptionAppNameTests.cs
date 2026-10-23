@@ -6,21 +6,21 @@ namespace Deckle.Transcription.Tests;
 
 // The paste events describe the window the text goes to. That description names
 // the program the person is using, so it stays on Verbose detail events and
-// never on a line the journal keeps.
+// never on a line the log keeps.
 [Trait("Category", "observability")]
 public sealed class TranscriptionAppNameTests
 {
     [Fact]
-    public void NoEventThatTravelsInTheJournalDeclaresAnAppOrProcessName()
+    public void NoEventThatTravelsInTheLogDeclaresAnAppOrProcessName()
     {
-        Assert.Empty(JournalledPayloads.AppNamesInTheJournal(typeof(DeckleWhispSource)));
+        Assert.Empty(LoggedPayloads.AppNamesInTheLog(typeof(DeckleWhispSource)));
     }
 
     [Fact]
-    public void TheForegroundDescriptorStaysOnVerboseDetailEventsThatTheJournalDoesNotKeep()
+    public void TheForegroundDescriptorStaysOnVerboseDetailEventsThatTheLogDoesNotKeep()
     {
-        var carrying = JournalledPayloads
-            .Carrying(typeof(DeckleWhispSource), JournalledPayloads.AppNameFields)
+        var carrying = LoggedPayloads
+            .Carrying(typeof(DeckleWhispSource), LoggedPayloads.AppNameFields)
             .Select(c => c.Event)
             .DistinctBy(e => e.Name)
             .ToArray();
@@ -30,7 +30,7 @@ public sealed class TranscriptionAppNameTests
         Assert.All(carrying, e =>
         {
             Assert.Equal(EventLevel.Verbose, e.Level);
-            Assert.False(JournalledPayloads.Travels(e), $"{e.Name} travels in the journal.");
+            Assert.False(LoggedPayloads.Travels(e), $"{e.Name} travels in the log.");
         });
     }
 }

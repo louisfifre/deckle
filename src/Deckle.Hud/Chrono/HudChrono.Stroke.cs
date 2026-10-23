@@ -301,7 +301,7 @@ public sealed partial class HudChrono
             // expression parse in StartRotation). Log it before rethrowing:
             // otherwise the failure can show only as frozen animations. The
             // callback serves the playground's own console; the provider is
-            // what reaches the journal in shipping Deckle.
+            // what reaches the log in shipping Deckle.
             NoteStrokeFailure("rebuild", variant, ex);
             log?.Invoke("ERROR", $"RebuildStroke threw {ex.GetType().Name}: {ex.Message}");
             throw;

@@ -4,7 +4,7 @@ namespace Deckle.Orchestration;
 // processes of it still alive.
 public sealed record ActiveSession(AppEntry Entry, IReadOnlyList<int> ProcessIds);
 
-// Why a session ended, so a reader of the journal can tell a game quitting
+// Why a session ended, so a reader of the log can tell a game quitting
 // from a settings change or a shutdown.
 public enum SessionEndReason
 {

@@ -87,7 +87,7 @@ public sealed class DeckleHomeSource : DeckleEventSource
     [Event(EvtDeleteRefused,
            Level = EventLevel.Informational,
            Keywords = Gesture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "A Home object was not moved to the bin | reason={0} | type_key={1}")]
     public void DeleteRefused(string reason, string type_key)
     {
@@ -95,11 +95,11 @@ public sealed class DeckleHomeSource : DeckleEventSource
     }
 
     // The move that did happen: the object no longer shows in any later read,
-    // so the journal says it went, though not which object.
+    // so the log says it went, though not which object.
     [Event(EvtObjectBinned,
            Level = EventLevel.Informational,
            Keywords = Gesture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "A Home object was moved to the bin | type_key={0}")]
     public void ObjectBinned(string type_key)
     {
@@ -112,7 +112,7 @@ public sealed class DeckleHomeSource : DeckleEventSource
     [Event(EvtSchemaReady,
            Level = EventLevel.Informational,
            Keywords = Gesture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Home schema is ready | work_id={0} | after_failures={1} | elapsed_ms={2:F0}")]
     public void SchemaReady(string work_id, int after_failures, double elapsed_ms)
     {

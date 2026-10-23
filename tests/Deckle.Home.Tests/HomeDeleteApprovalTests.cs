@@ -29,8 +29,8 @@ public sealed class HomeDeleteApprovalTests
     static string Field(EventWrittenEventArgs e, string name)
         => Convert.ToString(e.Payload![e.PayloadNames!.IndexOf(name)])!;
 
-    static bool TravelsInTheJournal(EventWrittenEventArgs e)
-        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Journal) != 0;
+    static bool TravelsInTheLog(EventWrittenEventArgs e)
+        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Milestone) != 0;
 
     [Fact]
     public async Task AnApprovedDeleteMovesTheObjectToTheBin()
@@ -142,7 +142,7 @@ public sealed class HomeDeleteApprovalTests
 
     [Fact]
     [Trait("Category", "observability")]
-    public async Task ARefusedDeleteTellsItsReasonAndNeverTheObjectInTheJournal()
+    public async Task ARefusedDeleteTellsItsReasonAndNeverTheObjectInTheLog()
     {
         using var listener = new TestEventListener("Deckle-Home");
         using var server = ServerWithAFreePoint();
@@ -152,7 +152,7 @@ public sealed class HomeDeleteApprovalTests
                 .DeleteAsync("point-1", confirm: true, Ct));
 
         EventWrittenEventArgs refused = Assert.Single(
-            listener.Events.Where(TravelsInTheJournal),
+            listener.Events.Where(TravelsInTheLog),
             e => e.EventId == DeckleHomeSource.EvtDeleteRefused);
         Assert.Equal("declined", Field(refused, "reason"));
         Assert.Equal(HomeSchema.Types.Point, Field(refused, "type_key"));
@@ -163,7 +163,7 @@ public sealed class HomeDeleteApprovalTests
 
     [Fact]
     [Trait("Category", "observability")]
-    public async Task ABinThatHappenedIsInTheJournalWithoutTheObject()
+    public async Task ABinThatHappenedIsInTheLogWithoutTheObject()
     {
         using var listener = new TestEventListener("Deckle-Home");
         using var server = ServerWithAFreePoint();
@@ -172,7 +172,7 @@ public sealed class HomeDeleteApprovalTests
             .DeleteAsync("point-1", confirm: true, Ct);
 
         EventWrittenEventArgs binned = Assert.Single(
-            listener.Events.Where(TravelsInTheJournal),
+            listener.Events.Where(TravelsInTheLog),
             e => e.EventId == DeckleHomeSource.EvtObjectBinned);
         Assert.Equal(HomeSchema.Types.Point, Field(binned, "type_key"));
         Assert.DoesNotContain(listener.Events, e => e.Payload!.Any(p =>

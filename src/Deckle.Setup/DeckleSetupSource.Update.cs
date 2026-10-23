@@ -60,13 +60,13 @@ public sealed partial class DeckleSetupSource
     }
 
     // The download is the update pipeline of this run: start, completion and
-    // cancel go to the journal, and a failure is an Error, which it keeps: the
+    // cancel go to the log, and a failure is an Error, which it keeps: the
     // update does not happen. All four carry the work_id of one attempt (a retry
     // is a new attempt), so a start with no end reads as abandoned.
     [Event(EvtUpdateDownloadStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Downloading the Deckle update | work_id={0}")]
     public void UpdateDownloadStarted(string work_id)
     {
@@ -87,7 +87,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtUpdateDownloadCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The Deckle update was downloaded | work_id={0} | version={1} | size_bytes={2} | duration_ms={3}")]
     public void UpdateDownloadCompleted(string work_id, string version, long size_bytes, long duration_ms)
     {
@@ -98,7 +98,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtUpdateDownloadCancelled,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The update download was cancelled | work_id={0} | reason=window_closed | step={1}")]
     public void UpdateDownloadCancelled(string work_id, string step)
     {

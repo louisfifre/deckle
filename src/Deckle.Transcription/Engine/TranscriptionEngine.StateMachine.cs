@@ -454,7 +454,7 @@ public sealed partial class TranscriptionEngine
         // after Dispose would re-arm the tray on a half-shut-down engine.
         // The take's end is declared on every normal path; one that was not
         // (a path that returns without raising Finished) is closed here, so the
-        // journal never holds a start without its end.
+        // log never holds a start without its end.
         EndTake(TakeOutcomes.Abandoned, TakeEndReasons.WorkerExit);
 
         bool reachedIdle;

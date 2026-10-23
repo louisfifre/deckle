@@ -86,10 +86,10 @@ public class SpeechEngineTests
     }
 
     // A read aloud is lasting work (synthesis, then playback): its request and its
-    // end, with the outcome, both travel in the journal that survives the defaults.
+    // end, with the outcome, both travel in the log that survives the defaults.
     [Fact]
     [Trait("Category", "observability")]
-    public void AReadAloudRequestAndItsEndTravelInTheJournal()
+    public void AReadAloudRequestAndItsEndTravelInTheLog()
     {
         using var listener = new TestEventListener("Deckle-Speech");
         using var engine = new SpeechEngine(new SilentBackend());
@@ -106,9 +106,9 @@ public class SpeechEngineTests
 
         Assert.NotNull(ended);
         Assert.Equal("failed", ended!.Payload![0]);
-        Assert.Equal(ObservationTags.Journal, ended.Tags & ObservationTags.Journal);
+        Assert.Equal(ObservationTags.Milestone, ended.Tags & ObservationTags.Milestone);
         Assert.Contains(listener.Events, e =>
             e.EventId == DeckleSpeechSource.EvtReadAloudRequested
-            && (e.Tags & ObservationTags.Journal) == ObservationTags.Journal);
+            && (e.Tags & ObservationTags.Milestone) == ObservationTags.Milestone);
     }
 }

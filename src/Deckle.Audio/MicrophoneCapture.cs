@@ -126,7 +126,7 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
         string purpose = host.RecordingPurpose;
         int configuredDevice = host.AudioInputDeviceId;
         // Pairs RecordingStarted, RecordingCompleted or RecordingFailed and the
-        // anomaly summary of this recording in the journal.
+        // anomaly summary of this recording in the log.
         string workId = WorkId.Next();
         var startClock = System.Diagnostics.Stopwatch.StartNew();
 

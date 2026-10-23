@@ -116,11 +116,11 @@ public sealed class DeckleThreadingSource : DeckleEventSource
 
     // First on-time callback after a stall. `duration_ms` runs from the first
     // late callback to this one; `worst_wait_ms` is the longest queue wait of
-    // the incident. Journal-tagged so the journal shows the stall's end.
+    // the incident. Milestone-tagged so the log shows the stall's end.
     [Event(EvtMarshalStallRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Threading,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The UI thread is responsive again | stalls={0} | worst_wait_ms={1} | duration_ms={2}")]
     public void MarshalStallRecovered(int stalls, int worst_wait_ms, long duration_ms)
     {
@@ -158,7 +158,7 @@ public sealed class DeckleThreadingSource : DeckleEventSource
 
 // Turns the per-callback queue wait into one stall incident. A blocked UI
 // thread makes every queued callback late at once, so logging each late
-// callback as a Warning would bury the journal under the same cause; the
+// callback as a Warning would bury the log under the same cause; the
 // first late callback opens the incident (Warning), the following ones are
 // Verbose, the first on-time callback closes it (Informational).
 //

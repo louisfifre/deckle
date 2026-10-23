@@ -41,9 +41,9 @@ public partial class App
     }
 
     // A rejected second instance has no sink and may not install one: the
-    // resident run holds the journal open for writing, so the fact goes to a
+    // resident run holds the log open for writing, so the fact goes to a
     // small file of its own, beside the launcher's. The resident run copies it into
-    // the journal at its next start (ReportRejectedSecondInstances).
+    // the log at its next start (ReportRejectedSecondInstances).
     private static void NoteSecondInstanceRejected() =>
         NoteFile.Append(
             Path.Combine(AppPaths.DiagnosticsDirectory, SecondInstanceFileName),

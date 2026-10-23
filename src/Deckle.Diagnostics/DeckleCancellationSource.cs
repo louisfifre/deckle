@@ -31,8 +31,8 @@ public sealed class DeckleCancellationSource : DeckleEventSource
 
     // A cancellation is a normal end of work, not a failure, so it is
     // Informational, never Warning or Error: a person who pressed Stop must not
-    // read an incident in the journal. It carries the Journal tag because the
-    // always-on journal is the one record a reader on another machine gets, and
+    // read an incident in the log. It carries the Milestone tag because the
+    // always-on log is the one record a reader on another machine gets, and
     // without this line a take that stops reads as work that vanished: the
     // operation, the reason and the age say why it ended. One Stop can cascade
     // into several of these on worker threads; each names its own operation,
@@ -42,7 +42,7 @@ public sealed class DeckleCancellationSource : DeckleEventSource
     [Event(EvtOperationCancelled,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "operation cancelled | operation={0} | reason={1} | age_ms={2}")]
     public void OperationCancelled(string operation, string reason, int age_ms)
     {

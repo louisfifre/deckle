@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Deckle.Orchestration.Tests;
 
-// What the journal says when a subscriber or an exit handler keeps throwing, and
+// What the log says when a subscriber or an exit handler keeps throwing, and
 // that the session and rule milestones name the entry they are about. The
 // incident tests pick their events by the pid they raise, since other test
 // classes of this project emit on the same provider in parallel.
@@ -21,8 +21,8 @@ public sealed class OrchestrationIncidentTests
     private static string Field(EventWrittenEventArgs e, string name)
         => Convert.ToString(e.Payload![e.PayloadNames!.IndexOf(name)])!;
 
-    private static bool TravelsInTheJournal(EventWrittenEventArgs e)
-        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Journal) != 0;
+    private static bool TravelsInTheLog(EventWrittenEventArgs e)
+        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Milestone) != 0;
 
     [Fact]
     [Trait("Category", "regression")]
@@ -46,7 +46,7 @@ public sealed class OrchestrationIncidentTests
             .Where(e => e.EventId == DeckleOrchestrationSource.EvtForegroundDeliveryFailedDetail).ToArray();
         Assert.Equal(2, details.Length);
         Assert.All(details, e => Assert.Equal(EventLevel.Verbose, e.Level));
-        Assert.All(details, e => Assert.False(TravelsInTheJournal(e)));
+        Assert.All(details, e => Assert.False(TravelsInTheLog(e)));
 
         // A later failure after a recovery opens a new incident.
         Assert.True(incident.Close());
@@ -81,14 +81,14 @@ public sealed class OrchestrationIncidentTests
         EventWrittenEventArgs recovered = Assert.Single(
             listener.Events,
             e => e.EventId == DeckleOrchestrationSource.EvtExitWatchCallbackRecovered);
-        Assert.True(TravelsInTheJournal(recovered));
+        Assert.True(TravelsInTheLog(recovered));
     }
 
     [Fact]
     [Trait("Category", "regression")]
     public void EveryPayloadOfTheProviderAppearsInItsMessageTemplate()
     {
-        // A payload missing from the template is dropped from the line the journal
+        // A payload missing from the template is dropped from the line the log
         // keeps, which is how the session handler's entry id went unread.
         foreach (var declared in ProviderManifest.EventsOf(typeof(DeckleOrchestrationSource)))
         {
@@ -108,7 +108,7 @@ public sealed class OrchestrationIncidentTests
 
     [Fact]
     [Trait("Category", "regression")]
-    public void ASessionAndItsRulesPairByTheEntryTheyNameInTheJournal()
+    public void ASessionAndItsRulesPairByTheEntryTheyNameInTheLog()
     {
         using var listener = new TestEventListener(Provider);
         var entry = new AppEntry { DisplayName = "Hollow", ProcessName = "Hollow" };
@@ -119,7 +119,7 @@ public sealed class OrchestrationIncidentTests
         OrchestrationRuntime.LogSessionEnded(entry, SessionEndReason.EntryDisabled);
 
         string[] story = listener.Events
-            .Where(TravelsInTheJournal)
+            .Where(TravelsInTheLog)
             .Where(e => Equals(e.Payload?[0], entry.Id))
             .Select(e => e.EventName!)
             .ToArray();

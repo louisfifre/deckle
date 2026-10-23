@@ -78,7 +78,7 @@ public sealed class DeckleModulesSource : DeckleEventSource
     [Event(EvtPresenceLoadFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The module presence file could not be used, so every module counts as present | reason={0}")]
     public void PresenceLoadFailed(string reason)
     {

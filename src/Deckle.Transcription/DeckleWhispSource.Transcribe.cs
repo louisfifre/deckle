@@ -39,7 +39,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtMicrophoneRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Microphone access recovered")]
     public void MicrophoneRecovered()
     {

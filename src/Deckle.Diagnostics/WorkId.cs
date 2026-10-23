@@ -5,10 +5,10 @@ namespace Deckle.Diagnostics;
 // The pairing identifier of a piece of lasting work (a take, a streaming
 // session, a rewrite, a file transcription, a recovery). The deckle-logging
 // doctrine asks every start and every end of such work to carry the same
-// identifier, so a reader holding only the journal file can match an end to
+// identifier, so a reader holding only the log file can match an end to
 // its start, or notice that a start never got one.
 //
-// Why a process-wide counter and not a GUID: the journal row already carries
+// Why a process-wide counter and not a GUID: the log row already carries
 // the session id (DeckleEventSource.SessionId), so the pair (session, work id)
 // is unique in the file. What the identifier must be is short, cheap to emit
 // on a hot path, and easy to grep, which a counter in hex is and a 36-character

@@ -80,7 +80,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtNotificationShown,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Showing a notification | notification_id={0}")]
     public void NotificationShown(string notification_id)
     {
@@ -101,7 +101,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtNotificationResponded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "A notification was answered | notification_id={0}")]
     public void NotificationResponded(string notification_id)
     {
@@ -119,7 +119,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     }
 
     // ─── Dropped ───────────────────────────────────────────────────────
-    // The Warning carries the notification and the reason itself: the journal
+    // The Warning carries the notification and the reason itself: the log
     // keeps Warnings whatever the verbosity, so a line that said only "dropped"
     // left a reader unable to tell which notification, or why. reason:
     // no_channel (none registered for the kind) or channel_unavailable.
@@ -148,7 +148,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtNotificationCancelled,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "A notification prompt was cancelled | notification_id={0}")]
     public void NotificationCancelled(string notification_id)
     {
@@ -159,7 +159,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtNotificationUnanswered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "A notification went unanswered | notification_id={0}")]
     public void NotificationUnanswered(string notification_id)
     {
@@ -178,7 +178,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
 
     // ─── Failed (a channel threw while delivering) ─────────────────────
     // Id 18 was the Verbose mirror carrying the cause and is retired: the
-    // cause belongs on the line the journal keeps.
+    // cause belongs on the line the log keeps.
     [Event(EvtNotificationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
@@ -224,7 +224,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtToastWithdrawRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Toast withdrawal works again")]
     public void ToastWithdrawRecovered()
     {

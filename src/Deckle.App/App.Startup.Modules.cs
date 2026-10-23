@@ -19,7 +19,7 @@ namespace Deckle.App;
 
 public partial class App
 {
-    // Module names in the journal: the ModuleIds vocabulary for the pieces a
+    // Module names in the log: the ModuleIds vocabulary for the pieces a
     // person can leave out, plain names for the shell pieces always composed.
     private const string SpeechModule            = "speech";
     private const string ForegroundWatcherModule = "foreground_watcher";

@@ -20,7 +20,7 @@ namespace Deckle.Diagnostics;
 // Rotation, pruning and line counting never stop the writes: a failure leaves
 // the file growing or the archive unpruned. That is a second incident of the
 // same shape (RotationFailed once, the attempts counted, RotationRecovered when
-// a roll and its prune go through), so the journal says that a file stopped
+// a roll and its prune go through), so the log says that a file stopped
 // rolling instead of leaving a disk to fill up unexplained.
 public sealed class JsonlSink : IFlushableLogSink
 {

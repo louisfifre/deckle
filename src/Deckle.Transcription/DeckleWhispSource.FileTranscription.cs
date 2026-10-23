@@ -15,12 +15,12 @@ public sealed partial class DeckleWhispSource
     // a batch file by file.
 
     // The batch is lasting work: this start and its one end (Completed or
-    // Aborted) travel in the journal and share `work_id`. The files of the
+    // Aborted) travel in the log and share `work_id`. The files of the
     // batch are the takes TakeStarted and TakeEnded record, one each.
     [Event(EvtFileTranscriptionBatchStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "File transcription batch started | work_id={0} | files={1}")]
     public void FileTranscriptionBatchStarted(string work_id, int files)
     {
@@ -43,7 +43,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtFileTranscriptionBatchCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "File transcription batch completed | work_id={0} | files={1} | outcome={2}")]
     public void FileTranscriptionBatchCompleted(string work_id, int files, string outcome)
     {
@@ -56,7 +56,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtFileTranscriptionBatchAborted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "File transcription batch ended early | work_id={0} | outcome={1} | files={2} | ex_type={3} | ex_message={4}")]
     public void FileTranscriptionBatchAborted(string work_id, string outcome, int files, string ex_type, string ex_message)
     {

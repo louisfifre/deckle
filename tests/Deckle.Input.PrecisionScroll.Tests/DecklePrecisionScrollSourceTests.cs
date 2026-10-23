@@ -25,7 +25,7 @@ public sealed class DecklePrecisionScrollSourceTests
             {
                 Assert.Equal(DecklePrecisionScrollSource.EvtEngineStarted, started.EventId);
                 Assert.Equal(EventLevel.Informational, started.Level);
-                Assert.Equal(ObservationTags.Journal, started.Tags & ObservationTags.Journal);
+                Assert.Equal(ObservationTags.Milestone, started.Tags & ObservationTags.Milestone);
             },
             incident =>
             {
@@ -37,7 +37,7 @@ public sealed class DecklePrecisionScrollSourceTests
             stopped =>
             {
                 Assert.Equal(DecklePrecisionScrollSource.EvtEngineStopped, stopped.EventId);
-                Assert.Equal(ObservationTags.Journal, stopped.Tags & ObservationTags.Journal);
+                Assert.Equal(ObservationTags.Milestone, stopped.Tags & ObservationTags.Milestone);
                 Assert.Equal("failed", stopped.Payload?[0]);
                 Assert.Equal("injection_failed", stopped.Payload?[1]);
             },

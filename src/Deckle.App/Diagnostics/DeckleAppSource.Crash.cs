@@ -19,7 +19,7 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtSurvivedException, origin, ex_type, site, ex_message);
     }
 
-    // The same incident again. Verbose and not journalled: the journal already
+    // The same incident again. Verbose and not logged: the log already
     // has the opening line, and a fault that fires on every frame must not fill it.
     [Event(EvtSurvivedExceptionRepeated,
            Level = EventLevel.Verbose,
@@ -31,7 +31,7 @@ public sealed partial class DeckleAppSource
     }
 
     // An exception that ends the process stays an Error. The Detail companion
-    // stays because the journal predicate keeps it by name for older readers.
+    // stays because the log predicate keeps it by name for older readers.
     [Event(EvtCrashAppDomain,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -62,7 +62,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtProcessExit,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "ProcessExit triggered")]
     public void ProcessExit()
     {

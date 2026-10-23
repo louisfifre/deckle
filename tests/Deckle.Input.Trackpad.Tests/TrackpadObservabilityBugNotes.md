@@ -3,12 +3,12 @@
 ## The registry gesture change and the repair script left no trace when they succeeded
 
 - Trigger: the person turns the Windows three-finger gestures off (or back on) from the Trackpad page, or runs the connection repair script, and it works.
-- Symptom: only failures reached the journal. A neutralized or restored set of system gestures, and a repair script that was launched and completed, were Informational lines outside the journal. After a support request the journal could show that a write had failed but never that the machine's gesture settings had been changed.
+- Symptom: only failures reached the log. A neutralized or restored set of system gestures, and a repair script that was launched and completed, were Informational lines outside the log. After a support request the log could show that a write had failed but never that the machine's gesture settings had been changed.
 - Cause: the success lines were written as plain Informational events, while their failures were Warnings (which travel on their own).
-- Violated invariant: work that changes the machine writes its start and its end in the journal.
-- Fix: `GesturesNeutralized`, `GesturesRestored`, `RepairLaunched` and `RepairCompleted` carry the Journal tag.
+- Violated invariant: work that changes the machine writes its start and its end in the log.
+- Fix: `GesturesNeutralized`, `GesturesRestored`, `RepairLaunched` and `RepairCompleted` carry the Milestone tag.
 - Recurrence cue: a `Gesture registry write failed` or `Connection repair script failed` line with no earlier `neutralized` or `launched` line to say what it followed.
-- Guard: `DeckleTrackpadSourceTests.ASystemSettingChangeAndTheRepairScriptReachTheJournalOnSuccessToo`.
+- Guard: `DeckleTrackpadSourceTests.ASystemSettingChangeAndTheRepairScriptReachTheLogOnSuccessToo`.
 
 ## A failed button release hid behind the first injection failure
 

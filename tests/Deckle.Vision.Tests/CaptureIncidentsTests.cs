@@ -4,9 +4,9 @@ using Xunit;
 
 namespace Deckle.Vision.Tests;
 
-// The capture loop writes one Warning when a degradation repeats and one journal
+// The capture loop writes one Warning when a degradation repeats and one log
 // line when it ends. A loop that exits with an incident still open has to close
-// it, or the journal shows a capture that is still failing long after it stopped.
+// it, or the log shows a capture that is still failing long after it stopped.
 // The clock is a tick count in milliseconds, so none of this waits.
 // Shares Deckle-Vision with the other class that listens to it: a listener sees every
 // emission of the process-wide provider, so the two classes never run side by side.

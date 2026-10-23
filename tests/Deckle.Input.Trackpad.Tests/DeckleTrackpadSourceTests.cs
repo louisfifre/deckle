@@ -40,14 +40,14 @@ public sealed class DeckleTrackpadSourceTests : IDisposable
             {
                 Assert.Equal(DeckleTrackpadSource.EvtInjectionIncidentEnded, ended.EventId);
                 Assert.Equal(EventLevel.Informational, ended.Level);
-                Assert.Equal(ObservationTags.Journal, ended.Tags & ObservationTags.Journal);
+                Assert.Equal(ObservationTags.Milestone, ended.Tags & ObservationTags.Milestone);
                 Assert.Equal("injection_succeeded", ended.Payload?[0]);
             });
     }
 
     [Fact]
     [Trait("Category", "regression")]
-    public void ASystemSettingChangeAndTheRepairScriptReachTheJournalOnSuccessToo()
+    public void ASystemSettingChangeAndTheRepairScriptReachTheLogOnSuccessToo()
     {
         using var listener = new TestEventListener("Deckle-Trackpad");
 
@@ -57,7 +57,7 @@ public sealed class DeckleTrackpadSourceTests : IDisposable
         DeckleTrackpadSource.Log.RepairCompleted(0);
 
         Assert.Equal(4, listener.Events.Count);
-        Assert.All(listener.Events, e => Assert.Equal(ObservationTags.Journal, e.Tags & ObservationTags.Journal));
+        Assert.All(listener.Events, e => Assert.Equal(ObservationTags.Milestone, e.Tags & ObservationTags.Milestone));
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public sealed class DeckleTrackpadSourceTests : IDisposable
         var started = Assert.Single(listener.Events);
         Assert.Equal(DeckleTrackpadSource.EvtEngineStarted, started.EventId);
         Assert.True(started.HasKeyword(Keywords.Lifecycle));
-        Assert.Equal(ObservationTags.Journal, started.Tags & ObservationTags.Journal);
+        Assert.Equal(ObservationTags.Milestone, started.Tags & ObservationTags.Milestone);
 
         OperationalLogAdmission.Configure(
             static activity => activity == OperationalLogActivity.Input);

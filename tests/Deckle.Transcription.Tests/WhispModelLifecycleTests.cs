@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Deckle.Transcription.Tests;
 
-// What the journal says about the model: how each load and each warmup ended and
+// What the log says about the model: how each load and each warmup ended and
 // why, and that a model which stays unavailable is one incident, not one line per
 // take. A cold file batch is the seam: the worker primes the backend before it
 // reads a file, so a missing file keeps the test free of audio.
@@ -21,8 +21,8 @@ public sealed class WhispModelLifecycleTests
     private static string Field(EventWrittenEventArgs e, string name)
         => Convert.ToString(e.Payload![e.PayloadNames!.IndexOf(name)])!;
 
-    private static bool TravelsInTheJournal(EventWrittenEventArgs e)
-        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Journal) != 0;
+    private static bool TravelsInTheLog(EventWrittenEventArgs e)
+        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Milestone) != 0;
 
     private static string MissingPath() =>
         Path.Combine(Path.GetTempPath(), $"deckle-model-{Guid.NewGuid():N}.wav");
@@ -65,26 +65,26 @@ public sealed class WhispModelLifecycleTests
             or DeckleWhispSource.EvtWarmupFailed;
 
     [Fact]
-    public async Task AColdLoadAndItsWarmupEachPairTheirStartAndEndInTheJournal()
+    public async Task AColdLoadAndItsWarmupEachPairTheirStartAndEndInTheLog()
     {
         using var listener = new TestEventListener(Provider);
         using var engine = new TranscriptionEngine(new FakeHost(), new ScriptedBackend(loadFails: false));
 
         await RunColdBatchAsync(engine, listener);
 
-        EventWrittenEventArgs[] journal = listener.Events.Where(TravelsInTheJournal).ToArray();
+        EventWrittenEventArgs[] logged = listener.Events.Where(TravelsInTheLog).ToArray();
         EventWrittenEventArgs loading = Assert.Single(
-            journal, e => e.EventId == DeckleWhispSource.EvtModelLoading);
+            logged, e => e.EventId == DeckleWhispSource.EvtModelLoading);
         EventWrittenEventArgs loaded = Assert.Single(
-            journal, e => e.EventId == DeckleWhispSource.EvtModelLoaded);
+            logged, e => e.EventId == DeckleWhispSource.EvtModelLoaded);
         Assert.Equal(Field(loading, WorkId.FieldName), Field(loaded, WorkId.FieldName));
         Assert.Equal("35", Field(loaded, "load_ms"));
         Assert.Equal("scripted", Field(loaded, "device"));
 
         EventWrittenEventArgs warmupStart = Assert.Single(
-            journal, e => e.EventId == DeckleWhispSource.EvtWarmupStart);
+            logged, e => e.EventId == DeckleWhispSource.EvtWarmupStart);
         EventWrittenEventArgs warmupEnd = Assert.Single(
-            journal, e => e.EventId == DeckleWhispSource.EvtWarmupComplete);
+            logged, e => e.EventId == DeckleWhispSource.EvtWarmupComplete);
         Assert.Equal(Field(warmupStart, WorkId.FieldName), Field(warmupEnd, WorkId.FieldName));
         Assert.NotEqual(Field(loading, WorkId.FieldName), Field(warmupStart, WorkId.FieldName));
         Assert.True(long.Parse(Field(warmupEnd, "elapsed_ms")) >= 0);
@@ -103,30 +103,30 @@ public sealed class WhispModelLifecycleTests
         backend.LoadFails = false;
         await RunColdBatchAsync(engine, listener);
 
-        EventWrittenEventArgs[] journal = listener.Events.Where(TravelsInTheJournal).ToArray();
+        EventWrittenEventArgs[] logged = listener.Events.Where(TravelsInTheLog).ToArray();
 
         // The first failure: a start and an Error that share an id.
         EventWrittenEventArgs loading = Assert.Single(
-            journal, e => e.EventId == DeckleWhispSource.EvtModelLoading);
+            logged, e => e.EventId == DeckleWhispSource.EvtModelLoading);
         EventWrittenEventArgs unavailable = Assert.Single(
-            journal, e => e.EventId == DeckleWhispSource.EvtModelUnavailable);
+            logged, e => e.EventId == DeckleWhispSource.EvtModelUnavailable);
         Assert.Equal(EventLevel.Error, unavailable.Level);
         Assert.Equal(Field(loading, WorkId.FieldName), Field(unavailable, WorkId.FieldName));
         Assert.Equal("file_not_found", Field(unavailable, "reason"));
 
-        // The later attempts are told in the detail, never in the journal.
+        // The later attempts are told in the detail, never in the log.
         Assert.Equal(
             2,
             listener.Events.Count(e => e.EventId == DeckleWhispSource.EvtModelLoadRetrying));
-        Assert.DoesNotContain(journal, e => e.EventId == DeckleWhispSource.EvtModelLoadRetrying);
-        Assert.DoesNotContain(journal, e => e.EventId == DeckleWhispSource.EvtModelLoadRetryFailed);
+        Assert.DoesNotContain(logged, e => e.EventId == DeckleWhispSource.EvtModelLoadRetrying);
+        Assert.DoesNotContain(logged, e => e.EventId == DeckleWhispSource.EvtModelLoadRetryFailed);
 
         // The recovery closes the incident that the Error opened.
         EventWrittenEventArgs recovered = Assert.Single(
-            journal, e => e.EventId == DeckleWhispSource.EvtModelRecovered);
+            logged, e => e.EventId == DeckleWhispSource.EvtModelRecovered);
         Assert.Equal(Field(unavailable, WorkId.FieldName), Field(recovered, WorkId.FieldName));
         Assert.Equal("scripted", Field(recovered, "device"));
-        Assert.DoesNotContain(journal, e => e.EventId == DeckleWhispSource.EvtModelLoaded);
+        Assert.DoesNotContain(logged, e => e.EventId == DeckleWhispSource.EvtModelLoaded);
     }
 
     [Fact]
@@ -141,7 +141,7 @@ public sealed class WhispModelLifecycleTests
 
         EventWrittenEventArgs warmupStart = Assert.Single(
             listener.Events, e => e.EventId == DeckleWhispSource.EvtWarmupStart);
-        Assert.True(TravelsInTheJournal(warmupStart));
+        Assert.True(TravelsInTheLog(warmupStart));
         EventWrittenEventArgs failed = Assert.Single(
             listener.Events, e => e.EventId == DeckleWhispSource.EvtWarmupFailed);
         Assert.Equal(EventLevel.Warning, failed.Level);

@@ -5,13 +5,13 @@ using Xunit;
 
 namespace Deckle.Setup.Tests;
 
-// A cancelled download is a normal end: Informational, and in the journal next to
-// the failed sibling, so the journal shows how every item ended.
+// A cancelled download is a normal end: Informational, and in the log next to
+// the failed sibling, so the log shows how every item ended.
 [Trait("Category", "observability")]
-public sealed class SetupCancellationJournalTests
+public sealed class SetupCancellationLogTests
 {
     [Fact]
-    public void ACancelledItemDownloadIsInformationalAndJournaled()
+    public void ACancelledItemDownloadIsInformationalAndAMilestone()
     {
         using var listener = new TestEventListener("Deckle-Setup");
 
@@ -19,6 +19,6 @@ public sealed class SetupCancellationJournalTests
 
         var ev = Assert.Single(listener.Events, e => e.EventId == DeckleSetupSource.EvtItemCancelled);
         Assert.Equal(EventLevel.Informational, ev.Level);
-        Assert.Equal(ObservationTags.Journal, ev.Tags & ObservationTags.Journal);
+        Assert.Equal(ObservationTags.Milestone, ev.Tags & ObservationTags.Milestone);
     }
 }

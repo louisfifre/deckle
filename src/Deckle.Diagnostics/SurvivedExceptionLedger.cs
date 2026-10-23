@@ -29,7 +29,7 @@ public readonly record struct SurvivedException(
 }
 
 // Counts the exceptions a net caught and let the process go on from, so that a
-// fault that fires on every frame or every tick is one incident in the journal and
+// fault that fires on every frame or every tick is one incident in the log and
 // not one line each. An incident is an exception type thrown at one site and
 // caught by one origin; the message is not part of it, because a message that
 // carries a number or a name would make every occurrence look new.
@@ -84,7 +84,7 @@ public sealed class SurvivedExceptionLedger
         return end > 1 ? generated[1..end] : null;
     }
 
-    // The cause on one line: a message can span several, and the journal reads one
+    // The cause on one line: a message can span several, and the log reads one
     // event per line.
     internal static string OneLine(string message)
     {

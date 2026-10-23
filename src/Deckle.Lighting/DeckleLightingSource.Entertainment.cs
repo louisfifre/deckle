@@ -80,7 +80,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtLightOutputSelected,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Push),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Hue output selected | output={0} | reason={1}")]
     public void LightOutputSelected(string output, string reason)
     {
@@ -157,7 +157,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEntertainmentTransportConnected,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Hue Entertainment session opened | elapsed_ms={0}")]
     public void EntertainmentTransportConnected(long elapsed_ms)
     {
@@ -167,18 +167,18 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEntertainmentConnectFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Hue Entertainment session could not open | stage={0} | ex_type={1} | ex_message={2} | elapsed_ms={3}")]
     public void EntertainmentConnectFailed(string stage, string ex_type, string ex_message, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtEntertainmentConnectFailed, stage, ex_type, ex_message, elapsed_ms);
     }
 
-    // A cancelled opening is a normal end, journaled like its failed sibling.
+    // A cancelled opening is a normal end, logged like its failed sibling.
     [Event(EvtEntertainmentConnectCancelled,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Hue Entertainment session opening cancelled | stage={0} | elapsed_ms={1}")]
     public void EntertainmentConnectCancelled(string stage, long elapsed_ms)
     {
@@ -188,7 +188,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEntertainmentSessionClosed,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Hue Entertainment session closed | outcome={0} | duration_ms={1} | frames_sent={2} | send_failures={3}")]
     public void EntertainmentSessionClosed(string outcome, long duration_ms, long frames_sent, int send_failures)
     {

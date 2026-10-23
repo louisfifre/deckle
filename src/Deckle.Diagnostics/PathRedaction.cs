@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 namespace Deckle.Diagnostics;
 
 // Hides where on the machine a path sits before it reaches a line. A path under
-// the Windows profile names the person (C:\Users\<name>\...), and a journal is
+// the Windows profile names the person (C:\Users\<name>\...), and a log is
 // read on another machine, so a provider passes every absolute path, and every
 // exception message that may quote one, through Redact before it writes the event.
 // The path keeps what a reader needs, the file under a known root, and loses

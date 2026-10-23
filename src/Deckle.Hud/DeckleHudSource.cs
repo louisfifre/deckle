@@ -88,7 +88,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtRevealMaskRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The digit reveal builds again | attempts={0}")]
     public void RevealMaskRecovered(int attempts)
     {
@@ -161,7 +161,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtStrokeCreationRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The HUD processing stroke builds again | failures={0}")]
     public void StrokeCreationRecovered(int failures)
     {

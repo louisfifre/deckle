@@ -51,7 +51,7 @@ public static class SettingsSearch
         new SettingSearchEntry
         {
             LabelKey = "GeneralAppLogCard",
-            Keywords = ["journal", "debug", "troubleshoot"],
+            Keywords = ["trace", "debug", "troubleshoot"],
         },
 
         // "Telemetry" section — the page's own composed toggle (TelemetrySettings).
