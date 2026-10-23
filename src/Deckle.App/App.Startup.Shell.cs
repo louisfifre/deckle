@@ -193,13 +193,19 @@ public partial class App
             GetIconRect = () => _tray.GetIconRect(),
             Entries = actions,
         };
-        _tray.LeftClickRequested += () => _trayActions.Show();
+        // The user incident lines go above the switches (App.TrayIncidents.cs);
+        // the menu is recomposed at its next open after the registry changed.
+        _tray.LeftClickRequested += ShowTrayActions;
 
         // Double click opens Settings. The shell delivers the first click's
         // WM_LBUTTONUP before WM_LBUTTONDBLCLK, so the menu opens, then the
         // Settings window takes activation and the menu hides; the trailing
         // WM_LBUTTONUP lands inside the menu's reopen guard and is ignored.
         _tray.DoubleClickRequested += () => ShowSettingsWindowLazy();
+
+        // Before the icon goes live, so its first mark already carries the dot
+        // of an incident opened during composition.
+        InitializeTrayIncidents(actions);
 
         // Last: the icon goes live here, so every tray callback is wired first.
         // The manager creates the icon's own owner window, a hidden top-level
