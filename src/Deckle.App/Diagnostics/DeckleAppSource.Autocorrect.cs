@@ -13,7 +13,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtAutocorrectUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Autocorrect is not running\nreason={0}")]
+           Message = "Autocorrect is on but could not be built, so typing is not corrected\nreason={0}")]
     public void AutocorrectUnavailable(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtAutocorrectUnavailable, reason);

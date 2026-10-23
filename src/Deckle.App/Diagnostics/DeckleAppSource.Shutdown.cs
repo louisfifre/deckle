@@ -82,7 +82,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Deckle could not relaunch itself\nex_type={0} | ex_message={1}")]
+           Message = "Deckle could not relaunch itself and closes\nex_type={0} | ex_message={1}")]
     public void RelaunchFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRelaunchFailed, ex_type, ex_message);
@@ -92,7 +92,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Cannot relaunch Deckle\nreason={0}")]
+           Message = "Deckle closes without relaunching itself\nreason={0}")]
     public void RestartSpawnSkipped(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtRestartSpawnSkipped, reason);
@@ -113,7 +113,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtRestartSettingsFlushFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Settings could not be saved before the restart\nex_type={0} | ex_message={1}")]
+           Message = "Settings could not be saved before the restart, so recent changes may be lost\nex_type={0} | ex_message={1}")]
     public void RestartSettingsFlushFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRestartSettingsFlushFailed, ex_type, ex_message);
@@ -149,7 +149,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtLegacySettingsMigrationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The legacy settings layout could not be moved\nex_type={0} | ex_message={1}")]
+           Message = "The legacy settings layout could not be moved, so the settings left there read as defaults\nex_type={0} | ex_message={1}")]
     public void LegacySettingsMigrationFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtLegacySettingsMigrationFailed, ex_type, ex_message);

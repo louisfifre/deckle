@@ -60,7 +60,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "A module declined to start\nmodule={0} | reason={1}")]
+           Message = "A module declined to start, so its features are unavailable\nmodule={0} | reason={1}")]
     public void ModuleRefused(string module, string reason)
     {
         if (IsEnabled()) WriteEvent(EvtModuleRefused, module, reason);

@@ -27,7 +27,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "An install mode run failed\nmode={0} | ex_type={1} | ex_message={2} | duration_ms={3}")]
+           Message = "An install mode run failed, so Deckle exits\nmode={0} | ex_type={1} | ex_message={2} | duration_ms={3}")]
     public void TransactionalModeFailed(string mode, string ex_type, string ex_message, long duration_ms)
     {
         if (IsEnabled()) WriteEvent(EvtTransactionalModeFailed, mode, ex_type, ex_message, duration_ms);
@@ -52,7 +52,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Deleting the previous data root\npath={0}")]
+           Message = "Deckle is deleting the previous data root\npath={0}")]
     public void DataRootCleanupStarting(string path)
     {
         if (IsEnabled()) WriteEvent(EvtDataRootCleanupStarting, path);
@@ -74,7 +74,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The previous data root could not be fully deleted\nex_type={0} | ex_message={1} | elapsed_ms={2}")]
+           Message = "The previous data root could not be fully deleted, so some of its files stay on disk\nex_type={0} | ex_message={1} | elapsed_ms={2}")]
     public void DataRootCleanupFailed(string ex_type, string ex_message, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtDataRootCleanupFailed, ex_type, ex_message, elapsed_ms);
@@ -127,7 +127,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtUpdateFlowRefused,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Cannot start the update\nreason={0}")]
+           Message = "The requested update could not start, so nothing was installed\nreason={0}")]
     public void UpdateFlowRefused(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtUpdateFlowRefused, reason);
@@ -149,7 +149,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The update failed\nex_type={0} | ex_message={1} | duration_ms={2}")]
+           Message = "The update stopped on an error\nex_type={0} | ex_message={1} | duration_ms={2}")]
     public void UpdateFlowFailed(string ex_type, string ex_message, long duration_ms)
     {
         if (IsEnabled()) WriteEvent(EvtUpdateFlowFailed, ex_type, ex_message, duration_ms);

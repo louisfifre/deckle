@@ -27,7 +27,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The Anytype runtime failed\nreason={0} | ex_type={1} | ex_message={2}")]
+           Message = "The Anytype runtime failed, so the Anytype tools are unavailable until Deckle restarts\nreason={0} | ex_type={1} | ex_message={2}")]
     public void AnytypeRuntimeFailed(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAnytypeRuntimeFailed, reason, ex_type, ex_message);

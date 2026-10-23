@@ -23,7 +23,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtWindowOperationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "A window step failed\nwindow={0} | operation={1} | reason={2} | ex_type={3} | ex_message={4}")]
+           Message = "A window step failed, and the window works on\nwindow={0} | operation={1} | reason={2} | ex_type={3} | ex_message={4}")]
     public void WindowOperationFailed(string window, string operation, string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtWindowOperationFailed, window, operation, reason, ex_type, ex_message);
@@ -55,7 +55,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtFileTranscriptionEntryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "File transcription could not start\nex_type={0} | ex_message={1}")]
+           Message = "File transcription could not start, so no file is transcribed\nex_type={0} | ex_message={1}")]
     public void FileTranscriptionEntryFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtFileTranscriptionEntryFailed, ex_type, ex_message);

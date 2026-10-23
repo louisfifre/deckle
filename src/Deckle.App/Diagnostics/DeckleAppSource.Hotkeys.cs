@@ -41,7 +41,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtHotkeyRegistrationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Cannot register the hotkey\naction={0} | chord={1} | reason={2} | win32_error={3}")]
+           Message = "A hotkey could not be registered, so its shortcut does nothing\naction={0} | chord={1} | reason={2} | win32_error={3}")]
     public void HotkeyRegistrationFailed(string action, string chord, string reason, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyRegistrationFailed, action, chord, reason, win32_error);
