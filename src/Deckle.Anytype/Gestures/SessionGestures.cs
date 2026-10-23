@@ -29,9 +29,9 @@ public sealed class SessionGestures(
     // answer is the handle log needs plus one line naming the task and its
     // project, so a report opened on the wrong task shows at once.
     //
-    // Only an id is taken, as log does for a report: the caller has the id from
-    // the read that placed it, and a name resolved by « a single hit wins »
-    // could open the report on a task nobody meant, before a write.
+    // Only an id is taken, as log does for a report: the caller has it from
+    // task_properties or search, and a name, even matched exactly, can be
+    // carried by another task or renamed, so it is no stable anchor for a write.
     public async Task<string> OpenReportAsync(string task, CancellationToken ct = default)
     {
         long t0 = Stopwatch.GetTimestamp();

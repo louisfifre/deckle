@@ -211,9 +211,8 @@ public class SessionGesturesTests
         Assert.Single(v2.Requests, r => r.Method == "POST");
     }
 
-    // Like log with a report: a name resolved by « a single hit wins » could
-    // open the report on a task nobody meant, so only an id is taken, and a
-    // name is refused before any request.
+    // Like log with a report: a name is no stable anchor for a write, so only
+    // an id is taken, and a name is refused before any request.
     [Fact]
     [Trait("Category", "regression")]
     public async Task OpenReportRequiresTheTaskIdBeforeReadingOrWriting()
