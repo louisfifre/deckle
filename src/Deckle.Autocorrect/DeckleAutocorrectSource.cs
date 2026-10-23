@@ -111,7 +111,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Autocorrect failed to arm\nreason={0}")]
+           Message = "Autocorrect could not start, so typing is not corrected\nreason={0}")]
     public void EngineStartFailed(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtEngineStartFailed, reason);
@@ -180,7 +180,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The contextual correction model failed to load\nengine={0} | provider={1} | ex_type={2} | ex_message={3}")]
+           Message = "The contextual correction model failed to load, so contextual correction is off\nengine={0} | provider={1} | ex_type={2} | ex_message={3}")]
     public void RerankerLoadFailure(string engine, string provider, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRerankerLoadFailure, engine, provider, ex_type, ex_message);
@@ -255,7 +255,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtPersonalDictionaryReset,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Personal dictionary reset to a new schema\nfrom_version={0} | to_version={1} | words={2} | suppressions={3}")]
+           Message = "The personal dictionary was reset for a new format, so learned words and suppressions are lost\nfrom_version={0} | to_version={1} | words={2} | suppressions={3}")]
     public void PersonalDictionaryReset(int from_version, int to_version, int words, int suppressions)
     {
         if (IsEnabled()) WriteEvent(EvtPersonalDictionaryReset, from_version, to_version, words, suppressions);
@@ -491,7 +491,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankFailing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Contextual correction keeps failing\nsource={0} | ex_type={1} | ex_message={2} | hr={3} | consecutive={4}")]
+           Message = "Contextual correction keeps failing, so sentences are not corrected in context\nsource={0} | ex_type={1} | ex_message={2} | hr={3} | consecutive={4}")]
     public void RerankFailing(string source, string ex_type, string ex_message, int hr, int consecutive)
     {
         if (IsEnabled()) WriteEvent(EvtRerankFailing, source, ex_type, ex_message, hr, consecutive);
@@ -557,7 +557,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankWorkerFaulted,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The contextual correction worker stopped on an error\nex_type={0} | ex_message={1} | hr={2}")]
+           Message = "The contextual correction worker stopped on an error, so contextual correction is off until Deckle restarts\nex_type={0} | ex_message={1} | hr={2}")]
     public void RerankWorkerFaulted(string ex_type, string ex_message, int hr)
     {
         if (IsEnabled()) WriteEvent(EvtRerankWorkerFaulted, ex_type, ex_message, hr);
@@ -568,7 +568,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtCaretRecoveryFailing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Caret sentence recovery keeps failing\nex_type={0} | ex_message={1}")]
+           Message = "Reading the text at the caret keeps failing, so autocorrect cannot recover the current sentence\nex_type={0} | ex_message={1}")]
     public void CaretRecoveryFailing(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtCaretRecoveryFailing, ex_type, ex_message);
