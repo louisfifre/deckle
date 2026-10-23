@@ -82,11 +82,6 @@ public class SessionGesturesTests
         },
     };
 
-    static JsonObject ProjectObject() => new()
-    {
-        ["object"] = new JsonObject { ["id"] = ProjectId, ["name"] = "Mon projet" },
-    };
-
     static JsonObject ReportObject(string id, string markdown, params string[] taskIds) => new()
     {
         ["object"] = new JsonObject
@@ -151,7 +146,8 @@ public class SessionGesturesTests
         // linked task(s).
         Assert.False(props.ContainsKey(DevSpace.Props.RelationProjet));
 
-        // A resend after a 5xx must not open a second report.
+        // The create carries an Idempotency-Key; that the server dedupes a
+        // resend on it is the writer's contract, not asserted here.
         FakeV2Handler.Seen post = CreateRequest(v2);
         Assert.False(string.IsNullOrWhiteSpace(post.Header("Idempotency-Key")));
     }
@@ -164,8 +160,10 @@ public class SessionGesturesTests
         using var server = new FakeAnytypeServer();
         FakeV2Handler v2 = WireOpenReads(createAnswer: "{\"type\":\"rapport\"}");
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
             () => NewGestures(server, v2).OpenReportAsync(TaskId, Ct));
+
+        Assert.Contains("n'a pas d'id", error.Message);
     }
 
     // The answer is the handle and one line to check the task against: no
