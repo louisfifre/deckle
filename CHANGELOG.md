@@ -94,7 +94,33 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Refuse to bin reports and linked objects, and wait for the person's approval
 - **anytype:** Ask the bin approval through a Windows notification
 - **anytype:** Tell agents when to archive and when to bin
+- **diagnostics:** Add WorkId, the pairing identifier of lasting work
+- **diagnostics:** Add RunMarker, a mark that tells an unclean end from an orderly one
+- **app:** Report a previous run that did not end in an orderly way
+- **hud:** Report a damaged or unsaved settings file to the journal
+- **input:** Report a damaged or unsaved settings file to the journal
+- **precision-scroll:** Report a damaged or unsaved settings file to the journal
+- **taskbar:** Report a damaged or unsaved settings file to the journal
+- **autocorrect:** Report a damaged or unsaved settings or dictionary file to the journal
+- **diagnostics:** Report a damaged or unsaved logging or telemetry settings file to the journal
+- **diagnostics:** Add WorkId, the pairing identifier of lasting work
+- **diagnostics:** Add NoteFile, a capped text file for facts that have no sink
+- **whisp:** Pair each take's start and end in the journal
+- **diagnostics:** Mark journal milestones in the self-describing JSONL row (F10)
 - **anytype:** Create the session report through v2
+- **diagnostics:** Add PathRedaction, one rule for the paths a line may carry
+- **diagnostics:** Add LoopPulse, a count and a stall watch for the hot loops
+- **diagnostics:** Expose the tick total of a LoopPulse and count Threading marshals
+- **hud:** Count the reveal geometry and state change events for the rollup
+- **autocorrect:** Count the surface change events for the rollup
+- **anytype:** Count API requests and watch the health probe for a stall
+- **audio:** Count the lagging capture iterations for the rollup
+- **whisper:** Watch the streaming heartbeat for a stall while a take records
+- **llm:** Journal a transcript rewrite under one work_id and count the interactive ones
+- **diagnostics:** Let NoteFile hand its lines back and clear the file
+- **app:** Copy the rejected second instances into the journal at the next start
+- **presets:** Tell the consumer when a stored selection names no preset
+- **ambient:** Journal a stored preset selection that names no preset
 - **anytype:** Separate journal entries with a divider
 - **anytype:** Let delete bin a report that nothing links to
 - **anytype:** Preview what links to an object before delete bins it
@@ -158,6 +184,107 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Drop an idea's plain name line from its body
 - **anytype:** Show a report's latest entry in the project overview
 - **anytype:** Read the bin flag under is_archived
+- **diagnostics:** Close a sink incident only after a write that returned
+- **home:** Name the searched object types when a typed lookup finds nothing
+- **core:** Keep a copy of a settings file the store cannot parse
+- **diagnostics:** Write NaN and infinities as text so the row is not lost
+- **core:** Write a pending debounced save when the settings store is disposed
+- **anytype:** Read code fences, CRLF bodies and closing hashes right in the section engine
+- **diagnostics:** Report a sink fault raised during boot replay
+- **anytype:** Keep a journal entry that opens with a hash
+- **diagnostics:** Bound TryFlush by its deadline while a producer waits
+- **diagnostics:** Forget a write error once its sink has recovered
+- **diagnostics:** Keep a torn JSONL row from gluing to the next one
+- **diagnostics:** Do not read a Process.Kill exit as a crash
+- **logging:** Read the whole replacement before emptying the collection
+- **home:** Advance listing offsets by the rows the server returned
+- **logging:** Carry recovery closers in the journal
+- **setup:** Skip an entry that vanishes while the data tree is walked
+- **install:** Leave prereleases out of the newest-release choice
+- **home:** Report a partly applied create or update instead of the raw failure
+- **notifications:** Do not show a toast whose prompt is already settled
+- **anytype:** Let the write lock wait only for a real holder
+- **anytype-mcp:** Re-mint a client token the vault holds only as an empty entry
+- **anytype:** Build the session digest before creating the report
+- **anytype:** Retry an unreadable listener table instead of giving up
+- **core:** Drop a follow read that a save of the store overtook
+- **audio:** Pair a recording's start and end and count its anomalies in the journal
+- **audio:** Give no verdict on a mic check that captured only silence
+- **app:** Report what happened before the sinks existed (F3, F4)
+- **trackpad:** End a grace-window drag when a fourth finger lands
+- **hud:** Ignore a stored override of the wrong type instead of throwing
+- **speech:** Check the disposed flag under the lock in Speak and Dispose
+- **diagnostics:** Report a file that cannot roll or prune, and a routed row without a path (F5, F7)
+- **diagnostics:** Report a message template that cannot be formatted (F6)
+- **lighting:** Keep the Hue application key out of the log
+- **lighting:** Close the Hue event-stream incident when monitoring stops
+- **diagnostics:** Let a failing sink callback reach the dispatcher instead of swallowing it (F8)
+- **ambient:** Pair a run's start and end and close the incidents it leaves open
+- **app:** Note each launcher child start and end (F11)
+- **setup:** Pair each install, update and relocation attempt by id and raise failures to Error (F18, F19)
+- **app:** Report a stopped Anytype runtime as an Error (F13)
+- **app:** Keep only the switch names in the run identity line (F16)
+- **app:** Pair shutdown by id and report any failed relaunch as an Error (F12, F17)
+- **vision:** Report swallowed capture cleanup failures as warnings
+- **vision:** Close the capture incidents a loop leaves open and count a flapping display
+- **ambient:** Carry the frame failure cause in the processing incident
+- **app:** Journal the boot decision to switch Ambient off and its start failure as an Error (F26)
+- **diagnostics:** Keep the network name out of the status line and report a failed network query (F46, F58)
+- **setup:** Name the cause when a required data file cannot be copied (F20)
+- **setup:** Journal a hand-off that timed out and diagnostics left behind by a move (F20)
+- **anytype:** Make a backend outage one journal incident with one id (F91)
+- **anytype:** Name a foreign endpoint owner by file name, not by path (F82)
+- **notifications:** Carry the notification and its cause on the Warning lines (F21)
+- **notifications:** Report a toast that cannot be withdrawn, once per incident (F22)
+- **anytype:** Make repeated API refusals one incident and keep server text out of the log (F83, F85, F93)
+- **core:** Refuse a module id that is not a single folder name (F125)
+- **anytype:** Carry the bin refusals and the bin move in the journal with their cause (F79, F80, F90)
+- **setup:** Keep every failed undo step in a relocation rollback error (F129)
+- **home:** Log the schema rejection by code and count and close its incident in the journal (F88, F89)
+- **setup:** Carry on when the wait for the previous app fails, and report why (F132)
+- **security:** Name a file by its profile variable in vault and credentials errors (F87)
+- **install:** Name the release and asset when a required asset is listed twice (F134)
+- **mcp:** Journal failed tool calls with their cause and say what the host skipped (F73, F74, F75, F76, F77)
+- **whisp:** Pair the model load and warmup in the journal and name what the fallbacks asked and got (F34, F35, F38, F94)
+- **orchestration:** Journal the session milestones with their entry and make delivery failures one incident (F36, F37, F40)
+- **modules:** Name why the presence file was not used and keep its path out of the log (F66, F57)
+- **playground:** Name the page, the call and the error type in the failure events (F69)
+- **anytype:** Give every lifecycle event the transverse Lifecycle keyword (F95)
+- **input:** Tell a failed device listing from a machine without a touchpad (F63)
+- **trackpad:** Journal the gesture change and the repair, and name a failed button release (F64)
+- **hud:** Report an overlay card that cannot be closed as a warning (F65)
+- **shell:** Warn when the tray icon falls back to the generic icon (F59)
+- **anytype:** Advance the listing offset by the rows the server returned
+- **anytype:** Advance the live tag reads by the rows the server returned
+- **anytype:** Advance the schema reads by the rows the server returned
+- **whisper:** Hide the profile in the paths and native lines a Whisper event writes
+- **vad:** Hide the profile in the model paths a Vad event writes
+- **input:** Hide the profile in the recording paths an Input event writes
+- **audio:** Hide the profile in the settings load line
+- **setup:** Hide the profile in the confirmed install location
+- **anytype:** Hide the profile in the paths and exception messages an Anytype event writes
+- **settings:** Hide the profile in the settings load line of Llm, Speech and Settings
+- **app:** Hide the profile in the paths and crash dump folder lines
+- **diagnostics:** Journal a cancellation as an informational normal end
+- **lighting:** Journal a cancelled Entertainment opening beside its failure
+- **setup:** Journal a cancelled item download beside its failure
+- **install:** Page through the releases until an app release is found
+- **chrome:** Stop stacking XamlRoot.Changed handlers on every title bar Loaded
+- **anytype:** Warn when a list read stops on an empty page the server says is not the last
+- **input:** Carry both ends of a recording session in the journal
+- **speech:** Carry both ends of a read aloud in the journal
+- **audio:** Carry both ends of a playback in the journal
+- **vision:** Carry the end of the capture loop in the journal
+- **notifications:** Carry a prompt from shown to its end in the journal
+- **orchestration:** Keep the process-name tier from claiming another program's executable
+- **autocorrect:** Keep the process name off the injection incident Warning
+- **anytype:** Resolve a name exactly when a gesture writes
+- **vad:** Retry a failed model download during the session
+- **home:** Write only to an exact name and ask the person before a delete
+- **precision-scroll:** Let Start reap a worker that ended on its own
+- **precision-scroll:** Restart a worker that stopped on its own, once
+- **diagnostics:** Count survived exceptions once per type and site
+- **app:** Report a survived exception as one warning per incident
 
 ## [0.59.0](https://github.com/louisfifre/deckle/compare/v0.58.5...v0.59.0) — 2026-10-21
 
