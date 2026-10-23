@@ -25,13 +25,21 @@ public sealed record McpSurfaceDescriptor(string Name, string Title, string Inst
         + "in the task body, not separate objects. The built-in done checkbox is "
         + "the canonical completion signal for projects and tasks; état remains "
         + "planning state, and archive only removes an object from active views. "
-        + "Before work that changes the space, call "
-        + "session_start on the anchor task, then pass its report_id to log as "
-        + "you journal the why; plain reads need no session. Reads are typed and "
+        + "Work on a task follows one ritual. Place yourself first: search, or a "
+        + "typed read given words (project_overview of a project, task_properties "
+        + "of a task). See the project's tasks, read the task, then call "
+        + "open_report with the task id. If the work deserves a task and none "
+        + "exists, create it first. A report always belongs to a task and is "
+        + "opened as soon as work on a task starts: no report without a task. "
+        + "Pass its report_id to log as you journal the why; plain reads need no "
+        + "report. Reads are typed and "
         + "named by what they return (task_properties, task_checklist, task_notes, "
         + "project_overview, report_journal, idea_text, document_outline, "
-        + "document_section); each answers with the object id first, and search "
-        + "finds an id from words. When the work belongs to "
+        + "document_section); each answers with the object id first. They accept "
+        + "words, not only an exact name or an id: an exact name wins, else a "
+        + "single match wins, else the candidates are listed. So a typed read given "
+        + "words searches and opens in one call; search is only for when the type "
+        + "is not known. When the work belongs to "
         + "a task of this space, open the first answer by placing it in its project, "
         + "so the person sees at once whether the session aims at the right one. "
         + "Shared vocabulary — états: "
@@ -41,9 +49,8 @@ public sealed record McpSurfaceDescriptor(string Name, string Title, string Inst
         + "and charge on projects — their 'réel' counterparts are set at "
         + "validation, so the estimate/actual delta stays readable. Select "
         + "options are applied, never created: new options come from the user, "
-        + "in Anytype. Names "
-        + "resolve to objects; an ambiguous name returns candidate ids so you "
-        + "can retry with one.");
+        + "in Anytype. An ambiguous name returns candidate ids so you can retry "
+        + "with one; the writes that must not guess (open_report, log) take an id only.");
 
     public static readonly McpSurfaceDescriptor Dialogues = new(
         "deckle-anytype-dialogues",

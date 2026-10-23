@@ -26,7 +26,7 @@ public class McpToolsetTests
             DummyClient(), ToolProfile.ProjectManagement, management: true);
         var names = Names(tools);
 
-        Assert.Contains("session_start", names);
+        Assert.Contains("open_report", names);
         Assert.Contains("create_task", names);
         Assert.Contains("create_document", names);
         Assert.Contains("delete", names);
@@ -42,7 +42,7 @@ public class McpToolsetTests
         var (tools, _) = McpToolset.Build(DummyClient(), ToolProfile.All, management: false);
         var names = Names(tools);
 
-        Assert.Contains("session_start", names);
+        Assert.Contains("open_report", names);
         Assert.Contains("dialogue_create", names);
         Assert.DoesNotContain("delete", names);
     }

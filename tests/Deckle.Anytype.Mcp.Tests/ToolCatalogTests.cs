@@ -10,7 +10,7 @@ public class ToolCatalogTests
 {
     static readonly string[] ExpectedToolNames =
     {
-        "session_start", "log",
+        "open_report", "log",
         "task_properties", "task_checklist", "task_notes", "project_overview",
         "report_journal", "idea_text", "document_outline", "document_section",
         "create_task", "complete", "archive", "link", "list_projects", "search", "subtask",
@@ -116,6 +116,31 @@ public class ToolCatalogTests
         Assert.DoesNotContain(rule, McpSurfaceDescriptor.Dialogues.Instructions);
     }
 
+    // The ritual lives in the instructions, not in a tool: an agent that skips
+    // it opens no report, or one with no task behind it.
+    [Fact]
+    public void ProjectManagementInstructionsCarryTheWorkRitual()
+    {
+        string instructions = McpSurfaceDescriptor.ProjectManagement.Instructions;
+
+        Assert.Contains("open_report", instructions);
+        Assert.Contains("no report without a task", instructions);
+        Assert.DoesNotContain("session_start", instructions);
+        // A typed read given words already searches and opens.
+        Assert.Contains("a typed read given words searches and opens in one call", instructions);
+        Assert.Contains("an exact name wins, else a single match wins", instructions);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void OpenReportTakesATaskIdAndNothingElse()
+    {
+        ToolDescriptor open = BuildCatalog().Single(t => t.Name == "open_report");
+
+        AssertRequired(open, "task");
+        Assert.Equal(["task"], ((JsonObject)open.InputSchema["properties"]!).Select(p => p.Key));
+    }
+
     [Fact]
     public void BuildDoesNotExposeAnyDestructiveTool()
     {
@@ -134,7 +159,7 @@ public class ToolCatalogTests
 
         AssertRequired(tools.Single(tool => tool.Name == "log"), "report");
         AssertRequired(tools.Single(tool => tool.Name == "subtask"), "done");
-        Assert.Contains("report_id", tools.Single(tool => tool.Name == "session_start").Description);
+        Assert.Contains("report_id", tools.Single(tool => tool.Name == "open_report").Description);
         Assert.True(tools.Single(tool => tool.Name == "log").Execution.RequiresStableTarget);
     }
 
@@ -155,7 +180,7 @@ public class ToolCatalogTests
     {
         var expected = new Dictionary<string, AmbiguousOutcomePolicy>(StringComparer.Ordinal)
         {
-            ["session_start"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["open_report"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["log"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["task_properties"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["task_checklist"] = AmbiguousOutcomePolicy.SafeToRetry,
@@ -188,7 +213,7 @@ public class ToolCatalogTests
 
         var expectedChanges = new Dictionary<string, ToolChangeKind>(StringComparer.Ordinal)
         {
-            ["session_start"] = ToolChangeKind.Additive,
+            ["open_report"] = ToolChangeKind.Additive,
             ["log"] = ToolChangeKind.Additive,
             ["task_properties"] = ToolChangeKind.None,
             ["task_checklist"] = ToolChangeKind.None,
