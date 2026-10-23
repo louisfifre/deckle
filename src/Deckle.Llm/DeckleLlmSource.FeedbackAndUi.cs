@@ -13,7 +13,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtUserFeedbackEmitted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "{1}: {2}")]
+           Message = "A message was shown on screen")]
     public void UserFeedbackEmitted(int severity, string title, string body, int role)
     {
         if (IsEnabled()) WriteEvent(EvtUserFeedbackEmitted, severity, title, body, role);
@@ -27,7 +27,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtPageNavigatedToFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The LLM settings page failed to open | ex_type={0} | ex_message={1}")]
+           Message = "The LLM settings page failed to open\nex_type={0} | ex_message={1}")]
     public void PageNavigatedToFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPageNavigatedToFailed, ex_type, ex_message);
@@ -36,7 +36,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtEndpointRefreshFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Endpoint refresh failed | ex_type={0} | ex_message={1}")]
+           Message = "Endpoint refresh failed\nex_type={0} | ex_message={1}")]
     public void EndpointRefreshFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtEndpointRefreshFailed, ex_type, ex_message);
@@ -45,7 +45,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtManualRefreshFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Manual refresh failed | ex_type={0} | ex_message={1}")]
+           Message = "Manual refresh failed\nex_type={0} | ex_message={1}")]
     public void ManualRefreshFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtManualRefreshFailed, ex_type, ex_message);
@@ -54,7 +54,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtOllamaRefreshSkipped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Ollama refresh was skipped | ex_type={0} | ex_message={1}")]
+           Message = "Ollama refresh was skipped\nex_type={0} | ex_message={1}")]
     public void OllamaRefreshSkipped(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtOllamaRefreshSkipped, ex_type, ex_message);
@@ -63,7 +63,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtResetAllFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Resetting the LLM settings failed | ex_type={0} | ex_message={1}")]
+           Message = "Resetting the LLM settings failed\nex_type={0} | ex_message={1}")]
     public void ResetAllFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtResetAllFailed, ex_type, ex_message);

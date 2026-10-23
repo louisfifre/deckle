@@ -15,7 +15,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtSettingsLoaded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
+           Message = "The rewrite settings were loaded")]
     public void SettingsLoaded(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoaded, message);
@@ -24,7 +24,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtSettingsLoadComplete,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
+           Message = "detail={0}")]
     public void SettingsLoadComplete(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadComplete, PathRedaction.Redact(message));
@@ -33,7 +33,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
+           Message = "The rewrite settings store worked around a problem\ndetail={0}")]
     public void SettingsLoadWarning(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
@@ -42,7 +42,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtSettingsLoadError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
+           Message = "The rewrite settings could not be saved or applied\ndetail={0}")]
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);

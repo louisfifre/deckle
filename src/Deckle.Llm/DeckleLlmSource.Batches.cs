@@ -25,7 +25,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtBatchRewriteSentDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "batch rewrite sent | batch={0} | chars={1} | profile={2}")]
+           Message = "batch={0} | chars={1} | profile={2}")]
     public void BatchRewriteSentDetail(int batch_index, int chars, string profile)
     {
         if (IsEnabled()) WriteEvent(EvtBatchRewriteSentDetail, new object[] { batch_index, chars, profile });
@@ -43,7 +43,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtBatchRewriteReturnedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "batch rewrite returned | batch={0} | elapsed_ms={1} | in_chars={2} | out_chars={3}")]
+           Message = "batch={0} | elapsed_ms={1} | in_chars={2} | out_chars={3}")]
     public void BatchRewriteReturnedDetail(int batch_index, long elapsed_ms, int in_chars, int out_chars)
     {
         if (IsEnabled()) WriteEvent(EvtBatchRewriteReturnedDetail, new object[] { batch_index, elapsed_ms, in_chars, out_chars });
@@ -56,7 +56,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtBatchRewriteFellBack,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A dictation batch kept its raw text | reason={1} | batch={0} | ex_type={2} | ex_message={3}")]
+           Message = "A dictation batch kept its raw text\nreason={1} | batch={0} | ex_type={2} | ex_message={3}")]
     public void BatchRewriteFellBack(int batch_index, string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtBatchRewriteFellBack, new object[] { batch_index, reason, ex_type, ex_message });

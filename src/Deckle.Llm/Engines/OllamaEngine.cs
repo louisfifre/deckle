@@ -163,7 +163,7 @@ public sealed class OllamaEngine : IGenerationEngine
                         modelsArr.ValueKind != JsonValueKind.Array ||
                         modelsArr.GetArrayLength() == 0)
                     {
-                        DeckleLlmSource.Log.PsProbeEmpty();
+                        DeckleLlmSource.Log.PsProbeEmpty(requestElapsed.ElapsedMilliseconds);
                         continue;
                     }
 
