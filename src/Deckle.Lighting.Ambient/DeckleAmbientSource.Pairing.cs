@@ -10,7 +10,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgeAutoRestoreFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Bridge auto-restore at boot failed, the user will need to re-pair\nex_type={0} | ex_message={1}")]
+           Message = "The Hue bridge could not be restored at startup, so it must be paired again\nex_type={0} | ex_message={1}")]
     public void BridgeAutoRestoreFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtBridgeAutoRestoreFailed, ex_type, ex_message);
@@ -130,7 +130,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtBridgeEndpointRecoveryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Bridge endpoint recovery failed\nreason={0} | ex_type={1} | ex_message={2}")]
+           Message = "The Hue bridge could not be found at a new address, so Ambient lighting cannot reach it\nreason={0} | ex_type={1} | ex_message={2}")]
     public void BridgeEndpointRecoveryFailed(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtBridgeEndpointRecoveryFailed, reason, ex_type, ex_message);

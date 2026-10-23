@@ -10,7 +10,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtAmbientPagePairFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Pairing from Settings failed\nex_type={0} | ex_message={1}")]
+           Message = "Pairing the Hue bridge from Settings failed\nex_type={0} | ex_message={1}")]
     public void AmbientPagePairFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAmbientPagePairFailed, ex_type, ex_message);
@@ -19,7 +19,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtAmbientPageListGroupsFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Listing groups from Settings failed\nex_type={0} | ex_message={1}")]
+           Message = "Listing the Hue groups from Settings failed\nex_type={0} | ex_message={1}")]
     public void AmbientPageListGroupsFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAmbientPageListGroupsFailed, ex_type, ex_message);
