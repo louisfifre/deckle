@@ -473,6 +473,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── DeckleAppSource.Setup.cs
 │   │   │   ├── DeckleAppSource.Shutdown.cs
 │   │   │   ├── DeckleAppSource.Surfaces.cs
+│   │   │   ├── HudFeedbackSink.cs
+│   │   │   ├── IHudFeedbackSink.cs
 │   │   │   ├── LaunchContextProbe.cs
 │   │   │   ├── LogEntry.cs
 │   │   │   ├── LogEntryRow.xaml
@@ -896,7 +898,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Diagnostics/
 │   │   ├── Sinks/
 │   │   │   ├── BoundedWriteQueue.cs
-│   │   │   ├── HudFeedbackSink.cs
 │   │   │   ├── JsonlAppendStream.cs
 │   │   │   ├── JsonlLineSerializer.cs
 │   │   │   ├── JsonlRotationPolicy.cs
@@ -920,11 +921,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleThemeSource.cs
 │   │   ├── DeckleThreadingSource.cs
 │   │   ├── DeckleWindowingSource.cs
+│   │   ├── DiagnosticsFiles.cs
 │   │   ├── DispatchEventListener.cs
 │   │   ├── EventEntry.cs
 │   │   ├── GLOSSARY.md  — glossary-deckle-diagnostics Observability vocabulary for the Diagnostics family, .Logging and .Telemetry in…
 │   │   ├── IFlushableLogSink.cs
-│   │   ├── IHudFeedbackSink.cs
 │   │   ├── ILogSink.cs
 │   │   ├── ILogWindowSink.cs
 │   │   ├── Keywords.cs
@@ -1832,7 +1833,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
 │   │   ├── DialogueToolCatalogTests.cs
 │   │   ├── FakeSecretVault.cs
-│   │   ├── JournalClosersTests.cs
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensBugNotes.md
 │   │   ├── McpClientTokensTests.cs
@@ -1840,6 +1840,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── McpHttpHostTests.cs
 │   │   ├── McpObservabilityTests.cs
 │   │   ├── McpToolsetTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── MilestoneClosersTests.cs
 │   │   ├── ProviderKeywordsBugNotes.md
 │   │   ├── ProviderKeywordsTests.cs
 │   │   ├── SchemaAdminToolCatalogTests.cs
@@ -1877,14 +1879,13 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── BackendSupervisionBugNotes.md
 │   │   ├── BackendSupervisorTests.cs
 │   │   ├── BackendTestFakes.cs
-│   │   ├── BinJournalTests.cs
+│   │   ├── BinLogTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceBugNotes.md
 │   │   ├── DevSpaceTests.cs
 │   │   ├── DialogueGesturesTests.cs
 │   │   ├── DocumentGesturesTests.cs
 │   │   ├── FakeV2Handler.cs
-│   │   ├── JournalClosersTests.cs
 │   │   ├── ListingPagingBugNotes.md
 │   │   ├── ListingPagingTests.cs
 │   │   ├── LiveTagResolverTests.cs
@@ -1892,10 +1893,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ManagementGesturesTests.cs
 │   │   ├── MarkdownBodyBugNotes.md
 │   │   ├── MarkdownBodyTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── MilestoneClosersTests.cs
 │   │   ├── NameResolverBugNotes.md
 │   │   ├── NameResolverTests.cs
 │   │   ├── OperationRecoveryBugNotes.md
-│   │   ├── PagedReadJournalTests.cs
+│   │   ├── PagedReadLogTests.cs
 │   │   ├── ProjectGesturesBugNotes.md
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── ProviderKeywordsBugNotes.md
@@ -1910,6 +1913,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SpaceWriteLockTests.cs
 │   │   ├── TaskGesturesBugNotes.md
 │   │   └── TaskGesturesTests.cs
+│   ├── Deckle.App.Tests/
+│   │   ├── Deckle.App.Tests.csproj
+│   │   ├── DictationRecoveryBugNotes.md
+│   │   ├── HudFeedbackSinkTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   └── MilestoneClosersTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── AudioPathRedactionTests.cs
 │   │   ├── AudioRecordingHostDefaultsTests.cs
@@ -1918,13 +1927,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── CaptureSettingsMigrationTests.cs
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── DeckleAudioSourceTests.cs
-│   │   ├── JournalClosersTests.cs
 │   │   ├── ListeningTakeTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MicLevelCheckBugNotes.md
 │   │   ├── MicLevelCheckTests.cs
 │   │   ├── MicrophoneCalibrationCalculatorTests.cs
 │   │   ├── MicrophoneErrorClassificationTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
+│   │   ├── MilestoneClosersTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── Pcm16BufferTests.cs
 │   │   ├── PcmBufferTests.cs
@@ -1983,9 +1993,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HarvestDataTests.cs
 │   │   ├── HarvestFilterTests.cs
 │   │   ├── InjectionPlanTests.cs
-│   │   ├── JournalClosersTests.cs
 │   │   ├── KeyDecoderTests.cs
 │   │   ├── MarginCalibrationTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── MilestoneClosersTests.cs
 │   │   ├── MistouchFamilyCorrectorTests.cs
 │   │   ├── MistouchFamilyStoreTests.cs
 │   │   ├── MistouchMinerTests.cs
@@ -2044,7 +2055,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ChronoFormatterTests.cs
 │   │   ├── ChronoTimerTests.cs
 │   │   ├── Deckle.Chrono.Tests.csproj
-│   │   └── DeckleChronoSourceTests.cs
+│   │   ├── DeckleChronoSourceTests.cs
+│   │   └── MessageTemplateDoctrineTests.cs
 │   ├── Deckle.Core.Tests/
 │   │   ├── AppPathsLegacyMigrationTests.cs
 │   │   ├── Deckle.Core.Tests.csproj
@@ -2083,6 +2095,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleThemeSourceTests.cs
 │   │   ├── DeckleThreadingSourceTests.cs
 │   │   ├── DeckleWindowingSourceTests.cs
+│   │   ├── DiagnosticsFilesTests.cs
 │   │   ├── DiagnosticsProviderCollection.cs
 │   │   ├── DispatchEventListenerBugNotes.md
 │   │   ├── DispatchEventListenerIncidentTests.cs
@@ -2097,6 +2110,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── JsonlSinkRotationTests.cs
 │   │   ├── LogLineFormatterTests.cs
 │   │   ├── LoopPulseTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── NoteFileTests.cs
 │   │   ├── OperationalLogAdmissionCollection.cs
 │   │   ├── OperationalLogAdmissionTests.cs
@@ -2107,6 +2121,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SinkCallbackFaultTests.cs
 │   │   ├── SurvivedExceptionBugNotes.md
 │   │   ├── SurvivedExceptionLedgerTests.cs
+│   │   ├── TemplateDoctrineTests.cs
 │   │   ├── ThreadingHotLoopCountTests.cs
 │   │   └── WorkIdTests.cs
 │   ├── Deckle.Home.Tests/
@@ -2129,7 +2144,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HomeSchemaIncidentTests.cs
 │   │   ├── HomeSearchTests.cs
 │   │   ├── HomeToolCatalogTests.cs
-│   │   └── HomeTypedToolCatalogTests.cs
+│   │   ├── HomeTypedToolCatalogTests.cs
+│   │   └── MessageTemplateDoctrineTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── AnimationGateTests.cs
 │   │   ├── ConfigOverridesBugNotes.md
@@ -2138,7 +2154,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── HudHotLoopCountTests.cs
 │   │   ├── HudSettingsOverridesTests.cs
-│   │   ├── JournalClosersTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── MilestoneClosersTests.cs
 │   │   ├── OverlayCardBugNotes.md
 │   │   ├── OverlayCardCloseObservabilityTests.cs
 │   │   ├── ProximityFadeTests.cs
@@ -2155,6 +2172,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── precision-scroll-baseline.json
 │   │   ├── Deckle.Input.PrecisionScroll.Tests.csproj
 │   │   ├── DecklePrecisionScrollSourceTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── PerceptualBaselineTests.cs
 │   │   ├── PrecisionScrollBugNotes.md
 │   │   ├── PrecisionScrollGestureTests.cs
@@ -2171,6 +2189,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── InputObservabilityCollection.cs
 │   │   ├── InputPathRedactionTests.cs
 │   │   ├── LowLevelMouseHookInteropTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MouseInteractionRouterTests.cs
 │   │   ├── MouseWheelTimestampTests.cs
 │   │   ├── RawInputProbeBugNotes.md
@@ -2180,6 +2199,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Input.Trackpad.Tests/
 │   │   ├── Deckle.Input.Trackpad.Tests.csproj
 │   │   ├── DeckleTrackpadSourceTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── ThreeFingerDragRecognizerBugNotes.md
 │   │   ├── ThreeFingerDragRecognizerTests.cs
 │   │   ├── TrackpadObservabilityBugNotes.md
@@ -2205,7 +2225,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── AmbientRunBugNotes.md
-│   │   ├── AmbientRunJournalTests.cs
+│   │   ├── AmbientRunLogTests.cs
 │   │   ├── AmbientStartSettingsTests.cs
 │   │   ├── AssemblyInfo.cs
 │   │   ├── CredentialPayloadTests.cs
@@ -2214,8 +2234,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FrameProcessingCauseTests.cs
 │   │   ├── HueCredentialPayloadBugNotes.md
 │   │   ├── HueEndpointResolverTests.cs
-│   │   ├── JournalClosersTests.cs
-│   │   └── LightPlacementResolverTests.cs
+│   │   ├── LightPlacementResolverTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   └── MilestoneClosersTests.cs
 │   ├── Deckle.Lighting.Tests/
 │   │   ├── BugExamples/
 │   │   │   └── dns-sd-pending-status-lifetime.json
@@ -2232,25 +2253,28 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   ├── HueLocalDiscoveryRegressionTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs
-│   │   ├── JournalClosersTests.cs
-│   │   ├── LightingCancellationJournalTests.cs
-│   │   └── LightingObservabilityCollection.cs
+│   │   ├── LightingCancellationLogTests.cs
+│   │   ├── LightingObservabilityCollection.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   └── MilestoneClosersTests.cs
 │   ├── Deckle.Llm.Rewrite.Tests/
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
 │   │   ├── DictationBatcherTests.cs
 │   │   ├── DictationBatchRewriterTests.cs
 │   │   ├── LlmSettingsMigrationsTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── ParagraphDraftTests.cs
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
 │   │   ├── RewriteDiffGateTests.cs
 │   │   ├── RewriteFailureMessageTests.cs
-│   │   ├── RewriteJournalTests.cs
+│   │   ├── RewriteLogTests.cs
 │   │   ├── RewriteServiceFeedbackTests.cs
 │   │   ├── SentenceBoundaryTests.cs
 │   │   └── SentenceRewriteTests.cs
 │   ├── Deckle.Modules.Tests/
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Modules.Tests.csproj
+│   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── ModuleGraphTests.cs
 │   │   ├── PresenceBugNotes.md
 │   │   ├── PresenceChoiceTests.cs
@@ -2261,6 +2285,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DeckleNotificationsSourceTests.cs
 │   │   ├── Descriptors.cs
 │   │   ├── FakeNotificationChannel.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── NotificationCatalogTests.cs
 │   │   ├── NotificationDispatcherTests.cs
 │   │   ├── ToastChannelBugNotes.md
@@ -2278,8 +2303,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ExecutableLocatorTests.cs
 │   │   ├── Fixture.cs
 │   │   ├── ForegroundChangeMappingTests.cs
-│   │   ├── JournalClosersTests.cs
 │   │   ├── KeyValuesReaderTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── MilestoneClosersTests.cs
 │   │   ├── OrchestrationAppNameTests.cs
 │   │   ├── OrchestrationBugNotes.md
 │   │   ├── OrchestrationIncidentTests.cs
@@ -2297,6 +2323,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HudTuningSectionsBugNotes.md
 │   │   ├── HudViewModelTests.cs
 │   │   ├── IlReferences.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MicrophonePreviewFailureTests.cs
 │   │   ├── MicrophonePreviewFeedTests.cs
 │   │   ├── PlaygroundFailureBugNotes.md
@@ -2311,6 +2338,10 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SecretVaultTests.cs
 │   │   ├── UserProfilePathBugNotes.md
 │   │   └── UserProfilePathTests.cs
+│   ├── Deckle.Settings.Tests/
+│   │   ├── Deckle.Settings.Tests.csproj
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   └── MilestoneClosersTests.cs
 │   ├── Deckle.Setup.Tests/
 │   │   ├── DataRootRelocatorBugNotes.md
 │   │   ├── DataRootRelocatorTests.cs
@@ -2320,8 +2351,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Setup.Tests.csproj
 │   │   ├── DeckleSetupSourceTests.cs
 │   │   ├── LocMirrorBugNotes.md
+│   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── PayloadDeploymentTests.cs
-│   │   ├── SetupCancellationJournalTests.cs
+│   │   ├── SetupCancellationLogTests.cs
 │   │   ├── SetupPathRedactionTests.cs
 │   │   ├── SetupStringMirrorTests.cs
 │   │   ├── UpdateHandoffBugNotes.md
@@ -2329,20 +2361,23 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Shell.Foreground.Tests/
 │   │   ├── Deckle.Shell.Foreground.Tests.csproj
 │   │   ├── FullscreenGeometryTests.cs
-│   │   └── JournalClosersTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   └── MilestoneClosersTests.cs
 │   ├── Deckle.Shell.TaskbarCover.Tests/
 │   │   ├── CoverGeometryTests.cs
 │   │   ├── CoverStackingTests.cs
 │   │   ├── CoverSuppressionTests.cs
 │   │   ├── Deckle.Shell.TaskbarCover.Tests.csproj
-│   │   ├── JournalClosersTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── MilestoneClosersTests.cs
 │   │   ├── TaskbarCoverBugNotes.md
 │   │   └── TaskbarPlacementTests.cs
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
 │   │   ├── DispatcherQueueExtensionsTests.cs
 │   │   ├── GlobalHotkeyBindingsTests.cs
-│   │   ├── JournalClosersTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── MilestoneClosersTests.cs
 │   │   ├── ResizeGestureTests.cs
 │   │   ├── ShellObservabilityCollection.cs
 │   │   ├── TrayIconBugNotes.md
@@ -2350,22 +2385,25 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── TrayIconRegistrationTests.cs
 │   ├── Deckle.Shell.TrayMenu.Tests/
 │   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
+│   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── TrayMenuBugNotes.md
 │   │   ├── TrayMenuPlacementTests.cs
 │   │   └── TrayWindowOwnershipTests.cs
 │   ├── Deckle.Speech.Tests/
 │   │   ├── Deckle.Speech.Tests.csproj
 │   │   ├── IsolatedDataRoot.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── SpeechEngineBugNotes.md
 │   │   ├── SpeechEngineTests.cs
 │   │   └── SpeechSettingsTests.cs
 │   ├── Deckle.TestSupport/
 │   │   ├── Deckle.TestSupport.csproj
 │   │   ├── EventArgsExtensions.cs
-│   │   ├── JournalledPayloads.cs
+│   │   ├── LoggedPayloads.cs
 │   │   ├── LoopbackHttpListenerLease.cs
 │   │   ├── ProviderManifest.cs
 │   │   ├── SharedFileReader.cs
+│   │   ├── TemplateDoctrine.cs
 │   │   ├── TestEventListener.cs
 │   │   ├── WindowsAppSdkBootstrap.cs
 │   │   └── WindowsAppSdkModuleInitializer.cs
@@ -2381,8 +2419,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs
 │   │   ├── FileTranscriptionResultTests.cs
-│   │   ├── JournalClosersTests.cs
 │   │   ├── LiveTranscriptionPipelineTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── MilestoneClosersTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── PhantomUtteranceBugNotes.md
 │   │   ├── PhantomUtteranceFilterTests.cs
@@ -2407,8 +2446,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── Deckle.Transcription.Whisper.Tests/
 │   │   ├── Deckle.Transcription.Whisper.Tests.csproj
 │   │   ├── HallucinationBugNotes.md
-│   │   ├── JournalClosersTests.cs
 │   │   ├── KnownHallucinationsTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── MilestoneClosersTests.cs
 │   │   ├── NativeRuntimeTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── RepetitionDetectorTests.cs
@@ -2422,6 +2462,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   └── WhisperReferenceAudioSystemTests.cs
 │   ├── Deckle.Vad.Tests/
 │   │   ├── Deckle.Vad.Tests.csproj
+│   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── SileroSpeechTimestampsTests.cs
 │   │   ├── VadBugNotes.md
 │   │   ├── VadObservabilityCollection.cs
@@ -2434,7 +2475,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── ContentPeakReleaseTests.cs
 │   │   ├── Deckle.Vision.Tests.csproj
 │   │   ├── DeckleVisionSourceTests.cs
-│   │   └── JournalClosersTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   └── MilestoneClosersTests.cs
 │   ├── Directory.Build.props
 │   └── GLOSSARY.md  — glossary-deckle-tests Test taxonomy. It names the four categories inside the automatic scope (unit, i…
 ├── .editorconfig

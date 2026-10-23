@@ -200,7 +200,7 @@ internal sealed class BackendReconciler : IBackendReconciler
             else DeckleAnytypeSource.Log.BackendStartTimedOut(pendingId, id);
             spawned?.Dispose();
             spawned = null;
-            // The cause rides the decision, so the supervisor's journal line for the
+            // The cause rides the decision, so the supervisor's log line for the
             // failed attempt says the table could not be read, not that a serve was slow.
             string decision = inspectionError is null
                 ? "timed-out"

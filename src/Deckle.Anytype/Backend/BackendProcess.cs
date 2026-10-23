@@ -124,7 +124,7 @@ internal sealed class BackendProcessHost : IBackendProcessHost
         }
     }
 
-    // A first start that cannot spawn is an Error the journal keeps. The same
+    // A first start that cannot spawn is an Error the log keeps. The same
     // failure on every rung of the ladder is the incident already open, so it
     // stays Verbose and the streak is marked once by BackendRestartsFailing.
     private static void ReportSpawnFailed(
@@ -142,7 +142,7 @@ internal static class BackendProcessReport
 {
     // One reading of the exited process for the reconciler and the supervisor
     // alike. Returns the uptime in seconds, -1 when the start time is unreadable.
-    // The Warning that the journal keeps: a first start that died, or the
+    // The Warning that the log keeps: a first start that died, or the
     // serve whose death opens a restart incident. workId pairs it with what it
     // ends.
     internal static double Stopped(IBackendProcess process, string workId)

@@ -12,7 +12,7 @@ namespace Deckle.Llm;
 // Verbose/Info separation per the deckle-logging skill: a milestone is a
 // short sentence a person reads. A Warning or Error carries its cause in its
 // own payload (ex_type and ex_message, a reason word, the HTTP status), so a
-// journal that keeps only Warnings and Errors still says why; its Verbose
+// log that keeps only Warnings and Errors still says why; its Verbose
 // mirror, when it has one, keeps the long extras (JSON previews).
 //
 // Rewrite milestones belong to RewriteService, which sees every exit path;
@@ -20,9 +20,9 @@ namespace Deckle.Llm;
 // transport. Only the transcript rewrite of a take is lasting work: it writes
 // TranscriptRewriteStarted, then TranscriptRewriteCompleted, RewriteTimeout or
 // RewriteUnavailable, all carrying one work_id, and the first and last are in
-// the journal. The paragraph and sentence rewrites run on every pause in
+// the log. The paragraph and sentence rewrites run on every pause in
 // typing: their Started, Completed and Cancelled lines are Verbose detail and
-// the journal sees them as a 60 s count (LoopPulse). Prompt and completion text never enter a payload: counts,
+// the log sees them as a 60 s count (LoopPulse). Prompt and completion text never enter a payload: counts,
 // models, providers and timings only.
 //
 // The Ollama /api/ps probe exists only to enrich admitted Transcription

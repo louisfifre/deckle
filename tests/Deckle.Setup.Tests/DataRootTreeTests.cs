@@ -15,11 +15,11 @@ public sealed class DataRootTreeTests : IDisposable
         string target = Path.Combine(_root, "target");
         Write(source, "settings.json", "settings");
         Write(source, Path.Combine("models", "model.bin"), "model");
-        Write(source, Path.Combine("diagnostics", "app.jsonl"), "live log");
+        Write(source, Path.Combine("diagnostics", "trace.jsonl"), "live log");
 
         var tree = new DataRootTree((from, to) =>
         {
-            if (from.EndsWith("app.jsonl", StringComparison.OrdinalIgnoreCase)) return false;
+            if (from.EndsWith("trace.jsonl", StringComparison.OrdinalIgnoreCase)) return false;
             File.Copy(from, to, overwrite: false);
             return true;
         });
@@ -31,7 +31,7 @@ public sealed class DataRootTreeTests : IDisposable
         Assert.Equal(1, result.SkippedFiles);
         Assert.Equal("settings", File.ReadAllText(Path.Combine(target, "settings.json")));
         Assert.Equal("model", File.ReadAllText(Path.Combine(target, "models", "model.bin")));
-        Assert.False(File.Exists(Path.Combine(target, "diagnostics", "app.jsonl")));
+        Assert.False(File.Exists(Path.Combine(target, "diagnostics", "trace.jsonl")));
     }
 
     [Fact]
@@ -51,8 +51,8 @@ public sealed class DataRootTreeTests : IDisposable
 
     [Theory]
     [Trait("Category", "unit")]
-    [InlineData(@"diagnostics\app.jsonl", true)]
-    [InlineData(@"Diagnostics\live\app.jsonl", true)]
+    [InlineData(@"diagnostics\trace.jsonl", true)]
+    [InlineData(@"Diagnostics\live\trace.jsonl", true)]
     [InlineData(@"models\diagnostics.bin", false)]
     [InlineData("diagnostics.jsonl", false)]
     public void OnlyTheDiagnosticsTreeIsSheddable(string relativePath, bool expected)

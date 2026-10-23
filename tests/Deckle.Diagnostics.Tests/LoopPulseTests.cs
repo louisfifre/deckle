@@ -17,13 +17,13 @@ public sealed class LoopPulseTests
     private static List<EventEntryView> Of(TestEventListener listener, string loop)
         => listener.Events
             .Where(e => e.Payload is { Count: > 0 } && (string?)e.Payload[0] == loop)
-            .Select(e => new EventEntryView(e.EventId, e.Level, (e.Tags & ObservationTags.Journal) != 0, e.Payload!))
+            .Select(e => new EventEntryView(e.EventId, e.Level, (e.Tags & ObservationTags.Milestone) != 0, e.Payload!))
             .ToList();
 
-    private sealed record EventEntryView(int Id, EventLevel Level, bool Journal, IReadOnlyList<object?> Payload);
+    private sealed record EventEntryView(int Id, EventLevel Level, bool Milestone, IReadOnlyList<object?> Payload);
 
     [Fact]
-    public void AWindowWithTicksWritesOneRollupThatStaysOutOfTheJournal()
+    public void AWindowWithTicksWritesOneRollupThatStaysOutOfTheLog()
     {
         using var listener = new TestEventListener("Deckle-HotLoop");
         var pulse = new LoopPulse("test_rollup", watchesStall: false);
@@ -35,7 +35,7 @@ public sealed class LoopPulseTests
         var ev = Assert.Single(Of(listener, "test_rollup"));
         Assert.Equal(DeckleHotLoopSource.EvtLoopRollup, ev.Id);
         Assert.Equal(EventLevel.Informational, ev.Level);
-        Assert.False(ev.Journal);
+        Assert.False(ev.Milestone);
         Assert.Equal(5L, ev.Payload[1]);
     }
 
@@ -69,11 +69,11 @@ public sealed class LoopPulseTests
         var ev = Assert.Single(Of(listener, "test_stall"));
         Assert.Equal(DeckleHotLoopSource.EvtLoopStalled, ev.Id);
         Assert.Equal(EventLevel.Warning, ev.Level);
-        Assert.True(ev.Journal);
+        Assert.True(ev.Milestone);
     }
 
     [Fact]
-    public void ALoopThatTicksAgainClosesTheStallInTheJournal()
+    public void ALoopThatTicksAgainClosesTheStallInTheLog()
     {
         using var listener = new TestEventListener("Deckle-HotLoop");
         var pulse = new LoopPulse("test_resume", watchesStall: true);
@@ -89,7 +89,7 @@ public sealed class LoopPulseTests
         Assert.Equal(
             [DeckleHotLoopSource.EvtLoopStalled, DeckleHotLoopSource.EvtLoopRecovered, DeckleHotLoopSource.EvtLoopRollup],
             events.Select(e => e.Id));
-        Assert.True(events[1].Journal);
+        Assert.True(events[1].Milestone);
         Assert.Equal("resumed", events[1].Payload[1]);
     }
 

@@ -5,7 +5,7 @@ using Xunit;
 namespace Deckle.Diagnostics.Tests;
 
 // Rotation, pruning and line counting run beside the writes and must never stop
-// them, so each of them fails quietly by design. The journal still has to say
+// them, so each of them fails quietly by design. The log still has to say
 // that the file stopped rolling or the archive stopped shrinking: a disk that
 // fills up with one file nobody trims is found from these lines.
 [Trait("Category", "regression")]

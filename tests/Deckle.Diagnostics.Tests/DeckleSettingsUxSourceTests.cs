@@ -7,7 +7,7 @@ namespace Deckle.Diagnostics.Tests;
 public class DeckleSettingsUxSourceTests
 {
     // The folder setters passed the chosen path as the value, so the log
-    // carried C:\Users\<name>\... for anyone reading a shared journal.
+    // carried C:\Users\<name>\... for anyone reading a shared log.
     [Fact]
     [Trait("Category", "regression")]
     public void SettingChangedNeverLogsADirectoryPath()

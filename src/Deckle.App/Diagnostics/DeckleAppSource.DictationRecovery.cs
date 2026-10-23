@@ -18,9 +18,12 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtDictationRecoveryFound);
     }
 
+    // The clipboard now holds text the person did not just copy: the log keeps
+    // that, beside the Warnings that end a recovery the other ways.
     [Event(EvtDictationRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
            Message = "The interrupted dictation was put back on the clipboard")]
     public void DictationRecovered()
     {

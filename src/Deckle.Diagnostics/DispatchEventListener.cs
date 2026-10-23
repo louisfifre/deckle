@@ -183,7 +183,7 @@ public sealed class DispatchEventListener : EventListener
 
         Dispatch(entry, snapshot);
 
-        // After the row, so the report reads as its consequence in the journal.
+        // After the row, so the report reads as its consequence in the log.
         if (templateError is not null) ReportBrokenTemplate(entry, templateError);
     }
 
@@ -343,7 +343,7 @@ public sealed class DispatchEventListener : EventListener
             kind: ObservationTags.GetKind(e.Tags),
             formattedMessage: formatted,
             payload: payload,
-            journal: ObservationTags.IsJournal(e.Tags));
+            milestone: ObservationTags.IsMilestone(e.Tags));
     }
 
     // Clean-shutdown barrier for sinks that hand work to a background writer.

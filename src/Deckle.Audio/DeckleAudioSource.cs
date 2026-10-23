@@ -81,14 +81,14 @@ public sealed class DeckleAudioSource : DeckleEventSource
     // machine with a wrong default device, and it must be answerable from a
     // default log. purpose separates dictation takes from Settings tests.
     //
-    // A recording is lasting work: its start and its end travel in the journal
+    // A recording is lasting work: its start and its end travel in the log
     // and share a work_id, so the file alone shows a recording that never
     // ended. The no-data, empty-buffer and lag warnings that fall between them
     // belong to it by position, and RecordingAnomaliesSummary closes their count.
     [Event(EvtRecordingStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Recording started | purpose={0} | device={1} | device_id={2} | default_device={3} | sample_rate={4} | channels={5} | bits_per_sample={6} | work_id={7}")]
     public void RecordingStarted(string purpose, string device_name, int device_id, bool default_device, int sample_rate, int channels, int bits_per_sample, string work_id)
     {
@@ -111,7 +111,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtRecordingCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Recording complete | end_reason={1} | duration_s={2:F1} | purpose={0} | work_id={3}")]
     public void RecordingCompleted(string purpose, string end_reason, double duration_s, string work_id)
     {
@@ -224,7 +224,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtCaptureReleaseRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The microphone is released cleanly again | failures={0}")]
     public void CaptureReleaseRecovered(int failures)
     {
@@ -261,7 +261,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtAudioDataRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The microphone delivers audio again | waited_ms={0}")]
     public void AudioDataRecovered(long waited_ms)
     {
@@ -292,7 +292,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtEmptyBufferRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Capture buffers recovered")]
     public void EmptyBufferRecovered()
     {
@@ -351,7 +351,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtCaptureLagRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The capture loop recovered")]
     public void CaptureLagRecovered()
     {
@@ -360,7 +360,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
 
     // One line per recording that met any of the three anomalies above, written
     // when the loop ends and whatever the verbosity: a recording that ends while
-    // an anomaly is still open leaves the Warning in the journal and no closer,
+    // an anomaly is still open leaves the Warning in the log and no closer,
     // so this is the line that says how far it went. A recording with none of
     // them writes nothing. *_recovered is false when the anomaly was still open
     // at the end (and when its own count is 0); lag_max_buffers_ready is the
@@ -368,7 +368,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtRecordingAnomaliesSummary,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Recording anomalies | no_data_stalls={0} | no_data_longest_gap_ms={1} | no_data_recovered={2} | empty_buffer_occurrences={3} | empty_buffer_recovered={4} | lag_occurrences={5} | lag_recovered={6} | lag_max_buffers_ready={7} | recording_ms={8} | work_id={9}")]
     public void RecordingAnomaliesSummary(
         int no_data_stalls, long no_data_longest_gap_ms, bool no_data_recovered,
@@ -414,7 +414,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtPlaybackStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Playback started | device={0} | device_id={1} | sample_rate={2} | duration_ms={3}")]
     public void PlaybackStarted(string device_name, int device_id, int sample_rate, long duration_ms)
     {
@@ -425,7 +425,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtPlaybackCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Playback ended | outcome={0} | elapsed_ms={1}")]
     public void PlaybackCompleted(string outcome, long elapsed_ms)
     {

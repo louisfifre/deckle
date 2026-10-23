@@ -7,14 +7,14 @@ using Xunit;
 namespace Deckle.Hud.Tests;
 
 // A card that cannot be closed stays on screen with nothing tracking it; the
-// journal has to say so without any verbosity control being raised.
+// log has to say so without any verbosity control being raised.
 [Collection("Hud operational observability")]
 [Trait("Category", "observability")]
 public sealed class OverlayCardCloseObservabilityTests
 {
     [Fact]
     [Trait("Category", "regression")]
-    public void AnOverlayCardThatCannotBeClosedIsAWarningInTheJournalWithItsCause()
+    public void AnOverlayCardThatCannotBeClosedIsAWarningInTheLogWithItsCause()
     {
         OperationalLogAdmission.Configure(static _ => false);
         using var listener = new TestEventListener("Deckle-Hud");

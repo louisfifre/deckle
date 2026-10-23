@@ -14,7 +14,7 @@ Regression: `DataRootTreeRegressionTests.An_entry_that_vanishes_while_the_tree_i
 ## The error that stopped a relocation did not say why a file was refused
 
 - **Trigger:** a required data file cannot be read for the copy (held open without sharing by another process), the copy is retried once and fails again. Reproduced by test with a file held `FileShare.None`.
-- **Observed symptom:** the Error `RelocateFailed` carried "Could not copy required data file 'x'." with no cause. The cause existed only in a Verbose line that the journal does not keep. Confirmed by running the test against the old code.
+- **Observed symptom:** the Error `RelocateFailed` carried "Could not copy required data file 'x'." with no cause. The cause existed only in a Verbose line that the log does not keep. Confirmed by running the test against the old code.
 - **Cause:** `Copy` saw a `bool` from the copier, so the exception caught in `TryCopyFile` never reached the throw.
 - **Violated invariant:** a failure carries its cause, the step and the error, on one line.
 - **Recurrence cue:** a `RelocateFailed` whose `ex_message` names a file but no error type or code.

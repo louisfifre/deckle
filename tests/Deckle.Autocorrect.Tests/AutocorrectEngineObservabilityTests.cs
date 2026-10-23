@@ -81,7 +81,7 @@ public sealed class AutocorrectEngineObservabilityTests
 
     [Fact]
     [Trait("Category", "regression")]
-    public void TheInjectionIncidentNamesNoAppOnTheLineTheJournalKeeps()
+    public void TheInjectionIncidentNamesNoAppOnTheLineTheLogKeeps()
     {
         const string process = "probe-process-4f1c";
         using var listener = new TestEventListener("Deckle-Autocorrect");
@@ -102,23 +102,23 @@ public sealed class AutocorrectEngineObservabilityTests
 
     [Fact]
     [Trait("Category", "regression")]
-    public void NoEventThatTravelsInTheJournalDeclaresAnAppOrProcessName()
+    public void NoEventThatTravelsInTheLogDeclaresAnAppOrProcessName()
     {
         // Presence-based on the declared shape, so it covers events the engine
         // tests above never raise.
-        Assert.Empty(JournalledPayloads.AppNamesInTheJournal(typeof(DeckleAutocorrectSource)));
+        Assert.Empty(LoggedPayloads.AppNamesInTheLog(typeof(DeckleAutocorrectSource)));
     }
 
     [Fact]
     public void TheSurfaceStaysNamedOnItsVerboseDetailEvent()
     {
-        var surface = JournalledPayloads
+        var surface = LoggedPayloads
             .Carrying(typeof(DeckleAutocorrectSource), ["process"])
             .Single(c => c.Event.Name == nameof(DeckleAutocorrectSource.SurfaceChanged))
             .Event;
 
         Assert.Equal(EventLevel.Verbose, surface.Level);
-        Assert.False(JournalledPayloads.Travels(surface));
+        Assert.False(LoggedPayloads.Travels(surface));
     }
 
     [Fact]

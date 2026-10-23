@@ -12,7 +12,7 @@ namespace Deckle.Diagnostics;
 // event already broadcasts to the whole process, so a second subscription
 // would only duplicate events.
 //
-// Two layers. `NetworkConnectivityChanged` is the journal line a person reads
+// Two layers. `NetworkConnectivityChanged` is the log line a person reads
 // ("the machine went offline at 14:02"), emitted only on a real connectivity
 // flip through NetworkConnectivityTracker. `NetworkStatusChanged` stays the
 // Verbose snapshot of every OS broadcast, counters included.
@@ -58,14 +58,14 @@ public sealed class DeckleNetworkSource : DeckleEventSource
     }
 
     // One line per connectivity flip, plus the boot state (previous_state=
-    // "unknown", reason="startup"), so a journal read on another machine says
+    // "unknown", reason="startup"), so a log read on another machine says
     // whether the machine was offline when a call failed. `reason` is what
     // the OS report shows changed, see NetworkConnectivityTracker. The
     // profile name stays out: a Wi-Fi name can identify a place.
     [Event(EvtNetworkConnectivityChanged,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Network | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Network connectivity changed | previous_state={0} | state={1} | reason={2}")]
     public void NetworkConnectivityChanged(string previous_state, string state, string reason)
     {
@@ -75,7 +75,7 @@ public sealed class DeckleNetworkSource : DeckleEventSource
 
     // A WinRT network query threw, so the machine's connectivity could not be
     // read: a degradation, not an offline state. The emitter then leaves the
-    // last known connectivity untouched, and the journal says here why it saw
+    // last known connectivity untouched, and the log says here why it saw
     // nothing. `stage` is the query: "connection_profile", "connectivity_level",
     // "medium", "host_names". One incident per stage, through
     // NetworkQueryIncidents, closed by NetworkQueryRecovered.
@@ -93,7 +93,7 @@ public sealed class DeckleNetworkSource : DeckleEventSource
     [Event(EvtNetworkQueryRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Network,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "network query recovered | stage={0}")]
     public void NetworkQueryRecovered(string stage)
     {
@@ -137,7 +137,7 @@ public sealed class NetworkQueryIncidents
     private readonly HashSet<string> _failing = new(StringComparer.Ordinal);
 
     // Emitted under the lock so a failure and the recovery that follows it
-    // reach the journal in the order they happened.
+    // reach the log in the order they happened.
     public void Failed(string stage, Exception ex)
     {
         ArgumentNullException.ThrowIfNull(ex);
@@ -160,7 +160,7 @@ public sealed class NetworkQueryIncidents
 
 // Turns the OS broadcasts into connectivity flips. Windows raises
 // NetworkStatusChanged for many reasons that leave connectivity unchanged
-// (an address renewal, a second adapter, a cost change), so the journal line
+// (an address renewal, a second adapter, a cost change), so the log line
 // fires only when the state differs from the last observation.
 //
 // `reason` vocabulary, derived from what changed in the OS report (the
@@ -204,7 +204,7 @@ public sealed class NetworkConnectivityTracker
     public bool Observe(string state, string? profileName)
     {
         // Emitted under the lock: two broadcasts handled on two pool threads
-        // must reach the journal in the order the state changed.
+        // must reach the log in the order the state changed.
         lock (_gate)
         {
             string previous = _state ?? StateUnknown;

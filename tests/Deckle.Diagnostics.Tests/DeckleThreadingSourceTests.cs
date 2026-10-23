@@ -41,7 +41,7 @@ public class DeckleThreadingSourceTests
     }
 
     // A blocked UI thread makes every queued callback late at once: the
-    // journal must show one stall, not one Warning per victim callback.
+    // log must show one stall, not one Warning per victim callback.
     [Fact]
     public void MarshalStallWatchReportsOneIncidentPerStall()
     {
@@ -82,10 +82,10 @@ public class DeckleThreadingSourceTests
             caller_source: "LOGWIN", reason: "log entry");
 
         Assert.Equal(2, listener.Events.Count);
-        var milestone = listener.Events[0];
-        Assert.Equal(DeckleThreadingSource.EvtDispatcherEnqueueRejected, milestone.EventId);
-        Assert.Equal(EventLevel.Warning, milestone.Level);
-        Assert.True(milestone.HasKeyword(Keywords.Threading));
+        var logged = listener.Events[0];
+        Assert.Equal(DeckleThreadingSource.EvtDispatcherEnqueueRejected, logged.EventId);
+        Assert.Equal(EventLevel.Warning, logged.Level);
+        Assert.True(logged.HasKeyword(Keywords.Threading));
         var detail = listener.Events[1];
         Assert.Equal(DeckleThreadingSource.EvtDispatcherEnqueueRejectedDetail, detail.EventId);
         Assert.Equal(EventLevel.Verbose, detail.Level);

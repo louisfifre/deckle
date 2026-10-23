@@ -5,7 +5,7 @@ namespace Deckle.App;
 
 // Precomputes the displayed text so ListView virtualization does not reformat
 // on every row realization. The rendering lives in LogLineFormatter so LogWindow
-// and app.jsonl produce the same line.
+// and trace.jsonl produce the same line.
 public sealed class LogEntry
 {
     public EventEntry Entry { get; }

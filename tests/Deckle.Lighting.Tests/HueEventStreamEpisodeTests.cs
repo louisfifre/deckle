@@ -51,7 +51,7 @@ public sealed class HueEventStreamEpisodeTests
         Assert.False(episode.TryRecover(out _));
     }
 
-    // 2026-10: a subscriber stopped while its incident was open left the journal
+    // 2026-10: a subscriber stopped while its incident was open left the log
     // with a Warning that never ended.
     [Fact]
     [Trait("Category", "regression")]

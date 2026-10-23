@@ -20,18 +20,18 @@ public static class ObservationTags
 {
     public const EventTags Dataset = (EventTags)0x1;
 
-    // The run journal: the few Informational milestones that tell a run's
+    // A milestone: one of the few Informational events that tell a run's
     // story (starting, ready, module up or skipped, shutdown, exit) and that
-    // the always-on journal file keeps beside every Warning and Error. A
+    // the always-on log keeps beside every Warning and Error. A
     // reader on another machine must find them without any verbosity control
     // turned on, so a provider tags them rather than hoping a level predicate
     // catches them.
-    public const EventTags Journal = (EventTags)0x2;
+    public const EventTags Milestone = (EventTags)0x2;
 
     public static ObservationKind GetKind(EventTags tags)
         => (tags & Dataset) != 0
             ? ObservationKind.Dataset
             : ObservationKind.Operational;
 
-    public static bool IsJournal(EventTags tags) => (tags & Journal) != 0;
+    public static bool IsMilestone(EventTags tags) => (tags & Milestone) != 0;
 }

@@ -4,8 +4,8 @@ namespace Deckle.Diagnostics;
 
 // One line appended to a small text file, for a process that has no sink to
 // write through: a launcher parent that supervises the app, or a second
-// instance that is turned away before it may touch the journal (the resident
-// run holds journal.jsonl open for writing, so a rejected one cannot append
+// instance that is turned away before it may touch the log (the resident
+// run holds log.jsonl open for writing, so a rejected one cannot append
 // to it).
 //
 // The file is bounded. Once it passes the cap it starts over, so a fact that
@@ -44,7 +44,7 @@ public static class NoteFile
     public readonly record struct Note(string At, string Text);
 
     // Reads every line the file holds and removes it, so the resident run can
-    // carry the facts a sinkless process left into its own journal.
+    // carry the facts a sinkless process left into its own log.
     //
     // The file is moved aside before it is read, not read and then deleted: a
     // second instance appending between the read and the delete would lose its

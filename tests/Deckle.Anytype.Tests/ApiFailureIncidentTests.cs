@@ -38,8 +38,8 @@ public sealed class ApiFailureIncidentTests
     private static string Field(EventWrittenEventArgs e, string name)
         => Convert.ToString(e.Payload![e.PayloadNames!.IndexOf(name)])!;
 
-    private static bool TravelsInTheJournal(EventWrittenEventArgs e)
-        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Journal) != 0;
+    private static bool TravelsInTheLog(EventWrittenEventArgs e)
+        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Milestone) != 0;
 
     private const string Envelope =
         """{"status":401,"code":"unauthorized","message":"the key of Alice is not valid","hint":"ask Alice"}""";
@@ -60,15 +60,15 @@ public sealed class ApiFailureIncidentTests
         for (int i = 0; i < 5; i++) await Refused(client, Get());
         await client.SendAsync(Get(), Ct);
 
-        EventWrittenEventArgs[] journal = listener.Events.Where(TravelsInTheJournal).ToArray();
+        EventWrittenEventArgs[] logged = listener.Events.Where(TravelsInTheLog).ToArray();
         EventWrittenEventArgs opened = Assert.Single(
-            journal, e => e.EventId == DeckleAnytypeSource.EvtApiRequestFailed);
+            logged, e => e.EventId == DeckleAnytypeSource.EvtApiRequestFailed);
         EventWrittenEventArgs ended = Assert.Single(
-            journal, e => e.EventId == DeckleAnytypeSource.EvtApiRefusalsEnded);
+            logged, e => e.EventId == DeckleAnytypeSource.EvtApiRefusalsEnded);
         Assert.Equal(ApiFailureReasons.HttpStatus, Field(opened, "reason"));
         Assert.Equal("401", Field(opened, "status_code"));
         Assert.Equal("5", Field(ended, "refused_requests"));
-        Assert.Equal(2, journal.Length);
+        Assert.Equal(2, logged.Length);
     }
 
     [Fact]
@@ -121,7 +121,7 @@ public sealed class ApiFailureIncidentTests
 
     [Fact]
     [Trait("Category", "regression")]
-    public async Task ARateLimitThatSurvivesItsRetryReachesTheJournalWithoutVerboseTracing()
+    public async Task ARateLimitThatSurvivesItsRetryReachesTheLogWithoutVerboseTracing()
     {
         using var listener = new TestEventListener("Deckle-Anytype");
         var handler = new FakeV2Handler()
@@ -132,7 +132,7 @@ public sealed class ApiFailureIncidentTests
         await Refused(client, Get());
 
         EventWrittenEventArgs failed = Assert.Single(
-            listener.Events.Where(TravelsInTheJournal),
+            listener.Events.Where(TravelsInTheLog),
             e => e.EventId == DeckleAnytypeSource.EvtApiRequestFailed);
         Assert.Equal("429", Field(failed, "status_code"));
         Assert.Equal(2, handler.Requests.Count);
@@ -151,7 +151,7 @@ public sealed class ApiFailureIncidentTests
             () => client.SendAsync(Patch(), Ct));
 
         Assert.True(ex.IsStaleEtag);
-        Assert.DoesNotContain(listener.Events, TravelsInTheJournal);
+        Assert.DoesNotContain(listener.Events, TravelsInTheLog);
         EventWrittenEventArgs superseded = Assert.Single(
             listener.Events, e => e.EventId == DeckleAnytypeSource.EvtApiRequestSuperseded);
         Assert.Equal("etag_mismatch", Field(superseded, "code"));
@@ -177,6 +177,6 @@ public sealed class ApiFailureIncidentTests
         EventWrittenEventArgs ended = Assert.Single(
             listener.Events, e => e.EventId == DeckleAnytypeSource.EvtApiRefusalsEnded);
         Assert.Equal("3", Field(ended, "refused_requests"));
-        Assert.Equal(2, listener.Events.Count(TravelsInTheJournal));
+        Assert.Equal(2, listener.Events.Count(TravelsInTheLog));
     }
 }

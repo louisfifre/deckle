@@ -12,7 +12,7 @@ namespace Deckle.Anytype.Mcp;
 internal sealed class McpHostLogBridge : ILoggerProvider
 {
     // Keyed by category and event name: the first occurrence is the Warning,
-    // repeats stay Verbose with their running count, and the journal gets the count
+    // repeats stay Verbose with their running count, and the log gets the count
     // at every power of ten and once more when the host's logging closes.
     private readonly ConcurrentDictionary<string, Problem> _problems = new(StringComparer.Ordinal);
 

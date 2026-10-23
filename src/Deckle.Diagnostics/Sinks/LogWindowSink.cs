@@ -129,7 +129,7 @@ public sealed class LogWindowSink : ILogSink
     }
 
     // Clears only the process-memory replay ring. Attached sinks keep receiving
-    // future entries, and persistent sinks such as diagnostics/app.jsonl are
+    // future entries, and persistent sinks such as diagnostics/trace.jsonl are
     // intentionally untouched.
     public void ClearBuffer()
     {

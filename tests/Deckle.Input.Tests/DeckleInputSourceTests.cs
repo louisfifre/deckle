@@ -23,7 +23,7 @@ public class DeckleInputSourceTests : IDisposable
     }
 
     [Fact]
-    public void KeyboardHostStartFailureCarriesItsCauseInOneJournalWarning()
+    public void KeyboardHostStartFailureCarriesItsCauseInOneLogWarning()
     {
         using var listener = new TestEventListener("Deckle-Input");
 
@@ -33,7 +33,7 @@ public class DeckleInputSourceTests : IDisposable
         Assert.Equal(DeckleInputSource.EvtKeyboardHostStartFailed, warning.EventId);
         Assert.Equal(EventLevel.Warning, warning.Level);
         Assert.True(warning.HasKeyword(Keywords.Lifecycle));
-        Assert.Equal(ObservationTags.Journal, warning.Tags & ObservationTags.Journal);
+        Assert.Equal(ObservationTags.Milestone, warning.Tags & ObservationTags.Milestone);
         Assert.Equal("Win32Exception", warning.Payload?[0]);
         Assert.Equal("Access is denied.", warning.Payload?[1]);
         Assert.Equal(5, warning.Payload?[2]);
@@ -55,7 +55,7 @@ public class DeckleInputSourceTests : IDisposable
     }
 
     [Fact]
-    public void HostLifecycleMilestonesReachTheJournalWithAnOutcome()
+    public void HostLifecycleMilestonesReachTheLogWithAnOutcome()
     {
         using var listener = new TestEventListener("Deckle-Input");
 
@@ -68,20 +68,20 @@ public class DeckleInputSourceTests : IDisposable
                 Assert.Equal(DeckleInputSource.EvtHostStarted, started.EventId);
                 Assert.Equal(EventLevel.Informational, started.Level);
                 Assert.True(started.HasKeyword(Keywords.Lifecycle));
-                Assert.Equal(ObservationTags.Journal, started.Tags & ObservationTags.Journal);
+                Assert.Equal(ObservationTags.Milestone, started.Tags & ObservationTags.Milestone);
             },
             stopped =>
             {
                 Assert.Equal(DeckleInputSource.EvtHostStopped, stopped.EventId);
                 Assert.Equal(EventLevel.Informational, stopped.Level);
-                Assert.Equal(ObservationTags.Journal, stopped.Tags & ObservationTags.Journal);
+                Assert.Equal(ObservationTags.Milestone, stopped.Tags & ObservationTags.Milestone);
                 Assert.Equal("failed", stopped.Payload?[0]);
                 Assert.Equal("get_message_failed", stopped.Payload?[1]);
             });
     }
 
     [Fact]
-    public void RecordingSessionsTravelInTheJournalFromStartToOutcome()
+    public void RecordingSessionsTravelInTheLogFromStartToOutcome()
     {
         using var listener = new TestEventListener("Deckle-Input");
 
@@ -91,25 +91,25 @@ public class DeckleInputSourceTests : IDisposable
         DeckleInputSource.Log.WheelRecordingStopped("completed", 3);
 
         Assert.Collection(listener.Events,
-            frameStart => AssertJournal(frameStart, DeckleInputSource.EvtRecordingStarted),
+            frameStart => AssertMilestone(frameStart, DeckleInputSource.EvtRecordingStarted),
             frameStop =>
             {
-                AssertJournal(frameStop, DeckleInputSource.EvtRecordingStopped);
+                AssertMilestone(frameStop, DeckleInputSource.EvtRecordingStopped);
                 Assert.Equal("failed", frameStop.Payload?[0]);
                 Assert.Equal(7L, frameStop.Payload?[1]);
             },
-            wheelStart => AssertJournal(wheelStart, DeckleInputSource.EvtWheelRecordingStarted),
+            wheelStart => AssertMilestone(wheelStart, DeckleInputSource.EvtWheelRecordingStarted),
             wheelStop =>
             {
-                AssertJournal(wheelStop, DeckleInputSource.EvtWheelRecordingStopped);
+                AssertMilestone(wheelStop, DeckleInputSource.EvtWheelRecordingStopped);
                 Assert.Equal("completed", wheelStop.Payload?[0]);
             });
     }
 
-    private static void AssertJournal(EventWrittenEventArgs e, int eventId)
+    private static void AssertMilestone(EventWrittenEventArgs e, int eventId)
     {
         Assert.Equal(eventId, e.EventId);
-        Assert.Equal(ObservationTags.Journal, e.Tags & ObservationTags.Journal);
+        Assert.Equal(ObservationTags.Milestone, e.Tags & ObservationTags.Milestone);
     }
 
     [Fact]

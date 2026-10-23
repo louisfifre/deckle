@@ -27,7 +27,7 @@ internal static class ApiFailureReasons
 //     the next ones stay Verbose details, the first answer closes the incident.
 //   • A refusal (a status the caller cannot use, or an endpoint that is not
 //     trusted): the first request of a run writes the Error, the identical ones
-//     that follow stay Verbose details, and the run's end writes one journal line
+//     that follow stay Verbose details, and the run's end writes one log line
 //     with its count. A refusal that differs from the run's (another status, or
 //     the other reason) opens a run of its own.
 //

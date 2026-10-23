@@ -92,7 +92,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtScreenCaptureStarting,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Screen capture starting")]
     public void ScreenCaptureStarting()
     {
@@ -105,7 +105,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtScreenCaptureStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Screen capture started | adapter={0} | feature_level={1} | monitor={2} | size={3}x{4} | format={5} | hdr={6} | rate_hz={7}")]
     public void ScreenCaptureStarted(string adapter, string feature_level, string monitor,
         int width, int height, string format, string hdr_state, int rate_hz)
@@ -133,7 +133,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtCaptureStartFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Screen capture failed to start | stage={0} | hr=0x{1:X8} | ex_type={2} | ex_message={3}")]
     public void CaptureStartFailed(string stage, int hr, string ex_type, string ex_message)
     {
@@ -185,7 +185,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtScreenCaptureStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Screen capture stopped | reason={0} | duration_ms={1}")]
     public void ScreenCaptureStopped(string reason, long duration_ms)
     {
@@ -219,7 +219,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtCaptureLoopEnded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "capture loop ended | outcome={0} | reason={1} | frames={2} | elapsed_ms={3}")]
     public void CaptureLoopEnded(string outcome, string reason, long frames, long elapsed_ms)
     {
@@ -229,7 +229,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtCaptureLoopCrashed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Screen capture loop crashed and is stopping | hr=0x{0:X8} | ex_type={1} | ex_message={2}")]
     public void CaptureLoopCrashed(int hr, string ex_type, string ex_message)
     {
@@ -239,7 +239,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtDeviceLost,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Graphics device lost, screen capture is stopping | hr=0x{0:X8}")]
     public void DeviceLost(int hr)
     {
@@ -249,7 +249,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtFrameOwnershipRecoveryAbandoned,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Screen capture is stuck on an unreleased frame and is stopping | attempts={0} | max_attempts={1} | hr=0x{2:X8}")]
     public void FrameOwnershipRecoveryAbandoned(int attempts, int max_attempts, int hr)
     {
@@ -289,7 +289,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtAcquireFrameRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Screen capture reads frames again | failures={0} | duration_ms={1}")]
     public void AcquireFrameRecovered(int failures, long duration_ms)
     {
@@ -310,7 +310,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtCaptureAccessRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Screen capture holds the display again | losses={0} | duration_ms={1}")]
     public void CaptureAccessRecovered(int losses, long duration_ms)
     {
@@ -323,7 +323,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtCaptureIncidentAbandoned,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Screen capture stopped with an incident still open | incident={0} | count={1} | duration_ms={2}")]
     public void CaptureIncidentAbandoned(string incident, int count, long duration_ms)
     {
@@ -426,7 +426,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtDuplicationRecreateRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Screen capture recovered")]
     public void DuplicationRecreateRecovered()
     {
@@ -448,7 +448,7 @@ public sealed class DeckleVisionSource : DeckleEventSource
     [Event(EvtDuplicationRecreateAbandoned,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Screen capture could not be reopened and is stopping | attempts={0} | hr=0x{1:X8} | ex_type={2} | ex_message={3}")]
     public void DuplicationRecreateAbandoned(int attempts, int hr, string ex_type, string ex_message)
     {

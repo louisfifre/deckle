@@ -5,7 +5,7 @@ namespace Deckle.Input.PrecisionScroll;
 public sealed class PrecisionScrollEngine : IWheelInterceptor, IPrecisionScrollEngine
 {
     // Long enough for an accepted gesture to play out its release, short
-    // enough that a stuck worker shows up in the journal before the user
+    // enough that a stuck worker shows up in the log before the user
     // notices a frozen settings toggle.
     private const int StopTimeoutMs = 2_000;
 

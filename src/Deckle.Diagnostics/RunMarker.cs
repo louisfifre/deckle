@@ -3,10 +3,10 @@ using System.Globalization;
 namespace Deckle.Diagnostics;
 
 // Tells a run that ended on its own terms from one that did not, across the
-// process boundary the journal cannot see over.
+// process boundary the log cannot see over.
 //
 // A run that dies by a kill, a power loss or a crash writes no end line, and
-// nothing in the journal says why a run has a start and no end. The marker is
+// nothing in the log says why a run has a start and no end. The marker is
 // a one-line file written when a run begins and removed when it ends in an
 // orderly way. A run that starts and finds the file still there knows the
 // previous one never reached its end, and names it.

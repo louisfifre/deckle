@@ -37,6 +37,7 @@
 
   <ItemGroup>
     <AssemblyMetadata Include="Stage" Value="$(DeckleStage)" />
+    <InternalsVisibleTo Include="Deckle.App.Tests" />
   </ItemGroup>
 
   <!-- Publish-only options, gated on _IsPublishing (set only by the Publish

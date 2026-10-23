@@ -63,7 +63,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtHostStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Host started")]
     public void HostStarted()
     {
@@ -86,7 +86,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtHostStartFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The host failed to start — the taskbar stays uncovered | reason={0} | ex_type={1} | ex_message={2}")]
     public void HostStartFailed(string reason, string ex_type, string ex_message)
     {
@@ -96,7 +96,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtHostStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Host stopped")]
     public void HostStopped()
     {
@@ -106,7 +106,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtHostStopTimedOut,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The cover thread did not exit in time — restart refused until it does")]
     public void HostStopTimedOut()
     {
@@ -152,7 +152,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtLayoutQueryRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Taskbar location recovered")]
     public void LayoutQueryRecovered()
     {
@@ -174,7 +174,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
     [Event(EvtBandCreateRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Every taskbar has its band again")]
     public void BandCreateRecovered()
     {

@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Deckle.Modules.Tests;
 
-// What the journal says when the presence file cannot be used: every module then
+// What the log says when the presence file cannot be used: every module then
 // counts as present, which is a decision the person did not make, so the line
 // has to name the cause and nothing the file holds.
 [Trait("Category", "observability")]
@@ -25,7 +25,7 @@ public sealed class PresenceObservabilityTests : IDisposable
 
     [Fact]
     [Trait("Category", "regression")]
-    public void ACorruptPresenceFileIsAWarningInTheJournalNamingTheErrorTypeAndNoPath()
+    public void ACorruptPresenceFileIsAWarningInTheLogNamingTheErrorTypeAndNoPath()
     {
         using var listener = new TestEventListener("Deckle-Modules");
         Directory.CreateDirectory(_dir);

@@ -87,7 +87,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtEngineStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Autocorrect armed")]
     public void EngineStarted()
     {
@@ -97,7 +97,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtEngineStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Autocorrect stopped")]
     public void EngineStopped()
     {
@@ -110,7 +110,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtEngineStartFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Autocorrect failed to arm | reason={0}")]
     public void EngineStartFailed(string reason)
     {
@@ -152,7 +152,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtEngineReady,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Autocorrect ready")]
     public void EngineReady()
     {
@@ -165,7 +165,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankerStatus,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Autocorrect contextual stage | engine={0} | load_ms={1}")]
     public void RerankerStatus(string engine, long load_ms)
     {
@@ -179,7 +179,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankerLoadFailure,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Contextual correction model failed to load | engine={0} | provider={1} | {2}: {3}")]
     public void RerankerLoadFailure(string engine, string provider, string ex_type, string ex_message)
     {
@@ -368,7 +368,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtInjectionRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Text injection recovered")]
     public void InjectionRecovered()
     {
@@ -479,7 +479,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankStallRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Contextual correction resumed after a stall | elapsed_ms={0}")]
     public void RerankStallRecovered(long elapsed_ms)
     {
@@ -500,7 +500,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Contextual correction recovered | failures={0}")]
     public void RerankRecovered(int failures)
     {
@@ -577,7 +577,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtCaretRecoveryRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Caret sentence recovery recovered | failures={0}")]
     public void CaretRecoveryRecovered(int failures)
     {
@@ -608,7 +608,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     // These two DELIBERATELY carry text: the typed word, its left context, and the
     // candidate forms with their scores. They are routed solely to the opt-in
     // autocorrect.decisions.jsonl sink (gated by AutocorrectDecisions, off by
-    // default) and excluded from app.jsonl. The synchronous decision and its
+    // default) and excluded from trace.jsonl. The synchronous decision and its
     // deferred reranker verdict share `id`, so the two lines join. CorrectionTrace
     // renders the flat fields.
 
@@ -656,7 +656,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     // are SentenceCorpus.SentenceRecord's. The heaviest text capture in the module,
     // a verbatim record of typed input: routed solely to the opt-in
     // autocorrect.text.jsonl sink (gated by AutocorrectText, off by default) and
-    // excluded from app.jsonl.
+    // excluded from trace.jsonl.
 
     [Event(EvtAutocorrectText,
            Level = EventLevel.Verbose,
@@ -676,7 +676,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     // fields and replay contract are TypingStream's. Verbatim typed input: routed
     // solely to the opt-in autocorrect.stream.jsonl sink under the SAME consent
     // envelope as the typed-sentence corpus (gated by AutocorrectText, off by
-    // default) and excluded from app.jsonl. Password surfaces never reach the
+    // default) and excluded from trace.jsonl. Password surfaces never reach the
     // stream: the engine gates them before decoding.
 
     [Event(EvtAutocorrectStream,

@@ -46,7 +46,7 @@ internal sealed class TrayIconRegistration(IntPtr window, INotifyIconApi api)
     public IntPtr Icon => _icon;
 
     // Attempts made in the current re-add sequence, or in the last one once
-    // it closed, for the journal.
+    // it closed, for the log.
     public int ReaddAttempts => _readdAttempts;
 
     // First add, with the status kept so far: Update may have run before.

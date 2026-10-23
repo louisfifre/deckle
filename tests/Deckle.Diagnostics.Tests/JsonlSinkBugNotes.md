@@ -2,7 +2,7 @@
 
 ## A non-finite number cost the whole row and opened a sink incident
 
-- **Trigger:** any event whose payload carries a `double` or `float` that is `NaN` or an infinity (a ratio over a zero duration, an uninitialised measurement), written through `JsonlLineSerializer`. Reproduced 2026-10-22 by test, not seen yet in a real journal.
+- **Trigger:** any event whose payload carries a `double` or `float` that is `NaN` or an infinity (a ratio over a zero duration, an uninitialised measurement), written through `JsonlLineSerializer`. Reproduced 2026-10-22 by test, not seen yet in a real log.
 - **Observed symptom:** `Utf8JsonWriter.WriteNumber` threw `ArgumentException`. `JsonlSink.WriteOnWorker` caught it, closed the stream and rethrew, so the row was lost and the queue opened a `SinkFaulted` incident for a sink whose disk was fine; the next row reopened the stream and closed the incident.
 - **Cause (established by running the test):** JSON has no literal for `NaN` or the infinities and the writer refuses them; the serializer passed every `float` and `double` straight to `WriteNumber`.
 - **Violated invariant:** one unrepresentable value never costs a row. The serializer is total over any payload an event can carry.
@@ -24,7 +24,7 @@ Regression: `BoundedWriteQueueRegressionTests.A_bounded_flush_returns_in_time_wh
 ## A recovered write error was rethrown at flush
 
 - **Trigger:** one failed write followed by a successful one (a disk hiccup), then `Flush`, `TryFlush` or `Dispose`. Reproduced 2026-10-22 by test.
-- **Observed symptom:** the journal said `SinkRecovered`, then the shutdown flush threw the old error as if the sink were still broken.
+- **Observed symptom:** the log said `SinkRecovered`, then the shutdown flush threw the old error as if the sink were still broken.
 - **Cause (established by running the test):** the queue remembered the last write error for Flush and Dispose to rethrow, and recovery closed the incident without clearing it.
 - **Violated invariant:** an incident closed by `SinkRecovered` leaves nothing to rethrow.
 - **Recurrence cue:** a `SinkRecovered` row followed by a flush failure naming the same error type and message.
@@ -45,9 +45,9 @@ Regression: `JsonlSinkRegressionTests.A_row_cut_short_before_its_newline_does_no
 
 ## A file that could not roll, prune or be counted said nothing
 
-- **Trigger:** rotation maintenance that fails while writes still succeed: the archive folder cannot be created (a file sits in its place), an old generation cannot be deleted (held open, read-only), or the active file cannot be read at start. Reproduced 2026-10-22 by test, not seen yet in a real journal.
+- **Trigger:** rotation maintenance that fails while writes still succeed: the archive folder cannot be created (a file sits in its place), an old generation cannot be deleted (held open, read-only), or the active file cannot be read at start. Reproduced 2026-10-22 by test, not seen yet in a real log.
 - **Observed symptom:** nothing. A failed roll left the active file growing past its cap, a failed prune left the archive over its cap, and a failed count made the file look empty so it would not roll for another full cap of lines. The first sign was a disk filling up.
-- **Cause (established by running the test):** each step ended in a bare `catch` that returned a default, on purpose so the journal keeps writing, with no line left behind.
+- **Cause (established by running the test):** each step ended in a bare `catch` that returned a default, on purpose so the log keeps writing, with no line left behind.
 - **Violated invariant:** a degradation is reported once as an incident and closed by one recovery. A sink that stops maintaining its file is a degraded sink.
 - **Recurrence cue:** a `RotationFailed` (Warning) with no `RotationRecovered` after it, on a file whose size or archive count keeps rising.
 - **Also changed, not covered by a test:** `NextGeneration` no longer swallows a listing error. It returned the number after the entries seen before the error, which could be 1, and the roll moves with overwrite, so a listing that failed midway could erase the oldest archive. The listing error now fails the roll instead. No existing seam makes `Directory.EnumerateFiles` fail after `CreateDirectory` succeeded.

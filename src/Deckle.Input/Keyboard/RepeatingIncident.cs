@@ -1,6 +1,6 @@
 namespace Deckle.Input;
 
-// Folds a repeating degradation into one incident, so the journal gets one
+// Folds a repeating degradation into one incident, so the log gets one
 // Warning when it starts and one recovery when it ends instead of a line per
 // occurrence. An occurrence streak opens the incident once it reaches the
 // threshold; Clear closes it once no occurrence was recorded for quietMs.

@@ -8,11 +8,11 @@ public sealed partial class DeckleSetupSource
     // ── Wizard lifecycle ──────────────────────────────────────────────────────
 
     // The setup window is the host of the install, update and relocate modes:
-    // its open and close frame the whole run, so both go to the journal.
+    // its open and close frame the whole run, so both go to the log.
     [Event(EvtWindowOpened,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The setup window opened")]
     public void WindowOpened()
     {
@@ -23,7 +23,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtWindowClosing,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The setup window is closing")]
     public void WindowClosing()
     {
@@ -61,7 +61,7 @@ public sealed partial class DeckleSetupSource
     // running-process gate that follows still decides whether the payload is
     // replaced, but the hand-off did not happen as designed: the old app was
     // still alive after the wait, the likely cause of a blocked update that
-    // follows. A degradation, so a Warning, which the journal keeps.
+    // follows. A degradation, so a Warning, which the log keeps.
     [Event(EvtPredecessorWaitTimedOut,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -87,7 +87,7 @@ public sealed partial class DeckleSetupSource
             WriteEvent(EvtPredecessorWaitFailed, pid, ex_type, hresult);
     }
 
-    // The pid ties this process's journal to the child's: install-continue and
+    // The pid ties this process's log to the child's: install-continue and
     // update-apply each start a new Deckle that writes its own run.
     [Event(EvtChildProcessLaunchedDetail,
            Level = EventLevel.Verbose,

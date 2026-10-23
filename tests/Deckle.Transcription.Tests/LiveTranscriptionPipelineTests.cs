@@ -13,7 +13,7 @@ using Xunit;
 
 namespace Deckle.Transcription.Tests;
 
-// In the observability collection because the take-journal tests listen to the
+// In the observability collection because the take-log tests listen to the
 // provider process-wide: no other suite may write Whisp events meanwhile.
 [Collection(OperationalObservabilityCollection.Name)]
 [Trait("Category", "integration")]
@@ -481,7 +481,7 @@ public sealed class LiveTranscriptionPipelineTests
 
     [Fact]
     [Trait("Category", "observability")]
-    public async Task ADeliveredTakeWritesOneJournalStartAndOneEndSharingTheirWorkId()
+    public async Task ADeliveredTakeWritesOneMilestoneStartAndOneEndSharingTheirWorkId()
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         using var listener = new TestEventListener("Deckle-Whisp");
@@ -508,7 +508,7 @@ public sealed class LiveTranscriptionPipelineTests
 
     [Fact]
     [Trait("Category", "observability")]
-    public async Task ATakeWithoutSpeechEndsInTheJournalAsNoneBecauseOfNoText()
+    public async Task ATakeWithoutSpeechEndsInTheLogAsNoneBecauseOfNoText()
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         using var listener = new TestEventListener("Deckle-Whisp");
@@ -546,7 +546,7 @@ public sealed class LiveTranscriptionPipelineTests
 
     [Fact]
     [Trait("Category", "observability")]
-    public void TheTakeAndFileBatchEventsTravelInTheJournal()
+    public void TheTakeAndFileBatchEventsTravelInTheLog()
     {
         string[] lifecycle =
         [
@@ -557,13 +557,13 @@ public sealed class LiveTranscriptionPipelineTests
             nameof(DeckleWhispSource.FileTranscriptionBatchAborted),
         ];
 
-        string[] outsideTheJournal = ProviderManifest.EventsOf(typeof(DeckleWhispSource))
+        string[] outsideTheLog = ProviderManifest.EventsOf(typeof(DeckleWhispSource))
             .Where(declared => lifecycle.Contains(declared.Name)
-                && !ObservationTags.IsJournal(declared.Tags))
+                && !ObservationTags.IsMilestone(declared.Tags))
             .Select(declared => declared.Name)
             .ToArray();
 
-        Assert.Empty(outsideTheJournal);
+        Assert.Empty(outsideTheLog);
     }
 
     private static object? PayloadOf(EventWrittenEventArgs e, string name) =>

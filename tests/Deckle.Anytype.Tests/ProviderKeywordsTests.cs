@@ -7,7 +7,7 @@ namespace Deckle.Anytype.Tests;
 
 // A person filtering the log on the cross-module Lifecycle keyword must find the
 // backend's supervision lines whichever of them it is, not only the milestones
-// that travel in the journal.
+// that travel in the log.
 [Trait("Category", "observability")]
 public sealed class ProviderKeywordsTests
 {

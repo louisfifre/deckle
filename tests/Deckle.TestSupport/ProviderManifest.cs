@@ -9,11 +9,11 @@ namespace Deckle.TestSupport;
 // Reads what a provider declares (event names, levels, tags) straight from its
 // [Event] attributes, so a test can assert on the shape of the provider without
 // raising any event. It exists for rules that hold across a whole provider, such
-// as "every closing event travels in the journal", where listing the events one
+// as "every closing event travels in the log", where listing the events one
 // by one in a test would let a new event slip through unchecked.
 public static class ProviderManifest
 {
-    // The suffix every recovery closer carries; the journal doctrine requires
+    // The suffix every recovery closer carries; the log doctrine requires
     // each of them, since the incident opener (a Warning or an Error) already
     // travels there and an unclosed incident reads as one that never ended.
     public const string RecoveredSuffix = "Recovered";
@@ -49,11 +49,11 @@ public static class ProviderManifest
         return names;
     }
 
-    // Names of the closing events that do not carry the Journal tag: every event
+    // Names of the closing events that do not carry the Milestone tag: every event
     // named *Recovered, plus the provider's other closers listed by name. A
     // listed name that matches no event is reported too, so the list cannot
     // outlive a renamed event.
-    public static IReadOnlyList<string> ClosersOutsideTheJournal(
+    public static IReadOnlyList<string> ClosersOutsideTheLog(
         Type sourceType, params string[] otherClosers)
     {
         IReadOnlyList<DeclaredEvent> events = EventsOf(sourceType);
@@ -63,7 +63,7 @@ public static class ProviderManifest
         {
             bool isCloser = declared.Name.EndsWith(RecoveredSuffix, StringComparison.Ordinal)
                 || otherClosers.Contains(declared.Name);
-            if (isCloser && !ObservationTags.IsJournal(declared.Tags))
+            if (isCloser && !ObservationTags.IsMilestone(declared.Tags))
                 missing.Add(declared.Name);
         }
 

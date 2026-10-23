@@ -8,14 +8,14 @@ public sealed partial class DeckleAppSource
     [Event(EvtShutdownRequested,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Shutdown requested | work_id={0}")]
     public void ShutdownRequested(string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtShutdownRequested, work_id);
     }
 
-    // One line per failing step, cause included: the journal says which
+    // One line per failing step, cause included: the log says which
     // teardown broke, not only that one did.
     [Event(EvtShutdownStepFailed,
            Level = EventLevel.Warning,
@@ -29,7 +29,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtRestartRequested,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Restart requested")]
     public void RestartRequested()
     {
@@ -39,7 +39,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtRestartFromTrayRequested,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Restart from tray requested")]
     public void RestartFromTrayRequested()
     {
@@ -58,7 +58,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtPostBuildRestartRequested,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Post-build self-restart requested")]
     public void PostBuildRestartRequested()
     {
@@ -75,13 +75,13 @@ public sealed partial class DeckleAppSource
     }
 
     // The process exits right after this line, so the user is left with no
-    // Deckle: the journal must say why. Every restart path ends here when its
+    // Deckle: the log must say why. Every restart path ends here when its
     // successor cannot start (settings restart, tray restart, post-build), not
     // only the post-build one the event was first written for.
     [Event(EvtRelaunchFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Cannot relaunch Deckle | {0}: {1}")]
     public void RelaunchFailed(string ex_type, string ex_message)
     {
@@ -91,7 +91,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtRestartSpawnSkipped,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Cannot relaunch Deckle | reason={0}")]
     public void RestartSpawnSkipped(string reason)
     {
@@ -103,7 +103,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtRestartSpawned,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Deckle started its successor | child_pid={0}")]
     public void RestartSpawned(int child_pid)
     {
@@ -122,7 +122,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtResidentMutexAbandoned,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The previous run ended uncleanly | reason=resident_mutex_abandoned")]
     public void ResidentMutexAbandoned()
     {
@@ -155,14 +155,38 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtLegacySettingsMigrationFailed, ex_type, ex_message);
     }
 
-    // A second instance is turned away before it may touch the journal, so it
+    // The log and the trace took their current names at this start, on an
+    // install that still had the pre-v0.68.1 ones (journal.jsonl, app.jsonl).
+    // Said once, so a reader of an older log knows where its history went.
+    [Event(EvtLegacyLogFilesRenamed,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Log files from an earlier version took their current names")]
+    public void LegacyLogFilesRenamed(int files)
+    {
+        if (IsEnabled()) WriteEvent(EvtLegacyLogFilesRenamed, files);
+    }
+
+    // A legacy log file could not take its current name. The new file starts
+    // empty beside it and the older history stays under the old name.
+    [Event(EvtLegacyLogFileRenameFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A log file from an earlier version kept its old name, so its history stays apart\nfile={0} | renamed={1} | ex_type={2} | ex_message={3}")]
+    public void LegacyLogFileRenameFailed(string file, int renamed, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtLegacyLogFileRenameFailed, file, renamed, ex_type, ex_message);
+    }
+
+    // A second instance is turned away before it may touch the log, so it
     // leaves its fact in second-instance.txt (App.Lifetime.cs) and the resident
     // run copies it here at its next start. noted_at is the time the second
     // instance wrote it, not the time of this line; fact names its pid.
     [Event(EvtSecondInstanceRejected,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "A second Deckle was turned away | noted_at={0} | fact={1}")]
     public void SecondInstanceRejected(string noted_at, string fact)
     {
@@ -174,7 +198,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtSecondInstancesRejected,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Second Deckle instances were turned away | count={0} | first_at={1} | last_at={2}")]
     public void SecondInstancesRejected(int count, string first_at, string last_at)
     {

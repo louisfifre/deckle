@@ -16,7 +16,7 @@ namespace Deckle.Core;
 //                     present only while a take runs or after a crash
 //   • telemetry/    — JSONL files (latency, microphone), raw-capture
 //                     subfolders, and per-profile corpus
-//   • diagnostics/  — local logs (setup, errors, app.jsonl); never transmitted
+//   • diagnostics/  — local logs (setup, errors, trace.jsonl); never transmitted
 //   • diagnostics/dumps/ — minidumps of fatal runtime errors, newest few kept
 //   • models/       — Whisper ggml-*.bin and the other downloaded models
 //   • native/       — libwhisper.dll, ggml*.dll

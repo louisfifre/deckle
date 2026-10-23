@@ -12,7 +12,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtAmbientMasterForcedOff,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Ambient master toggle forced OFF at boot | reason={0}")]
     public void AmbientMasterForcedOff(string reason)
     {

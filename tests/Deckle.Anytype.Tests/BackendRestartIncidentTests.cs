@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Deckle.Anytype.Tests;
 
-// A backend that will not come back is one incident in the journal: the death that
+// A backend that will not come back is one incident in the log: the death that
 // opens it, one mark when the streak passes the threshold, the recovery that closes
 // it. Each rung of the restart ladder stays Verbose, whatever number of them it takes.
 [Trait("Category", "observability")]
@@ -17,17 +17,17 @@ public sealed class BackendRestartIncidentTests
     private static string Field(EventWrittenEventArgs e, string name)
         => Convert.ToString(e.Payload![e.PayloadNames!.IndexOf(name)])!;
 
-    // What the always-on journal keeps: every Warning and Error, and the events
-    // that carry the Journal tag.
-    private static bool TravelsInTheJournal(EventWrittenEventArgs e)
-        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Journal) != 0;
+    // What the always-on log keeps: every Warning and Error, and the events
+    // that carry the Milestone tag.
+    private static bool TravelsInTheLog(EventWrittenEventArgs e)
+        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Milestone) != 0;
 
     private static BackendReconciliationResult Rejected(string id)
         => new(BackendStartOutcome.StartRejected, null, id, "start-rejected");
 
     [Fact]
     [Trait("Category", "regression")]
-    public async Task ABackendThatRejectsTenRestartsLeavesOneIncidentInTheJournal()
+    public async Task ABackendThatRejectsTenRestartsLeavesOneIncidentInTheLog()
     {
         using var listener = new TestEventListener("Deckle-Anytype");
         string executable = Path.GetFullPath("anytype.exe");
@@ -50,10 +50,10 @@ public sealed class BackendRestartIncidentTests
                 () => listener.Events.Any(e => e.EventId == DeckleAnytypeSource.EvtBackendRecovered),
                 TimeSpan.FromSeconds(10)));
 
-        var journal = listener.Events.Where(TravelsInTheJournal).ToArray();
-        var stopped = Assert.Single(journal, e => e.EventId == DeckleAnytypeSource.EvtBackendStopped);
-        var failing = Assert.Single(journal, e => e.EventId == DeckleAnytypeSource.EvtBackendRestartsFailing);
-        var recovered = Assert.Single(journal, e => e.EventId == DeckleAnytypeSource.EvtBackendRecovered);
+        var logged = listener.Events.Where(TravelsInTheLog).ToArray();
+        var stopped = Assert.Single(logged, e => e.EventId == DeckleAnytypeSource.EvtBackendStopped);
+        var failing = Assert.Single(logged, e => e.EventId == DeckleAnytypeSource.EvtBackendRestartsFailing);
+        var recovered = Assert.Single(logged, e => e.EventId == DeckleAnytypeSource.EvtBackendRecovered);
 
         // One id runs from the death to the recovery.
         string incident = Field(stopped, "work_id");
@@ -62,8 +62,8 @@ public sealed class BackendRestartIncidentTests
         Assert.Equal(incident, Field(recovered, "work_id"));
         Assert.Equal("11", Field(recovered, "attempts"));
 
-        // Nothing else of the ladder travels: ten rungs are not ten journal lines.
-        Assert.Equal(3, journal.Length);
+        // Nothing else of the ladder travels: ten rungs are not ten log lines.
+        Assert.Equal(3, logged.Length);
     }
 
     [Fact]
@@ -96,19 +96,19 @@ public sealed class BackendRestartIncidentTests
 
     [Fact]
     [Trait("Category", "regression")]
-    public async Task ARestartAttemptWhoseServeDiesAgainWritesNoJournalLine()
+    public async Task ARestartAttemptWhoseServeDiesAgainWritesNoLogLine()
     {
         using var listener = new TestEventListener("Deckle-Anytype");
 
         await ReconcileADyingServe(BackendTriggers.ProcessExit);
 
-        Assert.DoesNotContain(listener.Events, TravelsInTheJournal);
+        Assert.DoesNotContain(listener.Events, TravelsInTheLog);
         Assert.Single(listener.Events, e => e.EventId == DeckleAnytypeSource.EvtBackendRestartAttemptStarting);
         Assert.Single(listener.Events, e => e.EventId == DeckleAnytypeSource.EvtBackendRestartAttemptStopped);
     }
 
     [Fact]
-    public async Task AFirstStartWhoseServeDiesPairsItsStartAndItsStopInTheJournal()
+    public async Task AFirstStartWhoseServeDiesPairsItsStartAndItsStopInTheLog()
     {
         using var listener = new TestEventListener("Deckle-Anytype");
 
@@ -123,7 +123,7 @@ public sealed class BackendRestartIncidentTests
         Assert.All(
             listener.Events.Where(e => e.EventId is DeckleAnytypeSource.EvtBackendStarting
                 or DeckleAnytypeSource.EvtBackendStopped),
-            e => Assert.True(TravelsInTheJournal(e)));
+            e => Assert.True(TravelsInTheLog(e)));
     }
 
     private static async Task ReconcileADyingServe(string trigger)

@@ -20,7 +20,7 @@ public sealed partial class ScreenCaptureService
 
         // The incidents this loop can leave open: generic AcquireNextFrame
         // failures, a duplication that keeps being lost, a recreate that keeps
-        // failing. Each opens one Warning, ends on one journal line, and the
+        // failing. Each opens one Warning, ends on one log line, and the
         // finally below closes whatever the exit finds still open.
         var incidents = new CaptureIncidents(AcquireFailureIncidentThreshold, Stopwatch.Frequency);
 

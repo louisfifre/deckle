@@ -26,8 +26,8 @@ public sealed class McpObservabilityTests
     private static string Field(EventWrittenEventArgs e, string name)
         => Convert.ToString(e.Payload![e.PayloadNames!.IndexOf(name)])!;
 
-    private static bool TravelsInTheJournal(EventWrittenEventArgs e)
-        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Journal) != 0;
+    private static bool TravelsInTheLog(EventWrittenEventArgs e)
+        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Milestone) != 0;
 
     private static AnytypeApiClient Api() => new(new AnytypeCredentials(
         "http://127.0.0.1:1", "2025-11-08", "dummy-key", "dummy-space"));
@@ -128,7 +128,7 @@ public sealed class McpObservabilityTests
 
     [Fact]
     [Trait("Category", "regression")]
-    public async Task AFailedToolCallReachesTheJournalWithItsTypeStatusAndCodeAndNeverItsMessage()
+    public async Task AFailedToolCallReachesTheLogWithItsTypeStatusAndCodeAndNeverItsMessage()
     {
         using var listener = new TestEventListener(Provider);
         await using var probe = ProbeHost.Start(Api());
@@ -153,13 +153,13 @@ public sealed class McpObservabilityTests
         Assert.Equal(nameof(InvalidOperationException), Field(plain, "ex_type"));
         Assert.Equal("0", Field(plain, "status_code"));
         Assert.Equal("none", Field(plain, "error_code"));
-        Assert.All(failures, e => Assert.True(TravelsInTheJournal(e)));
+        Assert.All(failures, e => Assert.True(TravelsInTheLog(e)));
 
         EventWrittenEventArgs fine = Assert.Single(
             listener.Events,
             e => e.EventId == DeckleAnytypeMcpSource.EvtToolCallCompleted && Field(e, "tool") == "fine");
         Assert.Equal("completed", Field(fine, "outcome"));
-        Assert.False(TravelsInTheJournal(fine));
+        Assert.False(TravelsInTheLog(fine));
 
         Assert.DoesNotContain(
             listener.Events,
@@ -192,7 +192,7 @@ public sealed class McpObservabilityTests
 
     [Fact]
     [Trait("Category", "regression")]
-    public void ClientsWhoseTokenIsMissingFromTheVaultAreAWarningInTheJournal()
+    public void ClientsWhoseTokenIsMissingFromTheVaultAreAWarningInTheLog()
     {
         using var listener = new TestEventListener(Provider);
         // No EnsureMinted: every client is missing, so no environment variable is
@@ -202,7 +202,7 @@ public sealed class McpObservabilityTests
         tokens.MaterializeEnvironmentVariables();
 
         EventWrittenEventArgs missing = Assert.Single(
-            listener.Events.Where(TravelsInTheJournal),
+            listener.Events.Where(TravelsInTheLog),
             e => e.EventId == DeckleAnytypeMcpSource.EvtTokenVariablesMissing);
         Assert.Equal(EventLevel.Warning, missing.Level);
         Assert.Equal(McpClients.All.Count().ToString(), Field(missing, "missing"));
@@ -221,7 +221,7 @@ public sealed class McpObservabilityTests
 
         Assert.False(started);
         EventWrittenEventArgs refused = Assert.Single(
-            listener.Events.Where(TravelsInTheJournal),
+            listener.Events.Where(TravelsInTheLog),
             e => e.EventId == DeckleAnytypeMcpSource.EvtHostStartRefused);
         Assert.Equal("disposed", Field(refused, "reason"));
     }
@@ -243,7 +243,7 @@ public sealed class McpObservabilityTests
 
     [Fact]
     [Trait("Category", "regression")]
-    public void AFrameworkProblemThatKeepsHappeningIsCountedInTheJournal()
+    public void AFrameworkProblemThatKeepsHappeningIsCountedInTheLog()
     {
         using var listener = new TestEventListener(Provider);
         var bridge = new McpHostLogBridge();
@@ -252,16 +252,16 @@ public sealed class McpObservabilityTests
         Report(logger, "ConnectionReset", 25);
         bridge.Dispose();
 
-        EventWrittenEventArgs[] journal = listener.Events.Where(TravelsInTheJournal).ToArray();
+        EventWrittenEventArgs[] logged = listener.Events.Where(TravelsInTheLog).ToArray();
         // One Warning announces it; the count follows at 10, then at 25 when the host closes.
-        Assert.Single(journal, e => e.EventId == DeckleAnytypeMcpSource.EvtHostInternalLog);
+        Assert.Single(logged, e => e.EventId == DeckleAnytypeMcpSource.EvtHostInternalLog);
         Assert.Equal(
             ["10", "25"],
-            journal.Where(e => e.EventId == DeckleAnytypeMcpSource.EvtHostInternalLogCounted)
+            logged.Where(e => e.EventId == DeckleAnytypeMcpSource.EvtHostInternalLogCounted)
                 .Select(e => Field(e, "occurrences")));
         Assert.Equal(
             nameof(InvalidOperationException),
-            Field(journal.Last(e => e.EventId == DeckleAnytypeMcpSource.EvtHostInternalLogCounted), "ex_type"));
+            Field(logged.Last(e => e.EventId == DeckleAnytypeMcpSource.EvtHostInternalLogCounted), "ex_type"));
         Assert.DoesNotContain(
             listener.Events,
             e => e.Payload!.Any(p => Convert.ToString(p)?.Contains("Alice") == true));

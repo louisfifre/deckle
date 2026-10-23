@@ -12,7 +12,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtAnytypeRuntimeEnded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Anytype runtime ended | outcome={0} | reason={1} | {2}: {3}")]
     public void AnytypeRuntimeEnded(string outcome, string reason, string ex_type, string ex_message)
     {
@@ -26,7 +26,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtAnytypeRuntimeFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Anytype runtime failed | reason={0} | {1}: {2}")]
     public void AnytypeRuntimeFailed(string reason, string ex_type, string ex_message)
     {

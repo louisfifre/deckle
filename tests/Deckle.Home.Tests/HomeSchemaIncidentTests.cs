@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Deckle.Home.Tests;
 
-// A Home space that does not conform to the schema blocks every gesture. The journal
+// A Home space that does not conform to the schema blocks every gesture. The log
 // tells it once, with the reason and a count, never the message that lists what the
 // space holds, and tells when the space is repaired.
 [Trait("Category", "observability")]
@@ -29,8 +29,8 @@ public sealed class HomeSchemaIncidentTests
     private static string Field(EventWrittenEventArgs e, string name)
         => Convert.ToString(e.Payload![e.PayloadNames!.IndexOf(name)])!;
 
-    private static bool TravelsInTheJournal(EventWrittenEventArgs e)
-        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Journal) != 0;
+    private static bool TravelsInTheLog(EventWrittenEventArgs e)
+        => e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Milestone) != 0;
 
     [Fact]
     [Trait("Category", "regression")]
@@ -67,18 +67,18 @@ public sealed class HomeSchemaIncidentTests
         server.RestoreSchema();
         await PastTheSchema(gestures);
 
-        EventWrittenEventArgs[] journal = listener.Events.Where(TravelsInTheJournal).ToArray();
+        EventWrittenEventArgs[] logged = listener.Events.Where(TravelsInTheLog).ToArray();
         EventWrittenEventArgs opened = Assert.Single(
-            journal, e => e.EventId == DeckleHomeSource.EvtSchemaUnavailable);
+            logged, e => e.EventId == DeckleHomeSource.EvtSchemaUnavailable);
         EventWrittenEventArgs ready = Assert.Single(
-            journal, e => e.EventId == DeckleHomeSource.EvtSchemaReady);
+            logged, e => e.EventId == DeckleHomeSource.EvtSchemaReady);
         Assert.NotEmpty(Field(opened, "work_id"));
         Assert.Equal(Field(opened, "work_id"), Field(ready, "work_id"));
         Assert.Equal("2", Field(ready, "after_failures"));
     }
 
     [Fact]
-    public async Task AFirstReadThatSucceedsIsInTheJournalWithoutAnIncident()
+    public async Task AFirstReadThatSucceedsIsInTheLogWithoutAnIncident()
     {
         using var listener = new TestEventListener("Deckle-Home");
         using var server = new FakeHomeAnytypeServer();
@@ -86,7 +86,7 @@ public sealed class HomeSchemaIncidentTests
         await PastTheSchema(Gestures(server));
 
         EventWrittenEventArgs ready = Assert.Single(
-            listener.Events.Where(TravelsInTheJournal), e => e.EventId == DeckleHomeSource.EvtSchemaReady);
+            listener.Events.Where(TravelsInTheLog), e => e.EventId == DeckleHomeSource.EvtSchemaReady);
         Assert.Equal("", Field(ready, "work_id"));
         Assert.Equal("0", Field(ready, "after_failures"));
     }

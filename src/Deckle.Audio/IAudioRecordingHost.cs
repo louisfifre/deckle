@@ -31,7 +31,7 @@ public interface IAudioRecordingHost
     // running for hours holds no more memory than one buffer of it, and the
     // result's Pcm is empty. The low-audio warning is a dictation diagnostic
     // and stays off as well: a monitor left running in a quiet room would
-    // write it to the journal as a broken microphone. Defaulted so a
+    // write it to the log as a broken microphone. Defaulted so a
     // dictation host needs no change.
     bool RetainsAudio => true;
 }

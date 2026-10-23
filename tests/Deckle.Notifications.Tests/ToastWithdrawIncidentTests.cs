@@ -8,7 +8,7 @@ using Xunit;
 namespace Deckle.Notifications.Tests;
 
 // A toast that cannot be withdrawn used to vanish without a trace. These tests
-// pin the journal's view of it: the first failure is one Warning with its cause,
+// pin the log's view of it: the first failure is one Warning with its cause,
 // the failures that follow add nothing, and the first success after them is
 // one recovery. Same collection as the other classes that count events on the
 // shared Deckle-Notifications provider.
@@ -48,7 +48,7 @@ public class ToastWithdrawIncidentTests
         EventWrittenEventArgs recovered = Assert.Single(
             listener.Events, e => e.EventId == DeckleNotificationsSource.EvtToastWithdrawRecovered);
         Assert.Equal(EventLevel.Informational, recovered.Level);
-        Assert.Equal(ObservationTags.Journal, recovered.Tags & ObservationTags.Journal);
+        Assert.Equal(ObservationTags.Milestone, recovered.Tags & ObservationTags.Milestone);
     }
 
     [Fact]

@@ -259,7 +259,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtProcessTraceStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Process start events are on")]
     public void ProcessTraceStarted()
     {
@@ -270,7 +270,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtProcessTraceStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Process start events are off")]
     public void ProcessTraceStopped()
     {
@@ -366,7 +366,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtExitWatchCallbackRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Process exits are handled again")]
     public void ExitWatchCallbackRecovered()
     {
@@ -412,7 +412,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtRuntimeStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Watching for listed apps | enabled_entries={0} | elevated={1} | foreground_monitor={2}")]
     public void RuntimeStarted(int enabled_entries, bool elevated, bool foreground_monitor)
     {
@@ -422,7 +422,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtRuntimeStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Stopped watching for listed apps")]
     public void RuntimeStopped()
     {
@@ -440,13 +440,13 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     }
 
     // A session is lasting work: SessionStarted opens it and SessionEnded
-    // closes it, both in the journal. entry_id is the registry entry's opaque
+    // closes it, both in the log. entry_id is the registry entry's opaque
     // identifier and pairs them, since an entry has one session at a time; the
     // app's name and process stay in the Verbose details.
     [Event(EvtSessionStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "An app session started | entry_id={0} | pid={1}")]
     public void SessionStarted(string entry_id, int pid)
     {
@@ -467,7 +467,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtSessionEnded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "An app session ended | entry_id={0} | reason={1}")]
     public void SessionEnded(string entry_id, string reason)
     {
@@ -533,7 +533,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtReconcileRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Detection caught up with the app list again")]
     public void ReconcileRecovered()
     {
@@ -546,7 +546,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtProfileApplied,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "App rules applied | entry_id={0} | changes={1}")]
     public void ProfileApplied(string entry_id, int changes)
     {
@@ -569,7 +569,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtProfileRestored,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "App rules restored | entry_id={0} | restored={1}")]
     public void ProfileRestored(string entry_id, int restored)
     {
@@ -631,7 +631,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtDisplayQueryRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The monitor list can be read again")]
     public void DisplayQueryRecovered()
     {
@@ -708,7 +708,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtForegroundDeliveryRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Foreground changes are delivered again")]
     public void ForegroundDeliveryRecovered()
     {

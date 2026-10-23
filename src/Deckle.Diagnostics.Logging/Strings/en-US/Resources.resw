@@ -121,7 +121,7 @@
     <value>Application log</value>
   </data>
   <data name="GeneralAppLogCard.Description" xml:space="preserve">
-    <value>Every log line goes to diagnostics\app.jsonl, rotated every 8,000 lines into diagnostics\archive.</value>
+    <value>Every log line goes to diagnostics\trace.jsonl, rotated every 8,000 lines into diagnostics\archive.</value>
   </data>
   <data name="TelemetryMouseWheelCard.Header" xml:space="preserve">
     <value>Record wheel events</value>
@@ -157,7 +157,7 @@
     <value>The setup log, the error log and the application log. Open it when you report a problem.</value>
   </data>
 
-  <!-- Shared log filter bar. The live Log Window and the app.jsonl settings
+  <!-- Shared log filter bar. The live Log Window and the trace.jsonl settings
        instantiate the same control with independent filter selections. -->
   <data name="LogFilterBarSeverityButton.Content" xml:space="preserve">
     <value>Severity</value>

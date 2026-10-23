@@ -33,7 +33,7 @@ public sealed class JsonlLineSerializerTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public void SelfDescribingMarksAJournalMilestoneAndLeavesOtherRowsUntouched(bool journal)
+    public void SelfDescribingMarksAMilestoneAndLeavesOtherRowsUntouched(bool milestone)
     {
         var entry = new EventEntry(
             timestamp:        DateTimeOffset.UtcNow,
@@ -44,12 +44,12 @@ public sealed class JsonlLineSerializerTests
             kind:             ObservationKind.Operational,
             formattedMessage: "sample",
             payload:          new Dictionary<string, object?>(),
-            journal:          journal);
+            milestone:          milestone);
 
         ReadOnlyMemory<byte> line = new JsonlLineSerializer().Serialize(entry, "log", JsonlSchema.SelfDescribing);
         JsonElement root = JsonDocument.Parse(Encoding.UTF8.GetString(line.Span)).RootElement;
 
-        Assert.Equal(journal, root.TryGetProperty("journal", out JsonElement mark) && mark.GetBoolean());
+        Assert.Equal(milestone, root.TryGetProperty("milestone", out JsonElement mark) && mark.GetBoolean());
     }
 
     [Fact]

@@ -20,12 +20,7 @@ namespace Deckle.App;
 // a Flush barrier before termination.
 internal static class AppDiagnosticsBootstrap
 {
-    // The journal file is the one that travels: a reader on another machine
-    // opens it first, so it holds every Warning and Error plus the tagged run
-    // milestones, whatever the verbosity controls say. It is small by design.
-    private const string JournalFileName = "journal.jsonl";
-
-    // Written when a flush could not drain at exit or at a crash: the journal
+    // Written when a flush could not drain at exit or at a crash: the log
     // itself may be the sink that failed, so the fact lives in its own file.
     private const string FlushFailureFileName = "flush-failed.txt";
 
@@ -34,8 +29,11 @@ internal static class AppDiagnosticsBootstrap
     private static string? _diagnosticsDirectory;
     private static bool _hudAttached;
 
+    // What InitializeLocalSinks found of the legacy log file names.
+    public static LegacyFileRename? LegacyFileRename { get; private set; }
+
     // The crash detail and stack events are Verbose, so a level predicate alone
-    // would split a crash across files; the journal allowlists them by name.
+    // would split a crash across files; the log allowlists them by name.
     // The bare name holds while no other Deckle-* provider declares these names;
     // scope the check by provider if one ever does.
     private static readonly HashSet<string> _crashCompanions = new()
@@ -56,6 +54,12 @@ internal static class AppDiagnosticsBootstrap
         if (_dispatch is not null) return;
 
         _diagnosticsDirectory = diagnosticsDirectory;
+
+        // Before any sink opens its file: the log and the trace still carry
+        // their pre-v0.68.1 names on an older install. No sink exists yet to say
+        // how it went, so the host reports the result after AppStarting.
+        LegacyFileRename = DiagnosticsFiles.RenameLegacyFiles(diagnosticsDirectory);
+
         var dispatch = Dispatch;
 
         // setup.jsonl keeps every Deckle-Setup event, Verbose mirrors included.
@@ -75,14 +79,14 @@ internal static class AppDiagnosticsBootstrap
         // file needs no setting. A milestone's cause travels in its own payload
         // (deckle-logging): a Verbose mirror gated off never reaches here.
         dispatch.AddSink(new JsonlSink(
-            filePath:  Path.Combine(diagnosticsDirectory, JournalFileName),
-            kindLabel: "journal",
+            filePath:  Path.Combine(diagnosticsDirectory, DiagnosticsFiles.Log),
+            kindLabel: "log",
             predicate: static e => e.Kind == ObservationKind.Operational
                 && (e.Level <= EventLevel.Warning
-                || e.Journal
+                || e.Milestone
                 || _crashCompanions.Contains(e.EventName)),
             schema:    JsonlSchema.SelfDescribing,
-            // Five generations: the journal is sparse, so this spans weeks of
+            // Five generations: the log is sparse, so this spans weeks of
             // runs, and an incident older than that has lost its context anyway.
             rotation:  new JsonlRotationPolicy(maxLines: 4000, maxArchives: 5)));
     }

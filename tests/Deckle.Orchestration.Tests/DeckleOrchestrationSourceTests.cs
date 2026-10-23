@@ -53,7 +53,7 @@ public sealed class DeckleOrchestrationSourceTests
             {
                 Assert.Equal(DeckleOrchestrationSource.EvtSessionStarted, e.EventId);
                 Assert.Equal(EventLevel.Informational, e.Level);
-                Assert.True(TravelsInTheJournal(e));
+                Assert.True(TravelsInTheLog(e));
                 Assert.Equal(entry.Id, e.Payload![0]);
                 Assert.Equal(4242, e.Payload[1]);
             },
@@ -81,7 +81,7 @@ public sealed class DeckleOrchestrationSourceTests
             {
                 Assert.Equal(DeckleOrchestrationSource.EvtSessionEnded, e.EventId);
                 Assert.Equal(EventLevel.Informational, e.Level);
-                Assert.True(TravelsInTheJournal(e));
+                Assert.True(TravelsInTheLog(e));
                 Assert.Equal(entry.Id, e.Payload![0]);
                 Assert.Equal("entry_disabled", e.Payload[1]);
             },
@@ -108,7 +108,7 @@ public sealed class DeckleOrchestrationSourceTests
             Only(listener, DeckleOrchestrationSource.EvtProcessTraceUnavailable, DeckleOrchestrationSource.EvtProcessTraceUnavailableDetail),
             e =>
             {
-                // The Warning carries its own cause: a journal without Verbose
+                // The Warning carries its own cause: a log without Verbose
                 // must still say why start events are missing.
                 Assert.Equal(DeckleOrchestrationSource.EvtProcessTraceUnavailable, e.EventId);
                 Assert.Equal(EventLevel.Warning, e.Level);
@@ -163,7 +163,7 @@ public sealed class DeckleOrchestrationSourceTests
             {
                 Assert.Equal(DeckleOrchestrationSource.EvtProfileApplied, e.EventId);
                 Assert.Equal(EventLevel.Informational, e.Level);
-                Assert.True(TravelsInTheJournal(e));
+                Assert.True(TravelsInTheLog(e));
                 Assert.Equal(entry.Id, e.Payload![0]);
                 Assert.Equal(1, e.Payload[1]);
             },
@@ -225,8 +225,8 @@ public sealed class DeckleOrchestrationSourceTests
                 && Equals(e.Payload?[0], entry.Id))
             .ToList();
 
-    private static bool TravelsInTheJournal(EventWrittenEventArgs e) =>
-        e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Journal) != 0;
+    private static bool TravelsInTheLog(EventWrittenEventArgs e) =>
+        e.Level <= EventLevel.Warning || (e.Tags & ObservationTags.Milestone) != 0;
 
     // Other test classes of this project run in parallel and emit on the same
     // provider; each test asserts only on the events it is about.

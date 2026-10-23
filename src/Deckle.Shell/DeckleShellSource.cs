@@ -113,7 +113,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtTrayIconRestored,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Taskbar recreated, tray icon added again")]
     public void TrayIconRestored()
     {
@@ -380,7 +380,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtHotkeySubclassFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Could not install the hotkey window hook — no global hotkey will work | win32_error={0}")]
     public void HotkeySubclassFailed(int win32_error)
     {

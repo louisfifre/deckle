@@ -55,13 +55,13 @@ public sealed partial class DeckleLlmSource
     }
 
     // The start and the end of one transcript rewrite: lasting work, so both
-    // are in the journal and share a work_id. A rewrite that fails or times out
+    // are in the log and share a work_id. A rewrite that fails or times out
     // ends with RewriteUnavailable or RewriteTimeout instead, which carry the
-    // same work_id (and are Warnings, so the journal keeps them anyway).
+    // same work_id (and are Warnings, so the log keeps them anyway).
     [Event(EvtTranscriptRewriteStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Rewriting the transcript | provider={0} | engine={1} | model={2} | work_id={3}")]
     public void TranscriptRewriteStarted(string provider, string engine, string model, string work_id)
     {
@@ -71,7 +71,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtTranscriptRewriteCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Transcript rewrite complete | provider={0} | elapsed_ms={1} | work_id={2}")]
     public void TranscriptRewriteCompleted(string provider, long elapsed_ms, string work_id)
     {
@@ -79,7 +79,7 @@ public sealed partial class DeckleLlmSource
     }
 
     // The three lines below belong to the interactive rewrites (paragraph,
-    // sentence): detail, not journal. They fire on every pause in typing and
+    // sentence): detail, not log. They fire on every pause in typing and
     // none of them is lasting work worth a pair in the file.
     [Event(EvtRewriteStarted,
            Level = EventLevel.Verbose,
@@ -194,7 +194,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The rewriter answers again | caller={0} | provider={1} | failures={2}")]
     public void RewriteRecovered(string caller, string provider, int failures)
     {

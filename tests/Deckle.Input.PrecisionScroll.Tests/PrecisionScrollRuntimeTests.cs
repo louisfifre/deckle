@@ -63,7 +63,7 @@ public sealed class PrecisionScrollRuntimeTests
         EventWrittenEventArgs fellBack = Assert.Single(
             listener.Events, e => e.EventId == DecklePrecisionScrollSource.EvtFellBackToNativeWheel);
         Assert.Equal(EventLevel.Warning, fellBack.Level);
-        Assert.Equal(ObservationTags.Journal, fellBack.Tags & ObservationTags.Journal);
+        Assert.Equal(ObservationTags.Milestone, fellBack.Tags & ObservationTags.Milestone);
         Assert.Equal("queue_full", fellBack.Payload![0]);
         Assert.True(h.Engines[1].Disposed);
         Assert.Equal(h.HostStarts, h.HostStops);
@@ -124,7 +124,7 @@ public sealed class PrecisionScrollRuntimeTests
         EventWrittenEventArgs recovered = Assert.Single(
             listener.Events, e => e.EventId == DecklePrecisionScrollSource.EvtFallbackRecovered);
         Assert.Equal(EventLevel.Informational, recovered.Level);
-        Assert.Equal(ObservationTags.Journal, recovered.Tags & ObservationTags.Journal);
+        Assert.Equal(ObservationTags.Milestone, recovered.Tags & ObservationTags.Milestone);
         Assert.Equal("injection_failed", recovered.Payload![0]);
 
         // Switched back on: running again, and a new stop restarts again.
@@ -188,7 +188,7 @@ public sealed class PrecisionScrollRuntimeTests
     }
 
     [Fact]
-    public void TheJournalKeepsTheStayOffIncidentAndItsRecoveryAndNotTheRestartDetail()
+    public void TheLogKeepsTheStayOffIncidentAndItsRecoveryAndNotTheRestartDetail()
     {
         var declared = ProviderManifest.EventsOf(typeof(DecklePrecisionScrollSource));
 
@@ -197,10 +197,10 @@ public sealed class PrecisionScrollRuntimeTests
         var detail = declared.Single(e => e.Id == DecklePrecisionScrollSource.EvtRestartScheduledDetail);
 
         Assert.Equal(EventLevel.Warning, fellBack.Level);
-        Assert.Equal(ObservationTags.Journal, fellBack.Tags & ObservationTags.Journal);
-        Assert.Equal(ObservationTags.Journal, recovered.Tags & ObservationTags.Journal);
+        Assert.Equal(ObservationTags.Milestone, fellBack.Tags & ObservationTags.Milestone);
+        Assert.Equal(ObservationTags.Milestone, recovered.Tags & ObservationTags.Milestone);
         Assert.Equal(EventLevel.Verbose, detail.Level);
-        Assert.False(JournalledPayloads.Travels(detail));
+        Assert.False(LoggedPayloads.Travels(detail));
     }
 
     private sealed class Harness : IDisposable

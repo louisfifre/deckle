@@ -29,7 +29,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtBridgePaired,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Bridge paired")]
     public void BridgePaired()
     {

@@ -27,12 +27,12 @@ internal static class NetworkStatusEmitter
         NetworkQueryIncidents incidents = NetworkQueryIncidents.Shared;
 
         // The profile and its level are read on every broadcast, whatever the
-        // Network detail: the tracker writes the journal's connectivity line,
+        // Network detail: the tracker writes the log's connectivity line,
         // which must exist even when nobody asked for the Verbose snapshot.
         //
         // A query that throws is not an offline machine: it is a machine whose
         // state could not be read. The tracker is then left alone, so the
-        // journal never records a flip to "none" that nobody observed, and the
+        // log never records a flip to "none" that nobody observed, and the
         // incident says why the line is missing. The next broadcast re-reads.
         ConnectionProfile? profile;
         try

@@ -42,10 +42,10 @@ public class DeckleAmbientSourceTests
         Assert.Equal(1200, listener.Events[1].Payload?[2]);
     }
 
-    // Vision's terminal Error is the one Error the journal shows for a lost
+    // Vision's terminal Error is the one Error the log shows for a lost
     // capture; Ambient adds only its consequence, with the cause relayed.
     [Fact]
-    public void CaptureLostIsAJournalConsequenceCarryingTheVisionReason()
+    public void CaptureLostIsAMilestoneConsequenceCarryingTheVisionReason()
     {
         using var listener = new TestEventListener("Deckle-Ambient");
 
@@ -54,7 +54,7 @@ public class DeckleAmbientSourceTests
         var ev = Assert.Single(listener.Events);
         Assert.Equal(DeckleAmbientSource.EvtCaptureLost, ev.EventId);
         Assert.Equal(EventLevel.Informational, ev.Level);
-        Assert.Equal(ObservationTags.Journal, ev.Tags & ObservationTags.Journal);
+        Assert.Equal(ObservationTags.Milestone, ev.Tags & ObservationTags.Milestone);
         Assert.True(ev.HasKeyword(Keywords.Lifecycle));
         Assert.Equal("reason", ev.PayloadNames?[0]);
         Assert.Equal(CaptureStopReasons.DeviceLost, ev.Payload?[0]);

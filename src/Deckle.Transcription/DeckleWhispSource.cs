@@ -11,7 +11,7 @@ namespace Deckle.Transcription;
 // (DeckleWhisperSource).
 //
 // Transcript text never enters an operational event, so never the LogWindow or
-// app.jsonl. It travels only in the Dataset-tagged corpus events, which those
+// trace.jsonl. It travels only in the Dataset-tagged corpus events, which those
 // sinks reject and which the corpus consent gates.
 //
 // PipelineTimings, PipelineLlmMetrics and PipelineOutputs repeat LatencyRecorded

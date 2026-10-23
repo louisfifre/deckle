@@ -4,7 +4,7 @@ namespace Deckle.Transcription;
 
 public sealed partial class TranscriptionEngine
 {
-    // ── Take partial — the journal's start and end of one take ───────────────
+    // ── Take partial — the log's start and end of one take ───────────────
     //
     // A take is one dictation or one file of a batch. The engine runs one at a
     // time (one worker), so a single set of fields is enough. BeginTake writes
@@ -22,7 +22,7 @@ public sealed partial class TranscriptionEngine
     private void BeginTake(string kind)
     {
         // A previous take that never declared its end is closed before the next
-        // one opens, so two starts never sit in the journal without an end.
+        // one opens, so two starts never sit in the log without an end.
         EndTake(TakeOutcomes.Abandoned, TakeEndReasons.WorkerExit);
 
         _takeWorkId = WorkId.Next();
@@ -38,7 +38,7 @@ public sealed partial class TranscriptionEngine
             _takeWorkId, outcome, reason, _takeSw?.ElapsedMilliseconds ?? 0);
     }
 
-    // Ends the take and tells the HUD, in that order: the journal records the
+    // Ends the take and tells the HUD, in that order: the log records the
     // outcome before a subscriber can react to it. A reason is required when
     // nothing was delivered; a delivery needs none.
     private void FinishTake(TranscriptionOutcome outcome, string? reason = null)

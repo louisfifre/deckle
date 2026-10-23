@@ -42,7 +42,7 @@ public sealed class UpdatePredecessorTests
     }
 
     // The hand-off wait that ran out means the old app was still alive: a
-    // degradation the always-on journal must keep, so a Warning, not detail.
+    // degradation the always-on log must keep, so a Warning, not detail.
     [Fact]
     [Trait("Category", "observability")]
     public async Task A_predecessor_that_outlives_the_wait_is_reported_as_a_warning()
@@ -65,7 +65,7 @@ public sealed class UpdatePredecessorTests
     // WaitForExitAsync can fail for a reason that is not a timeout (the OS
     // refuses the handle, the process object is unusable). The hand-off is
     // best effort and the running-process gate stays authoritative, so the
-    // update must go on, with the cause left in the journal.
+    // update must go on, with the cause left in the log.
     [Theory]
     [Trait("Category", "regression")]
     [InlineData(typeof(System.ComponentModel.Win32Exception))]

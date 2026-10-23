@@ -90,7 +90,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtCorpusAudioWriteRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Corpus audio is saved again | failures={0}")]
     public void CorpusAudioWriteRecovered(int failures)
     {

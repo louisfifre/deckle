@@ -14,7 +14,7 @@
 - **Trigger:** `Process.WaitForExitAsync` on the predecessor throws something other than a timeout, a `Win32Exception` or an `InvalidOperationException`. Reproduced 2026-10-22 only through the fake process of the test; no real occurrence was observed, so how often the OS does this is not established.
 - **Observed symptom:** the exception left `UpdatePredecessor.WaitForExitAsync`, so a wait that is only a courtesy ended the update. Confirmed by running the test against the old code.
 - **Cause:** only `TimeoutException` was caught around the wait.
-- **Violated invariant:** the hand-off is best effort and the running-process gate stays authoritative, so a wait that fails falls back to that gate, like a timeout, and leaves its cause in the journal.
+- **Violated invariant:** the hand-off is best effort and the running-process gate stays authoritative, so a wait that fails falls back to that gate, like a timeout, and leaves its cause in the log.
 - **Recurrence cue:** an update that stops at the hand-off with `Win32Exception` or `InvalidOperationException` in its trace, or a `PredecessorWaitFailed` Warning followed by a blocked update.
 - **Not covered:** other exception types still escape on purpose, such as a cancellation, which no caller passes here.
 

@@ -55,7 +55,7 @@ public sealed class SessionGestures(
         // The project name only helps the person check the task; a report
         // belongs to its task, not to the project. So a project read that fails
         // does not stop the report: the line says the name was not read, and
-        // the failed request is already journaled by the client.
+        // the failed request is already logged by the client.
         string project;
         try
         {

@@ -36,12 +36,12 @@ public sealed class DeckleSpeechSource : DeckleEventSource
 
     // ── Engine lifecycle ────────────────────────────────────────────────
 
-    // Names the backend serving read-aloud, so a reader learns from the journal
+    // Names the backend serving read-aloud, so a reader learns from the log
     // alone whether speech is real or the placeholder tone (accelerator=stub).
     [Event(EvtSpeechEngineStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Speech engine started | backend={0} | accelerator={1}")]
     public void SpeechEngineStarted(string backend, string accelerator)
     {
@@ -51,7 +51,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     [Event(EvtSpeechEngineStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Speech engine stopped")]
     public void SpeechEngineStopped()
     {
@@ -63,7 +63,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     [Event(EvtReadAloudRequested,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Read aloud requested")]
     public void ReadAloudRequested()
     {
@@ -125,7 +125,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     [Event(EvtReadAloudEnded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Read aloud ended | outcome={0} | reason={1} | elapsed_ms={2}")]
     public void ReadAloudEnded(string outcome, string reason, long elapsed_ms)
     {

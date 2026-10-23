@@ -86,7 +86,7 @@ public class RewriteService : IRewriteService
     //
     // Paragraph and sentence rewrites run on every pause in typing. When the
     // server is down each one would fail, and one Warning per paragraph would
-    // bury the journal under a single cause. So the first failure (or
+    // bury the log under a single cause. So the first failure (or
     // unresolved provider) opens one incident with a Warning, the repeats
     // stay Verbose, and the next success closes it with one Informational
     // recovery. The transcript path keeps one Warning per take: each of its
@@ -224,7 +224,7 @@ public class RewriteService : IRewriteService
 
     // The shared body of the interactive rewrites. Failures stay silent at
     // the UI boundary (an interactive suggestion is optional, the caller
-    // simply offers nothing) but not in the journal: see the incident above.
+    // simply offers nothing) but not in the log: see the incident above.
     // The request is built inside the try, as it was before, so a throw
     // while building it is a failure like any other.
     GenerationResult RewriteInteractive(
@@ -235,7 +235,7 @@ public class RewriteService : IRewriteService
         Func<GenerationRequest> buildRequest,
         CancellationToken cancellationToken)
     {
-        // Counted for the 60 s rollup before anything can return: the journal sees
+        // Counted for the 60 s rollup before anything can return: the log sees
         // how many paragraph and sentence rewrites ran, not one line for each.
         HotLoops.LlmInteractiveRewrite.Tick();
         IGenerationEngine? engine = _engines.Resolve(providerId);

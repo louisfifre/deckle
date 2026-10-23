@@ -117,7 +117,7 @@ public sealed partial class TrayMenuHost
     public void Hide() => Hide("api");
 
     // reason: "deactivated", "flyout_closed", "icon_click", "item_click:<id>",
-    // "api". Traced so the close paths can be told apart in the journal.
+    // "api". Traced so the close paths can be told apart in the log.
     private void Hide(string reason)
     {
         if (!_isVisible) return;

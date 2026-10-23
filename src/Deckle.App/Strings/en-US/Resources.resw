@@ -249,18 +249,18 @@
     <value>Transcriptions may contain sensitive content. Review and purge the files periodically, and exclude them from any backup target you don't control.</value>
   </data>
 
-  <!-- Application log consent — full app.jsonl mirror of every log line. -->
+  <!-- Application log consent — full trace.jsonl mirror of every log line. -->
   <data name="ApplicationLogConsent_Title" xml:space="preserve">
     <value>Enable application log</value>
   </data>
   <data name="ApplicationLogConsent_Body_Intro" xml:space="preserve">
-    <value>Deckle will mirror every in-app log line to a local JSONL file (app.jsonl) so you can diagnose a specific issue across restarts.</value>
+    <value>Deckle will mirror every in-app log line to a local JSONL file (trace.jsonl) so you can diagnose a specific issue across restarts.</value>
   </data>
   <data name="ApplicationLogConsent_Body_What" xml:space="preserve">
     <value>Every log line from every subsystem (capture, VAD, Whisper, rewriting, clipboard, paste, UI) at every verbosity level. Log messages can include partial transcription text when a pipeline step logs what it just produced. Nothing is sent over the network.</value>
   </data>
   <data name="ApplicationLogConsent_Body_Remind" xml:space="preserve">
-    <value>The log is chatty. Expect roughly 2 MB per 30 minutes of active use. It rotates every 5000 lines (app-1.jsonl, app-2.jsonl, …) with no cap on archives, so turn it off once you have what you need and prune the archives by hand.</value>
+    <value>The log is chatty. Expect roughly 2 MB per 30 minutes of active use. It rotates every 5000 lines (trace.jsonl.0001, trace.jsonl.0002, …) with no cap on archives, so turn it off once you have what you need and prune the archives by hand.</value>
   </data>
 
   <!-- Autocorrect consent dialogs use Loc.Get from code-behind. Their source

@@ -73,7 +73,7 @@ answer in time, or no way to show the notification (notifications off, Deckle
 elevated, a host with none) refuses it and nothing moves. The reference guard is
 checked again after the answer, under the write scope, so a link added while
 the notification waited still stops the delete. Each refusal and each completed
-move is told in the journal with its reason and the object's type key, never its
+move is told in the log with its reason and the object's type key, never its
 name or id. These seven shared operations plus the 28 typed commands make 35
 tools.
 

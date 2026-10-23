@@ -201,7 +201,7 @@ public sealed partial class LogFilterBar : UserControl
 
     // The label is the word the log column shows, so LogLineFormatter owns the
     // naming. Only "Dictation" is localized here: the log lines stay invariant
-    // English because they land in app.jsonl.
+    // English because they land in trace.jsonl.
     private static string FormatModule(string provider)
         => string.Equals(provider, "Deckle-Whisp", StringComparison.Ordinal)
             ? Localize("LogFilter_Module_Dictation")

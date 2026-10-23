@@ -9,18 +9,18 @@ public sealed partial class DeckleWhispSource
     //
     // One take is one dictation, from the moment the worker owns it to the
     // moment its outcome is known, or one file of a batch. Both events travel
-    // in the journal and share `work_id`, so a reader of the file alone can say
+    // in the log and share `work_id`, so a reader of the file alone can say
     // what became of every take, including one that left nothing behind.
     // TranscriptionEngine guarantees the pair: a take that never reaches an
     // explicit end is closed as abandoned when its worker settles.
 
     // kind (closed vocabulary, TakeKinds): dictation, file. transcription_id
-    // is the corpus join key, so a journal line leads to the corpus line and
+    // is the corpus join key, so a log line leads to the corpus line and
     // the corpus audio of the same take.
     [Event(EvtTakeStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Take started | work_id={0} | kind={1} | transcription_id={2}")]
     public void TakeStarted(string work_id, string kind, string transcription_id)
     {
@@ -33,7 +33,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTakeEnded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Take ended | work_id={0} | outcome={1} | reason={2} | duration_ms={3}")]
     public void TakeEnded(string work_id, string outcome, string reason, long duration_ms)
     {

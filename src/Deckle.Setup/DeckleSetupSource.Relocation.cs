@@ -7,7 +7,7 @@ public sealed partial class DeckleSetupSource
 {
     // ── Data-root relocation ──────────────────────────────────────────────────
     // The move is the whole job of a --relocate-data run: its start, completion
-    // and cancel go to the journal, and a failure is an Error, which the journal
+    // and cancel go to the log, and a failure is an Error, which the log
     // keeps: the folder stays where it was and the run stops. All four carry the
     // work_id of one attempt (a retry is a new attempt), so a start with no end
     // reads as abandoned.
@@ -15,7 +15,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtRelocateStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "Moving the app data folder | work_id={0}")]
     public void RelocateStarted(string work_id)
     {
@@ -36,7 +36,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtRelocateCompleted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The app data folder moved | work_id={0}")]
     public void RelocateCompleted(string work_id)
     {
@@ -93,7 +93,7 @@ public sealed partial class DeckleSetupSource
     [Event(EvtRelocateCancelled,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The app data move was cancelled | work_id={0} | reason=window_closed | step={1}")]
     public void RelocateCancelled(string work_id, string step)
     {

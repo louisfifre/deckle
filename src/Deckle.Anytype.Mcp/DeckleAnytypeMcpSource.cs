@@ -56,7 +56,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtHostStarted,
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The MCP host is listening")]
     public void HostStarted()
     {
@@ -77,7 +77,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtHostStopped,
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The MCP host stopped")]
     public void HostStopped()
     {
@@ -89,7 +89,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtHostStartFailed,
            Level = EventLevel.Error,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The MCP host could not listen | port={0} | {1}: {2}")]
     public void HostStartFailed(int port, string ex_type, string ex_message)
     {
@@ -102,7 +102,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtHostStartRefused,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The MCP host did not start | reason={0}")]
     public void HostStartRefused(string reason)
     {
@@ -114,7 +114,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtHostStopFailed,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The MCP host did not stop cleanly | reason={0} | {1}: {2}")]
     public void HostStopFailed(string reason, string ex_type, string ex_message)
     {
@@ -128,7 +128,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtHostProvisioningFailed,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The MCP host is not provisioned | reason={0} | {1}: {2}")]
     public void HostProvisioningFailed(string reason, string ex_type, string ex_message)
     {
@@ -158,14 +158,14 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtHostInternalLogRepeated, category, event_name, occurrences, ex_type);
     }
 
-    // The running count of one framework problem, in the journal: written when the
+    // The running count of one framework problem, in the log: written when the
     // count reaches 10, 100, 1000... and once more when the host's logging closes
-    // if the count moved since, so the journal shows how often a problem the
+    // if the count moved since, so the log shows how often a problem the
     // Warning announced once kept happening.
     [Event(EvtHostInternalLogCounted,
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "The MCP host problem kept happening | category={0} | event_name={1} | occurrences={2} | ex_type={3}")]
     public void HostInternalLogCounted(string category, string event_name, int occurrences, string ex_type)
     {
@@ -201,7 +201,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtTokenVariablesMissing,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "MCP client tokens are missing from the vault | clients={0} | missing={1}")]
     public void TokenVariablesMissing(int clients, int missing)
     {
@@ -213,7 +213,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     // A request the host refused before dispatch (bad auth or Origin, oversized
     // body, wrong method, rate limit). Opens an incident: later refusals stay
     // Verbose until an admitted request closes it, so a misconfigured client or
-    // a hostile page cannot flood the journal. reason: rate-limit,
+    // a hostile page cannot flood the log. reason: rate-limit,
     // body-too-large, foreign-origin, missing-bearer, unknown-bearer,
     // method-not-allowed.
     [Event(EvtRequestRejected,
@@ -237,7 +237,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtRequestRejectionsEnded,
            Level = EventLevel.Informational,
            Keywords = Lifecycle,
-           Tags = ObservationTags.Journal,
+           Tags = ObservationTags.Milestone,
            Message = "MCP requests are admitted again | rejected={0}")]
     public void RequestRejectionsEnded(int rejected)
     {
@@ -245,7 +245,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     }
 
     // A tool call is short and the rate limiter bounds how many a client makes, so
-    // its start stays Verbose and the journal keeps its failures; the work_id of
+    // its start stays Verbose and the log keeps its failures; the work_id of
     // the start comes back on the call's end, whichever event writes it. An unknown
     // tool name is caller text and reads "unknown", a missing one reads "".
     [Event(EvtToolCallStarted,

@@ -6,7 +6,7 @@ namespace Deckle.Input;
 
 // Writes raw contact frames to a dedicated JSONL file — one file per
 // recording session under <UserDataRoot>/telemetry/trackpad/, separate from the
-// app.jsonl pipeline by design: frames flow at report cadence and would
+// trace.jsonl pipeline by design: frames flow at report cadence and would
 // drown the shared log; here they land in a self-describing dataset
 // made to be replayed and analyzed (cadence, gaps, bursts, hybrid
 // fragmentation).
