@@ -44,7 +44,7 @@ public sealed class DeckleHomeSource : DeckleEventSource
     [Event(EvtSchemaUnavailable,
            Level = EventLevel.Warning,
            Keywords = Gesture,
-           Message = "The Home schema is not ready\nwork_id={0} | reason={1} | ex_type={2} | status={3}")]
+           Message = "The Home schema could not be read, so Home actions wait until it can\nwork_id={0} | reason={1} | ex_type={2} | status={3}")]
     public void SchemaUnavailable(string work_id, string reason, string ex_type, int status_code)
     {
         if (IsEnabled()) WriteEvent(EvtSchemaUnavailable, work_id, reason, ex_type, status_code);
@@ -75,7 +75,7 @@ public sealed class DeckleHomeSource : DeckleEventSource
     [Event(EvtGesturePartiallyApplied,
            Level = EventLevel.Warning,
            Keywords = Gesture,
-           Message = "A Home batch was only partly applied\ngesture={0} | applied={1} | not_attempted={2} | ex_type={3}")]
+           Message = "A Home batch was only partly applied, so some of its changes are missing\ngesture={0} | applied={1} | not_attempted={2} | ex_type={3}")]
     public void GesturePartiallyApplied(string gesture, int applied, int not_attempted, string ex_type)
     {
         if (IsEnabled()) WriteEvent(EvtGesturePartiallyApplied, gesture, applied, not_attempted, ex_type);
