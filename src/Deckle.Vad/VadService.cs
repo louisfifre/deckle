@@ -5,6 +5,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using Deckle.Core;
+using Deckle.Diagnostics;
 
 namespace Deckle.Vad;
 
@@ -112,7 +113,7 @@ public sealed class VadService : IDisposable
                 catch (Exception ex)
                 {
                     _loadFailed = true;
-                    OpenIncident("load_failed", modelPath, ex.GetType().Name, ex.Message);
+                    OpenIncident("load_failed", modelPath, ex.GetType().Name, ex.Message, inTray: true);
                     // Bytes match the pinned build yet it won't construct — should not
                     // happen, but delete defensively so a later launch retries clean.
                     TryDeleteModel(modelPath);
@@ -125,9 +126,9 @@ public sealed class VadService : IDisposable
             // a corrupt copy. File.Exists alone can't tell the difference; drop it and
             // fall through to the verified download.
             if (readError is null)
-                OpenIncident("checksum_mismatch", modelPath, "", "");
+                OpenIncident("checksum_mismatch", modelPath, "", "", inTray: false);
             else
-                OpenIncident("checksum_read_failed", modelPath, readError.GetType().Name, readError.Message);
+                OpenIncident("checksum_read_failed", modelPath, readError.GetType().Name, readError.Message, inTray: false);
             TryDeleteModel(modelPath);
         }
 
@@ -135,7 +136,7 @@ public sealed class VadService : IDisposable
         {
             // A present model already opened the incident with its own cause.
             if (!modelPresent)
-                OpenIncident("model_missing", modelPath, "", "");
+                OpenIncident("model_missing", modelPath, "", "", inTray: false);
             _downloadKicked = true;
             _downloadTask = DownloadModelAsync(modelPath);
         }
@@ -149,7 +150,7 @@ public sealed class VadService : IDisposable
     public void ReportTrimFailure(int utteranceIndex, Exception ex)
     {
         DeckleVadSource.Log.SpeechTrimFailed(utteranceIndex, ex.GetType().Name, ex.Message);
-        OpenIncident("trim_failed", ResolveModelPath(), ex.GetType().Name, ex.Message);
+        OpenIncident("trim_failed", ResolveModelPath(), ex.GetType().Name, ex.Message, inTray: true);
     }
 
     // Closes whatever incident is open: a trim that ran proves the VAD usable,
@@ -184,7 +185,7 @@ public sealed class VadService : IDisposable
                 return;
             }
 
-            OpenIncident("download_failed", modelPath, failure.Value.ExType, failure.Value.Message);
+            OpenIncident("download_failed", modelPath, failure.Value.ExType, failure.Value.Message, inTray: true);
 
             bool last = attempt == attempts;
             TimeSpan wait = last ? TimeSpan.Zero : DownloadRetryDelays[attempt - 1];
@@ -196,7 +197,8 @@ public sealed class VadService : IDisposable
             {
                 OpenIncident(
                     "download_gave_up", modelPath, "",
-                    $"gave up after {attempts} attempts, will retry at the next start");
+                    $"gave up after {attempts} attempts, will retry at the next start",
+                    inTray: true);
                 return;
             }
 
@@ -229,7 +231,14 @@ public sealed class VadService : IDisposable
 
     // One incident per cause: a later take that finds the VAD unusable for the
     // same reason adds nothing, a new cause is news and is reported.
-    private void OpenIncident(string reason, string modelPath, string exType, string exMessage)
+    //
+    // inTray says whether the person should see it in the tray too. A missing
+    // or stale model is replaced by the download this service starts on its
+    // own, in seconds: showing it would light the dot for a fix already under
+    // way. A download that fails, or a model that will not run, stays until a
+    // later success closes it, so those are shown.
+    private void OpenIncident(
+        string reason, string modelPath, string exType, string exMessage, bool inTray)
     {
         lock (_incidentLock)
         {
@@ -238,6 +247,7 @@ public sealed class VadService : IDisposable
         }
         DeckleVadSource.Log.SpeechTrimUnavailable(reason, exType, exMessage);
         DeckleVadSource.Log.SpeechTrimUnavailableDetail(reason, modelPath);
+        if (inTray) UserIncidentRegistry.Instance.Open(UserIncidents.VadModel, reason);
     }
 
     private void CloseIncident()
@@ -248,7 +258,9 @@ public sealed class VadService : IDisposable
             previous = _incidentReason;
             _incidentReason = null;
         }
-        if (previous is not null) DeckleVadSource.Log.SpeechTrimRecovered(previous);
+        if (previous is null) return;
+        DeckleVadSource.Log.SpeechTrimRecovered(previous);
+        UserIncidentRegistry.Instance.Close(UserIncidents.VadModel);
     }
 
     private static void TryDeleteModel(string modelPath)

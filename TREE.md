@@ -448,10 +448,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   ├── recording--indicator--false--16px.png
 │   │   │   │   ├── recording--indicator--false--32px.ico
 │   │   │   │   ├── recording--indicator--false--32px.png
+│   │   │   │   ├── recording--indicator--false--incident--true--16px.ico
+│   │   │   │   ├── recording--indicator--false--incident--true--32px.ico
 │   │   │   │   ├── recording--indicator--true--16px.ico
 │   │   │   │   ├── recording--indicator--true--16px.png
 │   │   │   │   ├── recording--indicator--true--32px.ico
-│   │   │   │   └── recording--indicator--true--32px.png
+│   │   │   │   ├── recording--indicator--true--32px.png
+│   │   │   │   ├── recording--indicator--true--incident--true--16px.ico
+│   │   │   │   └── recording--indicator--true--incident--true--32px.ico
 │   │   │   └── Sounds/
 │   │   │       └── speech.wav
 │   │   ├── Diagnostics/
@@ -516,6 +520,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.Theme.cs
 │   │   ├── App.Trackpad.cs
 │   │   ├── App.TranscriptPanel.cs
+│   │   ├── App.TrayIncidents.cs
 │   │   ├── App.TrayToggles.cs
 │   │   ├── App.Update.cs
 │   │   ├── App.Windows.cs
@@ -533,7 +538,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LogWindow.xaml
 │   │   ├── LogWindow.xaml.cs
 │   │   ├── Program.cs
-│   │   └── SecondaryWindowPlacement.cs
+│   │   ├── SecondaryWindowPlacement.cs
+│   │   └── TrayIncidentLines.cs
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
 │   │   │   ├── CaptureAnomalyEpisode.cs
@@ -937,6 +943,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PathRedaction.cs
 │   │   ├── RunMarker.cs
 │   │   ├── SurvivedExceptionLedger.cs
+│   │   ├── UserIncidentRegistry.cs
+│   │   ├── UserIncidents.cs
 │   │   ├── WindowingProbe.cs
 │   │   └── WorkId.cs
 │   ├── Deckle.Diagnostics.Logging/
@@ -1519,6 +1527,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Modules/
 │   │   │   └── SettingsModuleRegistry.cs
 │   │   ├── Pages/
+│   │   │   ├── GeneralPage.ToastsElevated.cs
 │   │   │   ├── GeneralPage.xaml
 │   │   │   ├── GeneralPage.xaml.cs
 │   │   │   ├── HomePage.xaml
@@ -1859,6 +1868,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AnytypePathRedactionTests.cs
 │   │   ├── AnytypeRequestGateTests.cs
 │   │   ├── AnytypeSpaceAliasesTests.cs
+│   │   ├── AnytypeUserIncidentCollection.cs
 │   │   ├── AnytypeUtilityGesturesTests.cs
 │   │   ├── AnytypeV2ClientTests.cs
 │   │   ├── AnytypeV2ExceptionTests.cs
@@ -1879,6 +1889,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── BackendSupervisionBugNotes.md
 │   │   ├── BackendSupervisorTests.cs
 │   │   ├── BackendTestFakes.cs
+│   │   ├── BackendUserIncidentTests.cs
 │   │   ├── BinLogTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DevSpaceBugNotes.md
@@ -1918,7 +1929,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── DictationRecoveryBugNotes.md
 │   │   ├── HudFeedbackSinkTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
-│   │   └── MilestoneClosersTests.cs
+│   │   ├── MilestoneClosersTests.cs
+│   │   └── TrayIncidentLinesTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── AudioPathRedactionTests.cs
 │   │   ├── AudioRecordingHostDefaultsTests.cs
@@ -2123,6 +2135,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SurvivedExceptionLedgerTests.cs
 │   │   ├── TemplateDoctrineTests.cs
 │   │   ├── ThreadingHotLoopCountTests.cs
+│   │   ├── UserIncidentListenerFaultTests.cs
+│   │   ├── UserIncidentRegistryTests.cs
 │   │   └── WorkIdTests.cs
 │   ├── Deckle.Home.Tests/
 │   │   ├── AssemblyInfo.cs
@@ -2227,6 +2241,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientRunBugNotes.md
 │   │   ├── AmbientRunLogTests.cs
 │   │   ├── AmbientStartSettingsTests.cs
+│   │   ├── AmbientUserIncidentTests.cs
 │   │   ├── AssemblyInfo.cs
 │   │   ├── CredentialPayloadTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj
@@ -2250,6 +2265,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HueEntertainmentLightOutputTests.cs
 │   │   ├── HueEventStreamBugNotes.md
 │   │   ├── HueEventStreamEpisodeTests.cs
+│   │   ├── HueEventStreamUserIncidentTests.cs
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   ├── HueLocalDiscoveryRegressionTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs
@@ -2289,6 +2305,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── NotificationCatalogTests.cs
 │   │   ├── NotificationDispatcherTests.cs
 │   │   ├── ToastChannelBugNotes.md
+│   │   ├── ToastElevationIncidentTests.cs
 │   │   └── ToastWithdrawIncidentTests.cs
 │   ├── Deckle.Orchestration.Tests/
 │   │   ├── Fixtures/

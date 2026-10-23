@@ -16,7 +16,7 @@ public sealed class TrayIconFallbackObservabilityTests
     {
         using var listener = new TestEventListener("Deckle-Shell");
 
-        (IntPtr hIcon, bool owned) = TrayIconManager.LoadIconFromFile(active: true);
+        (IntPtr hIcon, bool owned) = TrayIconManager.LoadIconFromFile(recording: true, incident: false);
 
         Assert.NotEqual(IntPtr.Zero, hIcon);
         Assert.False(owned);
@@ -25,5 +25,18 @@ public sealed class TrayIconFallbackObservabilityTests
         Assert.Equal("recording", ev.Payload?[0]);
         Assert.Equal("asset_missing", ev.Payload?[1]);
         Assert.Equal(0, ev.Payload?[2]);
+    }
+
+    [Fact]
+    public void AnIncidentIconThatCannotBeFoundNamesTheIncidentState()
+    {
+        using var listener = new TestEventListener("Deckle-Shell");
+
+        (IntPtr hIcon, bool owned) = TrayIconManager.LoadIconFromFile(recording: false, incident: true);
+
+        Assert.NotEqual(IntPtr.Zero, hIcon);
+        Assert.False(owned);
+        var ev = Assert.Single(listener.Events, e => e.EventId == DeckleShellSource.EvtTrayIconFallback);
+        Assert.Equal("idle_incident", ev.Payload?[0]);
     }
 }

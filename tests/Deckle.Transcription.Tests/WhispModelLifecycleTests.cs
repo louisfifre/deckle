@@ -129,6 +129,29 @@ public sealed class WhispModelLifecycleTests
         Assert.DoesNotContain(logged, e => e.EventId == DeckleWhispSource.EvtModelLoaded);
     }
 
+    // The tray dot follows the same incident: open at the first failed load,
+    // closed by the load that succeeds. The collection runs alone, so the
+    // process-wide registry sees only this test.
+    [Fact]
+    public async Task AModelThatCannotLoadIsAUserIncidentUntilALoadSucceeds()
+    {
+        UserIncidentRegistry.Instance.Close(UserIncidents.WhisperModel);
+        using var listener = new TestEventListener(Provider);
+        var backend = new ScriptedBackend(loadFails: true);
+        using var engine = new TranscriptionEngine(new FakeHost(), backend);
+
+        await RunColdBatchAsync(engine, listener);
+
+        UserIncident incident = Assert.Single(
+            UserIncidentRegistry.Instance.Snapshot(), i => i.Id == UserIncidents.WhisperModel);
+        Assert.Equal("file_not_found", incident.Reason);
+
+        backend.LoadFails = false;
+        await RunColdBatchAsync(engine, listener);
+
+        Assert.False(UserIncidentRegistry.Instance.IsOpen(UserIncidents.WhisperModel));
+    }
+
     [Fact]
     [Trait("Category", "regression")]
     public async Task AWarmupThatCannotLoadTheModelEndsInAWarningWithTheStartsId()

@@ -16,8 +16,19 @@ public static class IconAssets
     private const string ImageIdle      = "recording--indicator--false--32px.png";
     private const string ImageRecording = "recording--indicator--true--32px.png";
 
+    // The tray's marks while a user incident is open: the same states with a
+    // dot. Provisional copies of the marks above until the maintainer draws
+    // them; a 16 px file sits beside each for when the tray loads that size.
+    private const string FileIdleIncident      = "recording--indicator--false--incident--true--32px.ico";
+    private const string FileRecordingIncident = "recording--indicator--true--incident--true--32px.ico";
+
     public static string? ResolvePath(bool recording)
         => Resolve(recording ? FileRecording : FileIdle);
+
+    public static string? ResolveTrayIconPath(bool recording, bool incident)
+        => incident
+            ? Resolve(recording ? FileRecordingIncident : FileIdleIncident)
+            : ResolvePath(recording);
 
     public static string? ResolveImagePath(bool recording)
         => Resolve(recording ? ImageRecording : ImageIdle);

@@ -514,6 +514,22 @@
   <data name="TrayPanel_StopRecording" xml:space="preserve">
     <value>Stop recording</value>
   </data>
+  <!-- A user incident line at the top of the left-click menu: {0} is the
+       module's name, one of the TrayIncident_Module_* below, the module's
+       TrayMenu_* switch label, or the product name Anytype, kept in code
+       (TrayIncidentLines). A click opens the Settings page with the fix. -->
+  <data name="TrayMenu_Incident_Format" xml:space="preserve">
+    <value>Problem · {0}</value>
+  </data>
+  <data name="TrayIncident_Module_Recording" xml:space="preserve">
+    <value>Recording</value>
+  </data>
+  <data name="TrayIncident_Module_Transcription" xml:space="preserve">
+    <value>Transcription</value>
+  </data>
+  <data name="TrayIncident_Module_Notifications" xml:space="preserve">
+    <value>Notifications</value>
+  </data>
   <data name="TrayMenu_Restart" xml:space="preserve">
     <value>Restart</value>
   </data>

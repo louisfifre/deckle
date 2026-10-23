@@ -18,6 +18,19 @@
                                             x:Uid="GeneralPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
 
+                <!-- A state, not an alert: open while Deckle runs as
+                     administrator, the user incident behind the tray's
+                     "Problem · Notifications" line, which opens this page. Not
+                     closable, since only a restart without administrator rights
+                     ends it; it sits above the Start elevated switch it names
+                     (GeneralPage.ToastsElevated.cs). -->
+                <InfoBar x:Name="ToastsElevatedInfoBar"
+                         x:Uid="GeneralToastsElevatedInfoBar"
+                         Severity="Warning"
+                         IsOpen="False"
+                         IsClosable="False"
+                         catalog:InfoBarLayout.CollapseWhenClosed="True" />
+
                 <!-- The theme, then the two logon switches (start with Windows,
                      start elevated) stand first, grouped under no title: a
                      section of one card earns no heading, the cards simply open

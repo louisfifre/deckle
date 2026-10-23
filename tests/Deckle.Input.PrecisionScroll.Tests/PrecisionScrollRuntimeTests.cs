@@ -134,6 +134,28 @@ public sealed class PrecisionScrollRuntimeTests
         Assert.Equal(4, h.Engines.Count);
     }
 
+    // The tray dot follows the stay-off: open from the fallback until the
+    // person's toggle. The collection runs alone, so the process-wide registry
+    // sees only this test.
+    [Fact]
+    public async Task TheStayOffIsAUserIncidentUntilTheSwitchIsToggled()
+    {
+        UserIncidentRegistry.Instance.Close(UserIncidents.PrecisionScroll);
+        using var h = new Harness();
+        h.Runtime.Apply(true, null);
+        await h.RestartAfter(0, "injection_failed");
+        h.Engines[1].End("queue_full");
+        await h.Runtime.Handling;
+
+        UserIncident incident = Assert.Single(
+            UserIncidentRegistry.Instance.Snapshot(), i => i.Id == UserIncidents.PrecisionScroll);
+        Assert.Equal("queue_full", incident.Reason);
+
+        h.Runtime.Apply(false, null);
+
+        Assert.False(UserIncidentRegistry.Instance.IsOpen(UserIncidents.PrecisionScroll));
+    }
+
     [Fact]
     [Trait("Category", "regression")]
     public async Task ChangingASettingWhileTheWheelIsNativeDoesNotRestartTheEngine()

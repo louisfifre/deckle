@@ -131,7 +131,9 @@ public sealed class DeckleShellSource : DeckleEventSource
     }
 
     // The tray shows the generic application icon instead of Deckle's own.
-    // state: idle or recording (the icon asked for). reason: asset_missing (the
+    // state: idle, recording, idle_incident or recording_incident (the icon
+    // asked for, the last two carrying the dot of an open user incident).
+    // reason: asset_missing (the
     // .ico is not next to the exe) or load_failed (the file is there but
     // Windows refused it; win32_error says why, 0 when the file is missing).
     [Event(EvtTrayIconFallback,

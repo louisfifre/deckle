@@ -6,6 +6,8 @@ namespace Deckle.Diagnostics;
 // A sink that throws, a flush that fails or times out, an archive pruned, a
 // boot replay that overflowed: each is a fact about the log, not about a
 // module, and a reader who finds a hole in a log needs it beside the hole.
+// The user incident registry reports here too: a listener that fails there
+// leaves the tray out of step with the incidents the log records.
 //
 // Every event here carries its cause in its own payload: this provider is
 // the one place where a Verbose mirror cannot be trusted to reach any file.
@@ -34,6 +36,8 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     public const int EvtMessageTemplateBroken = 11;
     public const int EvtSettingsLoadWarning = 12;
     public const int EvtSettingsLoadError = 13;
+    public const int EvtIncidentListenerFaulted = 14;
+    public const int EvtIncidentListenerRecovered = 15;
 
     // One incident per sink: opened by the first failure, closed by the next
     // successful write (SinkRecovered). The attempts in between are counted,
@@ -176,5 +180,31 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
+    }
+
+    // A listener of UserIncidentRegistry threw, so the surface it feeds (the
+    // tray dot, the menu lines) may no longer follow the open incidents. One
+    // incident, like SinkFaulted: the first failure is reported with its cause,
+    // the ones after it are counted, and the next notification every listener
+    // takes cleanly closes it. The module that opened or closed its user
+    // incident never sees the exception.
+    [Event(EvtIncidentListenerFaulted,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A listener of the user incident registry failed, so the tray may not show the open incidents\nlistener={0} | error_type={1} | error_message={2}")]
+    public void IncidentListenerFaulted(string listener, string error_type, string error_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtIncidentListenerFaulted, listener, error_type, error_message);
+    }
+
+    // Milestone-tagged: the log keeps the failure, so it keeps its end too.
+    [Event(EvtIncidentListenerRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The user incident registry's listeners run again")]
+    public void IncidentListenerRecovered(int failed_calls)
+    {
+        if (IsEnabled()) WriteEvent(EvtIncidentListenerRecovered, failed_calls);
     }
 }

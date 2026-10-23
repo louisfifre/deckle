@@ -122,6 +122,12 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
                 _watchTask = SuperviseAsync(ct => WatchAsync(process, ct), _lifetimeCts.Token);
             }
         }
+        else if (result.Outcome is BackendStartOutcome.EndpointConflict)
+        {
+            // Another program holds the backend's port: nothing in Deckle will
+            // free it, so the person has to.
+            OpenUserIncident("endpoint_conflict");
+        }
         else if (result.Outcome is BackendStartOutcome.StartRejected or BackendStartOutcome.TimedOut)
         {
             lock (_gate)
@@ -234,23 +240,29 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
             {
                 DeckleAnytypeSource.Log.BackendRecovered(
                     failures + 1, _time.GetElapsedTime(downSince).TotalSeconds, incidentId);
+                CloseUserIncident();
                 return (result.Process, attempt);
             }
             if (result?.Outcome is BackendStartOutcome.NotProvisioned)
             {
                 DeckleAnytypeSource.Log.BackendSupervisionGaveUp("not_provisioned", incidentId);
+                OpenUserIncident("not_provisioned");
                 return (null, attempt);
             }
             if (result?.Outcome is BackendStartOutcome.EndpointConflict)
             {
                 DeckleAnytypeSource.Log.BackendSupervisionGaveUp("endpoint_conflict", incidentId);
+                OpenUserIncident("endpoint_conflict");
                 return (null, attempt);
             }
 
             failures++;
             DeckleAnytypeSource.Log.BackendRestartAttemptFailed(failures, outcome, exType, exMessage, incidentId);
             if (failures == RestartsFailingThreshold)
+            {
                 DeckleAnytypeSource.Log.BackendRestartsFailing(failures, outcome, exType, exMessage, incidentId);
+                OpenUserIncident("restarts_failing");
+            }
         }
     }
 
@@ -299,15 +311,21 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
                 if (health.Healthy)
                 {
                     if (failures >= UnresponsiveThreshold)
+                    {
                         DeckleAnytypeSource.Log.BackendResponsive(
                             failures, Stopwatch.GetElapsedTime(failingSince).TotalSeconds);
+                        CloseUserIncident();
+                    }
                     failures = 0;
                     continue;
                 }
 
                 if (failures++ == 0) failingSince = Stopwatch.GetTimestamp();
                 if (failures == UnresponsiveThreshold)
+                {
                     DeckleAnytypeSource.Log.BackendUnresponsive(failures, health.Reason);
+                    OpenUserIncident("unresponsive");
+                }
             }
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
@@ -315,6 +333,19 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
             // The process exited or Deckle is leaving; the watch reports which.
         }
     }
+
+    // The tray shows what the log's incidents mean for the person: the
+    // backend is down and Deckle cannot bring it back on its own. It opens
+    // where the log marks that point (a failing streak, an unresponsive
+    // serve, a give-up, a port held by another program) and closes on the
+    // recovery lines. A serve that exits while unresponsive keeps it open
+    // until the restart that follows recovers. A first start that finds no
+    // backend installed opens nothing: the person may not use Anytype at all.
+    private static void OpenUserIncident(string reason)
+        => UserIncidentRegistry.Instance.Open(UserIncidents.AnytypeBackend, reason);
+
+    private static void CloseUserIncident()
+        => UserIncidentRegistry.Instance.Close(UserIncidents.AnytypeBackend);
 
     private static async Task IgnoreCancellation(Task? task)
     {

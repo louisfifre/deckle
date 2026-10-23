@@ -1,5 +1,6 @@
 using System.Diagnostics.Tracing;
 using Deckle.Core;
+using Deckle.Diagnostics;
 using Deckle.TestSupport;
 using Xunit;
 
@@ -101,6 +102,43 @@ public sealed class VadServiceDownloadRetryTests : IDisposable
 
         release.SetResult();
         await service.DownloadEnded.WaitAsync(TimeSpan.FromSeconds(10));
+    }
+
+    // The tray shows the download failing, not the download running: a missing
+    // model the service is already fetching is no problem for the person yet.
+    // The collection runs alone, so the process-wide registry sees only this test.
+    [Fact]
+    public async Task AFailedDownloadIsAUserIncidentButTheDownloadUnderWayIsNot()
+    {
+        UserIncidentRegistry.Instance.Close(UserIncidents.VadModel);
+        var firstDownload = new TaskCompletionSource<ProvisioningResult>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        var waiting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        int calls = 0;
+        using var service = new VadService(
+            () => _modelsDirectory,
+            _ => Interlocked.Increment(ref calls) == 1
+                ? firstDownload.Task
+                : Task.FromResult(ProvisioningResult.Ok(1, null)),
+            (_, _) =>
+            {
+                waiting.TrySetResult();
+                return release.Task;
+            });
+
+        Assert.Null(service.EnsureReady());
+        Assert.False(UserIncidentRegistry.Instance.IsOpen(UserIncidents.VadModel));
+
+        firstDownload.SetResult(ProvisioningResult.Fail("network unreachable"));
+        await waiting.Task.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        UserIncident incident = Assert.Single(
+            UserIncidentRegistry.Instance.Snapshot(), i => i.Id == UserIncidents.VadModel);
+        Assert.Equal("download_failed", incident.Reason);
+
+        release.SetResult();
+        await service.DownloadEnded.WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+        Assert.False(UserIncidentRegistry.Instance.IsOpen(UserIncidents.VadModel));
     }
 
     [Fact]

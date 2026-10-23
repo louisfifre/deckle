@@ -39,9 +39,10 @@ public sealed class TrayIconManager : IDisposable
     private IntPtr _hwnd;
     private uint   _wmTaskbarCreated;
 
-    private IntPtr _hIconIdle;
-    private IntPtr _hIconRecording;
-    private bool   _iconsOwned;   // false if fallback LoadIcon (shared icon: no DestroyIcon)
+    // The four marks, indexed by IconIndex: idle or recording, each with and
+    // without the dot of an open user incident. Owned is false for the
+    // fallback LoadIcon, a shared icon that DestroyIcon must not touch.
+    private readonly (IntPtr Icon, bool Owned)[] _icons = new (IntPtr, bool)[4];
     private bool   _disposed;
 
     private TrayIconRegistration? _registration;
@@ -51,9 +52,13 @@ public sealed class TrayIconManager : IDisposable
     private NativeMethods.WndProc? _wndProcDelegate;
 
     // Status kept before Register, so the add carries it: the App sets the
-    // initial status before the icon goes live.
+    // initial status before the icon goes live. The recording state arrives
+    // on the engine's threads and the incident dot on the UI thread; the gate
+    // keeps each update's tip and icon from mixing two callers' halves.
+    private readonly object _statusGate = new();
     private string _tip = "";
     private bool   _isRecording;
+    private bool   _hasIncident;
 
     /// <summary>
     /// Raised on left-click of the tray icon, on the message pump thread of
@@ -81,21 +86,33 @@ public sealed class TrayIconManager : IDisposable
     // first add: without an icon the app has no surface at all.
     public void Register()
     {
-        (_hIconIdle,      _iconsOwned) = LoadIconFromFile(active: false);
-        (_hIconRecording, _)           = LoadIconFromFile(active: true);
+        foreach (bool recording in new[] { false, true })
+        foreach (bool incident in new[] { false, true })
+            _icons[IconIndex(recording, incident)] = LoadIconFromFile(recording, incident);
 
         CreateOwnerWindow();
 
-        _registration = new TrayIconRegistration(_hwnd, new Win32NotifyIconApi());
-        _registration.Update(_tip, _isRecording ? _hIconRecording : _hIconIdle);
+        IntPtr icon;
+        lock (_statusGate)
+        {
+            _registration = new TrayIconRegistration(_hwnd, new Win32NotifyIconApi());
+            icon = CurrentIcon();
+            _registration.Update(_tip, icon);
+        }
         if (!_registration.Add())
         {
             int error = Marshal.GetLastWin32Error();
             Dispose();
             throw new InvalidOperationException(
-                $"Shell_NotifyIcon(NIM_ADD) failed — hWnd={_hwnd}, hIcon={_hIconIdle} (Win32 err {error})");
+                $"Shell_NotifyIcon(NIM_ADD) failed — hWnd={_hwnd}, hIcon={icon} (Win32 err {error})");
         }
     }
+
+    private static int IconIndex(bool recording, bool incident)
+        => (recording ? 1 : 0) + (incident ? 2 : 0);
+
+    // Under _statusGate.
+    private IntPtr CurrentIcon() => _icons[IconIndex(_isRecording, _hasIncident)].Icon;
 
     // ── Owner window ─────────────────────────────────────────────────────────
     //
@@ -255,19 +272,34 @@ public sealed class TrayIconManager : IDisposable
     // is only kept; the add then carries it.
     public void UpdateStatus(string status, bool isRecording)
     {
-        _tip = Loc.Format("Tray_Tooltip_Format", status);
-        _isRecording = isRecording;
+        lock (_statusGate)
+        {
+            _tip = Loc.Format("Tray_Tooltip_Format", status);
+            _isRecording = isRecording;
+            _registration?.Update(_tip, CurrentIcon());
+        }
+    }
 
-        _registration?.Update(_tip, isRecording ? _hIconRecording : _hIconIdle);
+    // Shows or hides the dot that says a user incident is open. The host
+    // decides what counts; this primitive only swaps the mark, in both the
+    // idle and the recording state.
+    public void SetIncidentIndicator(bool shown)
+    {
+        lock (_statusGate)
+        {
+            if (_hasIncident == shown) return;
+            _hasIncident = shown;
+            _registration?.Update(_tip, CurrentIcon());
+        }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     // Returns (hIcon, owned): owned=true if loaded from file (DestroyIcon
     // required), owned=false if shared system icon (DO NOT call DestroyIcon).
-    internal static (IntPtr hIcon, bool owned) LoadIconFromFile(bool active)
+    internal static (IntPtr hIcon, bool owned) LoadIconFromFile(bool recording, bool incident)
     {
-        string? path = IconAssets.ResolvePath(recording: active);
+        string? path = IconAssets.ResolveTrayIconPath(recording, incident);
         string reason = "asset_missing";
         int error = 0;
         if (path is not null)
@@ -287,7 +319,8 @@ public sealed class TrayIconManager : IDisposable
         // The shared IDI_APPLICATION icon keeps the tray item visible when the
         // assets were not copied; the tray then shows the wrong mark, so the
         // fallback is a Warning, not a silence.
-        DeckleShellSource.Log.TrayIconFallback(active ? "recording" : "idle", reason, error);
+        string state = (recording ? "recording" : "idle") + (incident ? "_incident" : "");
+        DeckleShellSource.Log.TrayIconFallback(state, reason, error);
         const nint IDI_APPLICATION = 32512;
         return (NativeMethods.LoadIcon(IntPtr.Zero, new IntPtr(IDI_APPLICATION)), owned: false);
     }
@@ -317,10 +350,9 @@ public sealed class TrayIconManager : IDisposable
             _classAtom = 0;
         }
 
-        if (_iconsOwned)
+        foreach ((IntPtr icon, bool owned) in _icons)
         {
-            if (_hIconIdle != IntPtr.Zero)      NativeMethods.DestroyIcon(_hIconIdle);
-            if (_hIconRecording != IntPtr.Zero) NativeMethods.DestroyIcon(_hIconRecording);
+            if (owned && icon != IntPtr.Zero) NativeMethods.DestroyIcon(icon);
         }
     }
 }
