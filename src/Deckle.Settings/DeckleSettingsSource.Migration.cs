@@ -19,7 +19,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtMigrationDispatchedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "migration dispatched | json_key={0} | module_id={1}")]
+           Message = "json_key={0} | module_id={1}")]
     public void MigrationDispatchedDetail(string json_key, string module_id)
     {
         if (IsEnabled()) WriteEvent(EvtMigrationDispatchedDetail, json_key, module_id);
@@ -28,7 +28,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtMigrationDispatchSkipped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "dispatch {0} skipped (target exists) | path={1}")]
+           Message = "json_key={0} | target_path={1}")]
     public void MigrationDispatchSkipped(string json_key, string target_path)
     {
         if (IsEnabled()) WriteEvent(EvtMigrationDispatchSkipped, json_key, target_path);
@@ -57,7 +57,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtPerModuleMigrationFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Per-module migration failed | ex_type={0} | ex_message={1}")]
+           Message = "Per-module migration failed\nex_type={0} | ex_message={1}")]
     public void PerModuleMigrationFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPerModuleMigrationFailed, ex_type, ex_message);
@@ -67,7 +67,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtInjectFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not inject a key into a module file | key={0} | module_id={1} | ex_type={2} | ex_message={3}")]
+           Message = "Could not inject a key into a module file\nkey={0} | module_id={1} | ex_type={2} | ex_message={3}")]
     public void InjectFailed(string key, string module_id, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtInjectFailed, key, module_id, ex_type, ex_message);
@@ -85,7 +85,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtModuleFolderMigratedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "module folder migrated | old_id={0} | new_id={1}")]
+           Message = "old_id={0} | new_id={1}")]
     public void ModuleFolderMigratedDetail(string old_id, string new_id)
     {
         if (IsEnabled()) WriteEvent(EvtModuleFolderMigratedDetail, old_id, new_id);
@@ -94,7 +94,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtModuleRenameDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "module rename | old=modules/{0} | new=modules/{1}")]
+           Message = "old=modules/{0} | new=modules/{1}")]
     public void ModuleRenameDetail(string old_id, string new_id)
     {
         if (IsEnabled()) WriteEvent(EvtModuleRenameDetail, old_id, new_id);
@@ -103,7 +103,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtModuleFolderRenameFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not rename a module folder | old_id={0} | new_id={1} | ex_type={2} | ex_message={3}")]
+           Message = "Could not rename a module folder\nold_id={0} | new_id={1} | ex_type={2} | ex_message={3}")]
     public void ModuleFolderRenameFailed(string old_id, string new_id, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtModuleFolderRenameFailed, old_id, new_id, ex_type, ex_message);
@@ -121,7 +121,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtRenamedRootKeyDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "root key renamed | old_key={0} | new_key={1}")]
+           Message = "old_key={0} | new_key={1}")]
     public void RenamedRootKeyDetail(string old_key, string new_key)
     {
         if (IsEnabled()) WriteEvent(EvtRenamedRootKeyDetail, old_key, new_key);

@@ -19,7 +19,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtBackupSkippedSourceMissingDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "backup skipped — source missing | path={0}")]
+           Message = "path={0}")]
     public void BackupSkippedSourceMissingDetail(string path)
     {
         if (IsEnabled()) WriteEvent(EvtBackupSkippedSourceMissingDetail, path);
@@ -37,7 +37,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtBackupCreatedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "backup created | path={0}")]
+           Message = "path={0}")]
     public void BackupCreatedDetail(string path)
     {
         if (IsEnabled()) WriteEvent(EvtBackupCreatedDetail, path);
@@ -46,7 +46,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtBackupFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Backup failed | ex_type={0} | ex_message={1}")]
+           Message = "Backup failed\nex_type={0} | ex_message={1}")]
     public void BackupFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtBackupFailed, ex_type, ex_message);
@@ -55,7 +55,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtBackupListFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not list the backups | ex_type={0} | ex_message={1}")]
+           Message = "Could not list the backups\nex_type={0} | ex_message={1}")]
     public void BackupListFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtBackupListFailed, ex_type, ex_message);
@@ -73,7 +73,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtRestoreSkippedSnapshotMissingDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "restore skipped — snapshot missing | path={0}")]
+           Message = "path={0}")]
     public void RestoreSkippedSnapshotMissingDetail(string path)
     {
         if (IsEnabled()) WriteEvent(EvtRestoreSkippedSnapshotMissingDetail, path);
@@ -91,7 +91,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtRestoredFromBackupDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "restored from backup | path={0}")]
+           Message = "path={0}")]
     public void RestoredFromBackupDetail(string path)
     {
         if (IsEnabled()) WriteEvent(EvtRestoredFromBackupDetail, path);
@@ -103,16 +103,16 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtRestoreFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Restore failed | reason={0} | ex_type={1} | ex_message={2}")]
+           Message = "Restore failed\nreason={0} | ex_type={1} | ex_message={2}")]
     public void RestoreFailed(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRestoreFailed, reason, ex_type, ex_message);
     }
 
     [Event(EvtRestoreDeclined,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "restore declined | reason=user_declined")]
+           Message = "The settings restore was declined")]
     public void RestoreDeclined()
     {
         if (IsEnabled()) WriteEvent(EvtRestoreDeclined);
@@ -121,7 +121,7 @@ public sealed partial class DeckleSettingsSource
     [Event(EvtCleanupFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "cleanup failed | operation={0} | ex_type={1} | ex_message={2}")]
+           Message = "operation={0} | ex_type={1} | ex_message={2}")]
     public void CleanupFailedDetail(string operation, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtCleanupFailedDetail, operation, ex_type, ex_message);
