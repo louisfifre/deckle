@@ -47,11 +47,12 @@ public static class SettingsSearch
             Keywords = ["monitor", "display", "placement"],
         },
 
-        // "Application log" section.
+        // "Trace" section. Its label already says "trace"; the former label
+        // stays a keyword so a person who learned it still finds the card.
         new SettingSearchEntry
         {
             LabelKey = "GeneralAppLogCard",
-            Keywords = ["trace", "debug", "troubleshoot"],
+            Keywords = ["application log", "debug", "troubleshoot"],
         },
 
         // "Telemetry" section — the page's own composed toggle (TelemetrySettings).

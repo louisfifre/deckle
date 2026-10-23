@@ -35,7 +35,7 @@
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
 
-                <!-- ── Application log ─────────────────────────────────────── -->
+                <!-- ── Trace (diagnostics\trace.jsonl) ───────────────────────── -->
                 <catalog:SettingsSection x:Name="ApplicationLogSection"
                                          x:Uid="DiagnosticsPageApplicationLogSection"
                                          HasReset="True"
