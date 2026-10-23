@@ -1,3 +1,5 @@
+using Deckle.Diagnostics;
+
 namespace Deckle.Lighting;
 
 // Owns the durable state of one EventStream loss episode. It is intentionally
@@ -57,6 +59,11 @@ internal sealed class HueEventStreamEpisode
 
             _incidentOpen = true;
             observation = new HueEventStreamObservation(duration, _failureCount, _lastException);
+            // The tray follows the incident under this lock: the opening runs
+            // on its own task after the grace period, and a reconnection at
+            // that very moment must not close the tray before it opens.
+            UserIncidentRegistry.Instance.Open(
+                UserIncidents.HueEvents, _lastException?.GetType().Name ?? "clean_close");
             return true;
         }
     }
@@ -76,6 +83,7 @@ internal sealed class HueEventStreamEpisode
                 GetDuration(),
                 _failureCount,
                 _lastException);
+            if (shouldReport) UserIncidentRegistry.Instance.Close(UserIncidents.HueEvents);
 
             _disconnected = false;
             _incidentOpen = false;
@@ -95,6 +103,8 @@ internal sealed class HueEventStreamEpisode
             observation = shouldReport
                 ? new HueEventStreamObservation(GetDuration(), _failureCount, _lastException)
                 : default;
+            // A stopped subscriber has no bridge to reach any more.
+            if (shouldReport) UserIncidentRegistry.Instance.Close(UserIncidents.HueEvents);
 
             _disconnected = false;
             _incidentOpen = false;

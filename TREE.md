@@ -2256,6 +2256,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── HueEntertainmentLightOutputTests.cs
 │   │   ├── HueEventStreamBugNotes.md
 │   │   ├── HueEventStreamEpisodeTests.cs
+│   │   ├── HueEventStreamUserIncidentTests.cs
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   ├── HueLocalDiscoveryRegressionTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs
