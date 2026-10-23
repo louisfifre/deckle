@@ -123,7 +123,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtRecordingFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "Recording failed\nex_type={1} | ex_message={2} | purpose={0} | elapsed_ms={3} | work_id={4}")]
+           Message = "The recording stopped on an error\nex_type={1} | ex_message={2} | purpose={0} | elapsed_ms={3} | work_id={4}")]
     public void RecordingFailed(string purpose, string ex_type, string ex_message, long elapsed_ms, string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtRecordingFailed, purpose, ex_type, ex_message, elapsed_ms, work_id);
@@ -187,7 +187,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtMicrophoneOpenFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "Cannot open the microphone\nmmsys_err={1} | mmsys_name={2} | device={4} | device_id={3} | purpose={0}")]
+           Message = "The microphone could not be opened, so nothing is recorded\nmmsys_err={1} | mmsys_name={2} | device={4} | device_id={3} | purpose={0}")]
     public void MicrophoneOpenFailed(string purpose, uint mmsys_err, string mmsys_name, int device_id, string device_name)
     {
         if (IsEnabled()) WriteEvent(EvtMicrophoneOpenFailed, purpose, mmsys_err, mmsys_name, device_id, device_name);
@@ -200,7 +200,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtMicrophoneStartFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "Cannot start the microphone\nstage={1} | mmsys_err={2} | mmsys_name={3} | win32_error={4} | device={6} | device_id={5} | purpose={0}")]
+           Message = "The microphone opened but could not start recording, so nothing is recorded\nstage={1} | mmsys_err={2} | mmsys_name={3} | win32_error={4} | device={6} | device_id={5} | purpose={0}")]
     public void MicrophoneStartFailed(string purpose, string stage, uint mmsys_err, string mmsys_name, int win32_error, int device_id, string device_name)
     {
         if (IsEnabled())
@@ -215,7 +215,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtCaptureReleaseFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "The microphone was not released cleanly\nstage={0} | mmsys_err={1} | mmsys_name={2}")]
+           Message = "The microphone was not released cleanly, so the next recording may fail to open it\nstage={0} | mmsys_err={1} | mmsys_name={2}")]
     public void CaptureReleaseFailed(string stage, uint mmsys_err, string mmsys_name)
     {
         if (IsEnabled()) WriteEvent(EvtCaptureReleaseFailed, stage, mmsys_err, mmsys_name);
@@ -252,7 +252,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtNoAudioDataDetected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "The microphone delivers no audio\nreason={0} | waited_ms={1} | device={3} | device_id={2}")]
+           Message = "The microphone delivers no audio, so the recording is silent\nreason={0} | waited_ms={1} | device={3} | device_id={2}")]
     public void NoAudioDataDetected(string reason, long waited_ms, int device_id, string device_name)
     {
         if (IsEnabled()) WriteEvent(EvtNoAudioDataDetected, reason, waited_ms, device_id, device_name);
@@ -302,7 +302,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtLowAudioDetected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "No healthy voice was detected at the start of the recording")]
+           Message = "No clear voice was heard at the start of the recording, so the microphone may be muted or too quiet")]
     public void LowAudioDetected()
     {
         if (IsEnabled()) WriteEvent(EvtLowAudioDetected);
@@ -387,7 +387,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtDurationCapReached,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "Recording stopped at the maximum duration")]
+           Message = "Recording stopped at the maximum duration, so later speech was not recorded")]
     public void DurationCapReached()
     {
         if (IsEnabled()) WriteEvent(EvtDurationCapReached);
@@ -437,7 +437,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtPlaybackFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Push | Keywords.Lifecycle),
-           Message = "Cannot play on the speaker\nstage={0} | mmsys_err={1} | mmsys_name={2} | win32_error={3} | device={4} | sample_rate={5}")]
+           Message = "Audio could not play on the speaker\nstage={0} | mmsys_err={1} | mmsys_name={2} | win32_error={3} | device={4} | sample_rate={5}")]
     public void PlaybackFailed(string stage, uint mmsys_err, string mmsys_name, int win32_error, string device_name, int sample_rate)
     {
         if (IsEnabled())
@@ -460,7 +460,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtPlaybackSkipped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Playback skipped\nreason={0}")]
+           Message = "Audio playback was skipped, so nothing was heard\nreason={0}")]
     public void PlaybackSkipped(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtPlaybackSkipped, reason);
@@ -508,7 +508,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtAudioFileDecodeFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "Could not decode the audio file\nreason={0} | hr=0x{1:X8} | elapsed_ms={2}")]
+           Message = "An audio file could not be decoded, so its audio is unavailable\nreason={0} | hr=0x{1:X8} | elapsed_ms={2}")]
     public void AudioFileDecodeFailed(string reason, int hr, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtAudioFileDecodeFailed, reason, hr, elapsed_ms);
@@ -529,7 +529,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtAudioFileDecodeCrashed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "Audio file decoding crashed\nex_type={0} | ex_message={1} | elapsed_ms={2}")]
+           Message = "Decoding an audio file stopped on an error, so its audio is unavailable\nex_type={0} | ex_message={1} | elapsed_ms={2}")]
     public void AudioFileDecodeCrashed(string ex_type, string ex_message, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtAudioFileDecodeCrashed, ex_type, ex_message, elapsed_ms);
