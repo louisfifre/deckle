@@ -213,4 +213,13 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtOpenLogsFromFooter);
     }
 
+    [Event(EvtOpenPlaygroundFromFooter,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Open playground from footer")]
+    public void OpenPlaygroundFromFooter()
+    {
+        if (IsEnabled()) WriteEvent(EvtOpenPlaygroundFromFooter);
+    }
+
 }

@@ -328,6 +328,12 @@
   <data name="SettingsLogsButton.AutomationProperties.Name" xml:space="preserve">
     <value>Logs</value>
   </data>
+  <data name="SettingsPlaygroundButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Playground</value>
+  </data>
+  <data name="SettingsPlaygroundButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Playground</value>
+  </data>
 
   <!-- Cross-page search (TitleBar central Content). x:Uid strings resolve locally.
        The box collapses to SettingsSearchIconButton below a width threshold. The two
