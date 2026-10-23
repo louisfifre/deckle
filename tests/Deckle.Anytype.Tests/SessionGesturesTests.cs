@@ -280,7 +280,7 @@ public class SessionGesturesTests
         JsonObject op = (JsonObject)Assert.Single(ops)!;
         Assert.Equal("insert_blocks", op["op"]!.GetValue<string>());
         Assert.Equal("last", op["position"]!.GetValue<string>());
-        Assert.Equal("2026-06-12 14:05\n\nwrites the tests", op["markdown"]!.GetValue<string>());
+        Assert.Equal("2026-06-12 14:05\n\nwrites the tests\n\n ", op["markdown"]!.GetValue<string>());
 
         FakeV2Handler.Seen patch = v2.Requests.Single(r => r.Method == "PATCH");
         Assert.False(patch.HasHeader("If-Match"));
@@ -305,7 +305,7 @@ public class SessionGesturesTests
         await NewGestures(server, v2, new StoppedClock()).LogAsync("writes the tests", NewReport, Ct);
 
         Assert.Equal(
-            "---\n\n2026-06-12 14:05\n\nwrites the tests",
+            "---\n\n2026-06-12 14:05\n\nwrites the tests\n\n ",
             LoggedOps(v2).Single()!["markdown"]!.GetValue<string>());
     }
 
@@ -351,7 +351,7 @@ public class SessionGesturesTests
         // The heading comes from the report's own journal date (2026-06-11),
         // not from today, in the same insert as the first entry.
         Assert.Equal(
-            "# Journal 2026-06-11\n\n2026-06-12 14:05\n\nwrites the tests",
+            "# Journal 2026-06-11\n\n2026-06-12 14:05\n\nwrites the tests\n\n ",
             LoggedOps(v2).Single()!["markdown"]!.GetValue<string>());
     }
 

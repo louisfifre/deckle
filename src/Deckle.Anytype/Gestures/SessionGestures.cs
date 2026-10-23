@@ -139,10 +139,13 @@ public sealed class SessionGestures(
         // so a missing one counts as empty.
         bool hasBody = report.Outline is { Count: > 0 };
 
-        // Two paragraphs: when the entry happened (the part that matters in a
-        // journal read days later), then what was said.
+        // Three paragraphs: when the entry happened (the part that matters in a
+        // journal read days later), what was said, then a spacer paragraph.
+        // Markdown drops trailing blank lines, so the spacer is a paragraph
+        // holding one no-break space (not measured on a live Anytype yet: if
+        // the server trims it, the gap before the next divider is lost).
         string stamp = _time.GetLocalNow().ToString(MarkdownBody.JournalStampFormat, CultureInfo.InvariantCulture);
-        string entry = $"{stamp}\n\n{line.Trim()}";
+        string entry = $"{stamp}\n\n{line.Trim()}\n\n{EntrySpacer}";
 
         // Anytype puts no space between paragraphs, so one entry's text ran
         // straight into the next entry's stamp. A divider sits between two
@@ -240,6 +243,8 @@ public sealed class SessionGestures(
     }
 
     // ── misc ─────────────────────────────────────────────────────────────────
+
+    const string EntrySpacer = " ";
 
     // Any block but a heading is an earlier entry (or the bullets of a report
     // written before the stamped form). A block whose type is not served
