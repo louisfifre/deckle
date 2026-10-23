@@ -103,7 +103,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The MCP host did not start\nreason={0}")]
+           Message = "The Anytype MCP host refused to start, so assistants cannot reach Anytype\nreason={0}")]
     public void HostStartRefused(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtHostStartRefused, reason);
@@ -141,7 +141,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtHostInternalLog,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
-           Message = "The MCP host reported a problem\nevent_name={1} | category={0} | level={2} | ex_type={3}")]
+           Message = "The web server behind the Anytype MCP host reported a problem\nevent_name={1} | category={0} | level={2} | ex_type={3}")]
     public void HostInternalLog(string category, string event_name, string log_level, string ex_type)
     {
         if (IsEnabled()) WriteEvent(EvtHostInternalLog, category, event_name, log_level, ex_type);
@@ -202,7 +202,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "MCP client tokens are missing from the vault\nclients={0} | missing={1}")]
+           Message = "Some assistants have no Anytype token in the vault, so the MCP host refuses them\nclients={0} | missing={1}")]
     public void TokenVariablesMissing(int clients, int missing)
     {
         if (IsEnabled()) WriteEvent(EvtTokenVariablesMissing, clients, missing);
@@ -219,7 +219,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtRequestRejected,
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
-           Message = "An MCP request was rejected\nreason={0} | status={1}")]
+           Message = "The Anytype MCP host refused a request before running it\nreason={0} | status={1}")]
     public void RequestRejected(string reason, int status_code)
     {
         if (IsEnabled()) WriteEvent(EvtRequestRejected, reason, status_code);
@@ -279,7 +279,7 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     [Event(EvtToolCallFailed,
            Level = EventLevel.Warning,
            Keywords = Tool,
-           Message = "MCP tool call failed\noutcome={2} | surface={0} | tool={1} | ex_type={3} | status_code={4} | error_code={5} | elapsed_ms={6:F1} | work_id={7}")]
+           Message = "An Anytype tool call failed, and the assistant received the error\noutcome={2} | surface={0} | tool={1} | ex_type={3} | status_code={4} | error_code={5} | elapsed_ms={6:F1} | work_id={7}")]
     public void ToolCallFailed(string surface, string tool, string outcome, string ex_type, int status_code, string error_code, double elapsed_ms, string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtToolCallFailed, surface, tool, outcome, ex_type, status_code, error_code, elapsed_ms, work_id);
