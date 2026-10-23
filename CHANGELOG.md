@@ -23,6 +23,13 @@ doctrine). This file is generated from the Conventional-Commit history by
 ### Changed
 
 - **logging:** Expose the Diagnostics page tag as a constant
+- **app:** Move the HUD feedback sink into the host
+- **diagnostics:** Rename the log files to log.jsonl and trace.jsonl
+- **diagnostics:** Rename the Journal tag to Milestone
+
+### Fixed
+
+- **app:** Keep a dictation put back on the clipboard in the log
 
 ## [0.67.1](https://github.com/louisfifre/deckle/compare/v0.59.0...v0.67.1) — 2026-10-23
 
