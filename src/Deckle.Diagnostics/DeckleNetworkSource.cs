@@ -82,7 +82,7 @@ public sealed class DeckleNetworkSource : DeckleEventSource
     [Event(EvtNetworkQueryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Network,
-           Message = "network query failed\nstage={0} | ex_type={1} | hr=0x{2:X8} | ex_message={3}")]
+           Message = "A network query failed, so the connection state stays at its last known value\nstage={0} | ex_type={1} | hr=0x{2:X8} | ex_message={3}")]
     public void NetworkQueryFailed(string stage, string ex_type, int hr, string ex_message)
     {
         if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Network)) return;

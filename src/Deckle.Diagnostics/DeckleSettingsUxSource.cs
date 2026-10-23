@@ -80,7 +80,7 @@ public sealed class DeckleSettingsUxSource : DeckleEventSource
     [Event(EvtFolderActionFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A folder action failed\naction={0} | ex_type={1} | hr=0x{2:X8} | ex_message={3}")]
+           Message = "A folder action from Settings failed and did not happen\naction={0} | ex_type={1} | hr=0x{2:X8} | ex_message={3}")]
     public void FolderActionFailed(string action, string ex_type, int hr, string ex_message)
     {
         if (IsEnabled(EventLevel.Error, (EventKeywords)Keywords.Lifecycle))

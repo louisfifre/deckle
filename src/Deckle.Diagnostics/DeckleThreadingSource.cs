@@ -95,7 +95,7 @@ public sealed class DeckleThreadingSource : DeckleEventSource
     [Event(EvtMarshalStalled,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Threading,
-           Message = "The UI thread ran a queued callback late\noperation={0} | caller={1} | waited_ms={2} | threshold_ms={3}")]
+           Message = "The UI thread was blocked, so Deckle's windows stopped responding for a while\noperation={0} | caller={1} | waited_ms={2} | threshold_ms={3}")]
     public void MarshalStalled(string operation, string caller, int waited_ms, int threshold_ms)
     {
         if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Threading)) return;
@@ -138,7 +138,7 @@ public sealed class DeckleThreadingSource : DeckleEventSource
     [Event(EvtDispatcherEnqueueRejected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Threading,
-           Message = "A dispatcher enqueue was rejected")]
+           Message = "Work for the UI thread was refused because its queue has shut down, so it did not run")]
     public void DispatcherEnqueueRejected()
     {
         if (!IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Threading)) return;

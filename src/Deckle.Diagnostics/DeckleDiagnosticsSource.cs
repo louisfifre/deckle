@@ -42,7 +42,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtSinkFaulted,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A log sink failed to write\nsink={0} | error_type={1} | error_message={2}")]
+           Message = "A log sink failed to write, so its rows are lost until it writes again\nsink={0} | error_type={1} | error_message={2}")]
     public void SinkFaulted(string sink, string error_type, string error_message)
     {
         if (IsEnabled()) WriteEvent(EvtSinkFaulted, sink, error_type, error_message);
@@ -72,7 +72,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtFlushFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A log sink could not flush\nsink={0} | error_type={1} | error_message={2}")]
+           Message = "A log sink could not flush, so its last rows may be missing from disk\nsink={0} | error_type={1} | error_message={2}")]
     public void FlushFailed(string sink, string error_type, string error_message)
     {
         if (IsEnabled()) WriteEvent(EvtFlushFailed, sink, error_type, error_message);
@@ -81,7 +81,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtFlushTimedOut,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A log sink did not flush in time\nsink={0} | timeout_ms={1}")]
+           Message = "A log sink did not flush in time, so its last rows may be missing from disk\nsink={0} | timeout_ms={1}")]
     public void FlushTimedOut(string sink, int timeout_ms)
     {
         if (IsEnabled()) WriteEvent(EvtFlushTimedOut, sink, timeout_ms);
@@ -106,7 +106,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtRotationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A log file could not be rolled or pruned\nfile_name={0} | step={1} | error_type={2} | error_message={3}")]
+           Message = "A log file could not be rolled or pruned, so the log takes more disk than its cap\nfile_name={0} | step={1} | error_type={2} | error_message={3}")]
     public void RotationFailed(string file_name, string step, string error_type, string error_message)
     {
         if (IsEnabled()) WriteEvent(EvtRotationFailed, file_name, step, error_type, error_message);
@@ -129,7 +129,7 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtRowUnrouted,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A log sink skipped a row because it had no path for it\nsink={0}")]
+           Message = "A log sink had no file for a row and skipped it, so the dataset has a gap\nsink={0}")]
     public void RowUnrouted(string sink)
     {
         if (IsEnabled()) WriteEvent(EvtRowUnrouted, sink);
