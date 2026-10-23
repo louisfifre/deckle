@@ -2316,6 +2316,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SecretVaultTests.cs
 │   │   ├── UserProfilePathBugNotes.md
 │   │   └── UserProfilePathTests.cs
+│   ├── Deckle.Settings.Tests/
+│   │   ├── Deckle.Settings.Tests.csproj
+│   │   └── MilestoneClosersTests.cs
 │   ├── Deckle.Setup.Tests/
 │   │   ├── DataRootRelocatorBugNotes.md
 │   │   ├── DataRootRelocatorTests.cs
