@@ -49,6 +49,25 @@ The log that the LogWindow shows, the other sink of the same operational stream.
 **Logs** :
 In ordinary use, any record of what a program did. The word is too loose in Deckle, where the operational log stream, its sinks and the telemetry datasets are separate things.
 
+**Log entry** :
+One record in a log, one line in a file or in the LogWindow. In Deckle an entry is an observation, built once as an `EventEntry` and offered to every sink.
+_Avoid_ : event (what happened, which an entry records).
+
+**Event** :
+What happened, declared by a provider with named fields. One emission becomes one log entry in each sink that takes it.
+
+**Provider** :
+The source that declares and emits a family of events, one `EventSource` per area, such as `Deckle-Chrono`. A reader filters on it to see one area.
+
+**Level** :
+The severity of an entry, the .NET `EventLevel` names from `Critical` through `Error`, `Warning` and `Informational` to `Verbose`. A `Warning` says the work went on degraded, an `Error` that it stopped.
+
+**Structured logging** :
+Logging where each entry carries named fields, such as time, level, provider and identifiers, so that a machine can filter entries and pair a start with its end. Deckle writes its files as one JSON object per line.
+
+**Sink** :
+A destination for admitted entries, such as a file, the LogWindow or the HUD. Each sink takes, by its own test, the part of the stream it serves.
+
 **Capture filter** :
 A filter applied at the moment of capture, in the audio or screen sense. A temporary lens over the LogWindow is a view filter.
 
