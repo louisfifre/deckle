@@ -483,7 +483,7 @@ public class ReadGesturesTests
             digest);
     }
 
-    // A report fresh out of session_start reads back with no markdown at all.
+    // A report fresh out of open_report reads back with no markdown at all.
     [Theory]
     [InlineData("")]
     [InlineData("# Journal 2026-07-21")]

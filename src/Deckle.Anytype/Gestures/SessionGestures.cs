@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Globalization;
-using System.Text;
 using System.Text.Json.Nodes;
 using Deckle.Anytype;
 
@@ -10,8 +9,7 @@ namespace Deckle.Anytype;
 // to it, and link further tasks to the open report. Anchoring is done from the
 // report side — the rapport carries journal date + the linked task(s) in its
 // « Tâche(s) liée(s) » property; its project is derived through those tasks.
-// session_start (create and digest) and session_log run on API v2;
-// session_touch still goes through v1.
+// open_report and session_log run on API v2; session_touch still goes through v1.
 public sealed class SessionGestures(
     AnytypeApiClient api,
     NameResolver resolver,
@@ -22,27 +20,52 @@ public sealed class SessionGestures(
     readonly NameResolver _resolver = resolver;
     readonly AnytypeV2ObjectReader _reader = new(v2);
     readonly AnytypeV2Writer _writer = new(v2);
-    readonly AnytypeV2Searcher _searcher = new(v2);
     readonly TimeProvider _time = time ?? TimeProvider.System;
 
-    // ── session_start ────────────────────────────────────────────────────────
+    // ── open_report ──────────────────────────────────────────────────────────
 
-    public async Task<string> StartAsync(string task, CancellationToken ct = default)
+    // Opens the report and says nothing of the task's history: the caller has
+    // just read the task, and report_journal replays a report on demand. The
+    // answer is the handle log needs plus one line naming the task and its
+    // project, so a report opened on the wrong task shows at once.
+    //
+    // Only an id is taken, as log does for a report: the caller has it from
+    // task_properties or search, and a name, even matched exactly, can be
+    // carried by another task or renamed, so it is no stable anchor for a write.
+    public async Task<string> OpenReportAsync(string task, CancellationToken ct = default)
     {
         long t0 = Stopwatch.GetTimestamp();
 
-        // The start creates a report on this task, so the name must be exact.
-        string taskId = await _resolver.ResolveAsync(
-            task, new[] { DevSpace.Types.Task }, NameMatch.Exact, ct);
-        TaskView taskView = await ReadTaskAsync(taskId, ct);
+        string taskId = AnytypeObjectId.Require(task, "task");
 
-        // Every read the digest needs comes BEFORE the create. The create is the
-        // last remote call, so a read that fails leaves no report behind: the
-        // caller retries the whole gesture, and a report created first would be
-        // stacked under a second one on the same task (and the failed call never
-        // gave its id back). The digest therefore cannot mention the new report,
-        // which also makes the old filter on it unnecessary.
-        string digest = await BuildStartDigestAsync(taskId, taskView, ct);
+        // Every read comes before the create: a failure after it would leave a
+        // report the caller never got the id of.
+        AnytypeV2ObjectDocument taskDoc = await _reader.ReadAsync(
+            taskId, new AnytypeV2ObjectReadOptions { Parts = AnytypeV2ObjectParts.Properties }, ct);
+        var taskProps = AnytypeV2PropertyMap.Of(taskDoc);
+        string taskName = taskProps.Name.Length > 0 ? taskProps.Name : "(sans titre)";
+
+        // The id is not resolved by type any more, so the type is checked here:
+        // a report linked to anything but a task has no place in the space.
+        string actual = taskDoc.Body["type"]?.GetValue<string>() ?? "";
+        if (actual.Length > 0 && actual != DevSpace.Types.Task)
+            throw new InvalidOperationException(
+                $"{taskName} est un objet {actual}, pas une tâche : un rapport s'ouvre sur une tâche.");
+
+        // The project name only helps the person check the task; a report
+        // belongs to its task, not to the project. So a project read that fails
+        // does not stop the report: the line says the name was not read, and
+        // the failed request is already journaled by the client.
+        string project;
+        try
+        {
+            project = await LinkedNames.JoinAsync(
+                _reader, taskProps.ObjectIds(DevSpace.Props.RelationProjet), ct) ?? "—";
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
+        {
+            project = "(projet non lu)";
+        }
 
         // Measured on a real create (2026-10-22): the « # Journal <date> »
         // heading stays a heading_1 block, so the report opens on its date and
@@ -76,8 +99,8 @@ public sealed class SessionGestures(
         DeckleAnytypeSource.Log.SessionStarted();
         DeckleAnytypeSource.Log.SessionReportCreated(reportId);
 
-        DeckleAnytypeSource.Log.GestureCompleted("session_start", Elapsed(t0));
-        return $"report_id : {reportId}\n{digest}";
+        DeckleAnytypeSource.Log.GestureCompleted("open_report", Elapsed(t0));
+        return $"report_id : {reportId}\n{taskName} · {project}";
     }
 
     // ── session_log ──────────────────────────────────────────────────────────
@@ -87,7 +110,7 @@ public sealed class SessionGestures(
     {
         long t0 = Stopwatch.GetTimestamp();
 
-        // session_start returns this provider handle. Accepting a report title
+        // open_report returns this provider handle. Accepting a report title
         // here would reintroduce ambiguous recovery after a lost append result.
         string reportId = AnytypeObjectId.Require(reportSelector, "report");
 
@@ -179,95 +202,6 @@ public sealed class SessionGestures(
             ["properties"] = new JsonArray(ObjectsProp(DevSpace.Props.TachesLiees, ids)),
         };
         await _api.UpdateObjectAsync(reportId, payload, ct);
-    }
-
-    // ── digest ───────────────────────────────────────────────────────────────
-
-    async Task<string> BuildStartDigestAsync(
-        string taskId, TaskView task, CancellationToken ct)
-    {
-        var sb = new StringBuilder();
-
-        // v2 serves a select as its option name; the digest has always shown the
-        // task type by its key, so the name is mapped back (an unknown name is
-        // shown as served).
-        string? typeName = task.Props.Select(DevSpace.Props.TypeDeTache);
-        string? type = typeName is null ? null : DevSpace.TypeDeTache.Resolve(typeName) ?? typeName;
-        string? priority = task.Props.Select(DevSpace.Props.Priorite);
-        string project = await LinkedNames.JoinAsync(
-            _reader, task.Props.ObjectIds(DevSpace.Props.RelationProjet), ct) ?? "—";
-
-        var header = new List<string>
-        {
-            (task.Props.Checkbox(DevSpace.Props.Done) ? "[x] " : "[ ] ") + task.Name,
-        };
-        if (type is not null) header.Add($"type {type}");
-        if (priority is not null) header.Add($"prio {priority}");
-        header.Add($"projet {project}");
-        sb.Append(string.Join(" · ", header));
-
-        foreach (MarkdownBody.ChecklistItem item in MarkdownBody.ChecklistItems(task.Markdown))
-            sb.Append('\n').Append(item.Done ? "- [x] " : "- [ ] ").Append(item.Label);
-
-        // Search rows carry no markdown, so each shown report is read for its
-        // body. Only the tail of each is shown: the digest places the session,
-        // it does not replay it (report_journal does, on demand, by the id
-        // given here).
-        foreach (AnytypeV2SearchRow row in (await ReportsForTaskAsync(taskId, ct))
-            .Take(RecentReports))
-        {
-            string date = row.Properties.Day(DevSpace.Props.DateDuJournal) ?? Today();
-            sb.Append($"\n— {date} · {row.Id}");
-
-            AnytypeV2ObjectDocument md = await _reader.ReadAsync(
-                row.Id, new AnytypeV2ObjectReadOptions { Markdown = true }, ct);
-            IReadOnlyList<string> entries = MarkdownBody.JournalEntries(md.Body["markdown"]?.GetValue<string>() ?? "");
-            int skipped = Math.Max(0, entries.Count - ReportTailEntries);
-            if (skipped > 0) sb.Append($"\n… {skipped} entrée(s) avant");
-            foreach (string entry in entries.Skip(skipped)) sb.Append('\n').Append(entry);
-        }
-
-        return sb.ToString();
-    }
-
-    // The task as the digest needs it: title and typed properties from one v2
-    // read, the checklist from a second (a markdown read carries neither).
-    sealed record TaskView(string Name, AnytypeV2PropertyMap Props, string Markdown);
-
-    async Task<TaskView> ReadTaskAsync(string taskId, CancellationToken ct)
-    {
-        AnytypeV2ObjectDocument doc = await _reader.ReadAsync(
-            taskId, new AnytypeV2ObjectReadOptions { Parts = AnytypeV2ObjectParts.Properties }, ct);
-        var props = AnytypeV2PropertyMap.Of(doc);
-        AnytypeV2ObjectDocument md = await _reader.ReadAsync(
-            taskId, new AnytypeV2ObjectReadOptions { Markdown = true }, ct);
-        string markdown = MarkdownBody.DropTitle(md.Body["markdown"]?.GetValue<string>() ?? "", props.Name);
-        return new TaskView(props.Name.Length > 0 ? props.Name : "(sans titre)", props, markdown);
-    }
-
-    // Measured: three full reports copied into the digest put session_start at
-    // 12 958 chars at p90. Three tails of five entries (one line each when this
-    // was measured) keep the thread of the last sessions within a few hundred.
-    public const int RecentReports = 3;
-    public const int ReportTailEntries = 5;
-
-    // The server filters on the report's link to the task and sorts by journal
-    // date, newest first (the structured form measured on 2026-10-22), so one
-    // page of the size shown is all the digest needs: a task can carry a long
-    // history of reports, and paging through it all to keep three was waste.
-    async Task<IReadOnlyList<AnytypeV2SearchRow>> ReportsForTaskAsync(string taskId, CancellationToken ct)
-    {
-        if (taskId.Length == 0) return [];
-
-        AnytypeV2SearchPage page = await _searcher.SearchPageAsync(
-            new AnytypeV2SearchRequest
-            {
-                Type = DevSpace.Types.Rapport,
-                Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.TachesLiees, [taskId])],
-                Sorts = [new AnytypeV2SearchSort(DevSpace.Props.DateDuJournal, Descending: true)],
-                Fields = [DevSpace.Props.DateDuJournal],
-            }, offset: 0, limit: RecentReports, ct);
-        return page.Rows;
     }
 
     // ── property read helpers (raw API property-array shape) ──────────────────

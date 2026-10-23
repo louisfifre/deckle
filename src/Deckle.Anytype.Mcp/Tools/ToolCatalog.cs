@@ -23,12 +23,12 @@ public static class ToolCatalog
         return new ToolDescriptor[]
         {
             new(
-                "session_start",
-                "Open a work session on a task: create its journal report and return its report_id, then the task's title, checklist and the tail of its last three reports. Call it once before work that changes the space; reads need no session. Pass the report_id to log.",
+                "open_report",
+                "Open a work report on a task: create a journal report linked to it, dated today, and answer report_id, then one line « task title · project ». Call it as soon as work on a task starts; a report always belongs to a task. Pass the report_id to log.",
                 Schema(
-                    required: [Prop("task", "string", "Anchor task, name or id.")]),
+                    required: [Prop("task", "string", "Task id, as task_properties or search gives it; names are refused.")]),
                 async (args, ct) =>
-                    await session.StartAsync(Str(args, "task"), ct),
+                    await session.OpenReportAsync(Str(args, "task"), ct),
                 ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new(
@@ -38,7 +38,7 @@ public static class ToolCatalog
                     required:
                     [
                         Prop("line", "string", "Journal line to append: the why of what you just did."),
-                        Prop("report", "string", "report_id returned by session_start; report names are refused."),
+                        Prop("report", "string", "report_id returned by open_report; report names are refused."),
                     ]),
                 async (args, ct) =>
                     await session.LogAsync(Str(args, "line"), Str(args, "report"), ct),
@@ -80,7 +80,7 @@ public static class ToolCatalog
                 "report_journal",
                 "A session report's id, journal date, linked tasks by name, and its last journal entries (20 by default), with the count of earlier entries.",
                 Schema(
-                    required: [Prop("report", "string", "Report, id (from session_start, project_overview or search) or name.")],
+                    required: [Prop("report", "string", "Report, id (from open_report, project_overview or search) or name.")],
                     optional: [Prop("last", "integer", "How many trailing entries to return. Default 20.", minimum: 1, maximum: 200)]),
                 async (args, ct) =>
                     await reads.ReportJournalAsync(Str(args, "report"), IntOpt(args, "last") ?? 20, ct),
