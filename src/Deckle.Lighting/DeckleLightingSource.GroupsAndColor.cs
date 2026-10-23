@@ -19,7 +19,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtBridgeReturnedNoGroups,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Bridge returned no groups payload")]
+           Message = "The Hue bridge returned no groups")]
     public void BridgeReturnedNoGroups()
     {
         if (IsEnabled()) WriteEvent(EvtBridgeReturnedNoGroups);

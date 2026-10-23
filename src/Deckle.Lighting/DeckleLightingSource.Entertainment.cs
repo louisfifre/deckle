@@ -71,7 +71,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtClipV2RequestFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A CLIP v2 request failed\nmethod={0} | path={1} | status={2} | description={3}")]
+           Message = "A request to the Hue bridge failed\nmethod={0} | path={1} | status={2} | description={3}")]
     public void ClipV2RequestFailed(string method, string path, int status, string description)
     {
         if (IsEnabled()) WriteEvent(EvtClipV2RequestFailed, method, path, status, description);
@@ -118,7 +118,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEntertainmentPrePrimeFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Preparing Hue Entertainment lights failed\nex_type={0} | ex_message={1}")]
+           Message = "Preparing the Hue lights for streaming failed\nex_type={0} | ex_message={1}")]
     public void EntertainmentPrePrimeFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtEntertainmentPrePrimeFailed, ex_type, ex_message);
@@ -200,7 +200,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEntertainmentStreamingStopFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Resource),
-           Message = "Hue Entertainment streaming could not be stopped\nex_type={0} | ex_message={1}")]
+           Message = "Hue Entertainment streaming could not be stopped, so the Hue app shows the area busy until the bridge times out\nex_type={0} | ex_message={1}")]
     public void EntertainmentStreamingStopFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtEntertainmentStreamingStopFailed, ex_type, ex_message);

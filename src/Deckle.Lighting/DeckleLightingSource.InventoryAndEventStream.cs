@@ -10,7 +10,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtIdentifyFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Identifying a light failed\nphase={0} | light_id={1} | status={2}")]
+           Message = "Identifying a light failed, so it did not blink\nphase={0} | light_id={1} | status={2}")]
     public void IdentifyFailed(string phase, string light_id, int status)
     {
         if (IsEnabled()) WriteEvent(EvtIdentifyFailed, phase, light_id, status);
@@ -60,7 +60,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtBridgeReturnedNoLights,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Bridge returned no lights")]
+           Message = "The Hue bridge returned no lights")]
     public void BridgeReturnedNoLights()
     {
         if (IsEnabled()) WriteEvent(EvtBridgeReturnedNoLights);
@@ -153,7 +153,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEventStreamIncident,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Hue event monitoring is unavailable, external changes may be overwritten\nduration_ms={0} | failures={1} | reason={2} | ex_type={3} | ex_message={4}")]
+           Message = "The Hue bridge's event stream is unavailable, so light changes made elsewhere may be overwritten\nduration_ms={0} | failures={1} | reason={2} | ex_type={3} | ex_message={4}")]
     public void EventStreamIncident(
         long duration_ms,
         int failures,

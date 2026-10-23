@@ -58,7 +58,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtDiscoveryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Cloud discovery failed\nex_type={0} | ex_message={1}")]
+           Message = "Finding the Hue bridge through the cloud failed\nex_type={0} | ex_message={1}")]
     public void DiscoveryFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtDiscoveryFailed, ex_type, ex_message);

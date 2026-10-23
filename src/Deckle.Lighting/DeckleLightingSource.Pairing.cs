@@ -62,7 +62,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtPairingRejected,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The bridge rejected pairing\nerror_type={0} | description={1}")]
+           Message = "The Hue bridge refused pairing, so Deckle is not paired\nerror_type={0} | description={1}")]
     public void PairingRejected(int error_type, string description)
     {
         if (IsEnabled()) WriteEvent(EvtPairingRejected, error_type, description);
@@ -71,7 +71,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtPairingTimedOut,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Pairing timed out before the link button was pressed\nattempts={0} | timeout_s={1}")]
+           Message = "Pairing timed out because the bridge's link button was not pressed\nattempts={0} | timeout_s={1}")]
     public void PairingTimedOut(int attempts, double timeout_s)
     {
         if (IsEnabled()) WriteEvent(EvtPairingTimedOut, attempts, timeout_s);
@@ -80,7 +80,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtBridgeUnreachable,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The bridge was unreachable during pairing\nex_type={0} | ex_message={1} | win32_error={2}")]
+           Message = "The Hue bridge could not be reached during pairing, so Deckle is not paired\nex_type={0} | ex_message={1} | win32_error={2}")]
     public void BridgeUnreachable(string ex_type, string ex_message, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtBridgeUnreachable, ex_type, ex_message, win32_error);
@@ -89,7 +89,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtPairingHttpError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The pairing request failed\nstatus={0}")]
+           Message = "The Hue bridge answered the pairing request with an error, so Deckle is not paired\nstatus={0}")]
     public void PairingHttpError(int status)
     {
         if (IsEnabled()) WriteEvent(EvtPairingHttpError, status);
