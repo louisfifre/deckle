@@ -64,4 +64,14 @@ public sealed class LogTransferTests
 
         Assert.Equal(longText + Environment.NewLine, result);
     }
+
+    [Fact]
+    public void Format_EndsEveryLineOfATwoLineRowTheSameWay()
+    {
+        string result = LogTransferText.Format(["sentence\n  pairs", "next"], value => value);
+
+        Assert.Equal(
+            "sentence" + Environment.NewLine + "  pairs" + Environment.NewLine + "next" + Environment.NewLine,
+            result);
+    }
 }
