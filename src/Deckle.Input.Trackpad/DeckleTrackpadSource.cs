@@ -119,7 +119,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtInjectionFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Mouse injection failed\naction={0} | win32_error={1}")]
+           Message = "Windows refused the trackpad's mouse input, so it does not reach the focused app\naction={0} | win32_error={1}")]
     public void InjectionFailed(string action, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtInjectionFailed, action, win32_error);
@@ -132,7 +132,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtPrimaryReleaseFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "The mouse button could not be released after a drag\nwin32_error={0}")]
+           Message = "The mouse button could not be released after a drag, so Windows may still see it held\nwin32_error={0}")]
     public void PrimaryReleaseFailed(int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtPrimaryReleaseFailed, win32_error);
@@ -187,7 +187,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtGestureWriteFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Gesture registry write failed\noperation={0} | reason={1} | ex_type={2} | ex_message={3}")]
+           Message = "The touchpad gesture settings could not be written, so Windows keeps its previous gestures\noperation={0} | reason={1} | ex_type={2} | ex_message={3}")]
     public void GestureWriteFailed(string operation, string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtGestureWriteFailed, operation, reason, ex_type, ex_message);
@@ -198,7 +198,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtGestureStateUnreadable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Gesture state unreadable\nquery={0} | ex_type={1} | ex_message={2}")]
+           Message = "The touchpad gesture state could not be read, so the page shows off, which may not match Windows\nquery={0} | ex_type={1} | ex_message={2}")]
     public void GestureStateUnreadable(string query, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtGestureStateUnreadable, query, ex_type, ex_message);
@@ -218,7 +218,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtRepairLaunchFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Connection repair script failed to launch\nreason={0} | win32_error={1} | ex_type={2} | ex_message={3}")]
+           Message = "The connection repair script could not launch, so nothing was repaired\nreason={0} | win32_error={1} | ex_type={2} | ex_message={3}")]
     public void RepairLaunchFailed(string reason, int win32_error, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRepairLaunchFailed, reason, win32_error, ex_type, ex_message);
@@ -239,7 +239,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtRepairFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Connection repair script failed\nreason={0} | exit_code={1}")]
+           Message = "The connection repair script failed, so the connection may still be broken\nreason={0} | exit_code={1}")]
     public void RepairFailed(string reason, int exit_code)
     {
         if (IsEnabled()) WriteEvent(EvtRepairFailed, reason, exit_code);
@@ -260,7 +260,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     [Event(EvtActFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Trackpad act failed\nact={0} | ex_type={1} | ex_message={2}")]
+           Message = "A trackpad action from Settings failed and did not run\nact={0} | ex_type={1} | ex_message={2}")]
     public void ActFailed(string act, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtActFailed, act, ex_type, ex_message);
