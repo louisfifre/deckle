@@ -96,7 +96,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     [Event(EvtSpeechSynthesisFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Speech synthesis failed\nex_type={0} | ex_message={1}")]
+           Message = "Speech synthesis failed, so nothing was read aloud\nex_type={0} | ex_message={1}")]
     public void SpeechSynthesisFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechSynthesisFailed, ex_type, ex_message);
@@ -110,7 +110,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
     [Event(EvtSpeechPlaybackFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Audio playback failed\nreason={0} | ex_type={1} | ex_message={2}")]
+           Message = "The synthesized speech could not play, so nothing was heard\nreason={0} | ex_type={1} | ex_message={2}")]
     public void SpeechPlaybackFailed(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechPlaybackFailed, reason, ex_type, ex_message);
