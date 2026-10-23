@@ -13,7 +13,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtProviderListModelsFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A provider did not answer the model listing\nprovider={0} | ex_type={1} | ex_message={2}")]
+           Message = "A provider did not answer the model listing, so its models are missing from the list\nprovider={0} | ex_type={1} | ex_message={2}")]
     public void ProviderListModelsFailed(string provider, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtProviderListModelsFailed, provider, ex_type, ex_message);

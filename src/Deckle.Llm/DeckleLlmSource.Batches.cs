@@ -56,7 +56,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtBatchRewriteFellBack,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A dictation batch kept its raw text\nreason={1} | batch={0} | ex_type={2} | ex_message={3}")]
+           Message = "A dictation batch could not be rewritten and keeps its raw text\nreason={1} | batch={0} | ex_type={2} | ex_message={3}")]
     public void BatchRewriteFellBack(int batch_index, string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtBatchRewriteFellBack, new object[] { batch_index, reason, ex_type, ex_message });

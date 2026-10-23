@@ -146,7 +146,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteTimeout,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Rewrite timed out\ncaller={0} | provider={1} | model={2} | elapsed_ms={3} | cap_s={4:F0} | work_id={5}")]
+           Message = "A rewrite timed out, so the text was not rewritten\ncaller={0} | provider={1} | model={2} | elapsed_ms={3} | cap_s={4:F0} | work_id={5}")]
     public void RewriteTimeout(string caller, string provider, string model, long elapsed_ms, double cap_s, string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtRewriteTimeout, new object[] { caller, provider, model, elapsed_ms, cap_s, work_id });
@@ -160,7 +160,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtRewriteUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Rewriter unavailable\nreason={3} | caller={0} | provider={1} | model={2} | status={4} | ex_type={5} | ex_message={6} | work_id={7}")]
+           Message = "A rewrite failed at its provider, so the text was not rewritten\nreason={3} | caller={0} | provider={1} | model={2} | status={4} | ex_type={5} | ex_message={6} | work_id={7}")]
     public void RewriteUnavailable(
         string caller, string provider, string model,
         string reason, int status, string ex_type, string ex_message, string work_id)
@@ -219,7 +219,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtParagraphRewriteFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A paragraph offer could not be prepared\nex_type={0} | ex_message={1}")]
+           Message = "A paragraph rewrite offer could not be prepared, so none is shown\nex_type={0} | ex_message={1}")]
     public void ParagraphRewriteFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtParagraphRewriteFailed, ex_type, ex_message);

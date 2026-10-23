@@ -36,7 +36,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtEndpointRefreshFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Endpoint refresh failed\nex_type={0} | ex_message={1}")]
+           Message = "Refreshing the providers after a change failed, so the LLM page may show stale providers\nex_type={0} | ex_message={1}")]
     public void EndpointRefreshFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtEndpointRefreshFailed, ex_type, ex_message);
@@ -45,7 +45,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtManualRefreshFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Manual refresh failed\nex_type={0} | ex_message={1}")]
+           Message = "Refreshing the providers on request failed, so the LLM page may show stale providers\nex_type={0} | ex_message={1}")]
     public void ManualRefreshFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtManualRefreshFailed, ex_type, ex_message);
@@ -54,7 +54,7 @@ public sealed partial class DeckleLlmSource
     [Event(EvtOllamaRefreshSkipped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Ollama refresh was skipped\nex_type={0} | ex_message={1}")]
+           Message = "Ollama did not answer, so the LLM page shows it unavailable with no models\nex_type={0} | ex_message={1}")]
     public void OllamaRefreshSkipped(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtOllamaRefreshSkipped, ex_type, ex_message);
