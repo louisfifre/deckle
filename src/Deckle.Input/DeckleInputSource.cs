@@ -131,7 +131,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Raw input host failed to start\nex_type={0} | ex_message={1} | win32_error={2}")]
+           Message = "The Raw Input host could not start, so the input features that rely on it are off\nex_type={0} | ex_message={1} | win32_error={2}")]
     public void HostStartFailed(string ex_type, string ex_message, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtHostStartFailed, ex_type, ex_message, win32_error);
@@ -204,7 +204,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtParserCreateFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Touchpad parser could not be created\nreason={0}")]
+           Message = "A touchpad's report format could not be parsed, so its input is ignored\nreason={0}")]
     public void ParserCreateFailed(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtParserCreateFailed, reason);
@@ -271,7 +271,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtRecordingFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Frame recording encountered an error\nex_type={0} | ex_message={1}")]
+           Message = "Touchpad frame recording failed and stopped\nex_type={0} | ex_message={1}")]
     public void RecordingFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRecordingFailed, ex_type, PathRedaction.Redact(ex_message));
@@ -325,7 +325,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Keyboard input host failed to start\nex_type={0} | ex_message={1} | win32_error={2}")]
+           Message = "The keyboard input host could not start, so the features that read the keyboard are off\nex_type={0} | ex_message={1} | win32_error={2}")]
     public void KeyboardHostStartFailed(string ex_type, string ex_message, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtKeyboardHostStartFailed, ex_type, ex_message, win32_error);
@@ -339,7 +339,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtInputPumpFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Input host message pump stopped unexpectedly\nhost={0} | reason={1} | win32_error={2} | ex_type={3} | ex_message={4}")]
+           Message = "An input host stopped unexpectedly, so it receives no more input until it restarts\nhost={0} | reason={1} | win32_error={2} | ex_type={3} | ex_message={4}")]
     public void InputPumpFailed(string host, string reason, int win32_error, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtInputPumpFailed, host, reason, win32_error, ex_type, ex_message);
@@ -372,7 +372,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtMouseHookFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Mouse wheel hook failed to start\nwin32_error={0}")]
+           Message = "The mouse wheel hook could not start, so the wheel cannot be intercepted\nwin32_error={0}")]
     public void MouseHookFailed(int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtMouseHookFailed, win32_error);
@@ -384,7 +384,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtMouseHookSilenceStarted,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Mouse wheel hook stopped receiving input\nreason={0} | unpaired={1}")]
+           Message = "The mouse wheel hook stopped receiving input, so the wheel is no longer intercepted\nreason={0} | unpaired={1}")]
     public void MouseHookSilenceStarted(string reason, int unpaired)
     {
         if (IsEnabled()) WriteEvent(EvtMouseHookSilenceStarted, reason, unpaired);
@@ -408,7 +408,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtInputRelayDegraded,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Keyboard input host is losing input relays\nreason={0} | win32_error={1} | occurrences={2}")]
+           Message = "The keyboard input host is dropping work, so some wheel or key input is missed\nreason={0} | win32_error={1} | occurrences={2}")]
     public void InputRelayDegraded(string reason, int win32_error, int occurrences)
     {
         if (IsEnabled()) WriteEvent(EvtInputRelayDegraded, reason, win32_error, occurrences);
@@ -470,7 +470,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtWheelRecordingFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Wheel recording encountered an error\nex_type={0} | ex_message={1}")]
+           Message = "Wheel event recording failed and stopped\nex_type={0} | ex_message={1}")]
     public void WheelRecordingFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtWheelRecordingFailed, ex_type, PathRedaction.Redact(ex_message));
