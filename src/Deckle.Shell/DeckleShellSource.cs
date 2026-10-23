@@ -76,7 +76,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtTrayIconHostCreated,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "tray icon owner window created | hwnd={0} | taskbar_created_msg={1}")]
+           Message = "hwnd={0} | taskbar_created_msg={1}")]
     public void TrayIconHostCreated(long hwnd, long taskbar_created_msg)
     {
         if (IsEnabled()) WriteEvent(EvtTrayIconHostCreated, hwnd, taskbar_created_msg);
@@ -85,16 +85,16 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtTrayIconHostDestroyed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "tray icon owner window destroyed | hwnd={0}")]
+           Message = "hwnd={0}")]
     public void TrayIconHostDestroyed(long hwnd)
     {
         if (IsEnabled()) WriteEvent(EvtTrayIconHostDestroyed, hwnd);
     }
 
     [Event(EvtTaskbarRecreated,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "TaskbarCreated received — adding the tray icon again")]
+           Message = "Explorer restarted, so the tray icon is added again")]
     public void TaskbarRecreated()
     {
         if (IsEnabled()) WriteEvent(EvtTaskbarRecreated);
@@ -104,7 +104,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtTrayIconReaddAttempt,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "tray icon re-add | attempt={0}/{1} | outcome={2} | error={3}")]
+           Message = "attempt={0}/{1} | outcome={2} | error={3}")]
     public void TrayIconReaddAttempt(int attempt, int max_attempts, string outcome, int error)
     {
         if (IsEnabled()) WriteEvent(EvtTrayIconReaddAttempt, attempt, max_attempts, outcome, error);
@@ -124,7 +124,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtTrayIconRestoreFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Taskbar recreated, but the tray icon could not be added again — restart Deckle to get it back | attempts={0} | win32_error={1}")]
+           Message = "Taskbar recreated, but the tray icon could not be added again — restart Deckle to get it back\nattempts={0} | win32_error={1}")]
     public void TrayIconRestoreFailed(int attempts, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtTrayIconRestoreFailed, attempts, win32_error);
@@ -137,7 +137,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtTrayIconFallback,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The tray icon fell back to the generic application icon | state={0} | reason={1} | win32_error={2}")]
+           Message = "The tray icon fell back to the generic application icon\nstate={0} | reason={1} | win32_error={2}")]
     public void TrayIconFallback(string state, string reason, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtTrayIconFallback, state, reason, win32_error);
@@ -148,7 +148,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtMessageOnlyHostCreated,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "message-only window created hwnd={0}")]
+           Message = "hwnd={0}")]
     public void MessageOnlyHostCreated(long hwnd)
     {
         if (IsEnabled()) WriteEvent(EvtMessageOnlyHostCreated, hwnd);
@@ -157,7 +157,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtMessageOnlyHostDestroyed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "message-only window destroyed | hwnd={0}")]
+           Message = "hwnd={0}")]
     public void MessageOnlyHostDestroyed(long hwnd)
     {
         if (IsEnabled()) WriteEvent(EvtMessageOnlyHostDestroyed, hwnd);
@@ -171,7 +171,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtWindowSubclassFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Windowing,
-           Message = "Could not watch window resizing | window={0} | win32_error={1}")]
+           Message = "Could not watch window resizing\nwindow={0} | win32_error={1}")]
     public void WindowSubclassFailed(string window, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtWindowSubclassFailed, window, win32_error);
@@ -182,7 +182,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtCursorSignalArmed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "cursor movement signal armed | hwnd={0}")]
+           Message = "hwnd={0}")]
     public void CursorSignalArmed(long hwnd)
     {
         if (IsEnabled()) WriteEvent(EvtCursorSignalArmed, hwnd);
@@ -191,7 +191,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtCursorSignalDisarmed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "cursor movement signal disarmed | hwnd={0}")]
+           Message = "hwnd={0}")]
     public void CursorSignalDisarmed(long hwnd)
     {
         if (IsEnabled()) WriteEvent(EvtCursorSignalDisarmed, hwnd);
@@ -202,7 +202,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtCursorSignalRegistrationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not arm the cursor proximity signal — proximity fade is off | stage={0} | win32_error={1}")]
+           Message = "Could not arm the cursor proximity signal — proximity fade is off\nstage={0} | win32_error={1}")]
     public void CursorSignalRegistrationFailed(string stage, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtCursorSignalRegistrationFailed, stage, win32_error);
@@ -213,7 +213,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtAutostartProbeFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not read the autostart setting | ex_type={0} | ex_message={1}")]
+           Message = "Could not read the autostart setting\nex_type={0} | ex_message={1}")]
     public void AutostartProbeFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAutostartProbeFailed, ex_type, ex_message);
@@ -241,7 +241,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtAutostartEnableFailedAclDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "autostart enable failed | reason=cannot_open | run_key_path={0}")]
+           Message = "run_key_path={0}")]
     public void AutostartEnableFailedAclDetail(string run_key_path)
     {
         if (IsEnabled()) WriteEvent(EvtAutostartEnableFailedAclDetail, run_key_path);
@@ -259,7 +259,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtAutostartEnabledDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "autostart enabled | command={0}")]
+           Message = "command={0}")]
     public void AutostartEnabledDetail(string command)
     {
         if (IsEnabled()) WriteEvent(EvtAutostartEnabledDetail, command);
@@ -268,16 +268,16 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtAutostartEnableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not enable autostart | ex_type={0} | ex_message={1}")]
+           Message = "Could not enable autostart\nex_type={0} | ex_message={1}")]
     public void AutostartEnableFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAutostartEnableFailed, ex_type, ex_message);
     }
 
     [Event(EvtAutostartDisableSkipped,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "autostart disable skipped | reason=entry points to different install")]
+           Message = "Autostart was left in place because it starts another Deckle install")]
     public void AutostartDisableSkipped()
     {
         if (IsEnabled()) WriteEvent(EvtAutostartDisableSkipped);
@@ -295,7 +295,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtAutostartDisableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not disable autostart | ex_type={0} | ex_message={1}")]
+           Message = "Could not disable autostart\nex_type={0} | ex_message={1}")]
     public void AutostartDisableFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAutostartDisableFailed, ex_type, ex_message);
@@ -317,7 +317,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtElevatedStartupEnableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not enable elevated startup | reason={0} | exit_code={1} | ex_type={2} | ex_message={3}")]
+           Message = "Could not enable elevated startup\nreason={0} | exit_code={1} | ex_type={2} | ex_message={3}")]
     public void ElevatedStartupEnableFailed(string reason, int exit_code, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtElevatedStartupEnableFailed, reason, exit_code, ex_type, ex_message);
@@ -337,7 +337,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtElevatedStartupDisableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not disable elevated startup | reason={0} | exit_code={1} | ex_type={2} | ex_message={3}")]
+           Message = "Could not disable elevated startup\nreason={0} | exit_code={1} | ex_type={2} | ex_message={3}")]
     public void ElevatedStartupDisableFailed(string reason, int exit_code, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtElevatedStartupDisableFailed, reason, exit_code, ex_type, ex_message);
@@ -346,7 +346,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtElevatedStartupProbeFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not read the elevated startup setting | ex_type={0} | ex_message={1}")]
+           Message = "Could not read the elevated startup setting\nex_type={0} | ex_message={1}")]
     public void ElevatedStartupProbeFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtElevatedStartupProbeFailed, ex_type, ex_message);
@@ -357,7 +357,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtElevatedStartupTaskUnreadable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not read the elevated startup task, the setting shows off | ex_type={0} | ex_message={1}")]
+           Message = "Could not read the elevated startup task, the setting shows off\nex_type={0} | ex_message={1}")]
     public void ElevatedStartupTaskUnreadable(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtElevatedStartupTaskUnreadable, ex_type, ex_message);
@@ -366,7 +366,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtElevatedStartupTempNotDeleted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "elevated startup temp file not deleted | path={0} | ex_type={1} | ex_message={2}")]
+           Message = "path={0} | ex_type={1} | ex_message={2}")]
     public void ElevatedStartupTempNotDeleted(string path, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtElevatedStartupTempNotDeleted, path, ex_type, ex_message);
@@ -381,7 +381,7 @@ public sealed class DeckleShellSource : DeckleEventSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Could not install the hotkey window hook — no global hotkey will work | win32_error={0}")]
+           Message = "Could not install the hotkey window hook — no global hotkey will work\nwin32_error={0}")]
     public void HotkeySubclassFailed(int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtHotkeySubclassFailed, win32_error);
@@ -391,7 +391,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtHotkeyVkResolveFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Could not resolve the hotkey for the current keyboard layout | scancode=0x{0:X} | hkl=0x{1:X}")]
+           Message = "Could not resolve the hotkey for the current keyboard layout\nscancode=0x{0:X} | hkl=0x{1:X}")]
     public void HotkeyVkResolveFailed(long scancode, long hkl)
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyVkResolveFailed, scancode, hkl);
@@ -401,7 +401,7 @@ public sealed class DeckleShellSource : DeckleEventSource
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
            Version = 1,
-           Message = "hotkey registered | id={0} | scancode=0x{1:X} | vk=0x{2:X2} | hkl=0x{3:X}")]
+           Message = "id={0} | scancode=0x{1:X} | vk=0x{2:X2} | hkl=0x{3:X}")]
     public void HotkeyRegistered(int id, uint scancode, uint vk, long hkl)
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyRegistered, id, scancode, vk, hkl);
@@ -412,7 +412,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtHotkeyUnregistered,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "hotkey unregistered | id={0}")]
+           Message = "id={0}")]
     public void HotkeyUnregistered(int id)
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyUnregistered, id);
@@ -423,16 +423,16 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtHotkeyReleaseFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "hotkey release failed | id={0} | win32_error={1}")]
+           Message = "id={0} | win32_error={1}")]
     public void HotkeyReleaseFailed(int id, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyReleaseFailed, id, win32_error);
     }
 
     [Event(EvtHotkeyLayoutChange,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "WM_INPUTLANGCHANGE — re-registering hotkeys")]
+           Message = "The keyboard layout changed, so hotkeys are registered again")]
     public void HotkeyLayoutChange()
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyLayoutChange);
@@ -442,7 +442,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtHotkeyReregisterFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Some hotkeys could not be re-registered after a keyboard layout change | failed={0} | win32_error={1}")]
+           Message = "Some hotkeys could not be re-registered after a keyboard layout change\nfailed={0} | win32_error={1}")]
     public void HotkeyReregisterFailed(int failed, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyReregisterFailed, failed, win32_error);
@@ -452,7 +452,7 @@ public sealed class DeckleShellSource : DeckleEventSource
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
            Version = 1,
-           Message = "hotkey re-register failed | failures={0}")]
+           Message = "failures={0}")]
     public void HotkeyReregisterFailedDetail(string failures)
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyReregisterFailedDetail, failures);
