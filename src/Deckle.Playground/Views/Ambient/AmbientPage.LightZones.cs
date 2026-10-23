@@ -57,7 +57,7 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            DecklePlaygroundSource.Log.HueCallFailed();
+            DecklePlaygroundSource.Log.HueCallFailed("list lights", ex.GetType().Name);
             DecklePlaygroundSource.Log.HueCallFailedDetail("list lights", $"{ex.GetType().Name}: {ex.Message}");
             _placementLights = null;
             BuildLightZonesUi();
@@ -296,7 +296,7 @@ public sealed partial class AmbientPage
         }
         catch (Exception ex)
         {
-            DecklePlaygroundSource.Log.HueCallFailed();
+            DecklePlaygroundSource.Log.HueCallFailed("identify", ex.GetType().Name);
             DecklePlaygroundSource.Log.HueCallFailedDetail("identify", $"{ex.GetType().Name}: {ex.Message}");
         }
         finally

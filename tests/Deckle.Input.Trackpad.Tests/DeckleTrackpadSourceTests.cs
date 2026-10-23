@@ -6,6 +6,7 @@ using Xunit;
 namespace Deckle.Input.Trackpad.Tests;
 
 [Trait("Category", "observability")]
+[Collection(TrackpadObservabilityCollection.Name)]
 public sealed class DeckleTrackpadSourceTests : IDisposable
 {
     public DeckleTrackpadSourceTests()
@@ -45,6 +46,35 @@ public sealed class DeckleTrackpadSourceTests : IDisposable
     }
 
     [Fact]
+    [Trait("Category", "regression")]
+    public void ASystemSettingChangeAndTheRepairScriptReachTheJournalOnSuccessToo()
+    {
+        using var listener = new TestEventListener("Deckle-Trackpad");
+
+        DeckleTrackpadSource.Log.GesturesNeutralized();
+        DeckleTrackpadSource.Log.GesturesRestored();
+        DeckleTrackpadSource.Log.RepairLaunched();
+        DeckleTrackpadSource.Log.RepairCompleted(0);
+
+        Assert.Equal(4, listener.Events.Count);
+        Assert.All(listener.Events, e => Assert.Equal(ObservationTags.Journal, e.Tags & ObservationTags.Journal));
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AFailedButtonReleaseIsAWarningWithItsWin32Error()
+    {
+        using var listener = new TestEventListener("Deckle-Trackpad");
+
+        DeckleTrackpadSource.Log.PrimaryReleaseFailed(5);
+
+        var warning = Assert.Single(listener.Events);
+        Assert.Equal(DeckleTrackpadSource.EvtPrimaryReleaseFailed, warning.EventId);
+        Assert.Equal(EventLevel.Warning, warning.Level);
+        Assert.Equal(5, warning.Payload?[0]);
+    }
+
+    [Fact]
     public void GestureDetailsFollowInputActivityWhileLifecycleRemainsAdmitted()
     {
         using var listener = new TestEventListener("Deckle-Trackpad");
@@ -70,5 +100,31 @@ public sealed class DeckleTrackpadSourceTests : IDisposable
             dragStarted => Assert.Equal(DeckleTrackpadSource.EvtDragStarted, dragStarted.EventId),
             ended => Assert.Equal(DeckleTrackpadSource.EvtDragEnded, ended.EventId),
             tap => Assert.Equal(DeckleTrackpadSource.EvtTapIgnored, tap.EventId));
+    }
+
+    // The settings store reports in free text. A damaged file at load is a
+    // Warning (degraded, defaults in use) and a failed write an Error.
+    [Fact]
+    public void ADamagedSettingsFileSurfacesAsAWarningAndAFailedWriteAsAnError()
+    {
+        using var listener = new TestEventListener("Deckle-Trackpad");
+
+        DeckleTrackpadSource.Log.SettingsLoadWarning("reason=parse_failed");
+        DeckleTrackpadSource.Log.SettingsLoadError("reason=write_failed");
+
+        Assert.Collection(
+            listener.Events,
+            warning =>
+            {
+                Assert.Equal(DeckleTrackpadSource.EvtSettingsLoadWarning, warning.EventId);
+                Assert.Equal(EventLevel.Warning, warning.Level);
+                Assert.Equal("reason=parse_failed", warning.Payload?[0]);
+            },
+            error =>
+            {
+                Assert.Equal(DeckleTrackpadSource.EvtSettingsLoadError, error.EventId);
+                Assert.Equal(EventLevel.Error, error.Level);
+                Assert.Equal("reason=write_failed", error.Payload?[0]);
+            });
     }
 }

@@ -93,6 +93,7 @@ public sealed class DeckleShellForegroundSource : DeckleEventSource
     [Event(EvtHookRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
            Message = "Foreground hook armed again, fullscreen detection is back | hook={0}")]
     public void HookRecovered(string hook)
     {

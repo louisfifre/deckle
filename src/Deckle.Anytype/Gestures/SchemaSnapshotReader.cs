@@ -72,13 +72,10 @@ public sealed class SchemaSnapshotReader(AnytypeApiClient api)
         string spaceId, CancellationToken ct)
     {
         var result = new Dictionary<string, SchemaTypeInfo>(StringComparer.Ordinal);
-        int offset = 0;
-        while (true)
+        await foreach (JsonObject root in PagedRead.PagesAsync(
+            "schema_types", (offset, token) => _api.ListTypesAsync(spaceId, offset, PageLimit, token), ct).ConfigureAwait(false))
         {
-            JsonObject root = await _api.ListTypesAsync(spaceId, offset, PageLimit, ct).ConfigureAwait(false);
             foreach (var (key, type) in ReadTypes(root)) result[key] = type;
-            if (!HasMore(root)) break;
-            offset += PageLimit;
         }
         return result;
     }
@@ -87,14 +84,11 @@ public sealed class SchemaSnapshotReader(AnytypeApiClient api)
         string spaceId, CancellationToken ct)
     {
         var result = new Dictionary<string, SchemaPropertyInfo>(StringComparer.Ordinal);
-        int offset = 0;
-        while (true)
+        await foreach (JsonObject root in PagedRead.PagesAsync(
+            "schema_properties", (offset, token) => _api.ListPropertiesForSpaceAsync(spaceId, offset, PageLimit, token), ct)
+            .ConfigureAwait(false))
         {
-            JsonObject root = await _api.ListPropertiesForSpaceAsync(spaceId, offset, PageLimit, ct)
-                .ConfigureAwait(false);
             foreach (var (key, prop) in ReadProperties(root)) result[key] = prop;
-            if (!HasMore(root)) break;
-            offset += PageLimit;
         }
         return result;
     }
@@ -103,14 +97,11 @@ public sealed class SchemaSnapshotReader(AnytypeApiClient api)
         string spaceId, string propertyId, CancellationToken ct)
     {
         var result = new Dictionary<string, SchemaTagInfo>(StringComparer.Ordinal);
-        int offset = 0;
-        while (true)
+        await foreach (JsonObject root in PagedRead.PagesAsync(
+            "schema_tags", (offset, token) => _api.ListPropertyTagsForSpaceAsync(spaceId, propertyId, offset, PageLimit, token), ct)
+            .ConfigureAwait(false))
         {
-            JsonObject root = await _api.ListPropertyTagsForSpaceAsync(spaceId, propertyId, offset, PageLimit, ct)
-                .ConfigureAwait(false);
             foreach (var (key, tag) in ReadTags(root)) result[key] = tag;
-            if (!HasMore(root)) break;
-            offset += PageLimit;
         }
         return result;
     }
@@ -166,8 +157,4 @@ public sealed class SchemaSnapshotReader(AnytypeApiClient api)
         }
         return result;
     }
-
-
-    private static bool HasMore(JsonObject root) =>
-        root["pagination"]?["has_more"]?.GetValue<bool>() ?? false;
 }

@@ -4,6 +4,7 @@ using Xunit;
 
 namespace Deckle.Orchestration.Tests;
 
+[Trait("Category", "unit")]
 public sealed class ForegroundChangeMappingTests
 {
     private static ForegroundState Snapshot(

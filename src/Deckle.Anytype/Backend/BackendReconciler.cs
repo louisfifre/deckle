@@ -9,6 +9,19 @@ internal sealed record BackendReconciliationResult(
     string Decision,
     int PendingProcessId = 0);
 
+// Closed vocabulary of what asks for a reconciliation, the `trigger` of
+// BackendReconciliationStarted. Startup is the first start of the session; the
+// other two come from the restart ladder, whose attempts belong to an incident
+// that is already open.
+internal static class BackendTriggers
+{
+    internal const string Startup = "startup";
+    internal const string ProcessExit = "process-exit";
+    internal const string StartFailed = "start-failed";
+
+    internal static bool IsRestart(string trigger) => trigger != Startup;
+}
+
 internal interface IBackendReconciler
 {
     Task<BackendReconciliationResult> ReconcileAsync(string trigger, CancellationToken ct);
@@ -68,7 +81,7 @@ internal sealed class BackendReconciler : IBackendReconciler
         {
             BackendReconciliationResult result = await _coordinator.RunAsync(
                 id,
-                _ => ReconcileProtected(id, ct),
+                _ => ReconcileProtected(id, BackendTriggers.IsRestart(trigger), ct),
                 ct).ConfigureAwait(false);
             DeckleAnytypeSource.Log.BackendReconciliationCompleted(
                 id, result.Decision, result.Process?.Id ?? result.PendingProcessId,
@@ -92,12 +105,13 @@ internal sealed class BackendReconciler : IBackendReconciler
         }
     }
 
-    private BackendReconciliationResult ReconcileProtected(string id, CancellationToken ct)
+    private BackendReconciliationResult ReconcileProtected(string id, bool inRestart, CancellationToken ct)
     {
         long started = _time.GetTimestamp();
         IBackendProcess? spawned = null;
         bool spawnAttempted = false;
         int pendingId = 0;
+        string? inspectionError = null;
         try
         {
             while (_time.GetElapsedTime(started) < ReadinessTimeout)
@@ -105,14 +119,23 @@ internal sealed class BackendReconciler : IBackendReconciler
                 ct.ThrowIfCancellationRequested();
 
                 BackendListenerSnapshot first = _listener.Inspect();
+
+                // A failed read of the TCP table says nothing about who owns the
+                // endpoint (it can fail for a moment under load), so it is no
+                // conflict: the supervisor gives up for the session on a
+                // conflict. Look again until the window closes, and spawn
+                // nothing meanwhile, since the listener may well be owned.
+                if (first.State == BackendListenerState.Failed)
+                {
+                    inspectionError = first.Error ?? "listener inspection failed";
+                    _time.Delay(ProbeInterval, ct);
+                    continue;
+                }
+
+                inspectionError = null;
                 if (first.State == BackendListenerState.Owned) pendingId = first.ProcessId;
-                if (first.State is BackendListenerState.Ambiguous or BackendListenerState.Failed)
-                    return Conflict(
-                        id, first,
-                        first.State == BackendListenerState.Ambiguous
-                            ? "listener_ambiguous"
-                            : "listener_query_failed",
-                        null);
+                if (first.State == BackendListenerState.Ambiguous)
+                    return Conflict(id, first, "listener_ambiguous", null);
 
                 if (first.State == BackendListenerState.Owned)
                 {
@@ -133,7 +156,8 @@ internal sealed class BackendReconciler : IBackendReconciler
                 }
                 else if (spawned is not null && spawned.HasExited)
                 {
-                    BackendProcessReport.Stopped(spawned);
+                    if (inRestart) BackendProcessReport.AttemptStopped(spawned, id);
+                    else BackendProcessReport.Stopped(spawned, id);
                     return Result(BackendStartOutcome.StartRejected, null, id, "start-rejected");
                 }
 
@@ -153,8 +177,9 @@ internal sealed class BackendReconciler : IBackendReconciler
                         }
 
                         ct.ThrowIfCancellationRequested();
-                        DeckleAnytypeSource.Log.BackendStarting();
-                        spawned = _processes.Spawn(spec);
+                        if (inRestart) DeckleAnytypeSource.Log.BackendRestartAttemptStarting(id);
+                        else DeckleAnytypeSource.Log.BackendStarting(id);
+                        spawned = _processes.Spawn(spec, inRestart);
                         spawnAttempted = true;
                         if (spawned is null)
                             return Result(BackendStartOutcome.StartRejected, null, id, "start-rejected");
@@ -171,10 +196,16 @@ internal sealed class BackendReconciler : IBackendReconciler
 
             // Disposing releases Deckle's handle only: the serve, if alive,
             // keeps running and the next reconciliation waits on it again.
-            DeckleAnytypeSource.Log.BackendStartTimedOut(pendingId);
+            if (inRestart) DeckleAnytypeSource.Log.BackendRestartAttemptTimedOut(pendingId, id);
+            else DeckleAnytypeSource.Log.BackendStartTimedOut(pendingId, id);
             spawned?.Dispose();
             spawned = null;
-            return new(BackendStartOutcome.TimedOut, null, id, "timed-out", pendingId);
+            // The cause rides the decision, so the supervisor's journal line for the
+            // failed attempt says the table could not be read, not that a serve was slow.
+            string decision = inspectionError is null
+                ? "timed-out"
+                : $"listener_query_failed: {inspectionError}";
+            return new(BackendStartOutcome.TimedOut, null, id, decision, pendingId);
         }
         finally
         {
@@ -196,15 +227,17 @@ internal sealed class BackendReconciler : IBackendReconciler
         bool transferOwner = !ReferenceEquals(owner, spawned);
         try
         {
+            // The detail names the foreign program, not where it lives: its path
+            // embeds the Windows user name.
             if (!IsTrusted(owner.ExecutablePath))
-                return Conflict(id, first, "owner_untrusted", owner.ExecutablePath);
+                return Conflict(id, first, "owner_untrusted", Path.GetFileName(owner.ExecutablePath));
             if (owner.HasExited) return null;
 
             bool healthy = _health.ProbeAsync(ct).GetAwaiter().GetResult().Healthy;
             BackendListenerSnapshot second = _listener.Inspect();
             DeckleAnytypeSource.Log.BackendListenerObserved(
                 id, first.ProcessId, second.ProcessId, healthy,
-                owner.ExecutablePath);
+                Path.GetFileName(owner.ExecutablePath));
 
             if (!healthy || second.State != BackendListenerState.Owned ||
                 second.ProcessId != first.ProcessId || owner.HasExited)
@@ -212,7 +245,7 @@ internal sealed class BackendReconciler : IBackendReconciler
 
             string mode = ReferenceEquals(owner, spawned) ? "spawned" : "adopted";
             DeckleAnytypeSource.Log.BackendProcessAttached(owner.Id, mode);
-            DeckleAnytypeSource.Log.BackendReady();
+            DeckleAnytypeSource.Log.BackendReady(id);
             BackendReconciliationResult result = Result(
                 mode == "spawned" ? BackendStartOutcome.Started : BackendStartOutcome.AlreadyRunning,
                 owner, id, mode);

@@ -38,8 +38,8 @@ public sealed record McpSurfaceDescriptor(string Name, string Title, string Inst
         + "document_section); each answers with the object id first. They accept "
         + "words, not only an exact name or an id: an exact name wins, else a "
         + "single match wins, else the candidates are listed. So a typed read given "
-        + "words searches and opens in one call; search is only for when the type "
-        + "is not known. When the work belongs to "
+        + "words finds the object and reads it in one call; search is only for when "
+        + "the type is not known. When the work belongs to "
         + "a task of this space, open the first answer by placing it in its project, "
         + "so the person sees at once whether the session aims at the right one. "
         + "Shared vocabulary — états: "
@@ -49,8 +49,11 @@ public sealed record McpSurfaceDescriptor(string Name, string Title, string Inst
         + "and charge on projects — their 'réel' counterparts are set at "
         + "validation, so the estimate/actual delta stays readable. Select "
         + "options are applied, never created: new options come from the user, "
-        + "in Anytype. An ambiguous name returns candidate ids so you can retry "
-        + "with one; the writes that must not guess (open_report, log) take an id only.");
+        + "in Anytype. Names "
+        + "resolve to objects: a read takes the one object a name resembles, a "
+        + "write needs the exact name or the id; an ambiguous or inexact name "
+        + "returns candidate ids so you can retry with one. open_report and log "
+        + "take an id only.");
 
     public static readonly McpSurfaceDescriptor Dialogues = new(
         "deckle-anytype-dialogues",

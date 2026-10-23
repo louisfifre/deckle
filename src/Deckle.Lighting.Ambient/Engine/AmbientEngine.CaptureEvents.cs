@@ -26,14 +26,16 @@ public sealed partial class AmbientEngine
         }
         else
         {
-            RecordFrameProcessingFailure("sampler_failed");
+            RecordFrameProcessingFailure(
+                "sampler_failed", sampler.LastFailure, Stopwatch.GetTimestamp());
         }
     }
 
     private void OnFrameProcessingFailed()
     {
         EnsureFrameProcessingEpisodeSession();
-        RecordFrameProcessingFailure("capture_failed");
+        RecordFrameProcessingFailure(
+            "capture_failed", _capture?.LastFrameFailure, Stopwatch.GetTimestamp());
     }
 
     private void EnsureFrameProcessingEpisodeSession()
@@ -46,10 +48,13 @@ public sealed partial class AmbientEngine
         Interlocked.Exchange(ref _frameProcessingStopRequested, 0);
     }
 
-    // reason is the cause of this failure; the milestones carry the last one.
-    private void RecordFrameProcessingFailure(string reason)
+    // reason is the cause of this failure; the milestones carry the last one,
+    // with the failure record the sampler or the capture kept for it. now is a
+    // Stopwatch tick count, passed in so the incident thresholds can be tested
+    // without waiting.
+    internal void RecordFrameProcessingFailure(string reason, FrameFailure? failure, long now)
     {
-        long now = Stopwatch.GetTimestamp();
+        FrameFailure cause = failure ?? FrameFailure.Unknown;
         if (_frameProcessingLastFailureTicks != 0)
         {
             long gapTicks = now - _frameProcessingLastFailureTicks;
@@ -66,7 +71,9 @@ public sealed partial class AmbientEngine
             && activeFailureMs >= FrameProcessingIncidentDelayMs)
         {
             _frameProcessingIncidentOpen = true;
-            DeckleAmbientSource.Log.FrameProcessingIncidentOpened(reason, _frameProcessingFailures);
+            DeckleAmbientSource.Log.FrameProcessingIncidentOpened(
+                reason, _frameProcessingFailures,
+                cause.Stage, cause.Hr, cause.ExType, cause.ExMessage);
             DeckleAmbientSource.Log.FrameProcessingEpisodeDetail(
                 "opened", _frameProcessingFailures, activeFailureMs);
         }
@@ -80,7 +87,14 @@ public sealed partial class AmbientEngine
             int failures = _frameProcessingFailures;
             AbortStartOrStop(
                 "frame_processing_failed",
-                () => DeckleAmbientSource.Log.FrameProcessingFailed(reason, failures));
+                () =>
+                {
+                    DeckleAmbientSource.Log.FrameProcessingFailed(
+                        reason, failures,
+                        cause.Stage, cause.Hr, cause.ExType, cause.ExMessage);
+                    // The failure is this incident's end; the stop must not close it again.
+                    _frameProcessingIncidentEnded = true;
+                });
         }
     }
 
@@ -106,6 +120,7 @@ public sealed partial class AmbientEngine
         _frameProcessingActiveFailureTicks = 0;
         _frameProcessingFailures = 0;
         _frameProcessingIncidentOpen = false;
+        _frameProcessingIncidentEnded = false;
     }
 
     // Capture worker thread — raised from inside TryRecreateDuplication

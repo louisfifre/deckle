@@ -52,6 +52,9 @@ public sealed class DispatchEventListener : EventListener
     // report it; the next top-level dispatch does.
     private int _reportsPending;
 
+    // Provider/event pairs whose Message template already failed once.
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _brokenTemplates = new();
+
     [ThreadStatic]
     private static int _dispatchDepth;
 
@@ -84,16 +87,27 @@ public sealed class DispatchEventListener : EventListener
     {
         if (sink is null) throw new ArgumentNullException(nameof(sink));
         var slot = new SinkSlot(sink);
+        bool reportDue = false;
+        SinkSlot[] snapshot;
         lock (_sinksLock)
         {
             if (replayBoot && _bootBuffer is not null)
             {
                 foreach (EventEntry entry in _bootBuffer)
-                    Offer(slot, entry);
+                    reportDue |= Offer(slot, entry);
             }
             _slots.Add(slot);
-            Volatile.Write(ref _snapshot, _slots.ToArray());
+            snapshot = _slots.ToArray();
+            Volatile.Write(ref _snapshot, snapshot);
         }
+
+        // A sink that threw during replay opened an incident. The report is
+        // emitted here, after the lock: it dispatches back through this
+        // listener, which takes the same lock. Left for the next live event it
+        // would stay unreported for as long as the sink is the only one failing.
+        if (!reportDue) return;
+        if (_dispatchDepth > 0) Volatile.Write(ref _reportsPending, 1);
+        else ReportIncidents(snapshot);
     }
 
     public void RemoveSink(ILogSink sink)
@@ -150,7 +164,7 @@ public sealed class DispatchEventListener : EventListener
         bool booting = Volatile.Read(ref _bootBuffer) is not null;
         if (snapshot.Length == 0 && !booting) return;
 
-        var entry = BuildEntry(eventData);
+        var entry = BuildEntry(eventData, out Exception? templateError);
 
         if (booting)
         {
@@ -168,6 +182,21 @@ public sealed class DispatchEventListener : EventListener
         }
 
         Dispatch(entry, snapshot);
+
+        // After the row, so the report reads as its consequence in the journal.
+        if (templateError is not null) ReportBrokenTemplate(entry, templateError);
+    }
+
+    // A template that cannot be formatted is a defect of the provider, not of
+    // one emission: the same event would fail on every call. Naming the pair
+    // once is enough, and the dedupe is also what bounds the recursion, since
+    // this report dispatches back through OnEventWritten.
+    private void ReportBrokenTemplate(EventEntry entry, Exception error)
+    {
+        if (!_brokenTemplates.TryAdd($"{entry.Provider}/{entry.EventName}", 0)) return;
+
+        DeckleDiagnosticsSource.Log.MessageTemplateBroken(
+            entry.Provider, entry.EventName, error.GetType().Name);
     }
 
     private void Dispatch(EventEntry entry, SinkSlot[] snapshot)
@@ -198,11 +227,17 @@ public sealed class DispatchEventListener : EventListener
     // Returns true when that state changed (an incident opened or closed), so
     // the caller knows a report is due; the report itself is emitted later,
     // outside any per-slot lock.
+    //
+    // Only a Write that returned closes an incident. An entry the sink does not
+    // want proves nothing about its health, and the fault report itself is such
+    // an entry: it dispatches back through here, and counting it as a success
+    // would close the incident the same instant it opened.
     private static bool Offer(SinkSlot slot, EventEntry entry)
     {
         try
         {
-            if (slot.Sink.Wants(entry)) slot.Sink.Write(entry);
+            if (!slot.Sink.Wants(entry)) return false;
+            slot.Sink.Write(entry);
         }
         catch (Exception ex)
         {
@@ -262,8 +297,9 @@ public sealed class DispatchEventListener : EventListener
     // The payload keys are the [Event] parameter names (snake_case by Deckle
     // convention); the formatted message is null when the provider declared no
     // Message template.
-    private static EventEntry BuildEntry(EventWrittenEventArgs e)
+    private static EventEntry BuildEntry(EventWrittenEventArgs e, out Exception? templateError)
     {
+        templateError = null;
         var names = e.PayloadNames;
         var values = e.Payload;
         int count = names is null ? 0 : names.Count;
@@ -289,10 +325,12 @@ public sealed class DispatchEventListener : EventListener
                 for (int i = 0; i < values.Count; i++) arr[i] = values[i];
                 formatted = string.Format(System.Globalization.CultureInfo.InvariantCulture, e.Message, arr);
             }
-            catch
+            catch (Exception ex)
             {
                 // A malformed template must not break the pipeline; leave
-                // formatted null and let sinks render the raw payload.
+                // formatted null and let sinks render the raw payload. The
+                // caller reports it, once per event.
+                templateError = ex;
             }
         }
 

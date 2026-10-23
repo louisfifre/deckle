@@ -38,7 +38,9 @@ public sealed class TrackpadSettingsService
         _store = new JsonSettingsStore<TrackpadSettings>(
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Trackpad-Save",
-            jsonOptions: _jsonOptions);
+            jsonOptions: _jsonOptions,
+            logWarning:  DeckleTrackpadSource.Log.SettingsLoadWarning,
+            logError:    DeckleTrackpadSource.Log.SettingsLoadError);
     }
 
     public void Save()                          => _store.Save();

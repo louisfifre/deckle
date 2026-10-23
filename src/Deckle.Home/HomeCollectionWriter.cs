@@ -16,7 +16,7 @@ internal sealed class HomeCollectionWriter(
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (string selector in selectors)
         {
-            JsonObject collection = objects.ResolveCollection(selector);
+            JsonObject collection = objects.ResolveCollection(selector, NameMatch.Exact);
             string id = HomeObjectJson.Id(collection);
             if (id.Length == 0)
                 throw new InvalidOperationException(

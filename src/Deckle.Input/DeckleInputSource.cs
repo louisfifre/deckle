@@ -87,6 +87,9 @@ public sealed class DeckleInputSource : DeckleEventSource
     public const int EvtWheelRecordingStoppedDetail = 55;
     public const int EvtWheelRecordingFailed       = 56;
     public const int EvtRecordingSizeUnavailable   = 57;
+    public const int EvtTouchpadEnumerationFailed  = 58;
+    public const int EvtSettingsLoadWarning = 59;
+    public const int EvtSettingsLoadError = 60;
 
     // ── Raw input host lifecycle ─────────────────────────────────────────
 
@@ -185,6 +188,18 @@ public sealed class DeckleInputSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtTouchpadRemoved);
     }
 
+    // The boot probe could not list the HID devices at all, so "touchpads=0" in
+    // the host's start line means "unknown" and not "none". step is count or list;
+    // win32_error is the last error of the failing call.
+    [Event(EvtTouchpadEnumerationFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "The touchpad probe could not list the input devices | step={0} | win32_error={1}")]
+    public void TouchpadEnumerationFailed(string step, int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtTouchpadEnumerationFailed, step, win32_error);
+    }
+
     // reason is one of TouchpadParser's snake_case failure words.
     [Event(EvtParserCreateFailed,
            Level = EventLevel.Warning,
@@ -216,6 +231,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtRecordingStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "Frame recording started")]
     public void RecordingStarted()
     {
@@ -228,7 +244,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "frame recording | path={0}")]
     public void RecordingStartedDetail(string path)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingStartedDetail, path);
+        if (IsEnabled()) WriteEvent(EvtRecordingStartedDetail, PathRedaction.Redact(path));
     }
 
     // Closes every armed session, including one that never saw a frame
@@ -236,6 +252,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtRecordingStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "Frame recording stopped | outcome={0} | frames={1}")]
     public void RecordingStopped(string outcome, long frames)
     {
@@ -248,7 +265,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "frame recording closed | path={0} | duration_s={1} | bytes={2}")]
     public void RecordingStoppedDetail(string path, double duration_s, long bytes)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingStoppedDetail, path, duration_s, bytes);
+        if (IsEnabled()) WriteEvent(EvtRecordingStoppedDetail, PathRedaction.Redact(path), duration_s, bytes);
     }
 
     [Event(EvtRecordingFailed,
@@ -257,7 +274,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "Frame recording encountered an error | ex_type={0} | ex_message={1}")]
     public void RecordingFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingFailed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtRecordingFailed, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // The file size only decorates the closing line; a failed stat must not
@@ -268,7 +285,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "recording size unavailable | recording={0} | ex_type={1} | ex_message={2}")]
     public void RecordingSizeUnavailable(string recording, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtRecordingSizeUnavailable, recording, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtRecordingSizeUnavailable, recording, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // ── Keyboard host lifecycle ──────────────────────────────────────────
@@ -415,6 +432,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtWheelRecordingStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "Wheel recording started")]
     public void WheelRecordingStarted()
     {
@@ -427,12 +445,13 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "wheel recording | path={0}")]
     public void WheelRecordingStartedDetail(string path)
     {
-        if (IsEnabled()) WriteEvent(EvtWheelRecordingStartedDetail, path);
+        if (IsEnabled()) WriteEvent(EvtWheelRecordingStartedDetail, PathRedaction.Redact(path));
     }
 
     [Event(EvtWheelRecordingStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "Wheel recording stopped | outcome={0} | events={1}")]
     public void WheelRecordingStopped(string outcome, long events)
     {
@@ -445,7 +464,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "wheel recording closed | path={0} | duration_s={1} | bytes={2}")]
     public void WheelRecordingStoppedDetail(string path, double duration_s, long bytes)
     {
-        if (IsEnabled()) WriteEvent(EvtWheelRecordingStoppedDetail, path, duration_s, bytes);
+        if (IsEnabled()) WriteEvent(EvtWheelRecordingStoppedDetail, PathRedaction.Redact(path), duration_s, bytes);
     }
 
     [Event(EvtWheelRecordingFailed,
@@ -454,7 +473,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "Wheel recording encountered an error | ex_type={0} | ex_message={1}")]
     public void WheelRecordingFailed(string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtWheelRecordingFailed, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtWheelRecordingFailed, ex_type, PathRedaction.Redact(ex_message));
     }
 
     [Event(EvtWheelDeviceObserved,
@@ -464,5 +483,24 @@ public sealed class DeckleInputSource : DeckleEventSource
     public void WheelDeviceObserved(int dev, string name, uint vendor_id, uint product_id)
     {
         if (IsEnabled()) WriteEvent(EvtWheelDeviceObserved, dev, name, vendor_id, product_id);
+    }
+
+    // The settings store reports in free text; the text carries its own cause.
+    [Event(EvtSettingsLoadWarning,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The mouse wheel settings need attention | {0}")]
+    public void SettingsLoadWarning(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
+    }
+
+    [Event(EvtSettingsLoadError,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The mouse wheel settings could not be saved | {0}")]
+    public void SettingsLoadError(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 }

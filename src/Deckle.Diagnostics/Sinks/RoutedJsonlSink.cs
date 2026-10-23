@@ -11,7 +11,6 @@ public sealed class RoutedJsonlSink : IFlushableLogSink
 {
     private const int DefaultQueueCapacity = 1024;
     private const int DefaultMaxOpenFiles = 16;
-    private static readonly byte[] NewLine = [(byte)'\n'];
 
     private readonly Func<EventEntry, string> _pathResolver;
     private readonly Func<EventEntry, bool> _predicate;
@@ -24,6 +23,9 @@ public sealed class RoutedJsonlSink : IFlushableLogSink
     private readonly Dictionary<string, OpenFile> _openFiles =
         new(StringComparer.OrdinalIgnoreCase);
     private readonly LinkedList<string> _leastRecentlyUsed = new();
+
+    // Rows skipped for want of a path since the last row that routed.
+    private int _unrouted;
 
     public RoutedJsonlSink(
         Func<EventEntry, string> pathResolver,
@@ -67,23 +69,38 @@ public sealed class RoutedJsonlSink : IFlushableLogSink
     private async ValueTask WriteOnWorker(EventEntry entry)
     {
         string path = _pathResolver(entry);
-        if (string.IsNullOrWhiteSpace(path)) return;
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            // Skipped, and said once: the first row opens an incident, the
+            // others are counted for the line that closes it.
+            if (_unrouted++ == 0)
+                OffWorkerReport.Run(onWorker: true, () => DeckleDiagnosticsSource.Log.RowUnrouted(_kindLabel));
+            return;
+        }
 
         OpenFile destination = GetOrOpen(path);
         try
         {
-            ReadOnlyMemory<byte> json = _serializer.Serialize(
+            // The serialized line ends with its newline: one write, so no
+            // failure can fall between a row and its terminator.
+            ReadOnlyMemory<byte> line = _serializer.Serialize(
                 entry,
                 _kindLabel,
                 JsonlSchema.PayloadOnly);
-            await destination.Stream.WriteAsync(json).ConfigureAwait(false);
-            await destination.Stream.WriteAsync(NewLine).ConfigureAwait(false);
+            await destination.Stream.WriteAsync(line).ConfigureAwait(false);
             await destination.Stream.FlushAsync().ConfigureAwait(false);
         }
         catch
         {
             RemoveAndClose(path, destination);
             throw;
+        }
+
+        if (_unrouted > 0)
+        {
+            int skipped = _unrouted;
+            _unrouted = 0;
+            OffWorkerReport.Run(onWorker: true, () => DeckleDiagnosticsSource.Log.RowsRoutedAgain(_kindLabel, skipped));
         }
     }
 
@@ -104,13 +121,7 @@ public sealed class RoutedJsonlSink : IFlushableLogSink
             Directory.CreateDirectory(parent);
 
         var node = new LinkedListNode<string>(path);
-        var stream = new FileStream(
-            path,
-            FileMode.Append,
-            FileAccess.Write,
-            FileShare.Read,
-            bufferSize: 4096,
-            FileOptions.Asynchronous | FileOptions.SequentialScan);
+        FileStream stream = JsonlAppendStream.Open(path);
         var opened = new OpenFile(stream, node);
         _leastRecentlyUsed.AddFirst(node);
         _openFiles.Add(path, opened);

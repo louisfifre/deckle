@@ -332,7 +332,10 @@ public static class HomeSchema
                 listed += $" ; … et {remaining} autres";
             throw new HomeSchemaException(
                 "Le schéma Home n’est pas conforme : " + listed
-                + ". Compare le snapshot au manifeste canonique, préserve les anciennes coordonnées et migre explicitement les formats et valeurs avant de réessayer.");
+                + ". Compare le snapshot au manifeste canonique, préserve les anciennes coordonnées et migre explicitement les formats et valeurs avant de réessayer.")
+            {
+                FailedChecks = failures.Count,
+            };
         }
 
         return new HomeSchemaRuntime(snapshot, FloorTypeKey(snapshot));
@@ -381,4 +384,8 @@ public sealed class HomeSchemaException(string message, string reason = "schema_
     : InvalidOperationException(message)
 {
     public string Reason { get; } = reason;
+
+    // How many schema checks failed, when the exception reports a validation;
+    // the trace carries the count, never the message.
+    public int FailedChecks { get; init; }
 }

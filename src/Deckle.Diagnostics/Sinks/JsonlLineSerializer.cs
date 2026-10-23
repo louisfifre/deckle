@@ -7,7 +7,8 @@ namespace Deckle.Diagnostics;
 
 // Shared JSONL encoding for fixed and routed sinks. The writer thread reuses
 // one ArrayBufferWriter, so the returned memory is valid only until the next
-// Serialize call; a complete line is serialized before any I/O.
+// Serialize call; a complete line, newline included, is serialized before any
+// I/O.
 internal sealed class JsonlLineSerializer
 {
     private readonly ArrayBufferWriter<byte> _buffer = new(512);
@@ -37,6 +38,10 @@ internal sealed class JsonlLineSerializer
             writer.WriteString("level", entry.Level.ToString());
             writer.WriteString("keywords", TransverseKeywordNames(entry));
             writer.WriteString("source", LogLineFormatter.MapSource(entry.Provider));
+            // Only when set: app.jsonl mixes the milestones the journal keeps
+            // with plain detail, and a reader needs to tell them apart. Rows
+            // without the mark read exactly as they did before.
+            if (entry.Journal) writer.WriteBoolean("journal", true);
             if (entry.FormattedMessage is null) writer.WriteNull("message");
             else writer.WriteString("message", entry.FormattedMessage);
             writer.WriteString("line", LogLineFormatter.Format(entry));
@@ -48,6 +53,9 @@ internal sealed class JsonlLineSerializer
         writer.WriteEndObject();
         writer.WriteEndObject();
         writer.Flush();
+        // The terminator belongs to the line: a sink writes it in one call, so
+        // a row can never be left without its newline by a failure in between.
+        _buffer.Write("\n"u8);
 
         return _buffer.WrittenMemory;
     }
@@ -61,6 +69,23 @@ internal sealed class JsonlLineSerializer
         var transverse = (Keywords)((long)entry.Keywords & TransverseMask);
         // [Flags] ToString() renders a zero value as "None"; the field is empty instead.
         return transverse == Keywords.None ? string.Empty : transverse.ToString();
+    }
+
+    // JSON has no literal for NaN or the infinities, and Utf8JsonWriter throws
+    // on them. A throw here would cost the whole row and, through the sink's
+    // fault path, close the stream and open a sink incident, so a measurement
+    // that went off the scale (a division by zero in a ratio, say) travels as
+    // its invariant text instead: "NaN", "Infinity", "-Infinity".
+    private static void WriteFloatingPoint(Utf8JsonWriter writer, string name, double value)
+    {
+        if (double.IsFinite(value)) writer.WriteNumber(name, value);
+        else writer.WriteString(name, value.ToString(CultureInfo.InvariantCulture));
+    }
+
+    private static void WriteFloatingPoint(Utf8JsonWriter writer, string name, float value)
+    {
+        if (float.IsFinite(value)) writer.WriteNumber(name, value);
+        else writer.WriteString(name, value.ToString(CultureInfo.InvariantCulture));
     }
 
     private static void WriteValue(Utf8JsonWriter writer, string name, object? value)
@@ -78,8 +103,8 @@ internal sealed class JsonlLineSerializer
             case ulong ul:           writer.WriteNumber(name, ul); break;
             case ushort us:          writer.WriteNumber(name, us); break;
             case sbyte sb:           writer.WriteNumber(name, sb); break;
-            case float f:            writer.WriteNumber(name, f); break;
-            case double d:           writer.WriteNumber(name, d); break;
+            case float f:            WriteFloatingPoint(writer, name, f); break;
+            case double d:           WriteFloatingPoint(writer, name, d); break;
             case Guid g:             writer.WriteString(name, g.ToString()); break;
             case DateTime dt:        writer.WriteString(name, dt.ToString("o", CultureInfo.InvariantCulture)); break;
             case DateTimeOffset dto: writer.WriteString(name, dto.ToString("o", CultureInfo.InvariantCulture)); break;

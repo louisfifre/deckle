@@ -55,7 +55,9 @@ public sealed class AmbientSettingsService
         Presets = new PresetFamily<AmbientTuning>(
             AmbientPresets.All,
             AmbientPresets.Default,
-            new AmbientPresetStore(() => Current));
+            new AmbientPresetStore(() => Current),
+            onSelectionReplaced: (asked, obtained) =>
+                DeckleAmbientSource.Log.PresetSelectionReplaced(asked, obtained));
     }
 
     public void Save()                       => _store.Save();

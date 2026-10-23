@@ -28,6 +28,9 @@ public static class MicLevelCheck
     // told it would help "a little". At or below it, the mic is already fine.
     public const double MarginalDeltaDb = 2.0;
 
+    // The level the DSP reports for a buffer of exact zeros.
+    private const double SilenceFloorDbfs = -120.0;
+
     public static MicLevelAssessment Assess(float[] pcm, PreprocessingSettings settings)
     {
         if (pcm is null || pcm.Length == 0)
@@ -38,6 +41,14 @@ public static class MicLevelCheck
         // Run the actual DSP: InputRmsDbfs is the raw level, OutputRmsDbfs is
         // what the backend would get, MakeupGainDb the lift that was applied.
         PreprocessingResult r = TranscriptionPreprocessor.Process(pcm, settings);
+
+        // RmsDbfs floors a buffer of exact zeros (a muted or dead mic) at
+        // -120. That is silence, not a very quiet voice: no verdict, or the
+        // deficit below would read 100 dB and recommend lifting nothing.
+        if (r.InputRmsDbfs <= SilenceFloorDbfs)
+        {
+            return new MicLevelAssessment(false, SilenceFloorDbfs, SilenceFloorDbfs, settings.TargetRmsDbfs, 0.0, PreprocessingAdvice.NotNeeded);
+        }
 
         double deficit = settings.TargetRmsDbfs - r.InputRmsDbfs;
         PreprocessingAdvice advice =

@@ -46,11 +46,7 @@ internal sealed class ToastActivation
         catch (Exception ex)
         {
             RegistrationSucceeded = false;
-            DeckleNotificationsSource.Log.ToastRegistrationFailed();
-            if (DeckleNotificationsSource.Log.IsEnabled())
-            {
-                DeckleNotificationsSource.Log.ToastRegistrationFailedDetail(ex.Message);
-            }
+            DeckleNotificationsSource.Log.ToastRegistrationFailed(ex.GetType().Name, ex.Message);
         }
     }
 

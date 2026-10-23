@@ -69,6 +69,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtPersonalDictionaryReset = 50;
     public const int EvtSentenceJudgeFeatureUnavailable = 51;
     public const int EvtDomainPackManifestUnreadable = 52;
+    public const int EvtSettingsLoadWarning = 53;
+    public const int EvtSettingsLoadError = 54;
 
     [Event(EvtCaretSentenceRecovery,
            Level = EventLevel.Verbose,
@@ -323,6 +325,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "surface | process={0} | editable={1} | password={2} | enrolled={3} | {4}")]
     public void SurfaceChanged(string process, bool editable, bool password, bool enrolled, string probe)
     {
+        HotLoops.AutocorrectSurfaceChanged.Tick();
         if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Capture)) return;
         WriteEvent(EvtSurfaceChanged, process, editable, password, enrolled, probe);
     }
@@ -349,21 +352,23 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         WriteEvent(EvtCorrectionDetail, reason, original_len, replacement_len, backspaces);
     }
 
-    // Opens the injection incident. process is the target app; win32_error is
-    // SendInput's last error, and 0 is itself a clue: UIPI blocking against an
-    // elevated window rejects the burst without setting any error.
+    // Opens the injection incident. win32_error is SendInput's last error, and 0
+    // is itself a clue: UIPI blocking against an elevated window rejects the
+    // burst without setting any error. The line names no app: an app name stays
+    // on Verbose detail events, where SurfaceChanged names the focused app.
     [Event(EvtInjectionFailing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Text injection is failing, corrections may not reach this app | process={0} | win32_error={1}")]
-    public void InjectionFailing(string process, int win32_error)
+           Message = "Text injection is failing, corrections may not reach this app | win32_error={0}")]
+    public void InjectionFailing(int win32_error)
     {
-        if (IsEnabled()) WriteEvent(EvtInjectionFailing, process, win32_error);
+        if (IsEnabled()) WriteEvent(EvtInjectionFailing, win32_error);
     }
 
     [Event(EvtInjectionRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
+           Tags = ObservationTags.Journal,
            Message = "Text injection recovered")]
     public void InjectionRecovered()
     {
@@ -474,6 +479,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankStallRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
            Message = "Contextual correction resumed after a stall | elapsed_ms={0}")]
     public void RerankStallRecovered(long elapsed_ms)
     {
@@ -494,6 +500,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtRerankRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
            Message = "Contextual correction recovered | failures={0}")]
     public void RerankRecovered(int failures)
     {
@@ -570,6 +577,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtCaretRecoveryRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Journal,
            Message = "Caret sentence recovery recovered | failures={0}")]
     public void CaretRecoveryRecovered(int failures)
     {
@@ -718,5 +726,24 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public void EnrollmentSuggested(string process)
     {
         if (IsEnabled()) WriteEvent(EvtEnrollmentSuggested, process);
+    }
+
+    // The settings store reports in free text; the text carries its own cause.
+    [Event(EvtSettingsLoadWarning,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The autocorrect settings need attention | {0}")]
+    public void SettingsLoadWarning(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
+    }
+
+    [Event(EvtSettingsLoadError,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The autocorrect settings could not be saved | {0}")]
+    public void SettingsLoadError(string message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 }

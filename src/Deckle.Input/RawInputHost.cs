@@ -356,7 +356,14 @@ public sealed class RawInputHost : IDisposable
     {
         uint count = 0;
         uint listEntrySize = (uint)Marshal.SizeOf<RawInputInterop.RAWINPUTDEVICELIST>();
-        if (RawInputInterop.GetRawInputDeviceList(null, ref count, listEntrySize) != 0 || count == 0)
+        // A failed call is not an empty machine: it gets its own Warning, so
+        // "no touchpad" in the log always means the list was read and held none.
+        if (RawInputInterop.GetRawInputDeviceList(null, ref count, listEntrySize) != 0)
+        {
+            DeckleInputSource.Log.TouchpadEnumerationFailed("count", Marshal.GetLastWin32Error());
+            return;
+        }
+        if (count == 0)
         {
             DeckleInputSource.Log.TouchpadAbsent();
             return;
@@ -365,7 +372,7 @@ public sealed class RawInputHost : IDisposable
         var list = new RawInputInterop.RAWINPUTDEVICELIST[count];
         if (RawInputInterop.GetRawInputDeviceList(list, ref count, listEntrySize) == unchecked((uint)-1))
         {
-            DeckleInputSource.Log.TouchpadAbsent();
+            DeckleInputSource.Log.TouchpadEnumerationFailed("list", Marshal.GetLastWin32Error());
             return;
         }
 

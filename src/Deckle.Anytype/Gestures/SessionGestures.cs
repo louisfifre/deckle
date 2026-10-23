@@ -161,8 +161,9 @@ public sealed class SessionGestures(
         long t0 = Stopwatch.GetTimestamp();
 
         string reportId = await _resolver.ResolveAsync(
-            report, new[] { DevSpace.Types.Rapport }, ct);
-        string taskId = await _resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
+            report, new[] { DevSpace.Types.Rapport }, NameMatch.Exact, ct);
+        string taskId = await _resolver.ResolveAsync(
+            task, new[] { DevSpace.Types.Task }, NameMatch.Exact, ct);
         JsonObject taskObj = await _api.GetObjectAsync(taskId, ct);
 
         await AppendTaskToReportAsync(reportId, taskId, ct);

@@ -11,6 +11,7 @@ namespace Deckle.Autocorrect.Tests;
 // are presence-based and scan ALL captured events, so they hold even if another
 // engine test emits concurrently.
 [Trait("Category", "observability")]
+[Collection(AutocorrectObservabilityCollection.Name)]
 public sealed class AutocorrectEngineObservabilityTests
 {
     public AutocorrectEngineObservabilityTests()
@@ -79,6 +80,48 @@ public sealed class AutocorrectEngineObservabilityTests
     }
 
     [Fact]
+    [Trait("Category", "regression")]
+    public void TheInjectionIncidentNamesNoAppOnTheLineTheJournalKeeps()
+    {
+        const string process = "probe-process-4f1c";
+        using var listener = new TestEventListener("Deckle-Autocorrect");
+        using var h = new AutocorrectEngineHarness(ScriptedPolicy.Maps("ca", "ça"));
+        h.Prober.Surface = AutocorrectEngineHarness.Editable(process);
+        h.Settings.Apps[process] = true;
+        h.Injector.Result = false;
+        h.Start();
+
+        h.Type("ca ");
+
+        EventWrittenEventArgs failing = Assert.Single(listener.Events,
+            e => e.EventId == DeckleAutocorrectSource.EvtInjectionFailing);
+        Assert.Equal(EventLevel.Warning, failing.Level);
+        AssertNoTypedWordLeaked([failing], process);
+        Assert.DoesNotContain("process", failing.PayloadNames!);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void NoEventThatTravelsInTheJournalDeclaresAnAppOrProcessName()
+    {
+        // Presence-based on the declared shape, so it covers events the engine
+        // tests above never raise.
+        Assert.Empty(JournalledPayloads.AppNamesInTheJournal(typeof(DeckleAutocorrectSource)));
+    }
+
+    [Fact]
+    public void TheSurfaceStaysNamedOnItsVerboseDetailEvent()
+    {
+        var surface = JournalledPayloads
+            .Carrying(typeof(DeckleAutocorrectSource), ["process"])
+            .Single(c => c.Event.Name == nameof(DeckleAutocorrectSource.SurfaceChanged))
+            .Event;
+
+        Assert.Equal(EventLevel.Verbose, surface.Level);
+        Assert.False(JournalledPayloads.Travels(surface));
+    }
+
+    [Fact]
     public void ForeignAutocorrectBurstLogsOnlyItsShapeAndOutcome()
     {
         using var listener = new TestEventListener("Deckle-Autocorrect");
@@ -116,7 +159,7 @@ public sealed class AutocorrectEngineObservabilityTests
 
     // The hard rule, asserted directly: no string payload on any captured event
     // equals a word the user typed or the engine produced. Reasons (enum names)
-    // and the process name are metadata, not typed content.
+    // are metadata, not typed content.
     private static void AssertNoTypedWordLeaked(
         IReadOnlyList<EventWrittenEventArgs> events, params string[] words)
     {

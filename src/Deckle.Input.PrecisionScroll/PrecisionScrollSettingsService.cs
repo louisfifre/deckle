@@ -34,7 +34,9 @@ public sealed class PrecisionScrollSettingsService
         _store = new JsonSettingsStore<PrecisionScrollSettings>(
             path: Path.Combine(directory, "settings.json"),
             mutexName: $"{AppPaths.AppFolderName}-Settings-PrecisionScroll-Save",
-            jsonOptions: _jsonOptions);
+            jsonOptions: _jsonOptions,
+            logWarning: DecklePrecisionScrollSource.Log.SettingsLoadWarning,
+            logError: DecklePrecisionScrollSource.Log.SettingsLoadError);
     }
 
     // Runtime consumers react to the in-memory value synchronously. Only the

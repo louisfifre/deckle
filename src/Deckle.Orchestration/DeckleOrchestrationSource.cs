@@ -88,6 +88,10 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public const int EvtSteamLibraryScanned = 71;
     public const int EvtSteamPathUnreadable = 72;
     public const int EvtProcessQuerySkipped = 73;
+    public const int EvtForegroundDeliveryFailedDetail = 74;
+    public const int EvtForegroundDeliveryRecovered = 75;
+    public const int EvtExitWatchCallbackFailedDetail = 76;
+    public const int EvtExitWatchCallbackRecovered = 77;
 
     // The settings store reports in free text; the text carries its own cause.
     [Event(EvtSettingsLoadWarning,
@@ -338,7 +342,9 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
 
     // The exit callback threw on the thread pool. Contained so the resident
     // process lives on; the session of that process may not end, and its
-    // rules then stay applied until the runtime stops.
+    // rules then stay applied until the runtime stops. Opens one incident:
+    // later failures only get the Verbose detail, and the next exit that is
+    // handled closes it.
     [Event(EvtExitWatchCallbackFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
@@ -346,6 +352,25 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public void ExitWatchCallbackFailed(int pid, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtExitWatchCallbackFailed, pid, ex_type, ex_message);
+    }
+
+    [Event(EvtExitWatchCallbackFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "process exit not handled | pid={0} | ex_type={1} | ex_message={2}")]
+    public void ExitWatchCallbackFailedDetail(int pid, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtExitWatchCallbackFailedDetail, pid, ex_type, ex_message);
+    }
+
+    [Event(EvtExitWatchCallbackRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
+           Message = "Process exits are handled again")]
+    public void ExitWatchCallbackRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtExitWatchCallbackRecovered);
     }
 
     // One WMI start event could not be read (stage=read) or handled
@@ -414,13 +439,18 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtDetectionStatusChanged, process_trace, foreground_monitor);
     }
 
+    // A session is lasting work: SessionStarted opens it and SessionEnded
+    // closes it, both in the journal. entry_id is the registry entry's opaque
+    // identifier and pairs them, since an entry has one session at a time; the
+    // app's name and process stay in the Verbose details.
     [Event(EvtSessionStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "An app session started")]
-    public void SessionStarted()
+           Tags = ObservationTags.Journal,
+           Message = "An app session started | entry_id={0} | pid={1}")]
+    public void SessionStarted(string entry_id, int pid)
     {
-        if (IsEnabled()) WriteEvent(EvtSessionStarted);
+        if (IsEnabled()) WriteEvent(EvtSessionStarted, entry_id, pid);
     }
 
     [Event(EvtSessionStartedDetail,
@@ -437,10 +467,11 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtSessionEnded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "An app session ended | reason={0}")]
-    public void SessionEnded(string reason)
+           Tags = ObservationTags.Journal,
+           Message = "An app session ended | entry_id={0} | reason={1}")]
+    public void SessionEnded(string entry_id, string reason)
     {
-        if (IsEnabled()) WriteEvent(EvtSessionEnded, reason);
+        if (IsEnabled()) WriteEvent(EvtSessionEnded, entry_id, reason);
     }
 
     [Event(EvtSessionEndedDetail,
@@ -458,7 +489,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtSessionHandlerFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "An app session event could not be handled | kind={0} | ex_type={2} | ex_message={3}")]
+           Message = "An app session event could not be handled | kind={0} | entry_id={1} | ex_type={2} | ex_message={3}")]
     public void SessionHandlerFailed(string kind, string entry_id, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtSessionHandlerFailed, kind, entry_id, ex_type, ex_message);
@@ -502,6 +533,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtReconcileRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
            Message = "Detection caught up with the app list again")]
     public void ReconcileRecovered()
     {
@@ -510,13 +542,15 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
 
     // A session's rules changed something at launch. Not emitted when every
     // rule found the system already as wanted: the detail alone says so.
+    // changes = how many things a restore will undo.
     [Event(EvtProfileApplied,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "App rules applied")]
-    public void ProfileApplied()
+           Tags = ObservationTags.Journal,
+           Message = "App rules applied | entry_id={0} | changes={1}")]
+    public void ProfileApplied(string entry_id, int changes)
     {
-        if (IsEnabled()) WriteEvent(EvtProfileApplied);
+        if (IsEnabled()) WriteEvent(EvtProfileApplied, entry_id, changes);
     }
 
     // effects = the effect names that applied, comma-separated; changes = how
@@ -535,10 +569,11 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtProfileRestored,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "App rules restored")]
-    public void ProfileRestored()
+           Tags = ObservationTags.Journal,
+           Message = "App rules restored | entry_id={0} | restored={1}")]
+    public void ProfileRestored(string entry_id, int restored)
     {
-        if (IsEnabled()) WriteEvent(EvtProfileRestored);
+        if (IsEnabled()) WriteEvent(EvtProfileRestored, entry_id, restored);
     }
 
     [Event(EvtProfileRestoredDetail,
@@ -555,7 +590,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtRuleApplyFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "App rules could not be applied — the app runs without them | effect={1} | ex_type={2} | ex_message={3}")]
+           Message = "App rules could not be applied — the app runs without them | entry_id={0} | effect={1} | ex_type={2} | ex_message={3}")]
     public void RuleApplyFailed(string entry_id, string effect, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRuleApplyFailed, entry_id, effect, ex_type, ex_message);
@@ -565,7 +600,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtRuleRestoreFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A rule could not be restored | effect={1} | ex_type={2} | ex_message={3}")]
+           Message = "A rule could not be restored | entry_id={0} | effect={1} | ex_type={2} | ex_message={3}")]
     public void RuleRestoreFailed(string entry_id, string effect, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRuleRestoreFailed, entry_id, effect, ex_type, ex_message);
@@ -596,6 +631,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     [Event(EvtDisplayQueryRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Windowing,
+           Tags = ObservationTags.Journal,
            Message = "The monitor list can be read again")]
     public void DisplayQueryRecovered()
     {
@@ -648,6 +684,9 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
 
     // A subscriber of the foreground change threw on the thread pool. The
     // exception is contained here; the change is dropped for that delivery.
+    // Opens one incident: a subscriber that fails on every change would
+    // otherwise write a Warning per focus change; later failures only get the
+    // Verbose detail, and the next delivery that succeeds closes it.
     [Event(EvtForegroundDeliveryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
@@ -655,5 +694,24 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public void ForegroundDeliveryFailed(int pid, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtForegroundDeliveryFailed, pid, ex_type, ex_message);
+    }
+
+    [Event(EvtForegroundDeliveryFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "foreground change not delivered | pid={0} | ex_type={1} | ex_message={2}")]
+    public void ForegroundDeliveryFailedDetail(int pid, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtForegroundDeliveryFailedDetail, pid, ex_type, ex_message);
+    }
+
+    [Event(EvtForegroundDeliveryRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Journal,
+           Message = "Foreground changes are delivered again")]
+    public void ForegroundDeliveryRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtForegroundDeliveryRecovered);
     }
 }

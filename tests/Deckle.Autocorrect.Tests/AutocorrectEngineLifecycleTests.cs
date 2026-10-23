@@ -6,6 +6,7 @@ namespace Deckle.Autocorrect.Tests;
 // Start/stop lifecycle: a host that fails to start leaves the engine fully
 // detached (handlers unsubscribed, no observation), and Stop unwinds the host.
 [Trait("Category", "integration")]
+[Collection(AutocorrectObservabilityCollection.Name)]
 public sealed class AutocorrectEngineLifecycleTests
 {
     [Fact]

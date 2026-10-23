@@ -4,7 +4,7 @@ using Xunit;
 
 namespace Deckle.Lighting.Ambient.Tests;
 
-[Trait("Category", "regression")]
+[Trait("Category", "unit")]
 public class AmbientHueChangeAttributorTests
 {
     [Fact]
@@ -199,6 +199,7 @@ public class AmbientHueChangeAttributorTests
     // the pending window that is an Ambient echo, not proof of an external
     // Hue command.
     [Fact]
+    [Trait("Category", "regression")]
     public void DelayedXyOnlySettlingWithinPendingWindowIsNotExternal()
     {
         var pushedAt = DateTimeOffset.Parse("2026-06-04T09:28:41Z");

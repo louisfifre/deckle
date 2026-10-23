@@ -41,6 +41,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     public const int EvtSpeechTrimVadFileDeleteFailed       = 17;
     public const int EvtSpeechTrimFailed                    = 18;
     public const int EvtSpeechTrimBounds                    = 19;
+    public const int EvtSpeechTrimVadDownloadAttemptFailedDetail = 20;
 
     // Where the trim cut, in ms of the buffer it received. trailing_removed_ms
     // is the audio after the last detected speech sample that never reached
@@ -103,7 +104,7 @@ public sealed class DeckleVadSource : DeckleEventSource
            Message = "model loaded | model_path={0}")]
     public void SpeechTrimVadLoadedDetail(string model_path)
     {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadLoadedDetail, model_path);
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadLoadedDetail, PathRedaction.Redact(model_path));
     }
 
     // Wall-clock for the VAD load: SHA-256 verify + ONNX session construction,
@@ -121,8 +122,11 @@ public sealed class DeckleVadSource : DeckleEventSource
     // Opens the "takes run untrimmed" incident, once per cause: a later take that
     // finds the VAD unusable for the same reason adds nothing. reason is one of
     // model_missing, checksum_mismatch, checksum_read_failed, load_failed,
-    // download_failed, trim_failed. ex_type is empty when no exception was
-    // thrown; ex_message then carries the failure text when there is one.
+    // download_failed, download_gave_up, trim_failed. ex_type is empty when no
+    // exception was thrown; ex_message then carries the failure text when there
+    // is one. download_failed opens on the first failed download and the retries
+    // stay inside it; download_gave_up follows once, when the last retry failed,
+    // and says the next start will try again.
     [Event(EvtSpeechTrimUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
@@ -130,7 +134,7 @@ public sealed class DeckleVadSource : DeckleEventSource
            Message = "Speech trim is off, takes run untrimmed | reason={0} | ex_type={1} | ex_message={2}")]
     public void SpeechTrimUnavailable(string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimUnavailable, reason, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimUnavailable, reason, ex_type, PathRedaction.Redact(ex_message));
     }
 
     [Event(EvtSpeechTrimUnavailableDetail,
@@ -139,7 +143,7 @@ public sealed class DeckleVadSource : DeckleEventSource
            Message = "speech trim unavailable | reason={0} | model_path={1}")]
     public void SpeechTrimUnavailableDetail(string reason, string model_path)
     {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimUnavailableDetail, reason, model_path);
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimUnavailableDetail, reason, PathRedaction.Redact(model_path));
     }
 
     // Closes the incident SpeechTrimUnavailable opened, so the journal never
@@ -162,7 +166,7 @@ public sealed class DeckleVadSource : DeckleEventSource
            Message = "model delete failed | model_path={0} | ex_type={1} | ex_message={2}")]
     public void SpeechTrimVadFileDeleteFailed(string model_path, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadFileDeleteFailed, model_path, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadFileDeleteFailed, PathRedaction.Redact(model_path), ex_type, PathRedaction.Redact(ex_message));
     }
 
     [Event(EvtSpeechTrimVadDownloadStart,
@@ -183,6 +187,21 @@ public sealed class DeckleVadSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadStartDetail, url);
     }
 
+    // One failed download attempt. The incident is SpeechTrimUnavailable; this is
+    // each attempt inside it, with how long the service waits before the next one
+    // (0 on the last attempt, which has no next).
+    [Event(EvtSpeechTrimVadDownloadAttemptFailedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "model download attempt failed | attempt={0} | attempts={1} | retry_in_s={2} | ex_type={3} | ex_message={4}")]
+    public void SpeechTrimVadDownloadAttemptFailedDetail(
+        int attempt, int attempts, long retry_in_s, string ex_type, string ex_message)
+    {
+        if (IsEnabled())
+            WriteEvent(EvtSpeechTrimVadDownloadAttemptFailedDetail,
+                attempt, attempts, retry_in_s, ex_type, PathRedaction.Redact(ex_message));
+    }
+
     [Event(EvtSpeechTrimVadDownloadComplete,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -198,7 +217,7 @@ public sealed class DeckleVadSource : DeckleEventSource
            Message = "model download complete | model_path={0}")]
     public void SpeechTrimVadDownloadCompleteDetail(string model_path)
     {
-        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadCompleteDetail, model_path);
+        if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadCompleteDetail, PathRedaction.Redact(model_path));
     }
 
     // The raw per-utterance failure; the visible incident is SpeechTrimUnavailable
@@ -210,7 +229,7 @@ public sealed class DeckleVadSource : DeckleEventSource
            Message = "speech trim failed | utterance_index={0} | ex_type={1} | ex_message={2}")]
     public void SpeechTrimFailed(int utterance_index, string ex_type, string ex_message)
     {
-        if (IsTrimDetailEnabled()) WriteEvent(EvtSpeechTrimFailed, utterance_index, ex_type, ex_message);
+        if (IsTrimDetailEnabled()) WriteEvent(EvtSpeechTrimFailed, utterance_index, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // The raw per-take attempt; the visible incident is SpeechTrimUnavailable,

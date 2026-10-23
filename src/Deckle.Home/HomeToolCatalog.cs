@@ -21,7 +21,7 @@ public static class HomeToolCatalog
 
             new ToolDescriptor(
                 "update",
-                "Update a Home batch. Prefer typed *_update for individual records. Read existing content first; omitted fields stay unchanged, supplied relation arrays replace their contents. Codes and Point room/category are immutable. append_text adds to the current body; section replaces one existing section. Relation fields may instead use {add:[selectors],remove:[selectors]} to retain other targets. Collections are separate from relations.",
+                "Update a Home batch. Prefer typed *_update for individual records. Read existing content first; omitted fields stay unchanged, supplied relation arrays replace their contents. Codes and Point room/category are immutable. Every selector a write takes (the object, a relation target, a collection) is an exact code, an exact name or an id: a partial name is refused with the nearest candidates, never guessed. append_text adds to the current body; section replaces one existing section. Relation fields may instead use {add:[selectors],remove:[selectors]} to retain other targets. Collections are separate from relations.",
                 UpdateSchema(),
                 (args, ct) => gestures().UpdateAsync(UpdateItems(args), ct),
                 ToolExecutionContract.OverwritingUncertain),
@@ -85,7 +85,7 @@ public static class HomeToolCatalog
 
             new ToolDescriptor(
                 "delete",
-                "Move a Home object to Anytype's recoverable bin. First call without confirm to preview and obtain the pinned id, then repeat with that exact id and confirm:true. A point referenced by another object refuses — clear the references (Commande, Commandé par, Alimenté par…) with update first; an unreferenced point deletes directly.",
+                "Move a Home object to Anytype's recoverable bin. First call without confirm to preview and obtain the pinned id, show it to the person, then repeat with that exact id and confirm:true: Deckle then asks the person by a Windows notification and refuses if they say no, do not answer in time, or the notification cannot be shown. A point referenced by another object refuses — clear the references (Commande, Commandé par, Alimenté par…) with update first; an unreferenced point deletes directly.",
                 ObjectSchema(
                     required: [("object", StringSchema("Object code, name, or pinned id."))],
                     optional: [("confirm", BooleanSchema("Confirm the previewed deletion; default false."))]),

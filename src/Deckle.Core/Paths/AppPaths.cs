@@ -79,6 +79,8 @@ public static class AppPaths
     {
         if (string.IsNullOrWhiteSpace(moduleId))
             throw new ArgumentException("Module id must not be empty.", nameof(moduleId));
+        if (!ModuleDirectoryName.IsSingleSegment(moduleId))
+            throw new ArgumentException("Module id must be a single folder name.", nameof(moduleId));
 
         string dir = Path.Combine(ModulesDirectory, moduleId);
         Directory.CreateDirectory(dir);
@@ -119,33 +121,47 @@ public static class AppPaths
         Directory.CreateDirectory(MouseWheelTelemetryDirectory);
         Directory.CreateDirectory(DiagnosticsDirectory);
 
-        TryMigrateLegacySettingsLayout();
+        LegacyLayoutMigrationFailure = MigrateLegacySettingsLayout(
+            UserDataRoot, SettingsFilePath, SettingsBackupDirectory);
     }
 
+    // Why the legacy settings layout could not be moved, or null when it was
+    // moved or there was nothing to move. This class runs in a static
+    // constructor, before any log sink exists and below the module that could
+    // write one, so it keeps the failure for the host to report once its sinks
+    // are installed instead of swallowing it.
+    public static Exception? LegacyLayoutMigrationFailure { get; }
+
     // Moves a legacy <UserDataRoot>\settings\ subfolder (settings.json and
-    // backups\) to the root layout. No-op once done; failures are swallowed
-    // so a quirky filesystem state doesn't bring the app down at start-up.
-    private static void TryMigrateLegacySettingsLayout()
+    // backups\) to the root layout. No-op once done. A failure does not stop
+    // the app from booting against the new layout; it is returned so it can be
+    // reported, because settings left in the old place read as defaults.
+    internal static Exception? MigrateLegacySettingsLayout(
+        string userDataRoot,
+        string settingsFilePath,
+        string settingsBackupDirectory)
     {
         try
         {
-            string legacyDir  = Path.Combine(UserDataRoot, "settings");
+            string legacyDir  = Path.Combine(userDataRoot, "settings");
             string legacyFile = Path.Combine(legacyDir, "settings.json");
 
-            if (File.Exists(legacyFile) && !File.Exists(SettingsFilePath))
-                File.Move(legacyFile, SettingsFilePath);
+            if (File.Exists(legacyFile) && !File.Exists(settingsFilePath))
+                File.Move(legacyFile, settingsFilePath);
 
             string legacyBackups = Path.Combine(legacyDir, "backups");
-            if (Directory.Exists(legacyBackups) && !Directory.Exists(SettingsBackupDirectory))
-                Directory.Move(legacyBackups, SettingsBackupDirectory);
+            if (Directory.Exists(legacyBackups) && !Directory.Exists(settingsBackupDirectory))
+                Directory.Move(legacyBackups, settingsBackupDirectory);
 
             if (Directory.Exists(legacyDir) &&
                 Directory.GetFileSystemEntries(legacyDir).Length == 0)
                 Directory.Delete(legacyDir);
+
+            return null;
         }
-        catch
+        catch (Exception ex)
         {
-            // best-effort; the app keeps booting against the new layout
+            return ex;
         }
     }
 

@@ -36,7 +36,9 @@ public sealed class TaskbarCoverSettingsService
         _store = new JsonSettingsStore<TaskbarCoverSettings>(
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-TaskbarCover-Save",
-            jsonOptions: _jsonOptions);
+            jsonOptions: _jsonOptions,
+            logWarning:  DeckleShellTaskbarCoverSource.Log.SettingsLoadWarning,
+            logError:    DeckleShellTaskbarCoverSource.Log.SettingsLoadError);
     }
 
     public void Save()                              => _store.Save();

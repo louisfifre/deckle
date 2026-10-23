@@ -7,6 +7,7 @@ using Xunit;
 namespace Deckle.Autocorrect.Tests;
 
 [Trait("Category", "unit")]
+[Collection(AutocorrectObservabilityCollection.Name)]
 public sealed class BackgroundRerankLaneTests
 {
     [Fact]
@@ -61,6 +62,12 @@ public sealed class BackgroundRerankLaneTests
         await reranker.Entered.Task.WaitAsync(TimeSpan.FromSeconds(2), cancellationToken);
         Task disposal = Task.Run(lane.Dispose, cancellationToken);
 
+        // "Still blocked" is a negative, so it only means something once the
+        // disposal is really running: a task still queued behind a starved
+        // pool would also look blocked. After this, a Dispose that did not
+        // wait would be done within microseconds, well inside the delay.
+        Assert.True(SpinWait.SpinUntil(
+            () => disposal.Status != TaskStatus.WaitingToRun, 2_000));
         await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken);
         Assert.False(disposal.IsCompleted);
         Assert.False(reranker.Disposed);

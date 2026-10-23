@@ -60,9 +60,8 @@ public sealed class SpaceWriteLock
 
                 return handle;
             }
-            catch (IOException)
+            catch (IOException ex) when (IsHeldByAnotherWriter(ex))
             {
-                // Held by another writer (sharing violation).
                 waited = true;
                 await Task.Delay(backoff, ct).ConfigureAwait(false);
                 backoff = TimeSpan.FromMilliseconds(
@@ -70,4 +69,14 @@ public sealed class SpaceWriteLock
             }
         }
     }
+
+    // Only a sharing or lock violation means another writer holds the file, and
+    // only that clears by waiting. Every other IOException (a missing directory,
+    // a path too long, a vanished drive, a full disk) would repeat identically,
+    // so it escapes to the gesture instead of being polled forever.
+    private const int ErrorSharingViolation = 32;
+    private const int ErrorLockViolation = 33;
+
+    private static bool IsHeldByAnotherWriter(IOException ex) =>
+        (ex.HResult & 0xFFFF) is ErrorSharingViolation or ErrorLockViolation;
 }

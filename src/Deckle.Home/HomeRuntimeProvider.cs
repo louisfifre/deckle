@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Net.Http;
 using Deckle.Anytype;
+using Deckle.Diagnostics;
 
 namespace Deckle.Home;
 
@@ -12,6 +13,7 @@ internal sealed class HomeRuntimeProvider(AnytypeApiClient api, string spaceId)
     // The failure streak since the last success; only touched inside _gate.
     private int _failures;
     private long _failingSince;
+    private string _incident = "";
 
     public async Task<HomeSchemaRuntime> GetAsync(CancellationToken ct)
     {
@@ -34,8 +36,9 @@ internal sealed class HomeRuntimeProvider(AnytypeApiClient api, string spaceId)
 
                 long since = _failures > 0 ? _failingSince : started;
                 DeckleHomeSource.Log.SchemaReady(
-                    _failures, Stopwatch.GetElapsedTime(since).TotalMilliseconds);
+                    _incident, _failures, Stopwatch.GetElapsedTime(since).TotalMilliseconds);
                 _failures = 0;
+                _incident = "";
                 return _runtime;
             }
             catch (Exception ex) when (ex is not OperationCanceledException || !ct.IsCancellationRequested)
@@ -64,14 +67,15 @@ internal sealed class HomeRuntimeProvider(AnytypeApiClient api, string spaceId)
         if (_failures++ == 0)
         {
             _failingSince = Stopwatch.GetTimestamp();
-            DeckleHomeSource.Log.SchemaUnavailable(reason, exType, status);
+            _incident = WorkId.Next();
+            DeckleHomeSource.Log.SchemaUnavailable(_incident, reason, exType, status);
         }
         else
         {
-            DeckleHomeSource.Log.SchemaAttemptFailed(reason, exType, status, _failures);
+            DeckleHomeSource.Log.SchemaAttemptFailed(_incident, reason, exType, status, _failures);
         }
 
-        if (ex is HomeSchemaException)
-            DeckleHomeSource.Log.SchemaRejectedDetail(ex.Message);
+        if (ex is HomeSchemaException rejected)
+            DeckleHomeSource.Log.SchemaRejectedDetail(rejected.Reason, rejected.FailedChecks);
     }
 }

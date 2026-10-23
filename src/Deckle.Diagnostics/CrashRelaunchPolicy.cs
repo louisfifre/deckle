@@ -45,7 +45,15 @@ public static class CrashRelaunchPolicy
     // chose, and Windows does not document the one Task Manager's End task
     // picks; it is a small number in practice, so a person ending Deckle does
     // not trigger a relaunch. That last point is observed, not documented.
-    public static bool IsCrash(int exitCode) => ((uint)exitCode & 0x80000000u) != 0;
+    //
+    // 0xFFFFFFFF (-1) is not a crash either. It has the high bit, but it is the
+    // code .NET's Process.Kill passes to TerminateProcess, so it is what
+    // Stop-Process -Force and every script that kills Deckle through the
+    // runtime leave behind: a deliberate end, which must not spend relaunch
+    // budget. No fatal exception uses that value. (That Process.Kill exits
+    // with -1 is the runtime's behavior as known, not stated in this repository.)
+    public static bool IsCrash(int exitCode)
+        => exitCode != -1 && ((uint)exitCode & 0x80000000u) != 0;
 
     public static string FormatAfterCrash(int exitCode, int relaunchOrdinal)
         => $"{(uint)exitCode:X8}:{relaunchOrdinal}";

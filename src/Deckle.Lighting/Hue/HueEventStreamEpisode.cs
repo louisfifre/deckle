@@ -85,6 +85,25 @@ internal sealed class HueEventStreamEpisode
         }
     }
 
+    // Ends an open incident because the subscriber itself stopped. A loss that
+    // never reached the incident delay has nothing to close.
+    internal bool TryAbandon(out HueEventStreamObservation observation)
+    {
+        lock (_gate)
+        {
+            bool shouldReport = _disconnected && _incidentOpen;
+            observation = shouldReport
+                ? new HueEventStreamObservation(GetDuration(), _failureCount, _lastException)
+                : default;
+
+            _disconnected = false;
+            _incidentOpen = false;
+            _failureCount = 0;
+            _lastException = null;
+            return shouldReport;
+        }
+    }
+
     private TimeSpan GetDuration()
         => _timeProvider.GetElapsedTime(_lostAtTimestamp, _timeProvider.GetTimestamp());
 }

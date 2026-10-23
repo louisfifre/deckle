@@ -5,10 +5,10 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-[Trait("Category", "unit")]
 public sealed class QwenAdapterCompatibilityProtocolTests
 {
     [Fact]
+    [Trait("Category", "unit")]
     public void AcceptsOnlyTheFrozenPhaseAPlanShape()
     {
         QwenAdapterCompatibilityPlan plan = FrozenPlan(readerValid: true);
@@ -21,6 +21,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RejectsProtocolBasePathAdapterAndNegativeDrift()
     {
         QwenAdapterCompatibilityPlan exact = FrozenPlan(readerValid: true);
@@ -75,6 +76,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void RefusesStructurallyIncompleteJsonWithoutThrowing()
     {
         QwenAdapterCompatibilityPlan exact = FrozenPlan(readerValid: true);
@@ -121,6 +123,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ParsesOnlyTheDedicatedPlanCommandShape()
     {
         string path = Absolute("plan.json");
@@ -143,6 +146,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RunsOneModelWithFreshRequestsAndIdentityStableAlternation()
     {
         QwenAdapterCompatibilityPlan plan = FrozenPlan();
@@ -215,6 +219,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RefusesCandidateTokensThatDoNotMatchTheFrozenLiteral()
     {
         QwenAdapterCompatibilityPlan plan = FrozenPlan();
@@ -233,6 +238,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RefusesAManifestBeforeConstructingTheRuntime()
     {
         QwenAdapterCompatibilityPlan plan = FrozenPlan();
@@ -257,6 +263,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void TreatsShapeDriftAsAnInfiniteNumericalMismatch()
     {
         QwenAdapterRuntimeObservation left = Observation("base", [1.0f, 2.0f]);
@@ -268,6 +275,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RejectsWrongLogitShapeWithoutSerializingInfinity()
     {
         QwenAdapterCompatibilityPlan plan = FrozenPlan();
@@ -285,6 +293,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ClearsSeededSeparationEvidenceAfterALateFingerprintDrift()
     {
         QwenAdapterCompatibilityPlan plan = FrozenPlan();
@@ -300,6 +309,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RejectsAForeignNegativeFailureFamily()
     {
         QwenAdapterCompatibilityPlan plan = FrozenPlan();
@@ -317,6 +327,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void UnloadsAPartialAdapterSetBeforeRuntimeDisposal()
     {
         QwenAdapterCompatibilityPlan plan = FrozenPlan();
@@ -333,6 +344,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RetainsCleanupFailuresAfterAnEarlyPartialLoadReport()
     {
         QwenAdapterCompatibilityPlan plan = FrozenPlan();
@@ -352,6 +364,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RetainsFatalStageAndLaterCleanupFailures()
     {
         QwenAdapterCompatibilityPlan plan = FrozenPlan();
@@ -373,6 +386,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void MatchesActualBytesInsteadOfTrustingADeclaredPath()
     {
         string directory = Path.Combine(Path.GetTempPath(), $"acx-0023-{Guid.NewGuid():N}");
@@ -398,6 +412,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void ResolvesOnlyTheExistingGraphReferencedByGenAiConfig()
     {
         string directory = Path.Combine(
@@ -432,6 +447,7 @@ public sealed class QwenAdapterCompatibilityProtocolTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ComputesTeacherForcedLogProbabilityWithStableLogSoftmax()
     {
         double uniform = QwenCandidateScoringMath.LogProbability([0.0f, 0.0f], 0);

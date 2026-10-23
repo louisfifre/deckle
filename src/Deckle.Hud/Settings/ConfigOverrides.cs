@@ -8,7 +8,7 @@ namespace Deckle.Hud;
 // following the default when the default moves in code. The serializer does
 // the field walk, so a property added to a config is covered without touching
 // this file; a property renamed or removed leaves a stale key in the file,
-// which Apply ignores.
+// which Apply ignores, as it does a stored value of the wrong type.
 internal static class ConfigOverrides
 {
     /// <summary>
@@ -41,10 +41,43 @@ internal static class ConfigOverrides
         if (overrides is null || overrides.Count == 0) return defaults;
 
         var node = JsonSerializer.SerializeToNode(defaults, options)!.AsObject();
+        var known = new List<KeyValuePair<string, JsonNode?>>();
         foreach (var (key, value) in overrides)
         {
             if (!node.ContainsKey(key)) continue;
+            known.Add(new(key, value));
             node[key] = value?.DeepClone();
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<T>(node, options)!;
+        }
+        catch (JsonException)
+        {
+            // A value of the wrong type (a hand edit, or a field whose type
+            // changed in code). Keep the overrides that read, drop the others:
+            // one bad field must not take the whole configuration with it.
+            return ApplyReadableOnly(defaults, known, options);
+        }
+    }
+
+    private static T ApplyReadableOnly<T>(
+        T defaults, List<KeyValuePair<string, JsonNode?>> known, JsonSerializerOptions options)
+    {
+        var node = JsonSerializer.SerializeToNode(defaults, options)!.AsObject();
+        foreach (var (key, value) in known)
+        {
+            JsonNode? previous = node[key]?.DeepClone();
+            node[key] = value?.DeepClone();
+            try
+            {
+                JsonSerializer.Deserialize<T>(node, options);
+            }
+            catch (JsonException)
+            {
+                node[key] = previous;
+            }
         }
         return JsonSerializer.Deserialize<T>(node, options)!;
     }

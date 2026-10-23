@@ -19,13 +19,18 @@ public sealed partial class HomeGestures
     private readonly AnytypeApiClient _api;
     private readonly string _spaceId;
     private readonly HomeRuntimeProvider _runtime;
+    private readonly IDeletionApproval _approval;
 
-    public HomeGestures(AnytypeApiClient api, string spaceId)
+    // The approval defaults to the one the host installed (a Windows toast in the
+    // resident app). A host that installs none answers Unavailable, so a delete
+    // fails closed.
+    public HomeGestures(AnytypeApiClient api, string spaceId, IDeletionApproval? approval = null)
     {
         ArgumentNullException.ThrowIfNull(api);
         ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
         _api = api;
         _spaceId = spaceId;
+        _approval = approval ?? DeletionApproval.Current;
         _runtime = new HomeRuntimeProvider(api, spaceId);
     }
 
@@ -148,24 +153,69 @@ public sealed partial class HomeGestures
                 collections));
         }
 
+        // Creation is one request per item, then one per collection: Anytype
+        // offers no transaction, so a failure part way leaves the space with
+        // the items already created. The caller is told which ones (see
+        // HomePartialWriteException) instead of being left to repeat a batch
+        // whose first items now exist.
         var memberships = new Dictionary<string, List<string>>(StringComparer.Ordinal);
-        foreach ((string _, JsonObject payload, IReadOnlyList<string> collections) in prepared)
+        var created = new List<string>();
+        string? failedItem = null;
+        try
         {
-            JsonObject created = await _api.CreateObjectAsync(_spaceId, payload, ct).ConfigureAwait(false);
-            string createdId = HomeObjectJson.Id(created);
-            if (collections.Count > 0 && createdId.Length == 0)
-                throw new InvalidOperationException(
-                    "Anytype n’a pas renvoyé l’id de l’objet créé ; son appartenance ne peut pas être appliquée.");
-
-            foreach (string collectionId in collections)
+            foreach ((string display, JsonObject payload, IReadOnlyList<string> collections) in prepared)
             {
-                if (!memberships.TryGetValue(collectionId, out List<string>? objectIds))
-                    memberships[collectionId] = objectIds = [];
-                objectIds.Add(createdId);
+                failedItem = display;
+                JsonObject createdObject = await _api.CreateObjectAsync(_spaceId, payload, ct).ConfigureAwait(false);
+                failedItem = null;
+                string createdId = HomeObjectJson.Id(createdObject);
+                created.Add(createdId.Length > 0 ? $"{display} (id {createdId})" : display);
+                if (collections.Count > 0 && createdId.Length == 0)
+                    throw new InvalidOperationException(
+                        "Anytype n’a pas renvoyé l’id de l’objet créé ; son appartenance ne peut pas être appliquée.");
+
+                foreach (string collectionId in collections)
+                {
+                    if (!memberships.TryGetValue(collectionId, out List<string>? objectIds))
+                        memberships[collectionId] = objectIds = [];
+                    objectIds.Add(createdId);
+                }
             }
         }
+        catch (Exception ex) when (created.Count > 0 && ex is not OperationCanceledException)
+        {
+            // Attach what was created before giving up, so the objects that
+            // exist are at least where the caller wanted them; a failure of
+            // this second attempt only changes what the message reports.
+            HomeMembershipState membership = HomeMembershipState.NotRequested;
+            if (memberships.Count > 0)
+            {
+                membership = HomeMembershipState.Unconfirmed;
+                try
+                {
+                    await collectionWriter.AddAsync(memberships, ct).ConfigureAwait(false);
+                    membership = HomeMembershipState.Applied;
+                }
+                catch (Exception flush) when (flush is not OperationCanceledException) { }
+            }
 
-        await collectionWriter.AddAsync(memberships, ct).ConfigureAwait(false);
+            // failedItem is set only while a create request is in flight; a
+            // failure after it (a missing id) leaves that item created.
+            string[] notAttempted = prepared.Skip(created.Count + (failedItem is null ? 0 : 1))
+                .Select(item => item.Display).ToArray();
+            throw Report(HomePartialWriteException.ForCreate(
+                type, created, failedItem, notAttempted, membership, prepared.Count, ex));
+        }
+
+        try
+        {
+            await collectionWriter.AddAsync(memberships, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (memberships.Count > 0 && ex is not OperationCanceledException)
+        {
+            throw Report(HomePartialWriteException.ForCreate(
+                type, created, null, [], HomeMembershipState.Unconfirmed, prepared.Count, ex));
+        }
 
         DeckleHomeSource.Log.GestureCompleted("create", Elapsed(started));
         return "Créé :\n" + string.Join("\n", prepared.Select(item => $"- {type} · {item.Display}"));
@@ -200,7 +250,7 @@ public sealed partial class HomeGestures
 
         foreach (HomeUpdateItem item in items)
         {
-            JsonObject target = index.Resolve(item.Object,
+            JsonObject target = index.Resolve(item.Object, NameMatch.Exact,
                 expectedType is null ? null : [schema.TypeKey(expectedType)]);
             string id = HomeObjectJson.Id(target);
             if (!targets.Add(id))
@@ -262,29 +312,63 @@ public sealed partial class HomeGestures
                 removeFromCollections));
         }
 
+        // One patch per item, then its collection steps, one request each:
+        // no transaction, so a failure part way leaves the earlier items
+        // written. Once a write has gone through, a failure is reported as a
+        // HomePartialWriteException naming what was applied (see there).
         var verificationFailures = new List<string>();
-        foreach ((
-            string id,
-            string display,
-            JsonObject payload,
-            IReadOnlyList<string> addToCollections,
-            IReadOnlyList<string> removeFromCollections) in prepared)
+        var applied = new List<string>();
+        bool wrote = false;
+        string? stage = null;
+        int position = 0;
+        try
         {
-            if (payload.Count > 0)
+            foreach ((
+                string id,
+                string display,
+                JsonObject payload,
+                IReadOnlyList<string> addToCollections,
+                IReadOnlyList<string> removeFromCollections) in prepared)
             {
-                JsonObject updated = HomeObjectJson.Unwrap(
-                    await _api.UpdateObjectAsync(_spaceId, id, payload, ct).ConfigureAwait(false));
-                if (payload["markdown"] is JsonValue intended)
+                if (payload.Count > 0)
                 {
-                    if (updated["markdown"] is not JsonValue)
-                        updated = HomeObjectJson.Unwrap(
-                            await _api.GetObjectAsync(_spaceId, id, ct).ConfigureAwait(false));
-                    if (!HomeBodyEditor.Matches(intended.GetValue<string>(), HomeObjectJson.String(updated, "markdown")))
-                        verificationFailures.Add(display);
+                    stage = "propriétés, nom ou corps";
+                    JsonObject updated = HomeObjectJson.Unwrap(
+                        await _api.UpdateObjectAsync(_spaceId, id, payload, ct).ConfigureAwait(false));
+                    wrote = true;
+                    if (payload["markdown"] is JsonValue intended)
+                    {
+                        if (updated["markdown"] is not JsonValue)
+                            updated = HomeObjectJson.Unwrap(
+                                await _api.GetObjectAsync(_spaceId, id, ct).ConfigureAwait(false));
+                        if (!HomeBodyEditor.Matches(intended.GetValue<string>(), HomeObjectJson.String(updated, "markdown")))
+                            verificationFailures.Add(display);
+                    }
                 }
+                stage = "ajout aux collections";
+                foreach (string collectionId in addToCollections)
+                {
+                    await collectionWriter.AddAsync([collectionId], id, ct).ConfigureAwait(false);
+                    wrote = true;
+                }
+                stage = "retrait des collections";
+                foreach (string collectionId in removeFromCollections)
+                {
+                    await collectionWriter.RemoveAsync([collectionId], id, ct).ConfigureAwait(false);
+                    wrote = true;
+                }
+                applied.Add(display);
+                position++;
             }
-            await collectionWriter.AddAsync(addToCollections, id, ct).ConfigureAwait(false);
-            await collectionWriter.RemoveAsync(removeFromCollections, id, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (wrote && ex is not OperationCanceledException)
+        {
+            throw Report(HomePartialWriteException.ForUpdate(
+                applied,
+                prepared[position].Display,
+                stage,
+                prepared.Skip(position + 1).Select(item => item.Display).ToArray(),
+                ex));
         }
 
         DeckleHomeSource.Log.GestureCompleted("update", Elapsed(started));
@@ -293,12 +377,22 @@ public sealed partial class HomeGestures
                 + string.Join(", ", verificationFailures) + ". Relis avant toute nouvelle écriture.");
     }
 
+    // One Warning per partly applied batch, counts only: the item names are
+    // Home content and stay in the exception the caller receives.
+    private static HomePartialWriteException Report(HomePartialWriteException partial)
+    {
+        DeckleHomeSource.Log.GesturePartiallyApplied(
+            partial.Gesture, partial.Applied.Count, partial.NotApplied.Count,
+            partial.InnerException?.GetType().Name ?? "");
+        return partial;
+    }
+
     public async Task<string> GetAsync(string selector, CancellationToken ct = default)
     {
         DateTime started = DateTime.UtcNow;
         await _runtime.GetAsync(ct).ConfigureAwait(false);
         HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
-        JsonObject summary = index.Resolve(selector);
+        JsonObject summary = index.Resolve(selector, NameMatch.Tolerant);
         JsonObject value = await _api.GetObjectAsync(
             _spaceId, HomeObjectJson.Id(summary), ct).ConfigureAwait(false);
         DeckleHomeSource.Log.GestureCompleted("get", Elapsed(started));
@@ -316,33 +410,104 @@ public sealed partial class HomeGestures
         if (!confirm)
         {
             HomeObjectIndex previewIndex = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
-            JsonObject preview = previewIndex.Resolve(selector);
+            JsonObject preview = previewIndex.Resolve(selector, NameMatch.Exact);
             RefusePointDelete(preview, previewIndex);
             DeckleHomeSource.Log.GestureCompleted("delete_preview", Elapsed(started));
-            return $"Suppression à confirmer : {HomeObjectIndex.Display(preview)} ({HomeObjectJson.TypeKey(preview)}) · id {HomeObjectJson.Id(preview)}. Relance delete avec cet id exact et confirm:true.";
+            return $"Suppression à confirmer : {HomeObjectIndex.Display(preview)} ({HomeObjectJson.TypeKey(preview)}) · id {HomeObjectJson.Id(preview)}. "
+                + "Montre cette cible à la personne et attends son accord dans la conversation, puis relance delete avec cet id exact et confirm:true : "
+                + "Deckle lui redemandera par une notification Windows et attendra "
+                + ManagementGestures.ApprovalWindow.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture) + " s.";
         }
 
-        using var writeScope = await _api.AcquireWriteScopeAsync("home_delete", "object", ct).ConfigureAwait(false);
+        // Nothing is held while the person reads the notification: the fence is
+        // checked before asking, and again under the write scope after the answer.
         HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
-        JsonObject target = index.Resolve(selector);
-        RefusePointDelete(target, index);
+        JsonObject target = index.Resolve(selector, NameMatch.Exact);
         string id = HomeObjectJson.Id(target);
         if (!string.Equals(selector.Trim(), id, StringComparison.Ordinal))
             throw new InvalidOperationException(
                 "La confirmation doit reprendre l’id exact fourni par la prévisualisation.");
+        RefuseIfReferenced(target, index);
 
-        JsonObject[] references = index.Objects.Where(value =>
-                HomeObjectJson.Id(value) != id
-                && HomeObjectJson.ObjectReferences(value).Contains(id))
-            .ToArray();
-        if (references.Length > 0)
-            throw new InvalidOperationException(
-                $"Suppression refusée : {HomeObjectIndex.Display(target)} est encore référencé par "
-                + string.Join(", ", references.Select(HomeObjectIndex.Display)) + ".");
+        // A referenced object was refused just above, so the bin empties no link.
+        string type = HomeObjectJson.TypeKey(target);
+        DeletionApprovalOutcome outcome = await AskDeletionAsync(
+            new DeletionCandidate(id, HomeObjectIndex.Display(target), type, LinkCount: 0), ct).ConfigureAwait(false);
+        if (outcome != DeletionApprovalOutcome.Approved)
+            throw DeletionRefusal(outcome, type);
+
+        // The person answered on what was true before the notification; what
+        // references the object may have changed while it waited.
+        using var writeScope = await _api.AcquireWriteScopeAsync("home_delete", "object", ct).ConfigureAwait(false);
+        index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
+        target = index.Resolve(id, NameMatch.Exact);
+        RefuseIfReferenced(target, index);
 
         await _api.DeleteObjectAsync(_spaceId, id, ct).ConfigureAwait(false);
+        DeckleHomeSource.Log.ObjectBinned(type);
         DeckleHomeSource.Log.GestureCompleted("delete", Elapsed(started));
         return $"Mis à la corbeille : {HomeObjectIndex.Display(target)}.";
+    }
+
+    // The window is the gesture's own policy, so an approval that never answers
+    // reads as Unanswered here rather than as a cancelled call. It is the one
+    // window the Anytype delete uses.
+    private async Task<DeletionApprovalOutcome> AskDeletionAsync(DeletionCandidate candidate, CancellationToken ct)
+    {
+        using var window = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        window.CancelAfter(ManagementGestures.ApprovalWindow);
+        try
+        {
+            return await _approval.RequestAsync(candidate, window.Token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            return DeletionApprovalOutcome.Unanswered;
+        }
+    }
+
+    private static InvalidOperationException DeletionRefusal(DeletionApprovalOutcome outcome, string type)
+    {
+        (string reason, string message) = outcome switch
+        {
+            DeletionApprovalOutcome.Declined => (HomeDeleteRefusalReasons.Declined,
+                "Refusé : la personne a répondu non à la notification Windows. Rien n'a bougé."),
+            DeletionApprovalOutcome.Unanswered => (HomeDeleteRefusalReasons.Unanswered,
+                $"Refusé : pas de réponse à la notification Windows en {ManagementGestures.ApprovalWindow.TotalSeconds:F0} s (elle a pu "
+                + "arriver dans le centre de notifications sans s'afficher). Rien n'a bougé ; redemande à la personne "
+                + "avant de réessayer."),
+            _ => (HomeDeleteRefusalReasons.ApprovalUnavailable,
+                "Refusé : Deckle ne peut pas demander la seconde validation (notifications Windows désactivées, "
+                + "Deckle lancé en administrateur, ou hôte sans notification). Rien n'a bougé ; la personne peut "
+                + "mettre l'objet à la corbeille elle-même dans Anytype."),
+        };
+        DeckleHomeSource.Log.DeleteRefused(reason, type);
+        return new InvalidOperationException(message);
+    }
+
+    // The reference fence of a delete: a point says what to clear, any other
+    // object lists who still references it. Every refusal here is a reference.
+    private static void RefuseIfReferenced(JsonObject target, HomeObjectIndex index)
+    {
+        try
+        {
+            RefusePointDelete(target, index);
+
+            string id = HomeObjectJson.Id(target);
+            JsonObject[] references = index.Objects.Where(value =>
+                    HomeObjectJson.Id(value) != id
+                    && HomeObjectJson.ObjectReferences(value).Contains(id))
+                .ToArray();
+            if (references.Length > 0)
+                throw new InvalidOperationException(
+                    $"Suppression refusée : {HomeObjectIndex.Display(target)} est encore référencé par "
+                    + string.Join(", ", references.Select(HomeObjectIndex.Display)) + ".");
+        }
+        catch (InvalidOperationException)
+        {
+            DeckleHomeSource.Log.DeleteRefused(HomeDeleteRefusalReasons.Referenced, HomeObjectJson.TypeKey(target));
+            throw;
+        }
     }
 
     public Task<string> CreateComponentAsync(
@@ -416,7 +581,7 @@ public sealed partial class HomeGestures
 
         using var writeScope = await _api.AcquireWriteScopeAsync("home_complete", "object", ct).ConfigureAwait(false);
         HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
-        JsonObject target = index.Resolve(selector);
+        JsonObject target = index.Resolve(selector, NameMatch.Exact);
         string type = HomeObjectJson.TypeKey(target);
         string id = HomeObjectJson.Id(target);
 
@@ -457,7 +622,7 @@ public sealed partial class HomeGestures
         DateTime started = DateTime.UtcNow;
         await _runtime.GetAsync(ct).ConfigureAwait(false);
         HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
-        JsonObject worksite = index.Resolve(selector, [HomeSchema.Types.Worksite]);
+        JsonObject worksite = index.Resolve(selector, NameMatch.Tolerant, [HomeSchema.Types.Worksite]);
         string id = HomeObjectJson.Id(worksite);
 
         JsonObject[] todos = TodosOf(index, id).ToArray();
@@ -516,13 +681,17 @@ public sealed partial class HomeGestures
         {
             JsonObject root = await _api.ListTemplatesAsync(_spaceId, typeId, offset, PageLimit, ct)
                 .ConfigureAwait(false);
+            int returned = 0;
             foreach (JsonObject value in (root["data"] as JsonArray ?? []).OfType<JsonObject>())
             {
+                returned++;
                 string id = HomeObjectJson.String(value, "id");
                 if (id.Length > 0) result.Add((id, HomeObjectJson.String(value, "name")));
             }
-            if (root["pagination"]?["has_more"]?.GetValue<bool>() != true) break;
-            offset += PageLimit;
+            // Advance by the rows served and stop on an empty page, so a
+            // listing that keeps announcing more cannot loop forever.
+            if (root["pagination"]?["has_more"]?.GetValue<bool>() != true || returned == 0) break;
+            offset += returned;
         }
         return result;
     }

@@ -119,7 +119,7 @@ internal sealed class HomePropertyWriter(
         foreach (JsonNode? item in Enumerate(value))
         {
             string selector = Text(item, property.Name);
-            result.Add(HomeObjectJson.Id(objects.Resolve(selector, allowedTypes)));
+            result.Add(HomeObjectJson.Id(objects.Resolve(selector, NameMatch.Exact, allowedTypes)));
         }
         return result;
     }
@@ -131,7 +131,7 @@ internal sealed class HomePropertyWriter(
                 "Le type Zone n'existe pas encore dans l'espace Anytype : crée-le dans "
                 + "l'app (layout Collection) avant de poser une relation Zone.");
 
-        JsonObject target = objects.ResolveCollection(selector);
+        JsonObject target = objects.ResolveCollection(selector, NameMatch.Exact);
         if (!string.Equals(HomeObjectJson.TypeKey(target), schema.FloorTypeKey, StringComparison.Ordinal))
             throw new InvalidOperationException(
                 $"« {HomeObjectIndex.Display(target)} » n'est pas une Zone : "
@@ -155,9 +155,11 @@ internal sealed class HomePropertyWriter(
         {
             JsonObject root = await api.ListPropertyTagsForSpaceAsync(
                 spaceId, property.Id, offset, limit, ct).ConfigureAwait(false);
+            int returned = 0;
             if (root["data"] is JsonArray data)
                 foreach (JsonNode? node in data)
                 {
+                    returned++;
                     if (node is not JsonObject raw) continue;
                     JsonObject value = HomeObjectJson.Unwrap(raw);
                     string key = HomeObjectJson.String(value, "key");
@@ -166,8 +168,10 @@ internal sealed class HomePropertyWriter(
                     string color = HomeObjectJson.String(value, "color");
                     result[id.Length > 0 ? id : key + "\0" + name] = new SchemaTagInfo(id, key, name, color);
                 }
-            if (!(root["pagination"]?["has_more"]?.GetValue<bool>() ?? false)) break;
-            offset += limit;
+            // Advance by the rows served, never by the limit asked for, and
+            // stop on an empty page: see HomeObjectIndex.LoadAsync.
+            if (!(root["pagination"]?["has_more"]?.GetValue<bool>() ?? false) || returned == 0) break;
+            offset += returned;
         }
         return result.Values.ToArray();
     }

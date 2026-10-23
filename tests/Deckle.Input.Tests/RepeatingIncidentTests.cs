@@ -9,17 +9,21 @@ public sealed class RepeatingIncidentTests
     [Fact]
     public void OpensOnceWhenTheStreakReachesTheThreshold()
     {
-        var incident = new RepeatingIncident(threshold: 3, quietMs: 0);
+        const int threshold = 3;
+        const int burst = 5;
+        var incident = new RepeatingIncident(threshold, quietMs: 0);
 
         Assert.False(incident.Record(0));
         Assert.False(incident.Record(1));
         Assert.True(incident.Record(2));
         Assert.True(incident.IsOpen);
 
-        // Further occurrences join the open incident instead of opening another.
+        // Further occurrences join the open incident instead of opening another,
+        // and the incident counts the whole streak: the occurrences that opened
+        // it, the single one after, and the burst.
         Assert.False(incident.Record(3));
-        Assert.False(incident.Record(4, occurrences: 5));
-        Assert.Equal(8, incident.Occurrences);
+        Assert.False(incident.Record(4, occurrences: burst));
+        Assert.Equal(threshold + 1 + burst, incident.Occurrences);
     }
 
     [Fact]

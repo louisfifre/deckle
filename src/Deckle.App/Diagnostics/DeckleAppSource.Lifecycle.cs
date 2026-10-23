@@ -42,7 +42,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Deckle {0} {1} {2} | session={3} | pid={4} | os={5} | supervised={6} | follows_crash={7} | args={8}")]
+           Message = "Deckle {0} {1} {2} | session={3} | pid={4} | os={5} | supervised={6} | follows_crash={7} | switches={8}")]
     public void RunIdentity(
         string version,
         string stage,
@@ -52,10 +52,10 @@ public sealed partial class DeckleAppSource
         string os,
         bool supervised,
         bool follows_crash,
-        string args)
+        string switches)
     {
         if (IsEnabled())
-            WriteEvent(EvtRunIdentity, version, stage, build, session, pid, os, supervised, follows_crash, args);
+            WriteEvent(EvtRunIdentity, version, stage, build, session, pid, os, supervised, follows_crash, switches);
     }
 
     // What the logs of this run can contain: a reader who finds no
@@ -92,10 +92,10 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Shutdown completed")]
-    public void ShutdownCompleted()
+           Message = "Shutdown completed | work_id={0} | steps={1} | failed={2} | elapsed_ms={3}")]
+    public void ShutdownCompleted(string work_id, int steps, int failed, long elapsed_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtShutdownCompleted);
+        if (IsEnabled()) WriteEvent(EvtShutdownCompleted, work_id, steps, failed, elapsed_ms);
     }
 
 }

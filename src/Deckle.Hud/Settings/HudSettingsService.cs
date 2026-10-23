@@ -44,7 +44,9 @@ public sealed class HudSettingsService
         _store = new JsonSettingsStore<HudSettings>(
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Hud-Save",
-            jsonOptions: _jsonOptions);
+            jsonOptions: _jsonOptions,
+            logWarning:  DeckleHudSource.Log.SettingsLoadWarning,
+            logError:    DeckleHudSource.Log.SettingsLoadError);
     }
 
     public HudComposition.ConicArcStrokeConfig EffectiveStroke() =>

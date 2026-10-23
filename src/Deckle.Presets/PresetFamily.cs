@@ -13,6 +13,11 @@
 // Migration: a store whose Selection is null (a file written before the
 // selection existed) gets it derived once from its values — the preset they
 // equal, else Custom with those values kept.
+//
+// A stored selection that names no preset (a preset retired, a file edited by
+// hand) is derived the same way, and the optional onSelectionReplaced callback is
+// told which id was asked for and which selection came out. The library stays
+// free of any logging dependency: the consumer decides where the report goes.
 
 namespace Deckle.Presets;
 
@@ -26,7 +31,11 @@ public sealed class PresetFamily<T> where T : class
 {
     private readonly IPresetStore<T> _store;
 
-    public PresetFamily(IReadOnlyList<Preset<T>> presets, string defaultId, IPresetStore<T> store)
+    public PresetFamily(
+        IReadOnlyList<Preset<T>> presets,
+        string defaultId,
+        IPresetStore<T> store,
+        Action<string, string>? onSelectionReplaced = null)
     {
         ArgumentNullException.ThrowIfNull(presets);
         ArgumentNullException.ThrowIfNull(defaultId);
@@ -63,7 +72,16 @@ public sealed class PresetFamily<T> where T : class
 
         if (_store.Selection is null || (_store.Selection != PresetFamily.Custom && Find(_store.Selection) is null))
         {
+            string? asked = _store.Selection;
             DeriveSelectionFromValues();
+
+            // A null selection is the migration of an older file, not a loss.
+            // An id that names no preset is one: the values the person sees
+            // may no longer be the preset they chose.
+            if (asked is not null)
+            {
+                onSelectionReplaced?.Invoke(asked, Selection);
+            }
         }
     }
 

@@ -9,7 +9,6 @@ namespace Deckle.Autocorrect.Tests;
 // default and only corrects on unambiguous evidence. Conservativity is the
 // product — a wrongly corrected valid word is the worst outcome — so most of
 // these assert that a word is LEFT ALONE.
-[Trait("Category", "unit")]
 public class DiacriticsRestorerTests
 {
     // The shared French fixture (frequencies per million, Lexique scale).
@@ -52,6 +51,7 @@ public class DiacriticsRestorerTests
     // ── Single-candidate lexical gate ──────────────────────────────────────
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RestoresUniqueVariant()
     {
         var d = Restorer().Evaluate("francais", []);
@@ -62,6 +62,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RestoresAccentOnEcole()
     {
         var d = Restorer().Evaluate("ecole", []);
@@ -71,6 +72,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void PreservesTitleCase()
     {
         var d = Restorer().Evaluate("Ecole", []);
@@ -79,6 +81,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void PreservesAllUpperCase()
     {
         var d = Restorer().Evaluate("FRANCAIS", []);
@@ -87,6 +90,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RestoresDeja()
     {
         var d = Restorer().Evaluate("deja", []);
@@ -98,18 +102,21 @@ public class DiacriticsRestorerTests
     // ── Literal protection: the guards that leave the word alone ────────────
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ValidFrenchFormIsNeverTouched()
     {
         Assert.Null(Restorer().Evaluate("cote", []));
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void MarcheIsProtectedAsValidFormBeforeAmbiguity()
     {
         Assert.Null(Restorer().Evaluate("marche", []));
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void SingleLetterFormIsLeftAlone()
     {
         // "a" is a valid French form AND below MinWordLength — left alone either way.
@@ -117,6 +124,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ValidEnglishWordIsNeverFrenchified()
     {
         // The bilingual guard protects a seed English literal even when an
@@ -126,6 +134,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void EnglishShapedTokenIsRestoredWhenTheGlobalEnglishSeedIsAbsent()
     {
         var d = Restorer(includeEnglish: false).Evaluate("cafe", []);
@@ -136,6 +145,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void PrimaryLexiconCanComeFromTheFrequencyInterface()
     {
         var primary = new StubFrequencyLexicon(new()
@@ -150,6 +160,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void DominantVoilaParticleOverridesRareVerbLiteral()
     {
         var d = Restorer().Evaluate("voila", []);
@@ -159,6 +170,7 @@ public class DiacriticsRestorerTests
         Assert.Equal(CorrectionReason.FrequencyDominance, d.Reason);
     }
     [Fact]
+    [Trait("Category", "unit")]
     public void AmbiguousPairWithoutDominanceIsLeftAlone()
     {
         // "eleve" → élève (30) vs élevé (25): ratio 1.2, far under 20, no context.
@@ -166,6 +178,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void AlreadyAccentedWordIsNeverSecondGuessed()
     {
         // The user typed the accent deliberately.
@@ -173,18 +186,21 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void DigitBearingTokenIsBlacklisted()
     {
         Assert.Null(Restorer().Evaluate("win11", []));
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ElisionTokenIsLeftAlone()
     {
         Assert.Null(Restorer().Evaluate("l'", []));
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void CamelCaseIdentifierIsLeftAlone()
     {
         Assert.Null(Restorer().Evaluate("fooBar", []));
@@ -193,6 +209,7 @@ public class DiacriticsRestorerTests
     // ── Frequency dominance ────────────────────────────────────────────────
 
     [Fact]
+    [Trait("Category", "unit")]
     public void DominantVariantWinsWithoutContext()
     {
         var d = Restorer().Evaluate("etant", []);
@@ -205,6 +222,7 @@ public class DiacriticsRestorerTests
     // ── Context disambiguation ──────────────────────────────────────────────
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ContextResolvesAmbiguousPair()
     {
         var ctx = new StubDisambiguator(chosen: "élève");
@@ -216,6 +234,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ContextReceivesLowercasedPreviousWord()
     {
         var ctx = new StubDisambiguator(chosen: "élève");
@@ -227,6 +246,7 @@ public class DiacriticsRestorerTests
     // ── Personal dictionary ─────────────────────────────────────────────────
 
     [Fact]
+    [Trait("Category", "unit")]
     public void AdoptedWordShieldsItself()
     {
         var personal = new StubPersonal(adopted: new() { "ecole" });
@@ -234,6 +254,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void SuppressedPairIsBlocked()
     {
         var personal = new StubPersonal(suppressed: new() { ("ecole", "école") });
@@ -241,6 +262,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void PersonalVariantSuppliesACorrection()
     {
         var d = Restorer(personalVariants: lower =>
@@ -257,6 +279,7 @@ public class DiacriticsRestorerTests
     // ── Miniature end-to-end ────────────────────────────────────────────────
 
     [Fact]
+    [Trait("Category", "unit")]
     public void SentenceCorrectsOnlyTheRestorableWord()
     {
         // « j'ai marche vers l'ecole »: "j'ai"/"vers" are unknown literals (no
@@ -281,6 +304,7 @@ public class DiacriticsRestorerTests
     // which the gate leaves untouched).
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RarityGateDropsAFarRarerVariantWhenTheLiteralIsValid()
     {
         var candidates = Restorer().SentenceCandidates("cotes", includeTypedLiteral: true);
@@ -289,6 +313,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RarityGateKeepsAModerateRatioVariant()
     {
         var candidates = Restorer().SentenceCandidates("taches", includeTypedLiteral: true);
@@ -297,6 +322,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RarityGateFallsBackToTheBestVariantWhenTheLiteralIsNotValid()
     {
         // Once êté drops, the fold collapses to one form and is no longer an
@@ -309,6 +335,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RarityGateClosesTheCaCedillaHole()
     {
         var candidates = Restorer().SentenceCandidates("ca", includeTypedLiteral: true);
@@ -319,6 +346,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RarityGateFallbackKeepsAModerateRatioPairIntact()
     {
         var candidates = Restorer().AmbiguousCandidates("eleve");
@@ -328,6 +356,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RarityGateNeverDropsTheTypedLiteralItself()
     {
         var candidates = Restorer().SentenceCandidates("cotes", includeTypedLiteral: true);
@@ -337,6 +366,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void RarityGateCollapsingASlotBelowTwoFormsMakesItUnambiguous()
     {
         var restorer = Restorer();
@@ -346,6 +376,7 @@ public class DiacriticsRestorerTests
     }
 
     [Theory]
+    [Trait("Category", "unit")]
     [InlineData("ratures")]
     [InlineData("date")]
     public void InflectedContentWordsDoNotBecomeSilentSentenceHomophoneSlots(string literal)
@@ -358,6 +389,7 @@ public class DiacriticsRestorerTests
     }
 
     [Theory]
+    [Trait("Category", "unit")]
     [InlineData("a", "à")]
     [InlineData("la", "là")]
     [InlineData("ou", "où")]
@@ -376,6 +408,7 @@ public class DiacriticsRestorerTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void PackagedMorphologyRestoresPrepareAfterJe()
     {
         string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");

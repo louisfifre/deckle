@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Net;
 using System.Text.Json.Nodes;
 using Deckle.Anytype;
@@ -64,9 +63,6 @@ public class SessionGesturesTests
         return (JsonArray)JsonNode.Parse(patch.Body!)!["ops"]!;
     }
 
-    static string Today() =>
-        DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-
     static JsonObject TaskObject(string id, string name) => new()
     {
         ["object"] = new JsonObject
@@ -123,7 +119,7 @@ public class SessionGesturesTests
         using var server = new FakeAnytypeServer();
         FakeV2Handler v2 = WireOpenReads();
 
-        string answer = await NewGestures(server, v2).OpenReportAsync(TaskId, Ct);
+        string answer = await NewGestures(server, v2, new StoppedClock()).OpenReportAsync(TaskId, Ct);
 
         Assert.StartsWith($"report_id : {NewReport}\n", answer, StringComparison.Ordinal);
 
@@ -131,14 +127,13 @@ public class SessionGesturesTests
         Assert.Equal(DevSpace.Types.Rapport, create["type"]!.GetValue<string>());
         // The heading opens the body; a report is a note and is sent no name,
         // which would land as a paragraph ahead of it.
-        Assert.Equal($"# Journal {Today()}", create["markdown"]!.GetValue<string>());
+        Assert.Equal("# Journal 2026-06-12", create["markdown"]!.GetValue<string>());
         Assert.False(create.ContainsKey("name"));
 
         var props = (JsonObject)create["properties"]!;
-        string date = props[DevSpace.Props.DateDuJournal]!.GetValue<string>();
-        Assert.Equal(Today(), date);
-        // Independent of the Today() mirror: the wire date stays ISO yyyy-MM-dd.
-        Assert.Matches(@"^\d{4}-\d{2}-\d{2}$", date);
+        // The wire date is the stopped clock's day in ISO yyyy-MM-dd, whatever
+        // the zone or the hour of the machine running the test.
+        Assert.Equal("2026-06-12", props[DevSpace.Props.DateDuJournal]!.GetValue<string>());
 
         Assert.Equal(TaskId, ((JsonArray)props[DevSpace.Props.TachesLiees]!).Single()!.GetValue<string>());
 
@@ -230,6 +225,7 @@ public class SessionGesturesTests
         Assert.Contains("pas une tâche", error.Message);
         Assert.DoesNotContain(v2.Requests, r => r.Method == "POST");
     }
+
     [Fact]
     public async Task TouchAppendsTheTaskToTheCurrentReportsLinkedTasks()
     {

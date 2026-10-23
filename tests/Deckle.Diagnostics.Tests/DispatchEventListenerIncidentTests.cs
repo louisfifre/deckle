@@ -9,6 +9,7 @@ namespace Deckle.Diagnostics.Tests;
 // bounded flush. Every assertion reads what Deckle-Diagnostics emitted, since
 // that is what a reader of the journal would see.
 [Trait("Category", "observability")]
+[Collection(DiagnosticsProviderCollection.Name)]
 public sealed class DispatchEventListenerIncidentTests
 {
     [EventSource(Name = "Deckle-DispatchIncidentTests")]
@@ -76,8 +77,11 @@ public sealed class DispatchEventListenerIncidentTests
         TestSource.Log.ValueObserved("back");
         TestSource.Log.ValueObserved("still fine");
 
+        // Deckle-Diagnostics is process-wide: the JsonlSink tests running in
+        // parallel report their own faults there, so keep only this sink's.
         var incident = reports.Events
-            .Where(e => e.EventSource.Name == "Deckle-Diagnostics")
+            .Where(e => e.EventSource.Name == "Deckle-Diagnostics"
+                && Equals(e.Payload?[0], nameof(FailingSink)))
             .Select(e => (e.EventName, Payload: e.Payload!.ToArray()))
             .ToArray();
 

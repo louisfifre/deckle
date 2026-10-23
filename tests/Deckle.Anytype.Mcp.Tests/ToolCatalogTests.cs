@@ -126,9 +126,10 @@ public class ToolCatalogTests
         Assert.Contains("open_report", instructions);
         Assert.Contains("no report without a task", instructions);
         Assert.DoesNotContain("session_start", instructions);
-        // A typed read given words already searches and opens.
-        Assert.Contains("a typed read given words searches and opens in one call", instructions);
+        Assert.Contains("create it first", instructions);
+        // Typed reads take words, and the two writes that must not guess take an id.
         Assert.Contains("an exact name wins, else a single match wins", instructions);
+        Assert.Contains("open_report and log take an id only", instructions);
     }
 
     [Fact]

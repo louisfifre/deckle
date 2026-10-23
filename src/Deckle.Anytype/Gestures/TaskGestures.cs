@@ -39,7 +39,7 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
         var sw = Stopwatch.StartNew();
 
         string projectId = await resolver.ResolveAsync(
-            project, new[] { DevSpace.Types.Project }, ct);
+            project, new[] { DevSpace.Types.Project }, NameMatch.Exact, ct);
 
         string typeKey = DevSpace.TypeDeTache.Resolve(type)
             ?? throw new ArgumentException(
@@ -221,7 +221,8 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
         var sw = Stopwatch.StartNew();
         label = RequireChecklistLabel(label);
 
-        string taskId = await resolver.ResolveAsync(task, new[] { DevSpace.Types.Task }, ct);
+        string taskId = await resolver.ResolveAsync(
+            task, new[] { DevSpace.Types.Task }, NameMatch.Exact, ct);
 
         using var _ = await api.AcquireWriteScopeAsync("task_subtask", taskId, ct);
 

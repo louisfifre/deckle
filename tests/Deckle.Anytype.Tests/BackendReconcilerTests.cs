@@ -3,9 +3,16 @@ using Xunit;
 
 namespace Deckle.Anytype.Tests;
 
+[Trait("Category", "integration")]
 public sealed class BackendReconcilerTests
 {
     static CancellationToken Ct => TestContext.Current.CancellationToken;
+
+    // The shipped readiness window and probe cadence (private to BackendReconciler,
+    // so mirrored here on purpose): the reconciler polls once per interval until the
+    // window closes. A retune of either is a contract change this test should flag.
+    private const int ReadinessTimeoutMs = 20_000;
+    private const int ProbeIntervalMs = 500;
 
     [Fact]
     [Trait("Category", "regression")]
@@ -76,6 +83,56 @@ public sealed class BackendReconcilerTests
         Assert.Equal(0, processes.SpawnCount);
     }
 
+    // A failed read of the TCP owner table says nothing about who owns the
+    // endpoint, so it is not a verdict on the endpoint: the reconciliation
+    // looks again instead of ending the supervision for the session.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task Transient_listener_inspection_failure_is_inspected_again()
+    {
+        string executable = Path.GetFullPath("anytype.exe");
+        var owner = new FakeBackendProcess(61, executable);
+        var processes = new FakeBackendProcessHost();
+        processes.Opened.Add(owner.Id, owner);
+        var listener = new ScriptedBackendListener
+        {
+            Current = new(BackendListenerState.Owned, owner.Id),
+        };
+        listener.Enqueue(new BackendListenerSnapshot(
+            BackendListenerState.Failed, Error: "GetExtendedTcpTable returned 5"));
+        var reconciler = Create(
+            executable, processes, listener, new FakeBackendHealth(), new ControlledBackendTime());
+
+        BackendReconciliationResult result = await reconciler.ReconcileAsync("startup", Ct);
+
+        Assert.Equal(BackendStartOutcome.AlreadyRunning, result.Outcome);
+        Assert.Equal(owner.Id, result.Process?.Id);
+        Assert.Equal(0, processes.SpawnCount);
+        result.Process?.Dispose();
+    }
+
+    // When the table cannot be read for the whole window the outcome stays
+    // retryable (the supervisor backs off and asks again) and names its cause;
+    // nothing is spawned blind, since the listener may well be owned.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task Persistent_listener_inspection_failure_stays_retryable_and_spawns_nothing()
+    {
+        string executable = Path.GetFullPath("anytype.exe");
+        var processes = new FakeBackendProcessHost();
+        var listener = new ScriptedBackendListener
+        {
+            Current = new(BackendListenerState.Failed, Error: "GetExtendedTcpTable returned 5"),
+        };
+        var reconciler = Create(
+            executable, processes, listener, new FakeBackendHealth(), new ControlledBackendTime());
+
+        BackendReconciliationResult result = await reconciler.ReconcileAsync("startup", Ct);
+
+        Assert.Equal(BackendStartOutcome.TimedOut, result.Outcome);
+        Assert.StartsWith("listener_query_failed", result.Decision, StringComparison.Ordinal);
+        Assert.Equal(0, processes.SpawnCount);
+    }
     [Fact]
     public async Task Exited_spawn_cannot_report_started()
     {
@@ -110,7 +167,7 @@ public sealed class BackendReconcilerTests
         Assert.Equal(BackendStartOutcome.TimedOut, result.Outcome);
         Assert.Null(result.Process);
         Assert.Equal(0, processes.SpawnCount);
-        Assert.Equal(40, time.DelayCalls);
+        Assert.Equal(ReadinessTimeoutMs / ProbeIntervalMs, time.DelayCalls);
     }
 
     [Fact]
@@ -161,7 +218,7 @@ public sealed class BackendReconcilerTests
                 ? new FakeBackendProcess(processId, executablePath)
                 : null;
 
-        public IBackendProcess? Spawn(BackendProcessSpec spec)
+        public IBackendProcess? Spawn(BackendProcessSpec spec, bool inRestart)
         {
             Interlocked.Increment(ref _spawnCount);
             _running = true;

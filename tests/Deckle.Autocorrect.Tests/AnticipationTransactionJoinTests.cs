@@ -6,10 +6,10 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-[Trait("Category", "unit")]
 public sealed class AnticipationTransactionJoinTests
 {
     [Fact]
+    [Trait("Category", "unit")]
     public void ParsesTheAggregateOnlyJoinMode()
     {
         ProbeArguments? parsed = ProbeArguments.Parse(
@@ -22,6 +22,7 @@ public sealed class AnticipationTransactionJoinTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void TerminalBranchChangesOnlyTheExactFinalPunctuation()
     {
         const string literal = "je suis la?";
@@ -33,6 +34,7 @@ public sealed class AnticipationTransactionJoinTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void PrefixMutationKeepsTheHashOfBytesActuallyAnalyzed()
     {
         byte[] before = Encoding.UTF8.GetBytes("before\n");
@@ -50,6 +52,7 @@ public sealed class AnticipationTransactionJoinTests
     }
 
     [Theory]
+    [Trait("Category", "unit")]
     [InlineData(false, 1, 0, 1, 0, 0, 0, 0, false, "invalid_run_no_eligibility_interpretation")]
     [InlineData(true, 0, 0, 1, 0, 0, 0, 0, false, "invalid_run_no_eligibility_interpretation")]
     [InlineData(true, 1, 1, 1, 0, 0, 0, 0, false, "invalid_run_no_eligibility_interpretation")]
@@ -82,6 +85,7 @@ public sealed class AnticipationTransactionJoinTests
     }
 
     [Theory]
+    [Trait("Category", "unit")]
     [InlineData("prefix je suis la.", "je suis la.", '.', true)]
     [InlineData("prefix je suis la?", "je suis la.", '.', false)]
     [InlineData("prefix je suis la.", "je suis la.", '?', false)]
@@ -98,6 +102,7 @@ public sealed class AnticipationTransactionJoinTests
                 terminal));
 
     [Fact]
+    [Trait("Category", "integration")]
     public void JoinsAnEligibleTransactionWithoutEmittingPrivateText()
     {
         const string sentinel = "Il y a une seul erreur.";
@@ -180,6 +185,7 @@ public sealed class AnticipationTransactionJoinTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void ValidReplayCanHaveNoSubmittedTransaction()
     {
         const string sentinel = "bonjour.";
@@ -235,6 +241,7 @@ public sealed class AnticipationTransactionJoinTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void InitialUnknownBoundaryTerminalIsNotGeneratorEvidence()
     {
         const string sentinel = "Il y a une seul erreur.";
@@ -277,6 +284,7 @@ public sealed class AnticipationTransactionJoinTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void EnterBoundaryDoesNotCrossAProcessChange()
     {
         string setup = Run("first-process", "setup", 0, "enter");
@@ -292,6 +300,7 @@ public sealed class AnticipationTransactionJoinTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void CaptureAfterErasingTheOnlyBoundaryIsQuarantined()
     {
         string firstClosure = Run("private-process", "seul.", 0, "repair");
@@ -318,6 +327,7 @@ public sealed class AnticipationTransactionJoinTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void CaptureLaneCountsOneClosedRequestAsOneSubmission()
     {
         var lane = new AggregateTransactionCaptureLane();
@@ -338,6 +348,7 @@ public sealed class AnticipationTransactionJoinTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void CaptureLaneRejectsAClosedRequestWithoutAnEdit()
     {
         var lane = new AggregateTransactionCaptureLane();
@@ -355,6 +366,7 @@ public sealed class AnticipationTransactionJoinTests
     }
 
     [Fact]
+    [Trait("Category", "unit")]
     public void ErasureBeyondObservedSpanRevokesTheEnterBoundary()
     {
         string setup = Run("private-process", "setup", 0, "enter");
@@ -370,6 +382,7 @@ public sealed class AnticipationTransactionJoinTests
     }
 
     [Fact]
+    [Trait("Category", "integration")]
     public void ExactObservedErasurePreservesTheEnterBoundary()
     {
         string setup = Run("private-process", "setup", 0, "enter");

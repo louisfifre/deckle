@@ -77,33 +77,38 @@ public sealed partial class DeckleWhispSource
     //
     // WarmupStart always ends with WarmupComplete, WarmupCancelled or
     // WarmupFailed: EnsurePrimed emits one on every exit, thrown ones included.
+    // The pair travels in the journal and shares `work_id`, which is not the id
+    // of the model load the warmup triggers: that load is its own work.
 
     [Event(EvtWarmupStart,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Warmup start")]
-    public void WarmupStart()
+           Tags = ObservationTags.Journal,
+           Message = "Warmup start | work_id={0}")]
+    public void WarmupStart(string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtWarmupStart);
+        if (IsEnabled()) WriteEvent(EvtWarmupStart, work_id);
     }
 
     [Event(EvtWarmupComplete,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Warmup complete")]
-    public void WarmupComplete()
+           Tags = ObservationTags.Journal,
+           Message = "Warmup complete | work_id={0} | elapsed_ms={1}")]
+    public void WarmupComplete(string work_id, long elapsed_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtWarmupComplete);
+        if (IsEnabled()) WriteEvent(EvtWarmupComplete, work_id, elapsed_ms);
     }
 
     // A Stop or Dispose that lands during the prime; the next take primes again.
     [Event(EvtWarmupCancelled,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Warmup cancelled | elapsed_ms={0}")]
-    public void WarmupCancelled(long elapsed_ms)
+           Tags = ObservationTags.Journal,
+           Message = "Warmup cancelled | work_id={0} | elapsed_ms={1}")]
+    public void WarmupCancelled(string work_id, long elapsed_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtWarmupCancelled, elapsed_ms);
+        if (IsEnabled()) WriteEvent(EvtWarmupCancelled, work_id, elapsed_ms);
     }
 
     // reason (closed vocabulary): model_load_failed, whose cause the
@@ -112,10 +117,10 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWarmupFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Warmup failed | reason={0} | ex_type={1} | ex_message={2} | elapsed_ms={3}")]
-    public void WarmupFailed(string reason, string ex_type, string ex_message, long elapsed_ms)
+           Message = "Warmup failed | work_id={0} | reason={1} | ex_type={2} | ex_message={3} | elapsed_ms={4}")]
+    public void WarmupFailed(string work_id, string reason, string ex_type, string ex_message, long elapsed_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtWarmupFailed, reason, ex_type, ex_message, elapsed_ms);
+        if (IsEnabled()) WriteEvent(EvtWarmupFailed, work_id, reason, ex_type, ex_message, elapsed_ms);
     }
 
     // Cold prime only: prime_ms is the model load plus dummy inference,
@@ -136,13 +141,30 @@ public sealed partial class DeckleWhispSource
 
     // ── Model lifecycle ─────────────────────────────────────────────────
 
+    // The load of the model is lasting work: ModelLoading opens it and
+    // ModelLoaded or ModelUnavailable closes it, sharing `work_id`. While the
+    // "no transcription" incident is open every take retries the load, and
+    // only the first failure is told: those retries start with
+    // ModelLoadRetrying instead, which stays out of the journal like their
+    // ModelLoadRetryFailed end. The success that ends the incident is
+    // ModelRecovered, which repeats the id of the ModelUnavailable it closes.
     [Event(EvtModelLoading,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Loading model")]
-    public void ModelLoading()
+           Tags = ObservationTags.Journal,
+           Message = "Loading model | work_id={0}")]
+    public void ModelLoading(string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtModelLoading);
+        if (IsEnabled()) WriteEvent(EvtModelLoading, work_id);
+    }
+
+    [Event(EvtModelLoadRetrying,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "retrying the model load while it is unavailable | work_id={0}")]
+    public void ModelLoadRetrying(string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtModelLoadRetrying, work_id);
     }
 
     [Event(EvtModelInitFromFile,
@@ -162,40 +184,44 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "The transcription model is unavailable | reason={0} | ex_type={1} | ex_message={2}")]
-    public void ModelUnavailable(string reason, string ex_type, string ex_message)
+           Message = "The transcription model is unavailable | work_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
+    public void ModelUnavailable(string work_id, string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtModelUnavailable, reason, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtModelUnavailable, work_id, reason, ex_type, ex_message);
     }
 
     // A later attempt that fails while the incident is open.
     [Event(EvtModelLoadRetryFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "model load retry failed | reason={0} | ex_type={1} | ex_message={2}")]
-    public void ModelLoadRetryFailed(string reason, string ex_type, string ex_message)
+           Message = "model load retry failed | work_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
+    public void ModelLoadRetryFailed(string work_id, string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtModelLoadRetryFailed, reason, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtModelLoadRetryFailed, work_id, reason, ex_type, ex_message);
     }
 
+    // work_id is the one of the load whose failure opened the incident, so the
+    // file pairs the ModelUnavailable that opened it with this line that closes
+    // it. load_ms and device describe the load that succeeded. device is the
+    // backend's accelerator word ("CPU", "Vulkan0", "unknown").
     [Event(EvtModelRecovered,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Transcription model availability recovered")]
-    public void ModelRecovered()
+           Message = "Transcription model availability recovered | work_id={0} | load_ms={1} | device={2}")]
+    public void ModelRecovered(string work_id, long load_ms, string device)
     {
-        if (IsEnabled()) WriteEvent(EvtModelRecovered);
+        if (IsEnabled()) WriteEvent(EvtModelRecovered, work_id, load_ms, device);
     }
 
     [Event(EvtModelLoaded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Model loaded")]
-    public void ModelLoaded()
+           Message = "Model loaded | work_id={0} | load_ms={1} | device={2}")]
+    public void ModelLoaded(string work_id, long load_ms, string device)
     {
-        if (IsEnabled()) WriteEvent(EvtModelLoaded);
+        if (IsEnabled()) WriteEvent(EvtModelLoaded, work_id, load_ms, device);
     }
 
     [Event(EvtModelOnDemandLoad,
@@ -218,9 +244,10 @@ public sealed partial class DeckleWhispSource
 
     // The idle-unload timer runs on the thread pool, where an escaping
     // exception ends the process; the model then stays loaded until the next
-    // take re-arms the timer.
+    // take re-arms the timer. Transcription goes on, so this is a degradation
+    // (a Warning), not a stop.
     [Event(EvtModelIdleUnloadFailed,
-           Level = EventLevel.Error,
+           Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "The idle model unload failed, the model stays loaded | ex_type={0} | ex_message={1}")]
     public void ModelIdleUnloadFailed(string ex_type, string ex_message)
@@ -255,13 +282,17 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtModelIdleTimerSet, idle_s);
     }
 
+    // The variable named a file that is not an existing absolute path. The
+    // Warning names what was obtained, the file the settings resolved to; the
+    // value of the variable can carry a user path and stays in the Verbose
+    // detail.
     [Event(EvtModelPathEnvIgnored,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The model path environment variable was ignored and the default was used")]
-    public void ModelPathEnvIgnored()
+           Message = "The model path environment variable was ignored and the default was used | reason=not_an_existing_absolute_path | fallback_file={0}")]
+    public void ModelPathEnvIgnored(string fallback_file)
     {
-        if (IsEnabled()) WriteEvent(EvtModelPathEnvIgnored);
+        if (IsEnabled()) WriteEvent(EvtModelPathEnvIgnored, fallback_file);
     }
 
     [Event(EvtModelPathEnvIgnoredDetail,
@@ -273,22 +304,15 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtModelPathEnvIgnoredDetail, env_path, fallback);
     }
 
+    // The Warning names what was asked and what was obtained, both file names
+    // in the models directory.
     [Event(EvtModelFallback,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The configured model is not on disk, an installed one is used instead")]
-    public void ModelFallback()
+           Message = "The configured model is not on disk, an installed one is used instead | reason=configured_file_absent | configured={0} | installed={1}")]
+    public void ModelFallback(string configured, string installed)
     {
-        if (IsEnabled()) WriteEvent(EvtModelFallback);
-    }
-
-    [Event(EvtModelFallbackDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "model fallback | reason=configured_file_absent | configured={0} | installed={1}")]
-    public void ModelFallbackDetail(string configured, string installed)
-    {
-        if (IsEnabled()) WriteEvent(EvtModelFallbackDetail, configured, installed);
+        if (IsEnabled()) WriteEvent(EvtModelFallback, configured, installed);
     }
 
     // ── Whisper init-phase compaction ────────────────────────────────────

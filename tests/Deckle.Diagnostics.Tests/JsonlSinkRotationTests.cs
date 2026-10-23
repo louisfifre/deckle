@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.Tracing;
 using System.IO;
 using Deckle.Diagnostics;
+using Deckle.TestSupport;
 using Xunit;
 
 namespace Deckle.Diagnostics.Tests;
@@ -54,9 +55,9 @@ public sealed class JsonlSinkRotationTests
             sink.Flush();
 
             Assert.True(File.Exists(active));
-            Assert.Single(File.ReadAllLines(active));               // line 3 only
+            Assert.Single(SharedFileReader.ReadAllLines(active));               // line 3 only
             Assert.True(File.Exists(Generation(dir, 1)));
-            Assert.Equal(3, File.ReadAllLines(Generation(dir, 1)).Length); // lines 0..2
+            Assert.Equal(3, SharedFileReader.ReadAllLines(Generation(dir, 1)).Length); // lines 0..2
         }
         finally
         {
@@ -85,8 +86,8 @@ public sealed class JsonlSinkRotationTests
             Assert.True(File.Exists(Generation(dir, 4)));
             Assert.False(File.Exists(Generation(dir, 5)));
 
-            Assert.Single(File.ReadAllLines(Generation(dir, 1)));
-            Assert.Contains("n=0", File.ReadAllText(Generation(dir, 1))); // oldest, untouched
+            Assert.Single(SharedFileReader.ReadAllLines(Generation(dir, 1)));
+            Assert.Contains("n=0", SharedFileReader.ReadAllText(Generation(dir, 1))); // oldest, untouched
         }
         finally
         {
@@ -115,8 +116,8 @@ public sealed class JsonlSinkRotationTests
             Assert.False(File.Exists(Generation(dir, 2)));
             Assert.True(File.Exists(Generation(dir, 3)));
             Assert.True(File.Exists(Generation(dir, 4)));
-            Assert.Contains("n=2", File.ReadAllText(Generation(dir, 3)));
-            Assert.Contains("n=3", File.ReadAllText(Generation(dir, 4)));
+            Assert.Contains("n=2", SharedFileReader.ReadAllText(Generation(dir, 3)));
+            Assert.Contains("n=3", SharedFileReader.ReadAllText(Generation(dir, 4)));
 
             // Numbering scans what remains, so it continues after the pruned
             // gap instead of reusing .0001.
@@ -125,7 +126,7 @@ public sealed class JsonlSinkRotationTests
             second.Flush();
 
             Assert.True(File.Exists(Generation(dir, 5)));
-            Assert.Contains("n=4", File.ReadAllText(Generation(dir, 5)));
+            Assert.Contains("n=4", SharedFileReader.ReadAllText(Generation(dir, 5)));
             Assert.False(File.Exists(Generation(dir, 3))); // pruned by the new roll
             Assert.True(File.Exists(Generation(dir, 4)));
         }
@@ -186,8 +187,8 @@ public sealed class JsonlSinkRotationTests
             sink.Flush();
 
             Assert.True(File.Exists(Generation(dir, 1)));
-            Assert.Equal(3, File.ReadAllLines(Generation(dir, 1)).Length);
-            Assert.Single(File.ReadAllLines(active));
+            Assert.Equal(3, SharedFileReader.ReadAllLines(Generation(dir, 1)).Length);
+            Assert.Single(SharedFileReader.ReadAllLines(active));
         }
         finally
         {
@@ -217,9 +218,9 @@ public sealed class JsonlSinkRotationTests
             second.Flush();
 
             Assert.True(File.Exists(Generation(dir, 1)));
-            Assert.Contains("n=0", File.ReadAllText(Generation(dir, 1))); // still the first line
+            Assert.Contains("n=0", SharedFileReader.ReadAllText(Generation(dir, 1))); // still the first line
             Assert.True(File.Exists(Generation(dir, 2)));
-            Assert.Contains("n=1", File.ReadAllText(Generation(dir, 2)));
+            Assert.Contains("n=1", SharedFileReader.ReadAllText(Generation(dir, 2)));
         }
         finally
         {

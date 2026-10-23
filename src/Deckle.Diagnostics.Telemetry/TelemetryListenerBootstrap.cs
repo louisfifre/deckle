@@ -105,8 +105,8 @@ public static class TelemetryListenerBootstrap
             pathResolver: e =>
             {
                 // The producer guarantees component presence and sanitization;
-                // a malformed payload leaves the path empty and the event is
-                // silently skipped.
+                // a malformed payload leaves the path empty, and the sink
+                // reports the skipped rows as one incident.
                 string bucket = e.Payload.TryGetValue("bucket", out var b) ? b?.ToString() ?? "" : "";
                 string tier   = e.Payload.TryGetValue("tier",   out var t) ? t?.ToString() ?? "" : "";
                 if (string.IsNullOrEmpty(bucket) || string.IsNullOrEmpty(tier)) return "";
@@ -149,8 +149,12 @@ public static class TelemetryListenerBootstrap
     {
         var reader = _gateReader;
         if (reader is null) return false;
-        try { return reader(gateName); }
-        catch { return false; }
+
+        // A reader that throws fails closed all the same: the exception leaves
+        // the sink's predicate, so the row is not written, and the dispatcher
+        // reports that sink as an incident instead of a consent that silently
+        // reads "off".
+        return reader(gateName);
     }
 
     // The application-wide ProcessExit barrier handles normal host shutdown;
@@ -166,8 +170,14 @@ public static class TelemetryListenerBootstrap
         foreach (var sink in _sinks)
         {
             if (sink is not IDisposable disposable) continue;
+            // A dataset that cannot drain must not break host shutdown, but
+            // the rows it lost are said on the pipeline's own provider.
             try { disposable.Dispose(); }
-            catch { /* Dataset I/O failure must not break host shutdown. */ }
+            catch (Exception ex)
+            {
+                DeckleDiagnosticsSource.Log.FlushFailed(
+                    sink.GetType().Name, ex.GetType().Name, ex.Message);
+            }
         }
         _sinks.Clear();
         _dispatch = null;

@@ -5,10 +5,10 @@ namespace Deckle.App;
 
 public sealed partial class DeckleAppSource
 {
-    // The resident Anytype runtime is gone. outcome: cancelled (reason
-    // shutdown), skipped (not_provisioned) or failed (endpoint_conflict,
-    // host_start_failed, exception, supervisor_faulted). ex_type and ex_message are empty when
-    // the reason alone is the cause.
+    // The resident Anytype runtime is gone without a failure. outcome:
+    // cancelled (reason shutdown) or skipped (not_provisioned). A runtime that
+    // stopped on a failure says so at Error level, in AnytypeRuntimeFailed.
+    // ex_type and ex_message are empty when the reason alone is the cause.
     [Event(EvtAnytypeRuntimeEnded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -17,6 +17,20 @@ public sealed partial class DeckleAppSource
     public void AnytypeRuntimeEnded(string outcome, string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAnytypeRuntimeEnded, outcome, reason, ex_type, ex_message);
+    }
+
+    // The resident Anytype runtime stopped on a failure, so the Anytype tools
+    // are gone until the next run. reason: endpoint_conflict, host_start_failed,
+    // exception or supervisor_faulted; ex_type and ex_message are empty when the
+    // reason alone is the cause.
+    [Event(EvtAnytypeRuntimeFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Anytype runtime failed | reason={0} | {1}: {2}")]
+    public void AnytypeRuntimeFailed(string reason, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtAnytypeRuntimeFailed, reason, ex_type, ex_message);
     }
 
     // reason: timeout (requests outlived the drain budget) or exception.

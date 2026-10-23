@@ -118,9 +118,17 @@ public partial class App
         // First, before settings migration: a listener only sees events emitted
         // after it subscribes, so these ungated local sinks must exist for a
         // failure in the very first boot step to land in journal.jsonl.
+        // Before the first event: a provider hides the data root in the paths
+        // it writes (PathRedaction), and Diagnostics cannot resolve it alone
+        // since it sits below Deckle.Core. A root registered late would let the
+        // first lines of the journal carry it in clear.
+        PathRedaction.AddRoot(PathRedaction.DataRootToken, AppPaths.UserDataRoot);
         AppDiagnosticsBootstrap.InitializeLocalSinks(AppPaths.DiagnosticsDirectory);
         DeckleAppSource.Log.AppStarting();
         EmitRunIdentity();
+        ReportPreviousRunEnd();
+        ReportLegacyLayoutMigration();
+        ReportRejectedSecondInstances();
         context.Milestone("diagnostics-local");
 
         // Before any module SettingsService is touched: each singleton loads its
@@ -241,8 +249,62 @@ public partial class App
             os:            $"{Environment.OSVersion.VersionString} {System.Runtime.InteropServices.RuntimeInformation.OSArchitecture}",
             supervised:    CrashSupervisor.Supervised,
             follows_crash: CrashSupervisor.FollowsCrash is not null,
-            args:          string.Join(' ', cliArgs.Skip(1)));
+            switches:      CommandLineSwitches.Names(cliArgs.Skip(1)));
     }
+
+    // Marks this run in progress and, when the previous run left its mark behind,
+    // says so: a run that is killed or loses power writes no end line, and this
+    // is the only place that can tell. Only the resident run gets here, after
+    // it owns the instance gate, so a rejected second instance never overwrites
+    // the mark of the run it lost to.
+    private static void ReportPreviousRunEnd()
+    {
+        RunMarker.PreviousRun? previous = RunMarker.Begin(
+            AppPaths.DiagnosticsDirectory,
+            DeckleEventSource.SessionId,
+            Environment.ProcessId,
+            DateTimeOffset.UtcNow);
+        if (previous is null) return;
+
+        DeckleAppSource.Log.PreviousRunEndedUncleanly(
+            previous.Session,
+            previous.Pid,
+            previous.StartedAt?.ToString("o", System.Globalization.CultureInfo.InvariantCulture) ?? "unknown");
+    }
+
+    // The second instances turned away since the last start could not write to
+    // the journal, which this run holds open: they left their fact in
+    // second-instance.txt. It is copied into the journal now, one line per fact,
+    // or as one count line past MaxRejectedFactsListed, and the file is cleared.
+    private const int MaxRejectedFactsListed = 10;
+
+    private static void ReportRejectedSecondInstances()
+    {
+        var notes = NoteFile.Take(Path.Combine(AppPaths.DiagnosticsDirectory, SecondInstanceFileName));
+        if (notes.Count == 0) return;
+
+        if (notes.Count > MaxRejectedFactsListed)
+        {
+            DeckleAppSource.Log.SecondInstancesRejected(notes.Count, notes[0].At, notes[^1].At);
+            return;
+        }
+
+        foreach (NoteFile.Note note in notes)
+            DeckleAppSource.Log.SecondInstanceRejected(note.At, note.Text);
+    }
+    // AppPaths moved the legacy settings layout while its static constructor
+    // ran, before this process had a sink: the failure it kept is reported here.
+    private static void ReportLegacyLayoutMigration()
+    {
+        if (AppPaths.LegacyLayoutMigrationFailure is not { } failure) return;
+
+        DeckleAppSource.Log.LegacySettingsMigrationFailed(failure.GetType().Name, failure.Message);
+    }
+
+    // Idempotent and limited to this run's own mark, so it can be called from
+    // the orderly shutdown and again from the process-exit handler.
+    private static void MarkRunEnded() =>
+        RunMarker.End(AppPaths.DiagnosticsDirectory, DeckleEventSource.SessionId);
 
     // Once the settings are readable: the line says what the logs of this
     // run can contain, and a flag flipped later is logged by the settings page.

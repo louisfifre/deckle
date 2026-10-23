@@ -16,6 +16,10 @@ namespace Deckle.Core;
 // recognised by content and ignored, and a file caught half-written stays
 // ignored until the next notification brings a valid one.
 //
+// A file the store cannot parse at load falls back to defaults, which the
+// next save writes over it. The unreadable text is copied to "<name>.bad"
+// first, so a typo in a hand edit costs the person nothing but a restore.
+//
 // Logging is delegate-injected (logInfo / logVerbose / logWarning /
 // logError), so this class stays in Deckle.Core (the lowest-level lib,
 // no diagnostics-module dependency). Each caller passes lambdas that
@@ -42,6 +46,12 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
     /// </summary>
     public static readonly TimeSpan ExternalWriteSettle = TimeSpan.FromMilliseconds(250);
 
+    /// <summary>
+    /// Appended to the settings path to name the copy of a file the store
+    /// could not read, made before defaults take its place.
+    /// </summary>
+    public const string BackupExtension = ".bad";
+
     private readonly string _path;
     private readonly string _mutexName;
     private readonly JsonSerializerOptions _jsonOptions;
@@ -57,6 +67,11 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
     private readonly System.Threading.Timer _followTimer;
     private readonly FileSystemWatcher? _watcher;
     private T _current;
+
+    // True from a Save until the write that serializes its change; Dispose
+    // uses it to know whether a debounced save is still waiting.
+    private bool _savePending;
+    private int _disposed;
 
     // The file's text as the store last wrote or read it. A notification
     // whose content matches is the store's own write (or one already seen)
@@ -165,8 +180,14 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
         {
             // The app still runs on defaults, so this is a Warning rather
             // than an Error.
+            // The defaults are written over the file on the next save, so the
+            // person's text is set aside first. A read that failed on I/O left
+            // a file that may be perfectly valid, which is no reason to copy it.
+            string backup = ex is IOException or UnauthorizedAccessException
+                ? "none"
+                : BackUpUnreadableFile();
             _logWarning?.Invoke(
-                $"Settings file unreadable, using defaults | reason=parse_failed | source=corrupt_fallback | path={_path} | ex_type={ex.GetType().Name} | ex_message={ex.Message}");
+                $"Settings file unreadable, using defaults | reason=parse_failed | source=corrupt_fallback | path={_path} | backup={backup} | ex_type={ex.GetType().Name} | ex_message={ex.Message}");
             // Same treatment as the missing-file defaults above: a post-load hook
             // that stamps fresh state (e.g. a schema version) must see every fresh
             // instance, or a later save would persist pre-migration-looking data
@@ -174,6 +195,24 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
             var fallback = new T();
             _postLoadMigration?.Invoke(fallback);
             return fallback;
+        }
+    }
+
+    // Copies the unreadable file next to itself as "<name>.bad", replacing an
+    // earlier copy: one backup, the latest damaged text. Returns the backup's
+    // path, or why there is none; a failed copy must not stop the defaults
+    // from serving the session.
+    private string BackUpUnreadableFile()
+    {
+        string backup = _path + BackupExtension;
+        try
+        {
+            File.Copy(_path, backup, overwrite: true);
+            return backup;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return $"failed:{ex.GetType().Name}";
         }
     }
 
@@ -205,6 +244,14 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
     /// </summary>
     public void Save()
     {
+        lock (_lock) _savePending = true;
+        // A disposed store has no timer left to wait on, and the caller's
+        // change would be dropped without a trace; write it now instead.
+        if (Volatile.Read(ref _disposed) != 0)
+        {
+            Flush();
+            return;
+        }
         _debounceTimer.Change(300, System.Threading.Timeout.Infinite);
     }
 
@@ -260,6 +307,7 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
             lock (_lock)
             {
                 json = JsonSerializer.Serialize(_current, _jsonOptions);
+                _savePending = false;
                 // Recorded before the write lands, so the watcher's read of
                 // the finished file matches whatever order the two threads run in.
                 _lastText = json;
@@ -277,6 +325,8 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
         }
         catch (Exception ex)
         {
+            // The change never reached the disk, so it is still owed.
+            lock (_lock) _savePending = true;
             _logError?.Invoke(
                 $"Settings save failed | reason=write_failed | path={_path} | ex_type={ex.GetType().Name} | ex_message={ex.Message}");
         }
@@ -378,6 +428,12 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
 
     private void FollowFile()
     {
+        // What this store last wrote, taken before the read. A save that lands
+        // while the read is in flight changes it, and the text read is then
+        // older than the store's own newest write.
+        string? writtenBeforeRead;
+        lock (_lock) writtenBeforeRead = _lastText;
+
         string raw;
         try
         {
@@ -419,6 +475,12 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
 
         lock (_lock)
         {
+            // A save finished between the read and here: the file now holds
+            // the store's own newer text, and applying the stale read would
+            // put the older values back in memory (and on disk at the next
+            // save). The save's own notification schedules a fresh read.
+            if (!string.Equals(_lastText, writtenBeforeRead, StringComparison.Ordinal)) return;
+
             _current = parsed;
             _lastText = raw;
         }
@@ -429,14 +491,30 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
         RaiseChanged("follow");
     }
 
+    /// <summary>
+    /// Stops following the file and writes a save still waiting out its
+    /// debounce, so a change made just before shutdown is not lost.
+    /// </summary>
     public void Dispose()
     {
+        if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+
         if (_watcher is not null)
         {
             _watcher.EnableRaisingEvents = false;
             _watcher.Dispose();
         }
+
+        // Disposing a timer does not wait for a callback already running, and
+        // that callback may be the very write that clears the pending flag.
+        // Waiting for it before looking at the flag keeps the two from racing.
+        using var timersStopped = new ManualResetEvent(initialState: false);
         _followTimer.Dispose();
-        _debounceTimer.Dispose();
+        if (_debounceTimer.Dispose(timersStopped))
+            timersStopped.WaitOne(TimeSpan.FromSeconds(5));
+
+        bool owed;
+        lock (_lock) owed = _savePending;
+        if (owed) Flush();
     }
 }

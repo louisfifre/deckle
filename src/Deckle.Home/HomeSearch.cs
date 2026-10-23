@@ -30,7 +30,7 @@ public sealed partial class HomeGestures
 
         if (filter.Room is not null)
         {
-            string room = HomeObjectJson.Id(index.Resolve(filter.Room, [HomeSchema.Types.Room]));
+            string room = HomeObjectJson.Id(index.Resolve(filter.Room, NameMatch.Tolerant, [HomeSchema.Types.Room]));
             query = query.Where(value =>
                 HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.InstalledIn).Contains(room)
                 || HomeObjectJson.ObjectReferences(value, HomeSchema.Properties.StoredIn).Contains(room));
@@ -47,7 +47,7 @@ public sealed partial class HomeGestures
         foreach (var relation in relations)
         {
             if (relation.Selector is null) continue;
-            string id = HomeObjectJson.Id(index.Resolve(relation.Selector, relation.Types));
+            string id = HomeObjectJson.Id(index.Resolve(relation.Selector, NameMatch.Tolerant, relation.Types));
             string property = relation.Property;
             query = query.Where(value => HomeObjectJson.ObjectReferences(value, property).Contains(id));
         }

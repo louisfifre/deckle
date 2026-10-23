@@ -22,6 +22,7 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
     private readonly Dictionary<string, List<(string Id, string Name)>> _templates = new(StringComparer.Ordinal);
     private JsonObject _schemaManifest = HomeSchema.CreateRequiredSchemaManifest();
     private int _nextId;
+    private readonly List<Func<Received, bool>> _failures = new();
 
     public readonly record struct Received(string Method, string Path, string Body);
 
@@ -38,11 +39,27 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
 
     public IReadOnlyList<Received> Requests => _requests.ToArray();
 
+    // The most rows a listing serves per page, whatever limit the caller asks
+    // for. The live API honors a limit up to its maximum, but a caller must not
+    // assume it did: it has to advance by the rows it received.
+    public int? PageCap { get; set; }
+
+    // Makes the templates listing announce more pages forever while serving
+    // none, the shape of a server that lost its place.
+    public bool StuckTemplates { get; set; }
+
+    // Refuses the next request the predicate matches with a 400, once, so a
+    // test can make one step of a multi-request gesture fail.
+    public void FailNext(Func<Received, bool> match) => _failures.Add(match);
+
     public void SetObjects(params JsonObject[] values)
     {
         _objects.Clear();
         _objects.AddRange(values);
     }
+
+    // Puts the schema back to the compiled manifest, as when the person repairs the space.
+    public void RestoreSchema() => _schemaManifest = HomeSchema.CreateRequiredSchemaManifest();
 
     public void RemoveSchemaProperty(string key)
     {
@@ -205,7 +222,7 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
             string method = context.Request.HttpMethod;
             _requests.Enqueue(new Received(method, path, body));
 
-            (int status, string json) = Handle(method, path, body);
+            (int status, string json) = Handle(method, path, body, context.Request.QueryString);
             byte[] payload = Encoding.UTF8.GetBytes(json);
             context.Response.StatusCode = status;
             context.Response.ContentType = "application/json";
@@ -215,18 +232,29 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         }
     }
 
-    private (int Status, string Json) Handle(string method, string path, string body)
+    private (int Status, string Json) Handle(
+        string method, string path, string body, System.Collections.Specialized.NameValueCollection query)
     {
         string root = $"/v1/spaces/{HomeSpace}";
+        var received = new Received(method, path, body);
+        lock (_failures)
+        {
+            int index = _failures.FindIndex(match => match(received));
+            if (index >= 0)
+            {
+                _failures.RemoveAt(index);
+                return (400, "{\"message\":\"injected failure\"}");
+            }
+        }
         if (method == "GET" && path == root + "/types") return (200, SchemaTypes().ToJsonString());
         if (method == "GET" && path.StartsWith(root + "/types/", StringComparison.Ordinal)
             && path.EndsWith("/templates", StringComparison.Ordinal))
-            return (200, Templates(path.Split('/')[^2]).ToJsonString());
+            return (200, Templates(path.Split('/')[^2], query).ToJsonString());
         if (method == "GET" && path == root + "/properties") return (200, SchemaProperties().ToJsonString());
         if (method == "GET" && path.StartsWith(root + "/properties/", StringComparison.Ordinal)
             && path.EndsWith("/tags", StringComparison.Ordinal))
-            return (200, SchemaTags(path.Split('/')[^2]).ToJsonString());
-        if (method == "GET" && path == root + "/objects") return (200, ObjectPage().ToJsonString());
+            return (200, SchemaTags(path.Split('/')[^2], query).ToJsonString());
+        if (method == "GET" && path == root + "/objects") return (200, ObjectPage(query).ToJsonString());
         if (method == "GET" && path.StartsWith(root + "/objects/", StringComparison.Ordinal))
             return Get(path.Split('/')[^1]);
         if (method == "POST" && path == root + "/objects") return Create(body);
@@ -264,14 +292,21 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         return Page(data);
     }
 
-    private JsonObject Templates(string typeId)
+    private JsonObject Templates(string typeId, System.Collections.Specialized.NameValueCollection query)
     {
+        if (StuckTemplates)
+            return new JsonObject
+            {
+                ["data"] = new JsonArray(),
+                ["pagination"] = new JsonObject { ["has_more"] = true },
+            };
+
         string typeKey = typeId["type-".Length..];
         var data = new JsonArray();
         if (_templates.TryGetValue(typeKey, out List<(string Id, string Name)>? seeded))
             foreach ((string id, string name) in seeded)
                 data.Add(new JsonObject { ["id"] = id, ["name"] = name });
-        return Page(data);
+        return Slice(data, query);
     }
 
     private JsonObject SchemaProperties()
@@ -291,7 +326,7 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         return Page(data);
     }
 
-    private JsonObject SchemaTags(string propertyId)
+    private JsonObject SchemaTags(string propertyId, System.Collections.Specialized.NameValueCollection query)
     {
         string propertyKey = propertyId["prop-".Length..];
         JsonObject? property = ((JsonArray)_schemaManifest["properties"]!).OfType<JsonObject>()
@@ -309,14 +344,31 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
                     ["color"] = "grey",
                 });
             }
-        return Page(data);
+        return Slice(data, query);
     }
 
-    private JsonObject ObjectPage()
+    private JsonObject ObjectPage(System.Collections.Specialized.NameValueCollection query)
     {
         var data = new JsonArray();
         foreach (JsonObject value in _objects) data.Add(value.DeepClone());
-        return Page(data);
+        return Slice(data, query);
+    }
+
+    // Serves the page the query names: from offset, at most limit rows and at
+    // most PageCap, with has_more telling the truth about what remains.
+    private JsonObject Slice(JsonArray all, System.Collections.Specialized.NameValueCollection query)
+    {
+        int offset = int.TryParse(query["offset"], out int parsedOffset) ? Math.Max(parsedOffset, 0) : 0;
+        int limit = int.TryParse(query["limit"], out int parsedLimit) && parsedLimit > 0 ? parsedLimit : int.MaxValue;
+        if (PageCap is int cap) limit = Math.Min(limit, cap);
+
+        var page = new JsonArray();
+        foreach (JsonNode? node in all.Skip(offset).Take(limit)) page.Add(node!.DeepClone());
+        return new JsonObject
+        {
+            ["data"] = page,
+            ["pagination"] = new JsonObject { ["has_more"] = offset + page.Count < all.Count },
+        };
     }
 
     private (int Status, string Json) Get(string id)

@@ -2,7 +2,7 @@ using Deckle.Input;
 
 namespace Deckle.Input.PrecisionScroll;
 
-public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
+public sealed class PrecisionScrollEngine : IWheelInterceptor, IPrecisionScrollEngine
 {
     // Long enough for an accepted gesture to play out its release, short
     // enough that a stuck worker shows up in the journal before the user
@@ -29,13 +29,28 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
     // Join, which orders the two. Empty means the stop was requested.
     private string _stopReason = "";
 
+    // Set by the worker as its last act, whatever ended it. _worker alone cannot
+    // tell a running worker from one that already ended on its own, because only
+    // Stop clears it.
+    private int _workerEnded;
+
     public PrecisionScrollEngine(IKeyboardInputHost inputHost) => _inputHost = inputHost;
+
+    public event Action<string>? EndedOnItsOwn;
 
     public bool Start()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (_worker is not null)
-            return true;
+        {
+            if (Volatile.Read(ref _workerEnded) == 0)
+                return true;
+
+            // The worker ended on its own and nobody stopped the engine since.
+            // Reporting it as running would leave the wheel native with no way
+            // back; reap it so this Start really starts again.
+            Stop();
+        }
 
         if (!PrecisionTouchpadInjector.TryCreate(out var injector, out int createError))
         {
@@ -61,6 +76,7 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
         _gestures = 0;
         _rollovers = 0;
         _stopReason = "";
+        Volatile.Write(ref _workerEnded, 0);
         Volatile.Write(ref _overflowed, 0);
         Volatile.Write(ref _runRequested, 1);
         Volatile.Write(ref _accepting, 1);
@@ -206,6 +222,11 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IDisposable
         {
             _injector?.Dispose();
         }
+
+        Volatile.Write(ref _workerEnded, 1);
+        string reason = _stopReason;
+        if (reason.Length != 0)
+            EndedOnItsOwn?.Invoke(reason);
     }
 
     private void RunWorker()

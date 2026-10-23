@@ -41,9 +41,9 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     // 26 retired.
     // 27 retired.
     public const int EvtUserFeedbackEmitted       = 28;
-    public const int EvtCrashUnhandledDetail        = 29;
+    // 29 retired: the detail of CrashUnhandled, whose line now carries its cause.
     public const int EvtCrashAppDomainDetail        = 30;
-    public const int EvtCrashTaskSchedulerDetail    = 31;
+    // 31 retired: the detail of CrashTaskScheduler, same reason.
     // 32 retired.
     // 33 retired.
     // 34 retired.
@@ -81,16 +81,16 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtModuleSkipped                  = 66;
     public const int EvtModuleFailed                   = 67;
     public const int EvtShutdownStepFailed             = 68;
-    public const int EvtShutdownStepsDetail            = 69;
-    public const int EvtCrashUnhandled                 = 70;
+    // 69 retired: its steps, failed and elapsed_ms moved onto ShutdownCompleted.
+    // 70 retired: an unhandled exception the app survives is SurvivedException.
     public const int EvtCrashAppDomain                 = 71;
-    public const int EvtCrashTaskScheduler             = 72;
+    // 72 retired: an unobserved task exception the app survives is SurvivedException.
     public const int EvtStatusChanged                  = 73;
     public const int EvtInstallTempCleanupFailed       = 74;
     public const int EvtDataRootCleanupStarting        = 75;
     public const int EvtDataRootCleanupFinished        = 76;
     public const int EvtDataRootCleanupFailed          = 77;
-    public const int EvtPostBuildRelaunchFailed        = 78;
+    public const int EvtRelaunchFailed                 = 78;
     public const int EvtRestartSettingsFlushFailed     = 79;
     public const int EvtRestartSpawnSkipped            = 80;
     public const int EvtRestartSpawned                 = 81;
@@ -102,7 +102,9 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtDictationRecoveryUnreadable    = 87;
     public const int EvtDictationRecoveryClipboardFailed = 88;
     public const int EvtDictationRecoveryKept          = 89;
-    public const int EvtSecondInstanceRejected         = 90;
+    // 90 retired: a rejected second instance has no sink, so the fact is a
+    // line in second-instance.txt (App.Lifetime.cs), which the resident run
+    // copies into the journal at its next start (124, 125).
     public const int EvtResidentMutexAbandoned         = 91;
     public const int EvtResidentMutexReleaseFailed     = 92;
     public const int EvtTransactionalModeExited        = 93;
@@ -133,4 +135,11 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtModuleStarting                 = 118;
     public const int EvtModuleRefused                  = 119;
     public const int EvtLaunchContextDetail            = 120;
+    public const int EvtPreviousRunEndedUncleanly      = 121;
+    public const int EvtLegacySettingsMigrationFailed  = 122;
+    public const int EvtAnytypeRuntimeFailed           = 123;
+    public const int EvtSecondInstanceRejected         = 124;
+    public const int EvtSecondInstancesRejected        = 125;
+    public const int EvtSurvivedException              = 126;
+    public const int EvtSurvivedExceptionRepeated      = 127;
 }

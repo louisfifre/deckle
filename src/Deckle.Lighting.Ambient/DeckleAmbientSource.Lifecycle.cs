@@ -6,47 +6,56 @@ namespace Deckle.Lighting.Ambient;
 public sealed partial class DeckleAmbientSource
 {
     // ── AmbientEngine — lifecycle ───────────────────────────────────────
+    //
+    // One run is one start and one stop. Every lifecycle event of a run
+    // carries the same `work_id` (WorkId.Next(), taken when StartAsync begins),
+    // so the file alone pairs a start with its end and tells two runs apart.
+    // Every Starting ends in exactly one of Started, StartFailed or
+    // StartCancelled; every Started ends in Stopping then Stopped.
 
     [Event(EvtPipelineStarting,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Ambient lighting starting")]
-    public void PipelineStarting()
+           Message = "Ambient lighting starting | work_id={0}")]
+    public void PipelineStarting(string work_id)
     {
-        if (IsEnabled()) WriteEvent(EvtPipelineStarting);
+        if (IsEnabled()) WriteEvent(EvtPipelineStarting, work_id);
     }
 
+    // What the run chose: output = the output class that was built, shape =
+    // group | multi, lights = the controlled lights (0 in group mode),
+    // push_hz = the push cadence, hdr = on | off.
     [Event(EvtPipelineStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Ambient lighting started")]
-    public void PipelineStarted()
+           Message = "Ambient lighting started | work_id={0} | output={1} | shape={2} | lights={3} | push_hz={4} | hdr={5}")]
+    public void PipelineStarted(string work_id, string output, string shape, int lights, int push_hz, string hdr)
     {
-        if (IsEnabled()) WriteEvent(EvtPipelineStarted);
+        if (IsEnabled()) WriteEvent(EvtPipelineStarted, work_id, output, shape, lights, push_hz, hdr);
     }
 
     [Event(EvtPipelineStartDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "start | source={0} | output={1} | shape={2} | lights={3} | push_hz={4} | sampler_grid={5}x{6} | hdr={7}")]
-    public void PipelineStartDetail(string source, string output, string shape, int lights, int push_hz, int grid_cols, int grid_rows, string hdr)
+           Message = "start | work_id={0} | source={1} | sampler_grid={2}x{3}")]
+    public void PipelineStartDetail(string work_id, string source, int grid_cols, int grid_rows)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtPipelineStartDetail, source, output, shape, lights, push_hz, grid_cols, grid_rows, hdr);
+        WriteEvent(EvtPipelineStartDetail, work_id, source, grid_cols, grid_rows);
     }
 
-    // reason = exception | invalid_pairing | an upstream abort reason
-    // (capture_lost, external, push_rejected, push_loop_crashed, ...).
+    // reason = exception | not_paired | bridge_ip_not_private | an upstream
+    // abort reason (capture_lost, external, push_rejected, push_loop_crashed, ...).
     [Event(EvtPipelineStartFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Ambient lighting failed to start | reason={0} | ex_type={1} | ex_message={2}")]
-    public void PipelineStartFailed(string reason, string ex_type, string ex_message)
+           Message = "Ambient lighting failed to start | work_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
+    public void PipelineStartFailed(string work_id, string reason, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtPipelineStartFailed, reason, ex_type, ex_message);
+        if (IsEnabled()) WriteEvent(EvtPipelineStartFailed, work_id, reason, ex_type, ex_message);
     }
 
     // A start the caller cancelled is not a failure: it ends the Starting
@@ -55,45 +64,67 @@ public sealed partial class DeckleAmbientSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Ambient lighting start cancelled | elapsed_ms={0}")]
-    public void PipelineStartCancelled(long elapsed_ms)
+           Message = "Ambient lighting start cancelled | work_id={0} | elapsed_ms={1}")]
+    public void PipelineStartCancelled(string work_id, long elapsed_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtPipelineStartCancelled, elapsed_ms);
+        if (IsEnabled()) WriteEvent(EvtPipelineStartCancelled, work_id, elapsed_ms);
     }
 
+    // reason = the engine's stop reason: user, or an upstream cause such as
+    // capture_lost, external, push_rejected, frame_processing_failed.
     [Event(EvtPipelineStopping,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Ambient lighting stopping")]
-    public void PipelineStopping()
+           Message = "Ambient lighting stopping | work_id={0} | reason={1}")]
+    public void PipelineStopping(string work_id, string reason)
     {
-        if (IsEnabled()) WriteEvent(EvtPipelineStopping);
+        if (IsEnabled()) WriteEvent(EvtPipelineStopping, work_id, reason);
     }
 
     // Emitted from the stop cleanup's finally so every Stopping has an end.
     // outcome = completed | failed; ex_type / ex_message name the first
-    // cleanup failure, "none" when completed.
+    // cleanup failure, "none" when completed. pushed / dropped are the run's
+    // totals: the frames the bridge accepted and the ticks the change
+    // threshold held back.
     [Event(EvtPipelineStopped,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Journal,
-           Message = "Ambient lighting stopped | reason={0} | outcome={1} | duration_s={2:F1} | ex_type={3} | ex_message={4}")]
-    public void PipelineStopped(string reason, string outcome, double duration_s, string ex_type, string ex_message)
+           Message = "Ambient lighting stopped | work_id={0} | reason={1} | outcome={2} | duration_s={3:F1} | pushed={4} | dropped={5} | ex_type={6} | ex_message={7}")]
+    public void PipelineStopped(
+        string work_id, string reason, string outcome, double duration_s,
+        long pushed, long dropped, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtPipelineStopped, reason, outcome, duration_s, ex_type, ex_message);
+        if (IsEnabled())
+            WriteEvent(EvtPipelineStopped, work_id, reason, outcome, duration_s, pushed, dropped, ex_type, ex_message);
     }
 
-    [Event(EvtPipelineStopDetail,
+    // The run stopped while an incident it had opened was still open, so no
+    // recovery will ever close it. incident = AmbientIncidentKinds. The stop
+    // is the incident's end.
+    [Event(EvtPipelineIncidentAbandoned,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Journal,
+           Message = "Ambient lighting stopped with an incident still open | work_id={0} | incident={1} | failures={2} | duration_ms={3}")]
+    public void PipelineIncidentAbandoned(string work_id, string incident, int failures, long duration_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtPipelineIncidentAbandoned, work_id, incident, failures, duration_ms);
+    }
+
+    // An upstream abort (capture lost, push rejected, ...) that the engine did
+    // not act on: it was already Stopping or Off, or an earlier abort of the
+    // same run is pending. why = already_stopping | abort_pending.
+    [Event(EvtPipelineAbortIgnoredDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "stop | shape={0} | pushed={1} | dropped={2}")]
-    public void PipelineStopDetail(string shape, long pushed, long dropped)
+           Message = "abort ignored | reason={0} | why={1}")]
+    public void PipelineAbortIgnoredDetail(string reason, string why)
     {
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtPipelineStopDetail, shape, pushed, dropped);
+        WriteEvent(EvtPipelineAbortIgnoredDetail, reason, why);
     }
-
     // component = capture | sampler | output | superseded_sampler. A release
     // failure can leave a native handle or a Hue streaming session behind.
     [Event(EvtResourceReleaseFailed,
@@ -129,4 +160,14 @@ public sealed partial class DeckleAmbientSource
         if (!IsAmbientDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtPipelineRestartDetail, settings);
     }
+}
+
+// Closed `incident` vocabulary of PipelineIncidentAbandoned.
+public static class AmbientIncidentKinds
+{
+    // Hue pushes kept failing (PushIncidentOpened).
+    public const string PushFailures = "push_failures";
+
+    // Captured frames kept failing to process (FrameProcessingIncidentOpened).
+    public const string FrameProcessing = "frame_processing";
 }
