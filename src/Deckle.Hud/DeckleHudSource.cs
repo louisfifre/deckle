@@ -63,7 +63,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtHideSyncTimedOut,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Cannot hide the HUD before the paste\nreason={0} | timeout_ms={1}")]
+           Message = "The HUD could not hide before the paste, so focus may move while the text is pasted\nreason={0} | timeout_ms={1}")]
     public void HideSyncTimedOut(string reason, int timeout_ms)
     {
         if (IsEnabled()) WriteEvent(EvtHideSyncTimedOut, reason, timeout_ms);
@@ -199,7 +199,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     [Event(EvtCleanupFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Cannot close an overlay card\nwhat={0} | ex_type={1} | ex_message={2}")]
+           Message = "An overlay card could not be closed and may stay on screen\nwhat={0} | ex_type={1} | ex_message={2}")]
     public void CleanupFailed(string what, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtCleanupFailed, what, ex_type, ex_message);
