@@ -9,7 +9,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Shutdown requested | work_id={0}")]
+           Message = "Shutdown requested")]
     public void ShutdownRequested(string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtShutdownRequested, work_id);
@@ -20,7 +20,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtShutdownStepFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Shutdown step {0} failed | {1}: {2}")]
+           Message = "A shutdown step failed, and shutdown went on\nstep={0} | ex_type={1} | ex_message={2}")]
     public void ShutdownStepFailed(string step, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtShutdownStepFailed, step, ex_type, ex_message);
@@ -49,7 +49,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtRestartSpawnNewProcess,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "spawn new process | exe={0} | args={1}")]
+           Message = "exe={0} | args={1}")]
     public void RestartSpawnNewProcess(string exe_path, string args)
     {
         if (IsEnabled()) WriteEvent(EvtRestartSpawnNewProcess, exe_path, args);
@@ -68,7 +68,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtPostBuildShellExecute,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "shell-execute relaunch | exe={0}")]
+           Message = "exe={0}")]
     public void PostBuildShellExecute(string exe_path)
     {
         if (IsEnabled()) WriteEvent(EvtPostBuildShellExecute, exe_path);
@@ -82,7 +82,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Cannot relaunch Deckle | {0}: {1}")]
+           Message = "Deckle could not relaunch itself\nex_type={0} | ex_message={1}")]
     public void RelaunchFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRelaunchFailed, ex_type, ex_message);
@@ -92,7 +92,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Cannot relaunch Deckle | reason={0}")]
+           Message = "Cannot relaunch Deckle\nreason={0}")]
     public void RestartSpawnSkipped(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtRestartSpawnSkipped, reason);
@@ -104,7 +104,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Deckle started its successor | child_pid={0}")]
+           Message = "Deckle started its successor")]
     public void RestartSpawned(int child_pid)
     {
         if (IsEnabled()) WriteEvent(EvtRestartSpawned, child_pid);
@@ -113,7 +113,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtRestartSettingsFlushFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Settings could not be saved before the restart | {0}: {1}")]
+           Message = "Settings could not be saved before the restart\nex_type={0} | ex_message={1}")]
     public void RestartSettingsFlushFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRestartSettingsFlushFailed, ex_type, ex_message);
@@ -123,7 +123,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The previous run ended uncleanly | reason=resident_mutex_abandoned")]
+           Message = "The previous run ended uncleanly")]
     public void ResidentMutexAbandoned()
     {
         if (IsEnabled()) WriteEvent(EvtResidentMutexAbandoned);
@@ -136,7 +136,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtPreviousRunEndedUncleanly,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The previous run did not end in an orderly way | previous_session={0} | previous_pid={1} | previous_started={2}")]
+           Message = "The previous run did not end in an orderly way\nprevious_session={0} | previous_pid={1} | previous_started={2}")]
     public void PreviousRunEndedUncleanly(string previous_session, int previous_pid, string previous_started)
     {
         if (IsEnabled()) WriteEvent(EvtPreviousRunEndedUncleanly, previous_session, previous_pid, previous_started);
@@ -149,7 +149,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtLegacySettingsMigrationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The legacy settings layout could not be moved | ex_type={0} | ex_message={1}")]
+           Message = "The legacy settings layout could not be moved\nex_type={0} | ex_message={1}")]
     public void LegacySettingsMigrationFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtLegacySettingsMigrationFailed, ex_type, ex_message);
@@ -187,7 +187,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "A second Deckle was turned away | noted_at={0} | fact={1}")]
+           Message = "A second Deckle was turned away")]
     public void SecondInstanceRejected(string noted_at, string fact)
     {
         if (IsEnabled()) WriteEvent(EvtSecondInstanceRejected, noted_at, fact);
@@ -199,7 +199,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Second Deckle instances were turned away | count={0} | first_at={1} | last_at={2}")]
+           Message = "Second Deckle instances were turned away")]
     public void SecondInstancesRejected(int count, string first_at, string last_at)
     {
         if (IsEnabled()) WriteEvent(EvtSecondInstancesRejected, count, first_at, last_at);
@@ -207,7 +207,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtResidentMutexReleaseFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "resident mutex release failed | ex_type={0} | ex_message={1}")]
+           Message = "ex_type={0} | ex_message={1}")]
     public void ResidentMutexReleaseFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtResidentMutexReleaseFailed, ex_type, ex_message);
@@ -218,7 +218,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtCleanupFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "cleanup failed | component={0} | ex_type={1} | ex_message={2}")]
+           Message = "component={0} | ex_type={1} | ex_message={2}")]
     public void CleanupFailed(string component, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtCleanupFailed, component, ex_type, ex_message);

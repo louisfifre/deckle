@@ -13,7 +13,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Anytype runtime ended | outcome={0} | reason={1} | {2}: {3}")]
+           Message = "The Anytype runtime ended")]
     public void AnytypeRuntimeEnded(string outcome, string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAnytypeRuntimeEnded, outcome, reason, ex_type, ex_message);
@@ -27,7 +27,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Anytype runtime failed | reason={0} | {1}: {2}")]
+           Message = "The Anytype runtime failed\nreason={0} | ex_type={1} | ex_message={2}")]
     public void AnytypeRuntimeFailed(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAnytypeRuntimeFailed, reason, ex_type, ex_message);
@@ -38,7 +38,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtAnytypeHostDrainIncomplete,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The Anytype MCP host did not drain and stays alive until exit | reason={0} | elapsed_ms={1}")]
+           Message = "The Anytype MCP host did not drain and stays alive until exit\nreason={0} | elapsed_ms={1}")]
     public void AnytypeHostDrainIncomplete(string reason, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtAnytypeHostDrainIncomplete, reason, elapsed_ms);

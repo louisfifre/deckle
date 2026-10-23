@@ -8,7 +8,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtPathsDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "paths | root={0} | settings={1} | telemetry={2} | models={3} | native={4}")]
+           Message = "root={0} | settings={1} | telemetry={2} | models={3} | native={4}")]
     public void PathsDetail(string root, string settings, string telemetry, string models, string native)
     {
         if (IsEnabled()) WriteEvent(EvtPathsDetail, PathRedaction.Redact(root), PathRedaction.Redact(settings), PathRedaction.Redact(telemetry), PathRedaction.Redact(models), PathRedaction.Redact(native));
@@ -17,7 +17,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtStartupMilestones,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "startup milestones | {0}")]
+           Message = "milestones_text={0}")]
     public void StartupMilestones(string milestones_text)
     {
         if (IsEnabled()) WriteEvent(EvtStartupMilestones, milestones_text);
@@ -28,7 +28,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtStatusChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "status changed | status={0} | recording={1}")]
+           Message = "status={0} | recording={1}")]
     public void StatusChanged(string status, bool recording)
     {
         if (!OperationalLogAdmission.IsDetailEnabled(

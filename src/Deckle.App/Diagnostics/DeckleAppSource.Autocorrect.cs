@@ -13,7 +13,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtAutocorrectUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Autocorrect is not running | reason={0}")]
+           Message = "Autocorrect is not running\nreason={0}")]
     public void AutocorrectUnavailable(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtAutocorrectUnavailable, reason);
@@ -25,7 +25,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtAutocorrectFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Autocorrect failed to start | phase={0} | {1}: {2}")]
+           Message = "Autocorrect failed to start, so typing is not corrected\nphase={0} | ex_type={1} | ex_message={2}")]
     public void AutocorrectFailed(string phase, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAutocorrectFailed, phase, ex_type, ex_message);
@@ -37,7 +37,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtAutocorrectAssetSkipped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Autocorrect runs without an optional asset | asset={0} | reason={1}")]
+           Message = "Autocorrect runs without an optional asset\nasset={0} | reason={1}")]
     public void AutocorrectAssetSkipped(string asset, string reason)
     {
         if (IsEnabled()) WriteEvent(EvtAutocorrectAssetSkipped, asset, reason);
@@ -47,7 +47,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtAutocorrectEnrollmentPromptFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "autocorrect enrollment prompt failed | ex_type={0} | ex_message={1}")]
+           Message = "ex_type={0} | ex_message={1}")]
     public void AutocorrectEnrollmentPromptFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAutocorrectEnrollmentPromptFailed, ex_type, ex_message);

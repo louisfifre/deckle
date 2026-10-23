@@ -18,7 +18,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtCrashDumpCaptureArmedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "crash dump capture | folder={0} | type={1} | retained={2}")]
+           Message = "folder={0} | type={1} | retained={2}")]
     public void CrashDumpCaptureArmedDetail(string folder, string dump_type, int retained)
     {
         if (IsEnabled()) WriteEvent(EvtCrashDumpCaptureArmedDetail, PathRedaction.Redact(folder), dump_type, retained);
@@ -36,7 +36,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtCrashDumpCaptureOffDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "crash dump capture off | {0}={1}")]
+           Message = "variable={0} | value={1}")]
     public void CrashDumpCaptureOffDetail(string variable, string value)
     {
         if (IsEnabled()) WriteEvent(EvtCrashDumpCaptureOffDetail, variable, value);
@@ -55,7 +55,7 @@ public sealed partial class DeckleAppSource
     [Event(EvtCrashDumpFoundDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "crash dump | path={0} | size_bytes={1} | written_at={2}")]
+           Message = "path={0} | size_bytes={1} | written_at={2}")]
     public void CrashDumpFoundDetail(string path, long size_bytes, string written_at)
     {
         if (IsEnabled()) WriteEvent(EvtCrashDumpFoundDetail, path, size_bytes, written_at);
@@ -67,7 +67,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Deckle was relaunched after it crashed | previous_exit_code={0} | relaunch={1} | max_relaunches={2}")]
+           Message = "Deckle was relaunched after it crashed\nprevious_exit_code={0} | relaunch={1} | max_relaunches={2}")]
     public void CrashRelaunched(string previous_exit_code, int relaunch, int max_relaunches)
     {
         if (IsEnabled()) WriteEvent(EvtCrashRelaunched, previous_exit_code, relaunch, max_relaunches);
