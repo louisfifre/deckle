@@ -87,7 +87,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The host failed to start — the taskbar stays uncovered\nreason={0} | ex_type={1} | ex_message={2}")]
+           Message = "The taskbar cover failed to start, so the taskbar stays uncovered\nreason={0} | ex_type={1} | ex_message={2}")]
     public void HostStartFailed(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtHostStartFailed, reason, ex_type, ex_message);
@@ -107,7 +107,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The cover thread did not exit in time — restart refused until it does")]
+           Message = "The taskbar cover thread did not stop in time, so the cover cannot restart until it does")]
     public void HostStopTimedOut()
     {
         if (IsEnabled()) WriteEvent(EvtHostStopTimedOut);
