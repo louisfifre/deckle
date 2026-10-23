@@ -49,7 +49,7 @@ public sealed class DeckleShellForegroundSource : DeckleEventSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Watcher failed to start, fullscreen detection is off\nreason={0} | win32_error={1}")]
+           Message = "The foreground watcher failed to start, so fullscreen detection is off\nreason={0} | win32_error={1}")]
     public void WatcherStartFailed(string reason, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtWatcherStartFailed, reason, win32_error);
