@@ -213,7 +213,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtAutostartProbeFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not read the autostart setting\nex_type={0} | ex_message={1}")]
+           Message = "The autostart setting could not be read, so it shows as off\nex_type={0} | ex_message={1}")]
     public void AutostartProbeFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAutostartProbeFailed, ex_type, ex_message);
@@ -268,7 +268,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtAutostartEnableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not enable autostart\nex_type={0} | ex_message={1}")]
+           Message = "Autostart could not be turned on, so Deckle will not start at sign-in\nex_type={0} | ex_message={1}")]
     public void AutostartEnableFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAutostartEnableFailed, ex_type, ex_message);
@@ -295,7 +295,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtAutostartDisableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not disable autostart\nex_type={0} | ex_message={1}")]
+           Message = "Autostart could not be turned off, so Deckle still starts at sign-in\nex_type={0} | ex_message={1}")]
     public void AutostartDisableFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAutostartDisableFailed, ex_type, ex_message);
@@ -317,7 +317,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtElevatedStartupEnableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not enable elevated startup\nreason={0} | exit_code={1} | ex_type={2} | ex_message={3}")]
+           Message = "Elevated startup could not be turned on, so Deckle will not start as administrator at sign-in\nreason={0} | exit_code={1} | ex_type={2} | ex_message={3}")]
     public void ElevatedStartupEnableFailed(string reason, int exit_code, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtElevatedStartupEnableFailed, reason, exit_code, ex_type, ex_message);
@@ -337,7 +337,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtElevatedStartupDisableFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not disable elevated startup\nreason={0} | exit_code={1} | ex_type={2} | ex_message={3}")]
+           Message = "Elevated startup could not be turned off, so Deckle may still start as administrator at sign-in\nreason={0} | exit_code={1} | ex_type={2} | ex_message={3}")]
     public void ElevatedStartupDisableFailed(string reason, int exit_code, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtElevatedStartupDisableFailed, reason, exit_code, ex_type, ex_message);
@@ -346,7 +346,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtElevatedStartupProbeFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Could not read the elevated startup setting\nex_type={0} | ex_message={1}")]
+           Message = "The elevated startup setting could not be read, so it shows as off\nex_type={0} | ex_message={1}")]
     public void ElevatedStartupProbeFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtElevatedStartupProbeFailed, ex_type, ex_message);
@@ -391,7 +391,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtHotkeyVkResolveFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Could not resolve the hotkey for the current keyboard layout\nscancode=0x{0:X} | hkl=0x{1:X}")]
+           Message = "A hotkey key does not exist on the current keyboard layout, so its shortcut does nothing\nscancode=0x{0:X} | hkl=0x{1:X}")]
     public void HotkeyVkResolveFailed(long scancode, long hkl)
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyVkResolveFailed, scancode, hkl);
@@ -442,7 +442,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     [Event(EvtHotkeyReregisterFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Some hotkeys could not be re-registered after a keyboard layout change\nfailed={0} | win32_error={1}")]
+           Message = "Some hotkeys could not be registered again after a keyboard layout change, so their shortcuts do nothing\nfailed={0} | win32_error={1}")]
     public void HotkeyReregisterFailed(int failed, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyReregisterFailed, failed, win32_error);
