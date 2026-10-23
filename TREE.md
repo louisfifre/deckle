@@ -2233,6 +2233,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── AmbientRunBugNotes.md
 │   │   ├── AmbientRunLogTests.cs
 │   │   ├── AmbientStartSettingsTests.cs
+│   │   ├── AmbientUserIncidentTests.cs
 │   │   ├── AssemblyInfo.cs
 │   │   ├── CredentialPayloadTests.cs
 │   │   ├── Deckle.Lighting.Ambient.Tests.csproj

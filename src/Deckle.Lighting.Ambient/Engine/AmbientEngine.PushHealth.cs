@@ -59,6 +59,9 @@ public sealed partial class AmbientEngine
             DeckleAmbientSource.Log.PushEpisodeDetail(
                 "opened", _pushConsecutiveFailures, PushFailureDurationMs(),
                 _pushFailureType, _pushFailureMessage);
+            // The lights stopped following the screen: the tray shows it until
+            // a push lands or the run ends (ResetPushFailureEpisode).
+            UserIncidentRegistry.Instance.Open(UserIncidents.HuePush, _pushFailureType);
         }
     }
 
@@ -118,8 +121,13 @@ public sealed partial class AmbientEngine
                 StatusCode: HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden
             };
 
+    // Every way out of an episode passes here: the recovery, the end of the
+    // run (the abandonment, or a rejection that stopped it) and the next start.
+    // A stopped run has no lights to reach, so its incident is no longer the
+    // person's to fix. Closing what is not open changes nothing.
     private void ResetPushFailureEpisode()
     {
+        UserIncidentRegistry.Instance.Close(UserIncidents.HuePush);
         _pushConsecutiveFailures = 0;
         _pushFailureStartTimestamp = 0;
         _pushIncidentOpen = false;
