@@ -94,7 +94,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribeEmpty,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "There was no audio to transcribe")]
+           Message = "There was no audio to transcribe, so the take produced no text")]
     public void TranscribeEmpty()
     {
         if (IsEnabled()) WriteEvent(EvtTranscribeEmpty);
@@ -110,7 +110,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscriptionFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Transcription failed\nreason={0} | result_code={1} | ex_type={2} | ex_message={3}")]
+           Message = "Transcription failed, so some or all of the take has no text\nreason={0} | result_code={1} | ex_type={2} | ex_message={3}")]
     public void TranscriptionFailed(string reason, int result_code, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtTranscriptionFailed, reason, result_code, ex_type, ex_message);

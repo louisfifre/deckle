@@ -19,7 +19,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtHotkeyStartingCASLost,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "The start transition was lost before recording began")]
+           Message = "Recording did not start because the dictation engine was stopping")]
     public void HotkeyStartingCASLost()
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyStartingCASLost);
@@ -30,7 +30,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtMicrophoneUnavailable,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "The microphone is unavailable\nphase={0} | mmsys_err={1}")]
+           Message = "The microphone is unavailable, so dictation cannot record until it comes back\nphase={0} | mmsys_err={1}")]
     public void MicrophoneUnavailable(string phase, int mmsys_err)
     {
         if (IsEnabled()) WriteEvent(EvtMicrophoneUnavailable, phase, mmsys_err);
@@ -49,7 +49,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtRecordingLowAudio,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Low audio was surfaced to the user")]
+           Message = "The recording sounds too quiet, so a warning was shown on screen")]
     public void RecordingLowAudio()
     {
         if (IsEnabled()) WriteEvent(EvtRecordingLowAudio);
@@ -100,7 +100,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPipelineCrashed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The pipeline crashed\nex_type={0} | ex_message={1}")]
+           Message = "Transcription stopped on an unexpected error, so the take produced no text\nex_type={0} | ex_message={1}")]
     public void PipelineCrashed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPipelineCrashed, ex_type, ex_message);
@@ -124,7 +124,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTakeDropped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The take was dropped without transcription\nreason={0}")]
+           Message = "The take was dropped without transcription, so it produced no text\nreason={0}")]
     public void TakeDropped(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtTakeDropped, reason);
@@ -136,7 +136,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtDictationNotDelivered,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "The dictation was not delivered\nreason={0} | recovery_kept={1}")]
+           Message = "The dictation reached neither the clipboard nor the window, so it was not delivered\nreason={0} | recovery_kept={1}")]
     public void DictationNotDelivered(string reason, bool recovery_kept)
     {
         if (IsEnabled()) WriteEvent(EvtDictationNotDelivered, reason, recovery_kept);

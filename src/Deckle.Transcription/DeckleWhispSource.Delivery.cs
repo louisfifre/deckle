@@ -19,7 +19,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardAllocFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Allocating clipboard memory failed")]
+           Message = "Clipboard memory could not be allocated, so the text was not copied")]
     public void ClipboardAllocFailed()
     {
         if (IsEnabled()) WriteEvent(EvtClipboardAllocFailed);
@@ -46,7 +46,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardOpenFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Opening the clipboard failed")]
+           Message = "The clipboard could not be opened, so the text was not copied")]
     public void ClipboardOpenFailed()
     {
         if (IsEnabled()) WriteEvent(EvtClipboardOpenFailed);
@@ -55,7 +55,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardSetDataFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Writing to the clipboard failed")]
+           Message = "The text could not be written to the clipboard, so it was not copied")]
     public void ClipboardSetDataFailed()
     {
         if (IsEnabled()) WriteEvent(EvtClipboardSetDataFailed);
@@ -64,7 +64,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardVerifyMissing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Clipboard verification found no text")]
+           Message = "The clipboard held no text after the copy, so the paste may be empty")]
     public void ClipboardVerifyMissing()
     {
         if (IsEnabled()) WriteEvent(EvtClipboardVerifyMissing);
@@ -73,7 +73,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardVerifyMismatch,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Clipboard verification found the wrong text")]
+           Message = "The clipboard held other text after the copy, so the paste may be wrong")]
     public void ClipboardVerifyMismatch()
     {
         if (IsEnabled()) WriteEvent(EvtClipboardVerifyMismatch);

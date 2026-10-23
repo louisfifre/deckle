@@ -54,7 +54,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtDictationRecoveryDeleteFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Deleting the dictation recovery copy failed\nex_type={0} | ex_message={1}")]
+           Message = "The dictation recovery copy could not be deleted, so it may be restored at the next launch\nex_type={0} | ex_message={1}")]
     public void DictationRecoveryDeleteFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtDictationRecoveryDeleteFailed, ex_type, ex_message);

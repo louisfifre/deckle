@@ -31,7 +31,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWarmupClipHeaderInvalid,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The warmup clip has an invalid header")]
+           Message = "The warmup clip has an invalid header, so the model warms up on silence")]
     public void WarmupClipHeaderInvalid()
     {
         if (IsEnabled()) WriteEvent(EvtWarmupClipHeaderInvalid);
@@ -49,7 +49,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWarmupClipSampleMismatch,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The warmup clip is not in the expected audio format")]
+           Message = "The warmup clip is not in the expected audio format, so the model warms up on silence")]
     public void WarmupClipSampleMismatch()
     {
         if (IsEnabled()) WriteEvent(EvtWarmupClipSampleMismatch);
@@ -117,7 +117,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWarmupFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Warmup failed\nwork_id={0} | reason={1} | ex_type={2} | ex_message={3} | elapsed_ms={4}")]
+           Message = "The transcription model could not be warmed up\nwork_id={0} | reason={1} | ex_type={2} | ex_message={3} | elapsed_ms={4}")]
     public void WarmupFailed(string work_id, string reason, string ex_type, string ex_message, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtWarmupFailed, work_id, reason, ex_type, ex_message, elapsed_ms);
@@ -184,7 +184,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The transcription model is unavailable\nwork_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
+           Message = "The transcription model could not be loaded, so dictation cannot be transcribed\nwork_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
     public void ModelUnavailable(string work_id, string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtModelUnavailable, work_id, reason, ex_type, ex_message);

@@ -34,7 +34,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtUtteranceSkipped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "An utterance failed and dictation continued\nindex={0} | ex_type={1} | ex_message={2}")]
+           Message = "An utterance could not be transcribed, and dictation went on without it\nindex={0} | ex_type={1} | ex_message={2}")]
     public void UtteranceSkipped(int index, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtUtteranceSkipped, index, ex_type, ex_message);
@@ -65,7 +65,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtUtterancesDiscarded,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Utterances were discarded without transcription\nreason={0} | discarded={1}")]
+           Message = "Some speech was discarded without transcription, so its text is missing\nreason={0} | discarded={1}")]
     public void UtterancesDiscarded(string reason, int discarded)
     {
         if (IsEnabled()) WriteEvent(EvtUtterancesDiscarded, reason, discarded);

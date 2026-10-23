@@ -54,7 +54,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtDisposeWorkerJoinTimeout,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The worker did not stop in time and was left running as the process exits")]
+           Message = "The transcription worker did not stop in time and was left running as Deckle exits")]
     public void DisposeWorkerJoinTimeout()
     {
         if (IsEnabled()) WriteEvent(EvtDisposeWorkerJoinTimeout);
@@ -144,7 +144,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPageModelScanFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Scanning for models failed\nex_type={0} | ex_message={1}")]
+           Message = "Scanning for models failed, so the model list may be incomplete\nex_type={0} | ex_message={1}")]
     public void PageModelScanFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPageModelScanFailed, ex_type, ex_message);
