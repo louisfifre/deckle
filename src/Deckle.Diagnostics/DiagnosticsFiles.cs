@@ -20,7 +20,7 @@ public static class DiagnosticsFiles
     // as `<file>.<NNNN>` (JsonlRotationPolicy).
     private const string ArchiveFolder = "archive";
 
-    // The names these files had before v0.69. An install that predates the
+    // The names these files had before v0.68.1. An install that predates the
     // rename still holds them; RenameLegacyFiles gives them the current name
     // so the history reads as one file.
     private static readonly (string Legacy, string Current)[] _renamed =

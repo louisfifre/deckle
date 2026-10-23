@@ -56,7 +56,7 @@ internal static class AppDiagnosticsBootstrap
         _diagnosticsDirectory = diagnosticsDirectory;
 
         // Before any sink opens its file: the log and the trace still carry
-        // their pre-v0.69 names on an older install. No sink exists yet to say
+        // their pre-v0.68.1 names on an older install. No sink exists yet to say
         // how it went, so the host reports the result after AppStarting.
         LegacyFileRename = DiagnosticsFiles.RenameLegacyFiles(diagnosticsDirectory);
 

@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Deckle.Diagnostics.Tests;
 
-// An install from before v0.69 holds the log as journal.jsonl and the trace as
+// An install from before v0.68.1 holds the log as journal.jsonl and the trace as
 // app.jsonl. The first start after the update gives them, and their archives,
 // the current names, so each history reads as one file.
 [Trait("Category", "integration")]

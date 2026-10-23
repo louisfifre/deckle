@@ -156,7 +156,7 @@ public sealed partial class DeckleAppSource
     }
 
     // The log and the trace took their current names at this start, on an
-    // install that still had the pre-v0.69 ones (journal.jsonl, app.jsonl).
+    // install that still had the pre-v0.68.1 ones (journal.jsonl, app.jsonl).
     // Said once, so a reader of an older log knows where its history went.
     [Event(EvtLegacyLogFilesRenamed,
            Level = EventLevel.Informational,
