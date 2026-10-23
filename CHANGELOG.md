@@ -19,6 +19,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **settings:** Open the Playground from the title bar
 - **app:** Replace the verbosity notice with Settings and Playground buttons
 - **app:** Wire the Settings, Logs and Playground windows to one another
+- **diagnostics:** Line up a warning's pairs under its sentence in the text line
+- **logging:** Open the log window with Verbose rows hidden
 
 ### Changed
 
@@ -26,10 +28,69 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Move the HUD feedback sink into the host
 - **diagnostics:** Rename the log files to log.jsonl and trace.jsonl
 - **diagnostics:** Rename the Journal tag to Milestone
+- **anytype:** Shape log templates by level
+- **anytype-mcp:** Shape log templates by level
+- **app:** Shape log templates by level
+- **audio:** Shape log templates by level
+- **autocorrect:** Shape log templates by level
+- **chrono:** Shape log templates by level
+- **diagnostics:** Shape log templates by level
+- **home:** Shape log templates by level
+- **hud:** Shape log templates by level
+- **input:** Shape log templates by level
+- **precision-scroll:** Shape log templates by level
+- **trackpad:** Shape log templates by level
+- **lighting:** Shape log templates by level
+- **ambient:** Shape log templates by level
+- **llm:** Shape log templates by level
+- **modules:** Shape log templates by level
+- **notifications:** Shape log templates by level
+- **orchestration:** Shape log templates by level
+- **playground:** Shape log templates by level
+- **settings:** Shape log templates by level
+- **setup:** Shape log templates by level
+- **shell:** Shape log templates by level
+- **foreground:** Shape log templates by level
+- **taskbar-cover:** Shape log templates by level
+- **tray-menu:** Shape log templates by level
+- **speech:** Shape log templates by level
+- **transcription:** Shape log templates by level
+- **whisper:** Shape log templates by level
+- **vad:** Shape log templates by level
+- **vision:** Shape log templates by level
+- **anytype-mcp:** Say what each warning and error means for the person
+- **anytype:** Say what each warning and error means for the person
+- **app:** Say what each warning and error means for the person
+- **audio:** Say what each warning and error means for the person
+- **autocorrect:** Say what each warning and error means for the person
+- **diagnostics:** Say what each warning and error means for the person
+- **home:** Say what each warning and error means for the person
+- **hud:** Say what each warning and error means for the person
+- **precision-scroll:** Say what each warning and error means for the person
+- **trackpad:** Say what each warning and error means for the person
+- **input:** Say what each warning and error means for the person
+- **ambient:** Say what each warning and error means for the person
+- **lighting:** Say what each warning and error means for the person
+- **llm:** Say what each warning and error means for the person
+- **notifications:** Say what each warning and error means for the person
+- **orchestration:** Say what each warning and error means for the person
+- **settings:** Say what each warning and error means for the person
+- **setup:** Say what each warning and error means for the person
+- **foreground:** Say what each warning and error means for the person
+- **taskbar-cover:** Say what each warning and error means for the person
+- **shell:** Say what each warning and error means for the person
+- **speech:** Say what each warning and error means for the person
+- **whisper:** Say what each warning and error means for the person
+- **transcription:** Say what each warning and error means for the person
+- **vad:** Say what each warning and error means for the person
+- **vision:** Say what each warning and error means for the person
 
 ### Fixed
 
 - **app:** Keep a dictation put back on the clipboard in the log
+- **logging:** End every line of a copied two-line row the same way
+- **logging:** Call the opt-in log file the trace in Settings
+- **settings:** State the trace's real rotation in its consent dialog
 
 ## [0.67.1](https://github.com/louisfifre/deckle/compare/v0.59.0...v0.67.1) — 2026-10-23
 
