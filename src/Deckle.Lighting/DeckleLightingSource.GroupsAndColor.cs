@@ -28,7 +28,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtGroupsListed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "groups list | bridge_id={0} | count={1}")]
+           Message = "bridge_id={0} | count={1}")]
     public void GroupsListed(string bridge_id, int count)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -38,7 +38,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtGroupListed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "group | id={0} | name={1} | type={2} | lights={3}")]
+           Message = "id={0} | name={1} | type={2} | lights={3}")]
     public void GroupListed(string id, string name, string type, int lights)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -52,7 +52,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtSetColorFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "set colour failed | target={0} | status={1}")]
+           Message = "target={0} | status={1}")]
     public void SetColorFailed(string target, int status)
     {
         if (!IsHueDetailEnabled(Keywords.Push)) return;
@@ -62,7 +62,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtPushColorOff,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "push colour | {0} | rgb={1},{2},{3} | on=false | tt_ds={4}")]
+           Message = "target={0} | r={1} | g={2} | b={3} | tt_ds={4}")]
     public void PushColorOff(string target, int r, int g, int b, int tt_ds)
     {
         if (!IsHueDetailEnabled(Keywords.Push)) return;
@@ -72,7 +72,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtPushColor,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "push colour | {0} | rgb={1},{2},{3} | xy={4:F4},{5:F4} | bri={6} | tt_ds={7}")]
+           Message = "target={0} | r={1} | g={2} | b={3} | xy_x={4:F4} | xy_y={5:F4} | bri={6} | tt_ds={7}")]
     public void PushColor(string target, int r, int g, int b, double xy_x, double xy_y, int bri, int tt_ds)
     {
         if (!IsHueDetailEnabled(Keywords.Push)) return;

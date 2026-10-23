@@ -17,9 +17,9 @@ public sealed partial class DeckleLightingSource
     }
 
     [Event(EvtEntertainmentEmpty,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "entertainment list | count=0")]
+           Message = "The Hue bridge has no entertainment area")]
     public void EntertainmentEmpty()
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -29,7 +29,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEntertainmentV2Catalog,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "entertainment v2 catalog | services={0} | lights={1}")]
+           Message = "services={0} | lights={1}")]
     public void EntertainmentV2Catalog(int services, int lights)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -39,7 +39,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEntertainmentListed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "entertainment list | count={0}")]
+           Message = "count={0}")]
     public void EntertainmentListed(int count)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -49,7 +49,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEntertainmentArea,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "entertainment | id={0} | name={1} | lights={2}")]
+           Message = "id={0} | name={1} | lights={2}")]
     public void EntertainmentArea(string id, string name, int lights_count)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -59,7 +59,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtPlacementListed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "placement | ent_id={0} | light_id={1} | name={2} | x={3:F3} | y={4:F3} | z={5:F3}")]
+           Message = "ent_id={0} | light_id={1} | name={2} | x={3:F3} | y={4:F3} | z={5:F3}")]
     public void PlacementListed(string ent_id, string light_id, string name, double x, double y, double z)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -71,7 +71,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtClipV2RequestFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A CLIP v2 request failed | method={0} | path={1} | status={2} | description={3}")]
+           Message = "A CLIP v2 request failed\nmethod={0} | path={1} | status={2} | description={3}")]
     public void ClipV2RequestFailed(string method, string path, int status, string description)
     {
         if (IsEnabled()) WriteEvent(EvtClipV2RequestFailed, method, path, status, description);
@@ -81,7 +81,7 @@ public sealed partial class DeckleLightingSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Push),
            Tags = ObservationTags.Milestone,
-           Message = "Hue output selected | output={0} | reason={1}")]
+           Message = "Hue output selected")]
     public void LightOutputSelected(string output, string reason)
     {
         if (IsEnabled()) WriteEvent(EvtLightOutputSelected, output, reason);
@@ -90,7 +90,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEntertainmentRestFallback,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Hue Entertainment is unavailable, using the REST fallback | reason={0} | ex_type={1} | ex_message={2}")]
+           Message = "Hue Entertainment is unavailable, using the REST fallback\nreason={0} | ex_type={1} | ex_message={2}")]
     public void EntertainmentRestFallback(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtEntertainmentRestFallback, reason, ex_type, ex_message);
@@ -108,7 +108,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEntertainmentPrePrimeDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "entertainment pre-prime | ent_id={0} | lights={1} | rgb=1,1,1")]
+           Message = "ent_id={0} | lights={1}")]
     public void EntertainmentPrePrimeDetail(string ent_id, int lights)
     {
         if (!IsHueDetailEnabled(Keywords.Push)) return;
@@ -118,7 +118,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEntertainmentPrePrimeFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Preparing Hue Entertainment lights failed | ex_type={0} | ex_message={1}")]
+           Message = "Preparing Hue Entertainment lights failed\nex_type={0} | ex_message={1}")]
     public void EntertainmentPrePrimeFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtEntertainmentPrePrimeFailed, ex_type, ex_message);
@@ -136,7 +136,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEntertainmentStreamingStartingDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "entertainment start | ent_id={0} | name={1} | channels={2}")]
+           Message = "ent_id={0} | name={1} | channels={2}")]
     public void EntertainmentStreamingStartingDetail(string ent_id, string name, int channels)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -158,7 +158,7 @@ public sealed partial class DeckleLightingSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
            Tags = ObservationTags.Milestone,
-           Message = "Hue Entertainment session opened | elapsed_ms={0}")]
+           Message = "Hue Entertainment session opened")]
     public void EntertainmentTransportConnected(long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtEntertainmentTransportConnected, elapsed_ms);
@@ -168,7 +168,7 @@ public sealed partial class DeckleLightingSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
            Tags = ObservationTags.Milestone,
-           Message = "Hue Entertainment session could not open | stage={0} | ex_type={1} | ex_message={2} | elapsed_ms={3}")]
+           Message = "Hue Entertainment session could not open\nstage={0} | ex_type={1} | ex_message={2} | elapsed_ms={3}")]
     public void EntertainmentConnectFailed(string stage, string ex_type, string ex_message, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtEntertainmentConnectFailed, stage, ex_type, ex_message, elapsed_ms);
@@ -179,7 +179,7 @@ public sealed partial class DeckleLightingSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
            Tags = ObservationTags.Milestone,
-           Message = "Hue Entertainment session opening cancelled | stage={0} | elapsed_ms={1}")]
+           Message = "Hue Entertainment session opening cancelled")]
     public void EntertainmentConnectCancelled(string stage, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtEntertainmentConnectCancelled, stage, elapsed_ms);
@@ -189,7 +189,7 @@ public sealed partial class DeckleLightingSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
            Tags = ObservationTags.Milestone,
-           Message = "Hue Entertainment session closed | outcome={0} | duration_ms={1} | frames_sent={2} | send_failures={3}")]
+           Message = "Hue Entertainment session closed")]
     public void EntertainmentSessionClosed(string outcome, long duration_ms, long frames_sent, int send_failures)
     {
         if (IsEnabled()) WriteEvent(EvtEntertainmentSessionClosed, outcome, duration_ms, frames_sent, send_failures);
@@ -200,7 +200,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEntertainmentStreamingStopFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Resource),
-           Message = "Hue Entertainment streaming could not be stopped | ex_type={0} | ex_message={1}")]
+           Message = "Hue Entertainment streaming could not be stopped\nex_type={0} | ex_message={1}")]
     public void EntertainmentStreamingStopFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtEntertainmentStreamingStopFailed, ex_type, ex_message);
@@ -209,7 +209,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEntertainmentStreamPrimed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "entertainment primed | ent_id={0} | channels={1} | rgb=0,0,0")]
+           Message = "ent_id={0} | channels={1}")]
     public void EntertainmentStreamPrimed(string ent_id, int channels)
     {
         if (!IsHueDetailEnabled(Keywords.Push)) return;

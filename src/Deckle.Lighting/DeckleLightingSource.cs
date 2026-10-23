@@ -144,7 +144,7 @@ public sealed partial class DeckleLightingSource : DeckleEventSource
     [Event(EvtHueStepFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Resource),
-           Message = "hue step failed | step={0} | ex_type={1} | ex_message={2}")]
+           Message = "step={0} | ex_type={1} | ex_message={2}")]
     public void HueStepFailedDetail(string step, string ex_type, string ex_message)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline | Keywords.Resource)) return;

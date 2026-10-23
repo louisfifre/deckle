@@ -10,7 +10,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtIdentifyFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Identifying a light failed | phase={0} | light_id={1} | status={2}")]
+           Message = "Identifying a light failed\nphase={0} | light_id={1} | status={2}")]
     public void IdentifyFailed(string phase, string light_id, int status)
     {
         if (IsEnabled()) WriteEvent(EvtIdentifyFailed, phase, light_id, status);
@@ -19,7 +19,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtLightIdentified,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "light identify | light_id={0} | alert={1} | phase={2}")]
+           Message = "light_id={0} | alert={1} | phase={2}")]
     public void LightIdentified(string light_id, string alert, string phase)
     {
         if (!IsHueDetailEnabled(Keywords.Push)) return;
@@ -40,7 +40,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtListingLightsInGroupDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "listing lights | group_id={0}")]
+           Message = "group_id={0}")]
     public void ListingLightsInGroupDetail(string group_id)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -50,7 +50,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtLightsListedEmpty,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "lights list | group_id={0} | count=0")]
+           Message = "group_id={0}")]
     public void LightsListedEmpty(string group_id)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -69,7 +69,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtBridgeReturnedNoLightsDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "no lights payload | group_id={0}")]
+           Message = "group_id={0}")]
     public void BridgeReturnedNoLightsDetail(string group_id)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -79,7 +79,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtLightsListed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "lights list | group_id={0} | count={1}")]
+           Message = "group_id={0} | count={1}")]
     public void LightsListed(string group_id, int count)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -89,7 +89,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtLightListed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "light | id={0} | name={1} | type={2} | reachable={3}")]
+           Message = "id={0} | name={1} | type={2} | reachable={3}")]
     public void LightListed(string id, string name, string type, bool reachable)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -99,9 +99,9 @@ public sealed partial class DeckleLightingSource
     // ── v2 id maps + EventStream ────────────────────────────────────────
 
     [Event(EvtFetchingV2IdMaps,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "fetching v2 id maps | resources=light,grouped_light")]
+           Message = "Fetching the Hue light and group ids")]
     public void FetchingV2IdMaps()
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -111,7 +111,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtV2IdMapsFetched,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "v2 id maps | lights={0} | grouped_lights={1}")]
+           Message = "lights={0} | grouped_lights={1}")]
     public void V2IdMapsFetched(int lights, int grouped_lights)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -119,9 +119,9 @@ public sealed partial class DeckleLightingSource
     }
 
     [Event(EvtEventStreamStarting,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
-           Message = "event stream subscriber starting")]
+           Message = "The Hue event stream is starting")]
     public void EventStreamStarting()
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline | Keywords.Lifecycle)) return;
@@ -133,7 +133,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEventStreamReconnecting,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "event stream reconnect | reason={0}")]
+           Message = "reason={0}")]
     public void EventStreamReconnecting(string reason)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
@@ -143,7 +143,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEventStreamStopped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
-           Message = "event stream subscriber stopped | outcome={0} | duration_ms={1} | ex_type={2} | ex_message={3}")]
+           Message = "outcome={0} | duration_ms={1} | ex_type={2} | ex_message={3}")]
     public void EventStreamStopped(string outcome, long duration_ms, string ex_type, string ex_message)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline | Keywords.Lifecycle)) return;
@@ -153,7 +153,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEventStreamIncident,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Hue event monitoring is unavailable, external changes may be overwritten | duration_ms={0} | failures={1} | reason={2} | ex_type={3} | ex_message={4}")]
+           Message = "Hue event monitoring is unavailable, external changes may be overwritten\nduration_ms={0} | failures={1} | reason={2} | ex_type={3} | ex_message={4}")]
     public void EventStreamIncident(
         long duration_ms,
         int failures,
@@ -188,7 +188,7 @@ public sealed partial class DeckleLightingSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "Hue event monitoring stopped while it was unavailable | duration_ms={0} | failures={1}")]
+           Message = "Hue event monitoring stopped while it was unavailable")]
     public void EventStreamIncidentAbandoned(long duration_ms, int failures)
     {
         if (IsEnabled()) WriteEvent(EvtEventStreamIncidentAbandoned, duration_ms, failures);
@@ -197,7 +197,7 @@ public sealed partial class DeckleLightingSource
     [Event(EvtEventStreamRecoveryDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "event stream restored | duration_ms={0} | failures={1}")]
+           Message = "duration_ms={0} | failures={1}")]
     public void EventStreamRecoveryDetail(long duration_ms, int failures)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
