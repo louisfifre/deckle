@@ -1,3 +1,4 @@
+using Deckle.Diagnostics;
 using Deckle.Input;
 
 namespace Deckle.Input.PrecisionScroll;
@@ -269,6 +270,9 @@ public sealed class PrecisionScrollRuntime : IDisposable
         _state = State.StaysOff;
         _incidentReason = reason;
         DecklePrecisionScrollSource.Log.FellBackToNativeWheel(reason);
+        // The person's gesture, toggling the switch, is what ends it: the tray
+        // shows it until then.
+        UserIncidentRegistry.Instance.Open(UserIncidents.PrecisionScroll, reason);
     }
 
     private void CloseIncident()
@@ -277,5 +281,6 @@ public sealed class PrecisionScrollRuntime : IDisposable
         if (previous is null) return;
         _incidentReason = null;
         DecklePrecisionScrollSource.Log.FallbackRecovered(previous);
+        UserIncidentRegistry.Instance.Close(UserIncidents.PrecisionScroll);
     }
 }
