@@ -88,6 +88,35 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.False(engine.IsBusy);
     }
 
+    // The tray dot keeps a failed microphone shown after the HUD fades, until
+    // the engine's next capture starts. The collection runs alone, so the
+    // process-wide registry sees only this test.
+    [Fact]
+    [Trait("Category", "observability")]
+    public async Task AMicrophoneThatCannotOpenIsAUserIncidentUntilTheNextCaptureStarts()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        UserIncidentRegistry.Instance.Close(UserIncidents.Microphone);
+        var capture = new ScriptedMicrophoneCapture(utteranceCount: 2) { ProbeFails = true };
+        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            backend,
+            capture,
+            new RecordingClipboardWriter());
+
+        Assert.Equal(ToggleResult.IgnoredBusy, engine.RequestToggle(shouldPaste: false));
+
+        UserIncident incident = Assert.Single(
+            UserIncidentRegistry.Instance.Snapshot(), i => i.Id == UserIncidents.Microphone);
+        Assert.Equal("probe", incident.Reason);
+
+        capture.ProbeFails = false;
+        await RunOneTakeAsync(engine, backend, testCancellation);
+
+        Assert.False(UserIncidentRegistry.Instance.IsOpen(UserIncidents.Microphone));
+    }
+
     // 2026-10-21: the warm-up decoded a subtitle credit on silence, and the
     // backend primed the first utterance of the take with it.
     [Fact]
@@ -683,8 +712,12 @@ public sealed class LiveTranscriptionPipelineTests
         public CancellationToken RecordToken { get; private set; }
         public long StopObservedTimestamp { get; private set; }
 
-        public ProbeResult Probe(int deviceId) =>
-            new(true, MicErrorKind.None, 0);
+        // Set to make the next probes fail the way an unplugged microphone does.
+        public bool ProbeFails { get; set; }
+
+        public ProbeResult Probe(int deviceId) => ProbeFails
+            ? new(false, MicErrorKind.NotDetected, 2)
+            : new(true, MicErrorKind.None, 0);
 
         public CaptureResult Record(
             IAudioRecordingHost host,

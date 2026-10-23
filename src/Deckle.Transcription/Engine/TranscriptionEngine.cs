@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Deckle.Audio;
 using Deckle.Catalog;
 using Deckle.Core;
+using Deckle.Diagnostics;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Deckle.Transcription;
@@ -190,12 +191,18 @@ public sealed partial class TranscriptionEngine : IDisposable
         if (Interlocked.Exchange(ref _microphoneIncidentOpen, 1) != 0) return;
         // MMSYSERR codes are small, so the cast keeps the value.
         DeckleWhispSource.Log.MicrophoneUnavailable(phase, unchecked((int)mmsysErr));
+        // The HUD told the person at the take; the tray keeps it shown after the
+        // HUD fades. It closes only on the engine's next capture: plugging a
+        // microphone in, or a successful test in Settings, does not close it
+        // until the next recording (no device-change watch exists).
+        UserIncidentRegistry.Instance.Open(UserIncidents.Microphone, phase);
     }
 
     private void CloseMicrophoneIncident()
     {
         if (Interlocked.Exchange(ref _microphoneIncidentOpen, 0) == 0) return;
         DeckleWhispSource.Log.MicrophoneRecovered();
+        UserIncidentRegistry.Instance.Close(UserIncidents.Microphone);
     }
 
     private void OpenModelIncident(string workId, string reason, string exType, string exMessage)
@@ -209,12 +216,19 @@ public sealed partial class TranscriptionEngine : IDisposable
         // reads this between the exchange above and here.
         _modelIncidentWorkId = workId;
         DeckleWhispSource.Log.ModelUnavailable(workId, reason, exType, exMessage);
+        // A load_exception (GPU, driver) is not always the person's to fix, but
+        // the next good load closes it and the Whisper page is still where to look.
+        UserIncidentRegistry.Instance.Open(UserIncidents.WhisperModel, reason);
     }
 
     // The id of the load whose failure opened the incident, which its recovery
     // repeats so the file pairs the two; null when no incident was open.
     private string? CloseModelIncident()
-        => Interlocked.Exchange(ref _modelIncidentOpen, 0) != 0 ? _modelIncidentWorkId : null;
+    {
+        if (Interlocked.Exchange(ref _modelIncidentOpen, 0) == 0) return null;
+        UserIncidentRegistry.Instance.Close(UserIncidents.WhisperModel);
+        return _modelIncidentWorkId;
+    }
 
     private System.Diagnostics.Stopwatch? _recordingSw;
 
