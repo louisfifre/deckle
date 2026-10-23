@@ -1527,6 +1527,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Modules/
 │   │   │   └── SettingsModuleRegistry.cs
 │   │   ├── Pages/
+│   │   │   ├── GeneralPage.ToastsElevated.cs
 │   │   │   ├── GeneralPage.xaml
 │   │   │   ├── GeneralPage.xaml.cs
 │   │   │   ├── HomePage.xaml

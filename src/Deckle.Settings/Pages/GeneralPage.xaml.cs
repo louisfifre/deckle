@@ -33,6 +33,7 @@ public sealed partial class GeneralPage : Page
             composer!.DirtyChanged += (_, _) => GateResetAll();
 
         ViewModel.DataFolderMoveRequested += OnDataFolderMoveRequested;
+        WireToastsElevatedInfoBar();
 
         LoadAndSync();
     }

@@ -413,6 +413,14 @@
        Second page in the Settings nav, after Home. Page header, then the
        untitled top cards (theme, start with Windows, start elevated), the
        Updates section and the Application data section. -->
+  <!-- Open while Deckle runs as administrator: Windows shows no toast from
+       an elevated process. "Start elevated" names the switch below it. -->
+  <data name="GeneralToastsElevatedInfoBar.Title" xml:space="preserve">
+    <value>Notifications are off</value>
+  </data>
+  <data name="GeneralToastsElevatedInfoBar.Message" xml:space="preserve">
+    <value>Windows doesn't show notifications from apps running as administrator. To get them back, turn off Start elevated if it's on, then restart Deckle without administrator rights.</value>
+  </data>
   <data name="GeneralAppThemeCard.Header" xml:space="preserve">
     <value>App theme</value>
   </data>
