@@ -99,7 +99,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Raw input host started | touchpads={0}")]
+           Message = "Raw input host started")]
     public void HostStarted(int touchpads)
     {
         if (IsEnabled()) WriteEvent(EvtHostStarted, touchpads);
@@ -108,7 +108,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtHostStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "raw input host window | hwnd={0} | thread_id={1}")]
+           Message = "hwnd={0} | thread_id={1}")]
     public void HostStartedDetail(long hwnd, int thread_id)
     {
         if (IsEnabled()) WriteEvent(EvtHostStartedDetail, hwnd, thread_id);
@@ -121,7 +121,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Raw input host stopped | outcome={0} | reason={1}")]
+           Message = "Raw input host stopped")]
     public void HostStopped(string outcome, string reason)
     {
         if (IsEnabled()) WriteEvent(EvtHostStopped, outcome, reason);
@@ -131,7 +131,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Raw input host failed to start | ex_type={0} | ex_message={1} | win32_error={2}")]
+           Message = "Raw input host failed to start\nex_type={0} | ex_message={1} | win32_error={2}")]
     public void HostStartFailed(string ex_type, string ex_message, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtHostStartFailed, ex_type, ex_message, win32_error);
@@ -151,7 +151,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtTouchpadDetectedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "touchpad | name={0} | vid=0x{1:X4} | pid=0x{2:X4} | x=[{3},{4}] | y=[{5},{6}] | slots={7} | report_bytes={8}")]
+           Message = "name={0} | vid=0x{1:X4} | pid=0x{2:X4} | x=[{3},{4}] | y=[{5},{6}] | slots={7} | report_bytes={8}")]
     public void TouchpadDetectedDetail(
         string name, uint vendor_id, uint product_id,
         int x_min, int x_max, int y_min, int y_max,
@@ -194,7 +194,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtTouchpadEnumerationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "The touchpad probe could not list the input devices | step={0} | win32_error={1}")]
+           Message = "The touchpad probe could not list the input devices\nstep={0} | win32_error={1}")]
     public void TouchpadEnumerationFailed(string step, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtTouchpadEnumerationFailed, step, win32_error);
@@ -204,7 +204,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtParserCreateFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Touchpad parser could not be created | reason={0}")]
+           Message = "Touchpad parser could not be created\nreason={0}")]
     public void ParserCreateFailed(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtParserCreateFailed, reason);
@@ -215,7 +215,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtFrameRollup,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "frames | count={0} | rate_hz={1} | max_gap_ms={2} | max_tips={3} | fragmented={4} | orphans={5} | flushes={6} | scan_mismatches={7}")]
+           Message = "count={0} | rate_hz={1} | max_gap_ms={2} | max_tips={3} | fragmented={4} | orphans={5} | flushes={6} | scan_mismatches={7}")]
     public void FrameRollup(
         int count, double rate_hz, double max_gap_ms, int max_tips,
         int fragmented, long orphans, long flushes, long scan_mismatches)
@@ -241,7 +241,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtRecordingStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "frame recording | path={0}")]
+           Message = "path={0}")]
     public void RecordingStartedDetail(string path)
     {
         if (IsEnabled()) WriteEvent(EvtRecordingStartedDetail, PathRedaction.Redact(path));
@@ -253,7 +253,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
            Tags = ObservationTags.Milestone,
-           Message = "Frame recording stopped | outcome={0} | frames={1}")]
+           Message = "Frame recording stopped")]
     public void RecordingStopped(string outcome, long frames)
     {
         if (IsEnabled()) WriteEvent(EvtRecordingStopped, outcome, frames);
@@ -262,7 +262,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtRecordingStoppedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "frame recording closed | path={0} | duration_s={1} | bytes={2}")]
+           Message = "path={0} | duration_s={1} | bytes={2}")]
     public void RecordingStoppedDetail(string path, double duration_s, long bytes)
     {
         if (IsEnabled()) WriteEvent(EvtRecordingStoppedDetail, PathRedaction.Redact(path), duration_s, bytes);
@@ -271,7 +271,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtRecordingFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Frame recording encountered an error | ex_type={0} | ex_message={1}")]
+           Message = "Frame recording encountered an error\nex_type={0} | ex_message={1}")]
     public void RecordingFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRecordingFailed, ex_type, PathRedaction.Redact(ex_message));
@@ -282,7 +282,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtRecordingSizeUnavailable,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "recording size unavailable | recording={0} | ex_type={1} | ex_message={2}")]
+           Message = "recording={0} | ex_type={1} | ex_message={2}")]
     public void RecordingSizeUnavailable(string recording, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtRecordingSizeUnavailable, recording, ex_type, PathRedaction.Redact(ex_message));
@@ -296,7 +296,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Keyboard input host started | mouse_hook={0}")]
+           Message = "Keyboard input host started")]
     public void KeyboardHostStarted(bool mouse_hook)
     {
         if (IsEnabled()) WriteEvent(EvtKeyboardHostStarted, mouse_hook);
@@ -305,7 +305,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtKeyboardHostStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "keyboard input host window | hwnd={0} | thread_id={1}")]
+           Message = "hwnd={0} | thread_id={1}")]
     public void KeyboardHostStartedDetail(long hwnd, int thread_id)
     {
         if (IsEnabled()) WriteEvent(EvtKeyboardHostStartedDetail, hwnd, thread_id);
@@ -315,7 +315,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Keyboard input host stopped | outcome={0} | reason={1}")]
+           Message = "Keyboard input host stopped")]
     public void KeyboardHostStopped(string outcome, string reason)
     {
         if (IsEnabled()) WriteEvent(EvtKeyboardHostStopped, outcome, reason);
@@ -325,7 +325,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Keyboard input host failed to start | ex_type={0} | ex_message={1} | win32_error={2}")]
+           Message = "Keyboard input host failed to start\nex_type={0} | ex_message={1} | win32_error={2}")]
     public void KeyboardHostStartFailed(string ex_type, string ex_message, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtKeyboardHostStartFailed, ex_type, ex_message, win32_error);
@@ -339,7 +339,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtInputPumpFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Input host message pump stopped unexpectedly | host={0} | reason={1} | win32_error={2} | ex_type={3} | ex_message={4}")]
+           Message = "Input host message pump stopped unexpectedly\nhost={0} | reason={1} | win32_error={2} | ex_type={3} | ex_message={4}")]
     public void InputPumpFailed(string host, string reason, int win32_error, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtInputPumpFailed, host, reason, win32_error, ex_type, ex_message);
@@ -348,7 +348,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtHostStopTimedOut,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Input host thread did not stop in time | host={0} | timeout_ms={1}")]
+           Message = "Input host thread did not stop in time\nhost={0} | timeout_ms={1}")]
     public void HostStopTimedOut(string host, int timeout_ms)
     {
         if (IsEnabled()) WriteEvent(EvtHostStopTimedOut, host, timeout_ms);
@@ -360,7 +360,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtKeyboardRollup,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "keyboard activity | keys={0} | injected_filtered={1} | pointer_downs={2} | wheel={3} | focus_changes={4}")]
+           Message = "keys={0} | injected_filtered={1} | pointer_downs={2} | wheel={3} | focus_changes={4}")]
     public void KeyboardRollup(int keys, int injected_filtered, int pointer_downs, int wheel, int focus_changes)
     {
         if (!IsAutocorrectDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
@@ -372,7 +372,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtMouseHookFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Mouse wheel hook failed to start | win32_error={0}")]
+           Message = "Mouse wheel hook failed to start\nwin32_error={0}")]
     public void MouseHookFailed(int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtMouseHookFailed, win32_error);
@@ -384,7 +384,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtMouseHookSilenceStarted,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Mouse wheel hook stopped receiving input | reason={0} | unpaired={1}")]
+           Message = "Mouse wheel hook stopped receiving input\nreason={0} | unpaired={1}")]
     public void MouseHookSilenceStarted(string reason, int unpaired)
     {
         if (IsEnabled()) WriteEvent(EvtMouseHookSilenceStarted, reason, unpaired);
@@ -395,7 +395,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
            Tags = ObservationTags.Milestone,
-           Message = "Mouse wheel hook receives input again | reason={0} | unpaired={1}")]
+           Message = "Mouse wheel hook receives input again")]
     public void MouseHookSilenceEnded(string reason, int unpaired)
     {
         if (IsEnabled()) WriteEvent(EvtMouseHookSilenceEnded, reason, unpaired);
@@ -408,7 +408,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtInputRelayDegraded,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Keyboard input host is losing input relays | reason={0} | win32_error={1} | occurrences={2}")]
+           Message = "Keyboard input host is losing input relays\nreason={0} | win32_error={1} | occurrences={2}")]
     public void InputRelayDegraded(string reason, int win32_error, int occurrences)
     {
         if (IsEnabled()) WriteEvent(EvtInputRelayDegraded, reason, win32_error, occurrences);
@@ -419,7 +419,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "Keyboard input host relays input again | reason={0} | occurrences={1}")]
+           Message = "Keyboard input host relays input again")]
     public void InputRelayRecovered(string reason, int occurrences)
     {
         if (IsEnabled()) WriteEvent(EvtInputRelayRecovered, reason, occurrences);
@@ -442,7 +442,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtWheelRecordingStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "wheel recording | path={0}")]
+           Message = "path={0}")]
     public void WheelRecordingStartedDetail(string path)
     {
         if (IsEnabled()) WriteEvent(EvtWheelRecordingStartedDetail, PathRedaction.Redact(path));
@@ -452,7 +452,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
            Tags = ObservationTags.Milestone,
-           Message = "Wheel recording stopped | outcome={0} | events={1}")]
+           Message = "Wheel recording stopped")]
     public void WheelRecordingStopped(string outcome, long events)
     {
         if (IsEnabled()) WriteEvent(EvtWheelRecordingStopped, outcome, events);
@@ -461,7 +461,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtWheelRecordingStoppedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "wheel recording closed | path={0} | duration_s={1} | bytes={2}")]
+           Message = "path={0} | duration_s={1} | bytes={2}")]
     public void WheelRecordingStoppedDetail(string path, double duration_s, long bytes)
     {
         if (IsEnabled()) WriteEvent(EvtWheelRecordingStoppedDetail, PathRedaction.Redact(path), duration_s, bytes);
@@ -470,7 +470,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtWheelRecordingFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Wheel recording encountered an error | ex_type={0} | ex_message={1}")]
+           Message = "Wheel recording encountered an error\nex_type={0} | ex_message={1}")]
     public void WheelRecordingFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtWheelRecordingFailed, ex_type, PathRedaction.Redact(ex_message));
@@ -479,7 +479,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtWheelDeviceObserved,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "wheel device | dev={0} | name={1} | vid=0x{2:X4} | pid=0x{3:X4}")]
+           Message = "dev={0} | name={1} | vid=0x{2:X4} | pid=0x{3:X4}")]
     public void WheelDeviceObserved(int dev, string name, uint vendor_id, uint product_id)
     {
         if (IsEnabled()) WriteEvent(EvtWheelDeviceObserved, dev, name, vendor_id, product_id);
@@ -489,7 +489,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The mouse wheel settings need attention | {0}")]
+           Message = "The mouse wheel settings store worked around a problem\ndetail={0}")]
     public void SettingsLoadWarning(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
@@ -498,7 +498,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtSettingsLoadError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The mouse wheel settings could not be saved | {0}")]
+           Message = "The mouse wheel settings could not be saved or applied\ndetail={0}")]
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
