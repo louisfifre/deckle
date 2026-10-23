@@ -32,7 +32,7 @@ public sealed class DeckleChronoSource : DeckleEventSource
     [Event(EvtPilotEmittedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "pilot emitted | note={0}")]
+           Message = "note={0}")]
     public void PilotEmittedDetail(string note)
     {
         if (IsEnabled()) WriteEvent(EvtPilotEmittedDetail, note);
@@ -45,7 +45,7 @@ public sealed class DeckleChronoSource : DeckleEventSource
     [Event(EvtClockStopped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "clock stopped | elapsed_ms={0}")]
+           Message = "elapsed_ms={0}")]
     public void ClockStopped(long elapsed_ms)
     {
         if (OperationalLogAdmission.IsScopedDetailEnabled(
