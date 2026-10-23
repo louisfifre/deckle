@@ -89,7 +89,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Precision scrolling is unavailable\nreason={0} | win32_error={1} | ex_type={2} | ex_message={3}")]
+           Message = "Precision scrolling could not start, so the wheel scrolls natively\nreason={0} | win32_error={1} | ex_type={2} | ex_message={3}")]
     public void Unavailable(string reason, int win32_error, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtUnavailable, reason, win32_error, ex_type, ex_message);
@@ -99,7 +99,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Touchpad direction could not be read\nwin32_error={0}")]
+           Message = "The touchpad scroll direction could not be read, so precision scrolling did not start\nwin32_error={0}")]
     public void TouchpadSettingsUnavailable(int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtTouchpadSettingsUnavailable, win32_error);
@@ -111,7 +111,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtInjectionFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Touchpad injection failed, precision scrolling stopped\naction={0} | win32_error={1}")]
+           Message = "Windows refused a touchpad frame, so precision scrolling stopped and the wheel scrolls natively\naction={0} | win32_error={1}")]
     public void InjectionFailed(string action, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtInjectionFailed, action, win32_error);
@@ -120,7 +120,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtWorkerFaulted,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Precision scrolling stopped on an unexpected error\nex_type={0} | ex_message={1}")]
+           Message = "Precision scrolling stopped on an unexpected error, so the wheel scrolls natively\nex_type={0} | ex_message={1}")]
     public void WorkerFaulted(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtWorkerFaulted, ex_type, ex_message);
@@ -129,7 +129,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtQueueOverloaded,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Precision scrolling stopped to protect input latency\nreason={0} | queue_capacity={1}")]
+           Message = "Precision scrolling stopped to protect input latency, so the wheel scrolls natively\nreason={0} | queue_capacity={1}")]
     public void QueueOverloaded(string reason, int queue_capacity)
     {
         if (IsEnabled()) WriteEvent(EvtQueueOverloaded, reason, queue_capacity);
@@ -140,7 +140,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
     [Event(EvtInactive,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Precision scrolling cannot intercept the wheel\nreason={0}")]
+           Message = "Precision scrolling cannot intercept the wheel, so the wheel scrolls natively\nreason={0}")]
     public void Inactive(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtInactive, reason);
@@ -176,7 +176,7 @@ public sealed class DecklePrecisionScrollSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Precision scrolling stopped again and stays off, the wheel scrolls natively\nreason={0}")]
+           Message = "Precision scrolling stopped again after its restart, so the wheel scrolls natively until the switch is turned off and on\nreason={0}")]
     public void FellBackToNativeWheel(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtFellBackToNativeWheel, reason);
