@@ -62,6 +62,12 @@ public partial class App
         else
         {
             context.Skip(ModuleIds.Transcription, engineSkip);
+            // A present module that cannot run is the person's to fix, from the
+            // Whisper page that provisions the runtime and the models. Nothing
+            // closes it in this process: the engine is composed only at start,
+            // so what fixes it is the restart that follows provisioning.
+            if (engineSkip != SkipNotPresent)
+                UserIncidentRegistry.Instance.Open(UserIncidents.WhisperModel, engineSkip);
         }
 
         // Constructed dormant: nothing calls Speak yet.
