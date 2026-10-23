@@ -17,22 +17,15 @@ namespace Deckle.TestSupport;
 // The values travel in the payload whatever the template says, so an
 // Informational sentence loses nothing by showing none of them.
 //
-// Templates written before the doctrine are listed by each suite with a reason,
-// keyed "SourceType.EventName". The check fails on a template that breaks the
-// doctrine and is not listed, on a listed one that now follows it (the entry has
-// gone stale), and on a listed name that matches no event.
+// A template that cannot follow the doctrine is listed by its suite with the
+// reason it cannot, keyed "SourceType.EventName". The check fails on a template
+// that breaks the doctrine and is not listed, on a listed one that now follows it
+// (the entry has gone stale), and on a listed name that matches no event.
 public static partial class TemplateDoctrine
 {
-    // The reason most listed templates carry: they predate the doctrine and the
-    // rewrite pass of delivery 2 brings them into it.
-    public const string PreDoctrine = "pre-doctrine template, rewritten by delivery 2";
-
-    // A Verbose event with no payload has no pair to show, so no Verbose
-    // template can fit it: delivery 2 gives it a payload or another level.
-    public const string VerboseWithoutPayload = "Verbose event without a payload, delivery 2 gives it one or another level";
-
-    // An event declared without a Message renders as its bare name.
-    public const string NoMessage = "no Message, delivery 2 writes one";
+    // What an unlisted breach asks for when it is reported as a line for the
+    // list: the reason is written by hand, or the template is reshaped.
+    public const string ReasonToWrite = "why this template cannot follow the doctrine";
 
     public static string? Breach(EventLevel level, string? message, int payloadCount)
     {
@@ -86,12 +79,7 @@ public static partial class TemplateDoctrine
                 bool listed = knownBreaches.ContainsKey(key);
 
                 if (breach is not null && !listed)
-                {
-                    string reason = attribute.Message is null ? nameof(NoMessage)
-                        : attribute.Level == EventLevel.Verbose && payloadCount == 0 ? nameof(VerboseWithoutPayload)
-                        : nameof(PreDoctrine);
-                    failures.Add($"{{ \"{key}\", TemplateDoctrine.{reason} }}, // {attribute.Level}: {breach}");
-                }
+                    failures.Add($"{{ \"{key}\", \"{ReasonToWrite}\" }}, // {attribute.Level}: {breach}");
                 else if (breach is null && listed)
                 {
                     failures.Add($"stale: {key} now follows the doctrine, remove it from the list");

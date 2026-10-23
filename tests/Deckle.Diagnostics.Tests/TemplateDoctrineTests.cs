@@ -54,7 +54,7 @@ public sealed class TemplateDoctrineTests
             [typeof(FakeSource)], new Dictionary<string, string>());
 
         string failure = Assert.Single(failures);
-        Assert.StartsWith("{ \"FakeSource.Unshaped\", TemplateDoctrine.PreDoctrine },", failure);
+        Assert.StartsWith("{ \"FakeSource.Unshaped\", \"" + TemplateDoctrine.ReasonToWrite + "\" },", failure);
     }
 
     [Fact]
@@ -62,7 +62,7 @@ public sealed class TemplateDoctrineTests
     {
         IReadOnlyList<string> failures = TemplateDoctrine.Violations(
             [typeof(FakeSource)],
-            new Dictionary<string, string> { ["FakeSource.Unshaped"] = TemplateDoctrine.PreDoctrine });
+            new Dictionary<string, string> { ["FakeSource.Unshaped"] = "a reason" });
 
         Assert.Empty(failures);
     }
@@ -74,8 +74,8 @@ public sealed class TemplateDoctrineTests
             [typeof(FakeSource)],
             new Dictionary<string, string>
             {
-                ["FakeSource.Unshaped"] = TemplateDoctrine.PreDoctrine,
-                ["FakeSource.Shaped"] = TemplateDoctrine.PreDoctrine,
+                ["FakeSource.Unshaped"] = "a reason",
+                ["FakeSource.Shaped"] = "a reason",
             });
 
         string failure = Assert.Single(failures);
@@ -89,8 +89,8 @@ public sealed class TemplateDoctrineTests
             [typeof(FakeSource)],
             new Dictionary<string, string>
             {
-                ["FakeSource.Unshaped"] = TemplateDoctrine.PreDoctrine,
-                ["FakeSource.Renamed"] = TemplateDoctrine.PreDoctrine,
+                ["FakeSource.Unshaped"] = "a reason",
+                ["FakeSource.Renamed"] = "a reason",
             });
 
         string failure = Assert.Single(failures);
