@@ -18,7 +18,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscriptionPreprocessed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "pre-processing applied | input_dbfs={0:F1} | output_dbfs={1:F1} | makeup_db={2:+0.0;-0.0} | output_peak={3:F3}")]
+           Message = "input_dbfs={0:F1} | output_dbfs={1:F1} | makeup_db={2:+0.0;-0.0} | output_peak={3:F3}")]
     public void TranscriptionPreprocessed(double input_dbfs, double output_dbfs, double makeup_db, double output_peak)
     {
         // Once per utterance on the streaming path.
@@ -30,7 +30,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Verbose,
            Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "Post-DSP telemetry over {0:F1}s ({1} samples @20Hz): min={2:F1} p10={3:F1} p25={4:F1} p50={5:F1} p75={6:F1} p90={7:F1} max={8:F1} dBFS | mean RMS={9:F4} ({10:F1} dBFS)")]
+           Message = "duration_seconds={0:F1} | samples={1} | min_dbfs={2:F1} | p10_dbfs={3:F1} | p25_dbfs={4:F1} | p50_dbfs={5:F1} | p75_dbfs={6:F1} | p90_dbfs={7:F1} | max_dbfs={8:F1} | mean_rms={9:F4} | mean_dbfs={10:F1}")]
     public void PreprocessedTelemetryRecorded(
         double duration_seconds,
         int    samples,

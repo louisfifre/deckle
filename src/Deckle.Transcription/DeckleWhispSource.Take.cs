@@ -21,7 +21,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "Take started | work_id={0} | kind={1} | transcription_id={2}")]
+           Message = "Take started")]
     public void TakeStarted(string work_id, string kind, string transcription_id)
     {
         if (IsEnabled()) WriteEvent(EvtTakeStarted, work_id, kind, transcription_id);
@@ -34,7 +34,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
-           Message = "Take ended | work_id={0} | outcome={1} | reason={2} | duration_ms={3}")]
+           Message = "Take ended")]
     public void TakeEnded(string work_id, string outcome, string reason, long duration_ms)
     {
         if (IsEnabled()) WriteEvent(EvtTakeEnded, work_id, outcome, reason, duration_ms);

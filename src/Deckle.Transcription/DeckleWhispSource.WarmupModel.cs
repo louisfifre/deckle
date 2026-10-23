@@ -22,7 +22,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWarmupClipMissingDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "warmup clip missing | path={0}")]
+           Message = "path={0}")]
     public void WarmupClipMissingDetail(string path)
     {
         if (IsEnabled()) WriteEvent(EvtWarmupClipMissingDetail, path);
@@ -40,7 +40,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWarmupClipHeaderInvalidDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "warmup clip header invalid | path={0}")]
+           Message = "path={0}")]
     public void WarmupClipHeaderInvalidDetail(string path)
     {
         if (IsEnabled()) WriteEvent(EvtWarmupClipHeaderInvalidDetail, path);
@@ -58,7 +58,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWarmupClipSampleMismatchDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "warmup clip format unexpected | format={0} | channels={1} | sample_rate={2} | bits={3} | expected=PCM mono 16-bit 16 kHz")]
+           Message = "audio_format={0} | num_channels={1} | sample_rate={2} | bits_per_sample={3}")]
     public void WarmupClipSampleMismatchDetail(int audio_format, int num_channels, int sample_rate, int bits_per_sample)
     {
         if (IsEnabled()) WriteEvent(EvtWarmupClipSampleMismatchDetail, audio_format, num_channels, sample_rate, bits_per_sample);
@@ -67,7 +67,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWarmupClipLoadFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The warmup clip could not be loaded, the model warms up on silence | ex_type={0} | ex_message={1}")]
+           Message = "The warmup clip could not be loaded, the model warms up on silence\nex_type={0} | ex_message={1}")]
     public void WarmupClipLoadFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtWarmupClipLoadFailed, ex_type, ex_message);
@@ -84,7 +84,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Warmup start | work_id={0}")]
+           Message = "Warmup start")]
     public void WarmupStart(string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtWarmupStart, work_id);
@@ -94,7 +94,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Warmup complete | work_id={0} | elapsed_ms={1}")]
+           Message = "Warmup complete")]
     public void WarmupComplete(string work_id, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtWarmupComplete, work_id, elapsed_ms);
@@ -105,7 +105,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Warmup cancelled | work_id={0} | elapsed_ms={1}")]
+           Message = "Warmup cancelled")]
     public void WarmupCancelled(string work_id, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtWarmupCancelled, work_id, elapsed_ms);
@@ -117,7 +117,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWarmupFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Warmup failed | work_id={0} | reason={1} | ex_type={2} | ex_message={3} | elapsed_ms={4}")]
+           Message = "Warmup failed\nwork_id={0} | reason={1} | ex_type={2} | ex_message={3} | elapsed_ms={4}")]
     public void WarmupFailed(string work_id, string reason, string ex_type, string ex_message, long elapsed_ms)
     {
         if (IsEnabled()) WriteEvent(EvtWarmupFailed, work_id, reason, ex_type, ex_message, elapsed_ms);
@@ -133,7 +133,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPrimeOverlap,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "prime overlap | prime_ms={0} | gate_wait_ms={1} | gate_phase={2}")]
+           Message = "prime_ms={0} | gate_wait_ms={1} | gate_phase={2}")]
     public void PrimeOverlap(long prime_ms, long gate_wait_ms, string gate_phase)
     {
         if (IsEnabled()) WriteEvent(EvtPrimeOverlap, prime_ms, gate_wait_ms, gate_phase);
@@ -152,7 +152,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Loading model | work_id={0}")]
+           Message = "Loading model")]
     public void ModelLoading(string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtModelLoading, work_id);
@@ -161,7 +161,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelLoadRetrying,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "retrying the model load while it is unavailable | work_id={0}")]
+           Message = "work_id={0}")]
     public void ModelLoadRetrying(string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtModelLoadRetrying, work_id);
@@ -170,7 +170,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelInitFromFile,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "whisper_init_from_file returned ctx={0}")]
+           Message = "ctx={0}")]
     public void ModelInitFromFile(long ctx)
     {
         if (IsEnabled()) WriteEvent(EvtModelInitFromFile, ctx);
@@ -184,7 +184,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The transcription model is unavailable | work_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
+           Message = "The transcription model is unavailable\nwork_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
     public void ModelUnavailable(string work_id, string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtModelUnavailable, work_id, reason, ex_type, ex_message);
@@ -194,7 +194,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelLoadRetryFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "model load retry failed | work_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
+           Message = "work_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
     public void ModelLoadRetryFailed(string work_id, string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtModelLoadRetryFailed, work_id, reason, ex_type, ex_message);
@@ -208,7 +208,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Transcription model availability recovered | work_id={0} | load_ms={1} | device={2}")]
+           Message = "Transcription model availability recovered")]
     public void ModelRecovered(string work_id, long load_ms, string device)
     {
         if (IsEnabled()) WriteEvent(EvtModelRecovered, work_id, load_ms, device);
@@ -218,16 +218,16 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Model loaded | work_id={0} | load_ms={1} | device={2}")]
+           Message = "Model loaded")]
     public void ModelLoaded(string work_id, long load_ms, string device)
     {
         if (IsEnabled()) WriteEvent(EvtModelLoaded, work_id, load_ms, device);
     }
 
     [Event(EvtModelOnDemandLoad,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "on-demand load | reason=first_use_or_after_idle_unload")]
+           Message = "The Whisper model loads on demand")]
     public void ModelOnDemandLoad()
     {
         if (IsEnabled()) WriteEvent(EvtModelOnDemandLoad);
@@ -236,7 +236,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelIdleUnloadSkipped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "idle unload skipped | state={0}")]
+           Message = "state={0}")]
     public void ModelIdleUnloadSkipped(string state)
     {
         if (IsEnabled()) WriteEvent(EvtModelIdleUnloadSkipped, state);
@@ -249,7 +249,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelIdleUnloadFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The idle model unload failed, the model stays loaded | ex_type={0} | ex_message={1}")]
+           Message = "The idle model unload failed, the model stays loaded\nex_type={0} | ex_message={1}")]
     public void ModelIdleUnloadFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtModelIdleUnloadFailed, ex_type, ex_message);
@@ -267,7 +267,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelUnloaded,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "model unloaded | idle_s={0} | state=vram-freed")]
+           Message = "idle_s={0}")]
     public void ModelUnloaded(int idle_s)
     {
         if (IsEnabled()) WriteEvent(EvtModelUnloaded, idle_s);
@@ -276,7 +276,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelIdleTimerSet,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "idle timer set | idle_s={0}")]
+           Message = "idle_s={0}")]
     public void ModelIdleTimerSet(int idle_s)
     {
         if (IsEnabled()) WriteEvent(EvtModelIdleTimerSet, idle_s);
@@ -289,7 +289,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelPathEnvIgnored,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The model path environment variable was ignored and the default was used | reason=not_an_existing_absolute_path | fallback_file={0}")]
+           Message = "The model path variable is not an existing absolute path, so the default model is used\nfallback_file={0}")]
     public void ModelPathEnvIgnored(string fallback_file)
     {
         if (IsEnabled()) WriteEvent(EvtModelPathEnvIgnored, fallback_file);
@@ -298,7 +298,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelPathEnvIgnoredDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "model path env ignored | reason=not_an_existing_absolute_path | env_path={0} | fallback={1}")]
+           Message = "env_path={0} | fallback={1}")]
     public void ModelPathEnvIgnoredDetail(string env_path, string fallback)
     {
         if (IsEnabled()) WriteEvent(EvtModelPathEnvIgnoredDetail, env_path, fallback);
@@ -309,7 +309,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtModelFallback,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The configured model is not on disk, an installed one is used instead | reason=configured_file_absent | configured={0} | installed={1}")]
+           Message = "The configured model file is missing, so an installed model is used instead\nconfigured={0} | installed={1}")]
     public void ModelFallback(string configured, string installed)
     {
         if (IsEnabled()) WriteEvent(EvtModelFallback, configured, installed);
@@ -326,7 +326,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWhisperInitParamsParsed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "whisper init params | {0}")]
+           Message = "summary={0}")]
     public void WhisperInitParamsParsed(string summary)
     {
         if (IsEnabled()) WriteEvent(EvtWhisperInitParamsParsed, summary);
@@ -335,7 +335,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWhisperModelLoadParsed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "whisper model load | {0}")]
+           Message = "summary={0}")]
     public void WhisperModelLoadParsed(string summary)
     {
         if (IsEnabled()) WriteEvent(EvtWhisperModelLoadParsed, summary);
@@ -344,7 +344,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWhisperBackendInitParsed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "whisper backend init | {0}")]
+           Message = "summary={0}")]
     public void WhisperBackendInitParsed(string summary)
     {
         if (IsEnabled()) WriteEvent(EvtWhisperBackendInitParsed, summary);
@@ -353,7 +353,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWhisperInitStateParsed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "whisper init state | {0}")]
+           Message = "summary={0}")]
     public void WhisperInitStateParsed(string summary)
     {
         if (IsEnabled()) WriteEvent(EvtWhisperInitStateParsed, summary);

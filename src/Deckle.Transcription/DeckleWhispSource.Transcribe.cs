@@ -10,7 +10,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtHotkeyToggleIgnored,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "toggle ignored | state={0}")]
+           Message = "state={0}")]
     public void HotkeyToggleIgnored(string state)
     {
         if (IsEnabled()) WriteEvent(EvtHotkeyToggleIgnored, state);
@@ -30,7 +30,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtMicrophoneUnavailable,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "The microphone is unavailable | phase={0} | mmsys_err={1}")]
+           Message = "The microphone is unavailable\nphase={0} | mmsys_err={1}")]
     public void MicrophoneUnavailable(string phase, int mmsys_err)
     {
         if (IsEnabled()) WriteEvent(EvtMicrophoneUnavailable, phase, mmsys_err);
@@ -67,7 +67,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtAutoCalibratedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "auto-calibrated | new_min_dbfs={0:F0} | new_max_dbfs={1:F0} | session_count={2} | margins=p25-5dB/p90+5dB")]
+           Message = "new_min_dbfs={0:F0} | new_max_dbfs={1:F0} | session_count={2}")]
     public void AutoCalibratedDetail(double new_min_dbfs, double new_max_dbfs, int session_count)
     {
         if (IsEnabled()) WriteEvent(EvtAutoCalibratedDetail, new_min_dbfs, new_max_dbfs, session_count);
@@ -82,7 +82,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWorkerStarted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "worker started | worker={0}")]
+           Message = "worker={0}")]
     public void WorkerStarted(string worker)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline)) WriteEvent(EvtWorkerStarted, worker);
@@ -91,7 +91,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtWorkerStopped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "worker stopped | worker={0} | reached_idle={1}")]
+           Message = "worker={0} | reached_idle={1}")]
     public void WorkerStopped(string worker, bool reached_idle)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline)) WriteEvent(EvtWorkerStopped, worker, reached_idle);
@@ -100,7 +100,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPipelineCrashed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The pipeline crashed | ex_type={0} | ex_message={1}")]
+           Message = "The pipeline crashed\nex_type={0} | ex_message={1}")]
     public void PipelineCrashed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPipelineCrashed, ex_type, ex_message);
@@ -113,7 +113,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTeardownExceptionIgnored,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "teardown exception ignored | site={0} | ex_type={1} | ex_message={2}")]
+           Message = "site={0} | ex_type={1} | ex_message={2}")]
     public void TeardownExceptionIgnored(string site, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtTeardownExceptionIgnored, site, ex_type, ex_message);
@@ -124,7 +124,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTakeDropped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The take was dropped without transcription | reason={0}")]
+           Message = "The take was dropped without transcription\nreason={0}")]
     public void TakeDropped(string reason)
     {
         if (IsEnabled()) WriteEvent(EvtTakeDropped, reason);
@@ -136,7 +136,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtDictationNotDelivered,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "The dictation was not delivered | reason={0} | recovery_kept={1}")]
+           Message = "The dictation was not delivered\nreason={0} | recovery_kept={1}")]
     public void DictationNotDelivered(string reason, bool recovery_kept)
     {
         if (IsEnabled()) WriteEvent(EvtDictationNotDelivered, reason, recovery_kept);

@@ -14,7 +14,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtUserFeedbackEmitted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "{1}: {2}")]
+           Message = "A message was shown on screen")]
     public void UserFeedbackEmitted(int severity, string title, string body, int role)
     {
         if (IsEnabled()) WriteEvent(EvtUserFeedbackEmitted, severity, title, body, role);
@@ -34,7 +34,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtManualProfileNotFoundDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "active profile not found | profile_name={0}")]
+           Message = "profile_name={0}")]
     public void ManualProfileNotFoundDetail(string profile_name)
     {
         if (IsEnabled()) WriteEvent(EvtManualProfileNotFoundDetail, profile_name);
@@ -45,7 +45,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtDisposeStart,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "dispose | waiting on worker | prev_state={0} | timeout_ms={1}")]
+           Message = "prev_state={0} | timeout_ms={1}")]
     public void DisposeStart(string prev_state, int timeout_ms)
     {
         if (IsEnabled()) WriteEvent(EvtDisposeStart, prev_state, timeout_ms);
@@ -63,7 +63,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtDisposeWorkerJoinTimeoutDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "dispose timeout | join_ms={0} | state=worker_alive_thread_leaked")]
+           Message = "join_ms={0}")]
     public void DisposeWorkerJoinTimeoutDetail(long join_ms)
     {
         if (IsEnabled()) WriteEvent(EvtDisposeWorkerJoinTimeoutDetail, join_ms);
@@ -72,25 +72,25 @@ public sealed partial class DeckleWhispSource
     [Event(EvtDisposeWorkerJoined,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "dispose | worker joined | join_ms={0}")]
+           Message = "join_ms={0}")]
     public void DisposeWorkerJoined(long join_ms)
     {
         if (IsEnabled()) WriteEvent(EvtDisposeWorkerJoined, join_ms);
     }
 
     [Event(EvtPageInitStart,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "ctor start")]
+           Message = "The transcription page is being created")]
     public void PageInitStart()
     {
         if (IsEnabled()) WriteEvent(EvtPageInitStart);
     }
 
     [Event(EvtPageInitComplete,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "init component complete")]
+           Message = "The transcription page components are ready")]
     public void PageInitComplete()
     {
         if (IsEnabled()) WriteEvent(EvtPageInitComplete);
@@ -99,16 +99,16 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPageInitFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The Whisper page failed to initialize | ex_type={0} | ex_message={1}")]
+           Message = "The Whisper page failed to initialize\nex_type={0} | ex_message={1}")]
     public void PageInitFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPageInitFailed, ex_type, ex_message);
     }
 
     [Event(EvtPageLoadedStart,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "loaded fired")]
+           Message = "The transcription page is loading")]
     public void PageLoadedStart()
     {
         if (IsEnabled()) WriteEvent(EvtPageLoadedStart);
@@ -124,9 +124,9 @@ public sealed partial class DeckleWhispSource
     }
 
     [Event(EvtPageLoadedComplete,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "loaded complete | state=page-ready")]
+           Message = "The transcription page finished loading")]
     public void PageLoadedComplete()
     {
         if (IsEnabled()) WriteEvent(EvtPageLoadedComplete);
@@ -135,7 +135,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPageLoadedFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The Whisper page failed to load | ex_type={0} | ex_message={1}")]
+           Message = "The Whisper page failed to load\nex_type={0} | ex_message={1}")]
     public void PageLoadedFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPageLoadedFailed, ex_type, ex_message);
@@ -144,7 +144,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPageModelScanFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Scanning for models failed | ex_type={0} | ex_message={1}")]
+           Message = "Scanning for models failed\nex_type={0} | ex_message={1}")]
     public void PageModelScanFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtPageModelScanFailed, ex_type, ex_message);
@@ -174,7 +174,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtSettingsLoadWarning,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
+           Message = "The transcription settings store worked around a problem\ndetail={0}")]
     public void SettingsLoadWarning(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
@@ -183,7 +183,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtSettingsLoadError,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "{0}")]
+           Message = "The transcription settings could not be saved or applied\ndetail={0}")]
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
@@ -194,7 +194,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPageStackTrace,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "page stack trace | stack_trace={0}")]
+           Message = "stack_trace={0}")]
     public void PageStackTrace(string stack_trace)
     {
         if (IsEnabled()) WriteEvent(EvtPageStackTrace, stack_trace);

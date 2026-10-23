@@ -30,7 +30,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Verbose,
            Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "id={0} audio={1:F1}s hotkey={3}ms whisper={7}ms llm={8}ms outcome={22}")]
+           Message = "transcription_id={0} | audio_sec={1:F1} | hotkey_to_capture_ms={3} | whisper_ms={7} | llm_ms={8} | outcome={22}")]
     public void LatencyRecorded(
         string transcription_id,
         double audio_sec,
@@ -69,7 +69,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Verbose,
            Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "asr | bucket={2} | tier={3} | words={9} | wps={12:F1} | audio={14}")]
+           Message = "bucket={2} | tier={3} | words={9} | wps={12:F1} | audio={14}")]
     public void CorpusAsrRecorded(
         string transcription_id,
         string audio_file,
@@ -99,7 +99,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Verbose,
            Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "rewrite | bucket={2} | profile={4} | words={9} | elapsed_ms={11}")]
+           Message = "bucket={2} | profile={4} | words={9} | elapsed_ms={11}")]
     public void CorpusRewriteRecorded(
         string transcription_id,
         string audio_file,

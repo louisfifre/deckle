@@ -19,7 +19,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribeStartDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "start | audio_sec={0:F1} | samples={1} | strategy={2}")]
+           Message = "audio_sec={0:F1} | samples={1} | strategy={2}")]
     public void TranscribeStartDetail(double audio_sec, int samples, string strategy)
     {
         if (OperationalLogAdmission.IsDetailEnabled(
@@ -31,7 +31,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscriptionCorrelation,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "correlation | transcription_id={0}")]
+           Message = "transcription_id={0}")]
     public void TranscriptionCorrelation(string transcription_id)
     {
         if (!OperationalLogAdmission.IsDetailEnabled(
@@ -45,7 +45,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribeParams,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "params | {0}")]
+           Message = "params_text={0}")]
     public void TranscribeParams(string params_text)
     {
         if (OperationalLogAdmission.IsDetailEnabled(
@@ -62,7 +62,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribeDecodeUsed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "decode used | offset_s={0:F2} | prompt_chars={1} | continues_previous={2} | no_context={3} | temp_start={4:F2} | temp_inc={5:F2} | segments={6} | last_end_s={7:F2} | audio_s={8:F2} | aborted={9}")]
+           Message = "offset_s={0:F2} | prompt_chars={1} | continues_previous={2} | no_context={3} | temp_start={4:F2} | temp_inc={5:F2} | segments={6} | last_end_s={7:F2} | audio_s={8:F2} | aborted={9}")]
     public void TranscribeDecodeUsed(
         double offset_s, int prompt_chars, bool continues_previous, bool no_context,
         double temp_start, double temp_inc, int segments, double last_end_s,
@@ -80,7 +80,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribePromptConfigured,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "prompt configured | len={0} | carry={1}")]
+           Message = "len={0} | carry={1}")]
     public void TranscribePromptConfigured(int prompt_len, bool carry)
     {
         if (!OperationalLogAdmission.IsDetailEnabled(
@@ -110,7 +110,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscriptionFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Transcription failed | reason={0} | result_code={1} | ex_type={2} | ex_message={3}")]
+           Message = "Transcription failed\nreason={0} | result_code={1} | ex_type={2} | ex_message={3}")]
     public void TranscriptionFailed(string reason, int result_code, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtTranscriptionFailed, reason, result_code, ex_type, ex_message);
@@ -128,7 +128,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribeCompleteDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "complete | whisper_ms={0} | n_seg={1} | chars={2}")]
+           Message = "whisper_ms={0} | n_seg={1} | chars={2}")]
     public void TranscribeCompleteDetail(long whisper_ms, int n_seg, int chars)
     {
         if (IsEnabled()) WriteEvent(EvtTranscribeCompleteDetail, whisper_ms, n_seg, chars);
@@ -146,7 +146,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribeRepetitionLoopMetrics,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "repetition loop | streak={0} | period={1}")]
+           Message = "streak={0} | period={1}")]
     public void TranscribeRepetitionLoopMetrics(int streak, int period)
     {
         if (!OperationalLogAdmission.IsDetailEnabled(
@@ -173,7 +173,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribeHallucinationFilteredMetrics,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "hallucination filtered | segment={0} | segments={1} | chars={2} | entry={3}")]
+           Message = "segment={0} | segments={1} | chars={2} | entry={3}")]
     public void TranscribeHallucinationFilteredMetrics(int segment, int segments, int chars, string entry)
     {
         if (IsEnabled()) WriteEvent(EvtTranscribeHallucinationFilteredMetrics, segment, segments, chars, entry);
@@ -182,7 +182,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribeSkipped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "skip transcribe | state={0}")]
+           Message = "state={0}")]
     public void TranscribeSkipped(string state)
     {
         if (IsEnabled()) WriteEvent(EvtTranscribeSkipped, state);
