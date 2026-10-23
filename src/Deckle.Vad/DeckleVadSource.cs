@@ -131,7 +131,7 @@ public sealed class DeckleVadSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
            Tags = ObservationTags.Milestone,
-           Message = "Speech trim is off, takes run untrimmed\nreason={0} | ex_type={1} | ex_message={2}")]
+           Message = "Speech detection is unavailable, so recordings are transcribed with their silences\nreason={0} | ex_type={1} | ex_message={2}")]
     public void SpeechTrimUnavailable(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechTrimUnavailable, reason, ex_type, PathRedaction.Redact(ex_message));
