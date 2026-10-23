@@ -26,7 +26,7 @@ public static class ToolCatalog
                 "open_report",
                 "Open a work report on a task: create a journal report linked to it, dated today, and answer report_id, then one line « task title · project ». Call it as soon as work on a task starts; a report always belongs to a task. Pass the report_id to log.",
                 Schema(
-                    required: [Prop("task", "string", "Task id, from the read that placed you; names are refused.")]),
+                    required: [Prop("task", "string", "Task id, as task_properties or search gives it; names are refused.")]),
                 async (args, ct) =>
                     await session.OpenReportAsync(Str(args, "task"), ct),
                 ToolExecutionContract.AdditiveRequiresDeduplication),
