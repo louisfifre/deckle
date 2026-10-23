@@ -12,6 +12,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Notifications.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- AppNotificationManager / AppNotificationBuilder for the toast channel.
          No UseWinUI: this module ships no XAML, only the notification API
          surface. -->

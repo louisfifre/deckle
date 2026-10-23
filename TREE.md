@@ -2297,6 +2297,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── NotificationCatalogTests.cs
 │   │   ├── NotificationDispatcherTests.cs
 │   │   ├── ToastChannelBugNotes.md
+│   │   ├── ToastElevationIncidentTests.cs
 │   │   └── ToastWithdrawIncidentTests.cs
 │   ├── Deckle.Orchestration.Tests/
 │   │   ├── Fixtures/

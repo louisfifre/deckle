@@ -3,6 +3,7 @@ using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using Deckle.Catalog;
+using Deckle.Diagnostics;
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
 
@@ -33,10 +34,16 @@ public sealed class ToastChannel : INotificationChannel
     public ToastChannel()
     {
         _isElevated = DetectElevated();
-        if (_isElevated)
-        {
-            DeckleNotificationsSource.Log.ToastsUnavailable();
-        }
+        if (_isElevated) ReportElevated();
+    }
+
+    // Windows drops every toast of an elevated process, and nothing Deckle
+    // does can lower it: only a relaunch without administrator rights can.
+    // So the tray shows it for the process's whole life, and nothing closes it.
+    internal static void ReportElevated()
+    {
+        DeckleNotificationsSource.Log.ToastsUnavailable();
+        UserIncidentRegistry.Instance.Open(UserIncidents.ToastsElevated, "elevated");
     }
 
     public NotificationChannel Channel => NotificationChannel.Toast;
