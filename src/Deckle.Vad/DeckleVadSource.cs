@@ -49,7 +49,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     [Event(EvtSpeechTrimBounds,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "speech trim bounds | utterance_index={0} | in_ms={1} | kept_ms={2} | leading_removed_ms={3} | trailing_removed_ms={4} | internal_removed_ms={5}")]
+           Message = "utterance_index={0} | in_ms={1} | kept_ms={2} | leading_removed_ms={3} | trailing_removed_ms={4} | internal_removed_ms={5}")]
     public void SpeechTrimBounds(
         int utterance_index, int in_ms, int kept_ms,
         int leading_removed_ms, int trailing_removed_ms, int internal_removed_ms)
@@ -62,7 +62,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     [Event(EvtSpeechTrimmed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "speech trimmed | utterance_index={0} | in_samples={1} | out_samples={2} | speech_segments={3} | trim_ms={4}")]
+           Message = "utterance_index={0} | in_samples={1} | out_samples={2} | speech_segments={3} | trim_ms={4}")]
     public void SpeechTrimmed(int utterance_index, int in_samples, int out_samples, int speech_segments, long trim_ms)
     {
         if (IsTrimDetailEnabled()) WriteEvent(EvtSpeechTrimmed, utterance_index, in_samples, out_samples, speech_segments, trim_ms);
@@ -73,7 +73,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     [Event(EvtSpeechTrimSettingsSnapshot,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "speech trim settings | threshold={0:F2} | min_speech_ms={1} | min_silence_ms={2} | speech_pad_ms={3}")]
+           Message = "threshold={0:F2} | min_speech_ms={1} | min_silence_ms={2} | speech_pad_ms={3}")]
     public void SpeechTrimSettingsSnapshot(double threshold, int min_speech_ms, int min_silence_ms, int speech_pad_ms)
     {
         if (IsTrimDetailEnabled()) WriteEvent(EvtSpeechTrimSettingsSnapshot, threshold, min_speech_ms, min_silence_ms, speech_pad_ms);
@@ -82,7 +82,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     [Event(EvtUtteranceDroppedNoSpeech,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "utterance dropped, no speech detected | utterance_index={0}")]
+           Message = "utterance_index={0}")]
     public void UtteranceDroppedNoSpeech(int utterance_index)
     {
         if (IsTrimDetailEnabled()) WriteEvent(EvtUtteranceDroppedNoSpeech, utterance_index);
@@ -101,7 +101,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     [Event(EvtSpeechTrimVadLoadedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "model loaded | model_path={0}")]
+           Message = "model_path={0}")]
     public void SpeechTrimVadLoadedDetail(string model_path)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechTrimVadLoadedDetail, PathRedaction.Redact(model_path));
@@ -113,7 +113,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     [Event(EvtSpeechTrimVadLoadComplete,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "load complete | load_ms={0}")]
+           Message = "load_ms={0}")]
     public void SpeechTrimVadLoadComplete(long load_ms)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechTrimVadLoadComplete, load_ms);
@@ -131,7 +131,7 @@ public sealed class DeckleVadSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
            Tags = ObservationTags.Milestone,
-           Message = "Speech trim is off, takes run untrimmed | reason={0} | ex_type={1} | ex_message={2}")]
+           Message = "Speech trim is off, takes run untrimmed\nreason={0} | ex_type={1} | ex_message={2}")]
     public void SpeechTrimUnavailable(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechTrimUnavailable, reason, ex_type, PathRedaction.Redact(ex_message));
@@ -140,7 +140,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     [Event(EvtSpeechTrimUnavailableDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "speech trim unavailable | reason={0} | model_path={1}")]
+           Message = "reason={0} | model_path={1}")]
     public void SpeechTrimUnavailableDetail(string reason, string model_path)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechTrimUnavailableDetail, reason, PathRedaction.Redact(model_path));
@@ -152,7 +152,7 @@ public sealed class DeckleVadSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
            Tags = ObservationTags.Milestone,
-           Message = "Speech trim is back on | previous_reason={0}")]
+           Message = "Speech trim is back on")]
     public void SpeechTrimRecovered(string previous_reason)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechTrimRecovered, previous_reason);
@@ -163,7 +163,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     [Event(EvtSpeechTrimVadFileDeleteFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "model delete failed | model_path={0} | ex_type={1} | ex_message={2}")]
+           Message = "model_path={0} | ex_type={1} | ex_message={2}")]
     public void SpeechTrimVadFileDeleteFailed(string model_path, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechTrimVadFileDeleteFailed, PathRedaction.Redact(model_path), ex_type, PathRedaction.Redact(ex_message));
@@ -181,7 +181,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     [Event(EvtSpeechTrimVadDownloadStartDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "model download started | url={0}")]
+           Message = "url={0}")]
     public void SpeechTrimVadDownloadStartDetail(string url)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadStartDetail, url);
@@ -193,7 +193,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     [Event(EvtSpeechTrimVadDownloadAttemptFailedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "model download attempt failed | attempt={0} | attempts={1} | retry_in_s={2} | ex_type={3} | ex_message={4}")]
+           Message = "attempt={0} | attempts={1} | retry_in_s={2} | ex_type={3} | ex_message={4}")]
     public void SpeechTrimVadDownloadAttemptFailedDetail(
         int attempt, int attempts, long retry_in_s, string ex_type, string ex_message)
     {
@@ -214,7 +214,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     [Event(EvtSpeechTrimVadDownloadCompleteDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "model download complete | model_path={0}")]
+           Message = "model_path={0}")]
     public void SpeechTrimVadDownloadCompleteDetail(string model_path)
     {
         if (IsEnabled()) WriteEvent(EvtSpeechTrimVadDownloadCompleteDetail, PathRedaction.Redact(model_path));
@@ -226,7 +226,7 @@ public sealed class DeckleVadSource : DeckleEventSource
     [Event(EvtSpeechTrimFailed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "speech trim failed | utterance_index={0} | ex_type={1} | ex_message={2}")]
+           Message = "utterance_index={0} | ex_type={1} | ex_message={2}")]
     public void SpeechTrimFailed(int utterance_index, string ex_type, string ex_message)
     {
         if (IsTrimDetailEnabled()) WriteEvent(EvtSpeechTrimFailed, utterance_index, ex_type, PathRedaction.Redact(ex_message));
@@ -235,9 +235,9 @@ public sealed class DeckleVadSource : DeckleEventSource
     // The raw per-take attempt; the visible incident is SpeechTrimUnavailable,
     // which VadService opens once per cause.
     [Event(EvtSpeechTrimNotReady,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "take runs untrimmed | reason=vad_not_ready")]
+           Message = "A take runs untrimmed because speech trim is not ready")]
     public void SpeechTrimNotReady()
     {
         if (IsTrimDetailEnabled()) WriteEvent(EvtSpeechTrimNotReady);
