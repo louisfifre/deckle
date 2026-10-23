@@ -2114,6 +2114,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── SinkCallbackFaultTests.cs
 │   │   ├── SurvivedExceptionBugNotes.md
 │   │   ├── SurvivedExceptionLedgerTests.cs
+│   │   ├── TemplateDoctrineTests.cs
 │   │   ├── ThreadingHotLoopCountTests.cs
 │   │   └── WorkIdTests.cs
 │   ├── Deckle.Home.Tests/
@@ -2376,6 +2377,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── LoopbackHttpListenerLease.cs
 │   │   ├── ProviderManifest.cs
 │   │   ├── SharedFileReader.cs
+│   │   ├── TemplateDoctrine.cs
 │   │   ├── TestEventListener.cs
 │   │   ├── WindowsAppSdkBootstrap.cs
 │   │   └── WindowsAppSdkModuleInitializer.cs
