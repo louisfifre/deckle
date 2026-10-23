@@ -1214,6 +1214,9 @@
   <data name="AnytypeNotifications_DeleteApproval_Body" xml:space="preserve">
     <value>An agent asks to move “{0}” ({1}) to the bin. It will disappear from searches but can be restored.</value>
   </data>
+  <data name="AnytypeNotifications_DeleteApprovalLinked_Body" xml:space="preserve">
+    <value>An agent asks to move “{0}” ({1}) to the bin. {2} other object(s) link to it; the bin will empty those links. It can be restored.</value>
+  </data>
   <data name="AnytypeNotifications_DeleteApproval_Bin" xml:space="preserve">
     <value>Move to bin</value>
   </data>

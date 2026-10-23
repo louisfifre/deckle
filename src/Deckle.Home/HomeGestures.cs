@@ -429,9 +429,10 @@ public sealed partial class HomeGestures
                 "La confirmation doit reprendre l’id exact fourni par la prévisualisation.");
         RefuseIfReferenced(target, index);
 
+        // A referenced object was refused just above, so the bin empties no link.
         string type = HomeObjectJson.TypeKey(target);
         DeletionApprovalOutcome outcome = await AskDeletionAsync(
-            new DeletionCandidate(id, HomeObjectIndex.Display(target), type), ct).ConfigureAwait(false);
+            new DeletionCandidate(id, HomeObjectIndex.Display(target), type, LinkCount: 0), ct).ConfigureAwait(false);
         if (outcome != DeletionApprovalOutcome.Approved)
             throw DeletionRefusal(outcome, type);
 

@@ -13,20 +13,27 @@ namespace Deckle.Anytype;
 // v2 search leaves binned objects out, so no later read shows it again. The
 // bin is for what should never have existed (a duplicate, a botched creation);
 // « Archivé » (archive) is the gesture for what had a life and should only stop
-// showing. So delete is a two-step, stateless gesture pinned by id, fenced on
-// both sides:
+// showing. So delete is a two-step, stateless gesture pinned by id:
 //
 //   • first call (confirm:false) — looks the target up and returns its identity
-//     (name, type, id, snippet) WITHOUT deleting anything;
+//     (name, type, id, snippet) and how many objects link to it, WITHOUT
+//     deleting anything;
 //   • second call (confirm:true) — asks the person through IDeletionApproval
 //     (a toast the agent does not answer in the chat), then commits.
 //
-// Both calls refuse, whatever anyone says, an object another object links to
-// (a chantier still holding its tasks, a task a rapport cites): the bin would
-// empty those links without a word. A rapport is an object like any other
-// here: it goes to the bin only when nothing links to it. The links are read
-// again after the person's answer, so a link added while the toast waited
-// still stops the delete.
+// Any object may be binned, whatever its type (a rapport included) and whatever
+// links to it: the safety is the confirmation, so the confirmation must say what
+// is being binned. Objects that link to the target (a task a rapport cites, a
+// chantier holding its tasks) are not a refusal but a fact stated in the preview
+// and on the toast: the bin empties those links. Only a count is told, because
+// the backlinks read gives ids and nothing more, and an extra read per linking
+// object is not worth the names.
+//
+// What stays a refusal is not knowing: when the links cannot be read, the
+// confirmation could not say what the bin empties, so nothing is binned. The
+// links are read again after the person's answer; if their count moved while the
+// toast waited, the person approved something other than what is now true, so the
+// call refuses and a new preview is asked for.
 //
 // The id returned by the preview IS the confirmation handle: confirming with
 // that id pins the commit to exactly what was shown, with no server-side token
@@ -56,21 +63,30 @@ public sealed class ManagementGestures(
         string name = DisplayName(obj);
         string type = TypeKey(obj);
 
-        await RefuseIfFencedAsync(id, name, type, ct);
+        int links = await ReadLinksAsync(id, name, type, ct);
 
         if (!confirm)
         {
             DeckleAnytypeSource.Log.GestureCompleted("delete_preview", Elapsed(started));
-            return Preview(id, name, type, obj);
+            return Preview(id, name, type, obj, links);
         }
 
-        DeletionApprovalOutcome outcome = await AskAsync(new DeletionCandidate(id, name, type), ct);
+        DeletionApprovalOutcome outcome = await AskAsync(new DeletionCandidate(id, name, type, links), ct);
         if (outcome != DeletionApprovalOutcome.Approved)
             throw Refusal(outcome, type, id, name);
 
-        // The person answered on what was true before the toast; what links to
-        // the object may have changed while it waited.
-        await RefuseIfFencedAsync(id, name, type, ct);
+        // The person answered on the links the toast showed; what links to the
+        // object may have changed while it waited, and then they approved
+        // something other than what the bin would empty now.
+        int linksNow = await ReadLinksAsync(id, name, type, ct);
+        if (linksNow != links)
+        {
+            DeckleAnytypeSource.Log.DeleteRefused(DeleteRefusalReasons.LinksChanged, type, id, "", "");
+            throw new InvalidOperationException(
+                $"Refusé : le nombre d'objets qui pointent vers « {name} » a changé pendant l'attente ({links} → {linksNow}) ; "
+                + "la personne a validé autre chose que ce que la corbeille viderait maintenant. Rien n'a bougé. "
+                + "Refais un aperçu (delete sans confirm), remontre-le à la personne, puis confirme.");
+        }
 
         // The lookup above doubles as existence + identity check; the write lock
         // guards only the destructive call itself (delete is not a read-modify-write).
@@ -98,33 +114,32 @@ public sealed class ManagementGestures(
         }
     }
 
-    async Task RefuseIfFencedAsync(string id, string name, string type, CancellationToken ct)
+    // How many objects link to this one. Links that cannot be read are the one
+    // refusal left on this side: the preview and the toast exist to say what the
+    // bin empties, and without the links they could not say it, so a bin never
+    // goes through on a confirmation that was unclear.
+    async Task<int> ReadLinksAsync(string id, string name, string type, CancellationToken ct)
     {
-        BacklinkCount count = await CountBacklinksAsync(id, ct);
-        if (count.Count is not { } backlinks)
+        BacklinkCount backlinks = await CountBacklinksAsync(id, ct);
+        if (backlinks.Count is not { } count)
         {
             DeckleAnytypeSource.Log.DeleteRefused(
-                DeleteRefusalReasons.ReferencesUnreadable, type, id, count.ExType, count.Cause);
+                DeleteRefusalReasons.ReferencesUnreadable, type, id, backlinks.ExType, backlinks.Cause);
             throw new InvalidOperationException(
                 $"Refusé : impossible de lire ce qui pointe vers « {name} » (recherche Anytype en échec, ou objet "
-                + "absent de la recherche). Sans cette vérification, rien ne part à la corbeille. Rien n'a bougé.");
+                + "absent de la recherche). Sans cette lecture, la confirmation ne pourrait pas dire ce que la corbeille "
+                + "viderait, donc rien ne part à la corbeille. Rien n'a bougé.");
         }
 
-        if (backlinks > 0)
-        {
-            DeckleAnytypeSource.Log.DeleteRefused(DeleteRefusalReasons.Referenced, type, id, "", "");
-            throw new InvalidOperationException(
-                $"Refusé : {backlinks} autre(s) objet(s) pointent vers « {name} » ({type}) ; la corbeille "
-                + "viderait ces liens sans bruit. Rien n'a bougé. " + Alternative(type));
-        }
+        return count;
     }
 
     // What links to the object, the object itself left out. Null when it
     // cannot be told: a failed search, or no row for the id (the search never
-    // lists a binned object). Unknown is refused like referenced: the check
-    // exists to stop a bin, never to let one through by default. An unknown count
-    // says why, as an error type and code or as not_listed, so the refusal that
-    // follows is not a mystery.
+    // lists a binned object). Unknown is never read as zero: a bin must not go
+    // through on a guess about what it empties. An unknown count says why, as an
+    // error type and code or as not_listed, so the refusal that follows is not a
+    // mystery.
     async Task<BacklinkCount> CountBacklinksAsync(string id, CancellationToken ct)
     {
         try
@@ -174,15 +189,17 @@ public sealed class ManagementGestures(
         return new InvalidOperationException(message);
     }
 
-    // archive exists only where the type carries the « Archivé » checkbox.
-    static string Alternative(string type) =>
+    // archive exists only where the type carries the « Archivé » checkbox. Told
+    // only when links exist, the case where hiding without emptying them matters.
+    static string ArchiveHint(string type) =>
         DevSpace.PropertiesFor(type).Any(p => p.Key == DevSpace.Props.Archive)
-            ? "Pour seulement ne plus le voir, utilise archive. S'il doit vraiment disparaître, la personne le met à la corbeille elle-même dans Anytype."
-            : "S'il doit vraiment disparaître, la personne le met à la corbeille elle-même dans Anytype.";
+            ? "\nPour seulement ne plus le voir, archive suffit et garde ces liens."
+            : "";
 
     // The id is spelled out so the model copies it verbatim into the confirming
-    // call.
-    static string Preview(string id, string name, string type, JsonObject obj)
+    // call. The links are stated before the instruction to show the target, so
+    // that what the person is asked to approve includes what the bin empties.
+    static string Preview(string id, string name, string type, JsonObject obj, int links)
     {
         var sb = new System.Text.StringBuilder();
         sb.Append("Mettre en corbeille (réversible) : ").Append(name).Append(" (").Append(type).Append(").\n");
@@ -191,7 +208,18 @@ public sealed class ManagementGestures(
         string snippet = FirstLine(obj["snippet"]?.GetValue<string>());
         if (snippet.Length > 0) sb.Append('\n').Append(snippet);
 
-        sb.Append("\nAvant de confirmer, montre cette cible à la personne et attends son accord explicite dans la conversation.");
+        if (links > 0)
+        {
+            sb.Append("\nAttention : ")
+              .Append(links == 1
+                  ? "1 autre objet pointe vers celui-ci ; la corbeille videra ce lien."
+                  : $"{links} autres objets pointent vers celui-ci ; la corbeille videra ces liens.")
+              .Append(ArchiveHint(type));
+        }
+
+        sb.Append(links > 0
+            ? "\nAvant de confirmer, montre cette cible et ces liens à la personne et attends son accord explicite dans la conversation."
+            : "\nAvant de confirmer, montre cette cible à la personne et attends son accord explicite dans la conversation.");
         sb.Append("\nPour confirmer, rappelle delete avec target=\"").Append(id).Append("\" et confirm=true : ");
         sb.Append("Deckle lui redemandera alors par une notification Windows et attendra ")
           .Append(ApprovalWindow.TotalSeconds.ToString("F0", System.Globalization.CultureInfo.InvariantCulture))

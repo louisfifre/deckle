@@ -72,12 +72,12 @@ public sealed class BinJournalTests
         server.OnV2Search(Rows(OtherId));
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => NewGestures(server, DeletionApprovalOutcome.Approved).DeleteAsync(ObjId, confirm: true, ct: Ct));
+            () => NewGestures(server, DeletionApprovalOutcome.Declined).DeleteAsync(ObjId, confirm: true, ct: Ct));
 
         EventWrittenEventArgs refused = Assert.Single(
             listener.Events.Where(TravelsInTheJournal),
             e => e.EventId == DeckleAnytypeSource.EvtDeleteRefused);
-        Assert.Equal(DeleteRefusalReasons.Referenced, Field(refused, "reason"));
+        Assert.Equal(DeleteRefusalReasons.Declined, Field(refused, "reason"));
         Assert.Equal(ObjId, Field(refused, "object_id"));
     }
 

@@ -4,11 +4,11 @@ namespace Deckle.Anytype;
 // did not happen.
 internal static class DeleteRefusalReasons
 {
-    // Another object links to the target.
-    public const string Referenced = "referenced";
-
     // What links to the target could not be read, so nothing is let through.
     public const string ReferencesUnreadable = "references_unreadable";
+
+    // The count of what links to the target moved while the toast waited.
+    public const string LinksChanged = "links_changed";
 
     // The person answered no.
     public const string Declined = "declined";
