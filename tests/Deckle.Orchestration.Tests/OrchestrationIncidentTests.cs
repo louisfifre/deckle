@@ -89,13 +89,17 @@ public sealed class OrchestrationIncidentTests
     public void EveryPayloadOfTheProviderAppearsInItsMessageTemplate()
     {
         // A payload missing from the template is dropped from the line the log
-        // keeps, which is how the session handler's entry id went unread.
+        // keeps, which is how the session handler's entry id went unread. An
+        // Informational template is a sentence alone by doctrine: its values
+        // travel in the payload of the JSONL line, so it is not checked here.
         foreach (var declared in ProviderManifest.EventsOf(typeof(DeckleOrchestrationSource)))
         {
             System.Reflection.MethodInfo method = typeof(DeckleOrchestrationSource).GetMethod(declared.Name)!;
-            string template = method
+            EventAttribute attribute = method
                 .GetCustomAttributes(typeof(EventAttribute), inherit: false)
-                .Cast<EventAttribute>().Single().Message ?? "";
+                .Cast<EventAttribute>().Single();
+            if (attribute.Level == EventLevel.Informational) continue;
+            string template = attribute.Message ?? "";
             int count = method.GetParameters().Length;
             for (int i = 0; i < count; i++)
             {

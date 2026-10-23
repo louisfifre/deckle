@@ -19,7 +19,7 @@
 - Violated invariant: a line carries its step and its error on one line; every payload belongs to the line.
 - Fix: the three templates name `entry_id`.
 - Recurrence cue: a Warning from this provider whose text has fewer fields than the event has payloads.
-- Guard: `OrchestrationIncidentTests.EveryPayloadOfTheProviderAppearsInItsMessageTemplate` checks every event of the provider.
+- Guard: `OrchestrationIncidentTests.EveryPayloadOfTheProviderAppearsInItsMessageTemplate` checks every Verbose, Warning and Error event of the provider. An Informational template is a sentence alone since the template doctrine, and its values travel in the payload of the JSONL line.
 
 ## A subscriber or exit handler that kept throwing was a Warning per occurrence
 
