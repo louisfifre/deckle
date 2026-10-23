@@ -182,7 +182,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtNotificationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "A notification channel failed to deliver\nnotification_id={0} | ex_type={1} | ex_message={2}")]
+           Message = "A notification channel failed to deliver, so the notification may not have shown\nnotification_id={0} | ex_type={1} | ex_message={2}")]
     public void NotificationFailed(string notification_id, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtNotificationFailed, notification_id, ex_type, ex_message);
@@ -192,7 +192,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtToastsUnavailable,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Toast notifications are unavailable in an elevated process")]
+           Message = "Deckle runs as administrator, so its notifications cannot show as toasts")]
     public void ToastsUnavailable()
     {
         if (IsEnabled()) WriteEvent(EvtToastsUnavailable);
@@ -202,7 +202,7 @@ public sealed class DeckleNotificationsSource : DeckleEventSource
     [Event(EvtToastRegistrationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "Toast notification registration failed\nex_type={0} | ex_message={1}")]
+           Message = "Toast notifications could not be registered with Windows, so toasts may not show\nex_type={0} | ex_message={1}")]
     public void ToastRegistrationFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtToastRegistrationFailed, ex_type, ex_message);
