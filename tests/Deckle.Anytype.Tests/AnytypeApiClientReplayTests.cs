@@ -10,12 +10,6 @@ public class AnytypeApiClientReplayTests
 {
     private const string ObjectId = "bafyreiReplayaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
-    private sealed class MutableEndpointTrust(bool trusted) : IBackendEndpointTrust
-    {
-        public bool Trusted { get; set; } = trusted;
-        public bool IsTrusted() => Trusted;
-    }
-
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -68,7 +62,7 @@ public class AnytypeApiClientReplayTests
     public async Task LostEndpointTrustPreventsTheBearerRequestFromBeingSent()
     {
         using var server = new FakeAnytypeServer();
-        var trust = new MutableEndpointTrust(trusted: false);
+        var trust = new ScriptedEndpointTrust(BackendEndpointVerdict.Untrusted);
         using var client = new AnytypeApiClient(server.Credentials, trust);
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
@@ -77,6 +71,26 @@ public class AnytypeApiClientReplayTests
                 Ct));
 
         Assert.Contains("not owned by a trusted Deckle provider", error.Message);
+        Assert.Empty(server.Requests);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task AnEmptyPortSaysTheBackendIsNotServingAndSendsNothing()
+    {
+        // Nothing listens: that is a serve that is not up yet, not a stranger on
+        // the port. The message must not accuse an owner that does not exist.
+        using var server = new FakeAnytypeServer();
+        var trust = new ScriptedEndpointTrust(BackendEndpointVerdict.NotListening);
+        using var client = new AnytypeApiClient(server.Credentials, trust);
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => client.CreateObjectAsync(
+                new JsonObject { ["type_key"] = DevSpace.Types.Idee, ["name"] = "Une idée" },
+                Ct));
+
+        Assert.Contains("not serving yet", error.Message);
+        Assert.DoesNotContain("trusted Deckle provider", error.Message);
         Assert.Empty(server.Requests);
     }
 }

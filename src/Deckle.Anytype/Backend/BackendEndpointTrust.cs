@@ -1,8 +1,19 @@
 namespace Deckle.Anytype;
 
+// What the guard proved about the fixed endpoint right now. Only Trusted lets a
+// request go out; the other two both refuse, but they tell the person different
+// things: NotListening is a backend that is not serving yet (nothing untrusted
+// is there), Untrusted is something that must not receive the bearer.
+internal enum BackendEndpointVerdict
+{
+    Trusted,
+    NotListening,
+    Untrusted,
+}
+
 internal interface IBackendEndpointTrust
 {
-    bool IsTrusted();
+    BackendEndpointVerdict Inspect();
 }
 
 // Re-proves the identity boundary immediately before a credentialed REST call.
@@ -26,26 +37,35 @@ internal sealed class BackendEndpointTrust(
             new BackendListenerOwner(endpoint.Port));
     }
 
-    public bool IsTrusted()
+    public BackendEndpointVerdict Inspect()
     {
         BackendListenerSnapshot snapshot = listener.Inspect();
+
+        // Only an unbound port reads as "nothing listens". An unreadable table
+        // or several owners prove nothing about who holds the port, so they
+        // stay refused as Untrusted: the bearer goes out on a proof, never on
+        // a guess.
+        if (snapshot.State == BackendListenerState.Unbound)
+            return BackendEndpointVerdict.NotListening;
         if (snapshot.State != BackendListenerState.Owned)
-            return false;
+            return BackendEndpointVerdict.Untrusted;
 
         using IBackendProcess? owner = processes.Open(snapshot.ProcessId);
         if (owner is null || owner.HasExited)
-            return false;
+            return BackendEndpointVerdict.Untrusted;
 
         try
         {
             string actual = Path.GetFullPath(owner.ExecutablePath);
             return provider.TrustedExecutablePaths().Any(path =>
-                string.Equals(Path.GetFullPath(path), actual, StringComparison.OrdinalIgnoreCase));
+                string.Equals(Path.GetFullPath(path), actual, StringComparison.OrdinalIgnoreCase))
+                ? BackendEndpointVerdict.Trusted
+                : BackendEndpointVerdict.Untrusted;
         }
         catch (Exception ex) when (ex is
             ArgumentException or IOException or NotSupportedException or UnauthorizedAccessException)
         {
-            return false;
+            return BackendEndpointVerdict.Untrusted;
         }
     }
 }

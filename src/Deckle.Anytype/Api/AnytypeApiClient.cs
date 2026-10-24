@@ -359,12 +359,11 @@ public sealed partial class AnytypeApiClient : IDisposable
         {
             for (int attempt = 0; ; attempt++)
             {
-                if (_endpointTrust is not null && !_endpointTrust.IsTrusted())
+                if (_endpointTrust is not null)
                 {
-                    _incidents.Refused(
-                        method.Method, path, 0, ApiFailureReasons.UntrustedEndpoint, "owner_untrusted");
-                    throw new InvalidOperationException(
-                        "The Anytype endpoint is not owned by a trusted Deckle provider; the request was not sent.");
+                    BackendEndpointVerdict verdict = _endpointTrust.Inspect();
+                    if (verdict != BackendEndpointVerdict.Trusted)
+                        throw _incidents.EndpointRefused(method.Method, path, verdict);
                 }
 
                 bool traceRequest = DeckleAnytypeSource.Log.IsEnabled(

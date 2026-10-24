@@ -13,6 +13,10 @@ internal interface IBackendProcess : IDisposable
     bool HasExited { get; }
     int? ExitCode { get; }
     Task WaitForExitAsync(CancellationToken ct);
+    // Ends the process at once. Never throws: a refusal (Windows denies it to a
+    // process of a higher integrity level) comes back as false with its cause,
+    // for the supervisor to log.
+    bool TryTerminate(out string exType, out string exMessage);
 }
 
 internal interface IBackendProcessHost
@@ -226,5 +230,32 @@ internal sealed class BackendProcess(Process process, string executablePath) : I
     }
 
     public Task WaitForExitAsync(CancellationToken ct) => _process.WaitForExitAsync(ct);
+
+    // A hard kill is acceptable here: the only caller ends a serve that is stuck
+    // before it selected an account, so there is no state of its own to flush,
+    // and anytype-heart must tolerate a crashed serve anyway. A graceful stop would ask
+    // the very code that is stuck. Win32Exception is the expected refusal: a serve
+    // started elevated cannot be ended by a Deckle that is not.
+    public bool TryTerminate(out string exType, out string exMessage)
+    {
+        exType = "";
+        exMessage = "";
+        try
+        {
+            _process.Kill();
+            return true;
+        }
+        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception
+            or InvalidOperationException or NotSupportedException)
+        {
+            // It may have exited between the caller's check and the kill:
+            // that is the outcome wanted, not a refusal.
+            if (HasExited) return true;
+            exType = ex.GetType().Name;
+            exMessage = ex.Message;
+            return false;
+        }
+    }
+
     public void Dispose() => _process.Dispose();
 }

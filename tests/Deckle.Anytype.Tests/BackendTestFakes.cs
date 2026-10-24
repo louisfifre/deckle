@@ -19,6 +19,11 @@ internal sealed class FakeBackendProcess(int id, string executablePath) : IBacke
     public bool HasExited { get; set; }
     public int? ExitCode { get; set; }
     public bool Disposed { get; private set; }
+    public int TerminateCalls { get; private set; }
+    // Set to make TryTerminate refuse the way Windows does for an elevated serve.
+    public (string Type, string Message)? TerminateRefusal { get; set; }
+    // True: the process outlives the kill, which a bounded wait must notice.
+    public bool SurvivesTermination { get; set; }
 
     public Task WaitForExitAsync(CancellationToken ct) => _exited.Task.WaitAsync(ct);
     public void Exit(int code = 0)
@@ -26,6 +31,16 @@ internal sealed class FakeBackendProcess(int id, string executablePath) : IBacke
         ExitCode = code;
         HasExited = true;
         _exited.TrySetResult();
+    }
+
+    public bool TryTerminate(out string exType, out string exMessage)
+    {
+        TerminateCalls++;
+        exType = TerminateRefusal?.Type ?? "";
+        exMessage = TerminateRefusal?.Message ?? "";
+        if (TerminateRefusal is not null) return false;
+        if (!SurvivesTermination) Exit(-1);
+        return true;
     }
     public void Dispose() => Disposed = true;
 }
@@ -48,6 +63,13 @@ internal sealed class FakeBackendProcessHost : IBackendProcessHost
         SpawnCount++;
         return SpawnResult;
     }
+}
+
+// A guard whose verdict the test sets, and can change between two requests.
+internal sealed class ScriptedEndpointTrust(BackendEndpointVerdict verdict) : IBackendEndpointTrust
+{
+    public BackendEndpointVerdict Verdict { get; set; } = verdict;
+    public BackendEndpointVerdict Inspect() => Verdict;
 }
 
 internal sealed class ScriptedBackendListener : IBackendListenerOwner
@@ -118,16 +140,25 @@ internal sealed class SequenceBackendReconciler(params BackendReconciliationResu
     private readonly Queue<BackendReconciliationResult> _results = new(results);
     public int Calls { get; private set; }
     public List<string> Triggers { get; } = [];
+    // The pid each call was asked to replace, 0 when none.
+    public List<int> ReplaceRequests { get; } = [];
     public TaskCompletionSource SecondCallEntered { get; } =
         new(TaskCreationOptions.RunContinuationsAsynchronously);
+    // Set when the last scripted result has been handed out.
+    public TaskCompletionSource Drained { get; } =
+        new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    public Task<BackendReconciliationResult> ReconcileAsync(string trigger, CancellationToken ct)
+    public Task<BackendReconciliationResult> ReconcileAsync(
+        string trigger, CancellationToken ct, int replaceProcessId = 0)
     {
         ct.ThrowIfCancellationRequested();
         Triggers.Add(trigger);
+        ReplaceRequests.Add(replaceProcessId);
         Calls++;
         if (Calls == 2) SecondCallEntered.TrySetResult();
-        return Task.FromResult(_results.Dequeue());
+        BackendReconciliationResult next = _results.Dequeue();
+        if (_results.Count == 0) Drained.TrySetResult();
+        return Task.FromResult(next);
     }
 }
 
@@ -141,7 +172,8 @@ internal sealed class BlockingBackendReconciler : IBackendReconciler
     public TaskCompletionSource? ReleaseCancellation { get; init; }
     public int Calls { get; private set; }
 
-    public async Task<BackendReconciliationResult> ReconcileAsync(string trigger, CancellationToken ct)
+    public async Task<BackendReconciliationResult> ReconcileAsync(
+        string trigger, CancellationToken ct, int replaceProcessId = 0)
     {
         Calls++;
         Entered.TrySetResult();

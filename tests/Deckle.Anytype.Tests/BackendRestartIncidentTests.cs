@@ -126,6 +126,104 @@ public sealed class BackendRestartIncidentTests
             e => Assert.True(TravelsInTheLog(e)));
     }
 
+    private static BackendReconciliationResult Unready(int pid, BackendReplacement? replacement = null)
+        => new(BackendStartOutcome.TimedOut, null, "wait", "timed-out", pid, replacement);
+
+    // Eight waits on pid 52 (the startup and seven attempts) put the controlled
+    // clock at 322 s, past the five minutes of grace; the ninth call is asked to
+    // replace it.
+    private static IEnumerable<BackendReconciliationResult> EightWaits()
+        => Enumerable.Range(0, 8).Select(_ => Unready(52));
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task AWedgedServeThatIsEndedLeavesOneWarningPairedWithTheIncident()
+    {
+        using var listener = new TestEventListener("Deckle-Anytype");
+        var serving = new FakeBackendProcess(60, Path.GetFullPath("anytype.exe"));
+        var reconciler = new SequenceBackendReconciler(
+            [.. EightWaits(), new(BackendStartOutcome.Started, serving, "back", "spawned",
+                Replacement: new BackendReplacement(BackendReplaceOutcome.Ended))]);
+        await using var supervisor = new BackendSupervisor(
+            reconciler, new FakeBackendHealth(), new ControlledBackendTime());
+
+        await supervisor.EnsureRunningAsync(Ct);
+        Assert.True(
+            SpinWait.SpinUntil(
+                () => listener.Events.Any(e => e.EventId == DeckleAnytypeSource.EvtBackendRecovered),
+                TimeSpan.FromSeconds(10)));
+
+        var ended = Assert.Single(
+            listener.Events, e => e.EventId == DeckleAnytypeSource.EvtBackendWedgedServeEnded);
+        Assert.True(TravelsInTheLog(ended));
+        Assert.Equal("52", Field(ended, "pid"));
+        Assert.Equal("322", Field(ended, "unready_s"));
+        // The id of the start that opened the incident rides to its recovery.
+        var recovered = Assert.Single(
+            listener.Events, e => e.EventId == DeckleAnytypeSource.EvtBackendRecovered);
+        Assert.Equal("wait", Field(ended, "work_id"));
+        Assert.Equal(Field(ended, "work_id"), Field(recovered, "work_id"));
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task AnEndingThatIsRefusedIsLoggedOnceAndNeverAskedAgainForThatPid()
+    {
+        using var listener = new TestEventListener("Deckle-Anytype");
+        var serving = new FakeBackendProcess(60, Path.GetFullPath("anytype.exe"));
+        var reconciler = new SequenceBackendReconciler(
+            [
+                .. EightWaits(),
+                Unready(52, new BackendReplacement(
+                    BackendReplaceOutcome.Refused, "Win32Exception", "Access is denied.")),
+                Unready(52), Unready(52), Unready(52),
+                new(BackendStartOutcome.Started, serving, "back", "spawned"),
+            ]);
+        await using var supervisor = new BackendSupervisor(
+            reconciler, new FakeBackendHealth(), new ControlledBackendTime());
+
+        await supervisor.EnsureRunningAsync(Ct);
+        Assert.True(
+            SpinWait.SpinUntil(
+                () => listener.Events.Any(e => e.EventId == DeckleAnytypeSource.EvtBackendRecovered),
+                TimeSpan.FromSeconds(10)));
+
+        Assert.Equal(1, reconciler.ReplaceRequests.Count(pid => pid != 0));
+        var refused = Assert.Single(
+            listener.Events, e => e.EventId == DeckleAnytypeSource.EvtBackendWedgedServeEndRefused);
+        Assert.True(TravelsInTheLog(refused));
+        Assert.Equal("52", Field(refused, "pid"));
+        Assert.Equal("Win32Exception", Field(refused, "ex_type"));
+        Assert.Equal("Access is denied.", Field(refused, "ex_message"));
+        Assert.Equal("wait", Field(refused, "work_id"));
+        Assert.DoesNotContain(
+            listener.Events, e => e.EventId == DeckleAnytypeSource.EvtBackendWedgedServeEnded);
+    }
+
+    // The identity re-check is an everyday no, not an event worth keeping: it
+    // stays Verbose, outside the always-on log, and says why without a path.
+    [Fact]
+    public async Task AReplaceRequestTheReconcilerDeclinesStaysVerboseAndCarriesNoPath()
+    {
+        using var listener = new TestEventListener("Deckle-Anytype");
+        string executable = Path.GetFullPath("anytype.exe");
+        var stranger = new FakeBackendProcess(52, Path.GetFullPath("other.exe"));
+        var processes = new FakeBackendProcessHost();
+        processes.Opened.Add(stranger.Id, stranger);
+        var reconciler = new BackendReconciler(
+            new FakeBackendProvider(executable), processes, new ScriptedBackendListener(),
+            new FakeBackendHealth(), new ImmediateBackendCoordinator(), new ControlledBackendTime());
+
+        await reconciler.ReconcileAsync(BackendTriggers.StartFailed, Ct, replaceProcessId: stranger.Id);
+
+        var declined = Assert.Single(
+            listener.Events, e => e.EventId == DeckleAnytypeSource.EvtBackendWedgedServeEndDeclined);
+        Assert.False(TravelsInTheLog(declined));
+        Assert.Equal("not_trusted", Field(declined, "reason"));
+        Assert.Equal("52", Field(declined, "pid"));
+        Assert.DoesNotContain("other.exe", declined.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
     private static async Task ReconcileADyingServe(string trigger)
     {
         string executable = Path.GetFullPath("anytype.exe");

@@ -1,13 +1,26 @@
 namespace Deckle.Anytype;
 
 // PendingProcessId names the live trusted serve a timed-out reconciliation
-// waited on without it ever serving; 0 when none was seen.
+// waited on without it ever serving; 0 when none was seen. Replacement is null
+// unless the caller asked for a serve to be replaced.
 internal sealed record BackendReconciliationResult(
     BackendStartOutcome Outcome,
     IBackendProcess? Process,
     string ReconciliationId,
     string Decision,
-    int PendingProcessId = 0);
+    int PendingProcessId = 0,
+    BackendReplacement? Replacement = null);
+
+// What became of a request to replace a serve. Declined means the identity
+// re-check said no and the serve was left alone (the reconciler wrote why);
+// Refused means the ending was tried and Windows said no, or the serve outlived
+// it, with the cause for the supervisor to log.
+internal enum BackendReplaceOutcome { Ended, Declined, Refused }
+
+internal sealed record BackendReplacement(
+    BackendReplaceOutcome Outcome,
+    string ExType = "",
+    string ExMessage = "");
 
 // Closed vocabulary of what asks for a reconciliation, the `trigger` of
 // BackendReconciliationStarted. Startup is the first start of the session; the
@@ -24,7 +37,12 @@ internal static class BackendTriggers
 
 internal interface IBackendReconciler
 {
-    Task<BackendReconciliationResult> ReconcileAsync(string trigger, CancellationToken ct);
+    // A reconciliation never ends a serve on its own: it waits on a live trusted
+    // one. replaceProcessId, when not 0, is the one exception, asked for by the
+    // supervisor, which holds the memory across attempts that this transaction
+    // lacks. The reconciler re-proves that serve's identity before ending it.
+    Task<BackendReconciliationResult> ReconcileAsync(
+        string trigger, CancellationToken ct, int replaceProcessId = 0);
 }
 
 // One inspect/adopt/spawn transaction. The named lease spans warm-up so a
@@ -38,6 +56,11 @@ internal sealed class BackendReconciler : IBackendReconciler
     // delay, yet short enough to surface a backend that never binds.
     private static readonly TimeSpan ReadinessTimeout = TimeSpan.FromSeconds(20);
     private static readonly TimeSpan ProbeInterval = TimeSpan.FromMilliseconds(500);
+
+    // A killed process is gone from the kernel within milliseconds; the bound
+    // only keeps a serve that survives its kill from holding the lease.
+    private static readonly TimeSpan TerminationWait = TimeSpan.FromSeconds(5);
+    private static readonly TimeSpan TerminationPoll = TimeSpan.FromMilliseconds(100);
 
     private readonly IBackendProviderCatalog _provider;
     private readonly IBackendProcessHost _processes;
@@ -72,7 +95,8 @@ internal sealed class BackendReconciler : IBackendReconciler
 
     public async Task<BackendReconciliationResult> ReconcileAsync(
         string trigger,
-        CancellationToken ct)
+        CancellationToken ct,
+        int replaceProcessId = 0)
     {
         string id = Guid.NewGuid().ToString("N");
         long started = _time.GetTimestamp();
@@ -81,7 +105,18 @@ internal sealed class BackendReconciler : IBackendReconciler
         {
             BackendReconciliationResult result = await _coordinator.RunAsync(
                 id,
-                _ => ReconcileProtected(id, BackendTriggers.IsRestart(trigger), ct),
+                _ =>
+                {
+                    // Inside the lease, before the loop: the ending and the
+                    // spawn that replaces it form one transaction, so no other
+                    // Deckle can slip a serve between them.
+                    BackendReplacement? replacement = replaceProcessId != 0
+                        ? ReplaceWedgedServe(id, replaceProcessId, ct)
+                        : null;
+                    BackendReconciliationResult reconciled = ReconcileProtected(
+                        id, BackendTriggers.IsRestart(trigger), ct);
+                    return replacement is null ? reconciled : reconciled with { Replacement = replacement };
+                },
                 ct).ConfigureAwait(false);
             DeckleAnytypeSource.Log.BackendReconciliationCompleted(
                 id, result.Decision, result.Process?.Id ?? result.PendingProcessId,
@@ -103,6 +138,59 @@ internal sealed class BackendReconciler : IBackendReconciler
                 _time.GetElapsedTime(started).TotalMilliseconds);
             throw;
         }
+    }
+
+    // Ends a serve the supervisor found alive and unready for too long. The ask
+    // is old news by the time the lease is held, so identity is proven again
+    // here: the pid must still be a live process of a trusted provider and must
+    // not own the listener (a serve that bound it became ready after all).
+    // Anything short of that leaves it alone, and the loop below behaves as it
+    // always has. Never throws for a refusal; cancellation still propagates.
+    private BackendReplacement ReplaceWedgedServe(string id, int processId, CancellationToken ct)
+    {
+        using IBackendProcess? serve = _processes.Open(processId);
+        if (serve is null) return Declined(id, processId, "gone");
+        if (serve.HasExited) return Declined(id, processId, "exited");
+
+        bool trusted;
+        try
+        {
+            trusted = IsTrusted(serve.ExecutablePath);
+        }
+        catch (Exception ex) when (ex is
+            ArgumentException or IOException or NotSupportedException or UnauthorizedAccessException)
+        {
+            trusted = false;
+        }
+        if (!trusted) return Declined(id, processId, "not_trusted");
+
+        BackendListenerSnapshot listener = _listener.Inspect();
+        if (listener.State == BackendListenerState.Owned && listener.ProcessId == processId)
+            return Declined(id, processId, "owns_listener");
+        // A table that cannot be read, or shared by several owners, cannot show
+        // that the serve does not own the port.
+        if (listener.State is BackendListenerState.Failed or BackendListenerState.Ambiguous)
+            return Declined(id, processId, "listener_unreadable");
+
+        if (!serve.TryTerminate(out string exType, out string exMessage))
+            return new(BackendReplaceOutcome.Refused, exType, exMessage);
+
+        long waitStarted = _time.GetTimestamp();
+        while (!serve.HasExited)
+        {
+            if (_time.GetElapsedTime(waitStarted) >= TerminationWait)
+                return new(
+                    BackendReplaceOutcome.Refused, "TimeoutException",
+                    $"the process was still running {TerminationWait.TotalSeconds:F0} s after it was ended");
+            _time.Delay(TerminationPoll, ct);
+        }
+        return new(BackendReplaceOutcome.Ended);
+    }
+
+    private static BackendReplacement Declined(string id, int processId, string reason)
+    {
+        DeckleAnytypeSource.Log.BackendWedgedServeEndDeclined(processId, reason, id);
+        return new(BackendReplaceOutcome.Declined);
     }
 
     private BackendReconciliationResult ReconcileProtected(string id, bool inRestart, CancellationToken ct)

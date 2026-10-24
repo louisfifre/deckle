@@ -138,6 +138,116 @@ public sealed class BackendSupervisorTests
         Assert.Equal([TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(5)], time.Delays);
     }
 
+    // The restart ladder waits 2, 5, 15 then 60 s: after n attempts the controlled
+    // clock reads 2, 7, 22, 82, 142, 202, 262, 322, 382, 442 s. Five minutes of
+    // grace are therefore passed by the eighth attempt, the ninth call overall.
+    private static BackendReconciliationResult StillUnready(
+        int pid, BackendReplacement? replacement = null) =>
+        new(BackendStartOutcome.TimedOut, null, "wait", "timed-out", pid, replacement);
+
+    private static BackendReconciliationResult Serving(int pid, BackendReplacement? replacement = null) =>
+        new(BackendStartOutcome.Started, new FakeBackendProcess(pid, Path.GetFullPath("anytype.exe")),
+            "spawned", "spawned", Replacement: replacement);
+
+    private static BackendReconciliationResult[] Unready(int pid, int count) =>
+        Enumerable.Range(0, count).Select(_ => StillUnready(pid)).ToArray();
+
+    private static async Task<SequenceBackendReconciler> RunToTheEnd(
+        params BackendReconciliationResult[] results)
+    {
+        var reconciler = new SequenceBackendReconciler(results);
+        await using var supervisor = new BackendSupervisor(
+            reconciler, new FakeBackendHealth(), new ControlledBackendTime());
+        Assert.Equal(results[0].Outcome, await supervisor.EnsureRunningAsync(Ct));
+        await reconciler.Drained.Task.WaitAsync(TimeSpan.FromSeconds(10), Ct);
+        return reconciler;
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task A_serve_unready_past_the_grace_is_asked_to_be_replaced_exactly_once()
+    {
+        // The startup wait and seven attempts name pid 52; the ninth call is the
+        // one asked to replace it. It leaves the serve in place (declined), and the
+        // two calls after it must not ask again.
+        SequenceBackendReconciler reconciler = await RunToTheEnd(
+            [
+                .. Unready(52, 8),
+                StillUnready(52, new BackendReplacement(BackendReplaceOutcome.Declined)),
+                .. Unready(52, 2),
+                Serving(60),
+            ]);
+
+        int[] expected = new int[12];
+        expected[8] = 52;
+        Assert.Equal(expected, reconciler.ReplaceRequests);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task The_reconciliation_asked_to_replace_a_serve_hands_back_the_one_that_recovers()
+    {
+        using var listener = new Deckle.TestSupport.TestEventListener("Deckle-Anytype");
+        var reconciler = new SequenceBackendReconciler(
+            [.. Unready(52, 8), Serving(60, new BackendReplacement(BackendReplaceOutcome.Ended))]);
+        await using var supervisor = new BackendSupervisor(
+            reconciler, new FakeBackendHealth(), new ControlledBackendTime());
+
+        Assert.Equal(BackendStartOutcome.TimedOut, await supervisor.EnsureRunningAsync(Ct));
+        Assert.True(
+            SpinWait.SpinUntil(
+                () => listener.Events.Any(e => e.EventId == DeckleAnytypeSource.EvtBackendRecovered),
+                TimeSpan.FromSeconds(10)));
+
+        Assert.Equal(52, reconciler.ReplaceRequests[8]);
+        Assert.Equal(9, reconciler.Calls);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task A_serve_unready_below_the_grace_is_never_asked_to_be_replaced()
+    {
+        // Seven attempts, the last after 262 s: still inside the five minutes.
+        SequenceBackendReconciler reconciler = await RunToTheEnd(
+            [.. Unready(52, 7), Serving(60)]);
+
+        Assert.All(reconciler.ReplaceRequests, pid => Assert.Equal(0, pid));
+        Assert.Equal(8, reconciler.Calls);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task A_new_pid_starts_the_grace_again()
+    {
+        // Pid 52 for the startup and three attempts, then pid 53 from the clock's
+        // 82 s: its grace ends at 382 s, which is the tenth call, not the ninth.
+        SequenceBackendReconciler reconciler = await RunToTheEnd(
+            [.. Unready(52, 4), .. Unready(53, 6), Serving(60)]);
+
+        int[] expected = new int[11];
+        expected[9] = 53;
+        Assert.Equal(expected, reconciler.ReplaceRequests);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task An_attempt_that_is_not_a_wait_on_a_live_serve_starts_the_grace_again()
+    {
+        // The rejected attempt at 82 s breaks the streak: pid 52 is seen anew at
+        // 142 s and is asked after 442 s, the eleventh call.
+        SequenceBackendReconciler reconciler = await RunToTheEnd(
+            [
+                .. Unready(52, 4),
+                new BackendReconciliationResult(BackendStartOutcome.StartRejected, null, "r", "start-rejected"),
+                .. Unready(52, 6),
+                Serving(60),
+            ]);
+
+        int[] expected = new int[12];
+        expected[10] = 52;
+        Assert.Equal(expected, reconciler.ReplaceRequests);
+    }
+
     // Startup succeeds, the first restart throws, the second ends the ladder.
     private sealed class FaultOnSecondCallReconciler(FakeBackendProcess process) : IBackendReconciler
     {
@@ -145,7 +255,8 @@ public sealed class BackendSupervisorTests
         public TaskCompletionSource ThirdCallEntered { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public Task<BackendReconciliationResult> ReconcileAsync(string trigger, CancellationToken ct)
+        public Task<BackendReconciliationResult> ReconcileAsync(
+            string trigger, CancellationToken ct, int replaceProcessId = 0)
         {
             ct.ThrowIfCancellationRequested();
             switch (Interlocked.Increment(ref _calls))

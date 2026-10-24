@@ -20,7 +20,7 @@ public sealed class BackendEndpointTrustTests
         var trust = new BackendEndpointTrust(
             new FakeBackendProvider(executable), processes, listener);
 
-        Assert.True(trust.IsTrusted());
+        Assert.Equal(BackendEndpointVerdict.Trusted, trust.Inspect());
         Assert.True(owner.Disposed);
     }
 
@@ -38,7 +38,34 @@ public sealed class BackendEndpointTrustTests
         var trust = new BackendEndpointTrust(
             new FakeBackendProvider(trusted), processes, listener);
 
-        Assert.False(trust.IsTrusted());
+        Assert.Equal(BackendEndpointVerdict.Untrusted, trust.Inspect());
         Assert.True(owner.Disposed);
     }
+
+    [Fact]
+    public void Unbound_port_reads_as_not_listening_rather_than_untrusted()
+    {
+        var trust = new BackendEndpointTrust(
+            new FakeBackendProvider(Path.GetFullPath("anytype.exe")),
+            new FakeBackendProcessHost(),
+            new ScriptedBackendListener { Current = new(BackendListenerState.Unbound, 0) });
+
+        Assert.Equal(BackendEndpointVerdict.NotListening, trust.Inspect());
+    }
+
+    // The listener table says nothing reliable about who holds the port, so
+    // neither case may read as "nothing listens": that would be a guess.
+    [Fact]
+    public void Port_with_several_owners_stays_untrusted() =>
+        Assert.Equal(BackendEndpointVerdict.Untrusted, InspectWith(BackendListenerState.Ambiguous));
+
+    [Fact]
+    public void Unreadable_port_table_stays_untrusted() =>
+        Assert.Equal(BackendEndpointVerdict.Untrusted, InspectWith(BackendListenerState.Failed));
+
+    private static BackendEndpointVerdict InspectWith(BackendListenerState state) =>
+        new BackendEndpointTrust(
+            new FakeBackendProvider(Path.GetFullPath("anytype.exe")),
+            new FakeBackendProcessHost(),
+            new ScriptedBackendListener { Current = new(state, 0) }).Inspect();
 }
