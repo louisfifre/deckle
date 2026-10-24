@@ -145,7 +145,8 @@ public sealed class BackendSupervisorTests
         public TaskCompletionSource ThirdCallEntered { get; } =
             new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public Task<BackendReconciliationResult> ReconcileAsync(string trigger, CancellationToken ct)
+        public Task<BackendReconciliationResult> ReconcileAsync(
+            string trigger, CancellationToken ct, int replaceProcessId = 0)
         {
             ct.ThrowIfCancellationRequested();
             switch (Interlocked.Increment(ref _calls))

@@ -90,6 +90,9 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public const int EvtApiRefusalsEnded              = 65;
     public const int EvtApiRequestSuperseded          = 66;
     public const int EvtPagedReadEndedOnEmptyPage     = 67;
+    public const int EvtBackendWedgedServeEnded       = 68;
+    public const int EvtBackendWedgedServeEndRefused  = 69;
+    public const int EvtBackendWedgedServeEndDeclined = 70;
 
     // ── HTTP transport ──────────────────────────────────────────────────
 
@@ -677,6 +680,41 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public void BackendRecovered(int attempts, double downtime_s, string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtBackendRecovered, attempts, downtime_s, work_id);
+    }
+
+    // A serve stayed alive without ever serving past the grace, and Deckle ended
+    // it so the next start can replace it. Warning: it is Deckle acting on a
+    // process, and it explains the exit the log shows next. unready_s is how long
+    // the serve had been waited on.
+    [Event(EvtBackendWedgedServeEnded,
+           Level = EventLevel.Warning,
+           Keywords = Lifecycle,
+           Message = "Deckle ended an Anytype backend that never started serving, and starts a new one\npid={0} | unready_s={1:F0} | work_id={2}")]
+    public void BackendWedgedServeEnded(int pid, double unready_s, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendWedgedServeEnded, pid, unready_s, work_id);
+    }
+
+    // Windows refused (typically a serve started as administrator while Deckle
+    // is not). Written once per serve: the supervisor does not ask again.
+    [Event(EvtBackendWedgedServeEndRefused,
+           Level = EventLevel.Warning,
+           Keywords = Lifecycle,
+           Message = "Deckle could not end an Anytype backend that never started serving, so Anytype stays unavailable until it is ended by hand\nex_type={1} | ex_message={2} | pid={0} | work_id={3}")]
+    public void BackendWedgedServeEndRefused(int pid, string ex_type, string ex_message, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendWedgedServeEndRefused, pid, ex_type, PathRedaction.Redact(ex_message), work_id);
+    }
+
+    // The identity re-check ahead of the ending said no, so the serve was left
+    // alone. reason: gone, exited, not_trusted, owns_listener or listener_unreadable.
+    [Event(EvtBackendWedgedServeEndDeclined,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "reason={1} | pid={0} | reconciliation_id={2}")]
+    public void BackendWedgedServeEndDeclined(int pid, string reason, string reconciliation_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendWedgedServeEndDeclined, pid, reason, reconciliation_id);
     }
 
     [Event(EvtBackendSupervisionStopped,

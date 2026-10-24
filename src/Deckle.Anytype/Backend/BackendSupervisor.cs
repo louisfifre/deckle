@@ -31,6 +31,14 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
     private static readonly TimeSpan HealthInterval = TimeSpan.FromSeconds(30);
     private const int UnresponsiveThreshold = 3;
 
+    // How long one serve may stay alive without serving before the next
+    // reconciliation is asked to replace it. A normal login binds REST about
+    // 2.6 s after the start, so five minutes leaves room for a slow migration
+    // and still does not leave Anytype dead for hours: on 2026-10-24 a serve
+    // stuck in account_transition was waited on 352 times over 8 hours, because
+    // the reconciler never spawns beside a live trusted serve.
+    internal static readonly TimeSpan WedgedServeGrace = TimeSpan.FromMinutes(5);
+
     private readonly IBackendReconciler _reconciler;
     private readonly IBackendHealthProbe _health;
     private readonly IBackendTime _time;
@@ -106,6 +114,9 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
 
     private async Task<BackendStartOutcome> InitializeAsync(CancellationToken lifetimeToken)
     {
+        // The startup wait is the first minutes of a serve's unready time, so
+        // the incident it opens inherits both the pid and this timestamp.
+        long startedAt = _time.GetTimestamp();
         BackendReconciliationResult result = await _reconciler
             .ReconcileAsync(BackendTriggers.Startup, lifetimeToken)
             .ConfigureAwait(false);
@@ -136,8 +147,10 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
                 {
                     // The incident shares the id of the start that opened it.
                     string startId = result.ReconciliationId;
+                    int pendingId = result.Outcome is BackendStartOutcome.TimedOut
+                        ? result.PendingProcessId : 0;
                     _watchTask = SuperviseAsync(
-                        ct => RecoverAsync(startId, ct), _lifetimeCts.Token);
+                        ct => RecoverAsync(startId, pendingId, startedAt, ct), _lifetimeCts.Token);
                 }
             }
         }
@@ -165,10 +178,12 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
         }
     }
 
-    private async Task RecoverAsync(string incidentId, CancellationToken ct)
+    private async Task RecoverAsync(
+        string incidentId, int pendingProcessId, long unreadySince, CancellationToken ct)
     {
         (IBackendProcess? process, _) = await RestartAsync(
-            BackendTriggers.StartFailed, attempt: 0, incidentId, ct).ConfigureAwait(false);
+            BackendTriggers.StartFailed, attempt: 0, incidentId, ct,
+            pendingProcessId, unreadySince).ConfigureAwait(false);
         if (process is not null)
             await WatchAsync(process, ct).ConfigureAwait(false);
     }
@@ -206,17 +221,44 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
     // ended supervision for the rest of the session without a word. The
     // trigger names what opened the incident, an exit or a start that never
     // served: labelling both "process-exit" hid a live serve stuck in login.
+    //
+    // This loop is also where the memory across attempts lives, because each
+    // reconciliation is a memoryless transaction. It follows the live serve that
+    // consecutive timed-out waits name; once that same pid has stayed unready for
+    // WedgedServeGrace, the next reconciliation is asked to replace it, once per
+    // pid: after a refusal (an elevated serve) asking again would only repeat it.
+    // The streak starts over when the pid changes or a result is not a timed-out
+    // wait on a live serve. pendingProcessId / unreadySince seed it with the
+    // startup wait that opened the incident.
     private async Task<(IBackendProcess? Process, int Attempt)> RestartAsync(
-        string trigger, int attempt, string incidentId, CancellationToken ct)
+        string trigger, int attempt, string incidentId, CancellationToken ct,
+        int pendingProcessId = 0, long unreadySince = 0)
     {
         long downSince = _time.GetTimestamp();
         int failures = 0;
+        int unreadyPid = pendingProcessId;
+        var asked = new HashSet<int>();
         while (true)
         {
             TimeSpan delay = RestartBackoff[Math.Min(attempt, RestartBackoff.Length - 1)];
             DeckleAnytypeSource.Log.BackendRestartScheduled(attempt + 1, delay.TotalMilliseconds);
             await Task.Run(() => _time.Delay(delay, ct), ct).ConfigureAwait(false);
 
+            // Judged after the backoff, which is part of the time the serve stayed unready.
+            int replacePid = 0;
+            double unreadySeconds = 0;
+            if (unreadyPid != 0 && !asked.Contains(unreadyPid))
+            {
+                TimeSpan unready = _time.GetElapsedTime(unreadySince);
+                if (unready >= WedgedServeGrace)
+                {
+                    replacePid = unreadyPid;
+                    unreadySeconds = unready.TotalSeconds;
+                    asked.Add(replacePid);
+                }
+            }
+
+            long attemptStarted = _time.GetTimestamp();
             BackendReconciliationResult? result = null;
             string outcome;
             string exType = "";
@@ -224,7 +266,7 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
             try
             {
                 result = await _reconciler
-                    .ReconcileAsync(trigger, ct)
+                    .ReconcileAsync(trigger, ct, replacePid)
                     .ConfigureAwait(false);
                 outcome = result.Decision;
             }
@@ -235,6 +277,28 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
                 exMessage = ex.Message;
             }
             attempt = Math.Min(attempt + 1, RestartBackoff.Length - 1);
+
+            // Written before the recovery below: the serve that comes back is
+            // the replacement of the one just ended.
+            switch (result?.Replacement)
+            {
+                case { Outcome: BackendReplaceOutcome.Ended }:
+                    DeckleAnytypeSource.Log.BackendWedgedServeEnded(replacePid, unreadySeconds, incidentId);
+                    break;
+                case { Outcome: BackendReplaceOutcome.Refused } refused:
+                    DeckleAnytypeSource.Log.BackendWedgedServeEndRefused(
+                        replacePid, refused.ExType, refused.ExMessage, incidentId);
+                    break;
+            }
+
+            // A thrown reconciliation says nothing about the serve: the streak stays.
+            if (result is not null)
+            {
+                int pending = result.Outcome is BackendStartOutcome.TimedOut ? result.PendingProcessId : 0;
+                if (pending != unreadyPid)
+                    unreadySince = attemptStarted;
+                unreadyPid = pending;
+            }
 
             if (result?.Process is not null)
             {
