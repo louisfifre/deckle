@@ -15,13 +15,6 @@ namespace Deckle.Anytype.Tests;
 [Trait("Category", "observability")]
 public sealed class ApiFailureIncidentTests
 {
-    private sealed class MutableEndpointTrust(bool trusted) : IBackendEndpointTrust
-    {
-        public bool Trusted { get; set; } = trusted;
-
-        public bool IsTrusted() => Trusted;
-    }
-
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     private static AnytypeV2Client ClientOver(
@@ -162,13 +155,13 @@ public sealed class ApiFailureIncidentTests
     public async Task ARunOfRequestsToAnUntrustedEndpointIsOneErrorUntilTheOwnerIsTrusted()
     {
         using var listener = new TestEventListener("Deckle-Anytype");
-        var trust = new MutableEndpointTrust(trusted: false);
+        var trust = new ScriptedEndpointTrust(BackendEndpointVerdict.Untrusted);
         var handler = new FakeV2Handler().Reply(HttpStatusCode.OK, "{}");
         using AnytypeV2Client client = ClientOver(handler, trust);
 
         for (int i = 0; i < 3; i++)
             await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendAsync(Get(), Ct));
-        trust.Trusted = true;
+        trust.Verdict = BackendEndpointVerdict.Trusted;
         await client.SendAsync(Get(), Ct);
 
         EventWrittenEventArgs opened = Assert.Single(
@@ -178,5 +171,46 @@ public sealed class ApiFailureIncidentTests
             listener.Events, e => e.EventId == DeckleAnytypeSource.EvtApiRefusalsEnded);
         Assert.Equal("3", Field(ended, "refused_requests"));
         Assert.Equal(2, listener.Events.Count(TravelsInTheLog));
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ARunOfRequestsToAnEmptyPortIsOneNotServingErrorUntilTheBackendListens()
+    {
+        using var listener = new TestEventListener("Deckle-Anytype");
+        var trust = new ScriptedEndpointTrust(BackendEndpointVerdict.NotListening);
+        var handler = new FakeV2Handler().Reply(HttpStatusCode.OK, "{}");
+        using AnytypeV2Client client = ClientOver(handler, trust);
+
+        for (int i = 0; i < 3; i++)
+            await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendAsync(Get(), Ct));
+        trust.Verdict = BackendEndpointVerdict.Trusted;
+        await client.SendAsync(Get(), Ct);
+
+        EventWrittenEventArgs opened = Assert.Single(
+            listener.Events, e => e.EventId == DeckleAnytypeSource.EvtApiRequestFailed);
+        Assert.Equal(ApiFailureReasons.BackendNotServing, Field(opened, "reason"));
+        EventWrittenEventArgs ended = Assert.Single(
+            listener.Events, e => e.EventId == DeckleAnytypeSource.EvtApiRefusalsEnded);
+        Assert.Equal("3", Field(ended, "refused_requests"));
+        Assert.Equal(2, listener.Events.Count(TravelsInTheLog));
+    }
+
+    [Fact]
+    public async Task AnEmptyPortAndAStrangerOnThePortAreTwoRunsNotOne()
+    {
+        using var listener = new TestEventListener("Deckle-Anytype");
+        var trust = new ScriptedEndpointTrust(BackendEndpointVerdict.NotListening);
+        using AnytypeV2Client client = ClientOver(new FakeV2Handler(), trust);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendAsync(Get(), Ct));
+        trust.Verdict = BackendEndpointVerdict.Untrusted;
+        await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendAsync(Get(), Ct));
+
+        Assert.Equal(
+            [ApiFailureReasons.BackendNotServing, ApiFailureReasons.UntrustedEndpoint],
+            listener.Events
+                .Where(e => e.EventId == DeckleAnytypeSource.EvtApiRequestFailed)
+                .Select(e => Field(e, "reason")));
     }
 }

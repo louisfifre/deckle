@@ -146,9 +146,10 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     }
 
     // Closes a run of identical refusals ApiRequestFailed(reason=http_status|
-    // untrusted_endpoint) opened. The server's error text stays out of the log
-    // (it is free text, and the detail above carries the machine code instead).
-    // A run of one is already told by its opening line and writes nothing here.
+    // untrusted_endpoint|backend_not_serving) opened. The server's error text
+    // stays out of the log (it is free text, and the detail above carries the
+    // machine code instead). A run of one is already told by its opening line
+    // and writes nothing here.
     [Event(EvtApiRefusalsEnded,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Network,

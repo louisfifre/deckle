@@ -18,6 +18,10 @@ internal static class ApiFailureReasons
 
     // The endpoint's owner is not a provider Deckle trusts, so nothing was sent.
     public const string UntrustedEndpoint = "untrusted_endpoint";
+
+    // Nothing listens on the backend's port: the serve has not bound it yet, or
+    // is stuck before it does. Nothing untrusted is there, and nothing was sent.
+    public const string BackendNotServing = "backend_not_serving";
 }
 
 // The failure incidents of one Anytype API client, shared by the v1 and the v2
@@ -94,6 +98,24 @@ internal sealed partial class ApiFailureIncidents
             DeckleAnytypeSource.Log.ApiRequestFailed(method, status, reason, "", "");
         }
         DeckleAnytypeSource.Log.ApiRequestFailedDetail(method, path, status, BoundedCode(code));
+    }
+
+    // The request was held back because the endpoint is not proven trusted
+    // (Inspect is not Trusted); nothing was sent and the bearer stayed home. The
+    // two verdicts are two reasons, so a run of one never counts toward the
+    // other, and the exception tells the caller which of them it hit: "not
+    // trusted" for a stranger on the port, "not serving yet" for an empty port.
+    internal InvalidOperationException EndpointRefused(
+        string method, string path, BackendEndpointVerdict verdict)
+    {
+        bool nothingListens = verdict == BackendEndpointVerdict.NotListening;
+        Refused(
+            method, path, 0,
+            nothingListens ? ApiFailureReasons.BackendNotServing : ApiFailureReasons.UntrustedEndpoint,
+            nothingListens ? "not_listening" : "owner_untrusted");
+        return new InvalidOperationException(nothingListens
+            ? "The Anytype backend is not serving yet (nothing listens on its port); the request was not sent."
+            : "The Anytype endpoint is not owned by a trusted Deckle provider; the request was not sent.");
     }
 
     // A write whose version was stale: the caller re-reads and retries it.

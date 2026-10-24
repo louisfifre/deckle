@@ -50,6 +50,13 @@ internal sealed class FakeBackendProcessHost : IBackendProcessHost
     }
 }
 
+// A guard whose verdict the test sets, and can change between two requests.
+internal sealed class ScriptedEndpointTrust(BackendEndpointVerdict verdict) : IBackendEndpointTrust
+{
+    public BackendEndpointVerdict Verdict { get; set; } = verdict;
+    public BackendEndpointVerdict Inspect() => Verdict;
+}
+
 internal sealed class ScriptedBackendListener : IBackendListenerOwner
 {
     private readonly Queue<BackendListenerSnapshot> _snapshots = new();

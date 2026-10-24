@@ -12,11 +12,6 @@ public class AnytypeV2ClientTests
 {
     private const string SpaceId = "space-1";
 
-    private sealed class FixedEndpointTrust(bool trusted) : IBackendEndpointTrust
-    {
-        public bool IsTrusted() => trusted;
-    }
-
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     private static AnytypeV2Client ClientOver(FakeV2Handler handler, IBackendEndpointTrust? trust = null) =>
@@ -186,10 +181,29 @@ public class AnytypeV2ClientTests
     public async Task AnUntrustedEndpointReceivesNothingAndTheBearerStaysHome()
     {
         var handler = new FakeV2Handler().Reply(HttpStatusCode.OK, "{}");
-        using AnytypeV2Client client = ClientOver(handler, new FixedEndpointTrust(false));
+        using AnytypeV2Client client = ClientOver(
+            handler, new ScriptedEndpointTrust(BackendEndpointVerdict.Untrusted));
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => client.SendAsync(Get(), Ct));
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => client.SendAsync(Get(), Ct));
 
+        Assert.Contains("not owned by a trusted Deckle provider", error.Message);
+        Assert.Empty(handler.Requests);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task AnEmptyPortSaysTheBackendIsNotServingAndSendsNothing()
+    {
+        var handler = new FakeV2Handler().Reply(HttpStatusCode.OK, "{}");
+        using AnytypeV2Client client = ClientOver(
+            handler, new ScriptedEndpointTrust(BackendEndpointVerdict.NotListening));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => client.SendAsync(Get(), Ct));
+
+        Assert.Contains("not serving yet", error.Message);
+        Assert.DoesNotContain("trusted Deckle provider", error.Message);
         Assert.Empty(handler.Requests);
     }
 
@@ -215,7 +229,7 @@ public class AnytypeV2ClientTests
     public async Task ATrustedEndpointIsServedNormally()
     {
         var handler = new FakeV2Handler().Reply(HttpStatusCode.OK, "{}");
-        using AnytypeV2Client client = ClientOver(handler, new FixedEndpointTrust(true));
+        using AnytypeV2Client client = ClientOver(handler, new ScriptedEndpointTrust(BackendEndpointVerdict.Trusted));
 
         await client.SendAsync(Get(), Ct);
 
