@@ -20,7 +20,6 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Replace the verbosity notice with Settings and Playground buttons
 - **app:** Wire the Settings, Logs and Playground windows to one another
 - **diagnostics:** Line up a warning's pairs under its sentence in the text line
-- **logging:** Open the log window with Verbose rows hidden
 - **diagnostics:** Hold the user incidents that are open now
 - **precision-scroll:** Report the fallback to the native wheel as a user incident
 - **transcription:** Report an unavailable microphone or Whisper model as a user incident
@@ -103,6 +102,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **logging:** End every line of a copied two-line row the same way
 - **logging:** Call the opt-in log file the trace in Settings
 - **settings:** State the trace's real rotation in its consent dialog
+- **anytype:** Say "not serving yet" when nothing listens on the port
+- **anytype:** Replace a serve that stays alive without ever serving
 
 ## [0.67.1](https://github.com/louisfifre/deckle/compare/v0.59.0...v0.67.1) — 2026-10-23
 
