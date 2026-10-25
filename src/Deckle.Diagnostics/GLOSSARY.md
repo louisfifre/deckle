@@ -26,8 +26,8 @@ One of the few `Informational` events that tell a run's story, such as a start a
 _Avoid_ : verbosity control (which never removes a milestone).
 
 **User incident** :
-A part of Deckle that runs degraded until a gesture of the person restores it, such as a microphone that cannot open or notifications that Windows drops because Deckle runs as administrator. A module opens and closes it by an id from `UserIncidents`, beside the log lines it already writes, and `UserIncidentRegistry` holds what is open now. The tray shows it as a dot on its icon and a "Problem · {module}" line in its menu. It is a state, not a record: the registry writes no log line for an open or a close, and the dot goes away when the incident closes.
-_Avoid_ : incident alone (in the log, a degradation that repeats, written once and closed by one recovery, whether or not the person can fix it), alert or notification (nothing pops up), error (an `Error` level entry).
+A degraded state of one module that a gesture of the person ends, such as a microphone that cannot open or notifications Windows drops because Deckle runs as administrator. It opens and closes where the module already logs the degradation and its recovery, and the tray shows it for as long as it is open. It is a state, not a record: it leaves no line of its own and disappears when the module recovers.
+_Avoid_ : incident (in the log, a degradation that repeats, written once and closed by one recovery, whether or not the person can fix it), alert or notification (nothing pops up), error (an `Error` level entry).
 
 **Telemetry dataset** :
 A dataset collected for one purpose, machine-readable and under its own explicit consent, such as latency, microphone, corpus or autocorrect-decision data. It lies outside the operational log stream and its verbosity controls.
