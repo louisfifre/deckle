@@ -192,10 +192,17 @@ public sealed class PrecisionScrollEngine : IWheelInterceptor, IPrecisionScrollE
     // device handle, so the engine cannot tell two classic mice apart. Exact
     // classic detents are therefore the narrow boundary: Precision Touchpad
     // input uses finer deltas and remains native.
+    //
+    // Injected detents are accepted on purpose: Steam Input emits its
+    // controller "scroll wheel" through injection, and a guard on the injected
+    // flag left it dry. Deckle's own synthetic touchpad is not a recursion
+    // risk: in the wheel captures its output never came back through this
+    // hook, and a runaway would overflow the queue, which hands the wheel back
+    // to Windows. Other injectors (remote tools, scripts) get smoothed too,
+    // which is harmless.
     internal static bool CanConvert(in MouseWheelEvent wheelEvent) =>
         wheelEvent.Source == WheelEventSource.MessageHook
         && wheelEvent.Axis == WheelAxis.Vertical
-        && !wheelEvent.IsInjected
         && wheelEvent.InputState == WheelInputState.None
         && wheelEvent.Delta != 0
         && wheelEvent.Delta % 120 == 0;

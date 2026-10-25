@@ -175,8 +175,12 @@ public sealed class PrecisionScrollGestureTests
     [InlineData(WheelAxis.Vertical, 40, WheelEventSource.MessageHook, false, false)]
     [InlineData(WheelAxis.Horizontal, 120, WheelEventSource.MessageHook, false, false)]
     [InlineData(WheelAxis.Vertical, 120, WheelEventSource.RawInput, false, false)]
-    [InlineData(WheelAxis.Vertical, 120, WheelEventSource.MessageHook, true, false)]
-    public void OnlyClassicPhysicalVerticalDetentsAreConverted(
+    [InlineData(WheelAxis.Vertical, 120, WheelEventSource.MessageHook, true, true)]
+    [InlineData(WheelAxis.Vertical, -240, WheelEventSource.MessageHook, true, true)]
+    [InlineData(WheelAxis.Vertical, 40, WheelEventSource.MessageHook, true, false)]
+    [InlineData(WheelAxis.Horizontal, 120, WheelEventSource.MessageHook, true, false)]
+    [InlineData(WheelAxis.Vertical, 120, WheelEventSource.RawInput, true, false)]
+    public void OnlyClassicVerticalDetentsAreConverted(
         WheelAxis axis,
         short delta,
         WheelEventSource source,
@@ -207,6 +211,24 @@ public sealed class PrecisionScrollGestureTests
             TimestampMs: 0,
             Device: IntPtr.Zero,
             WheelEventSource.MessageHook,
+            InputState: inputState);
+
+        Assert.False(PrecisionScrollEngine.CanConvert(in wheelEvent));
+    }
+
+    [Theory]
+    [InlineData(WheelInputState.Shift)]
+    [InlineData(WheelInputState.Control)]
+    [InlineData(WheelInputState.LeftButton)]
+    public void ModifiedInjectedWheelInputRemainsNative(WheelInputState inputState)
+    {
+        var wheelEvent = new MouseWheelEvent(
+            WheelAxis.Vertical,
+            Delta: 120,
+            TimestampMs: 0,
+            Device: IntPtr.Zero,
+            WheelEventSource.MessageHook,
+            IsInjected: true,
             InputState: inputState);
 
         Assert.False(PrecisionScrollEngine.CanConvert(in wheelEvent));
