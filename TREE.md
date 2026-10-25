@@ -135,7 +135,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── windhawk-build-mod.ps1
 │   │   │   └── windhawk-install-mod.ps1
 │   │   ├── wheel-probes/
-│   │   │   └── hidpp_probe.py
+│   │   │   ├── hidpp_probe.py
+│   │   │   └── wheel_analysis.py
 │   │   ├── research--cerveau-llm--2026-10-13.md  — Cadrage vérifié (2026-10-13) — un cerveau LLM dans Deckle.Llm : les crédits API…
 │   │   ├── research--settings-ux--2026-10-13.md  — Recherche vérifiée (2026-10-13), la direction Settings de Louis passée au cribl…
 │   │   ├── research--taskbar-sans-windhawk--2026-10-08.md  — Recherche vérifiée (2026-10-08) — remplacer Windhawk par un module Deckle pour…
