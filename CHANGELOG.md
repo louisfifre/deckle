@@ -32,6 +32,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Report a transcription engine that cannot start as a user incident
 - **app:** Show open user incidents on the tray icon and in its menu
 - **settings:** Explain on General why an elevated Deckle shows no notifications
+- **precision-scroll:** Smooth the wheel that Steam Input injects
 
 ### Changed
 
