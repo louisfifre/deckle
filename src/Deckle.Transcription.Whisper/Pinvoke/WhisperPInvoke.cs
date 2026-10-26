@@ -6,22 +6,29 @@ using Deckle.Core;
 
 namespace Deckle.Transcription.Whisper;
 
-// Whisper.cpp P/Invokes plus the DllImportResolver that hands whisper.dll and
-// ggml.dll to NativeRuntimeLoader, which loads them from <UserDataRoot>\native\
-// with the search limited to that folder and System32. The static constructor
-// wires the resolver before any [DllImport] in this class runs.
+// Whisper.cpp P/Invokes plus the DllImportResolver that hands whisper.dll,
+// ggml.dll and ggml-base.dll to NativeRuntimeLoader, which loads them from
+// <UserDataRoot>\native\ with the search limited to that folder and System32.
+// The static constructor wires the resolver before any [DllImport] in this
+// class runs.
 //
-// WhisperKey and GgmlKey MUST match the literal in every [DllImport("whisper")]
-// and [DllImport("ggml")]: C# requires a constant literal in the attribute.
+// WhisperKey, GgmlKey and GgmlBaseKey MUST match the literal in every
+// [DllImport("whisper")], [DllImport("ggml")] and [DllImport("ggml-base")]:
+// C# requires a constant literal in the attribute. The registry of backends is
+// split between the two ggml DLLs: ggml.dll loads and lists them, ggml-base.dll
+// owns each entry (its name, its devices). A P/Invoke on the wrong one fails
+// with EntryPointNotFoundException at the first model load.
 //
 // Startup checks NativeRuntime.IsInstalled() before constructing WhisperBackend,
 // so the resolver's fail-closed throw is a backstop, not an expected path.
 public static class WhisperPInvoke
 {
-    private const string WhisperKey = "whisper";
-    private const string GgmlKey    = "ggml";
-    private const string EntryDll   = "whisper.dll";
-    private const string GgmlDll    = "ggml.dll";
+    private const string WhisperKey  = "whisper";
+    private const string GgmlKey     = "ggml";
+    private const string GgmlBaseKey = "ggml-base";
+    private const string EntryDll    = "whisper.dll";
+    private const string GgmlDll     = "ggml.dll";
+    private const string GgmlBaseDll = "ggml-base.dll";
 
     static WhisperPInvoke()
     {
@@ -34,9 +41,10 @@ public static class WhisperPInvoke
         // search order.
         string? dll = libraryName switch
         {
-            WhisperKey => EntryDll,
-            GgmlKey    => GgmlDll,
-            _          => null,
+            WhisperKey  => EntryDll,
+            GgmlKey     => GgmlDll,
+            GgmlBaseKey => GgmlBaseDll,
+            _           => null,
         };
         if (dll is null) return IntPtr.Zero;
 
@@ -66,8 +74,8 @@ public static class WhisperPInvoke
     public static extern IntPtr ggml_backend_reg_get(nuint index);
 
     // Static string owned by the backend ("CPU", "Vulkan"): read with
-    // PtrToStringUTF8, never freed.
-    [DllImport("ggml", CallingConvention = CallingConvention.Cdecl)]
+    // PtrToStringUTF8, never freed. Exported by ggml-base.dll, not ggml.dll.
+    [DllImport("ggml-base", CallingConvention = CallingConvention.Cdecl)]
     public static extern IntPtr ggml_backend_reg_name(IntPtr reg);
 
     [DllImport("ggml", CallingConvention = CallingConvention.Cdecl)]
