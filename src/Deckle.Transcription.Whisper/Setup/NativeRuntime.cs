@@ -82,10 +82,10 @@ public static class NativeRuntime
         string DisplayName);
 
     public static NativeRuntimeBundle CurrentBundle { get; } = new(
-        Version:     "1.9.1",
-        Url:         "https://github.com/louisfifre/deckle/releases/download/native-v1.9.1/deckle-native-1.9.1.zip",
-        Sha256:      "74c75b4bc49a538a155c05d1eabc96273f0e1cb166a23148ad06bbf2663310b7",
-        SizeBytes:   24_746_525L,
+        Version:     "1.9.2",
+        Url:         "https://github.com/louisfifre/deckle/releases/download/native-v1.9.2/deckle-native-1.9.2.zip",
+        Sha256:      "40cb8007d4795133db8c99fe04e1e4ec91e2f04b205b557eb23b477dc1a1bf20",
+        SizeBytes:   26_282_437L,
         DisplayName: "Whisper.cpp + Vulkan runtime");
 
     // While the URL is a placeholder, auto-download is disabled and the wizard
