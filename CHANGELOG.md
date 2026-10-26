@@ -33,6 +33,8 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Show open user incidents on the tray icon and in its menu
 - **settings:** Explain on General why an elevated Deckle shows no notifications
 - **precision-scroll:** Smooth the wheel that Steam Input injects
+- **scripts:** Read the import tables of PE images
+- **scripts:** Refuse a native bundle that imports outside itself
 
 ### Changed
 
@@ -96,6 +98,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **transcription:** Say what each warning and error means for the person
 - **vad:** Say what each warning and error means for the person
 - **vision:** Say what each warning and error means for the person
+- **scripts:** Source the dev native runtime from an MSVC build
 
 ### Fixed
 
@@ -105,6 +108,9 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **settings:** State the trace's real rotation in its consent dialog
 - **anytype:** Say "not serving yet" when nothing listens on the port
 - **anytype:** Replace a serve that stays alive without ever serving
+- **whisper:** Load the native runtime from its folder and name the DLL that fails
+- **whisper:** Ask ggml-base for a backend's name
+- **whisper:** Download native bundle 1.9.2
 
 ## [0.67.1](https://github.com/louisfifre/deckle/compare/v0.59.0...v0.67.1) — 2026-10-23
 
