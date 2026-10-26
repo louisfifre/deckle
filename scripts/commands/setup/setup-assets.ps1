@@ -3,9 +3,9 @@
     Set up runtime assets
 .DESCRIPTION
     Populates the native and models folders under the user data root with the
-    whisper.cpp DLLs, the MinGW C++ runtime and the Whisper models the app
-    needs at runtime. Idempotent: skips files already present at the same
-    size unless -Force.
+    whisper.cpp DLLs, the Visual C++ runtime they import and the Whisper
+    models the app needs at runtime. Idempotent: skips files already present
+    at the same size unless -Force.
 .NOTES
     section: Machine
     order: 120
@@ -24,11 +24,15 @@ param(
     [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]$FromRelease,
 
-    # Native runtime — copy DLLs from a local whisper.cpp build tree.
-    # Path must contain build\bin\ (output of `cmake --build`). Mutually
-    # exclusive with -FromRelease.
+    # Native runtime — copy DLLs from a local whisper.cpp build tree built
+    # with MSVC; the Visual C++ runtime comes from the same Visual Studio.
+    # Mutually exclusive with -FromRelease.
     [Parameter(ParameterSetName = 'WhisperRepo')]
     [string]$WhisperRepo,
+
+    # Build folder under the whisper.cpp repo (output of `cmake --build`).
+    [Parameter(ParameterSetName = 'WhisperRepo')]
+    [string]$WhisperBuildDir = 'build',
 
     # Download ggml-large-v3.bin (~3 GB) on top of ggml-base.bin. Off by
     # default to keep first-time setup fast.
@@ -50,10 +54,6 @@ $LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
 
 $Repo = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
-
-# A Scoop installed outside %USERPROFILE%\scoop sets the SCOOP variable.
-$ScoopRoot   = if ($env:SCOOP) { $env:SCOOP } else { Join-Path $env:USERPROFILE 'scoop' }
-$ScoopMingw  = Join-Path $ScoopRoot 'apps\mingw\current\bin'
 
 # Same order as AppPaths.ResolveUserDataRoot, after the -DataRoot override.
 if ($DataRoot)                 { $TargetRoot = $DataRoot }
@@ -89,8 +89,7 @@ trap {
 # packager consume, so a dependency change stays one edit.
 $NativeRuntimeSource = Join-Path $Repo 'src\Deckle.Transcription.Whisper\Setup\NativeRuntime.cs'
 $NativeRuntimeCatalog = Get-DeckleNativeRuntimeCatalog -SourcePath $NativeRuntimeSource
-$WhisperDlls = @($NativeRuntimeCatalog.WhisperDlls)
-$MingwDlls = @($NativeRuntimeCatalog.MingwDlls)
+$CatalogDlls = @($NativeRuntimeCatalog.Names)
 
 # Must match NativeRuntime.CurrentBundle.Url.
 $DeckleRepoSlug = 'louisfifre/deckle'
@@ -156,10 +155,9 @@ if ($FromRelease) {
     # Extract only the catalog entries — same defense-in-depth filter the
     # C# side applies in NativeRuntime.InstallFromZipAsync.
     Add-Type -AssemblyName System.IO.Compression.FileSystem | Out-Null
-    $catalog = $WhisperDlls + $MingwDlls
     $archive = [System.IO.Compression.ZipFile]::OpenRead($tmpZip)
     try {
-        foreach ($name in $catalog) {
+        foreach ($name in $CatalogDlls) {
             $entry = $archive.Entries | Where-Object { $_.Name -eq $name } | Select-Object -First 1
             if (-not $entry) {
                 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "MISSING $name in bundle" -Role Warning
@@ -183,38 +181,21 @@ else {
     elseif ($env:DECKLE_WHISPER_REPO)  { $resolved = $env:DECKLE_WHISPER_REPO }
     else                               { $resolved = Join-Path (Split-Path $Repo -Parent) 'whisper.cpp' }
 
-    $whisperBin = Join-Path $resolved 'build\bin'
+    $whisperBin = Join-Path (Join-Path $resolved $WhisperBuildDir) 'bin'
     if (Test-Path $whisperBin) {
-        $NativeSource = $whisperBin
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "whisper.cpp build : $whisperBin"
-        foreach ($name in $WhisperDlls) {
-            $src = Join-Path $whisperBin $name
-            if (-not (Test-Path $src)) {
-                Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "MISSING source $src — rebuild whisper.cpp needed" -Role Warning
-                continue
-            }
-            CopyIdempotent $src (Join-Path $TargetNative $name)
+        # The same resolution the release packager uses: whisper.cpp output
+        # from the build tree, the Visual C++ runtime from the Visual Studio
+        # that compiled it. A MinGW tree or an incomplete build is refused
+        # with its reason rather than copied in part.
+        $build = Get-DeckleNativeRuntimeBuild -WhisperRepo $resolved -BuildDir $WhisperBuildDir
+        $NativeSource = $build.Bin
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "whisper.cpp build : $($build.Bin)"
+        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "VC++ runtime      : Redist $($build.RedistVersion)"
+        $sources = Resolve-DeckleNativeRuntimeDllSources -Build $build -Catalog $NativeRuntimeCatalog
+        foreach ($name in $CatalogDlls) {
+            CopyIdempotent $sources[$name] (Join-Path $TargetNative $name)
         }
-
-        # MinGW runtime DLLs come from the Scoop install, paired with the
-        # toolchain that produced ggml-vulkan.dll above.
-        if (Test-Path $ScoopMingw) {
-            Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "mingw runtime    : $ScoopMingw"
-            foreach ($name in $MingwDlls) {
-                $src = Join-Path $ScoopMingw $name
-                if (-not (Test-Path $src)) {
-                    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "MISSING source $src — install MinGW via Scoop" -Role Warning
-                    continue
-                }
-                CopyIdempotent $src (Join-Path $TargetNative $name)
-            }
-        } else {
-            Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "MinGW Scoop install not found at $ScoopMingw — runtime DLLs skipped" -Role Warning
-            $NativeRuntimeStatus = 'Partial: whisper.cpp DLLs copied, MinGW runtime missing'
-        }
-        if ($NativeRuntimeStatus -eq 'Pending') {
-            $NativeRuntimeStatus = "Copied from $NativeSource"
-        }
+        $NativeRuntimeStatus = "Copied from $NativeSource"
     } else {
         $NativeSource = $resolved
         $NativeRuntimeStatus = 'Skipped: no native source found'
@@ -270,7 +251,7 @@ if ($WithCamembert) {
 
 $nativeCount = (Get-ChildItem $TargetNative -File -ErrorAction SilentlyContinue | Measure-Object).Count
 $modelCount  = (Get-ChildItem $TargetModels -File -ErrorAction SilentlyContinue | Measure-Object).Count
-$nativeCatalogCount = @(($WhisperDlls + $MingwDlls) | Where-Object { Test-Path (Join-Path $TargetNative $_) }).Count
+$nativeCatalogCount = @($CatalogDlls | Where-Object { Test-Path (Join-Path $TargetNative $_) }).Count
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'done'
 Write-Host "         $TargetNative : $nativeCount file(s)"
 Write-Host "         $TargetModels : $modelCount file(s)"
@@ -280,7 +261,7 @@ Write-DeckleOutputLine -Segments @(
     New-DeckleOutputSegment -Text 'scripts\deckle.ps1 (Build & run)' -Role Body
 )
 
-$summaryResult = if ($nativeCatalogCount -lt ($WhisperDlls.Count + $MingwDlls.Count)) { 'Partial' } else { 'Success' }
+$summaryResult = if ($nativeCatalogCount -lt $CatalogDlls.Count) { 'Partial' } else { 'Success' }
 $summarySentence = if ($summaryResult -eq 'Partial') {
     "Runtime asset setup finished, but the native runtime catalog is incomplete."
 } else {
@@ -294,7 +275,7 @@ Write-DeckleActionSummary `
     -Details ([ordered]@{
         'Data root'      = $TargetRoot
         Native          = $NativeRuntimeStatus
-        'Native catalog' = "$nativeCatalogCount / $($WhisperDlls.Count + $MingwDlls.Count)"
+        'Native catalog' = "$nativeCatalogCount / $($CatalogDlls.Count)"
         'Native files'  = $nativeCount
         Models          = $ModelStatus
         'Model files'   = $modelCount
