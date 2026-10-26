@@ -23,9 +23,15 @@ param(
     [ValidatePattern('^\d+\.\d+\.\d+$')]
     [string]$Version,
 
-    # Path to a local whisper.cpp clone with build/bin/ already populated by
-    # `cmake --build`. Used only when packaging a new runtime bundle.
+    # Path to a local whisper.cpp clone with <WhisperBuildDir>/bin/ already
+    # populated by `cmake --build`. Used only when packaging a new runtime
+    # bundle.
     [string]$WhisperRepo,
+
+    # Build folder under the whisper.cpp clone. The runtime is an MSVC build
+    # with dynamic ggml backends (GGML_BACKEND_DL, GGML_CPU_ALL_VARIANTS,
+    # GGML_VULKAN); the script refuses any other compiler.
+    [string]$WhisperBuildDir = 'build',
 
     # Publish or inspect an already-packaged bundle instead of rebuilding it.
     # When neither source is supplied, the bundle pinned by CurrentBundle is
@@ -53,6 +59,7 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 $LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
+Import-Module (Join-Path $LibDir 'pe-imports.psm1') -Force
 Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
 Import-Module (Join-Path $LibDir 'release-validation.psm1') -Force
 
@@ -64,8 +71,6 @@ $RepoRoot = if ($Target) {
 }
 $NativeRuntimeSource = Join-Path $RepoRoot 'src\Deckle.Transcription.Whisper\Setup\NativeRuntime.cs'
 $NativeRuntimeCatalog = Get-DeckleNativeRuntimeCatalog -SourcePath $NativeRuntimeSource
-$WhisperDlls = @($NativeRuntimeCatalog.WhisperDlls)
-$MingwDlls = @($NativeRuntimeCatalog.MingwDlls)
 
 $WorkflowOutput = New-DeckleWorkflowOutput -Category 'publish'
 
@@ -158,12 +163,17 @@ if ($ArtifactPath) {
     Assert-DeckleNativeRuntimeArchive `
         -ArchivePath $ZipPath `
         -DllNames $NativeRuntimeCatalog.Names
+    # A bundle that matched its hash can still be one that only loads on the
+    # machine that built it: its import tables are checked every time.
+    Assert-DeckleNativeRuntimeArchiveLoadable `
+        -ArchivePath $ZipPath `
+        -DllNames $NativeRuntimeCatalog.Names
     $ZipSha256 = $verifiedArtifact.Sha256
     $ZipBytes = $verifiedArtifact.SizeBytes
     $ZipSize = [math]::Round($ZipBytes / 1MB, 2)
     if (-not $OutDir) { $OutDir = Split-Path -Parent $ZipPath }
     $SourceKind = 'Existing artifact'
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$ZipName ($ZipSize MB) matches CurrentBundle and the native catalog"
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$ZipName ($ZipSize MB) matches CurrentBundle and the native catalog, and every import resolves inside the bundle or Windows"
 } else {
     if (-not $Version) {
         $publishedTags = @(& git -C $RepoRoot tag --list 'native-v*')
@@ -177,31 +187,13 @@ if ($ArtifactPath) {
         Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "whisper.cpp $($versionPlan.WhisperVersion); previous bundle native-v$($versionPlan.PreviousVersion)"
     }
 
-    $WhisperBin = Join-Path $WhisperRepo 'build\bin'
-    if (-not (Test-Path $WhisperBin)) {
-        throw "whisper.cpp build output not found: $WhisperBin (cmake --build build needed first)"
-    }
-
-$CMakeCache = Join-Path $WhisperRepo 'build\CMakeCache.txt'
-if (-not (Test-Path $CMakeCache)) {
-    throw "whisper.cpp CMake cache not found: $CMakeCache"
-}
-$compilerMatch = Select-String -Path $CMakeCache `
-    -Pattern '^CMAKE_CXX_COMPILER:(?:FILEPATH|STRING)=(.+)$' |
-    Select-Object -First 1
-if (-not $compilerMatch) {
-    throw "CMAKE_CXX_COMPILER not found in $CMakeCache"
-}
-$CxxExe = $compilerMatch.Matches[0].Groups[1].Value.Trim()
-if (-not (Test-Path -LiteralPath $CxxExe -PathType Leaf)) {
-    throw "C++ compiler recorded by whisper.cpp no longer exists: $CxxExe"
-}
-$MingwBin = Split-Path -Parent $CxxExe
-foreach ($name in $MingwDlls) {
-    if (-not (Test-Path -LiteralPath (Join-Path $MingwBin $name) -PathType Leaf)) {
-        throw "MinGW runtime paired with the whisper.cpp build is missing: $(Join-Path $MingwBin $name)"
-    }
-}
+    # The build tree names its compiler; the runtime DLLs come from the Redist
+    # of that same Visual Studio, so the bundle never mixes toolsets.
+    $Build = Get-DeckleNativeRuntimeBuild -WhisperRepo $WhisperRepo -BuildDir $WhisperBuildDir
+    $DllSources = Resolve-DeckleNativeRuntimeDllSources -Build $Build -Catalog $NativeRuntimeCatalog
+    $WhisperBin = $Build.Bin
+    $CxxExe = $Build.Compiler
+    $CMakeCache = $Build.CMakeCache
 
 if (-not $OutDir) {
     $OutDir = Join-Path ([System.IO.Path]::GetTempPath()) "deckle-native-$Version"
@@ -220,19 +212,25 @@ $null = New-Item -ItemType Directory -Path $StagingDir
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Stage DLLs to $StagingDir"
 
 $Sha256ByName = [ordered]@{}
-function Stage-Dll($srcDir, $name) {
-    $src = Join-Path $srcDir $name
-    if (-not (Test-Path $src)) { throw "MISSING source $src" }
+foreach ($name in $NativeRuntimeCatalog.Names) {
+    $src = $DllSources[$name]
     $dst = Join-Path $StagingDir $name
-    Copy-Item $src $dst
+    Copy-Item -LiteralPath $src -Destination $dst
     $hash = (Get-FileHash $dst -Algorithm SHA256).Hash.ToLower()
     $Sha256ByName[$name] = $hash
     $size = [math]::Round((Get-Item $dst).Length / 1MB, 2)
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message ("{0,-22} {1,8} MB  sha256={2}" -f $name, $size, $hash)
+    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message ("{0,-24} {1,8} MB  sha256={2}" -f $name, $size, $hash)
 }
 
-foreach ($n in $WhisperDlls) { Stage-Dll $WhisperBin  $n }
-foreach ($n in $MingwDlls)   { Stage-Dll $MingwBin $n }
+# Refuse the bundle here, before it is even zipped, when one of its DLLs
+# imports something the tester's machine would not have: the build machine
+# hides such a gap behind its PATH, a bare Windows does not.
+Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Check every import resolves inside the bundle or Windows'
+Assert-DeckleNativeImportsResolved `
+    -Directory $StagingDir `
+    -DllNames $NativeRuntimeCatalog.Names `
+    -ExternalDllNames (Get-DeckleNativeExternalDllNames)
+Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Imports resolve; external: $((Get-DeckleNativeExternalDllNames) -join ', ')"
 
 Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Gather provenance'
 
@@ -250,10 +248,12 @@ if (Test-Path (Join-Path $WhisperRepo '.git')) {
 }
 
 # The exact compiler CMake used for this build, not whichever one PATH finds.
+# Read from the file's version resource: cl.exe prints its banner only to
+# stderr and needs the vcvars environment to run at all.
 $CompilerLine = 'unknown'
-if (Test-Path $CxxExe) {
-    $line = (& $CxxExe --version 2>$null | Select-Object -First 1)
-    if ($line) { $CompilerLine = $line }
+$compilerInfo = (Get-Item -LiteralPath $CxxExe).VersionInfo
+if ($compilerInfo.ProductVersion) {
+    $CompilerLine = "MSVC cl.exe $($compilerInfo.ProductVersion) ($CxxExe)"
 }
 
 # Scoop installs the Vulkan SDK under apps\vulkan\<version>\ behind a 'current'
@@ -277,19 +277,16 @@ $NinjaLine = 'unknown'
 $ninjaOut = (& ninja --version 2>$null)
 if ($ninjaOut) { $NinjaLine = $ninjaOut.Trim() }
 
-$VulkanFlags = @()
-if (Test-Path $CMakeCache) {
-    $VulkanFlags = (Select-String -Path $CMakeCache -Pattern '^GGML_VULKAN[A-Z_]*:BOOL=' |
-                    ForEach-Object { $_.Line })
-}
+$BuildFlags = @($Build.BuildFlags)
 
 $Hostname  = $env:COMPUTERNAME
 $BuildDate = (Get-Date).ToString('yyyy-MM-ddTHH:mm:sszzz')
 
 $filesBlock = ''
-foreach ($n in ($WhisperDlls + $MingwDlls)) {
-    $filesBlock += "{0,-22} sha256={1}`n" -f $n, $Sha256ByName[$n]
+foreach ($n in $NativeRuntimeCatalog.Names) {
+    $filesBlock += "{0,-24} sha256={1}`n" -f $n, $Sha256ByName[$n]
 }
+$fileCount = $NativeRuntimeCatalog.Names.Count
 
 $prov = @"
 Deckle native runtime bundle
@@ -307,38 +304,43 @@ commit         : $WhisperCommit
 Toolchain
 ---------
 Compiler       : $CompilerLine
-Runtime DLLs   : $MingwBin
+Runtime DLLs   : Visual C++ Redistributable $($Build.RedistVersion)
+                 $($Build.RedistDirs -join "`n                 ")
 Vulkan SDK     : $VulkanSdk
 CMake          : $CMakeLine
 Generator      : Ninja $NinjaLine
 
 Build flags
 -----------
-$($VulkanFlags -join "`n")
+$($BuildFlags -join "`n")
 
-Files (8)
----------
+External dependencies
+---------------------
+$((Get-DeckleNativeExternalDllNames) -join "`n") (provided by the graphics driver; without it the CPU backend is used)
+
+Files ($fileCount)
+----------
 $filesBlock
 
 Licenses
 --------
 whisper.cpp / ggml : MIT — https://github.com/ggerganov/whisper.cpp/blob/master/LICENSE
-MinGW C++ runtime  : GPL-3 with runtime exception (libgcc, libstdc++) /
-                     MIT (libwinpthread). Redistribution permitted as
-                     dynamic linkage runtime per the GCC runtime library
-                     exception.
+Visual C++ runtime : Microsoft Visual C++ Redistributable (vcruntime140,
+                     vcruntime140_1, msvcp140, vcomp140). Redistributable
+                     application-locally under the Visual Studio license
+                     terms (Distributable Code, REDIST.TXT).
 
 Reproduction
 ------------
 Built by scripts/commands/release/publish-native-runtime.ps1 from the local
-whisper.cpp build and MinGW runtime directories recorded above.
+whisper.cpp build and the Visual C++ Redist folders recorded above.
 "@
 
 Set-Content -Path (Join-Path $StagingDir 'PROVENANCE.txt') -Value $prov -Encoding UTF8
 Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'PROVENANCE.txt written'
 
 # SHA256SUMS stays `sha256sum -c` compatible.
-$sumsLines = foreach ($n in ($WhisperDlls + $MingwDlls)) {
+$sumsLines = foreach ($n in $NativeRuntimeCatalog.Names) {
     '{0} *{1}' -f $Sha256ByName[$n], $n
 }
 Set-Content -Path (Join-Path $StagingDir 'SHA256SUMS') -Value $sumsLines -Encoding UTF8
@@ -391,7 +393,7 @@ if ($Publish) {
         @(
             "Deckle native runtime $Version"
             ''
-            'Prebuilt whisper.cpp and MinGW runtime libraries for Deckle first-run setup.'
+            'Prebuilt whisper.cpp (MSVC, dynamic ggml backends) and Visual C++ runtime libraries for Deckle first-run setup.'
             ''
             "SHA-256: ``$ZipSha256``"
         ) | Set-Content -LiteralPath $Notes -Encoding utf8
@@ -444,6 +446,9 @@ if ($Publish) {
             -Bundle $releaseArtifact `
             -ArtifactPath $downloadedArtifact | Out-Null
         Assert-DeckleNativeRuntimeArchive `
+            -ArchivePath $downloadedArtifact `
+            -DllNames $NativeRuntimeCatalog.Names
+        Assert-DeckleNativeRuntimeArchiveLoadable `
             -ArchivePath $downloadedArtifact `
             -DllNames $NativeRuntimeCatalog.Names
         Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'GitHub asset downloaded and verified byte-for-byte'
