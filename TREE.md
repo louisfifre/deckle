@@ -2472,6 +2472,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── KnownHallucinationsTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── NativeRuntimeBugNotes.md
 │   │   ├── NativeRuntimeLoaderTests.cs
 │   │   ├── NativeRuntimeTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
