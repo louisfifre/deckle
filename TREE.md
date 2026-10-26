@@ -238,6 +238,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── menu.psm1
 │   │   ├── native-console.ps1
 │   │   ├── native-runtime-release.psm1
+│   │   ├── pe-imports.psm1
 │   │   ├── release-history.psm1
 │   │   ├── release-validation.psm1
 │   │   ├── repository-inventory.psm1
@@ -299,6 +300,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── deckle-process.tests.ps1
 │   │   │   ├── native-console.tests.ps1
 │   │   │   ├── native-runtime-release.tests.ps1
+│   │   │   ├── pe-fixture.ps1
+│   │   │   ├── pe-imports.tests.ps1
 │   │   │   ├── release-history.tests.ps1
 │   │   │   ├── release-validation.tests.ps1
 │   │   │   ├── repository-inventory.tests.ps1
