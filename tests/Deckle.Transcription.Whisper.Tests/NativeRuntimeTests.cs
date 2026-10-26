@@ -31,6 +31,31 @@ public sealed class NativeRuntimeTests : IDisposable
         }
     }
 
+    // The catalog is in load order, so the loader can walk it top to bottom:
+    // the C++ runtime first, the ggml core, the backends ggml loads itself,
+    // and the entry DLL last.
+    [Fact]
+    [Trait("Category", "unit")]
+    public void TheCatalogListsTheRuntimeFirstAndTheEntryDllLast()
+    {
+        List<string> names = NativeRuntime.RequiredDllNames.ToList();
+
+        Assert.Equal(NativeRuntime.EntryDll, names[^1]);
+        Assert.Equal("whisper.dll", NativeRuntime.EntryDll);
+        Assert.True(names.IndexOf("vcomp140.dll") < names.IndexOf("ggml-base.dll"));
+        Assert.True(names.IndexOf("ggml-base.dll") < names.IndexOf("ggml.dll"));
+        Assert.True(names.IndexOf("ggml.dll") < names.IndexOf("ggml-cpu-x64.dll"));
+        Assert.Equal(names.Distinct(StringComparer.OrdinalIgnoreCase).Count(), names.Count);
+
+        string[] backends = names.Where(NativeRuntime.IsBackendDll).ToArray();
+        Assert.All(backends, b => Assert.True(b.StartsWith("ggml-cpu-", StringComparison.Ordinal) || NativeRuntime.IsVulkanBackend(b)));
+        Assert.Contains("ggml-vulkan.dll", backends);
+        Assert.Contains("ggml-cpu-x64.dll", backends);
+        Assert.DoesNotContain("ggml-base.dll", backends);
+        Assert.DoesNotContain("ggml.dll", backends);
+        Assert.DoesNotContain(NativeRuntime.EntryDll, backends);
+    }
+
     [Fact]
     [Trait("Category", "unit")]
     public void WhisperV191InteropLayoutsMatchTheNativeAbi()

@@ -1789,6 +1789,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   └── WhisperStructs.cs
 │   │   ├── Setup/
 │   │   │   ├── NativeRuntime.cs
+│   │   │   ├── NativeRuntimeLoadCheck.cs
+│   │   │   ├── NativeRuntimeLoader.cs
+│   │   │   ├── PeImports.cs
 │   │   │   ├── SpeechModelResolver.cs
 │   │   │   └── SpeechModels.cs
 │   │   ├── Deckle.Transcription.Whisper.csproj
@@ -2469,11 +2472,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── KnownHallucinationsTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── NativeRuntimeLoaderTests.cs
 │   │   ├── NativeRuntimeTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
+│   │   ├── PeImportsTests.cs
 │   │   ├── RepetitionDetectorTests.cs
 │   │   ├── SpeechModelFilesTests.cs
 │   │   ├── SpeechModelResolverTests.cs
+│   │   ├── TestPeImage.cs
 │   │   ├── WhisperComputeDeviceObserverTests.cs
 │   │   ├── WhisperContextBugNotes.md
 │   │   ├── WhisperContextParamsMapperTests.cs

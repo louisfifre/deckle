@@ -74,6 +74,10 @@ public sealed partial class WhisperBackend
             // device.
             s_computeDevice.BeginLoad();
 
+            // Here and not in the constructor: loading the backends is where
+            // ggml enumerates the GPU, which has no place at app startup.
+            NativeRuntimeLoader.EnsureBackendsLoaded(AppPaths.NativeDirectory);
+
             _ctx = WhisperPInvoke.whisper_init_from_file_with_params(modelPath, ctxParams);
             sw.Stop();
             // The last init phase has no following line to flush it until the
