@@ -4,6 +4,9 @@
 # mismatched.
 
 $ErrorActionPreference = 'Stop'
+# No -Force here: forcing a nested import unloads the copy a calling script
+# imported for itself.
+Import-Module (Join-Path $PSScriptRoot 'pe-imports.psm1')
 
 function Get-DeckleNativeRuntimeCatalog {
     [CmdletBinding()]
@@ -43,18 +46,134 @@ function Get-DeckleNativeRuntimeCatalog {
         throw "Native runtime RequiredDllNames is empty in $SourcePath"
     }
 
+    # whisper.cpp's own output (the entry DLL and the ggml family) comes from
+    # the build tree; everything else is the Visual C++ runtime, taken from
+    # the Redist folder of the toolset that produced the build.
     $whisperDlls = @($names | Where-Object { $_ -ceq $entryMatch.Groups['value'].Value -or $_ -like 'ggml*.dll' })
-    $mingwDlls = @($names | Where-Object { $_ -notin $whisperDlls })
-    if (-not $whisperDlls.Count -or -not $mingwDlls.Count) {
-        throw "Native runtime catalog cannot be separated into whisper.cpp and MinGW files"
+    $runtimeDlls = @($names | Where-Object { $_ -notin $whisperDlls })
+    if (-not $whisperDlls.Count -or -not $runtimeDlls.Count) {
+        throw "Native runtime catalog cannot be separated into whisper.cpp and Visual C++ runtime files"
     }
 
     return [pscustomobject]@{
         EntryDll    = $entryMatch.Groups['value'].Value
         Names       = @($names)
         WhisperDlls = $whisperDlls
-        MingwDlls   = $mingwDlls
+        RuntimeDlls = $runtimeDlls
     }
+}
+
+# The one import the bundle leaves to the machine: the Vulkan loader comes
+# with the graphics driver, and ggml-vulkan.dll is a backend the app loads
+# only when that loader is there.
+function Get-DeckleNativeExternalDllNames {
+    [CmdletBinding()]
+    param()
+    return @('vulkan-1.dll')
+}
+
+function Get-DeckleNativeRuntimeBuild {
+    <#
+    .SYNOPSIS
+        Locates a whisper.cpp build tree and the Visual C++ Redist folders
+        paired with the compiler that produced it.
+    .DESCRIPTION
+        The bundle ships the runtime DLLs the build imports, so they must come
+        from the same toolset: the Redist folder is read from the cl.exe path
+        CMake recorded, never from PATH or from System32.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$WhisperRepo,
+        [string]$BuildDir = 'build'
+    )
+
+    $buildRoot = Join-Path $WhisperRepo $BuildDir
+    $bin = Join-Path $buildRoot 'bin'
+    if (-not (Test-Path -LiteralPath $bin -PathType Container)) {
+        throw "whisper.cpp build output not found: $bin (cmake --build needed first)"
+    }
+    $cmakeCache = Join-Path $buildRoot 'CMakeCache.txt'
+    if (-not (Test-Path -LiteralPath $cmakeCache -PathType Leaf)) {
+        throw "whisper.cpp CMake cache not found: $cmakeCache"
+    }
+
+    $compilerMatch = Select-String -LiteralPath $cmakeCache `
+        -Pattern '^CMAKE_CXX_COMPILER:(?:FILEPATH|STRING)=(.+)$' |
+        Select-Object -First 1
+    if (-not $compilerMatch) { throw "CMAKE_CXX_COMPILER not found in $cmakeCache" }
+    $compiler = $compilerMatch.Matches[0].Groups[1].Value.Trim()
+    if (-not (Test-Path -LiteralPath $compiler -PathType Leaf)) {
+        throw "C++ compiler recorded by whisper.cpp no longer exists: $compiler"
+    }
+    if ((Split-Path -Leaf $compiler) -ine 'cl.exe') {
+        throw "whisper.cpp was built with $compiler; the native runtime is built with MSVC (cl.exe) so that its runtime is the Visual C++ Redistributable"
+    }
+
+    # cl.exe sits at <VC>\Tools\MSVC\<tools>\bin\Host<arch>\<arch>\cl.exe; the
+    # Redist of the same Visual Studio is <VC>\Redist\MSVC\<redist>\x64\.
+    $vcRoot = $compiler
+    for ($i = 0; $i -lt 7; $i++) { $vcRoot = Split-Path -Parent $vcRoot }
+    $redistRoot = Join-Path $vcRoot 'Redist\MSVC'
+    $redistVersions = @(Get-ChildItem -LiteralPath $redistRoot -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match '^\d+\.\d+\.\d+$' } |
+        Sort-Object { [version]$_.Name } -Descending)
+    if (-not $redistVersions.Count) {
+        throw "Visual C++ Redist folder not found beside the compiler: $redistRoot"
+    }
+    $redist = $redistVersions[0]
+    $redistDirs = @(Get-ChildItem -LiteralPath (Join-Path $redist.FullName 'x64') -Directory |
+        Where-Object { $_.Name -like 'Microsoft.VC*.CRT' -or $_.Name -like 'Microsoft.VC*.OpenMP' } |
+        ForEach-Object FullName)
+    if (-not $redistDirs.Count) {
+        throw "Visual C++ Redist $($redist.Name) has no x64 CRT folder"
+    }
+
+    $flags = @(Select-String -LiteralPath $cmakeCache -Pattern '^(GGML_VULKAN|GGML_BACKEND_DL|GGML_CPU_ALL_VARIANTS|GGML_NATIVE|GGML_OPENMP|BUILD_SHARED_LIBS):BOOL=' |
+        ForEach-Object Line)
+
+    return [pscustomobject]@{
+        Bin           = $bin
+        CMakeCache    = $cmakeCache
+        Compiler      = $compiler
+        RedistVersion = $redist.Name
+        RedistDirs    = $redistDirs
+        BuildFlags    = $flags
+    }
+}
+
+function Resolve-DeckleNativeRuntimeDllSources {
+    <#
+    .SYNOPSIS
+        Maps every catalog DLL to the file it is copied from: the build's
+        bin folder for whisper.cpp output, the Redist folders for the runtime.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][psobject]$Build,
+        [Parameter(Mandatory)][psobject]$Catalog
+    )
+
+    $sources = [ordered]@{}
+    foreach ($name in $Catalog.WhisperDlls) {
+        $path = Join-Path $Build.Bin $name
+        if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+            throw "whisper.cpp build is missing $name under $($Build.Bin); the catalog and the CMake options disagree"
+        }
+        $sources[$name] = $path
+    }
+    foreach ($name in $Catalog.RuntimeDlls) {
+        $found = $null
+        foreach ($dir in $Build.RedistDirs) {
+            $candidate = Join-Path $dir $name
+            if (Test-Path -LiteralPath $candidate -PathType Leaf) { $found = $candidate; break }
+        }
+        if (-not $found) {
+            throw "Visual C++ Redist $($Build.RedistVersion) does not ship $name under $($Build.RedistDirs -join ', ')"
+        }
+        $sources[$name] = $found
+    }
+    return $sources
 }
 
 function Get-DeckleNativeRuntimeBundle {
@@ -109,9 +228,11 @@ function Get-DeckleNativeRuntimeVersionPlan {
     }
 
     $cmakeSource = Get-Content -LiteralPath $cmakeLists -Raw
+    # Upstream has written both project(whisper VERSION x) and
+    # project("whisper.cpp" VERSION x) over time.
     $upstreamMatch = [regex]::Match(
         $cmakeSource,
-        'project\s*\(\s*whisper\b[^)]*\bVERSION\s+(?<value>\d+\.\d+\.\d+)',
+        'project\s*\(\s*"?whisper(?:\.cpp)?"?\b[^)]*\bVERSION\s+(?<value>\d+\.\d+\.\d+)',
         [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
     if (-not $upstreamMatch.Success) {
         throw "whisper.cpp project version not found in $cmakeLists"
@@ -245,4 +366,42 @@ function Assert-DeckleNativeRuntimeArchive {
     }
 }
 
-Export-ModuleMember -Function Get-DeckleNativeRuntimeCatalog, Get-DeckleNativeRuntimeBundle, Get-DeckleNativeRuntimeVersionPlan, Assert-DeckleNativeRuntimeArtifact, Assert-DeckleNativeRuntimeArchive
+function Assert-DeckleNativeRuntimeArchiveLoadable {
+    <#
+    .SYNOPSIS
+        Extracts the archive's DLLs to a scratch folder and refuses any import
+        a bare Windows machine would not resolve from the bundle itself.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$ArchivePath,
+        [Parameter(Mandatory)][string[]]$DllNames
+    )
+
+    $scratch = Join-Path ([IO.Path]::GetTempPath()) "deckle-native-imports-$([guid]::NewGuid())"
+    try {
+        $null = New-Item -ItemType Directory -Path $scratch
+        Add-Type -AssemblyName System.IO.Compression
+        $archive = [System.IO.Compression.ZipFile]::OpenRead($ArchivePath)
+        try {
+            foreach ($entry in $archive.Entries) {
+                if ($entry.FullName -notlike '*.dll' -or $entry.FullName -match '[/\\]') { continue }
+                $stream = $entry.Open()
+                try {
+                    $file = [IO.File]::Create((Join-Path $scratch $entry.FullName))
+                    try { $stream.CopyTo($file) } finally { $file.Dispose() }
+                } finally { $stream.Dispose() }
+            }
+        } finally {
+            $archive.Dispose()
+        }
+        Assert-DeckleNativeImportsResolved `
+            -Directory $scratch `
+            -DllNames $DllNames `
+            -ExternalDllNames (Get-DeckleNativeExternalDllNames)
+    } finally {
+        if (Test-Path -LiteralPath $scratch) { Remove-Item -LiteralPath $scratch -Recurse -Force }
+    }
+}
+
+Export-ModuleMember -Function Get-DeckleNativeRuntimeCatalog, Get-DeckleNativeExternalDllNames, Get-DeckleNativeRuntimeBuild, Resolve-DeckleNativeRuntimeDllSources, Get-DeckleNativeRuntimeBundle, Get-DeckleNativeRuntimeVersionPlan, Assert-DeckleNativeRuntimeArtifact, Assert-DeckleNativeRuntimeArchive, Assert-DeckleNativeRuntimeArchiveLoadable

@@ -52,6 +52,12 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     public const int EvtNativeRuntimeCopiedDetail           = 29;
     public const int EvtNativeRuntimeCleanupFailed          = 30;
     public const int EvtNativeRuntimeProbeFailed            = 31;
+    public const int EvtNativeRuntimeLoadFailed             = 32;
+    public const int EvtNativeRuntimeLoadCheckPassed        = 33;
+    public const int EvtNativeRuntimeLoadCheckFailed        = 34;
+    public const int EvtNativeBackendsLoaded                = 35;
+    public const int EvtNativeBackendVulkanUnavailable      = 36;
+    public const int EvtNativeBackendsNone                  = 37;
 
     // ── Native runtime identity ─────────────────────────────────────────
 
@@ -101,6 +107,83 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     public void NativeRuntimeProbeFailed(string probe, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtNativeRuntimeProbeFailed, probe, ex_type, PathRedaction.Redact(ex_message));
+    }
+
+    // ── Native runtime loading ──────────────────────────────────────────
+
+    // The first catalog DLL that did not load, with the import it misses
+    // when the loader could tell. Transcription stops here: the P/Invoke
+    // resolver throws right after. win32_error: 126 an import is missing,
+    // 193 not a 64-bit DLL, 1114 its initialization failed.
+    [Event(EvtNativeRuntimeLoadFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The whisper.cpp runtime could not be loaded, so transcription cannot run\ndll={0} | missing_import={1} | win32_error={2} | summary={3}")]
+    public void NativeRuntimeLoadFailed(string dll, string missing_import, int win32_error, string summary)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeRuntimeLoadFailed, dll, missing_import, win32_error, PathRedaction.Redact(summary));
+    }
+
+    // The setup wizard's question, "does the installed runtime load here?",
+    // answered. vulkan is false on a machine without the Vulkan loader: the
+    // runtime still loads and transcribes on the CPU.
+    [Event(EvtNativeRuntimeLoadCheckPassed,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Checked that the whisper.cpp runtime loads on this machine")]
+    public void NativeRuntimeLoadCheckPassed(bool vulkan)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeRuntimeLoadCheckPassed, vulkan);
+    }
+
+    [Event(EvtNativeRuntimeLoadCheckFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The installed whisper.cpp runtime does not load on this machine\ndll={0} | missing_import={1} | win32_error={2} | summary={3}")]
+    public void NativeRuntimeLoadCheckFailed(string dll, string missing_import, int win32_error, string summary)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeRuntimeLoadCheckFailed, dll, missing_import, win32_error, PathRedaction.Redact(summary));
+    }
+
+    // ── ggml backends ───────────────────────────────────────────────────
+
+    // Once per process, before the first model load. backends is ggml's own
+    // names, comma-separated ("CPU,Vulkan"); devices counts what they expose.
+    [Event(EvtNativeBackendsLoaded,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Loaded the ggml backends")]
+    public void NativeBackendsLoaded(string backends, long devices)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeBackendsLoaded, backends, devices);
+    }
+
+    // The fallback the bundle is built for: no Vulkan loader on this machine
+    // (or the backend refused the device), so whisper.cpp runs on the CPU.
+    [Event(EvtNativeBackendVulkanUnavailable,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The Vulkan backend is not available, so transcription runs on the CPU\nbackends={0}")]
+    public void NativeBackendVulkanUnavailable(string backends)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeBackendVulkanUnavailable, backends);
+    }
+
+    // Not even the CPU backend answered: the folder holds no loadable
+    // ggml-cpu-*.dll, and the model load that follows cannot succeed.
+    [Event(EvtNativeBackendsNone,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "No ggml backend could be loaded, so transcription cannot run\nnative_dir={0}")]
+    public void NativeBackendsNone(string native_dir)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeBackendsNone, PathRedaction.Redact(native_dir));
     }
 
     // ── Native log hook ─────────────────────────────────────────────────

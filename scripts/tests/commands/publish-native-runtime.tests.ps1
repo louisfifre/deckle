@@ -2,6 +2,7 @@ $ErrorActionPreference = 'Stop'
 $ScriptsDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $CommandDir = Join-Path $ScriptsDir 'commands'
 $LibDir = Join-Path $ScriptsDir 'lib'
+. (Join-Path $ScriptsDir 'tests\lib\pe-fixture.ps1')
 
 $scriptPath = Join-Path $CommandDir 'release\publish-native-runtime.ps1'
 $tokens = $null
@@ -53,10 +54,12 @@ try {
     $stagingDir = Join-Path $root 'staging'
     $null = New-Item -ItemType Directory -Path $sourceDir, $artifactDir, $stagingDir
 
-    $dllNames = @('libwhisper.dll', 'ggml.dll', 'libgcc_s_seh-1.dll')
-    foreach ($name in $dllNames) {
-        Set-Content -LiteralPath (Join-Path $stagingDir $name) -Value "fixture $name" -Encoding utf8NoBOM
-    }
+    # Real PE images: the command reads their import tables before it accepts
+    # an existing bundle.
+    $dllNames = @('vcruntime140.dll', 'ggml.dll', 'whisper.dll')
+    New-DeckleTestPeImage -Path (Join-Path $stagingDir 'vcruntime140.dll') -Imports @('KERNEL32.dll')
+    New-DeckleTestPeImage -Path (Join-Path $stagingDir 'ggml.dll') -Imports @('vcruntime140.dll', 'KERNEL32.dll') -DelayImports @('vulkan-1.dll')
+    New-DeckleTestPeImage -Path (Join-Path $stagingDir 'whisper.dll') -Imports @('ggml.dll', 'vcruntime140.dll')
     Set-Content -LiteralPath (Join-Path $stagingDir 'PROVENANCE.txt') -Value 'fixture provenance' -Encoding utf8NoBOM
     $sumLines = foreach ($name in $dllNames) {
         $dllPath = Join-Path $stagingDir $name
@@ -70,12 +73,12 @@ try {
     $artifactSize = (Get-Item -LiteralPath $artifactPath).Length
     $sourcePath = Join-Path $sourceDir 'NativeRuntime.cs'
     @"
-public const string EntryDll = "libwhisper.dll";
+public const string EntryDll = "whisper.dll";
 public static IReadOnlyList<string> RequiredDllNames { get; } = new[]
 {
-    EntryDll,
+    "vcruntime140.dll",
     "ggml.dll",
-    "libgcc_s_seh-1.dll",
+    EntryDll,
 };
 public static NativeRuntimeBundle CurrentBundle { get; } = new(
     Version:     "1.9.1",
@@ -94,6 +97,35 @@ public static NativeRuntimeBundle CurrentBundle { get; } = new(
     }
     if (-not (Test-Path -LiteralPath $artifactPath -PathType Leaf)) {
         throw 'Existing artifact validation must not consume or replace the bundle'
+    }
+
+    # The same pinned bundle, with ggml.dll now importing a runtime the
+    # bundle does not ship, is refused by name of the missing import.
+    New-DeckleTestPeImage -Path (Join-Path $stagingDir 'ggml.dll') -Imports @('vcruntime140.dll', 'libgomp-1.dll')
+    $sumLines = foreach ($name in $dllNames) {
+        $dllPath = Join-Path $stagingDir $name
+        "$((Get-FileHash -LiteralPath $dllPath -Algorithm SHA256).Hash.ToLowerInvariant()) *$name"
+    }
+    Set-Content -LiteralPath (Join-Path $stagingDir 'SHA256SUMS') -Value $sumLines -Encoding utf8NoBOM
+    Remove-Item -LiteralPath $artifactPath
+    Compress-Archive -Path (Join-Path $stagingDir '*') -DestinationPath $artifactPath
+    $artifactSha256 = (Get-FileHash -LiteralPath $artifactPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $artifactSize = (Get-Item -LiteralPath $artifactPath).Length
+    (Get-Content -LiteralPath $sourcePath -Raw) `
+        -replace 'Sha256:\s*"[0-9a-f]+"', "Sha256:      `"$artifactSha256`"" `
+        -replace 'SizeBytes:\s*\d+L', "SizeBytes:   ${artifactSize}L" |
+        Set-Content -LiteralPath $sourcePath -Encoding utf8NoBOM -NoNewline
+    $refusal = [System.Collections.Generic.List[string]]::new()
+    $refused = $false
+    try {
+        & $scriptPath -Target $root *>&1 | ForEach-Object { $refusal.Add([string]$_) }
+    } catch {
+        $refused = $true
+        $refusal.Add($_.Exception.Message)
+    }
+    if (-not $refused) { throw 'A bundle importing a DLL it does not ship must be refused' }
+    if (($refusal -join "`n") -notmatch 'ggml\.dll imports libgomp-1\.dll, which is neither in the bundle nor part of Windows') {
+        throw "The refusal must name the importer and the missing import: $($refusal -join ' ')"
     }
 } finally {
     if (Test-Path -LiteralPath $root) { Remove-Item -LiteralPath $root -Recurse -Force }

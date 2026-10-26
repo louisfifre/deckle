@@ -22,9 +22,11 @@ param(
     # Probe + report only. No install, no env var change, no asset download.
     [switch]$DryRun,
 
-    # Include the native recompile toolchain (MinGW, CMake, Ninja, Vulkan
-    # SDK) and Ollama. Required to rebuild whisper.cpp DLLs or to use the
-    # local LLM rewrite path. Off by default to keep first setup lean.
+    # Include the native recompile toolchain (CMake, Ninja, Vulkan SDK, and
+    # MinGW for the Anytype backend's cgo build) and Ollama. whisper.cpp
+    # itself is built with the MSVC toolset of the Visual Studio install
+    # above. Required to rebuild native DLLs or to use the local LLM rewrite
+    # path. Off by default to keep first setup lean.
     [switch]$Full,
 
     # Also invoke scripts/commands/setup/setup-assets.ps1 after environment bootstrap.
@@ -258,7 +260,7 @@ if ($Full) {
     }
 
     if (-not $state.Gcc) {
-        Add-Plan 'MinGW (GCC 15.2.0)'  'C++ toolchain for whisper.cpp Vulkan build' { scoop install mingw }
+        Add-Plan 'MinGW (GCC 15.2.0)'  'GCC toolchain for the Anytype backend cgo build (whisper.cpp uses MSVC)' { scoop install mingw }
     }
     if (-not $state.Cmake) {
         Add-Plan 'CMake' 'Build system for whisper.cpp' { scoop install cmake }
