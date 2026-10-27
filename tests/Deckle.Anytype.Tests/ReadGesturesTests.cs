@@ -186,6 +186,33 @@ public class ReadGesturesTests
             "Doc est un objet document, pas task : lis-le avec la lecture de son type.",
             error.Message);
     }
+    // ── EpicPropertiesAsync ───────────────────────────────────────────────────
+
+    // An epic has no done box: its title stands alone, then its properties in
+    // the type's order. It is the read an agent takes an epic's id from.
+    [Fact]
+    public async Task EpicPropertiesRendersTheTitleThenEachPropertyInTheTypesOrder()
+    {
+        const string EpicId = "bafyreiEpicaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+        FakeV2Handler v2 = Reads(
+            PropsReply(EpicId, "epic", "Deckle",
+                Str(DevSpace.Props.DefinitionDeFini, "Un utilitaire local tenu."),
+                Sel(DevSpace.Props.Priorite, "5"),
+                Sel(DevSpace.Props.Etat, "En cours")));
+
+        string digest = await NewGestures(v2).EpicPropertiesAsync(EpicId, Ct);
+
+        Assert.Equal(
+            Lines(
+                $"id : {EpicId}",
+                "Deckle",
+                "État : En cours",
+                "Priorité : 5",
+                "Définition de fini : Un utilitaire local tenu."),
+            digest);
+        Assert.Single(v2.Requests);
+    }
+
     // ── TaskChecklistAsync ────────────────────────────────────────────────────
 
     // The template's empty `- [ ] ` slot is not a subtask, labels come back

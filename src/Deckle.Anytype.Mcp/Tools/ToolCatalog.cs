@@ -77,6 +77,13 @@ public static class ToolCatalog
                 ToolExecutionContract.ReadOnly),
 
             new(
+                "epic_properties",
+                "An epic's id, title and properties: état, priority, Définition de fini, budget and charge. Its projects are listed by list_projects.",
+                Schema(required: [Prop("epic", "string", "Epic, name or id.")]),
+                async (args, ct) => await reads.EpicPropertiesAsync(Str(args, "epic"), ct),
+                ToolExecutionContract.ReadOnly),
+
+            new(
                 "report_journal",
                 "A session report's id, journal date, linked tasks by name, and its last journal entries (20 by default), with the count of earlier entries.",
                 Schema(
@@ -176,7 +183,7 @@ public static class ToolCatalog
 
             new(
                 "search",
-                "Find objects by words in their name and body: one line per hit, type · name, no id. Pass context:true to tell candidates apart: project and task hits add Description and Définition de fini, every hit adds up to three body lines. Then read the chosen object with its typed read; an epic has none, list_projects shows its projects.",
+                "Find objects by words in their name and body: one line per hit, type · name, no id. Pass context:true to tell candidates apart: project and task hits add Description and Définition de fini, every hit adds up to three body lines. Then read the chosen object with its typed read, which answers with its id.",
                 Schema(
                     required: [Prop("text", "string", "Free-text query.")],
                     optional:

@@ -12,7 +12,7 @@ public class ToolCatalogTests
     {
         "open_report", "log",
         "task_properties", "task_checklist", "task_notes", "project_overview",
-        "report_journal", "idea_text", "document_outline", "document_section",
+        "epic_properties", "report_journal", "idea_text", "document_outline", "document_section",
         "create_task", "complete", "archive", "link", "list_projects", "search", "subtask",
         "create_epic", "create_project", "create_idea", "create_document", "update", "replace_section",
     };
@@ -22,7 +22,7 @@ public class ToolCatalogTests
     static readonly string[] TypedReadNames =
     {
         "task_properties", "task_checklist", "task_notes", "project_overview",
-        "report_journal", "idea_text", "document_outline", "document_section",
+        "epic_properties", "report_journal", "idea_text", "document_outline", "document_section",
     };
 
     static IReadOnlyList<ToolDescriptor> BuildCatalog()
@@ -186,6 +186,7 @@ public class ToolCatalogTests
             ["task_properties"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["task_checklist"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["task_notes"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["epic_properties"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["report_journal"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["idea_text"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["document_outline"] = AmbiguousOutcomePolicy.SafeToRetry,
@@ -219,6 +220,7 @@ public class ToolCatalogTests
             ["task_properties"] = ToolChangeKind.None,
             ["task_checklist"] = ToolChangeKind.None,
             ["task_notes"] = ToolChangeKind.None,
+            ["epic_properties"] = ToolChangeKind.None,
             ["report_journal"] = ToolChangeKind.None,
             ["idea_text"] = ToolChangeKind.None,
             ["document_outline"] = ToolChangeKind.None,

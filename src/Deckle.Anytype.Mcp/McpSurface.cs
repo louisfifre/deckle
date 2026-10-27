@@ -34,7 +34,7 @@ public sealed record McpSurfaceDescriptor(string Name, string Title, string Inst
         + "Pass its report_id to log as you journal the why; plain reads need no "
         + "report. Reads are typed and "
         + "named by what they return (task_properties, task_checklist, task_notes, "
-        + "project_overview, report_journal, idea_text, document_outline, "
+        + "project_overview, epic_properties, report_journal, idea_text, document_outline, "
         + "document_section); each answers with the object id first. They accept "
         + "words, not only an exact name or an id: an exact name wins, else a "
         + "single match wins, else the candidates are listed. So a typed read given "

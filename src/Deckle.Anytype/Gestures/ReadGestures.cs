@@ -97,6 +97,23 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
         return sb.ToString();
     }
 
+    // ── epic ─────────────────────────────────────────────────────────────────
+
+    // The only read that answers with an epic's id, which update requires;
+    // its projects are listed by list_projects.
+    public async Task<string> EpicPropertiesAsync(string epic, CancellationToken ct = default)
+    {
+        var started = DateTime.UtcNow;
+        Loaded obj = await LoadAsync(epic, DevSpace.Types.Epic, withMarkdown: false, ct);
+
+        var sb = new StringBuilder();
+        AppendIdentity(sb, obj, done: null);
+        await AppendPropertiesAsync(sb, obj, DevSpace.Types.Epic, ct);
+
+        DeckleAnytypeSource.Log.GestureCompleted("epic_properties", Elapsed(started));
+        return sb.ToString();
+    }
+
     // ── rapport ──────────────────────────────────────────────────────────────
 
     // A report is read to look back, so its tail is what matters: the last
