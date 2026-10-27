@@ -242,12 +242,49 @@ public class NameResolverTests
     {
         var handler = new FakeV2Handler().Reply(HttpStatusCode.OK, Rows(
             (FirstId, "", "rapport"),
-            (SecondId, "", "rapport")));
+            (SecondId, "", "idee")));
 
         AmbiguousNameException error = await Assert.ThrowsAsync<AmbiguousNameException>(
-            () => ResolverOver(handler).ResolveAsync("Journal", [DevSpace.Types.Rapport], NameMatch.Tolerant, Ct));
+            () => ResolverOver(handler).ResolveAsync("Journal", null, NameMatch.Tolerant, Ct));
 
         Assert.Contains("(sans titre)", error.Message);
+    }
+
+    // An idea's title is the first line of its body, which a v2 row cannot
+    // carry: on v2 every idea read « (sans titre) » and idea_text refused the
+    // exact title of an idea search had just shown. Body-titled types are
+    // resolved on the v1 search, whose snippet carries the title.
+    [Theory]
+    [Trait("Category", "regression")]
+    [InlineData(NameMatch.Tolerant)]
+    [InlineData(NameMatch.Exact)]
+    public async Task AnIdeaResolvesByTheTitleItsBodyCarries(NameMatch match)
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnSearch(new JsonObject
+        {
+            ["data"] = new JsonArray(
+                Note(FirstId, "Socle MCP\nCe que le socle doit porter."),
+                Note(SecondId, "Socle MCP pour Home\nUne variante."),
+                Note(ThirdId, "Autre idée\nqui cite le socle MCP.")),
+        });
+        var handler = new FakeV2Handler();
+        var v1 = new AnytypeApiClient(server.Credentials);
+        var resolver = new NameResolver(v1, new AnytypeV2Client(
+            new AnytypeCredentials("http://127.0.0.1:31012", "2025-11-08", "test-bearer", v1.SpaceId), null, handler));
+
+        string id = await resolver.ResolveAsync("Socle MCP", [DevSpace.Types.Idee], match, Ct);
+
+        Assert.Equal(FirstId, id);
+        Assert.Empty(handler.Requests);
+
+        static JsonObject Note(string id, string snippet) => new()
+        {
+            ["id"] = id,
+            ["name"] = "",
+            ["snippet"] = snippet,
+            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Idee },
+        };
     }
 
     // The v2 client is bound to one space: another space is searched on v1.

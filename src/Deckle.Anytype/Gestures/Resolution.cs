@@ -180,7 +180,7 @@ public sealed class NameResolver(AnytypeApiClient api, AnytypeV2Client? v2 = nul
         int pageSize = match == NameMatch.Exact ? ExactPageSize : CandidateLimit;
         int ceiling = match == NameMatch.Exact ? ExactScanCeiling : 0;
 
-        if (_searcher is not null && spaceId == _v2SpaceId)
+        if (_searcher is not null && spaceId == _v2SpaceId && !TitledByBody(typeKeys))
             return await SearchCandidatesV2Async(query, typeKeys, pageSize, ceiling, ct);
 
         var result = new List<Candidate>();
@@ -213,11 +213,19 @@ public sealed class NameResolver(AnytypeApiClient api, AnytypeV2Client? v2 = nul
         return result;
     }
 
+    // An idea or a report has an empty name: its title is the first line of its
+    // body. A v2 row carries no snippet and refuses to be asked for one
+    // (measured 2026-10-27: `fields: ["snippet"]` answers 400), so on v2 every
+    // such object reads « (sans titre) » and its title never resolves. Those
+    // types stay on the v1 search, whose snippet gives the title, at the cost
+    // of one request, where reading each v2 candidate would cost one per hit.
+    static bool TitledByBody(IReadOnlyList<string>? typeKeys) =>
+        typeKeys is { Count: > 0 }
+        && typeKeys.Any(t => t is DevSpace.Types.Idee or DevSpace.Types.Rapport);
+
     // v2 takes ONE type per search, so several types cost one search each; the
-    // hits are merged by id. A v2 row has no snippet (measured 2026-10-22), so
-    // an object without a name, a report, reads « (sans titre) » in an
-    // ambiguity message, where v1 showed the first line of its snippet.
-    // Exact-name matching is unaffected: it only concerns named objects.
+    // hits are merged by id. A nameless object found without a type filter
+    // still reads « (sans titre) » here: see TitledByBody.
     async Task<List<Candidate>> SearchCandidatesV2Async(
         string query, IReadOnlyList<string>? typeKeys, int pageSize, int ceiling, CancellationToken ct)
     {
