@@ -45,7 +45,7 @@ internal static class NativeRuntimeLoader
     // whisper.cpp keeps threads and registries inside them.
     private static readonly object s_loadLock = new();
     private static readonly Dictionary<string, IntPtr> s_loaded = new(StringComparer.OrdinalIgnoreCase);
-    private static int s_backendsLoaded;
+    private static readonly OnceOnSuccess s_backends = new();
 
     // Loads the catalog up to and including dllName, in catalog order, and
     // returns dllName's handle. The backends are skipped: ggml loads them.
@@ -130,10 +130,17 @@ internal static class NativeRuntimeLoader
     // ggml-<backend>-*.dll, loads each with a plain LoadLibraryW and keeps
     // the best-scoring variant per backend; the C++ runtime those files
     // import is already in the process by then, brought in by whisper.dll.
-    public static void EnsureBackendsLoaded(string nativeDirectory)
-    {
-        if (Interlocked.Exchange(ref s_backendsLoaded, 1) != 0) return;
+    //
+    // Once means once it worked: a call that throws (ggml.dll missing an
+    // export, the folder half-written) or registers nothing leaves the next
+    // model load free to try again, after a repair, in the same process. A
+    // run that registered backends is never repeated, since ggml would
+    // register them a second time.
+    public static void EnsureBackendsLoaded(string nativeDirectory) =>
+        s_backends.Run(() => LoadBackends(nativeDirectory));
 
+    private static bool LoadBackends(string nativeDirectory)
+    {
         WhisperPInvoke.ggml_backend_load_all_from_path(nativeDirectory);
 
         nuint count = WhisperPInvoke.ggml_backend_reg_count();
@@ -151,10 +158,11 @@ internal static class NativeRuntimeLoader
         if (count == 0)
         {
             DeckleWhisperSource.Log.NativeBackendsNone(nativeDirectory);
-            return;
+            return false;
         }
         DeckleWhisperSource.Log.NativeBackendsLoaded(joined, devices);
         if (!vulkan) DeckleWhisperSource.Log.NativeBackendVulkanUnavailable(joined);
+        return true;
     }
 
     private static NativeDllLoadResult TryLoad(string nativeDirectory, string name, out IntPtr handle)
@@ -195,8 +203,13 @@ internal static class NativeRuntimeLoader
     private static string? FindMissingImport(string nativeDirectory, string path)
     {
         IReadOnlyList<string> imports;
+        // A diagnosis must never throw over the failure it explains: an
+        // unreadable or malformed image (PeImports turns a truncated one into
+        // BadImageFormatException too) leaves the import unnamed, and the
+        // summary falls back to "needs an import that could not be found".
         try { imports = PeImports.ReadImportedDllNames(path); }
-        catch (Exception ex) when (ex is IOException or BadImageFormatException or UnauthorizedAccessException)
+        catch (Exception ex) when (ex is IOException or BadImageFormatException or UnauthorizedAccessException
+                                      or ArgumentException or IndexOutOfRangeException)
         {
             return null;
         }

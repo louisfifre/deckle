@@ -1795,6 +1795,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── NativeRuntime.cs
 │   │   │   ├── NativeRuntimeLoadCheck.cs
 │   │   │   ├── NativeRuntimeLoader.cs
+│   │   │   ├── OnceOnSuccess.cs
 │   │   │   ├── PeImports.cs
 │   │   │   ├── SpeechModelResolver.cs
 │   │   │   └── SpeechModels.cs
@@ -2480,6 +2481,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── NativeRuntimeBugNotes.md
 │   │   ├── NativeRuntimeLoaderTests.cs
 │   │   ├── NativeRuntimeTests.cs
+│   │   ├── OnceOnSuccessTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
 │   │   ├── PeImportsTests.cs
 │   │   ├── RepetitionDetectorTests.cs

@@ -19,10 +19,26 @@ internal static class PeImports
     private const int ImportDirectoryIndex      = 1;
     private const int DelayImportDirectoryIndex = 13;
 
+    // Throws BadImageFormatException for anything that is not a well-formed
+    // image, a truncated file included: the walk reads offsets the file
+    // itself declares, and a file cut short (an interrupted copy, a damaged
+    // download) declares offsets past its end. Callers catch one type.
     public static IReadOnlyList<string> ReadImportedDllNames(string path)
     {
         byte[] bytes = File.ReadAllBytes(path);
         string name = Path.GetFileName(path);
+        try
+        {
+            return Read(bytes, name, path);
+        }
+        catch (Exception ex) when (ex is ArgumentException or IndexOutOfRangeException)
+        {
+            throw new BadImageFormatException($"{name} is truncated or malformed: {ex.Message}", path, ex);
+        }
+    }
+
+    private static List<string> Read(byte[] bytes, string name, string path)
+    {
 
         if (bytes.Length < 0x40 || bytes[0] != (byte)'M' || bytes[1] != (byte)'Z')
             throw new BadImageFormatException($"{name} is not a PE image: no MZ header", path);
