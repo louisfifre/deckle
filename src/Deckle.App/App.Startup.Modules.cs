@@ -77,6 +77,10 @@ public partial class App
             // so what fixes it is the restart that follows provisioning.
             if (engineSkip != SkipNotPresent)
                 UserIncidentRegistry.Instance.Open(UserIncidents.WhisperModel, engineSkip);
+            // The runtime is what a bundle change breaks, so it alone earns the
+            // setup window at the end of startup (App.SpeechRepair.cs).
+            if (engineSkip is SkipNativeRuntimeMissing or SkipNativeRuntimeUnloadable)
+                _speechRepairReason = engineSkip;
         }
 
         // Constructed dormant: nothing calls Speak yet.

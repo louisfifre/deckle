@@ -514,6 +514,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── App.ParagraphRewrite.cs
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
+│   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs
 │   │   ├── App.Startup.CrashDumps.cs
 │   │   ├── App.Startup.DictationRecovery.cs

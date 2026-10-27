@@ -628,6 +628,26 @@
   <data name="Setup_Native_ImportFailed_Format" xml:space="preserve">
     <value>Could not import: {0}</value>
   </data>
+  <!-- ─── Setup wizard — repair ──────────────────────────────────────
+       The install step when the running app opened the wizard on its own
+       because the speech engine is missing or does not load. The subtitle
+       is one of the Setup_Repair_* sentences; nothing downloads before the
+       Download click. -->
+  <data name="Setup_StepTitle_Repair" xml:space="preserve">
+    <value>Download the speech engine</value>
+  </data>
+  <data name="Setup_Repair_Changed" xml:space="preserve">
+    <value>Deckle's speech engine changed version. Download it again to keep using transcription.</value>
+  </data>
+  <data name="Setup_Repair_DoesNotLoad" xml:space="preserve">
+    <value>The speech engine doesn't load on this PC. Download it again to repair transcription.</value>
+  </data>
+  <data name="Setup_Repair_Missing" xml:space="preserve">
+    <value>Transcription needs its speech engine. Download it to start using transcription.</value>
+  </data>
+  <data name="Setup_NextLabel_Download" xml:space="preserve">
+    <value>Download</value>
+  </data>
   <data name="Setup_Native_DoesNotLoad_Format" xml:space="preserve">
     <value>Doesn't load here, will be downloaded again. {0}</value>
   </data>

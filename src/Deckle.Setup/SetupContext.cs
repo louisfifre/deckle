@@ -87,6 +87,15 @@ public sealed class SetupContext
 
     public bool ChoicesConfirmed { get; set; }
 
+    // ── Repair (the wizard opened by the app itself) ────────────────────────
+    //
+    // Set when the running app found the speech engine missing or not loading
+    // and opened the wizard on its own, straight on the install step. The
+    // sentence says why; the install step shows it and waits for the person's
+    // Download click before it fetches anything, then clears it so a Retry
+    // from the summary runs at once. Null on every other flow.
+    public string? RepairNotice { get; set; }
+
     // Per-item results captured by the Installing page, in the install plan's
     // order.
     public List<InstallResult> Results { get; } = new();

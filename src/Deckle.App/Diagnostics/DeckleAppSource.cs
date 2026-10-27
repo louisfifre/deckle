@@ -144,4 +144,7 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtSurvivedExceptionRepeated      = 127;
     public const int EvtLegacyLogFilesRenamed          = 128;
     public const int EvtLegacyLogFileRenameFailed      = 129;
+    public const int EvtSpeechRepairOffered            = 130;
+    public const int EvtSpeechRepairEnded              = 131;
+    public const int EvtSpeechRepairFailed             = 132;
 }

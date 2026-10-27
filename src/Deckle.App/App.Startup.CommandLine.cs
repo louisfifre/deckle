@@ -104,5 +104,13 @@ public partial class App
         }
 
         context.Complete();
+
+        // Queued behind the first frame, so the tray is up before the window
+        // opens. A post-build process hands over to its relaunch, which runs
+        // this same check; offering here too would open the window twice.
+        if (_speechRepairReason is { } repairReason && postBuildIdx < 0 && postBuildHudZOrderSelfTestIdx < 0)
+            Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread()
+                .TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low,
+                    () => OfferSpeechRepair(repairReason));
     }
 }

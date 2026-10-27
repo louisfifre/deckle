@@ -37,20 +37,56 @@ public sealed partial class InstallingPage : Page
         _context     = setup.Context;
         _dispatcher  = DispatcherQueue.GetForCurrentThread();
 
-        setup.SetStepHeader(
-            Loc.Get("Setup_StepTitle_Installing"),
-            Loc.Get("Setup_StepSubtitle_Installing"));
         setup.SetCurrentStep(SetupStep.Install);
         setup.SetBackEnabled(false);
-        setup.SetNextEnabled(false);
-        setup.SetNextVisible(false);
-        setup.SetCancelVisible(false); // inline Cancel install button instead
+
+        // Opened by the app, not by the person: nothing is fetched until they
+        // say so. The rows show what the download brings, the footer offers
+        // Download and Cancel.
+        if (_context.RepairNotice is { } notice)
+        {
+            setup.SetStepHeader(Loc.Get("Setup_StepTitle_Repair"), notice);
+            BuildItemRows(InstallPlan.Build(_context));
+            long pending = InstallPlan.PendingBytes(_context);
+            GlobalStatusText.Text = Loc.Format(
+                "Setup_TotalEstimate_Pending_Format", ByteSizeFormatter.Format(pending));
+            CancelDownloadButton.Visibility = Visibility.Collapsed;
+            setup.SetNextLabel(Loc.Get("Setup_NextLabel_Download"));
+            setup.SetNextVisible(true);
+            setup.SetNextEnabled(true);
+            setup.SetCancelVisible(true);
+            setup.NextRequested += OnDownloadRequested;
+            return;
+        }
+
+        StartInstall();
+    }
+
+    private void OnDownloadRequested()
+    {
+        if (_setup is null || _context is null) return;
+        _setup.NextRequested -= OnDownloadRequested;
+        _context.RepairNotice = null;
+        CancelDownloadButton.Visibility = Visibility.Visible;
+        StartInstall();
+    }
+
+    private void StartInstall()
+    {
+        if (_setup is null) return;
+        _setup.SetStepHeader(
+            Loc.Get("Setup_StepTitle_Installing"),
+            Loc.Get("Setup_StepSubtitle_Installing"));
+        _setup.SetNextEnabled(false);
+        _setup.SetNextVisible(false);
+        _setup.SetCancelVisible(false); // inline Cancel install button instead
 
         _ = InstallAllAsync();
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
+        if (_setup is not null) _setup.NextRequested -= OnDownloadRequested;
         _cts?.Cancel();
         _cts?.Dispose();
         _cts = null;

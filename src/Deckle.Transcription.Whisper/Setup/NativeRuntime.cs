@@ -329,6 +329,27 @@ public static class NativeRuntime
         }
     }
 
+    // The DLLs of the native folder that the catalog does not name: what an
+    // older bundle left behind (1.9.1 shipped libwhisper.dll and the MinGW
+    // runtime). Their presence is what tells a catalog that changed version
+    // from a runtime that was never installed.
+    public static IReadOnlyList<string> GetStale()
+        => GetStale(AppPaths.NativeDirectory);
+
+    internal static IReadOnlyList<string> GetStale(string nativeDirectory)
+    {
+        if (!Directory.Exists(nativeDirectory)) return Array.Empty<string>();
+        var catalog = new HashSet<string>(RequiredDllNames, StringComparer.OrdinalIgnoreCase);
+        var stale = new List<string>();
+        foreach (string path in Directory.EnumerateFiles(nativeDirectory, "*.dll"))
+        {
+            string name = Path.GetFileName(path);
+            if (!catalog.Contains(name)) stale.Add(name);
+        }
+        stale.Sort(StringComparer.OrdinalIgnoreCase);
+        return stale;
+    }
+
     public static IReadOnlyList<string> GetMissing()
         => GetMissing(AppPaths.NativeDirectory);
 
