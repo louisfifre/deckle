@@ -93,9 +93,18 @@ public sealed partial class ChoicesPage : Page
 
     private void RefreshNativeStatus()
     {
-        if (NativeRuntime.IsInstalled())
+        if (NativeRuntime.IsUsable())
         {
             NativeStatusText.Text = Loc.Get("Setup_Native_Installed");
+            BrowseNativeButton.Content = Loc.Get("Setup_Native_Replace");
+        }
+        else if (NativeRuntime.IsInstalled())
+        {
+            // All there and still not loading here: the install step
+            // downloads the bundle again, and the line says what failed.
+            NativeStatusText.Text = Loc.Format(
+                "Setup_Native_DoesNotLoad_Format",
+                NativeRuntime.CheckLoad().FirstFailure?.Summary ?? "");
             BrowseNativeButton.Content = Loc.Get("Setup_Native_Replace");
         }
         else if (NativeRuntime.BundleUrlIsPlaceholder)
@@ -160,7 +169,7 @@ public sealed partial class ChoicesPage : Page
         if (_setup is null) return;
         // With a bundle URL the install step downloads a missing runtime; with
         // a placeholder URL only a manual Browse can supply it.
-        bool nativeReady = NativeRuntime.IsInstalled() || !NativeRuntime.BundleUrlIsPlaceholder;
+        bool nativeReady = NativeRuntime.IsUsable() || !NativeRuntime.BundleUrlIsPlaceholder;
         bool ready = nativeReady && ModelRadio.SelectedIndex >= 0;
         _setup.SetNextEnabled(ready);
     }

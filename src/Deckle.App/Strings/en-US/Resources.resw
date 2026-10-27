@@ -628,6 +628,9 @@
   <data name="Setup_Native_ImportFailed_Format" xml:space="preserve">
     <value>Could not import: {0}</value>
   </data>
+  <data name="Setup_Native_DoesNotLoad_Format" xml:space="preserve">
+    <value>Doesn't load here, will be downloaded again. {0}</value>
+  </data>
 
   <!-- ─── Setup wizard — installing page ─────────────────────────────
        Inline Cancel install button in XAML uses x:Uid. All progress

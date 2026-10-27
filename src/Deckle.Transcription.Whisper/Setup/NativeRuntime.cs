@@ -110,31 +110,57 @@ public static class NativeRuntime
 
     // Loads the installed catalog the way the first transcription will, with
     // the search limited to the native folder and System32, and reports the
-    // first DLL that does not load and the import it misses. The wizard calls
-    // it after extraction and the app can call it at startup, so that
-    // "installed" means "loads on this machine".
-    public static NativeRuntimeLoadCheck CheckLoad() =>
-        CheckLoad(AppPaths.NativeDirectory);
+    // first DLL that does not load and the import it misses. Provisioning
+    // runs it after extraction and the app at startup, so that "installed"
+    // means "loads on this machine".
+    public static NativeRuntimeLoadCheck CheckLoad()
+    {
+        NativeRuntimeLoadCheck check = CheckLoad(AppPaths.NativeDirectory);
+        s_lastCheck = check;
+        return check;
+    }
 
     internal static NativeRuntimeLoadCheck CheckLoad(string nativeDirectory) =>
         NativeRuntimeLoader.Check(nativeDirectory);
 
+    // The last answer of CheckLoad for the app's native folder. The wizard
+    // asks IsUsable from every estimate it refreshes, and each check loads
+    // the whole catalog; the files only change through the provisioning
+    // below, which drops the answer. A folder edited by hand while the app
+    // runs keeps the old answer until the next provisioning or restart.
+    private static NativeRuntimeLoadCheck? s_lastCheck;
+
+    // The question the install plan and the Settings page ask: the catalog
+    // is complete and loads here. The Vulkan backend may fail (CheckLoad
+    // allows it) without making the runtime unusable.
+    public static bool IsUsable() =>
+        IsInstalled() && (s_lastCheck ?? CheckLoad()).Loads;
+
     // Only catalog DLLs are copied, so pointing at a build folder full of other
-    // artifacts keeps NativeDirectory tidy.
+    // artifacts keeps NativeDirectory tidy. A complete copy is load-checked at
+    // once: a runtime picked by hand is the one most likely to miss an import.
     public static int CopyFromFolder(string sourcePath)
     {
-        Directory.CreateDirectory(AppPaths.NativeDirectory);
+        int copied = CopyFromFolder(sourcePath, AppPaths.NativeDirectory);
+        s_lastCheck = null;
+        if (IsInstalled()) CheckLoad();
+        return copied;
+    }
+
+    internal static int CopyFromFolder(string sourcePath, string nativeDirectory)
+    {
+        Directory.CreateDirectory(nativeDirectory);
         int copied = 0;
         foreach (string name in RequiredDllNames)
         {
             string from = Path.Combine(sourcePath, name);
             if (!File.Exists(from)) continue;
-            string to = Path.Combine(AppPaths.NativeDirectory, name);
+            string to = Path.Combine(nativeDirectory, name);
             File.Copy(from, to, overwrite: true);
             copied++;
         }
 
-        IReadOnlyList<string> missing = GetMissing();
+        IReadOnlyList<string> missing = GetMissing(nativeDirectory);
         DeckleWhisperSource.Log.NativeRuntimeCopied(copied, missing.Count);
         DeckleWhisperSource.Log.NativeRuntimeCopiedDetail(sourcePath, string.Join(",", missing));
         return copied;
@@ -156,7 +182,16 @@ public static class NativeRuntime
         string zipPath,
         CancellationToken ct)
     {
-        Directory.CreateDirectory(AppPaths.NativeDirectory);
+        s_lastCheck = null;
+        return await InstallFromZipAsync(zipPath, AppPaths.NativeDirectory, ct).ConfigureAwait(false);
+    }
+
+    internal static async Task<int> InstallFromZipAsync(
+        string zipPath,
+        string nativeDirectory,
+        CancellationToken ct)
+    {
+        Directory.CreateDirectory(nativeDirectory);
 
         using var archive = ZipFile.OpenRead(zipPath);
         int extracted = 0;
@@ -168,7 +203,7 @@ public static class NativeRuntime
             ZipArchiveEntry? entry = archive.GetEntry(name);
             if (entry is null) continue;
 
-            string finalPath   = Path.Combine(AppPaths.NativeDirectory, name);
+            string finalPath   = Path.Combine(nativeDirectory, name);
             string partialPath = finalPath + ".partial";
 
             try
@@ -249,6 +284,17 @@ public static class NativeRuntime
                 reason = "bundle_incomplete";
                 return ProvisioningResult.Fail(
                     $"bundle is incomplete (extracted {extracted}/{RequiredDllNames.Count} DLLs)");
+            }
+
+            // A bundle that is all there can still not load here (an import
+            // this machine lacks, a file that is not a 64-bit DLL): the
+            // person learns it now, in the wizard, not at the first take.
+            NativeRuntimeLoadCheck check = CheckLoad();
+            if (!check.Loads)
+            {
+                reason = "load_check_failed";
+                exMessage = check.FirstFailure?.Summary ?? "no CPU backend loaded";
+                return ProvisioningResult.Fail(exMessage);
             }
 
             outcome = "completed";

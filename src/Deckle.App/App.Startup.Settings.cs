@@ -62,7 +62,7 @@ public partial class App
         // The Dictation page lives in Deckle.Transcription, which cannot see the
         // Whisper child module, so the App, which composes both, answers here.
         Settings.SettingsHost.IsSpeechProvisioned =
-            () => NativeRuntime.IsInstalled() && SpeechModels.IsAnyModelInstalled();
+            () => NativeRuntime.IsUsable() && SpeechModels.IsAnyModelInstalled();
 
         WireUpdater();
 

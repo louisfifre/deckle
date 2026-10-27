@@ -19,8 +19,9 @@ namespace Deckle.Transcription.Whisper;
 // owns each entry (its name, its devices). A P/Invoke on the wrong one fails
 // with EntryPointNotFoundException at the first model load.
 //
-// Startup checks NativeRuntime.IsInstalled() before constructing WhisperBackend,
-// so the resolver's fail-closed throw is a backstop, not an expected path.
+// Startup checks that the runtime is installed and loads (NativeRuntime.CheckLoad)
+// before constructing WhisperBackend, so the resolver's fail-closed throw is a
+// backstop, not an expected path.
 public static class WhisperPInvoke
 {
     private const string WhisperKey  = "whisper";

@@ -470,8 +470,10 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     }
 
     // reason (closed vocabulary): placeholder_url | download_failed |
-    // bundle_incomplete | exception. For download_failed, ex_message is the
-    // downloader's own error text.
+    // bundle_incomplete | load_check_failed | exception. For download_failed,
+    // ex_message is the downloader's own error text; for load_check_failed,
+    // the sentence naming the DLL that does not load (the check's own
+    // Warning carries the fields).
     [Event(EvtNativeRuntimeProvisionFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,

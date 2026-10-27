@@ -40,8 +40,9 @@ public sealed partial class DeckleSetupSource
             WriteEvent(EvtItemImported, item_id, size_bytes);
     }
 
-    // reason=sha256_mismatch and files_missing are verdicts on the picked
-    // content (ex_type empty); reason=threw carries the exception.
+    // reason=sha256_mismatch, files_missing and load_check_failed are verdicts
+    // on the picked content (ex_type empty); reason=threw carries the
+    // exception.
     [Event(EvtItemImportFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,

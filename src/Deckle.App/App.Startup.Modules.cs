@@ -29,6 +29,7 @@ public partial class App
 
     private const string SkipNotPresent          = "not_present";
     private const string SkipNativeRuntimeMissing = "native_runtime_missing";
+    private const string SkipNativeRuntimeUnloadable = "native_runtime_unloadable";
     private const string SkipSpeechModelMissing  = "speech_model_missing";
 
     // ForegroundWatcher.Start returns false only when its foreground hook
@@ -42,9 +43,17 @@ public partial class App
         // on demand from Settings, never as a hard gate that quits the app. The
         // WhisperBackend constructor installs the native log hook and would throw
         // DllNotFoundException without the runtime.
+        //
+        // Present is not enough: the catalog is loaded once here, the way the
+        // first take will, so a runtime that does not load on this machine is
+        // named now (the check logs the DLL and the import) instead of at the
+        // first hotkey press. The check frees what it loads, and loading a
+        // backend DLL does not register it: ggml enumerates the GPU only when
+        // the first model load asks it to (NativeRuntimeLoader).
         string? engineSkip =
             !context.TranscriptionPresent         ? SkipNotPresent
             : !NativeRuntime.IsInstalled()        ? SkipNativeRuntimeMissing
+            : !NativeRuntime.CheckLoad().Loads    ? SkipNativeRuntimeUnloadable
             : !SpeechModels.IsAnyModelInstalled() ? SkipSpeechModelMissing
             : null;
         if (engineSkip is null)

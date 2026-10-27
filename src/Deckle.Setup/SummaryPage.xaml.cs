@@ -300,6 +300,17 @@ public sealed partial class SummaryPage : Page
                     return;
                 }
 
+                // CopyFromFolder load-checked the complete copy: a folder from
+                // another build can hold every name and still not load here.
+                if (!NativeRuntime.IsUsable())
+                {
+                    string summary = NativeRuntime.CheckLoad().FirstFailure?.Summary ?? "";
+                    DeckleSetupSource.Log.ItemImportFailed(r.ItemId, "load_check_failed", "", summary);
+                    status.Text = Loc.Format("Setup_ImportFailed_Format", summary);
+                    button.IsEnabled = true;
+                    return;
+                }
+
                 DeckleSetupSource.Log.ItemImported(r.ItemId, 0);
                 MarkImported(r.ItemId, r.DisplayName, null);
             }

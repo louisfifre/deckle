@@ -117,12 +117,15 @@ public static class InstallPlan
 
     // ── Dictation ─────────────────────────────────────────────────────────────
 
+    // Usable, not merely present: a catalog whose files are all there but do
+    // not load on this machine is reinstalled like a missing one, which is
+    // what brings an install back after the bundle changed version.
     private static InstallItem NativeRuntimeItem() => new()
     {
         Id          = NativeRuntimeItemId,
         DisplayName = NativeRuntime.CurrentBundle.DisplayName,
         SizeBytes   = NativeRuntime.CurrentBundle.SizeBytes,
-        IsInstalled = NativeRuntime.IsInstalled,
+        IsInstalled = NativeRuntime.IsUsable,
         RunAsync    = NativeRuntime.ProvisionAsync,
     };
 
