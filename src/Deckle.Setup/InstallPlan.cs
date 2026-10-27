@@ -50,6 +50,16 @@ public static class InstallPlan
         return pending;
     }
 
+    // The sentence of the window's total band, worded once for every page
+    // that shows it.
+    internal static string DescribeTotal(SetupContext context)
+    {
+        long pending = PendingBytes(context);
+        return pending > 0
+            ? Loc.Format("Setup_TotalEstimate_Pending_Format", ByteSizeFormatter.Format(pending))
+            : Loc.Get("Setup_TotalEstimate_NothingPending");
+    }
+
     internal static IReadOnlyList<InstallItem> Build(SetupContext context)
     {
         var items = new List<InstallItem>();

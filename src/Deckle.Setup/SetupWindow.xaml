@@ -8,6 +8,15 @@
     <!-- Mica backdrop is set in code-behind. The root Grid stays
          transparent so DWM applies Mica through the window. -->
     <Grid>
+        <Grid.Resources>
+            <!-- One column for the header, the page, the total band and the
+                 footer, so their edges line up at every width. 1000 is the
+                 content width the Settings pages cap at: below it the side
+                 margins stay at their 40 and the cards take the rest; above it
+                 the margins grow. -->
+            <x:Double x:Key="SetupColumnMaxWidth">1000</x:Double>
+        </Grid.Resources>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />  <!-- TitleBar -->
             <RowDefinition Height="*" />     <!-- Step rail + right-hand panel -->
@@ -34,52 +43,85 @@
                         IsSettingsVisible="False"
                         SelectionChanged="OnStepSelectionChanged">
 
-            <!-- The right-hand panel: step header, page Frame, footer. -->
+            <!-- The right-hand panel: step header, scrolling page, total band,
+                 footer. Only the page scrolls; the rest stays in place. -->
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />  <!-- Step header -->
-                    <RowDefinition Height="*" />     <!-- Page Frame -->
+                    <RowDefinition Height="*" />     <!-- Page -->
+                    <RowDefinition Height="Auto" />  <!-- Total band -->
                     <RowDefinition Height="Auto" />  <!-- Footer -->
                 </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="0" Padding="40,16,40,16" Spacing="6">
+                <StackPanel Grid.Row="0"
+                            Padding="40,16,40,16"
+                            Spacing="6">
                     <TextBlock x:Name="StepTitle"
+                               MaxWidth="{StaticResource SetupColumnMaxWidth}"
                                Text="Setup"
                                Style="{ThemeResource TitleTextBlockStyle}" />
                     <TextBlock x:Name="StepSubtitle"
+                               MaxWidth="{StaticResource SetupColumnMaxWidth}"
                                Text=""
                                Style="{ThemeResource BodyTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                TextWrapping="Wrap" />
                 </StackPanel>
 
-                <Frame x:Name="ContentFrame"
-                       Grid.Row="1"
-                       Padding="40,8,40,16" />
+                <!-- The one scrolling region. It spans the panel edge to edge and
+                     carries the side margins as its own padding, the way the
+                     Settings pages do: the scroll bar then runs in the right
+                     margin, never over a card's control. -->
+                <ScrollViewer x:Name="PageScroller"
+                              Grid.Row="1"
+                              Padding="40,8,40,16"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <Frame x:Name="ContentFrame"
+                           MaxWidth="{StaticResource SetupColumnMaxWidth}"
+                           Navigating="OnPageNavigating"
+                           Navigated="OnPageNavigated" />
+                </ScrollViewer>
 
-                <Grid Grid.Row="2" Padding="40,16,40,24">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
+                <!-- Fixed below the scrolling page: the total stays in view
+                     while the person scrolls the cards that change it. A page
+                     that has a total opens it (SetTotalEstimate); every
+                     navigation closes it first. -->
+                <InfoBar x:Name="TotalEstimateBar"
+                         x:Uid="SetupTotalEstimateBar"
+                         Grid.Row="2"
+                         Margin="40,8,40,0"
+                         MaxWidth="{StaticResource SetupColumnMaxWidth}"
+                         IsOpen="False"
+                         IsClosable="False"
+                         Severity="Informational" />
 
-                    <Button x:Name="CancelButton"
-                            x:Uid="SetupCancelButton"
-                            Grid.Column="0"
-                            Click="OnCancelClick" />
+                <Grid Grid.Row="3"
+                      Padding="40,16,40,24">
+                    <Grid MaxWidth="{StaticResource SetupColumnMaxWidth}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
 
-                    <StackPanel Grid.Column="1"
-                                Orientation="Horizontal"
-                                Spacing="8">
-                        <Button x:Name="BackButton"
-                                x:Uid="SetupBackButton"
-                                Click="OnBackClick"
-                                IsEnabled="False" />
-                        <Button x:Name="NextButton"
-                                x:Uid="SetupNextButton"
-                                Style="{ThemeResource AccentButtonStyle}"
-                                Click="OnNextClick" />
-                    </StackPanel>
+                        <Button x:Name="CancelButton"
+                                x:Uid="SetupCancelButton"
+                                Grid.Column="0"
+                                Click="OnCancelClick" />
+
+                        <StackPanel Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    Spacing="8">
+                            <Button x:Name="BackButton"
+                                    x:Uid="SetupBackButton"
+                                    Click="OnBackClick"
+                                    IsEnabled="False" />
+                            <Button x:Name="NextButton"
+                                    x:Uid="SetupNextButton"
+                                    Style="{ThemeResource AccentButtonStyle}"
+                                    Click="OnNextClick" />
+                        </StackPanel>
+                    </Grid>
                 </Grid>
             </Grid>
         </NavigationView>

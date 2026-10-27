@@ -106,6 +106,15 @@ public sealed partial class SetupWindow : Window
         ApplyStepStates();
     }
 
+    // The total sits outside the scrolling page, so it stays in view while the
+    // person scrolls the cards that change it. Navigation closes it; a page
+    // that has a total sets it from OnNavigatedTo and on every change.
+    public void SetTotalEstimate(string message)
+    {
+        TotalEstimateBar.Message = message;
+        TotalEstimateBar.IsOpen  = true;
+    }
+
     public void SetNextEnabled(bool enabled)  => NextButton.IsEnabled = enabled;
     public void SetNextLabel(string label)    => NextButton.Content   = label;
     public void SetNextVisible(bool visible)  => NextButton.Visibility   = ToVisibility(visible);
@@ -314,6 +323,16 @@ public sealed partial class SetupWindow : Window
             CaptionInsetCorrection.Attach(AppTitleBar, appWindow);
         }
     }
+
+    // Navigating runs before the new page's OnNavigatedTo, so a page that keeps
+    // a total reopens the band and one that has none never shows the last one.
+    private void OnPageNavigating(object sender, NavigatingCancelEventArgs e) =>
+        TotalEstimateBar.IsOpen = false;
+
+    // One scroller serves every page, so a page opens at its top, not at the
+    // offset the previous one was left at.
+    private void OnPageNavigated(object sender, NavigationEventArgs e) =>
+        PageScroller.ChangeView(null, 0, null, disableAnimation: true);
 
     private void OnBackClick(object sender, RoutedEventArgs e)   => BackRequested?.Invoke();
     private void OnNextClick(object sender, RoutedEventArgs e)   => NextRequested?.Invoke();

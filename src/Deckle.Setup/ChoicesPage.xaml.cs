@@ -157,11 +157,7 @@ public sealed partial class ChoicesPage : Page
 
         // The same plan InstallingPage runs, so the estimate matches what the
         // install step fetches; the model radio feeds it through SelectedModel.
-        long pendingBytes = InstallPlan.PendingBytes(_context);
-
-        TotalEstimateBar.Message = pendingBytes > 0
-            ? Loc.Format("Setup_TotalEstimate_Pending_Format", ByteSizeFormatter.Format(pendingBytes))
-            : Loc.Get("Setup_TotalEstimate_NothingPending");
+        _setup?.SetTotalEstimate(InstallPlan.DescribeTotal(_context));
     }
 
     private void UpdateNextEnabled()

@@ -180,10 +180,7 @@ public sealed partial class ModulesPage : Page
         // The Dictation step exists only while transcription is selected.
         _setup.RefreshStepRail();
 
-        long pendingBytes = InstallPlan.PendingBytes(_setup.Context);
-        TotalEstimateBar.Message = pendingBytes > 0
-            ? Loc.Format("Setup_TotalEstimate_Pending_Format", ByteSizeFormatter.Format(pendingBytes))
-            : Loc.Get("Setup_TotalEstimate_NothingPending");
+        _setup.SetTotalEstimate(InstallPlan.DescribeTotal(_setup.Context));
     }
 
     // ── Next ──────────────────────────────────────────────────────────────────

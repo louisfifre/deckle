@@ -67,6 +67,11 @@ public sealed partial class SummaryPage : Page
         _setup.SetNextLabel(Loc.Get(ok ? "Setup_NextLabel_GetStarted" : "Setup_NextLabel_Retry"));
         _setup.SetCancelVisible(!ok);
 
+        // The same band as the steps before: after a full run it says nothing
+        // is left, after a partial one what is still to fetch, and a manual
+        // import brings it down through this same recompute.
+        _setup.SetTotalEstimate(InstallPlan.DescribeTotal(_context));
+
         ResultBar.Severity = ok ? InfoBarSeverity.Success : InfoBarSeverity.Warning;
         ResultBar.Title    = Loc.Get(ok ? "Setup_Result_CompleteTitle" : "Setup_Result_IncompleteTitle");
         ResultBar.Message  = ok

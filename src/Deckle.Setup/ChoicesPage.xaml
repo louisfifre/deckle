@@ -7,48 +7,41 @@
     xmlns:transcription="using:Deckle.Transcription"
     xmlns:ui="using:CommunityToolkit.WinUI">
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="16" MaxWidth="640" HorizontalAlignment="Stretch">
+    <!-- The window scrolls the page and holds the total below it. -->
+    <StackPanel Spacing="16">
 
-            <controls:SettingsCard x:Uid="SetupChoicesInstallLocation"
-                                   HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Folder}}">
-                <TextBlock x:Name="LocationPathText"
+        <controls:SettingsCard x:Uid="SetupChoicesInstallLocation"
+                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Folder}}">
+            <TextBlock x:Name="LocationPathText"
+                       VerticalAlignment="Center"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       TextTrimming="CharacterEllipsis"
+                       MaxWidth="380" />
+        </controls:SettingsCard>
+
+        <controls:SettingsCard x:Uid="SetupChoicesSpeechRuntime"
+                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightning}}">
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock x:Name="NativeStatusText"
                            VerticalAlignment="Center"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                           TextTrimming="CharacterEllipsis"
-                           MaxWidth="380" />
-            </controls:SettingsCard>
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <Button x:Name="BrowseNativeButton"
+                        Click="OnBrowseNativeClick" />
+            </StackPanel>
+        </controls:SettingsCard>
 
-            <controls:SettingsCard x:Uid="SetupChoicesSpeechRuntime"
-                                   HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightning}}">
-                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                    <TextBlock x:Name="NativeStatusText"
-                               VerticalAlignment="Center"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    <Button x:Name="BrowseNativeButton"
-                            Click="OnBrowseNativeClick" />
-                </StackPanel>
-            </controls:SettingsCard>
+        <controls:SettingsCard x:Uid="SetupChoicesSpeechModel"
+                               HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Microphone}}"
+                               ContentAlignment="Vertical">
+            <RadioButtons x:Name="ModelRadio"
+                          SelectionChanged="OnModelSelectionChanged">
+                <RadioButtons.ItemTemplate>
+                    <DataTemplate x:DataType="transcription:ModelEntry">
+                        <TextBlock Text="{x:Bind DisplayName}" />
+                    </DataTemplate>
+                </RadioButtons.ItemTemplate>
+            </RadioButtons>
+        </controls:SettingsCard>
 
-            <controls:SettingsCard x:Uid="SetupChoicesSpeechModel"
-                                   HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Microphone}}"
-                                   ContentAlignment="Vertical">
-                <RadioButtons x:Name="ModelRadio"
-                              SelectionChanged="OnModelSelectionChanged">
-                    <RadioButtons.ItemTemplate>
-                        <DataTemplate x:DataType="transcription:ModelEntry">
-                            <TextBlock Text="{x:Bind DisplayName}" />
-                        </DataTemplate>
-                    </RadioButtons.ItemTemplate>
-                </RadioButtons>
-            </controls:SettingsCard>
-
-            <InfoBar x:Name="TotalEstimateBar"
-                     x:Uid="SetupTotalEstimateBar"
-                     IsOpen="True"
-                     IsClosable="False"
-                     Severity="Informational" />
-
-        </StackPanel>
-    </ScrollViewer>
+    </StackPanel>
 </Page>

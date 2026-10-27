@@ -47,6 +47,10 @@ public sealed partial class FoldersPage : Page
         BrowseAppButton.Content  = Loc.Get("Common_Browse");
         BrowseDataButton.Content = Loc.Get("Common_Browse");
 
+        // Between the two pages that change the total, so it stays in view
+        // here too; the folders move where it lands, not its size.
+        setup.SetTotalEstimate(InstallPlan.DescribeTotal(_context));
+
         RefreshPaths();
         setup.SetNextEnabled(false);
         _ = MeasurePayloadAndRefreshAsync(_context.SourceDirectory);
