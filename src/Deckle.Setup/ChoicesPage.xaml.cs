@@ -8,7 +8,7 @@ using Deckle.Transcription.Whisper;
 
 namespace Deckle.Setup;
 
-// The Dictation step: collects the speech choices up-front so the install step
+// The Transcription step: collects the speech choices up-front so the install step
 // can run unattended. Browse copies the whisper DLLs immediately
 // (NativeRuntime.CopyFromFolder), so a picked runtime leaves nothing native for
 // the install step to do.
@@ -32,7 +32,7 @@ public sealed partial class ChoicesPage : Page
         setup.SetStepHeader(
             Loc.Get("Setup_StepTitle_Choices"),
             Loc.Get("Setup_StepSubtitle_Choices"));
-        setup.SetCurrentStep(SetupStep.Dictation);
+        setup.SetCurrentStep(SetupStep.Transcription);
         setup.SetBackEnabled(true);
         setup.SetNextLabel(Loc.Get("Setup_NextLabel_Install"));
         setup.SetNextVisible(true);

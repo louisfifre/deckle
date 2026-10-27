@@ -177,7 +177,7 @@ public sealed partial class ModulesPage : Page
         if (_setup is null) return;
         _setup.Context.SelectedModules = new HashSet<string>(_selection, StringComparer.Ordinal);
 
-        // The Dictation step exists only while transcription is selected.
+        // The Transcription step exists only while its module is selected.
         _setup.RefreshStepRail();
 
         _setup.SetTotalEstimate(InstallPlan.DescribeTotal(_setup.Context));

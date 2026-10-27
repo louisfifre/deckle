@@ -10,7 +10,7 @@ public enum SetupStep
 {
     Modules,
     Location,
-    Dictation,
+    Transcription,
     Install,
     Finish,
 }

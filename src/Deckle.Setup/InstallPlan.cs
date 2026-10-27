@@ -64,7 +64,7 @@ public static class InstallPlan
     {
         var items = new List<InstallItem>();
 
-        // Install order: dictation first, then autocorrect, then Anytype.
+        // Install order: transcription first, then autocorrect, then Anytype.
         foreach (string moduleId in ModulesInInstallOrder)
         {
             if (context.SelectedModules.Contains(moduleId))
@@ -125,7 +125,7 @@ public static class InstallPlan
         return items;
     }
 
-    // ── Dictation ─────────────────────────────────────────────────────────────
+    // ── Transcription ─────────────────────────────────────────────────────────
 
     // Usable, not merely present: a catalog whose files are all there but do
     // not load on this machine is reinstalled like a missing one, which is

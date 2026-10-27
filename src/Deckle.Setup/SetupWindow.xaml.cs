@@ -108,11 +108,12 @@ public sealed partial class SetupWindow : Window
 
     // The total sits outside the scrolling page, so it stays in view while the
     // person scrolls the cards that change it. Navigation closes it; a page
-    // that has a total sets it from OnNavigatedTo and on every change.
-    public void SetTotalEstimate(string message)
+    // that has a total sets it from OnNavigatedTo and on every change, and
+    // null closes it.
+    public void SetTotalEstimate(string? message)
     {
-        TotalEstimateBar.Message = message;
-        TotalEstimateBar.IsOpen  = true;
+        TotalEstimateBar.Message = message ?? "";
+        TotalEstimateBar.IsOpen  = message is not null;
     }
 
     public void SetNextEnabled(bool enabled)  => NextButton.IsEnabled = enabled;
@@ -154,7 +155,7 @@ public sealed partial class SetupWindow : Window
     }
 
     // Also called by the Modules page on every selection change, so ticking
-    // Dictation adds or removes its step live.
+    // Transcription adds or removes its step live.
     public void RefreshStepRail()
     {
         if (!IsWizard) return;
@@ -193,7 +194,7 @@ public sealed partial class SetupWindow : Window
     {
         var steps = new List<SetupStep> { SetupStep.Modules };
         if (Context.InstallMode || Context.ResumesInstall) steps.Add(SetupStep.Location);
-        if (Context.SelectedModules.Contains(ModuleIds.Transcription)) steps.Add(SetupStep.Dictation);
+        if (Context.SelectedModules.Contains(ModuleIds.Transcription)) steps.Add(SetupStep.Transcription);
         steps.Add(SetupStep.Install);
         steps.Add(SetupStep.Finish);
         return steps;
@@ -221,21 +222,23 @@ public sealed partial class SetupWindow : Window
         }
     }
 
+    // The Transcription step wears its module's icon, read from the catalogue
+    // the module card and the Settings page read, so the three cannot drift.
     private static string StepGlyph(SetupStep step) => step switch
     {
-        SetupStep.Modules   => Glyphs.Setup,
-        SetupStep.Location  => Glyphs.Folder,
-        SetupStep.Dictation => Glyphs.Microphone,
-        SetupStep.Install   => Glyphs.Download,
-        _                   => Glyphs.Launch,
+        SetupStep.Modules       => Glyphs.Setup,
+        SetupStep.Location      => Glyphs.Folder,
+        SetupStep.Transcription => ModuleRegistry.Modules.First(m => m.Id == ModuleIds.Transcription).Glyph,
+        SetupStep.Install       => Glyphs.Download,
+        _                       => Glyphs.Launch,
     };
 
     private static Type? PageOf(SetupStep step) => step switch
     {
-        SetupStep.Modules   => typeof(ModulesPage),
-        SetupStep.Location  => typeof(FoldersPage),
-        SetupStep.Dictation => typeof(ChoicesPage),
-        _                   => null,
+        SetupStep.Modules       => typeof(ModulesPage),
+        SetupStep.Location      => typeof(FoldersPage),
+        SetupStep.Transcription => typeof(ChoicesPage),
+        _                       => null,
     };
 
     private void OnStepSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
