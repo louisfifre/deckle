@@ -106,6 +106,16 @@ public sealed partial class SetupWindow : Window
         ApplyStepStates();
     }
 
+    // The total sits outside the scrolling page, so it stays in view while the
+    // person scrolls the cards that change it. Navigation closes it; a page
+    // that has a total sets it from OnNavigatedTo and on every change, and
+    // null closes it.
+    public void SetTotalEstimate(string? message)
+    {
+        TotalEstimateBar.Message = message ?? "";
+        TotalEstimateBar.IsOpen  = message is not null;
+    }
+
     public void SetNextEnabled(bool enabled)  => NextButton.IsEnabled = enabled;
     public void SetNextLabel(string label)    => NextButton.Content   = label;
     public void SetNextVisible(bool visible)  => NextButton.Visibility   = ToVisibility(visible);
@@ -145,7 +155,7 @@ public sealed partial class SetupWindow : Window
     }
 
     // Also called by the Modules page on every selection change, so ticking
-    // Dictation adds or removes its step live.
+    // Transcription adds or removes its step live.
     public void RefreshStepRail()
     {
         if (!IsWizard) return;
@@ -184,7 +194,7 @@ public sealed partial class SetupWindow : Window
     {
         var steps = new List<SetupStep> { SetupStep.Modules };
         if (Context.InstallMode || Context.ResumesInstall) steps.Add(SetupStep.Location);
-        if (Context.SelectedModules.Contains(ModuleIds.Transcription)) steps.Add(SetupStep.Dictation);
+        if (Context.SelectedModules.Contains(ModuleIds.Transcription)) steps.Add(SetupStep.Transcription);
         steps.Add(SetupStep.Install);
         steps.Add(SetupStep.Finish);
         return steps;
@@ -212,21 +222,23 @@ public sealed partial class SetupWindow : Window
         }
     }
 
+    // The Transcription step wears its module's icon, read from the catalogue
+    // the module card and the Settings page read, so the three cannot drift.
     private static string StepGlyph(SetupStep step) => step switch
     {
-        SetupStep.Modules   => Glyphs.Setup,
-        SetupStep.Location  => Glyphs.Folder,
-        SetupStep.Dictation => Glyphs.Microphone,
-        SetupStep.Install   => Glyphs.Download,
-        _                   => Glyphs.Launch,
+        SetupStep.Modules       => Glyphs.Setup,
+        SetupStep.Location      => Glyphs.Folder,
+        SetupStep.Transcription => ModuleRegistry.Modules.First(m => m.Id == ModuleIds.Transcription).Glyph,
+        SetupStep.Install       => Glyphs.Download,
+        _                       => Glyphs.Launch,
     };
 
     private static Type? PageOf(SetupStep step) => step switch
     {
-        SetupStep.Modules   => typeof(ModulesPage),
-        SetupStep.Location  => typeof(FoldersPage),
-        SetupStep.Dictation => typeof(ChoicesPage),
-        _                   => null,
+        SetupStep.Modules       => typeof(ModulesPage),
+        SetupStep.Location      => typeof(FoldersPage),
+        SetupStep.Transcription => typeof(ChoicesPage),
+        _                       => null,
     };
 
     private void OnStepSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -273,13 +285,30 @@ public sealed partial class SetupWindow : Window
     private static Visibility ToVisibility(bool visible) =>
         visible ? Visibility.Visible : Visibility.Collapsed;
 
+    // Wizard: 960 DIPs wide, the width the Settings window opens at, so the
+    // page column is 960 − 220 rail − 2 × 40 margins = 660. 880 high holds the
+    // whole module list without scrolling: 48 title bar + 94 step header +
+    // 8 cards × 68 with 7 × 4 spacing + 24 page padding + 56 total band + 72
+    // footer = 866. Update and relocate keep the 560×720 narrow card they were
+    // tuned in, with the rail hidden.
+    private const double WizardWidth = 960, WizardHeight = 880;
+    private const double CardWidth   = 560, CardHeight   = 720;
+
+    // The floor keeps a 360-DIP page column beside the rail, where a card,
+    // its control wrapped under its header, and the three footer buttons
+    // still fit. 400 high is the Settings window's floor: header, total and
+    // footer keep a card's height of page between them.
+    // The margins are the page padding of SetupWindow.xaml; the rail width is
+    // read from the NavigationView itself.
+    private const double SideMargins    = 2 * 40;
+    private const double MinColumnWidth = 360;
+    private const double MinHeight      = 400;
+
     private void ConfigureWindow()
     {
-        // Wizard flows: 960×680 DIPs, room for the step rail beside a page.
-        // Update and relocate keep the 560×720 narrow card they were tuned in,
-        // with the rail hidden. Either is centred on the window's display work
-        // area and capped at 90 % of it, so a small display never gets a window
-        // larger than its screen. AppWindow.MoveAndResize takes raw pixels, so
+        // Centred on the window's display work area and capped at 90 % of it,
+        // so a small display never gets a window larger than its screen; the
+        // page then scrolls in its margin. AppWindow sizes are raw pixels, so
         // DIPs are scaled by GetDpiForWindow / 96.
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
@@ -287,12 +316,20 @@ public sealed partial class SetupWindow : Window
         {
             appWindow.Title = Loc.Get("Setup_WindowTitle");
 
+            IntPtr hwnd  = WindowNative.GetWindowHandle(this);
+            double scale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(hwnd));
+
+            if (appWindow.Presenter is OverlappedPresenter presenter)
+            {
+                double minWidth = (IsWizard ? Nav.OpenPaneLength : 0) + SideMargins + MinColumnWidth;
+                presenter.PreferredMinimumWidth  = (int)Math.Round(minWidth  * scale);
+                presenter.PreferredMinimumHeight = (int)Math.Round(MinHeight * scale);
+            }
+
             var area = DisplayArea.GetFromWindowId(appWindow.Id, DisplayAreaFallback.Primary);
             if (area is not null)
             {
-                IntPtr hwnd  = WindowNative.GetWindowHandle(this);
-                double scale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(hwnd));
-                (double dipWidth, double dipHeight) = IsWizard ? (960, 680) : (560, 720);
+                (double dipWidth, double dipHeight) = IsWizard ? (WizardWidth, WizardHeight) : (CardWidth, CardHeight);
                 int w = Math.Min((int)Math.Round(dipWidth  * scale), (int)(area.WorkArea.Width  * 0.9));
                 int h = Math.Min((int)Math.Round(dipHeight * scale), (int)(area.WorkArea.Height * 0.9));
                 int x = area.WorkArea.X + (area.WorkArea.Width  - w) / 2;
@@ -314,6 +351,16 @@ public sealed partial class SetupWindow : Window
             CaptionInsetCorrection.Attach(AppTitleBar, appWindow);
         }
     }
+
+    // Navigating runs before the new page's OnNavigatedTo, so a page that keeps
+    // a total reopens the band and one that has none never shows the last one.
+    private void OnPageNavigating(object sender, NavigatingCancelEventArgs e) =>
+        TotalEstimateBar.IsOpen = false;
+
+    // One scroller serves every page, so a page opens at its top, not at the
+    // offset the previous one was left at.
+    private void OnPageNavigated(object sender, NavigationEventArgs e) =>
+        PageScroller.ChangeView(null, 0, null, disableAnimation: true);
 
     private void OnBackClick(object sender, RoutedEventArgs e)   => BackRequested?.Invoke();
     private void OnNextClick(object sender, RoutedEventArgs e)   => NextRequested?.Invoke();

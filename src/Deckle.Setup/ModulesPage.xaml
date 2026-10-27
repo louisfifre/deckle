@@ -15,19 +15,9 @@
         </Style>
     </Page.Resources>
 
-    <ScrollViewer VerticalScrollBarVisibility="Auto">
-        <StackPanel Spacing="16" MaxWidth="640" HorizontalAlignment="Stretch">
-
-            <!-- One SettingsCard per catalogue module, built in code from
-                 ModuleRegistry (BuildModuleCards) — the list is data, not layout. -->
-            <StackPanel x:Name="ModulesList" Spacing="4" />
-
-            <InfoBar x:Name="TotalEstimateBar"
-                     x:Uid="SetupTotalEstimateBar"
-                     IsOpen="True"
-                     IsClosable="False"
-                     Severity="Informational" />
-
-        </StackPanel>
-    </ScrollViewer>
+    <!-- One SettingsCard per catalogue module, built in code from
+         ModuleRegistry (BuildModuleCards) — the list is data, not layout. The
+         window scrolls it and holds the total below it. -->
+    <StackPanel x:Name="ModulesList"
+                Spacing="{StaticResource SettingsCardSpacing}" />
 </Page>

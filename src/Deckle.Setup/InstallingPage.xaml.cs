@@ -47,9 +47,7 @@ public sealed partial class InstallingPage : Page
         {
             setup.SetStepHeader(Loc.Get("Setup_StepTitle_Repair"), notice);
             BuildItemRows(InstallPlan.Build(_context));
-            long pending = InstallPlan.PendingBytes(_context);
-            GlobalStatusText.Text = Loc.Format(
-                "Setup_TotalEstimate_Pending_Format", ByteSizeFormatter.Format(pending));
+            setup.SetTotalEstimate(InstallPlan.DescribeTotal(_context));
             CancelDownloadButton.Visibility = Visibility.Collapsed;
             setup.SetNextLabel(Loc.Get("Setup_NextLabel_Download"));
             setup.SetNextVisible(true);
@@ -77,6 +75,8 @@ public sealed partial class InstallingPage : Page
         _setup.SetStepHeader(
             Loc.Get("Setup_StepTitle_Installing"),
             Loc.Get("Setup_StepSubtitle_Installing"));
+        // The rows report the bytes from here on; the estimate has done its job.
+        _setup.SetTotalEstimate(null);
         _setup.SetNextEnabled(false);
         _setup.SetNextVisible(false);
         _setup.SetCancelVisible(false); // inline Cancel install button instead

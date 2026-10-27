@@ -181,10 +181,10 @@
     <value>Modules</value>
   </data>
   <data name="Setup_Step_Location_Label" xml:space="preserve">
-    <value>Location</value>
+    <value>Folders</value>
   </data>
-  <data name="Setup_Step_Dictation_Label" xml:space="preserve">
-    <value>Dictation</value>
+  <data name="Setup_Step_Transcription_Label" xml:space="preserve">
+    <value>Transcription</value>
   </data>
   <data name="Setup_Step_Install_Label" xml:space="preserve">
     <value>Install</value>
@@ -206,34 +206,34 @@
        Step header text is set programmatically by ChoicesPage via
        SetStepHeader. Cards in XAML use x:Uid for header/description. -->
   <data name="Setup_StepTitle_Choices" xml:space="preserve">
-    <value>Dictation</value>
+    <value>Transcription</value>
   </data>
   <data name="Setup_StepSubtitle_Choices" xml:space="preserve">
-    <value>Pick the speech model Dictation runs on, and check its runtime.</value>
+    <value>Choose the speech model transcription runs on, and check its speech engine.</value>
   </data>
   <data name="Setup_NextLabel_Install" xml:space="preserve">
     <value>Install</value>
   </data>
   <data name="SetupChoicesInstallLocation.Header" xml:space="preserve">
-    <value>Install location</value>
+    <value>Data folder</value>
   </data>
   <data name="SetupChoicesInstallLocation.Description" xml:space="preserve">
-    <value>Where the app stores its data. Pick a custom location later from Settings.</value>
+    <value>Models, settings and logs. You can move it later in Settings.</value>
   </data>
   <data name="SetupChoicesSpeechRuntime.Header" xml:space="preserve">
-    <value>Speech runtime</value>
+    <value>Speech engine</value>
   </data>
   <data name="SetupChoicesSpeechRuntime.Description" xml:space="preserve">
-    <value>Native whisper.cpp libraries the engine loads at start-up.</value>
+    <value>The whisper.cpp libraries transcription runs on.</value>
   </data>
   <data name="SetupChoicesSpeechModel.Header" xml:space="preserve">
     <value>Speech model</value>
   </data>
   <data name="SetupChoicesSpeechModel.Description" xml:space="preserve">
-    <value>Pick the Whisper model the engine will run. You can swap it later from Settings.</value>
+    <value>The Whisper model transcription runs. You can change it later in Settings.</value>
   </data>
   <data name="SetupTotalEstimateBar.Title" xml:space="preserve">
-    <value>Total install size</value>
+    <value>Download size</value>
   </data>
   <data name="Setup_Native_Installed" xml:space="preserve">
     <value>Installed</value>
@@ -325,10 +325,10 @@
     <value>Some items could not be installed</value>
   </data>
   <data name="Setup_StepSubtitle_Summary_Success" xml:space="preserve">
-    <value>Dependencies installed. The app is ready to use.</value>
+    <value>Everything is installed. Deckle is ready to use.</value>
   </data>
   <data name="Setup_StepSubtitle_Summary_Failure" xml:space="preserve">
-    <value>Review the issues below and either retry or quit.</value>
+    <value>Review the items below, then select Retry or Cancel.</value>
   </data>
   <data name="Setup_NextLabel_GetStarted" xml:space="preserve">
     <value>Get started</value>
@@ -442,13 +442,13 @@
     <value>Continue</value>
   </data>
   <data name="Setup_Module_transcription_Label" xml:space="preserve">
-    <value>Dictation</value>
+    <value>Transcription</value>
   </data>
   <data name="Setup_Module_transcription_Description" xml:space="preserve">
     <value>Voice transcription on a hotkey, running on a local speech model</value>
   </data>
   <data name="Setup_Module_rewrite_Label" xml:space="preserve">
-    <value>Rewrite</value>
+    <value>Rewriting</value>
   </data>
   <data name="Setup_Module_rewrite_Description" xml:space="preserve">
     <value>Rewrites your text with a language model</value>
@@ -466,7 +466,7 @@
     <value>Matches Philips Hue lights to what is on screen</value>
   </data>
   <data name="Setup_Module_trackpad_Label" xml:space="preserve">
-    <value>Trackpad gestures</value>
+    <value>Trackpad</value>
   </data>
   <data name="Setup_Module_trackpad_Description" xml:space="preserve">
     <value>Three-finger drag on the precision touchpad</value>
@@ -511,10 +511,10 @@
     <value>Step {0} of {1}. {2}</value>
   </data>
   <data name="Setup_TotalEstimate_Pending_Format" xml:space="preserve">
-    <value>~{0} to download for the selected modules.</value>
+    <value>~{0} for the selected modules.</value>
   </data>
   <data name="Setup_TotalEstimate_NothingPending" xml:space="preserve">
-    <value>Everything selected is already installed.</value>
+    <value>Nothing to download. Everything selected is installed.</value>
   </data>
   <data name="Setup_StepTitle_Folders" xml:space="preserve">
     <value>Choose the folders</value>

@@ -50,11 +50,21 @@ public static class InstallPlan
         return pending;
     }
 
+    // The sentence of the window's total band, worded once for every page
+    // that shows it.
+    internal static string DescribeTotal(SetupContext context)
+    {
+        long pending = PendingBytes(context);
+        return pending > 0
+            ? Loc.Format("Setup_TotalEstimate_Pending_Format", ByteSizeFormatter.Format(pending))
+            : Loc.Get("Setup_TotalEstimate_NothingPending");
+    }
+
     internal static IReadOnlyList<InstallItem> Build(SetupContext context)
     {
         var items = new List<InstallItem>();
 
-        // Install order: dictation first, then autocorrect, then Anytype.
+        // Install order: transcription first, then autocorrect, then Anytype.
         foreach (string moduleId in ModulesInInstallOrder)
         {
             if (context.SelectedModules.Contains(moduleId))
@@ -115,7 +125,7 @@ public static class InstallPlan
         return items;
     }
 
-    // ── Dictation ─────────────────────────────────────────────────────────────
+    // ── Transcription ─────────────────────────────────────────────────────────
 
     // Usable, not merely present: a catalog whose files are all there but do
     // not load on this machine is reinstalled like a missing one, which is

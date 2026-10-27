@@ -177,13 +177,10 @@ public sealed partial class ModulesPage : Page
         if (_setup is null) return;
         _setup.Context.SelectedModules = new HashSet<string>(_selection, StringComparer.Ordinal);
 
-        // The Dictation step exists only while transcription is selected.
+        // The Transcription step exists only while its module is selected.
         _setup.RefreshStepRail();
 
-        long pendingBytes = InstallPlan.PendingBytes(_setup.Context);
-        TotalEstimateBar.Message = pendingBytes > 0
-            ? Loc.Format("Setup_TotalEstimate_Pending_Format", ByteSizeFormatter.Format(pendingBytes))
-            : Loc.Get("Setup_TotalEstimate_NothingPending");
+        _setup.SetTotalEstimate(InstallPlan.DescribeTotal(_setup.Context));
     }
 
     // ── Next ──────────────────────────────────────────────────────────────────

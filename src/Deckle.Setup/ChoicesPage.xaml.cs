@@ -8,7 +8,7 @@ using Deckle.Transcription.Whisper;
 
 namespace Deckle.Setup;
 
-// The Dictation step: collects the speech choices up-front so the install step
+// The Transcription step: collects the speech choices up-front so the install step
 // can run unattended. Browse copies the whisper DLLs immediately
 // (NativeRuntime.CopyFromFolder), so a picked runtime leaves nothing native for
 // the install step to do.
@@ -32,7 +32,7 @@ public sealed partial class ChoicesPage : Page
         setup.SetStepHeader(
             Loc.Get("Setup_StepTitle_Choices"),
             Loc.Get("Setup_StepSubtitle_Choices"));
-        setup.SetCurrentStep(SetupStep.Dictation);
+        setup.SetCurrentStep(SetupStep.Transcription);
         setup.SetBackEnabled(true);
         setup.SetNextLabel(Loc.Get("Setup_NextLabel_Install"));
         setup.SetNextVisible(true);
@@ -157,11 +157,7 @@ public sealed partial class ChoicesPage : Page
 
         // The same plan InstallingPage runs, so the estimate matches what the
         // install step fetches; the model radio feeds it through SelectedModel.
-        long pendingBytes = InstallPlan.PendingBytes(_context);
-
-        TotalEstimateBar.Message = pendingBytes > 0
-            ? Loc.Format("Setup_TotalEstimate_Pending_Format", ByteSizeFormatter.Format(pendingBytes))
-            : Loc.Get("Setup_TotalEstimate_NothingPending");
+        _setup?.SetTotalEstimate(InstallPlan.DescribeTotal(_context));
     }
 
     private void UpdateNextEnabled()
