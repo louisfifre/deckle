@@ -299,16 +299,23 @@ function Invoke-NativeRuntime {
     $artifactPath = Join-Path $wt "artifacts\deckle-native-$($pinnedBundle.Version)\$artifactName"
     $useExistingArtifact = Test-Path -LiteralPath $artifactPath -PathType Leaf
     $whisperRepo = $null
+    $whisperBuildDir = $null
     $outDir = $null
     $versionHolder = [pscustomobject]@{ Plan = $null }
 
     if ($useExistingArtifact) {
         $version = [string]$pinnedBundle.Version
     } else {
-        $whisperInput = Read-Optional -Question 'Path to whisper.cpp with an existing build/bin' -Header 'Deckle > Release > Native runtime' -Label 'Path' -Lines @('No bundle is available for the current version.', 'A new bundle requires an existing native build.')
+        $whisperInput = Read-Optional -Question 'Path to whisper.cpp with an existing native build' -Header 'Deckle > Release > Native runtime' -Label 'Path' -Lines @('No bundle is available for the current version.', 'A new bundle requires an existing native build.')
         if ($whisperInput.Status -eq 'Cancelled') { return }
         $whisperRepo = [string]$whisperInput.Value
         if ([string]::IsNullOrWhiteSpace($whisperRepo)) { Write-Host "Cancelled: whisper.cpp path is required." -ForegroundColor DarkGray; return }
+
+        # The MSVC build may live in its own folder beside a MinGW one; the
+        # bundle packages <folder>\bin, so the folder is asked, not assumed.
+        $buildDirInput = Read-Optional -Question 'Build folder inside whisper.cpp (blank = build)' -Header 'Deckle > Release > Native runtime' -Label 'Folder'
+        if ($buildDirInput.Status -eq 'Cancelled') { return }
+        $whisperBuildDir = [string]$buildDirInput.Value
 
         $versionCheck = Invoke-DeckleMenuAction `
             -Header 'Deckle > Release > Native runtime' `
@@ -362,7 +369,10 @@ function Invoke-NativeRuntime {
     }
     $nativeArgs = @{ Version = $version; Target = $wt }
     if ($useExistingArtifact) { $nativeArgs.ArtifactPath = $artifactPath }
-    else                      { $nativeArgs.WhisperRepo = $whisperRepo }
+    else {
+        $nativeArgs.WhisperRepo = $whisperRepo
+        if (-not [string]::IsNullOrWhiteSpace($whisperBuildDir)) { $nativeArgs.WhisperBuildDir = $whisperBuildDir }
+    }
     if ($outDir)  { $nativeArgs.OutDir = $outDir }
     if ($Publish) { $nativeArgs.Publish = $true }
     $scriptPath = Join-Path $CommandDir 'release\publish-native-runtime.ps1'
