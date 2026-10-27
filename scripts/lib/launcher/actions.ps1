@@ -298,6 +298,23 @@ function Invoke-NativeRuntime {
     $artifactName = "deckle-native-$($pinnedBundle.Version).zip"
     $artifactPath = Join-Path $wt "artifacts\deckle-native-$($pinnedBundle.Version)\$artifactName"
     $useExistingArtifact = Test-Path -LiteralPath $artifactPath -PathType Leaf
+
+    # The pinned bundle already has its tag: the release the app downloads
+    # exists, so there is nothing to publish and no build tree to ask for.
+    # Fabricating a newer runtime is the exceptional path and stays on the
+    # command line, where the whisper.cpp tree is named on purpose.
+    if (-not $useExistingArtifact) {
+        $null = & git -C $wt fetch origin --tags --quiet 2>&1
+        $pinnedTag = "native-v$($pinnedBundle.Version)"
+        if (@(& git -C $wt tag --list $pinnedTag).Count -gt 0) {
+            return Invoke-DeckleMenuAction -Header 'Deckle > Release > Native runtime' -Label "$pinnedTag already published" -Source Release -MenuRows $MenuRows -Action {
+                Write-Host "[release] The app pins $pinnedTag, which is already published. Nothing to do."
+                Write-Host '[release] A new runtime starts from a whisper.cpp build:'
+                Write-Host '          pwsh scripts/commands/release/publish-native-runtime.ps1 -WhisperRepo <path> -WhisperBuildDir <folder>'
+            }
+        }
+    }
+
     $whisperRepo = $null
     $whisperBuildDir = $null
     $outDir = $null

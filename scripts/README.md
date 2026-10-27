@@ -57,7 +57,7 @@ An Action whose Header carries a confirmation sentence opens that sentence as a 
 |  | Update changelog | yes | `commands/changelog.ps1` |
 |  | Record version | yes | `commands/record-version.ps1 -Push` |
 | **Workspace > Release > Publish** | App release | yes | records a pending version when needed, then `commands/release/publish-app.ps1 -Publish` (confirms first) |
-|  | Native runtime | yes | validates and publishes the bundle pinned by the app when it already exists under `artifacts/`; otherwise derives and packages the next runtime from an existing whisper.cpp `<build folder>/bin` (asked, `build` by default); it runs no build (confirms first) |
+|  | Native runtime | yes | stops with nothing to do when the bundle pinned by the app already has its `native-v` tag; otherwise validates and publishes that bundle when it exists under `artifacts/`, or derives and packages the next runtime from an existing whisper.cpp `<build folder>/bin` (asked, `build` by default); it runs no build (confirms first) |
 | **Workspace > Release > Prepare** | App artifacts | yes | `commands/release/publish-app.ps1` |
 |  | Native runtime | yes | validates the bundle pinned by the app when available, or derives and packages the next runtime from an existing whisper.cpp `<build folder>/bin` (asked, `build` by default); it runs no build |
 | **Workspace > Maintenance** | Repository statistics | yes | targeted specifications over `lib/repository-inventory.psm1`, rendered in the maintenance viewport |

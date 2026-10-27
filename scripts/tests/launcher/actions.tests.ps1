@@ -150,4 +150,21 @@ try {
     $env:DECKLE_AGENT_STATE_TEST_MARKER = $previousMarker
     if (Test-Path -LiteralPath $agentDispatchRoot) { Remove-Item -LiteralPath $agentDispatchRoot -Recurse -Force }
 }
+
+# A pinned native bundle that already has its tag needs no publication: the
+# launcher must say so instead of asking for a whisper.cpp build tree.
+function Get-DeckleNativeRuntimeBundle { param($SourcePath) return [pscustomobject]@{ Version = '1.9.2' } }
+function git {
+    param([Parameter(ValueFromRemainingArguments)]$Arguments)
+    $global:LASTEXITCODE = 0
+    if ($Arguments -contains 'tag') { return 'native-v1.9.2' }
+}
+function Read-Optional { $script:NativePathAsked = $true; return [pscustomobject]@{ Status = 'Cancelled'; Value = '' } }
+$script:NativePathAsked = $false
+foreach ($publish in $true, $false) {
+    $nativeResult = Invoke-NativeRuntime -MenuRows @([pscustomobject]@{ Cells = @() }) -Publish:$publish
+    Assert-Equal $false $script:NativePathAsked "published pinned bundle asks no whisper.cpp path (Publish=$publish)"
+    Assert-Equal 'native-v1.9.2 already published' $nativeResult.Title "published pinned bundle reports nothing to do (Publish=$publish)"
+}
+
 Write-Host 'actions.tests.ps1: PASS' -ForegroundColor Green
