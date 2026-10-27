@@ -43,8 +43,10 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
         {
             if (node is not JsonObject o) continue;
             string typeKey = QueryProp.TypeKey(o) ?? "?";
+            // No id: the typed read that follows a search answers with it first,
+            // and a name it cannot settle lists the candidates by id. Here it
+            // would cost some sixty characters on every hit.
             sb.Append(typeKey).Append(" · ").Append(QueryProp.Name(o));
-            sb.Append(" · ").Append(QueryProp.Id(o));
 
             if (context)
             {
@@ -537,8 +539,6 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
 // own copy with no shared-type collision (see ProjectGestures for the twin).
 file static class QueryProp
 {
-    public static string Id(JsonObject obj) => obj["id"]?.GetValue<string>() ?? "";
-
     public static string Name(JsonObject obj)
     {
         string? name = obj["name"]?.GetValue<string>();

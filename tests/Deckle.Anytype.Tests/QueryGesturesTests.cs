@@ -143,14 +143,14 @@ public class QueryGesturesTests
         string digest = await NewGestures(server).SearchAsync("Deckle", context: true, ct: Ct);
 
         Assert.Equal(
-            $"project · Deckle · {ProjectId}\n" +
+            "project · Deckle\n" +
             "Description : Utilitaire Windows local.\n" +
             "Définition de fini : Le parcours principal est livré.\n" +
             "Aperçu :\n" +
             "Details\n" +
             "Enjeu\n" +
             "Construire l’utilitaire Windows local.\n" +
-            $"task · Reconnexion · {TaskId}\n" +
+            "task · Reconnexion\n" +
             "Description : Reprendre après la veille.\n" +
             "Définition de fini : Aucune action manuelle requise.\n" +
             "Aperçu :\n" +
@@ -186,10 +186,10 @@ public class QueryGesturesTests
         string digest = await NewGestures(server).SearchAsync("Deckle", context: true, ct: Ct);
 
         Assert.Equal(
-            $"project · Deckle · {ProjectId}\n" +
+            "project · Deckle\n" +
             "Aperçu :\n" +
             "Corps du projet\n" +
-            $"epic · Applications · {EpicId}\n" +
+            "epic · Applications\n" +
             "Aperçu :\n" +
             "Ligne 1\n" +
             "Ligne 2\n" +
@@ -223,8 +223,8 @@ public class QueryGesturesTests
         string digest = await NewGestures(server).SearchAsync("Anytype", ct: Ct);
 
         Assert.Equal(
-            $"task · Reconnexion · {TaskId}\n" +
-            $"rapport · 2026-07-21 — Session Anytype · {EpicId}",
+            "task · Reconnexion\n" +
+            "rapport · 2026-07-21 — Session Anytype",
             digest);
     }
 

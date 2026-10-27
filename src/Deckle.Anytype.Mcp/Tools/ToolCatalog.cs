@@ -26,7 +26,7 @@ public static class ToolCatalog
                 "open_report",
                 "Open a work report on a task: create a journal report linked to it, dated today, and answer report_id, then one line « task title · project ». Call it as soon as work on a task starts; a report always belongs to a task. Pass the report_id to log.",
                 Schema(
-                    required: [Prop("task", "string", "Task id, as task_properties or search gives it; names are refused.")]),
+                    required: [Prop("task", "string", "Task id, as task_properties gives it; names are refused.")]),
                 async (args, ct) =>
                     await session.OpenReportAsync(Str(args, "task"), ct),
                 ToolExecutionContract.AdditiveRequiresDeduplication),
@@ -80,7 +80,7 @@ public static class ToolCatalog
                 "report_journal",
                 "A session report's id, journal date, linked tasks by name, and its last journal entries (20 by default), with the count of earlier entries.",
                 Schema(
-                    required: [Prop("report", "string", "Report, id (from open_report, project_overview or search) or name.")],
+                    required: [Prop("report", "string", "Report, id (from open_report or project_overview) or name.")],
                     optional: [Prop("last", "integer", "How many trailing entries to return. Default 20.", minimum: 1, maximum: 200)]),
                 async (args, ct) =>
                     await reads.ReportJournalAsync(Str(args, "report"), IntOpt(args, "last") ?? 20, ct),
@@ -176,7 +176,7 @@ public static class ToolCatalog
 
             new(
                 "search",
-                "Find objects by words in their name and body: one line per hit, type · name · id. Pass context:true to tell candidates apart: project and task hits add Description and Définition de fini, every hit adds up to three body lines. Then read the chosen object with its typed read; an epic has none, list_projects shows its projects.",
+                "Find objects by words in their name and body: one line per hit, type · name, no id. Pass context:true to tell candidates apart: project and task hits add Description and Définition de fini, every hit adds up to three body lines. Then read the chosen object with its typed read; an epic has none, list_projects shows its projects.",
                 Schema(
                     required: [Prop("text", "string", "Free-text query.")],
                     optional:
