@@ -145,7 +145,7 @@ public static class WhisperPInvoke
     [DllImport("whisper",CallingConvention = CallingConvention.Cdecl)]
     public static extern void whisper_log_set(WhisperLogCallback log_callback, IntPtr user_data);
 
-    // Static strings owned by libwhisper: read with PtrToStringUTF8, never
+    // Static strings owned by whisper.dll: read with PtrToStringUTF8, never
     // freed. whisper_version is absent from older builds, so a hand-imported
     // runtime can throw EntryPointNotFoundException here.
     [DllImport("whisper",CallingConvention = CallingConvention.Cdecl)]

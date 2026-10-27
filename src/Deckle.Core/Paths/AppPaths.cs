@@ -19,7 +19,7 @@ namespace Deckle.Core;
 //   • diagnostics/  — local logs (setup, errors, trace.jsonl); never transmitted
 //   • diagnostics/dumps/ — minidumps of fatal runtime errors, newest few kept
 //   • models/       — Whisper ggml-*.bin and the other downloaded models
-//   • native/       — libwhisper.dll, ggml*.dll
+//   • native/       — whisper.dll, ggml*.dll and the C++ runtime (NativeRuntime)
 //   • benchmark/    — optional
 //   • modules/      — one folder per module (GetModuleDirectory)
 //

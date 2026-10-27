@@ -43,7 +43,7 @@
     <!-- Transcription parent owns the wizard-agnostic primitives (ModelEntry,
          Downloader) and the EventSource provider. -->
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
-    <!-- Whisper catalogs (SpeechModels) and the libwhisper native runtime
+    <!-- Whisper catalogs (SpeechModels) and the whisper.cpp native runtime
          descriptor drive the wizard pages. -->
     <ProjectReference Include="..\Deckle.Transcription.Whisper\Deckle.Transcription.Whisper.csproj" />
   </ItemGroup>

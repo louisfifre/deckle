@@ -63,7 +63,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
 
     // ── Native runtime identity ─────────────────────────────────────────
 
-    // Once per process. version is what libwhisper.dll itself reports
+    // Once per process. version is what whisper.dll itself reports
     // ("unknown" for a build without whisper_version), bundle the release
     // this app expects: a hand-imported runtime can differ. The whole identity
     // travels in the payload, since a Verbose mirror would stay out of the
@@ -268,7 +268,7 @@ public sealed class DeckleWhisperSource : DeckleEventSource
 
     // Every load, ungated: which file, whether the settings asked for the GPU
     // and which runtime builds the context are what a log from another machine
-    // must answer first. runtime is the version libwhisper.dll reports.
+    // must answer first. runtime is the version whisper.dll reports.
     [Event(EvtModelLoadStarting,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,

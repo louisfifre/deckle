@@ -14,7 +14,7 @@ public sealed partial class WhisperBackend
     // for the process; the rest stay in the gated detail.
     private static int s_logLineFailures;
 
-    // What libwhisper.dll reports about itself, read once per process.
+    // What whisper.dll reports about itself, read once per process.
     // "unknown" until read, or for a build without whisper_version.
     private static string s_runtimeVersion = "unknown";
     private static int s_runtimeIdentityLogged;
