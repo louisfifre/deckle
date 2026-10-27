@@ -159,6 +159,7 @@ public static class NativeRuntime
             File.Copy(from, to, overwrite: true);
             copied++;
         }
+        RemoveStale(nativeDirectory);
 
         IReadOnlyList<string> missing = GetMissing(nativeDirectory);
         DeckleWhisperSource.Log.NativeRuntimeCopied(copied, missing.Count);
@@ -226,7 +227,33 @@ public static class NativeRuntime
             }
         }
 
+        RemoveStale(nativeDirectory);
         return extracted;
+    }
+
+    // After every provisioning the folder holds the catalog alone. A leftover
+    // is not inert: ggml_backend_load_all_from_path loads every ggml-*.dll it
+    // finds here as a backend, and an older bundle's whisper (libwhisper.dll)
+    // beside the current one makes the folder lie about what runs. Best
+    // effort per file: one locked leftover must not fail a provisioning
+    // whose catalog is in place.
+    internal static void RemoveStale(string nativeDirectory)
+    {
+        var removed = new List<string>();
+        foreach (string name in GetStale(nativeDirectory))
+        {
+            try
+            {
+                File.Delete(Path.Combine(nativeDirectory, name));
+                removed.Add(name);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                DeckleWhisperSource.Log.NativeRuntimeStaleRemoveFailed(name, ex.GetType().Name, ex.Message);
+            }
+        }
+        if (removed.Count > 0)
+            DeckleWhisperSource.Log.NativeRuntimeStaleRemoved(removed.Count, string.Join(",", removed));
     }
 
     private static void DeletePartial(string path)
@@ -344,6 +371,9 @@ public static class NativeRuntime
         foreach (string path in Directory.EnumerateFiles(nativeDirectory, "*.dll"))
         {
             string name = Path.GetFileName(path);
+            // "*.dll" also matches "x.dllx" (the 8.3 extension rule), so the
+            // extension is checked again.
+            if (!name.EndsWith(".dll", StringComparison.OrdinalIgnoreCase)) continue;
             if (!catalog.Contains(name)) stale.Add(name);
         }
         stale.Sort(StringComparer.OrdinalIgnoreCase);

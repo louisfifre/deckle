@@ -71,6 +71,101 @@ public sealed class NativeRuntimeTests : IDisposable
         Assert.Equal(272, Marshal.OffsetOf<WhisperFullParams>(nameof(WhisperFullParams.vad_model_path)).ToInt32());
     }
 
+    // What a 0.71 install leaves in the native folder: bundle 1.9.1's MinGW
+    // build. ggml loads every ggml-*.dll of the folder as a backend, so a
+    // stale backend name is part of the fixture.
+    private static readonly string[] OlderBundleDlls =
+    [
+        "libwhisper.dll",
+        "libgcc_s_seh-1.dll",
+        "libstdc++-6.dll",
+        "libwinpthread-1.dll",
+        "ggml-cuda.dll",
+    ];
+
+    // Regression: 0.72.0 extracted 1.9.2 beside 1.9.1's files and removed
+    // none of them.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task InstallingFromTheBundleLeavesTheCatalogAlone()
+    {
+        Directory.CreateDirectory(_nativeDirectory);
+        WriteFakes(_nativeDirectory, OlderBundleDlls);
+        File.WriteAllBytes(Path.Combine(_nativeDirectory, "_bundle.part.txt"), [0]);
+
+        string zipPath = Path.Combine(_nativeDirectory + "-zip", "bundle.zip");
+        Directory.CreateDirectory(Path.GetDirectoryName(zipPath)!);
+        try
+        {
+            using (var zip = System.IO.Compression.ZipFile.Open(zipPath, System.IO.Compression.ZipArchiveMode.Create))
+                foreach (string name in NativeRuntime.RequiredDllNames)
+                    using (Stream s = zip.CreateEntry(name).Open()) s.WriteByte(0);
+
+            int extracted = await NativeRuntime.InstallFromZipAsync(zipPath, _nativeDirectory, CancellationToken.None);
+
+            Assert.Equal(NativeRuntime.RequiredDllNames.Count, extracted);
+            AssertCatalogAlone();
+            // Only DLLs are the catalog's business; the download's own zip
+            // sits in this folder while it extracts.
+            Assert.True(File.Exists(Path.Combine(_nativeDirectory, "_bundle.part.txt")));
+        }
+        finally
+        {
+            Directory.Delete(Path.GetDirectoryName(zipPath)!, recursive: true);
+        }
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void CopyingFromAFolderLeavesTheCatalogAlone()
+    {
+        string source = _nativeDirectory + "-source";
+        Directory.CreateDirectory(_nativeDirectory);
+        WriteFakes(_nativeDirectory, OlderBundleDlls);
+        try
+        {
+            // A build folder holds more than the catalog: none of it is copied.
+            WriteFakes(source, NativeRuntime.RequiredDllNames);
+            WriteFakes(source, ["whisper-cli-helper.dll"]);
+
+            NativeRuntime.CopyFromFolder(source, _nativeDirectory);
+
+            AssertCatalogAlone();
+        }
+        finally
+        {
+            Directory.Delete(source, recursive: true);
+        }
+    }
+
+    // The 8.3 rule makes "*.dll" match "x.dllx": only true .dll names are
+    // the catalog's business.
+    [Fact]
+    [Trait("Category", "unit")]
+    public void StaleNamesAreTheDllsTheCatalogDoesNotName()
+    {
+        Directory.CreateDirectory(_nativeDirectory);
+        WriteFakes(_nativeDirectory, ["whisper.dll", "LibWhisper.DLL", "notes.dllx", "whisper.dll.partial"]);
+
+        Assert.Equal(["LibWhisper.DLL"], NativeRuntime.GetStale(_nativeDirectory));
+        Assert.Empty(NativeRuntime.GetStale(_nativeDirectory + "-absent"));
+    }
+
+    private void AssertCatalogAlone()
+    {
+        Assert.Empty(NativeRuntime.GetStale(_nativeDirectory));
+        Assert.True(NativeRuntime.IsInstalled(_nativeDirectory));
+        foreach (string name in OlderBundleDlls)
+            Assert.False(File.Exists(Path.Combine(_nativeDirectory, name)), name);
+    }
+
+    private static void WriteFakes(string directory, IEnumerable<string> names)
+    {
+        Directory.CreateDirectory(directory);
+        foreach (string name in names)
+            File.WriteAllBytes(Path.Combine(directory, name), [0]);
+    }
+
     public void Dispose()
     {
         try { Directory.Delete(_nativeDirectory, recursive: true); }

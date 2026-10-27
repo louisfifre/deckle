@@ -58,6 +58,8 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     public const int EvtNativeBackendsLoaded                = 35;
     public const int EvtNativeBackendVulkanUnavailable      = 36;
     public const int EvtNativeBackendsNone                  = 37;
+    public const int EvtNativeRuntimeStaleRemoved           = 38;
+    public const int EvtNativeRuntimeStaleRemoveFailed      = 39;
 
     // ── Native runtime identity ─────────────────────────────────────────
 
@@ -523,5 +525,30 @@ public sealed class DeckleWhisperSource : DeckleEventSource
     public void NativeRuntimeCleanupFailed(string path, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtNativeRuntimeCleanupFailed, PathRedaction.Redact(path), ex_type, PathRedaction.Redact(ex_message));
+    }
+
+    // Every provisioning leaves the native folder holding the catalog alone.
+    // names lists the DLLs removed (file names, no path), comma-separated:
+    // an older bundle's files (1.9.1 shipped libwhisper.dll and the MinGW
+    // runtime) and any stray DLL. Written only when something was removed.
+    [Event(EvtNativeRuntimeStaleRemoved,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Removed DLLs the speech engine catalog no longer names from the native folder")]
+    public void NativeRuntimeStaleRemoved(int removed, string names)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeRuntimeStaleRemoved, removed, names);
+    }
+
+    // Degraded, not stopped: the catalog is in place, but ggml enumerates the
+    // ggml-*.dll of this folder as backends, so a stale one it cannot delete
+    // may still be loaded beside the current ones.
+    [Event(EvtNativeRuntimeStaleRemoveFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A DLL the catalog no longer names could not be removed from the native folder, so it stays beside the current runtime\nname={0} | ex_type={1} | ex_message={2}")]
+    public void NativeRuntimeStaleRemoveFailed(string name, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeRuntimeStaleRemoveFailed, name, ex_type, PathRedaction.Redact(ex_message));
     }
 }
