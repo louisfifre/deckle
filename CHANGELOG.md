@@ -25,6 +25,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **setup:** Scroll the page edge to edge and keep the total in a fixed band
 - **setup:** Open the wizard tall enough for every module and set its floor
 - **setup:** Name the speech step Transcription and align the wizard wording with Settings
+- **whisper:** Purge an older bundle's DLLs before ggml loads its backends
 
 ## [0.72.0](https://github.com/louisfifre/deckle/compare/v0.67.1...v0.72.0) — 2026-10-27
 
