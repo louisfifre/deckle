@@ -47,6 +47,8 @@ internal static class NativeRuntimeLoader
     private static readonly Dictionary<string, IntPtr> s_loaded = new(StringComparer.OrdinalIgnoreCase);
     private static readonly OnceOnSuccess s_backends = new();
 
+    private const string NeverFreed = "ggml-base.dll";
+
     // Loads the catalog up to and including dllName, in catalog order, and
     // returns dllName's handle. The backends are skipped: ggml loads them.
     // Throws DllNotFoundException naming the first DLL that does not load and
@@ -82,6 +84,12 @@ internal static class NativeRuntimeLoader
     // Loads every catalog DLL once, in order, and frees them again: the
     // answer is whether they load here, not a loaded runtime. A DLL already
     // loaded for P/Invoke is not freed by this (Windows counts references).
+    //
+    // ggml-base.dll is the exception, kept for the process: its static
+    // initializer installs ggml's std::terminate handler and asserts that
+    // the previous handler is not its own. Freeing it leaves that handler
+    // set in the C++ runtime; reloaded at the same address, the assertion
+    // fails and the process aborts (0xC0000409) at the first take.
     public static NativeRuntimeLoadCheck Check(string nativeDirectory)
     {
         var results = new List<NativeDllLoadResult>(NativeRuntime.RequiredDllNames.Count);
@@ -92,7 +100,8 @@ internal static class NativeRuntimeLoader
             {
                 NativeDllLoadResult result = TryLoad(nativeDirectory, name, out IntPtr handle);
                 results.Add(result);
-                if (result.Loaded) handles.Add(handle);
+                if (result.Loaded && !name.Equals(NeverFreed, StringComparison.OrdinalIgnoreCase))
+                    handles.Add(handle);
             }
         }
         finally

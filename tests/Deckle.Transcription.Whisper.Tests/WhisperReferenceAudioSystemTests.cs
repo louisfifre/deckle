@@ -32,6 +32,10 @@ public sealed class WhisperReferenceAudioSystemTests
         Assert.True(
             NativeRuntime.IsInstalled(),
             "The installed Whisper native runtime is required for this opt-in system test.");
+        // App startup runs the load check before the backend, so the test does
+        // too: a check that unloads a DLL the model load needs again aborts
+        // the process here (see NativeRuntimeBugNotes.md).
+        Assert.True(NativeRuntime.CheckLoad().Loads, "The installed native runtime does not load here.");
 
         string audioPath = Path.Combine(
             AppContext.BaseDirectory,
