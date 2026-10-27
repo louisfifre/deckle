@@ -22,11 +22,7 @@ public partial class App
             if (_engine is null)
             {
                 // No engine means speech is not provisioned.
-                DeckleAppSource.Log.UserFeedbackEmitted(
-                    0, // Info
-                    "Dictation isn't set up yet",
-                    "Open Settings › Dictation to download the speech engine and model.",
-                    1); // Overlay
+                EmitSpeechNotSetUp();
                 return;
             }
 

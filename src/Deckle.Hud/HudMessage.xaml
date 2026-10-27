@@ -39,6 +39,11 @@
                            Style="{StaticResource BodyStrongTextBlockStyle}"
                            TextTrimming="CharacterEllipsis"
                            Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                <!-- One line, not a wrap: the fixed 78-dip card holds the
+                     title line and one body line, and a second line would
+                     spill under the bottom padding. Every HUD string is held
+                     to that line by HudMessageFitTests, so the ellipsis is a
+                     safety net for runtime-built text, not the layout. -->
                 <TextBlock x:Name="MessageSubtitle"
                            Style="{StaticResource BodyTextBlockStyle}"
                            TextTrimming="CharacterEllipsis"

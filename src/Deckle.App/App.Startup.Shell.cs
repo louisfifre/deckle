@@ -230,8 +230,8 @@ public partial class App
         {
             DeckleAppSource.Log.UserFeedbackEmitted(
                 2, // Error
-                "Hotkeys unavailable",
-                "Deckle could not listen for its shortcuts. Use the tray panel to record.",
+                Deckle.Catalog.Loc.Get("Feedback_HotkeysUnavailable_Title"),
+                Deckle.Catalog.Loc.Get("Feedback_HotkeysUnavailable_Body"),
                 1); // Overlay
         }
         Settings.SettingsService.Instance.Changed += OnShellSettingsChangedForHotkeys;

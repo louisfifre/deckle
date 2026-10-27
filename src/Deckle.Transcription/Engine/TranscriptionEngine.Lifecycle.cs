@@ -21,6 +21,20 @@ public sealed partial class TranscriptionEngine
     // (file existence, GPU init, fallback) live in the IAsrBackend; the engine
     // handles only the user-facing status and UserFeedback.
 
+    // The Settings page a failed load sends the person to, by its own nav
+    // label, so a rename of the page cannot leave the message pointing at a
+    // page that is gone.
+    private static string SettingsPageLabel() =>
+        Loc.GetFrom("Deckle.Transcription", "SettingsModuleNavLabel");
+
+    // A load that fails without a missing file has no cause the engine can
+    // name: whisper_init returns null for a corrupt file, a format it does
+    // not read and a GPU that refuses the allocation alike, and an exception
+    // here is the native runtime itself. The message says what failed and
+    // what the person can try (another model, smaller or freshly downloaded,
+    // from the page that lists them), never a guessed cause; the log carries
+    // the reason.
+
     // silentStatus suppresses the "Loading model… → Ready" status transitions.
     // The concurrent prime sets it: the load runs alongside the capture, and
     // "Recording" must hold for the whole take. Error UserFeedback still
@@ -49,7 +63,7 @@ public sealed partial class TranscriptionEngine
             OpenModelIncident(workId, "load_exception", ex.GetType().Name, ex.Message);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_ModelLoadFailed_Title"),
-                Loc.Get("Engine_ModelLoadFailed_Body"),
+                Loc.Format("Engine_ModelLoadFailed_Body_Format", SettingsPageLabel()),
                 FB_REPLACEMENT);
             if (!silentStatus) RaiseStatus(Loc.Get("Status_Ready"));
             return false;
@@ -62,14 +76,14 @@ public sealed partial class TranscriptionEngine
             {
                 EmitUserFeedback(FB_ERROR,
                     Loc.Get("Engine_WhisperModelNotFound_Title"),
-                    Loc.Get("Engine_WhisperModelNotFound_Body"),
+                    Loc.Format("Engine_WhisperModelNotFound_Body_Format", SettingsPageLabel()),
                     FB_REPLACEMENT);
             }
             else
             {
                 EmitUserFeedback(FB_ERROR,
                     Loc.Get("Engine_ModelLoadFailed_Title"),
-                    Loc.Get("Engine_ModelLoadFailed_Body"),
+                    Loc.Format("Engine_ModelLoadFailed_Body_Format", SettingsPageLabel()),
                     FB_REPLACEMENT);
             }
             if (!silentStatus) RaiseStatus(Loc.Get("Status_Ready"));

@@ -353,16 +353,16 @@
        to one (Severity, Role) combination decided in code, not here.
        Naming: Engine_<Reason>_Title and Engine_<Reason>_Body. -->
   <data name="Engine_WhisperModelNotFound_Title" xml:space="preserve">
-    <value>Whisper model not found</value>
+    <value>Speech model not found</value>
   </data>
-  <data name="Engine_WhisperModelNotFound_Body" xml:space="preserve">
-    <value>See in settings.</value>
+  <data name="Engine_WhisperModelNotFound_Body_Format" xml:space="preserve">
+    <value>Get it in Settings › {0}.</value>
   </data>
   <data name="Engine_ModelLoadFailed_Title" xml:space="preserve">
-    <value>Failed to load model</value>
+    <value>The speech model didn't load</value>
   </data>
-  <data name="Engine_ModelLoadFailed_Body" xml:space="preserve">
-    <value>Low GPU memory or corrupt file.</value>
+  <data name="Engine_ModelLoadFailed_Body_Format" xml:space="preserve">
+    <value>Swap it in Settings › {0}.</value>
   </data>
   <data name="Engine_PipelineCrashed_Title" xml:space="preserve">
     <value>Pipeline crashed</value>
@@ -374,31 +374,31 @@
     <value>Low audio detected</value>
   </data>
   <data name="Engine_LowAudio_Body" xml:space="preserve">
-    <value>Your mic is picking up very little sound.</value>
+    <value>Your mic picks up very little.</value>
   </data>
   <data name="Engine_TranscriptionFailed_Title" xml:space="preserve">
     <value>Transcription failed</value>
   </data>
   <data name="Engine_TranscriptionFailed_Body" xml:space="preserve">
-    <value>Whisper could not decode the audio.</value>
+    <value>The audio couldn't be decoded.</value>
   </data>
   <data name="Engine_ClipboardCopyFailed_Memory_Title" xml:space="preserve">
     <value>Clipboard copy failed</value>
   </data>
   <data name="Engine_ClipboardCopyFailed_Memory_Body" xml:space="preserve">
-    <value>Memory allocation failed. Try again.</value>
+    <value>Out of memory. Try again.</value>
   </data>
   <data name="Engine_ClipboardUnavailable_Title" xml:space="preserve">
     <value>Clipboard unavailable</value>
   </data>
   <data name="Engine_ClipboardUnavailable_Body" xml:space="preserve">
-    <value>Another app is holding it. Try again.</value>
+    <value>Another app holds it. Try again.</value>
   </data>
   <data name="Engine_ClipboardCopyFailed_Refused_Title" xml:space="preserve">
     <value>Clipboard copy failed</value>
   </data>
   <data name="Engine_ClipboardCopyFailed_Refused_Body" xml:space="preserve">
-    <value>Windows refused the write. Try again.</value>
+    <value>Windows refused it. Try again.</value>
   </data>
   <data name="Engine_ClipboardIncomplete_Unverified_Title" xml:space="preserve">
     <value>Clipboard may be incomplete</value>
@@ -434,9 +434,35 @@
     <value>Microphone unavailable</value>
   </data>
   <data name="MicError_Unavailable_Body_Format" xml:space="preserve">
-    <value>Audio device open failed (MMSYSERR {0}).</value>
+    <value>Mic open failed (MMSYSERR {0}).</value>
   </data>
 
+  <!-- ─── HUD feedback from the host ─────────────────────────────────
+       Messages the app itself raises on the HUD card: one line of title,
+       one line of body, measured by HudMessageFitTests. A {0} that names a
+       Settings page is that page's SettingsModuleNavLabel, so a rename
+       cannot leave the message pointing at a page that is gone. -->
+  <data name="Feedback_SpeechNotSetUp_Title" xml:space="preserve">
+    <value>Transcription isn't set up</value>
+  </data>
+  <data name="Feedback_SpeechNotSetUp_Body_Format" xml:space="preserve">
+    <value>Set it up in Settings › {0}.</value>
+  </data>
+  <data name="Feedback_HotkeysUnavailable_Title" xml:space="preserve">
+    <value>Shortcuts unavailable</value>
+  </data>
+  <data name="Feedback_HotkeysUnavailable_Body" xml:space="preserve">
+    <value>Record from the tray panel.</value>
+  </data>
+  <data name="Feedback_HotkeyUnavailable_Title_Format" xml:space="preserve">
+    <value>{0} shortcut</value>
+  </data>
+  <data name="Feedback_HotkeyUnavailable_Body_Taken" xml:space="preserve">
+    <value>Another app uses it. Pick another.</value>
+  </data>
+  <data name="Feedback_HotkeyUnavailable_Body_NotOnLayout" xml:space="preserve">
+    <value>That key isn't on this keyboard.</value>
+  </data>
   <!-- ─── HUD ────────────────────────────────────────────────────────
        Short post-paste / post-copy confirmations rendered in the HUD
        message slot. Hud_Copied_Hint sits under the title to remind the
@@ -454,7 +480,7 @@
     text was put back on the clipboard. It names the dictation because the
     clipboard changed with no action from the user. -->
   <data name="Hud_DictationRecovered_Title" xml:space="preserve">
-    <value>Recovered dictation copied to clipboard</value>
+    <value>Recovered dictation copied</value>
   </data>
   <!-- File transcription completion. The saved .txt file is the primary
        outcome; the hint reminds the user it's also on the clipboard. -->
@@ -555,19 +581,19 @@
     <value>Couldn't read the audio file</value>
   </data>
   <data name="FileTranscription_DecodeFailed_Body_FileNotFound" xml:space="preserve">
-    <value>The file was moved or deleted. Pick another one.</value>
+    <value>It was moved or deleted.</value>
   </data>
   <data name="FileTranscription_DecodeFailed_Body_UnsupportedFormat" xml:space="preserve">
-    <value>This audio format isn't supported. Try MP3, WAV, or M4A.</value>
+    <value>Use an MP3, WAV, or M4A file.</value>
   </data>
   <data name="FileTranscription_DecodeFailed_Body_NoAudioTrack" xml:space="preserve">
-    <value>This file has no audio track to transcribe.</value>
+    <value>This file has no audio track.</value>
   </data>
   <data name="FileTranscription_DecodeFailed_Body_ProtectedContent" xml:space="preserve">
-    <value>This file is copy-protected and can't be read.</value>
+    <value>This file is copy-protected.</value>
   </data>
   <data name="FileTranscription_DecodeFailed_Body_ReadError" xml:space="preserve">
-    <value>The file couldn't be read. It may be corrupt or in use.</value>
+    <value>It may be corrupt or in use.</value>
   </data>
   <data name="FileTranscription_WriteFailed_Title" xml:space="preserve">
     <value>Couldn't save the transcript</value>

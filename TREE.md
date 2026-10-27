@@ -2177,6 +2177,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── HudHotLoopCountTests.cs
+│   │   ├── HudMessageFitTests.cs
 │   │   ├── HudSettingsOverridesTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs

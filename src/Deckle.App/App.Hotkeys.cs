@@ -7,6 +7,18 @@ namespace Deckle.App;
 
 public partial class App
 {
+    // A take or a file asked for while the engine is not composed. The page
+    // is named by its own nav label: the strings once said "Dictation", a
+    // page that had been renamed Transcription.
+    private static void EmitSpeechNotSetUp() =>
+        DeckleAppSource.Log.UserFeedbackEmitted(
+            0, // Info
+            Deckle.Catalog.Loc.Get("Feedback_SpeechNotSetUp_Title"),
+            Deckle.Catalog.Loc.Format(
+                "Feedback_SpeechNotSetUp_Body_Format",
+                Deckle.Catalog.Loc.GetFrom("Deckle.Transcription", "SettingsModuleNavLabel")),
+            1); // Overlay
+
     // The tray panel's Record button lands here too.
     private void OnHotkey(int hotkeyId)
     {
@@ -19,11 +31,7 @@ public partial class App
         {
             // No engine means speech is not provisioned.
             DeckleAppSource.Log.HotkeyPressIgnored("engine_not_composed");
-            DeckleAppSource.Log.UserFeedbackEmitted(
-                0, // Info
-                "Dictation isn't set up yet",
-                "Open Settings › Dictation to download the speech engine and model.",
-                1); // Overlay
+            EmitSpeechNotSetUp();
             return;
         }
 

@@ -171,16 +171,16 @@
        to one (Severity, Role) combination decided in code, not here.
        Naming: Engine_<Reason>_Title and Engine_<Reason>_Body. -->
   <data name="Engine_WhisperModelNotFound_Title" xml:space="preserve">
-    <value>Whisper model not found</value>
+    <value>Speech model not found</value>
   </data>
-  <data name="Engine_WhisperModelNotFound_Body" xml:space="preserve">
-    <value>See in settings.</value>
+  <data name="Engine_WhisperModelNotFound_Body_Format" xml:space="preserve">
+    <value>Get it in Settings › {0}.</value>
   </data>
   <data name="Engine_ModelLoadFailed_Title" xml:space="preserve">
-    <value>Failed to load model</value>
+    <value>The speech model didn't load</value>
   </data>
-  <data name="Engine_ModelLoadFailed_Body" xml:space="preserve">
-    <value>Low GPU memory or corrupt file.</value>
+  <data name="Engine_ModelLoadFailed_Body_Format" xml:space="preserve">
+    <value>Swap it in Settings › {0}.</value>
   </data>
   <data name="Engine_PipelineCrashed_Title" xml:space="preserve">
     <value>Pipeline crashed</value>
@@ -192,31 +192,31 @@
     <value>Low audio detected</value>
   </data>
   <data name="Engine_LowAudio_Body" xml:space="preserve">
-    <value>Your mic is picking up very little sound.</value>
+    <value>Your mic picks up very little.</value>
   </data>
   <data name="Engine_TranscriptionFailed_Title" xml:space="preserve">
     <value>Transcription failed</value>
   </data>
   <data name="Engine_TranscriptionFailed_Body" xml:space="preserve">
-    <value>Whisper could not decode the audio.</value>
+    <value>The audio couldn't be decoded.</value>
   </data>
   <data name="Engine_ClipboardCopyFailed_Memory_Title" xml:space="preserve">
     <value>Clipboard copy failed</value>
   </data>
   <data name="Engine_ClipboardCopyFailed_Memory_Body" xml:space="preserve">
-    <value>Memory allocation failed. Try again.</value>
+    <value>Out of memory. Try again.</value>
   </data>
   <data name="Engine_ClipboardUnavailable_Title" xml:space="preserve">
     <value>Clipboard unavailable</value>
   </data>
   <data name="Engine_ClipboardUnavailable_Body" xml:space="preserve">
-    <value>Another app is holding it. Try again.</value>
+    <value>Another app holds it. Try again.</value>
   </data>
   <data name="Engine_ClipboardCopyFailed_Refused_Title" xml:space="preserve">
     <value>Clipboard copy failed</value>
   </data>
   <data name="Engine_ClipboardCopyFailed_Refused_Body" xml:space="preserve">
-    <value>Windows refused the write. Try again.</value>
+    <value>Windows refused it. Try again.</value>
   </data>
   <data name="Engine_ClipboardIncomplete_Unverified_Title" xml:space="preserve">
     <value>Clipboard may be incomplete</value>
@@ -252,19 +252,19 @@
     <value>Couldn't read the audio file</value>
   </data>
   <data name="FileTranscription_DecodeFailed_Body_FileNotFound" xml:space="preserve">
-    <value>The file was moved or deleted. Pick another one.</value>
+    <value>It was moved or deleted.</value>
   </data>
   <data name="FileTranscription_DecodeFailed_Body_UnsupportedFormat" xml:space="preserve">
-    <value>This audio format isn't supported. Try MP3, WAV, or M4A.</value>
+    <value>Use an MP3, WAV, or M4A file.</value>
   </data>
   <data name="FileTranscription_DecodeFailed_Body_NoAudioTrack" xml:space="preserve">
-    <value>This file has no audio track to transcribe.</value>
+    <value>This file has no audio track.</value>
   </data>
   <data name="FileTranscription_DecodeFailed_Body_ProtectedContent" xml:space="preserve">
-    <value>This file is copy-protected and can't be read.</value>
+    <value>This file is copy-protected.</value>
   </data>
   <data name="FileTranscription_DecodeFailed_Body_ReadError" xml:space="preserve">
-    <value>The file couldn't be read. It may be corrupt or in use.</value>
+    <value>It may be corrupt or in use.</value>
   </data>
   <data name="FileTranscription_WriteFailed_Title" xml:space="preserve">
     <value>Couldn't save the transcript</value>
@@ -294,7 +294,7 @@
     <value>Microphone unavailable</value>
   </data>
   <data name="MicError_Unavailable_Body_Format" xml:space="preserve">
-    <value>Audio device open failed (MMSYSERR {0}).</value>
+    <value>Mic open failed (MMSYSERR {0}).</value>
   </data>
 
   <!-- ─── HUD ────────────────────────────────────────────────────────
@@ -389,13 +389,13 @@
        Second page in the Settings nav. Per-setting Reset buttons share
        the SettingsResetButton.ToolTipService.ToolTip key (style-level
        tooltip in the Page resources). -->
-  <!-- Dictation not-provisioned call-to-action. Shown when the speech runtime
+  <!-- Transcription not-provisioned call-to-action. Shown when the speech runtime
        or model is missing; the button reopens the first-run setup wizard. -->
   <data name="WhisperSetupInfoBar.Title" xml:space="preserve">
-    <value>Dictation isn't set up yet</value>
+    <value>Transcription isn't set up</value>
   </data>
   <data name="WhisperSetupInfoBar.Message" xml:space="preserve">
-    <value>Download the speech engine and a model to start dictating.</value>
+    <value>Download the speech engine and a model to start transcribing.</value>
   </data>
   <data name="WhisperSetupButton.Content" xml:space="preserve">
     <value>Set up</value>

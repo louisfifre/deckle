@@ -110,12 +110,14 @@ public partial class App
 
             // Error 0: the scancode has no key under the active layout, so
             // nobody owns it; every other error is a chord taken elsewhere.
+            // The label rides in the title, so the body keeps its one line
+            // for the reason and the fix.
             string body = failure.Win32Error == 0
-                ? $"{label}: this key is not on the current keyboard layout."
-                : $"{label}: another app owns this shortcut.";
+                ? Loc.Get("Feedback_HotkeyUnavailable_Body_NotOnLayout")
+                : Loc.Get("Feedback_HotkeyUnavailable_Body_Taken");
             DeckleAppSource.Log.UserFeedbackEmitted(
                 2, // Error
-                "Hotkey unavailable",
+                Loc.Format("Feedback_HotkeyUnavailable_Title_Format", label),
                 body,
                 1); // Overlay
         }
