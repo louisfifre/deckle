@@ -141,6 +141,12 @@ internal static class NativeRuntimeLoader
 
     private static bool LoadBackends(string nativeDirectory)
     {
+        // ggml loads every ggml-*.dll of the folder, so an older bundle's
+        // ggml-cpu.dll (MinGW) beside the MSVC catalog lands in the process
+        // and aborts it. Provisioning already purges, but a folder filled
+        // before that purge existed, or by hand, reaches here unpurged. The
+        // stale files are not loaded yet: LoadForPInvoke loads catalog DLLs only.
+        NativeRuntime.RemoveStale(nativeDirectory);
         WhisperPInvoke.ggml_backend_load_all_from_path(nativeDirectory);
 
         nuint count = WhisperPInvoke.ggml_backend_reg_count();

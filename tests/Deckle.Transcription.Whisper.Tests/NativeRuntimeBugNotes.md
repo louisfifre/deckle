@@ -26,3 +26,12 @@
 - **Violated invariant:** A native folder holds exactly the catalog of the running build, and "installed" means the catalog loads on this machine; when it does not, the person is told why and offered the download, never left with a silent skip.
 - **Recurrence cue:** Any change to `NativeRuntime.RequiredDllNames` or `CurrentBundle`, a renamed Settings page named in a message, or a new HUD string written as a literal or longer than the card's one body line.
 - **Regression coverage:** `NativeRuntimeTests.InstallingFromTheBundleLeavesTheCatalogAlone` and `CopyingFromAFolderLeavesTheCatalogAlone` seed the 1.9.1 files and pin that both provisioning paths remove them. `Deckle.Hud.Tests.HudMessageFitTests` measures every HUD resource string against the card's text column. The startup offer (`App.SpeechRepair.cs`) has no automated test: it opens a WinUI window, and the App suite creates none. What proves it is a launch on a data root whose native folder holds 1.9.1 alone, run by the maintainer.
+
+## An unpurged native folder crashed every start
+
+- **Trigger:** Deckle 0.72.2 Release started on the maintainer's machine, whose native folder had been provisioned with 1.9.2 by a build that predated the purge, so it still held the five 1.9.1 files listed above.
+- **Observed symptom:** Four crashes in a row right after "Starting transcription", exit code `0xC0000409` faulting in `ucrtbase.dll` (a native `abort()`), until the supervisor gave up its relaunch budget. The load check had passed just before: it loads the catalog only.
+- **Cause:** The purge ran at provisioning only, and this folder was never provisioned again after it shipped. `ggml_backend_load_all_from_path` then loaded the stale MinGW `ggml-cpu.dll` beside the MSVC `ggml-base.dll`. Removing the five files with `clean-native.ps1` is the established part; that the stale `ggml-cpu.dll` is what aborts is the interpretation the next launch confirms or refutes.
+- **Violated invariant:** The one stated above: the native folder holds exactly the catalog of the running build, whatever filled it.
+- **Recurrence cue:** Any purge tied to one path that writes the folder rather than to the one place that reads it.
+- **Regression coverage:** `NativeRuntimeLoader.LoadBackends` now purges right before handing the folder to ggml; `RemoveStale` itself is pinned by the tests above. The call site needs the real DLLs, so the opt-in system test `WhisperReferenceAudioSystemTests` is what exercises it.
