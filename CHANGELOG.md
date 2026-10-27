@@ -9,6 +9,20 @@ public API: the version is read at the **user/behaviour** level, and during the
 doctrine). This file is generated from the Conventional-Commit history by
 `scripts/commands/changelog.ps1` — do not edit it by hand.
 
+## [Unreleased]
+
+### Added
+
+- **scripts:** Clean a developer native folder to the current catalog
+
+### Fixed
+
+- **whisper:** Count a native runtime as installed only when it loads here
+- **app:** Open setup on the install step when the speech engine is missing or does not load
+- **whisper:** Leave only the catalog in the native folder after provisioning
+- **hud:** Keep every HUD message on its one line and name the Transcription page
+- **whisper:** Retry a failed backend load and refuse a truncated image as a bad image
+
 ## [0.72.0](https://github.com/louisfifre/deckle/compare/v0.67.1...v0.72.0) — 2026-10-27
 
 ### Added
