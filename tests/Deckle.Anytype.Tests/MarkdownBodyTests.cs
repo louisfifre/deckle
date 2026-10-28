@@ -316,6 +316,23 @@ public class MarkdownBodyTests
         Assert.Equal(body, MarkdownBody.DropTitle(body, name));
     }
 
+    [Fact]
+    public void DropSnippetHeaderRemovesTheCutHeaderTheBodyRepeats()
+    {
+        Assert.Equal("Titre   \nTexte entier.   ",
+            MarkdownBody.DropSnippetHeader("Titre\n\nTexte…   \nTitre   \nTexte entier.   "));
+    }
+
+    [Theory]
+    [InlineData("Titre\nTexte entier.")]
+    [InlineData("Peut-être…   \nAutre chose.")]
+    [InlineData("Titre\n\nTexte…   \nAutre titre   \nTexte entier.")]
+    [InlineData("Titre\n\nTexte…   \nTitre")]
+    public void DropSnippetHeaderLeavesABodyItDoesNotRepeat(string body)
+    {
+        Assert.Equal(body, MarkdownBody.DropSnippetHeader(body));
+    }
+
     // ── JournalEntries: the unit a report tail counts ─────────────────────────
 
     [Fact]

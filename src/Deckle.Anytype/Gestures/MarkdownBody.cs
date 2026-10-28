@@ -283,6 +283,36 @@ public static class MarkdownBody
         return body;
     }
 
+    // A nameless idea's v2 render opens with its snippet before the body: the
+    // body's first lines as paragraphs, the last cut with « … » (measured
+    // 2026-10-28; a nameless report opened on its own body). That header only
+    // repeats the body, so it is dropped, but only when the lines after it do
+    // start with what it says: a body that merely ends a line with « … » stays
+    // whole. Whether a short, uncut snippet is rendered too is not established.
+    public static string DropSnippetHeader(string body)
+    {
+        string[] lines = body.Split('\n');
+        var header = new List<string>();
+        int end = -1;
+        for (int i = 0; i < lines.Length; i++)
+        {
+            string line = lines[i].Trim();
+            if (line.Length == 0) continue;
+            header.Add(line);
+            if (line.EndsWith('…')) { end = i; break; }
+        }
+        if (end < 0) return body;
+
+        List<string> rest = lines[(end + 1)..]
+            .Select(l => l.Trim()).Where(l => l.Length > 0).Take(header.Count).ToList();
+        if (rest.Count < header.Count) return body;
+        for (int j = 0; j < header.Count - 1; j++)
+            if (!rest[j].Equals(header[j], StringComparison.Ordinal)) return body;
+        if (!rest[^1].StartsWith(header[^1].TrimEnd('…'), StringComparison.Ordinal)) return body;
+
+        return string.Join('\n', lines[(end + 1)..]);
+    }
+
     // session_log writes each journal entry as two paragraphs: this stamp, then
     // the text. JournalEntries finds the entries by it.
     public const string JournalStampFormat = "yyyy-MM-dd HH:mm";

@@ -611,6 +611,22 @@ public class ReadGesturesTests
         Assert.Equal(Lines($"id : {IdeaId}", "Piste_une", "## Piste_une", "Suite"), digest);
     }
 
+    // The render shape measured on 2026-10-28: the snippet as paragraphs, cut
+    // with « … », then the body with its hard breaks.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task IdeaTextReadsANamelessIdeaTitleAndTextOnce()
+    {
+        FakeV2Handler v2 = Reads(
+            PropsReply(IdeaId, "idee", ""),
+            MdReply(IdeaId, "idee",
+                "Socle\n\n## L'idée\n\nDeckle pourrait…   \nSocle   \n## L'idée   \nDeckle pourrait exposer un socle.   \n"));
+
+        string digest = await NewGestures(v2).IdeaTextAsync(IdeaId, Ct);
+
+        Assert.Equal(Lines($"id : {IdeaId}", "Socle", "## L'idée", "Deckle pourrait exposer un socle."), digest);
+    }
+
     [Fact]
     public async Task IdeaTextWithoutNameOrBodyStaysSansTitre()
     {

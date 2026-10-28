@@ -253,11 +253,17 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
             markdown = MarkdownBody.DropTitle(md.Body["markdown"]?.GetValue<string>() ?? "", props.Name);
         }
         // Ideas and reports are often created without a name: their first body
-        // line stands in for it rather than a bare "(sans titre)".
+        // line stands in for it rather than a bare "(sans titre)", and leaves the
+        // body as a name would, so the title is not read twice.
         if (props.Name.Length == 0 && typeKey is DevSpace.Types.Idee or DevSpace.Types.Rapport)
         {
+            markdown = MarkdownBody.DropSnippetHeader(markdown);
             string first = MarkdownBody.FirstLine(markdown);
-            if (first.Length > 0) name = first;
+            if (first.Length > 0)
+            {
+                name = first;
+                markdown = MarkdownBody.DropTitle(markdown, first);
+            }
         }
         return new Loaded(doc.Id ?? id, name, props, doc.Body, markdown);
     }
