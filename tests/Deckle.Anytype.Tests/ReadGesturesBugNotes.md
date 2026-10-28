@@ -9,3 +9,13 @@
 - **Recurrence cue:** a flag that a search filter on the same key finds but that no read ever shows; a reader that checks two places for one value because neither was measured.
 
 Regression: `ReadGesturesTests.TaskPropertiesFlagsAnObjectInAnytypesBinWithACorbeilleLine` and `AnytypeV2PropertyMapTests.TheBinIsReadFromIsArchivedOnly`.
+
+## A nameless idea read its title three times and its opening twice
+
+- **Trigger:** `idea_text` of an idea whose `name` is empty, its title being the first line of its body.
+- **Observed symptom:** seen on 2026-10-28 through the live MCP: the digest repeated the title under the id, then a copy of the body's opening cut with « … », then the whole body again from its title.
+- **Cause:** for a nameless idea, the v2 markdown render opens with the snippet as paragraphs, cut with « … », before the body's own blocks (measured the same day). `DropTitle` only drops a line that spells the object's name, and the name is empty, so the header stayed. The name taken from the first line then repeated the body's own first line.
+- **Violated invariant:** a typed read shows each line of the object once: the title as identity, the body as the author wrote it.
+- **Recurrence cue:** a digest whose opening lines end with « … » and come back in full just after; a nameless object type whose render was never measured. Whether a short, uncut snippet is rendered too is not established; a nameless report measured the same day opened on its own body.
+
+Regression: `ReadGesturesTests.IdeaTextReadsANamelessIdeaTitleAndTextOnce`.
