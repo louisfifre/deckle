@@ -137,6 +137,12 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── windhawk-build-mod.ps1
 │   │   │   └── windhawk-install-mod.ps1
 │   │   ├── wheel-probes/
+│   │   │   ├── curves-2026-10-29/
+│   │   │   │   ├── build_curves_data.py
+│   │   │   │   ├── curves-page.html
+│   │   │   │   ├── README.md
+│   │   │   │   ├── wheel_events_20261029.csv
+│   │   │   │   └── wheel_summary_20261029.csv
 │   │   │   ├── hidpp_probe.py
 │   │   │   ├── README.md
 │   │   │   ├── wheel_analysis.py

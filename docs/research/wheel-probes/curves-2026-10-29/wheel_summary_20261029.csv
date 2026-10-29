@@ -1,0 +1,7 @@
+row,session,source,events,share_x120_pct,share_injected_pct,gap_median_ms,gap_p10_ms,gap_p90_ms,max_abs_delta,total_notches
+"S1 · MX, PS off | MX","S1 · MX, PS off",MX,1013,100.0,0.0,8.0,7.0,22.0,840,1319.0
+"S3 · MX, PS on | MX","S3 · MX, PS on",MX,1302,100.0,0.0,8.0,7.0,22.1,840,1853.0
+"S3 · MX, PS on | rejeu Deckle","S3 · MX, PS on",rejeu Deckle,953,0.0,0.0,15.3,12.1,28.1,9525,5509.4
+"S4 · touchpad, PS off | touchpad","S4 · touchpad, PS off",touchpad,1231,0.2,0.0,16.0,11.2,56.3,1786,1385.3
+"S6 · Steam, PS off | Steam","S6 · Steam, PS off",Steam,271,100.0,100.0,88.9,49.0,205.0,120,271.0
+"S6 · Steam, PS off | touchpad","S6 · Steam, PS off",touchpad,19,0.0,0.0,15.7,15.2,25.4,110,4.5

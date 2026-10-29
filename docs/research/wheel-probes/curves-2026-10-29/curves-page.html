@@ -1,0 +1,306 @@
+<meta name="dash-one-writer">
+<style>
+  .mw { display: grid; gap: var(--cds-gap-xl); font-family: var(--font-anthropic-sans); }
+  .mw-head { display: grid; gap: var(--cds-gap-sm); }
+  .mw h1 { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
+  .mw h2 { font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .mw h3 { font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); margin: 0; }
+  .mw p { margin: 0; max-width: 72ch; }
+  .mw .note { color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+  .mw .finds { display: grid; gap: var(--cds-gap-xs); margin: 0; padding-left: 1.2em; max-width: 78ch; }
+  .mw .finds b, .mw .lede b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .mw .tag { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: 0 var(--cds-pad-xs); margin-left: var(--cds-gap-xs); white-space: nowrap; }
+  .mw .sec { display: grid; gap: var(--cds-gap-md); }
+  .mw .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: var(--cds-gap-md); }
+  .mw .card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: grid; gap: var(--cds-gap-sm); align-content: start; min-width: 0; }
+  .mw .chart { position: relative; min-height: 210px; }
+  .mw .chart svg { display: block; overflow: visible; }
+  .mw .legend { display: flex; flex-wrap: wrap; gap: var(--cds-gap-md); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .mw .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; background: var(--cds-chart-muted); }
+  .mw .tip { position: absolute; pointer-events: none; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); border-radius: var(--cds-radius); box-shadow: var(--cds-shadow-popover); padding: var(--cds-pad-xs) var(--cds-pad-sm); font-size: var(--cds-font-size-caption); white-space: nowrap; font-variant-numeric: tabular-nums; z-index: 2; }
+  .mw .tip .k { color: var(--cds-text-secondary); }
+  .mw .tablebox { overflow: auto; }
+  .mw table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+  .mw th, .mw td { text-align: right; padding: var(--cds-pad-xs) var(--cds-pad-sm); border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+  .mw th:nth-child(-n+2), .mw td:nth-child(-n+2) { text-align: left; }
+  .mw th { font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); }
+  .mw [data-dash-source-state=refreshing] { opacity: .5; transition: opacity var(--cds-dur-slow); }
+</style>
+
+<div class="mw">
+  <header class="mw-head">
+    <h1>Molette : MX, touchpad, Steam</h1>
+    <p class="lede">Avec Precision Scrolling, le rejeu de Deckle a fait défiler <b data-draw="ratio" data-source="replay_ratio" data-field="ratio">—</b> fois plus que les crans de la MX qu'il remplaçait.</p>
+    <p class="note">Sessions étiquetées du 29 octobre 2026, captées par le hook de Deckle. Un cran vaut un delta de 120.</p>
+  </header>
+
+  <section class="sec" id="constats">
+    <h2>Ce que montrent les captures</h2>
+    <ul class="finds">
+      <li>La MX n'envoie jamais de fraction : des crans de 120 (ou 240 quand tu vas vite), un toutes les <b data-draw="mxgap" data-source="summary" data-field="gap_median_ms" data-where="row=S1 · MX, PS off | MX">—</b> ms en médiane.<span class="tag">établi</span></li>
+      <li>Steam envoie des ±120 injectés, un toutes les <b data-draw="steamgap" data-source="summary" data-field="gap_median_ms" data-where="row=S6 · Steam, PS off | Steam">—</b> ms en médiane quand tu tournes le stick.<span class="tag">établi</span></li>
+      <li>Le touchpad envoie de petites fractions, toutes les <b data-draw="padgap" data-source="summary" data-field="gap_median_ms" data-where="row=S4 · touchpad, PS off | touchpad">—</b> ms en médiane ; parfois une valeur tombe pile sur un multiple de 120, que Precision Scrolling prendrait pour un cran.<span class="tag">établi</span></li>
+      <li>Le rejeu revient dans Windows comme une molette de touchpad et en fait beaucoup plus que les crans d'origine : Windows applique sa propre accélération au doigt virtuel.<span class="tag">interprétation</span></li>
+    </ul>
+    <p class="note">S5 (touchpad avec Precision Scrolling) manque : elle a été jouée dans une appli qui lit le touchpad directement, sans passer par la molette, donc le hook n'a rien vu.</p>
+  </section>
+
+  <section class="sec" id="position">
+    <h2>La position, message après message</h2>
+    <p class="note">Somme des deltas reçus, en crans. Chaque marche est un message de molette : c'est exactement ce qu'une appli reçoit. Plus l'escalier est fin, plus le défilement paraît fluide.</p>
+    <div class="legend">
+      <span><span class="sw" data-series="MX"></span>Crans de la MX</span>
+      <span><span class="sw" data-series="rejeu Deckle"></span>Rejeu de Deckle</span>
+      <span><span class="sw" data-series="touchpad"></span>Touchpad</span>
+      <span><span class="sw" data-series="Steam"></span>Steam (DualSense)</span>
+    </div>
+    <div class="grid">
+      <div class="card"><h3>Un geste rapide de la MX, de près</h3><p class="note">S1, Precision Scrolling off : l'escalier que tu sens comme une saccade.</p><div class="chart" data-draw="zoom" data-session="S1" data-source="events"></div></div>
+      <div class="card"><h3>Le même geste avec Precision Scrolling</h3><p class="note">S3 : les crans de la MX sont avalés et remplacés par le rejeu, en marches beaucoup plus fines.</p><div class="chart" data-draw="zoom" data-session="S3" data-source="events"></div></div>
+      <div class="card"><h3>Le touchpad, de près</h3><p class="note">S4, Precision Scrolling off : la référence de fluidité.</p><div class="chart" data-draw="zoom" data-session="S4" data-source="events"></div></div>
+      <div class="card"><h3>Steam, de près</h3><p class="note">S6, Precision Scrolling off : des marches d'un cran, espacées.</p><div class="chart" data-draw="zoom" data-session="S6" data-source="events"></div></div>
+    </div>
+  </section>
+
+  <section class="sec" id="vitesse">
+    <h2>La vitesse sur toute la session</h2>
+    <p class="note">Crans par seconde, mesurés sur une fenêtre glissante de 100 ms. Positif vers le haut, négatif vers le bas.</p>
+    <div class="grid">
+      <div class="card"><h3>S1 · MX, Precision Scrolling off</h3><div class="chart" data-draw="speed" data-session="S1" data-source="events"></div></div>
+      <div class="card"><h3>S3 · MX, Precision Scrolling on</h3><div class="chart" data-draw="speed" data-session="S3" data-source="events"></div></div>
+      <div class="card"><h3>S4 · touchpad, Precision Scrolling off</h3><div class="chart" data-draw="speed" data-session="S4" data-source="events"></div></div>
+      <div class="card"><h3>S6 · Steam, Precision Scrolling off</h3><div class="chart" data-draw="speed" data-session="S6" data-source="events"></div></div>
+    </div>
+  </section>
+
+  <section class="sec" id="rythme">
+    <h2>Le rythme : l'écart entre deux messages</h2>
+    <p class="note">Part des messages selon l'écart avec le précédent, échelle logarithmique. Un pic à gauche veut dire des messages serrés.</p>
+    <div class="grid">
+      <div class="card"><h3>MX (S1)</h3><div class="chart" data-draw="gaps" data-session="S1" data-series="MX" data-source="events"></div></div>
+      <div class="card"><h3>Rejeu de Deckle (S3)</h3><div class="chart" data-draw="gaps" data-session="S3" data-series="rejeu Deckle" data-source="events"></div></div>
+      <div class="card"><h3>Touchpad (S4)</h3><div class="chart" data-draw="gaps" data-session="S4" data-series="touchpad" data-source="events"></div></div>
+      <div class="card"><h3>Steam (S6)</h3><div class="chart" data-draw="gaps" data-session="S6" data-series="Steam" data-source="events"></div></div>
+    </div>
+  </section>
+
+  <section class="sec" id="tableau">
+    <h2>Chaque source en chiffres</h2>
+    <div class="card tablebox">
+      <table data-source="summary" data-row-key="row">
+        <thead><tr>
+          <th data-field="session">Session</th>
+          <th data-field="source">Source</th>
+          <th data-field="events">Messages</th>
+          <th data-field="share_x120_pct">% multiples de 120</th>
+          <th data-field="share_injected_pct">% injectés</th>
+          <th data-field="gap_median_ms">Écart médian (ms)</th>
+          <th data-field="gap_p10_ms">p10 (ms)</th>
+          <th data-field="gap_p90_ms">p90 (ms)</th>
+          <th data-field="max_abs_delta">|delta| max</th>
+          <th data-field="total_notches">Crans au total</th>
+        </tr></thead>
+        <tbody data-draw="table"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+  dash.calc('replay_ratio', {
+    inputs: ['summary'],
+    title: 'Rejeu rapporté aux crans MX (S3)',
+    description: 'Défilement total du rejeu de Deckle divisé par celui des crans de la MX, pendant la session S3.',
+    fn: (summary) => {
+      const s3 = summary.filter((r) => r.session.startsWith('S3'));
+      const mx = Number(s3.find((r) => r.source === 'MX').total_notches);
+      const replay = Number(s3.find((r) => r.source === 'rejeu Deckle').total_notches);
+      return [{ratio: Math.round((replay / mx) * 10) / 10}];
+    },
+  });
+
+  window.MW = (() => {
+    const SERIES = ['MX', 'rejeu Deckle', 'touchpad', 'Steam'];
+    const color = (s) => dash.colors[SERIES.indexOf(s)];
+    let ref = null, parsed = null;
+    const rows = () => {
+      const d = dash.data('events');
+      if (d.status !== 'ok') return null;
+      if (d.data !== ref) {
+        ref = d.data;
+        parsed = d.data.map((r) => ({
+          session: r.session.slice(0, 2), source: r.source, t: Number(r.t_s),
+          pos: Number(r.position_notches), speed: Number(r.speed_nps),
+          gap: r.gap_ms === '' ? null : Number(r.gap_ms),
+        }));
+      }
+      return parsed;
+    };
+    const fmt = d3.format(',.1f');
+    const fmtT = d3.format('.2f');
+
+    const measure = (svg, labels) => {
+      const t = svg.append('text').attr('font-size', 'var(--cds-font-size-caption)');
+      let w = 0;
+      for (const l of labels) { t.text(l); w = Math.max(w, t.node().getComputedTextLength()); }
+      t.remove();
+      return w;
+    };
+
+    // Lines over time, one per source; step lines for positions (each step is one message).
+    const lines = (el, data, {key, step, xDomain, yLabel}) => {
+      el.replaceChildren();
+      const width = Math.max(260, el.clientWidth), height = 210;
+      const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${width} ${height}`);
+      const groups = d3.group(data, (d) => d.source);
+      const ys = d3.extent(data, (d) => d[key]);
+      const y = d3.scaleLinear([Math.min(0, ys[0]), Math.max(0, ys[1])], [height - 24, 8]).nice();
+      const ticks = y.ticks(4);
+      const left = measure(svg, ticks.map(fmt)) + 10;
+      const x = d3.scaleLinear(xDomain, [left, width - 8]);
+      svg.append('g').selectAll('line').data(ticks).join('line')
+        .attr('x1', left).attr('x2', width - 8).attr('y1', y).attr('y2', y)
+        .attr('stroke', 'var(--cds-chart-grid)');
+      svg.append('g').selectAll('text').data(ticks).join('text')
+        .attr('x', left - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end')
+        .attr('fill', 'var(--color-fg-muted)').attr('font-size', 'var(--cds-font-size-caption)').text(fmt);
+      const xt = x.ticks(Math.max(2, Math.floor(width / 90)));
+      svg.append('g').selectAll('text').data(xt).join('text')
+        .attr('x', x).attr('y', height - 6).attr('text-anchor', 'middle')
+        .attr('fill', 'var(--color-fg-muted)').attr('font-size', 'var(--cds-font-size-caption)')
+        .text((v) => `${fmtT(v)} s`);
+      svg.append('text').attr('x', left).attr('y', 4).attr('dy', '0.7em').attr('text-anchor', 'start')
+        .attr('fill', 'var(--color-fg-muted)').attr('font-size', 'var(--cds-font-size-caption)').text(yLabel);
+      const line = d3.line().x((d) => x(d.t)).y((d) => y(d[key])).curve(step ? d3.curveStepAfter : d3.curveLinear);
+      for (const [source, pts] of groups) {
+        svg.append('path').datum(pts).attr('fill', 'none').attr('stroke', color(source))
+          .attr('stroke-width', 2).attr('stroke-linejoin', 'round').attr('stroke-linecap', 'round').attr('d', line);
+      }
+      const tip = d3.select(el).append('div').attr('class', 'tip').style('display', 'none');
+      const dots = svg.append('g');
+      const bis = d3.bisector((d) => d.t).center;
+      svg.append('rect').attr('x', left).attr('y', 0).attr('width', width - left - 8).attr('height', height)
+        .attr('fill', 'transparent')
+        .on('pointermove', (ev) => {
+          const [mx] = d3.pointer(ev);
+          const t = x.invert(mx);
+          const hits = [...groups].map(([source, pts]) => ({source, p: pts[bis(pts, t)]}));
+          dots.selectAll('circle').data(hits).join('circle').attr('r', 3.5)
+            .attr('cx', (h) => x(h.p.t)).attr('cy', (h) => y(h.p[key])).attr('fill', (h) => color(h.source));
+          tip.style('display', null).replaceChildren();
+          tip.append('div').attr('class', 'k').text(`${fmtT(t)} s`);
+          for (const h of hits) tip.append('div').text(`${h.source} : ${fmt(h.p[key])}`);
+          const box = el.getBoundingClientRect(), tw = tip.node().offsetWidth;
+          const px = Math.min(Math.max(0, (mx / width) * box.width + 12), box.width - tw);
+          tip.style('left', `${px}px`).style('top', '8px');
+        })
+        .on('pointerleave', () => { tip.style('display', 'none'); dots.selectAll('circle').remove(); });
+    };
+
+    const zoom = (el) => {
+      const all = rows();
+      if (!all) { el.replaceChildren(); return; }
+      const s = all.filter((r) => r.session === el.dataset.session);
+      const main = s.filter((r) => r.source !== 'touchpad' || el.dataset.session === 'S4');
+      const lead = main.filter((r) => r.source === (el.dataset.session === 'S4' ? 'touchpad' : el.dataset.session === 'S6' ? 'Steam' : 'MX'));
+      const peak = lead.reduce((a, b) => (Math.abs(b.speed) > Math.abs(a.speed) ? b : a), lead[0]);
+      const domain = [Math.max(0, peak.t - 0.6), peak.t + 0.9];
+      const win = main.filter((r) => r.t >= domain[0] && r.t <= domain[1]);
+      // Rebase positions to 0 at the window start, so each series starts at the same place.
+      const base = new Map();
+      for (const r of main) if (r.t < domain[0]) base.set(r.source, r.pos);
+      const data = win.map((r) => ({...r, pos: r.pos - (base.get(r.source) ?? 0)}));
+      lines(el, data, {key: 'pos', step: true, xDomain: domain, yLabel: 'crans parcourus'});
+    };
+
+    const speed = (el) => {
+      const all = rows();
+      if (!all) { el.replaceChildren(); return; }
+      const s = all.filter((r) => r.session === el.dataset.session && (r.source !== 'touchpad' || el.dataset.session === 'S4'));
+      lines(el, s, {key: 'speed', step: false, xDomain: d3.extent(s, (d) => d.t), yLabel: 'crans / s'});
+    };
+
+    const gaps = (el) => {
+      el.replaceChildren();
+      const all = rows();
+      if (!all) return;
+      const g = all.filter((r) => r.session === el.dataset.session && r.source === el.dataset.series && r.gap > 0 && r.gap <= 1000);
+      const width = Math.max(260, el.clientWidth), height = 210;
+      const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${width} ${height}`);
+      const edges = d3.range(0, 25).map((i) => Math.pow(10, 3 * i / 24));
+      const bins = d3.bin().domain([1, 1000]).thresholds(edges.slice(1, -1))(g.map((r) => r.gap));
+      const share = bins.map((b) => ({x0: b.x0, x1: b.x1, v: b.length / g.length, n: b.length}));
+      const y = d3.scaleLinear([0, 0.6], [height - 24, 8]);
+      const pct = d3.format('.0%');
+      const left = measure(svg, y.ticks(3).map(pct)) + 10;
+      const x = d3.scaleLog([1, 1000], [left, width - 8]);
+      svg.append('g').selectAll('line').data(y.ticks(3)).join('line')
+        .attr('x1', left).attr('x2', width - 8).attr('y1', y).attr('y2', y).attr('stroke', 'var(--cds-chart-grid)');
+      svg.append('g').selectAll('text').data(y.ticks(3)).join('text')
+        .attr('x', left - 6).attr('y', y).attr('dy', '0.32em').attr('text-anchor', 'end')
+        .attr('fill', 'var(--color-fg-muted)').attr('font-size', 'var(--cds-font-size-caption)').text(pct);
+      svg.append('g').selectAll('text').data([1, 10, 100, 1000]).join('text')
+        .attr('x', x).attr('y', height - 6).attr('text-anchor', 'middle')
+        .attr('fill', 'var(--color-fg-muted)').attr('font-size', 'var(--cds-font-size-caption)').text((v) => `${v} ms`);
+      const tip = d3.select(el).append('div').attr('class', 'tip').style('display', 'none');
+      svg.append('g').selectAll('rect').data(share).join('rect')
+        .attr('x', (b) => x(b.x0) + 0.5).attr('width', (b) => Math.max(1, x(b.x1) - x(b.x0) - 1))
+        .attr('y', (b) => y(Math.min(b.v, 0.6))).attr('height', (b) => y(0) - y(Math.min(b.v, 0.6)))
+        .attr('rx', 2).attr('fill', color(el.dataset.series))
+        .on('pointermove', (ev, b) => {
+          tip.style('display', null).replaceChildren();
+          tip.append('div').attr('class', 'k').text(`${d3.format('.1f')(b.x0)} à ${d3.format('.1f')(b.x1)} ms`);
+          tip.append('div').text(`${pct(b.v)} des messages (${b.n})`);
+          const [mx] = d3.pointer(ev, el);
+          const tw = tip.node().offsetWidth;
+          tip.style('left', `${Math.min(Math.max(0, mx + 12), el.clientWidth - tw)}px`).style('top', '8px');
+        })
+        .on('pointerleave', () => tip.style('display', 'none'));
+    };
+
+    return {zoom, speed, gaps, color, SERIES};
+  })();
+
+  dash.onData(() => {
+    for (const sw of document.querySelectorAll('.mw .sw[data-series]')) {
+      const c = MW.color(sw.dataset.series);
+      if (c) sw.style.background = c;
+    }
+  });
+
+  const cell = (el, id, field, where) => {
+    const d = dash.data(id);
+    if (d.status !== 'ok') { el.textContent = '—'; return; }
+    const [k, v] = where.split('=');
+    const row = d.data.find((r) => r[k] === v);
+    el.textContent = row ? String(Number(row[field])) : '—';
+  };
+
+  dash.draw('ratio', (el) => {
+    const d = dash.data('replay_ratio');
+    el.textContent = d.status === 'ok' && d.data.length ? String(d.data[0].ratio) : '—';
+  });
+  dash.draw('mxgap', (el) => cell(el, 'summary', 'gap_median_ms', el.dataset.where));
+  dash.draw('steamgap', (el) => cell(el, 'summary', 'gap_median_ms', el.dataset.where));
+  dash.draw('padgap', (el) => cell(el, 'summary', 'gap_median_ms', el.dataset.where));
+  dash.draw('zoom', (el) => MW.zoom(el));
+  dash.draw('speed', (el) => MW.speed(el));
+  dash.draw('gaps', (el) => MW.gaps(el));
+
+  dash.draw('table', (tbody) => {
+    tbody.replaceChildren();
+    const d = dash.data('summary');
+    if (d.status !== 'ok') return;
+    const cols = ['session', 'source', 'events', 'share_x120_pct', 'share_injected_pct', 'gap_median_ms', 'gap_p10_ms', 'gap_p90_ms', 'max_abs_delta', 'total_notches'];
+    for (const r of d.data) {
+      const tr = document.createElement('tr');
+      tr.dataset.key = r.row;
+      for (const c of cols) {
+        const td = document.createElement('td');
+        td.textContent = r[c];
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    }
+  });
+</script>
