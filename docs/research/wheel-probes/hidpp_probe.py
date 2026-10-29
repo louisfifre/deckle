@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""hidpp_probe.py - read-only HID++ 2.0 probe of feature 0x2121 (HIRES_WHEEL).
+"""hidpp_probe.py - read-only HID++ 2.0 probe: HIRES_WHEEL (0x2121), the full
+feature table (IFeatureSet 0x0001), SmartShift (0x2110 / 0x2111), the thumb wheel
+(0x2150) and the firmware entities (DeviceFwVersion 0x0003).
 
 What it does
     Talks HID++ 2.0 to a Logitech device from user mode, over a HID++ long-report
@@ -12,7 +14,11 @@ What it does
                  it pings the device, reads its name, looks up feature 0x2121
                  and, when present, reads the wheel capability, the wheel mode
                  and the ratchet switch state, printing raw hex and a decoded
-                 line for every reply.
+                 line for every reply. For a device that exposes 0x2121 it then
+                 also prints the full feature table (IFeatureSet), reads
+                 SmartShift (0x2110 and/or 0x2111) and the thumb wheel (0x2150)
+                 when present, and the firmware entities (0x0003). A feature the
+                 device does not have prints "not present" and the probe moves on.
 
       bluetooth  A device connected directly over Bluetooth LE (HID over GATT),
                  e.g. an MX Master 3S (PID B034). Windows names these HID
@@ -41,12 +47,25 @@ Why it is read-only BY CONSTRUCTION
         explicit allowlist of (feature id, function number) pairs, and raises
         RefusedMessage BEFORE writing anything if the pair is not listed:
             IRoot       0x0000 : fn 0 getFeature, fn 1 getProtocolVersion (ping)
+            IFeatureSet 0x0001 : fn 0 getCount,   fn 1 getFeatureID
+            DEVICE_FW   0x0003 : fn 0 getEntityCount, fn 1 getFwInfo
             DEVICE_NAME 0x0005 : fn 0 getCount,   fn 1 getDeviceName
+            SMARTSHIFT  0x2110 : fn 0 getRatchetControlMode
+            SMARTSHIFT+ 0x2111 : fn 0 getCapabilities, fn 1 getRatchetControlMode
             HIRES_WHEEL 0x2121 : fn 0 getWheelCapability, fn 1 getWheelMode,
                                  fn 3 getRatchetSwitchState
-      * HIRES_WHEEL function 2 (setWheelMode) is not in the list, so it cannot
-        be sent. No HID++ 1.0 register command (report ids 0x10 / sub-ids 0x80
-        and 0x81, 0x82...) can be sent either: only report id 0x11 is accepted.
+            THUMBWHEEL  0x2150 : fn 0 getThumbwheelInfo, fn 1 getThumbwheelStatus
+        Only getters are listed (16 calls). Parameter shapes are checked too:
+        getFeature may look up only the ids in LOOKUP_FEATURES; getFeatureID
+        takes one index byte 1..0xFE, getFwInfo one index byte 0..0x0F, getDeviceName
+        one offset byte; every other call takes no parameter at all.
+      * The setters are not in the list, so they cannot be sent: HIRES_WHEEL
+        fn 2 (setWheelMode), SMARTSHIFT fn 1, SMARTSHIFT+ fn 2, THUMBWHEEL fn 2
+        (setThumbwheelReporting). No HID++ 1.0 register command (report ids
+        0x10 / sub-ids 0x80 and 0x81, 0x82...) can be sent either: only report
+        id 0x11 is accepted.
+      * The feature table is only PRINTED. A table entry is mapped to its index
+        (so that calls on it validate) only when its id is in LOOKUP_FEATURES.
       * The device index is bound to the transport the channel was OPENED on, a
         property fixed at construction (not an argument of send()):
             receiver  channel: indexes 1..6 only. 0xFF (and 0) address the
@@ -122,21 +141,56 @@ PATH_TAG_USB = "vid_046d"        # USB / receiver paths
 PATH_TAG_BLE = "vid&02046d"      # Bluetooth HID paths (vid&02 = USB-IF source)
 
 FEATURE_IROOT = 0x0000
+FEATURE_FEATURE_SET = 0x0001
+FEATURE_FW_VERSION = 0x0003
 FEATURE_DEVICE_NAME = 0x0005
+FEATURE_SMART_SHIFT = 0x2110
+FEATURE_SMART_SHIFT_ENHANCED = 0x2111
 FEATURE_HIRES_WHEEL = 0x2121
+FEATURE_THUMBWHEEL = 0x2150
 
-# The allowlist. Nothing else can be written. Keep it this short on purpose.
+# The allowlist. Nothing else can be written. Keep it this short on purpose:
+# getters only. The setters (HIRES_WHEEL fn 2, SMART_SHIFT fn 1, SMART_SHIFT_ENHANCED
+# fn 2, THUMBWHEEL fn 2) are deliberately absent.
 ALLOWED_CALLS = {
     (FEATURE_IROOT, 0): "IRoot.getFeature",
     (FEATURE_IROOT, 1): "IRoot.getProtocolVersion (ping)",
+    (FEATURE_FEATURE_SET, 0): "IFeatureSet.getCount",
+    (FEATURE_FEATURE_SET, 1): "IFeatureSet.getFeatureID",
+    (FEATURE_FW_VERSION, 0): "DEVICE_FW_VERSION.getEntityCount",
+    (FEATURE_FW_VERSION, 1): "DEVICE_FW_VERSION.getFwInfo",
     (FEATURE_DEVICE_NAME, 0): "DEVICE_NAME.getCount",
     (FEATURE_DEVICE_NAME, 1): "DEVICE_NAME.getDeviceName",
+    (FEATURE_SMART_SHIFT, 0): "SMART_SHIFT.getRatchetControlMode",
+    (FEATURE_SMART_SHIFT_ENHANCED, 0): "SMART_SHIFT_ENHANCED.getCapabilities",
+    (FEATURE_SMART_SHIFT_ENHANCED, 1): "SMART_SHIFT_ENHANCED.getRatchetControlMode",
     (FEATURE_HIRES_WHEEL, 0): "HIRES_WHEEL.getWheelCapability",
     (FEATURE_HIRES_WHEEL, 1): "HIRES_WHEEL.getWheelMode",
     (FEATURE_HIRES_WHEEL, 3): "HIRES_WHEEL.getRatchetSwitchState",
+    (FEATURE_THUMBWHEEL, 0): "THUMBWHEEL.getThumbwheelInfo",
+    (FEATURE_THUMBWHEEL, 1): "THUMBWHEEL.getThumbwheelStatus",
 }
-# Only these feature ids may be looked up through IRoot.getFeature.
-LOOKUP_FEATURES = (FEATURE_DEVICE_NAME, FEATURE_HIRES_WHEEL)
+# Only these feature ids may be looked up through IRoot.getFeature (and mapped
+# back from an index by register_feature).
+LOOKUP_FEATURES = (FEATURE_FEATURE_SET, FEATURE_FW_VERSION, FEATURE_DEVICE_NAME,
+                   FEATURE_SMART_SHIFT, FEATURE_SMART_SHIFT_ENHANCED,
+                   FEATURE_HIRES_WHEEL, FEATURE_THUMBWHEEL)
+
+# Names for the printed feature table. FROM MEMORY (Solaar / hid-logitech-hidpp
+# knowledge), not from a Logitech spec: the table says so. Unknown ids print as
+# "unknown".
+FEATURE_NAMES = {
+    0x0000: "IRoot", 0x0001: "IFeatureSet", 0x0003: "DeviceFwVersion",
+    0x0005: "DeviceName", 0x0007: "DeviceFriendlyName", 0x0020: "ConfigChange",
+    0x00C3: "DeviceSecureDfu", 0x1004: "UnifiedBattery",
+    0x1802: "DeviceReset (?)", 0x1803: "GpioAccess", 0x1805: "OOBState",
+    0x1814: "ChangeHost", 0x1815: "HostsInfo", 0x1830: "PowerModes",
+    0x1890: "RfTest", 0x1891: "RfTest", 0x18A1: "LedTest",
+    0x1B04: "ReprogControlsV4", 0x1D4B: "WirelessDeviceStatus",
+    0x1E00: "EnableHiddenFeatures", 0x1E22: "SPI", 0x1EB0: "TDE",
+    0x2110: "SmartShift", 0x2111: "SmartShiftEnhanced", 0x2121: "HiResWheel",
+    0x2150: "Thumbwheel", 0x2201: "AdjustableDpi", 0x2250: "AnalysisMode",
+}
 
 GENERIC_READ = 0x80000000
 GENERIC_WRITE = 0x40000000
@@ -539,6 +593,10 @@ class GuardedChannel:
             ok = params[0] == 0 and params[1] == 0 and not any(params[3:])
         elif (feature_id, function) == (FEATURE_DEVICE_NAME, 1):
             ok = not any(params[1:])                    # params[0] = name offset
+        elif (feature_id, function) == (FEATURE_FEATURE_SET, 1):
+            ok = 1 <= params[0] <= 0xFE and not any(params[1:])   # params[0] = feature index
+        elif (feature_id, function) == (FEATURE_FW_VERSION, 1):
+            ok = params[0] <= 0x0F and not any(params[1:])        # params[0] = entity index
         else:
             ok = not any(params)                        # all remaining calls: no params
         if not ok:
@@ -740,6 +798,70 @@ def decode_ratchet(p):
     return f"state byte=0x{b:02X}: bit0 -> {state}"
 
 
+# The decoders below follow the field layouts as recalled from Solaar and the
+# Linux hid-logitech-hidpp driver, not from a Logitech spec: every field is
+# marked "(uncertain)". The raw hex of each reply is printed too.
+
+WHEEL_MODES = {1: "free-spin", 2: "ratchet"}
+
+
+def decode_smart_shift(p):
+    mode, threshold, default = p[0], p[1], p[2]
+    thr = "disabled" if threshold in (0x00, 0xFF) else str(threshold)
+    return (f"wheel mode={mode} ({WHEEL_MODES.get(mode, 'unknown')}; 1=free-spin, "
+            f"2=ratchet, uncertain); auto-disengage threshold={threshold} ({thr}; "
+            f"0 or 255 = disabled, unit unknown, uncertain); current default "
+            f"auto-disengage={default} (uncertain)")
+
+
+def decode_smart_shift_capabilities(p):
+    flags, default_disengage, default_torque, max_force = p[0], p[1], p[2], p[3]
+    return (f"capability flags=0b{flags:08b} (bit0 tunable torque: "
+            f"{'yes' if flags & 1 else 'no'}, uncertain; other bits unknown); "
+            f"auto-disengage default={default_disengage} (uncertain); default tunable "
+            f"torque={default_torque} (uncertain); max force={max_force} (uncertain)")
+
+
+def decode_smart_shift_enhanced(p):
+    mode, threshold, torque = p[0], p[1], p[2]
+    thr = "disabled" if threshold in (0x00, 0xFF) else str(threshold)
+    return (f"wheel mode={mode} ({WHEEL_MODES.get(mode, 'unknown')}; 1=free-spin, "
+            f"2=ratchet, uncertain); auto-disengage threshold={threshold} ({thr}; "
+            f"0 or 255 = disabled, uncertain); current tunable torque={torque} (uncertain)")
+
+
+def decode_thumbwheel_info(p):
+    native, diverted = struct.unpack(">H", p[0:2])[0], struct.unpack(">H", p[2:4])[0]
+    direction, caps = p[4], p[5]
+    time_unit = struct.unpack(">H", p[6:8])[0]
+    return (f"native resolution={native} (uncertain); diverted resolution={diverted} "
+            f"(uncertain); default direction={direction} (uncertain, meaning unknown); "
+            f"capabilities=0b{caps:08b} (uncertain, bit meanings unverified); "
+            f"time unit={time_unit} (uncertain, unit unknown)")
+
+
+def decode_thumbwheel_status(p):
+    mode, inverted = p[0], p[1]
+    names = {0: "HID native", 1: "diverted to HID++"}
+    return (f"reporting mode={mode} ({names.get(mode, 'unknown')}; uncertain); "
+            f"direction inverted={inverted} ({'yes' if inverted else 'no'}, uncertain); "
+            f"remaining bytes: {hexs(p[2:6])} (unknown)")
+
+
+FW_KINDS = {0: "firmware", 1: "bootloader", 2: "hardware", 3: "other"}
+
+
+def decode_fw_info(p):
+    kind = p[0] & 0x0F
+    name = bytes(p[1:4]).decode("ascii", errors="replace")
+    build = struct.unpack(">H", p[6:8])[0]
+    pid = struct.unpack(">H", p[9:11])[0]
+    return (f"kind={kind} ({FW_KINDS.get(kind, 'unknown')}, uncertain); name={name!r} "
+            f"(uncertain); version={p[4]:02X}.{p[5]:02X} build={build:04X} (uncertain, "
+            f"BCD); flags=0x{p[8]:02X} (unknown); product id=0x{pid:04X} (uncertain); "
+            f"extra bytes: {hexs(p[11:16])}")
+
+
 # --------------------------------------------------------------------------
 # Probe
 # --------------------------------------------------------------------------
@@ -762,7 +884,7 @@ def discover(chan, dev, feature_id):
     p = reply.params
     index, ftype, version = p[0], p[1], p[2]
     if index == 0:
-        print(f"  => feature 0x{feature_id:04X}: not supported by this device")
+        print(f"  => feature 0x{feature_id:04X}: not present (not supported by this device)")
         return None
     print(f"  => feature 0x{feature_id:04X}: index={index} type={decode_feature_type(ftype)} "
           f"version={version}")
@@ -813,7 +935,101 @@ def probe_device(chan, dev):
         reply = call(chan, dev, wheel_index, fn)
         if reply is not None:
             print(f"  => {decoder(reply.params)}")
+
+    probe_feature_table(chan, dev)
+    probe_smart_shift(chan, dev)
+    probe_thumbwheel(chan, dev)
+    probe_firmware(chan, dev)
     return True
+
+
+def read_one(chan, dev, index, fn, label, decoder, params=b""):
+    """One read-only call, printed with its decoded line. Returns the reply."""
+    print(f"  [{label}]")
+    reply = call(chan, dev, index, fn, params)
+    if reply is not None:
+        print(f"  => {decoder(reply.params)}")
+    return reply
+
+
+def probe_feature_table(chan, dev):
+    """Print every feature of the device (IFeatureSet). Only ids in
+    LOOKUP_FEATURES are mapped back to their index; the rest is just printed."""
+    print("\n  == feature table (IFeatureSet 0x0001) ==")
+    fs_index = discover(chan, dev, FEATURE_FEATURE_SET)
+    if fs_index is None:
+        return
+    print("  [getCount]")
+    reply = call(chan, dev, fs_index, 0)
+    if reply is None:
+        return
+    count = min(reply.params[0], 0xFE)
+    print(f"  => {reply.params[0]} features besides IRoot (uncertain: count excludes IRoot)")
+    rows = [(0, FEATURE_IROOT, None, None)]
+    failures = 0
+    for i in range(1, count + 1):
+        print(f"  [getFeatureID {i}]")
+        reply = call(chan, dev, fs_index, 1, bytes([i]))
+        if reply is None:
+            failures += 1
+            if failures >= 3:
+                print("  => 3 failed reads in a row, stopping the table here")
+                break
+            continue
+        failures = 0
+        p = reply.params
+        fid, ftype, version = struct.unpack(">H", p[0:2])[0], p[2], p[3]
+        rows.append((i, fid, ftype, version))
+        if fid in LOOKUP_FEATURES:
+            try:
+                chan.register_feature(dev, i, fid)
+            except RefusedMessage as exc:
+                print(f"  => not mapped: {exc}")
+    print("  index  id      name                         type                         ver")
+    print("  (names and type flags from memory, uncertain)")
+    for i, fid, ftype, version in rows:
+        name = FEATURE_NAMES.get(fid, "unknown")
+        tcol = "-" if ftype is None else decode_feature_type(ftype)
+        vcol = "-" if version is None else str(version)
+        print(f"  {i:>5}  0x{fid:04X}  {name:<27}  {tcol:<27}  {vcol}")
+
+
+def probe_smart_shift(chan, dev):
+    print("\n  == SmartShift (0x2110 / 0x2111) ==")
+    ss_index = discover(chan, dev, FEATURE_SMART_SHIFT)
+    if ss_index is not None:
+        read_one(chan, dev, ss_index, 0, "SMART_SHIFT.getRatchetControlMode",
+                 decode_smart_shift)
+    sse_index = discover(chan, dev, FEATURE_SMART_SHIFT_ENHANCED)
+    if sse_index is not None:
+        read_one(chan, dev, sse_index, 0, "SMART_SHIFT_ENHANCED.getCapabilities",
+                 decode_smart_shift_capabilities)
+        read_one(chan, dev, sse_index, 1, "SMART_SHIFT_ENHANCED.getRatchetControlMode",
+                 decode_smart_shift_enhanced)
+
+
+def probe_thumbwheel(chan, dev):
+    print("\n  == Thumbwheel (0x2150) ==")
+    tw_index = discover(chan, dev, FEATURE_THUMBWHEEL)
+    if tw_index is None:
+        return
+    read_one(chan, dev, tw_index, 0, "getThumbwheelInfo", decode_thumbwheel_info)
+    read_one(chan, dev, tw_index, 1, "getThumbwheelStatus", decode_thumbwheel_status)
+
+
+def probe_firmware(chan, dev):
+    print("\n  == Firmware (DeviceFwVersion 0x0003) ==")
+    fw_index = discover(chan, dev, FEATURE_FW_VERSION)
+    if fw_index is None:
+        return
+    print("  [getEntityCount]")
+    reply = call(chan, dev, fw_index, 0)
+    if reply is None:
+        return
+    count = min(reply.params[0], 0x10)         # getFwInfo accepts entity index 0..0x0F
+    print(f"  => {reply.params[0]} entities (uncertain: byte 0 = entity count)")
+    for i in range(count):
+        read_one(chan, dev, fw_index, 1, f"getFwInfo {i}", decode_fw_info, bytes([i]))
 
 
 # --------------------------------------------------------------------------
@@ -954,7 +1170,10 @@ def run_self_test():
             failed += 1
         print(f"  {'PASS' if ok else 'FAIL'}  {label}")
 
+    tripped = []                       # frames that reached the raw write on tripwire channels
+
     def tripwire(frame):
+        tripped.append(bytes(frame))
         raise AssertionError("the raw write was reached")
 
     def make(transport):
@@ -981,24 +1200,52 @@ def run_self_test():
             return False
         return False
 
-    NAME_IDX, WHEEL_IDX = 4, 7
+    FSET_IDX, FW_IDX, SS_IDX, NAME_IDX, SSE_IDX, TW_IDX, WHEEL_IDX = 1, 2, 3, 4, 5, 6, 7
     ok_params = {(FEATURE_IROOT, 0): struct.pack(">H", FEATURE_DEVICE_NAME),
                  (FEATURE_IROOT, 1): bytes([0, 0, PING_DATA]),
+                 (FEATURE_FEATURE_SET, 1): bytes([1]),
+                 (FEATURE_FW_VERSION, 1): bytes([0]),
                  (FEATURE_DEVICE_NAME, 1): bytes([0])}
-    feature_index = {FEATURE_IROOT: 0, FEATURE_DEVICE_NAME: NAME_IDX,
-                     FEATURE_HIRES_WHEEL: WHEEL_IDX}
+    feature_index = {FEATURE_IROOT: 0, FEATURE_FEATURE_SET: FSET_IDX,
+                     FEATURE_FW_VERSION: FW_IDX, FEATURE_SMART_SHIFT: SS_IDX,
+                     FEATURE_DEVICE_NAME: NAME_IDX, FEATURE_SMART_SHIFT_ENHANCED: SSE_IDX,
+                     FEATURE_THUMBWHEEL: TW_IDX, FEATURE_HIRES_WHEEL: WHEEL_IDX}
+    no_param_calls = [(f, fn) for (f, fn) in ALLOWED_CALLS
+                      if (f, fn) not in ok_params]
+    wheel_bad = [bytes([1]), bytes([0] * 15 + [1]), bytes([0, 0, 0xFF])]
+
+    print("\n[allowlist]")
+    check(f"allowlist has 16 entries, all getters (got {len(ALLOWED_CALLS)})",
+          len(ALLOWED_CALLS) == 16
+          and all(n.split(".", 1)[1].startswith("get") or "ping" in n
+                  for n in ALLOWED_CALLS.values()))
+    check("LOOKUP_FEATURES is exactly the 7 expected ids",
+          set(LOOKUP_FEATURES) == {0x0001, 0x0003, 0x0005, 0x2110, 0x2111, 0x2121, 0x2150})
+    check("no setter pair is in the allowlist",
+          all(pair not in ALLOWED_CALLS for pair in
+              ((FEATURE_HIRES_WHEEL, 2), (FEATURE_SMART_SHIFT, 1),
+               (FEATURE_SMART_SHIFT_ENHANCED, 2), (FEATURE_THUMBWHEEL, 2))))
+    wired = make(TRANSPORT_BLUETOOTH)
+    sent = []
+    wired._GuardedChannel__raw_write = sent.append          # recorder instead of tripwire
+    wired.register_feature(BLE_DEVICE_INDEX, SS_IDX, FEATURE_SMART_SHIFT)
+    wired.send(BLE_DEVICE_INDEX, SS_IDX, 0)
+    check("positive control: an allowed call reaches the (recorded) raw write",
+          sent == [build_frame(BLE_DEVICE_INDEX, SS_IDX, 0)])
 
     for transport, dev, other_devs in (
             (TRANSPORT_RECEIVER, 1, (0, 7, 0xFF, 0xFE)),
             (TRANSPORT_BLUETOOTH, BLE_DEVICE_INDEX, (0, 1, 2, 6, 7, 0xFE))):
         print(f"\n[{transport} channel, device index {fmt_index(dev)}]")
         chan = make(transport)
-        chan.register_feature(dev, NAME_IDX, FEATURE_DEVICE_NAME)
-        chan.register_feature(dev, WHEEL_IDX, FEATURE_HIRES_WHEEL)
+        for fid, fidx in feature_index.items():
+            if fid != FEATURE_IROOT:
+                chan.register_feature(dev, fidx, fid)
         check("transport is exposed read-only",
               chan.transport == transport and _assign_fails(chan))
 
-        # The 7 allowed calls pass (and nothing else is reported as allowed).
+        # Every allowed call passes with correct params (and nothing else is
+        # reported as allowed).
         names = []
         for (fid, fn) in ALLOWED_CALLS:
             frame = build_frame(dev, feature_index[fid], fn, ok_params.get((fid, fn), b""))
@@ -1006,13 +1253,20 @@ def run_self_test():
                 names.append(chan._validate_frame(frame))
             except RefusedMessage as exc:
                 names.append(f"REFUSED: {exc}")
-        check("the 7 allowed calls pass", names == list(ALLOWED_CALLS.values()))
-        # getFeature for the second lookup id also passes.
-        check("IRoot.getFeature(0x2121) passes",
-              not refused(chan, build_frame(dev, 0, 0, struct.pack(">H", FEATURE_HIRES_WHEEL))))
+        check(f"the {len(ALLOWED_CALLS)} allowed calls pass", names == list(ALLOWED_CALLS.values()))
+        # getFeature passes for every id in LOOKUP_FEATURES.
+        check("IRoot.getFeature passes for each of the 7 LOOKUP_FEATURES ids",
+              all(not refused(chan, build_frame(dev, 0, 0, struct.pack(">H", f)))
+                  for f in LOOKUP_FEATURES))
+        # Boundaries of the two index-taking calls.
+        check("getFeatureID index 1 and 0xFE pass; getFwInfo entity 0 and 0x0F pass",
+              not refused(chan, build_frame(dev, FSET_IDX, 1, bytes([1])))
+              and not refused(chan, build_frame(dev, FSET_IDX, 1, bytes([0xFE])))
+              and not refused(chan, build_frame(dev, FW_IDX, 1, bytes([0])))
+              and not refused(chan, build_frame(dev, FW_IDX, 1, bytes([0x0F]))))
 
         # Exhaustive over function numbers: only the allowlisted ones pass.
-        for fid in (FEATURE_IROOT, FEATURE_DEVICE_NAME, FEATURE_HIRES_WHEEL):
+        for fid in feature_index:
             passing = {fn for fn in range(16)
                        if not refused(chan, build_frame(dev, feature_index[fid], fn,
                                                         ok_params.get((fid, fn), b"")))}
@@ -1023,6 +1277,17 @@ def run_self_test():
               refused(chan, build_frame(dev, WHEEL_IDX, 2))
               and refused(chan, build_frame(dev, WHEEL_IDX, 2, bytes([0x07])))
               and refused_by_send(chan, dev, WHEEL_IDX, 2))
+        for label, idx, fn in (("SMART_SHIFT fn 1 (setRatchetControlMode)", SS_IDX, 1),
+                               ("SMART_SHIFT_ENHANCED fn 2 (setRatchetControlMode)", SSE_IDX, 2),
+                               ("THUMBWHEEL fn 2 (setThumbwheelReporting)", TW_IDX, 2)):
+            check(f"{label} refused (also with params, also via send())",
+                  refused(chan, build_frame(dev, idx, fn))
+                  and refused(chan, build_frame(dev, idx, fn, bytes([0x02, 0x01])))
+                  and refused_by_send(chan, dev, idx, fn)
+                  and refused_by_send(chan, dev, idx, fn, bytes([0x02, 0x01])))
+        check("every function above the allowlisted ones (fn 4..15) refused on every feature",
+              all(refused(chan, build_frame(dev, idx, fn))
+                  for idx in feature_index.values() if idx != 0 for fn in range(4, 16)))
 
         # Device index: only this transport's index passes, over all 256 values.
         passing = {d for d in range(256) if not refused(chan, build_frame(d, 0, 1, ok_params[(0, 1)]))}
@@ -1039,6 +1304,9 @@ def run_self_test():
               and refused_by_send(chan, dev, 9, 0))
         check("register_feature refuses unknown ids / indexes / device indexes",
               _register_refused(chan, dev, 3, 0x2122) and _register_refused(chan, dev, 0, FEATURE_HIRES_WHEEL)
+              and _register_refused(chan, dev, 0x20, 0x1814) and _register_refused(chan, dev, 0x21, 0x1B04)
+              and _register_refused(chan, dev, 0x22, FEATURE_IROOT)
+              and _register_refused(chan, dev, SS_IDX, FEATURE_THUMBWHEEL)    # index already mapped
               and _register_refused(chan, dev, 0xFF, FEATURE_HIRES_WHEEL)
               and all(_register_refused(chan, d, 3, FEATURE_HIRES_WHEEL) for d in other_devs))
 
@@ -1047,9 +1315,21 @@ def run_self_test():
               all(refused(chan, build_frame(dev, WHEEL_IDX, 1, sw_id=sw)) for sw in (0x0, 0x1, 0xA, 0xC, 0xF)))
 
         # Non-zero parameters.
-        wheel_bad = [bytes([1]), bytes([0] * 15 + [1]), bytes([0, 0, 0xFF])]
         check("non-zero params on HIRES_WHEEL fn 0/1/3 refused",
               all(refused(chan, build_frame(dev, WHEEL_IDX, fn, p)) for fn in (0, 1, 3) for p in wheel_bad))
+        check("non-zero params on every other no-param call refused (also via send())",
+              all(refused(chan, build_frame(dev, feature_index[f], fn, p))
+                  and refused_by_send(chan, dev, feature_index[f], fn, p)
+                  for (f, fn) in no_param_calls for p in wheel_bad))
+        check("getFeatureID: index 0, 0xFF, or extra non-zero bytes refused (also via send())",
+              all(refused(chan, build_frame(dev, FSET_IDX, 1, p))
+                  and refused_by_send(chan, dev, FSET_IDX, 1, p)
+                  for p in (bytes([0]), bytes([0xFF]), bytes([1, 1]), bytes([1, 0, 0, 1]),
+                            bytes([1] + [0] * 14 + [1]), b"")))
+        check("getFwInfo: entity 0x10 / 0xFF or extra non-zero bytes refused (also via send())",
+              all(refused(chan, build_frame(dev, FW_IDX, 1, p))
+                  and refused_by_send(chan, dev, FW_IDX, 1, p)
+                  for p in (bytes([0x10]), bytes([0xFF]), bytes([0, 1]), bytes([1, 0, 1]))))
         check("non-zero params on DEVICE_NAME fn 0 / fn 1 (beyond offset) refused",
               refused(chan, build_frame(dev, NAME_IDX, 0, bytes([1])))
               and refused(chan, build_frame(dev, NAME_IDX, 1, bytes([0, 1])))
@@ -1062,6 +1342,11 @@ def run_self_test():
               all(refused(chan, build_frame(dev, 0, 0, p)) for p in
                   (struct.pack(">H", 0x0000), struct.pack(">H", 0x1000), struct.pack(">H", 0x2120),
                    struct.pack(">H", FEATURE_HIRES_WHEEL) + bytes([1]))))
+        check("IRoot.getFeature of ChangeHost 0x1814, ReprogControlsV4 0x1B04 and other ids "
+              "outside LOOKUP_FEATURES refused (also via send())",
+              all(refused(chan, build_frame(dev, 0, 0, struct.pack(">H", f)))
+                  and refused_by_send(chan, dev, 0, 0, struct.pack(">H", f))
+                  for f in (0x1814, 0x1B04, 0x1815, 0x1E00, 0x2201, 0x00C3, 0xFFFF)))
 
         # Report shape.
         good = build_frame(dev, 0, 1, ok_params[(0, 1)])
@@ -1090,6 +1375,11 @@ def run_self_test():
     m = GuardedChannel._match(err, 0xFF, 0x00, 1)
     check("HID++ 2.0 error with the echoed index matches as an error",
           m is not None and m.kind == "hidpp2-error" and m.error_code == 0x09)
+
+    # The tripwire on __raw_write: it must never have fired for any refused frame.
+    print("\n[tripwire]")
+    check("the raw write was never reached by any refused frame "
+          f"({len(tripped)} tripwire hit(s))", not tripped)
 
     print(f"\nSelf-test: {passed} passed, {failed} failed")
     return 0 if failed == 0 else 5
@@ -1137,7 +1427,9 @@ def hex_int(text):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Read-only HID++ 2.0 HIRES_WHEEL probe.")
+    ap = argparse.ArgumentParser(
+        description="Read-only HID++ 2.0 probe (HIRES_WHEEL, feature table, SmartShift, "
+                    "thumb wheel, firmware).")
     ap.add_argument("--enumerate-only", action="store_true",
                     help="list 046D HID interfaces (with transport) and stop")
     ap.add_argument("--target", choices=("auto", "bolt", "bluetooth"), default="auto",
