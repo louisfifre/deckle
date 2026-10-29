@@ -1,16 +1,28 @@
 {
 	"folders": [
 		{
+			"name": "deckle",
 			"path": "."
 		},
 		{
+			"name": "deckle-scripts",
+			"path": "../deckle-scripts"
+		},
+		{
+			"name": "skills",
+			"path": "../../skills"
+		},
+		{
+			"name": "home",
 			"path": "../home"
 		},
 		{
-			"path": "../../worktrees"
+			"name": "homelab",
+			"path": "../homelab"
 		},
 		{
-			"path": "../../skills"
+			"name": "worktrees",
+			"path": "../../worktrees"
 		}
 	],
 	"settings": {
