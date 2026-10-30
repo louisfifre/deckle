@@ -1,4 +1,4 @@
-# Tree — deckle-scripts-adoption
+# Tree — deckle
 _Generated from `git ls-files` — do not edit by hand._
 
 ```

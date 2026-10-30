@@ -14,6 +14,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **anytype:** Drop the object id from search hits
 - **anytype:** Add an epic_properties read
 - **scripts:** Vendor Deckle Scripts v0.1.0 as the launcher
+- **version:** Read the version from the git tag at build
 
 ### Changed
 
