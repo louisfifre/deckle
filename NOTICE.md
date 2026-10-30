@@ -7,13 +7,13 @@ Deckle depends on the following third-party components and data sources. This fi
 ### whisper.cpp
 
 - Repository : https://github.com/ggerganov/whisper.cpp
-- License : MIT. Read from the bundle notes that `scripts/commands/release/publish-native-runtime.ps1` writes, which point to the upstream `LICENSE`.
+- License : MIT. Read from the bundle notes that `scripts/release/publish-native-runtime.ps1` writes, which point to the upstream `LICENSE`.
 - Used as : pre-built native DLLs (`whisper.dll`, `ggml.dll`, `ggml-base.dll`, the `ggml-cpu-*.dll` variants, `ggml-vulkan.dll`) loaded at runtime. The catalog lives in `src/Deckle.Transcription.Whisper/Setup/NativeRuntime.cs`.
 
 ### Microsoft Visual C++ Redistributable
 
 - Project : https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist
-- License : Microsoft Visual Studio license, which permits redistributing the Redist DLLs with an application built with that Visual Studio. Read from the bundle notes that `scripts/commands/release/publish-native-runtime.ps1` writes into each native runtime release.
+- License : Microsoft Visual Studio license, which permits redistributing the Redist DLLs with an application built with that Visual Studio. Read from the bundle notes that `scripts/release/publish-native-runtime.ps1` writes into each native runtime release.
 - Used as : runtime DLLs (`vcruntime140.dll`, `vcruntime140_1.dll`, `msvcp140.dll`, `vcomp140.dll`) shipped alongside the whisper.cpp build that was produced with MSVC, so the bundle loads on a machine without the Redist installed.
 
 ### Vulkan loader

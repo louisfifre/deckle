@@ -1,0 +1,7 @@
+#!/bin/sh
+# Reject a commit whose identity is not the repository's own or whose message
+# carries an attribution marker.
+# Installed from scripts/lib/hooks/commit-msg by scripts/setup/install-hooks.ps1.
+root=$(git rev-parse --show-toplevel)
+pwsh -NoLogo -NoProfile -NonInteractive -File "$root/scripts/lib/hooks/validate-commit-attribution.ps1" "$1"
+exit $?

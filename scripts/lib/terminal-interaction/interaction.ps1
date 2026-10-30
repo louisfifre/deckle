@@ -36,8 +36,75 @@ function Set-TerminalDecision {
             return $false
         }
         'Exit' { return $true }
+        'Execute' {
+            # The Execution View is installed first, so the runner paints
+            # into a View that already owns the top of the stack.
+            $state = New-TerminalViewState -View $Decision.View
+            if ($Decision.Mode -eq 'Replace') {
+                $ViewStack[$ViewStack.Count - 1] = $state
+            } else {
+                $ViewStack.Add($state)
+            }
+            return $false
+        }
         default { throw "Unknown transition decision '$($Decision.Kind)'." }
     }
+}
+
+function Get-TerminalStateFrame {
+    param(
+        [Parameter(Mandatory)][System.Collections.Generic.List[object]]$ViewStack,
+        [Parameter(Mandatory)][object]$State,
+        [Parameter(Mandatory)][object]$HostState,
+        [AllowEmptyCollection()][string[]]$Logo = @()
+    )
+
+    $metrics = Get-TerminalHostMetrics
+    $ownerActionMenu = Get-TerminalOwnerActionMenu -ViewStack $ViewStack -View $State.View
+    return Get-TerminalInteractionFrame `
+        -View $State.View `
+        -OwnerActionMenu $ownerActionMenu `
+        -Width $metrics.Width `
+        -Height $metrics.Height `
+        -FocusedTargetId $State.FocusedTargetId `
+        -SupportsUnicode ($HostState.UnicodeOutput -eq 'Supported') `
+        -ColorCapability $HostState.Color `
+        -BodyOffset $State.BodyOffset `
+        -JournalOffset $State.JournalOffset `
+        -Logo $Logo
+}
+
+function Invoke-TerminalExecution {
+    param(
+        [Parameter(Mandatory)][System.Collections.Generic.List[object]]$ViewStack,
+        [Parameter(Mandatory)][object]$Decision,
+        [Parameter(Mandatory)][object]$HostState,
+        [AllowNull()][object]$PreviousFrame,
+        [AllowEmptyCollection()][string[]]$Logo = @()
+    )
+
+    # The run owns the terminal until it ends: no input is read, the Journal
+    # follows its latest page, and keys pressed meanwhile are dropped so they
+    # never activate a target of the finished View.
+    $state = $ViewStack[$ViewStack.Count - 1]
+    $lastFrame = $PreviousFrame
+    $paint = {
+        param($view)
+        $state.View = $view
+        $state.JournalOffset = [int]::MaxValue
+        $frame = Get-TerminalStateFrame -ViewStack $ViewStack -State $state -HostState $HostState -Logo $Logo
+        Write-TerminalInteractionFrame -Frame $frame -HostState $HostState -PreviousFrame $lastFrame
+        $lastFrame = $frame
+    }.GetNewClosure()
+    & $paint $state.View
+    $final = & $Decision.Runner $paint
+    if ($null -ne $final) {
+        $state.View = $final
+        $state.JournalOffset = [int]::MaxValue
+    }
+    $state.FocusedTargetId = $null
+    Clear-TerminalHostInput -State $HostState
+    return $lastFrame
 }
 
 function Get-TerminalEscapeDecision {
@@ -85,7 +152,10 @@ function Start-TerminalInteraction {
     param(
         [Parameter(Mandatory)][object]$RootView,
         [Parameter(Mandatory)][scriptblock]$IntentHandler,
-        [ValidateSet('Terminal', 'Deckle')][string]$Palette = 'Terminal'
+        [ValidateSet('Terminal', 'TrueColor')][string]$Palette = 'Terminal',
+        # Lines drawn above the Header of every frame when the terminal
+        # affords them.
+        [AllowEmptyCollection()][string[]]$Logo = @()
     )
 
     $viewStack = [System.Collections.Generic.List[object]]::new()
@@ -107,7 +177,8 @@ function Start-TerminalInteraction {
                 -SupportsUnicode ($hostState.UnicodeOutput -eq 'Supported') `
                 -ColorCapability $hostState.Color `
                 -BodyOffset $currentState.BodyOffset `
-                -JournalOffset $currentState.JournalOffset
+                -JournalOffset $currentState.JournalOffset `
+                -Logo $Logo
 
             $initialFocus = Get-TerminalInitialFocus -Frame $frame
             $hasCurrentFocus = $false
@@ -125,7 +196,8 @@ function Start-TerminalInteraction {
                     -SupportsUnicode ($hostState.UnicodeOutput -eq 'Supported') `
                     -ColorCapability $hostState.Color `
                     -BodyOffset $currentState.BodyOffset `
-                    -JournalOffset $currentState.JournalOffset
+                    -JournalOffset $currentState.JournalOffset `
+                    -Logo $Logo
             }
             Write-TerminalInteractionFrame -Frame $frame -HostState $hostState -PreviousFrame $previousFrame
             $previousFrame = $frame
@@ -253,6 +325,9 @@ function Start-TerminalInteraction {
                     }
                     $decision = & $IntentHandler $request $currentState.View
                     $exitRequested = Set-TerminalDecision -ViewStack $viewStack -Decision $decision
+                    if ($null -ne $decision -and $decision.Kind -eq 'Execute') {
+                        $previousFrame = Invoke-TerminalExecution -ViewStack $viewStack -Decision $decision -HostState $hostState -PreviousFrame $previousFrame -Logo $Logo
+                    }
                 }
                 'Spacebar' {
                     $target = Get-TerminalFocusedTarget -Frame $frame -FocusedTargetId $currentState.FocusedTargetId

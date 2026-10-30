@@ -11,217 +11,220 @@ function Initialize-TerminalHostBridge {
     if (-not (Test-TerminalWindows)) { return $false }
 
     try {
-        if (-not ('DeckleTerminalHostSession' -as [type])) {
+        if (-not ('DeckleScripts.TerminalInteraction.HostSession' -as [type])) {
             Add-Type -TypeDefinition @'
 using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 
-public enum DeckleTerminalInputKind
+namespace DeckleScripts.TerminalInteraction
 {
-    Key,
-    Wheel,
-    Resize
-}
-
-public sealed class DeckleTerminalInputEvent
-{
-    public DeckleTerminalInputKind Kind { get; set; }
-    public ConsoleKeyInfo KeyInfo { get; set; }
-    public int WheelDelta { get; set; }
-    public int X { get; set; }
-    public int Y { get; set; }
-    public int Width { get; set; }
-    public int Height { get; set; }
-}
-
-[StructLayout(LayoutKind.Sequential)]
-internal struct DeckleTerminalCoord
-{
-    internal short X;
-    internal short Y;
-}
-
-[StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
-internal struct DeckleTerminalKeyEvent
-{
-    [FieldOffset(0)] internal int KeyDown;
-    [FieldOffset(4)] internal ushort RepeatCount;
-    [FieldOffset(6)] internal ushort VirtualKeyCode;
-    [FieldOffset(8)] internal ushort VirtualScanCode;
-    [FieldOffset(10)] internal char UnicodeChar;
-    [FieldOffset(12)] internal uint ControlKeyState;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-internal struct DeckleTerminalMouseEvent
-{
-    internal DeckleTerminalCoord MousePosition;
-    internal uint ButtonState;
-    internal uint ControlKeyState;
-    internal uint EventFlags;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-internal struct DeckleTerminalWindowBufferSizeEvent
-{
-    internal DeckleTerminalCoord Size;
-}
-
-[StructLayout(LayoutKind.Explicit)]
-internal struct DeckleTerminalInputRecord
-{
-    [FieldOffset(0)] internal ushort EventType;
-    [FieldOffset(4)] internal DeckleTerminalKeyEvent KeyEvent;
-    [FieldOffset(4)] internal DeckleTerminalMouseEvent MouseEvent;
-    [FieldOffset(4)] internal DeckleTerminalWindowBufferSizeEvent WindowBufferSizeEvent;
-}
-
-public sealed class DeckleTerminalHostSession : IDisposable
-{
-    private const int StdInputHandle = -10;
-    private const int StdOutputHandle = -11;
-    private const ushort KeyEvent = 0x0001;
-    private const ushort MouseEvent = 0x0002;
-    private const ushort WindowBufferSizeEvent = 0x0004;
-    private const uint MouseWheeled = 0x0004;
-    private const uint EnableProcessedInput = 0x0001;
-    private const uint EnableWindowInput = 0x0008;
-    private const uint EnableMouseInput = 0x0010;
-    private const uint EnableQuickEditMode = 0x0040;
-    private const uint EnableExtendedFlags = 0x0080;
-    private const uint EnableVirtualTerminalProcessing = 0x0004;
-    private const uint RightAltPressed = 0x0001;
-    private const uint LeftAltPressed = 0x0002;
-    private const uint RightCtrlPressed = 0x0004;
-    private const uint LeftCtrlPressed = 0x0008;
-    private const uint ShiftPressed = 0x0010;
-
-    private readonly IntPtr input;
-    private readonly IntPtr output;
-    private readonly uint originalInputMode;
-    private readonly uint originalOutputMode;
-    private readonly bool inputConfigured;
-    private readonly bool outputConfigured;
-    private bool disposed;
-
-    public bool PointerInputSupported { get { return inputConfigured; } }
-    public bool ResizeInputSupported { get { return inputConfigured; } }
-    public bool VirtualTerminalSupported { get { return outputConfigured; } }
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    private static extern IntPtr GetStdHandle(int standardHandle);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool GetConsoleMode(IntPtr consoleHandle, out uint mode);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool SetConsoleMode(IntPtr consoleHandle, uint mode);
-
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    private static extern bool ReadConsoleInputW(
-        IntPtr consoleInput,
-        [Out] DeckleTerminalInputRecord[] buffer,
-        uint bufferLength,
-        out uint eventsRead);
-
-    public DeckleTerminalHostSession()
+    public enum InputKind
     {
-        input = GetStdHandle(StdInputHandle);
-        output = GetStdHandle(StdOutputHandle);
-
-        uint inputMode;
-        if (IsHandleValid(input) && GetConsoleMode(input, out inputMode))
-        {
-            originalInputMode = inputMode;
-            uint requested = inputMode | EnableExtendedFlags | EnableMouseInput | EnableWindowInput;
-            requested &= ~EnableQuickEditMode;
-            requested &= ~EnableProcessedInput;
-            inputConfigured = SetConsoleMode(input, requested);
-        }
-
-        uint outputMode;
-        if (IsHandleValid(output) && GetConsoleMode(output, out outputMode))
-        {
-            originalOutputMode = outputMode;
-            outputConfigured = SetConsoleMode(output, outputMode | EnableVirtualTerminalProcessing);
-        }
+        Key,
+        Wheel,
+        Resize
     }
 
-    private static bool IsHandleValid(IntPtr handle)
+    public sealed class InputEvent
     {
-        return handle != IntPtr.Zero && handle != new IntPtr(-1);
+        public InputKind Kind { get; set; }
+        public ConsoleKeyInfo KeyInfo { get; set; }
+        public int WheelDelta { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+        public int Width { get; set; }
+        public int Height { get; set; }
     }
 
-    public DeckleTerminalInputEvent Read()
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct Coord
     {
-        if (!inputConfigured)
-        {
-            throw new InvalidOperationException("Console input records are unavailable.");
-        }
-
-        DeckleTerminalInputRecord[] records = new DeckleTerminalInputRecord[1];
-        while (true)
-        {
-            uint eventsRead;
-            if (!ReadConsoleInputW(input, records, 1, out eventsRead))
-            {
-                throw new Win32Exception(Marshal.GetLastWin32Error());
-            }
-            if (eventsRead == 0) { continue; }
-
-            DeckleTerminalInputRecord record = records[0];
-            if (record.EventType == KeyEvent && record.KeyEvent.KeyDown != 0)
-            {
-                uint state = record.KeyEvent.ControlKeyState;
-                bool shift = (state & ShiftPressed) != 0;
-                bool alt = (state & (LeftAltPressed | RightAltPressed)) != 0;
-                bool control = (state & (LeftCtrlPressed | RightCtrlPressed)) != 0;
-                return new DeckleTerminalInputEvent
-                {
-                    Kind = DeckleTerminalInputKind.Key,
-                    KeyInfo = new ConsoleKeyInfo(
-                        record.KeyEvent.UnicodeChar,
-                        (ConsoleKey)record.KeyEvent.VirtualKeyCode,
-                        shift,
-                        alt,
-                        control)
-                };
-            }
-
-            if (record.EventType == MouseEvent && (record.MouseEvent.EventFlags & MouseWheeled) != 0)
-            {
-                int delta = (short)((record.MouseEvent.ButtonState >> 16) & 0xffff);
-                return new DeckleTerminalInputEvent
-                {
-                    Kind = DeckleTerminalInputKind.Wheel,
-                    WheelDelta = delta,
-                    X = record.MouseEvent.MousePosition.X,
-                    Y = record.MouseEvent.MousePosition.Y
-                };
-            }
-
-            if (record.EventType == WindowBufferSizeEvent)
-            {
-                return new DeckleTerminalInputEvent
-                {
-                    Kind = DeckleTerminalInputKind.Resize,
-                    Width = record.WindowBufferSizeEvent.Size.X,
-                    Height = record.WindowBufferSizeEvent.Size.Y
-                };
-            }
-        }
+        internal short X;
+        internal short Y;
     }
 
-    public void Dispose()
+    [StructLayout(LayoutKind.Explicit, CharSet = CharSet.Unicode)]
+    internal struct KeyEventRecord
     {
-        if (disposed) { return; }
-        disposed = true;
-        if (inputConfigured) { SetConsoleMode(input, originalInputMode); }
-        if (outputConfigured) { SetConsoleMode(output, originalOutputMode); }
+        [FieldOffset(0)] internal int KeyDown;
+        [FieldOffset(4)] internal ushort RepeatCount;
+        [FieldOffset(6)] internal ushort VirtualKeyCode;
+        [FieldOffset(8)] internal ushort VirtualScanCode;
+        [FieldOffset(10)] internal char UnicodeChar;
+        [FieldOffset(12)] internal uint ControlKeyState;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct MouseEventRecord
+    {
+        internal Coord MousePosition;
+        internal uint ButtonState;
+        internal uint ControlKeyState;
+        internal uint EventFlags;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct WindowBufferSizeRecord
+    {
+        internal Coord Size;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    internal struct InputRecord
+    {
+        [FieldOffset(0)] internal ushort EventType;
+        [FieldOffset(4)] internal KeyEventRecord KeyEvent;
+        [FieldOffset(4)] internal MouseEventRecord MouseEvent;
+        [FieldOffset(4)] internal WindowBufferSizeRecord WindowBufferSizeEvent;
+    }
+
+    public sealed class HostSession : IDisposable
+    {
+        private const int StdInputHandle = -10;
+        private const int StdOutputHandle = -11;
+        private const ushort KeyEvent = 0x0001;
+        private const ushort MouseEvent = 0x0002;
+        private const ushort WindowBufferSizeEvent = 0x0004;
+        private const uint MouseWheeled = 0x0004;
+        private const uint EnableProcessedInput = 0x0001;
+        private const uint EnableWindowInput = 0x0008;
+        private const uint EnableMouseInput = 0x0010;
+        private const uint EnableQuickEditMode = 0x0040;
+        private const uint EnableExtendedFlags = 0x0080;
+        private const uint EnableVirtualTerminalProcessing = 0x0004;
+        private const uint RightAltPressed = 0x0001;
+        private const uint LeftAltPressed = 0x0002;
+        private const uint RightCtrlPressed = 0x0004;
+        private const uint LeftCtrlPressed = 0x0008;
+        private const uint ShiftPressed = 0x0010;
+
+        private readonly IntPtr input;
+        private readonly IntPtr output;
+        private readonly uint originalInputMode;
+        private readonly uint originalOutputMode;
+        private readonly bool inputConfigured;
+        private readonly bool outputConfigured;
+        private bool disposed;
+
+        public bool PointerInputSupported { get { return inputConfigured; } }
+        public bool ResizeInputSupported { get { return inputConfigured; } }
+        public bool VirtualTerminalSupported { get { return outputConfigured; } }
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetStdHandle(int standardHandle);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool GetConsoleMode(IntPtr consoleHandle, out uint mode);
+
+        [DllImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SetConsoleMode(IntPtr consoleHandle, uint mode);
+
+        [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool ReadConsoleInputW(
+            IntPtr consoleInput,
+            [Out] InputRecord[] buffer,
+            uint bufferLength,
+            out uint eventsRead);
+
+        public HostSession()
+        {
+            input = GetStdHandle(StdInputHandle);
+            output = GetStdHandle(StdOutputHandle);
+
+            uint inputMode;
+            if (IsHandleValid(input) && GetConsoleMode(input, out inputMode))
+            {
+                originalInputMode = inputMode;
+                uint requested = inputMode | EnableExtendedFlags | EnableMouseInput | EnableWindowInput;
+                requested &= ~EnableQuickEditMode;
+                requested &= ~EnableProcessedInput;
+                inputConfigured = SetConsoleMode(input, requested);
+            }
+
+            uint outputMode;
+            if (IsHandleValid(output) && GetConsoleMode(output, out outputMode))
+            {
+                originalOutputMode = outputMode;
+                outputConfigured = SetConsoleMode(output, outputMode | EnableVirtualTerminalProcessing);
+            }
+        }
+
+        private static bool IsHandleValid(IntPtr handle)
+        {
+            return handle != IntPtr.Zero && handle != new IntPtr(-1);
+        }
+
+        public InputEvent Read()
+        {
+            if (!inputConfigured)
+            {
+                throw new InvalidOperationException("Console input records are unavailable.");
+            }
+
+            InputRecord[] records = new InputRecord[1];
+            while (true)
+            {
+                uint eventsRead;
+                if (!ReadConsoleInputW(input, records, 1, out eventsRead))
+                {
+                    throw new Win32Exception(Marshal.GetLastWin32Error());
+                }
+                if (eventsRead == 0) { continue; }
+
+                InputRecord record = records[0];
+                if (record.EventType == KeyEvent && record.KeyEvent.KeyDown != 0)
+                {
+                    uint state = record.KeyEvent.ControlKeyState;
+                    bool shift = (state & ShiftPressed) != 0;
+                    bool alt = (state & (LeftAltPressed | RightAltPressed)) != 0;
+                    bool control = (state & (LeftCtrlPressed | RightCtrlPressed)) != 0;
+                    return new InputEvent
+                    {
+                        Kind = InputKind.Key,
+                        KeyInfo = new ConsoleKeyInfo(
+                            record.KeyEvent.UnicodeChar,
+                            (ConsoleKey)record.KeyEvent.VirtualKeyCode,
+                            shift,
+                            alt,
+                            control)
+                    };
+                }
+
+                if (record.EventType == MouseEvent && (record.MouseEvent.EventFlags & MouseWheeled) != 0)
+                {
+                    int delta = (short)((record.MouseEvent.ButtonState >> 16) & 0xffff);
+                    return new InputEvent
+                    {
+                        Kind = InputKind.Wheel,
+                        WheelDelta = delta,
+                        X = record.MouseEvent.MousePosition.X,
+                        Y = record.MouseEvent.MousePosition.Y
+                    };
+                }
+
+                if (record.EventType == WindowBufferSizeEvent)
+                {
+                    return new InputEvent
+                    {
+                        Kind = InputKind.Resize,
+                        Width = record.WindowBufferSizeEvent.Size.X,
+                        Height = record.WindowBufferSizeEvent.Size.Y
+                    };
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            if (disposed) { return; }
+            disposed = true;
+            if (inputConfigured) { SetConsoleMode(input, originalInputMode); }
+            if (outputConfigured) { SetConsoleMode(output, originalOutputMode); }
+        }
     }
 }
 '@ | Out-Null
@@ -242,7 +245,7 @@ function Write-TerminalHostSequence {
 
 function Start-TerminalHost {
     [CmdletBinding()]
-    param([ValidateSet('Terminal', 'Deckle')][string]$Palette = 'Terminal')
+    param([ValidateSet('Terminal', 'TrueColor')][string]$Palette = 'Terminal')
 
     if ([Console]::IsInputRedirected -or [Console]::IsOutputRedirected) {
         throw 'Interactive terminal input and output are required. Use snapshot mode when output is redirected.'
@@ -283,7 +286,7 @@ function Start-TerminalHost {
 
     if (Initialize-TerminalHostBridge) {
         try {
-            $state.NativeSession = [DeckleTerminalHostSession]::new()
+            $state.NativeSession = [DeckleScripts.TerminalInteraction.HostSession]::new()
             if ($state.NativeSession.PointerInputSupported) { $state.PointerInput = 'Supported' }
             if ($state.NativeSession.ResizeInputSupported) { $state.ResizeInput = 'Supported' }
             if ($state.NativeSession.VirtualTerminalSupported) { $state.VirtualTerminal = 'Supported' }
@@ -364,6 +367,19 @@ function Get-TerminalHostMetrics {
     return [pscustomobject]@{
         Width = [Math]::Max(20, [Console]::WindowWidth)
         Height = [Math]::Max(8, [Console]::WindowHeight)
+    }
+}
+
+function Clear-TerminalHostInput {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][object]$State)
+
+    # KeyAvailable discards the non-key records it peeks, so wheel and
+    # resize events queued during a run go with the keys.
+    try {
+        while ([Console]::KeyAvailable) { [void][Console]::ReadKey($true) }
+    } catch {
+        # A host without a readable input buffer has nothing to clear.
     }
 }
 

@@ -1,5 +1,5 @@
-﻿# Arborescence — Deckle
-_Généré depuis `git ls-files` — ne pas éditer à la main._
+# Tree — deckle-scripts-adoption
+_Generated from `git ls-files` — do not edit by hand._
 
 ```
 ├── .agents/
@@ -46,7 +46,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │           ├── assets/
 │           │   └── winui.png
 │           ├── references/
-│           │   ├── _sections.md
 │           │   ├── accessibility-input-and-localization.md
 │           │   ├── build-run-and-launch-verification.md
 │           │   ├── community-toolkit-controls-and-helpers.md
@@ -61,7 +60,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │           │   ├── shell-navigation-and-windowing.md
 │           │   ├── styling-theming-materials-and-icons.md
 │           │   ├── testing-debugging-and-review-checklists.md
-│           │   └── windows-app-sdk-lifecycle-notifications-and-deployment.md
+│           │   ├── windows-app-sdk-lifecycle-notifications-and-deployment.md
+│           │   └── _sections.md
 │           ├── config.yaml
 │           ├── LICENSE.txt
 │           └── SKILL.md  — winui-app Develop, review, troubleshoot, or bootstrap WinUI 3 and Windows App SDK C# apps…
@@ -84,11 +84,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── monitor/
 │   │   │   ├── gpu_monitor.ps1
 │   │   │   └── joiner.py
-│   │   ├── __init__.py
-│   │   ├── _base_compat.py
 │   │   ├── env.py
 │   │   ├── event_log.py
-│   │   └── paths.py
+│   │   ├── paths.py
+│   │   ├── _base_compat.py
+│   │   └── __init__.py
 │   ├── rewrite/
 │   │   └── paragraph-gate/
 │   │       ├── .gitignore
@@ -97,8 +97,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │       ├── README.md
 │   │       └── samples.jsonl
 │   ├── viewers/
-│   │   ├── __init__.py
-│   │   └── build_html.py
+│   │   ├── build_html.py
+│   │   └── __init__.py
 │   ├── Directory.Build.props
 │   ├── Directory.Packages.props
 │   └── README.md  — readme-benchmark Index for Deckle benchmark workspaces — routes autoresearch, paragraph-rewrite…
@@ -145,8 +145,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   │   └── wheel_summary_20261029.csv
 │   │   │   ├── hidpp_probe.py
 │   │   │   ├── README.md
-│   │   │   ├── wheel_analysis.py
-│   │   │   └── wheel-session.ps1
+│   │   │   ├── wheel-session.ps1
+│   │   │   └── wheel_analysis.py
 │   │   ├── research--cerveau-llm--2026-10-13.md  — Cadrage vérifié (2026-10-13) — un cerveau LLM dans Deckle.Llm : les crédits API…
 │   │   ├── research--settings-ux--2026-10-13.md  — Recherche vérifiée (2026-10-13), la direction Settings de Louis passée au cribl…
 │   │   ├── research--taskbar-sans-windhawk--2026-10-08.md  — Recherche vérifiée (2026-10-08) — remplacer Windhawk par un module Deckle pour…
@@ -159,75 +159,45 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── primary.svg
 │   └── secondary.png
 ├── scripts/
-│   ├── commands/
-│   │   ├── maintenance/
-│   │   │   ├── check-script-headers.ps1  — Check script headers Lists the scripts the menu hides and the headers that are voided. A voided, inv…
-│   │   │   ├── clean-native.ps1  — Clean the native folder Brings the whisper.cpp native folder under the user data root back to the curre…
-│   │   │   ├── clean.ps1  — Clean build outputs Remove generated build output from a Deckle worktree without touching anything…
-│   │   │   ├── inspect-context.ps1  — Context inventory Inventory the repository's tracked Markdown context, grouped by loading mode, w…
-│   │   │   ├── README.md  — Maintenance Statistics, cleanup, AI sessions and checks of the repository.
-│   │   │   ├── reset-agent-state.ps1  — Inspect or reset local AI sessions Build a cleanup plan for the local Codex and Claude Code session data of the cu…
-│   │   │   ├── stats.ps1  — Repository statistics Walk every project under src\ and build one file inventory per Deckle module, w…
-│   │   │   ├── stop-build-servers.ps1  — Stop .NET build servers Stop the MSBuild and Roslyn build servers left behind by dotnet builds. They sh…
-│   │   │   ├── survey-anytype-v2.ps1
-│   │   │   ├── sweep-exposables.ps1  — Sweep exposable source values Text sweep of the exposables carried by the source tree. An exposable is a code…
-│   │   │   └── validate-resources.ps1  — Validate WinUI resources Read-only audit of the WinUI resource inventories. Reports missing resource key…
-│   │   ├── release/
-│   │   │   ├── build-anytype-backend.ps1  — Build the Anytype backend Rebuilds one anytype-cli release tag from source for Windows with the tantivy-g…
-│   │   │   ├── publish-app.ps1  — Prepare or publish the app release Builds the two artifacts a Deckle GitHub Release carries: the installer stub an…
-│   │   │   ├── publish-native-runtime.ps1  — Prepare or publish the native runtime Packages a versioned zip of the native DLLs that Deckle's first-run wizard down…
-│   │   │   └── README.md  — Release Prepare and publish the app and the native runtime.
-│   │   ├── setup/
-│   │   │   ├── bootstrap-dev-env.ps1  — Bootstrap the dev environment Brings a fresh Windows 11 machine up to speed for building and running Deckle.…
-│   │   │   ├── install-hooks.ps1  — Install git hooks Install Deckle's repository and global git hooks. Run once after a clone: hook…
-│   │   │   ├── README.md  — Setup Set up the machine and the repository.
-│   │   │   └── setup-assets.ps1  — Set up runtime assets Populates the native and models folders under the user data root with the whisp…
-│   │   ├── build-run.ps1  — Build the app Build Deckle for the chosen configuration (x64) and, unless told not to, launch…
-│   │   ├── changelog.ps1  — Update the changelog Generate the changelog and release notes from the git history. The Conventional…
-│   │   ├── cut-version.ps1
-│   │   ├── fetch-autocorrect-data.ps1
-│   │   ├── launch-app.ps1  — Launch the freshest built app Replace the running Deckle instance with the freshest already-built executable…
-│   │   ├── record-release.ps1
-│   │   ├── record-version.ps1  — Record an internal version Record internal progress without publishing a release. A version record bumps t…
-│   │   └── update-readme-stats.ps1  — Update the README pulse Regenerate the small "Development pulse" section in README.md from the local Gi…
-│   ├── hooks/
-│   │   ├── pre-commit
-│   │   ├── update-tree.ps1  — Regenerate TREE.md from git ls-files Serves the pre-commit hook and direct manual runs. Annotates Markdown files wit…
-│   │   └── validate-commit-attribution.ps1  — Enforce Deckle's sole maintainer identity and reject agent attribution markers.
+│   ├── .deckle-scripts/
+│   │   └── manifest.json
+│   ├── dotnet/
+│   │   ├── README.md  — .NET .NET build server cleanup. Unproven until Deckle runs on this launcher.
+│   │   └── stop-build-servers.ps1  — Stop .NET build servers Stops the MSBuild and Roslyn build servers left behind by dotnet builds, which…
+│   ├── git/
+│   │   ├── changelog.ps1  — Update the changelog Generates CHANGELOG.md in the Keep a Changelog format from the Conventional Com…
+│   │   ├── git-common.ps1
+│   │   ├── mark-release.ps1  — Mark a release Marks the version of HEAD as published with an annotated tag release/vX.Y.Z on…
+│   │   ├── README.md  — Git and versions Versions as tags, release marks and the changelog.
+│   │   └── record-version.ps1  — Record a version Records the next version as an annotated tag vX.Y.Z on HEAD, bumping the latest…
 │   ├── lib/
 │   │   ├── agent-state-maintenance/
 │   │   │   ├── sanitization.ps1
 │   │   │   └── sqlite-cleanup.ps1
-│   │   ├── deckle-preview/
-│   │   │   ├── catalog.ps1
-│   │   │   ├── discovered-catalog.ps1
-│   │   │   ├── flows.ps1
-│   │   │   └── statistics-preparation.ps1
+│   │   ├── hooks/
+│   │   │   ├── commit-msg
+│   │   │   ├── pre-commit
+│   │   │   └── validate-commit-attribution.ps1  — Enforce the repository's sole identity and reject agent attribution markers Run by the commit-msg hook. Author and committer must both be the identity git…
 │   │   ├── launcher/
 │   │   │   ├── action-log.ps1
-│   │   │   ├── action-results.ps1
-│   │   │   ├── actions.ps1
-│   │   │   ├── context.ps1
-│   │   │   ├── maintenance-results.ps1
-│   │   │   ├── menu-layout.ps1
-│   │   │   ├── menus.ps1
-│   │   │   ├── statistics-menus.ps1
-│   │   │   └── statistics-plans.ps1
-│   │   ├── menu/
-│   │   │   ├── chrome.ps1
-│   │   │   ├── grid-layout.ps1
-│   │   │   ├── grid-picker.ps1
-│   │   │   ├── grid-status.ps1
-│   │   │   ├── input.ps1
-│   │   │   ├── list-picker.ps1
-│   │   │   ├── session.ps1
-│   │   │   ├── status-view.ps1
-│   │   │   └── text-input.ps1
+│   │   │   ├── discovered-catalog.ps1
+│   │   │   ├── execution.ps1
+│   │   │   ├── flows.ps1
+│   │   │   ├── launcher.ps1
+│   │   │   └── logs.ps1
 │   │   ├── script-discovery/
 │   │   │   ├── catalog.ps1
 │   │   │   ├── front-matter.ps1
 │   │   │   ├── header.ps1
 │   │   │   └── key-value-lines.ps1
+│   │   ├── templates/
+│   │   │   ├── AGENTS.md
+│   │   │   ├── CLAUDE.md
+│   │   │   ├── CONTRIBUTING.md
+│   │   │   ├── gitattributes.template
+│   │   │   ├── gitignore.template
+│   │   │   ├── LICENSE-GPL-3.0
+│   │   │   └── LICENSE-MIT
 │   │   ├── terminal-interaction/
 │   │   │   ├── contracts.ps1
 │   │   │   ├── execution-layout.ps1
@@ -244,113 +214,75 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── action-summary.ps1
 │   │   ├── agent-state-maintenance.psm1
 │   │   ├── agent-state-maintenance.strings.psd1
+│   │   ├── build-outputs.ps1
 │   │   ├── build-server-cleanup.ps1
 │   │   ├── context-inventory.psm1
 │   │   ├── deckle-process.ps1
-│   │   ├── menu.psm1
+│   │   ├── manifest.ps1
 │   │   ├── native-console.ps1
 │   │   ├── native-runtime-release.psm1
 │   │   ├── pe-imports.psm1
-│   │   ├── release-history.psm1
 │   │   ├── release-validation.psm1
 │   │   ├── repository-inventory.psm1
 │   │   ├── resource-inventory.psm1
 │   │   ├── script-discovery.psm1
 │   │   ├── script-output.ps1
 │   │   ├── source-metrics.psm1
-│   │   └── terminal-interaction.psm1
+│   │   ├── terminal-interaction.psm1
+│   │   └── version.ps1
+│   ├── maintenance/
+│   │   ├── clean-app.ps1  — Clean app build outputs Remove generated build output from a Deckle worktree without touching anything…
+│   │   ├── clean-native.ps1  — Clean the native folder Brings the whisper.cpp native folder under the user data root back to the curre…
+│   │   ├── clean.ps1  — Clean build outputs Removes the build output folders of every language present in the repository, e…
+│   │   ├── inspect-context.ps1  — Context inventory Inventory the repository's tracked Markdown context, grouped by loading mode, w…
+│   │   ├── README.md  — Maintenance Cleanups of the repository and of the local agent state.
+│   │   ├── reset-agent-state.ps1  — Inspect or reset local AI sessions Builds a cleanup plan for the local Codex and Claude Code session data of the c…
+│   │   ├── stats.ps1  — Repository statistics Walk every project under src\ and build one file inventory per Deckle module, w…
+│   │   ├── survey-anytype-v2.ps1
+│   │   ├── sweep-exposables.ps1  — Sweep exposable source values Text sweep of the exposables carried by the source tree. An exposable is a code…
+│   │   └── validate-resources.ps1  — Validate WinUI resources Read-only audit of the WinUI resource inventories. Reports missing resource key…
+│   ├── release/
+│   │   ├── build-anytype-backend.ps1  — Build the Anytype backend Rebuilds one anytype-cli release tag from source for Windows with the tantivy-g…
+│   │   ├── publish-app.ps1  — Prepare or publish the app release Builds the two artifacts a Deckle GitHub Release carries: the installer stub an…
+│   │   ├── publish-native-runtime.ps1  — Prepare or publish the native runtime Packages a versioned zip of the native DLLs that Deckle's first-run wizard down…
+│   │   └── README.md  — Release Prepare and publish the app and the native runtime.
+│   ├── setup/
+│   │   ├── bootstrap-dev-env.ps1  — Bootstrap the dev environment Brings a fresh Windows 11 machine up to speed for building and running Deckle.…
+│   │   ├── install-hooks.ps1  — Install git hooks Installs the repository's git hooks from their versioned sources and registers…
+│   │   ├── README.md  — Setup Standard files, hooks and the tree of a repository.
+│   │   ├── scaffold.ps1  — Scaffold repository files Creates the standard folders and files a repository starts with, and never over…
+│   │   ├── setup-assets.ps1  — Set up runtime assets Populates the native and models folders under the user data root with the whisp…
+│   │   └── update-tree.ps1  — Regenerate TREE.md Writes the repository tree from git ls-files, annotating Markdown files with th…
 │   ├── tests/
 │   │   ├── BugExamples/
 │   │   │   ├── build-only-stops-resident.json
 │   │   │   ├── dotnet-max-node-response-precedence.json
-│   │   │   ├── repository-portability.json
-│   │   │   └── terminal-cursor-positioning.json
+│   │   │   └── repository-portability.json
 │   │   ├── commands/
-│   │   │   ├── changelog.tests.ps1
-│   │   │   ├── ChangelogBugNotes.md
-│   │   │   ├── check-script-headers.tests.ps1
-│   │   │   ├── CommitAttributionBugNotes.md
-│   │   │   ├── install-hooks.tests.ps1
 │   │   │   ├── publish-native-runtime.tests.ps1
-│   │   │   ├── update-readme-stats.tests.ps1
-│   │   │   └── versioning-workflow.tests.ps1
-│   │   ├── fixtures/
-│   │   │   └── script-discovery/
-│   │   │       ├── tools/
-│   │   │       │   ├── deep/
-│   │   │       │   │   └── zeta.ps1  — Zeta tool
-│   │   │       │   ├── epsilon.ps1  — Epsilon tool
-│   │   │       │   └── README.md  — Tooling Tools that are rarely used.
-│   │   │       ├── zone/
-│   │   │       │   └── eta.ps1  — Eta zone task
-│   │   │       ├── alpha.ps1  — Alpha task Runs the alpha task over two lines.
-│   │   │       ├── array-set.ps1  — Array set Takes a multi-value scope filter.
-│   │   │       ├── beta.ps1  — Beta build Builds the beta target in the chosen configuration.
-│   │   │       ├── delta.ps1  — Delta care Takes care of delta.
-│   │   │       ├── dot-word.ps1
-│   │   │       ├── gamma.ps1  — Gamma package Packs or ships the gamma package.
-│   │   │       ├── glued-requires.ps1
-│   │   │       ├── no-header.ps1
-│   │   │       ├── theta.ps1  — Axe delta Removes delta for good.
-│   │   │       └── two-axes.ps1
-│   │   ├── launcher/
-│   │   │   ├── action-log.tests.ps1
-│   │   │   ├── action-results.tests.ps1
-│   │   │   ├── ActionResultBugNotes.md
-│   │   │   ├── actions.tests.ps1
-│   │   │   ├── context.tests.ps1
-│   │   │   ├── maintenance-results.tests.ps1
-│   │   │   ├── menu-layout.tests.ps1
-│   │   │   ├── menus.tests.ps1
-│   │   │   ├── statistics-menus.tests.ps1
-│   │   │   └── statistics-plans.tests.ps1
-│   │   ├── lib/
-│   │   │   ├── action-summary.tests.ps1
-│   │   │   ├── agent-skills-layout.tests.ps1
-│   │   │   ├── agent-state-maintenance.tests.ps1
-│   │   │   ├── context-inventory.tests.ps1
-│   │   │   ├── deckle-process.tests.ps1
-│   │   │   ├── native-console.tests.ps1
-│   │   │   ├── native-runtime-release.tests.ps1
-│   │   │   ├── pe-fixture.ps1
-│   │   │   ├── pe-imports.tests.ps1
-│   │   │   ├── release-history.tests.ps1
-│   │   │   ├── release-validation.tests.ps1
-│   │   │   ├── repository-inventory.tests.ps1
-│   │   │   ├── resource-inventory.tests.ps1
-│   │   │   ├── script-discovery.tests.ps1
-│   │   │   ├── script-layout.tests.ps1
-│   │   │   ├── script-output.tests.ps1
-│   │   │   └── source-metrics.tests.ps1
-│   │   ├── menu/
-│   │   │   ├── chrome.tests.ps1
-│   │   │   ├── grid-picker.tests.ps1
-│   │   │   ├── grid-status.tests.ps1
-│   │   │   ├── input.tests.ps1
-│   │   │   ├── list-picker.tests.ps1
-│   │   │   ├── status-view.tests.ps1
-│   │   │   └── text-input.tests.ps1
-│   │   └── terminal-interaction/
-│   │       ├── contracts.tests.ps1
-│   │       ├── discovered-catalog.tests.ps1
-│   │       ├── flows.tests.ps1
-│   │       ├── host.tests.ps1
-│   │       ├── HostBugNotes.md
-│   │       ├── layout.tests.ps1
-│   │       ├── LayoutBugNotes.md
-│   │       ├── navigation.tests.ps1
-│   │       ├── NavigationBugNotes.md
-│   │       ├── preparation.tests.ps1
-│   │       ├── RenderingBugNotes.md
-│   │       ├── SemanticBugNotes.md
-│   │       └── theme.tests.ps1
-│   ├── build-locked.ps1  — Run one dotnet build or test under the machine-wide Deckle build lock. AGENTS.md forbids two builds at once on this machine, whatever the session. Par…
-│   ├── deckle-preview.ps1
-│   ├── deckle.ps1
-│   ├── GLOSSARY.md  — Deckle Scripts interaction vocabulary. It names the launcher's choices, action…
-│   ├── README.md  — readme-scripts Dev workflows entry point for Deckle: the deckle.ps1 menu, the commands under c…
+│   │   │   └── update-readme-stats.tests.ps1
+│   │   └── lib/
+│   │       ├── agent-skills-layout.tests.ps1
+│   │       ├── context-inventory.tests.ps1
+│   │       ├── deckle-process.tests.ps1
+│   │       ├── native-runtime-release.tests.ps1
+│   │       ├── pe-fixture.ps1
+│   │       ├── pe-imports.tests.ps1
+│   │       ├── release-validation.tests.ps1
+│   │       ├── repository-inventory.tests.ps1
+│   │       ├── resource-inventory.tests.ps1
+│   │       ├── script-layout.tests.ps1
+│   │       └── source-metrics.tests.ps1
+│   ├── build-locked.ps1
+│   ├── build-run.ps1  — Build the app Build Deckle for the chosen configuration (x64) and, unless told not to, launch…
+│   ├── check-scripts.ps1  — Check scripts Reads every script the menu could offer and reports the ones it would hide or t…
+│   ├── fetch-autocorrect-data.ps1
+│   ├── launch-app.ps1  — Launch the freshest built app Replace the running Deckle instance with the freshest already-built executable…
+│   ├── menu.ps1
+│   ├── README.md  — readme-scripts Dev workflows entry point for Deckle: the menu.ps1 launcher installed from Deck…
 │   ├── resource-validation.allowlist.json
-│   └── TERMINAL-INTERACTION-SPEC.md  — Behavior and composition contracts of the reusable terminal launcher beneath De…
+│   ├── update-readme-stats.ps1  — Update the README pulse Regenerate the small "Development pulse" section in README.md from the local Gi…
+│   └── update.ps1  — Update Deckle Scripts Installs or updates the launcher, its library and the chosen packs from a sourc…
 ├── src/
 │   ├── Deckle.Anytype/
 │   │   ├── Api/
@@ -2543,6 +2475,5 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 ├── LICENSE
 ├── NOTICE.md
 ├── README.md
-├── release-history.json
 └── TREE.md
 ```

@@ -1,7 +1,7 @@
 # Catalog builder: one Level per folder, Action Rows grouped by Section,
 # sub-folders as Accesses, and the scripts left out with their reason.
 
-function Get-DeckleCatalogRelativePath {
+function Get-CatalogRelativePath {
     param(
         [Parameter(Mandatory)][string]$RootPath,
         [Parameter(Mandatory)][string]$Path
@@ -12,7 +12,7 @@ function Get-DeckleCatalogRelativePath {
     return $Path.Substring($RootPath.Length).TrimStart('\', '/').Replace('\', '/')
 }
 
-function Compare-DeckleOrderThenLabel {
+function Compare-OrderThenLabel {
     param($Left, $Right)
 
     # A lower rank comes first; then ordered entries, ascending; the rest follow
@@ -28,7 +28,7 @@ function Compare-DeckleOrderThenLabel {
     return $Left.Index.CompareTo($Right.Index)
 }
 
-function Sort-DeckleCatalogEntries {
+function Sort-CatalogEntries {
     param([Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Entries)
 
     $list = [System.Collections.Generic.List[object]]::new()
@@ -45,14 +45,14 @@ function Sort-DeckleCatalogEntries {
     }
     $list.Sort([System.Comparison[object]]{
         param($left, $right)
-        Compare-DeckleOrderThenLabel -Left $left -Right $right
+        Compare-OrderThenLabel -Left $left -Right $right
     })
     return @($list | ForEach-Object Item)
 }
 
-function New-DeckleCatalogRows {
+function New-CatalogRows {
     param(
-        [Parameter(Mandatory)][object]$Header,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.ScriptDiscovery.Header')][object]$Header,
         [Parameter(Mandatory)][string]$RelativePath
     )
 
@@ -60,7 +60,7 @@ function New-DeckleCatalogRows {
     for ($index = 0; $index -lt $Header.Actions.Count; $index++) {
         $action = $Header.Actions[$index]
         $rows.Add([pscustomobject][ordered]@{
-            PSTypeName = 'Deckle.ScriptDiscovery.ActionRow'
+            PSTypeName = 'DeckleScripts.ScriptDiscovery.ActionRow'
             ScriptPath = $Header.Path
             ScriptName = $Header.Name
             RelativePath = $RelativePath
@@ -80,18 +80,19 @@ function New-DeckleCatalogRows {
     return @($rows)
 }
 
-function New-DeckleCatalogLevel {
+function New-CatalogLevel {
     param(
         [Parameter(Mandatory)][string]$Path,
-        [Parameter(Mandatory)][string]$RootPath
+        [Parameter(Mandatory)][string]$RootPath,
+        [string[]]$ExcludeFolder = @()
     )
 
     $name = Split-Path -Leaf $Path
     $level = [pscustomobject][ordered]@{
-        PSTypeName = 'Deckle.ScriptDiscovery.Level'
+        PSTypeName = 'DeckleScripts.ScriptDiscovery.Level'
         Path = $Path
         Name = $name
-        RelativePath = Get-DeckleCatalogRelativePath -RootPath $RootPath -Path $Path
+        RelativePath = Get-CatalogRelativePath -RootPath $RootPath -Path $Path
         Label = $name
         Description = $null
         Section = $null
@@ -99,9 +100,13 @@ function New-DeckleCatalogLevel {
         Sections = @()
         Accesses = @()
         Hidden = @()
+        # False for a folder with no described script anywhere beneath it:
+        # it stays in the catalog, so the compliance check still reports its
+        # hidden scripts, but no menu offers it as an Access.
+        HasActions = $false
     }
 
-    $frontMatter = Get-DeckleMarkdownFrontMatter -Path (Join-Path $Path 'README.md')
+    $frontMatter = Get-MarkdownFrontMatter -Path (Join-Path $Path 'README.md')
     if ($null -ne $frontMatter) {
         if (-not [string]::IsNullOrWhiteSpace($frontMatter['name'])) { $level.Label = $frontMatter['name'].Trim() }
         if (-not [string]::IsNullOrWhiteSpace($frontMatter['description'])) { $level.Description = $frontMatter['description'].Trim() }
@@ -121,8 +126,8 @@ function New-DeckleCatalogLevel {
     $scriptEntries = [System.Collections.Generic.List[object]]::new()
     $hidden = [System.Collections.Generic.List[object]]::new()
     foreach ($file in $scriptFiles) {
-        $header = Read-DeckleScriptHeader -Path $file.FullName
-        $relativePath = Get-DeckleCatalogRelativePath -RootPath $RootPath -Path $file.FullName
+        $header = Read-ScriptHeader -Path $file.FullName
+        $relativePath = Get-CatalogRelativePath -RootPath $RootPath -Path $file.FullName
         if ($header.Status -ne 'Described') {
             $hidden.Add([pscustomobject]@{
                 Path = $file.FullName
@@ -132,7 +137,7 @@ function New-DeckleCatalogLevel {
             })
             continue
         }
-        $rows = @(New-DeckleCatalogRows -Header $header -RelativePath $relativePath)
+        $rows = @(New-CatalogRows -Header $header -RelativePath $relativePath)
         if ($rows.Count -eq 0) { continue }
         # A Section ranks its rows in three bands: Action Rows with Variants
         # first, as one unit per script so they stay consecutive; then the
@@ -163,13 +168,13 @@ function New-DeckleCatalogLevel {
 
     $sections = [System.Collections.Generic.List[object]]::new()
     if ($untitled.Count -gt 0) {
-        $sortedScripts = @(Sort-DeckleCatalogEntries -Entries @($untitled))
+        $sortedScripts = @(Sort-CatalogEntries -Entries @($untitled))
         $sections.Add([pscustomobject]@{ Label = $null; Order = $null; Rows = @($sortedScripts | ForEach-Object { $_ }) })
     }
     $namedEntries = foreach ($group in $groups.Values) {
         $ordered = @($group.Entries | Where-Object { $null -ne $_.Order } | ForEach-Object Order)
         $smallest = if ($ordered.Count -gt 0) { ($ordered | Measure-Object -Minimum).Minimum } else { $null }
-        $sortedScripts = @(Sort-DeckleCatalogEntries -Entries @($group.Entries))
+        $sortedScripts = @(Sort-CatalogEntries -Entries @($group.Entries))
         $sectionValue = [pscustomobject]@{
             Label = $group.Label
             Order = if ($null -ne $smallest) { [int]$smallest } else { $null }
@@ -177,53 +182,63 @@ function New-DeckleCatalogLevel {
         }
         [pscustomobject]@{ Item = $sectionValue; Order = $sectionValue.Order; Label = $sectionValue.Label }
     }
-    foreach ($section in @(Sort-DeckleCatalogEntries -Entries @($namedEntries))) { $sections.Add($section) }
+    foreach ($section in @(Sort-CatalogEntries -Entries @($namedEntries))) { $sections.Add($section) }
     $level.Sections = @($sections)
 
+    # The exclusions apply to the root's direct children only: a launcher
+    # keeps its library and tests out of the menu, nothing deeper.
+    $isRoot = $Path -eq $RootPath
     $accessEntries = foreach ($directory in @(Get-ChildItem -LiteralPath $Path -Directory |
             Where-Object { -not $_.Name.StartsWith('.') } |
+            Where-Object { -not ($isRoot -and $_.Name -in $ExcludeFolder) } |
             Sort-Object -Property Name)) {
-        $child = New-DeckleCatalogLevel -Path $directory.FullName -RootPath $RootPath
+        $child = New-CatalogLevel -Path $directory.FullName -RootPath $RootPath
         [pscustomobject]@{ Item = $child; Order = $child.Order; Label = $child.Label }
     }
-    $level.Accesses = @(Sort-DeckleCatalogEntries -Entries @($accessEntries))
+    $level.Accesses = @(Sort-CatalogEntries -Entries @($accessEntries))
     $level.Hidden = @($hidden)
+    $level.HasActions = $sections.Count -gt 0 -or @($level.Accesses | Where-Object HasActions).Count -gt 0
     return $level
 }
 
-function Get-DeckleScriptCatalog {
+function Get-ScriptCatalog {
     [CmdletBinding()]
-    param([Parameter(Mandatory)][string]$Path)
+    param(
+        [Parameter(Mandatory)][string]$Path,
+        # Names of root folders that never enter the catalog, such as the
+        # launcher's own library and tests.
+        [string[]]$ExcludeFolder = @()
+    )
 
     if (-not (Test-Path -LiteralPath $Path -PathType Container)) {
         throw "Scripts folder '$Path' does not exist."
     }
     $rootPath = [System.IO.Path]::GetFullPath((Resolve-Path -LiteralPath $Path).ProviderPath).TrimEnd('\', '/')
-    return New-DeckleCatalogLevel -Path $rootPath -RootPath $rootPath
+    return New-CatalogLevel -Path $rootPath -RootPath $rootPath -ExcludeFolder $ExcludeFolder
 }
 
-function Get-DeckleCatalogHiddenScripts {
+function Get-CatalogHiddenScripts {
     [CmdletBinding()]
-    param([Parameter(Mandatory)][object]$Catalog)
+    param([Parameter(Mandatory)][PSTypeName('DeckleScripts.ScriptDiscovery.Level')][object]$Catalog)
 
     $hidden = [System.Collections.Generic.List[object]]::new()
     foreach ($entry in $Catalog.Hidden) { $hidden.Add($entry) }
     foreach ($access in $Catalog.Accesses) {
-        foreach ($entry in @(Get-DeckleCatalogHiddenScripts -Catalog $access)) { $hidden.Add($entry) }
+        foreach ($entry in @(Get-CatalogHiddenScripts -Catalog $access)) { $hidden.Add($entry) }
     }
     return @($hidden)
 }
 
-function Get-DeckleCatalogRows {
+function Get-CatalogRows {
     [CmdletBinding()]
-    param([Parameter(Mandatory)][object]$Catalog)
+    param([Parameter(Mandatory)][PSTypeName('DeckleScripts.ScriptDiscovery.Level')][object]$Catalog)
 
     $rows = [System.Collections.Generic.List[object]]::new()
     foreach ($section in $Catalog.Sections) {
         foreach ($row in $section.Rows) { $rows.Add($row) }
     }
     foreach ($access in $Catalog.Accesses) {
-        foreach ($row in @(Get-DeckleCatalogRows -Catalog $access)) { $rows.Add($row) }
+        foreach ($row in @(Get-CatalogRows -Catalog $access)) { $rows.Add($row) }
     }
     return @($rows)
 }

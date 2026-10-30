@@ -33,7 +33,7 @@ function New-TerminalTarget {
     }
 
     return [pscustomobject][ordered]@{
-        PSTypeName = 'Deckle.TerminalInteraction.Target'
+        PSTypeName = 'DeckleScripts.TerminalInteraction.Target'
         TargetId = $TargetId
         Label = $Label
         IntentKind = $IntentKind
@@ -50,7 +50,7 @@ function New-TerminalActionRow {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Label,
-        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][object[]]$Variants
+        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][PSTypeName('DeckleScripts.TerminalInteraction.Target')][object[]]$Variants
     )
 
     foreach ($variant in $Variants) {
@@ -60,7 +60,7 @@ function New-TerminalActionRow {
     }
 
     return [pscustomobject][ordered]@{
-        PSTypeName = 'Deckle.TerminalInteraction.ActionRow'
+        PSTypeName = 'DeckleScripts.TerminalInteraction.ActionRow'
         Kind = 'ActionRow'
         Label = $Label
         Variants = @($Variants)
@@ -84,7 +84,7 @@ function New-TerminalSection {
     }
 
     return [pscustomobject][ordered]@{
-        PSTypeName = 'Deckle.TerminalInteraction.Section'
+        PSTypeName = 'DeckleScripts.TerminalInteraction.Section'
         Label = $Label
         Items = @($Items)
     }
@@ -149,7 +149,7 @@ function New-TerminalActionMenuView {
     )
 
     $descriptor = [pscustomobject][ordered]@{
-        PSTypeName = 'Deckle.TerminalInteraction.ActionMenuView'
+        PSTypeName = 'DeckleScripts.TerminalInteraction.ActionMenuView'
         Kind = 'ActionMenu'
         ViewId = $ViewId
         Banner = $Banner
@@ -169,13 +169,13 @@ function New-TerminalContentView {
         [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Banner,
         [string]$Context,
         [Parameter(Mandatory)][object[]]$Lines,
-        [object[]]$Targets = @(),
+        [PSTypeName('DeckleScripts.TerminalInteraction.Target')][object[]]$Targets = @(),
         [object]$BackTarget,
         [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$OwnerActionMenuId
     )
 
     $descriptor = [pscustomobject][ordered]@{
-        PSTypeName = 'Deckle.TerminalInteraction.ContentView'
+        PSTypeName = 'DeckleScripts.TerminalInteraction.ContentView'
         Kind = 'Content'
         ViewId = $ViewId
         Banner = $Banner
@@ -196,7 +196,8 @@ function New-TerminalExecutionView {
         [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Banner,
         [string]$Context,
         [Parameter(Mandatory)][ValidateSet('Running', 'Completed', 'Failed')][string]$State,
-        [Parameter(Mandatory)][object[]]$JournalLines,
+        # A run that has not written anything yet has an empty Journal.
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$JournalLines,
         [Parameter(Mandatory)][object[]]$TrackingSteps,
         [string]$Result,
         [object]$BackTarget,
@@ -215,7 +216,7 @@ function New-TerminalExecutionView {
     }
 
     $descriptor = [pscustomobject][ordered]@{
-        PSTypeName = 'Deckle.TerminalInteraction.ExecutionView'
+        PSTypeName = 'DeckleScripts.TerminalInteraction.ExecutionView'
         Kind = 'Execution'
         ViewId = $ViewId
         Banner = $Banner

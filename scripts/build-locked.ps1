@@ -1,20 +1,20 @@
-<#
-.SYNOPSIS
-    Run one dotnet build or test under the machine-wide Deckle build lock.
-.DESCRIPTION
-    AGENTS.md forbids two builds at once on this machine, whatever the session.
-    Parallel agents cannot see each other, so this script gives them one gate:
-    it takes the named mutex `Global\Deckle.Build`, waits as long as another
-    build holds it, then runs `dotnet build` (or `dotnet test`) with the
-    project's mandatory flags, and releases the mutex when dotnet exits.
-    Directory.Build.rsp still applies (low priority, no node reuse); the
-    explicit `/m:4` stays because the CLI applies its default node count after
-    response files.
-.EXAMPLE
-    pwsh -File scripts/build-locked.ps1 -Project src/Deckle.App/Deckle.App.csproj
-.EXAMPLE
-    pwsh -File scripts/build-locked.ps1 -Test -Project tests/Deckle.Shell.Taskbar.Tests/Deckle.Shell.Taskbar.Tests.csproj
-#>
+# build-locked.ps1 - Run one dotnet build or test under the machine-wide Deckle build lock.
+#
+# AGENTS.md forbids two builds at once on this machine, whatever the session.
+# Parallel agents cannot see each other, so this script gives them one gate:
+# it takes the named mutex `Global\Deckle.Build`, waits as long as another
+# build holds it, then runs `dotnet build` (or `dotnet test`) with the
+# project's mandatory flags, and releases the mutex when dotnet exits.
+# Directory.Build.rsp still applies (low priority, no node reuse); the
+# explicit `/m:4` stays because the CLI applies its default node count after
+# response files.
+#
+# Examples:
+#   pwsh -File scripts/build-locked.ps1 -Project src/Deckle.App/Deckle.App.csproj
+#   pwsh -File scripts/build-locked.ps1 -Test -Project tests/Deckle.Shell.Taskbar.Tests/Deckle.Shell.Taskbar.Tests.csproj
+#
+# No Header on purpose: -Project is mandatory, so the menu could not run
+# this script without asking, and agents call it from their own builds.
 
 [CmdletBinding()]
 param(

@@ -10,7 +10,7 @@ The nearest `GLOSSARY.md` up the tree governs the code you're touching. This map
 ## Glossaries
 
 - [Settings](src/Deckle.Settings/GLOSSARY.md) — the exposable and its kinds, of which a setting is one
-- [Scripts](scripts/GLOSSARY.md) — terminal-launcher navigation, actions, executions, tracking, journals, and results
+- Scripts — the terminal menu under `scripts/` is Deckle Scripts, vendored; its vocabulary (levels, actions, executions, journals, results) lives in that repository's `GLOSSARY.md`, at https://github.com/louisfifre/deckle-scripts
 - [Tests](tests/GLOSSARY.md) — the test taxonomy: four automatic categories, three outside the automatic scope
 - [Diagnostics](src/Deckle.Diagnostics/GLOSSARY.md) — observability: admission vs view, the controls, filters, logs and datasets that quiet or split the stream (covers `.Logging` and `.Telemetry`)
 - [Security](src/Deckle.Security/GLOSSARY.md) — trusted-session boundary, captured content, and custody of persisted copies

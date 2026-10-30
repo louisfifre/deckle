@@ -9,7 +9,7 @@ function New-TerminalFramePlan {
     )
 
     return [pscustomobject][ordered]@{
-        PSTypeName = 'Deckle.TerminalInteraction.Frame'
+        PSTypeName = 'DeckleScripts.TerminalInteraction.Frame'
         ViewId = $View.ViewId
         Width = $Width
         Height = $Height
@@ -34,7 +34,7 @@ function New-TerminalFrameLine {
 }
 
 function Add-TerminalFrameLine {
-    param([Parameter(Mandatory)][object]$Frame)
+    param([Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame)
 
     if ($Frame.Lines.Count -ge $Frame.Height) { return -1 }
     $line = New-TerminalFrameLine -Width $Frame.Width
@@ -44,7 +44,7 @@ function Add-TerminalFrameLine {
 
 function Add-TerminalFrameSegment {
     param(
-        [Parameter(Mandatory)][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
         [Parameter(Mandatory)][int]$LineIndex,
         [Parameter(Mandatory)][int]$X,
         [AllowEmptyString()][string]$Text,
@@ -79,8 +79,8 @@ function Add-TerminalFrameSegment {
 
 function Add-TerminalTargetPlacement {
     param(
-        [Parameter(Mandatory)][object]$Frame,
-        [Parameter(Mandatory)][object]$Target,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Target')][object]$Target,
         [Parameter(Mandatory)][int]$X,
         [Parameter(Mandatory)][int]$Y,
         [Parameter(Mandatory)][ValidateRange(1, 1000)][int]$Width
@@ -149,7 +149,7 @@ function Split-TerminalText {
 
 function Get-TerminalTargetPresentationRole {
     param(
-        [Parameter(Mandatory)][object]$Target,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Target')][object]$Target,
         [switch]$AsActionVariant
     )
 
@@ -159,8 +159,8 @@ function Get-TerminalTargetPresentationRole {
 
 function Add-TerminalTarget {
     param(
-        [Parameter(Mandatory)][object]$Frame,
-        [Parameter(Mandatory)][object]$Target,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Target')][object]$Target,
         [Parameter(Mandatory)][int]$LineIndex,
         [Parameter(Mandatory)][int]$X,
         [Parameter(Mandatory)][int]$Width,
@@ -205,7 +205,7 @@ function Add-TerminalTarget {
 
 function Add-TerminalSectionHeading {
     param(
-        [Parameter(Mandatory)][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
         [Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Label
     )
 
@@ -237,20 +237,34 @@ function ConvertTo-TerminalMenuLayoutSections {
         $rows = [System.Collections.Generic.List[object]]::new()
         $pendingTargets = [System.Collections.Generic.List[object]]::new()
         $trailingTarget = $null
+        # Consecutive plain targets form one row; the renderer fills the
+        # grid's columns with them and wraps the rest, like Variants. Right
+        # under an Action Row, such a row opens with a blank line: its targets
+        # are Actions of their own, not more Variants of the row above, and
+        # the gap says so where a heading would be too much.
+        $flushTargets = {
+            if ($pendingTargets.Count -eq 0) { return }
+            $rows.Add([pscustomobject]@{
+                Kind = 'TargetRow'
+                Label = ''
+                Targets = @($pendingTargets)
+                TrailingTarget = $null
+                Spaced = $rows.Count -gt 0 -and $rows[$rows.Count - 1].Kind -eq 'ActionRow'
+            })
+            $pendingTargets.Clear()
+        }
 
         for ($itemIndex = 0; $itemIndex -lt $section.Items.Count; $itemIndex++) {
             $item = $section.Items[$itemIndex]
             $isActionRow = $item.PSObject.Properties['Kind'] -and $item.Kind -eq 'ActionRow'
             if ($isActionRow) {
-                if ($pendingTargets.Count -gt 0) {
-                    $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @($pendingTargets); TrailingTarget = $null })
-                    $pendingTargets.Clear()
-                }
+                & $flushTargets
                 $rows.Add([pscustomobject]@{
                     Kind = 'ActionRow'
                     Label = $item.Label
                     Variants = @($item.Variants)
                     TrailingTarget = $null
+                    Spaced = $false
                 })
                 continue
             }
@@ -259,17 +273,13 @@ function ConvertTo-TerminalMenuLayoutSections {
                 $trailingTarget = $item
                 continue
             }
-            # Consecutive plain targets form one row; the renderer fills the
-            # grid's columns with them and wraps the rest, like Variants.
             $pendingTargets.Add($item)
         }
-        if ($pendingTargets.Count -gt 0) {
-            $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @($pendingTargets); TrailingTarget = $null })
-        }
+        & $flushTargets
         if ($null -ne $trailingTarget) {
             # The Exit target seats at the right end of the menu's last line.
             if ($rows.Count -eq 0) {
-                $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @(); TrailingTarget = $trailingTarget })
+                $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @(); TrailingTarget = $trailingTarget; Spaced = $false })
             } else {
                 $rows[$rows.Count - 1].TrailingTarget = $trailingTarget
             }
@@ -347,7 +357,10 @@ function Get-TerminalMenuGrid {
         }
     }
 
-    $left = 2
+    # Action Row labels sit two cells past the Section heading, which is drawn
+    # at column 1: the indentation Deckle's first menu gave them, kept so the
+    # eye tells a Section from the rows it holds.
+    $left = 3
     $right = $Width - 2
     $labelWidth = Get-TerminalActionLabelWidth -LayoutSections $LayoutSections
     $targetX = $left + $labelWidth + 3
@@ -374,14 +387,15 @@ function Get-TerminalMenuGrid {
 
 function Add-TerminalMenuRow {
     param(
-        [Parameter(Mandatory)][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
         [Parameter(Mandatory)][object]$Row,
         [Parameter(Mandatory)][object]$Grid,
         [Parameter(Mandatory)][bool]$Wide,
         [string]$FocusedTargetId
     )
 
-    $left = 2
+    $left = $Grid.Left
+    if ($Row.Spaced) { [void](Add-TerminalFrameLine -Frame $Frame) }
     if ($Wide) {
         $line = Add-TerminalFrameLine -Frame $Frame
         if ($line -lt 0) { return }
@@ -446,8 +460,8 @@ function Add-TerminalMenuRow {
             -Frame $Frame `
             -Target $target `
             -LineIndex $line `
-            -X 4 `
-            -Width ([Math]::Max(1, $Frame.Width - 6)) `
+            -X ($left + 2) `
+            -Width ([Math]::Max(1, $Frame.Width - $left - 4)) `
             -FocusedTargetId $FocusedTargetId `
             -AsActionVariant:($Row.Kind -eq 'ActionRow')
     }
@@ -455,8 +469,8 @@ function Add-TerminalMenuRow {
 
 function Add-TerminalActionMenuBody {
     param(
-        [Parameter(Mandatory)][object]$Frame,
-        [Parameter(Mandatory)][object]$View,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.ActionMenuView')][object]$View,
         [Parameter(Mandatory)][object]$NavigationGrid,
         [string]$FocusedTargetId
     )
@@ -493,8 +507,8 @@ function Add-TerminalActionMenuBody {
 
 function Add-TerminalContentBody {
     param(
-        [Parameter(Mandatory)][object]$Frame,
-        [Parameter(Mandatory)][object]$View,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.ContentView')][object]$View,
         [Parameter(Mandatory)][object]$NavigationGrid,
         [string]$FocusedTargetId
     )
@@ -518,8 +532,8 @@ function Add-TerminalContentBody {
 
 function Add-TerminalPagedBody {
     param(
-        [Parameter(Mandatory)][object]$Frame,
-        [Parameter(Mandatory)][object]$BodyFrame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$BodyFrame,
         [Parameter(Mandatory)][int]$BodyOffset,
         [string]$FocusedTargetId
     )
@@ -576,7 +590,9 @@ function Get-TerminalInteractionFrame {
         [bool]$SupportsUnicode = $true,
         [ValidateSet('Supported', 'Unsupported', 'Unknown')][string]$ColorCapability = 'Supported',
         [ValidateRange(0, 2147483647)][int]$BodyOffset = 0,
-        [ValidateRange(0, 2147483647)][int]$JournalOffset = 0
+        [ValidateRange(0, 2147483647)][int]$JournalOffset = 0,
+        # Lines drawn above the Header when the terminal affords them.
+        [AllowEmptyCollection()][string[]]$Logo = @()
     )
 
     if ($View.Kind -eq 'ActionMenu') {
@@ -589,7 +605,7 @@ function Get-TerminalInteractionFrame {
 
     $navigationGrid = Get-TerminalNavigationGrid -OwnerActionMenu $OwnerActionMenu -Width $Width
     $frame = New-TerminalFramePlan -View $View -Width $Width -Height $Height -ColorCapability $ColorCapability
-    Add-TerminalHeader -Frame $frame -View $View -SupportsUnicode $SupportsUnicode
+    Add-TerminalHeader -Frame $frame -View $View -SupportsUnicode $SupportsUnicode -Logo $Logo
     switch ($View.Kind) {
         'ActionMenu' {
             $bodyFrame = New-TerminalFramePlan -View $View -Width $Width -Height 1000 -ColorCapability $ColorCapability

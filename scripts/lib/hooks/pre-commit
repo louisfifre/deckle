@@ -1,0 +1,6 @@
+#!/bin/sh
+# Regenerate TREE.md and stage it into the current commit.
+# Installed from scripts/lib/hooks/pre-commit by scripts/setup/install-hooks.ps1.
+root=$(git rev-parse --show-toplevel)
+pwsh -NoLogo -NoProfile -NonInteractive -File "$root/scripts/setup/update-tree.ps1" -Apply || exit 1
+git add "$root/TREE.md"

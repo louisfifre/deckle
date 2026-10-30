@@ -2,7 +2,7 @@
 
 function Get-TerminalPreparationGrid {
     param(
-        [Parameter(Mandatory)][object[]]$Selectors,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Selector')][object[]]$Selectors,
         [Parameter(Mandatory)][int]$Width
     )
 
@@ -41,8 +41,8 @@ function Get-TerminalPreparationGrid {
 
 function Add-TerminalSelector {
     param(
-        [Parameter(Mandatory)][object]$Frame,
-        [Parameter(Mandatory)][object]$Selector,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Selector')][object]$Selector,
         [Parameter(Mandatory)][object]$Grid,
         [string]$FocusedTargetId
     )
@@ -95,7 +95,7 @@ function Add-TerminalSelector {
 
 function Add-TerminalPreparationLines {
     param(
-        [Parameter(Mandatory)][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
         [Parameter(Mandatory)][AllowEmptyCollection()][string[]]$Lines,
         [ValidateSet('Body', 'Supporting', 'Warning', 'Error')][string]$PresentationRole = 'Body'
     )
@@ -116,8 +116,8 @@ function Add-TerminalPreparationLines {
 
 function Add-TerminalPreparationBody {
     param(
-        [Parameter(Mandatory)][object]$Frame,
-        [Parameter(Mandatory)][object]$View,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.PreparationView')][object]$View,
         [Parameter(Mandatory)][object]$NavigationGrid,
         [string]$FocusedTargetId
     )

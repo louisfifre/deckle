@@ -1,10 +1,9 @@
 $ErrorActionPreference = 'Stop'
 $ScriptsDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$CommandDir = Join-Path $ScriptsDir 'commands'
 $LibDir = Join-Path $ScriptsDir 'lib'
 . (Join-Path $ScriptsDir 'tests\lib\pe-fixture.ps1')
 
-$scriptPath = Join-Path $CommandDir 'release\publish-native-runtime.ps1'
+$scriptPath = Join-Path $ScriptsDir 'release\publish-native-runtime.ps1'
 $tokens = $null
 $parseErrors = $null
 $ast = [Management.Automation.Language.Parser]::ParseFile(

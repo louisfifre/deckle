@@ -120,7 +120,7 @@ function Get-TerminalHeaderCommandRows {
 
 function Add-TerminalCommandRow {
     param(
-        [Parameter(Mandatory)][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
         [Parameter(Mandatory)][int]$LineIndex,
         [Parameter(Mandatory)][object[]]$Commands,
         [Parameter(Mandatory)][int]$StartX
@@ -139,14 +139,34 @@ function Add-TerminalCommandRow {
 
 function Add-TerminalHeader {
     param(
-        [Parameter(Mandatory)][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
         [Parameter(Mandatory)][object]$View,
-        [bool]$SupportsUnicode = $true
+        [bool]$SupportsUnicode = $true,
+        [AllowEmptyCollection()][string[]]$Logo = @()
     )
 
     $left = 2
     $right = [Math]::Max($left, $Frame.Width - 2)
     $contentWidth = [Math]::Max(1, $right - $left)
+
+    # The logo opens the frame when the terminal affords it: it is drawn in
+    # Unicode block glyphs, needs the width of its widest line, and must
+    # leave the body a dozen lines under the three Header lines. A short,
+    # narrow or ASCII-only terminal keeps the Header to its two rails.
+    $logoLines = @($Logo | Where-Object { -not [string]::IsNullOrEmpty($_) })
+    $logoWidth = 0
+    foreach ($logoLine in $logoLines) { $logoWidth = [Math]::Max($logoWidth, $logoLine.Length) }
+    $minimumBodyHeight = 12
+    $showLogo = $logoLines.Count -gt 0 -and $SupportsUnicode -and
+        $Frame.Width -ge ($logoWidth + 2 * $left) -and
+        ($Frame.Height - ($logoLines.Count + 1) - 3) -ge $minimumBodyHeight
+    if ($showLogo) {
+        foreach ($logoLine in $logoLines) {
+            $line = Add-TerminalFrameLine -Frame $Frame
+            Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X $left -Text $logoLine -PresentationRole Banner
+        }
+        [void](Add-TerminalFrameLine -Frame $Frame)
+    }
     $banner = Limit-TerminalText -Text $View.Banner -Width $contentWidth
     $context = if ($View.Context) {
         Limit-TerminalText -Text ([string]$View.Context) -Width $contentWidth

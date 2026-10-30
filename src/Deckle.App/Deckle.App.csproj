@@ -17,10 +17,12 @@
          Windows App SDK ML is not used, so its automatic ONNX Runtime
          initialization must not compete with the host's runtime. -->
     <DisableWindowsAppSDKMLAutoInitialize>true</DisableWindowsAppSDKMLAutoInitialize>
-    <Version>0.72.8</Version>
+    <!-- No <Version> here: the ReadVersionFromGit target below reads it from
+         the version tag of the repository, so the tag, the changelog, the
+         update check and the assembly can never disagree. -->
     <!-- The release stage the running build belongs to (Alpha, then Beta),
-         shown as the Settings title bar subtitle. Deliberately apart from
-         <Version>: the tag, the changelog and the update check all read the
+         shown as the Settings title bar subtitle. Deliberately apart from the
+         version: the tag, the changelog and the update check all read the
          bare number, so the stage never enters them. Maintained here and
          nowhere else; the ItemGroup below bakes it into the assembly. -->
     <DeckleStage>Alpha</DeckleStage>
@@ -39,6 +41,35 @@
     <AssemblyMetadata Include="Stage" Value="$(DeckleStage)" />
     <InternalsVisibleTo Include="Deckle.App.Tests" />
   </ItemGroup>
+
+  <!-- The version of a build is the highest vX.Y.Z tag reachable from HEAD,
+       recorded at each merge into main by scripts/git/record-version.ps1; a
+       commit after the tag still belongs to that version, until the next one.
+       Nothing falls back: a checkout without a reachable version tag does not
+       build, and the error says what to record. Set inside a target because
+       the SDK's targets, evaluated after this file, give Version a 1.0.0
+       default; GetAssemblyVersion is the first consumer. A Version passed on
+       the command line is a global property, which this assignment leaves as
+       it is. -->
+  <Target Name="ReadVersionFromGit" BeforeTargets="GetAssemblyVersion">
+    <Exec Command="git -C &quot;$(MSBuildProjectDirectory)&quot; tag --merged HEAD --list &quot;v[0-9]*&quot; --sort=-v:refname"
+          ConsoleToMSBuild="true"
+          EchoOff="true"
+          StandardOutputImportance="low"
+          IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" ItemName="_DeckleVersionTag" />
+      <Output TaskParameter="ExitCode" PropertyName="_DeckleVersionGitExitCode" />
+    </Exec>
+    <Error Condition="'$(_DeckleVersionGitExitCode)' != '0'"
+           Text="git could not list the version tags of the repository (exit code $(_DeckleVersionGitExitCode)): Deckle reads its version from the vX.Y.Z tags, so it builds from a git checkout only." />
+    <PropertyGroup>
+      <_DeckleVersionTags>@(_DeckleVersionTag)</_DeckleVersionTags>
+      <Version Condition="'$(_DeckleVersionTags)' != ''">$(_DeckleVersionTags.Split(';')[0].Substring(1))</Version>
+    </PropertyGroup>
+    <Error Condition="'$(_DeckleVersionTags)' == ''"
+           Text="No version tag vX.Y.Z is reachable from HEAD. Record one with scripts/git/record-version.ps1 -Apply (or fetch the tags: git fetch --tags)." />
+    <Message Importance="normal" Text="Deckle version $(Version), from the git tag v$(Version)." />
+  </Target>
 
   <!-- Publish-only options, gated on _IsPublishing (set only by the Publish
        target) so a plain Release build does not pay self-contained costs.

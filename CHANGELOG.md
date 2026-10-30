@@ -1,13 +1,11 @@
 # Changelog
 
-All notable changes to Deckle are recorded here.
+All notable changes to deckle are recorded here.
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
-the project adheres to [Semantic Versioning](https://semver.org/). Deckle has no
-public API: the version is read at the **user/behaviour** level, and during the
-`0.x` phase any release may change behaviour (see the `deckle-versioning`
-doctrine). This file is generated from the Conventional-Commit history by
-`scripts/commands/changelog.ps1` — do not edit it by hand.
+the project adheres to [Semantic Versioning](https://semver.org/).
+
+This file is generated from the Conventional Commits history by `scripts/git/changelog.ps1`; do not edit it by hand.
 
 ## [Unreleased]
 
@@ -15,6 +13,13 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 - **anytype:** Drop the object id from search hits
 - **anytype:** Add an epic_properties read
+- **scripts:** Vendor Deckle Scripts v0.1.0 as the launcher
+
+### Changed
+
+- **scripts:** Drop -Pick from the commands; the menu asks
+- **scripts:** Adopt the product-free names of the shared library
+- **scripts:** Lay the Deckle scripts out in the menu's levels
 
 ### Fixed
 
@@ -23,7 +28,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Read a nameless idea's title and text once
 - **audio:** Return the queued buffers to the app before freeing them
 
-## [0.72.4](https://github.com/louisfifre/deckle/compare/v0.72.0...v0.72.4) — 2026-10-27
+## [0.72.4](https://github.com/louisfifre/deckle/compare/release/v0.72.0...release/v0.72.4) — 2026-10-27
 
 ### Added
 
@@ -42,7 +47,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **whisper:** Purge an older bundle's DLLs before ggml loads its backends
 - **whisper:** Keep ggml-base loaded after the startup load check
 
-## [0.72.0](https://github.com/louisfifre/deckle/compare/v0.67.1...v0.72.0) — 2026-10-27
+## [0.72.0](https://github.com/louisfifre/deckle/compare/release/v0.67.1...release/v0.72.0) — 2026-10-27
 
 ### Added
 
@@ -145,7 +150,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **whisper:** Ask ggml-base for a backend's name
 - **whisper:** Download native bundle 1.9.2
 
-## [0.67.1](https://github.com/louisfifre/deckle/compare/v0.59.0...v0.67.1) — 2026-10-23
+## [0.67.1](https://github.com/louisfifre/deckle/compare/release/v0.59.0...release/v0.67.1) — 2026-10-23
 
 ### Added
 
@@ -425,7 +430,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Point open_report's task id to the reads that give it
 - **anytype:** Open the report even when its task's project cannot be read
 
-## [0.59.0](https://github.com/louisfifre/deckle/compare/v0.58.5...v0.59.0) — 2026-10-21
+## [0.59.0](https://github.com/louisfifre/deckle/compare/release/v0.58.5...release/v0.59.0) — 2026-10-21
 
 ### Added
 
@@ -447,7 +452,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **anytype:** Pin the patched anytype-cli 0.5.0 rebuild as the backend
 - **anytype:** Pin the backend asset that carries the license texts
 
-## [0.58.5](https://github.com/louisfifre/deckle/compare/v0.57.0...v0.58.5) — 2026-10-20
+## [0.58.5](https://github.com/louisfifre/deckle/compare/release/v0.57.0...release/v0.58.5) — 2026-10-20
 
 ### Added
 
@@ -487,7 +492,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **autocorrect:** Follow the generation seam in the proposal replay test
 - **hud:** Fade the transcript panel's first visible line through a clipped copy
 
-## [0.57.0](https://github.com/louisfifre/deckle/compare/v0.35.0...v0.57.0) — 2026-10-15
+## [0.57.0](https://github.com/louisfifre/deckle/compare/release/v0.35.0...release/v0.57.0) — 2026-10-15
 
 ### Added
 
@@ -832,7 +837,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **transcription:** Count the bespoke cards in the Reset all gate
 - **playground:** Keep the gauge's curve handles inside the frame
 
-## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
+## [0.35.0](https://github.com/louisfifre/deckle/compare/release/v0.31.6...release/v0.35.0) — 2026-08-13
 
 ### Added
 
@@ -872,7 +877,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Fill focused terminal cells
 - **home:** Drop restock_threshold from the required schema
 
-## [0.31.6](https://github.com/louisfifre/deckle/compare/v0.30.2...v0.31.6) — 2026-07-31
+## [0.31.6](https://github.com/louisfifre/deckle/compare/release/v0.30.2...release/v0.31.6) — 2026-07-31
 
 ### Added
 
@@ -892,7 +897,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **ambient:** Keep pairing status in expander footer
 - **transcription:** Keep file batches on live pipeline
 
-## [0.30.2](https://github.com/louisfifre/deckle/compare/v0.14.1...v0.30.2) — 2026-07-31
+## [0.30.2](https://github.com/louisfifre/deckle/compare/release/v0.14.1...release/v0.30.2) — 2026-07-31
 
 ### Added
 
@@ -1015,13 +1020,13 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **precision-scroll:** Convert wheel input globally
 - **scripts:** Restore semantic scrollable action logs
 
-## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
+## [0.14.1](https://github.com/louisfifre/deckle/compare/release/v0.14.0...release/v0.14.1) — 2026-07-20
 
 ### Fixed
 
 - **release:** Materialize tags before finalizing drafts
 
-## [0.14.0](https://github.com/louisfifre/deckle/compare/v0.13.7...v0.14.0) — 2026-07-20
+## [0.14.0](https://github.com/louisfifre/deckle/compare/release/v0.13.7...release/v0.14.0) — 2026-07-20
 
 ### Added
 
@@ -1038,7 +1043,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **install:** Isolate app releases from native bundles
 - **release:** Stage verified releases before publication
 
-## [0.13.7](https://github.com/louisfifre/deckle/compare/v0.13.4...v0.13.7) — 2026-07-19
+## [0.13.7](https://github.com/louisfifre/deckle/compare/release/v0.13.4...release/v0.13.7) — 2026-07-19
 
 ### Fixed
 
@@ -1046,7 +1051,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Exclude duplicate DirectML publish payload
 - **logging:** Restore structured filter labels
 
-## [0.13.4](https://github.com/louisfifre/deckle/compare/v0.8.0...v0.13.4) — 2026-07-19
+## [0.13.4](https://github.com/louisfifre/deckle/compare/release/v0.8.0...release/v0.13.4) — 2026-07-19
 
 ### Added
 
@@ -1209,7 +1214,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - Align runtime behavior and observability
 - **app:** Resolve DirectML publish collision
 
-## [0.8.0](https://github.com/louisfifre/deckle/compare/v0.7.2...v0.8.0) — 2026-07-03
+## [0.8.0](https://github.com/louisfifre/deckle/compare/release/v0.7.2...release/v0.8.0) — 2026-07-03
 
 ### Added
 
@@ -1247,7 +1252,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **autocorrect:** Add deterministic locative la rule
 - **autocorrect:** Score suffix evidence in ONNX judge
 
-## [0.7.2](https://github.com/louisfifre/deckle/compare/v0.7.1...v0.7.2) — 2026-07-02
+## [0.7.2](https://github.com/louisfifre/deckle/compare/release/v0.7.1...release/v0.7.2) — 2026-07-02
 
 ### Added
 
@@ -1261,13 +1266,13 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **installer:** Clean before extraction only over a recognised install
 - **installer:** Match running processes anywhere under the install folder
 
-## [0.7.1](https://github.com/louisfifre/deckle/compare/v0.7.0...v0.7.1) — 2026-07-01
+## [0.7.1](https://github.com/louisfifre/deckle/compare/release/v0.7.0...release/v0.7.1) — 2026-07-01
 
 ### Added
 
 - **installer:** Recap-and-one-keystroke console install
 
-## [0.7.0](https://github.com/louisfifre/deckle/compare/v0.6.0...v0.7.0) — 2026-07-01
+## [0.7.0](https://github.com/louisfifre/deckle/compare/release/v0.6.0...release/v0.7.0) — 2026-07-01
 
 ### Added
 
@@ -1290,7 +1295,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **ambient:** Ignore weak Hue echo mismatches
 - **ambient:** Attribute Hue bridge changes
 
-## [0.6.0](https://github.com/louisfifre/deckle/compare/v0.5.0...v0.6.0) — 2026-07-01
+## [0.6.0](https://github.com/louisfifre/deckle/compare/release/v0.5.0...release/v0.6.0) — 2026-07-01
 
 ### Added
 
@@ -1424,7 +1429,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Point the native runtime source at the louisfifre release
 - **scripts:** Parenthesise the version-bump arithmetic
 
-## [0.5.0](https://github.com/louisfifre/deckle/compare/v0.4.4...v0.5.0) — 2026-06-14
+## [0.5.0](https://github.com/louisfifre/deckle/compare/release/v0.4.4...release/v0.5.0) — 2026-06-14
 
 ### Added
 
@@ -1543,7 +1548,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Add missing Setup_OpenDiagnosticsFolder to the root resource map
 - **app:** Register always-on local sinks before settings migration
 
-## [0.4.4](https://github.com/louisfifre/deckle/compare/v0.4.1...v0.4.4) — 2026-06-07
+## [0.4.4](https://github.com/louisfifre/deckle/compare/release/v0.4.1...release/v0.4.4) — 2026-06-07
 
 ### Added
 
@@ -1578,7 +1583,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **app:** Keep the streaming firehose log gate whole across the VAD split
 - **transcription:** Start chrono and duration on real capture start
 
-## [0.4.1](https://github.com/louisfifre/deckle/compare/v0.4.0...v0.4.1) — 2026-06-04
+## [0.4.1](https://github.com/louisfifre/deckle/compare/release/v0.4.0...release/v0.4.1) — 2026-06-04
 
 ### Added
 
@@ -1590,7 +1595,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 
 - **scripts:** Mark 0.x releases as pre-release
 
-## [0.4.0](https://github.com/louisfifre/deckle/releases/tag/v0.4.0) — 2026-06-04
+## [0.4.0](https://github.com/louisfifre/deckle/releases/tag/release/v0.4.0) — 2026-06-04
 
 ### Added
 
@@ -2025,9 +2030,3 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **ambient:** Treat stale matching Hue echo as echo, not external
 - **scripts:** Align publish folder name with the release artifact
 - **hud:** Stabilize post-build topmost show
-
-## Earlier history
-
-Versions 0.2.0 – 0.3.5 — the WhispUI genesis and the early Deckle cycles
-(hotkey transcription, ambient lighting, observability) — predate this
-generated changelog and are not itemised here. See the git history.

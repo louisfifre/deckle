@@ -9,10 +9,10 @@ $ModuleRoot = $PSScriptRoot
 . (Join-Path $ModuleRoot 'script-discovery\catalog.ps1')
 
 Export-ModuleMember -Function `
-    Read-DeckleKeyValueLines, `
-    ConvertTo-DeckleKeyValueTable, `
-    Get-DeckleMarkdownFrontMatter, `
-    Read-DeckleScriptHeader, `
-    Get-DeckleScriptCatalog, `
-    Get-DeckleCatalogHiddenScripts, `
-    Get-DeckleCatalogRows
+    Read-KeyValueLines, `
+    ConvertTo-KeyValueTable, `
+    Get-MarkdownFrontMatter, `
+    Read-ScriptHeader, `
+    Get-ScriptCatalog, `
+    Get-CatalogHiddenScripts, `
+    Get-CatalogRows

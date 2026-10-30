@@ -19,7 +19,7 @@ function ConvertTo-TerminalFrameCharacters {
 function ConvertTo-TerminalFrameText {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
         [switch]$PreserveWidth
     )
 
@@ -34,7 +34,7 @@ function ConvertTo-TerminalFrameText {
 
 function Get-TerminalChangedLineIndexes {
     param(
-        [Parameter(Mandatory)][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
         [AllowNull()][object]$PreviousFrame
     )
 
@@ -90,7 +90,7 @@ function Get-TerminalSegmentColors {
     # A host that names no resolved palette keeps the console colours.
     $palette = 'Terminal'
     $paletteProperty = $HostState.PSObject.Properties['Palette']
-    if ($null -ne $paletteProperty -and $paletteProperty.Value -in @('DeckleDark', 'DeckleLight')) {
+    if ($null -ne $paletteProperty -and $paletteProperty.Value -in @('TrueColorDark', 'TrueColorLight')) {
         $palette = [string]$paletteProperty.Value
     }
     $style = Get-TerminalPresentationStyle `
@@ -277,7 +277,7 @@ function ConvertTo-TerminalFrameRuns {
 
 function Write-TerminalInteractionFrame {
     param(
-        [Parameter(Mandatory)][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
         [Parameter(Mandatory)][object]$HostState,
         [AllowNull()][object]$PreviousFrame
     )

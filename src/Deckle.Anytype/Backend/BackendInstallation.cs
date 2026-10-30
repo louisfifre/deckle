@@ -46,7 +46,7 @@ public static class BackendInstallation
     // open (msvcrt-linked exe plus a cross-allocator free in tantivy-go, see
     // anyproto/tantivy-go#25). Until upstream ships the fix, the pin is our own
     // rebuild of the official tag, produced by
-    // scripts/commands/release/build-anytype-backend.ps1 and hosted as a
+    // scripts/release/build-anytype-backend.ps1 and hosted as a
     // release asset of this repository; the SHA-256 is the one that script
     // prints. Once a release carries the fix, point this back at
     // github.com/anyproto/anytype-cli and pin GitHub's per-asset digest.

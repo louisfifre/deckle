@@ -1,10 +1,9 @@
 $ErrorActionPreference = 'Stop'
 $ScriptsDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
-$CommandDir = Join-Path $ScriptsDir 'commands'
 $LibDir = Join-Path $ScriptsDir 'lib'
 
 $root = Join-Path ([IO.Path]::GetTempPath()) "deckle-readme-stats-$([guid]::NewGuid())"
-$scriptPath = Join-Path $root 'scripts\commands\update-readme-stats.ps1'
+$scriptPath = Join-Path $root 'scripts\update-readme-stats.ps1'
 
 function Invoke-TestGit {
     param([Parameter(ValueFromRemainingArguments)][string[]]$Arguments)
@@ -15,9 +14,8 @@ function Invoke-TestGit {
 
 try {
     $null = New-Item -ItemType Directory -Path $root
-    $null = New-Item -ItemType Directory -Path (Join-Path $root 'scripts\commands')
     $null = New-Item -ItemType Directory -Path (Join-Path $root 'scripts\lib')
-    Copy-Item -LiteralPath (Join-Path $CommandDir 'update-readme-stats.ps1') -Destination $scriptPath
+    Copy-Item -LiteralPath (Join-Path $ScriptsDir 'update-readme-stats.ps1') -Destination $scriptPath
     Copy-Item -LiteralPath (Join-Path $LibDir 'action-summary.ps1') -Destination (Join-Path $root 'scripts\lib\action-summary.ps1')
     Copy-Item -LiteralPath (Join-Path $LibDir 'script-output.ps1') -Destination (Join-Path $root 'scripts\lib\script-output.ps1')
     Invoke-TestGit init --initial-branch=main | Out-Null

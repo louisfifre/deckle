@@ -1,13 +1,13 @@
 # Focus and paging transitions over a rendered frame.
 
 function Get-TerminalEnabledPlacements {
-    param([Parameter(Mandatory)][object]$Frame)
+    param([Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame)
 
     return @($Frame.Targets | Where-Object { $_.Target.Enabled })
 }
 
 function Get-TerminalInitialFocus {
-    param([Parameter(Mandatory)][object]$Frame)
+    param([Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame)
 
     if ($Frame.DefaultTargetId) {
         $declared = @(Get-TerminalEnabledPlacements -Frame $Frame | Where-Object { $_.TargetId -eq $Frame.DefaultTargetId } | Select-Object -First 1)
@@ -21,7 +21,7 @@ function Get-TerminalInitialFocus {
 function Move-TerminalFocus {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory)][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
         [string]$CurrentTargetId,
         [Parameter(Mandatory)][ValidateSet('Up', 'Down', 'Left', 'Right')][string]$Direction
     )
@@ -84,7 +84,7 @@ function Move-TerminalFocus {
 
 function Get-TerminalFocusedTarget {
     param(
-        [Parameter(Mandatory)][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
         [string]$FocusedTargetId
     )
 
@@ -111,7 +111,7 @@ function Get-TerminalPagingFocusTargetId {
 
 function Move-TerminalJournalPage {
     param(
-        [Parameter(Mandatory)][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
         [Parameter(Mandatory)][int]$CurrentOffset,
         [Parameter(Mandatory)][ValidateSet('Previous', 'Next', 'First', 'Last')][string]$Direction
     )
@@ -128,7 +128,7 @@ function Move-TerminalJournalPage {
 
 function Move-TerminalBodyPage {
     param(
-        [Parameter(Mandatory)][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
         [Parameter(Mandatory)][int]$CurrentOffset,
         [Parameter(Mandatory)][ValidateSet('Previous', 'Next', 'First', 'Last')][string]$Direction
     )
