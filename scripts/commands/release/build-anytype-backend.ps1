@@ -54,7 +54,7 @@ $LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 
 $Repo = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
-$Output = New-DeckleWorkflowOutput -Category 'anytype-backend'
+$Output = New-WorkflowOutput -Category 'anytype-backend'
 
 # The 16 sites where tantivy-go v1.0.6 frees a `C.CString` result through
 # `string_free`. Each entry names a Go file of the module and the variables
@@ -110,7 +110,7 @@ function Invoke-Native {
 }
 
 # ---------------------------------------------------------------------------
-Write-DeckleWorkflowStep -Output $Output -Message "Toolchain"
+Write-WorkflowStep -Output $Output -Message "Toolchain"
 
 # The scoop mingw comes first on PATH so `gcc` is the GCC the recipe was
 # proven with, not whichever one another tool put there.
@@ -128,8 +128,8 @@ $Gh = Get-Command gh -ErrorAction SilentlyContinue
 
 $goVersion = (Invoke-Native go @('version'))[0]
 $gccVersion = (Invoke-Native gcc @('--version'))[0]
-Write-DeckleWorkflowMessage -Output $Output -Message "go     : $goVersion"
-Write-DeckleWorkflowMessage -Output $Output -Message "gcc    : $gccVersion ($((Get-Command gcc).Source))"
+Write-WorkflowMessage -Output $Output -Message "go     : $goVersion"
+Write-WorkflowMessage -Output $Output -Message "gcc    : $gccVersion ($((Get-Command gcc).Source))"
 Add-Report "go: $goVersion"
 Add-Report "gcc: $gccVersion ($((Get-Command gcc).Source))"
 
@@ -138,16 +138,16 @@ Add-Report "gcc: $gccVersion ($((Get-Command gcc).Source))"
 [System.Diagnostics.Process]::GetCurrentProcess().PriorityClass = 'BelowNormal'
 
 # ---------------------------------------------------------------------------
-Write-DeckleWorkflowStep -Output $Output -Message "Source $Tag"
+Write-WorkflowStep -Output $Output -Message "Source $Tag"
 
 if ($Force -and (Test-Path -LiteralPath $Work)) {
-    Write-DeckleWorkflowAction -Output $Output -Message "removing $Work"
+    Write-WorkflowAction -Output $Output -Message "removing $Work"
     Remove-Item -LiteralPath $Work -Recurse -Force
 }
 New-Item -ItemType Directory -Force -Path $Work | Out-Null
 
 if (-not (Test-Path -LiteralPath (Join-Path $Clone 'go.mod'))) {
-    Write-DeckleWorkflowAction -Output $Output -Message "cloning anyproto/anytype-cli at $Tag"
+    Write-WorkflowAction -Output $Output -Message "cloning anyproto/anytype-cli at $Tag"
     if (Test-Path -LiteralPath $Clone) { Remove-Item -LiteralPath $Clone -Recurse -Force }
     Invoke-Native git @('clone', '--quiet', '--depth', '1', '--branch', $Tag,
         'https://github.com/anyproto/anytype-cli', $Clone) | Out-Null
@@ -159,22 +159,22 @@ if (-not (Test-Path -LiteralPath (Join-Path $Clone 'go.mod'))) {
 $Commit = (Invoke-Native git @('rev-parse', '--short', 'HEAD') -WorkingDirectory $Clone)[0]
 $DescribedTag = (Invoke-Native git @('describe', '--tags', '--exact-match') -WorkingDirectory $Clone)[0]
 if ($DescribedTag -ne $Tag) { throw "clone is at $DescribedTag, expected $Tag" }
-Write-DeckleWorkflowMessage -Output $Output -Message "commit : $Commit ($Tag)"
+Write-WorkflowMessage -Output $Output -Message "commit : $Commit ($Tag)"
 Add-Report "anytype-cli: $Tag $Commit"
 
 # GOTOOLCHAIN=local keeps the build on the Go installed here. A tag that
 # needs a newer Go fails here, by name, instead of downloading one silently.
 $env:GOTOOLCHAIN = 'local'
-Write-DeckleWorkflowAction -Output $Output -Message "go mod download"
+Write-WorkflowAction -Output $Output -Message "go mod download"
 Invoke-Native go @('mod', 'download') -WorkingDirectory $Clone | Out-Null
 
 $TantivyVersion = (Invoke-Native go @('list', '-m', '-f', '{{.Version}}', 'github.com/anyproto/tantivy-go') -WorkingDirectory $Clone)[0]
 $TantivyCacheDir = (Invoke-Native go @('list', '-m', '-f', '{{.Dir}}', 'github.com/anyproto/tantivy-go') -WorkingDirectory $Clone)[0]
-Write-DeckleWorkflowMessage -Output $Output -Message "tantivy-go : $TantivyVersion"
+Write-WorkflowMessage -Output $Output -Message "tantivy-go : $TantivyVersion"
 Add-Report "tantivy-go: $TantivyVersion"
 
 # ---------------------------------------------------------------------------
-Write-DeckleWorkflowStep -Output $Output -Message "Tantivy static library $TantivyVersion"
+Write-WorkflowStep -Output $Output -Message "Tantivy static library $TantivyVersion"
 
 # Same source as the official Makefile's download-tantivy target: the
 # prebuilt Rust archive published with the tantivy-go release.
@@ -184,7 +184,7 @@ $LibFile = Join-Path $LibExtracted 'libtantivy_go.a'
 if (-not (Test-Path -LiteralPath $LibFile)) {
     New-Item -ItemType Directory -Force -Path $TantivyLibDir, $LibExtracted | Out-Null
     $url = "https://github.com/anyproto/tantivy-go/releases/download/$TantivyVersion/windows-amd64.tar.gz"
-    Write-DeckleWorkflowAction -Output $Output -Message "downloading $url"
+    Write-WorkflowAction -Output $Output -Message "downloading $url"
     Invoke-WebRequest -Uri $url -OutFile $LibArchive
     Invoke-Native tar @('-xzf', $LibArchive, '-C', $LibExtracted) | Out-Null
     if (-not (Test-Path -LiteralPath $LibFile)) { throw "the tantivy archive holds no libtantivy_go.a" }
@@ -208,11 +208,11 @@ if ($Gh) {
         $LibVerdict = "unverified ($($_.Exception.Message.Split("`n")[0]))"
     }
 }
-Write-DeckleWorkflowMessage -Output $Output -Message "archive : $LibVerdict"
+Write-WorkflowMessage -Output $Output -Message "archive : $LibVerdict"
 Add-Report "tantivy lib archive: $LibVerdict"
 
 # ---------------------------------------------------------------------------
-Write-DeckleWorkflowStep -Output $Output -Message "tantivy-go free patch"
+Write-WorkflowStep -Output $Output -Message "tantivy-go free patch"
 
 # The module cache is read-only and shared with every other Go build on the
 # machine, so the patch is applied to a private copy and wired in through a
@@ -261,18 +261,18 @@ foreach ($site in $PatchSites) {
     [IO.File]::WriteAllText($path, $text)
     $Applied += $count
 }
-foreach ($line in $SiteLines) { Write-DeckleWorkflowMessage -Output $Output -Message $line -Role Muted }
+foreach ($line in $SiteLines) { Write-WorkflowMessage -Output $Output -Message $line -Role Muted }
 Add-Report "patch sites: $Applied/$ExpectedSiteCount"
 $SiteLines | ForEach-Object { Add-Report "  $_" }
 
 $Patched = $false
 if ($Applied -eq 0) {
-    Write-DeckleWorkflowMessage -Output $Output -Message "no site matches: tantivy-go $TantivyVersion no longer needs the patch, building the plain tag" -Role Success
+    Write-WorkflowMessage -Output $Output -Message "no site matches: tantivy-go $TantivyVersion no longer needs the patch, building the plain tag" -Role Success
 } elseif ($Applied -eq $ExpectedSiteCount) {
     $Patched = $true
     $replacePath = $PatchedModule -replace '\\', '/'
     Invoke-Native go @('mod', 'edit', '-replace', "github.com/anyproto/tantivy-go=$replacePath") -WorkingDirectory $Clone | Out-Null
-    Write-DeckleWorkflowMessage -Output $Output -Message "$Applied sites patched, go.mod replaces tantivy-go with the copy" -Role Success
+    Write-WorkflowMessage -Output $Output -Message "$Applied sites patched, go.mod replaces tantivy-go with the copy" -Role Success
     # The diff is kept beside the binary so a reader can see exactly what
     # differs from the tag without rebuilding anything.
     $diffPath = Join-Path $OutDir 'tantivy-go.patch'
@@ -283,7 +283,7 @@ if ($Applied -eq 0) {
 }
 
 # ---------------------------------------------------------------------------
-Write-DeckleWorkflowStep -Output $Output -Message "Build"
+Write-WorkflowStep -Output $Output -Message "Build"
 
 if ($Force -or -not (Test-Path -LiteralPath $Exe) -or $Patched) {
     $env:CGO_ENABLED = '1'
@@ -300,21 +300,21 @@ if ($Force -or -not (Test-Path -LiteralPath $Exe) -or $Patched) {
         "-X 'github.com/anyproto/anytype-cli/core.Commit=$Commit' " +
         "-X 'github.com/anyproto/anytype-cli/core.BuildTime=$buildTime deckle' " +
         "-X 'github.com/anyproto/anytype-cli/core.GitState=$gitState'"
-    Write-DeckleWorkflowAction -Output $Output -Message "go build -p 4 -trimpath -tags noheic (UCRT)"
+    Write-WorkflowAction -Output $Output -Message "go build -p 4 -trimpath -tags noheic (UCRT)"
     $sw = [Diagnostics.Stopwatch]::StartNew()
     if (Test-Path -LiteralPath $Exe) { Remove-Item -LiteralPath $Exe -Force }
     $buildLines = Invoke-Native go @('build', '-p', '4', '-trimpath', '-tags', 'noheic', '-ldflags', $ldflags, '-o', $Exe, '.') -WorkingDirectory $Clone
     foreach ($line in $buildLines) {
-        if ("$line".Trim()) { Write-DeckleWorkflowMessage -Output $Output -Message "$line" -Role Muted }
+        if ("$line".Trim()) { Write-WorkflowMessage -Output $Output -Message "$line" -Role Muted }
     }
-    Write-DeckleWorkflowMessage -Output $Output -Message ("built in {0:N0} s" -f $sw.Elapsed.TotalSeconds)
+    Write-WorkflowMessage -Output $Output -Message ("built in {0:N0} s" -f $sw.Elapsed.TotalSeconds)
     Add-Report "built: $buildTime UTC, $([math]::Round($sw.Elapsed.TotalSeconds)) s"
 } else {
-    Write-DeckleWorkflowMessage -Output $Output -Message "reusing $Exe (use -Force to rebuild)" -Role Muted
+    Write-WorkflowMessage -Output $Output -Message "reusing $Exe (use -Force to rebuild)" -Role Muted
 }
 
 # ---------------------------------------------------------------------------
-Write-DeckleWorkflowStep -Output $Output -Message "Verification"
+Write-WorkflowStep -Output $Output -Message "Verification"
 
 $Problems = @()
 
@@ -336,7 +336,7 @@ Add-Report "embedded: $tantivyLine $replaceLine".Trim()
 Add-Report "embedded: $("$heartLine".Trim())"
 if ($Patched -and -not $replaceLine) { $Problems += 'the binary does not carry the tantivy-go replace' }
 if (-not $Patched -and $replaceLine) { $Problems += 'the binary carries a replace it should not' }
-Write-DeckleWorkflowMessage -Output $Output -Message "$tantivyLine $replaceLine".Trim() -Role Muted
+Write-WorkflowMessage -Output $Output -Message "$tantivyLine $replaceLine".Trim() -Role Muted
 
 # The import table is the CRT proof: the UCRT shows as api-ms-win-crt-*,
 # the msvcrt build as msvcrt.dll. objdump comes with the mingw install.
@@ -344,16 +344,16 @@ if ($ObjDump) {
     $objdumpLines = Invoke-Native $ObjDump.Source @('-p', $Exe)
     $imports = @($objdumpLines | ForEach-Object { if ("$_" -match 'DLL Name: (.+)$') { $Matches[1].Trim() } } | Sort-Object -Unique)
     Add-Report "imports: $($imports -join ', ')"
-    Write-DeckleWorkflowMessage -Output $Output -Message "imports: $($imports -join ', ')" -Role Muted
+    Write-WorkflowMessage -Output $Output -Message "imports: $($imports -join ', ')" -Role Muted
     if ($imports -contains 'msvcrt.dll') { $Problems += 'the binary links msvcrt.dll; the toolchain is not the UCRT mingw' }
     if (-not ($imports | Where-Object { $_ -like 'api-ms-win-crt-*' })) { $Problems += 'no UCRT import found' }
 } else {
     Add-Report "imports: not read (objdump absent)"
-    Write-DeckleWorkflowMessage -Output $Output -Message "objdump absent: CRT not verified" -Role Warning
+    Write-WorkflowMessage -Output $Output -Message "objdump absent: CRT not verified" -Role Warning
 }
 
 # ---------------------------------------------------------------------------
-Write-DeckleWorkflowStep -Output $Output -Message "Package"
+Write-WorkflowStep -Output $Output -Message "Package"
 
 # Same layout as the official asset: anytype.exe at the archive root, which
 # is where BackendInstallation.InstallFromZipAsync looks for it. The license
@@ -392,7 +392,7 @@ $Report | Out-File -LiteralPath (Join-Path $OutDir 'build-report.txt') -Encoding
 $result = if ($Problems.Count -eq 0) { 'Success' } else { 'Failed' }
 $sentence = if ($Patched) { "anytype-cli $Tag rebuilt with the tantivy-go free patch." } else { "anytype-cli $Tag rebuilt from the plain tag; the patch no longer applies." }
 if ($Problems.Count -gt 0) { $sentence = "anytype-cli $Tag was built but failed verification: $($Problems -join '; ')." }
-Write-DeckleActionSummary -Workflow 'Build Anytype backend' -Result $result -Sentence $sentence -Details ([ordered]@{
+Write-ActionSummary -Workflow 'Build Anytype backend' -Result $result -Sentence $sentence -Details ([ordered]@{
     'Asset'        = $ZipPath
     'SHA-256'      = $ZipHash
     'Bytes'        = $ZipSize

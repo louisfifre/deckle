@@ -43,7 +43,7 @@ $LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'deckle-process.ps1')
 . (Join-Path $LibDir 'native-console.ps1')
 
-$WorkflowOutput = New-DeckleWorkflowOutput -Category 'build'
+$WorkflowOutput = New-WorkflowOutput -Category 'build'
 
 $Workflow = if ($NoRun) { 'Build' } else { 'Build & run' }
 $RepoRoot = $null
@@ -52,7 +52,7 @@ $LaunchMode = if ($NoRun) { 'Skipped (-NoRun)' } else { 'Pending' }
 $WaitResult = $null
 
 trap {
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Failed `
         -Sentence "$Workflow failed before completion." `
@@ -75,7 +75,7 @@ if ($Target) {
     $RepoRoot = Split-Path -Parent (Split-Path $ScriptDir)
 }
 
-Write-DeckleOutputText -Text "Repo: $RepoRoot" -Role Muted
+Write-OutputText -Text "Repo: $RepoRoot" -Role Muted
 
 $ProjectDir = Join-Path $RepoRoot 'src\Deckle.App'
 $Csproj     = Join-Path $ProjectDir 'Deckle.App.csproj'
@@ -95,18 +95,18 @@ $PivotPrefix     = $Configuration.ToLowerInvariant()
 # leaving the output directory half-copied.
 if ($NoRun) {
     $OutputDir = Join-Path $AppArtifactsBin $PivotPrefix
-    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Check running Deckle instance'
+    Write-WorkflowStep -Output $WorkflowOutput -Message 'Check running Deckle instance'
     $locking = Get-DeckleProcessInDirectory -Directory $OutputDir
     if ($locking.Count -gt 0) {
         $pids = ($locking | ForEach-Object { $_.Id }) -join ', '
         throw "Deckle PID $pids is running from $OutputDir, the directory this $Configuration build writes to, and -NoRun never stops it. Build Debug (separate output directory), build from another worktree, or drop -NoRun to replace the running instance with the fresh build."
     }
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "No running Deckle.exe in $OutputDir; any running instance is left untouched" -Role Muted
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "No running Deckle.exe in $OutputDir; any running instance is left untouched" -Role Muted
 } else {
-    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Stop running Deckle instance'
+    Write-WorkflowStep -Output $WorkflowOutput -Message 'Stop running Deckle instance'
     Stop-DeckleProcess -WriteEvent {
         param([string]$Role, [string]$Message)
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message $Message -Role $Role
+        Write-WorkflowMessage -Output $WorkflowOutput -Message $Message -Role $Role
     }
 }
 
@@ -116,18 +116,18 @@ if ($NoRun) {
 # worktree. /m:4 stays explicit: the .NET CLI applies its default node count
 # (every logical CPU) after Directory.Build.rsp. Four nodes measured as the
 # knee on 2026-10-14: eight gained nothing, one doubled the wall time.
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "dotnet build ($Configuration x64)"
-$buildExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentList @(
+Write-WorkflowStep -Output $WorkflowOutput -Message "dotnet build ($Configuration x64)"
+$buildExitCode = Invoke-CapturedProcess -FilePath 'dotnet' -ArgumentList @(
     'build', $Csproj, "-c:$Configuration", '-p:Platform=x64', '-v:m', '-nologo',
     '/m:4'
 )
 if ($buildExitCode -ne 0) { throw "dotnet build failed (code $buildExitCode)" }
-Write-DeckleWorkflowResult -Output $WorkflowOutput -Message 'Build succeeded'
+Write-WorkflowResult -Output $WorkflowOutput -Message 'Build succeeded'
 
 if ($NoRun) {
-    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Done'
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'Launch skipped because -NoRun was set'
-    Write-DeckleActionSummary `
+    Write-WorkflowStep -Output $WorkflowOutput -Message 'Done'
+    Write-WorkflowMessage -Output $WorkflowOutput -Message 'Launch skipped because -NoRun was set'
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Success `
         -Sentence "Deckle was built in $Configuration x64; launch was skipped and the running instance was left untouched." `
@@ -144,13 +144,13 @@ if ($NoRun) {
 # Prefix match on the pivot (debug, debug_win-x64) rather than an exact folder,
 # so a RID-suffixed pivot cannot strand the launch on a stale exe; the newest
 # write wins when several pivots coexist.
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Resolve built executable'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Resolve built executable'
 $ExeCandidates = Get-ChildItem -Path $AppArtifactsBin -Recurse -Filter 'Deckle.exe' -ErrorAction SilentlyContinue |
     Where-Object { $_.Directory.Name -like "$PivotPrefix*" } |
     Sort-Object LastWriteTime -Descending
 if (-not $ExeCandidates) { throw "Exe not found under $AppArtifactsBin (expected artifacts\bin\Deckle.App\$PivotPrefix\Deckle.exe)" }
 $ExePath = $ExeCandidates[0].FullName
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message $ExePath
+Write-WorkflowMessage -Output $WorkflowOutput -Message $ExePath
 
 function Start-DeckleViaShell {
     param(
@@ -181,13 +181,13 @@ if ($HudZOrderSelfTest) {
     $launchArgs = @('--post-build')
 }
 
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Launch Deckle'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Launch Deckle'
 Start-DeckleViaShell -FilePath $ExePath -DeckleArgs $launchArgs
 if ($launchArgs.Count) {
-    Write-DeckleWorkflowResult -Output $WorkflowOutput -Message ("Started with args: {0}" -f ($launchArgs -join ' '))
+    Write-WorkflowResult -Output $WorkflowOutput -Message ("Started with args: {0}" -f ($launchArgs -join ' '))
     $LaunchMode = "Started with args: $($launchArgs -join ' ')"
 } else {
-    Write-DeckleWorkflowResult -Output $WorkflowOutput -Message 'Started without post-build restart args'
+    Write-WorkflowResult -Output $WorkflowOutput -Message 'Started without post-build restart args'
     $LaunchMode = 'Started without post-build restart args'
 }
 
@@ -200,17 +200,17 @@ if ($Wait) {
         $proc = Get-Process -Name Deckle -ErrorAction SilentlyContinue | Select-Object -First 1
     } while (-not $proc -and (Get-Date) -lt $deadline)
     if ($proc) {
-        Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Wait for Deckle PID $($proc.Id)"
+        Write-WorkflowStep -Output $WorkflowOutput -Message "Wait for Deckle PID $($proc.Id)"
         $proc.WaitForExit()
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Deckle exited with code $($proc.ExitCode)"
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "Deckle exited with code $($proc.ExitCode)"
         $WaitResult = "Deckle PID $($proc.Id) exited with code $($proc.ExitCode)"
     } else {
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'Deckle process did not appear within 5 seconds' -Role Warning
+        Write-WorkflowMessage -Output $WorkflowOutput -Message 'Deckle process did not appear within 5 seconds' -Role Warning
         $WaitResult = 'Deckle process did not appear within 5 seconds'
     }
 }
 
-Write-DeckleActionSummary `
+Write-ActionSummary `
     -Workflow $Workflow `
     -Result Success `
     -Sentence "Deckle was built in $Configuration x64 and launched from this worktree." `

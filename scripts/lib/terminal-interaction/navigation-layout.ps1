@@ -2,7 +2,7 @@
 
 function Get-TerminalNavigationGrid {
     param(
-        [Parameter(Mandatory)][object]$OwnerActionMenu,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.ActionMenuView')][object]$OwnerActionMenu,
         [Parameter(Mandatory)][int]$Width
     )
 
@@ -19,8 +19,8 @@ function Get-TerminalNavigationGrid {
 
 function Add-TerminalNavigationTarget {
     param(
-        [Parameter(Mandatory)][object]$Frame,
-        [Parameter(Mandatory)][object]$Target,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Target')][object]$Target,
         [Parameter(Mandatory)][int]$LineIndex,
         [Parameter(Mandatory)][object]$Grid,
         [string]$FocusedTargetId
@@ -51,7 +51,7 @@ function Get-TerminalPagingFooterHeight {
 
 function Add-TerminalPagingFooter {
     param(
-        [Parameter(Mandatory)][object]$Frame,
+        [Parameter(Mandatory)][PSTypeName('DeckleScripts.TerminalInteraction.Frame')][object]$Frame,
         [Parameter(Mandatory)][int]$Offset,
         [Parameter(Mandatory)][int]$PageSize,
         [Parameter(Mandatory)][int]$LineCount,

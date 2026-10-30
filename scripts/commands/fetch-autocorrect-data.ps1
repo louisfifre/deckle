@@ -45,7 +45,7 @@ if (-not $OutputRoot) {
 }
 $RawDir = Join-Path $OutputRoot 'raw'
 
-$WorkflowOutput = New-DeckleWorkflowOutput -Category 'fetch'
+$WorkflowOutput = New-WorkflowOutput -Category 'fetch'
 
 $Workflow = 'Fetch autocorrect data'
 $lexiqueRows = $null
@@ -54,7 +54,7 @@ $trainCount = $null
 $evalCount = $null
 
 trap {
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Failed `
         -Sentence "Autocorrect data fetch failed before completion." `
@@ -74,13 +74,13 @@ function Get-SizeMB($path) { [math]::Round((Get-Item $path).Length / 1MB, 2) }
 function Download($url, $dst, $expectedMinBytes) {
     $name = Split-Path $dst -Leaf
     if (-not $Force -and (Test-Path $dst) -and ((Get-Item $dst).Length -ge $expectedMinBytes)) {
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "already present $name ($(Get-SizeMB $dst) MB)"
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "already present $name ($(Get-SizeMB $dst) MB)"
         return $false
     }
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "downloading $name ..."
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "downloading $name ..."
     & curl.exe -L --fail --retry 3 --progress-bar -o $dst $url
     if ($LASTEXITCODE -ne 0) { throw "curl failed for $url" }
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "downloaded $name ($(Get-SizeMB $dst) MB)"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "downloaded $name ($(Get-SizeMB $dst) MB)"
     return $true
 }
 
@@ -91,12 +91,12 @@ $Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
 $swTotal = [System.Diagnostics.Stopwatch]::StartNew()
 
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "output root: $OutputRoot"
+Write-WorkflowStep -Output $WorkflowOutput -Message "output root: $OutputRoot"
 if (-not (Test-Path $RawDir)) {
     New-Item -ItemType Directory -Path $RawDir -Force | Out-Null
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "created $RawDir"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "created $RawDir"
 } else {
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "exists  $RawDir"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "exists  $RawDir"
 }
 
 # Lexique 3.83, CC BY-SA 4.0: its frequency-ranked French ortho column is the
@@ -104,7 +104,7 @@ if (-not (Test-Path $RawDir)) {
 # http (the server only speaks http and serves the TSV as
 # application/octet-stream). Fallback is the openlexicon GitHub mirror, which
 # serves the same dataset over https raw.
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Lexique 3.83 (French inflected forms + frequencies)'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Lexique 3.83 (French inflected forms + frequencies)'
 $lexiqueDst = Join-Path $RawDir 'Lexique383.tsv'
 $lexiquePrimary  = 'http://www.lexique.org/databases/Lexique383/Lexique383.tsv'
 $lexiqueFallback = 'https://raw.githubusercontent.com/chrplr/openlexicon/master/datasets-info/Lexique383/Lexique383.tsv'
@@ -113,29 +113,29 @@ $lexiqueMinBytes = 20MB
 $lexiqueUrlUsed  = $lexiquePrimary
 
 if ($Force -or -not (Test-Path $lexiqueDst) -or ((Get-Item $lexiqueDst).Length -lt $lexiqueMinBytes)) {
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "trying primary $lexiquePrimary"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "trying primary $lexiquePrimary"
     & curl.exe -L --fail --retry 2 --progress-bar -o $lexiqueDst $lexiquePrimary
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path $lexiqueDst) -or ((Get-Item $lexiqueDst).Length -lt $lexiqueMinBytes)) {
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "primary failed or short — falling back to openlexicon GitHub mirror" -Role Warning
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "primary failed or short — falling back to openlexicon GitHub mirror" -Role Warning
         & curl.exe -L --fail --retry 3 --progress-bar -o $lexiqueDst $lexiqueFallback
         if ($LASTEXITCODE -ne 0) { throw "curl failed for both Lexique sources" }
         $lexiqueUrlUsed = $lexiqueFallback
     }
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "downloaded Lexique383.tsv ($(Get-SizeMB $lexiqueDst) MB) from $lexiqueUrlUsed"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "downloaded Lexique383.tsv ($(Get-SizeMB $lexiqueDst) MB) from $lexiqueUrlUsed"
 } else {
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "already present Lexique383.tsv ($(Get-SizeMB $lexiqueDst) MB)"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "already present Lexique383.tsv ($(Get-SizeMB $lexiqueDst) MB)"
 }
 
 $lexiqueHeader = (Get-Content $lexiqueDst -First 1)
 $lexiqueCols   = $lexiqueHeader -split "`t"
 if ($lexiqueCols -notcontains 'ortho' -or -not ($lexiqueCols -match 'freq')) {
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "header does not look like Lexique (no 'ortho' / 'freq' column) — got: $lexiqueHeader" -Role Warning
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "header does not look like Lexique (no 'ortho' / 'freq' column) — got: $lexiqueHeader" -Role Warning
 }
 # Measure-Object streams the file rather than loading it whole.
 $lexiqueLines = (Get-Content $lexiqueDst | Measure-Object -Line).Lines
 $lexiqueRows  = $lexiqueLines - 1
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "header columns ($($lexiqueCols.Count)): $($lexiqueCols -join ', ')"
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "data rows: $lexiqueRows"
+Write-WorkflowMessage -Output $WorkflowOutput -Message "header columns ($($lexiqueCols.Count)): $($lexiqueCols -join ', ')"
+Write-WorkflowMessage -Output $WorkflowOutput -Message "data rows: $lexiqueRows"
 
 # Morphalou 3.1 closes the conjugation / vocabulary gap Lexique leaves
 # (captes, renommes…): build-data overlays these forms at an epsilon frequency.
@@ -143,7 +143,7 @@ Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "data rows: $lexiqu
 # JS-only; the content API serves the zip directly). Only the CSV is kept from
 # the archive — the bundled HTML conjugation tree is dead weight. LGPL-LR (see
 # NOTICE.md).
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Morphalou 3.1 (French inflected-form coverage)'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Morphalou 3.1 (French inflected-form coverage)'
 $morphalouCsv = Join-Path $RawDir 'Morphalou3.1_CSV.csv'
 $morphalouUrl = 'https://repository.ortolang.fr/api/content/morphalou/3/Morphalou3.1_formatCSV_toutEnUn.zip'
 # The extracted CSV is ~100 MB; 50 MB is a safe completeness floor.
@@ -151,10 +151,10 @@ $morphalouMinBytes = 50MB
 
 if ($Force -or -not (Test-Path $morphalouCsv) -or ((Get-Item $morphalouCsv).Length -lt $morphalouMinBytes)) {
     $morphalouZip = Join-Path $RawDir 'Morphalou3.1_CSV.zip'
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "downloading Morphalou3.1 CSV archive (~38 MB) ..."
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "downloading Morphalou3.1 CSV archive (~38 MB) ..."
     & curl.exe -L --fail --retry 3 --progress-bar -o $morphalouZip $morphalouUrl
     if ($LASTEXITCODE -ne 0) { throw "curl failed for Morphalou" }
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "extracting Morphalou3.1_CSV.csv only ..."
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "extracting Morphalou3.1_CSV.csv only ..."
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $zipArchive = [System.IO.Compression.ZipFile]::OpenRead($morphalouZip)
     try {
@@ -165,14 +165,14 @@ if ($Force -or -not (Test-Path $morphalouCsv) -or ((Get-Item $morphalouCsv).Leng
         $zipArchive.Dispose()
     }
     Remove-Item $morphalouZip -Force
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "extracted Morphalou3.1_CSV.csv ($(Get-SizeMB $morphalouCsv) MB)"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "extracted Morphalou3.1_CSV.csv ($(Get-SizeMB $morphalouCsv) MB)"
 } else {
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "already present Morphalou3.1_CSV.csv ($(Get-SizeMB $morphalouCsv) MB)"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "already present Morphalou3.1_CSV.csv ($(Get-SizeMB $morphalouCsv) MB)"
 }
 
 # Norvig's English unigram counts tell English words (left untouched) from
 # French ones (re-accenting candidates).
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Norvig count_1w.txt (English word counts)'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Norvig count_1w.txt (English word counts)'
 $norvigDst = Join-Path $RawDir 'count_1w.txt'
 $norvigUrl = 'https://norvig.com/ngrams/count_1w.txt'
 # The file is ~4.7 MB / ~333k lines; 3 MB is a safe completeness floor.
@@ -181,18 +181,18 @@ Download $norvigUrl $norvigDst 3MB | Out-Null
 $norvigSample = Get-Content $norvigDst -First 3
 $norvigShapeOk = ($norvigSample | Where-Object { $_ -match '^\S+\t\d+$' }).Count -eq $norvigSample.Count
 if (-not $norvigShapeOk) {
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "count_1w.txt rows do not match 'word<TAB>count' — sample: $($norvigSample -join ' / ')" -Role Warning
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "count_1w.txt rows do not match 'word<TAB>count' — sample: $($norvigSample -join ' / ')" -Role Warning
 }
 $norvigRows = (Get-Content $norvigDst | Measure-Object -Line).Lines
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "shape ok: $norvigShapeOk (sample: $($norvigSample[0]))"
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "rows: $norvigRows"
+Write-WorkflowMessage -Output $WorkflowOutput -Message "shape ok: $norvigShapeOk (sample: $($norvigSample[0]))"
+Write-WorkflowMessage -Output $WorkflowOutput -Message "rows: $norvigRows"
 
 # The restricted globish seed is built from the <Equivalent langue="en"> entries
 # of the official FranceTerme export. The canonical XML lives on the
 # culture.gouv.fr public export — the remote resource the data.gouv.fr dataset
 # points to — served over http as text/xml, ~9 MB, no auth. Licence Ouverte /
 # Etalab (see NOTICE.md).
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'FranceTerme.xml (French terminology — English equivalents)'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'FranceTerme.xml (French terminology — English equivalents)'
 $franceTermeDst = Join-Path $RawDir 'FranceTerme.xml'
 $franceTermeUrl = 'http://www.franceterme.culture.gouv.fr/public/FranceTerme.xml'
 # The export is ~8.9 MB; 4 MB is a safe "looks complete" floor.
@@ -200,7 +200,7 @@ Download $franceTermeUrl $franceTermeDst 4MB | Out-Null
 
 $franceTermeHead = (Get-Content $franceTermeDst -First 1)
 if ($franceTermeHead -notmatch '<\?xml') {
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "FranceTerme.xml does not begin with an XML declaration — got: $franceTermeHead" -Role Warning
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "FranceTerme.xml does not begin with an XML declaration — got: $franceTermeHead" -Role Warning
 }
 
 # The kaikki wiktextract JSONL dumps — the surface-form deposits the domain
@@ -225,14 +225,14 @@ $KaikkiDumps = @(
 
 if ($IncludeKaikki) {
     foreach ($dump in $KaikkiDumps) {
-        Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Kaikki raw extraction — $($dump.Label)"
+        Write-WorkflowStep -Output $WorkflowOutput -Message "Kaikki raw extraction — $($dump.Label)"
         Download $dump.Url (Join-Path $RawDir $dump.Name) $dump.MinBytes | Out-Null
     }
 }
 
 # Wikipedia FR plaintext is a real-prose corpus for evaluating the
 # autocorrect end to end.
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Wikipedia FR plaintext corpus (train + eval)'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Wikipedia FR plaintext corpus (train + eval)'
 $trainDst = Join-Path $RawDir 'wiki-fr-train.txt'
 $evalDst  = Join-Path $RawDir 'wiki-fr-eval.txt'
 
@@ -240,7 +240,7 @@ $trainOk = (Test-Path $trainDst) -and ((Get-Item $trainDst).Length -ge ($TrainMB
 $evalOk  = (Test-Path $evalDst)  -and ((Get-Item $evalDst).Length  -ge ($EvalMB  * 1MB))
 
 if (-not $Force -and $trainOk -and $evalOk) {
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "already present wiki-fr-train.txt ($(Get-SizeMB $trainDst) MB) + wiki-fr-eval.txt ($(Get-SizeMB $evalDst) MB)"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "already present wiki-fr-train.txt ($(Get-SizeMB $trainDst) MB) + wiki-fr-eval.txt ($(Get-SizeMB $evalDst) MB)"
 } else {
     $UA = 'Deckle-autocorrect-corpus/1.0 (contact: outils@louisfifre.com)'
     $apiBase = 'https://fr.wikipedia.org/w/api.php'
@@ -263,7 +263,7 @@ if (-not $Force -and $trainOk -and $evalOk) {
                 return Invoke-RestMethod -Uri $url -Headers $headers -TimeoutSec 40
             } catch {
                 if ($attempt -eq 2) { throw }
-                Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "transient API failure (attempt $attempt) — retrying: $($_.Exception.Message)" -Role Warning
+                Write-WorkflowMessage -Output $WorkflowOutput -Message "transient API failure (attempt $attempt) — retrying: $($_.Exception.Message)" -Role Warning
                 Start-Sleep -Seconds 2
             }
         }
@@ -304,9 +304,9 @@ if (-not $Force -and $trainOk -and $evalOk) {
         return $text.Trim()
     }
 
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "enumerating quality-article titles ..."
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "enumerating quality-article titles ..."
     $allTitles = @(Get-CategoryTitles)
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "candidate titles: $($allTitles.Count)"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "candidate titles: $($allTitles.Count)"
 
     function Build-Corpus($titles, $dst, $targetBytes, $label, [hashtable]$seenSet) {
         $writer = New-Object System.IO.StreamWriter($dst, $false, $Utf8NoBom)
@@ -325,7 +325,7 @@ if (-not $Force -and $trainOk -and $evalOk) {
                 $count++
                 $written = $writer.BaseStream.Length
                 if ($count % 25 -eq 0) {
-                    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$label : $count articles, $([math]::Round($written / 1MB, 2)) MB"
+                    Write-WorkflowMessage -Output $WorkflowOutput -Message "$label : $count articles, $([math]::Round($written / 1MB, 2)) MB"
                 }
                 if ($written -ge $targetBytes) { break }
             }
@@ -339,33 +339,33 @@ if (-not $Force -and $trainOk -and $evalOk) {
     # The shared seen-set keeps train and the held-out eval disjoint by
     # article. Train is filled first, eval second from whatever titles remain.
     $seen = @{}
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "building train corpus (target $TrainMB MB) ..."
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "building train corpus (target $TrainMB MB) ..."
     $trainCount = Build-Corpus $allTitles $trainDst ($TrainMB * 1MB) 'train' $seen
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "train: $trainCount articles, $(Get-SizeMB $trainDst) MB"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "train: $trainCount articles, $(Get-SizeMB $trainDst) MB"
 
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "building eval corpus (target $EvalMB MB, disjoint articles) ..."
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "building eval corpus (target $EvalMB MB, disjoint articles) ..."
     $evalCount = Build-Corpus $allTitles $evalDst ($EvalMB * 1MB) 'eval' $seen
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "eval: $evalCount articles, $(Get-SizeMB $evalDst) MB"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "eval: $evalCount articles, $(Get-SizeMB $evalDst) MB"
 
     if ((Get-Item $trainDst).Length -lt ($TrainMB * 1MB)) {
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "train below target ($(Get-SizeMB $trainDst) MB < $TrainMB MB) — categories may be exhausted" -Role Warning
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "train below target ($(Get-SizeMB $trainDst) MB < $TrainMB MB) — categories may be exhausted" -Role Warning
     }
     if ((Get-Item $evalDst).Length -lt ($EvalMB * 1MB)) {
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "eval below target ($(Get-SizeMB $evalDst) MB < $EvalMB MB) — categories may be exhausted" -Role Warning
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "eval below target ($(Get-SizeMB $evalDst) MB < $EvalMB MB) — categories may be exhausted" -Role Warning
     }
 }
 
 $swTotal.Stop()
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'done'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'done'
 $expectedFiles = @('Lexique383.tsv', 'Morphalou3.1_CSV.csv', 'count_1w.txt', 'FranceTerme.xml', 'wiki-fr-train.txt', 'wiki-fr-eval.txt')
 if ($IncludeKaikki) { $expectedFiles += $KaikkiDumps.Name }
 foreach ($f in $expectedFiles) {
     $p = Join-Path $RawDir $f
     if (Test-Path $p) { Write-Host ("         {0,-20} {1,8} MB" -f $f, (Get-SizeMB $p)) }
-    else              { Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "MISSING $f" -Role Warning }
+    else              { Write-WorkflowMessage -Output $WorkflowOutput -Message "MISSING $f" -Role Warning }
 }
-Write-DeckleOutputLine -Segments @()
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "wall time: $([math]::Round($swTotal.Elapsed.TotalMinutes, 1)) min" -Role Muted
+Write-OutputLine -Segments @()
+Write-WorkflowMessage -Output $WorkflowOutput -Message "wall time: $([math]::Round($swTotal.Elapsed.TotalMinutes, 1)) min" -Role Muted
 
 $missingFiles = $expectedFiles |
     Where-Object { -not (Test-Path (Join-Path $RawDir $_)) }
@@ -376,7 +376,7 @@ $summarySentence = if ($missingFiles.Count -gt 0) {
     "Autocorrect data sources were fetched under $RawDir."
 }
 
-Write-DeckleActionSummary `
+Write-ActionSummary `
     -Workflow $Workflow `
     -Result $summaryResult `
     -Sentence $summarySentence `

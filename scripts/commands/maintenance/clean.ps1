@@ -41,7 +41,7 @@ $skippedLabels = @()
 $buildServerCleanup = $null
 
 trap {
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Failed `
         -Sentence "Build output cleanup failed before completion." `
@@ -205,7 +205,7 @@ $buildServerExit = if (-not $buildServerCleanup) {
     "$($buildServerCleanup.ExitCode)"
 }
 
-Write-DeckleActionSummary `
+Write-ActionSummary `
     -Workflow $Workflow `
     -Result $summaryResult `
     -Sentence $summarySentence `

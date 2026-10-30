@@ -294,7 +294,6 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       ├── theta.ps1  — Axe delta Removes delta for good.
 │   │   │       └── two-axes.ps1
 │   │   ├── launcher/
-│   │   │   ├── action-log.tests.ps1
 │   │   │   ├── action-results.tests.ps1
 │   │   │   ├── ActionResultBugNotes.md
 │   │   │   ├── actions.tests.ps1
@@ -305,12 +304,9 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── statistics-menus.tests.ps1
 │   │   │   └── statistics-plans.tests.ps1
 │   │   ├── lib/
-│   │   │   ├── action-summary.tests.ps1
 │   │   │   ├── agent-skills-layout.tests.ps1
-│   │   │   ├── agent-state-maintenance.tests.ps1
 │   │   │   ├── context-inventory.tests.ps1
 │   │   │   ├── deckle-process.tests.ps1
-│   │   │   ├── native-console.tests.ps1
 │   │   │   ├── native-runtime-release.tests.ps1
 │   │   │   ├── pe-fixture.ps1
 │   │   │   ├── pe-imports.tests.ps1
@@ -318,9 +314,7 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── release-validation.tests.ps1
 │   │   │   ├── repository-inventory.tests.ps1
 │   │   │   ├── resource-inventory.tests.ps1
-│   │   │   ├── script-discovery.tests.ps1
 │   │   │   ├── script-layout.tests.ps1
-│   │   │   ├── script-output.tests.ps1
 │   │   │   └── source-metrics.tests.ps1
 │   │   ├── menu/
 │   │   │   ├── chrome.tests.ps1
@@ -331,19 +325,14 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │   ├── status-view.tests.ps1
 │   │   │   └── text-input.tests.ps1
 │   │   └── terminal-interaction/
-│   │       ├── contracts.tests.ps1
 │   │       ├── discovered-catalog.tests.ps1
 │   │       ├── flows.tests.ps1
-│   │       ├── host.tests.ps1
 │   │       ├── HostBugNotes.md
-│   │       ├── layout.tests.ps1
 │   │       ├── LayoutBugNotes.md
-│   │       ├── navigation.tests.ps1
 │   │       ├── NavigationBugNotes.md
 │   │       ├── preparation.tests.ps1
 │   │       ├── RenderingBugNotes.md
-│   │       ├── SemanticBugNotes.md
-│   │       └── theme.tests.ps1
+│   │       └── SemanticBugNotes.md
 │   ├── build-locked.ps1  — Run one dotnet build or test under the machine-wide Deckle build lock. AGENTS.md forbids two builds at once on this machine, whatever the session. Par…
 │   ├── deckle-preview.ps1
 │   ├── deckle.ps1

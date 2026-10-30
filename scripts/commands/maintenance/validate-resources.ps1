@@ -58,7 +58,7 @@ if ($Json) {
 }
 
 $findingCount = @($result.Missing).Count + @($result.Divergences).Count
-Write-DeckleActionSummary -Workflow 'Validate resources' -Result Success `
+Write-ActionSummary -Workflow 'Validate resources' -Result Success `
     -Sentence "Deckle resource inventories were audited without modifying them." `
     -Details ([ordered]@{
         Worktree = $RepoRoot

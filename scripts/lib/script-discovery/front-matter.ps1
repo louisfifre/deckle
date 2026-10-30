@@ -1,6 +1,6 @@
 # Markdown front matter, read through the shared key-value reader.
 
-function Get-DeckleMarkdownFrontMatter {
+function Get-MarkdownFrontMatter {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Path)
 
@@ -18,8 +18,8 @@ function Get-DeckleMarkdownFrontMatter {
     if ($closing -lt 0) { return $null }
     if ($closing -eq 1) { return $null }
 
-    $pairs = @(Read-DeckleKeyValueLines -Lines $lines[1..($closing - 1)])
-    $fields = ConvertTo-DeckleKeyValueTable -Pairs $pairs
+    $pairs = @(Read-KeyValueLines -Lines $lines[1..($closing - 1)])
+    $fields = ConvertTo-KeyValueTable -Pairs $pairs
     if ($fields.Count -eq 0) { return $null }
     return $fields
 }

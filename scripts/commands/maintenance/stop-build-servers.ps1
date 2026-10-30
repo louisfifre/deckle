@@ -24,7 +24,7 @@ $Workflow = 'Stop .NET build servers'
 $cleanup = $null
 
 trap {
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Failed `
         -Sentence "Stopping .NET build servers failed." `
@@ -54,7 +54,7 @@ $summarySentence = if ($cleanup.BeforeCount -eq 0) {
 }
 $commandExit = if ($cleanup.ExitCode -eq 0) { '0' } else { "$($cleanup.ExitCode) (no servers remained)" }
 
-Write-DeckleActionSummary `
+Write-ActionSummary `
     -Workflow $Workflow `
     -Result Success `
     -Sentence $summarySentence `

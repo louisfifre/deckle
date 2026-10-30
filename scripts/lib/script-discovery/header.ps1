@@ -1,9 +1,9 @@
 # Script Header reader: comment-based help, param block and #Requires, through
 # the PowerShell parser only, so reading a script never executes it.
 
-$script:DeckleHelpKeywordPattern = '^\s*(<#|#)?\s*\.(SYNOPSIS|DESCRIPTION|NOTES|PARAMETER|EXAMPLE|INPUTS|OUTPUTS|LINK|COMPONENT|ROLE|FUNCTIONALITY)\b'
+$script:HelpKeywordPattern = '^\s*(<#|#)?\s*\.(SYNOPSIS|DESCRIPTION|NOTES|PARAMETER|EXAMPLE|INPUTS|OUTPUTS|LINK|COMPONENT|ROLE|FUNCTIONALITY)\b'
 
-function ConvertTo-DeckleHelpSentence {
+function ConvertTo-HelpSentence {
     param([AllowNull()][string]$Text)
 
     if ([string]::IsNullOrWhiteSpace($Text)) { return '' }
@@ -11,7 +11,7 @@ function ConvertTo-DeckleHelpSentence {
     return ($lines -join ' ')
 }
 
-function Get-DeckleAttributeName {
+function Get-AttributeName {
     param([Parameter(Mandatory)][object]$Attribute)
 
     $name = $Attribute.TypeName.Name
@@ -21,7 +21,7 @@ function Get-DeckleAttributeName {
     return $name
 }
 
-function Get-DeckleScriptParameters {
+function Get-ScriptParameters {
     param([AllowNull()][object]$ParamBlock)
 
     $parameters = [System.Collections.Generic.List[object]]::new()
@@ -37,7 +37,7 @@ function Get-DeckleScriptParameters {
         $isMandatory = $false
         foreach ($attribute in $parameterAst.Attributes) {
             if ($attribute -isnot [System.Management.Automation.Language.AttributeAst]) { continue }
-            $attributeName = Get-DeckleAttributeName -Attribute $attribute
+            $attributeName = Get-AttributeName -Attribute $attribute
             if ($attributeName -eq 'ValidateSet') {
                 $values = foreach ($argument in $attribute.PositionalArguments) {
                     try { [string]$argument.SafeGetValue() } catch { $argument.Extent.Text }
@@ -82,7 +82,7 @@ function Get-DeckleScriptParameters {
     return @($parameters)
 }
 
-function Get-DeckleLeadingCommentTokens {
+function Get-LeadingCommentTokens {
     param([Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Tokens)
 
     $comments = [System.Collections.Generic.List[object]]::new()
@@ -95,14 +95,14 @@ function Get-DeckleLeadingCommentTokens {
     return @($comments)
 }
 
-function Get-DeckleVoidedHeaderReason {
+function Get-VoidedHeaderReason {
     param([Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Tokens)
 
-    $leading = @(Get-DeckleLeadingCommentTokens -Tokens $Tokens)
+    $leading = @(Get-LeadingCommentTokens -Tokens $Tokens)
     $helpToken = $null
     foreach ($comment in $leading) {
         foreach ($line in ($comment.Text -split '\r?\n')) {
-            if ($line -match $script:DeckleHelpKeywordPattern) { $helpToken = $comment; break }
+            if ($line -match $script:HelpKeywordPattern) { $helpToken = $comment; break }
         }
         if ($null -ne $helpToken) { break }
     }
@@ -134,7 +134,7 @@ function Get-DeckleVoidedHeaderReason {
     return 'unknown help keyword or dot-word line'
 }
 
-function ConvertTo-DeckleHeaderAction {
+function ConvertTo-HeaderAction {
     param([Parameter(Mandatory)][AllowEmptyString()][string]$Value)
 
     $segments = @($Value -split '\|' | ForEach-Object { $_.Trim() })
@@ -165,13 +165,13 @@ function ConvertTo-DeckleHeaderAction {
     }
 }
 
-function Read-DeckleScriptHeader {
+function Read-ScriptHeader {
     [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Path)
 
     $fullPath = [System.IO.Path]::GetFullPath($Path)
     $header = [pscustomobject][ordered]@{
-        PSTypeName = 'Deckle.ScriptDiscovery.Header'
+        PSTypeName = 'DeckleScripts.ScriptDiscovery.Header'
         Path = $fullPath
         Name = [System.IO.Path]::GetFileNameWithoutExtension($fullPath)
         Status = $null
@@ -197,7 +197,7 @@ function Read-DeckleScriptHeader {
     $ast = [System.Management.Automation.Language.Parser]::ParseInput($text, $fullPath, [ref]$tokens, [ref]$errors)
     $header.ParseErrors = @($errors)
     $header.Requirements = $ast.ScriptRequirements
-    $parameters = @(Get-DeckleScriptParameters -ParamBlock $ast.ParamBlock)
+    $parameters = @(Get-ScriptParameters -ParamBlock $ast.ParamBlock)
     $header.Parameters = @($parameters | ForEach-Object {
         [pscustomobject]@{
             Name = $_.Name
@@ -215,7 +215,7 @@ function Read-DeckleScriptHeader {
             $header.Reason = $errors[0].Message
             return $header
         }
-        $voidedReason = Get-DeckleVoidedHeaderReason -Tokens @($tokens)
+        $voidedReason = Get-VoidedHeaderReason -Tokens @($tokens)
         if ($null -ne $voidedReason) {
             $header.Status = 'VoidedHeader'
             $header.Reason = $voidedReason
@@ -226,12 +226,12 @@ function Read-DeckleScriptHeader {
         return $header
     }
 
-    $header.Label = ConvertTo-DeckleHelpSentence -Text $help.Synopsis
-    $header.Description = ConvertTo-DeckleHelpSentence -Text $help.Description
+    $header.Label = ConvertTo-HelpSentence -Text $help.Synopsis
+    $header.Description = ConvertTo-HelpSentence -Text $help.Description
     $noteLines = if ($help.Notes) { @($help.Notes -split '\r?\n') } else { @() }
-    $keys = @(Read-DeckleKeyValueLines -Lines $noteLines)
+    $keys = @(Read-KeyValueLines -Lines $noteLines)
     $header.Keys = $keys
-    $table = ConvertTo-DeckleKeyValueTable -Pairs $keys
+    $table = ConvertTo-KeyValueTable -Pairs $keys
 
     $invalid = [System.Collections.Generic.List[string]]::new()
     if ($header.Label -eq '') { $invalid.Add('the synopsis is empty') }
@@ -257,7 +257,7 @@ function Read-DeckleScriptHeader {
         }
     } else {
         foreach ($pair in $actionPairs) {
-            $parsed = ConvertTo-DeckleHeaderAction -Value $pair.Value
+            $parsed = ConvertTo-HeaderAction -Value $pair.Value
             if ($null -ne $parsed.Error) { $invalid.Add($parsed.Error); continue }
             $actions.Add($parsed.Action)
         }

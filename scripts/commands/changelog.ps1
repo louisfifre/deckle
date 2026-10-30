@@ -40,7 +40,7 @@ $LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'release-history.psm1') -Force
 
-$WorkflowOutput = New-DeckleWorkflowOutput -Category 'changelog'
+$WorkflowOutput = New-WorkflowOutput -Category 'changelog'
 
 $Workflow = if ($NotesFor) { 'Generate release notes' } else { 'Update changelog' }
 $RepoRoot = $null
@@ -53,7 +53,7 @@ if ($Commit -and ($NotesFor -or $OutFile)) {
 }
 
 trap {
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Failed `
         -Sentence "$Workflow failed before completion." `
@@ -74,7 +74,7 @@ if ($Target) {
     $RepoRoot = Split-Path -Parent (Split-Path $ScriptDir)  # commands/ -> scripts/ -> repo root
 }
 
-Write-DeckleOutputText -Text "Repo: $RepoRoot" -Role Muted
+Write-OutputText -Text "Repo: $RepoRoot" -Role Muted
 
 # Earliest version regenerated in full. Everything below it predates strict
 # Conventional Commits and is summarised, not itemised (see $GenesisNote).
@@ -212,7 +212,7 @@ function Get-GroupedEntries([hashtable[]]$commits) {
         $e = ConvertTo-Entry $c
         if ($null -eq $e) { continue }
         if ($e.Type -eq 'revert' -and -not $c.Reverts) {
-            Write-DeckleWorkflowMessage -Output $WorkflowOutput -Role Warning `
+            Write-WorkflowMessage -Output $WorkflowOutput -Role Warning `
                 -Message "Revert without a 'This reverts commit' line, listed under Removed: $($c.Subject)"
         }
         if (-not $byGroup.ContainsKey($e.Group)) { $byGroup[$e.Group] = [System.Collections.Generic.List[string]]::new() }
@@ -266,22 +266,22 @@ if ($NotesFor) {
         $date    = (Get-Date -Format 'yyyy-MM-dd')
     }
 
-    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Release notes for v$version (range: $range)"
+    Write-WorkflowStep -Output $WorkflowOutput -Message "Release notes for v$version (range: $range)"
     $subjects = Get-RangeCommits $range
     $section  = Format-Section $version $prevTag $thisTag $date $subjects
     if ($section -notmatch '### ') {
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "No user-facing commits in $range — notes are just a heading." -Role Warning
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "No user-facing commits in $range — notes are just a heading." -Role Warning
     }
 
     if ($OutFile) {
         [System.IO.File]::WriteAllText($OutFile, $section + "`n", [System.Text.UTF8Encoding]::new($false))
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Notes written to $OutFile"
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "Notes written to $OutFile"
         $dest = $OutFile
     } else {
         Write-Output $section
         $dest = 'stdout'
     }
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Success `
         -Sentence "Release notes for v$version were generated from $range." `
@@ -301,7 +301,7 @@ if (-not $tags.Count) { throw "No published release tags found in $RepoRoot" }
 $floorIdx = [array]::IndexOf($tags, $FloorTag)
 if ($floorIdx -lt 0) { throw "Floor tag $FloorTag not found in release-history.json" }
 
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Regenerating changelog from $FloorTag (latest public release: $($tags[-1]))"
+Write-WorkflowStep -Output $WorkflowOutput -Message "Regenerating changelog from $FloorTag (latest public release: $($tags[-1]))"
 
 $rendered = $tags[$floorIdx..($tags.Count - 1)]
 $sections = [System.Collections.Generic.List[string]]::new()
@@ -313,7 +313,7 @@ if ($unreleased.Count) {
     $section = Format-Section '' $null $null '' $unreleased
     if ($section -match '### ') {
         $sections.Add($section)
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Unreleased — $($unreleased.Count) commits since public release $($tags[-1])"
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "Unreleased — $($unreleased.Count) commits since public release $($tags[-1])"
     }
 }
 
@@ -327,15 +327,15 @@ for ($i = $rendered.Count - 1; $i -ge 0; $i--) {
     $date      = Get-TagDate $thisTag
     $subjects  = Get-RangeCommits $range
     $sections.Add((Format-Section $version $prevTag $thisTag $date $subjects))
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "v$version — $($subjects.Count) commits in range"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "v$version — $($subjects.Count) commits in range"
 }
 
 $doc = $Header.TrimEnd() + "`n`n" + (($sections -join "`n`n")) + "`n`n" + $GenesisNote.TrimEnd() + "`n"
 
 $dest = if ($OutFile) { $OutFile } else { Join-Path $RepoRoot 'CHANGELOG.md' }
 [System.IO.File]::WriteAllText($dest, $doc, [System.Text.UTF8Encoding]::new($false))
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Done"
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Wrote $dest"
+Write-WorkflowStep -Output $WorkflowOutput -Message "Done"
+Write-WorkflowMessage -Output $WorkflowOutput -Message "Wrote $dest"
 
 if ($Commit) {
     & git -C $RepoRoot add -- CHANGELOG.md
@@ -347,15 +347,15 @@ if ($Commit) {
         & git -C $RepoRoot commit -m 'docs(changelog): refresh unreleased changes' -- CHANGELOG.md
         if ($LASTEXITCODE -ne 0) { throw 'Could not commit CHANGELOG.md.' }
         $commitHash = (& git -C $RepoRoot rev-parse --short HEAD).Trim()
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Committed CHANGELOG.md ($commitHash)"
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "Committed CHANGELOG.md ($commitHash)"
     } elseif ($diffExitCode -eq 0) {
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'CHANGELOG.md is already current; no commit was needed.'
+        Write-WorkflowMessage -Output $WorkflowOutput -Message 'CHANGELOG.md is already current; no commit was needed.'
     } else {
         throw 'Could not inspect the staged CHANGELOG.md change.'
     }
 }
 
-Write-DeckleActionSummary `
+Write-ActionSummary `
     -Workflow $Workflow `
     -Result Success `
     -Sentence "CHANGELOG.md was regenerated from $FloorTag through public release $($tags[-1])." `

@@ -29,7 +29,7 @@ if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($gitCommonDir)) {
 $hooksDir  = Join-Path $gitCommonDir 'hooks'
 $sourceDir = Join-Path $repoRoot 'scripts' 'hooks'
 
-$WorkflowOutput = New-DeckleWorkflowOutput -Category 'hooks'
+$WorkflowOutput = New-WorkflowOutput -Category 'hooks'
 
 $Workflow = 'Install git hooks'
 $InstalledHooks = New-Object System.Collections.Generic.List[string]
@@ -38,7 +38,7 @@ $GlobalHookSource = Join-Path $sourceDir 'validate-commit-attribution.ps1'
 $GlobalHookPath = Join-Path $GlobalHookDirectory 'validate-commit-attribution.ps1'
 
 trap {
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Failed `
         -Sentence "Git hook installation failed before completion." `
@@ -52,11 +52,11 @@ trap {
     throw
 }
 
-Write-DeckleOutputText -Text "Repo: $repoRoot" -Role Muted
-Write-DeckleOutputText -Text "Hooks: $hooksDir" -Role Muted
-Write-DeckleOutputText -Text "Global hook: $GlobalHookPath" -Role Muted
+Write-OutputText -Text "Repo: $repoRoot" -Role Muted
+Write-OutputText -Text "Hooks: $hooksDir" -Role Muted
+Write-OutputText -Text "Global hook: $GlobalHookPath" -Role Muted
 
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Install git hooks'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Install git hooks'
 $hookFiles = @('pre-commit')
 foreach ($hookFile in $hookFiles) {
     $src = Join-Path $sourceDir $hookFile
@@ -66,15 +66,15 @@ foreach ($hookFile in $hookFiles) {
 
     $dst = Join-Path $hooksDir $hookFile
     if (Test-Path $dst) {
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Existing hook '$hookFile' backed up as '$hookFile.bak'" -Role Warning
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "Existing hook '$hookFile' backed up as '$hookFile.bak'" -Role Warning
         Copy-Item $dst "$dst.bak" -Force
     }
     Copy-Item $src $dst -Force
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Installed $hookFile"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "Installed $hookFile"
     $InstalledHooks.Add($hookFile) | Out-Null
 }
 
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Install global commit-attribution guard'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Install global commit-attribution guard'
 $gitVersionText = (& git --version) -replace '^git version\s+', ''
 if ($LASTEXITCODE -ne 0 -or $gitVersionText -notmatch '^(\d+)\.(\d+)') {
     throw 'Could not determine the installed Git version.'
@@ -98,19 +98,19 @@ git config --global --replace-all "hook.$GlobalHookName.event" commit-msg
 if ($LASTEXITCODE -ne 0) { throw 'Could not register the global commit-attribution hook event.' }
 git config --global "hook.$GlobalHookName.enabled" true
 if ($LASTEXITCODE -ne 0) { throw 'Could not enable the global commit-attribution hook.' }
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'Installed the global commit-attribution guard'
+Write-WorkflowMessage -Output $WorkflowOutput -Message 'Installed the global commit-attribution guard'
 $InstalledHooks.Add('commit-msg (global)') | Out-Null
 
 # Merge driver used by .gitattributes for TREE.md. `ours` keeps the local side
 # so two branches never collide on the generated tree listing; the next commit
 # that changes the file set regenerates it via the pre-commit hook. The driver
 # definition lives in .git/config (not shared by clone), so it is set here.
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Register TREE.md merge driver"
+Write-WorkflowStep -Output $WorkflowOutput -Message "Register TREE.md merge driver"
 git -C $repoRoot config merge.ours.driver true
 if ($LASTEXITCODE -ne 0) { throw "Could not register the TREE.md merge driver." }
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Registered merge.ours driver"
+Write-WorkflowMessage -Output $WorkflowOutput -Message "Registered merge.ours driver"
 
-Write-DeckleActionSummary `
+Write-ActionSummary `
     -Workflow $Workflow `
     -Result Success `
     -Sentence "Deckle git hooks and the global commit-attribution guard were installed." `

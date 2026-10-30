@@ -1,11 +1,29 @@
-# build-server-cleanup.ps1 — .NET build server inspection and shutdown.
+# .NET build server inspection and shutdown.
 
-function Format-DeckleSize {
+function Format-ByteSize {
     param([int64]$Bytes)
     if     ($Bytes -ge 1GB) { '{0:N1} GB' -f ($Bytes / 1GB) }
     elseif ($Bytes -ge 1MB) { '{0:N1} MB' -f ($Bytes / 1MB) }
     elseif ($Bytes -ge 1KB) { '{0:N1} KB' -f ($Bytes / 1KB) }
     else                    { "$Bytes B" }
+}
+
+# Classifies one process from its name and command line. Kept apart from the
+# process listing so the rule is testable on plain strings. A dotnet.exe is a
+# build server only when its command line proves it; it is never guessed,
+# because the same executable also runs the user's own applications.
+function Get-BuildServerKind {
+    param(
+        [Parameter(Mandatory)][string]$ProcessName,
+        [AllowEmptyString()][string]$CommandLine = ''
+    )
+
+    if ($ProcessName -eq 'VBCSCompiler') { return 'Roslyn' }
+    if ($ProcessName -eq 'dotnet' -and (
+        $CommandLine -match 'MSBuild\.dll' -or
+        $CommandLine -match '/nodemode:1'
+    )) { return 'MSBuild' }
+    return $null
 }
 
 function Get-DotnetBuildServerProcesses {
@@ -23,18 +41,13 @@ function Get-DotnetBuildServerProcesses {
 
     foreach ($process in $processes) {
         $commandLine = if ($commandLines.ContainsKey($process.Id)) { $commandLines[$process.Id] } else { '' }
-        $isRoslynServer = $process.ProcessName -eq 'VBCSCompiler'
-        $isMsBuildNode = $process.ProcessName -eq 'dotnet' -and (
-            $commandLine -match 'MSBuild\.dll' -or
-            $commandLine -match '/nodemode:1'
-        )
-
-        if (-not $isRoslynServer -and -not $isMsBuildNode) { continue }
+        $kind = Get-BuildServerKind -ProcessName $process.ProcessName -CommandLine $commandLine
+        if ($null -eq $kind) { continue }
 
         [pscustomobject]@{
             Id          = $process.Id
             Name        = $process.ProcessName
-            Kind        = if ($isRoslynServer) { 'Roslyn' } else { 'MSBuild' }
+            Kind        = $kind
             WorkingSet  = [int64]$process.WorkingSet64
             CommandLine = $commandLine
         }
@@ -47,7 +60,7 @@ function Format-DotnetBuildServerCount {
         [int64]$WorkingSet
     )
     if ($Count -eq 0) { return 'None' }
-    return ("{0} process(es), {1}" -f $Count, (Format-DeckleSize $WorkingSet))
+    return ("{0} process(es), {1}" -f $Count, (Format-ByteSize $WorkingSet))
 }
 
 function Format-DotnetBuildServerList {
@@ -59,7 +72,7 @@ function Format-DotnetBuildServerList {
     if (-not $Processes -or $Processes.Count -eq 0) { return 'None' }
 
     $items = @($Processes | Select-Object -First $Limit | ForEach-Object {
-        "{0}#{1} ({2}, {3})" -f $_.Name, $_.Id, $_.Kind, (Format-DeckleSize $_.WorkingSet)
+        "{0}#{1} ({2}, {3})" -f $_.Name, $_.Id, $_.Kind, (Format-ByteSize $_.WorkingSet)
     })
     $remaining = $Processes.Count - $items.Count
     if ($remaining -gt 0) { $items += "+ $remaining more" }
@@ -71,8 +84,6 @@ function Stop-DotnetBuildServers {
     param()
 
     $before = @(Get-DotnetBuildServerProcesses)
-    $beforeById = @{}
-    foreach ($process in $before) { $beforeById[$process.Id] = $process }
 
     $commandOutput = @(& dotnet build-server shutdown 2>&1)
     $exitCode = $LASTEXITCODE

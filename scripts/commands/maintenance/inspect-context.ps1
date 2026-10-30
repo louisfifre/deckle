@@ -190,7 +190,7 @@ if ($Json) {
     Write-Host "`nWrote $Json" -ForegroundColor DarkGray
 }
 
-Write-DeckleActionSummary -Workflow $Workflow -Result Success `
+Write-ActionSummary -Workflow $Workflow -Result Success `
     -Sentence "Deckle's tracked Markdown context was inventoried without modifying it." `
     -Details ([ordered]@{
         Worktree = $RepoRoot

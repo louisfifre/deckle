@@ -26,19 +26,19 @@ $LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $PSScriptRoot)) 'lib
 Import-Module (Join-Path $LibDir 'agent-state-maintenance.psm1') -Force
 $strings = Get-AgentStateStrings
 $workflow = $strings.Workflow
-$output = New-DeckleWorkflowOutput -Category 'ai-sessions'
+$output = New-WorkflowOutput -Category 'ai-sessions'
 
 try {
-    Write-DeckleWorkflowStep -Output $output -Message 'Build the local session cleanup plan'
-    Write-DeckleWorkflowMessage -Output $output -Message "Scope: $($Scope -join ', ')" -Role Muted
+    Write-WorkflowStep -Output $output -Message 'Build the local session cleanup plan'
+    Write-WorkflowMessage -Output $output -Message "Scope: $($Scope -join ', ')" -Role Muted
     $plan = Get-AgentStateCleanupPlan -Scope $Scope
-    Write-DeckleWorkflowMessage -Output $output -Message "$($plan.Files) files / $(Format-AgentStateByteCount -Bytes $plan.Bytes)" -Role Muted
+    Write-WorkflowMessage -Output $output -Message "$($plan.Files) files / $(Format-AgentStateByteCount -Bytes $plan.Bytes)" -Role Muted
 
     $operation = if ($Apply) { 'Validate and reset local session state' } else { 'Validate the cleanup plan without changing local state' }
-    Write-DeckleWorkflowStep -Output $output -Message $operation
+    Write-WorkflowStep -Output $output -Message $operation
     $result = Invoke-AgentStateCleanupPlan -Plan $plan -Apply:$Apply -Confirmation $Confirmation
     $operationResult = if ($Apply) { 'Local session state reset completed' } else { 'Cleanup plan validated without changes' }
-    Write-DeckleWorkflowResult -Output $output -Message $operationResult
+    Write-WorkflowResult -Output $output -Message $operationResult
     $sentence = if ($Apply) { $strings.ResetSentence } else { $strings.AuditSentence }
     $details = [ordered]@{
         Mode = $(if ($Apply) { 'Apply' } else { 'Preview' })
@@ -57,7 +57,7 @@ try {
         Details = $details
         Next = $plan.Warnings
     }
-    Write-DeckleActionSummary @summary
+    Write-ActionSummary @summary
 } catch {
     $next = if ($_.Exception.Message -match '^Close the active AI tools') { @($strings.CloseApps) } else { @() }
     $summary = @{
@@ -67,6 +67,6 @@ try {
         Details = [ordered]@{ Error = $_.Exception.Message }
         Next = $next
     }
-    Write-DeckleActionSummary @summary
+    Write-ActionSummary @summary
     throw
 }

@@ -22,7 +22,7 @@ function Invoke-DeckleMenuAction {
         [Parameter(Mandatory)][scriptblock]$Action
     )
 
-    $collector = New-DeckleActionLogCollector -Source $Source
+    $collector = New-ActionLogCollector -Source $Source
     $timer = [System.Diagnostics.Stopwatch]::StartNew()
     $refreshInterval = [timespan]::FromMilliseconds(100)
     $lastRefresh = $null
@@ -41,26 +41,26 @@ function Invoke-DeckleMenuAction {
 
     try {
         & $Action *>&1 | ForEach-Object {
-            $completedRecords = @(Add-DeckleActionLogItem -Collector $collector -InputObject $_)
+            $completedRecords = @(Add-ActionLogItem -Collector $collector -InputObject $_)
             $refreshDue = $null -eq $lastRefresh -or ($timer.Elapsed - $lastRefresh) -ge $refreshInterval
             if ($completedRecords.Count -gt 0 -and $refreshDue) {
                 $view = Update-GridStatusView `
                     -View $view `
                     -Title (Get-DeckleActionResultTitle -Label $Label -State Running -Elapsed $timer.Elapsed) `
-                    -Lines @(ConvertTo-DeckleActionLogDisplayLines -Records @($collector.Records)) `
+                    -Lines @(ConvertTo-ActionLogDisplayLines -Records @($collector.Records)) `
                     -Follow
                 $lastRefresh = $timer.Elapsed
             }
         }
     } catch {
         $succeeded = $false
-        Add-DeckleActionLogItem -Collector $collector -InputObject $_ | Out-Null
+        Add-ActionLogItem -Collector $collector -InputObject $_ | Out-Null
     } finally {
         $timer.Stop()
         try {
-            Complete-DeckleActionLog -Collector $collector | Out-Null
+            Complete-ActionLog -Collector $collector | Out-Null
             if ($collector.Records.Count -eq 0) {
-                Add-DeckleActionLogItem `
+                Add-ActionLogItem `
                     -Collector $collector `
                     -InputObject 'The action produced no console output.' | Out-Null
             }
@@ -76,7 +76,7 @@ function Invoke-DeckleMenuAction {
             $view = Update-GridStatusView `
                 -View $view `
                 -Title (Get-DeckleActionResultTitle -Label $Label -State $state -Elapsed $timer.Elapsed) `
-                -Lines @(ConvertTo-DeckleActionLogDisplayLines -Records @($collector.Records)) `
+                -Lines @(ConvertTo-ActionLogDisplayLines -Records @($collector.Records)) `
                 -Follow
         } finally {
             Close-GridStatusView -View $view
@@ -87,7 +87,7 @@ function Invoke-DeckleMenuAction {
         Result    = $result
         Succeeded = $result -ceq 'Success'
         Title     = Get-DeckleActionResultTitle -Label $Label -State $state -Elapsed $timer.Elapsed
-        Lines     = @(ConvertTo-DeckleActionLogDisplayLines -Records @($collector.Records))
+        Lines     = @(ConvertTo-ActionLogDisplayLines -Records @($collector.Records))
         LogRecords = @($collector.Records)
     }
 }

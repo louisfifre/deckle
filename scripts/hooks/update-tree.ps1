@@ -14,14 +14,14 @@ $outputFile = Join-Path $repoRoot 'TREE.md'
 . (Join-Path $repoRoot 'scripts\lib\script-output.ps1')
 Import-Module (Join-Path $repoRoot 'scripts\lib\script-discovery.psm1') -Force
 
-$WorkflowOutput = New-DeckleWorkflowOutput -Category 'tree'
+$WorkflowOutput = New-WorkflowOutput -Category 'tree'
 
-Write-DeckleOutputText -Text "Repo: $repoRoot" -Role Muted
-Write-DeckleOutputText -Text "TREE: $outputFile" -Role Muted
+Write-OutputText -Text "Repo: $repoRoot" -Role Muted
+Write-OutputText -Text "TREE: $outputFile" -Role Muted
 
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Collect tracked files'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Collect tracked files'
 $files = git -C $repoRoot ls-files | Where-Object { $_ -ne '' }
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$($files.Count) tracked file(s)"
+Write-WorkflowMessage -Output $WorkflowOutput -Message "$($files.Count) tracked file(s)"
 
 function Format-TreeSuffix {
     param([string]$Name, [string]$Description)
@@ -44,7 +44,7 @@ function Format-TreeSuffix {
 function Format-MarkdownSuffix {
     param([string]$AbsolutePath)
 
-    $fm = Get-DeckleMarkdownFrontMatter -Path $AbsolutePath
+    $fm = Get-MarkdownFrontMatter -Path $AbsolutePath
     if (-not $fm) { return '' }
     return Format-TreeSuffix -Name $fm['name'] -Description $fm['description']
 }
@@ -55,7 +55,7 @@ function Format-ScriptSuffix {
     param([string]$AbsolutePath)
 
     if (-not (Test-Path -LiteralPath $AbsolutePath -PathType Leaf)) { return '' }
-    $header = Read-DeckleScriptHeader -Path $AbsolutePath
+    $header = Read-ScriptHeader -Path $AbsolutePath
     if ($header.Status -ne 'Described') { return '' }
     return Format-TreeSuffix -Name $header.Label -Description $header.Description
 }
@@ -123,7 +123,7 @@ function Render-Node {
 
 Render-Node $root '' ''
 
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Write TREE.md'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Write TREE.md'
 $body = $lines -join "`n"
 
 # No wall-clock timestamp on purpose: it would make every regeneration differ
@@ -140,4 +140,4 @@ $body
 "@
 
 [System.IO.File]::WriteAllText($outputFile, $content, [System.Text.Encoding]::UTF8)
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "TREE.md updated"
+Write-WorkflowMessage -Output $WorkflowOutput -Message "TREE.md updated"

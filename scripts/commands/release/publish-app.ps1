@@ -53,7 +53,7 @@ Import-Module (Join-Path $LibDir 'release-history.psm1') -Force
 Import-Module (Join-Path $LibDir 'release-validation.psm1') -Force
 Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
 
-$WorkflowOutput = New-DeckleWorkflowOutput -Category 'publish'
+$WorkflowOutput = New-WorkflowOutput -Category 'publish'
 
 $Workflow = if ($Publish) { 'Publish app release' } else { 'Prepare app release artifacts' }
 $RepoRoot = $null
@@ -64,7 +64,7 @@ $ZipSha256 = $null
 $Published = $false
 
 trap {
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Failed `
         -Sentence "$Workflow failed before completion." `
@@ -87,7 +87,7 @@ if ($Target) {
     $RepoRoot = Split-Path -Parent (Split-Path -Parent $CommandDir)
 }
 
-Write-DeckleOutputText -Text "Repo: $RepoRoot" -Role Muted
+Write-OutputText -Text "Repo: $RepoRoot" -Role Muted
 
 $ProjectDir = Join-Path $RepoRoot 'src\Deckle.App'
 $Csproj     = Join-Path $ProjectDir 'Deckle.App.csproj'
@@ -101,7 +101,7 @@ if (-not $Version) { throw "<Version> not found in $Csproj" }
 if ($Version -notmatch '^\d+\.\d+\.\d+$') {
     throw "Version '$Version' is not canonical MAJOR.MINOR.PATCH"
 }
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Deckle v$Version"
+Write-WorkflowStep -Output $WorkflowOutput -Message "Deckle v$Version"
 $tag       = "v$Version"
 $ZipName   = "Deckle-v$Version.zip"
 $ShaName   = "$ZipName.sha256"
@@ -120,7 +120,7 @@ if ($Publish) {
     if (-not $publishedTags.Count) { throw 'release-history.json has no public release' }
     $releaseRecorded = $publishedTags -contains $tag
 
-    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Fetch and validate release source'
+    Write-WorkflowStep -Output $WorkflowOutput -Message 'Fetch and validate release source'
     & git -C $RepoRoot fetch origin main --tags --prune
     if ($LASTEXITCODE -ne 0) { throw "git fetch origin main --tags failed (code $LASTEXITCODE)" }
     $source = if ($releaseRecorded) {
@@ -132,7 +132,7 @@ if ($Publish) {
             -LatestPublishedTag $publishedTags[-1]
     }
     $OwnerRepo = $source.OwnerRepo
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "clean main at $($source.HeadSha.Substring(0, 12)), synchronized with origin/main"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "clean main at $($source.HeadSha.Substring(0, 12)), synchronized with origin/main"
 
     & gh auth status --hostname github.com *> $null
     if ($LASTEXITCODE -ne 0) { throw 'GitHub CLI is not authenticated for github.com' }
@@ -140,7 +140,7 @@ if ($Publish) {
     if ($LASTEXITCODE -ne 0 -or $resolvedRepo -cne $OwnerRepo) {
         throw "GitHub repository preflight failed for $OwnerRepo"
     }
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "GitHub access verified for $OwnerRepo"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "GitHub access verified for $OwnerRepo"
 
     # Reconcile before building. A previous run may have stopped after upload,
     # tag publication, GitHub finalization, or local release recording. Remote
@@ -153,7 +153,7 @@ if ($Publish) {
         throw "$tag is recorded locally but no matching GitHub release exists"
     }
     if ($recoveryPlan -cne 'Build') {
-        Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Reconcile existing GitHub release $tag"
+        Write-WorkflowStep -Output $WorkflowOutput -Message "Reconcile existing GitHub release $tag"
         $releaseHeadSha = (& git -C $RepoRoot rev-parse "$($remoteRelease.targetCommitish)^{commit}").Trim()
         if ($LASTEXITCODE -ne 0) { throw "GitHub release target could not be resolved locally" }
         & git -C $RepoRoot merge-base --is-ancestor $releaseHeadSha $source.HeadSha
@@ -186,7 +186,7 @@ if ($Publish) {
             if ($sidecar -cne "$actualHash *$ZipName") {
                 throw "Recovered payload checksum does not match $ShaName"
             }
-            Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'Existing installer, payload archive, and checksum verified'
+            Write-WorkflowMessage -Output $WorkflowOutput -Message 'Existing installer, payload archive, and checksum verified'
         } finally {
             if (Test-Path -LiteralPath $recoveryDir) {
                 Remove-Item -LiteralPath $recoveryDir -Recurse -Force
@@ -199,13 +199,13 @@ if ($Publish) {
             if ($LASTEXITCODE -ne 0) {
                 throw "GitHub draft finalization failed (code $LASTEXITCODE); the verified draft remains hidden"
             }
-            Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "GitHub release $tag made public"
+            Write-WorkflowMessage -Output $WorkflowOutput -Message "GitHub release $tag made public"
         }
         & (Join-Path $CommandDir 'record-release.ps1') -Target $RepoRoot -Version $Version -Push
         if (-not $?) { throw 'record-release.ps1 failed after GitHub publication' }
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$tag recorded locally and synchronized"
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "$tag recorded locally and synchronized"
         $Published = $true
-        Write-DeckleActionSummary `
+        Write-ActionSummary `
             -Workflow $Workflow `
             -Result Success `
             -Sentence "Deckle $tag was reconciled without rebuilding or reuploading artifacts." `
@@ -222,7 +222,7 @@ if ($Publish) {
     # The setup wizard downloads the separately versioned whisper.cpp bundle:
     # prove it is publicly downloadable and byte-for-byte identical to the
     # metadata compiled into Deckle before releasing an installer that needs it.
-    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Verify native runtime release'
+    Write-WorkflowStep -Output $WorkflowOutput -Message 'Verify native runtime release'
     $nativeSource = Join-Path $RepoRoot 'src\Deckle.Transcription.Whisper\Setup\NativeRuntime.cs'
     $nativeBundle = Get-DeckleNativeRuntimeBundle -SourcePath $nativeSource
     $nativeDownload = Join-Path ([IO.Path]::GetTempPath()) "deckle-native-preflight-$([guid]::NewGuid()).zip"
@@ -231,7 +231,7 @@ if ($Publish) {
         $verifiedNative = Assert-DeckleNativeRuntimeArtifact `
             -Bundle $nativeBundle `
             -ArtifactPath $nativeDownload
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "native-v$($verifiedNative.Version) available and verified ($($verifiedNative.SizeBytes) bytes)"
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "native-v$($verifiedNative.Version) available and verified ($($verifiedNative.SizeBytes) bytes)"
     } finally {
         if (Test-Path -LiteralPath $nativeDownload) {
             Remove-Item -LiteralPath $nativeDownload -Force
@@ -243,7 +243,7 @@ if (-not $OutDir) {
     $OutDir = Join-Path $RepoRoot "artifacts\Deckle-v$Version"
 }
 if (Test-Path $OutDir) {
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "OutDir exists, cleaning: $OutDir" -Role Warning
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "OutDir exists, cleaning: $OutDir" -Role Warning
     Remove-Item $OutDir -Recurse -Force
 }
 $null = New-Item -ItemType Directory -Path $OutDir
@@ -263,7 +263,7 @@ if ($Publish) {
         $Notes = Join-Path $OutDir 'release-notes.md'
         & (Join-Path $CommandDir 'changelog.ps1') -Target $RepoRoot -NotesFor $Version -OutFile $Notes
         if ($LASTEXITCODE -ne 0) { throw "changelog.ps1 notes generation failed (code $LASTEXITCODE)" }
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Release notes generated from history: $Notes"
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "Release notes generated from history: $Notes"
     } elseif (-not (Test-Path -LiteralPath $Notes -PathType Leaf)) {
         throw "Release notes file not found: $Notes"
     }
@@ -271,10 +271,10 @@ if ($Publish) {
 
 # A running Release instance keeps the app DLLs locked, and the publish below
 # would retry the copy until it fails.
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Stop running Deckle instance'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Stop running Deckle instance'
 Stop-DeckleProcess -WriteEvent {
     param([string]$Role, [string]$Message)
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message $Message -Role $Role
+    Write-WorkflowMessage -Output $WorkflowOutput -Message $Message -Role $Role
 }
 
 # win-x64 via RuntimeIdentifierOverride, NOT `-r win-x64`. A plain RID
@@ -285,8 +285,8 @@ Stop-DeckleProcess -WriteEvent {
 # documented workaround: it sets the RID without the path-splitting
 # propagation. SelfContained is forced (a RID no longer implies it since
 # .NET 6); the app is x64-only (<Platforms>x64</Platforms>).
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'dotnet publish (Release, win-x64, self-contained folder)'
-$publishExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentList @(
+Write-WorkflowStep -Output $WorkflowOutput -Message 'dotnet publish (Release, win-x64, self-contained folder)'
+$publishExitCode = Invoke-CapturedProcess -FilePath 'dotnet' -ArgumentList @(
     'publish', $Csproj,
     '-c:Release',
     '-p:RuntimeIdentifierOverride=win-x64',
@@ -307,13 +307,13 @@ if (-not (Test-Path $exe)) { throw "Deckle.exe missing from publish output — $
 # is what makes Publish emit it; treat its absence as a hard failure.
 if (-not (Test-Path $pri)) { throw "Deckle.pri missing — windowless app. Check EnableMsixTooling in the csproj." }
 $fileCount = (Get-ChildItem $PublishDir -Recurse -File).Count
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "publish folder OK — $fileCount files (Deckle.exe + Deckle.pri present)"
+Write-WorkflowMessage -Output $WorkflowOutput -Message "publish folder OK — $fileCount files (Deckle.exe + Deckle.pri present)"
 
 # CreateFromDirectory (streaming) rather than Compress-Archive, which is slow
 # and memory-hungry on a publish folder of hundreds of files.
 # includeBaseDirectory:$false puts Deckle.exe at the zip root so the installer
 # extracts straight into the target folder.
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Compress to $ZipName"
+Write-WorkflowStep -Output $WorkflowOutput -Message "Compress to $ZipName"
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 [System.IO.Compression.ZipFile]::CreateFromDirectory(
     $PublishDir, $ZipPath,
@@ -323,25 +323,25 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 # zips, missing root payload files, duplicate paths and archive traversal before
 # a checksum blesses the broken artifact.
 Assert-DeckleReleaseArchive -PublishDir $PublishDir -ZipPath $ZipPath
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'release archive reopened and its payload contract verified'
+Write-WorkflowMessage -Output $WorkflowOutput -Message 'release archive reopened and its payload contract verified'
 
 $ZipSha256 = (Get-FileHash $ZipPath -Algorithm SHA256).Hash.ToLower()
 $ZipBytes  = (Get-Item $ZipPath).Length
 $ZipSize   = [math]::Round($ZipBytes / 1MB, 2)
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$ZipName ($ZipSize MB) sha256=$ZipSha256"
+Write-WorkflowMessage -Output $WorkflowOutput -Message "$ZipName ($ZipSize MB) sha256=$ZipSha256"
 
 # sha256sum -c compatible sidecar, so the installer (or a human) can verify the
 # download independently of the release body.
 Set-Content -Path $ShaPath -Value ('{0} *{1}' -f $ZipSha256, $ZipName) -Encoding ascii
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$ShaName written"
+Write-WorkflowMessage -Output $WorkflowOutput -Message "$ShaName written"
 
 # NativeAOT links the installer stub here at publish: it needs the VC++ linker
 # on the maintainer's machine; a plain `dotnet build` only validates the IL.
 # `-r win-x64` is correct here: the installer has no PRI merge, so none of the
 # WinAppSDK RID quirk the app build dodges with RuntimeIdentifierOverride.
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'dotnet publish installer (Release, win-x64, NativeAOT)'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'dotnet publish installer (Release, win-x64, NativeAOT)'
 if (-not (Test-Path $InstallerCsproj)) { throw "Installer csproj not found at $InstallerCsproj" }
-$installerExitCode = Invoke-DeckleConsoleProcess -FilePath 'dotnet' -ArgumentList @(
+$installerExitCode = Invoke-CapturedProcess -FilePath 'dotnet' -ArgumentList @(
     'publish', $InstallerCsproj,
     '-c:Release',
     '-r', 'win-x64',
@@ -359,9 +359,9 @@ Copy-Item $InstallerBuilt $SetupPath -Force
 $SetupBytes = (Get-Item $SetupPath).Length
 $SetupSize  = [math]::Round($SetupBytes / 1MB, 2)
 $SetupSha256 = (Get-FileHash $SetupPath -Algorithm SHA256).Hash.ToLower()
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "$SetupName ($SetupSize MB) sha256=$SetupSha256"
+Write-WorkflowMessage -Output $WorkflowOutput -Message "$SetupName ($SetupSize MB) sha256=$SetupSha256"
 
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Done'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Done'
 Write-Host @"
 
   Installer : $SetupPath ($SetupSize MB)   <- the user-facing download
@@ -380,7 +380,7 @@ Write-Host @"
 
 # Publishing is the maintainer's act, never triggered by an agent.
 if ($Publish) {
-    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Publish GitHub Release v$Version"
+    Write-WorkflowStep -Output $WorkflowOutput -Message "Publish GitHub Release v$Version"
     $tag    = "v$Version"
     $title  = "Deckle $tag"
     $headSha = (& git -C $RepoRoot rev-parse HEAD).Trim()
@@ -399,12 +399,12 @@ if ($Publish) {
     if (-not $releaseExists) {
         & gh @ghArgs
         if ($LASTEXITCODE -ne 0) { throw "gh release create failed (code $LASTEXITCODE)" }
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Draft release $tag uploaded"
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "Draft release $tag uploaded"
 
         $remoteReleaseJson = (& gh release view $tag --repo $OwnerRepo --json isDraft,assets,tagName,targetCommitish) -join "`n"
         if ($LASTEXITCODE -ne 0) { throw "GitHub draft $tag could not be read after upload" }
     } else {
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Existing draft release $tag found; validating it for resume"
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "Existing draft release $tag found; validating it for resume"
     }
 
     # Read the draft back from GitHub before it can become discoverable by the
@@ -420,12 +420,12 @@ if ($Publish) {
         -Tag $tag `
         -HeadSha $headSha `
         -ExpectedAssets $expectedAssets
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'GitHub draft assets verified by name and byte size'
+    Write-WorkflowMessage -Output $WorkflowOutput -Message 'GitHub draft assets verified by name and byte size'
 
     Publish-DeckleReleaseTag -RepoRoot $RepoRoot -Tag $tag -HeadSha $headSha
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "GitHub tag $tag published at release HEAD"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "GitHub tag $tag published at release HEAD"
 
-    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Make the verified GitHub release public'
+    Write-WorkflowStep -Output $WorkflowOutput -Message 'Make the verified GitHub release public'
     # A 0.x cut is a release, not a GitHub pre-release: SemVer's 0.x already says
     # the surface may still move, and the pre-release flag (versioning convention)
     # is kept for a suffixed build sent out for testing. "Latest" is claimed
@@ -446,11 +446,11 @@ if ($Publish) {
         -ExpectedNames @($SetupName, $ZipName, $ShaName) `
         -ExpectedSizes $expectedAssets
 
-    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Freeze the public release into CHANGELOG.md'
+    Write-WorkflowStep -Output $WorkflowOutput -Message 'Freeze the public release into CHANGELOG.md'
     & (Join-Path $CommandDir 'record-release.ps1') -Target $RepoRoot -Version $Version -Push
     if (-not $?) { throw 'record-release.ps1 failed after GitHub publication' }
     $Published = $true
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Released as $tag"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "Released as $tag"
 }
 
 $releaseTag = if ($Version) { "v$Version" } else { $null }
@@ -461,7 +461,7 @@ $sentence = if ($Published) {
     "Deckle $releaseTag release artifacts were built locally for inspection."
 }
 
-Write-DeckleActionSummary `
+Write-ActionSummary `
     -Workflow $Workflow `
     -Result Success `
     -Sentence $sentence `

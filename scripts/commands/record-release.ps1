@@ -17,7 +17,7 @@ $LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'release-history.psm1') -Force
 
-$WorkflowOutput = New-DeckleWorkflowOutput -Category 'record-release'
+$WorkflowOutput = New-WorkflowOutput -Category 'record-release'
 
 $RepoRoot = $null
 $Tag = $null
@@ -43,7 +43,7 @@ trap {
         }
         & git -C $RepoRoot reset --quiet -- release-history.json CHANGELOG.md 2>$null
     }
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow 'Record public release' `
         -Result Failed `
         -Sentence 'Public release recording failed before completion.' `
@@ -82,15 +82,15 @@ if ($dirty) { throw "Tracked changes are pending - commit or stash them first:`n
 & git -C $RepoRoot rev-parse --verify --quiet "$Tag^{commit}" *> $null
 if ($LASTEXITCODE -ne 0) { throw "Public release tag $Tag is missing locally" }
 
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Record public release $Tag"
+Write-WorkflowStep -Output $WorkflowOutput -Message "Record public release $Tag"
 $OriginalHistory = [System.IO.File]::ReadAllBytes((Join-Path $RepoRoot 'release-history.json'))
 $OriginalChangelog = [System.IO.File]::ReadAllBytes((Join-Path $RepoRoot 'CHANGELOG.md'))
 $MutationStarted = $true
 $added = Add-PublishedReleaseTag -RepoRoot $RepoRoot -Tag $Tag
 if ($added) {
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'release-history.json updated'
+    Write-WorkflowMessage -Output $WorkflowOutput -Message 'release-history.json updated'
 } else {
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'Release already present in history'
+    Write-WorkflowMessage -Output $WorkflowOutput -Message 'Release already present in history'
 }
 
 & (Join-Path $ScriptDir 'changelog.ps1') -Target $RepoRoot
@@ -105,23 +105,23 @@ if ($diffCode -eq 1) {
     & git -C $RepoRoot commit -m $Commit
     if ($LASTEXITCODE -ne 0) { throw "release record commit failed (code $LASTEXITCODE)" }
     $CommitCreated = $true
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message $Commit
+    Write-WorkflowMessage -Output $WorkflowOutput -Message $Commit
 } elseif ($diffCode -eq 0) {
     $Commit = 'Unchanged'
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'Release history and changelog already finalized'
+    Write-WorkflowMessage -Output $WorkflowOutput -Message 'Release history and changelog already finalized'
 } else {
     throw "git diff --cached failed (code $diffCode)"
 }
 
 if ($Push) {
-    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Push finalized release record'
+    Write-WorkflowStep -Output $WorkflowOutput -Message 'Push finalized release record'
     & git -C $RepoRoot push
     if ($LASTEXITCODE -ne 0) { throw "git push failed (code $LASTEXITCODE)" }
     $Pushed = $true
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'Branch pushed'
+    Write-WorkflowMessage -Output $WorkflowOutput -Message 'Branch pushed'
 }
 
-Write-DeckleActionSummary `
+Write-ActionSummary `
     -Workflow 'Record public release' `
     -Result Success `
     -Sentence "Public release $Tag was frozen into the changelog." `

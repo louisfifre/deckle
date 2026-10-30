@@ -1,6 +1,6 @@
-# Semantic presentation for Deckle script output.
+# Semantic presentation for script output.
 
-$script:DeckleOutputColors = @{
+$script:OutputRoleColors = @{
     Body     = $null
     Category = [ConsoleColor]::Magenta
     Heading  = [ConsoleColor]::Cyan
@@ -11,17 +11,17 @@ $script:DeckleOutputColors = @{
     Error    = [ConsoleColor]::Red
 }
 
-function Get-DeckleOutputColor {
+function Get-OutputColor {
     param(
         [Parameter(Mandatory)]
         [ValidateSet('Body', 'Category', 'Heading', 'Action', 'Muted', 'Success', 'Warning', 'Error')]
         [string]$Role
     )
 
-    return $script:DeckleOutputColors[$Role]
+    return $script:OutputRoleColors[$Role]
 }
 
-function New-DeckleOutputSegment {
+function New-OutputSegment {
     param(
         [Parameter(Mandatory)][AllowEmptyString()][string]$Text,
         [Parameter(Mandatory)]
@@ -35,30 +35,30 @@ function New-DeckleOutputSegment {
     }
 }
 
-function Write-DeckleOutputFragment {
+function Write-OutputFragment {
     param(
         [Parameter(Mandatory)][AllowEmptyString()][string]$Text,
         [Parameter(Mandatory)]
         [ValidateSet('Body', 'Category', 'Heading', 'Action', 'Muted', 'Success', 'Warning', 'Error')]
         [string]$Role,
         [switch]$NoNewline,
-        [string[]]$Tags = @('Deckle.Output'),
+        [string[]]$Tags = @('DeckleScripts.Output'),
         [hashtable]$Metadata = @{}
     )
 
     $message = [System.Management.Automation.HostInformationMessage]::new()
     $message.Message = $Text
     $message.NoNewLine = [bool]$NoNewline
-    $color = Get-DeckleOutputColor -Role $Role
+    $color = Get-OutputColor -Role $Role
     if ($null -ne $color) { $message.ForegroundColor = $color }
-    $message | Add-Member -NotePropertyName DeckleRole -NotePropertyValue $Role
+    $message | Add-Member -NotePropertyName OutputRole -NotePropertyValue $Role
     foreach ($entry in $Metadata.GetEnumerator()) {
         $message | Add-Member -NotePropertyName ([string]$entry.Key) -NotePropertyValue $entry.Value
     }
     Write-Information -MessageData $message -Tags $Tags -InformationAction Continue
 }
 
-function Write-DeckleOutputLine {
+function Write-OutputLine {
     param(
         [Parameter(Mandatory)]
         [AllowEmptyCollection()]
@@ -66,32 +66,32 @@ function Write-DeckleOutputLine {
     )
 
     if ($Segments.Count -eq 0) {
-        Write-DeckleOutputFragment -Text '' -Role Body
+        Write-OutputFragment -Text '' -Role Body
         return
     }
 
     for ($index = 0; $index -lt $Segments.Count; $index++) {
         $segment = $Segments[$index]
-        Write-DeckleOutputFragment `
+        Write-OutputFragment `
             -Text ([string]$segment.Text) `
             -Role ([string]$segment.Role) `
             -NoNewline:($index -lt ($Segments.Count - 1))
     }
 }
 
-function Write-DeckleOutputText {
+function Write-OutputText {
     param(
         [Parameter(Mandatory)][AllowEmptyString()][string]$Text,
         [ValidateSet('Body', 'Category', 'Heading', 'Action', 'Muted', 'Success', 'Warning', 'Error')]
         [string]$Role = 'Body'
     )
 
-    Write-DeckleOutputLine -Segments @(
-        New-DeckleOutputSegment -Text $Text -Role $Role
+    Write-OutputLine -Segments @(
+        New-OutputSegment -Text $Text -Role $Role
     )
 }
 
-function New-DeckleWorkflowOutput {
+function New-WorkflowOutput {
     param([Parameter(Mandatory)][ValidateNotNullOrEmpty()][string]$Category)
 
     return [pscustomobject]@{
@@ -100,20 +100,20 @@ function New-DeckleWorkflowOutput {
     }
 }
 
-function Write-DeckleWorkflowStep {
+function Write-WorkflowStep {
     param(
         [Parameter(Mandatory)]$Output,
         [Parameter(Mandatory)][string]$Message
     )
 
-    Write-DeckleOutputLine -Segments @()
-    Write-DeckleOutputLine -Segments @(
-        New-DeckleOutputSegment -Text "[$($Output.Category)] " -Role Category
-        New-DeckleOutputSegment -Text $Message -Role Heading
+    Write-OutputLine -Segments @()
+    Write-OutputLine -Segments @(
+        New-OutputSegment -Text "[$($Output.Category)] " -Role Category
+        New-OutputSegment -Text $Message -Role Heading
     )
 }
 
-function Write-DeckleWorkflowMessage {
+function Write-WorkflowMessage {
     param(
         [Parameter(Mandatory)]$Output,
         [Parameter(Mandatory)][string]$Message,
@@ -121,26 +121,26 @@ function Write-DeckleWorkflowMessage {
         [string]$Role = 'Body'
     )
 
-    Write-DeckleOutputLine -Segments @(
-        New-DeckleOutputSegment -Text $Output.Indent -Role Body
-        New-DeckleOutputSegment -Text $Message -Role $Role
+    Write-OutputLine -Segments @(
+        New-OutputSegment -Text $Output.Indent -Role Body
+        New-OutputSegment -Text $Message -Role $Role
     )
 }
 
-function Write-DeckleWorkflowAction {
+function Write-WorkflowAction {
     param(
         [Parameter(Mandatory)]$Output,
         [Parameter(Mandatory)][string]$Message
     )
 
-    Write-DeckleWorkflowMessage -Output $Output -Message $Message -Role Action
+    Write-WorkflowMessage -Output $Output -Message $Message -Role Action
 }
 
-function Write-DeckleWorkflowResult {
+function Write-WorkflowResult {
     param(
         [Parameter(Mandatory)]$Output,
         [Parameter(Mandatory)][string]$Message
     )
 
-    Write-DeckleWorkflowMessage -Output $Output -Message $Message -Role Success
+    Write-WorkflowMessage -Output $Output -Message $Message -Role Success
 }

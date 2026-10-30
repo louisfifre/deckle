@@ -1,6 +1,6 @@
 # Shared `key: value` reader for Markdown front matter and script Header notes.
 
-function Format-DeckleKeyValueBlock {
+function Format-KeyValueBlock {
     param([AllowEmptyCollection()][System.Collections.Generic.List[string]]$Lines)
 
     if ($null -eq $Lines -or $Lines.Count -eq 0) { return '' }
@@ -19,7 +19,7 @@ function Format-DeckleKeyValueBlock {
     return (($normalized -join ' ') -replace '\s+', ' ').Trim()
 }
 
-function Read-DeckleKeyValueLines {
+function Read-KeyValueLines {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][AllowNull()][AllowEmptyCollection()][AllowEmptyString()][string[]]$Lines
@@ -48,7 +48,7 @@ function Read-DeckleKeyValueLines {
                     $blockLines.Add($blockLine)
                     $index++
                 }
-                $value = Format-DeckleKeyValueBlock -Lines $blockLines
+                $value = Format-KeyValueBlock -Lines $blockLines
             }
 
             if ($value.Length -ge 2 -and
@@ -63,7 +63,7 @@ function Read-DeckleKeyValueLines {
     return @($pairs)
 }
 
-function ConvertTo-DeckleKeyValueTable {
+function ConvertTo-KeyValueTable {
     [CmdletBinding()]
     param([Parameter(Mandatory)][AllowNull()][AllowEmptyCollection()][object[]]$Pairs)
 

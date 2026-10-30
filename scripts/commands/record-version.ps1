@@ -33,7 +33,7 @@ $ScriptDir = $PSScriptRoot
 $LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 
-$WorkflowOutput = New-DeckleWorkflowOutput -Category 'record-version'
+$WorkflowOutput = New-WorkflowOutput -Category 'record-version'
 
 $Workflow = 'Record version'
 $RepoRoot = $null
@@ -44,7 +44,7 @@ $ChangelogCommit = $null
 $Pushed = $false
 
 trap {
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Failed `
         -Sentence 'Version recording failed before completion.' `
@@ -83,7 +83,7 @@ if ($Target) {
 } else {
     $RepoRoot = Split-Path -Parent (Split-Path $ScriptDir)
 }
-Write-DeckleOutputText -Text "Repo: $RepoRoot" -Role Muted
+Write-OutputText -Text "Repo: $RepoRoot" -Role Muted
 
 Assert-NoTrackedChanges $RepoRoot
 
@@ -91,17 +91,17 @@ if ($Current) {
     $Mode = 'Refresh current'
     $Version = Get-AppVersion $RepoRoot
     $Tag = "v$Version"
-    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Refresh Unreleased for $Tag"
+    Write-WorkflowStep -Output $WorkflowOutput -Message "Refresh Unreleased for $Tag"
 } else {
     $Mode = "Bump $Bump"
-    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Record next internal version ($Bump)"
+    Write-WorkflowStep -Output $WorkflowOutput -Message "Record next internal version ($Bump)"
     & (Join-Path $ScriptDir 'cut-version.ps1') -Target $RepoRoot -Bump $Bump
     if (-not $?) { throw 'cut-version.ps1 failed' }
     $Version = Get-AppVersion $RepoRoot
     $Tag = "v$Version"
 }
 
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Regenerate the Unreleased accumulator'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Regenerate the Unreleased accumulator'
 & (Join-Path $ScriptDir 'changelog.ps1') -Target $RepoRoot
 if (-not $?) { throw 'changelog.ps1 failed' }
 
@@ -113,20 +113,20 @@ if ($diffCode -eq 1) {
     & git -C $RepoRoot commit -m 'docs(changelog): refresh unreleased changes'
     if ($LASTEXITCODE -ne 0) { throw "changelog refresh commit failed (code $LASTEXITCODE)" }
     $ChangelogCommit = 'docs(changelog): refresh unreleased changes'
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message $ChangelogCommit
+    Write-WorkflowMessage -Output $WorkflowOutput -Message $ChangelogCommit
 } elseif ($diffCode -eq 0) {
     $ChangelogCommit = 'Unchanged'
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'CHANGELOG.md already matches the public-release range'
+    Write-WorkflowMessage -Output $WorkflowOutput -Message 'CHANGELOG.md already matches the public-release range'
 } else {
     throw "git diff --cached failed (code $diffCode)"
 }
 
 if ($Push) {
-    Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Push current branch'
+    Write-WorkflowStep -Output $WorkflowOutput -Message 'Push current branch'
     & git -C $RepoRoot push
     if ($LASTEXITCODE -ne 0) { throw "git push failed (code $LASTEXITCODE)" }
     $Pushed = $true
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'Branch pushed; no tag created'
+    Write-WorkflowMessage -Output $WorkflowOutput -Message 'Branch pushed; no tag created'
 }
 
 $sentence = if ($Pushed) {
@@ -135,7 +135,7 @@ $sentence = if ($Pushed) {
     "Deckle $Tag was recorded locally without creating a release tag."
 }
 
-Write-DeckleActionSummary `
+Write-ActionSummary `
     -Workflow $Workflow `
     -Result Success `
     -Sentence $sentence `

@@ -31,7 +31,7 @@ if ($libraryEntryPoints.Count -gt 0) {
 Import-Module (Join-Path $LibDir 'script-discovery.psm1') -Force
 $headerFaults = @(Get-ChildItem -LiteralPath $ScriptsDir -Recurse -File -Include '*.ps1' |
     Where-Object { -not $_.FullName.StartsWith($TestDir + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) } |
-    ForEach-Object { Read-DeckleScriptHeader -Path $_.FullName } |
+    ForEach-Object { Read-ScriptHeader -Path $_.FullName } |
     Where-Object { $_.Status -notin @('Described', 'NoHeader') })
 if ($headerFaults.Count -gt 0) {
     $faultLines = $headerFaults | ForEach-Object {

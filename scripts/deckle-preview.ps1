@@ -34,13 +34,13 @@ Import-Module (Join-Path $LibDir 'script-discovery.psm1') -Force
 # preview keeps its exact behavior and cost.
 $DiscoveredCatalog = $null
 if ($Discovered -or $Snapshot -in @('Catalog', 'Confirmation')) {
-    $DiscoveredCatalog = Get-DeckleScriptCatalog -Path (Join-Path $ScriptDir 'commands')
+    $DiscoveredCatalog = Get-ScriptCatalog -Path (Join-Path $ScriptDir 'commands')
 }
 
 # The Confirmation snapshot shows the step for the first discovered Action
 # that declares a confirmation sentence, with its folder's menu as owner.
 function Get-DecklePreviewConfirmationSnapshot {
-    $row = @(Get-DeckleCatalogRows -Catalog $DiscoveredCatalog | Where-Object { $_.Confirmation }) | Select-Object -First 1
+    $row = @(Get-CatalogRows -Catalog $DiscoveredCatalog | Where-Object { $_.Confirmation }) | Select-Object -First 1
     if ($null -eq $row) { throw 'No discovered Action declares a confirmation sentence.' }
     $item = ConvertTo-DecklePreviewDiscoveredItem -Row $row
     $target = if ($item.PSObject.Properties['Kind'] -and $item.Kind -eq 'ActionRow') { $item.Variants[0] } else { $item }

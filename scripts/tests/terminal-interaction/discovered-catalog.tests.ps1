@@ -30,7 +30,7 @@ function Get-ViewTargets([object]$View) {
     return @($targets)
 }
 
-$catalog = Get-DeckleScriptCatalog -Path $FixtureDir
+$catalog = Get-ScriptCatalog -Path $FixtureDir
 $root = ConvertTo-DecklePreviewDiscoveredView -Level $catalog -Banner 'Fixture Preview' -IsRoot
 Assert-Equal 'menu.discovered' $root.ViewId 'the discovered root has a stable View id'
 Assert-Equal $null $root.BackTarget 'the root View has no Back control'

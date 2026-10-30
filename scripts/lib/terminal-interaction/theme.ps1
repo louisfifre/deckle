@@ -1,6 +1,6 @@
 # Semantic presentation roles mapped to terminal attributes, from one of two
 # palettes. Terminal, the default, names every role in the sixteen console
-# colours and lets the terminal's own scheme give them their values. Deckle
+# colours and lets the terminal's own scheme give them their values. TrueColor
 # carries the designed RGB tokens, sent exactly to VT hosts, with the console
 # colours kept as the fallback of a legacy host.
 
@@ -27,12 +27,12 @@ function Resolve-TerminalThemeVariant {
 
 function Resolve-TerminalPalette {
     param(
-        [Parameter(Mandatory)][ValidateSet('Terminal', 'Deckle')][string]$Palette,
+        [Parameter(Mandatory)][ValidateSet('Terminal', 'TrueColor')][string]$Palette,
         [Parameter(Mandatory)][ConsoleColor]$BackgroundColor
     )
 
     if ($Palette -eq 'Terminal') { return 'Terminal' }
-    return 'Deckle' + (Resolve-TerminalThemeVariant -BackgroundColor $BackgroundColor)
+    return 'TrueColor' + (Resolve-TerminalThemeVariant -BackgroundColor $BackgroundColor)
 }
 
 # Tokens from the Figma file "Deckle Scripts", node 22-27: title, sections,
@@ -40,9 +40,9 @@ function Resolve-TerminalPalette {
 # It names no colour for a plain Action, muted chrome, or outcomes; those
 # roles keep their ConsoleColor fallback rather than an invented value.
 function Get-TerminalThemePalette {
-    param([Parameter(Mandatory)][ValidateSet('DeckleDark', 'DeckleLight')][string]$Palette)
+    param([Parameter(Mandatory)][ValidateSet('TrueColorDark', 'TrueColorLight')][string]$Palette)
 
-    if ($Palette -eq 'DeckleLight') {
+    if ($Palette -eq 'TrueColorLight') {
         return [pscustomobject]@{
             Background = [int[]]@(246, 246, 246)  # F6F6F6
             Title = [int[]]@(40, 142, 215)        # 288ED7
@@ -77,7 +77,7 @@ function Get-TerminalPresentationStyle {
         [string]$Role,
         [ValidateSet('Normal', 'Focused', 'Disabled')][string]$State = 'Normal',
         [ValidateSet('Supported', 'Unsupported', 'Unknown')][string]$ColorCapability = 'Supported',
-        [ValidateSet('Terminal', 'DeckleDark', 'DeckleLight')][string]$Palette = 'Terminal'
+        [ValidateSet('Terminal', 'TrueColorDark', 'TrueColorLight')][string]$Palette = 'Terminal'
     )
 
     if ($ColorCapability -ne 'Supported') {
@@ -115,8 +115,8 @@ function Get-TerminalPresentationStyle {
     # selection token, so a consequence shows at rest and selection keeps one
     # language.
     if ($State -eq 'Focused') {
-        $foreground = if ($Palette -eq 'DeckleDark') { [ConsoleColor]::Black } else { [ConsoleColor]::White }
-        $background = if ($Palette -eq 'DeckleDark') { [ConsoleColor]::White } else { [ConsoleColor]::DarkGray }
+        $foreground = if ($Palette -eq 'TrueColorDark') { [ConsoleColor]::Black } else { [ConsoleColor]::White }
+        $background = if ($Palette -eq 'TrueColorDark') { [ConsoleColor]::White } else { [ConsoleColor]::DarkGray }
         return [pscustomobject]@{
             Foreground = $foreground
             Background = $background

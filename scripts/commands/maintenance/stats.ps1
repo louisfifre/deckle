@@ -54,7 +54,7 @@ $RepoRoot = $null
 $SrcDir = $null
 
 trap {
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Failed `
         -Sentence "Module statistics failed before completion." `
@@ -715,7 +715,7 @@ $watchFiles = @($longFiles | Where-Object { $_ -notin $tooLargeFiles })
 $tooLargeResources = @($resourceFiles | Where-Object { $_.ReswKeys -ge $ResourceTooLargeThreshold })
 $watchResources = @($resourceFiles | Where-Object { $_.ReswKeys -lt $ResourceTooLargeThreshold })
 
-Write-DeckleActionSummary `
+Write-ActionSummary `
     -Workflow $Workflow `
     -Result Success `
     -Sentence "Deckle module inventory was measured across $($rows.Count) src module(s)." `

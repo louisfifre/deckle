@@ -2,7 +2,7 @@
 
 . (Join-Path (Split-Path -Parent $PSScriptRoot) 'script-output.ps1')
 
-function Get-DeckleActionLogRole {
+function Get-ActionLogRole {
     param([AllowNull()]$InputObject)
 
     if ($InputObject -isnot [System.Management.Automation.InformationRecord] -or
@@ -10,15 +10,15 @@ function Get-DeckleActionLogRole {
         return $null
     }
 
-    $roleProperty = $InputObject.MessageData.PSObject.Properties['DeckleRole']
-    if ($null -ne $roleProperty -and $roleProperty.Value -in $script:DeckleOutputColors.Keys) {
+    $roleProperty = $InputObject.MessageData.PSObject.Properties['OutputRole']
+    if ($null -ne $roleProperty -and $roleProperty.Value -in $script:OutputRoleColors.Keys) {
         return [string]$roleProperty.Value
     }
 
     try {
         $hostColor = [ConsoleColor]$InputObject.MessageData.ForegroundColor
         foreach ($role in @('Error', 'Warning', 'Success', 'Action', 'Heading', 'Category', 'Muted')) {
-            if ($hostColor -eq (Get-DeckleOutputColor -Role $role)) { return $role }
+            if ($hostColor -eq (Get-OutputColor -Role $role)) { return $role }
         }
     } catch {
         # Compatibility output from a host without console colors has no role.
@@ -26,19 +26,19 @@ function Get-DeckleActionLogRole {
     return $null
 }
 
-function Get-DeckleActionLogStream {
+function Get-ActionLogStream {
     param([AllowNull()]$InputObject)
 
     if ($InputObject -isnot [System.Management.Automation.InformationRecord] -or
         $InputObject.MessageData -isnot [System.Management.Automation.HostInformationMessage]) {
         return $null
     }
-    $streamProperty = $InputObject.MessageData.PSObject.Properties['DeckleStream']
+    $streamProperty = $InputObject.MessageData.PSObject.Properties['OutputStream']
     if ($null -ne $streamProperty) { return [string]$streamProperty.Value }
     return $null
 }
 
-function Get-DeckleActionLogLevel {
+function Get-ActionLogLevel {
     param(
         [Parameter(Mandatory)][AllowEmptyString()][string]$Message,
         [AllowNull()]$InputObject
@@ -46,7 +46,7 @@ function Get-DeckleActionLogLevel {
 
     if ($Message -match '^\[summary\]') { return 'Summary' }
 
-    $role = Get-DeckleActionLogRole -InputObject $InputObject
+    $role = Get-ActionLogRole -InputObject $InputObject
     if ($role -eq 'Error') { return 'Error' }
     if ($role -eq 'Warning') { return 'Warning' }
     if ($role -in @('Category', 'Heading')) { return 'Step' }
@@ -60,7 +60,7 @@ function Get-DeckleActionLogLevel {
     return 'Info'
 }
 
-function ConvertFrom-DeckleTerminalOutput {
+function ConvertFrom-TerminalOutput {
     param([AllowNull()]$InputObject)
 
     $text = [string]$InputObject
@@ -75,14 +75,14 @@ function ConvertFrom-DeckleTerminalOutput {
         -replace '[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]', '')
 }
 
-function Get-DeckleActionLogColor {
+function Get-ActionLogColor {
     param(
         [Parameter(Mandatory)][string]$Level,
         [AllowNull()]$InputObject
     )
 
-    $role = Get-DeckleActionLogRole -InputObject $InputObject
-    if ($role -and $role -ne 'Body') { return Get-DeckleOutputColor -Role $role }
+    $role = Get-ActionLogRole -InputObject $InputObject
+    if ($role -and $role -ne 'Body') { return Get-OutputColor -Role $role }
 
     if ($InputObject -is [System.Management.Automation.InformationRecord] -and
         $InputObject.MessageData -is [System.Management.Automation.HostInformationMessage]) {
@@ -95,15 +95,15 @@ function Get-DeckleActionLogColor {
     }
 
     $color = switch ($Level) {
-        'Error'   { Get-DeckleOutputColor -Role Error }
-        'Warning' { Get-DeckleOutputColor -Role Warning }
-        'Step'    { Get-DeckleOutputColor -Role Category }
+        'Error'   { Get-OutputColor -Role Error }
+        'Warning' { Get-OutputColor -Role Warning }
+        'Step'    { Get-OutputColor -Role Category }
         default   { $null }
     }
     return $color
 }
 
-function Get-DeckleActionLogLevelRank {
+function Get-ActionLogLevelRank {
     param([Parameter(Mandatory)][string]$Level)
 
     $rank = switch ($Level) {
@@ -116,7 +116,7 @@ function Get-DeckleActionLogLevelRank {
     return $rank
 }
 
-function New-DeckleActionLogSegment {
+function New-ActionLogSegment {
     param(
         [Parameter(Mandatory)][AllowEmptyString()][string]$Text,
         [AllowNull()][string]$Role,
@@ -134,7 +134,7 @@ function New-DeckleActionLogSegment {
     }
 }
 
-function New-DeckleActionLogRecord {
+function New-ActionLogRecord {
     param(
         [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Segments,
         [Parameter(Mandatory)][string]$Source,
@@ -146,7 +146,7 @@ function New-DeckleActionLogRecord {
     $message = (@($Segments | ForEach-Object Text) -join '').TrimEnd()
     if ([string]::IsNullOrWhiteSpace($message)) { return $null }
 
-    $level = @($Segments | Sort-Object { Get-DeckleActionLogLevelRank -Level $_.Level } -Descending)[0].Level
+    $level = @($Segments | Sort-Object { Get-ActionLogLevelRank -Level $_.Level } -Descending)[0].Level
     $presentationSegments = @($Segments | ForEach-Object {
         [pscustomobject]@{
             Text            = [string]$_.Text
@@ -160,12 +160,12 @@ function New-DeckleActionLogRecord {
         $message -match '^(\[[a-z][a-z-]*\]\s*)(.*)$') {
         $presentationSegments = @(
             [pscustomobject]@{
-                Text = $Matches[1]; Role = 'Category'; ForegroundColor = Get-DeckleOutputColor -Role Category
+                Text = $Matches[1]; Role = 'Category'; ForegroundColor = Get-OutputColor -Role Category
             }
             [pscustomobject]@{ Text = $Matches[2]; Role = 'Body'; ForegroundColor = $null }
         )
     } elseif ($presentationSegments.Count -eq 1 -and $null -eq $presentationSegments[0].ForegroundColor) {
-        $presentationSegments[0].ForegroundColor = Get-DeckleActionLogColor -Level $level -InputObject $null
+        $presentationSegments[0].ForegroundColor = Get-ActionLogColor -Level $level -InputObject $null
     }
 
     $lastSegment = $presentationSegments[$presentationSegments.Count - 1]
@@ -185,7 +185,7 @@ function New-DeckleActionLogRecord {
     }
 }
 
-function New-DeckleActionLogCollector {
+function New-ActionLogCollector {
     param([Parameter(Mandatory)][string]$Source)
 
     return [pscustomobject]@{
@@ -197,7 +197,7 @@ function New-DeckleActionLogCollector {
     }
 }
 
-function Add-DeckleActionLogItem {
+function Add-ActionLogItem {
     param(
         [Parameter(Mandatory)]$Collector,
         [AllowNull()]$InputObject,
@@ -207,24 +207,24 @@ function Add-DeckleActionLogItem {
     $Collector.InputCount++
     $isHostOutput = $InputObject -is [System.Management.Automation.InformationRecord] -and
         $InputObject.MessageData -is [System.Management.Automation.HostInformationMessage]
-    $terminalText = ConvertFrom-DeckleTerminalOutput -InputObject $InputObject
+    $terminalText = ConvertFrom-TerminalOutput -InputObject $InputObject
     $parts = @([regex]::Split($terminalText, "\n"))
-    $role = Get-DeckleActionLogRole -InputObject $InputObject
-    $stream = Get-DeckleActionLogStream -InputObject $InputObject
-    $hostColor = Get-DeckleActionLogColor -Level Info -InputObject $InputObject
+    $role = Get-ActionLogRole -InputObject $InputObject
+    $stream = Get-ActionLogStream -InputObject $InputObject
+    $hostColor = Get-ActionLogColor -Level Info -InputObject $InputObject
 
     for ($partIndex = 0; $partIndex -lt $parts.Count; $partIndex++) {
         $part = $parts[$partIndex]
         if ($part.Length -gt 0) {
-            $partLevel = Get-DeckleActionLogLevel -Message $part -InputObject $InputObject
-            $Collector.PendingSegments.Add((New-DeckleActionLogSegment `
+            $partLevel = Get-ActionLogLevel -Message $part -InputObject $InputObject
+            $Collector.PendingSegments.Add((New-ActionLogSegment `
                 -Text $part -Role $role -Stream $stream -ForegroundColor $hostColor -Level $partLevel))
         }
 
         $hasEmbeddedNewline = $partIndex -lt ($parts.Count - 1)
         $endsLogicalLine = $hasEmbeddedNewline -or -not $isHostOutput -or -not [bool]$InputObject.MessageData.NoNewLine
         if ($endsLogicalLine) {
-            $record = New-DeckleActionLogRecord `
+            $record = New-ActionLogRecord `
                 -Segments @($Collector.PendingSegments) -Source $Collector.Source -Timestamp $Timestamp
             if ($null -ne $record) {
                 $Collector.Records.Add($record)
@@ -238,13 +238,13 @@ function Add-DeckleActionLogItem {
     }
 }
 
-function Complete-DeckleActionLog {
+function Complete-ActionLog {
     param(
         [Parameter(Mandatory)]$Collector,
         [datetime]$Timestamp = (Get-Date)
     )
 
-    $record = New-DeckleActionLogRecord `
+    $record = New-ActionLogRecord `
         -Segments @($Collector.PendingSegments) -Source $Collector.Source -Timestamp $Timestamp
     if ($null -ne $record) {
         $Collector.Records.Add($record)
@@ -256,34 +256,34 @@ function Complete-DeckleActionLog {
     $Collector.PendingSegments.Clear()
 }
 
-function ConvertTo-DeckleActionLogRecords {
+function ConvertTo-ActionLogRecords {
     param(
         [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$InputObject,
         [Parameter(Mandatory)][string]$Source,
         [datetime]$Timestamp = (Get-Date)
     )
 
-    $collector = New-DeckleActionLogCollector -Source $Source
+    $collector = New-ActionLogCollector -Source $Source
     foreach ($item in $InputObject) {
-        Add-DeckleActionLogItem -Collector $collector -InputObject $item -Timestamp $Timestamp | Out-Null
+        Add-ActionLogItem -Collector $collector -InputObject $item -Timestamp $Timestamp | Out-Null
     }
-    Complete-DeckleActionLog -Collector $collector -Timestamp $Timestamp | Out-Null
+    Complete-ActionLog -Collector $collector -Timestamp $Timestamp | Out-Null
     return @($collector.Records)
 }
 
-function ConvertTo-DeckleActionLogLines {
+function ConvertTo-ActionLogLines {
     param(
         [Parameter(Mandatory)]$InputObject,
         [Parameter(Mandatory)][string]$Source,
         [datetime]$Timestamp = (Get-Date)
     )
 
-    foreach ($record in @(ConvertTo-DeckleActionLogRecords -InputObject $InputObject -Source $Source -Timestamp $Timestamp)) {
+    foreach ($record in @(ConvertTo-ActionLogRecords -InputObject $InputObject -Source $Source -Timestamp $Timestamp)) {
         $record.Message
     }
 }
 
-function ConvertTo-DeckleActionLogDisplayLines {
+function ConvertTo-ActionLogDisplayLines {
     param([Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Records)
 
     foreach ($record in $Records) {

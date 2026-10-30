@@ -59,7 +59,7 @@ $results = $null
 $RuntimeAssetsStatus = 'Skipped'
 
 trap {
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Failed `
         -Sentence "Development environment bootstrap failed before completion." `
@@ -289,7 +289,7 @@ if ($plan.Count -eq 0) {
 
 if ($DryRun) {
     Write-Section "Dry run — exiting before any install."
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Success `
         -Sentence "Development environment bootstrap was probed only; no install was run." `
@@ -463,7 +463,7 @@ $summarySentence = if ($DryRun) {
     "Development environment bootstrap completed $installedCount install step(s) for the requested tier."
 }
 
-Write-DeckleActionSummary `
+Write-ActionSummary `
     -Workflow $Workflow `
     -Result $summaryResult `
     -Sentence $summarySentence `

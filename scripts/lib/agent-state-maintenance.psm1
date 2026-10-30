@@ -83,7 +83,7 @@ function Assert-AgentStateRootIdentity {
         $fullPath.Equals($profile, [StringComparison]::OrdinalIgnoreCase)) {
         throw "Refusing broad $Kind state root: $fullPath"
     }
-    $null = Assert-AgentStatePath -Path (Join-Path $fullPath '__deckle-root-check__') -Root $fullPath
+    $null = Assert-AgentStatePath -Path (Join-Path $fullPath '__root-check__') -Root $fullPath
     $canonicalPath = switch ($Kind) {
         'Codex' { Join-Path $profile '.codex' }
         'Claude' { Join-Path $profile '.claude' }
@@ -414,7 +414,7 @@ function Invoke-AgentStateCleanupPlan {
         return Invoke-AgentStateCleanupPlanCore @PSBoundParameters
     }
 
-    $mutex = [Threading.Mutex]::new($false, 'Local\Deckle.AgentStateReset')
+    $mutex = [Threading.Mutex]::new($false, 'Local\DeckleScripts.AgentStateReset')
     $acquired = $false
     try {
         try {

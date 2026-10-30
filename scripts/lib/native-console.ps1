@@ -2,20 +2,20 @@
 
 . (Join-Path $PSScriptRoot 'script-output.ps1')
 
-function Write-DeckleNativeConsoleLine {
+function Write-CapturedProcessLine {
     param(
         [Parameter(Mandatory)][AllowEmptyString()][string]$Text,
         [Parameter(Mandatory)][ValidateSet('StdOut', 'StdErr')][string]$Stream
     )
 
-    Write-DeckleOutputFragment `
+    Write-OutputFragment `
         -Text $Text `
         -Role Body `
-        -Tags @('Deckle.Output', 'Deckle.Native') `
-        -Metadata @{ DeckleStream = $Stream }
+        -Tags @('DeckleScripts.Output', 'DeckleScripts.Native') `
+        -Metadata @{ OutputStream = $Stream }
 }
 
-function Invoke-DeckleConsoleProcess {
+function Invoke-CapturedProcess {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$FilePath,
@@ -46,7 +46,7 @@ function Invoke-DeckleConsoleProcess {
                 if ($null -eq $line) {
                     $stdoutDone = $true
                 } else {
-                    Write-DeckleNativeConsoleLine -Text $line -Stream StdOut
+                    Write-CapturedProcessLine -Text $line -Stream StdOut
                     $stdoutTask = $process.StandardOutput.ReadLineAsync()
                 }
                 $madeProgress = $true
@@ -57,7 +57,7 @@ function Invoke-DeckleConsoleProcess {
                 if ($null -eq $line) {
                     $stderrDone = $true
                 } else {
-                    Write-DeckleNativeConsoleLine -Text $line -Stream StdErr
+                    Write-CapturedProcessLine -Text $line -Stream StdErr
                     $stderrTask = $process.StandardError.ReadLineAsync()
                 }
                 $madeProgress = $true

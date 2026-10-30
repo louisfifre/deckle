@@ -40,7 +40,7 @@ $kept = @()
 $missing = @()
 
 trap {
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Failed `
         -Sentence "Native folder cleanup failed before completion." `
@@ -112,7 +112,7 @@ $sentence = if ($Inspect) {
     "Native folder holds exactly the current catalog."
 }
 
-Write-DeckleActionSummary `
+Write-ActionSummary `
     -Workflow $Workflow `
     -Result $result `
     -Sentence $sentence `

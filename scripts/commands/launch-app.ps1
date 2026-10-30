@@ -26,7 +26,7 @@ $LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 . (Join-Path $LibDir 'deckle-process.ps1')
 
-$WorkflowOutput = New-DeckleWorkflowOutput -Category 'launch'
+$WorkflowOutput = New-WorkflowOutput -Category 'launch'
 
 $Workflow = 'Launch'
 $RepoRoot = $null
@@ -34,7 +34,7 @@ $ExePath = $null
 $WaitResult = $null
 
 trap {
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Failed `
         -Sentence "Deckle launch failed before completion." `
@@ -54,18 +54,18 @@ if ($Target) {
     $RepoRoot = Split-Path -Parent (Split-Path $ScriptDir)
 }
 
-Write-DeckleOutputText -Text "Repo: $RepoRoot" -Role Muted
+Write-OutputText -Text "Repo: $RepoRoot" -Role Muted
 
 $AppArtifactsBin = Join-Path $RepoRoot 'artifacts\bin\Deckle.App'
 $PivotPrefix     = $Configuration.ToLowerInvariant()
 
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Stop running Deckle instance'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Stop running Deckle instance'
 Stop-DeckleProcess -WriteEvent {
     param([string]$Role, [string]$Message)
-    Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message $Message -Role $Role
+    Write-WorkflowMessage -Output $WorkflowOutput -Message $Message -Role $Role
 }
 
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Resolve built executable ($Configuration)"
+Write-WorkflowStep -Output $WorkflowOutput -Message "Resolve built executable ($Configuration)"
 $ExeCandidates = Get-ChildItem -Path $AppArtifactsBin -Recurse -Filter 'Deckle.exe' -ErrorAction SilentlyContinue |
     Where-Object { $_.Directory.Name -like "$PivotPrefix*" } |
     Sort-Object LastWriteTime -Descending
@@ -75,16 +75,16 @@ if (-not $ExeCandidates) {
 }
 
 $ExePath = $ExeCandidates[0].FullName
-Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message $ExePath
+Write-WorkflowMessage -Output $WorkflowOutput -Message $ExePath
 
 $psi = [System.Diagnostics.ProcessStartInfo]::new()
 $psi.FileName = $ExePath
 $psi.UseShellExecute = $true
 $psi.WorkingDirectory = Split-Path -Parent $ExePath
 
-Write-DeckleWorkflowStep -Output $WorkflowOutput -Message 'Launch Deckle'
+Write-WorkflowStep -Output $WorkflowOutput -Message 'Launch Deckle'
 [System.Diagnostics.Process]::Start($psi) | Out-Null
-Write-DeckleWorkflowResult -Output $WorkflowOutput -Message 'Started without build'
+Write-WorkflowResult -Output $WorkflowOutput -Message 'Started without build'
 
 if ($Wait) {
     $deadline = (Get-Date).AddSeconds(5)
@@ -93,17 +93,17 @@ if ($Wait) {
         $proc = Get-Process -Name Deckle -ErrorAction SilentlyContinue | Select-Object -First 1
     } while (-not $proc -and (Get-Date) -lt $deadline)
     if ($proc) {
-        Write-DeckleWorkflowStep -Output $WorkflowOutput -Message "Wait for Deckle PID $($proc.Id)"
+        Write-WorkflowStep -Output $WorkflowOutput -Message "Wait for Deckle PID $($proc.Id)"
         $proc.WaitForExit()
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message "Deckle exited with code $($proc.ExitCode)"
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "Deckle exited with code $($proc.ExitCode)"
         $WaitResult = "Deckle PID $($proc.Id) exited with code $($proc.ExitCode)"
     } else {
-        Write-DeckleWorkflowMessage -Output $WorkflowOutput -Message 'Deckle process did not appear within 5 seconds' -Role Warning
+        Write-WorkflowMessage -Output $WorkflowOutput -Message 'Deckle process did not appear within 5 seconds' -Role Warning
         $WaitResult = 'Deckle process did not appear within 5 seconds'
     }
 }
 
-Write-DeckleActionSummary `
+Write-ActionSummary `
     -Workflow $Workflow `
     -Result Success `
     -Sentence "Deckle was launched from the existing $Configuration build; no build was run." `

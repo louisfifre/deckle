@@ -25,7 +25,7 @@ Import-Module (Join-Path $LibDir 'script-discovery.psm1') -Force
 $Workflow = 'Check script headers'
 
 trap {
-    Write-DeckleActionSummary `
+    Write-ActionSummary `
         -Workflow $Workflow `
         -Result Failed `
         -Sentence 'Checking script headers failed.' `
@@ -47,38 +47,38 @@ if (-not (Test-Path -LiteralPath $ScriptsRoot -PathType Container)) {
     throw "No scripts folder under '$RepoRoot'."
 }
 
-$output = New-DeckleWorkflowOutput -Category 'headers'
-Write-DeckleOutputText -Text "Repo: $RepoRoot" -Role Muted
+$output = New-WorkflowOutput -Category 'headers'
+Write-OutputText -Text "Repo: $RepoRoot" -Role Muted
 
-Write-DeckleWorkflowStep -Output $output -Message 'Read script headers'
+Write-WorkflowStep -Output $output -Message 'Read script headers'
 # Tests are exempt: their fixtures break Headers on purpose.
 $headers = @(Get-ChildItem -LiteralPath $ScriptsRoot -Recurse -File |
     Where-Object { $_.Extension -ieq '.ps1' -or $_.Extension -ieq '.psm1' } |
     Where-Object { -not $_.FullName.StartsWith($TestsRoot + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) } |
     Sort-Object -Property FullName |
-    ForEach-Object { Read-DeckleScriptHeader -Path $_.FullName })
+    ForEach-Object { Read-ScriptHeader -Path $_.FullName })
 $described = @($headers | Where-Object Status -eq 'Described')
 $faults = @($headers | Where-Object { $_.Status -in @('VoidedHeader', 'InvalidHeader', 'ParseError') })
-Write-DeckleWorkflowMessage -Output $output -Message "$($headers.Count) script(s) read, $($described.Count) described"
+Write-WorkflowMessage -Output $output -Message "$($headers.Count) script(s) read, $($described.Count) described"
 if ($faults.Count -eq 0) {
-    Write-DeckleWorkflowMessage -Output $output -Message 'No voided or invalid header' -Role Success
+    Write-WorkflowMessage -Output $output -Message 'No voided or invalid header' -Role Success
 }
 foreach ($fault in $faults) {
     $relative = [IO.Path]::GetRelativePath($RepoRoot, $fault.Path).Replace('\', '/')
-    Write-DeckleWorkflowMessage -Output $output -Message "$relative [$($fault.Status)] $($fault.Reason)" -Role Error
+    Write-WorkflowMessage -Output $output -Message "$relative [$($fault.Status)] $($fault.Reason)" -Role Error
 }
 
-Write-DeckleWorkflowStep -Output $output -Message 'Commands hidden by choice (no header)'
+Write-WorkflowStep -Output $output -Message 'Commands hidden by choice (no header)'
 $hiddenByChoice = @()
 if (Test-Path -LiteralPath $CommandsRoot -PathType Container) {
-    $catalog = Get-DeckleScriptCatalog -Path $CommandsRoot
-    $hiddenByChoice = @(Get-DeckleCatalogHiddenScripts -Catalog $catalog | Where-Object Status -eq 'NoHeader')
+    $catalog = Get-ScriptCatalog -Path $CommandsRoot
+    $hiddenByChoice = @(Get-CatalogHiddenScripts -Catalog $catalog | Where-Object Status -eq 'NoHeader')
 }
 if ($hiddenByChoice.Count -eq 0) {
-    Write-DeckleWorkflowMessage -Output $output -Message 'None' -Role Muted
+    Write-WorkflowMessage -Output $output -Message 'None' -Role Muted
 }
 foreach ($entry in $hiddenByChoice) {
-    Write-DeckleWorkflowMessage -Output $output -Message "commands/$($entry.RelativePath)" -Role Muted
+    Write-WorkflowMessage -Output $output -Message "commands/$($entry.RelativePath)" -Role Muted
 }
 
 $result = if ($faults.Count -eq 0) { 'Success' } else { 'Failed' }
@@ -87,7 +87,7 @@ $sentence = if ($faults.Count -eq 0) {
 } else {
     "$($faults.Count) script header(s) are voided or invalid and hide their script."
 }
-Write-DeckleActionSummary `
+Write-ActionSummary `
     -Workflow $Workflow `
     -Result $result `
     -Sentence $sentence `
