@@ -1,13 +1,13 @@
 {
-  "source": "https://github.com/louisfifre/deckle-scripts.git",
-  "version": "0.1.0",
+  "source": "D:\\projects\\deckle-scripts",
+  "version": "0.1.1",
   "packs": [
     "dotnet",
     "git",
     "maintenance",
     "setup"
   ],
-  "installedAt": "2026-10-30T18:16:35Z",
+  "installedAt": "2026-10-30T18:55:05Z",
   "files": {
     "scripts/check-scripts.ps1": "2cbf05dbe6d49651e338c1f99c6e24cdfbfc2ce1a3a89143359d940260c295cf",
     "scripts/dotnet/README.md": "6f575b4da880bcd87e17d667d7362a57da841ba5cd764fa705bde52a3b7c4423",
@@ -54,7 +54,7 @@
     "scripts/lib/terminal-interaction/header-layout.ps1": "a4b44320d2fe8d14cc15177ce26eb6e6e8dfe0dc947c94f3fb666f9566a72f00",
     "scripts/lib/terminal-interaction/host.ps1": "37b2f6df634d6c164e655b1d43d19b5416a1d14b9449fe89596d8ec078e01584",
     "scripts/lib/terminal-interaction/interaction.ps1": "7f27fadac515b70ce823dc47642dbcd81f89d7132d80e8e8766c93122a5728d0",
-    "scripts/lib/terminal-interaction/layout.ps1": "026c7dbaabfec1c32a048180abd0b494a79363b558aad72086a9ee9879238671",
+    "scripts/lib/terminal-interaction/layout.ps1": "0f2b0dc5f15fcf8f84f84985a54657257ba7573cc1fe177021d21ae3793f8923",
     "scripts/lib/terminal-interaction/navigation-layout.ps1": "c94b6b96468399a26055eff9ca22eeee5016f5580464a2be4b24b86d39878356",
     "scripts/lib/terminal-interaction/navigation.ps1": "e96e509c6da6c349f5cc9e8d4c273e4ea424a81f041a2b330b7f6f0e8ca6d7bf",
     "scripts/lib/terminal-interaction/preparation-layout.ps1": "1501b5de1fef4eed0213fc87e48b0f2a5cabee747a6b496d97fc5d572b568c93",

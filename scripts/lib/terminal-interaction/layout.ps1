@@ -357,7 +357,10 @@ function Get-TerminalMenuGrid {
         }
     }
 
-    $left = 2
+    # Action Row labels sit two cells past the Section heading, which is drawn
+    # at column 1: the indentation Deckle's first menu gave them, kept so the
+    # eye tells a Section from the rows it holds.
+    $left = 3
     $right = $Width - 2
     $labelWidth = Get-TerminalActionLabelWidth -LayoutSections $LayoutSections
     $targetX = $left + $labelWidth + 3
@@ -391,7 +394,7 @@ function Add-TerminalMenuRow {
         [string]$FocusedTargetId
     )
 
-    $left = 2
+    $left = $Grid.Left
     if ($Row.Spaced) { [void](Add-TerminalFrameLine -Frame $Frame) }
     if ($Wide) {
         $line = Add-TerminalFrameLine -Frame $Frame
@@ -457,8 +460,8 @@ function Add-TerminalMenuRow {
             -Frame $Frame `
             -Target $target `
             -LineIndex $line `
-            -X 4 `
-            -Width ([Math]::Max(1, $Frame.Width - 6)) `
+            -X ($left + 2) `
+            -Width ([Math]::Max(1, $Frame.Width - $left - 4)) `
             -FocusedTargetId $FocusedTargetId `
             -AsActionVariant:($Row.Kind -eq 'ActionRow')
     }
