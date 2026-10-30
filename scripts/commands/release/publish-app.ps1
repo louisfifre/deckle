@@ -25,10 +25,6 @@ param(
     # script. Accepts any path — main repo or any git worktree root.
     [string]$Target,
 
-    # Interactive picker: lists the main repo + all linked worktrees and
-    # prompts for a choice. Overrides -Target.
-    [switch]$Pick,
-
     # Output directory for the publish folder + produced ZIP. Defaults to a
     # versioned subfolder under <RepoRoot>\artifacts\ (git-ignored). Never the
     # system temp dir — build artefacts stay on the repo's volume, off C:.
@@ -84,10 +80,7 @@ trap {
     throw
 }
 
-if ($Pick) {
-    Import-Module (Join-Path $LibDir 'menu.psm1') -Force
-    $RepoRoot = Select-Worktree -ContextDir $ScriptDir
-} elseif ($Target) {
+if ($Target) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {

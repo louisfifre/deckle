@@ -12,7 +12,6 @@
 [CmdletBinding()]
 param(
     [string]$Target,
-    [switch]$Pick,
     [string]$RelativePath,
     [string[]]$LoadingMode = @(),
     [string[]]$DocumentType = @(),
@@ -28,10 +27,7 @@ $LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 Import-Module (Join-Path $LibDir 'context-inventory.psm1') -Force
 
 $Workflow = 'Show context stats'
-if ($Pick) {
-    Import-Module (Join-Path $LibDir 'menu.psm1') -Force
-    $RepoRoot = Select-Worktree -ContextDir $ScriptDir
-} elseif ($Target) {
+if ($Target) {
     $RepoRoot = (Resolve-Path -LiteralPath $Target).Path
 } else {
     $RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))

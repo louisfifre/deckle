@@ -17,10 +17,6 @@ param(
     # Repository/worktree root. Defaults to the repo holding this script.
     [string]$Target,
 
-    # Interactive picker: lists the main repo + all linked worktrees and
-    # prompts for a choice. Overrides -Target.
-    [switch]$Pick,
-
     # Override the README path. Mostly useful for tests.
     [string]$ReadmePath,
 
@@ -54,10 +50,7 @@ trap {
     throw
 }
 
-if ($Pick) {
-    Import-Module (Join-Path $LibDir 'menu.psm1') -Force
-    $RepoRoot = Select-Worktree -ContextDir $ScriptDir
-} elseif ($Target) {
+if ($Target) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Resolve-Path -LiteralPath $Target).Path
 } else {

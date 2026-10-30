@@ -18,11 +18,6 @@ param(
     # currently-edited worktree).
     [string]$Target,
 
-    # Interactive worktree picker via scripts/lib/menu.psm1. Overrides
-    # -Target. Useful when cleaning from a terminal with several
-    # worktrees checked out.
-    [switch]$Pick,
-
     # Also delete the released ZIP staging under artifacts\Deckle-v*\.
     # Destructive of release artefacts — opt-in only.
     [switch]$IncludeReleases
@@ -63,10 +58,7 @@ trap {
     throw
 }
 
-if ($Pick) {
-    Import-Module (Join-Path $LibDir 'menu.psm1') -Force
-    $RepoRoot = Select-Worktree -ContextDir $ScriptDir
-} elseif ($Target) {
+if ($Target) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {

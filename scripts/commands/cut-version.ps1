@@ -10,10 +10,9 @@ param(
     [ValidateSet('patch', 'minor', 'major')]
     [string]$Bump = 'patch',
 
-    # Target worktree. Resolves like the other commands: -Pick prompts for
-    # one, -Target takes an explicit path, otherwise the repo two levels up.
+    # Target worktree. Resolves like the other commands: -Target takes an
+    # explicit path, otherwise the repo two levels up.
     [string]$Target,
-    [switch]$Pick,
 
     # Write the bumped <Version> WITHOUT committing — an escape
     # hatch to inspect the rewrite. The whole point is the atomic bump, so
@@ -48,10 +47,7 @@ trap {
     throw
 }
 
-if ($Pick) {
-    Import-Module (Join-Path $LibDir 'menu.psm1') -Force
-    $RepoRoot = Select-Worktree -ContextDir $ScriptDir
-} elseif ($Target) {
+if ($Target) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {

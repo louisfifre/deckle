@@ -13,7 +13,6 @@
 [CmdletBinding()]
 param(
     [string]$Target,
-    [switch]$Pick,
     [string]$Allowlist,
     [string]$Json,
     [int]$MaxItems = 50,
@@ -26,10 +25,7 @@ $LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'resource-inventory.psm1') -Force
 
-if ($Pick) {
-    Import-Module (Join-Path $LibDir 'menu.psm1') -Force
-    $RepoRoot = Select-Worktree -ContextDir $ScriptDir
-} elseif ($Target) {
+if ($Target) {
     $RepoRoot = (Resolve-Path -LiteralPath $Target).Path
 } else {
     $RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))

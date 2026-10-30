@@ -25,9 +25,6 @@ param(
     # Build a specific repo or worktree instead of the one containing this
     # script. Accepts any path — main repo or any git worktree root.
     [string]$Target,
-    # Interactive picker: lists the main repo + all linked worktrees via
-    # `git worktree list` and prompts for a choice. Overrides -Target.
-    [switch]$Pick,
     # Skip the --post-build flag passed to Deckle.exe on launch. The flag
     # triggers a one-shot self-restart at the app side, mitigating the
     # post-build HUD topmost glitch. Disable here for debug scenarios
@@ -71,10 +68,7 @@ trap {
 
 # The default is the repo holding this script copy, so VS Code's Run on the
 # open file builds the worktree being edited.
-if ($Pick) {
-    Import-Module (Join-Path $LibDir 'menu.psm1') -Force
-    $RepoRoot = Select-Worktree -ContextDir $ScriptDir
-} elseif ($Target) {
+if ($Target) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {

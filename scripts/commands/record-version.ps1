@@ -23,7 +23,6 @@ param(
     [switch]$Current,
 
     [string]$Target,
-    [switch]$Pick,
 
     # Pushes the current branch only. Public release tags are never pushed here.
     [switch]$Push
@@ -78,10 +77,7 @@ function Assert-NoTrackedChanges([string]$Root) {
     }
 }
 
-if ($Pick) {
-    Import-Module (Join-Path $LibDir 'menu.psm1') -Force
-    $RepoRoot = Select-Worktree -ContextDir $ScriptDir
-} elseif ($Target) {
+if ($Target) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {

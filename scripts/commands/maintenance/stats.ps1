@@ -16,10 +16,6 @@ param(
     # this script (three levels up: scripts/commands/maintenance -> commands -> scripts -> repo root).
     [string]$Target,
 
-    # Interactive worktree picker via scripts/lib/menu.psm1. Overrides
-    # -Target. Useful when several worktrees are checked out.
-    [switch]$Pick,
-
     # Files at or above this raw-line count are shown as watch items.
     [int]$WatchThreshold = 500,
 
@@ -70,10 +66,7 @@ trap {
     throw
 }
 
-if ($Pick) {
-    Import-Module (Join-Path $LibDir 'menu.psm1') -Force
-    $RepoRoot = Select-Worktree -ContextDir $ScriptDir
-} elseif ($Target) {
+if ($Target) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {

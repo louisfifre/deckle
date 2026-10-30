@@ -7,7 +7,6 @@
 [CmdletBinding()]
 param(
     [string]$Target,
-    [switch]$Pick,
     [string]$Version,
     [switch]$Push
 )
@@ -58,10 +57,7 @@ trap {
     throw
 }
 
-if ($Pick) {
-    Import-Module (Join-Path $LibDir 'menu.psm1') -Force
-    $RepoRoot = Select-Worktree -ContextDir $ScriptDir
-} elseif ($Target) {
+if ($Target) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {

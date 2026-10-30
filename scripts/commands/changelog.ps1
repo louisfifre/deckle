@@ -18,10 +18,6 @@ param(
     # script. Accepts any path — main repo or any git worktree root.
     [string]$Target,
 
-    # Interactive picker: lists the main repo + all linked worktrees and
-    # prompts for a choice. Overrides -Target.
-    [switch]$Pick,
-
     # Release-notes mode: emit ONLY this version's section (e.g. "0.4.5"),
     # without the document header, instead of regenerating the whole file. If
     # the version is already in release-history.json, its public-release range
@@ -71,10 +67,7 @@ trap {
     throw
 }
 
-if ($Pick) {
-    Import-Module (Join-Path $LibDir 'menu.psm1') -Force
-    $RepoRoot = Select-Worktree -ContextDir $ScriptDir
-} elseif ($Target) {
+if ($Target) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {
