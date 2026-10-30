@@ -3,17 +3,19 @@
 ## Buffers still queued in the driver were freed at the end of every capture
 
 Seen on 2026-10-30 as a crash of v0.72.5 with exit code `0xC0000374` (heap
-corruption, raised in `ntdll`), a few seconds after a listening test in
-Settings > Audio > Recording ended and before its playback was logged.
+corruption, raised in `ntdll`). The Windows event log dates the fault at
+18:17:09, about 80 ms after a listening test in Settings > Audio > Recording
+released the microphone (18:17:08.930), and before any playback was logged.
 
 - **Trigger.** Any capture that ends while buffers are still queued, which is
   every capture: with 4 buffers of 50 ms, `waveInStop` leaves 3 of them pending
   (`CaptureDrainDetail` reported `pending_buffers=3` on each take).
 - **Symptom.** Every take logged `CaptureReleaseDetail` with
   `stage=unprepare_header | mmsys_err=33` (`WAVERR_STILLPLAYING`), 53 times in
-  the session that crashed. The crash itself is rare and comes later, at an
-  unrelated heap operation. That the playback which followed is what exposed
-  the corruption is inferred from the timing, not shown by a stack.
+  the session that crashed. The crash itself is rare: the corruption is only
+  caught when the heap next checks the damaged block. Here that came within
+  80 ms of the release, so the playback the user started next did not trigger
+  it; which heap call caught it is unknown, as no stack was read.
 - **Cause.** The drain in `WaveInLoop.Pump` stopped the device with
   `waveInStop`, which returns only the buffer being filled and leaves the empty
   ones queued. `waveInUnprepareHeader` refused those headers, and
