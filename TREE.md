@@ -1976,7 +1976,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── PcmConversionTests.cs
 │   │   ├── TranscriptionPreprocessorTests.cs
 │   │   ├── WaveInBufferRingBugNotes.md
-│   │   └── WaveInBufferRingTests.cs
+│   │   ├── WaveInBufferRingTests.cs
+│   │   └── WaveInReleaseBugNotes.md
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs

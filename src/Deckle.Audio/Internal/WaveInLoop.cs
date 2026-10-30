@@ -26,8 +26,8 @@ internal enum LoopExit
 // Result of Pump — separated from CaptureResult because MicrophoneCapture
 // still builds the telemetry payload and the float buffer from it. The drain
 // duration is captured here (the loop owns the post-Stop drain phase).
-// ReleaseStage names the first drain call the driver refused (stop or
-// unprepare_header), null when both went through; MicrophoneCapture adds the
+// ReleaseStage names the first drain call the driver refused (stop, reset or
+// unprepare_header), null when all went through; MicrophoneCapture adds the
 // close and owns the release incident.
 internal readonly record struct PumpResult(
     byte[]      Pcm,
@@ -343,32 +343,50 @@ internal static class WaveInLoop
         // Continue from the same cursor, in queue order: the partial buffer
         // waveInStop returns can sit at a lower index than the last completed
         // one, and it is the end of the take. Nothing is requeued here, so one
-        // lap at most bounds the walk.
+        // lap at most bounds the walk, across both calls below.
         int tailBytes = 0;
         int taken = 0;
-        for (; taken < nBuffers && ring.TakeNext(isDone, out int i); taken++)
+        void TakeDoneTail()
         {
-            WAVEHDR hdr = Marshal.PtrToStructure<WAVEHDR>(hdrPtrs[i]);
-            if (hdr.dwBytesRecorded > 0)
+            for (; taken < nBuffers && ring.TakeNext(isDone, out int i); taken++)
             {
-                tailBytes += (int)hdr.dwBytesRecorded;
-                ReadOnlySpan<byte> data = allBytes.Append(hdr.lpData, (int)hdr.dwBytesRecorded);
-                // Push the drained tail through the same sub-window mill so
-                // _rmsLog covers the full session (the in-loop path stops as
-                // soon as the cancellation token fires). The drain has no
-                // low-audio tracker, so the returned buffer dBFS is
-                // intentionally discarded here.
-                _ = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
+                WAVEHDR hdr = Marshal.PtrToStructure<WAVEHDR>(hdrPtrs[i]);
+                if (hdr.dwBytesRecorded > 0)
+                {
+                    tailBytes += (int)hdr.dwBytesRecorded;
+                    ReadOnlySpan<byte> data = allBytes.Append(hdr.lpData, (int)hdr.dwBytesRecorded);
+                    // Push the drained tail through the same sub-window mill so
+                    // _rmsLog covers the full session (the in-loop path stops as
+                    // soon as the cancellation token fires). The drain has no
+                    // low-audio tracker, so the returned buffer dBFS is
+                    // intentionally discarded here.
+                    _ = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
+                }
             }
         }
+        TakeDoneTail();
 
         // The cursor stops at the first buffer the driver still holds, and
         // FIFO means every later one is still held too: what the walk did not
         // take is what the stop left pending.
         int pendingBuffers = nBuffers - taken;
 
-        // Every header is unprepared, done or not: the caller frees the
-        // buffers right after.
+        // waveInStop returns only the buffer being filled; the empty ones stay
+        // queued in the driver. Unpreparing a queued header is refused
+        // (WAVERR_STILLPLAYING), and the caller frees the buffers right after,
+        // so without this reset the driver kept pointers into freed memory and
+        // corrupted the heap (0xC0000374). waveInReset marks every pending
+        // buffer done and hands it back; the walk takes them so the cursor
+        // agrees with the driver, though a stopped device leaves them empty.
+        uint resetErr = WaveDeviceInterop.waveInReset(hWaveIn);
+        if (resetErr != 0 && releaseStage is null)
+        {
+            releaseStage = "reset";
+            releaseErr = resetErr;
+        }
+        TakeDoneTail();
+
+        // Every header is unprepared: the caller frees the buffers right after.
         for (int i = 0; i < nBuffers; i++)
         {
             uint unprepareErr = NativeMethods.waveInUnprepareHeader(hWaveIn, hdrPtrs[i], hdrSize);
