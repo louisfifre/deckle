@@ -1,5 +1,5 @@
 {
-  "source": "D:\\projects\\deckle-scripts",
+  "source": "https://github.com/louisfifre/deckle-scripts",
   "version": "0.1.1",
   "packs": [
     "dotnet",
@@ -7,7 +7,7 @@
     "maintenance",
     "setup"
   ],
-  "installedAt": "2026-10-30T18:55:05Z",
+  "installedAt": "2026-10-30T20:03:03Z",
   "files": {
     "scripts/check-scripts.ps1": "2cbf05dbe6d49651e338c1f99c6e24cdfbfc2ce1a3a89143359d940260c295cf",
     "scripts/dotnet/README.md": "6f575b4da880bcd87e17d667d7362a57da841ba5cd764fa705bde52a3b7c4423",
