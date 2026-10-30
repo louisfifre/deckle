@@ -36,6 +36,23 @@ function ConvertTo-ReleaseVersion {
     return $parsed
 }
 
+# The public releases, as the vX.Y.Z of every release/vX.Y.Z tag in ascending
+# order. The release mark is an annotated tag on the released commit, created
+# by publish-app.ps1 (or scripts/git/mark-release.ps1 by hand); no ledger file.
+function Get-DeckleReleaseTags {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$RepoRoot)
+
+    $tags = @(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @('tag', '--list', 'release/v*'))
+    $versions = foreach ($tag in $tags) {
+        $bare = $tag -replace '^release/', ''
+        if ($bare -cmatch '^v\d+\.\d+\.\d+$') {
+            [pscustomobject]@{ Tag = $bare; Version = [version]$bare.Substring(1) }
+        }
+    }
+    return [string[]]@($versions | Sort-Object -Property Version | ForEach-Object { $_.Tag })
+}
+
 function Assert-DeckleReleaseSource {
     [CmdletBinding()]
     param(
@@ -194,7 +211,10 @@ function Publish-DeckleReleaseTag {
     param(
         [Parameter(Mandatory)][string]$RepoRoot,
         [Parameter(Mandatory)][string]$Tag,
-        [Parameter(Mandatory)][string]$HeadSha
+        [Parameter(Mandatory)][string]$HeadSha,
+        # With a message the tag is created annotated, the form the version and
+        # release marks take; without it, lightweight.
+        [string]$Message
     )
 
     $resolvedHead = (@(Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @(
@@ -215,7 +235,8 @@ function Publish-DeckleReleaseTag {
             throw "Local tag $Tag points to $($localTag[0].Trim()), not release HEAD $HeadSha"
         }
     } elseif ($localTagCode -eq 1) {
-        $null = Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments @('tag', $Tag, $HeadSha)
+        $arguments = if ($Message) { @('tag', '-a', $Tag, '-m', $Message, $HeadSha) } else { @('tag', $Tag, $HeadSha) }
+        $null = Invoke-ReleaseGit -RepoRoot $RepoRoot -Arguments $arguments
     } else {
         throw "git rev-parse $Tag failed (code $localTagCode)"
     }
@@ -294,4 +315,4 @@ function Assert-DeckleReleaseArchive {
     }
 }
 
-Export-ModuleMember -Function Assert-DeckleReleaseRepositorySource, Assert-DeckleReleaseSource, Get-DeckleReleaseRecoveryPlan, Assert-DeckleReleaseAssets, Assert-DeckleReleaseArchive, Assert-DeckleReleaseDraft, Publish-DeckleReleaseTag
+Export-ModuleMember -Function Get-DeckleReleaseTags, Assert-DeckleReleaseRepositorySource, Assert-DeckleReleaseSource, Get-DeckleReleaseRecoveryPlan, Assert-DeckleReleaseAssets, Assert-DeckleReleaseArchive, Assert-DeckleReleaseDraft, Publish-DeckleReleaseTag

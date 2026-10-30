@@ -39,6 +39,19 @@ try {
     $publishedTag = (& git --git-dir=$remote rev-parse 'v0.13.8^{commit}').Trim()
     if ($publishedTag -cne $firstHead) { throw 'Release tag was not published at release HEAD' }
 
+    # The release mark is annotated, and the marks are the record of the public
+    # releases, in version order whatever git's own listing order.
+    if (@(Get-DeckleReleaseTags -RepoRoot $root).Count -ne 0) { throw 'A repository without release marks reported some' }
+    Publish-DeckleReleaseTag -RepoRoot $root -Tag 'release/v0.13.8' -HeadSha $firstHead -Message 'Release 0.13.8'
+    if ((& git -C $root cat-file -t 'release/v0.13.8').Trim() -cne 'tag') { throw 'The release mark was not an annotated tag' }
+    $publishedMark = (& git --git-dir=$remote rev-parse 'release/v0.13.8^{commit}').Trim()
+    if ($publishedMark -cne $firstHead) { throw 'The release mark was not pushed at release HEAD' }
+    Invoke-Git $root @('tag', 'release/v0.9.10', $firstHead)
+    Invoke-Git $root @('tag', 'release/v0.10.0', $firstHead)
+    Invoke-Git $root @('tag', 'release/not-a-version', $firstHead)
+    $marks = @(Get-DeckleReleaseTags -RepoRoot $root)
+    if (($marks -join ' ') -cne 'v0.9.10 v0.10.0 v0.13.8') { throw "Release marks were read as '$($marks -join ' ')'" }
+
     Set-Content -LiteralPath (Join-Path $root 'tracked.txt') -Value 'next release source'
     Invoke-Git $root @('add', 'tracked.txt')
     Invoke-Git $root @('commit', '-m', 'fix: advance release source')

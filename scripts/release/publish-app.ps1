@@ -32,25 +32,25 @@ param(
 
     # Also publish the installer exe + the app ZIP (+ its .sha256 sidecar) as a
     # GitHub Release tagged v$Version via gh. Requires gh authenticated against
-    # the repo's remote. The version is read from the csproj; gh attaches to the
-    # commit only after every artifact has built successfully.
+    # the repo's remote. The version is the vX.Y.Z tag HEAD carries; gh attaches
+    # to the commit only after every artifact has built successfully.
     [switch]$Publish,
 
     # Optional release-notes file passed to `gh release create --notes-file`.
     # Without it, the notes are generated from the commit history by
-    # changelog.ps1 (home-grown, plain git log, no GitHub API).
+    # scripts/git/changelog.ps1 (plain git log, no GitHub API).
     [string]$Notes
 )
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot                                  # scripts/release/
 $ScriptsDir = Split-Path -Parent $ScriptDir                 # scripts/
-$CommandDir = Join-Path $ScriptsDir 'commands'
+$GitDir = Join-Path $ScriptsDir 'git'                       # the versions pack
 $LibDir = Join-Path $ScriptsDir 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 . (Join-Path $LibDir 'deckle-process.ps1')
 . (Join-Path $LibDir 'native-console.ps1')
-Import-Module (Join-Path $LibDir 'release-history.psm1') -Force
+. (Join-Path $LibDir 'version.ps1')
 Import-Module (Join-Path $LibDir 'release-validation.psm1') -Force
 Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
 
@@ -88,20 +88,44 @@ if ($Target) {
     $RepoRoot = Split-Path -Parent $ScriptsDir
 }
 
+# Once GitHub holds the public release, the repository records it: the
+# annotated tag release/vX.Y.Z goes on the released commit and is pushed, then
+# CHANGELOG.md is regenerated from the tags and committed, so the two records
+# cannot disagree. Called after the release is public, so a failure here is a
+# repair to make, never a reason to retract the release.
+function Register-PublishedRelease {
+    param([Parameter(Mandatory)][string]$ReleaseSha)
+
+    Publish-DeckleReleaseTag -RepoRoot $RepoRoot -Tag "release/$tag" -HeadSha $ReleaseSha -Message "Release $Version"
+    Write-WorkflowMessage -Output $WorkflowOutput -Message "release/$tag marked at $($ReleaseSha.Substring(0, 12)) and pushed"
+
+    & (Join-Path $GitDir 'changelog.ps1') -Target $RepoRoot -Apply
+    if ($LASTEXITCODE -ne 0) { throw "changelog.ps1 failed after GitHub publication (code $LASTEXITCODE)" }
+    $changed = @(& git -C $RepoRoot status --porcelain -- CHANGELOG.md)
+    if ($changed.Count -eq 0) {
+        Write-WorkflowMessage -Output $WorkflowOutput -Message 'CHANGELOG.md already carried the release' -Role Muted
+        return
+    }
+    & git -C $RepoRoot add -- CHANGELOG.md
+    if ($LASTEXITCODE -ne 0) { throw 'git add CHANGELOG.md failed after GitHub publication' }
+    & git -C $RepoRoot commit -q -m "docs(changelog): record $tag"
+    if ($LASTEXITCODE -ne 0) { throw 'git commit of CHANGELOG.md failed after GitHub publication' }
+    & git -C $RepoRoot push origin main
+    if ($LASTEXITCODE -ne 0) { throw 'git push of the changelog commit failed after GitHub publication' }
+    Write-WorkflowMessage -Output $WorkflowOutput -Message 'CHANGELOG.md regenerated, committed and pushed'
+}
+
 Write-OutputText -Text "Repo: $RepoRoot" -Role Muted
 
 $ProjectDir = Join-Path $RepoRoot 'src\Deckle.App'
 $Csproj     = Join-Path $ProjectDir 'Deckle.App.csproj'
 if (-not (Test-Path $Csproj)) { throw "csproj not found at $Csproj — is '$RepoRoot' a Deckle repo?" }
 
-# The csproj <Version> is the single source of truth.
-$Version  = $null
-$verMatch = Select-String -Path $Csproj -Pattern '<Version>([^<]+)</Version>' | Select-Object -First 1
-if ($verMatch) { $Version = $verMatch.Matches[0].Groups[1].Value.Trim() }
-if (-not $Version) { throw "<Version> not found in $Csproj" }
-if ($Version -notmatch '^\d+\.\d+\.\d+$') {
-    throw "Version '$Version' is not canonical MAJOR.MINOR.PATCH"
-}
+# The version is the vX.Y.Z tag on HEAD, recorded by scripts/git/record-version.ps1
+# at the merge into main: a release is cut from the commit that carries it, and
+# the build reads the same tag. The reader throws its own sentence when HEAD
+# carries none.
+$Version = Get-RepositoryVersion -Path $RepoRoot
 Write-WorkflowStep -Output $WorkflowOutput -Message "Deckle v$Version"
 $tag       = "v$Version"
 $ZipName   = "Deckle-v$Version.zip"
@@ -117,13 +141,17 @@ if ($LASTEXITCODE -eq 0 -and $remoteUrl) {
 # A public release is immutable input to remote machines: prove its source
 # before stopping Deckle or spending minutes in NativeAOT.
 if ($Publish) {
-    $publishedTags = @(Get-PublishedReleaseTags -RepoRoot $RepoRoot)
-    if (-not $publishedTags.Count) { throw 'release-history.json has no public release' }
-    $releaseRecorded = $publishedTags -contains $tag
-
     Write-WorkflowStep -Output $WorkflowOutput -Message 'Fetch and validate release source'
     & git -C $RepoRoot fetch origin main --tags --prune
     if ($LASTEXITCODE -ne 0) { throw "git fetch origin main --tags failed (code $LASTEXITCODE)" }
+
+    # A public release is marked by an annotated tag release/vX.Y.Z on its
+    # commit; the marks are the only record, read after the fetch so a mark
+    # pushed from another machine counts.
+    $publishedTags = @(Get-DeckleReleaseTags -RepoRoot $RepoRoot)
+    if (-not $publishedTags.Count) { throw 'No release/vX.Y.Z tag marks a public release' }
+    $releaseRecorded = $publishedTags -contains $tag
+
     $source = if ($releaseRecorded) {
         Assert-DeckleReleaseRepositorySource -RepoRoot $RepoRoot -AllowAhead
     } else {
@@ -202,9 +230,8 @@ if ($Publish) {
             }
             Write-WorkflowMessage -Output $WorkflowOutput -Message "GitHub release $tag made public"
         }
-        & (Join-Path $CommandDir 'record-release.ps1') -Target $RepoRoot -Version $Version -Push
-        if (-not $?) { throw 'record-release.ps1 failed after GitHub publication' }
-        Write-WorkflowMessage -Output $WorkflowOutput -Message "$tag recorded locally and synchronized"
+        Register-PublishedRelease -ReleaseSha $releaseHeadSha
+        Write-WorkflowMessage -Output $WorkflowOutput -Message "$tag marked as released and synchronized"
         $Published = $true
         Write-ActionSummary `
             -Workflow $Workflow `
@@ -262,7 +289,7 @@ $InstallerPubDir = Join-Path $OutDir 'installer'
 if ($Publish) {
     if (-not $Notes) {
         $Notes = Join-Path $OutDir 'release-notes.md'
-        & (Join-Path $CommandDir 'changelog.ps1') -Target $RepoRoot -NotesFor $Version -OutFile $Notes
+        & (Join-Path $GitDir 'changelog.ps1') -Target $RepoRoot -NotesFor $Version -OutFile $Notes -Apply
         if ($LASTEXITCODE -ne 0) { throw "changelog.ps1 notes generation failed (code $LASTEXITCODE)" }
         Write-WorkflowMessage -Output $WorkflowOutput -Message "Release notes generated from history: $Notes"
     } elseif (-not (Test-Path -LiteralPath $Notes -PathType Leaf)) {
@@ -447,9 +474,8 @@ if ($Publish) {
         -ExpectedNames @($SetupName, $ZipName, $ShaName) `
         -ExpectedSizes $expectedAssets
 
-    Write-WorkflowStep -Output $WorkflowOutput -Message 'Freeze the public release into CHANGELOG.md'
-    & (Join-Path $CommandDir 'record-release.ps1') -Target $RepoRoot -Version $Version -Push
-    if (-not $?) { throw 'record-release.ps1 failed after GitHub publication' }
+    Write-WorkflowStep -Output $WorkflowOutput -Message 'Mark the release and freeze it into CHANGELOG.md'
+    Register-PublishedRelease -ReleaseSha $headSha
     $Published = $true
     Write-WorkflowMessage -Output $WorkflowOutput -Message "Released as $tag"
 }

@@ -1,12 +1,8 @@
 $ErrorActionPreference = 'Stop'
 $ScriptsDir = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 $RepoRoot = Split-Path -Parent $ScriptsDir
-$CommandDir = Join-Path $ScriptsDir 'commands'
 $LibDir = Join-Path $ScriptsDir 'lib'
 $TestDir = Join-Path $ScriptsDir 'tests'
-
-$commands = @(Get-ChildItem -LiteralPath $CommandDir -File -Filter '*.ps1')
-if ($commands.Count -eq 0) { throw 'scripts/commands must contain the directly executable workflows.' }
 
 $testsOutsideTestDir = @(Get-ChildItem -LiteralPath $ScriptsDir -Recurse -File -Filter '*.tests.ps1' |
     Where-Object { -not $_.FullName.StartsWith($TestDir + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) })
