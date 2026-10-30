@@ -57,7 +57,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
+$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'pe-imports.psm1') -Force
 Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
@@ -67,7 +67,7 @@ $RepoRoot = if ($Target) {
     if (-not (Test-Path -LiteralPath $Target -PathType Container)) { throw "Target not found: $Target" }
     (Get-Item -LiteralPath $Target).FullName
 } else {
-    Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
+    Split-Path -Parent (Split-Path -Parent $ScriptDir)
 }
 $NativeRuntimeSource = Join-Path $RepoRoot 'src\Deckle.Transcription.Whisper\Setup\NativeRuntime.cs'
 $NativeRuntimeCatalog = Get-DeckleNativeRuntimeCatalog -SourcePath $NativeRuntimeSource
@@ -332,7 +332,7 @@ Visual C++ runtime : Microsoft Visual C++ Redistributable (vcruntime140,
 
 Reproduction
 ------------
-Built by scripts/commands/release/publish-native-runtime.ps1 from the local
+Built by scripts/release/publish-native-runtime.ps1 from the local
 whisper.cpp build and the Visual C++ Redist folders recorded above.
 "@
 

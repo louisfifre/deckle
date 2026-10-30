@@ -43,9 +43,10 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$ScriptDir = $PSScriptRoot                                  # scripts/commands/release/
-$CommandDir = Split-Path -Parent $ScriptDir                 # scripts/commands/
-$LibDir = Join-Path (Split-Path -Parent $CommandDir) 'lib'
+$ScriptDir = $PSScriptRoot                                  # scripts/release/
+$ScriptsDir = Split-Path -Parent $ScriptDir                 # scripts/
+$CommandDir = Join-Path $ScriptsDir 'commands'
+$LibDir = Join-Path $ScriptsDir 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 . (Join-Path $LibDir 'deckle-process.ps1')
 . (Join-Path $LibDir 'native-console.ps1')
@@ -84,7 +85,7 @@ if ($Target) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {
-    $RepoRoot = Split-Path -Parent (Split-Path -Parent $CommandDir)
+    $RepoRoot = Split-Path -Parent $ScriptsDir
 }
 
 Write-OutputText -Text "Repo: $RepoRoot" -Role Muted
@@ -374,7 +375,7 @@ Write-Host @"
     https://github.com/$OwnerRepo/releases/download/v$Version/$ShaName
 
   To publish (maintainer act):
-    pwsh scripts/commands/release/publish-app.ps1 -Target "$RepoRoot" -Publish
+    pwsh scripts/release/publish-app.ps1 -Target "$RepoRoot" -Publish
 
 "@ -ForegroundColor Green
 

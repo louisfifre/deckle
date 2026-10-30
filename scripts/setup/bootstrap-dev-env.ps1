@@ -29,7 +29,7 @@ param(
     # path. Off by default to keep first setup lean.
     [switch]$Full,
 
-    # Also invoke scripts/commands/setup/setup-assets.ps1 after environment bootstrap.
+    # Also invoke scripts/setup/setup-assets.ps1 after environment bootstrap.
     # Kept for explicit dev-machine provisioning; the app's setup wizard is
     # the normal runtime-assets path.
     [switch]$IncludeAssets,
@@ -49,7 +49,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
+$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 
 $Workflow = 'Bootstrap dev environment'
@@ -433,17 +433,17 @@ Write-Host "  1. Open a new PowerShell terminal so VULKAN_SDK and any" -Foregrou
 Write-Host "     freshly-installed tool become visible." -ForegroundColor White
 Write-Host ""
 Write-Host "  2. Verify nothing is missing:" -ForegroundColor White
-Write-Host "       scripts\commands\setup\bootstrap-dev-env.ps1 -DryRun" -ForegroundColor DarkGray
+Write-Host "       scripts\setup\bootstrap-dev-env.ps1 -DryRun" -ForegroundColor DarkGray
 Write-Host ""
 Write-Host "  3. Build + run Deckle:" -ForegroundColor White
-Write-Host "       scripts\commands\build-run.ps1" -ForegroundColor DarkGray
+Write-Host "       scripts\build-run.ps1" -ForegroundColor DarkGray
 Write-Host "     or use the interactive launcher:" -ForegroundColor White
 Write-Host "       scripts\deckle.ps1" -ForegroundColor DarkGray
 
 if ($Full) {
     Write-Host ""
     Write-Host "  4. (-Full only) Clone whisper.cpp for native rebuilds:" -ForegroundColor White
-    $repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
+    $repoRoot = Split-Path -Parent (Split-Path -Parent $ScriptDir)
     $whisperRepo = [IO.Path]::GetFullPath((Join-Path $repoRoot '..\whisper.cpp'))
     Write-Host "       git clone https://github.com/ggerganov/whisper.cpp `"$whisperRepo`"" -ForegroundColor DarkGray
     Write-Host "     Then build whisper.cpp with Vulkan before publishing a native bundle." -ForegroundColor DarkGray
@@ -479,6 +479,6 @@ Write-ActionSummary `
     }) `
     -Next @(
         "Open a new PowerShell terminal."
-        "Run scripts\commands\setup\bootstrap-dev-env.ps1 -DryRun to verify."
+        "Run scripts\setup\bootstrap-dev-env.ps1 -DryRun to verify."
         "Run scripts\deckle.ps1 and choose Build & run."
     )

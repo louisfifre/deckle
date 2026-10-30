@@ -50,10 +50,10 @@ param(
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
+$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 
-$Repo = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
+$Repo = Split-Path -Parent (Split-Path -Parent $ScriptDir)
 $Output = New-WorkflowOutput -Category 'anytype-backend'
 
 # The 16 sites where tantivy-go v1.0.6 frees a `C.CString` result through
@@ -120,7 +120,7 @@ if (Test-Path -LiteralPath $ScoopMingw) { $env:PATH = "$ScoopMingw;$env:PATH" }
 
 foreach ($tool in 'go', 'git', 'gcc', 'tar') {
     if (-not (Get-Command $tool -ErrorAction SilentlyContinue)) {
-        throw "$tool is not on PATH; run commands/setup/bootstrap-dev-env.ps1 (Go, git, scoop mingw)."
+        throw "$tool is not on PATH; run setup/bootstrap-dev-env.ps1 (Go, git, scoop mingw)."
     }
 }
 $ObjDump = Get-Command objdump -ErrorAction SilentlyContinue

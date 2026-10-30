@@ -30,7 +30,7 @@ namespace Deckle.Core;
 //
 // The application binary itself stays read-only and Program Files-friendly:
 // it ships with Assets but no models, no native DLLs, no config. The setup
-// wizard or scripts/commands/setup/setup-assets.ps1 populates
+// wizard or scripts/setup/setup-assets.ps1 populates
 // <UserDataRoot>\models\ and \native\.
 public static class AppPaths
 {

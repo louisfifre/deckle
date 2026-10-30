@@ -35,10 +35,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
+$LibDir = Join-Path $ScriptDir 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 
-$Repo = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$Repo = Split-Path -Parent $PSScriptRoot
 
 if (-not $OutputRoot) {
     $OutputRoot = Join-Path $Repo 'artifacts\autocorrect-data'

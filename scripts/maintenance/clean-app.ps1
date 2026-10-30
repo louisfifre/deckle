@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Clean build outputs
+    Clean app build outputs
 .DESCRIPTION
     Remove generated build output from a Deckle worktree without touching
     anything tracked by git. Everything removed is ignored by git and rebuilt
@@ -8,7 +8,7 @@
 .NOTES
     section: Cleanup
     order: 220
-    action: Clean build outputs | | danger | Deletes generated build outputs from the target worktree.
+    action: Clean app build outputs | | danger | Deletes generated build outputs from the target worktree.
 #>
 
 [CmdletBinding()]
@@ -25,12 +25,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
+$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 . (Join-Path $LibDir 'build-server-cleanup.ps1')
 . (Join-Path $LibDir 'deckle-process.ps1')
 
-$Workflow = 'Clean build outputs'
+$Workflow = 'Clean app build outputs'
 $RepoRoot = $null
 $removed = 0
 $skipped = 0
@@ -62,7 +62,7 @@ if ($Target) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {
-    $RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
+    $RepoRoot = Split-Path -Parent (Split-Path -Parent $ScriptDir)
 }
 
 Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray

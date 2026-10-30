@@ -25,8 +25,8 @@
     "reviewPaths": [
       "Directory.Build.rsp",
       "AGENTS.md",
-      "scripts/commands/build-run.ps1",
-      "scripts/commands/publish-app.ps1"
+      "scripts/build-run.ps1",
+      "scripts/publish-app.ps1"
     ]
   },
   "provenance": {

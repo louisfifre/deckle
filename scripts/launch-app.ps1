@@ -22,7 +22,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
+$LibDir = Join-Path $ScriptDir 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 . (Join-Path $LibDir 'deckle-process.ps1')
 
@@ -51,7 +51,7 @@ if ($Target) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {
-    $RepoRoot = Split-Path -Parent (Split-Path $ScriptDir)
+    $RepoRoot = Split-Path -Parent $ScriptDir
 }
 
 Write-OutputText -Text "Repo: $RepoRoot" -Role Muted

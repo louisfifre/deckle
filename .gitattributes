@@ -29,7 +29,8 @@
 # ── Unix shell / Python (LF) ────────────────────────────────────────────────
 *.sh  text eol=lf
 *.py  text eol=lf
-scripts/hooks/pre-commit text eol=lf
+scripts/lib/hooks/pre-commit text eol=lf
+scripts/lib/hooks/commit-msg text eol=lf
 
 # ── Binary assets ───────────────────────────────────────────────────────────
 *.png  binary
@@ -68,5 +69,5 @@ scripts/hooks/pre-commit text eol=lf
 # `merge=ours` keeps the local side when two branches both touched the tree
 # listing, so a merge never halts on it; the next commit that changes the file
 # set regenerates it through the pre-commit hook. Needs the driver registered
-# (`git config merge.ours.driver true`), done by scripts/commands/setup/install-hooks.ps1.
+# (`git config merge.ours.driver true`), done by scripts/setup/install-hooks.ps1.
 TREE.md merge=ours

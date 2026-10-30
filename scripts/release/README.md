@@ -1,7 +1,7 @@
 ---
 name: Release
 description: Prepare and publish the app and the native runtime.
-order: 10
+order: 400
 ---
 
 # Release

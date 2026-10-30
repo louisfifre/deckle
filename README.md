@@ -81,9 +81,9 @@ On a fresh Windows 11 machine:
 ```powershell
 git clone https://github.com/louisfifre/deckle.git
 cd deckle
-pwsh scripts/commands/setup/bootstrap-dev-env.ps1           # .NET 10, VS 2026, tooling
-pwsh scripts/commands/build-run.ps1 -Configuration Release  # build and run
-pwsh scripts/commands/build-run.ps1 -Configuration Release -NoRun  # build only
+pwsh scripts/setup/bootstrap-dev-env.ps1           # .NET 10, VS 2026, tooling
+pwsh scripts/build-run.ps1 -Configuration Release  # build and run
+pwsh scripts/build-run.ps1 -Configuration Release -NoRun  # build only
 ```
 
 The scripts, their switches, and how the native runtime is sourced are documented in [scripts/README.md](scripts/README.md). How the dictation chain works, file by file, is in [docs/transcription-audio-chain.md](docs/transcription-audio-chain.md).

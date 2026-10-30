@@ -87,9 +87,9 @@ remembered projects, session attachments, and conversation catalogs while
 preserving core configuration, credentials, authored instructions, plugins,
 repositories, branches, and worktrees.
 
-    pwsh scripts/commands/maintenance/reset-agent-state.ps1
-    pwsh scripts/commands/maintenance/reset-agent-state.ps1 -Scope Codex
-    pwsh scripts/commands/maintenance/reset-agent-state.ps1 -Apply -Confirmation 'RESET LOCAL AI SESSIONS'
+    pwsh scripts/maintenance/reset-agent-state.ps1
+    pwsh scripts/maintenance/reset-agent-state.ps1 -Scope Codex
+    pwsh scripts/maintenance/reset-agent-state.ps1 -Apply -Confirmation 'RESET LOCAL AI SESSIONS'
 
 Preview is the default. Apply mode refuses to run while Codex or Claude
 processes are active. Preview and apply require Python 3 when Codex mixed
@@ -208,7 +208,7 @@ PowerShell tests mirror the same boundaries under `tests/commands/`, `tests/lib/
 
 A `pre-commit` hook regenerates [`TREE.md`](../TREE.md) at the repo root before every commit and stages it automatically, so the repo always carries an up-to-date view of its tracked tree. Source in [`hooks/pre-commit`](hooks/pre-commit), local install via [`commands/setup/install-hooks.ps1`](commands/setup/install-hooks.ps1) or the `deckle.ps1` Setup menu to run once after a clone — hooks live under `.git/hooks/` and are not versioned by git.
 
-The hook delegates to [`hooks/update-tree.ps1`](hooks/update-tree.ps1), which rebuilds `TREE.md` from `git ls-files`: tracked files only, each Markdown file annotated from its front matter and each script from its Header, through the same discovery module as the menu. It can also run by hand to refresh outside a commit: `pwsh scripts/hooks/update-tree.ps1`.
+The hook delegates to [`hooks/update-tree.ps1`](hooks/update-tree.ps1), which rebuilds `TREE.md` from `git ls-files`: tracked files only, each Markdown file annotated from its front matter and each script from its Header, through the same discovery module as the menu. It can also run by hand to refresh outside a commit: `pwsh scripts/setup/update-tree.ps1`.
 
 The same installer copies [`hooks/validate-commit-attribution.ps1`](hooks/validate-commit-attribution.ps1) to the user's Git configuration directory and registers it as a global configured `commit-msg` hook. Git 2.54+ runs configured hooks alongside repository hooks, so the global guard applies to every local repository without replacing their own `.git/hooks` directory. Before Git creates a commit, it requires both author and committer to be exactly `Louis <git@louisfifre.com>` and rejects co-author, generated-by, AI-generated, and assisted-by markers.
 
@@ -217,7 +217,7 @@ The same installer copies [`hooks/validate-commit-attribution.ps1`](hooks/valida
 The root README carries a small generated `Development pulse` section bounded by invisible HTML comments. Regenerate it locally through the menu (`Update README pulse`) or directly:
 
 ```powershell
-pwsh scripts/commands/update-readme-stats.ps1 -Commit
+pwsh scripts/update-readme-stats.ps1 -Commit
 ```
 
 GitHub also runs `.github/workflows/update-readme-stats.yml` monthly and on manual dispatch. The workflow checks out full history (`fetch-depth: 0`), runs the same script, and commits `README.md` only when the generated section changed.

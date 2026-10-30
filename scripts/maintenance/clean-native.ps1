@@ -28,11 +28,11 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
+$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'native-runtime-release.psm1') -Force
 
-$Repo = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
+$Repo = Split-Path -Parent (Split-Path -Parent $ScriptDir)
 $Workflow = 'Clean native folder'
 $NativeDir = $null
 $removed = @()
@@ -124,4 +124,4 @@ Write-ActionSummary `
         'In use, kept'   = $(if ($kept.Count) { $kept } else { 'None' })
         Missing          = $(if ($missing.Count) { $missing } else { 'None' })
     }) `
-    -Next $(if ($missing.Count) { @('Run scripts\commands\setup\setup-assets.ps1, or the setup wizard, to provision the missing DLLs.') } else { @() })
+    -Next $(if ($missing.Count) { @('Run scripts\setup\setup-assets.ps1, or the setup wizard, to provision the missing DLLs.') } else { @() })

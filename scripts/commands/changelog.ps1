@@ -35,7 +35,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$ScriptDir = $PSScriptRoot                                  # scripts/commands/
+$ScriptDir = $PSScriptRoot                                  # scripts/
 $LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'release-history.psm1') -Force

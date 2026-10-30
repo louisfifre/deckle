@@ -13,7 +13,7 @@
 [CmdletBinding()]
 param(
     # Override the target worktree. Defaults to the repo containing
-    # this script (three levels up: scripts/commands/maintenance -> commands -> scripts -> repo root).
+    # this script (two levels up: scripts/maintenance -> scripts -> repo root).
     [string]$Target,
 
     # Files at or above this raw-line count are shown as watch items.
@@ -45,7 +45,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
+$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'source-metrics.psm1') -Force
 
@@ -70,7 +70,7 @@ if ($Target) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {
-    $RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
+    $RepoRoot = Split-Path -Parent (Split-Path -Parent $ScriptDir)
 }
 
 Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray

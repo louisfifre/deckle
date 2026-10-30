@@ -83,7 +83,7 @@ public partial class App
             showTimer.Start();
         }
 
-        // Passed by scripts/commands/build-run.ps1. The first launch right after
+        // Passed by scripts/build-run.ps1. The first launch right after
         // MSBuild can inherit a degraded foreground state that makes Windows
         // defer WS_EX_TOPMOST on the HUD, so the first recording shows it behind
         // every other window. A relaunch through ShellExecute starts clean.

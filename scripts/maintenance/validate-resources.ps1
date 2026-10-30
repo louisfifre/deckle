@@ -21,14 +21,14 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
+$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'resource-inventory.psm1') -Force
 
 if ($Target) {
     $RepoRoot = (Resolve-Path -LiteralPath $Target).Path
 } else {
-    $RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $ScriptDir))
+    $RepoRoot = Split-Path -Parent (Split-Path -Parent $ScriptDir)
 }
 if (-not $Allowlist) { $Allowlist = Join-Path $RepoRoot 'scripts/resource-validation.allowlist.json' }
 

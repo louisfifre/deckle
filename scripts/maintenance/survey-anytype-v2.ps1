@@ -24,8 +24,8 @@
 #     header, and scrubbed from the report; only its length is ever shown.
 #
 # Usage:
-#   pwsh -NoProfile -File scripts/commands/maintenance/survey-anytype-v2.ps1
-#   pwsh -NoProfile -File scripts/commands/maintenance/survey-anytype-v2.ps1 -OutputPath .tmp/x.md
+#   pwsh -NoProfile -File scripts/maintenance/survey-anytype-v2.ps1
+#   pwsh -NoProfile -File scripts/maintenance/survey-anytype-v2.ps1 -OutputPath .tmp/x.md
 
 #Requires -Version 7.2
 
@@ -38,7 +38,7 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 3.0
 
-$RepoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
+$RepoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 if (-not $OutputPath) {
     $OutputPath = Join-Path $RepoRoot ('.tmp/anytype-v2-survey/{0}.md' -f (Get-Date -Format 'yyyy-MM-dd_HHmm'))
 } elseif (-not [IO.Path]::IsPathRooted($OutputPath)) {
