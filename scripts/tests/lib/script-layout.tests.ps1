@@ -14,8 +14,14 @@ if ($testsOutsideTestDir.Count -gt 0) {
     throw "PowerShell tests must live under scripts/tests: $($testsOutsideTestDir.FullName -join ', ')"
 }
 
+# The vendored Deckle Scripts files follow their own repository's rules; the
+# manifest names them.
+$manifest = Get-Content -Raw -LiteralPath (Join-Path $ScriptsDir '.deckle-scripts\manifest.json') | ConvertFrom-Json
+$vendored = @($manifest.files.PSObject.Properties.Name | ForEach-Object { [IO.Path]::GetFullPath((Join-Path $RepoRoot $_)) })
+
 $libraryEntryPoints = @()
 foreach ($file in Get-ChildItem -LiteralPath $LibDir -Recurse -File -Include '*.ps1', '*.psm1') {
+    if ($vendored -contains $file.FullName) { continue }
     $tokens = $null
     $parseErrors = $null
     $ast = [Management.Automation.Language.Parser]::ParseFile($file.FullName, [ref]$tokens, [ref]$parseErrors)

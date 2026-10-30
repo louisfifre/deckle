@@ -159,6 +159,8 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   ├── primary.svg
 │   └── secondary.png
 ├── scripts/
+│   ├── .deckle-scripts/
+│   │   └── manifest.json
 │   ├── commands/
 │   │   ├── maintenance/
 │   │   │   ├── check-script-headers.ps1  — Check script headers Lists the scripts the menu hides and the headers that are voided. A voided, inv…
@@ -190,6 +192,15 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── record-release.ps1
 │   │   ├── record-version.ps1  — Record an internal version Record internal progress without publishing a release. A version record bumps t…
 │   │   └── update-readme-stats.ps1  — Update the README pulse Regenerate the small "Development pulse" section in README.md from the local Gi…
+│   ├── dotnet/
+│   │   ├── README.md  — .NET .NET build server cleanup. Unproven until Deckle runs on this launcher.
+│   │   └── stop-build-servers.ps1  — Stop .NET build servers Stops the MSBuild and Roslyn build servers left behind by dotnet builds, which…
+│   ├── git/
+│   │   ├── changelog.ps1  — Update the changelog Generates CHANGELOG.md in the Keep a Changelog format from the Conventional Com…
+│   │   ├── git-common.ps1
+│   │   ├── mark-release.ps1  — Mark a release Marks the version of HEAD as published with an annotated tag release/vX.Y.Z on…
+│   │   ├── README.md  — Git and versions Versions as tags, release marks and the changelog.
+│   │   └── record-version.ps1  — Record a version Records the next version as an annotated tag vX.Y.Z on HEAD, bumping the latest…
 │   ├── hooks/
 │   │   ├── pre-commit
 │   │   ├── update-tree.ps1  — Regenerate TREE.md from git ls-files Serves the pre-commit hook and direct manual runs. Annotates Markdown files wit…
@@ -198,36 +209,30 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── agent-state-maintenance/
 │   │   │   ├── sanitization.ps1
 │   │   │   └── sqlite-cleanup.ps1
-│   │   ├── deckle-preview/
-│   │   │   ├── catalog.ps1
-│   │   │   ├── discovered-catalog.ps1
-│   │   │   ├── flows.ps1
-│   │   │   └── statistics-preparation.ps1
+│   │   ├── hooks/
+│   │   │   ├── commit-msg
+│   │   │   ├── pre-commit
+│   │   │   └── validate-commit-attribution.ps1  — Enforce the repository's sole identity and reject agent attribution markers Run by the commit-msg hook. Author and committer must both be the identity git…
 │   │   ├── launcher/
 │   │   │   ├── action-log.ps1
-│   │   │   ├── action-results.ps1
-│   │   │   ├── actions.ps1
-│   │   │   ├── context.ps1
-│   │   │   ├── maintenance-results.ps1
-│   │   │   ├── menu-layout.ps1
-│   │   │   ├── menus.ps1
-│   │   │   ├── statistics-menus.ps1
-│   │   │   └── statistics-plans.ps1
-│   │   ├── menu/
-│   │   │   ├── chrome.ps1
-│   │   │   ├── grid-layout.ps1
-│   │   │   ├── grid-picker.ps1
-│   │   │   ├── grid-status.ps1
-│   │   │   ├── input.ps1
-│   │   │   ├── list-picker.ps1
-│   │   │   ├── session.ps1
-│   │   │   ├── status-view.ps1
-│   │   │   └── text-input.ps1
+│   │   │   ├── discovered-catalog.ps1
+│   │   │   ├── execution.ps1
+│   │   │   ├── flows.ps1
+│   │   │   ├── launcher.ps1
+│   │   │   └── logs.ps1
 │   │   ├── script-discovery/
 │   │   │   ├── catalog.ps1
 │   │   │   ├── front-matter.ps1
 │   │   │   ├── header.ps1
 │   │   │   └── key-value-lines.ps1
+│   │   ├── templates/
+│   │   │   ├── AGENTS.md
+│   │   │   ├── CLAUDE.md
+│   │   │   ├── CONTRIBUTING.md
+│   │   │   ├── gitattributes.template
+│   │   │   ├── gitignore.template
+│   │   │   ├── LICENSE-GPL-3.0
+│   │   │   └── LICENSE-MIT
 │   │   ├── terminal-interaction/
 │   │   │   ├── contracts.ps1
 │   │   │   ├── execution-layout.ps1
@@ -244,10 +249,11 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── action-summary.ps1
 │   │   ├── agent-state-maintenance.psm1
 │   │   ├── agent-state-maintenance.strings.psd1
+│   │   ├── build-outputs.ps1
 │   │   ├── build-server-cleanup.ps1
 │   │   ├── context-inventory.psm1
 │   │   ├── deckle-process.ps1
-│   │   ├── menu.psm1
+│   │   ├── manifest.ps1
 │   │   ├── native-console.ps1
 │   │   ├── native-runtime-release.psm1
 │   │   ├── pe-imports.psm1
@@ -258,13 +264,22 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   ├── script-discovery.psm1
 │   │   ├── script-output.ps1
 │   │   ├── source-metrics.psm1
-│   │   └── terminal-interaction.psm1
+│   │   ├── terminal-interaction.psm1
+│   │   └── version.ps1
+│   ├── maintenance/
+│   │   ├── clean.ps1  — Clean build outputs Removes the build output folders of every language present in the repository, e…
+│   │   ├── README.md  — Maintenance Cleanups of the repository and of the local agent state.
+│   │   └── reset-agent-state.ps1  — Inspect or reset local AI sessions Builds a cleanup plan for the local Codex and Claude Code session data of the c…
+│   ├── setup/
+│   │   ├── install-hooks.ps1  — Install git hooks Installs the repository's git hooks from their versioned sources and registers…
+│   │   ├── README.md  — Setup Standard files, hooks and the tree of a repository.
+│   │   ├── scaffold.ps1  — Scaffold repository files Creates the standard folders and files a repository starts with, and never over…
+│   │   └── update-tree.ps1  — Regenerate TREE.md Writes the repository tree from git ls-files, annotating Markdown files with th…
 │   ├── tests/
 │   │   ├── BugExamples/
 │   │   │   ├── build-only-stops-resident.json
 │   │   │   ├── dotnet-max-node-response-precedence.json
-│   │   │   ├── repository-portability.json
-│   │   │   └── terminal-cursor-positioning.json
+│   │   │   └── repository-portability.json
 │   │   ├── commands/
 │   │   │   ├── changelog.tests.ps1
 │   │   │   ├── ChangelogBugNotes.md
@@ -293,53 +308,25 @@ _Généré depuis `git ls-files` — ne pas éditer à la main._
 │   │   │       ├── no-header.ps1
 │   │   │       ├── theta.ps1  — Axe delta Removes delta for good.
 │   │   │       └── two-axes.ps1
-│   │   ├── launcher/
-│   │   │   ├── action-results.tests.ps1
-│   │   │   ├── ActionResultBugNotes.md
-│   │   │   ├── actions.tests.ps1
-│   │   │   ├── context.tests.ps1
-│   │   │   ├── maintenance-results.tests.ps1
-│   │   │   ├── menu-layout.tests.ps1
-│   │   │   ├── menus.tests.ps1
-│   │   │   ├── statistics-menus.tests.ps1
-│   │   │   └── statistics-plans.tests.ps1
-│   │   ├── lib/
-│   │   │   ├── agent-skills-layout.tests.ps1
-│   │   │   ├── context-inventory.tests.ps1
-│   │   │   ├── deckle-process.tests.ps1
-│   │   │   ├── native-runtime-release.tests.ps1
-│   │   │   ├── pe-fixture.ps1
-│   │   │   ├── pe-imports.tests.ps1
-│   │   │   ├── release-history.tests.ps1
-│   │   │   ├── release-validation.tests.ps1
-│   │   │   ├── repository-inventory.tests.ps1
-│   │   │   ├── resource-inventory.tests.ps1
-│   │   │   ├── script-layout.tests.ps1
-│   │   │   └── source-metrics.tests.ps1
-│   │   ├── menu/
-│   │   │   ├── chrome.tests.ps1
-│   │   │   ├── grid-picker.tests.ps1
-│   │   │   ├── grid-status.tests.ps1
-│   │   │   ├── input.tests.ps1
-│   │   │   ├── list-picker.tests.ps1
-│   │   │   ├── status-view.tests.ps1
-│   │   │   └── text-input.tests.ps1
-│   │   └── terminal-interaction/
-│   │       ├── discovered-catalog.tests.ps1
-│   │       ├── flows.tests.ps1
-│   │       ├── HostBugNotes.md
-│   │       ├── LayoutBugNotes.md
-│   │       ├── NavigationBugNotes.md
-│   │       ├── preparation.tests.ps1
-│   │       ├── RenderingBugNotes.md
-│   │       └── SemanticBugNotes.md
+│   │   └── lib/
+│   │       ├── agent-skills-layout.tests.ps1
+│   │       ├── context-inventory.tests.ps1
+│   │       ├── deckle-process.tests.ps1
+│   │       ├── native-runtime-release.tests.ps1
+│   │       ├── pe-fixture.ps1
+│   │       ├── pe-imports.tests.ps1
+│   │       ├── release-history.tests.ps1
+│   │       ├── release-validation.tests.ps1
+│   │       ├── repository-inventory.tests.ps1
+│   │       ├── resource-inventory.tests.ps1
+│   │       ├── script-layout.tests.ps1
+│   │       └── source-metrics.tests.ps1
 │   ├── build-locked.ps1  — Run one dotnet build or test under the machine-wide Deckle build lock. AGENTS.md forbids two builds at once on this machine, whatever the session. Par…
-│   ├── deckle-preview.ps1
-│   ├── deckle.ps1
-│   ├── GLOSSARY.md  — Deckle Scripts interaction vocabulary. It names the launcher's choices, action…
+│   ├── check-scripts.ps1  — Check scripts Reads every script the menu could offer and reports the ones it would hide or t…
+│   ├── menu.ps1
 │   ├── README.md  — readme-scripts Dev workflows entry point for Deckle: the deckle.ps1 menu, the commands under c…
 │   ├── resource-validation.allowlist.json
-│   └── TERMINAL-INTERACTION-SPEC.md  — Behavior and composition contracts of the reusable terminal launcher beneath De…
+│   └── update.ps1  — Update Deckle Scripts Installs or updates the launcher, its library and the chosen packs from a sourc…
 ├── src/
 │   ├── Deckle.Anytype/
 │   │   ├── Api/

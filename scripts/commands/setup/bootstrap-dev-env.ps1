@@ -51,7 +51,6 @@ $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 $LibDir = Join-Path (Split-Path -Parent (Split-Path -Parent $ScriptDir)) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
-Import-Module (Join-Path $LibDir 'menu.psm1') -Force
 
 $Workflow = 'Bootstrap dev environment'
 $plan = $null
@@ -316,7 +315,10 @@ if ($plan.Count -gt 0 -and -not $Yes) {
         Write-Host "Stay at the keyboard to click 'Yes' when it appears." -ForegroundColor Yellow
         Write-Host ""
     }
-    if (-not (Select-YesNo -Question 'Proceed with environment bootstrap?' -Default $false)) {
+    # The menu confirms a danger action before running it and passes -Yes; this
+    # prompt serves a terminal run without the menu.
+    $answer = Read-Host 'Proceed with environment bootstrap? [y/N]'
+    if ($answer -notmatch '^(y|yes)$') {
         Write-Host "Aborted." -ForegroundColor Yellow
         return
     }

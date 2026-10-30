@@ -1,0 +1,133 @@
+# ── OS and IDE junk ─────────────────────────────────────────────────────
+
+# Visual Studio local state.
+.vs/
+*.user
+*.suo
+*.userprefs
+*.vsidx
+
+# JetBrains, Vim swap, macOS, Windows Explorer thumbnails.
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# VSCode Local History extension.
+.history/
+
+# ── Backup, patch and merge leftovers ───────────────────────────────────
+
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+.~lock.*
+
+# ── Secrets and credentials ─────────────────────────────────────────────
+# Preventive: no such file should ever exist in a repository.
+
+# Environment variable files.
+*.env
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+.envrc
+
+# Private keys, certificates, secret stores.
+*.pem
+*.key
+*.p12
+*.pfx
+*.secret
+*.secrets
+secrets/
+credentials*.json
+credentials*.toml
+credentials*.yaml
+credentials*.yml
+*.credential
+auth.json
+id_rsa*
+id_ed25519*
+id_ecdsa*
+id_dsa*
+
+# Cloud and container credentials.
+.aws/
+.gcloud/
+.docker/config.json
+*.kubeconfig
+kubeconfig
+
+# Local configuration overrides.
+appsettings.local.json
+appsettings.Development.json
+appsettings.development.json
+local.settings.json
+*.local.json
+
+# Windows shortcuts and Internet Shortcuts embed metadata that fingerprints
+# the host, so they stay out of the repository.
+*.lnk
+*.url
+
+# ── Logs and crash dumps ────────────────────────────────────────────────
+
+.tmp/
+**/.tmp-*
+crash-*.log
+*.dmp
+*.mdmp
+crashdumps/
+
+# ── Python caches and virtualenvs ───────────────────────────────────────
+
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+*.egg-info/
+venv/
+.venv*/
+env/
+ENV/
+
+# ── Node caches ─────────────────────────────────────────────────────────
+
+node_modules/
+.npm/
+npm-debug.log*
+yarn-error.log
+
+# ── Test and coverage output ────────────────────────────────────────────
+
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+# ── .NET build output ───────────────────────────────────────────────────
+
+bin/
+obj/
+publish/
+artifacts/
+
+# ── Agent runtime state and local-only customisation ────────────────────
+# Tracked agent and skill files stay versioned; only runtime state and
+# personal customisation are excluded.
+
+.claude/settings.local.json
+.claude/worktrees/
