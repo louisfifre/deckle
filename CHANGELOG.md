@@ -21,6 +21,7 @@ doctrine). This file is generated from the Conventional-Commit history by
 - **scripts:** Stop the native runtime menu when the pinned bundle is already published
 - **anytype:** Resolve ideas and reports by the title their body carries
 - **anytype:** Read a nameless idea's title and text once
+- **audio:** Return the queued buffers to the app before freeing them
 
 ## [0.72.4](https://github.com/louisfifre/deckle/compare/v0.72.0...v0.72.4) — 2026-10-27
 
