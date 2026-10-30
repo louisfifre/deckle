@@ -20,8 +20,13 @@ public sealed record McpSurfaceDescriptor(string Name, string Title, string Inst
         "deckle-anytype",
         "Deckle Anytype",
         "Anytype project-management space for Deckle. Shared model: Deckle is the "
-        + "permanent Epic; each finite workstream is a Project (chantier); each "
-        + "executable unit is a Task. Subtasks are inline '- [ ]' checklist items "
+        + "permanent Epic; a Project (chantier) is one subject of the work, global "
+        + "and long-lived, such as transcription, the design system or "
+        + "observability, never a module nor a deliverable; it is renamed after "
+        + "its current stage rather than recreated, and a Task is one executable "
+        + "unit that moves its subject forward. New work joins the project of its "
+        + "subject, dormant ones included, and a project is created only for a "
+        + "subject the space does not hold yet. Subtasks are inline '- [ ]' checklist items "
         + "in the task body, not separate objects. The built-in done checkbox is "
         + "the canonical completion signal for projects and tasks; état remains "
         + "planning state, and archive only removes an object from active views. "
