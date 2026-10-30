@@ -1,0 +1,35 @@
+{
+    // Ctrl+Shift+B opens the Deckle scripts menu. A task, not a debug session:
+    // the menu is a command to run, so it gets a plain pwsh terminal with no
+    // debugger in between. launch.json stays for the day a script needs a
+    // breakpoint.
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Deckle scripts",
+            "type": "process",
+            "command": "pwsh",
+            "args": [
+                "-NoProfile",
+                "-File",
+                "${workspaceFolder}/scripts/menu.ps1"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "focus": true,
+                "panel": "dedicated",
+                "clear": true,
+                "echo": false,
+                "showReuseMessage": false
+            },
+            "problemMatcher": []
+        }
+    ]
+}

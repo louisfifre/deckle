@@ -71,7 +71,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   └── workflows/
 │       └── update-readme-stats.yml
 ├── .vscode/
-│   └── launch.json
+│   ├── launch.json
+│   └── tasks.json
 ├── benchmark/
 │   ├── autoresearch/
 │   │   ├── campaigns/
