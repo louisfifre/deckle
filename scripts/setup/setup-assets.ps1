@@ -258,7 +258,7 @@ Write-Host "         $TargetModels : $modelCount file(s)"
 Write-OutputLine -Segments @()
 Write-OutputLine -Segments @(
     New-OutputSegment -Text 'Next: ' -Role Category
-    New-OutputSegment -Text 'scripts\deckle.ps1 (Build & run)' -Role Body
+    New-OutputSegment -Text 'scripts\menu.ps1 (Build & run)' -Role Body
 )
 
 $summaryResult = if ($nativeCatalogCount -lt $CatalogDlls.Count) { 'Partial' } else { 'Success' }
@@ -281,4 +281,4 @@ Write-ActionSummary `
         'Model files'   = $modelCount
         Force           = $(if ($Force) { 'Yes' } else { 'No' })
     }) `
-    -Next @("Run scripts\deckle.ps1 and choose Build & run.")
+    -Next @("Run scripts\menu.ps1 and choose Build & run.")

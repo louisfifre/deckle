@@ -438,7 +438,7 @@ Write-Host ""
 Write-Host "  3. Build + run Deckle:" -ForegroundColor White
 Write-Host "       scripts\build-run.ps1" -ForegroundColor DarkGray
 Write-Host "     or use the interactive launcher:" -ForegroundColor White
-Write-Host "       scripts\deckle.ps1" -ForegroundColor DarkGray
+Write-Host "       scripts\menu.ps1" -ForegroundColor DarkGray
 
 if ($Full) {
     Write-Host ""
@@ -480,5 +480,5 @@ Write-ActionSummary `
     -Next @(
         "Open a new PowerShell terminal."
         "Run scripts\setup\bootstrap-dev-env.ps1 -DryRun to verify."
-        "Run scripts\deckle.ps1 and choose Build & run."
+        "Run scripts\menu.ps1 and choose Build & run."
     )
