@@ -179,6 +179,8 @@ Two repository hooks come from the setup pack, installed into `.git/hooks/` by [
 
 The `pre-commit` hook regenerates [`TREE.md`](../TREE.md) at the repo root before every commit and stages it automatically, so the repo always carries an up-to-date view of its tracked tree. It delegates to [`setup/update-tree.ps1`](setup/update-tree.ps1), which rebuilds `TREE.md` from `git ls-files`: tracked files only, each Markdown file annotated from its front matter and each script from its Header, through the same discovery module as the menu. It can also run by hand to refresh outside a commit: `pwsh scripts/setup/update-tree.ps1 -Apply`.
 
+Until Deckle Scripts resolves the repository root from inside a hook ([louisfifre/deckle-scripts#1](https://github.com/louisfifre/deckle-scripts/issues/1): git exports `GIT_DIR` there, so `update-tree.ps1` called without `-Target` takes its own folder for the root), install only the identity guard, `install-hooks.ps1 -Apply -Hooks commit-msg`, and keep the transitional `pre-commit` already in `.git/hooks/`, which passes `-Target` itself.
+
 The `commit-msg` hook runs `lib/hooks/validate-commit-attribution.ps1`: before Git creates a commit, it requires both author and committer to be the identity git resolves for the repository and rejects co-author, generated-by, AI-generated, and assisted-by markers. It is repository-local; the machine-wide configured hook installed by the previous launcher, if still present, keeps applying on its own.
 
 ## Versions and changelog
