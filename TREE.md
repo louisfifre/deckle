@@ -2078,6 +2078,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── JsonlSinkRegressionTests.cs
 │   │   ├── JsonlSinkRotationTests.cs
 │   │   ├── LogLineFormatterTests.cs
+│   │   ├── LoopPulseBugNotes.md
 │   │   ├── LoopPulseTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── NoteFileTests.cs
