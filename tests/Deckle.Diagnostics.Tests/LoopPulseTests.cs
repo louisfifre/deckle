@@ -22,8 +22,10 @@ public sealed class LoopPulseTests
 
     private sealed record EventEntryView(int Id, EventLevel Level, bool Milestone, IReadOnlyList<object?> Payload);
 
+    // Verbose and no milestone: the rollup is detail a person can filter out of
+    // the LogWindow, and it never enters the always-on log.
     [Fact]
-    public void AWindowWithTicksWritesOneRollupThatStaysOutOfTheLog()
+    public void AWindowWithTicksWritesOneRollupAsVerboseDetail()
     {
         using var listener = new TestEventListener("Deckle-HotLoop");
         var pulse = new LoopPulse("test_rollup", watchesStall: false);
@@ -34,7 +36,7 @@ public sealed class LoopPulseTests
 
         var ev = Assert.Single(Of(listener, "test_rollup"));
         Assert.Equal(DeckleHotLoopSource.EvtLoopRollup, ev.Id);
-        Assert.Equal(EventLevel.Informational, ev.Level);
+        Assert.Equal(EventLevel.Verbose, ev.Level);
         Assert.False(ev.Milestone);
         Assert.Equal(5L, ev.Payload[1]);
     }

@@ -13,7 +13,10 @@ namespace Deckle.Diagnostics;
 // be running ticked zero times in a window, and LoopRecovered closes it, once,
 // when the count moves again or the loop is no longer expected to run. Both
 // travel in the log; the rollup does not, because a loop that works needs
-// no line in the one record a reader on another machine gets.
+// no line in the one record a reader on another machine gets. The rollup is
+// detail, so it is Verbose: at Informational it reached the LogWindow with
+// every run-story milestone and, once a minute per live loop, read as noise
+// a person could not filter away without losing the milestones too.
 //
 // The `loop` vocabulary is the pulses of HotLoops (LoopPulse.cs): a call site
 // ticks a pulse, it never passes a literal.
@@ -33,12 +36,12 @@ public sealed class DeckleHotLoopSource : DeckleEventSource
     // `count` is the ticks of the window, `window_s` the seconds it spans. A
     // window with no tick writes nothing: a quiet loop is not an event.
     [Event(EvtLoopRollup,
-           Level = EventLevel.Informational,
+           Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "loop rollup")]
+           Message = "loop={0} | count={1} | window_s={2}")]
     public void LoopRollup(string loop, long count, int window_s)
     {
-        if (!IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Heartbeat)) return;
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtLoopRollup, loop, count, window_s);
     }
 
