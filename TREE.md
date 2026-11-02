@@ -2409,6 +2409,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteProfileSelectionTests.cs
 │   │   ├── SegmentedTranscriptionSessionTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
+│   │   ├── TakeStartCheckBugNotes.md
 │   │   ├── TakeStartCheckTests.cs
 │   │   ├── TrailingNoisePadTests.cs
 │   │   ├── TranscriptFileWriterDiskTests.cs
