@@ -263,6 +263,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtTakeStarted                      = 241;
     public const int EvtTakeEnded                        = 242;
     public const int EvtModelLoadRetrying                = 243;
+    public const int EvtWarmupTestFailed                 = 244;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // Bits 0x400+ are provider-local (Deckle.Diagnostics.Keywords). No live

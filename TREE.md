@@ -1659,6 +1659,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── PreparedFileProducer.cs
 │   │   │   ├── RewriteProfileSelection.cs
 │   │   │   ├── SampleLevels.cs
+│   │   │   ├── SystemMemorySnapshot.cs
 │   │   │   ├── TextMetrics.cs
 │   │   │   ├── TrailingNoisePad.cs
 │   │   │   ├── TranscriptFileWriter.cs
