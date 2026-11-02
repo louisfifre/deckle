@@ -118,8 +118,9 @@ public sealed partial class DeckleWhispSource
     // No recovery ran. reason: previous_attempt_crashed (an ".attempted" file
     // is left by a run that never finished: the audio is kept and the app does
     // not retry), attempt_marker_failed (the file could not be set aside, so a
-    // crash could not be told apart later), unreadable or empty (the file is
-    // discarded). kept=false means the audio is gone.
+    // crash could not be told apart later), unreadable (the file goes back for
+    // the next launch, since a transient read error looks the same) or empty
+    // (the file is discarded). kept=false means the audio is gone.
     [Event(EvtTakeAudioRecoverySkipped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
