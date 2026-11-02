@@ -36,6 +36,10 @@ public sealed partial class TranscriptionEngine
         if (Interlocked.Exchange(ref _takeOpen, 0) == 0) return;
         DeckleWhispSource.Log.TakeEnded(
             _takeWorkId, outcome, reason, _takeSw?.ElapsedMilliseconds ?? 0);
+
+        // After the log line and before any subscriber: the audio file is
+        // settled by the time the HUD or a test hears the take is over.
+        SettleTakeAudio(outcome, reason);
     }
 
     // Ends the take and tells the HUD, in that order: the log records the
@@ -49,7 +53,7 @@ public sealed partial class TranscriptionEngine
 
     // A take that delivered nothing is "failed" when something went wrong and
     // "none" when there was nothing to deliver; the reason decides.
-    private static string TakeOutcomeName(TranscriptionOutcome outcome, string? reason) => outcome switch
+    internal static string TakeOutcomeName(TranscriptionOutcome outcome, string? reason) => outcome switch
     {
         TranscriptionOutcome.Pasted        => TakeOutcomes.Pasted,
         TranscriptionOutcome.ClipboardOnly => TakeOutcomes.ClipboardOnly,
@@ -57,11 +61,12 @@ public sealed partial class TranscriptionEngine
         _ => IsFailureReason(reason) ? TakeOutcomes.Failed : TakeOutcomes.None,
     };
 
-    private static bool IsFailureReason(string? reason) => reason is
+    internal static bool IsFailureReason(string? reason) => reason is
         TakeEndReasons.MicrophoneError
         or TakeEndReasons.ModelNotLoaded
         or TakeEndReasons.ModelNotReady
         or TakeEndReasons.TranscriptionFailed
+        or TakeEndReasons.TranscriptionUnavailable
         or TakeEndReasons.Incomplete
         or TakeEndReasons.CopyFailed
         or TakeEndReasons.WriteFailed

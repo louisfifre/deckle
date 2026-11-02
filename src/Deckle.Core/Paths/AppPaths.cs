@@ -54,7 +54,10 @@ public static class AppPaths
     // Holds dictation.dat while a take runs; created by the store on its first write.
     public static string RecoveryDirectory            { get; }
     public static string DictationRecoveryFilePath    { get; }
-    public static string TelemetryDirectory           { get; }
+    // The sealed audio of the take in progress; its ".attempted" sibling marks a
+    // recovery run that may have crashed the app.
+    public static string TakeAudioRecoveryFilePath    { get; }
+    public static string TelemetryDirectory          { get; }
     public static string TrackpadTelemetryDirectory   { get; }
     public static string MouseWheelTelemetryDirectory { get; }
     public static string DiagnosticsDirectory         { get; }
@@ -96,6 +99,7 @@ public static class AppPaths
         SettingsBackupDirectory      = Path.Combine(UserDataRoot, "backups");
         RecoveryDirectory            = Path.Combine(UserDataRoot, "recovery");
         DictationRecoveryFilePath    = Path.Combine(RecoveryDirectory, "dictation.dat");
+        TakeAudioRecoveryFilePath    = Path.Combine(RecoveryDirectory, "take-audio.dat");
         TelemetryDirectory           = Path.Combine(UserDataRoot, "telemetry");
         TrackpadTelemetryDirectory   = Path.Combine(TelemetryDirectory, "trackpad");
         MouseWheelTelemetryDirectory = Path.Combine(TelemetryDirectory, "mouse-wheel");

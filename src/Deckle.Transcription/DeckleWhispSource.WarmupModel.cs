@@ -112,8 +112,11 @@ public sealed partial class DeckleWhispSource
     }
 
     // reason (closed vocabulary): model_load_failed, whose cause the
-    // ModelUnavailable incident already carries (ex_type empty), or
-    // prime_exception, whose exception propagates to the worker afterwards.
+    // ModelUnavailable incident already carries (ex_type empty); test_failed,
+    // the test inference failed on both attempts, whose causes the two
+    // WarmupTestFailed lines carry (ex_type empty); or prime_exception, an
+    // exception outside the test inference. None of them throws: the gate
+    // yields false and the take ends as a failure.
     [Event(EvtWarmupFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -123,13 +126,38 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtWarmupFailed, work_id, reason, ex_type, ex_message, elapsed_ms);
     }
 
-    // Cold prime only: prime_ms is the model load plus dummy inference,
+    // The test inference that opens every take failed: the backend threw, or
+    // returned a native error code. attempt is 1 for the first test and 2 for
+    // the one after the engine unloaded and reloaded the model; the first
+    // failure is retried silently, a second ends the take. reason (closed
+    // vocabulary): exception (ex_type and ex_message carry it) | bad_result
+    // (result_code carries the native code, ex_message the backend's reason).
+    // The four memory fields are read at the moment of the failure, in
+    // megabytes: available and total physical memory, available commit and
+    // commit limit. All zero means the query failed.
+    [Event(EvtWarmupTestFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The warm-up inference failed\nwork_id={0} | attempt={1} | reason={2} | ex_type={3} | ex_message={4} | result_code={5} | avail_phys_mb={6} | total_phys_mb={7} | avail_commit_mb={8} | commit_limit_mb={9} | elapsed_ms={10}")]
+    public void WarmupTestFailed(
+        string work_id, int attempt, string reason, string ex_type, string ex_message, int result_code,
+        long avail_phys_mb, long total_phys_mb, long avail_commit_mb, long commit_limit_mb, long elapsed_ms)
+    {
+        if (IsEnabled())
+            WriteEvent(EvtWarmupTestFailed, work_id, attempt, reason, ex_type, ex_message, result_code,
+                avail_phys_mb, total_phys_mb, avail_commit_mb, commit_limit_mb, elapsed_ms);
+    }
+
+    // Every take: prime_ms is the model load (zero work when the model was
+    // already resident) plus the test inference,
     // gate_wait_ms how long the first real backend call waited for it, and
     // gate_phase (closed vocabulary) where that wait sat, which sets its meaning:
     //   at_stop          (monolithic) — post-Stop latency the user perceived;
     //                     ≈ 0 means the recording hid the whole cold cost.
     //   during_recording (segmented)  — the consumer waited while capture ran;
     //                     a large value is hidden cost, not user-facing latency.
+    //   during_file_decode, during_recovery — the batch or the launch recovery
+    //                     waited for the model; nobody is recording meanwhile.
     [Event(EvtPrimeOverlap,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

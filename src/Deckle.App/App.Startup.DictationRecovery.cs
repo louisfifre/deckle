@@ -8,11 +8,80 @@ namespace Deckle.App;
 // discarded). The sealed raw text goes back on the clipboard and the HUD says
 // so once, with no prompt and no dialog.
 //
-// Independent of the engine on purpose: the transcription module may be absent
-// or unprovisioned, and the file would still deserve its restore. The text is
-// personal data, so nothing below logs it, only the character count.
+// Two files can be there. The audio of the take (take-audio.dat) is the most
+// complete: when the engine exists it is transcribed once and its text goes to
+// the clipboard (TakeAudioRecovery holds the decision and the cleanup order).
+// The text copy (dictation.dat) is the fallback, restored whenever the audio
+// did not deliver, so a take is never left with nothing: the clipboard is
+// written once, by whichever recovery delivers.
+//
+// The text restore is independent of the engine on purpose: the transcription
+// module may be absent or unprovisioned, and the file would still deserve its
+// restore. The text is personal data, so nothing below logs it, only the
+// character count.
 public partial class App
 {
+    private void RecoverInterruptedDictation()
+    {
+        TranscriptionEngine? engine = _engine;
+        var audio = new TakeAudioRecoveryStore(AppPaths.TakeAudioRecoveryFilePath);
+        if (engine is null || !(audio.Exists || audio.AttemptedExists))
+        {
+            RestoreInterruptedDictation();
+            return;
+        }
+
+        var recovery = new TakeAudioRecovery(
+            audio,
+            new DictationRecoveryStore(AppPaths.DictationRecoveryFilePath),
+            engine.RecoverTakeFromAudioAsync);
+
+        // TryRecoverAsync runs on this thread up to the engine call: it sets the
+        // file aside, reads it and puts the engine to work. That is on purpose.
+        // The UI thread does not pump hotkeys until startup returns, so no take
+        // can start and replace the file in between, and the engine is busy
+        // from the moment the hotkeys can fire. The model load and the
+        // transcription then run on the engine's worker, and the HUD shows
+        // its "transcribing" state meanwhile.
+        _ = FinishDictationRecoveryAsync(recovery.TryRecoverAsync());
+    }
+
+    private async Task FinishDictationRecoveryAsync(Task<TakeAudioRecoveryResult> pending)
+    {
+        try
+        {
+            // Continues off the UI thread; the HUD, the clipboard and the files
+            // are safe from there, as the engine's own worker uses them too.
+            TakeAudioRecoveryResult result = await pending.ConfigureAwait(false);
+            if (!result.Recovered)
+            {
+                RestoreInterruptedDictation();
+                return;
+            }
+
+            _hudWindow?.ShowDictationRecovered();
+            DeckleAppSource.Log.DictationRecovered();
+            DeckleAppSource.Log.DictationRecoveredDetail(result.Chars);
+        }
+        catch (Exception ex)
+        {
+            // Neither the recovery nor the text restore is meant to throw, but
+            // nothing may escape a fire-and-forget task. A failure of the audio
+            // flow must not cost the text copy: it is restored here, and a no-op
+            // when the flow got as far as deleting it.
+            DeckleAppSource.Log.CleanupFailed("dictation_recovery", ex.GetType().Name, ex.Message);
+            try
+            {
+                RestoreInterruptedDictation();
+            }
+            catch (Exception restoreEx)
+            {
+                DeckleAppSource.Log.CleanupFailed(
+                    "dictation_text_recovery", restoreEx.GetType().Name, restoreEx.Message);
+            }
+        }
+    }
+
     private void RestoreInterruptedDictation()
     {
         var store = new DictationRecoveryStore(AppPaths.DictationRecoveryFilePath);
