@@ -94,6 +94,40 @@ public sealed partial class TranscriptionEngine
         return TryStartFromIdle(shouldPaste);
     }
 
+    // ── The engine's own Stop ───────────────────────────────────────────────
+    //
+    // Called by the streaming consumer when the prime fails while the capture
+    // is still running: recording on into a channel nobody reads helps no one.
+    // It is the engine's counterpart of the user's Stop in RequestToggle, with
+    // no capture tail (nothing is worth catching) and one difference the
+    // pipeline must know about: MicrophoneCapture reports a cancelled capture as
+    // Completed, whoever cancelled it, so the reason travels in _selfStopReason,
+    // written BEFORE the cancel so that the pipeline reads it once Record
+    // returns.
+    //
+    // The state CAS makes a hotkey press during the shutdown IgnoredBusy, like a
+    // press inside a user Stop's tail. Its result is not checked: when a user
+    // Stop or the cap already moved the state, the take is ending anyway, and
+    // the reason still decides how (a failed prime must not end as "no text").
+    // A prime cancelled by Dispose leaves no failure and no stop: Dispose
+    // cancels the capture itself.
+    private void StopLiveTakeAfterPrimeFailure()
+    {
+        string? reason = ReadPrimeFailure() switch
+        {
+            PrimeFailure.TestFailed => TakeEndReasons.TranscriptionUnavailable,
+            PrimeFailure.ModelLoad  => TakeEndReasons.ModelNotLoaded,
+            _                       => null,
+        };
+        if (reason is null) return;
+
+        Volatile.Write(ref _selfStopReason, reason);
+        Interlocked.CompareExchange(
+            ref _state, (int)PipelineState.Stopping, (int)PipelineState.Recording);
+        try { _recordCts?.Cancel(); }
+        catch (ObjectDisposedException) { /* the worker settled first */ }
+    }
+
     // ── File-transcription entry point ──────────────────────────────────────
     //
     // Enqueues one tray selection as an immutable batch. The engine starts one
@@ -364,7 +398,7 @@ public sealed partial class TranscriptionEngine
 
         // Observed in the finally even on early-exit paths that bypass the gate
         // (e.g. a mic error before the first backend call), so default it to a
-        // completed true for the warm / never-started case.
+        // completed true for the never-started case.
         Task<bool> primeTask = Task.FromResult(true);
 
         try
@@ -372,6 +406,7 @@ public sealed partial class TranscriptionEngine
             // The prime runs CONCURRENTLY with the capture the strategy starts;
             // the strategy crosses its gate (AwaitPrime) before the first
             // backend call. See BeginPrime.
+            Volatile.Write(ref _selfStopReason, null);
             primeTask = BeginPrime(drainCts.Token);
 
             _transcriptionId = System.Guid.NewGuid().ToString("N");
@@ -429,14 +464,14 @@ public sealed partial class TranscriptionEngine
         // makes the IsModelLoaded check below reflect the load result. It MUST
         // run before the drain token is disposed: the prime's abort_callback
         // polls it, and touching a disposed CTS can throw across the native
-        // boundary. On Dispose the token is already cancelled, so the dummy
+        // boundary. On Dispose the token is already cancelled, so the test
         // inference aborts; a model load in flight is not cancellable and runs
-        // to completion. A load failure already surfaced its UserFeedback.
+        // to completion. The prime turns every failure into a false and a log
+        // line (WarmupFailed), so this wait is not expected to throw; the catch
+        // keeps a teardown from ever being skipped if it does.
         try { primeTask.GetAwaiter().GetResult(); }
         catch (Exception ex)
         {
-            // The prime failure already surfaced (WarmupFailed, UserFeedback);
-            // this records that the teardown observed it.
             DeckleWhispSource.Log.TeardownExceptionIgnored("prime_settle", ex.GetType().Name, ex.Message);
         }
 

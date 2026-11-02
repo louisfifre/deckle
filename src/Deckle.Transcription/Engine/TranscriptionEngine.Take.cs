@@ -62,6 +62,7 @@ public sealed partial class TranscriptionEngine
         or TakeEndReasons.ModelNotLoaded
         or TakeEndReasons.ModelNotReady
         or TakeEndReasons.TranscriptionFailed
+        or TakeEndReasons.TranscriptionUnavailable
         or TakeEndReasons.Incomplete
         or TakeEndReasons.CopyFailed
         or TakeEndReasons.WriteFailed

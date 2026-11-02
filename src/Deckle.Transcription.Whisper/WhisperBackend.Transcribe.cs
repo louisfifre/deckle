@@ -175,17 +175,25 @@ public sealed partial class WhisperBackend
         {
             audioArray = pcmSamples.ToArray();
         }
-        lock (_transcribeLock)
+        // whisper_full can throw (a native SEHException out of the GPU backend
+        // under memory pressure). The native allocations the params point to and
+        // the running stopwatches are released on that path too, so a failed
+        // call leaves nothing behind for the retry the engine makes next.
+        try
         {
-            result = WhisperPInvoke.whisper_full(ctx, wparams, audioArray, sampleCount);
+            lock (_transcribeLock)
+            {
+                result = WhisperPInvoke.whisper_full(ctx, wparams, audioArray, sampleCount);
+            }
         }
-        _transcribeSw.Stop();
+        finally
+        {
+            _transcribeSw.Stop();
+            if (_whisperInitSw is { IsRunning: true }) _whisperInitSw.Stop();
+            nativeAllocs.Free();
+        }
         long totalMs = _transcribeSw.ElapsedMilliseconds;
-
-        if (_whisperInitSw is { IsRunning: true }) _whisperInitSw.Stop();
         long whisperInitMs = _whisperInitSw?.ElapsedMilliseconds ?? 0;
-
-        nativeAllocs.Free();
 
         bool aborted = _abortRequested || ct.IsCancellationRequested;
 

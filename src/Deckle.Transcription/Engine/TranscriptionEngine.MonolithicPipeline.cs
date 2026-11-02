@@ -73,11 +73,20 @@ public sealed partial class TranscriptionEngine
         RaiseStatus(Loc.Get("Status_Transcribing"));
 
         // ── Inference ─────────────────────────────────────────────────────────
-        // Prime gate. On a short cold take it blocks until the prime finishes;
+        // Prime gate. On a take shorter than the prime it blocks until it finishes;
         // that wait counts toward _stopToPipelineSw because the user genuinely
-        // waited for it, hence "at_stop". A failed prime falls through to the
-        // IsModelLoaded check (UserFeedback already shown by LoadModel).
-        await AwaitPrime(primeTask, "at_stop").ConfigureAwait(false);
+        // waited for it, hence "at_stop". The capture is already over, so unlike
+        // the streaming path there is nothing to stop early: a failed test ends
+        // the take here with the same message and reason. Any other failed prime
+        // falls through to the IsModelLoaded check (UserFeedback already shown
+        // by LoadModel).
+        bool primed = await AwaitPrime(primeTask, "at_stop").ConfigureAwait(false);
+        if (!primed && ReadPrimeFailure() == PrimeFailure.TestFailed)
+        {
+            EmitTranscriptionUnavailable();
+            FinishTake(TranscriptionOutcome.None, TakeEndReasons.TranscriptionUnavailable);
+            return null;
+        }
 
         if (!_backend.IsModelLoaded)
         {

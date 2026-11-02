@@ -188,6 +188,12 @@
   <data name="Engine_PipelineCrashed_Body" xml:space="preserve">
     <value>Try again. Check logs if it persists.</value>
   </data>
+  <data name="Engine_TranscriptionUnavailable_Title" xml:space="preserve">
+    <value>Transcription unavailable</value>
+  </data>
+  <data name="Engine_TranscriptionUnavailable_Body" xml:space="preserve">
+    <value>Recording stopped. Try again later.</value>
+  </data>
   <data name="Engine_LowAudio_Title" xml:space="preserve">
     <value>Low audio detected</value>
   </data>

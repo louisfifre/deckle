@@ -101,6 +101,11 @@ public static class TakeEndReasons
     // The backend call threw or returned an error code.
     public const string TranscriptionFailed = "transcription_failed";
 
+    // The test inference that opens every take failed twice, with a model
+    // reload between: the engine stopped the take itself, or the batch, and
+    // told the person once.
+    public const string TranscriptionUnavailable = "transcription_unavailable";
+
     // A file take could not deliver every utterance.
     public const string Incomplete = "incomplete";
 

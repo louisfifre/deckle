@@ -5,7 +5,7 @@ namespace Deckle.Transcription;
 
 // Whisp module provider. Covers the transcription engine (TranscriptionEngine),
 // the model lifecycle as the engine sees it (lazy load, idle unload), the
-// cold-start prime, the take and file pipelines, clipboard, paste, and
+// start-of-take prime, the take and file pipelines, clipboard, paste, and
 // structured end-of-pipeline heartbeats (LatencyRecorded, CorpusAsrRecorded,
 // CorpusRewriteRecorded). The native Whisper backend has its own provider
 // (DeckleWhisperSource).
@@ -263,6 +263,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtTakeStarted                      = 241;
     public const int EvtTakeEnded                        = 242;
     public const int EvtModelLoadRetrying                = 243;
+    public const int EvtWarmupTestFailed                 = 244;
 
     // ── Per-provider keywords ───────────────────────────────────────────
     // Bits 0x400+ are provider-local (Deckle.Diagnostics.Keywords). No live
