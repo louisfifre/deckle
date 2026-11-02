@@ -374,7 +374,7 @@
     <value>Transcription unavailable</value>
   </data>
   <data name="Engine_TranscriptionUnavailable_Body" xml:space="preserve">
-    <value>Recording stopped. Try again or restart Deckle.</value>
+    <value>Recording stopped. Try again later.</value>
   </data>
   <data name="Engine_LowAudio_Title" xml:space="preserve">
     <value>Low audio detected</value>
