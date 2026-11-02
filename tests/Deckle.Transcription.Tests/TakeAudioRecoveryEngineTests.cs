@@ -37,7 +37,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         TakeAudioRecoveryStore store = NewStore();
-        var backend = new SequencedBackend(["un", "deux", "trois"]);
+        var backend = new SequencedBackend([TestInference, "un", "deux", "trois"]);
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
             backend,
@@ -69,7 +69,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         TakeAudioRecoveryStore store = NewStore();
-        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
             backend,
@@ -89,7 +89,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
         TakeAudioRecoveryStore store = NewStore();
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
-            new SequencedBackend([]),
+            new SequencedBackend([TestInference]),
             new ScriptedMicrophoneCapture(utteranceCount: 0),
             new RecordingClipboardWriter(),
             takeAudio: store);
@@ -106,7 +106,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         TakeAudioRecoveryStore store = NewStore();
-        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         var clipboard = new RecordingClipboardWriter();
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
@@ -155,6 +155,39 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
         }
     }
 
+    // The per-take test inference fails twice: the engine stops the take by
+    // itself and says so. What was said before that is the only copy, so the
+    // audio stays for the next launch.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ATakeStoppedByAFailingTestInferenceKeepsItsAudio()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        TakeAudioRecoveryStore store = NewStore();
+        var clipboard = new RecordingClipboardWriter();
+        // No scripted text: the test inference throws on both attempts.
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            new SequencedBackend([]),
+            new ScriptedMicrophoneCapture(utteranceCount: 2),
+            clipboard,
+            takeAudio: store);
+        var finished = new TaskCompletionSource<TranscriptionOutcome>(
+            TaskCreationOptions.RunContinuationsAsynchronously);
+        engine.TranscriptionFinished += result => finished.TrySetResult(result);
+
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+
+        // No Stop press: the engine ends the take on its own.
+        TranscriptionOutcome outcome = await finished.Task.WaitAsync(
+            TimeSpan.FromSeconds(5), testCancellation);
+
+        Assert.Equal(TranscriptionOutcome.None, outcome);
+        Assert.Equal(0, clipboard.WriteCount);
+        Assert.True(store.Exists);
+        Assert.Equal(2 * SamplesPerUtterance, store.TryRead().Samples.Length);
+    }
+
     // Regression: a backend that fails every utterance left the take with no
     // text and no failure flag, so it ended as "no text" and the audio, the only
     // copy of what was said, was deleted.
@@ -165,10 +198,10 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         TakeAudioRecoveryStore store = NewStore();
         var clipboard = new RecordingClipboardWriter();
-        // No scripted text: every backend call throws.
+        // Only the test inference is scripted: every call after it throws.
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
-            new SequencedBackend([]),
+            new SequencedBackend([TestInference]),
             new ScriptedMicrophoneCapture(utteranceCount: 2),
             clipboard,
             takeAudio: store);
@@ -186,7 +219,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         TakeAudioRecoveryStore store = NewStore();
-        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         var engine = new TranscriptionEngine(
             new StreamingHost(),
             backend,
@@ -208,7 +241,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         TakeAudioRecoveryStore store = NewStore();
-        var backend = new SequencedBackend(["un", "deux", "trois", "quatre", "cinq", "six"]);
+        var backend = new SequencedBackend([TestInference, "un", "deux", "trois", "quatre", "cinq", "six"]);
         string wav = Path.Combine(_root, "source.wav");
         WriteToneWav(wav);
         using var engine = new TranscriptionEngine(
@@ -240,6 +273,8 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
     [InlineData(TakeOutcomes.None, TakeEndReasons.StateLost, false)]
     [InlineData(TakeOutcomes.None, TakeEndReasons.Cancelled, false)]
     [InlineData(TakeOutcomes.Failed, TakeEndReasons.MicrophoneError, false)]
+    [InlineData(TakeOutcomes.Failed, TakeEndReasons.TranscriptionUnavailable, false)]
+    [InlineData(TakeOutcomes.Failed, TakeEndReasons.ModelNotLoaded, false)]
     [InlineData(TakeOutcomes.Failed, TakeEndReasons.CopyFailed, false)]
     [InlineData(TakeOutcomes.Failed, TakeEndReasons.PipelineCrashed, false)]
     [InlineData(TakeOutcomes.Abandoned, TakeEndReasons.WorkerExit, false)]
