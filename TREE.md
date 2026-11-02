@@ -1682,6 +1682,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Recovery/
 │   │   │   ├── DictationRecoveryStore.cs
 │   │   │   ├── TakeAudioRecorder.cs
+│   │   │   ├── TakeAudioRecovery.cs
 │   │   │   └── TakeAudioRecoveryStore.cs
 │   │   ├── Setup/
 │   │   │   └── ModelEntry.cs
@@ -2414,6 +2415,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── StreamingBackendAudioTests.cs
 │   │   ├── TakeAudioRecoveryEngineTests.cs
 │   │   ├── TakeAudioRecoveryStoreTests.cs
+│   │   ├── TakeAudioRecoveryTests.cs
 │   │   ├── TrailingNoisePadTests.cs
 │   │   ├── TranscriptFileWriterDiskTests.cs
 │   │   ├── TranscriptFileWriterTests.cs

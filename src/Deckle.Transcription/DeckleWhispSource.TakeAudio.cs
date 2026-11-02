@@ -102,15 +102,17 @@ public sealed partial class DeckleWhispSource
     }
 
     // reason: no_text (the audio held no speech), engine_busy, transcription_failed
-    // or exception. kept=true means the audio waits for the next launch; the
-    // text copy, when there is one, is restored in its place.
+    // or exception (ex_type then names it, empty otherwise; the engine's own
+    // failures carry their cause on the take's end). kept=true means the audio
+    // waits for the next launch; the text copy, when there is one, is restored
+    // in its place.
     [Event(EvtTakeAudioRecoveryFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The interrupted take could not be recovered from its audio\nwork_id={0} | reason={1} | kept={2} | duration_ms={3}")]
-    public void TakeAudioRecoveryFailed(string work_id, string reason, bool kept, long duration_ms)
+           Message = "The interrupted take could not be recovered from its audio\nwork_id={0} | reason={1} | ex_type={2} | kept={3} | duration_ms={4}")]
+    public void TakeAudioRecoveryFailed(string work_id, string reason, string ex_type, bool kept, long duration_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtTakeAudioRecoveryFailed, work_id, reason, kept, duration_ms);
+        if (IsEnabled()) WriteEvent(EvtTakeAudioRecoveryFailed, work_id, reason, ex_type, kept, duration_ms);
     }
 
     // No recovery ran. reason: previous_attempt_crashed (an ".attempted" file
