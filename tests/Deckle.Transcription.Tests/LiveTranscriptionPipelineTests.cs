@@ -24,7 +24,7 @@ public sealed class LiveTranscriptionPipelineTests
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
-        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         var clipboard = new RecordingClipboardWriter();
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
@@ -79,12 +79,13 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(1, clipboard.WriteCount);
         Assert.Equal("bonjour\n\nDeckle", clipboard.Text);
         Assert.Equal(["bonjour", "Deckle"], segments.ToArray());
-        Assert.Equal(2, backend.CallCount);
+        // The test inference, then the two utterances; never two at once.
+        Assert.Equal(3, backend.CallCount);
         Assert.Equal(1, backend.MaxConcurrentCalls);
-        Assert.All(backend.SampleCounts, count =>
+        Assert.All(backend.SampleCounts.Skip(1), count =>
             Assert.Equal(6 * 800 + TrailingNoisePad.PadSamples, count));
-        Assert.Equal("test prompt", backend.Contexts[0].PrimingText);
-        Assert.Equal("test prompt bonjour", backend.Contexts[1].PrimingText);
+        Assert.Equal("test prompt", backend.Contexts[1].PrimingText);
+        Assert.Equal("test prompt bonjour", backend.Contexts[2].PrimingText);
         Assert.False(engine.IsBusy);
     }
 
@@ -98,7 +99,7 @@ public sealed class LiveTranscriptionPipelineTests
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         UserIncidentRegistry.Instance.Close(UserIncidents.Microphone);
         var capture = new ScriptedMicrophoneCapture(utteranceCount: 2) { ProbeFails = true };
-        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
             backend,
@@ -119,15 +120,18 @@ public sealed class LiveTranscriptionPipelineTests
 
     // 2026-10-21: the warm-up decoded a subtitle credit on silence, and the
     // backend primed the first utterance of the take with it.
-    [Fact]
+    // The test inference now runs on a loaded model too, so both starts apply.
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     [Trait("Category", "regression")]
-    public async Task TheFirstUtteranceAfterTheWarmUpDoesNotContinueTheWarmUpCall()
+    public async Task TheFirstUtteranceAfterTheWarmUpDoesNotContinueTheWarmUpCall(bool modelLoaded)
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
         var backend = new SequencedBackend(
             ["Sous-titrage Société Radio-Canada", "bonjour", "Deckle"],
-            modelLoaded: false);
+            modelLoaded);
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
             backend,
@@ -161,7 +165,7 @@ public sealed class LiveTranscriptionPipelineTests
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
-        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
             backend,
@@ -207,9 +211,10 @@ public sealed class LiveTranscriptionPipelineTests
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         var backend = new SequencedBackend(
-            ["bonjour", "phantom"],
+            [TestInference, "bonjour", "phantom"],
             segments:
             [
+                new TranscriptionSegment(TestInference, 0, 10, 1f, 0f),
                 new TranscriptionSegment("bonjour", 0, 30, 0.9f, 0f, 2, 0.8f),
                 new TranscriptionSegment("phantom", 0, 30, 0.601f, 0f, 12, 0.079f),
             ]);
@@ -232,7 +237,7 @@ public sealed class LiveTranscriptionPipelineTests
     public async Task EveryUtteranceReachesTheBackendWithANoiseTailAfterItsSpeech()
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
-        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
             backend,
@@ -241,7 +246,8 @@ public sealed class LiveTranscriptionPipelineTests
 
         await RunOneTakeAsync(engine, backend, testCancellation);
 
-        Assert.All(backend.ReceivedSamples, received =>
+        // The first call is the engine's test inference, not an utterance.
+        Assert.All(backend.ReceivedSamples.Skip(1), received =>
         {
             float[] tail = received[^TrailingNoisePad.PadSamples..];
             Assert.Contains(tail, sample => sample != 0f);
@@ -255,7 +261,7 @@ public sealed class LiveTranscriptionPipelineTests
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
-        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         var clipboard = new RecordingClipboardWriter();
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
@@ -306,7 +312,7 @@ public sealed class LiveTranscriptionPipelineTests
         {
             var store = new DictationRecoveryStore(Path.Combine(root, "dictation.dat"));
             var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
-            var backend = new SequencedBackend(["bonjour", "Deckle"]);
+            var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
             using var engine = new TranscriptionEngine(
                 new StreamingHost(),
                 backend,
@@ -364,7 +370,7 @@ public sealed class LiveTranscriptionPipelineTests
             var clipboard = new RecordingClipboardWriter();
             using var engine = new TranscriptionEngine(
                 new StreamingHost(),
-                new SequencedBackend(["bonjour", "Deckle"]),
+                new SequencedBackend([TestInference, "bonjour", "Deckle"]),
                 new ScriptedMicrophoneCapture(utteranceCount: 2, CaptureOutcome.MicError),
                 clipboard,
                 recovery: store);
@@ -395,7 +401,7 @@ public sealed class LiveTranscriptionPipelineTests
             var clipboard = new RecordingClipboardWriter();
             using var engine = new TranscriptionEngine(
                 new StreamingHost(),
-                new SequencedBackend(["bonjour", "Deckle"]),
+                new SequencedBackend([TestInference, "bonjour", "Deckle"]),
                 new ScriptedMicrophoneCapture(utteranceCount: 2),
                 clipboard,
                 recovery: store);
@@ -458,7 +464,7 @@ public sealed class LiveTranscriptionPipelineTests
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
-        var backend = new SequencedBackend([FirstLongUtterance, SecondLongUtterance]);
+        var backend = new SequencedBackend([TestInference, FirstLongUtterance, SecondLongUtterance]);
         var clipboard = new RecordingClipboardWriter();
         var rewrite = new BracketingRewriteService();
         using var engine = new TranscriptionEngine(
@@ -490,7 +496,7 @@ public sealed class LiveTranscriptionPipelineTests
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
-        var backend = new SequencedBackend([FirstLongUtterance, SecondLongUtterance]);
+        var backend = new SequencedBackend([TestInference, FirstLongUtterance, SecondLongUtterance]);
         var clipboard = new RecordingClipboardWriter();
         var rewrite = new BracketingRewriteService();
         using var engine = new TranscriptionEngine(
@@ -514,7 +520,7 @@ public sealed class LiveTranscriptionPipelineTests
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         using var listener = new TestEventListener("Deckle-Whisp");
-        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
             backend,
@@ -543,7 +549,7 @@ public sealed class LiveTranscriptionPipelineTests
         using var listener = new TestEventListener("Deckle-Whisp");
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
-            new SequencedBackend([]),
+            new SequencedBackend([TestInference]),
             new ScriptedMicrophoneCapture(utteranceCount: 0),
             new RecordingClipboardWriter());
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
@@ -663,7 +669,7 @@ public sealed class LiveTranscriptionPipelineTests
         public GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken) => default;
     }
 
-    private sealed class StreamingHost : ITranscriptionEngineHost
+    internal sealed class StreamingHost : ITranscriptionEngineHost
     {
         public StreamingHost()
         {
@@ -688,7 +694,7 @@ public sealed class LiveTranscriptionPipelineTests
         public void ApplyLevelWindow(LevelWindowSettings lw) { }
     }
 
-    private sealed class ScriptedMicrophoneCapture : IMicrophoneCapture
+    internal sealed class ScriptedMicrophoneCapture : IMicrophoneCapture
     {
         private const int FrameSamples = 800;
         private readonly int _utteranceCount;
@@ -756,6 +762,11 @@ public sealed class LiveTranscriptionPipelineTests
         public void Dispose() { }
     }
 
+    // The engine's test inference opens every take, so the first scripted call
+    // is always that one, whether the model was loaded or not; the utterances
+    // follow. Its text never reaches the take.
+    private const string TestInference = "test inference";
+
     private sealed class SequencedBackend : IAsrBackend
     {
         private readonly IReadOnlyList<string> _texts;
@@ -768,8 +779,8 @@ public sealed class LiveTranscriptionPipelineTests
         private int _maxConcurrentCalls;
         private volatile bool _modelLoaded;
 
-        // A backend created without a loaded model makes the engine prime it,
-        // and the prime's dummy call takes the first text.
+        // The engine's test inference takes the first text, loaded model or not;
+        // a backend created without a loaded model also makes it load first.
         public SequencedBackend(
             IReadOnlyList<string> texts,
             bool modelLoaded = true,
@@ -840,7 +851,7 @@ public sealed class LiveTranscriptionPipelineTests
         public void Dispose() { }
     }
 
-    private sealed class RecordingClipboardWriter : IClipboardWriter
+    internal sealed class RecordingClipboardWriter : IClipboardWriter
     {
         private int _writeCount;
 

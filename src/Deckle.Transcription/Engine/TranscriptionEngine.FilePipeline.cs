@@ -60,19 +60,34 @@ public sealed partial class TranscriptionEngine
                 recordCts.Token);
 
             bool transcribingStarted = false;
-            ConsumePreparedFilesAsync(
+            bool stoppedByPrime = ConsumePreparedFilesAsync(
                 preparedFiles.Reader,
                 files,
                 primeTask,
                 () => transcribingStarted,
                 () => transcribingStarted = true,
                 outcome => batchOutcome = CombineFileOutcomes(batchOutcome, outcome),
+                recordCts.Cancel,
                 drainCts.Token).GetAwaiter().GetResult();
 
-            decodeProducer.GetAwaiter().GetResult();
-            batchCompleted = true;
-            DeckleWhispSource.Log.FileTranscriptionBatchCompleted(batchId, files, batchOutcome.ToString());
-            RaiseFinished(batchOutcome);
+            if (stoppedByPrime)
+            {
+                // The prime failed, so no file of the batch can be transcribed:
+                // the consumer ended the batch after one message and cancelled
+                // the decode producer, whose cancellation is expected here and
+                // is not the batch being cancelled. The batch ends as failed;
+                // its cause is the WarmupFailed of the prime.
+                try { decodeProducer.GetAwaiter().GetResult(); }
+                catch (OperationCanceledException) { /* the stop requested above */ }
+                RaiseFinished(batchOutcome);
+            }
+            else
+            {
+                decodeProducer.GetAwaiter().GetResult();
+                batchCompleted = true;
+                DeckleWhispSource.Log.FileTranscriptionBatchCompleted(batchId, files, batchOutcome.ToString());
+                RaiseFinished(batchOutcome);
+            }
         }
         catch (OperationCanceledException)
         {
@@ -130,13 +145,19 @@ public sealed partial class TranscriptionEngine
         EmitUserFeedback(FB_ERROR, title, body, FB_OVERLAY);
     }
 
-    private async Task ConsumePreparedFilesAsync(
+    // Returns true when the batch was ended early because the prime failed:
+    // every following file would meet the same closed gate, so the batch stops
+    // after the first one, with the one message the failing file gave.
+    // stopProducer cancels the decode producer, which would otherwise wait for
+    // a reader that is gone.
+    private async Task<bool> ConsumePreparedFilesAsync(
         ChannelReader<PreparedFileTranscription> reader,
         int files,
         Task<bool> primeTask,
         Func<bool> hasStarted,
         Action markStarted,
         Action<TranscriptionOutcome> recordOutcome,
+        Action stopProducer,
         CancellationToken cancellationToken)
     {
         await foreach (PreparedFileTranscription prepared in
@@ -164,7 +185,7 @@ public sealed partial class TranscriptionEngine
                 {
                     DeckleWhispSource.Log.TranscribeSkipped(
                         ((PipelineState)Volatile.Read(ref _state)).ToString());
-                    return;
+                    return false;
                 }
 
                 markStarted();
@@ -197,7 +218,13 @@ public sealed partial class TranscriptionEngine
                     first,
                     cancellationToken).ConfigureAwait(false);
                 if (production is null)
-                    continue;
+                {
+                    if (ReadPrimeFailure() == PrimeFailure.None)
+                        continue;
+
+                    stopProducer();
+                    return true;
+                }
 
                 TranscriptionOutcome outcome = FinalizeTranscription(
                     production.Value,
@@ -226,6 +253,8 @@ public sealed partial class TranscriptionEngine
                 EndTake(TakeOutcomes.Failed, TakeEndReasons.TranscriptionFailed);
             }
         }
+
+        return false;
     }
 
     private async Task<PipelineProduction?> TranscribePreparedFileAsync(
@@ -236,10 +265,23 @@ public sealed partial class TranscriptionEngine
         bool announceTranscribing,
         CancellationToken cancellationToken)
     {
-        if (!await AwaitPrime(primeTask, "during_file_decode").ConfigureAwait(false)
-            || !_backend.IsModelLoaded)
+        bool primed = await AwaitPrime(primeTask, "during_file_decode").ConfigureAwait(false);
+        if (!primed && ReadPrimeFailure() == PrimeFailure.TestFailed)
         {
-            // The load cause sits on ModelUnavailable; this names the file it cost.
+            // The one message of the batch: the caller ends the batch on this
+            // null, so no later file reports the same closed gate. The causes
+            // are on the WarmupTestFailed lines.
+            DeckleWhispSource.Log.FileTranscriptionFailed(
+                prepared.Index, files, file, "transcription_unavailable", "", "");
+            EmitTranscriptionUnavailable();
+            EndTake(TakeOutcomes.Failed, TakeEndReasons.TranscriptionUnavailable);
+            return null;
+        }
+
+        if (!primed || !_backend.IsModelLoaded)
+        {
+            // The load cause sits on ModelUnavailable; this names the file it
+            // cost, and LoadModel gave the person the one message.
             DeckleWhispSource.Log.FileTranscriptionFailed(prepared.Index, files, file, "model_not_ready", "", "");
             RaiseStatus(Loc.Get("Status_ModelNotReady"));
             EndTake(TakeOutcomes.Failed, TakeEndReasons.ModelNotReady);

@@ -173,11 +173,22 @@ public sealed partial class TranscriptionEngine : IDisposable
     // model resident.
     private long _modelLoadMs;
 
-    // Wall time of the concurrent prime (model load + dummy inference). Set by
-    // EnsurePrimed on the prime task, read by AwaitPrime at the gate (Task
-    // completion is the memory barrier). Stays 0 on a warm worker, which is how
-    // AwaitPrime skips the PrimeOverlap measure.
+    // Wall time of the concurrent prime (model load when cold + test inference).
+    // Set by EnsurePrimed on the prime task, read by AwaitPrime at the gate
+    // (Task completion is the memory barrier). Stays 0 when the prime did not
+    // finish its test, which is how AwaitPrime skips the PrimeOverlap measure.
     private long _primeMs;
+
+    // A PrimeFailure, as an int for Volatile. Why this run's prime ended without
+    // a usable model; reset by BeginPrime.
+    private int _primeFailure;
+
+    // The TakeEndReasons value the engine stopped the live take with, or null
+    // while no stop of its own was requested. A dictation take stops itself when
+    // its prime fails; MicrophoneCapture reports a cancelled capture as
+    // Completed, so the pipeline cannot tell that stop from a user Stop and reads
+    // this field instead. Reset when the worker starts.
+    private string? _selfStopReason;
 
     // Dependency incidents outlive one take. They close only when the real
     // dependency succeeds again: waveInStart for the microphone, and a

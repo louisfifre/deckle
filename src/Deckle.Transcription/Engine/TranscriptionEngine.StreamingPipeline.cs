@@ -53,7 +53,8 @@ public sealed partial class TranscriptionEngine
         var policy = new SegmentedTranscriptionPolicy(
             FixedPrompt: _host.Transcription.Engine.InitialPrompt ?? "",
             ApplyPreprocessing: true,
-            RejectIncompleteResults: false);
+            RejectIncompleteResults: false,
+            StopCaptureOnPrimeFailure: true);
         SegmentedTranscriptionSession<StreamingConsumeResult> session =
             StartSegmentedTranscription(policy, drainCt, primeTask);
 
@@ -192,6 +193,19 @@ public sealed partial class TranscriptionEngine
             return null;
         }
 
+        // The capture ended because the engine stopped it (the prime failed), or
+        // a user Stop landed before the failure was known. Either way the
+        // consumer discarded everything: tell the person once, here, where the
+        // capture is over and the HUD's Recording state has nothing left to say.
+        // A failed model load told them already. The same exit as MicError.
+        if (Volatile.Read(ref _selfStopReason) is { } selfStopReason)
+        {
+            if (selfStopReason == TakeEndReasons.TranscriptionUnavailable)
+                EmitTranscriptionUnavailable();
+            FinishTake(TranscriptionOutcome.None, selfStopReason);
+            return null;
+        }
+
         if (capture.Telemetry is not null)
         {
             TryAutoCalibrate(capture.Telemetry);
@@ -322,11 +336,16 @@ public sealed partial class TranscriptionEngine
         // recording instead of adding to the Stop latency.
         if (!await AwaitPrime(primeTask, "during_recording").ConfigureAwait(false))
         {
-            // Prime failed (UserFeedback already shown), but Record is still
-            // capturing and the segmenter keeps writing utterances. Drain and
-            // discard so those buffers are released as they arrive instead of
-            // piling up until Stop; the empty result takes the caller's
-            // empty-text exit. Dispose (drainCt) ends the drain early.
+            // The prime failed or was cancelled. Whether the person was told
+            // depends on why (see PrimeFailure), and the pipeline decides that
+            // once the capture has ended. Record is still capturing and the
+            // segmenter keeps writing utterances: a failed live take ends its
+            // own capture rather than record for nothing, and the discard below
+            // releases the buffers as they arrive instead of letting them pile
+            // up until the capture returns. The empty result takes the caller's
+            // exit. Dispose (drainCt) ends the drain early.
+            if (policy.StopCaptureOnPrimeFailure)
+                StopLiveTakeAfterPrimeFailure();
             int discarded = 0;
             try
             {
@@ -629,10 +648,14 @@ public sealed partial class TranscriptionEngine
         string Text, long TotalMs, long InitMs, int NSegments, int NUtterances,
         float[]? BackendAudio, bool Incomplete);
 
+    // StopCaptureOnPrimeFailure: the live dictation, whose capture keeps running
+    // while the consumer waits at the prime gate, ends it when the prime fails.
+    // A file batch has no capture to stop and handles the failed gate itself.
     private readonly record struct SegmentedTranscriptionPolicy(
         string FixedPrompt,
         bool ApplyPreprocessing,
-        bool RejectIncompleteResults);
+        bool RejectIncompleteResults,
+        bool StopCaptureOnPrimeFailure = false);
 
     internal static bool IsFileTranscriptionResultUsable(TranscriptionResult result) =>
         !result.Aborted && result.ResultCode == 0;

@@ -52,7 +52,8 @@ public sealed partial class DeckleWhispSource
 
     // The end of a batch that did not complete. outcome (closed vocabulary):
     // cancelled | failed. ex_type and ex_message are empty when cancelled; a
-    // failure's full cause is in the PipelineCrashed that precedes it.
+    // failure's full cause is in the PipelineCrashed that precedes it, or, with
+    // empty ex_type, in the WarmupFailed of a prime that stopped the batch.
     [Event(EvtFileTranscriptionBatchAborted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -83,9 +84,10 @@ public sealed partial class DeckleWhispSource
     }
 
     // reason (closed vocabulary): model_not_ready (the prime failed or the
-    // model is not loaded), incomplete (an utterance could not be delivered),
-    // exception (the pipeline threw; ex_type and ex_message carry it). file is
-    // the file name without its folder.
+    // model is not loaded), transcription_unavailable (the test inference
+    // failed twice, so the batch stopped on this file), incomplete (an
+    // utterance could not be delivered), exception (the pipeline threw; ex_type
+    // and ex_message carry it). file is the file name without its folder.
     [Event(EvtFileTranscriptionFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,

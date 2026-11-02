@@ -222,14 +222,16 @@ public sealed partial class TranscriptionEngine
     // BeginPrime starts the prime for the current run and returns the gate
     // (AwaitPrime) the pipeline crosses before its first backend call.
     //
-    // On a WARM worker the model is resident: no task is spawned and the gate
-    // is an already-completed true.
+    // The prime runs on EVERY take, dictation or file batch, warm worker or
+    // cold. It is a test of the inference path, not only a warm-up: a model that
+    // is resident can still be unable to decode (a native failure under memory
+    // pressure leaves the backend reporting it loaded), and the first sign of it
+    // must come at the start of the take, not after minutes of recording.
     //
-    // On a COLD worker the prime (model load + a dummy inference to compile the
-    // GPU kernels) runs on the thread pool, CONCURRENTLY with the capture, so
-    // the chrono ticks from the first PCM while the model warms behind it. The
-    // first real backend call waits at the gate until the prime's dummy
-    // whisper_full has returned, so the two never overlap.
+    // It runs on the thread pool, CONCURRENTLY with the capture, so the chrono
+    // ticks from the first PCM while the model loads (when cold) and the test
+    // inference runs behind it. The first real backend call waits at the gate
+    // until the prime's whisper_full has returned, so the two never overlap.
     //
     // primeCt is the run's DRAIN token (_drainCts), never the producer/Stop token:
     // the prime must SURVIVE a Stop so the model finishes warming even on a take
@@ -237,39 +239,82 @@ public sealed partial class TranscriptionEngine
     // bounded.
     private Task<bool> BeginPrime(CancellationToken primeCt)
     {
-        if (_backend.IsModelLoaded) return Task.FromResult(true);
+        Volatile.Write(ref _primeFailure, (int)PrimeFailure.None);
         return Task.Run(() => EnsurePrimed(primeCt));
     }
 
+    // Why the prime of the current run ended without a usable model. None is
+    // also what a cancelled prime (Dispose) leaves. Written by the prime thread
+    // before its task completes and read after the gate, so the task is the
+    // memory barrier.
+    private enum PrimeFailure
+    {
+        None,
+
+        // The model could not be loaded. LoadModel already told the person.
+        ModelLoad,
+
+        // The test inference failed on both attempts. Nothing told the person
+        // yet: the pipeline that owns the take does it.
+        TestFailed,
+    }
+
+    private PrimeFailure ReadPrimeFailure() => (PrimeFailure)Volatile.Read(ref _primeFailure);
+
+    // The one message a TestFailed prime gives the person, shared by the
+    // dictation, monolithic and file-batch exits.
+    private static void EmitTranscriptionUnavailable() =>
+        EmitUserFeedback(FB_ERROR,
+            Loc.Get("Engine_TranscriptionUnavailable_Title"),
+            Loc.Get("Engine_TranscriptionUnavailable_Body"),
+            FB_REPLACEMENT);
+
     // The gate every pipeline crosses before its first backend call: no real
-    // whisper_full until the prime's dummy whisper_full has returned. The
+    // whisper_full until the prime's test whisper_full has returned. The
     // backend's _transcribeLock is the hard native guard against a concurrent
     // call; this gate adds the ordering and the model-loaded guarantee, so the
-    // real call never hits an unloaded context. PrimeOverlap is emitted only
-    // when a prime actually ran.
+    // real call never hits an unloaded context.
+    // A false means no real call may follow: the prime failed or was cancelled.
+    // The gate never throws, whatever happened to the prime task; the cause
+    // sits in the log and in ReadPrimeFailure.
     // gatePhase (closed vocabulary "at_stop" | "during_recording" |
     // "during_file_decode") records WHERE the wait sat, so gate_wait_ms reads as
     // one magnitude per phase. See PrimeOverlap's remark.
     private async Task<bool> AwaitPrime(Task<bool> primeTask, string gatePhase)
     {
         var sw = System.Diagnostics.Stopwatch.StartNew();
-        bool primed = await primeTask.ConfigureAwait(false);
+        bool primed;
+        try
+        {
+            primed = await primeTask.ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            // EnsurePrimed turns every exception into a false, so the task
+            // cannot fault; this keeps the guarantee if that ever changes.
+            DeckleWhispSource.Log.WarmupFailed(
+                WorkId.Next(), "prime_exception", ex.GetType().Name, ex.Message, sw.ElapsedMilliseconds);
+            Volatile.Write(ref _primeFailure, (int)PrimeFailure.TestFailed);
+            return false;
+        }
         sw.Stop();
         if (_primeMs > 0)
             DeckleWhispSource.Log.PrimeOverlap(_primeMs, sw.ElapsedMilliseconds, gatePhase);
         return primed;
     }
 
-    // Ensures a clean first transcription: model loaded AND inference kernels
-    // compiled. Runs on the thread pool via BeginPrime on a cold worker,
+    // Ensures a clean first transcription: model loaded AND inference proven
+    // to work. Runs on the thread pool via BeginPrime on every take,
     // concurrently with the capture, never at boot.
-    //   1) Load the model silently: the HUD already shows Recording. A load
-    //      failure surfaces its own UserFeedback inside LoadModel and returns
-    //      false, so the gate reports failure and the take is dropped.
-    //   2) Run a dummy inference on the embedded clip so VAD, whisper_full and
+    //   1) Load the model silently when it is not resident: the HUD already
+    //      shows Recording. A load failure surfaces its own UserFeedback inside
+    //      LoadModel and returns false, so the gate reports failure.
+    //   2) Run a test inference on the embedded clip so VAD, whisper_full and
     //      the first-time GPU kernel compile all execute once. A missing or
     //      corrupt clip falls back to 1.6 s of silence, which still compiles
-    //      the kernels.
+    //      the kernels. A throw or a native error code fails the test: the
+    //      model is unloaded through the backend, loaded again and tested a
+    //      second time, silently. A second failure makes the gate report false.
     //
     // The prime calls the backend DIRECTLY, with an empty segment sink: never
     // the clipboard, the corpus, the status or Finished events, nor
@@ -277,13 +322,14 @@ public sealed partial class TranscriptionEngine
     // transcription from observing a half-primed user-facing state.
     //
     // A Stop does NOT abort the prime; only Dispose fires the drain token,
-    // aborting the dummy inference (abort_callback observes it mid-decoder).
+    // aborting the test inference (abort_callback observes it mid-decoder).
     // The model load itself is not cancellable; a Dispose during the load is
     // observed right after it returns.
+    //
+    // Nothing escapes: a cancellation or any exception becomes a false and a
+    // log line, so the pipeline that awaits the gate never sees a faulted task.
     private bool EnsurePrimed(CancellationToken ct)
     {
-        if (_backend.IsModelLoaded) return true;
-
         var sw = System.Diagnostics.Stopwatch.StartNew();
         string warmupId = WorkId.Next();
         DeckleWhispSource.Log.WarmupStart(warmupId);
@@ -296,23 +342,20 @@ public sealed partial class TranscriptionEngine
         catch (OperationCanceledException)
         {
             DeckleWhispSource.Log.WarmupCancelled(warmupId, sw.ElapsedMilliseconds);
-            throw;
+            return false;
         }
         catch (Exception ex)
         {
             DeckleWhispSource.Log.WarmupFailed(warmupId, "prime_exception", ex.GetType().Name, ex.Message, sw.ElapsedMilliseconds);
-            throw;
+            Volatile.Write(ref _primeFailure, (int)PrimeFailure.TestFailed);
+            return false;
         }
     }
 
     private bool RunPrime(CancellationToken ct, System.Diagnostics.Stopwatch sw, string warmupId)
     {
         if (!EnsureModelLoaded(silentStatus: true))
-        {
-            // LoadModel already carries the cause on ModelUnavailable.
-            DeckleWhispSource.Log.WarmupFailed(warmupId, "model_load_failed", "", "", sw.ElapsedMilliseconds);
-            return false;
-        }
+            return FailPrimeOnModelLoad(warmupId, sw);
         if (ct.IsCancellationRequested)
         {
             DeckleWhispSource.Log.WarmupCancelled(warmupId, sw.ElapsedMilliseconds);
@@ -321,6 +364,70 @@ public sealed partial class TranscriptionEngine
 
         float[] warmupBuffer = TryLoadWarmupClip() ?? new float[25_600];
 
+        for (int attempt = 1; ; attempt++)
+        {
+            PrimeTestOutcome test = RunPrimeTest(warmupBuffer, ct);
+            if (test.Cancelled)
+            {
+                // Dispose fired the drain token during the test: abandon quietly.
+                DeckleWhispSource.Log.WarmupCancelled(warmupId, sw.ElapsedMilliseconds);
+                return false;
+            }
+            if (test.Failure is not { } failure) break;
+
+            SystemMemorySnapshot memory = SystemMemorySnapshot.Read();
+            DeckleWhispSource.Log.WarmupTestFailed(
+                warmupId, attempt, failure.Reason, failure.ExType, failure.ExMessage, failure.ResultCode,
+                memory.AvailablePhysicalMb, memory.TotalPhysicalMb,
+                memory.AvailableCommitMb, memory.CommitLimitMb,
+                sw.ElapsedMilliseconds);
+
+            if (attempt == 2)
+            {
+                // The causes are on the two WarmupTestFailed lines.
+                DeckleWhispSource.Log.WarmupFailed(warmupId, "test_failed", "", "", sw.ElapsedMilliseconds);
+                Volatile.Write(ref _primeFailure, (int)PrimeFailure.TestFailed);
+                return false;
+            }
+
+            // First failure: start over from a freshly loaded model, without a
+            // word to the person. The unload goes through the BACKEND, not the
+            // engine's UnloadModel(), which does nothing unless the engine is
+            // Idle, and the backend keeps reporting the model as loaded after a
+            // native throw, so EnsureModelLoaded would skip the reload.
+            lock (_idleUnloadLock) { _backend.UnloadModel(); }
+            if (!EnsureModelLoaded(silentStatus: true))
+                return FailPrimeOnModelLoad(warmupId, sw);
+            if (ct.IsCancellationRequested)
+            {
+                DeckleWhispSource.Log.WarmupCancelled(warmupId, sw.ElapsedMilliseconds);
+                return false;
+            }
+        }
+
+        _primeMs = sw.ElapsedMilliseconds;
+        DeckleWhispSource.Log.WarmupComplete(warmupId, _primeMs);
+        return true;
+    }
+
+    private bool FailPrimeOnModelLoad(string warmupId, System.Diagnostics.Stopwatch sw)
+    {
+        // LoadModel already carries the cause on ModelUnavailable and told the person.
+        DeckleWhispSource.Log.WarmupFailed(warmupId, "model_load_failed", "", "", sw.ElapsedMilliseconds);
+        Volatile.Write(ref _primeFailure, (int)PrimeFailure.ModelLoad);
+        return false;
+    }
+
+    // How one test inference ended: passed (neither field set), cancelled by
+    // Dispose, or failed with the cause the log carries.
+    private readonly record struct PrimeTestOutcome(bool Cancelled, PrimeTestFailure? Failure);
+
+    // reason is exception or bad_result, the WarmupTestFailed vocabulary.
+    private readonly record struct PrimeTestFailure(
+        string Reason, string ExType, string ExMessage, int ResultCode);
+
+    private PrimeTestOutcome RunPrimeTest(float[] warmupBuffer, CancellationToken ct)
+    {
         // The discarded result is not enough to keep the prime out of the take.
         // whisper.cpp keeps the tokens a call decoded in the decoder state of
         // the context and primes the next call with them unless no_context is
@@ -333,31 +440,34 @@ public sealed partial class TranscriptionEngine
         // every take leaves ContinuesPreviousCall false, which sets no_context.
         try
         {
-            _backend.TranscribeAsync(
+            TranscriptionResult result = _backend.TranscribeAsync(
                     warmupBuffer,
                     static _ => { },
                     ct,
                     new TranscriptionContext(PrimingText: null, EmitPreamble: false))
                 .GetAwaiter().GetResult();
-        }
-        catch (OperationCanceledException)
-        {
-            // Dispose fired the drain token during the prime: abandon quietly.
-            // Any other exception is a genuine prime failure and propagates
-            // through the gate to the pipeline that awaits it.
-            DeckleWhispSource.Log.WarmupCancelled(warmupId, sw.ElapsedMilliseconds);
-            return false;
-        }
 
-        if (ct.IsCancellationRequested)
-        {
-            DeckleWhispSource.Log.WarmupCancelled(warmupId, sw.ElapsedMilliseconds);
-            return false;
-        }
+            if (ct.IsCancellationRequested)
+                return new PrimeTestOutcome(Cancelled: true, Failure: null);
 
-        _primeMs = sw.ElapsedMilliseconds;
-        DeckleWhispSource.Log.WarmupComplete(warmupId, _primeMs);
-        return true;
+            // The backend reports a native failure as a code, not an exception;
+            // an aborted call is not one (the same rule as the consumer's).
+            if (result.ResultCode != 0 && !result.Aborted)
+            {
+                return new PrimeTestOutcome(false, new PrimeTestFailure(
+                    "bad_result", "", result.ErrorReason ?? "", result.ResultCode));
+            }
+            return new PrimeTestOutcome(false, null);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            return new PrimeTestOutcome(Cancelled: true, Failure: null);
+        }
+        catch (Exception ex)
+        {
+            return new PrimeTestOutcome(false, new PrimeTestFailure(
+                "exception", ex.GetType().Name, ex.Message, 0));
+        }
     }
 
 }
