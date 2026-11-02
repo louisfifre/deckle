@@ -48,30 +48,29 @@ public sealed class CrashRelaunchPolicyTests
 }
 
 [Trait("Category", "unit")]
-public sealed class CrashRelaunchBudgetTests
+public sealed class CrashRelaunchAllowanceTests
 {
-    private static readonly DateTimeOffset Start = new(2026, 10, 18, 9, 0, 0, TimeSpan.Zero);
-
+    // The launcher's chain, as CrashSupervisor drives it: a launcher that has
+    // made no relaunch may make one, and the relaunched Deckle's crash comes
+    // back to a launcher that has made it. The rule takes no clock, so no
+    // time away from the crash can give the allowance back.
     [Fact]
-    public void The_budget_grants_the_maximum_then_refuses()
+    public void A_launcher_relaunches_once()
     {
-        var budget = new CrashRelaunchBudget();
-
-        for (int i = 0; i < CrashRelaunchPolicy.MaxRelaunches; i++)
-            Assert.True(budget.TrySpend(Start));
-
-        Assert.False(budget.TrySpend(Start));
-        Assert.Equal(CrashRelaunchPolicy.MaxRelaunches, budget.Granted);
+        Assert.Equal(1, CrashRelaunchPolicy.MaxRelaunches);
+        Assert.True(CrashRelaunchPolicy.MayRelaunch(0));
     }
 
-    [Fact]
-    public void A_relaunch_leaving_the_window_frees_one_slot()
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(int.MaxValue)]
+    public void The_crash_of_a_relaunched_Deckle_stays_closed(int relaunchesMade)
     {
-        var budget = new CrashRelaunchBudget();
-        for (int i = 0; i < CrashRelaunchPolicy.MaxRelaunches; i++)
-            budget.TrySpend(Start);
-
-        Assert.False(budget.TrySpend(Start + CrashRelaunchPolicy.RelaunchWindow - TimeSpan.FromSeconds(1)));
-        Assert.True(budget.TrySpend(Start + CrashRelaunchPolicy.RelaunchWindow));
+        Assert.False(CrashRelaunchPolicy.MayRelaunch(relaunchesMade));
     }
+
+    // Not tested here: a fresh start by the user resets the allowance because
+    // it is a new launcher process whose count starts at zero. That is process
+    // state in CrashSupervisor, which spawns real processes and has no seam.
 }
