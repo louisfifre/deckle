@@ -599,7 +599,7 @@ public sealed class LiveTranscriptionPipelineTests
         e.Payload![e.PayloadNames!.IndexOf(name)];
     // Starts a take, stops it once the backend has transcribed both scripted
     // utterances, and waits until the engine is back to Ready.
-    private static async Task RunOneTakeAsync(
+    internal static async Task RunOneTakeAsync(
         TranscriptionEngine engine, SequencedBackend backend, CancellationToken testCancellation)
     {
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
@@ -663,7 +663,7 @@ public sealed class LiveTranscriptionPipelineTests
         public GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken) => default;
     }
 
-    private sealed class StreamingHost : ITranscriptionEngineHost
+    internal sealed class StreamingHost : ITranscriptionEngineHost
     {
         public StreamingHost()
         {
@@ -688,7 +688,7 @@ public sealed class LiveTranscriptionPipelineTests
         public void ApplyLevelWindow(LevelWindowSettings lw) { }
     }
 
-    private sealed class ScriptedMicrophoneCapture : IMicrophoneCapture
+    internal sealed class ScriptedMicrophoneCapture : IMicrophoneCapture
     {
         private const int FrameSamples = 800;
         private readonly int _utteranceCount;
@@ -756,7 +756,7 @@ public sealed class LiveTranscriptionPipelineTests
         public void Dispose() { }
     }
 
-    private sealed class SequencedBackend : IAsrBackend
+    internal sealed class SequencedBackend : IAsrBackend
     {
         private readonly IReadOnlyList<string> _texts;
         private readonly object _gate = new();
@@ -773,12 +773,17 @@ public sealed class LiveTranscriptionPipelineTests
         public SequencedBackend(
             IReadOnlyList<string> texts,
             bool modelLoaded = true,
-            IReadOnlyList<TranscriptionSegment>? segments = null)
+            IReadOnlyList<TranscriptionSegment>? segments = null,
+            bool loadFails = false)
         {
             _texts = texts;
             _modelLoaded = modelLoaded;
             _scriptedSegments = segments;
+            _loadFails = loadFails;
         }
+
+        // The model never loads, as when the file is gone or the GPU refuses.
+        private readonly bool _loadFails;
 
         // When set, call i reports this segment instead of a perfect one.
         private readonly IReadOnlyList<TranscriptionSegment>? _scriptedSegments;
@@ -796,6 +801,9 @@ public sealed class LiveTranscriptionPipelineTests
 
         public Task<ModelLoadResult> LoadModelAsync(CancellationToken ct)
         {
+            if (_loadFails)
+                return Task.FromResult(new ModelLoadResult(false, 0, null, "load_failed"));
+
             _modelLoaded = true;
             return Task.FromResult(new ModelLoadResult(true, 0, "test", null));
         }
@@ -840,7 +848,7 @@ public sealed class LiveTranscriptionPipelineTests
         public void Dispose() { }
     }
 
-    private sealed class RecordingClipboardWriter : IClipboardWriter
+    internal sealed class RecordingClipboardWriter : IClipboardWriter
     {
         private int _writeCount;
 

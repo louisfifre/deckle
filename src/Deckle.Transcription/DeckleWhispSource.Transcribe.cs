@@ -110,7 +110,7 @@ public sealed partial class DeckleWhispSource
     // was already reported. site (closed vocabulary): prime_settle |
     // streaming_capture_teardown | file_decode_producer | recovery_temp_delete
     // | file_length | take_audio_truncate | take_audio_length | take_audio_close
-    // | take_audio_mark_attempted | take_audio_restore_attempted.
+    // | take_audio_mark_attempted | take_audio_restore_attempted | take_audio_writer.
     [Event(EvtTeardownExceptionIgnored,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,

@@ -89,7 +89,8 @@ public static class TakeEndReasons
     // No model was loaded when the take reached the backend.
     public const string ModelNotLoaded = "model_not_loaded";
 
-    // A file could not be transcribed because the model was not ready.
+    // The model was not ready: a file could not be transcribed, or a dictation
+    // was recorded while the model failed to load and nothing was transcribed.
     public const string ModelNotReady = "model_not_ready";
 
     // The capture held no audio.

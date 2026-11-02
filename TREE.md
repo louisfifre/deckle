@@ -1675,10 +1675,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptionEngine.StateMachine.cs
 │   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
 │   │   │   ├── TranscriptionEngine.Take.cs
+│   │   │   ├── TranscriptionEngine.TakeAudio.cs
 │   │   │   ├── TranscriptionEngine.Telemetry.cs
 │   │   │   └── TranscriptionEngine.Utterances.cs
 │   │   ├── Recovery/
 │   │   │   ├── DictationRecoveryStore.cs
+│   │   │   ├── TakeAudioRecorder.cs
 │   │   │   └── TakeAudioRecoveryStore.cs
 │   │   ├── Setup/
 │   │   │   └── ModelEntry.cs
@@ -2408,6 +2410,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteProfileSelectionTests.cs
 │   │   ├── SegmentedTranscriptionSessionTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
+│   │   ├── TakeAudioRecoveryEngineTests.cs
 │   │   ├── TakeAudioRecoveryStoreTests.cs
 │   │   ├── TrailingNoisePadTests.cs
 │   │   ├── TranscriptFileWriterDiskTests.cs

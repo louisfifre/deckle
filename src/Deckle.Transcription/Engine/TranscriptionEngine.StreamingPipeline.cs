@@ -230,7 +230,12 @@ public sealed partial class TranscriptionEngine
         if (string.IsNullOrWhiteSpace(consumed.Text))
         {
             RaiseStatus(Loc.Get("Status_Ready"));
-            FinishTake(TranscriptionOutcome.None, TakeEndReasons.NoText);
+            // The consumer reports Incomplete on a live take only when the prime
+            // failed: speech was recorded and thrown away, which is a lost take,
+            // not a silent one. Its audio is kept for the next launch.
+            FinishTake(
+                TranscriptionOutcome.None,
+                consumed.Incomplete ? TakeEndReasons.ModelNotReady : TakeEndReasons.NoText);
             return null;
         }
 
