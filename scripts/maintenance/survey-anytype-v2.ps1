@@ -9,7 +9,8 @@
 # Kept out of the launcher menu on purpose: this file carries no comment-based
 # Header, because a Header without an `action:` line still declares a one-click
 # Action (scripts/README.md, "Adding a script"). The maintainer decides whether
-# it joins Maintenance > Checks; the Header would then be `section: Checks`.
+# it joins the Check row of Maintenance; the Header would then declare
+# `action: Check / Anytype API v2 |`.
 #
 # Safety contract, enforced by Invoke-SurveyRequest rather than by discipline:
 #   - GET/HEAD only, plus POST .../search (a read), plus POST/PATCH that carry

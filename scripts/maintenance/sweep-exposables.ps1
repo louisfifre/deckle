@@ -8,8 +8,8 @@
     any surface exposes it today. The sweep reads text only (no build, no
     reflection, no runtime) and keeps the file and line of every entry.
 .NOTES
-    section: Checks
     order: 420
+    action: Check / exposable values |
 #>
 
 [CmdletBinding()]

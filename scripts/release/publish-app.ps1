@@ -7,10 +7,9 @@
     -Publish both are built locally for inspection; with -Publish they are
     also uploaded as a GitHub Release under the version tag via gh.
 .NOTES
-    section: Release
     order: 110
-    action: Prepare app artifacts |
-    action: Publish app release | -Publish | danger | Publishes a public GitHub Release of the app.
+    action: App release / prepare |
+    action: App release / publish | -Publish | danger | Publishes a public GitHub Release of the app.
 #>
 
 # The app payload is the publish folder, not a single file: the rationale sits

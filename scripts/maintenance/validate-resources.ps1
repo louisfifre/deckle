@@ -6,8 +6,8 @@
     resource keys, divergences between required mirrors and module copies
     that look unused.
 .NOTES
-    section: Checks
     order: 410
+    action: Check / WinUI resources |
 #>
 
 [CmdletBinding()]

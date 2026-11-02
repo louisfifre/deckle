@@ -13,10 +13,9 @@
     again. Missing DLLs are reported, never fetched: setup-assets.ps1 or the
     setup wizard provisions them.
 .NOTES
-    section: Cleanup
     order: 230
-    action: Inspect native folder | -WhatIf
-    action: Clean native folder | | danger | Deletes the DLLs the current native catalog does not name from the user data native folder.
+    action: Preview / native folder | -WhatIf
+    action: Clean / native folder | | danger | Deletes the DLLs the current native catalog does not name from the user data native folder.
 #>
 
 [CmdletBinding(SupportsShouldProcess)]

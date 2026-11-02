@@ -6,9 +6,8 @@
     tantivy-go cross-allocator free fixed, then packages it in the layout of
     the official asset. The fix applies nothing once upstream carries it.
 .NOTES
-    section: Release
     order: 130
-    action: Build Anytype backend |
+    action: Anytype backend / build |
 #>
 
 # Why Deckle builds its own backend. Since v0.3.7 the official Windows asset

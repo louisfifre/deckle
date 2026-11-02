@@ -6,8 +6,9 @@
     module, with line counts. The console shows a long-file watch list, a
     module summary, file-type counts and a per-module file tree.
 .NOTES
-    section: Statistics
-    order: 110
+    section: Project
+    order: 220
+    action: Statistics / repository |
 #>
 
 [CmdletBinding()]
@@ -45,7 +46,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
-$LibDir = Join-Path (Split-Path -Parent $ScriptDir) 'lib'
+$LibDir = Join-Path $ScriptDir 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'source-metrics.psm1') -Force
 
@@ -70,7 +71,7 @@ if ($Target) {
     if (-not (Test-Path $Target)) { throw "Target not found: $Target" }
     $RepoRoot = (Get-Item $Target).FullName
 } else {
-    $RepoRoot = Split-Path -Parent (Split-Path -Parent $ScriptDir)
+    $RepoRoot = Split-Path -Parent $ScriptDir
 }
 
 Write-Host "Repo: $RepoRoot" -ForegroundColor DarkGray

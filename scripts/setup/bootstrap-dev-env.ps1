@@ -7,10 +7,9 @@
     with winget (OS-level installers) and scoop (dev toolchain). Idempotent:
     safe to re-run.
 .NOTES
-    section: Machine
-    order: 110
-    action: Plan the bootstrap (dry run) | -DryRun
-    action: Bootstrap dev environment | -Yes | danger | Installs tools on this machine with winget and scoop.
+    order: 120
+    action: Dev environment / plan | -DryRun
+    action: Dev environment / bootstrap | -Yes | danger | Installs tools on this machine with winget and scoop.
 #>
 
 # Left out on purpose: cloning whisper.cpp (its location is a per-dev choice)

@@ -7,8 +7,8 @@
     models the app needs at runtime. Idempotent: skips files already present
     at the same size unless -Force.
 .NOTES
-    section: Machine
-    order: 120
+    order: 130
+    action: Runtime assets / set up |
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'WhisperRepo')]
