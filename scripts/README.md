@@ -109,13 +109,12 @@ Each script is callable directly from a terminal; the menu is purely additive. C
 | [`release/publish-native-runtime.ps1`](release/publish-native-runtime.ps1) | **Maintainer-only.** Validate and optionally publish the bundle pinned by `NativeRuntime.CurrentBundle`, auto-discovered under `artifacts/` or supplied with `-ArtifactPath`. When no current bundle exists, package a new one from an already-built local whisper.cpp tree (MSVC, dynamic ggml backends) and the Visual C++ Redist of the same Visual Studio. Every bundle, staged or downloaded, is refused when a DLL imports a name that is neither in the bundle nor part of Windows (`vulkan-1.dll` is the one declared external). Local and downloaded release assets are verified by size, archive contract, and SHA-256. No CMake or Deckle build is invoked. | `-ArtifactPath <zip>` or `-WhisperRepo <path>` with `-WhisperBuildDir <name>`; `-Target <Deckle repo>`, `-OutDir <path>`, `-Publish`, `-Version X.Y.Z`, `-Notes <path>` |
 | [`release/build-anytype-backend.ps1`](release/build-anytype-backend.ps1) | Rebuild one `anytype-cli` release tag from source for Windows, UCRT-linked, with the tantivy-go cross-allocator free patched in a private module copy, then package it in the official asset layout with a sha256 sidecar and a build report under `artifacts/anytype-backend-vX.Y.Z/`. The patch applies nothing once no site matches and refuses a partial match. See the script's own comments for the why (anyproto/tantivy-go#25, anyproto/anytype-cli#63). | `-Version X.Y.Z`, `-OutDir <path>`, `-Force` |
 
-Three scripts carry no Header and stay out of the menu on purpose:
+Two scripts carry no Header and stay out of the menu on purpose:
 
 | File | Purpose | Common switches |
 |---|---|---|
 | [`build-locked.ps1`](build-locked.ps1) | Run one `dotnet build` or `dotnet test` under the machine-wide `Global\Deckle.Build` mutex, with the project's mandatory flags, so parallel agents never build at once. `-Project` is mandatory, which the menu could not supply. | `-Project <path>`, `-Test`, `-Configuration Debug\|Release` |
 | [`fetch-autocorrect-data.ps1`](fetch-autocorrect-data.ps1) | Stage 0 of the autocorrect pipeline: download the raw lexical sources (Lexique 3.83, Norvig counts, FranceTerme, a Wikipedia FR train/eval corpus) into `artifacts\autocorrect-data\raw\`. Acquires data only, idempotent, never versioned. | `-OutputRoot <path>`, `-TrainMB`, `-EvalMB`, `-IncludeKaikki`, `-Force` |
-| [`maintenance/survey-anytype-v2.ps1`](maintenance/survey-anytype-v2.ps1) | Replay a fixed list of read-only measures against the local headless Anytype backend and write one Markdown report, so the v2 port of `Deckle.Anytype` is decided on measured behaviour rather than on contradictory docs. Rerun on every new backend version and diff the reports; the safety contract is in the script's own comments. | `-OutputPath <path>` |
 
 ## Adding a script — the Header
 
