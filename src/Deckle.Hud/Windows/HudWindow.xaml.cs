@@ -71,6 +71,9 @@ public sealed partial class HudWindow : Window
     private static readonly UIntPtr SubclassId = new(0x48554450); // "HUDP"
 
     private HudState _state = HudState.Hidden;
+    // The kind of the message on screen while _state is Message, for
+    // HudHidePolicy; stale and unread in every other state.
+    private MessageKind _messageKind;
     private Microsoft.UI.Dispatching.DispatcherQueueTimer? _messageHideTimer;
     private int _zOrderProbeGeneration;
 

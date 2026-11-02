@@ -1,4 +1,4 @@
-# Tree — hotloop-rollup-level
+# Tree — take-start-check
 _Generated from `git ls-files` — do not edit by hand._
 
 ```
@@ -972,6 +972,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HudChrono.xaml.cs
 │   │   │   └── UtteranceCountdownState.cs
 │   │   ├── Model/
+│   │   │   ├── HudHidePolicy.cs
 │   │   │   ├── HudPalette.cs
 │   │   │   ├── HudState.cs
 │   │   │   └── MessageKind.cs
@@ -2124,6 +2125,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
+│   │   ├── HudHidePolicyTests.cs
 │   │   ├── HudHotLoopCountTests.cs
 │   │   ├── HudMessageFitTests.cs
 │   │   ├── HudSettingsOverridesTests.cs

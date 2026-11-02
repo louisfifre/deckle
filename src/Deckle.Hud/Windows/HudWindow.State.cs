@@ -105,7 +105,14 @@ public sealed partial class HudWindow : Window
         _ => TimeSpan.FromSeconds(8),  // Error
     };
 
-    public void Hide() => EnqueueUI(() => SetState(HudState.Hidden, reason: "hide"));
+    // A warning or error still on screen keeps its own timer (HudHidePolicy):
+    // the finish signal that follows a failure must not wipe it. The decision is
+    // taken on the UI thread, so it reads the state the queue has reached.
+    public void Hide() => EnqueueUI(() =>
+    {
+        if (HudHidePolicy.ShouldHonorHide(_state, _messageKind))
+            SetState(HudState.Hidden, reason: "hide");
+    });
 
     // Blocking variant: explicit rendezvous between the transcribe thread
     // and the UI thread. Called just before PasteFromClipboard so SW_HIDE
@@ -239,6 +246,7 @@ public sealed partial class HudWindow : Window
                 Chrono.Visibility  = Visibility.Collapsed;
                 Message.Visibility = Visibility.Visible;
                 Message.Show(msg);
+                _messageKind = msg.Kind;
                 IconAssets.ApplyToWindow(AppWindow, recording: false);
                 bool shouldFadeMessage = ShouldFadeIn(wasShown);
                 if (shouldFadeMessage) SetAlphaImmediate(0);
