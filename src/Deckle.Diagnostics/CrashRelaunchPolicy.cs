@@ -20,13 +20,23 @@ public static class CrashRelaunchPolicy
     // the previous exit code in hex, then the relaunch ordinal, "C0000005:2".
     public const string AfterCrashVariable = "DECKLE_AFTER_CRASH";
 
-    // At most this many relaunches inside the window, then the launcher gives
-    // up. A crash at startup (a corrupt settings file, a driver that faults at
-    // load) would otherwise loop for ever, burning CPU and filling the dump
-    // folder. Three tries cover an unlucky one-off; a fourth crash in ten
-    // minutes is not luck, and a person has to look.
-    public const int MaxRelaunches = 3;
-    public static readonly TimeSpan RelaunchWindow = TimeSpan.FromMinutes(10);
+    // One relaunch per launcher, then it gives up, however long the relaunched
+    // Deckle ran before it crashed: no time window, no second try later. A crash
+    // at startup (a corrupt settings file, a driver that faults at load) would
+    // otherwise loop for ever, burning CPU and filling the dump folder. One try
+    // covers an unlucky one-off; a second crash is not luck, and a person has
+    // to look. Whoever installed Deckle knows how to start it again, and that
+    // start is a new launcher with a new allowance.
+    //
+    // The allowance is the launcher's own counter, not a file or an argument:
+    // the launcher lives for the whole chain, and a chain begins and ends with
+    // it. A deliberate restart ends the chain too (see CrashSupervisor).
+    public const int MaxRelaunches = 1;
+
+    // True while the launcher has not yet used its allowance, given how many
+    // relaunches it has already made.
+    public static bool MayRelaunch(int relaunchesMade)
+        => relaunchesMade < MaxRelaunches;
 
     // A pause before the relaunch lets Windows Error Reporting and the
     // runtime's dump writer finish and lets a session that is ending raise its

@@ -7,8 +7,9 @@ namespace Deckle.App;
 
 // The launcher half of Deckle's crash recovery. The process the shell starts
 // stays alive as a thin parent: it starts the real Deckle as its child, waits,
-// and starts it again when the child dies of a crash (CrashRelaunchPolicy says
-// which exits are crashes and how many relaunches are allowed).
+// and starts it again, once, when the child dies of a crash (CrashRelaunchPolicy
+// says which exits are crashes and how many relaunches are allowed). The
+// relaunched child dying of a crash too ends the launcher: Deckle stays closed.
 //
 // The parent is deliberately minimal: no WinUI, no diagnostics stack, no
 // settings. It can only hold up if it does almost nothing, and it has no sink
@@ -45,7 +46,9 @@ internal static class CrashSupervisor
     // the successor the child spawned finds no marker in its environment (the
     // child removed it at startup) and becomes the launcher of its own child.
     // The old parent never relaunches after a deliberate exit, and two parents
-    // never watch the same Deckle.
+    // never watch the same Deckle. The successor's launcher starts a new chain
+    // with a new allowance: the relaunch it follows ended in a deliberate exit,
+    // not a crash.
     internal static bool TryRun(string[] args)
     {
         if (App.IsTransactionalMode(args)) return false;
@@ -94,7 +97,11 @@ internal static class CrashSupervisor
             }
             Environment.SetEnvironmentVariable(CrashRelaunchPolicy.SupervisedVariable, "1");
 
-            var budget = new CrashRelaunchBudget();
+            // This launcher's chain of crashes: it ends with this process, so
+            // the count needs no file. The relaunched child removed the marker
+            // from its environment, so it never becomes a launcher itself, and
+            // its crash comes back here, to a launcher whose allowance is spent.
+            int relaunches = 0;
             string? afterCrash = null;
             while (true)
             {
@@ -111,7 +118,7 @@ internal static class CrashSupervisor
                 // an id, so supervisor.txt reads on its own. A start with no end
                 // means the launcher itself went down with its child.
                 string workId = WorkId.Next();
-                Note($"child started | {WorkId.FieldName}={workId} | child_pid={child.Id} | relaunch={budget.Granted}");
+                Note($"child started | {WorkId.FieldName}={workId} | child_pid={child.Id} | relaunch={relaunches}");
 
                 child.WaitForExit();
                 int exitCode = child.ExitCode;
@@ -129,14 +136,15 @@ internal static class CrashSupervisor
                     Note("no relaunch | reason=session_ending");
                     return true;
                 }
-                if (!budget.TrySpend(DateTimeOffset.UtcNow))
+                if (!CrashRelaunchPolicy.MayRelaunch(relaunches))
                 {
-                    Note($"gave up | reason=relaunch_budget_spent | max_relaunches={CrashRelaunchPolicy.MaxRelaunches} | window_min={CrashRelaunchPolicy.RelaunchWindow.TotalMinutes}");
+                    Note($"gave up | reason=relaunch_budget_spent | relaunches={relaunches} | max_relaunches={CrashRelaunchPolicy.MaxRelaunches}");
                     return true;
                 }
 
-                afterCrash = CrashRelaunchPolicy.FormatAfterCrash(exitCode, budget.Granted);
-                Note($"relaunching | relaunch={budget.Granted} | max_relaunches={CrashRelaunchPolicy.MaxRelaunches}");
+                relaunches++;
+                afterCrash = CrashRelaunchPolicy.FormatAfterCrash(exitCode, relaunches);
+                Note($"relaunching | relaunch={relaunches} | max_relaunches={CrashRelaunchPolicy.MaxRelaunches}");
             }
         }
         catch (Exception ex)
