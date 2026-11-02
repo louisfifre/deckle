@@ -248,7 +248,7 @@ public sealed partial class TranscriptionEngine
     // real call never hits an unloaded context. PrimeOverlap is emitted only
     // when a prime actually ran.
     // gatePhase (closed vocabulary "at_stop" | "during_recording" |
-    // "during_file_decode") records WHERE the wait sat, so gate_wait_ms reads as
+    // "during_file_decode" | "during_recovery") records WHERE the wait sat, so gate_wait_ms reads as
     // one magnitude per phase. See PrimeOverlap's remark.
     private async Task<bool> AwaitPrime(Task<bool> primeTask, string gatePhase)
     {

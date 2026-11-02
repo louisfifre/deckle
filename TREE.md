@@ -1662,6 +1662,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TrailingNoisePad.cs
 │   │   │   ├── TranscriptFileWriter.cs
 │   │   │   ├── TranscriptionDelivery.cs
+│   │   │   ├── TranscriptionEngine.AudioRecovery.cs
 │   │   │   ├── TranscriptionEngine.BatchRewrite.cs
 │   │   │   ├── TranscriptionEngine.cs
 │   │   │   ├── TranscriptionEngine.FilePipeline.cs
@@ -2406,6 +2407,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PhantomUtteranceBugNotes.md
 │   │   ├── PhantomUtteranceFilterTests.cs
 │   │   ├── PreparedFileChannelTests.cs
+│   │   ├── RecoverTakeFromAudioTests.cs
 │   │   ├── RewriteAvailabilityTests.cs
 │   │   ├── RewriteProfileSelectionTests.cs
 │   │   ├── SegmentedTranscriptionSessionTests.cs

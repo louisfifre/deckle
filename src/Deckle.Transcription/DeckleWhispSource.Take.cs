@@ -8,13 +8,14 @@ public sealed partial class DeckleWhispSource
     // ── Take lifecycle ──────────────────────────────────────────────────
     //
     // One take is one dictation, from the moment the worker owns it to the
-    // moment its outcome is known, or one file of a batch. Both events travel
+    // moment its outcome is known, one file of a batch, or the transcription of
+    // an interrupted dictation's saved audio at launch. Both events travel
     // in the log and share `work_id`, so a reader of the file alone can say
     // what became of every take, including one that left nothing behind.
     // TranscriptionEngine guarantees the pair: a take that never reaches an
     // explicit end is closed as abandoned when its worker settles.
 
-    // kind (closed vocabulary, TakeKinds): dictation, file. transcription_id
+    // kind (closed vocabulary, TakeKinds): dictation, file, audio_recovery. transcription_id
     // is the corpus join key, so a log line leads to the corpus line and
     // the corpus audio of the same take.
     [Event(EvtTakeStarted,
@@ -49,6 +50,9 @@ public static class TakeKinds
 
     // One audio file of a tray selection.
     public const string File = "file";
+
+    // The saved audio of an interrupted dictation, transcribed at launch.
+    public const string AudioRecovery = "audio_recovery";
 }
 
 // Closed `outcome` vocabulary of TakeEnded.

@@ -76,7 +76,7 @@ public sealed partial class DeckleWhispSource
     // ── Worker lifecycle ────────────────────────────────────────────────
     //
     // One worker thread per take or file batch. worker (closed vocabulary):
-    // dictation | file. reached_idle false means Dispose won the race and the
+    // dictation | file | recovery. reached_idle false means Dispose won the race and the
     // engine did not return to Idle.
 
     [Event(EvtWorkerStarted,
