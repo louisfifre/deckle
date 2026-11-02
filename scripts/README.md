@@ -6,7 +6,7 @@ module: scripts
 
 # `scripts/` — Deckle dev workflows
 
-Everything here runs under PowerShell 7. The entry point is [`menu.ps1`](menu.ps1), the launcher of [Deckle Scripts](https://github.com/louisfifre/deckle-scripts), installed here with four of its packs; Deckle's own scripts sit beside the installed ones, in the folders the menu shows as levels, and every one stays usable from a terminal or a `launch.json` profile for automation. Tracked workflows resolve the repository from their own location, so the checkout drive and the terminal's current directory are not part of their contract. Every script the menu offers carries a Header, the comment-based help block the launcher reads to build its menu: see *Adding a script* below before writing one.
+Everything here runs under PowerShell 7. The entry point is [`menu.ps1`](menu.ps1), the launcher of [Deckle Scripts](https://github.com/louisfifre/deckle-scripts), installed here with three of its packs and its Settings folder; Deckle's own scripts sit beside the installed ones, in the folders the menu shows as levels, and every one stays usable from a terminal or a `launch.json` profile for automation. Tracked workflows resolve the repository from their own location, so the checkout drive and the terminal's current directory are not part of their contract. Every script the menu offers carries a Header, the comment-based help block the launcher reads to build its menu: see *Adding a script* below before writing one.
 
 The launcher's vocabulary (levels, actions, variants, executions, journals, results) is defined in the `GLOSSARY.md` of the deckle-scripts repository, not here.
 
@@ -37,51 +37,54 @@ pwsh -NoProfile -File scripts/menu.ps1 -Snapshot Confirmation
 
 `-Snapshot` accepts `Menu`, `Level`, `Confirmation`, `Execution` and `Logs`. An agent inspects the interface through `-Snapshot` and `-List` only; the repository instructions forbid it to start the interactive launcher and to `-Run` an action that stops or relaunches the resident app.
 
-What the menu offers today, level by level. The *Installed* column marks the scripts that come from Deckle Scripts; the others are Deckle's own.
+What the menu offers today, level by level. A row reads as its action followed by its cells; the cells of one row may come from several scripts. The *Installed* column marks the scripts that come from Deckle Scripts; the others are Deckle's own.
 
-| Level | Section | Action | Script | Installed |
+| Level | Row | Cell | Script | Installed |
 |---|---|---|---|:---:|
-| root | Run | Launch (Release / Debug) | [`launch-app.ps1`](launch-app.ps1) | |
-|  |  | Build & run, Build (no run) (Release / Debug) | [`build-run.ps1`](build-run.ps1) | |
-|  | Project | Update README pulse | [`update-readme-stats.ps1`](update-readme-stats.ps1) `-Commit` | |
-|  | Checks | Check scripts | [`check-scripts.ps1`](check-scripts.ps1) | yes |
-|  | (none, first row) | Check for updates, Update Deckle Scripts | [`update.ps1`](update.ps1) | yes |
-| **Setup** | Repository | Preview scaffold, Scaffold repository files | [`setup/scaffold.ps1`](setup/scaffold.ps1) | yes |
-|  |  | Preview hooks, Install git hooks | [`setup/install-hooks.ps1`](setup/install-hooks.ps1) | yes |
-|  |  | Preview tree, Regenerate TREE.md | [`setup/update-tree.ps1`](setup/update-tree.ps1) | yes |
-|  | Machine | Plan the bootstrap (dry run), Bootstrap dev environment | [`setup/bootstrap-dev-env.ps1`](setup/bootstrap-dev-env.ps1) | |
-|  |  | Set up runtime assets | [`setup/setup-assets.ps1`](setup/setup-assets.ps1) | |
-| **Git and versions** | Version | Record version (patch / minor / major) | [`git/record-version.ps1`](git/record-version.ps1) `-Apply` | yes |
-|  | Release | Mark release | [`git/mark-release.ps1`](git/mark-release.ps1) `-Apply` | yes |
-|  | Changelog | Preview changelog, Write changelog | [`git/changelog.ps1`](git/changelog.ps1) | yes |
-| **Maintenance** | Statistics | Repository statistics | [`maintenance/stats.ps1`](maintenance/stats.ps1) | |
-|  |  | Context inventory | [`maintenance/inspect-context.ps1`](maintenance/inspect-context.ps1) | |
-|  | Cleanup | Preview build outputs, Clean build outputs | [`maintenance/clean.ps1`](maintenance/clean.ps1) | yes |
-|  |  | Clean app build outputs | [`maintenance/clean-app.ps1`](maintenance/clean-app.ps1) | |
-|  |  | Inspect native folder, Clean native folder | [`maintenance/clean-native.ps1`](maintenance/clean-native.ps1) | |
-|  | AI sessions | Inspect AI sessions, Reset AI sessions | [`maintenance/reset-agent-state.ps1`](maintenance/reset-agent-state.ps1) | yes |
-|  | Checks | Validate WinUI resources | [`maintenance/validate-resources.ps1`](maintenance/validate-resources.ps1) | |
-|  |  | Sweep exposable source values | [`maintenance/sweep-exposables.ps1`](maintenance/sweep-exposables.ps1) | |
-| **.NET** | | Stop .NET build servers | [`dotnet/stop-build-servers.ps1`](dotnet/stop-build-servers.ps1) | yes |
-| **Release** | Release | Prepare app artifacts, Publish app release | [`release/publish-app.ps1`](release/publish-app.ps1) | |
-|  |  | Prepare native runtime, Publish native runtime | [`release/publish-native-runtime.ps1`](release/publish-native-runtime.ps1) | |
-|  |  | Build Anytype backend | [`release/build-anytype-backend.ps1`](release/build-anytype-backend.ps1) | |
+| root | Launch | Release, Debug | [`launch-app.ps1`](launch-app.ps1) | |
+|  | Build & run | Release, Debug | [`build-run.ps1`](build-run.ps1) | |
+|  | Build (no run) | Release, Debug | [`build-run.ps1`](build-run.ps1) `-NoRun` | |
+|  | README pulse | update | [`update-readme-stats.ps1`](update-readme-stats.ps1) `-Commit` | |
+|  | Statistics | repository | [`stats.ps1`](stats.ps1) | |
+|  |  | context | [`inspect-context.ps1`](inspect-context.ps1) | |
+| **Setup** | Scaffold | preview, apply | [`setup/scaffold.ps1`](setup/scaffold.ps1) | yes |
+|  | Git hooks | preview, install | [`setup/install-hooks.ps1`](setup/install-hooks.ps1) | yes |
+|  | Dev environment | plan, bootstrap | [`setup/bootstrap-dev-env.ps1`](setup/bootstrap-dev-env.ps1) | |
+|  | Runtime assets | set up | [`setup/setup-assets.ps1`](setup/setup-assets.ps1) | |
+| **Versions** | Record version | patch, minor, major | [`git/record-version.ps1`](git/record-version.ps1) `-Apply` | yes |
+|  | Changelog | preview, write | [`git/changelog.ps1`](git/changelog.ps1) | yes |
+| **Maintenance** | Preview | build outputs | [`maintenance/clean.ps1`](maintenance/clean.ps1) | yes |
+|  |  | native folder | [`maintenance/clean-native.ps1`](maintenance/clean-native.ps1) `-WhatIf` | |
+|  |  | AI sessions | [`maintenance/reset-agent-state.ps1`](maintenance/reset-agent-state.ps1) | yes |
+|  | Check | WinUI resources | [`maintenance/validate-resources.ps1`](maintenance/validate-resources.ps1) | |
+|  |  | exposable values | [`maintenance/sweep-exposables.ps1`](maintenance/sweep-exposables.ps1) | |
+|  | Clean | build outputs | [`maintenance/clean.ps1`](maintenance/clean.ps1) `-Apply` | yes |
+|  |  | .NET build servers | [`maintenance/stop-build-servers.ps1`](maintenance/stop-build-servers.ps1) | yes |
+|  |  | native folder | [`maintenance/clean-native.ps1`](maintenance/clean-native.ps1) | |
+|  |  | AI sessions | [`maintenance/reset-agent-state.ps1`](maintenance/reset-agent-state.ps1) `-Apply` | yes |
+| **Release** | App release | prepare, publish | [`release/publish-app.ps1`](release/publish-app.ps1) | |
+|  | Native runtime | prepare, publish | [`release/publish-native-runtime.ps1`](release/publish-native-runtime.ps1) | |
+|  | Anytype backend | build | [`release/build-anytype-backend.ps1`](release/build-anytype-backend.ps1) | |
+| **Settings** | Deckle Scripts | check updates, update | [`settings/update.ps1`](settings/update.ps1) | yes |
+|  | Scripts | check | [`settings/check-scripts.ps1`](settings/check-scripts.ps1) | yes |
+
+Logs and Quit close the root in a column of their own on the right, Logs above Quit, and Settings is always the last folder, facing Quit.
 
 A script with a `-Target` parameter opens the worktree Selector before running, so the same action serves the main checkout and every worktree. The menu asks nothing else: the choices a script needs are its Variants, declared in its Header.
 
 ## Installed from Deckle Scripts
 
-The launcher (`menu.ps1`, `lib/launcher/`, `lib/terminal-interaction*`, `lib/script-discovery*`), the shared helpers it ships (`lib/action-summary.ps1`, `lib/native-console.ps1`, `lib/script-output.ps1`, `lib/build-outputs.ps1`, `lib/build-server-cleanup.ps1`, `lib/version.ps1`, `lib/manifest.ps1`, `lib/agent-state-maintenance*`, `lib/hooks/`, `lib/templates/`), `check-scripts.ps1`, `update.ps1` and the four packs `setup`, `git`, `maintenance` and `dotnet` are installed from the deckle-scripts repository at one of its version tags. [`.deckle-scripts/manifest.json`](.deckle-scripts/manifest.json) is the record of that install: the source, the version, the packs and every installed file with its hash.
+The launcher (`menu.ps1`, `lib/launcher/`, `lib/terminal-interaction*`, `lib/script-discovery*`), the shared helpers it ships (`lib/action-summary.ps1`, `lib/native-console.ps1`, `lib/script-output.ps1`, `lib/build-outputs.ps1`, `lib/build-server-cleanup.ps1`, `lib/version.ps1`, `lib/manifest.ps1`, `lib/agent-state-maintenance*`, `lib/hooks/`, `lib/templates/`), the `settings` folder with `update.ps1` and `check-scripts.ps1`, and the three packs `setup`, `git` and `maintenance` are installed from the deckle-scripts repository at one of its version tags. [`.deckle-scripts/manifest.json`](.deckle-scripts/manifest.json) is the record of that install: the source, the version, the packs and every installed file with its hash.
 
 Those files are never edited in this repository. An improvement, a fix or a new pack goes to the deckle-scripts repository, and comes back through an update:
 
 ```powershell
 # Preview what the next version would change; nothing is written.
-pwsh -NoProfile -File scripts/update.ps1
-pwsh -NoProfile -File scripts/update.ps1 -Version v0.2.0
+pwsh -NoProfile -File scripts/settings/update.ps1
+pwsh -NoProfile -File scripts/settings/update.ps1 -Version v0.2.0
 
 # Apply it. A file edited locally since its installation stops the update unless -Force.
-pwsh -NoProfile -File scripts/update.ps1 -Apply
+pwsh -NoProfile -File scripts/settings/update.ps1 -Apply
 ```
 
 The update never overwrites a file it does not own, so Deckle's own scripts, library modules and tests sit safely beside the installed ones. Updating is the maintainer's act, never an agent's.
@@ -95,10 +98,9 @@ Each script is callable directly from a terminal; the menu is purely additive. C
 | [`launch-app.ps1`](launch-app.ps1) | Kill running `Deckle.exe` and launch the freshest already-built app executable. Does not build. | `-Configuration Debug\|Release`, `-Target <worktree>`, `-Wait` |
 | [`build-run.ps1`](build-run.ps1) | Kill running `Deckle.exe`, build via `dotnet build` on four low-priority MSBuild nodes that exit with the build, and launch the freshly built exe through ShellExecute. With `-NoRun`, build only: the running instance is never stopped, and the build is refused before compiling when that instance runs from the build's own output directory (see *Running instance and build outputs*). | `-Configuration Debug\|Release`, `-NoRun`, `-Wait`, `-Target <worktree>`, `-NoAutoRestart` |
 | [`update-readme-stats.ps1`](update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. `-Commit` creates a local README-only commit and refuses unrelated tracked changes; it never pushes. Also used without `-Commit` by the monthly GitHub Action. | `-Target <worktree>`, `-ReadmePath <path>`, `-Commit` |
-| [`maintenance/clean-app.ps1`](maintenance/clean-app.ps1) | Kill running `Deckle.exe` (it locks the output), stop .NET build servers left by manual/agent builds, then remove the consolidated `artifacts/{bin,obj,publish,package}/` plus any straggler `bin/`+`obj/` under `src/`, `tests/`, and benchmark study folders. Keeps `artifacts/Deckle-v*` release staging unless `-IncludeReleases`. Guards against symlinks / junctions. Reports total freed bytes. The pack's `clean.ps1` beside it knows nothing of Deckle's layout, so this one stays the cleanup to use here. | `-Target <worktree>`, `-IncludeReleases` |
 | [`maintenance/clean-native.ps1`](maintenance/clean-native.ps1) | Bring `<UserDataRoot>\native\` back to the catalog of `NativeRuntime.cs`: delete the DLLs it does not name (an older bundle's `libwhisper.dll` and MinGW runtime) and `.partial` leftovers, then report the catalog DLLs that are missing. Does not stop Deckle; a DLL in use is reported and kept. | `-DataRoot <path>`, `-WhatIf` |
-| [`maintenance/stats.ps1`](maintenance/stats.ps1) | Walk every `.csproj` under `src/`, build a per-file inventory, highlight C# files over 400 / 600 effective LOC and other text files over 500 / 1000 raw lines, summarize modules by source LOC, list tracked repository file types dynamically, and print the per-file module table. Git defines the repository boundary, so ignored workspace data is excluded and tracked links are counted without traversal. Generated module files are also excluded. | `-Target <worktree>`, `-Json <path>`; `-PassThru` for structured output |
-| [`maintenance/inspect-context.ps1`](maintenance/inspect-context.ps1) | Inventory tracked Markdown documents by loading mode, Git modification date, additions over 1/7/30 days, heading count, exact size and line count, plus a model-independent token estimate. Separates automatically scoped instructions from references that must be opened explicitly. | `-Target <worktree>`, `-RelativePath <path>`, `-LoadingMode <name[]>`, `-DocumentType <name[]>`, `-SkipActivity`, `-Json <path>`; `-PassThru` includes documents |
+| [`stats.ps1`](stats.ps1) | Walk every `.csproj` under `src/`, build a per-file inventory, highlight C# files over 400 / 600 effective LOC and other text files over 500 / 1000 raw lines, summarize modules by source LOC, list tracked repository file types dynamically, and print the per-file module table. Git defines the repository boundary, so ignored workspace data is excluded and tracked links are counted without traversal. Generated module files are also excluded. | `-Target <worktree>`, `-Json <path>`; `-PassThru` for structured output |
+| [`inspect-context.ps1`](inspect-context.ps1) | Inventory tracked Markdown documents by loading mode, Git modification date, additions over 1/7/30 days, heading count, exact size and line count, plus a model-independent token estimate. Separates automatically scoped instructions from references that must be opened explicitly. | `-Target <worktree>`, `-RelativePath <path>`, `-LoadingMode <name[]>`, `-DocumentType <name[]>`, `-SkipActivity`, `-Json <path>`; `-PassThru` includes documents |
 | [`maintenance/sweep-exposables.ps1`](maintenance/sweep-exposables.ps1) | Inventory tracked source values that may deserve configuration or design arbitration without building or loading Deckle. Writes one JSON object per line with its source location. | `-RepoRoot <worktree>`, `-OutputPath <path>`, `-Quiet` |
 | [`maintenance/validate-resources.ps1`](maintenance/validate-resources.ps1) | Audit every module `Resources.resw` against static `x:Uid`, `Loc.Get*`, descriptor literals, and the explicit dynamic-key allowlist ([`resource-validation.allowlist.json`](resource-validation.allowlist.json)). Reports missing keys, required-mirror divergences, and potentially unused copies without modifying resources. | `-Target <worktree>`, `-Allowlist <path>`, `-Json <path>`, `-FailOnFindings` |
 | [`setup/setup-assets.ps1`](setup/setup-assets.ps1) | Populate `<UserDataRoot>\native\` and `<UserDataRoot>\models\` with the whisper.cpp DLLs, the Visual C++ runtime, and Whisper / Silero VAD models. Idempotent. See *Native runtime* below for the three sourcing modes. | `-DataRoot <path>`, `-FromRelease X.Y.Z`, `-WhisperRepo <path>`, `-WhisperBuildDir <name>`, `-WithLarge`, `-Force` |
@@ -146,13 +148,13 @@ What each part does:
 - The block is first in the file, `#Requires` comes after it, and one blank line follows `#>`. A `#Requires` line or a comment glued directly above the block voids it silently.
 - `.SYNOPSIS` is the label the menu shows, one line. `.DESCRIPTION` is its help sentence. `TREE.md` takes them as the script's name and description.
 - `.NOTES` carries the menu keys as `key: value` lines, the same syntax as the front matter of the Markdown files: `section` groups the script with others at the same level, `order` ranks it within the level, and each `action:` line declares one Action. Sections sort by the smallest `order` they hold, so the orders are numbered across the sections of a level and the hundreds digit ranks the section: at the root, Run 1xx and Project 2xx. Without an `action:` line the script declares one Action, its synopsis as label, no arguments.
-- An `action:` line reads `Label | arguments | danger | sentence`. The label comes first, then the arguments appended verbatim to the invocation (may be empty), then in any order the word `danger`, which gives the Danger treatment, and a sentence, which makes the Confirmation a separate step naming that sentence.
+- An `action:` line reads `Label | arguments | danger | sentence`. The label comes first, then the arguments appended verbatim to the invocation (may be empty), then in any order the word `danger`, which gives the Danger treatment, and a sentence, which makes the Confirmation a separate step naming that sentence. A label written `Row / cell` makes the Action one cell of a named row: every script of the same level and section that names the same row adds its cells to that one line, which is how `Clean` gathers cells from four scripts. An Action with Variants already fills its own row and cannot name one.
 - The Variants of every Action come from the script's single `[ValidateSet]` parameter of scalar type, in declaration order, the default preselected; activating a Variant passes that value. A `[ValidateSet]` on an array parameter is a Filter, not an axis. A script that needs two axes is two scripts. A `-Target` parameter opens the worktree Selector in the launcher.
 - Inside the block no line may start with a dot followed by letters except a help keyword, and no keyword may be invented: the block dies silently, with no error.
 
-A subfolder of `scripts/` is a menu level, except `lib`, `tests` and the dot-folders: an Access labelled by its name, or by the `name` of its `README.md` front matter, which may also carry `description` and `order`. The packs bring their own level READMEs (`setup`, `git`, `maintenance`, `dotnet`); Deckle's `release/README.md` is the one level of its own. Scripts at the root of `scripts/` sit on the root menu. Within a level, Action Rows come first grouped by `section`, then the subfolders as one group. Inside a section the Actions come in three bands: scripts with Variants first, then plain Actions, then Danger Actions last; `order` sorts inside each band.
+A subfolder of `scripts/` is a menu level, except `lib`, `tests` and the dot-folders: an Access labelled by its name, or by the `name` of its `README.md` front matter, which may also carry `description` and `order`. The packs bring their own level READMEs (`setup`, `git`, `maintenance`, `settings`); Deckle's `release/README.md` is the one level of its own. Scripts at the root of `scripts/` sit on the root menu. Within a level, Action Rows come first grouped by `section`, then the subfolders as one group, with Settings always last. Inside a section the rows come in three bands: scripts with Variants first, then plain Actions and named rows, then Danger Actions and rows whose cells are all Danger last; `order` sorts inside each band, a named row taking the smallest `order` of its cells. Sections inside a folder carry no heading.
 
-A script without a Header stays out of the menu on purpose, so the folder can keep a script that served once. [`check-scripts.ps1`](check-scripts.ps1) lists the hidden scripts and fails on a Header that is present but voided, on a `-Pick` parameter (the menu asks, a script never does), on a `-Target` that is not a plain string and on a file encoded with a byte order mark; run it before closing a change that touches a script, and `tests/lib/script-layout.tests.ps1` enforces the same rule.
+A script without a Header stays out of the menu on purpose, so the folder can keep a script that served once. [`settings/check-scripts.ps1`](settings/check-scripts.ps1) lists the hidden scripts and fails on a Header that is present but voided, on a `-Pick` parameter (the menu asks, a script never does), on a `-Target` that is not a plain string and on a file encoded with a byte order mark; run it before closing a change that touches a script, and `tests/lib/script-layout.tests.ps1` enforces the same rule.
 
 ## Library — `lib/`
 
@@ -175,7 +177,7 @@ PowerShell tests live under `tests/lib/` for the modules above and `tests/comman
 
 ## Git hooks — TREE.md and commit identity
 
-Two repository hooks come from the setup pack, installed into `.git/hooks/` by [`setup/install-hooks.ps1`](setup/install-hooks.ps1) `-Apply` (or the menu's *Install git hooks*), to run once after a clone since installed hooks are not versioned. An existing hook that differs is kept aside as a `.bak` file, and the installer also registers the `TREE.md` merge driver.
+Two repository hooks come from the setup pack, installed into `.git/hooks/` by [`setup/install-hooks.ps1`](setup/install-hooks.ps1) `-Apply` (or the menu's *Git hooks › install*), to run once after a clone since installed hooks are not versioned. An existing hook that differs is kept aside as a `.bak` file, and the installer also registers the `TREE.md` merge driver.
 
 The `pre-commit` hook regenerates [`TREE.md`](../TREE.md) at the repo root before every commit and stages it automatically, so the repo always carries an up-to-date view of its tracked tree. It delegates to [`setup/update-tree.ps1`](setup/update-tree.ps1), which rebuilds `TREE.md` from `git ls-files`: tracked files only, each Markdown file annotated from its front matter and each script from its Header, through the same discovery module as the menu. It can also run by hand to refresh outside a commit: `pwsh scripts/setup/update-tree.ps1 -Apply`.
 
@@ -205,7 +207,7 @@ The bump rules, the categories and the release-notes path are the `deckle-versio
 
 ## Generated docs automation
 
-The root README carries a small generated `Development pulse` section bounded by invisible HTML comments. Regenerate it locally through the menu (`Update README pulse`) or directly:
+The root README carries a small generated `Development pulse` section bounded by invisible HTML comments. Regenerate it locally through the menu (*README pulse › update*) or directly:
 
 ```powershell
 pwsh scripts/update-readme-stats.ps1 -Commit
@@ -215,7 +217,7 @@ GitHub also runs `.github/workflows/update-readme-stats.yml` monthly and on manu
 
 ## Native runtime — three sourcing modes
 
-The app's first launch opens the in-app setup wizard when native DLLs or models are missing. The menu also exposes `Set up runtime assets` as a developer shortcut over `setup/setup-assets.ps1`, which provisions the native DLL catalog of `NativeRuntime.cs` (whisper.cpp with its dynamic ggml backends, one per CPU level plus Vulkan, and the 4 Visual C++ runtime DLLs) through one of three paths:
+The app's first launch opens the in-app setup wizard when native DLLs or models are missing. The menu also exposes *Runtime assets › set up* as a developer shortcut over `setup/setup-assets.ps1`, which provisions the native DLL catalog of `NativeRuntime.cs` (whisper.cpp with its dynamic ggml backends, one per CPU level plus Vulkan, and the 4 Visual C++ runtime DLLs) through one of three paths:
 
 1. **`-FromRelease <X.Y.Z>` (default for non-rebuilders).** Fetches `deckle-native-<X.Y.Z>.zip` from the Deckle GitHub Release and extracts the catalog DLLs in place. No local whisper.cpp clone needed. Same source as the first-run wizard's auto-download path.
 
@@ -229,7 +231,7 @@ The Whisper models are pulled from HuggingFace; the Silero VAD model is pulled f
 
 ## Running instance and build outputs
 
-Deckle is single-instance (a resident mutex rejects a second process) and holds its executable plus every loaded assembly open for as long as it runs. Two consequences shape the scripts that touch it. Scripts that *replace* the running instance — `launch-app.ps1`, `build-run.ps1` without `-NoRun`, and `maintenance/clean-app.ps1`, which deletes its files — stop it first; that is their contract, stated in each script. Scripts that only *build* must not: `build-run.ps1 -NoRun` leaves the running instance alone, whatever worktree or configuration it was launched from. The single case where that instance would block the build is a build into the very directory it runs from (`artifacts\bin\Deckle.App\<configuration>` of the same checkout): the script then refuses before compiling and names the PID, the directory, and the ways out — build Debug, build from another worktree, or drop `-NoRun` to replace the instance — rather than failing on locked files after a full compile and leaving the output half-copied. Agent validation builds (Debug x64, see the repository instructions) therefore never conflict with a Release instance.
+Deckle is single-instance (a resident mutex rejects a second process) and holds its executable plus every loaded assembly open for as long as it runs. Two consequences shape the scripts that touch it. Scripts that *replace* the running instance — `launch-app.ps1` and `build-run.ps1` without `-NoRun` — stop it first; that is their contract, stated in each script. Scripts that only *build* must not: `build-run.ps1 -NoRun` leaves the running instance alone, whatever worktree or configuration it was launched from. The single case where that instance would block the build is a build into the very directory it runs from (`artifacts\bin\Deckle.App\<configuration>` of the same checkout): the script then refuses before compiling and names the PID, the directory, and the ways out — build Debug, build from another worktree, or drop `-NoRun` to replace the instance — rather than failing on locked files after a full compile and leaving the output half-copied. Agent validation builds (Debug x64, see the repository instructions) therefore never conflict with a Release instance.
 
 ## Post-build auto-relaunch
 
