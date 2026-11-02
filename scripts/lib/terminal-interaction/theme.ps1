@@ -129,10 +129,11 @@ function Get-TerminalPresentationStyle {
         'Banner' { [ConsoleColor]::Blue }
         'Context' { [ConsoleColor]::DarkGray }
         'Section' { [ConsoleColor]::Magenta }
-        'SectionSeparator' { [ConsoleColor]::Gray }
+        # The rule after a Section heading stays muted chrome, below the
+        # heading it extends.
+        'SectionSeparator' { [ConsoleColor]::DarkGray }
         # A plain Action reads as body text, like a Variant; only the label of
-        # an Action Row, or of a compact Action Group, takes the teal of the
-        # launcher's row titles.
+        # an Action Row takes the teal of the launcher's row titles.
         'Action' { $null }
         'ActionLabel' { [ConsoleColor]::Cyan }
         'ActionVariant' { $null }
@@ -159,7 +160,6 @@ function Get-TerminalPresentationStyle {
             'Banner' { $designed.Title }
             'Section' { $designed.Section }
             'PanelTitle' { $designed.Section }
-            'SectionSeparator' { $designed.Selection }
             'PanelSeparator' { $designed.Body }
             'Action' { $designed.Body }
             'ActionLabel' { $designed.ActionLabel }

@@ -65,6 +65,8 @@ function New-CatalogRows {
             ScriptName = $Header.Name
             RelativePath = $RelativePath
             Label = $action.Label
+            Row = $action.Row
+            Cell = $action.Cell
             Description = $Header.Description
             Arguments = $action.Arguments
             Danger = $action.Danger
@@ -141,7 +143,8 @@ function New-CatalogLevel {
         if ($rows.Count -eq 0) { continue }
         # A Section ranks its rows in three bands: Action Rows with Variants
         # first, as one unit per script so they stay consecutive; then the
-        # plain Actions; then the Danger Actions, last, where a hand does not
+        # plain Actions and the named rows; then the Danger Actions, and the
+        # named rows made only of Danger cells, last, where a hand does not
         # reach them by accident. Inside a band the script's order and
         # synopsis sort, then the action's position, so the actions of one
         # script keep their declaration order.
@@ -152,6 +155,35 @@ function New-CatalogLevel {
         foreach ($row in $rows) {
             $rank = if ($row.Danger) { 2 } else { 1 }
             $scriptEntries.Add([pscustomobject]@{ Item = @($row); Order = $header.Order; Label = $header.Label; Rank = $rank; Position = $row.ActionIndex })
+        }
+    }
+
+    # The cells that name one row, across the scripts of the folder, become one
+    # unit: sorted inside by their scripts, ranked by the smallest order among
+    # them, so the row stays whole wherever it sorts.
+    $namedRows = [System.Collections.Specialized.OrderedDictionary]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $units = [System.Collections.Generic.List[object]]::new()
+    foreach ($entry in $scriptEntries) {
+        $first = $entry.Item[0]
+        if ($null -eq $first.Row) { $units.Add($entry); continue }
+        $key = "$($first.Section)`n$($first.Row)"
+        if (-not $namedRows.Contains($key)) {
+            $namedRows[$key] = [System.Collections.Generic.List[object]]::new()
+            $units.Add($key)
+        }
+        $namedRows[$key].Add($entry)
+    }
+    $scriptEntries = foreach ($unit in $units) {
+        if ($unit -isnot [string]) { $unit; continue }
+        $cells = $namedRows[$unit]
+        $ordered = @($cells | Where-Object { $null -ne $_.Order } | ForEach-Object Order)
+        $allDanger = @($cells | Where-Object { -not $_.Item[0].Danger }).Count -eq 0
+        [pscustomobject]@{
+            Item = @(Sort-CatalogEntries -Entries @($cells))
+            Order = if ($ordered.Count -gt 0) { [int]($ordered | Measure-Object -Minimum).Minimum } else { $null }
+            Label = $cells[0].Item[0].Row
+            Rank = if ($allDanger) { 2 } else { 1 }
+            Position = 0
         }
     }
 

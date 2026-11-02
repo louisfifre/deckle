@@ -6,10 +6,9 @@
     overwrites what exists: whatever is already there is kept as it is. The
     preview lists what would be created and what is kept.
 .NOTES
-    section: Repository
     order: 100
-    action: Preview scaffold |
-    action: Scaffold repository files | -Apply
+    action: Scaffold / preview |
+    action: Scaffold / apply | -Apply
 #>
 
 [CmdletBinding()]

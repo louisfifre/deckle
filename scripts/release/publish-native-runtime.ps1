@@ -7,10 +7,9 @@
     Release of the Deckle repo and extracts it into the user data folder.
     With -Publish the zip is also published as a native-vX.Y.Z release via gh.
 .NOTES
-    section: Release
     order: 120
-    action: Prepare native runtime |
-    action: Publish native runtime | -Publish | danger | Publishes a public GitHub Release of the native runtime.
+    action: Native runtime / prepare |
+    action: Native runtime / publish | -Publish | danger | Publishes a public GitHub Release of the native runtime.
 #>
 
 # The zip stays flat: NativeRuntime.InstallFromZipAsync looks each DLL up by

@@ -7,10 +7,9 @@
     repository, the installed hooks are not, so a fresh clone runs this once.
     An existing hook that differs is kept aside as a .bak file.
 .NOTES
-    section: Repository
     order: 110
-    action: Preview hooks |
-    action: Install git hooks | -Apply
+    action: Git hooks / preview |
+    action: Git hooks / install | -Apply
 #>
 
 [CmdletBinding()]

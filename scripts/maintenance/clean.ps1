@@ -8,10 +8,9 @@
     tracked file. Without the apply switch it only lists what it would remove
     and what it keeps.
 .NOTES
-    section: Cleanup
     order: 200
-    action: Preview build outputs |
-    action: Clean build outputs | -Apply | danger | Deletes the build output folders that pass the three locks.
+    action: Preview / build outputs |
+    action: Clean / build outputs | -Apply | danger | Deletes the build output folders that pass the three locks.
 #>
 
 [CmdletBinding()]

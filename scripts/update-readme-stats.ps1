@@ -9,7 +9,7 @@
 .NOTES
     section: Project
     order: 210
-    action: Update README pulse | -Commit
+    action: README pulse / update | -Commit
 #>
 
 [CmdletBinding()]

@@ -7,10 +7,9 @@
     Without the apply switch it only validates the plan and changes nothing.
     The reset needs the exact confirmation phrase.
 .NOTES
-    section: AI sessions
     order: 300
-    action: Inspect AI sessions |
-    action: Reset AI sessions | -Apply -Confirmation 'RESET LOCAL AI SESSIONS' | danger | Deletes local Codex and Claude Code session data for the current account.
+    action: Preview / AI sessions |
+    action: Clean / AI sessions | -Apply -Confirmation 'RESET LOCAL AI SESSIONS' | danger | Deletes local Codex and Claude Code session data for the current account.
 #>
 
 [CmdletBinding()]

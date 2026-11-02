@@ -1,7 +1,7 @@
 ---
-name: Git and versions
-description: Versions as tags, release marks and the changelog.
+name: Versions
+description: Versions as tags and the changelog.
 order: 150
 ---
 
-Versions are annotated git tags; these scripts record them, mark releases and write the changelog.
+Versions are annotated git tags; these scripts record them and write the changelog; mark-release.ps1 marks a release by hand.

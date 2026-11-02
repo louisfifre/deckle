@@ -9,9 +9,8 @@
     machine, not to a repository, so every one is stopped, and a build in
     progress is interrupted. There is no preview: the script acts immediately.
 .NOTES
-    section: .NET
-    order: 100
-    action: Stop .NET build servers | | danger | Stops every MSBuild and Roslyn build server of the machine, which interrupts a build in progress.
+    order: 210
+    action: Clean / .NET build servers | | danger | Stops every MSBuild and Roslyn build server of the machine, which interrupts a build in progress.
 #>
 
 [CmdletBinding()]

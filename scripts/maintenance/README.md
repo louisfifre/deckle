@@ -1,9 +1,9 @@
 ---
 name: Maintenance
-description: Cleanups of the repository and of the local agent state.
+description: Previews and cleanups of the build outputs, the machine's .NET build servers and the local agent state.
 order: 200
 ---
 
 # Maintenance
 
-Cleanups of the repository and of the local agent state.
+Previews and cleanups of the build outputs, the machine's .NET build servers and the local agent state.
