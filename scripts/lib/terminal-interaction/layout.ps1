@@ -492,8 +492,13 @@ function Add-TerminalActionMenuBody {
 
     for ($sectionIndex = 0; $sectionIndex -lt $layoutSections.Count; $sectionIndex++) {
         $section = $layoutSections[$sectionIndex]
-        $previousSection = if ($sectionIndex -gt 0) { $layoutSections[$sectionIndex - 1] } else { $null }
-        if ($sectionIndex -gt 0 -and (-not $section.Compact -or -not $previousSection.Compact)) {
+        # A blank line parts Sections only where a heading opens or closes
+        # one. Rows with no heading between them, an untitled group then
+        # compact Action Groups, all read as rows of one list: label column on
+        # the left, choices on the right, each on the next line.
+        $hasHeading = -not [string]::IsNullOrEmpty($section.Label)
+        $previousHasHeading = $sectionIndex -gt 0 -and -not [string]::IsNullOrEmpty($layoutSections[$sectionIndex - 1].Label)
+        if ($sectionIndex -gt 0 -and ($hasHeading -or $previousHasHeading)) {
             [void](Add-TerminalFrameLine -Frame $Frame)
         }
         if (-not [string]::IsNullOrEmpty($section.Label)) {

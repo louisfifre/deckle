@@ -42,6 +42,11 @@ function New-LauncherExecuteDecision {
     $banner = $Context.Banner
     $scriptsRoot = $Context.ScriptsRoot
     $repositoryRoot = $Context.RepositoryRoot
+    # GetNewClosure binds the runner to a new dynamic module that sees only
+    # the global scope, while menu.ps1 loads these functions in a script scope
+    # below it: the runner carries the ones it calls as variables.
+    $invokeExecution = ${function:Invoke-LauncherExecution}
+    $toExecutionView = ${function:ConvertTo-LauncherExecutionView}
     return [pscustomobject]@{
         Kind = 'Execute'
         Mode = $Mode
@@ -53,9 +58,10 @@ function New-LauncherExecuteDecision {
             # GetNewClosure copies the local scope only, so the inner
             # closure gets its own copy of what the outer one captured.
             $paintBanner = $banner
-            $publish = { param($current) & $Paint (ConvertTo-LauncherExecutionView -Record $current -Banner $paintBanner) }.GetNewClosure()
-            $final = Invoke-LauncherExecution -Record $record -ScriptsRoot $scriptsRoot -RepositoryRoot $repositoryRoot -Publish $publish
-            return ConvertTo-LauncherExecutionView -Record $final -Banner $banner
+            $paintView = $toExecutionView
+            $publish = { param($current) & $Paint (& $paintView -Record $current -Banner $paintBanner) }.GetNewClosure()
+            $final = & $invokeExecution -Record $record -ScriptsRoot $scriptsRoot -RepositoryRoot $repositoryRoot -Publish $publish
+            return & $toExecutionView -Record $final -Banner $banner
         }.GetNewClosure()
     }
 }

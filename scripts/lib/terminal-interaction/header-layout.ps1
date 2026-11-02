@@ -85,37 +85,25 @@ function Get-TerminalCommandRowLength {
     return $length
 }
 
-function Get-TerminalHeaderCommandRows {
+function Select-TerminalHeaderCommands {
     param(
         [Parameter(Mandatory)][object[]]$Commands,
-        [Parameter(Mandatory)][int]$FirstWidth,
-        [Parameter(Mandatory)][int]$SecondWidth
+        [Parameter(Mandatory)][int]$Width
     )
 
-    $first = [System.Collections.Generic.List[object]]::new()
-    $second = [System.Collections.Generic.List[object]]::new()
-    $firstLength = 0
-    $secondLength = 0
+    # Commands enter by priority while they fit, then show in display order.
+    $selected = [System.Collections.Generic.List[object]]::new()
+    $length = 0
     foreach ($command in @($Commands | Sort-Object Priority, DisplayOrder)) {
         $commandLength = Get-TerminalCommandLength -Command $command
-        $nextFirstLength = if ($first.Count -eq 0) { $commandLength } else { $firstLength + 3 + $commandLength }
-        if ($nextFirstLength -le $FirstWidth) {
-            $first.Add($command)
-            $firstLength = $nextFirstLength
-            continue
-        }
-
-        $nextSecondLength = if ($second.Count -eq 0) { $commandLength } else { $secondLength + 3 + $commandLength }
-        if ($nextSecondLength -le $SecondWidth) {
-            $second.Add($command)
-            $secondLength = $nextSecondLength
+        $nextLength = if ($selected.Count -eq 0) { $commandLength } else { $length + 3 + $commandLength }
+        if ($nextLength -le $Width) {
+            $selected.Add($command)
+            $length = $nextLength
         }
     }
 
-    return [pscustomobject]@{
-        First = @($first | Sort-Object DisplayOrder)
-        Second = @($second | Sort-Object DisplayOrder)
-    }
+    return @($selected | Sort-Object DisplayOrder)
 }
 
 function Add-TerminalCommandRow {
@@ -151,15 +139,15 @@ function Add-TerminalHeader {
 
     # The logo opens the frame when the terminal affords it: it is drawn in
     # Unicode block glyphs, needs the width of its widest line, and must
-    # leave the body a dozen lines under the three Header lines. A short,
-    # narrow or ASCII-only terminal keeps the Header to its two rails.
+    # leave the body a dozen lines under the two Header lines. A short,
+    # narrow or ASCII-only terminal keeps the Header to its title and rule.
     $logoLines = @($Logo | Where-Object { -not [string]::IsNullOrEmpty($_) })
     $logoWidth = 0
     foreach ($logoLine in $logoLines) { $logoWidth = [Math]::Max($logoWidth, $logoLine.Length) }
     $minimumBodyHeight = 12
     $showLogo = $logoLines.Count -gt 0 -and $SupportsUnicode -and
         $Frame.Width -ge ($logoWidth + 2 * $left) -and
-        ($Frame.Height - ($logoLines.Count + 1) - 3) -ge $minimumBodyHeight
+        ($Frame.Height - ($logoLines.Count + 1) - 2) -ge $minimumBodyHeight
     if ($showLogo) {
         foreach ($logoLine in $logoLines) {
             $line = Add-TerminalFrameLine -Frame $Frame
@@ -167,46 +155,34 @@ function Add-TerminalHeader {
         }
         [void](Add-TerminalFrameLine -Frame $Frame)
     }
+    # One title line, the rule right under it: the banner, then the View's
+    # place as a breadcrumb after a chevron, and the commands at the end of the
+    # line. Commands keep the room the banner leaves them, by priority; the
+    # breadcrumb takes what remains and shortens, the Header never grows.
     $banner = Limit-TerminalText -Text $View.Banner -Width $contentWidth
-    $context = if ($View.Context) {
-        Limit-TerminalText -Text ([string]$View.Context) -Width $contentWidth
-    } else {
-        ''
-    }
-    $firstCommandWidth = [Math]::Max(0, $right - ($left + $banner.Length + 4))
-    $secondCommandWidth = if ($context.Length -gt 0) {
-        [Math]::Max(0, $right - ($left + $context.Length + 4))
-    } else {
-        $contentWidth
-    }
+    $commandWidth = [Math]::Max(0, $right - ($left + $banner.Length + 4))
     $commands = @(Get-TerminalHeaderCommands -View $View -SupportsUnicode $SupportsUnicode)
-    $commandRows = Get-TerminalHeaderCommandRows `
-        -Commands $commands `
-        -FirstWidth $firstCommandWidth `
-        -SecondWidth $secondCommandWidth
+    $commandRow = @(Select-TerminalHeaderCommands -Commands $commands -Width $commandWidth)
+    $commandLength = if ($commandRow.Count -gt 0) { Get-TerminalCommandRowLength -Commands $commandRow } else { 0 }
 
     $titleLine = Add-TerminalFrameLine -Frame $Frame
     Add-TerminalFrameSegment -Frame $Frame -LineIndex $titleLine -X $left -Text $banner -PresentationRole Banner
-    if ($commandRows.First.Count -gt 0) {
-        $firstLength = Get-TerminalCommandRowLength -Commands $commandRows.First
+    if ($View.Context) {
+        $chevron = ' > '
+        $contextX = $left + $banner.Length + $chevron.Length
+        $commandGap = if ($commandRow.Count -gt 0) { 3 } else { 0 }
+        $context = Limit-TerminalText -Text ([string]$View.Context) -Width ($right - $commandLength - $commandGap - $contextX)
+        if ($context.Length -gt 0) {
+            Add-TerminalFrameSegment -Frame $Frame -LineIndex $titleLine -X ($left + $banner.Length) -Text $chevron -PresentationRole Context
+            Add-TerminalFrameSegment -Frame $Frame -LineIndex $titleLine -X $contextX -Text $context -PresentationRole Context
+        }
+    }
+    if ($commandRow.Count -gt 0) {
         Add-TerminalCommandRow `
             -Frame $Frame `
             -LineIndex $titleLine `
-            -Commands $commandRows.First `
-            -StartX ($right - $firstLength)
-    }
-
-    $contextLine = Add-TerminalFrameLine -Frame $Frame
-    if ($context.Length -gt 0) {
-        Add-TerminalFrameSegment -Frame $Frame -LineIndex $contextLine -X $left -Text $context -PresentationRole Context
-    }
-    if ($commandRows.Second.Count -gt 0) {
-        $secondLength = Get-TerminalCommandRowLength -Commands $commandRows.Second
-        Add-TerminalCommandRow `
-            -Frame $Frame `
-            -LineIndex $contextLine `
-            -Commands $commandRows.Second `
-            -StartX ($right - $secondLength)
+            -Commands $commandRow `
+            -StartX ($right - $commandLength)
     }
 
     $separatorLine = Add-TerminalFrameLine -Frame $Frame

@@ -7,6 +7,7 @@
     -Apply copies it. The install never overwrites a file it does not own, and a
     file edited locally since its installation stops the update unless -Force.
 .NOTES
+    section: Deckle Scripts
     order: 900
     action: Check for updates |
     action: Update Deckle Scripts | -Apply | Replaces the installed launcher, library and packs with the selected version.

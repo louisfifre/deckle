@@ -87,14 +87,20 @@ function Invoke-TerminalExecution {
     # follows its latest page, and keys pressed meanwhile are dropped so they
     # never activate a target of the finished View.
     $state = $ViewStack[$ViewStack.Count - 1]
-    $lastFrame = $PreviousFrame
+    # GetNewClosure binds the callback to a new dynamic module: it no longer
+    # sees this module's private functions, so it carries them as variables,
+    # and an assignment inside it never reaches this scope, so the frame on
+    # screen lives in an object both share.
+    $screen = [pscustomobject]@{ Frame = $PreviousFrame }
+    $stateFrame = ${function:Get-TerminalStateFrame}
+    $writeFrame = ${function:Write-TerminalInteractionFrame}
     $paint = {
         param($view)
         $state.View = $view
         $state.JournalOffset = [int]::MaxValue
-        $frame = Get-TerminalStateFrame -ViewStack $ViewStack -State $state -HostState $HostState -Logo $Logo
-        Write-TerminalInteractionFrame -Frame $frame -HostState $HostState -PreviousFrame $lastFrame
-        $lastFrame = $frame
+        $frame = & $stateFrame -ViewStack $ViewStack -State $state -HostState $HostState -Logo $Logo
+        & $writeFrame -Frame $frame -HostState $HostState -PreviousFrame $screen.Frame
+        $screen.Frame = $frame
     }.GetNewClosure()
     & $paint $state.View
     $final = & $Decision.Runner $paint
@@ -104,7 +110,7 @@ function Invoke-TerminalExecution {
     }
     $state.FocusedTargetId = $null
     Clear-TerminalHostInput -State $HostState
-    return $lastFrame
+    return $screen.Frame
 }
 
 function Get-TerminalEscapeDecision {

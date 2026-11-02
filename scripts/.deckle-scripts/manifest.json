@@ -1,13 +1,13 @@
 {
   "source": "https://github.com/louisfifre/deckle-scripts",
-  "version": "0.1.1",
+  "version": "0.1.5",
   "packs": [
     "dotnet",
     "git",
     "maintenance",
     "setup"
   ],
-  "installedAt": "2026-10-30T20:03:03Z",
+  "installedAt": "2026-11-02T17:25:04Z",
   "files": {
     "scripts/check-scripts.ps1": "2cbf05dbe6d49651e338c1f99c6e24cdfbfc2ce1a3a89143359d940260c295cf",
     "scripts/dotnet/README.md": "6f575b4da880bcd87e17d667d7362a57da841ba5cd764fa705bde52a3b7c4423",
@@ -30,7 +30,7 @@
     "scripts/lib/launcher/action-log.ps1": "9cce65c92afa7ce8e963a691406c6e7368d474424cc58d732c6de793ae1bf1b3",
     "scripts/lib/launcher/discovered-catalog.ps1": "da0bf339ccc6f778631c682662be98a098a4b8a22e142a245241ab48632b4394",
     "scripts/lib/launcher/execution.ps1": "f225870b70bcff661133bf16a84e59367191f908cd4751b60b9f12d4c4419581",
-    "scripts/lib/launcher/flows.ps1": "ceb64ac681dcddb089a566ab9c7cde7e9a38f2215244047064b28054b2739a5a",
+    "scripts/lib/launcher/flows.ps1": "d832cae3ff8e0406e79038c9bcedbf4dbbba263c1468cd56230de6e68d79a2dc",
     "scripts/lib/launcher/launcher.ps1": "187f0f1dbcf90ab87df2d190bcee85d805c594d862538f56bf20f0c88a400bc3",
     "scripts/lib/launcher/logs.ps1": "a3d820698837f3a9d22a7e97dc420da72df99d08eddf059ed3939dad9117537b",
     "scripts/lib/manifest.ps1": "2e0d2cb49dc0992d25f9e6952ce4196d7f5b98fffd76674d16da7328bd171c66",
@@ -51,10 +51,10 @@
     "scripts/lib/terminal-interaction.psm1": "a4530f851a63a2f5c81e670afd09fbf0a919313ba81d4ab3cb113c4eac6081fc",
     "scripts/lib/terminal-interaction/contracts.ps1": "a78ab3425b444e01c709fb27ed6e746862fba2838aba55ab140ebaaeeca619b1",
     "scripts/lib/terminal-interaction/execution-layout.ps1": "8bce4c3f50a76d96c209ec01e2bf044d3cec66a462cc08dcfaace626617ffc33",
-    "scripts/lib/terminal-interaction/header-layout.ps1": "a4b44320d2fe8d14cc15177ce26eb6e6e8dfe0dc947c94f3fb666f9566a72f00",
+    "scripts/lib/terminal-interaction/header-layout.ps1": "1a1dbd6b347c6d01145bcc0f3d0bb85e3ffb6d4d4d50dadbb8ecddb3b6b866bf",
     "scripts/lib/terminal-interaction/host.ps1": "37b2f6df634d6c164e655b1d43d19b5416a1d14b9449fe89596d8ec078e01584",
-    "scripts/lib/terminal-interaction/interaction.ps1": "7f27fadac515b70ce823dc47642dbcd81f89d7132d80e8e8766c93122a5728d0",
-    "scripts/lib/terminal-interaction/layout.ps1": "0f2b0dc5f15fcf8f84f84985a54657257ba7573cc1fe177021d21ae3793f8923",
+    "scripts/lib/terminal-interaction/interaction.ps1": "ddb82c03382d00abfdcbcaed9cfa9709a0c6e45f51ba54d089104e4de660f845",
+    "scripts/lib/terminal-interaction/layout.ps1": "a4bda78cd8e4f30dc7e34c3ea3380c4817cb2e08aa52e92babfed38c58551474",
     "scripts/lib/terminal-interaction/navigation-layout.ps1": "c94b6b96468399a26055eff9ca22eeee5016f5580464a2be4b24b86d39878356",
     "scripts/lib/terminal-interaction/navigation.ps1": "e96e509c6da6c349f5cc9e8d4c273e4ea424a81f041a2b330b7f6f0e8ca6d7bf",
     "scripts/lib/terminal-interaction/preparation-layout.ps1": "1501b5de1fef4eed0213fc87e48b0f2a5cabee747a6b496d97fc5d572b568c93",
@@ -70,6 +70,6 @@
     "scripts/setup/install-hooks.ps1": "67829ce1d90402747e6cbc218284e2757ced63cd00e1cdc2f120a427315cca38",
     "scripts/setup/scaffold.ps1": "0f4561ca213026400da0a8bbc5db040b3d356338ddfd75faf375b684dc5ab4cc",
     "scripts/setup/update-tree.ps1": "17547f86fe2fe00f5888d7ed60fb5f2825c73fb501469412849ed5b706144265",
-    "scripts/update.ps1": "1db2534ddfc14497ed85eef471cc5ff4538add2c200d2319b0962b1287391ad1"
+    "scripts/update.ps1": "7da0f04d071e47a6b969564134d3f2dd0fe70d1534b51198ec923b1486f701b5"
   }
 }
