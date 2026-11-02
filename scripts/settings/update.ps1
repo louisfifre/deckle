@@ -7,10 +7,9 @@
     -Apply copies it. The install never overwrites a file it does not own, and a
     file edited locally since its installation stops the update unless -Force.
 .NOTES
-    section: Deckle Scripts
-    order: 900
-    action: Check for updates |
-    action: Update Deckle Scripts | -Apply | Replaces the installed launcher, library and packs with the selected version.
+    order: 100
+    action: Deckle Scripts / check updates |
+    action: Deckle Scripts / update | -Apply | Replaces the installed launcher, library and packs with the selected version.
 #>
 
 #Requires -Version 7.0
@@ -28,7 +27,7 @@ param(
 $ErrorActionPreference = 'Stop'
 # In an installed copy this script replaces itself and the library while it
 # runs. That is safe: PowerShell has already parsed the files it executes.
-$LibDir = Join-Path $PSScriptRoot 'lib'
+$LibDir = Join-Path (Split-Path -Parent $PSScriptRoot) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 . (Join-Path $LibDir 'version.ps1')
 . (Join-Path $LibDir 'manifest.ps1')
@@ -146,7 +145,7 @@ function Get-OfferedPacks {
     param([Parameter(Mandatory)][string]$SourceRoot)
 
     $folders = Get-ChildItem -LiteralPath (Join-Path $SourceRoot 'scripts') -Directory -Force |
-        Where-Object { $_.Name -notin @('lib', 'tests') -and -not $_.Name.StartsWith('.') }
+        Where-Object { $_.Name -notin @('lib', 'settings', 'tests') -and -not $_.Name.StartsWith('.') }
     return @(Sort-OrdinalStrings -Value @($folders | ForEach-Object Name))
 }
 
@@ -158,11 +157,10 @@ function Get-OwnedFiles {
 
     $scriptsRoot = Join-Path $SourceRoot 'scripts'
     $paths = [System.Collections.Generic.List[string]]::new()
-    foreach ($name in @('menu.ps1', 'update.ps1', 'check-scripts.ps1')) {
-        $path = Join-Path $scriptsRoot $name
-        if (Test-Path -LiteralPath $path -PathType Leaf) { $paths.Add($path) }
-    }
-    $folders = @(Join-Path $scriptsRoot 'lib') + @($Packs | ForEach-Object { Join-Path $scriptsRoot $_ })
+    $menu = Join-Path $scriptsRoot 'menu.ps1'
+    if (Test-Path -LiteralPath $menu -PathType Leaf) { $paths.Add($menu) }
+    # The library and the launcher's own Settings folder ship with every pack choice.
+    $folders = @((Join-Path $scriptsRoot 'lib'), (Join-Path $scriptsRoot 'settings')) + @($Packs | ForEach-Object { Join-Path $scriptsRoot $_ })
     foreach ($folder in $folders) {
         if (-not (Test-Path -LiteralPath $folder -PathType Container)) { continue }
         foreach ($file in Get-ChildItem -LiteralPath $folder -Recurse -File -Force) { $paths.Add($file.FullName) }
@@ -322,7 +320,7 @@ try {
     $selectedPacks = @(Sort-OrdinalStrings -Value @($selectedPacks | Select-Object -Unique))
 
     $sourceFiles = Get-OwnedFiles -SourceRoot $checkout.Root -Packs $selectedPacks
-    foreach ($required in @('scripts/menu.ps1', 'scripts/update.ps1')) {
+    foreach ($required in @('scripts/menu.ps1', 'scripts/settings/update.ps1')) {
         if (-not $sourceFiles.Contains($required)) { throw "The source '$Source' has no $required, so it is not a Deckle Scripts source." }
     }
     $installedVersion = if ($manifest) { [string]$manifest.version } else { 'not installed' }

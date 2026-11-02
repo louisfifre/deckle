@@ -142,6 +142,18 @@ function ConvertTo-HeaderAction {
     if ([string]::IsNullOrWhiteSpace($label)) {
         return [pscustomobject]@{ Action = $null; Error = 'action line has an empty label' }
     }
+    # A label written `Row / cell` places the Action as one cell of a named
+    # row, which the Actions of several scripts of one folder may share.
+    $row = $null
+    $cell = $label
+    $separator = $label.IndexOf(' / ', [StringComparison]::Ordinal)
+    if ($separator -ge 0) {
+        $row = $label.Substring(0, $separator).Trim()
+        $cell = $label.Substring($separator + 3).Trim()
+        if ($row -eq '' -or $cell -eq '') {
+            return [pscustomobject]@{ Action = $null; Error = "action '$label' names an empty row or cell" }
+        }
+    }
     $arguments = if ($segments.Count -ge 2) { $segments[1] } else { '' }
     $danger = $false
     $confirmation = $null
@@ -157,6 +169,8 @@ function ConvertTo-HeaderAction {
     return [pscustomobject]@{
         Action = [pscustomobject]@{
             Label = $label
+            Row = $row
+            Cell = $cell
             Arguments = $arguments
             Danger = $danger
             Confirmation = $confirmation
@@ -253,7 +267,7 @@ function Read-ScriptHeader {
     $actionPairs = @($keys | Where-Object { $_.Key -eq 'action' })
     if ($actionPairs.Count -eq 0) {
         if ($header.Label -ne '') {
-            $actions.Add([pscustomobject]@{ Label = $header.Label; Arguments = ''; Danger = $false; Confirmation = $null })
+            $actions.Add([pscustomobject]@{ Label = $header.Label; Row = $null; Cell = $header.Label; Arguments = ''; Danger = $false; Confirmation = $null })
         }
     } else {
         foreach ($pair in $actionPairs) {
@@ -277,6 +291,12 @@ function Read-ScriptHeader {
                 IsDefault = $axis.HasConstantDefault -and [string]$axis.DefaultValue -eq $_
             }
         })
+    }
+
+    # A Variant row already belongs to its Action; a cell of a named row
+    # cannot carry Variants of its own.
+    if ($header.Variants.Count -gt 0 -and @($actions | Where-Object { $null -ne $_.Row }).Count -gt 0) {
+        $invalid.Add('an action with Variants cannot name a row')
     }
 
     if ($invalid.Count -gt 0) {

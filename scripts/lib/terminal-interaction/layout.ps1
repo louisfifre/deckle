@@ -229,14 +229,14 @@ function Add-TerminalSectionHeading {
 function ConvertTo-TerminalMenuLayoutSections {
     param(
         [Parameter(Mandatory)][object[]]$Sections,
-        [switch]$CompactSections
+        [switch]$Nested
     )
 
     $layoutSections = [System.Collections.Generic.List[object]]::new()
     foreach ($section in $Sections) {
         $rows = [System.Collections.Generic.List[object]]::new()
         $pendingTargets = [System.Collections.Generic.List[object]]::new()
-        $trailingTarget = $null
+        $trailingTargets = @(if ($section.PSObject.Properties['Trailing']) { $section.Trailing })
         # Consecutive plain targets form one row; the renderer fills the
         # grid's columns with them and wraps the rest, like Variants. Right
         # under an Action Row, such a row opens with a blank line: its targets
@@ -248,7 +248,7 @@ function ConvertTo-TerminalMenuLayoutSections {
                 Kind = 'TargetRow'
                 Label = ''
                 Targets = @($pendingTargets)
-                TrailingTarget = $null
+                TrailingTargets = @()
                 Spaced = $rows.Count -gt 0 -and $rows[$rows.Count - 1].Kind -eq 'ActionRow'
             })
             $pendingTargets.Clear()
@@ -263,46 +263,34 @@ function ConvertTo-TerminalMenuLayoutSections {
                     Kind = 'ActionRow'
                     Label = $item.Label
                     Variants = @($item.Variants)
-                    TrailingTarget = $null
+                    TrailingTargets = @()
                     Spaced = $false
                 })
                 continue
             }
 
-            if ($item.PresentationRole -eq 'Exit' -and $itemIndex -eq ($section.Items.Count - 1)) {
-                $trailingTarget = $item
+            # A Section without declared trailing targets still seats a final
+            # Exit target at the right end of its last line.
+            if ($trailingTargets.Count -eq 0 -and $item.PresentationRole -eq 'Exit' -and $itemIndex -eq ($section.Items.Count - 1)) {
+                $trailingTargets = @($item)
                 continue
             }
             $pendingTargets.Add($item)
         }
         & $flushTargets
-        if ($null -ne $trailingTarget) {
-            # The Exit target seats at the right end of the menu's last line.
+        if ($trailingTargets.Count -gt 0) {
+            # The trailing targets seat at the right end of the Section's last
+            # lines, the last of them on its very last line.
             if ($rows.Count -eq 0) {
-                $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @(); TrailingTarget = $trailingTarget; Spaced = $false })
-            } else {
-                $rows[$rows.Count - 1].TrailingTarget = $trailingTarget
+                $rows.Add([pscustomobject]@{ Kind = 'TargetRow'; Label = ''; Targets = @(); TrailingTargets = @(); Spaced = $false })
             }
+            $rows[$rows.Count - 1].TrailingTargets = $trailingTargets
         }
-        # In a nested menu, a labelled Section of independent Actions only is
-        # a compact Action Group: its label titles its first row, as an Action
-        # Row label does, and no heading or rule is drawn. Its Actions keep
-        # their own intents; they never become Variants.
-        $independentActions = @(
-            $section.Items | Where-Object {
-                -not ($_.PSObject.Properties['Kind'] -and $_.Kind -eq 'ActionRow') -and
-                $_.IntentKind -eq 'Action'
-            }
-        )
-        $compact = $CompactSections -and
-            -not [string]::IsNullOrEmpty($section.Label) -and
-            $section.Items.Count -gt 0 -and
-            $independentActions.Count -eq $section.Items.Count
-        if ($compact) { $rows[0].Label = $section.Label }
+        # A nested menu draws no Section heading: its Sections only order the
+        # rows, which read as one list.
         $layoutSections.Add([pscustomobject]@{
-            Label = if ($compact) { '' } else { $section.Label }
+            Label = if ($Nested) { '' } else { $section.Label }
             Rows = @($rows)
-            Compact = $compact
         })
     }
     return @($layoutSections)
@@ -351,8 +339,8 @@ function Get-TerminalMenuGrid {
     foreach ($section in $LayoutSections) {
         foreach ($row in $section.Rows) {
             if ($row.Kind -eq 'ActionRow') { $columnCount = [Math]::Max($columnCount, @($row.Variants).Count) }
-            if ($null -ne $row.TrailingTarget) {
-                $trailingWidth = [Math]::Max($trailingWidth, [Math]::Max(8, $row.TrailingTarget.Label.Length + 2))
+            foreach ($trailing in $row.TrailingTargets) {
+                $trailingWidth = [Math]::Max($trailingWidth, [Math]::Max(8, $trailing.Label.Length + 2))
             }
         }
     }
@@ -397,16 +385,17 @@ function Add-TerminalMenuRow {
     $left = $Grid.Left
     if ($Row.Spaced) { [void](Add-TerminalFrameLine -Frame $Frame) }
     if ($Wide) {
-        $line = Add-TerminalFrameLine -Frame $Frame
-        if ($line -lt 0) { return }
-        if ($Row.Label) {
-            Add-TerminalFrameSegment -Frame $Frame -LineIndex $line -X $left -Text (Limit-TerminalText -Text $Row.Label -Width $Grid.LabelWidth) -PresentationRole ActionLabel
-        }
         $targets = @(if ($Row.Kind -eq 'ActionRow') { $Row.Variants } else { $Row.Targets })
+        $trailing = @($Row.TrailingTargets)
         $columns = [Math]::Max(1, $Grid.ColumnCount)
-        # Exit reserves nothing from the grid: only a cell that would run
-        # under it, on the row's last line, is shortened to stop before it.
-        $exitX = if ($null -ne $Row.TrailingTarget) { $Grid.Right - $Grid.TrailingWidth } else { $Grid.Right + 1 }
+        # The trailing targets reserve nothing from the grid: only a cell that
+        # would run under one of them is shortened to stop before it.
+        $exitX = if ($trailing.Count -gt 0) { $Grid.Right - $Grid.TrailingWidth } else { $Grid.Right + 1 }
+
+        # First the cells take their lines, counted from the row's first one;
+        # drawing waits until the row knows how many lines it spans.
+        $cells = [System.Collections.Generic.List[object]]::new()
+        $lineOffset = 0
         $lastLineStart = [Math]::Floor(($targets.Count - 1) / $columns) * $columns
         $column = 0
         for ($i = 0; $i -lt $targets.Count; $i++) {
@@ -414,8 +403,7 @@ function Add-TerminalMenuRow {
             if ($i -gt 0 -and $column -eq $columns) {
                 # Cells beyond the last column wrap beneath the first cell,
                 # never beneath the label, without a blank line.
-                $line = Add-TerminalFrameLine -Frame $Frame
-                if ($line -lt 0) { return }
+                $lineOffset++
                 $column = 0
             }
             $x = $Grid.TargetX + ($column * ($Grid.ColumnWidth + $Grid.Gap))
@@ -423,27 +411,58 @@ function Add-TerminalMenuRow {
             if ($i -ge $lastLineStart -and ($x + $width) -gt ($exitX - $Grid.Gap)) {
                 $width = $exitX - $Grid.Gap - $x
                 if ($width -lt 8) {
-                    # Too little room beside Exit: the cell takes a new line
-                    # instead, which becomes the row's last line.
-                    $line = Add-TerminalFrameLine -Frame $Frame
-                    if ($line -lt 0) { return }
+                    # Too little room beside the last trailing target: the
+                    # cell takes a new line instead, the row's last line.
+                    $lineOffset++
                     $column = 0
                     $x = $Grid.TargetX
                     $width = $Grid.ColumnWidth
                     $lastLineStart = $i
                 }
             }
+            $cells.Add([pscustomobject]@{ Target = $targets[$i]; Line = $lineOffset; X = $x; Width = $width })
+        }
+        $lineCount = $lineOffset + 1
+
+        # The trailing targets above the last one sit on the lines above it; a
+        # row too short for them takes the blank lines that open it, and adds
+        # the ones missing. A cell under one of them is shortened too.
+        $above = [Math]::Max(0, $trailing.Count - $lineCount)
+        $blank = 0
+        for ($index = $Frame.Lines.Count - 1; $index -ge 0 -and $blank -lt $above; $index--) {
+            if ($Frame.Lines[$index].Segments.Count -gt 0) { break }
+            $blank++
+        }
+        for ($missing = $above - $blank; $missing -gt 0; $missing--) { [void](Add-TerminalFrameLine -Frame $Frame) }
+        foreach ($cell in $cells) {
+            $fromLast = $lineCount - 1 - $cell.Line
+            if ($fromLast -ge 1 -and $fromLast -lt $trailing.Count -and ($cell.X + $cell.Width) -gt ($exitX - $Grid.Gap)) {
+                $cell.Width = [Math]::Max(1, $exitX - $Grid.Gap - $cell.X)
+            }
+        }
+
+        $start = $Frame.Lines.Count
+        for ($index = 0; $index -lt $lineCount; $index++) {
+            if ((Add-TerminalFrameLine -Frame $Frame) -lt 0) { break }
+        }
+        if ($Row.Label) {
+            Add-TerminalFrameSegment -Frame $Frame -LineIndex $start -X $left -Text (Limit-TerminalText -Text $Row.Label -Width $Grid.LabelWidth) -PresentationRole ActionLabel
+        }
+        foreach ($cell in $cells) {
+            if (($start + $cell.Line) -ge $Frame.Lines.Count) { continue }
             Add-TerminalTarget `
                 -Frame $Frame `
-                -Target $targets[$i] `
-                -LineIndex $line `
-                -X $x `
-                -Width $width `
+                -Target $cell.Target `
+                -LineIndex ($start + $cell.Line) `
+                -X $cell.X `
+                -Width $cell.Width `
                 -FocusedTargetId $FocusedTargetId `
                 -AsActionVariant:($Row.Kind -eq 'ActionRow')
         }
-        if ($null -ne $Row.TrailingTarget) {
-            Add-TerminalTarget -Frame $Frame -Target $Row.TrailingTarget -LineIndex $line -X $exitX -Width $Grid.TrailingWidth -FocusedTargetId $FocusedTargetId
+        for ($index = 0; $index -lt $trailing.Count; $index++) {
+            $line = $start + $lineCount - $trailing.Count + $index
+            if ($line -ge $Frame.Lines.Count) { continue }
+            Add-TerminalTarget -Frame $Frame -Target $trailing[$index] -LineIndex $line -X $exitX -Width $Grid.TrailingWidth -FocusedTargetId $FocusedTargetId
         }
         return
     }
@@ -453,7 +472,7 @@ function Add-TerminalMenuRow {
         Add-TerminalFrameSegment -Frame $Frame -LineIndex $labelLine -X $left -Text $Row.Label -PresentationRole ActionLabel
     }
     $targets = @(if ($Row.Kind -eq 'ActionRow') { $Row.Variants } else { $Row.Targets })
-    if ($null -ne $Row.TrailingTarget) { $targets += $Row.TrailingTarget }
+    $targets += @($Row.TrailingTargets)
     foreach ($target in $targets) {
         $line = Add-TerminalFrameLine -Frame $Frame
         Add-TerminalTarget `
@@ -479,7 +498,7 @@ function Add-TerminalActionMenuBody {
     $layoutSections = @(
         ConvertTo-TerminalMenuLayoutSections `
             -Sections $View.Sections `
-            -CompactSections:($null -ne $View.BackTarget)
+            -Nested:($null -ne $View.BackTarget)
     )
     $grid = Get-TerminalMenuGrid -LayoutSections $layoutSections -Width $Frame.Width
 
@@ -493,9 +512,9 @@ function Add-TerminalActionMenuBody {
     for ($sectionIndex = 0; $sectionIndex -lt $layoutSections.Count; $sectionIndex++) {
         $section = $layoutSections[$sectionIndex]
         # A blank line parts Sections only where a heading opens or closes
-        # one. Rows with no heading between them, an untitled group then
-        # compact Action Groups, all read as rows of one list: label column on
-        # the left, choices on the right, each on the next line.
+        # one. Rows with no heading between them, such as the Sections of a
+        # nested menu, all read as rows of one list: label column on the
+        # left, choices on the right, each on the next line.
         $hasHeading = -not [string]::IsNullOrEmpty($section.Label)
         $previousHasHeading = $sectionIndex -gt 0 -and -not [string]::IsNullOrEmpty($layoutSections[$sectionIndex - 1].Label)
         if ($sectionIndex -gt 0 -and ($hasHeading -or $previousHasHeading)) {

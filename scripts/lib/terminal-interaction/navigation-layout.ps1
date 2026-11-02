@@ -12,7 +12,7 @@ function Get-TerminalNavigationGrid {
     $layoutSections = @(
         ConvertTo-TerminalMenuLayoutSections `
             -Sections $OwnerActionMenu.Sections `
-            -CompactSections:($null -ne $OwnerActionMenu.BackTarget)
+            -Nested:($null -ne $OwnerActionMenu.BackTarget)
     )
     return Get-TerminalMenuGrid -LayoutSections $layoutSections -Width $Width
 }

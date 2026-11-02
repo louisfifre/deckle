@@ -85,23 +85,35 @@ function ConvertTo-LauncherDiscoveredView {
 
     $sections = [System.Collections.Generic.List[object]]::new()
     foreach ($catalogSection in $Level.Sections) {
-        $items = @(foreach ($row in $catalogSection.Rows) { ConvertTo-LauncherDiscoveredItem -Row $row })
-        $sections.Add((New-TerminalSection -Label $catalogSection.Label -Items $items))
+        $items = [System.Collections.Generic.List[object]]::new()
+        $rows = @($catalogSection.Rows)
+        for ($index = 0; $index -lt $rows.Count; $index++) {
+            $row = $rows[$index]
+            if ($null -eq $row.Row) { $items.Add((ConvertTo-LauncherDiscoveredItem -Row $row)); continue }
+            # The catalog keeps the cells of one named row consecutive; each
+            # stays an Action of its own, shown under the row's label.
+            $cells = [System.Collections.Generic.List[object]]::new()
+            while ($index -lt $rows.Count -and $rows[$index].Row -eq $row.Row) {
+                $cells.Add((New-LauncherDiscoveredActionTarget -Row $rows[$index] -Label $rows[$index].Cell))
+                $index++
+            }
+            $index--
+            $items.Add((New-TerminalActionRow -Label $row.Row -Variants @($cells)))
+        }
+        $sections.Add((New-TerminalSection -Label $catalogSection.Label -Items @($items)))
     }
 
     # A folder with no described script beneath it is not offered: opening
-    # it would show nothing to run.
-    $closingItems = [System.Collections.Generic.List[object]]::new()
-    foreach ($access in $Level.Accesses) {
-        if (-not $access.HasActions) { continue }
-        $closingItems.Add((New-LauncherDiscoveredAccessTarget -Level $access))
-    }
+    # it would show nothing to run. Settings belongs to the launcher and
+    # closes the list wherever its order would place it.
+    $accesses = @($Level.Accesses | Where-Object HasActions)
+    $accesses = @($accesses | Where-Object { $_.RelativePath -ne 'settings' }) + @($accesses | Where-Object { $_.RelativePath -eq 'settings' })
+    $closingItems = @($accesses | ForEach-Object { New-LauncherDiscoveredAccessTarget -Level $_ })
     if ($IsRoot) {
-        $closingItems.Add((New-LauncherLogsAccessTarget))
-        $closingItems.Add((New-LauncherQuitTarget))
-    }
-    if ($closingItems.Count -gt 0) {
-        $sections.Add((New-TerminalSection -Label $null -Items @($closingItems)))
+        $trailing = @((New-LauncherLogsAccessTarget), (New-LauncherQuitTarget))
+        $sections.Add((New-TerminalSection -Label $null -Items $closingItems -Trailing $trailing))
+    } elseif ($closingItems.Count -gt 0) {
+        $sections.Add((New-TerminalSection -Label $null -Items $closingItems))
     }
     if ($sections.Count -eq 0) {
         $empty = New-TerminalTarget `
@@ -199,7 +211,12 @@ function Test-LauncherConfirmationView {
 function Get-LauncherFirstTargetId {
     param([Parameter(Mandatory)][object]$View)
 
-    $first = $View.Sections[0].Items[0]
+    # A root with no script and no folder holds only its trailing Logs and
+    # Quit, so the first target is looked for there too.
+    $first = @($View.Sections | ForEach-Object {
+        $_.Items
+        if ($_.PSObject.Properties['Trailing']) { $_.Trailing }
+    } | Where-Object { $null -ne $_ })[0]
     if ($first.PSObject.Properties['Kind'] -and $first.Kind -eq 'ActionRow') { return $first.Variants[0].TargetId }
     return $first.TargetId
 }

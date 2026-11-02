@@ -1,13 +1,12 @@
-<#
-.SYNOPSIS
-    Mark a release
-.DESCRIPTION
-    Marks the version of HEAD as published with an annotated tag release/vX.Y.Z on the same commit. HEAD must carry a version tag. Preview by default; -Apply creates the tag. The tag is pushed only with -Push.
-.NOTES
-    section: Release
-    order: 110
-    action: Mark release | -Apply
-#>
+# mark-release.ps1 - Mark a release.
+#
+# Marks the version of HEAD as published with an annotated tag release/vX.Y.Z
+# on the same commit. HEAD must carry a version tag. Preview by default;
+# -Apply creates the tag. The tag is pushed only with -Push.
+#
+# Kept out of the launcher menu on purpose, with a plain comment instead of a
+# Header: a publication flow marks its release itself, and this script stays
+# the hand-run fallback.
 
 [CmdletBinding()]
 param(

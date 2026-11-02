@@ -72,9 +72,15 @@ function New-TerminalSection {
     param(
         # An empty label declares an untitled group: its items render without a title line.
         [Parameter(Mandatory)][AllowNull()][AllowEmptyString()][string]$Label,
-        [Parameter(Mandatory)][ValidateNotNullOrEmpty()][object[]]$Items
+        [Parameter(Mandatory)][AllowEmptyCollection()][object[]]$Items,
+        # Targets stacked at the right end of the Section's last lines, top to
+        # bottom, such as Logs above Quit; the grid reserves nothing for them.
+        [object[]]$Trailing = @()
     )
 
+    if ($Items.Count -eq 0 -and $Trailing.Count -eq 0) {
+        throw "Section '$Label' needs at least one item."
+    }
     foreach ($item in $Items) {
         $isActionRow = $item.PSObject.Properties['Kind'] -and $item.Kind -eq 'ActionRow'
         $isTarget = $null -ne $item.PSObject.Properties['IntentKind']
@@ -82,11 +88,17 @@ function New-TerminalSection {
             throw "Section '$Label' accepts only semantic targets and Action Rows."
         }
     }
+    foreach ($target in $Trailing) {
+        if ($null -eq $target.PSObject.Properties['IntentKind']) {
+            throw "Section '$Label' accepts only semantic targets as trailing targets."
+        }
+    }
 
     return [pscustomobject][ordered]@{
         PSTypeName = 'DeckleScripts.TerminalInteraction.Section'
         Label = $Label
         Items = @($Items)
+        Trailing = @($Trailing)
     }
 }
 
@@ -105,6 +117,9 @@ function Get-TerminalDescriptorTargets {
                 } else {
                     $targets.Add($item)
                 }
+            }
+            if ($section.PSObject.Properties['Trailing']) {
+                foreach ($target in $section.Trailing) { $targets.Add($target) }
             }
         }
     }

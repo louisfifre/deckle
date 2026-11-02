@@ -9,8 +9,8 @@
     a string, or a file encoded with a byte order mark. A script without a
     Header stays hidden by choice and does not fail the check.
 .NOTES
-    section: Checks
-    order: 900
+    order: 200
+    action: Scripts / check |
 #>
 
 [CmdletBinding()]
@@ -19,7 +19,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$LibDir = Join-Path $PSScriptRoot 'lib'
+$LibDir = Join-Path (Split-Path -Parent $PSScriptRoot) 'lib'
 . (Join-Path $LibDir 'action-summary.ps1')
 Import-Module (Join-Path $LibDir 'script-discovery.psm1') -Force
 
@@ -39,7 +39,7 @@ trap {
 $RepoRoot = if ($Target) {
     (Resolve-Path -LiteralPath $Target).ProviderPath
 } else {
-    Split-Path -Parent $PSScriptRoot
+    Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
 }
 $ScriptsRoot = Join-Path $RepoRoot 'scripts'
 if (-not (Test-Path -LiteralPath $ScriptsRoot -PathType Container)) {

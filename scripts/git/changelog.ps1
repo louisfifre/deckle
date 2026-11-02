@@ -4,10 +4,9 @@
 .DESCRIPTION
     Generates CHANGELOG.md in the Keep a Changelog format from the Conventional Commits history, one section per published version. No external tool and no network: plain git log and PowerShell. Preview prints the document; -Apply writes it.
 .NOTES
-    section: Changelog
     order: 120
-    action: Preview changelog |
-    action: Write changelog | -Apply
+    action: Changelog / preview |
+    action: Changelog / write | -Apply
 #>
 
 [CmdletBinding()]

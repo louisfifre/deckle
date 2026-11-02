@@ -34,7 +34,8 @@ function New-LauncherLogsAccessTarget {
         -TargetId 'access.logs' `
         -Label ('Logs' + [char]0x2026) `
         -IntentKind Access `
-        -Payload ([pscustomobject]@{ AccessId = 'logs' })
+        -Payload ([pscustomobject]@{ AccessId = 'logs' }) `
+        -PresentationRole Action
 }
 
 function ConvertTo-LauncherLogsView {
