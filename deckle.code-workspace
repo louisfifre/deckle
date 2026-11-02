@@ -9,20 +9,10 @@
 			"path": "../deckle-scripts"
 		},
 		{
-			"name": "skills",
-			"path": "../../skills"
+			"path": "../../worktrees/deckle"
 		},
 		{
-			"name": "home",
-			"path": "../home"
-		},
-		{
-			"name": "homelab",
-			"path": "../homelab"
-		},
-		{
-			"name": "worktrees",
-			"path": "../../worktrees"
+			"path": "../../worktrees/deckle-scripts"
 		}
 	],
 	"settings": {
