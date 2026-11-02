@@ -605,7 +605,7 @@ public sealed class LiveTranscriptionPipelineTests
         e.Payload![e.PayloadNames!.IndexOf(name)];
     // Starts a take, stops it once the backend has transcribed both scripted
     // utterances, and waits until the engine is back to Ready.
-    private static async Task RunOneTakeAsync(
+    internal static async Task RunOneTakeAsync(
         TranscriptionEngine engine, SequencedBackend backend, CancellationToken testCancellation)
     {
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
@@ -765,9 +765,9 @@ public sealed class LiveTranscriptionPipelineTests
     // The engine's test inference opens every take, so the first scripted call
     // is always that one, whether the model was loaded or not; the utterances
     // follow. Its text never reaches the take.
-    private const string TestInference = "test inference";
+    internal const string TestInference = "test inference";
 
-    private sealed class SequencedBackend : IAsrBackend
+    internal sealed class SequencedBackend : IAsrBackend
     {
         private readonly IReadOnlyList<string> _texts;
         private readonly object _gate = new();
@@ -784,12 +784,17 @@ public sealed class LiveTranscriptionPipelineTests
         public SequencedBackend(
             IReadOnlyList<string> texts,
             bool modelLoaded = true,
-            IReadOnlyList<TranscriptionSegment>? segments = null)
+            IReadOnlyList<TranscriptionSegment>? segments = null,
+            bool loadFails = false)
         {
             _texts = texts;
             _modelLoaded = modelLoaded;
             _scriptedSegments = segments;
+            _loadFails = loadFails;
         }
+
+        // The model never loads, as when the file is gone or the GPU refuses.
+        private readonly bool _loadFails;
 
         // When set, call i reports this segment instead of a perfect one.
         private readonly IReadOnlyList<TranscriptionSegment>? _scriptedSegments;
@@ -807,6 +812,9 @@ public sealed class LiveTranscriptionPipelineTests
 
         public Task<ModelLoadResult> LoadModelAsync(CancellationToken ct)
         {
+            if (_loadFails)
+                return Task.FromResult(new ModelLoadResult(false, 0, null, "load_failed"));
+
             _modelLoaded = true;
             return Task.FromResult(new ModelLoadResult(true, 0, "test", null));
         }

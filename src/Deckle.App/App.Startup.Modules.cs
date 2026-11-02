@@ -65,7 +65,8 @@ public partial class App
                 _engine = new TranscriptionEngine(
                     host,
                     backend,
-                    recovery: new DictationRecoveryStore(AppPaths.DictationRecoveryFilePath));
+                    recovery: new DictationRecoveryStore(AppPaths.DictationRecoveryFilePath),
+                    takeAudio: new TakeAudioRecoveryStore(AppPaths.TakeAudioRecoveryFilePath));
             });
         }
         else

@@ -412,6 +412,9 @@ public sealed partial class TranscriptionEngine
             _transcriptionId = System.Guid.NewGuid().ToString("N");
             DeckleWhispSource.Log.TranscriptionCorrelation(_transcriptionId);
             BeginTake(TakeKinds.Dictation);
+            // The take's audio goes to disk from the first frame on
+            // (TranscriptionEngine.TakeAudio.cs); the take's end settles it.
+            BeginTakeAudio();
 
             // The selected strategy owns capture, the backend call(s), and every
             // state transition through to Transcribing. It returns null when it
@@ -427,9 +430,10 @@ public sealed partial class TranscriptionEngine
                     : ProduceMonolithicAsync(recordCts.Token, primeTask))
                 .GetAwaiter().GetResult();
 
-            // The recovery file is cleared inside finalize, once the raw copy
-            // has landed (TranscriptionEngine.Recovery.cs). A take that ends
-            // here without that copy keeps it.
+            // The text recovery file is cleared inside finalize, once the raw
+            // copy has landed (TranscriptionEngine.Recovery.cs). A take that ends
+            // here without that copy keeps it. The audio file follows the take's
+            // end instead (TranscriptionEngine.TakeAudio.cs).
             if (produced is not null)
                 FinalizeTranscription(produced.Value, TranscriptionDelivery.Dictation);
         }

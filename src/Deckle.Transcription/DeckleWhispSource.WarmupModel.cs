@@ -156,6 +156,8 @@ public sealed partial class DeckleWhispSource
     //                     ≈ 0 means the recording hid the whole cold cost.
     //   during_recording (segmented)  — the consumer waited while capture ran;
     //                     a large value is hidden cost, not user-facing latency.
+    //   during_file_decode, during_recovery — the batch or the launch recovery
+    //                     waited for the model; nobody is recording meanwhile.
     [Event(EvtPrimeOverlap,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

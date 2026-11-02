@@ -1,4 +1,4 @@
-# Tree — crash-relaunch-once
+# Tree — transcription-robustness
 _Generated from `git ls-files` — do not edit by hand._
 
 ```
@@ -971,6 +971,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HudChrono.xaml.cs
 │   │   │   └── UtteranceCountdownState.cs
 │   │   ├── Model/
+│   │   │   ├── HudHidePolicy.cs
 │   │   │   ├── HudPalette.cs
 │   │   │   ├── HudState.cs
 │   │   │   └── MessageKind.cs
@@ -1657,10 +1658,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── PreparedFileProducer.cs
 │   │   │   ├── RewriteProfileSelection.cs
 │   │   │   ├── SampleLevels.cs
+│   │   │   ├── SystemMemorySnapshot.cs
 │   │   │   ├── TextMetrics.cs
 │   │   │   ├── TrailingNoisePad.cs
 │   │   │   ├── TranscriptFileWriter.cs
 │   │   │   ├── TranscriptionDelivery.cs
+│   │   │   ├── TranscriptionEngine.AudioRecovery.cs
 │   │   │   ├── TranscriptionEngine.BatchRewrite.cs
 │   │   │   ├── TranscriptionEngine.cs
 │   │   │   ├── TranscriptionEngine.FilePipeline.cs
@@ -1674,10 +1677,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptionEngine.StateMachine.cs
 │   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
 │   │   │   ├── TranscriptionEngine.Take.cs
+│   │   │   ├── TranscriptionEngine.TakeAudio.cs
 │   │   │   ├── TranscriptionEngine.Telemetry.cs
 │   │   │   └── TranscriptionEngine.Utterances.cs
 │   │   ├── Recovery/
-│   │   │   └── DictationRecoveryStore.cs
+│   │   │   ├── DictationRecoveryStore.cs
+│   │   │   ├── TakeAudioRecorder.cs
+│   │   │   ├── TakeAudioRecovery.cs
+│   │   │   └── TakeAudioRecoveryStore.cs
 │   │   ├── Setup/
 │   │   │   └── ModelEntry.cs
 │   │   ├── Streaming/
@@ -1712,6 +1719,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleWhispSource.Segments.cs
 │   │   ├── DeckleWhispSource.Streaming.cs
 │   │   ├── DeckleWhispSource.Take.cs
+│   │   ├── DeckleWhispSource.TakeAudio.cs
 │   │   ├── DeckleWhispSource.Telemetry.cs
 │   │   ├── DeckleWhispSource.Transcribe.cs
 │   │   ├── DeckleWhispSource.Ui.cs
@@ -2123,6 +2131,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
+│   │   ├── HudHidePolicyTests.cs
 │   │   ├── HudHotLoopCountTests.cs
 │   │   ├── HudMessageFitTests.cs
 │   │   ├── HudSettingsOverridesTests.cs
@@ -2401,10 +2410,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PhantomUtteranceBugNotes.md
 │   │   ├── PhantomUtteranceFilterTests.cs
 │   │   ├── PreparedFileChannelTests.cs
+│   │   ├── RecoverTakeFromAudioTests.cs
 │   │   ├── RewriteAvailabilityTests.cs
 │   │   ├── RewriteProfileSelectionTests.cs
 │   │   ├── SegmentedTranscriptionSessionTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
+│   │   ├── TakeAudioRecoveryEngineTests.cs
+│   │   ├── TakeAudioRecoveryStoreTests.cs
+│   │   ├── TakeAudioRecoveryTests.cs
+│   │   ├── TakeStartCheckBugNotes.md
+│   │   ├── TakeStartCheckTests.cs
 │   │   ├── TrailingNoisePadTests.cs
 │   │   ├── TranscriptFileWriterDiskTests.cs
 │   │   ├── TranscriptFileWriterTests.cs

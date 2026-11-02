@@ -76,7 +76,7 @@ public sealed partial class DeckleWhispSource
     // ── Worker lifecycle ────────────────────────────────────────────────
     //
     // One worker thread per take or file batch. worker (closed vocabulary):
-    // dictation | file. reached_idle false means Dispose won the race and the
+    // dictation | file | recovery. reached_idle false means Dispose won the race and the
     // engine did not return to Idle.
 
     [Event(EvtWorkerStarted,
@@ -109,7 +109,8 @@ public sealed partial class DeckleWhispSource
     // An exception swallowed during teardown, after the failure that matters
     // was already reported. site (closed vocabulary): prime_settle |
     // streaming_capture_teardown | file_decode_producer | recovery_temp_delete
-    // | file_length.
+    // | file_length | take_audio_truncate | take_audio_length | take_audio_close
+    // | take_audio_mark_attempted | take_audio_restore_attempted | take_audio_writer.
     [Event(EvtTeardownExceptionIgnored,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,

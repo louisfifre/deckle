@@ -311,14 +311,16 @@ public sealed partial class TranscriptionEngine : IDisposable
         ITranscriptionEngineHost host,
         IAsrBackend backend,
         IRewriteService? rewrite = null,
-        DictationRecoveryStore? recovery = null)
+        DictationRecoveryStore? recovery = null,
+        TakeAudioRecoveryStore? takeAudio = null)
         : this(
             host,
             backend,
             new MicrophoneCapture(),
             Win32ClipboardWriter.Instance,
             rewrite,
-            recovery)
+            recovery,
+            takeAudio)
     {
     }
 
@@ -328,7 +330,8 @@ public sealed partial class TranscriptionEngine : IDisposable
         IMicrophoneCapture capture,
         IClipboardWriter clipboard,
         IRewriteService? rewrite = null,
-        DictationRecoveryStore? recovery = null)
+        DictationRecoveryStore? recovery = null,
+        TakeAudioRecoveryStore? takeAudio = null)
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(backend);
@@ -340,6 +343,7 @@ public sealed partial class TranscriptionEngine : IDisposable
         _capture = capture;
         _clipboard = clipboard;
         _recovery = recovery;
+        _takeAudio = takeAudio;
         _vadService = new VadService(_host.ResolveModelsDirectory);
 
         _rewrite = rewrite ?? new RewriteService();

@@ -244,7 +244,14 @@ public sealed partial class TranscriptionEngine
         if (string.IsNullOrWhiteSpace(consumed.Text))
         {
             RaiseStatus(Loc.Get("Status_Ready"));
-            FinishTake(TranscriptionOutcome.None, TakeEndReasons.NoText);
+            // Incomplete with no text is a lost take, not a silent one: speech was
+            // recorded and nothing came out of it. Either the prime failed (the
+            // consumer then counted no utterance) or every utterance sent to the
+            // backend was skipped. Its audio is kept for the next launch.
+            string reason = !consumed.Incomplete ? TakeEndReasons.NoText
+                : consumed.NUtterances == 0 ? TakeEndReasons.ModelNotReady
+                : TakeEndReasons.TranscriptionFailed;
+            FinishTake(TranscriptionOutcome.None, reason);
             return null;
         }
 
@@ -515,8 +522,10 @@ public sealed partial class TranscriptionEngine
                     DeckleWhispSource.Log.UtteranceSkipped(u.Index, ex.GetType().Name, ex.Message);
                 else
                     DeckleWhispSource.Log.UtteranceSkippedRepeat(u.Index, ex.GetType().Name, ex.Message);
-                if (policy.RejectIncompleteResults)
-                    incomplete = true;
+                // Flagged whatever the policy: a live take delivers the other
+                // utterances anyway, but when none of them gave text the caller
+                // must tell a failed take from a silent one.
+                incomplete = true;
                 previousTail = null;
                 continue;
             }
@@ -531,8 +540,7 @@ public sealed partial class TranscriptionEngine
                     DeckleWhispSource.Log.UtteranceSkipped(u.Index, "", cause);
                 else
                     DeckleWhispSource.Log.UtteranceSkippedRepeat(u.Index, "", cause);
-                if (policy.RejectIncompleteResults)
-                    incomplete = true;
+                incomplete = true;
                 previousTail = null;
                 continue;
             }
@@ -643,7 +651,9 @@ public sealed partial class TranscriptionEngine
     }
 
     // BackendAudio is null when no stage (DSP or VAD trim) transformed the
-    // audio, so the caller falls back to the raw take.
+    // audio, so the caller falls back to the raw take. Incomplete: the prime
+    // failed, or an utterance was skipped on a backend failure; a policy that
+    // rejects incomplete results also flags an aborted or failed-code result.
     private readonly record struct StreamingConsumeResult(
         string Text, long TotalMs, long InitMs, int NSegments, int NUtterances,
         float[]? BackendAudio, bool Incomplete);

@@ -238,10 +238,13 @@ public partial class App
         context.Milestone("hotkeys");
 
         // After the HUD exists: the restore shows its message there.
-        RestoreInterruptedDictation();
+        RecoverInterruptedDictation();
 
         // No model warmup at boot: nothing sits in VRAM while the app is idle.
-        // The engine primes the model on the first hotkey press.
+        // The engine primes the model on the first hotkey press. The one
+        // exception is a take that died with its audio on disk: the recovery
+        // above then loads the model at launch, because that audio is the only
+        // copy of what was said.
     }
 }
 
