@@ -23,8 +23,8 @@ public readonly record struct TakeAudioRecoveryResult(bool Recovered, int Chars 
 //     delivered                    the .attempted file and the text recovery
 //                                  file go: the audio transcription is the more
 //                                  complete copy.
-//     failed cleanly, not started  the file goes back to .dat, so the next
-//                                  launch tries again.
+//     failed cleanly, not started, the file goes back to .dat, so the next
+//     or unreadable                launch tries again.
 //     no speech in it              the file goes: nothing more to get from it.
 //   anything else                  the caller restores the text recovery file,
 //                                  so what the text store saved is not lost.
@@ -61,13 +61,22 @@ public sealed class TakeAudioRecovery(
         }
 
         TakeAudioRead read = audio.TryReadAttempted();
-        if (read.Status != TakeAudioReadStatus.Restored || read.Samples.Length == 0)
+        if (read.Status != TakeAudioReadStatus.Restored)
         {
-            // Nothing can be done with it, and keeping it would repeat the
-            // warning at every launch.
-            string reason = read.Status == TakeAudioReadStatus.Restored ? "empty" : "unreadable";
+            // An IOException reads the same as a damaged file, and a transient
+            // one must not cost the only copy: the file goes back to .dat. A
+            // truly damaged file repeats this warning until the next dictation
+            // take replaces it.
+            bool kept = audio.RestoreAttempted();
+            DeckleWhispSource.Log.TakeAudioRecoverySkipped("unreadable", kept);
+            return default;
+        }
+
+        if (read.Samples.Length == 0)
+        {
+            // No record in it: nothing to get from it.
             bool deleted = audio.DeleteAttempted();
-            DeckleWhispSource.Log.TakeAudioRecoverySkipped(reason, kept: !deleted);
+            DeckleWhispSource.Log.TakeAudioRecoverySkipped("empty", kept: !deleted);
             return default;
         }
 

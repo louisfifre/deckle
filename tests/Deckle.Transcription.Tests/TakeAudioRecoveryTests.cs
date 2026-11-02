@@ -167,7 +167,7 @@ public sealed class TakeAudioRecoveryTests : IDisposable
     }
 
     [Fact]
-    public async Task AnUnreadableFileIsDiscardedWithoutRunning()
+    public async Task AnUnreadableFileIsKeptWithoutRunning()
     {
         Directory.CreateDirectory(Path.GetDirectoryName(_audio.FilePath)!);
         File.WriteAllBytes(_audio.FilePath, new byte[40]);
@@ -181,7 +181,7 @@ public sealed class TakeAudioRecoveryTests : IDisposable
 
         Assert.False(result.Recovered);
         Assert.False(called);
-        Assert.False(_audio.Exists);
+        Assert.True(_audio.Exists);
         Assert.False(_audio.AttemptedExists);
     }
 
