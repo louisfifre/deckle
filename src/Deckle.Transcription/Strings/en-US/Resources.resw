@@ -194,6 +194,9 @@
   <data name="Engine_TranscriptionUnavailable_Body" xml:space="preserve">
     <value>Recording stopped. Try again later.</value>
   </data>
+  <data name="Engine_RecoveryUnavailable_Body" xml:space="preserve">
+    <value>Your recording is kept.</value>
+  </data>
   <data name="Engine_LowAudio_Title" xml:space="preserve">
     <value>Low audio detected</value>
   </data>

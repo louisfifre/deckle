@@ -209,8 +209,23 @@ public sealed partial class TranscriptionEngine
             return new RecoveredTake(RecoveredTakeStatus.NoText);
         }
 
-        if (!await AwaitPrime(primeTask, "during_recovery").ConfigureAwait(false)
-            || !_backend.IsModelLoaded)
+        bool primed = await AwaitPrime(primeTask, "during_recovery").ConfigureAwait(false);
+        if (!primed && ReadPrimeFailure() == PrimeFailure.TestFailed)
+        {
+            // The test inference failed twice (the causes are on WarmupTestFailed).
+            // A handled failure like a model that cannot load: the caller puts the
+            // audio back for the next launch and restores the text copy. Nobody
+            // else would tell the person, and no text reached the clipboard, so
+            // the body says only that the recording is safe.
+            EmitUserFeedback(FB_ERROR,
+                Loc.Get("Engine_TranscriptionUnavailable_Title"),
+                Loc.Get("Engine_RecoveryUnavailable_Body"),
+                FB_REPLACEMENT);
+            EndTake(TakeOutcomes.Failed, TakeEndReasons.TranscriptionUnavailable);
+            return failed;
+        }
+
+        if (!primed || !_backend.IsModelLoaded)
         {
             // The load cause sits on ModelUnavailable, and LoadModel has told the person.
             EndTake(TakeOutcomes.Failed, TakeEndReasons.ModelNotReady);

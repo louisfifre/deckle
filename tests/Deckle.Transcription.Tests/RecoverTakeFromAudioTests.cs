@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics.Tracing;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
@@ -42,7 +43,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
     [Fact]
     public async Task TheRecoveredTextGoesToTheClipboardAndNothingIsPasted()
     {
-        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         var clipboard = new RecordingClipboardWriter();
         var takeAudio = new TakeAudioRecoveryStore(Path.Combine(_root, "take-audio.dat"));
         var textStore = new DictationRecoveryStore(Path.Combine(_root, "dictation.dat"));
@@ -60,9 +61,10 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
         Assert.Equal(new RecoveredTake(RecoveredTakeStatus.Delivered, "bonjour\n\nDeckle".Length), result);
         Assert.Equal(1, clipboard.WriteCount);
         Assert.Equal("bonjour\n\nDeckle", clipboard.Text);
-        Assert.Equal(2, backend.CallCount);
-        // The dictation prompt primes the first utterance, as in a live take.
-        Assert.Equal("test prompt", backend.Contexts[0].PrimingText);
+        Assert.Equal(3, backend.CallCount);
+        // The dictation prompt primes the first utterance, as in a live take;
+        // the call before it is the test inference.
+        Assert.Equal("test prompt", backend.Contexts[1].PrimingText);
 
         // The HUD sees "transcribing", then the engine back to ready, and one
         // Finished with None: the caller announces the recovery itself.
@@ -78,8 +80,8 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
     [Fact]
     public async Task AColdModelIsPrimedBeforeTheRecoveredAudioIsTranscribed()
     {
-        // The first scripted text goes to the prime's dummy call, not to the take.
-        var backend = new SequencedBackend(["warm-up", "bonjour", "Deckle"], modelLoaded: false);
+        // The first scripted text goes to the prime's test inference, not to the take.
+        var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"], modelLoaded: false);
         var clipboard = new RecordingClipboardWriter();
         using var engine = new TranscriptionEngine(
             new StreamingHost(), backend, new ScriptedMicrophoneCapture(utteranceCount: 0), clipboard);
@@ -95,7 +97,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
     [Fact]
     public async Task WhileItRunsAHotkeyAndASecondRecoveryAreRefused()
     {
-        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         using var engine = new TranscriptionEngine(
             new StreamingHost(), backend, new ScriptedMicrophoneCapture(utteranceCount: 0),
             new RecordingClipboardWriter());
@@ -119,7 +121,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
     [Fact]
     public async Task ARecoveryIsRefusedWhileADictationIsRecording()
     {
-        var backend = new SequencedBackend(["bonjour", "Deckle"]);
+        var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         using var engine = new TranscriptionEngine(
             new StreamingHost(), backend, new ScriptedMicrophoneCapture(utteranceCount: 2),
             new RecordingClipboardWriter());
@@ -138,8 +140,8 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
     {
         var clipboard = new RecordingClipboardWriter();
         using var engine = new TranscriptionEngine(
-            new StreamingHost(), new SequencedBackend([]), new ScriptedMicrophoneCapture(utteranceCount: 0),
-            clipboard);
+            new StreamingHost(), new SequencedBackend([TestInference]),
+            new ScriptedMicrophoneCapture(utteranceCount: 0), clipboard);
 
         RecoveredTake result = await engine.RecoverTakeFromAudioAsync(new float[16_000])
             .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
@@ -174,12 +176,50 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
         }
     }
 
+    // The recovery crosses the same per-take test inference as a live take. When
+    // it fails twice the run is a handled failure: the caller keeps the audio,
+    // the person gets one short message, and the engine is not left busy.
+    [Fact]
+    public async Task ATestInferenceThatFailsTwiceFailsTheRecoveryWithOneShortMessage()
+    {
+        using var listener = new TestEventListener("Deckle-Whisp");
+        var clipboard = new RecordingClipboardWriter();
+        // No scripted text: every backend call throws, the test inference included.
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            new SequencedBackend([]),
+            new ScriptedMicrophoneCapture(utteranceCount: 0),
+            clipboard);
+
+        RecoveredTake result = await engine.RecoverTakeFromAudioAsync(Utterances(2))
+            .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+        Assert.Equal(RecoveredTakeStatus.Failed, result.Status);
+        Assert.Equal(0, clipboard.WriteCount);
+        Assert.False(engine.IsBusy);
+
+        EventWrittenEventArgs message = Assert.Single(
+            listener.Events, e => e.EventName == nameof(DeckleWhispSource.UserFeedbackEmitted));
+        Assert.Equal(Loc.Get("Engine_TranscriptionUnavailable_Title"), Field(message, "title"));
+        Assert.Equal(Loc.Get("Engine_RecoveryUnavailable_Body"), Field(message, "body"));
+
+        EventWrittenEventArgs ended = Assert.Single(
+            listener.Events, e => e.EventName == nameof(DeckleWhispSource.TakeEnded));
+        Assert.Equal(TakeOutcomes.Failed, Field(ended, "outcome"));
+        Assert.Equal(TakeEndReasons.TranscriptionUnavailable, Field(ended, "reason"));
+        Assert.DoesNotContain(
+            listener.Events, e => e.EventName == nameof(DeckleWhispSource.PipelineCrashed));
+    }
+
+    private static string Field(EventWrittenEventArgs e, string name)
+        => Convert.ToString(e.Payload![e.PayloadNames!.IndexOf(name)])!;
+
     [Fact]
     public async Task AClipboardThatRefusesTheTextFailsTheRecovery()
     {
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
-            new SequencedBackend(["bonjour", "Deckle"]),
+            new SequencedBackend([TestInference, "bonjour", "Deckle"]),
             new ScriptedMicrophoneCapture(utteranceCount: 0),
             new RefusingClipboardWriter());
 

@@ -224,7 +224,7 @@ public sealed class TakeAudioRecoveryTests : IDisposable
         var clipboard = new RecordingClipboardWriter();
         using var engine = new TranscriptionEngine(
             new StreamingHost(),
-            new SequencedBackend(["bonjour", "Deckle"]),
+            new SequencedBackend([TestInference, "bonjour", "Deckle"]),
             new ScriptedMicrophoneCapture(utteranceCount: 0),
             clipboard);
 
@@ -239,6 +239,36 @@ public sealed class TakeAudioRecoveryTests : IDisposable
         Assert.False(_audio.Exists);
         Assert.False(_audio.AttemptedExists);
         Assert.False(_text.Exists);
+    }
+
+    // The launch-time chain with a test inference that fails: not a crash, not
+    // a loss. The audio goes back to .dat for the next launch, the text copy is
+    // untouched (the app restores it), and nothing reached the clipboard.
+    [Fact]
+    public async Task ARealEngineWhoseTestInferenceFailsKeepsTheAudioAndTheTextCopy()
+    {
+        Assert.True(_audio.TryBegin());
+        Assert.True(_audio.TryAppend(Enumerable.Repeat(0.1f, 6 * 800).ToArray()));
+        _audio.Close();
+        Assert.True(_text.TryWrite("Only the first words."));
+        var clipboard = new RecordingClipboardWriter();
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            new SequencedBackend([]),
+            new ScriptedMicrophoneCapture(utteranceCount: 0),
+            clipboard);
+
+        TakeAudioRecoveryResult result = await new TakeAudioRecovery(
+                _audio, _text, engine.RecoverTakeFromAudioAsync)
+            .TryRecoverAsync()
+            .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+        Assert.False(result.Recovered);
+        Assert.Equal(0, clipboard.WriteCount);
+        Assert.True(_audio.Exists);
+        Assert.False(_audio.AttemptedExists);
+        Assert.True(_text.Exists);
+        Assert.False(engine.IsBusy);
     }
 
     [Fact]
