@@ -155,6 +155,31 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
         }
     }
 
+    // Regression: a backend that fails every utterance left the take with no
+    // text and no failure flag, so it ended as "no text" and the audio, the only
+    // copy of what was said, was deleted.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ATakeWhoseBackendFailsOnEveryUtteranceKeepsItsAudio()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        TakeAudioRecoveryStore store = NewStore();
+        var clipboard = new RecordingClipboardWriter();
+        // No scripted text: every backend call throws.
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            new SequencedBackend([]),
+            new ScriptedMicrophoneCapture(utteranceCount: 2),
+            clipboard,
+            takeAudio: store);
+
+        TranscriptionOutcome outcome = await RunTakeAsync(engine, calls: null, testCancellation);
+
+        Assert.Equal(TranscriptionOutcome.None, outcome);
+        Assert.Equal(0, clipboard.WriteCount);
+        Assert.Equal(2 * SamplesPerUtterance, store.TryRead().Samples.Length);
+    }
+
     [Fact]
     [Trait("Category", "regression")]
     public async Task DisposingTheEngineMidTakeKeepsTheAudioRecordedSoFar()
