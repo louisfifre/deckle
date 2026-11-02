@@ -1,4 +1,4 @@
-# Tree — hotloop-rollup-level
+# Tree — take-audio-recovery
 _Generated from `git ls-files` — do not edit by hand._
 
 ```
@@ -1678,7 +1678,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptionEngine.Telemetry.cs
 │   │   │   └── TranscriptionEngine.Utterances.cs
 │   │   ├── Recovery/
-│   │   │   └── DictationRecoveryStore.cs
+│   │   │   ├── DictationRecoveryStore.cs
+│   │   │   └── TakeAudioRecoveryStore.cs
 │   │   ├── Setup/
 │   │   │   └── ModelEntry.cs
 │   │   ├── Streaming/
@@ -1713,6 +1714,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleWhispSource.Segments.cs
 │   │   ├── DeckleWhispSource.Streaming.cs
 │   │   ├── DeckleWhispSource.Take.cs
+│   │   ├── DeckleWhispSource.TakeAudio.cs
 │   │   ├── DeckleWhispSource.Telemetry.cs
 │   │   ├── DeckleWhispSource.Transcribe.cs
 │   │   ├── DeckleWhispSource.Ui.cs
@@ -2406,6 +2408,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteProfileSelectionTests.cs
 │   │   ├── SegmentedTranscriptionSessionTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
+│   │   ├── TakeAudioRecoveryStoreTests.cs
 │   │   ├── TrailingNoisePadTests.cs
 │   │   ├── TranscriptFileWriterDiskTests.cs
 │   │   ├── TranscriptFileWriterTests.cs
