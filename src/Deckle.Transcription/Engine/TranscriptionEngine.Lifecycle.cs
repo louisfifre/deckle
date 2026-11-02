@@ -102,9 +102,15 @@ public sealed partial class TranscriptionEngine
         return true;
     }
 
+    // Always takes _idleUnloadLock, with no lock-free "already loaded" shortcut.
+    // The idle timer holds that lock for the whole native free, and the backend
+    // keeps reporting the model as loaded until the free has returned. The test
+    // inference now opens every take, a few milliseconds after the hotkey, so a
+    // press that lands during an idle unload would otherwise decode on a context
+    // that is being freed. Waiting here lets the unload finish; the check below
+    // then sees the model gone and loads it again.
     private bool EnsureModelLoaded(bool silentStatus = false)
     {
-        if (_backend.IsModelLoaded) return true;
         lock (_idleUnloadLock)
         {
             if (_backend.IsModelLoaded) return true;

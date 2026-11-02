@@ -5,7 +5,7 @@ namespace Deckle.Transcription;
 
 // Whisp module provider. Covers the transcription engine (TranscriptionEngine),
 // the model lifecycle as the engine sees it (lazy load, idle unload), the
-// cold-start prime, the take and file pipelines, clipboard, paste, and
+// start-of-take prime, the take and file pipelines, clipboard, paste, and
 // structured end-of-pipeline heartbeats (LatencyRecorded, CorpusAsrRecorded,
 // CorpusRewriteRecorded). The native Whisper backend has its own provider
 // (DeckleWhisperSource).

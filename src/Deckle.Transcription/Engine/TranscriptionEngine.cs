@@ -386,7 +386,7 @@ public sealed partial class TranscriptionEngine : IDisposable
     // whisper_full under its _transcribeLock, two locks that never contend. The
     // join returns only after the worker's teardown has settled the run and
     // waited the prime task, so a successful join means both the real
-    // inference and the prime's dummy inference have returned.
+    // inference and the prime's test inference have returned.
     //
     // If the join times out the worker leaks, and _backend.Dispose() MUST then
     // be skipped: freeing the context while that worker may still be inside

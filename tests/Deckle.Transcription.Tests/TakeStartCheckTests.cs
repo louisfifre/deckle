@@ -272,6 +272,49 @@ public sealed class TakeStartCheckTests
         }
     }
 
+    // The test inference opens the take a few milliseconds after the hotkey. The
+    // idle timer holds the unload lock for the whole native free while the backend
+    // still reports the model as loaded; a take started inside that window must
+    // wait for the free and load the model again, not decode on a context being
+    // freed. The timer callback has no seam, so the test calls the unload it runs.
+    [Fact]
+    public async Task ATakeStartedDuringAnIdleUnloadWaitsForTheFreeBeforeItsTest()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        var backend = new SlowUnloadBackend();
+        using var engine = new TranscriptionEngine(
+            new LiveTranscriptionPipelineTests.StreamingHost(),
+            backend,
+            new LiveTranscriptionPipelineTests.ScriptedMicrophoneCapture(utteranceCount: 0),
+            new LiveTranscriptionPipelineTests.RecordingClipboardWriter());
+        var finished = NewFinishedSignal(engine);
+        Task ready = NewReadySignal(engine);
+
+        var idleUnload = typeof(TranscriptionEngine).GetMethod(
+            "UnloadModel", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!;
+        Task unload = Task.Run(() => idleUnload.Invoke(engine, null), testCancellation);
+        await backend.UnloadEntered.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+
+        // Room for a prime that did not wait to reach the backend.
+        await Task.Delay(500, testCancellation);
+        Assert.False(backend.TranscribedDuringUnload);
+        Assert.Equal(0, backend.CallCount);
+
+        backend.ReleaseUnload.Set();
+        await unload.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+        await backend.Transcribed.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+        await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+        await ready.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
+
+        Assert.False(backend.TranscribedDuringUnload);
+        Assert.Equal(1, backend.LoadCount);
+        Assert.Equal(1, backend.CallCount);
+    }
+
     private static TaskCompletionSource<TranscriptionOutcome> NewFinishedSignal(TranscriptionEngine engine)
     {
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
@@ -315,6 +358,57 @@ public sealed class TakeStartCheckTests
         for (int i = 0; i < samples; i++)
             writer.Write((short)(Math.Sin(2 * Math.PI * 440 * i / rate) * 0.3 * short.MaxValue));
         return path;
+    }
+
+    // Holds its unload open until released, and keeps reporting the model as
+    // loaded meanwhile, as WhisperBackend does until whisper_free has returned.
+    private sealed class SlowUnloadBackend : IAsrBackend
+    {
+        private volatile bool _loaded = true;
+        private volatile bool _unloading;
+        private int _callCount;
+        private int _loadCount;
+
+        public TaskCompletionSource UnloadEntered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public TaskCompletionSource Transcribed { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        public ManualResetEventSlim ReleaseUnload { get; } = new(false);
+        public volatile bool TranscribedDuringUnload;
+
+        public string Name => "slow-unload";
+        public bool IsModelLoaded => _loaded;
+        public string? DetectedAccelerator => "test";
+        public int CallCount => Volatile.Read(ref _callCount);
+        public int LoadCount => Volatile.Read(ref _loadCount);
+
+        public Task<ModelLoadResult> LoadModelAsync(CancellationToken ct)
+        {
+            Interlocked.Increment(ref _loadCount);
+            _loaded = true;
+            return Task.FromResult(new ModelLoadResult(true, 0, "test", null));
+        }
+
+        public void UnloadModel()
+        {
+            _unloading = true;
+            UnloadEntered.TrySetResult();
+            ReleaseUnload.Wait(TimeSpan.FromSeconds(10));
+            _loaded = false;
+            _unloading = false;
+        }
+
+        public Task<TranscriptionResult> TranscribeAsync(
+            ReadOnlyMemory<float> pcmSamples,
+            Action<TranscriptionSegment>? segmentSink,
+            CancellationToken ct,
+            TranscriptionContext? context = null)
+        {
+            if (_unloading) TranscribedDuringUnload = true;
+            Interlocked.Increment(ref _callCount);
+            Transcribed.TrySetResult();
+            return Task.FromResult(new TranscriptionResult([], "", 0, 0, false, 0));
+        }
+
+        public void Dispose() { }
     }
 
     // Fails its first calls the way the Whisper backend does under memory
