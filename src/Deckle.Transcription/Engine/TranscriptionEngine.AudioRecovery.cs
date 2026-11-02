@@ -170,8 +170,10 @@ public sealed partial class TranscriptionEngine
         {
             try
             {
-                RaiseFinished(TranscriptionOutcome.None);
-                SettleWorkerToIdle("recovery", primeTask, recordCts, drainCts);
+                // A throwing subscriber must not keep the engine out of Idle:
+                // the hotkeys would stay refused until the app restarts.
+                try { RaiseFinished(TranscriptionOutcome.None); }
+                finally { SettleWorkerToIdle("recovery", primeTask, recordCts, drainCts); }
             }
             finally
             {

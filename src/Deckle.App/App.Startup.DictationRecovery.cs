@@ -65,9 +65,20 @@ public partial class App
         }
         catch (Exception ex)
         {
-            // The recovery never throws; the text restore is the only part that
-            // could. Nothing may escape a fire-and-forget task.
+            // Neither the recovery nor the text restore is meant to throw, but
+            // nothing may escape a fire-and-forget task. A failure of the audio
+            // flow must not cost the text copy: it is restored here, and a no-op
+            // when the flow got as far as deleting it.
             DeckleAppSource.Log.CleanupFailed("dictation_recovery", ex.GetType().Name, ex.Message);
+            try
+            {
+                RestoreInterruptedDictation();
+            }
+            catch (Exception restoreEx)
+            {
+                DeckleAppSource.Log.CleanupFailed(
+                    "dictation_text_recovery", restoreEx.GetType().Name, restoreEx.Message);
+            }
         }
     }
 
