@@ -133,7 +133,11 @@ static class Corpus
 
     static IEnumerable<(DateTimeOffset Timestamp, JsonElement Payload)> ReadPayloads(string file)
     {
-        foreach (string line in File.ReadLines(file))
+        // The running app keeps its corpus files open for writing, so the
+        // read must share write access; File.ReadLines would be refused.
+        using var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        using var reader = new StreamReader(stream);
+        while (reader.ReadLine() is { } line)
         {
             if (string.IsNullOrWhiteSpace(line)) continue;
             JsonElement root;
