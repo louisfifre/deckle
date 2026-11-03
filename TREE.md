@@ -91,6 +91,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── _base_compat.py
 │   │   └── __init__.py
 │   ├── rewrite/
+│   │   ├── model-compare/
+│   │   │   └── prompts/
+│   │   │       ├── lissage-current.md
+│   │   │       └── lissage-literal.md
 │   │   └── paragraph-gate/
 │   │       ├── .gitignore
 │   │       ├── ParagraphGate.csproj
