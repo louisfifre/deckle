@@ -92,9 +92,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── __init__.py
 │   ├── rewrite/
 │   │   ├── model-compare/
-│   │   │   └── prompts/
-│   │   │       ├── lissage-current.md
-│   │   │       └── lissage-literal.md
+│   │   │   ├── prompts/
+│   │   │   │   ├── lissage-current.md
+│   │   │   │   └── lissage-literal.md
+│   │   │   ├── .gitignore
+│   │   │   ├── Corpus.cs
+│   │   │   ├── Judge.cs
+│   │   │   ├── ModelCompare.csproj
+│   │   │   ├── Program.cs
+│   │   │   ├── Shared.cs
+│   │   │   └── Summary.cs
 │   │   └── paragraph-gate/
 │   │       ├── .gitignore
 │   │       ├── ParagraphGate.csproj
