@@ -100,6 +100,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Judge.cs
 │   │   │   ├── ModelCompare.csproj
 │   │   │   ├── Program.cs
+│   │   │   ├── README.md
 │   │   │   ├── Shared.cs
 │   │   │   └── Summary.cs
 │   │   └── paragraph-gate/
