@@ -492,6 +492,222 @@ public class SchemaAdminGesturesTests
         Assert.Contains("piece · Pièce · basic · emoji:🚪", digest);
     }
 
+    static JsonObject PriorityProperty() => new()
+    {
+        ["id"] = "prop-prio",
+        ["key"] = "priorite",
+        ["name"] = "Priorité",
+        ["format"] = "select",
+    };
+
+    // The object_type document v2 serves for a type: one dataview block whose
+    // views carry what the app stores, default fields omitted (measured shape,
+    // 2026-11-04).
+    static JsonObject V2TypeList(params (string Key, string Name)[] types) => new()
+    {
+        ["data"] = new JsonArray(types
+            .Select(t => (JsonNode)new JsonObject { ["key"] = t.Key, ["name"] = t.Name })
+            .ToArray()),
+        ["has_more"] = false,
+    };
+
+    static JsonObject PieceTypeDocument(string id = "type-piece") => new()
+    {
+        ["kind"] = "object_type",
+        ["id"] = id,
+        ["blocks"] = new JsonArray
+        {
+            new JsonObject
+            {
+                ["id"] = "dataview",
+                ["type"] = "dataview",
+                ["views"] = new JsonArray
+                {
+                    new JsonObject
+                    {
+                        ["id"] = "all",
+                        ["name"] = "Tous",
+                        ["wrap_content"] = true,
+                        ["sorts"] = new JsonArray
+                        {
+                            new JsonObject { ["property"] = "created_date", ["direction"] = "desc", ["empty_placement"] = "end" },
+                        },
+                        ["filters"] = new JsonArray
+                        {
+                            new JsonObject { ["property"] = "done", ["condition"] = "equal", ["value"] = false },
+                            new JsonObject
+                            {
+                                ["operator"] = "or",
+                                ["filters"] = new JsonArray
+                                {
+                                    new JsonObject { ["property"] = "etat_identification", ["condition"] = "in", ["value"] = new JsonArray { "Confirmé" } },
+                                    new JsonObject { ["property"] = "due_date", ["condition"] = "less", ["date_preset"] = "today" },
+                                },
+                            },
+                        },
+                        ["columns"] = new JsonArray
+                        {
+                            new JsonObject { ["property"] = "name", ["width"] = 300 },
+                            new JsonObject { ["property"] = "etat_identification", ["hidden"] = true },
+                            new JsonObject { ["property"] = "priorite" },
+                            new JsonObject { ["property"] = "tag" },
+                        },
+                    },
+                    new JsonObject
+                    {
+                        ["id"] = "00a25",
+                        ["type"] = "kanban",
+                        ["name"] = "Par priorité",
+                        ["group_by"] = "priorite",
+                        ["card_size"] = "medium",
+                        ["sorts"] = new JsonArray { new JsonObject { ["property"] = "name" } },
+                        ["columns"] = new JsonArray { new JsonObject { ["property"] = "name" } },
+                        ["groups"] = new JsonArray
+                        {
+                            new JsonObject { ["id"] = "empty", ["hidden"] = true },
+                            new JsonObject { ["id"] = "opt-5", ["background_color"] = "red" },
+                            new JsonObject { ["id"] = "opt-gone" },
+                        },
+                        ["object_orders"] = new JsonArray { new JsonObject { ["group_id"] = "opt-5" } },
+                    },
+                },
+            },
+        },
+    };
+
+    [Fact]
+    public async Task InspectRendersOptionsViewsAndWhatTheApiLeavesOut()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType() }));
+        server.OnListProperties(Page(new JsonArray { ExistingProperty(), PriorityProperty() }));
+        server.OnListPropertyTags("prop-etat", Page(new JsonArray { ExistingTag() }));
+        server.OnListPropertyTags("prop-prio", Page(new JsonArray
+        {
+            new JsonObject { ["id"] = "opt-5", ["key"] = "5", ["name"] = "5", ["color"] = "red" },
+            new JsonObject { ["id"] = "opt-0", ["key"] = "zero", ["name"] = "0", ["color"] = "grey" },
+        }));
+        server.OnV2Get("types", V2TypeList(("piece", "Pièce")));
+        server.OnV2Get("types/piece", PieceTypeDocument());
+        server.OnV2Search(new JsonObject
+        {
+            ["data"] = new JsonArray { new JsonObject { ["id"] = "q1", ["name"] = "Archives", ["type"] = "query" } },
+            ["has_more"] = false,
+        });
+        server.OnV2Search(new JsonObject { ["data"] = new JsonArray(), ["has_more"] = false });
+        server.OnV2Get("queries/q1/views", new JsonObject
+        {
+            ["data"] = new JsonArray
+            {
+                new JsonObject
+                {
+                    ["id"] = "default", ["type"] = "list", ["name"] = "Tous",
+                    ["columns"] = new JsonArray { new JsonObject { ["property"] = "name" } },
+                },
+            },
+            ["has_more"] = false,
+        });
+
+        string digest = await NewGestures(server).InspectAsync("home", Ct);
+
+        string[] lines = digest.Split('\n');
+        Assert.Contains("- priorite · Priorité · select", lines);
+        Assert.Contains("  - 5 · 5 · red", lines);
+        Assert.Contains("  - zero · 0 · grey", lines);
+        Assert.Contains("  - (sans clé) · Confirmé · grey", lines);
+        Assert.True(
+            Array.IndexOf(lines, "  - 5 · 5 · red") < Array.IndexOf(lines, "  - zero · 0 · grey"),
+            "Options keep the order v1 serves.");
+
+        Assert.Contains("- piece · Pièce · 2 vues", lines);
+        Assert.Contains("  1. Tous · table", lines);
+        Assert.Contains("     filtres : done equal false ; (etat_identification in [Confirmé] or due_date less (today))", lines);
+        Assert.Contains("     tris : created_date desc, vides en fin", lines);
+        Assert.Contains("     colonnes affichées : name, priorite, tag · 1 masquée", lines);
+        Assert.Contains("     réglages : wrap_content=true", lines);
+        Assert.Contains("  2. Par priorité · kanban · groupé par priorite", lines);
+        Assert.Contains("     tris : name asc", lines);
+        Assert.Contains("     groupes : (vide) masqué · 5 red · opt-gone", lines);
+        Assert.Contains("     ordre manuel des cartes : 1 groupe", lines);
+        Assert.Contains("     réglages : card_size=medium", lines);
+
+        Assert.Contains("Ensembles et collections : 1", lines);
+        Assert.Contains("- Archives · query · q1 · 1 vue", lines);
+        Assert.Contains("  1. Tous · list", lines);
+
+        Assert.Contains("Non rendu par l'API :", lines);
+        Assert.Contains("Colonnes dont la propriété est absente de la liste : name, tag", lines);
+        Assert.DoesNotContain(server.Requests, r => r.Method != "GET" && !r.Path.EndsWith("/search", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task InspectStopsReadingViewsOnceV2RefusesTheKey()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType(), OtherType() }));
+        server.OnListProperties(EmptyList());
+        server.OnV2Get("types", V2TypeList(("autre", "Autre"), ("piece", "Pièce")));
+        server.OnV2Get(
+            "types/autre",
+            new JsonObject { ["status"] = 403, ["code"] = "forbidden", ["message"] = "v1 key" },
+            status: 403);
+
+        string digest = await NewGestures(server).InspectAsync("home", Ct);
+
+        Assert.Contains("non lues : l'API v2 refuse cette clé (HTTP 403 forbidden)", digest);
+        Assert.DoesNotContain(server.Requests, r => r.Path.EndsWith("/types/piece", StringComparison.Ordinal));
+        Assert.DoesNotContain(server.Requests, r => r.Path.StartsWith("/v2/", StringComparison.Ordinal) && r.Path.EndsWith("/search", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task InspectNamesATypeWhoseViewsCannotBeReadAndGoesOn()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType(), OtherType() }));
+        server.OnListProperties(EmptyList());
+        server.OnV2Get("types", V2TypeList(("autre", "Autre"), ("piece", "Pièce")));
+        server.OnV2Get("types/autre", new JsonObject { ["code"] = "not_found" }, status: 404);
+        server.OnV2Get("types/piece", PieceTypeDocument());
+
+        string digest = await NewGestures(server).InspectAsync("home", Ct);
+
+        Assert.Contains("- autre · Autre · vues illisibles : HTTP 404 not_found", digest);
+        Assert.Contains("- piece · Pièce · 2 vues", digest);
+    }
+
+    // Measured on dev, 2026-11-04: the v1 key `contact` is ambiguous on v2,
+    // whose own key for the space's Contact is a hex id. The views are read by
+    // the v2 key and shown under the v1 key the document's id points back to.
+    [Fact]
+    public async Task InspectReadsViewsByTheV2KeyAndShowsItBesideTheV1Key()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { OtherType() }));
+        server.OnListProperties(EmptyList());
+        server.OnV2Get("types", V2TypeList(("698c39e0341c163a60acc2e9", "Autre")));
+        server.OnV2Get("types/698c39e0341c163a60acc2e9", PieceTypeDocument(id: "type-autre"));
+
+        string digest = await NewGestures(server).InspectAsync("home", Ct);
+
+        Assert.Contains("- autre (clé v2 698c39e0341c163a60acc2e9) · Autre · 2 vues", digest);
+        Assert.DoesNotContain(server.Requests, r => r.Path.EndsWith("/v2/spaces/test-space/types/autre", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task InspectSaysOnceThatV2RefusedTheKeyWhenTheTypeListIsRefused()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType() }));
+        server.OnListProperties(EmptyList());
+        server.OnV2Get("types", new JsonObject { ["code"] = "forbidden" }, status: 403);
+
+        string digest = await NewGestures(server).InspectAsync("home", Ct);
+
+        Assert.Contains("non lues : l'API v2 refuse cette clé (HTTP 403 forbidden)", digest);
+        Assert.DoesNotContain(server.Requests, r => r.Path.EndsWith("/types/piece", StringComparison.Ordinal));
+        Assert.DoesNotContain("Ensembles et collections", digest);
+    }
+
     [Fact]
     public async Task PreviewRejectsNonStringTypeLayoutBeforeReadingAnytype()
     {

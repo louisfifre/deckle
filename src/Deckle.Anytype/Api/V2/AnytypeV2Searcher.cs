@@ -82,7 +82,9 @@ public sealed record AnytypeV2SearchPage(IReadOnlyList<AnytypeV2SearchRow> Rows,
 // unless a filter asks for `archived = true` (none of 54 binned objects showed
 // in a listing by type or a full-text search on its exact name), so no caller
 // filters the bin. That filter key is refused (400) once a type is named.
-public sealed class AnytypeV2Searcher(AnytypeV2Client client)
+// SpaceId searches another space than the client's own (a gesture given a space
+// alias); null searches the client's space.
+public sealed class AnytypeV2Searcher(AnytypeV2Client client, string? spaceId = null)
 {
     // The v1 search served up to 1000 per page. The v2 ceiling was not
     // measured (the default is 25), so a moderate page is asked and the loop
@@ -108,7 +110,8 @@ public sealed class AnytypeV2Searcher(AnytypeV2Client client)
                         new("limit", limit.ToString(System.Globalization.CultureInfo.InvariantCulture)),
                         new("offset", offset.ToString(System.Globalization.CultureInfo.InvariantCulture)),
                     ],
-                    ReadOnly: true),
+                    ReadOnly: true,
+                    SpaceId: spaceId),
                 ct)
             .ConfigureAwait(false);
 

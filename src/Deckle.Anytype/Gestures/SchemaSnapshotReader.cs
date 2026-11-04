@@ -97,11 +97,32 @@ public sealed class SchemaSnapshotReader(AnytypeApiClient api)
         string spaceId, string propertyId, CancellationToken ct)
     {
         var result = new Dictionary<string, SchemaTagInfo>(StringComparer.Ordinal);
+        foreach (SchemaTagInfo tag in await ReadTagListAsync(spaceId, propertyId, ct).ConfigureAwait(false))
+        {
+            if (tag.Key.Length > 0) result[tag.Key] = tag;
+            if (tag.Name.Length > 0) result[tag.Name] = tag;
+        }
+        return result;
+    }
+
+    // The options of one select property, once each, in the order v1 serves
+    // them. v1 because it is the only version that names an option by id and
+    // key: v2's option rows carry a name and a color, nothing else (measured
+    // 2026-11-04), and a kanban view names its groups by option id.
+    internal async Task<IReadOnlyList<SchemaTagInfo>> ReadTagListAsync(
+        string spaceId, string propertyId, CancellationToken ct)
+    {
+        var result = new List<SchemaTagInfo>();
         await foreach (JsonObject root in PagedRead.PagesAsync(
             "schema_tags", (offset, token) => _api.ListPropertyTagsForSpaceAsync(spaceId, propertyId, offset, PageLimit, token), ct)
             .ConfigureAwait(false))
         {
-            foreach (var (key, tag) in ReadTags(root)) result[key] = tag;
+            foreach (JsonObject obj in SchemaApiJson.Data(root))
+                result.Add(new SchemaTagInfo(
+                    SchemaApiJson.Id(obj),
+                    SchemaApiJson.Str(obj, "key"),
+                    SchemaApiJson.Str(obj, "name"),
+                    SchemaApiJson.Str(obj, "color")));
         }
         return result;
     }
@@ -139,21 +160,6 @@ public sealed class SchemaSnapshotReader(AnytypeApiClient api)
                 key,
                 SchemaApiJson.Str(obj, "name"),
                 SchemaApiJson.Str(obj, "format"));
-        }
-        return result;
-    }
-
-    private static Dictionary<string, SchemaTagInfo> ReadTags(JsonObject root)
-    {
-        var result = new Dictionary<string, SchemaTagInfo>(StringComparer.Ordinal);
-        foreach (JsonObject obj in SchemaApiJson.Data(root))
-        {
-            string key = SchemaApiJson.Str(obj, "key");
-            string name = SchemaApiJson.Str(obj, "name");
-
-            var tag = new SchemaTagInfo(SchemaApiJson.Id(obj), key, name, SchemaApiJson.Str(obj, "color"));
-            if (key.Length > 0) result[key] = tag;
-            if (name.Length > 0) result[name] = tag;
         }
         return result;
     }

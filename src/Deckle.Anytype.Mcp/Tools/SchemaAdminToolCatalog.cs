@@ -11,7 +11,7 @@ public static class SchemaAdminToolCatalog
         {
             new(
                 "schema_inspect_space",
-                "Inspect a configured Anytype space alias and list its current types and properties. The space argument is an alias such as dev or home, never a raw space_id.",
+                "Inspect a configured Anytype space alias, read only. Lists its types; its properties, each select and multi_select with its options (key, name, color, read through API v1, the only version that serves an option's key); the views of every type and of every query or collection (layout, grouping, filters, sorts, visible columns in order, group colors, other settings, read through API v2). The output ends with what the API does not render (option display order, options of unlisted properties, the active view) and how omitted defaults are read, so a space plan knows what stays manual. The space argument is an alias such as dev or home, never a raw space_id.",
                 Schema(
                     required: [Prop("space", "string", "Configured space alias, for example dev or home.")]),
                 async (args, ct) =>

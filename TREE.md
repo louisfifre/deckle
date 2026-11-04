@@ -350,12 +350,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ReadGestures.cs
 │   │   │   ├── Resolution.cs
 │   │   │   ├── SchemaAdminGestures.cs
+│   │   │   ├── SchemaAdminGestures.Inspect.cs
 │   │   │   ├── SchemaApiJson.cs
 │   │   │   ├── SchemaIcons.cs
 │   │   │   ├── SchemaManifest.cs
 │   │   │   ├── SchemaModels.cs
 │   │   │   ├── SchemaPlanner.cs
 │   │   │   ├── SchemaSnapshotReader.cs
+│   │   │   ├── SchemaViewReader.cs
 │   │   │   ├── SelectValueGestures.cs
 │   │   │   ├── SessionGestures.cs
 │   │   │   └── TaskGestures.cs

@@ -39,6 +39,17 @@ public class SchemaAdminToolCatalogTests
     }
 
     [Fact]
+    public void InspectSaysItRendersOptionsAndViewsAndWhatTheApiLeavesOut()
+    {
+        ToolDescriptor inspect = BuildCatalog().Single(t => t.Name == "schema_inspect_space");
+
+        Assert.Contains("options (key, name, color", inspect.Description);
+        Assert.Contains("views of every type and of every query or collection", inspect.Description);
+        Assert.Contains("does not render", inspect.Description);
+        Assert.Equal(ToolEffect.ReadOnly, inspect.Execution.Effect);
+    }
+
+    [Fact]
     public void EveryInputSchemaIsStrictObjectSchema()
     {
         foreach (ToolDescriptor tool in BuildCatalog())
