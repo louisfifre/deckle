@@ -7,7 +7,7 @@ the project adheres to [Semantic Versioning](https://semver.org/).
 
 This file is generated from the Conventional Commits history by `scripts/git/changelog.ps1`; do not edit it by hand.
 
-## [Unreleased]
+## [0.76.1](https://github.com/louisfifre/deckle/compare/release/v0.72.4...release/v0.76.1) — 2026-11-04
 
 ### Added
 
@@ -15,12 +15,23 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **anytype:** Add an epic_properties read
 - **scripts:** Vendor Deckle Scripts v0.1.0 as the launcher
 - **version:** Read the version from the git tag at build
+- **transcription:** Add the sealed take audio store
+- **transcription:** Keep each dictation take's audio on disk until its text is delivered
+- **transcription:** Transcribe an interrupted take from its saved audio
+- **app:** Recover an interrupted take from its audio at launch
+- **transcription:** Add the vocabulary of a failed take-start check
+- **benchmark:** Add the Lissage prompt variants for the model comparison
+- **benchmark:** Add the model-compare harness for the whole-dictation rewrite
+- **anytype:** Let a v2 request address another space than the client's
+- **anytype:** Render select options and views in schema_inspect_space
 
 ### Changed
 
 - **scripts:** Drop -Pick from the commands; the menu asks
 - **scripts:** Adopt the product-free names of the shared library
 - **scripts:** Lay the Deckle scripts out in the menu's levels
+- **scripts:** Drop clean-app for the pack's clean
+- **scripts:** Lay Deckle's scripts out as named rows
 
 ### Fixed
 
@@ -28,6 +39,20 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **anytype:** Resolve ideas and reports by the title their body carries
 - **anytype:** Read a nameless idea's title and text once
 - **audio:** Return the queued buffers to the app before freeing them
+- **diagnostics:** Make the loop rollup Verbose detail
+- **diagnostics:** Relaunch Deckle once after a crash, then stay closed
+- **hud:** Keep a warning or error on screen when the take finishes
+- **whisper:** Free the native params and stop the timers when whisper_full throws
+- **transcription:** Test the inference at the start of every take and stop the take when it fails twice
+- **transcription:** Keep a take's audio when the backend failed every utterance
+- **transcription:** Fall back to the text copy when the audio recovery flow throws
+- **transcription:** Shorten the unavailable message to fit one line of the HUD card
+- **transcription:** Wait for an idle unload before the test inference of a take
+- **transcription:** End an audio recovery cleanly when the test inference fails
+- **transcription:** Keep an unreadable take audio file at launch
+- **benchmark:** Read corpus files the running app holds open
+- **anytype:** Read type views by their v2 key, tied to the v1 type by id
+- **mcp:** Return tool text whole instead of cutting it at 8 000 characters
 
 ## [0.72.4](https://github.com/louisfifre/deckle/compare/release/v0.72.0...release/v0.72.4) — 2026-10-27
 
