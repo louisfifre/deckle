@@ -9,13 +9,16 @@
 			"path": "../deckle-scripts"
 		},
 		{
+			"name": "worktrees (deckle)",
 			"path": "../../worktrees/deckle"
 		},
 		{
+			"name": "worktrees (deckle-scripts)",
 			"path": "../../worktrees/deckle-scripts"
 		}
 	],
 	"settings": {
+		"terminal.integrated.cwd": "${workspaceFolder:deckle}",
 		"liveServer.settings.multiRootWorkspaceName": "deckle",
 		"powershell.cwd": "deckle"
 	}
