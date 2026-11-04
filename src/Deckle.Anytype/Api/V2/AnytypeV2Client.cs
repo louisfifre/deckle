@@ -95,7 +95,8 @@ public sealed class AnytypeV2Client : IDisposable
         AnytypeV2Request request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
-        string path = $"{_spacePath}/{request.Path}{QueryString(request.Query)}";
+        string spacePath = request.SpaceId is null ? _spacePath : $"/v2/spaces/{request.SpaceId}";
+        string path = $"{spacePath}/{request.Path}{QueryString(request.Query)}";
         string method = request.Method.Method;
 
         await _gate.WaitAsync(ct).ConfigureAwait(false);
