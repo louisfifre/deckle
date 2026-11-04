@@ -14,7 +14,7 @@ Top-level container for experimental harnesses that are useful to keep near Deck
 |---|---|
 | [`autoresearch/`](autoresearch/) | Generic Karpathy-style autoresearch workspace: define a goal, generate or edit candidates, measure them with explicit criteria, keep/discard, and iterate. |
 | [`lib/`](lib/) | Cross-benchmark infrastructure only: path resolution, env loading, event logs, resource monitoring. |
-| [`rewrite/`](rewrite/) | Evaluation of the paragraph rewrite; today the paragraph-gate study ([`rewrite/paragraph-gate`](rewrite/paragraph-gate/)) running the production prompt, engine and diff gate on a local model. |
+| [`rewrite/`](rewrite/) | Evaluation of the rewrites: the paragraph-gate study ([`rewrite/paragraph-gate`](rewrite/paragraph-gate/)) running the production paragraph prompt, engine and diff gate on a local model, and the model-compare study ([`rewrite/model-compare`](rewrite/model-compare/)) running Claude models × prompt variants on the whole-dictation rewrite, judged by an LLM. |
 | [`viewers/`](viewers/) | Generic benchmark result viewers. |
 
 Keep reusable code inside the workspace that owns the concept. Shared plumbing that could serve another benchmark stays under `lib/` or `viewers/`.
