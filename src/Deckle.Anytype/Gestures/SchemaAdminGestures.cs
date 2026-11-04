@@ -8,28 +8,6 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
 {
     private readonly SchemaSnapshotReader _snapshotReader = new(api);
 
-    public async Task<string> InspectAsync(string space, CancellationToken ct = default)
-    {
-        var started = DateTime.UtcNow;
-        string spaceId = aliases.Resolve(space);
-
-        SchemaSnapshot snapshot = await _snapshotReader.BuildAsync(spaceId, null, ct);
-
-        var sb = new StringBuilder();
-        sb.Append("Espace ").Append(space).Append(" : ").Append(spaceId).Append('\n');
-        sb.Append("Types : ").Append(snapshot.Types.Count).Append('\n');
-        foreach (SchemaTypeInfo type in snapshot.Types.Values.OrderBy(t => t.Key, StringComparer.Ordinal))
-            sb.Append("- ").Append(type.Key).Append(" · ").Append(type.Name).Append(" · ").Append(type.Layout)
-                .Append(" · ").Append(type.Icon?.Display ?? "icon:none").Append('\n');
-
-        sb.Append("Propriétés : ").Append(snapshot.Properties.Count).Append('\n');
-        foreach (SchemaPropertyInfo prop in snapshot.Properties.Values.OrderBy(p => p.Key, StringComparer.Ordinal))
-            sb.Append("- ").Append(prop.Key).Append(" · ").Append(prop.Name).Append(" · ").Append(prop.Format).Append('\n');
-
-        DeckleAnytypeSource.Log.GestureCompleted("schema_inspect_space", Elapsed(started));
-        return sb.ToString().TrimEnd();
-    }
-
     public async Task<string> PreviewAsync(
         string space,
         JsonObject manifestNode,
