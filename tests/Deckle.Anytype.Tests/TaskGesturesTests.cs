@@ -801,6 +801,11 @@ internal sealed class FakeAnytypeServer : IDisposable
     public void OnV2Search(JsonObject response) =>
         _routes.Add(new("POST", $"/v2/spaces/{Space}/search", 200, response.ToJsonString()));
 
+    // Any other /v2 read, by its path under the space (types/task,
+    // queries/{id}/views); the status lets a test stand in for a refusal.
+    public void OnV2Get(string relativePath, JsonObject response, int status = 200) =>
+        _routes.Add(new("GET", $"/v2/spaces/{Space}/{relativePath}", status, response.ToJsonString()));
+
     // Raw JSON payload for the list-add route — the live endpoint answers a bare
     // JSON string, which a JsonObject-based registration could not express.
     public void OnPostListObjects(string listId, string rawJson) =>

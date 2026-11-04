@@ -38,6 +38,22 @@ public class AnytypeV2ClientTests
     }
 
     [Fact]
+    public async Task ARequestNamingAnotherSpaceGoesToThatSpaceWithTheSameBearer()
+    {
+        var handler = new FakeV2Handler()
+            .Reply(HttpStatusCode.OK, "{}")
+            .Reply(HttpStatusCode.OK, "{}");
+        using AnytypeV2Client client = ClientOver(handler);
+
+        await client.SendAsync(new AnytypeV2Request(HttpMethod.Get, "types/task", SpaceId: "space-2"), Ct);
+        await client.SendAsync(Get("types/task"), Ct);
+
+        Assert.Equal("/v2/spaces/space-2/types/task", handler.Requests[0].PathAndQuery);
+        Assert.Equal("Bearer test-bearer", handler.Requests[0].Header("Authorization"));
+        Assert.Equal($"/v2/spaces/{SpaceId}/types/task", handler.Requests[1].PathAndQuery);
+    }
+
+    [Fact]
     public async Task AQueryIsAppendedAndEscaped()
     {
         var handler = new FakeV2Handler().Reply(HttpStatusCode.OK, "{}");
