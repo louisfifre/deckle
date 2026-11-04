@@ -201,31 +201,17 @@ internal static class McpSurfaceProtocolAdapter
         return result;
     }
 
-    // Safety net on the text a model receives, never the normal path. Measured
-    // over 45 days of transcripts, successful reads were the context cost (get
-    // p90 5 664 chars, max 43 737; eight results over 50 KB) while errors stayed
-    // under 3 206 chars. The typed reads are designed to stay far under this
-    // limit; the cap also covers ex.Message errors.
-    private const int MaxResultChars = 8000;
-
+    // The text goes out whole, on purpose. A former 8 000-character cap kept
+    // the head and dropped the tail, so a report journal lost its newest
+    // entries, the very ones a resumed session needs. Context cost is the
+    // caller's choice of read (a whole object or a part of it), never a
+    // silent cut here.
     private static CallToolResult ToolResult(ToolOutput output, bool isError) => new()
     {
-        // Only the text fallback is cut: StructuredContent was already
-        // validated against the output schema and is left untouched.
-        Content = [new TextContentBlock { Text = CapText(output.Text) }],
+        Content = [new TextContentBlock { Text = output.Text }],
         StructuredContent = output.StructuredContent is null
             ? null
             : JsonSerializer.SerializeToElement(output.StructuredContent),
         IsError = isError ? true : null,
     };
-
-    // A cut between the two halves of a surrogate pair (an emoji, say) would
-    // leave a lone high surrogate, which is not valid UTF-16 and serializes to
-    // U+FFFD or fails; the cut steps back one char to keep the pair whole.
-    private static string CapText(string text)
-    {
-        if (text.Length <= MaxResultChars) return text;
-        int cut = char.IsHighSurrogate(text[MaxResultChars - 1]) ? MaxResultChars - 1 : MaxResultChars;
-        return $"{text[..cut]}\n[coupé : {cut} / {text.Length} caractères]";
-    }
 }
