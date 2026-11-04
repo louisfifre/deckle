@@ -103,15 +103,9 @@ public class McpHttpHostTests
                         ToolExecutionContract.ReadOnly),
                     new ToolDescriptor(
                         "flood",
-                        "Returns a text far above the adapter's size cap.",
+                        "Returns a text far above the former 8 000-character cap.",
                         new JsonObject { ["type"] = "object", ["additionalProperties"] = false },
-                        (_, _) => Task.FromResult(new string('x', 20_000)),
-                        ToolExecutionContract.ReadOnly),
-                    new ToolDescriptor(
-                        "flood-emoji",
-                        "Returns a text whose cap falls inside a surrogate pair.",
-                        new JsonObject { ["type"] = "object", ["additionalProperties"] = false },
-                        (_, _) => Task.FromResult(new string('x', 7_999) + "😀" + new string('x', 12_000)),
+                        (_, _) => Task.FromResult(new string('x', 20_000) + "end"),
                         ToolExecutionContract.ReadOnly),
                 ],
                 new McpSurfaceDescriptor("structured", "Structured", "Test surface."))),
@@ -512,7 +506,7 @@ public class McpHttpHostTests
     }
 
     [Fact]
-    public async Task OversizedToolTextIsCutAtTheAdapterWithATotalMarker()
+    public async Task LongToolTextReachesTheModelWholeWithItsTail()
     {
         await using var harness = Harness.Start(StructuredClient);
         await using McpClient client = await ConnectAsync(
@@ -523,24 +517,7 @@ public class McpHttpHostTests
 
         Assert.NotEqual(true, result.IsError);
         TextContentBlock text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content));
-        const string Marker = "\n[coupé : 8000 / 20000 caractères]";
-        Assert.Equal(8000 + Marker.Length, text.Text.Length);
-        Assert.EndsWith(Marker, text.Text, StringComparison.Ordinal);
-        Assert.Equal(new string('x', 8000), text.Text[..8000]);
-    }
-
-    [Fact]
-    public async Task OversizedToolTextIsNeverCutInsideASurrogatePair()
-    {
-        await using var harness = Harness.Start(StructuredClient);
-        await using McpClient client = await ConnectAsync(
-            harness, StructuredClient.Id, ModernProtocol);
-
-        CallToolResult result = await client.CallToolAsync(
-            "flood-emoji", new Dictionary<string, object?>(), cancellationToken: Ct);
-
-        TextContentBlock text = Assert.IsType<TextContentBlock>(Assert.Single(result.Content));
-        Assert.Equal(new string('x', 7_999) + "\n[coupé : 7999 / 20001 caractères]", text.Text);
+        Assert.Equal(new string('x', 20_000) + "end", text.Text);
     }
 
     [Fact]
