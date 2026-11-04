@@ -91,6 +91,18 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── _base_compat.py
 │   │   └── __init__.py
 │   ├── rewrite/
+│   │   ├── model-compare/
+│   │   │   ├── prompts/
+│   │   │   │   ├── lissage-current.md
+│   │   │   │   └── lissage-literal.md
+│   │   │   ├── .gitignore
+│   │   │   ├── Corpus.cs
+│   │   │   ├── Judge.cs
+│   │   │   ├── ModelCompare.csproj
+│   │   │   ├── Program.cs
+│   │   │   ├── README.md
+│   │   │   ├── Shared.cs
+│   │   │   └── Summary.cs
 │   │   └── paragraph-gate/
 │   │       ├── .gitignore
 │   │       ├── ParagraphGate.csproj
