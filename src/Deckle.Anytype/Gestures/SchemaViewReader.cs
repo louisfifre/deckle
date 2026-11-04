@@ -30,7 +30,9 @@ public sealed record SchemaViewInfo(
 
 // The views of one dataview, or why they could not be read. A failure is a
 // value, not an exception: one unreadable type must not hide the others.
-public sealed record SchemaViewsRead(IReadOnlyList<SchemaViewInfo> Views, string? Failure, bool Denied = false)
+// ObjectId is the id of the object that holds them, when the read served it.
+public sealed record SchemaViewsRead(
+    IReadOnlyList<SchemaViewInfo> Views, string? Failure, bool Denied = false, string? ObjectId = null)
 {
     internal static SchemaViewsRead Failed(AnytypeV2Exception ex) => new(
         [],
@@ -45,6 +47,14 @@ public sealed record SchemaViewsRead(IReadOnlyList<SchemaViewInfo> Views, string
 public sealed record SchemaViewSource(string Id, string Name, string Kind, SchemaViewsRead Views);
 
 public sealed record SchemaSetsRead(IReadOnlyList<SchemaViewSource> Sources, string? Failure);
+
+// One type as /v2 lists it. Its key is the only address GET /types/{key}
+// takes, and it is not always the v1 key: measured 2026-11-04, v1 `contact`
+// is ambiguous on v2 (the space's own Contact and the bundled one), and the
+// space's is `698c39e0341c163a60acc2e9`; an id answers 404.
+public sealed record SchemaV2TypeRow(string Key, string Name);
+
+public sealed record SchemaV2TypeList(IReadOnlyList<SchemaV2TypeRow> Types, string? Failure, bool Denied);
 
 // Reads the stored views of a space through /v2, the only version that serves
 // them. A type's views ride in its object_type document (GET /types/{key}, one
@@ -61,6 +71,34 @@ internal sealed class SchemaViewReader(AnytypeV2Client client)
         "groups", "object_orders",
     };
 
+    public async Task<SchemaV2TypeList> ListTypesAsync(string spaceId, CancellationToken ct)
+    {
+        var types = new List<SchemaV2TypeRow>();
+        try
+        {
+            for (int offset = 0; ;)
+            {
+                AnytypeV2Response response = await client.SendAsync(
+                        new AnytypeV2Request(HttpMethod.Get, "types", Query: Page(offset), SpaceId: spaceId), ct)
+                    .ConfigureAwait(false);
+
+                JsonObject? body = response.Body as JsonObject;
+                JsonArray page = body?["data"] as JsonArray ?? [];
+                foreach (JsonObject row in page.OfType<JsonObject>())
+                    if (SchemaApiJson.Str(row, "key") is { Length: > 0 } key)
+                        types.Add(new SchemaV2TypeRow(key, SchemaApiJson.Str(row, "name")));
+                if (body?["has_more"]?.GetValue<bool>() != true || page.Count == 0) break;
+                offset += page.Count;
+            }
+        }
+        catch (AnytypeV2Exception ex)
+        {
+            SchemaViewsRead failed = SchemaViewsRead.Failed(ex);
+            return new SchemaV2TypeList(types, failed.Failure, failed.Denied);
+        }
+        return new SchemaV2TypeList(types, null, false);
+    }
+
     public async Task<SchemaViewsRead> ReadTypeViewsAsync(string spaceId, string typeKey, CancellationToken ct)
     {
         try
@@ -71,10 +109,14 @@ internal sealed class SchemaViewReader(AnytypeV2Client client)
                     ct)
                 .ConfigureAwait(false);
 
-            JsonObject? dataview = ((response.Body as JsonObject)?["blocks"] as JsonArray)?
+            JsonObject? document = response.Body as JsonObject;
+            JsonObject? dataview = (document?["blocks"] as JsonArray)?
                 .OfType<JsonObject>()
                 .FirstOrDefault(block => SchemaApiJson.Str(block, "type") == "dataview");
-            return new SchemaViewsRead(ParseViews(dataview?["views"] as JsonArray), null);
+            return new SchemaViewsRead(
+                ParseViews(dataview?["views"] as JsonArray),
+                null,
+                ObjectId: document is null ? null : SchemaApiJson.Id(document) is { Length: > 0 } id ? id : null);
         }
         catch (AnytypeV2Exception ex)
         {
@@ -120,11 +162,7 @@ internal sealed class SchemaViewReader(AnytypeV2Client client)
                         new AnytypeV2Request(
                             HttpMethod.Get,
                             $"{route}/{id}/views",
-                            Query:
-                            [
-                                new("offset", offset.ToString(CultureInfo.InvariantCulture)),
-                                new("limit", PageLimit.ToString(CultureInfo.InvariantCulture)),
-                            ],
+                            Query: Page(offset),
                             SpaceId: spaceId),
                         ct)
                     .ConfigureAwait(false);
@@ -143,6 +181,12 @@ internal sealed class SchemaViewReader(AnytypeV2Client client)
         }
         return new SchemaViewsRead(ParseViews(views), null);
     }
+
+    private static KeyValuePair<string, string>[] Page(int offset) =>
+    [
+        new("offset", offset.ToString(CultureInfo.InvariantCulture)),
+        new("limit", PageLimit.ToString(CultureInfo.InvariantCulture)),
+    ];
 
     internal static IReadOnlyList<SchemaViewInfo> ParseViews(JsonArray? views)
     {

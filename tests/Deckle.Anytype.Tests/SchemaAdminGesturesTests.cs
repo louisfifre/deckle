@@ -503,9 +503,18 @@ public class SchemaAdminGesturesTests
     // The object_type document v2 serves for a type: one dataview block whose
     // views carry what the app stores, default fields omitted (measured shape,
     // 2026-11-04).
-    static JsonObject PieceTypeDocument() => new()
+    static JsonObject V2TypeList(params (string Key, string Name)[] types) => new()
+    {
+        ["data"] = new JsonArray(types
+            .Select(t => (JsonNode)new JsonObject { ["key"] = t.Key, ["name"] = t.Name })
+            .ToArray()),
+        ["has_more"] = false,
+    };
+
+    static JsonObject PieceTypeDocument(string id = "type-piece") => new()
     {
         ["kind"] = "object_type",
+        ["id"] = id,
         ["blocks"] = new JsonArray
         {
             new JsonObject
@@ -578,6 +587,7 @@ public class SchemaAdminGesturesTests
             new JsonObject { ["id"] = "opt-5", ["key"] = "5", ["name"] = "5", ["color"] = "red" },
             new JsonObject { ["id"] = "opt-0", ["key"] = "zero", ["name"] = "0", ["color"] = "grey" },
         }));
+        server.OnV2Get("types", V2TypeList(("piece", "Pièce")));
         server.OnV2Get("types/piece", PieceTypeDocument());
         server.OnV2Search(new JsonObject
         {
@@ -636,6 +646,7 @@ public class SchemaAdminGesturesTests
         using var server = new FakeAnytypeServer();
         server.OnListTypes(Page(new JsonArray { ExistingType(), OtherType() }));
         server.OnListProperties(EmptyList());
+        server.OnV2Get("types", V2TypeList(("autre", "Autre"), ("piece", "Pièce")));
         server.OnV2Get(
             "types/autre",
             new JsonObject { ["status"] = 403, ["code"] = "forbidden", ["message"] = "v1 key" },
@@ -654,6 +665,7 @@ public class SchemaAdminGesturesTests
         using var server = new FakeAnytypeServer();
         server.OnListTypes(Page(new JsonArray { ExistingType(), OtherType() }));
         server.OnListProperties(EmptyList());
+        server.OnV2Get("types", V2TypeList(("autre", "Autre"), ("piece", "Pièce")));
         server.OnV2Get("types/autre", new JsonObject { ["code"] = "not_found" }, status: 404);
         server.OnV2Get("types/piece", PieceTypeDocument());
 
@@ -661,6 +673,39 @@ public class SchemaAdminGesturesTests
 
         Assert.Contains("- autre · Autre · vues illisibles : HTTP 404 not_found", digest);
         Assert.Contains("- piece · Pièce · 2 vues", digest);
+    }
+
+    // Measured on dev, 2026-11-04: the v1 key `contact` is ambiguous on v2,
+    // whose own key for the space's Contact is a hex id. The views are read by
+    // the v2 key and shown under the v1 key the document's id points back to.
+    [Fact]
+    public async Task InspectReadsViewsByTheV2KeyAndShowsItBesideTheV1Key()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { OtherType() }));
+        server.OnListProperties(EmptyList());
+        server.OnV2Get("types", V2TypeList(("698c39e0341c163a60acc2e9", "Autre")));
+        server.OnV2Get("types/698c39e0341c163a60acc2e9", PieceTypeDocument(id: "type-autre"));
+
+        string digest = await NewGestures(server).InspectAsync("home", Ct);
+
+        Assert.Contains("- autre (clé v2 698c39e0341c163a60acc2e9) · Autre · 2 vues", digest);
+        Assert.DoesNotContain(server.Requests, r => r.Path.EndsWith("/v2/spaces/test-space/types/autre", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task InspectSaysOnceThatV2RefusedTheKeyWhenTheTypeListIsRefused()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType() }));
+        server.OnListProperties(EmptyList());
+        server.OnV2Get("types", new JsonObject { ["code"] = "forbidden" }, status: 403);
+
+        string digest = await NewGestures(server).InspectAsync("home", Ct);
+
+        Assert.Contains("non lues : l'API v2 refuse cette clé (HTTP 403 forbidden)", digest);
+        Assert.DoesNotContain(server.Requests, r => r.Path.EndsWith("/types/piece", StringComparison.Ordinal));
+        Assert.DoesNotContain("Ensembles et collections", digest);
     }
 
     [Fact]

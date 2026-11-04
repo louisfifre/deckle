@@ -23,24 +23,36 @@ public sealed partial class SchemaAdminGestures
             if (SchemaPlanner.IsTagFormat(prop.Format) && prop.Id.Length > 0)
                 options[prop.Key] = await _snapshotReader.ReadTagListAsync(spaceId, prop.Id, ct);
 
-        // A key v2 refuses (one minted before anytype-cli 0.5.0 serves v1 only)
-        // would refuse every type alike: the first refusal stops the view reads.
+        // The views are read by the v2 type keys, the only address v2 takes,
+        // and tied back to the v1 type by the document's id. A key v2 refuses
+        // (one minted before anytype-cli 0.5.0 serves v1 only) would refuse
+        // every type alike: the first refusal stops the view reads.
         var viewReader = new SchemaViewReader(api.V2);
-        var typeViews = new List<(SchemaTypeInfo Type, SchemaViewsRead Views)>();
-        string? denied = null;
-        foreach (SchemaTypeInfo type in snapshot.Types.Values.OrderBy(t => t.Key, StringComparer.Ordinal))
+        SchemaV2TypeList v2Types = await viewReader.ListTypesAsync(spaceId, ct);
+        string? denied = v2Types.Denied ? v2Types.Failure : null;
+        var typeViews = new List<(string Label, string Name, SchemaViewsRead Views)>();
+        foreach (SchemaV2TypeRow row in v2Types.Types)
         {
-            SchemaViewsRead read = await viewReader.ReadTypeViewsAsync(spaceId, type.Key, ct);
+            if (denied is not null) break;
+            SchemaViewsRead read = await viewReader.ReadTypeViewsAsync(spaceId, row.Key, ct);
             if (read.Denied)
             {
                 denied = read.Failure;
                 break;
             }
-            typeViews.Add((type, read));
+            SchemaTypeInfo? v1 = read.ObjectId is null
+                ? null
+                : snapshot.Types.Values.FirstOrDefault(t => t.Id == read.ObjectId);
+            string label = v1 is null ? row.Key
+                : v1.Key == row.Key ? v1.Key
+                : $"{v1.Key} (clé v2 {row.Key})";
+            typeViews.Add((label, row.Name, read));
         }
+        typeViews.Sort((a, b) => StringComparer.Ordinal.Compare(a.Label, b.Label));
+        string? typeListFailure = v2Types.Denied ? null : v2Types.Failure;
         SchemaSetsRead? sets = denied is null ? await viewReader.ReadSetsAsync(spaceId, ct) : null;
 
-        string text = RenderInspection(space, spaceId, snapshot, options, typeViews, sets, denied);
+        string text = RenderInspection(space, spaceId, snapshot, options, typeViews, typeListFailure, sets, denied);
         DeckleAnytypeSource.Log.GestureCompleted("schema_inspect_space", Elapsed(started));
         return text;
     }
@@ -50,7 +62,8 @@ public sealed partial class SchemaAdminGestures
         string spaceId,
         SchemaSnapshot snapshot,
         IReadOnlyDictionary<string, IReadOnlyList<SchemaTagInfo>> options,
-        IReadOnlyList<(SchemaTypeInfo Type, SchemaViewsRead Views)> typeViews,
+        IReadOnlyList<(string Label, string Name, SchemaViewsRead Views)> typeViews,
+        string? typeListFailure,
         SchemaSetsRead? sets,
         string? denied)
     {
@@ -78,11 +91,13 @@ public sealed partial class SchemaAdminGestures
         if (denied is not null)
             sb.Append("- non lues : l'API v2 refuse cette clé (").Append(denied)
                 .Append("). Une clé créée avant anytype-cli 0.5.0 ne sert que v1.\n");
-        foreach ((SchemaTypeInfo type, SchemaViewsRead read) in typeViews)
+        foreach ((string label, string name, SchemaViewsRead read) in typeViews)
         {
-            sb.Append("- ").Append(type.Key).Append(" · ").Append(type.Name).Append(" · ");
+            sb.Append("- ").Append(label).Append(" · ").Append(name).Append(" · ");
             AppendViews(sb, read, snapshot, options, unlisted);
         }
+        if (typeListFailure is not null)
+            sb.Append("- liste des types v2 interrompue : ").Append(typeListFailure).Append('\n');
 
         if (sets is not null)
         {
