@@ -10,14 +10,16 @@
     action: Anytype backend / build |
 #>
 
-# Why Deckle builds its own backend. Since v0.3.7 the official Windows asset
-# of anytype-cli links msvcrt.dll: the release workflow moved to Ubuntu's
-# mingw, whose default CRT is msvcrt. tantivy-go frees Go-allocated C strings
-# through its Rust `string_free`, so a `malloc` from msvcrt's private heap is
-# freed on the process heap and the serve dies with 0xC0000374 at account
-# open. The fix is upstream as anyproto/tantivy-go#25 and the regression as
-# anyproto/anytype-cli#63; neither has an answer. Until a release carries
-# them, this script rebuilds the tag with two deliberate deviations:
+# Why Deckle once built its own backend. From v0.3.7 to v0.5.1 the official
+# Windows asset of anytype-cli linked msvcrt.dll: the release workflow had
+# moved to Ubuntu's mingw, whose default CRT is msvcrt. tantivy-go frees
+# Go-allocated C strings through its Rust `string_free`, so a `malloc` from
+# msvcrt's private heap is freed on the process heap and the serve dies with
+# 0xC0000374 at account open (anyproto/anytype-cli#63, fix proposed as
+# anyproto/tantivy-go#25). Since v0.5.2 upstream builds the Windows asset
+# with a UCRT toolchain and its CI refuses an msvcrt import, so the pin is
+# the official asset again and this script is the fallback for a release
+# that regresses. It rebuilds the tag with two deliberate deviations:
 #
 #   - the tantivy-go sites listed in $PatchSites free with `C.free`, which
 #     pairs with the `C.CString` malloc whatever CRT the binary links;
@@ -34,7 +36,7 @@
 param(
     # anytype-cli release tag to rebuild, without the leading v.
     [ValidatePattern('^\d+\.\d+\.\d+$')]
-    [string]$Version = '0.5.0',
+    [string]$Version = '0.5.2',
 
     # Output directory, holding the zip, its sha256 sidecar, the build
     # report and the work tree. Defaults to
