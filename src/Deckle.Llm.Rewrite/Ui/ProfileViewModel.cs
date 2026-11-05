@@ -1,5 +1,6 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Deckle.Catalog;
 using Microsoft.UI.Xaml.Data;
 namespace Deckle.Llm.Rewrite;
 
@@ -60,6 +61,23 @@ public partial class ProfileViewModel : ObservableObject
     [ObservableProperty]
     public partial double RepeatPenalty { get; set; }
 
+    // Chosen by the length of the take (RewriteProfile.AutoSelect*). The
+    // minutes are always one of RewriteProfile.AutoSelectStopsMinutes.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Summary))]
+    public partial bool AutoSelect { get; set; }
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Summary))]
+    public partial int AutoSelectFromMinutes { get; set; }
+
+    // The shortcut that starts a dictation rewritten with this profile.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(Summary))]
+    public partial HotkeyChord? Hotkey { get; set; }
+
+    public string Id { get; private set; } = "";
+
     // ── State ────────────────────────────────────────────────────────────────
 
     // Drives IsExpanded so a freshly added profile opens. Never reset: once
@@ -75,10 +93,21 @@ public partial class ProfileViewModel : ObservableObject
         {
             string model = string.IsNullOrWhiteSpace(Model) ? "(no model)" : Model;
             string provider = string.IsNullOrWhiteSpace(ProviderName) ? "(no provider)" : ProviderName;
-            if (!ShowsGenerationHints)
-                return $"{provider}  ·  {model}";
-            int idx = Math.Clamp((int)CtxIndex, 0, CtxKSteps.Length - 1);
-            return $"{provider}  ·  {model}  ·  {CtxKSteps[idx]}K ctx  ·  temp {Temperature:F2}";
+            string summary = $"{provider}  ·  {model}";
+            if (ShowsGenerationHints)
+            {
+                int idx = Math.Clamp((int)CtxIndex, 0, CtxKSteps.Length - 1);
+                summary += $"  ·  {CtxKSteps[idx]}K ctx  ·  temp {Temperature:F2}";
+            }
+            // What makes the profile run, readable with the fold closed: the
+            // list of profiles then doubles as the overview of the thresholds.
+            if (AutoSelect)
+                summary += "  ·  " + string.Format(
+                    Loc.GetFrom("Deckle.Llm.Rewrite", "LlmProfile_SummaryFromMinutes_Format"),
+                    AutoSelectFromMinutes);
+            if (HotkeyChordText.Format(Hotkey) is { } chord)
+                summary += $"  ·  {chord}";
+            return summary;
         }
     }
 
@@ -103,6 +132,20 @@ public partial class ProfileViewModel : ObservableObject
     partial void OnCtxIndexChanged(double value) { if (!_isSyncing) PushToSettings(); }
     partial void OnTopPChanged(double value) { if (!_isSyncing) PushToSettings(); }
     partial void OnRepeatPenaltyChanged(double value) { if (!_isSyncing) PushToSettings(); }
+    partial void OnAutoSelectChanged(bool value) { if (!_isSyncing) PushToSettings(); }
+    partial void OnAutoSelectFromMinutesChanged(int value) { if (!_isSyncing) PushToSettings(); }
+    partial void OnHotkeyChanged(HotkeyChord? value) { if (!_isSyncing) PushToSettings(); }
+
+    // The stop nearest to a stored value, so a hand-edited 7.5 or 45 lands
+    // on the slider instead of off it.
+    internal static int NearestStopIndex(int minutes)
+    {
+        var stops = RewriteProfile.AutoSelectStopsMinutes;
+        int best = 0;
+        for (int i = 1; i < stops.Count; i++)
+            if (Math.Abs(stops[i] - minutes) < Math.Abs(stops[best] - minutes)) best = i;
+        return best;
+    }
 
     // ── Constructor ──────────────────────────────────────────────────────────
 
@@ -119,6 +162,9 @@ public partial class ProfileViewModel : ObservableObject
         CtxIndex = Array.IndexOf(CtxKSteps, DefaultNumCtxK);
         TopP = double.NaN;
         RepeatPenalty = double.NaN;
+        AutoSelect = false;
+        AutoSelectFromMinutes = new RewriteProfile().AutoSelectFromMinutes;
+        Hotkey = null;
         _isSyncing = false;
     }
 
@@ -142,6 +188,11 @@ public partial class ProfileViewModel : ObservableObject
         TopP = profile.TopP ?? double.NaN;
         RepeatPenalty = profile.RepeatPenalty ?? double.NaN;
 
+        Id = profile.Id;
+        AutoSelect = profile.AutoSelect;
+        AutoSelectFromMinutes = RewriteProfile.AutoSelectStopsMinutes[NearestStopIndex(profile.AutoSelectFromMinutes)];
+        Hotkey = profile.Hotkey;
+
         _isSyncing = false;
     }
 
@@ -163,6 +214,9 @@ public partial class ProfileViewModel : ObservableObject
         p.NumCtxK = CtxKSteps[Math.Clamp((int)CtxIndex, 0, CtxKSteps.Length - 1)];
         p.TopP = double.IsNaN(TopP) ? null : (double?)TopP;
         p.RepeatPenalty = double.IsNaN(RepeatPenalty) ? null : (double?)RepeatPenalty;
+        p.AutoSelect = AutoSelect;
+        p.AutoSelectFromMinutes = AutoSelectFromMinutes;
+        p.Hotkey = Hotkey;
         LlmSettingsService.Instance.Save();
     }
 }
@@ -180,6 +234,24 @@ public sealed class CtxTooltipConverter : IValueConverter
         if (idx >= 0 && idx < ProfileViewModel.CtxKSteps.Length)
             return $"{ProfileViewModel.CtxKSteps[idx]}K";
         return value;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, string language)
+        => throw new NotImplementedException();
+}
+
+// The threshold slider indexes RewriteProfile.AutoSelectStopsMinutes; its
+// thumb says the minutes the index stands for.
+public sealed class MinutesStopConverter : IValueConverter
+{
+    public static string Format(int minutes) => string.Format(
+        Loc.GetFrom("Deckle.Llm.Rewrite", "LlmProfile_MinutesValue_Format"), minutes);
+
+    public object Convert(object value, Type targetType, object parameter, string language)
+    {
+        var stops = RewriteProfile.AutoSelectStopsMinutes;
+        int idx = value is double d ? (int)Math.Round(d) : 0;
+        return idx >= 0 && idx < stops.Count ? Format(stops[idx]) : value;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, string language)

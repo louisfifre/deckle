@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 using Deckle.Catalog;
 using Deckle.Llm;
 
@@ -224,6 +227,137 @@ public sealed partial class LlmProfilesSection : UserControl
         return names
             .Where(n => n.Contains(query, StringComparison.OrdinalIgnoreCase))
             .ToList();
+    }
+
+    // ── Length threshold and shortcut cards ─────────────────────────────────
+    //
+    // Composed rather than written in the template, so the shortcut gets the
+    // same chord editor as the Shortcuts page. They go into the profile's own
+    // fold after the editor card, each a card of its own: a fold never holds a
+    // fold, so the threshold card is revealed by the switch above it instead
+    // of folding under it.
+    //
+    // The ItemsRepeater recycles an expander for another profile after a
+    // Reload, so the cards are tied to the profile they were composed for and
+    // recomposed when the expander changes hands.
+
+    private sealed record ComposedProfileCards(ProfileViewModel Profile, List<UIElement> Cards);
+
+    private readonly ConditionalWeakTable<SettingsExpander, ComposedProfileCards> _composed = new();
+
+    private void ProfileExpander_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (sender is SettingsExpander expander && expander.DataContext is ProfileViewModel vm)
+            ComposeProfileCards(expander, vm);
+    }
+
+    private void ProfileExpander_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
+    {
+        if (sender is SettingsExpander expander && expander.IsLoaded && args.NewValue is ProfileViewModel vm)
+            ComposeProfileCards(expander, vm);
+    }
+
+    private void ComposeProfileCards(SettingsExpander expander, ProfileViewModel vm)
+    {
+        if (_composed.TryGetValue(expander, out ComposedProfileCards? done))
+        {
+            if (ReferenceEquals(done.Profile, vm)) return;
+            foreach (UIElement card in done.Cards) expander.Items.Remove(card);
+            _composed.Remove(expander);
+        }
+
+        var host = new StackPanel();
+        new SettingsComposer(host, vm).Compose(ProfileCards(vm), inFold: true);
+
+        var cards = new List<UIElement>();
+        while (host.Children.Count > 0)
+        {
+            UIElement card = host.Children[0];
+            host.Children.RemoveAt(0);
+            expander.Items.Add(card);
+            cards.Add(card);
+        }
+        _composed.Add(expander, new ComposedProfileCards(vm, cards));
+    }
+
+    private IReadOnlyList<SettingDescriptor> ProfileCards(ProfileViewModel vm) =>
+    [
+        Setting.Toggle("LlmProfileAutoSelectCard",
+            () => vm.AutoSelect, v => vm.AutoSelect = v,
+            defaultValue: () => false),
+        Setting.Editor("LlmProfileAutoSelectFromCard",
+            () => vm.AutoSelectFromMinutes, v => vm.AutoSelectFromMinutes = v,
+            new EditorArgs(() => BuildMinutesSlider(vm)),
+            visibleWhen: () => vm.AutoSelect,
+            defaultValue: () => new RewriteProfile().AutoSelectFromMinutes),
+        Setting.Hotkey("LlmProfileHotkeyCard",
+            () => vm.Hotkey, v => vm.Hotkey = v,
+            new HotkeyArgs(AllowUnbound: true),
+            defaultValue: () => null,
+            advisory: () => HotkeyHeldByAnotherProfile(vm)),
+    ];
+
+    // A slider over the stops, not over minutes: the stops are uneven (a
+    // minute apart up to ten, coarser beyond), so the thumb moves stop to stop
+    // and the readout beside it says the minutes. Writes on every stop, like
+    // the profile's other sliders; the settings save is debounced.
+    private static FrameworkElement BuildMinutesSlider(ProfileViewModel vm)
+    {
+        IReadOnlyList<int> stops = RewriteProfile.AutoSelectStopsMinutes;
+        var slider = new Slider
+        {
+            Minimum = 0,
+            Maximum = stops.Count - 1,
+            StepFrequency = 1,
+            SmallChange = 1,
+            LargeChange = 1,
+            SnapsTo = SliderSnapsTo.StepValues,
+            MinWidth = 240,
+            VerticalAlignment = VerticalAlignment.Center,
+            ThumbToolTipValueConverter = new MinutesStopConverter(),
+        };
+        var readout = new TextBlock
+        {
+            MinWidth = 56,
+            VerticalAlignment = VerticalAlignment.Center,
+            Style = (Style)Application.Current.Resources["BodyTextBlockStyle"],
+        };
+
+        void Sync()
+        {
+            slider.Value = ProfileViewModel.NearestStopIndex(vm.AutoSelectFromMinutes);
+            readout.Text = MinutesStopConverter.Format(vm.AutoSelectFromMinutes);
+        }
+
+        slider.ValueChanged += (_, e) =>
+        {
+            int minutes = stops[Math.Clamp((int)Math.Round(e.NewValue), 0, stops.Count - 1)];
+            readout.Text = MinutesStopConverter.Format(minutes);
+            vm.AutoSelectFromMinutes = minutes;
+        };
+        vm.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ProfileViewModel.AutoSelectFromMinutes)) Sync();
+        };
+        Sync();
+
+        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
+        row.Children.Add(slider);
+        row.Children.Add(readout);
+        return row;
+    }
+
+    // Two profiles on one chord: Windows registers it once, so only the first
+    // would ever start. The Shortcuts page checks against the other actions.
+    private string? HotkeyHeldByAnotherProfile(ProfileViewModel vm)
+    {
+        if (vm.Hotkey is not { IsComplete: true } chord) return null;
+        ProfileViewModel? other = Profiles.FirstOrDefault(p => !ReferenceEquals(p, vm) && p.Hotkey == chord);
+        return other is null
+            ? null
+            : string.Format(
+                Loc.GetFrom("Deckle.Llm.Rewrite", "LlmProfile_HotkeyUsedByProfile_Format"),
+                other.Name);
     }
 
     // ── Add ─────────────────────────────────────────────────────────────────
