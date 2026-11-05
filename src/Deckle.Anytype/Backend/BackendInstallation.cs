@@ -42,19 +42,23 @@ public static class BackendInstallation
     // only half the first run: the bot account and API key are a separate,
     // interactive provisioning act.
     //
-    // The official Windows assets since 0.3.7 die with 0xC0000374 at account
-    // open (msvcrt-linked exe plus a cross-allocator free in tantivy-go, see
-    // anyproto/tantivy-go#25). Until upstream ships the fix, the pin is our own
-    // rebuild of the official tag, produced by
-    // scripts/release/build-anytype-backend.ps1 and hosted as a
-    // release asset of this repository; the SHA-256 is the one that script
-    // prints. Once a release carries the fix, point this back at
-    // github.com/anyproto/anytype-cli and pin GitHub's per-asset digest.
+    // The pin is the official asset again, with GitHub's per-asset digest.
+    // The official Windows assets from 0.3.7 to 0.5.1 died with 0xC0000374 at
+    // account open: an msvcrt-linked exe plus a cross-allocator free in
+    // tantivy-go (anyproto/anytype-cli#63, anyproto/tantivy-go#25), so 0.5.0
+    // was our own UCRT rebuild of the tag. Since 0.5.2 upstream builds the
+    // Windows asset with a UCRT toolchain and its CI refuses an exe that
+    // imports msvcrt.dll; the tantivy-go free itself is still unpatched there,
+    // so the toolchain alone keeps it harmless. A future pin is checked the
+    // same way before it ships: the exe must import api-ms-win-crt-*, never
+    // msvcrt.dll, and a serve must open an account on a fresh profile
+    // (scripts/release/build-anytype-backend.ps1 stays as the fallback
+    // should a release regress).
     public static BackendBundle CurrentBundle { get; } = new(
-        Version:     "0.5.0",
-        Url:         "https://github.com/louisfifre/deckle/releases/download/anytype-backend-v0.5.0/anytype-cli-v0.5.0-windows-amd64.zip",
-        Sha256:      "988760efb3fa29d378534baee71b3433fdceca72dac96362ce65d076029ceb2e",
-        SizeBytes:   51_350_092L,
+        Version:     "0.5.2",
+        Url:         "https://github.com/anyproto/anytype-cli/releases/download/v0.5.2/anytype-cli-v0.5.2-windows-amd64.zip",
+        Sha256:      "9bd743bb375961e85b0c3ce15355792a3b3526e0a2d48423ef5796e8814d6775",
+        SizeBytes:   50_396_862L,
         DisplayName: "Anytype backend (anytype-cli)");
 
     // False means the module stays dormant — never a boot failure — and the
