@@ -130,6 +130,7 @@ public sealed class BackendRealProcessTests
                 IBackendProcess process = new BackendProcessHost().Spawn(
                         new BackendProcessSpec(path, "-n 120 127.0.0.1"), inRestart: false)
                     ?? throw new InvalidOperationException("the dummy process did not start");
+                WaitForMainModule(process.Id);
                 return new DummyServe(directory, path, process);
             }
             catch
@@ -137,6 +138,25 @@ public sealed class BackendRealProcessTests
                 TryDelete(directory);
                 throw;
             }
+        }
+
+        // Windows lists a process's modules only once its loader has run, so
+        // Process.MainModule is null (no throw) for about the first millisecond
+        // of its life, and BackendProcessHost.Open then reads the process as
+        // gone. A serve the supervisor asks to replace has been alive for
+        // minutes, never for under a millisecond; this wait restores that
+        // precondition, which a warm JIT otherwise defeats (observed: the
+        // replace test failed with reason "gone" whenever a sibling ran first).
+        private static void WaitForMainModule(int processId)
+        {
+            var sw = Stopwatch.StartNew();
+            while (sw.Elapsed < TimeSpan.FromSeconds(2))
+            {
+                using var live = System.Diagnostics.Process.GetProcessById(processId);
+                if (live.MainModule?.FileName is not null) return;
+                Thread.Sleep(5);
+            }
+            throw new InvalidOperationException("the dummy process never listed its main module");
         }
 
         public void Kill()
