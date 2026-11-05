@@ -408,6 +408,14 @@
   <data name="GeneralHotkeyAlreadyUsed_Format" xml:space="preserve">
     <value>Already used by {0}</value>
   </data>
+  <!-- Read-only card of a rewrite profile's shortcut on the Shortcuts page.
+       {0} is the profile's name. -->
+  <data name="HotkeysPage_ProfileHotkey_Format" xml:space="preserve">
+    <value>Dictate with {0}</value>
+  </data>
+  <data name="HotkeysPage_ProfileHotkey_Description" xml:space="preserve">
+    <value>Set in this profile, on the Rewriting page.</value>
+  </data>
 
   <!-- ─── GeneralPage ────────────────────────────────────────────────
        Second page in the Settings nav, after Home. Page header, then the

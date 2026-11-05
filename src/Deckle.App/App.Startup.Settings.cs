@@ -75,6 +75,15 @@ public partial class App
         Settings.SettingsHost.IsHotkeyActionAvailable =
             id => _hotkeyActions.Any(action => action.ToggleId == id);
 
+        // The rewrite profiles' own shortcuts, as registered: the Shortcuts page
+        // lists them and checks its chords against them.
+        Settings.SettingsHost.ProfileHotkeys = () => _profileHotkeyActions
+            .Select(action => action.Chord() is { } chord
+                ? new Settings.ProfileHotkey(action.Label, chord)
+                : null)
+            .OfType<Settings.ProfileHotkey>()
+            .ToList();
+
         // Each module page declares its own nav identity in its own assembly; the
         // composition root supplies only the Order, which leaves gaps so a later
         // module can land between two. A page registers only when the presence

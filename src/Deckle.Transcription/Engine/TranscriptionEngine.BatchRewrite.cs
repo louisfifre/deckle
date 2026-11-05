@@ -36,14 +36,16 @@ public sealed partial class TranscriptionEngine
     // the recording cannot label the take with a profile its batches never used.
     internal sealed record BatchRewriteRun(DictationBatchRewriter Rewriter, RewriteProfile Profile);
 
-    // Null when batching is off or no active profile resolves: the take then
-    // follows the whole-take rewrite (or none) at finalize, as before.
+    // Null when batching is off or no profile resolves without the take's
+    // length: the take then follows the whole-take rewrite (or none) at
+    // finalize, where the length thresholds can choose.
     private BatchRewriteRun? StartBatchRewrite()
     {
         LlmSettings llm = _host.Llm;
         if (!llm.BatchRewriting.Enabled) return null;
 
-        RewriteProfile? profile = RewriteProfileSelection.ForDictation(llm);
+        RewriteProfile? profile = RewriteProfileSelection.ForDictation(
+            llm, sentAudioSec: null, TakeProfileId);
         if (profile is null) return null;
 
         // The core does not clamp: a hand-edited settings file could hold any

@@ -2263,6 +2263,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteDiffGateTests.cs
 │   │   ├── RewriteFailureMessageTests.cs
 │   │   ├── RewriteLogTests.cs
+│   │   ├── RewriteProfileTriggerTests.cs
 │   │   ├── RewriteServiceFeedbackTests.cs
 │   │   ├── SentenceBoundaryTests.cs
 │   │   └── SentenceRewriteTests.cs

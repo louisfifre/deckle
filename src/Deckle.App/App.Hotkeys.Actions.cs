@@ -30,6 +30,41 @@ public partial class App
 
     private IReadOnlyList<HotkeyAction> _hotkeyActions = [];
 
+    // ── Rewrite profile shortcuts ─────────────────────────────────────────────
+    //
+    // Each rewrite profile may carry its own chord (RewriteProfile.Hotkey); a
+    // press starts a take rewritten with that profile, and stops a take like
+    // Record does. Profiles come and go, so these actions are rebuilt from the
+    // Rewriting settings at every rebind, with ids from 100 up in profile
+    // order; a press resolves through the list built at that same rebind, so
+    // an id always means the profile it was registered for.
+    private const int FirstProfileHotkeyId = 100;
+    private bool _profileHotkeysAvailable;
+    private IReadOnlyList<HotkeyAction> _profileHotkeyActions = [];
+
+    private IEnumerable<HotkeyAction> AllHotkeyActions() => _hotkeyActions.Concat(_profileHotkeyActions);
+
+    private IReadOnlyList<HotkeyAction> BuildProfileHotkeyActions()
+    {
+        if (!_profileHotkeysAvailable) return [];
+
+        var actions = new List<HotkeyAction>();
+        List<Llm.Rewrite.RewriteProfile> profiles = Llm.Rewrite.LlmSettingsService.Instance.Current.Profiles;
+        for (int i = 0; i < profiles.Count; i++)
+        {
+            Llm.Rewrite.RewriteProfile profile = profiles[i];
+            if (profile.Hotkey is not { IsComplete: true } chord) continue;
+            string profileId = profile.Id;
+            actions.Add(new(
+                FirstProfileHotkeyId + i,
+                "rewrite-profile",
+                profile.Name,
+                () => chord,
+                () => ToggleRecordingFromHotkey(profileId)));
+        }
+        return actions;
+    }
+
     // False when the WM_HOTKEY subclass could not be installed: a rebind
     // would then acquire chords nobody listens to.
     private bool _hotkeysInstalled;
@@ -72,7 +107,7 @@ public partial class App
     private IReadOnlyList<GlobalHotkeyBinding> BuildHotkeyBindings()
     {
         var bindings = new List<GlobalHotkeyBinding>();
-        foreach (HotkeyAction action in _hotkeyActions)
+        foreach (HotkeyAction action in AllHotkeyActions())
         {
             if (action.Chord() is not { IsComplete: true } chord) continue;
             bindings.Add(new(
@@ -86,14 +121,14 @@ public partial class App
     // The chord as Settings shows it ("Ctrl + Shift + `"), so a log line
     // matches what the person sees on the page.
     private string HotkeyChordLabel(int hotkeyId)
-        => HotkeyChordText.Format(_hotkeyActions.FirstOrDefault(a => a.Id == hotkeyId)?.Chord())
+        => HotkeyChordText.Format(AllHotkeyActions().FirstOrDefault(a => a.Id == hotkeyId)?.Chord())
            ?? "unbound";
 
     private void ReportHotkeyFailures(IReadOnlyList<HotkeyRegistrationFailure> failures)
     {
         foreach (HotkeyRegistrationFailure failure in failures)
         {
-            HotkeyAction? action = _hotkeyActions.FirstOrDefault(a => a.Id == failure.Id);
+            HotkeyAction? action = AllHotkeyActions().FirstOrDefault(a => a.Id == failure.Id);
             string label = action?.Label ?? $"id={failure.Id}";
             GlobalHotkeyBinding binding = _hotkeyManager?.Bindings.FirstOrDefault(b => b.Id == failure.Id) ?? default;
 
@@ -137,6 +172,7 @@ public partial class App
     {
         if (_hotkeyManager is null || !_hotkeysInstalled) return;
 
+        _profileHotkeyActions = BuildProfileHotkeyActions();
         IReadOnlyList<GlobalHotkeyBinding> bindings = BuildHotkeyBindings();
         if (bindings.SequenceEqual(_hotkeyManager.Bindings)) return;
 

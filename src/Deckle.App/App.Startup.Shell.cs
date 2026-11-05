@@ -216,6 +216,9 @@ public partial class App
         // An absent module has no action, so its chord is never registered and
         // stays free for other apps.
         _hotkeyActions = BuildHotkeyActions(context, [.. trayToggles, .. trayFooterToggles]);
+        // A profile shortcut starts a dictation, so it needs both modules.
+        _profileHotkeysAvailable = context.TranscriptionPresent && context.RewritePresent;
+        _profileHotkeyActions = BuildProfileHotkeyActions();
         _hotkeyManager = new HotkeyManager(_messageHost.Hwnd, OnHotkey, BuildHotkeyBindings());
         // Register throws only when the WM_HOTKEY subclass cannot be installed;
         // uncaught, that throw would stop the app from starting. Deckle-Shell
@@ -235,6 +238,9 @@ public partial class App
                 1); // Overlay
         }
         Settings.SettingsService.Instance.Changed += OnShellSettingsChangedForHotkeys;
+        // The profile shortcuts live in the Rewriting settings, saved apart.
+        if (_profileHotkeysAvailable)
+            Llm.Rewrite.LlmSettingsService.Instance.Changed += OnShellSettingsChangedForHotkeys;
         context.Milestone("hotkeys");
 
         // After the HUD exists: the restore shows its message there.

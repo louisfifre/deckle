@@ -21,8 +21,14 @@
                                          x:Uid="HotkeysPageDictationSection"
                                          HasReset="True"
                                          ResetRequested="ResetDictation_Click">
-                    <StackPanel x:Name="DictationHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
+                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                        <StackPanel x:Name="DictationHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+                        <!-- One read-only card per rewrite profile that has a
+                             shortcut; it is set in the profile (LoadProfileHotkeys). -->
+                        <StackPanel x:Name="ProfileHotkeysHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+                    </StackPanel>
                 </catalog:SettingsSection>
 
                 <!-- ── Input ───────────────────────────────────────────────── -->

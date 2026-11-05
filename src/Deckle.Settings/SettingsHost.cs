@@ -51,4 +51,12 @@ public static class SettingsHost
 
     // Unwired (null) shows every hotkey card.
     public static Func<string, bool>? IsHotkeyActionAvailable;
+
+    // The shortcuts the rewrite profiles carry, set in each profile on the
+    // Rewriting page. Deckle.Settings does not reference that module, so the
+    // App lists them; the Shortcuts page shows them and checks its own chords
+    // against them. Unwired (null) lists none.
+    public static Func<IReadOnlyList<ProfileHotkey>>? ProfileHotkeys;
 }
+
+public sealed record ProfileHotkey(string ProfileName, Deckle.Catalog.HotkeyChord Chord);
