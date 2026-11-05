@@ -514,6 +514,55 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal("[" + rawTake + "]", clipboard.Text);
     }
 
+    // No active profile, so only the length can choose: a threshold the take
+    // reaches rewrites it, one it does not reach leaves the raw text. The
+    // scripted speech is far below a minute, so a zero threshold stands for
+    // "reached" and an hour for "not reached".
+    [Theory]
+    [InlineData(0, true)]
+    [InlineData(60, false)]
+    public async Task ALengthThresholdChoosesTheProfileOfAStreamedTake(int fromMinutes, bool rewritten)
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
+        var backend = new SequencedBackend([TestInference, FirstLongUtterance, SecondLongUtterance]);
+        var clipboard = new RecordingClipboardWriter();
+        var rewrite = new BracketingRewriteService();
+        StreamingHost host = RewritingHost(batchRewriting: false);
+        host.Llm.ActiveProfileId = null;
+        host.Llm.ActiveProfileName = null;
+        RewriteProfile byLength = host.Llm.Profiles[1];
+        byLength.Id = "by-length";
+        byLength.AutoSelect = true;
+        byLength.AutoSelectFromMinutes = fromMinutes;
+        using var engine = new TranscriptionEngine(host, backend, capture, clipboard, rewrite);
+
+        await RunOneTakeAsync(engine, backend, testCancellation);
+
+        Assert.Equal(rewritten ? ["by-length"] : [], rewrite.ProfileIds);
+        Assert.Equal(rewritten ? 2 : 1, clipboard.WriteCount);
+    }
+
+    // The profile's own shortcut wins over the active profile, and holds even
+    // with rewriting switched off: the press asked for that rewrite.
+    [Fact]
+    public async Task AProfileShortcutRewritesTheTakeWithThatProfile()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
+        var backend = new SequencedBackend([TestInference, FirstLongUtterance, SecondLongUtterance]);
+        var clipboard = new RecordingClipboardWriter();
+        var rewrite = new BracketingRewriteService();
+        StreamingHost host = RewritingHost(batchRewriting: false);
+        host.Llm.Enabled = false;
+        host.Llm.Profiles[1].Id = "shortcut";
+        using var engine = new TranscriptionEngine(host, backend, capture, clipboard, rewrite);
+
+        await RunOneTakeAsync(engine, backend, testCancellation, rewriteProfileId: "shortcut");
+
+        Assert.Equal(["shortcut"], rewrite.ProfileIds);
+    }
+
     [Fact]
     [Trait("Category", "observability")]
     public async Task ADeliveredTakeWritesOneMilestoneStartAndOneEndSharingTheirWorkId()
@@ -606,7 +655,8 @@ public sealed class LiveTranscriptionPipelineTests
     // Starts a take, stops it once the backend has transcribed both scripted
     // utterances, and waits until the engine is back to Ready.
     internal static async Task RunOneTakeAsync(
-        TranscriptionEngine engine, SequencedBackend backend, CancellationToken testCancellation)
+        TranscriptionEngine engine, SequencedBackend backend, CancellationToken testCancellation,
+        string? rewriteProfileId = null)
     {
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
             TaskCreationOptions.RunContinuationsAsynchronously);
@@ -621,7 +671,7 @@ public sealed class LiveTranscriptionPipelineTests
 
         Assert.Equal(
             ToggleResult.Started,
-            engine.RequestToggle(shouldPaste: false));
+            engine.RequestToggle(shouldPaste: false, rewriteProfileId));
         await backend.AllCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), testCancellation);
         Assert.Equal(
@@ -655,12 +705,15 @@ public sealed class LiveTranscriptionPipelineTests
     private sealed class BracketingRewriteService : IRewriteService
     {
         private readonly ConcurrentQueue<string> _inputs = new();
+        private readonly ConcurrentQueue<string> _profileIds = new();
 
         public string[] Inputs => _inputs.ToArray();
+        public string[] ProfileIds => _profileIds.ToArray();
 
         public GenerationResult Rewrite(string text, RewriteProfile profile)
         {
             _inputs.Enqueue(text);
+            _profileIds.Enqueue(profile.Id);
             return new GenerationResult("[" + text + "]", 1, 0, 0, 0, 0, 0);
         }
 

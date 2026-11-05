@@ -76,8 +76,6 @@ public partial class ProfileViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(Summary))]
     public partial HotkeyChord? Hotkey { get; set; }
 
-    public string Id { get; private set; } = "";
-
     // ── State ────────────────────────────────────────────────────────────────
 
     // Drives IsExpanded so a freshly added profile opens. Never reset: once
@@ -188,7 +186,6 @@ public partial class ProfileViewModel : ObservableObject
         TopP = profile.TopP ?? double.NaN;
         RepeatPenalty = profile.RepeatPenalty ?? double.NaN;
 
-        Id = profile.Id;
         AutoSelect = profile.AutoSelect;
         AutoSelectFromMinutes = RewriteProfile.AutoSelectStopsMinutes[NearestStopIndex(profile.AutoSelectFromMinutes)];
         Hotkey = profile.Hotkey;
