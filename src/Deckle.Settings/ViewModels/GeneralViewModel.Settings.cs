@@ -113,8 +113,20 @@ public partial class GeneralViewModel
                 return string.Format(Loc.GetFrom("Deckle.Settings", "GeneralHotkeyAlreadyUsed_Format"), header);
             }
         }
+        foreach (ProfileHotkey profile in SettingsHost.ProfileHotkeys?.Invoke() ?? [])
+        {
+            if (profile.Chord == c)
+                return string.Format(
+                    Loc.GetFrom("Deckle.Settings", "GeneralHotkeyAlreadyUsed_Format"),
+                    ProfileHotkeyHeader(profile.ProfileName));
+        }
         return null;
     }
+
+    // The card header of a profile's shortcut on the Shortcuts page, also the
+    // name a duplicate advisory gives it.
+    public static string ProfileHotkeyHeader(string profileName)
+        => string.Format(Loc.GetFrom("Deckle.Settings", "HotkeysPage_ProfileHotkey_Format"), profileName);
 
     // Side effects live in the VM setters, so the composer can drive them. The
     // autostart setter drives StartupService and, when the write is refused,

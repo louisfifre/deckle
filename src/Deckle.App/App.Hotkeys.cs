@@ -22,10 +22,14 @@ public partial class App
     // The tray panel's Record button lands here too.
     private void OnHotkey(int hotkeyId)
     {
-        _hotkeyActions.FirstOrDefault(action => action.Id == hotkeyId)?.Invoke();
+        AllHotkeyActions().FirstOrDefault(action => action.Id == hotkeyId)?.Invoke();
     }
 
-    private void ToggleRecordingFromHotkey()
+    private void ToggleRecordingFromHotkey() => ToggleRecordingFromHotkey(rewriteProfileId: null);
+
+    // rewriteProfileId: the profile whose own shortcut was pressed, null for
+    // Record. The engine uses it only when the press starts a take.
+    private void ToggleRecordingFromHotkey(string? rewriteProfileId)
     {
         if (_engine is null)
         {
@@ -35,10 +39,11 @@ public partial class App
             return;
         }
 
-        // The press carries no profile: the engine applies the persisted
-        // active rewrite profile at finalize.
+        // Without a profile, the engine picks one at finalize from the take's
+        // length and the active profile (RewriteProfileSelection).
         var result = _engine.RequestToggle(
-            shouldPaste: Settings.SettingsService.Instance.Current.Paste.AutoPasteEnabled);
+            shouldPaste: Settings.SettingsService.Instance.Current.Paste.AutoPasteEnabled,
+            rewriteProfileId);
 
         switch (result)
         {

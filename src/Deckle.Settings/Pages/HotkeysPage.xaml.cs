@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
@@ -74,14 +75,40 @@ public sealed partial class HotkeysPage : Page
     private void LoadAndSync()
     {
         ViewModel.LoadHotkeys();
+        bool anyProfileHotkey = LoadProfileHotkeys();
         // A section whose every card is hidden would leave its title over
         // nothing, so it hides whole.
-        DictationSection.Visibility = SectionVisibility(GeneralViewModel.DictationHotkeyIds);
+        DictationSection.Visibility = anyProfileHotkey
+            ? Visibility.Visible
+            : SectionVisibility(GeneralViewModel.DictationHotkeyIds);
         InputSection.Visibility = SectionVisibility(GeneralViewModel.InputHotkeyIds);
         DisplaySection.Visibility = SectionVisibility(GeneralViewModel.DisplayHotkeyIds);
         // Load() raises no PropertyChanged on a clean profile, so no composer
         // DirtyChanged fires and this call settles the gate.
         GateResetAll();
+    }
+
+    // A profile's shortcut is set in the profile, where it belongs with the
+    // rewrite it starts; this page lists it beside the other chords so the
+    // whole keyboard reads in one place. Read-only: one place edits a value.
+    private bool LoadProfileHotkeys()
+    {
+        ProfileHotkeysHost.Children.Clear();
+        IReadOnlyList<ProfileHotkey> hotkeys = SettingsHost.ProfileHotkeys?.Invoke() ?? [];
+        foreach (ProfileHotkey hotkey in hotkeys)
+        {
+            ProfileHotkeysHost.Children.Add(new SettingsCard
+            {
+                Header = GeneralViewModel.ProfileHotkeyHeader(hotkey.ProfileName),
+                Description = Loc.GetFrom("Deckle.Settings", "HotkeysPage_ProfileHotkey_Description"),
+                Content = new TextBlock
+                {
+                    Text = HotkeyChordText.Format(hotkey.Chord) ?? "",
+                    VerticalAlignment = VerticalAlignment.Center,
+                },
+            });
+        }
+        return hotkeys.Count > 0;
     }
 
     private static Visibility SectionVisibility(IReadOnlyList<string> ids)
