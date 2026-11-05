@@ -119,6 +119,12 @@ public sealed partial class TranscriptionEngine : IDisposable
 
     private volatile bool _shouldPaste = false;
 
+    // The profile whose own shortcut started the live take, or null when the
+    // plain Record shortcut did. Written at start under the lifecycle lock,
+    // read by the worker at finalize; RewriteProfileSelection gives it priority.
+    private volatile string? _takeProfileId;
+    private string? TakeProfileId => _takeProfileId;
+
     // An int because Interlocked does not operate on enums; see PipelineState
     // for the legal transitions. The worker owns every transition into
     // Transcribing and back to Idle; only Dispose competes with it, moving any

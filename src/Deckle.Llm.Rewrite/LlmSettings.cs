@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Deckle.Catalog;
 using Deckle.Llm;
 
 namespace Deckle.Llm.Rewrite;
@@ -28,6 +29,23 @@ public sealed class RewriteProfile
     public int? NumCtxK { get; set; }            // in K (×1024 when sent)
     public double? TopP { get; set; }
     public double? RepeatPenalty { get; set; }
+
+    // Chosen by length: a dictation whose audio sent to transcription lasts
+    // at least AutoSelectFromMinutes takes this profile, the highest threshold
+    // reached winning (RewriteProfileSelection). Off keeps the minutes, so
+    // turning it back on finds the last choice. Minutes rather than characters
+    // because a person judges a dictation by how long they spoke.
+    public bool AutoSelect { get; set; }
+    public int AutoSelectFromMinutes { get; set; } = 5;
+
+    // Starts a dictation rewritten with this profile, whatever its length.
+    // null = no shortcut. Registered by the App next to the other hotkeys.
+    public HotkeyChord? Hotkey { get; set; }
+
+    // The stops the threshold slider snaps to: a minute apart while a minute
+    // still changes the nature of a dictation, coarser beyond.
+    public static readonly IReadOnlyList<int> AutoSelectStopsMinutes =
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 40, 50, 60];
 }
 
 // Legacy duration-rule shape, retained so existing settings deserialize without
