@@ -44,6 +44,19 @@ public static class SettingsSearch
             Keywords = ["admin", "administrator", "uac", "privileges"],
         },
 
+        // ── Updates (composed: GeneralViewModel.UpdatesSettings, then the bespoke
+        // version card, Tag'd in the XAML) ──
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralUpdateAutoCheckCard",
+            Keywords = ["update", "upgrade", "automatic", "check", "release"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralVersionCard",
+            Keywords = ["version", "install", "new release", "upgrade"],
+        },
+
         // ── Application data, in the page's order ──
         new SettingSearchEntry
         {

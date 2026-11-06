@@ -128,9 +128,14 @@ public partial class App
                 }
             }
 
-            // A stop on a failure is an Error; a shutdown is only an end.
+            // A stop on a failure is an Error; a shutdown is only an end. An
+            // exception already said it at Error, with its phase, in
+            // AnytypeRuntimeFaulted above: one Error line per fact.
             if (endOutcome == "failed")
-                DeckleAppSource.Log.AnytypeRuntimeFailed(endReason, endExType, endExMessage);
+            {
+                if (endReason != "exception")
+                    DeckleAppSource.Log.AnytypeRuntimeFailed(endReason, endExType, endExMessage);
+            }
             else
                 DeckleAppSource.Log.AnytypeRuntimeEnded(endOutcome, endReason, endExType, endExMessage);
         }

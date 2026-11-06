@@ -7,8 +7,7 @@
 # Scope note: C# code-style diagnostics (IDExxxx, including the IDE1006 naming
 # rules below) surface in the IDE by default but NOT during `dotnet build`.
 # To also fail/warn them at build time, set <EnforceCodeStyleInBuild>true</…>
-# in Directory.Build.props — deliberately left off for now to keep build output
-# clean during first adoption.
+# in Directory.Build.props — deliberately left off to keep build output clean.
 
 root = true
 

@@ -26,7 +26,10 @@
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
                 <!-- ── Three-finger drag ────────────────────────────────────── -->
-                <catalog:SettingsSection x:Uid="TrackpadPageDragSection">
+                <!-- Hidden with its title while the module is off (mask, never
+                     grey); the code-behind follows ViewModel.Enabled. -->
+                <catalog:SettingsSection x:Name="DragSection"
+                                         x:Uid="TrackpadPageDragSection">
                     <StackPanel x:Name="DragHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>

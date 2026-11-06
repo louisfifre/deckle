@@ -114,7 +114,7 @@ Notes on the diagram:
 | FinalizeTranscription | `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.cs` → `FinalizeTranscription`, `CopyToClipboard`, `DeliverTranscript`, `PasteFromClipboard`; `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.Rewrite.cs` → `ApplyRewrite` | Copies the raw text to the clipboard first. Then, if a rewrite profile applies, rewrites it with Ollama. Then pastes with Ctrl+V only if paste is enabled, the foreground window is not Deckle, and UI Automation confirms the focused element is a text field (Edit or Document). Paste is off by default (`AutoPasteEnabled = false` in `src/Deckle.Settings/Persistence/AppSettings.cs`). |
 | HUD states | `src/Deckle.App/App.Startup.Shell.cs` → `StatusChanged` handler; `src/Deckle.App/App.Hotkeys.cs` → `ShowPreparing`, `SwitchToTranscribing`; `src/Deckle.Hud/Model/HudState.cs`; `src/Deckle.Hud/Windows/HudWindow.State.cs` | Start press → Charging. "Recording" status → Recording. Stop press → Transcribing at once. "Rewriting…" status → Rewriting. |
 | ShowPasted or ShowCopied | `src/Deckle.App/App.Startup.Shell.cs` → `TranscriptionFinished` handler | Pasted → green flash. ClipboardOnly → the "copied" message. No text → the HUD hides. |
-| Transcript panel | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `UtteranceTranscribed?.Invoke` (event declared in `src/Deckle.Transcription/Engine/TranscriptionEngine.Utterances.cs`); `src/Deckle.App/App.TranscriptPanel.cs`; `src/Deckle.Hud/Transcript/TranscriptPanelWindow.xaml.cs` | Raised once per utterance that yields text, right after the text joins the assembly. The panel opens a take when the engine starts recording, appends each text with the same paragraph rule as the assembly (`src/Deckle.Hud/Transcript/TranscriptHistory.cs`), closes the take when the transcription finishes, and hides with the HUD. With the HUD turned off (`Overlay.Enabled`), no take opens. Its side is `Overlay.TranscriptPanelSide` (Settings ▸ Dictation). Monolithic raises no event, so the panel stays hidden. |
+| Transcript panel | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `UtteranceTranscribed?.Invoke` (event declared in `src/Deckle.Transcription/Engine/TranscriptionEngine.Utterances.cs`); `src/Deckle.App/App.TranscriptPanel.cs`; `src/Deckle.Hud/Transcript/TranscriptPanelWindow.xaml.cs` | Raised once per utterance that yields text, right after the text joins the assembly. The panel opens a take when the engine starts recording, appends each text with the same paragraph rule as the assembly (`src/Deckle.Hud/Transcript/TranscriptHistory.cs`), closes the take when the transcription finishes, and hides with the HUD. With the HUD turned off (`Overlay.Enabled`), no take opens. Its side is `Overlay.TranscriptPanelSide` (Settings ▸ Transcription). Monolithic raises no event, so the panel stays hidden. |
 
 ## Diagram 2 — one Streaming take over time
 
@@ -207,7 +207,7 @@ Where the files live:
 
 Where the settings are shown:
 
-- **Settings ▸ Dictation**: `src/Deckle.Transcription/WhisperPage.xaml` and `src/Deckle.Transcription/WhisperPage.xaml.cs` (the hand-written cards: model, language, initial prompt), plus the composed GPU and models-folder cards of `src/Deckle.Transcription/ViewModels/WhisperViewModel.Settings.cs`. The two pages below are nested under it in the rail.
+- **Settings ▸ Transcription**: `src/Deckle.Transcription/WhisperPage.xaml` and `src/Deckle.Transcription/WhisperPage.xaml.cs` (the hand-written cards: model, language, initial prompt), plus the composed GPU and models-folder cards of `src/Deckle.Transcription/ViewModels/WhisperViewModel.Settings.cs`. The two pages below are nested under it in the rail.
 - **Settings ▸ Decoding** (`src/Deckle.Transcription/DecodingPage.xaml`): the decoding, confidence, context and output-filter cards, composed in `WhisperViewModel.Settings.cs`.
 - **Settings ▸ Streaming** (`src/Deckle.Transcription/StreamingPage.xaml`): the streaming toggle, the Silero (VAD) group and the energy segmenter cards, including the cut curve card with its anchors and the curve editor `src/Deckle.Catalog/Composer/CurveEditor.cs` (no preset selector), composed in `WhisperViewModel.Settings.cs`.
 - **Settings ▸ Recording**: `src/Deckle.Audio/RecordingViewModel.Settings.cs`, plus the microphone picker in `src/Deckle.Audio/RecordingPage.xaml.cs`.
@@ -216,10 +216,10 @@ Where the settings are shown:
 
 | Parameter | Acts in | Default in code | Stored in (section) | Exposed where |
 |---|---|---|---|---|
-| `Engine.Model` | `src/Deckle.Transcription.Whisper/WhisperBackend.Model.cs` (model load) | `"ggml-base.bin"` | `engine` | Dictation (model card, `WhisperPage.xaml`) |
-| `Engine.UseGpu` | `src/Deckle.Transcription.Whisper/Engine/WhisperContextParamsMapper.cs` (model load) | `true` | `engine` | Dictation (`WhisperUseGpuCard`) |
-| `Engine.Language` | `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs` | `"fr"` | `engine` | Dictation (`WhisperPage.xaml.cs`) |
-| `Engine.InitialPrompt` | `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs`; in Streaming, the fixed part of every prompt (`ProduceStreamingAsync`) | A French paragraph about coding a Windows app (see the file) | `engine` | Dictation (`WhisperInitialPromptCard`) |
+| `Engine.Model` | `src/Deckle.Transcription.Whisper/WhisperBackend.Model.cs` (model load) | `"ggml-base.bin"` | `engine` | Transcription (model card, `WhisperPage.xaml`) |
+| `Engine.UseGpu` | `src/Deckle.Transcription.Whisper/Engine/WhisperContextParamsMapper.cs` (model load) | `true` | `engine` | Transcription (`WhisperUseGpuCard`) |
+| `Engine.Language` | `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs` | `"fr"` | `engine` | Transcription (`WhisperPage.xaml.cs`) |
+| `Engine.InitialPrompt` | `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs`; in Streaming, the fixed part of every prompt (`ProduceStreamingAsync`) | A French paragraph about coding a Windows app (see the file) | `engine` | Transcription (`WhisperInitialPromptCard`) |
 | `Engine.CarryInitialPrompt` | `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs` | `true` | `engine` | Not exposed |
 | `Confidence.EntropyThreshold` | `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs` | `2.4` | `confidence` | Decoding page (Confidence section, `WhisperEntropyCard`) |
 | `Confidence.LogprobThreshold` | same | `-1.0` | `confidence` | Decoding page (Confidence section, `WhisperLogprobCard`) |
@@ -297,8 +297,8 @@ At the end of each dictation, `RecordPipelineMetrics` emits the `LatencyRecorded
 | `hotkey_to_capture_ms` | Start press → `waveInStart` | `_hotkeySw`, started in `TryStartFromIdleLocked`, stopped in `OnCaptureStarted` |
 | `record_drain_ms` | `waveInStop` → last buffers read | `DrainDuration` in `src/Deckle.Audio/Internal/WaveInLoop.cs` |
 | `stop_to_pipeline_ms` | Stop press → Streaming: consumer finished draining; Monolithic: handoff to the backend | `_stopToPipelineSw`, started in `RequestToggle`, stopped in `ProduceStreamingAsync` or `ProduceMonolithicAsync` |
-| `whisper_init_ms` | The init stopwatch, summed over all utterances. It starts just before `whisper_full` and stops when it returns, so it spans the whole call and is about the total, not an init phase | `InitDurationMs` of each `TranscriptionResult` (`_whisperInitSw` in `src/Deckle.Transcription.Whisper/WhisperBackend.Transcribe.cs`) |
-| `whisper_ms` | Whisper's total time minus `whisper_init_ms`, summed over all utterances; about 0 for the reason above | same |
+| `whisper_init_ms` | The init stopwatch, summed over all utterances. It starts just before `whisper_full` and stops at the first `encoder_begin_callback`, so it times whisper.cpp's pre-decode setup (mel spectrogram, VAD when enabled, state reset). A call that never reaches the encoder stops it when `whisper_full` returns | `InitDurationMs` of each `TranscriptionResult` (`_whisperInitSw` in `src/Deckle.Transcription.Whisper/WhisperBackend.Transcribe.cs`) |
+| `whisper_ms` | Whisper's total time minus `whisper_init_ms`, summed over all utterances: the encode and decode | same |
 | `llm_ms` | Ollama rewrite, 0 without a profile | `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.Rewrite.cs` |
 | `clipboard_ms` | Raw copy to the clipboard | `FinalizeTranscription` |
 | `paste_ms` | UI Automation check plus Ctrl+V, 0 when paste is off | `DeliverTranscript` |

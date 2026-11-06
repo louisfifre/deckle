@@ -1,10 +1,10 @@
 ---
-description: The resident Anytype gateway uses stateless MCP requests and advertises an explicit ambiguous-outcome policy for every tool.
+description: The Anytype gateway uses stateless MCP requests and advertises an explicit ambiguous-outcome policy for every tool.
 ---
 
 # ADR-0005 — Serve Anytype MCP stateless with explicit recovery contracts
 
-**Status** — accepted 2026-08-10, extends [ADR-0002](0002-anytype-app-supervised-headless-backend.md)
+**Status** — accepted 2026-08-10, extends [ADR-0002](0002-anytype-app-supervised-headless-backend.md); the gateway's placement in the resident app is superseded by [ADR-0008](0008-run-anytype-mcp-in-a-supervised-gateway-process.md), the stateless transport and recovery contracts stand
 
 ## Context
 
@@ -14,7 +14,7 @@ Tool calls have different failure semantics. Reads and explicit sets can be repe
 
 ## Decision
 
-The resident gateway MUST use the official C# MCP SDK v2 stateless Streamable HTTP transport on the fixed loopback URL. It MUST authenticate every request by bearer and rebuild that bearer's capability surface for the request. The same endpoint SHOULD accept down-level clients supported by the SDK. Deckle promises that a fresh request works at the same URL and credential after restart; it does not promise that every client retries automatically.
+The gateway MUST use the official C# MCP SDK v2 stateless Streamable HTTP transport on the fixed loopback URL. It MUST authenticate every request by bearer and rebuild that bearer's capability surface for the request. The same endpoint SHOULD accept down-level clients supported by the SDK. Deckle promises that a fresh request works at the same URL and credential after restart; it does not promise that every client retries automatically.
 
 No tool contract MAY rely on hidden transport-session state. A created report id MUST be returned and passed explicitly to later journal writes. A schema preview MUST be a deterministic, self-verifying handle that can be recomputed from the repeated manifest and live plan after a restart.
 

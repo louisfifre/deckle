@@ -102,6 +102,11 @@ public static class SettingsSearch
         },
         new SettingSearchEntry
         {
+            LabelKey = "WhisperBeamSizeCard",
+            Keywords = ["beam", "width", "candidates", "decoding"],
+        },
+        new SettingSearchEntry
+        {
             LabelKey = "WhisperTemperatureCard",
             Keywords = ["randomness", "sampling", "decoding"],
         },

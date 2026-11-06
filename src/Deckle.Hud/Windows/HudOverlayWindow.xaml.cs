@@ -223,14 +223,6 @@ public sealed partial class HudOverlayWindow : Window
         WindowingProbe.EmitWindowPositioned(_hwnd, "hud-overlay", "absolute");
     }
 
-    public void SetPositionPx(int xPx, int yPx)
-    {
-        NativeMethods.SetWindowPos(
-            _hwnd, IntPtr.Zero,
-            xPx, yPx, 0, 0,
-            NativeMethods.SWP_NOSIZE | NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
-    }
-
     // ── Fade: public entry points driven by HudOverlayManager ────────────────
 
     // Enters proximity mode once the fade completes; the callback fires after

@@ -4,8 +4,9 @@ namespace Deckle.Autocorrect;
 
 // File names and loading rules for the lexicons consumed by the live engine.
 // The global-English tier intentionally keys off the restricted seed artifact:
-// the full English list (lexicon-en.tsv.gz) also sits in Data/, but it is not
-// a protected-literal tier for the product.
+// the full English list (lexicon-en.tsv.gz) also sits in the Data/ folder of the
+// repository, but it is not shipped and is not a protected-literal tier for the
+// product.
 public static class AutocorrectLexiconArtifacts
 {
     public const string FrenchFileName = "lexicon-fr.tsv.gz";

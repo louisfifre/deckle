@@ -11,7 +11,7 @@
 #
 # Examples:
 #   pwsh -File scripts/build-locked.ps1 -Project src/Deckle.App/Deckle.App.csproj
-#   pwsh -File scripts/build-locked.ps1 -Test -Project tests/Deckle.Shell.Taskbar.Tests/Deckle.Shell.Taskbar.Tests.csproj
+#   pwsh -File scripts/build-locked.ps1 -Test -Project tests/Deckle.Shell.TaskbarCover.Tests/Deckle.Shell.TaskbarCover.Tests.csproj
 #
 # No Header on purpose: -Project is mandatory, so the menu could not run
 # this script without asking, and agents call it from their own builds.

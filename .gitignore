@@ -9,26 +9,13 @@
 # %LOCALAPPDATA%\Deckle\models\, sourced by the first-run wizard.
 whisper.cpp/
 
-# Vendored upstream Rust source for the voxtral-burn POC — clone of
-# TrevorS/voxtral-mini-realtime-rs landed inside the worktree for
-# convenience, build artifacts and target/ stay local. Model weights
-# live under the external directory configured by DECKLE_MODELS_DIR,
-# never in the repo.
-benchmark/rs/voxtral-mini-realtime-rs/
-
-# Legacy doc revisions kept locally for reference — superseded versions
-# of docs/*.md moved aside when a new revision lands. Not shipped.
-docs/archives/
-
 # ─────────────────────────────────────────────────────────────────────────
 #  Build artifacts
 # ─────────────────────────────────────────────────────────────────────────
 
-# .NET build output.
-src/**/bin/
-src/**/obj/
-tests/**/bin/
-tests/**/obj/
+# .NET build output. src/ and tests/ build into artifacts/ (ArtifactsPath in
+# Directory.Build.props); benchmark/ has its own props and keeps per-project
+# bin/ and obj/.
 benchmark/**/bin/
 benchmark/**/obj/
 
@@ -37,6 +24,9 @@ publish/
 # Release staging from scripts/release/publish-app.ps1 (publish folder +
 # versioned ZIP + .sha256). Lives under the repository; never committed.
 artifacts/
+
+# Output of scripts/maintenance/sweep-exposables.ps1, written at the repo root.
+exposables-raw.jsonl
 
 # Misc build logs.
 build-log.txt
@@ -176,19 +166,11 @@ benchmark/reports/
 benchmark/logs/
 benchmark/results.tsv
 benchmark/runs/
-# Ancien layout, conservé pour rétrocompat.
-benchmark/corpus/
-# Nouveau layout : chacun amène ses propres samples, jamais sur Git
-# (audio privé, transcriptions Whisper de l'utilisateur).
+# Each contributor brings their own samples, never on Git (private audio,
+# the user's Whisper transcriptions).
 benchmark/corpora/
 benchmark/external/
 benchmark/models-cache/
-# Artefacts d'anciennes itérations, conservés en local comme matière
-# première mais jamais publiés.
-benchmark/_archive/
-benchmark/config/voxtral_paths.toml
-# Relais transitoire entre sessions Claude, pas de la doctrine pérenne.
-benchmark/HANDOFF.md
 
 # ─────────────────────────────────────────────────────────────────────────
 #  Python tooling — caches and virtualenvs (benchmark/ + ad hoc scripts)
@@ -242,9 +224,3 @@ coverage/
 # from ever surfacing it as untracked, and prevents accidental
 # `git add .` pollution.
 .claude/worktrees/
-
-# Personal-workflow skills not meant for the public repo.
-.agents/skills/benchmark-loop/
-
-# Legacy singular agent facade, kept local when present.
-.agent

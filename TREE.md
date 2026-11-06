@@ -114,7 +114,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── 0002-anytype-app-supervised-headless-backend.md  — Deckle supervises Anytype's headless backend from the resident app, in the inte…
 │   │   ├── 0003-anytype-specialized-spaces-versioned-plans.md  — Deckle provisions specialized Anytype spaces from versioned composed plans and…
 │   │   ├── 0004-reconcile-anytype-backend-by-listener-owner.md  — Deckle reconciles one externally versioned Anytype provider by proving which tr…
-│   │   ├── 0005-serve-anytype-mcp-stateless-with-explicit-recovery.md  — The resident Anytype gateway uses stateless MCP requests and advertises an expl…
+│   │   ├── 0005-serve-anytype-mcp-stateless-with-explicit-recovery.md  — The Anytype gateway uses stateless MCP requests and advertises an explicit ambi…
 │   │   ├── 0006-signal-user-incidents-as-tray-state.md  — A degraded state the person can fix is declared in a registry and shown as tray…
 │   │   ├── 0007-write-message-shape-per-level-in-the-template.md  — Every event's message template carries the shape its level calls for, a sentenc…
 │   │   └── 0008-run-anytype-mcp-in-a-supervised-gateway-process.md  — The Anytype MCP host runs in its own gateway process that Deckle stages by cont…
@@ -415,17 +415,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Fonts/
 │   │   │   │   └── BitcountSingle.ttf
 │   │   │   ├── Icons/
-│   │   │   │   ├── recording--indicator--false--16px.ico
-│   │   │   │   ├── recording--indicator--false--16px.png
 │   │   │   │   ├── recording--indicator--false--32px.ico
 │   │   │   │   ├── recording--indicator--false--32px.png
-│   │   │   │   ├── recording--indicator--false--incident--true--16px.ico
 │   │   │   │   ├── recording--indicator--false--incident--true--32px.ico
-│   │   │   │   ├── recording--indicator--true--16px.ico
-│   │   │   │   ├── recording--indicator--true--16px.png
 │   │   │   │   ├── recording--indicator--true--32px.ico
 │   │   │   │   ├── recording--indicator--true--32px.png
-│   │   │   │   ├── recording--indicator--true--incident--true--16px.ico
 │   │   │   │   └── recording--indicator--true--incident--true--32px.ico
 │   │   │   └── Sounds/
 │   │   │       └── speech.wav
@@ -2364,6 +2358,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Settings.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── SettingsBootstrapLegacyTargetTests.cs
 │   │   └── SettingsBootstrapMoveTests.cs
 │   ├── Deckle.Setup.Tests/
 │   │   ├── DataRootRelocatorBugNotes.md

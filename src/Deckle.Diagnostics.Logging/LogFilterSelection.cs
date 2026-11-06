@@ -19,7 +19,6 @@ public sealed class LogFilterSelection
     public int Count => _severities.Count + _modules.Count + _categories.Count;
     public bool IsEmpty => Count == 0;
 
-    public IReadOnlyCollection<EventLevel> Severities => _severities;
     public IReadOnlyCollection<string> Modules => _modules;
     public IReadOnlyCollection<Keywords> Categories => _categories;
 

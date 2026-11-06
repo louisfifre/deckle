@@ -18,7 +18,7 @@ public static class IconAssets
 
     // The tray's marks while a user incident is open: the same states with a
     // dot. Provisional copies of the marks above until the maintainer draws
-    // them; a 16 px file sits beside each for when the tray loads that size.
+    // them.
     private const string FileIdleIncident      = "recording--indicator--false--incident--true--32px.ico";
     private const string FileRecordingIncident = "recording--indicator--true--incident--true--32px.ico";
 

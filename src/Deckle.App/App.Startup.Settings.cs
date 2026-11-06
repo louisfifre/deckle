@@ -10,7 +10,6 @@ using Deckle.Setup;
 using Deckle.Shell;
 using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
-using Deckle.Speech;
 using Deckle.Transcription;
 using Deckle.Transcription.Whisper;
 
@@ -55,7 +54,7 @@ public partial class App
             bool ok = await setup.Completion;
             if (ok)
                 RestartApp(ModulePresence.IsPresent(ModuleIds.Transcription)
-                    ? "Deckle.Transcription.WhisperPage, Deckle.Transcription"
+                    ? WhisperSettingsModule.PageTag
                     : null);
         };
 

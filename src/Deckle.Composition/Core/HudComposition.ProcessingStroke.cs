@@ -17,7 +17,6 @@ public static partial class HudComposition
     // Forever animations go silent.
     private static int _creationCounter;
     private static int _liveStrokeCount;
-    internal static int TotalStrokesCreated => _creationCounter;
     public   static int LiveStrokeCount     => _liveStrokeCount;
     internal static event Action<int, string>? StrokeLifecycle; // (creationId, event)
 

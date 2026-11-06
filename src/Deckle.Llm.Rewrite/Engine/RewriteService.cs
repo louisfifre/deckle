@@ -1,3 +1,5 @@
+using System.Globalization;
+using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Llm;
 
@@ -25,6 +27,9 @@ public interface IRewriteService
 
 public class RewriteService : IRewriteService
 {
+    // The module's own resource subtree, where its code-side strings live.
+    private const string Module = "Deckle.Llm.Rewrite";
+
     readonly IGenerationEngineResolver _engines;
     readonly Func<string, LlmProvider?> _findProvider;
 
@@ -172,8 +177,11 @@ public class RewriteService : IRewriteService
             // severity 1 = Warning, role 1 = Overlay.
             DeckleLlmSource.Log.UserFeedbackEmitted(
                 severity: 1,
-                title:    "Rewriter took too long",
-                body:     $"Over {GenerationDeadline.HardCap.TotalMinutes:F0} min. Raw transcript copied.",
+                title:    Loc.GetFrom(Module, "RewriteTimeout_Title"),
+                body:     string.Format(
+                    CultureInfo.CurrentCulture,
+                    Loc.GetFrom(Module, "RewriteTimeout_Body_Format"),
+                    GenerationDeadline.HardCap.TotalMinutes.ToString("F0", CultureInfo.CurrentCulture)),
                 role:     1);
             return new GenerationResult(null, sw.ElapsedMilliseconds, 0, 0, 0, 0, 0);
         }

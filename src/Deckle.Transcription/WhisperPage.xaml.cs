@@ -470,20 +470,18 @@ public sealed partial class WhisperPage : Page
 
         DeckleWhispSource.Log.PageResetAll();
 
-        // After slice C2b, all Whisper settings (including ModelsDirectory)
-        // live in a single TranscriptionSettings POCO at modules/transcription/settings.json.
-        // PathsSettings used to be reset alongside, but BackupDirectory is
-        // unrelated to Whisper — leaving it untouched fixes a long-standing
-        // pre-existing bug where "Reset Whisper" wiped the user's backup
-        // directory override.
-        TranscriptionSettingsService.Instance.Replace(new TranscriptionSettings());
-
-        // Reload everything from the fresh POCO defaults.
-        _initializing = true;
-        ViewModel.Load();
-        RefreshModelNames();
-        SyncLanguageCombo();
-        _initializing = false;
+        // Resets exactly the cards this page shows, the way DecodingPage and
+        // StreamingPage reset theirs: the composed cards (Dictation experience,
+        // GPU, models folder) through their composers, then the three bespoke
+        // cards (Model, Language, Initial prompt) through their own reset
+        // handlers. The Decoding and Streaming values live in the same
+        // TranscriptionSettings but belong to their own pages, so they stay.
+        // The earlier whole-POCO replace wiped them, and left the overlay and
+        // auto-paste cards (which live in AppSettings) untouched.
+        foreach (SettingsComposer composer in _composers) composer.ResetAll();
+        ModelReset_Click(sender, e);
+        LanguageReset_Click(sender, e);
+        InitialPromptReset_Click(sender, e);
         UpdateRestartState();
     }
 }

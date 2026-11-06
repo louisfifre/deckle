@@ -8,9 +8,13 @@ using System.Collections.Concurrent;
 namespace Deckle.App;
 
 // Host bridge for the paragraph-retaille interaction. Business state and UI
-// live in Deckle.Llm.Rewrite; this file only maps the process-shared Raw Input
-// stream onto that public surface and restores the captured target before an
-// accepted offer is injected.
+// live in Deckle.Llm.Rewrite; this file wires the process-shared Raw Input
+// stream to that surface through a keystroke state machine (OnParagraphKey:
+// text and Backspace grow the draft, Shift+Enter closes it and requests an
+// offer, any other key, click or focus change invalidates it, and a disabled
+// module, a non-editable or password surface drops it). It also probes the
+// focused surface and restores the captured target before an accepted offer
+// is injected.
 public partial class App
 {
     private ParagraphDraft? _paragraphDraft;

@@ -26,7 +26,6 @@ public partial class App : Microsoft.UI.Xaml.Application
     private HotkeyManager? _hotkeyManager;
     private LogWindow? _logWindow;
 
-    internal static Settings.SettingsWindow? SettingsWin => (Current as App)?._settingsWindow;
     private Settings.SettingsWindow? _settingsWindow;
     private PlaygroundWindow? _playgroundWindow;
     private HudWindow? _hudWindow;

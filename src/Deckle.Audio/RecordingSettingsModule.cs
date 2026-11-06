@@ -9,10 +9,12 @@ namespace Deckle.Audio;
 // Order.
 public static class RecordingSettingsModule
 {
+    public const string PageTag = "Deckle.Audio.RecordingPage, Deckle.Audio";
+
     public static SettingsModuleDescriptor Describe(int order) => new()
     {
         Id = "recording",
-        PageTag = "Deckle.Audio.RecordingPage, Deckle.Audio",
+        PageTag = PageTag,
         OwningAssembly = "Deckle.Audio",
         Glyph = Glyphs.Microphone,
         Order = order,

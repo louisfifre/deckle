@@ -146,7 +146,7 @@ public sealed partial class WhisperBackend
             if (_ctx == IntPtr.Zero) return;
             WhisperPInvoke.whisper_free(_ctx);
             _ctx = IntPtr.Zero;
-            DeckleWhispSource.Log.ModelUnloadedJalon();
+            DeckleWhispSource.Log.ModelUnloadedMilestone();
         }
     }
 

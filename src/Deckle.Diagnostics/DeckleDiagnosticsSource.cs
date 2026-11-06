@@ -46,10 +46,10 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtSinkFaulted,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A log sink failed to write, so its rows are lost until it writes again\nsink={0} | error_type={1} | error_message={2}")]
-    public void SinkFaulted(string sink, string error_type, string error_message)
+           Message = "A log sink failed to write, so its rows are lost until it writes again\nsink={0} | ex_type={1} | ex_message={2}")]
+    public void SinkFaulted(string sink, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtSinkFaulted, sink, error_type, error_message);
+        if (IsEnabled()) WriteEvent(EvtSinkFaulted, sink, ex_type, ex_message);
     }
 
     [Event(EvtSinkRecovered,
@@ -76,10 +76,10 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtFlushFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A log sink could not flush, so its last rows may be missing from disk\nsink={0} | error_type={1} | error_message={2}")]
-    public void FlushFailed(string sink, string error_type, string error_message)
+           Message = "A log sink could not flush, so its last rows may be missing from disk\nsink={0} | ex_type={1} | ex_message={2}")]
+    public void FlushFailed(string sink, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtFlushFailed, sink, error_type, error_message);
+        if (IsEnabled()) WriteEvent(EvtFlushFailed, sink, ex_type, ex_message);
     }
 
     [Event(EvtFlushTimedOut,
@@ -110,10 +110,10 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtRotationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A log file could not be rolled or pruned, so the log takes more disk than its cap\nfile_name={0} | step={1} | error_type={2} | error_message={3}")]
-    public void RotationFailed(string file_name, string step, string error_type, string error_message)
+           Message = "A log file could not be rolled or pruned, so the log takes more disk than its cap\nfile_name={0} | step={1} | ex_type={2} | ex_message={3}")]
+    public void RotationFailed(string file_name, string step, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtRotationFailed, file_name, step, error_type, error_message);
+        if (IsEnabled()) WriteEvent(EvtRotationFailed, file_name, step, ex_type, ex_message);
     }
 
     // Milestone-tagged: the log keeps the failure, so it keeps its end too.
@@ -157,10 +157,10 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtMessageTemplateBroken,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "An event's message template cannot be formatted\nevent_name={1} | provider={0} | error_type={2}")]
-    public void MessageTemplateBroken(string provider, string event_name, string error_type)
+           Message = "An event's message template cannot be formatted\nevent_name={1} | provider={0} | ex_type={2}")]
+    public void MessageTemplateBroken(string provider, string event_name, string ex_type)
     {
-        if (IsEnabled()) WriteEvent(EvtMessageTemplateBroken, provider, event_name, error_type);
+        if (IsEnabled()) WriteEvent(EvtMessageTemplateBroken, provider, event_name, ex_type);
     }
 
     // The settings store reports in free text; the text carries its own cause.
@@ -191,10 +191,10 @@ public sealed class DeckleDiagnosticsSource : DeckleEventSource
     [Event(EvtIncidentListenerFaulted,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A listener of the user incident registry failed, so the tray may not show the open incidents\nlistener={0} | error_type={1} | error_message={2}")]
-    public void IncidentListenerFaulted(string listener, string error_type, string error_message)
+           Message = "A listener of the user incident registry failed, so the tray may not show the open incidents\nlistener={0} | ex_type={1} | ex_message={2}")]
+    public void IncidentListenerFaulted(string listener, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtIncidentListenerFaulted, listener, error_type, error_message);
+        if (IsEnabled()) WriteEvent(EvtIncidentListenerFaulted, listener, ex_type, ex_message);
     }
 
     // Milestone-tagged: the log keeps the failure, so it keeps its end too.

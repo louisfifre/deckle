@@ -21,6 +21,10 @@ namespace Deckle.Settings;
 // truth); its legacy section is dropped.
 public static class SettingsBootstrap
 {
+    // The folder under modules\ that the transcription store reads; the legacy
+    // "whisp" section and paths.modelsDirectory land there.
+    internal const string TranscriptionModuleId = "transcription";
+
     private static bool _migrated;
 
     private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -60,7 +64,7 @@ public static class SettingsBootstrap
         // Only a number moves: a hand-edited string would fail the audio
         // file's load and lose its device, DSP and cap with it.
         MoveModuleSetting(
-            "transcription", ["streaming", "segmenter", "thresholdDbfs"],
+            TranscriptionModuleId, ["streaming", "segmenter", "thresholdDbfs"],
             "audio", "voiceLevelDbfs",
             accept: IsNumber);
     }
@@ -95,20 +99,20 @@ public static class SettingsBootstrap
 
             // The legacy JSON key is "capture"; the module directory id is
             // "audio".
-            mutated |= DispatchSection(root, "whisp",     "whisp");
+            mutated |= DispatchSection(root, "whisp",     TranscriptionModuleId);
             mutated |= DispatchSection(root, "llm",       "llm");
             mutated |= DispatchSection(root, "capture",   "audio");
             mutated |= DispatchSection(root, "telemetry", "telemetry");
 
-            // The legacy paths.modelsDirectory belongs to the whisp module:
-            // inject it into the whisp file (just dispatched above, or
+            // The legacy paths.modelsDirectory belongs to the transcription module:
+            // inject it into its file (just dispatched above, or
             // pre-existing from a partial migration), then strip it from paths.
             if (root["paths"] is JsonObject paths
                 && paths["modelsDirectory"] is JsonValue modelsDirNode
                 && modelsDirNode.TryGetValue<string>(out string? modelsDir)
                 && !string.IsNullOrEmpty(modelsDir))
             {
-                InjectIntoModuleFile("whisp", "modelsDirectory", JsonValue.Create(modelsDir));
+                InjectIntoModuleFile(TranscriptionModuleId, "modelsDirectory", JsonValue.Create(modelsDir));
                 paths.Remove("modelsDirectory");
                 DeckleSettingsSource.Log.MigrationModelsDirectoryDispatched();
                 mutated = true;

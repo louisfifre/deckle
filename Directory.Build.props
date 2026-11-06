@@ -2,8 +2,8 @@
 
   <!-- ── Shared MSBuild properties for every Deckle project under src/ and tests/ ──
        Centralizes the properties that were duplicated, byte-for-byte, across the
-       22 module csproj. A target-framework or platform bump now lives in one
-       place instead of 22 files.
+       module csproj. A target-framework or platform bump now lives in one
+       place instead of every project file.
 
        Only UNCONDITIONAL, universally-true properties belong here. Directory.Build.props
        is imported very early (before the project body), so anything that depends on a

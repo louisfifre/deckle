@@ -45,6 +45,11 @@ public sealed partial class TrackpadPage : Page
 
         _enabledComposer.DirtyChanged += (_, _) => GateResetAll();
         _dragComposer.DirtyChanged += (_, _) => GateResetAll();
+        ViewModel.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(TrackpadViewModel.Enabled)) SyncSectionVisibility();
+        };
+        SyncSectionVisibility();
         GateResetAll();
     }
 
@@ -56,9 +61,15 @@ public sealed partial class TrackpadPage : Page
         ViewModel.Load();
         RefreshGesturesLabel();
         // Load() raises no PropertyChanged on a clean profile, so no composer
-        // DirtyChanged fires and this call settles the gate.
+        // DirtyChanged fires and these calls settle the section and the gate.
+        SyncSectionVisibility();
         GateResetAll();
     }
+
+    // Settings-UX doctrine: what does not apply while the module is off is
+    // hidden, title included, not greyed.
+    private void SyncSectionVisibility() =>
+        DragSection.Visibility = ViewModel.Enabled ? Visibility.Visible : Visibility.Collapsed;
 
     // ── Whole-page "Reset all" ───────────────────────────────────────────────
     //

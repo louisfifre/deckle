@@ -64,7 +64,7 @@ Open-source packages.
 - `Microsoft.ML.OnnxRuntime.DirectML` 1.23.0 — MIT — Microsoft. Read from the nuspec license file `LICENSE`. Runs the external Silero VAD on the CPU execution provider of this build.
 - `Microsoft.ML.OnnxRuntimeGenAI.DirectML` 0.13.0 — MIT — Microsoft. Read from the nuspec license file `LICENSE`. Runs the local closed-candidate sentence judge through ONNX Runtime GenAI, using DirectML or CPU as selected.
 - `Microsoft.ML.Tokenizers` 2.0.0 — MIT — Microsoft. Read from the nuspec license expression. Tokenizes text for the CamemBERT masked-language-model probe.
-- `System.Security.Cryptography.ProtectedData` 6.0.0 — MIT — Microsoft. Read from the nuspec license expression. Protects local autocorrect observation data with Windows DPAPI.
+- `System.Security.Cryptography.ProtectedData` 6.0.0 — MIT — Microsoft. Read from the nuspec license expression. Seals local data at rest with Windows DPAPI: the secret vault, the dictation and take-audio recovery stores, and the autocorrect CLI's observation data.
 - `System.Management` 10.0.12 — MIT — Microsoft. Read from the nuspec license expression. Watches process starts through WMI in `Deckle.Orchestration`.
 - `BouncyCastle.Cryptography` 2.6.2 — MIT — Legion of the Bouncy Castle Inc. Read from the nuspec license expression. Provides the DTLS-PSK transport used for Philips Hue Entertainment.
 - `Anthropic` 12.57.0 — MIT — Anthropic. Read from the nuspec license expression. The official C# SDK through which `Deckle.Llm`'s Claude engine calls the Messages API.

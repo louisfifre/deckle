@@ -10,14 +10,16 @@ namespace Deckle.Llm;
 // Wraps Ollama REST endpoints for viewing and managing installed models: list,
 // show, delete, health-check.
 //
-// Separate from RewriteService (which only does /api/chat for rewriting).
+// Separate from the rewrite engines under Engines/ (OllamaEngine calls
+// /api/generate to rewrite); this service only administers models.
 //
 // Model creation (`ollama create`, GGUF import) is not wrapped: it happens from
 // the user's shell through the native Ollama CLI, then the Models section
 // refreshes so they appear.
 //
-// The base URL is derived from LlmSettings.OllamaEndpoint by stripping the path
-// (/api/chat) to keep only the origin (http://localhost:11434).
+// The base URL is derived from the endpoint the caller supplies (an Ollama
+// provider's endpoint, which names /api/generate) by dropping the path to keep
+// only the origin (http://localhost:11434).
 
 public sealed class OllamaService
 {
@@ -29,7 +31,7 @@ public sealed class OllamaService
     readonly Func<string> _getEndpoint;
 
     /// <param name="getEndpoint">
-    /// Callback returning the current endpoint (e.g. "http://localhost:11434/api/chat").
+    /// Callback returning the current endpoint (e.g. "http://localhost:11434/api/generate").
     /// Called on each request to follow configuration changes.
     /// </param>
     public OllamaService(Func<string> getEndpoint)

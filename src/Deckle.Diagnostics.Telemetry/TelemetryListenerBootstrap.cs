@@ -26,7 +26,7 @@ public static class TelemetryListenerBootstrap
 
     // Null until ConfigureGates runs: every gate reads false and no line
     // touches disk.
-    private static Func<string, bool>? _gateReader;
+    private static Func<TelemetrySettings>? _settingsReader;
 
     public static void Configure(
         DispatchEventListener dispatch,
@@ -49,14 +49,14 @@ public static class TelemetryListenerBootstrap
             kindLabel: "latency",
             predicate: e => e.Kind == ObservationKind.Dataset
                          && e.EventName == "LatencyRecorded"
-                         && ReadGate("LatencyEnabled")));
+                         && ReadGate(s => s.LatencyEnabled)));
 
         Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "microphone.jsonl"),
             kindLabel: "microphone",
             predicate: e => e.Kind == ObservationKind.Dataset
                          && e.EventName == "MicrophoneTelemetryRecorded"
-                         && ReadGate("MicrophoneTelemetry")));
+                         && ReadGate(s => s.MicrophoneTelemetry)));
 
         // Post-DSP mirror of microphone.jsonl, same field-for-field schema.
         // Two homogeneous files rather than one mixed file: each loads as-is
@@ -67,7 +67,7 @@ public static class TelemetryListenerBootstrap
             kindLabel: "microphone_processed",
             predicate: e => e.Kind == ObservationKind.Dataset
                          && e.EventName == "PreprocessedTelemetryRecorded"
-                         && ReadGate("MicrophoneTelemetry")));
+                         && ReadGate(s => s.MicrophoneTelemetry)));
 
         // The synchronous decision and its deferred reranker verdict land in
         // the same file, joined by id. Carries typed words by design, so it is
@@ -78,7 +78,7 @@ public static class TelemetryListenerBootstrap
             predicate: e => e.Kind == ObservationKind.Dataset
                          && (e.EventName == "AutocorrectDecisionRecorded"
                           || e.EventName == "AutocorrectRerankRecorded")
-                         && ReadGate("AutocorrectDecisions")));
+                         && ReadGate(s => s.AutocorrectDecisions)));
 
         // Verbatim typed input, the heaviest text capture, so it carries its
         // own consent toggle, separate from the decision dataset.
@@ -87,7 +87,7 @@ public static class TelemetryListenerBootstrap
             kindLabel: "autocorrect_text",
             predicate: e => e.Kind == ObservationKind.Dataset
                          && e.EventName == "AutocorrectTextRecorded"
-                         && ReadGate("AutocorrectText")));
+                         && ReadGate(s => s.AutocorrectText)));
 
         // Typing stream: the verbatim forward flow, one run per line, segmented
         // at backward repairs. Same consent toggle as the typed-sentence corpus
@@ -97,7 +97,7 @@ public static class TelemetryListenerBootstrap
             kindLabel: "autocorrect_stream",
             predicate: e => e.Kind == ObservationKind.Dataset
                          && e.EventName == "AutocorrectStreamRecorded"
-                         && ReadGate("AutocorrectText")));
+                         && ReadGate(s => s.AutocorrectText)));
 
         string corpusRoot = Path.Combine(rootDirectory, "corpus");
 
@@ -115,7 +115,7 @@ public static class TelemetryListenerBootstrap
             kindLabel: "corpus_asr",
             predicate: e => e.Kind == ObservationKind.Dataset
                          && e.EventName == "CorpusAsrRecorded"
-                         && ReadGate("CorpusEnabled")));
+                         && ReadGate(s => s.CorpusEnabled)));
 
         Register(new RoutedJsonlSink(
             pathResolver: e =>
@@ -127,7 +127,7 @@ public static class TelemetryListenerBootstrap
             kindLabel: "corpus_rewrite",
             predicate: e => e.Kind == ObservationKind.Dataset
                          && e.EventName == "CorpusRewriteRecorded"
-                         && ReadGate("CorpusEnabled")));
+                         && ReadGate(s => s.CorpusEnabled)));
     }
 
     private static void Register(ILogSink sink)
@@ -136,25 +136,25 @@ public static class TelemetryListenerBootstrap
         _dispatch!.AddSink(sink);
     }
 
-    // The reader receives a TelemetrySettings toggle name ("LatencyEnabled",
-    // "MicrophoneTelemetry", "CorpusEnabled", "AutocorrectDecisions",
-    // "AutocorrectText") and must return false for an unknown name.
-    public static void ConfigureGates(Func<string, bool> gateReader)
+    // The reader returns the current TelemetrySettings; each gate picks its own
+    // toggle from it, so a renamed toggle fails to compile instead of reading
+    // as an unknown name.
+    public static void ConfigureGates(Func<TelemetrySettings> settingsReader)
     {
-        if (gateReader is null) throw new ArgumentNullException(nameof(gateReader));
-        _gateReader = gateReader;
+        if (settingsReader is null) throw new ArgumentNullException(nameof(settingsReader));
+        _settingsReader = settingsReader;
     }
 
-    private static bool ReadGate(string gateName)
+    private static bool ReadGate(Func<TelemetrySettings, bool> gate)
     {
-        var reader = _gateReader;
+        var reader = _settingsReader;
         if (reader is null) return false;
 
         // A reader that throws fails closed all the same: the exception leaves
         // the sink's predicate, so the row is not written, and the dispatcher
         // reports that sink as an incident instead of a consent that silently
         // reads "off".
-        return reader(gateName);
+        return gate(reader());
     }
 
     // The application-wide ProcessExit barrier handles normal host shutdown;
@@ -182,6 +182,6 @@ public static class TelemetryListenerBootstrap
         _sinks.Clear();
         _dispatch = null;
         _configured = false;
-        _gateReader = null;
+        _settingsReader = null;
     }
 }

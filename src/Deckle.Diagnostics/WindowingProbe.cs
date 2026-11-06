@@ -244,10 +244,6 @@ public static class WindowingProbe
     public static void ReportShow(string window, string stage, bool ok, int win32Error = 0)
         => Report(show: true, window, stage, ok, hr: 0, win32Error, exType: "", exMessage: "");
 
-    public static void ReportShowFailure(string window, string stage, Exception exception)
-        => Report(show: true, window, stage, ok: false,
-            exception.HResult, win32Error: 0, exception.GetType().Name, exception.Message);
-
     public static void ReportPlacement(string window, string stage, bool ok, int win32Error = 0)
         => Report(show: false, window, stage, ok, hr: 0, win32Error, exType: "", exMessage: "");
 

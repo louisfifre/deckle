@@ -41,7 +41,9 @@
          a consuming app gets it prefixed with the project name. Deckle.App
          flattens it back with its FlattenAutocorrectLexicons target so the
          engine finds it beside the exe. -->
-    <Content Include="Data\**" CopyToOutputDirectory="PreserveNewest" />
+    <!-- lexicon-en.tsv.gz stays in the repository as the lab's derived artifact
+         but nothing in the product reads it, so it is not shipped. -->
+    <Content Include="Data\**" Exclude="Data\lexicon-en.tsv.gz" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <PropertyGroup>
