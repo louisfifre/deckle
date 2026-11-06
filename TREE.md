@@ -98,12 +98,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── affinage-sonnet-v2.json
 │   │   │   │   ├── affinage-sonnet.json
 │   │   │   │   ├── arrangement-sonnet-v2.json
+│   │   │   │   ├── arrangement-sonnet-v3.json
 │   │   │   │   ├── arrangement-sonnet.json
 │   │   │   │   ├── lissage-opus-v2.json
 │   │   │   │   └── lissage-opus.json
 │   │   │   ├── prompts/
 │   │   │   │   ├── affinage-opt1.md
+│   │   │   │   ├── affinage-opt2.md
 │   │   │   │   ├── arrangement-opt1.md
+│   │   │   │   ├── arrangement-opt2.md
 │   │   │   │   ├── lissage-current.md
 │   │   │   │   ├── lissage-literal.md
 │   │   │   │   └── lissage-opt1.md
