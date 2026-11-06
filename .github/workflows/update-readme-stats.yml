@@ -30,8 +30,10 @@ jobs:
             exit 0
           }
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Every commit of the repository ships under the maintainer's sole
+          # identity, automated ones included.
+          git config user.name "Louis"
+          git config user.email "git@louisfifre.com"
           git add README.md
           git commit -m "docs: update development pulse"
           git push
