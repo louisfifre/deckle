@@ -62,8 +62,7 @@ public sealed class CaptureSettingsService
         => DeckleAudioSource.Log.CaptureSettingsResolved(
             settings.AudioInputDeviceId,
             settings.MaxRecordingDurationSeconds,
-            settings.Preprocessing?.Enabled ?? false,
-            settings.LevelWindow?.AutoCalibrationEnabled ?? false);
+            settings.Preprocessing?.Enabled ?? false);
 
     // The recording limit's former default. In a file older than schema
     // version 1, a stored value equal to it means the user never chose a limit.

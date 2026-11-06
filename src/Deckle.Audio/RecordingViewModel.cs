@@ -11,9 +11,6 @@ namespace Deckle.Audio;
 //
 // Pattern: Load() pulls from the POCOs, property changes push back via
 // PushToSettings(). The _isSyncing flag prevents re-saving during Load().
-// Level window changes also push directly into the AudioLevelMapper
-// statics via AudioLevelMapper.Apply so the HUD reflects the new curve on
-// the next sub-window without restart.
 public partial class RecordingViewModel : ObservableObject
 {
     private bool _isSyncing;
@@ -126,55 +123,6 @@ public partial class RecordingViewModel : ObservableObject
         MicResultDetail   = "";
     }
 
-    // ── Level window (calibration) ──────────────────────────────────────────
-
-    [ObservableProperty]
-    public partial double LevelWindowMinDbfs { get; set; }
-
-    [ObservableProperty]
-    public partial double LevelWindowMaxDbfs { get; set; }
-
-    [ObservableProperty]
-    public partial double LevelWindowExponent { get; set; }
-
-    [ObservableProperty]
-    public partial bool LevelWindowAutoCalibration { get; set; }
-
-    // Slider drags fire ValueChanged on every step, so the per-edit log line
-    // stays at Verbose level. PushToSettings is fine on every step (the file
-    // save is debounced inside JsonSettingsStore); AudioLevelMapper.Apply
-    // writes a few static fields, also free.
-    partial void OnLevelWindowMinDbfsChanged(double value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.MinDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
-        PushToSettings();
-        AudioLevelMapper.Apply(CaptureSettingsService.Instance.Current.LevelWindow);
-    }
-
-    partial void OnLevelWindowMaxDbfsChanged(double value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.MaxDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
-        PushToSettings();
-        AudioLevelMapper.Apply(CaptureSettingsService.Instance.Current.LevelWindow);
-    }
-
-    partial void OnLevelWindowExponentChanged(double value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.DbfsCurveExponent", value.ToString("F2", CultureInfo.InvariantCulture));
-        PushToSettings();
-        AudioLevelMapper.Apply(CaptureSettingsService.Instance.Current.LevelWindow);
-    }
-
-    partial void OnLevelWindowAutoCalibrationChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.AutoCalibration", value.ToString());
-        PushToSettings();
-    }
-
     // The microphone-telemetry opt-in lives in RecordingTelemetryViewModel, the
     // module's contribution to the Diagnostics page.
 
@@ -188,13 +136,8 @@ public partial class RecordingViewModel : ObservableObject
         // single source the composer's reset defaults read. The device id has
         // no composed default (runtime hardware enumeration), so its -1 sentinel
         // stays an explicit literal here.
-        var levelWindow = new LevelWindowSettings();
         AudioInputDeviceId = -1;
         MaxRecordingDurationSeconds = new CaptureSettings().MaxRecordingDurationSeconds;
-        LevelWindowMinDbfs = levelWindow.MinDbfs;
-        LevelWindowMaxDbfs = levelWindow.MaxDbfs;
-        LevelWindowExponent = levelWindow.DbfsCurveExponent;
-        LevelWindowAutoCalibration = levelWindow.AutoCalibrationEnabled;
         PreprocessingEnabled = new PreprocessingSettings().Enabled;
 
         // _isSyncing stays true — Load() will set it to false.
@@ -209,10 +152,6 @@ public partial class RecordingViewModel : ObservableObject
 
             AudioInputDeviceId = capture.AudioInputDeviceId;
             MaxRecordingDurationSeconds = capture.MaxRecordingDurationSeconds;
-            LevelWindowMinDbfs = capture.LevelWindow.MinDbfs;
-            LevelWindowMaxDbfs = capture.LevelWindow.MaxDbfs;
-            LevelWindowExponent = capture.LevelWindow.DbfsCurveExponent;
-            LevelWindowAutoCalibration = capture.LevelWindow.AutoCalibrationEnabled;
             PreprocessingEnabled = capture.Preprocessing.Enabled;
         }
         finally
@@ -227,10 +166,6 @@ public partial class RecordingViewModel : ObservableObject
 
         capture.AudioInputDeviceId = AudioInputDeviceId;
         capture.MaxRecordingDurationSeconds = MaxRecordingDurationSeconds;
-        capture.LevelWindow.MinDbfs = (float)LevelWindowMinDbfs;
-        capture.LevelWindow.MaxDbfs = (float)LevelWindowMaxDbfs;
-        capture.LevelWindow.DbfsCurveExponent = (float)LevelWindowExponent;
-        capture.LevelWindow.AutoCalibrationEnabled = LevelWindowAutoCalibration;
         capture.Preprocessing.Enabled = PreprocessingEnabled;
 
         CaptureSettingsService.Instance.Save();

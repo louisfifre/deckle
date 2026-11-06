@@ -55,24 +55,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtRecordingLowAudio);
     }
 
-    [Event(EvtAutoCalibrated,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Level window auto-calibrated")]
-    public void AutoCalibrated()
-    {
-        if (IsEnabled()) WriteEvent(EvtAutoCalibrated);
-    }
-
-    [Event(EvtAutoCalibratedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "new_min_dbfs={0:F0} | new_max_dbfs={1:F0} | session_count={2}")]
-    public void AutoCalibratedDetail(double new_min_dbfs, double new_max_dbfs, int session_count)
-    {
-        if (IsEnabled()) WriteEvent(EvtAutoCalibratedDetail, new_min_dbfs, new_max_dbfs, session_count);
-    }
-
     // ── Worker lifecycle ────────────────────────────────────────────────
     //
     // One worker thread per take or file batch. worker (closed vocabulary):

@@ -206,11 +206,6 @@ public sealed partial class TranscriptionEngine
             return null;
         }
 
-        if (capture.Telemetry is not null)
-        {
-            TryAutoCalibrate(capture.Telemetry);
-        }
-
         // Stopping → Transcribing. Losing this CAS means Dispose won — skip.
         if (Interlocked.CompareExchange(
                 ref _state,

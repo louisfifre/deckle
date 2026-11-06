@@ -529,7 +529,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── Telemetry/
-│   │   │   ├── MicrophoneCalibrationCalculator.cs
 │   │   │   ├── MicrophoneTelemetryCalculator.cs
 │   │   │   └── MicrophoneTelemetryPayload.cs
 │   │   ├── AudioFileDecoder.cs
@@ -1922,7 +1921,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MicLevelCheckBugNotes.md
 │   │   ├── MicLevelCheckTests.cs
-│   │   ├── MicrophoneCalibrationCalculatorTests.cs
 │   │   ├── MicrophoneErrorClassificationTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
 │   │   ├── MilestoneClosersTests.cs

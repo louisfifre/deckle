@@ -249,9 +249,6 @@ public sealed partial class TranscriptionEngine : IDisposable
 
     private System.Diagnostics.Stopwatch? _recordingSw;
 
-    // One MicrophoneTelemetryPayload per recording; see TryAutoCalibrate.
-    private readonly Queue<MicrophoneTelemetryPayload> _autoCalibBuffer = new();
-
     // Latency stage timers feeding LatencyPayload, reset at each run's start.
     //
     //   _hotkeySw             — start request → just after waveInStart: the mic

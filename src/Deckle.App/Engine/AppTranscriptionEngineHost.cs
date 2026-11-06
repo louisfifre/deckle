@@ -22,11 +22,4 @@ internal sealed class AppTranscriptionEngineHost : ITranscriptionEngineHost
         () => LlmSettingsService.Instance.Current);
 
     public string ResolveModelsDirectory() => TranscriptionSettingsService.Instance.ResolveModelsDirectory();
-
-    // Saves the audio module only: the engine's one caller is auto-calibration,
-    // which mutates Audio.LevelWindow in place. Another module's save gets its
-    // own typed hook on ITranscriptionEngineHost.
-    public void SaveSettings() => CaptureSettingsService.Instance.Save();
-
-    public void ApplyLevelWindow(LevelWindowSettings lw) => App.ApplyLevelWindow(lw);
 }

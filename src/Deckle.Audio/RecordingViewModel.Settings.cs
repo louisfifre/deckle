@@ -50,11 +50,9 @@ public partial class RecordingViewModel
             defaultValue: () => new PreprocessingSettings().Enabled),
     ];
 
-    // The manual voice-level window (floor, ceiling, curve, behind a "set the
-    // window manually" master) is no longer exposed (triage of 2026-10-14): the
-    // level check above measures the window, and three dBFS sliders without a
-    // meter beside them were an expert override nobody could judge. The view
-    // model keeps the LevelWindow* properties and LevelWindowSettings its defaults.
+    // The mic level check above measures the RMS of a 5 s sample and compares
+    // it to the preprocessing target, to advise whether turning the DSP on is
+    // worth it. It does not measure or set the HUD level window.
     //
     // The microphone-telemetry opt-in lives in RecordingTelemetryViewModel,
     // composed on the Diagnostics page.

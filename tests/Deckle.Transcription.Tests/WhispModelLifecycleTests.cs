@@ -225,8 +225,6 @@ public sealed class WhispModelLifecycleTests
         public TelemetrySettings Telemetry { get; } = new();
         public LlmSettings Llm { get; } = new();
         public string ResolveModelsDirectory() => Path.GetTempPath();
-        public void SaveSettings() { }
-        public void ApplyLevelWindow(LevelWindowSettings lw) { }
     }
 
     // A backend that is not loaded until a load succeeds, and whose load can be

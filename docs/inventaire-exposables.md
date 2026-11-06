@@ -96,23 +96,16 @@ Total : **693 entrées** réparties sur **41 modules**.
 | AudioFileDecoder.TargetSampleRate | tuning-constant | `16000` | src/Deckle.Audio/AudioFileDecoder.cs:29 | non | Fixed pipeline format, locked to MicrophoneCapture; frozen contract, not a knob. Keep only as inventory trace. |
 | AudioFileDecoder.TargetChannels | tuning-constant | `1` | src/Deckle.Audio/AudioFileDecoder.cs:30 | non | Same frozen format contract. |
 | AudioFileDecoder.TargetBitsPerSample | tuning-constant | `32` | src/Deckle.Audio/AudioFileDecoder.cs:31 | non | Same frozen format contract. |
-| AudioLevelMapper.EmaAlpha | tuning-constant | `0.25f` | src/Deckle.Audio/AudioLevelMapper.cs:34 | non | Genuine unexposed tuning: HUD stroke smoothing tau ~0.15s. Public static mutable field, nothing writes it today. |
-| AudioLevelMapper.MinDbfs | tuning-constant | `-55f` | src/Deckle.Audio/AudioLevelMapper.cs:72 | oui | Runtime mirror of LevelWindowSettings.MinDbfs (pushed at startup and on change). Same knob, second declaration site - dedupe against CaptureSettings.cs:58. |
-| AudioLevelMapper.MaxDbfs | tuning-constant | `-32f` | src/Deckle.Audio/AudioLevelMapper.cs:73 | oui | Runtime mirror of LevelWindowSettings.MaxDbfs. |
-| AudioLevelMapper.DbfsCurveExponent | tuning-constant | `1.0f` | src/Deckle.Audio/AudioLevelMapper.cs:74 | oui | Runtime mirror of LevelWindowSettings.DbfsCurveExponent. Note the file comment still documents an older -40/-22/exp2.0 calibration - comment is stale vs the code. |
+| AudioLevelMapper.EmaAlpha | tuning-constant | `0.25f` | src/Deckle.Audio/AudioLevelMapper.cs:31 | non | Genuine unexposed tuning: HUD stroke smoothing tau ~0.15s. Public static mutable field, nothing writes it today. |
+| AudioLevelMapper.MinDbfs | tuning-constant | `-55f` | src/Deckle.Audio/AudioLevelMapper.cs:35 | oui | Fixed HUD level window floor (const); no setting, no calibration. |
+| AudioLevelMapper.MaxDbfs | tuning-constant | `-32f` | src/Deckle.Audio/AudioLevelMapper.cs:36 | oui | Fixed HUD level window ceiling (const). |
 | CaptureSettings.AudioInputDeviceId | persisted-setting | `-1` | src/Deckle.Audio/CaptureSettings.cs:15 | oui | June marks it bespoke (runtime waveIn enumeration). -1 = WAVE_MAPPER. |
 | CaptureSettings.MaxRecordingDurationSeconds | persisted-setting | `20 * 60 (1200 s)` | src/Deckle.Audio/CaptureSettings.cs:23 | non | Persisted, no UI found in the sweep scope. Sweep value string was the unevaluated expression; real default 1200. 0 = no cap. |
-| CaptureSettings.LevelWindow | persisted-setting | `new LevelWindowSettings()` | src/Deckle.Audio/CaptureSettings.cs:25 | oui | Container property, not a knob - its five members are the exposables. |
 | CaptureSettings.Preprocessing | persisted-setting | `new PreprocessingSettings()` | src/Deckle.Audio/CaptureSettings.cs:34 | oui | Container property; the opt-in toggle is Preprocessing.Enabled, fine params live in the Playground. |
-| LevelWindowSettings.MinDbfs | persisted-setting | `-55f` | src/Deckle.Audio/CaptureSettings.cs:58 | oui |  |
-| LevelWindowSettings.MaxDbfs | persisted-setting | `-32f` | src/Deckle.Audio/CaptureSettings.cs:59 | oui |  |
-| LevelWindowSettings.DbfsCurveExponent | persisted-setting | `1.0f` | src/Deckle.Audio/CaptureSettings.cs:60 | oui |  |
-| LevelWindowSettings.AutoCalibrationEnabled | persisted-setting | `false` | src/Deckle.Audio/CaptureSettings.cs:61 | oui |  |
-| LevelWindowSettings.AutoCalibrationSamples | persisted-setting | `5` | src/Deckle.Audio/CaptureSettings.cs:62 | oui | June lists the LevelWindow block but not this member explicitly; rolling-window size for the auto-calibration heuristic. |
-| WaveInLoop.NormalVoiceDbfsThreshold | tuning-constant | `-45.0` | src/Deckle.Audio/Internal/WaveInLoop.cs:102 | non | Method-local const. Drives the user-facing low-audio warning - user-perceivable, so kept. |
-| WaveInLoop.NormalVoiceSustainedMs | tuning-constant | `200` | src/Deckle.Audio/Internal/WaveInLoop.cs:103 | non | Method-local const gating the same warning. |
-| WaveInLoop.WarnAfterSilenceMs | tuning-constant | `5000` | src/Deckle.Audio/Internal/WaveInLoop.cs:104 | non | Method-local const: delay before the low-audio warning fires. |
-| WaveInLoop.SubWindowMs | tuning-constant | `50` | src/Deckle.Audio/Internal/WaveInLoop.cs:382 | non | Method-local const. Structural cadence: telemetry and MicrophoneTelemetryCalculator.SubWindowSamples=800 assume it. Not independently tunable. |
+| WaveInLoop.NormalVoiceDbfsThreshold | tuning-constant | `-45.0` | src/Deckle.Audio/Internal/WaveInLoop.cs:96 | non | Method-local const. Drives the user-facing low-audio warning - user-perceivable, so kept. |
+| WaveInLoop.NormalVoiceSustainedMs | tuning-constant | `200` | src/Deckle.Audio/Internal/WaveInLoop.cs:97 | non | Method-local const gating the same warning. |
+| WaveInLoop.WarnAfterSilenceMs | tuning-constant | `5000` | src/Deckle.Audio/Internal/WaveInLoop.cs:98 | non | Method-local const: delay before the low-audio warning fires. |
+| WaveInLoop.SubWindowMs | tuning-constant | `50` | src/Deckle.Audio/Internal/WaveInLoop.cs:436 | non | Method-local const. Structural cadence: telemetry and MicrophoneTelemetryCalculator.SubWindowSamples=800 assume it. Not independently tunable. |
 | MicrophoneCapture.N_BUFFERS | tuning-constant | `4` | src/Deckle.Audio/MicrophoneCapture.cs:40 | non | waveIn buffer count - implementation detail, but it sets capture latency/robustness. Kept under doubt. |
 | MicLevelTester.DefaultMeasureSeconds | tuning-constant | `5` | src/Deckle.Audio/MicLevelTester.cs:23 | non | Duration of the Settings mic check - directly user-perceivable. |
 | MicLevelCheck.RecommendDeltaDb | tuning-constant | `6.0` | src/Deckle.Audio/Preprocessing/MicLevelCheck.cs:26 | non | Self-declared provisional engineer guess; decides the 'enable the lift' recommendation shown to the user. |
@@ -897,7 +890,6 @@ Total : **693 entrées** réparties sur **41 modules**.
 
 Reprises **verbatim** de la section « Lacunes / à recouper » de `docs/inventaire-settings.md` (juin 2026). Aucune n'est tranchée ici ; elles restent à l'arbitrage de Louis. Note : la section en compte onze, pas neuf.
 
-- LevelWindowSettings defaults: verified source is MinDbfs=-55f, MaxDbfs=-32f, DbfsCurveExponent=1.0f, AutoCalibrationEnabled=false (src/Deckle.Audio/CaptureSettings.cs:58-61). Two zone reports gave conflicting figures (-90/-36, AutoCalibration default true) — those are wrong; treat -55/-32/1.0/false as canonical.
 - EnergySegmenter defaults: verified source is ThresholdDbfs=-45.0, HangoverMaxMs=5000, HangoverMinMs=500, HangoverRampStartMs=15000, HangoverRampEndMs=120000, MarginMs=150, MinUtteranceMs=250 (src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:48-58). Several reports cited -38/4000/60000/180000/40/100/300 — those appear stale (an older worktree?); reconcile before quoting defaults anywhere.
 - SpeechTrimSettings (VAD) defaults: reports disagree (Threshold 0.5 agreed; MinSpeech 250 vs 100; MinSilence 100 vs 300; SpeechPad 30 vs 0). SpeechTrimSettings.cs was not located by glob — verify the actual POCO before quoting VAD defaults.
 - totalSettings=132 is a deduplicated estimate across seven overlapping zone reports that recount the same POCOs; it counts persisted category=='setting' entries (incl. frozen DSP params and dormant Speech skeleton) and excludes category=='diagnostic'/'command' and read-only ids (RewriteProfile.Id). A line-by-line POCO census would firm the exact figure.
@@ -911,7 +903,6 @@ Reprises **verbatim** de la section « Lacunes / à recouper » de `docs/inventa
 
 Éléments du présent inventaire qui recoupent ces lacunes :
 
-- Lacune 1 (LevelWindow) — `Deckle.Audio` confirme -55 / -32 / 1.0 à la source, et identifie la source probable des chiffres divergents : un commentaire périmé au-dessus de `AudioLevelMapper.MinDbfs` documentant une calibration -40 / -22 / exposant 2.0 que le code ne tient plus.
 - Lacune 2 (EnergySegmenter) — `Deckle.Transcription` confirme -45.0 / 5000 / 500 / 15000 / 120000 / 150 / 250, et note que la section consolidée de juin (lignes 206-212) porte encore les anciens chiffres alors que sa table par module porte les bons.
 - Lacune 5 (HangoverCurve) — probablement périmée : le dépôt a depuis un `HangoverCurveCanvas` (éditeur de bézier Win2D dans `Ui/Controls/`). Son câblage dans WhisperPage n'a pas été vérifié.
 - Lacune 7 (SpeechSettings) — `Deckle.Speech` confirme les trois valeurs (false / Pierre / 0.6), sans dérive. `Enabled` n'a aujourd'hui aucun consommateur.
@@ -938,4 +929,4 @@ Ce que la passe automatique ne voit pas, confirmé par les quarante-et-une véri
 - **Collections-enveloppes.** Le balayage prend l'enveloppe et rate l'élément décrit : `SetupNotifications.All` pris, le descripteur `UpdateAvailable` qui porte la surface réelle (sévérité, canal, actions) raté.
 - **`owner` mal attribué.** Dans un fichier d'interop, les constantes qui suivent une déclaration de struct sont rattachées à ce struct et non à la classe statique englobante : tout `TrayMenuNativeMethods.cs` sous `SIZE`, tout `TaskbarCoverNativeMethods.cs` sous `MSG`/`APPBARDATA`, tout `ScreenCaptureInterop.cs` sous `RECT`. Sans effet ici (ces entrées sont retirées), mais le champ n'est pas fiable.
 - **Constantes locales de méthode annoncées `field`.** Récurrent et vérifiable au nom en minuscule : `SurfaceProfiler.minTimedSentences`, `LiveTagResolver.limit`, `McpHttpHost.scheme`, `HomePropertyWriter.limit`, `HdrState.SdrReferenceNits`, `LogWindow.MaxEntries`. Les exposer suppose d'abord de les hisser au niveau du type.
-- **Doublons de déclaration.** Plusieurs valeurs existent à deux endroits sans constante partagée : les 59 champs de `ConicArcStrokeConfig` mirroités dans `TuningModel`, `AudioLevelMapper.MinDbfs/MaxDbfs/DbfsCurveExponent` mirroir de `LevelWindowSettings`, `SeparatorRunCap` déclaré deux fois, la cadence 50 ms / 800 échantillons déclarée dans deux fichiers. Tout total global doit être dédupliqué par nom.
+- **Doublons de déclaration.** Plusieurs valeurs existent à deux endroits sans constante partagée : les 59 champs de `ConicArcStrokeConfig` mirroités dans `TuningModel`, `SeparatorRunCap` déclaré deux fois, la cadence 50 ms / 800 échantillons déclarée dans deux fichiers. Tout total global doit être dédupliqué par nom.

@@ -139,7 +139,5 @@ public sealed class WhisperReferenceAudioSystemTests
         public TelemetrySettings Telemetry { get; } = new();
         public LlmSettings Llm { get; } = new();
         public string ResolveModelsDirectory() => _modelDirectory;
-        public void SaveSettings() { }
-        public void ApplyLevelWindow(LevelWindowSettings lw) { }
     }
 }

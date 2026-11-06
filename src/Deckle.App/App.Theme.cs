@@ -10,10 +10,6 @@ public partial class App
 
     private static bool _firstThemeApplyDone;
 
-    // Entry point for the boot and the engine's auto-calibration.
-    public static void ApplyLevelWindow(Audio.LevelWindowSettings cfg)
-        => Audio.AudioLevelMapper.Apply(cfg);
-
     public static void ApplyTheme(string themeName)
     {
         var theme = themeName switch

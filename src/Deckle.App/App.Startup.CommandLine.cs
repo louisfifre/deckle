@@ -22,9 +22,6 @@ public partial class App
     {
         ApplyTheme(Settings.SettingsService.Instance.Current.Appearance.Theme);
 
-        // So the first recording reflects the user's calibration, not the defaults.
-        ApplyLevelWindow(Audio.CaptureSettingsService.Instance.Current.LevelWindow);
-
         var cliArgs = Environment.GetCommandLineArgs();
 
         HandleDataRootCleanup(cliArgs);

@@ -743,8 +743,6 @@ public sealed class LiveTranscriptionPipelineTests
         public TelemetrySettings Telemetry { get; } = new();
         public LlmSettings Llm { get; } = new();
         public string ResolveModelsDirectory() => Path.GetTempPath();
-        public void SaveSettings() { }
-        public void ApplyLevelWindow(LevelWindowSettings lw) { }
     }
 
     internal sealed class ScriptedMicrophoneCapture : IMicrophoneCapture

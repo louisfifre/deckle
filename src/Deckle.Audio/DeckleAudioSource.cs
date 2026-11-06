@@ -636,10 +636,10 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtCaptureSettingsResolved,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "device_id={0} | max_recording_s={1} | preprocessing={2} | auto_calibration={3}")]
-    public void CaptureSettingsResolved(int device_id, int max_recording_s, bool preprocessing, bool auto_calibration)
+           Message = "device_id={0} | max_recording_s={1} | preprocessing={2}")]
+    public void CaptureSettingsResolved(int device_id, int max_recording_s, bool preprocessing)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtCaptureSettingsResolved, device_id, max_recording_s, preprocessing, auto_calibration);
+            WriteEvent(EvtCaptureSettingsResolved, device_id, max_recording_s, preprocessing);
     }
 }

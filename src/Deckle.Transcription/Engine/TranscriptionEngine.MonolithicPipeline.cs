@@ -50,11 +50,6 @@ public sealed partial class TranscriptionEngine
             }
         }
 
-        if (capture.Telemetry is not null)
-        {
-            TryAutoCalibrate(capture.Telemetry);
-        }
-
         float[] audio = capture.Pcm;
 
         // RequestToggle (user Stop) or the cap-hit branch above moved the state
