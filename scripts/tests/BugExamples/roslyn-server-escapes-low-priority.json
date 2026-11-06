@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "id": "developer-tooling-2026-11-06-roslyn-server-escapes-low-priority",
+  "status": "active",
+  "modules": ["DeveloperTooling"],
+  "classes": ["build-priority", "compiler-server", "process-inheritance"],
+  "trigger": {
+    "operation": "dotnet-build-with-low-priority-and-shared-compilation"
+  },
+  "symptom": "A low-priority Deckle build still drove one CPU core and the fans to full speed; Task Manager showed every MSBuild node at BelowNormal and VBCSCompiler alone at Normal.",
+  "cause": "Roslyn starts its compiler server through CreateProcess with an explicit NORMAL_PRIORITY_CLASS flag (BuildServerConnection.cs), which cancels the priority class a child would otherwise inherit from its BelowNormal MSBuild node. Measured on a Release build on 2026-11-06: 67 s of CPU in VBCSCompiler against 61 s in the four nodes together, so about half of the build ran at normal priority.",
+  "violatedInvariant": "Every process a Deckle command-line build runs, the Roslyn compiler server included, runs at BelowNormal or lower.",
+  "contract": {
+    "must": [
+      "Lower any running VBCSCompiler to BelowNormal from scripts/build-server-watchdog.ps1 at every tick, so a server started during a build is caught within one tick (Set-BuildServerLowPriority).",
+      "Leave a server already at BelowNormal or lower untouched: an operator who parked it at Idle keeps it."
+    ],
+    "mustNot": [
+      "Disable shared compilation to get the low priority for free: an in-process compiler inherits BelowNormal, but a full rebuild takes twice as long (see dotnet-max-node-response-precedence)."
+    ]
+  },
+  "automation": {
+    "tier": "scripted",
+    "test": "scripts/tests/commands/build-server-watchdog.tests.ps1",
+    "residual": "The test exercises the lowering rule on a stand-in process. That a real build's server is reached within one tick was observed by hand on 2026-11-06 (BelowNormal three seconds after a forced recompile of Deckle.Core); the first seconds of a build, before the watchdog's first tick, still run at Normal.",
+    "reviewPaths": [
+      "scripts/build-server-watchdog.ps1",
+      "Directory.Build.targets",
+      "Directory.Build.rsp"
+    ]
+  },
+  "provenance": {
+    "observedAt": "2026-11-06",
+    "redaction": "synthetic"
+  }
+}

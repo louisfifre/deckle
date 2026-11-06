@@ -262,7 +262,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── BugExamples/
 │   │   │   ├── build-only-stops-resident.json
 │   │   │   ├── dotnet-max-node-response-precedence.json
-│   │   │   └── repository-portability.json
+│   │   │   ├── repository-portability.json
+│   │   │   └── roslyn-server-escapes-low-priority.json
 │   │   ├── commands/
 │   │   │   ├── build-server-watchdog.tests.ps1
 │   │   │   ├── publish-native-runtime.tests.ps1
