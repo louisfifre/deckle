@@ -92,8 +92,7 @@ public sealed partial class TranscriptionEngine
         // in the rewrite or the paste cannot leave a stale file behind.
         ClearRecovery();
 
-        FinalizeRewrite rewrite = ApplyRewrite(
-            rawText, isFileRun, production.BatchRewrite, production.SentAudioSec);
+        FinalizeRewrite rewrite = ApplyRewrite(rawText, isFileRun, production.BatchRewrite);
         FinalizeDelivery delivered = DeliverTranscript(rewrite.Text, delivery);
 
         RecordPipelineMetrics(

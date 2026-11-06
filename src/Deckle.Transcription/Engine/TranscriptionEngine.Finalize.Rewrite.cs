@@ -9,10 +9,10 @@ public sealed partial class TranscriptionEngine
     // were already sent during the recording, so the take is assembled from
     // them (TranscriptionEngine.BatchRewrite.cs) instead of rewritten whole.
     // A batched take keeps the profile it started with: its length was not
-    // known then, so the length thresholds only choose for a whole-take rewrite.
+    // known then, so the length ladder only chooses for a whole-take rewrite,
+    // by the characters of the raw transcript it is about to rewrite.
     private FinalizeRewrite ApplyRewrite(
-        string rawText, bool isFileRun, BatchRewriteRun? batchRewrite = null,
-        double sentAudioSec = 0)
+        string rawText, bool isFileRun, BatchRewriteRun? batchRewrite = null)
     {
         if (batchRewrite is not null && !isFileRun)
             return ApplyBatchRewrite(rawText, batchRewrite);
@@ -20,7 +20,7 @@ public sealed partial class TranscriptionEngine
         var llmSettings = _host.Llm;
         RewriteProfile? profile = isFileRun
             ? null
-            : RewriteProfileSelection.ForDictation(llmSettings, sentAudioSec, TakeProfileId);
+            : RewriteProfileSelection.ForDictation(llmSettings, rawText.Length, TakeProfileId);
 
         if (!isFileRun
             && llmSettings.Enabled

@@ -59,6 +59,7 @@ public static partial class LlmSettingsMigrations
     {
         bool profiles = RepairProfileReferences(s);
         bool providers = RepairProviders(s);
-        return profiles || providers;
+        bool ladder = MoveProfileThresholdsToLadder(s);
+        return profiles || providers || ladder;
     }
 }

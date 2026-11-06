@@ -277,8 +277,7 @@ public sealed partial class TranscriptionEngine
             TotalTranscribeMs: consumed.TotalMs,
             InitMs:            consumed.InitMs,
             NSegments:         consumed.NSegments,
-            BatchRewrite:      batchRewrite,
-            SpeechSec:         consumed.SpeechSec);
+            BatchRewrite:      batchRewrite);
     }
 
     // Creates the source-neutral segmenter/channel/consumer core shared by live
@@ -369,10 +368,6 @@ public sealed partial class TranscriptionEngine
         var sb = new StringBuilder();
         long totalMs = 0, initMs = 0;
         int nSeg = 0, nUtt = 0;
-        // Speech the take's text came from: the trimmed audio of each utterance
-        // that contributed text. A dropped, failed or phantom utterance gave
-        // nothing to rewrite, so it does not count toward the rewrite threshold.
-        long speechSamplesKept = 0;
 
         // A silence cut is a real pause the speaker made — render it as a
         // paragraph break in the assembled text instead of flattening it into a
@@ -600,7 +595,6 @@ public sealed partial class TranscriptionEngine
                 if (sb.Length > 0) sb.Append(pendingParagraphBreak ? "\n\n" : " ");
                 sb.Append(text);
                 pendingParagraphBreak = u.EndedOnSilence;
-                speechSamplesKept += speechSamples;
                 UtteranceTranscribed?.Invoke(new TranscribedUtterance(u.Index, text, u.EndedOnSilence));
             }
 
@@ -615,8 +609,7 @@ public sealed partial class TranscriptionEngine
 
         float[]? backendAudio = backendChunks is null ? null : ConcatSamples(backendChunks);
         return new StreamingConsumeResult(
-            sb.ToString(), totalMs, initMs, nSeg, nUtt, backendAudio, incomplete,
-            SpeechSec: speechSamplesKept / 16_000.0);
+            sb.ToString(), totalMs, initMs, nSeg, nUtt, backendAudio, incomplete);
     }
 
     // internal for Deckle.Transcription.Tests: the ordered concatenation is what
@@ -661,10 +654,9 @@ public sealed partial class TranscriptionEngine
     // audio, so the caller falls back to the raw take. Incomplete: the prime
     // failed, or an utterance was skipped on a backend failure; a policy that
     // rejects incomplete results also flags an aborted or failed-code result.
-    // SpeechSec: the trimmed audio of the utterances that gave text.
     private readonly record struct StreamingConsumeResult(
         string Text, long TotalMs, long InitMs, int NSegments, int NUtterances,
-        float[]? BackendAudio, bool Incomplete, double SpeechSec = 0);
+        float[]? BackendAudio, bool Incomplete);
 
     // StopCaptureOnPrimeFailure: the live dictation, whose capture keeps running
     // while the consumer waits at the prime gate, ends it when the prime fails.

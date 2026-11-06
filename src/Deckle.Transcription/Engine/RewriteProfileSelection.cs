@@ -5,17 +5,18 @@ namespace Deckle.Transcription;
 // Which profile rewrites a dictation:
 //   1. a profile whose own shortcut started the take, whatever its length,
 //      and even with rewriting switched off; the rest needs it on;
-//   2. else, once the length is known, the auto-selected profile with the
-//      highest threshold the take reached (on a tie, the first in the list);
-//   3. else the active profile, which so acts as the default under every
-//      threshold. No active profile keeps the raw result: that is the floor.
-// Legacy auto-rule and shortcut-slot settings still on disk are ignored.
+//   2. else, once the length is known and the length ladder is on, the
+//      profile of the highest step the raw transcript reached;
+//   3. else the active profile, which so acts as the default below the
+//      first step. No active profile keeps the raw result: that is the floor.
+// Legacy auto-rule, shortcut-slot and per-profile threshold settings still
+// on disk are ignored.
 internal static class RewriteProfileSelection
 {
-    // sentAudioSec null = length not known yet (a batched take picks its
-    // profile at start), so only the forced and the active profile apply.
+    // rawChars null = length not known yet (a batched take picks its profile
+    // at start), so only the forced and the active profile apply.
     public static RewriteProfile? ForDictation(
-        LlmSettings settings, double? sentAudioSec = null, string? forcedProfileId = null)
+        LlmSettings settings, int? rawChars = null, string? forcedProfileId = null)
     {
         // A profile's own shortcut is an explicit request for that rewrite, so
         // it holds even while automatic rewriting is switched off.
@@ -26,21 +27,28 @@ internal static class RewriteProfileSelection
         if (!settings.Enabled)
             return null;
 
-        if (sentAudioSec is { } seconds && ByLength(settings, seconds) is { } byLength)
+        if (rawChars is { } chars && ByLength(settings, chars) is { } byLength)
             return byLength;
 
         return Active(settings);
     }
 
-    public static RewriteProfile? ByLength(LlmSettings settings, double sentAudioSec)
+    // A step whose profile was deleted is skipped, so the step below it, or
+    // the active profile, takes the dictation instead.
+    public static RewriteProfile? ByLength(LlmSettings settings, int rawChars)
     {
+        LengthSwitchSettings? ladder = settings.LengthSwitch;
+        if (ladder is not { Enabled: true }) return null;
+
         RewriteProfile? best = null;
-        foreach (RewriteProfile profile in settings.Profiles)
+        int bestFrom = -1;
+        foreach (LengthStep step in ladder.Steps)
         {
-            if (!profile.AutoSelect) continue;
-            if (sentAudioSec < profile.AutoSelectFromMinutes * 60.0) continue;
-            if (best is null || profile.AutoSelectFromMinutes > best.AutoSelectFromMinutes)
-                best = profile;
+            if (rawChars < step.FromChars || step.FromChars <= bestFrom) continue;
+            RewriteProfile? profile = settings.Profiles.Find(p => p.Id == step.ProfileId);
+            if (profile is null) continue;
+            best = profile;
+            bestFrom = step.FromChars;
         }
         return best;
     }

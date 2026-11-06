@@ -305,31 +305,44 @@
   <data name="LlmProfile_ContextBody.Text" xml:space="preserve">
     <value>Tokens the model considers at once. Larger is slower and heavier.</value>
   </data>
-  <!-- Length threshold and shortcut cards of a profile (composed in
-       LlmProfilesSection.ProfileCards). -->
-  <data name="LlmProfileAutoSelectCard.Header" xml:space="preserve">
-    <value>Use for long dictations</value>
-  </data>
-  <data name="LlmProfileAutoSelectCard.Description" xml:space="preserve">
-    <value>Rewrites a dictation with this profile once it reaches a length. When several profiles qualify, the one with the longest threshold wins.</value>
-  </data>
-  <data name="LlmProfileAutoSelectFromCard.Header" xml:space="preserve">
-    <value>From</value>
-  </data>
-  <data name="LlmProfileAutoSelectFromCard.Description" xml:space="preserve">
-    <value>Time of speech sent to transcription. Pauses count only when streaming is off.</value>
-  </data>
-  <data name="LlmProfileHotkeyCard.Header" xml:space="preserve">
+  <!-- Shortcut cards of a profile (composed in LlmProfilesSection.ProfileCards):
+       a switch, then the chord it reveals. -->
+  <data name="LlmProfileHotkeyEnabledCard.Header" xml:space="preserve">
     <value>Shortcut</value>
   </data>
-  <data name="LlmProfileHotkeyCard.Description" xml:space="preserve">
+  <data name="LlmProfileHotkeyEnabledCard.Description" xml:space="preserve">
     <value>Starts a dictation rewritten with this profile, whatever its length or the Rewriting switch.</value>
   </data>
-  <data name="LlmProfile_MinutesValue_Format" xml:space="preserve">
-    <value>{0} min</value>
+  <data name="LlmProfileHotkeyCard.Header" xml:space="preserve">
+    <value>Keys</value>
   </data>
-  <data name="LlmProfile_SummaryFromMinutes_Format" xml:space="preserve">
-    <value>from {0} min</value>
+  <!-- Length ladder of the Dictation section (LlmActiveProfileSection). -->
+  <data name="LlmLengthSwitchCard.Header" xml:space="preserve">
+    <value>Switch profile by length</value>
+  </data>
+  <data name="LlmLengthSwitchCard.Description" xml:space="preserve">
+    <value>Rewrites a longer dictation with another profile. Below the first step, the rewrite profile above applies. A dictation rewritten while you speak keeps the profile it started with.</value>
+  </data>
+  <data name="LlmLengthStep_Header" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="LlmLengthStep_Stop_Format" xml:space="preserve">
+    <value>{0} characters, about {1} min</value>
+  </data>
+  <data name="LlmLengthStep_StopUnderMinute_Format" xml:space="preserve">
+    <value>{0} characters, under a minute</value>
+  </data>
+  <data name="LlmLengthStep_LengthName" xml:space="preserve">
+    <value>Length</value>
+  </data>
+  <data name="LlmLengthStep_ProfileName" xml:space="preserve">
+    <value>Profile</value>
+  </data>
+  <data name="LlmLengthStep_RemoveName" xml:space="preserve">
+    <value>Remove step</value>
+  </data>
+  <data name="LlmLengthAddStepButton.Content" xml:space="preserve">
+    <value>Add a step</value>
   </data>
   <data name="LlmProfile_HotkeyUsedByProfile_Format" xml:space="preserve">
     <value>The profile {0} already uses this shortcut.</value>
@@ -399,7 +412,7 @@
     <value>Rewrite profile</value>
   </data>
   <data name="LlmActiveProfileCard.Description" xml:space="preserve">
-    <value>Applied to every dictation shorter than the profiles used for long dictations. (None) keeps it as spoken.</value>
+    <value>The profile a dictation is rewritten with. (None) keeps it as spoken.</value>
   </data>
 
   <!-- LlmDictationSection -->
@@ -413,7 +426,7 @@
     <value>Rewrite while you speak</value>
   </data>
   <data name="LlmBatchRewriteGroup.Description" xml:space="preserve">
-    <value>Sends each stretch of speech to the active profile as soon as you pause, so little is left to rewrite when you stop. Each batch is rewritten on its own, so a profile that regroups a whole text by subject does not suit it. The profiles for long dictations do not apply: the length is unknown when the first batch leaves.</value>
+    <value>Sends each stretch of speech to the active profile as soon as you pause, so little is left to rewrite when you stop. Each batch is rewritten on its own, so a profile that regroups a whole text by subject does not suit it. Switching profile by length does not apply: the length is not known when the first batch leaves.</value>
   </data>
   <data name="LlmBatchSizeCard.Header" xml:space="preserve">
     <value>Batch size</value>
