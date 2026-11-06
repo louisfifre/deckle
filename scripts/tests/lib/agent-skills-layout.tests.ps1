@@ -26,7 +26,7 @@ if ($canonicalNames.Count -eq 0) {
     throw '.agents/skills must expose at least one project skill.'
 }
 
-foreach ($relativeFacade in @('.claude\skills', '.codex\skills')) {
+foreach ($relativeFacade in @('.claude\skills')) {
     $facadePath = Join-Path $repoRoot $relativeFacade
     $facadeItem = Get-Item -LiteralPath $facadePath
     if ($facadeItem.LinkType -ne 'SymbolicLink') {
