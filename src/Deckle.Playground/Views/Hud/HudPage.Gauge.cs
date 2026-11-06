@@ -45,7 +45,7 @@ public sealed partial class HudPage
     {
         var compositor = ElementCompositionPreview.GetElementVisual(NakedPreviewHost).Compositor;
         bool isDark = ActualTheme != ElementTheme.Light;
-        bool animations = SettingsService.Instance.Current.Overlay.Animations;
+        bool animations = SystemAnimationPreference.Instance.AnimationsEnabled;
         // The page's own model: the gauge paints Recording's material and
         // reads the geometry tuned on the other targets. Nothing here is read
         // by the live HUD.
@@ -152,7 +152,7 @@ public sealed partial class HudPage
             _setCountdownPosition?.Invoke(0);
             if (!ViewModel.IsPlaying) ViewModel.IsPlaying = true;
             FlushPendingRebuild();
-            bool animations = SettingsService.Instance.Current.Overlay.Animations;
+            bool animations = SystemAnimationPreference.Instance.AnimationsEnabled;
             _gaugePreview?.Replay(_countdownTuning.DurationSeconds, animations);
             if (animations)
             {
@@ -176,7 +176,7 @@ public sealed partial class HudPage
             _countdownTuning.Progress = 0;
             _setCountdownPosition?.Invoke(0);
             _gaugePreview?.SetProgress(
-                0, interpolate: SettingsService.Instance.Current.Overlay.Animations);
+                0, interpolate: SystemAnimationPreference.Instance.AnimationsEnabled);
         };
         transport.Children.Add(replay);
         transport.Children.Add(resume);
