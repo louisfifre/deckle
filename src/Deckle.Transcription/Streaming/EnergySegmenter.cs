@@ -22,7 +22,9 @@ internal readonly record struct SegmenterSnapshot(
 // frame is voiced it does not decide itself: it reads the answer from its own
 // Deckle.Audio.VoiceDetector, built on the user's voice level; the low-audio
 // warning of the capture loop runs its own on the same level and the same RMS
-// sequence, so both reach the same decisions.
+// sequence, so both reach the same decisions. The floor under which a voiced
+// extent is a blip, not speech, also comes from outside: the shared minimum
+// speech (StreamingSettings.MinSpeechMs) Silero applies to each span.
 //
 // Single-threaded by construction: Push and Flush run on the one producer
 // thread, so there is no shared mutable state and no lock.
@@ -81,6 +83,7 @@ internal sealed class EnergySegmenter
     public EnergySegmenter(
         EnergySegmenterSettings settings,
         double voiceLevelDbfs,
+        int minSpeechMs,
         Action<Utterance> onUtterance,
         bool logsDetail = true)
     {
@@ -93,7 +96,7 @@ internal sealed class EnergySegmenter
         _rampStartFrames   = FramesFromMs(settings.HangoverRampStartMs, min: 1);
         _rampEndFrames     = FramesFromMs(settings.HangoverRampEndMs,   min: 1);
         _marginFrames      = FramesFromMs(settings.MarginMs,            min: 0);
-        _minVoicedFrames   = FramesFromMs(settings.MinUtteranceMs,      min: 1);
+        _minVoicedFrames   = FramesFromMs(minSpeechMs,                  min: 1);
         _hangoverCurve     = new UnitBezier(
             settings.HangoverCurveX1, settings.HangoverCurveY1,
             settings.HangoverCurveX2, settings.HangoverCurveY2);

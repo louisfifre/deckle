@@ -733,7 +733,7 @@ public sealed class LiveTranscriptionPipelineTests
             Transcription.Streaming.Segmenter.HangoverRampStartMs = 50;
             Transcription.Streaming.Segmenter.HangoverRampEndMs = 50;
             Transcription.Streaming.Segmenter.MarginMs = 0;
-            Transcription.Streaming.Segmenter.MinUtteranceMs = 250;
+            Transcription.Streaming.MinSpeechMs = 250;
             Transcription.Engine.InitialPrompt = "test prompt";
             Llm.Enabled = false;
         }

@@ -14,9 +14,6 @@ public partial class WhisperViewModel
     public partial double VadThreshold { get; set; }
 
     [ObservableProperty]
-    public partial double VadMinSpeechDurationMs { get; set; }
-
-    [ObservableProperty]
     public partial double VadMinSilenceDurationMs { get; set; }
 
     [ObservableProperty]
@@ -34,12 +31,6 @@ public partial class WhisperViewModel
         PushToSettings();
     }
 
-    partial void OnVadMinSpeechDurationMsChanged(double value)
-    {
-        if (_isSyncing) return;
-        PushToSettings();
-    }
-
     partial void OnVadMinSilenceDurationMsChanged(double value)
     {
         if (_isSyncing) return;
@@ -52,8 +43,8 @@ public partial class WhisperViewModel
         PushToSettings();
     }
 
-    // The Seg* values tune the energy segmenter, consulted only when streaming is
-    // on.
+    // The Seg* values tune the energy segmenter, which cuts every recording:
+    // streaming dictation, files and recovered takes.
 
     [ObservableProperty]
     public partial bool StreamingEnabled { get; set; }
@@ -86,8 +77,10 @@ public partial class WhisperViewModel
     [ObservableProperty]
     public partial double SegMarginMs { get; set; }
 
+    // The shared minimum speech (Streaming.MinSpeechMs): the segmenter's floor
+    // on an utterance's voiced extent and Silero's on each span inside it.
     [ObservableProperty]
-    public partial double SegMinUtteranceMs { get; set; }
+    public partial double MinSpeechMs { get; set; }
 
     partial void OnStreamingEnabledChanged(bool value)
     {
@@ -214,7 +207,7 @@ public partial class WhisperViewModel
         PushToSettings();
     }
 
-    partial void OnSegMinUtteranceMsChanged(double value)
+    partial void OnMinSpeechMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();

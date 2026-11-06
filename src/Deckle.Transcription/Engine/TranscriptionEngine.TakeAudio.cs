@@ -80,12 +80,13 @@ public sealed partial class TranscriptionEngine
     }
 
     // The audio goes only when nothing is left to recover: the text reached the
-    // person, or there was no speech in it. Every other ending keeps it, and a
-    // failure reason added later is covered without touching this rule, since
-    // it ends a take as "failed" (see IsFailureReason) and a failed take is
-    // never discarded.
+    // person, or there was no speech in it (no text, no audio, or a silence trim
+    // that found no speech: a recovery run would trim it to nothing again).
+    // Every other ending keeps it, and a failure reason added later is covered
+    // without touching this rule, since it ends a take as "failed" (see
+    // IsFailureReason) and a failed take is never discarded.
     internal static bool DiscardsTakeAudio(string outcome, string reason) =>
         outcome is TakeOutcomes.Pasted or TakeOutcomes.ClipboardOnly
         || (outcome == TakeOutcomes.None
-            && reason is TakeEndReasons.NoText or TakeEndReasons.EmptyAudio);
+            && reason is TakeEndReasons.NoText or TakeEndReasons.EmptyAudio or TakeEndReasons.NoSpeech);
 }

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Deckle.Core;
 
 namespace Deckle.Transcription;
@@ -48,7 +49,40 @@ public sealed class TranscriptionSettingsService
             // internals, not a user workflow step. Keep only anomalies.
             logWarning:  DeckleWhispSource.Log.SettingsLoadWarning,
             logError:    DeckleWhispSource.Log.SettingsLoadError,
+            preDeserializeMigration: MigrateMinSpeech,
             postLoadMigration: ApplyPostLoadMigrations);
+    }
+
+    // The segmenter's minimum utterance (streaming.segmenter.minUtteranceMs)
+    // and Silero's minimum speech (streaming.speechTrim.minSpeechDurationMs)
+    // were one floor stored twice; both now read streaming.minSpeechMs. When
+    // the target is absent it takes Silero's value, the final judge, else the
+    // segmenter's; the two old keys are removed whenever they exist, so the
+    // next save writes the file without them. Pure over the JSON text so it
+    // can be tested without a store.
+    internal static (string json, bool migrated) MigrateMinSpeech(string json)
+    {
+        if (JsonNode.Parse(json) is not JsonObject root
+            || root["streaming"] is not JsonObject streaming)
+            return (json, false);
+
+        JsonObject? speechTrim = streaming["speechTrim"] as JsonObject;
+        JsonObject? segmenter  = streaming["segmenter"]  as JsonObject;
+        JsonNode? fromTrim      = speechTrim?["minSpeechDurationMs"];
+        JsonNode? fromSegmenter = segmenter?["minUtteranceMs"];
+
+        bool migrated = false;
+
+        if (!streaming.ContainsKey("minSpeechMs") && (fromTrim ?? fromSegmenter) is JsonNode source)
+        {
+            streaming["minSpeechMs"] = source.DeepClone();
+            migrated = true;
+        }
+
+        if (speechTrim is not null && speechTrim.Remove("minSpeechDurationMs")) migrated = true;
+        if (segmenter  is not null && segmenter.Remove("minUtteranceMs"))       migrated = true;
+
+        return migrated ? (root.ToJsonString(_jsonOptions), true) : (json, false);
     }
 
     internal static bool ApplyPostLoadMigrations(TranscriptionSettings settings)

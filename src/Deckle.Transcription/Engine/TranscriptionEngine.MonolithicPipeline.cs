@@ -3,6 +3,7 @@ using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Transcription;
+using Deckle.Vad;
 
 namespace Deckle.Transcription;
 
@@ -12,7 +13,9 @@ public sealed partial class TranscriptionEngine
     //
     // Capture the whole take, then a single backend.TranscribeAsync() that does
     // its own internal windowing (30 s + dynamic seek in Whisper) and
-    // inter-window context propagation. No chunking on the C# side.
+    // inter-window context propagation. No chunking on the C# side; the take
+    // goes through the optional DSP and the Silero trim first, like each
+    // utterance of the segmented session.
     //
     // Owns capture and every state transition through to Transcribing; returns
     // null when it already handled an early exit and raised Finished itself.
@@ -114,8 +117,36 @@ public sealed partial class TranscriptionEngine
             EmitPreprocessedTelemetry(backendAudio);
         }
 
+        // The Silero trim, as the segmented session runs it on each utterance:
+        // the monolithic take is one utterance, index 0, so the log lines read
+        // like the first utterance of a segmented take. It removes the silences
+        // Whisper hallucinates on, and a take with no speech never reaches the
+        // backend. A trim failure keeps the untrimmed audio.
+        float[] decodedAudio = backendAudio;
+        (SileroVad? vad, SileroVadOptions vadOptions) = PrepareSpeechTrim();
+        if (vad is not null)
+        {
+            float[]? trimmed = TrimSpeech(vad, vadOptions, backendAudio, utteranceIndex: 0);
+            if (trimmed is { Length: 0 })
+            {
+                DeckleVadSource.Log.UtteranceDroppedNoSpeech(0);
+                RaiseStatus(Loc.Get("Status_Ready"));
+                FinishTake(TranscriptionOutcome.None, TakeEndReasons.NoSpeech);
+                return null;
+            }
+            if (trimmed is not null)
+            {
+                backendAudio = trimmed;
+                // Whisper sometimes ended the text early when the audio stopped on
+                // near-digital silence after the trim; a noise tail fixed it (see
+                // TrailingNoisePad). The pad goes only to the backend: BackendAudio
+                // keeps the trimmed, unpadded buffer, as in the streaming consumer.
+                decodedAudio = TrailingNoisePad.Append(trimmed);
+            }
+        }
+
         TranscriptionResult? consumed =
-            await ConsumeMonolithicAudioAsync(backendAudio, producerCt).ConfigureAwait(false);
+            await ConsumeMonolithicAudioAsync(decodedAudio, producerCt).ConfigureAwait(false);
         if (consumed is null)
             return null;
 

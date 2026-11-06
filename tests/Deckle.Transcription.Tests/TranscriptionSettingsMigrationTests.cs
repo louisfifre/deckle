@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Deckle.Transcription;
 using Xunit;
 
@@ -54,4 +55,77 @@ public class TranscriptionSettingsMigrationTests
         Assert.False(migrated);
         Assert.Equal(60_000, settings.Streaming.Segmenter.HangoverRampStartMs);
     }
+
+    // The segmenter's minimum utterance and Silero's minimum speech were one
+    // floor stored twice; streaming.minSpeechMs replaces both.
+
+    [Fact]
+    public void MinSpeechTakesSilerosValueWhenBothOldFloorsDiffer()
+    {
+        const string json = """
+            { "streaming": {
+                "segmenter":  { "marginMs": 150, "minUtteranceMs": 300 },
+                "speechTrim": { "enabled": true, "minSpeechDurationMs": 400 } } }
+            """;
+
+        (string migratedJson, bool migrated) = TranscriptionSettingsService.MigrateMinSpeech(json);
+
+        Assert.True(migrated);
+        JsonObject streaming = Streaming(migratedJson);
+        Assert.Equal(400, (int)streaming["minSpeechMs"]!);
+        Assert.False(((JsonObject)streaming["segmenter"]!).ContainsKey("minUtteranceMs"));
+        Assert.False(((JsonObject)streaming["speechTrim"]!).ContainsKey("minSpeechDurationMs"));
+        Assert.Equal(150, (int)streaming["segmenter"]!["marginMs"]!);
+        Assert.True((bool)streaming["speechTrim"]!["enabled"]!);
+    }
+
+    [Fact]
+    public void MinSpeechTakesTheSegmentersValueWhenItIsTheOnlyOldFloor()
+    {
+        const string json = """
+            { "streaming": { "segmenter": { "minUtteranceMs": 300 } } }
+            """;
+
+        (string migratedJson, bool migrated) = TranscriptionSettingsService.MigrateMinSpeech(json);
+
+        Assert.True(migrated);
+        JsonObject streaming = Streaming(migratedJson);
+        Assert.Equal(300, (int)streaming["minSpeechMs"]!);
+        Assert.False(((JsonObject)streaming["segmenter"]!).ContainsKey("minUtteranceMs"));
+    }
+
+    [Fact]
+    public void AFileWithNeitherOldFloorIsLeftUntouched()
+    {
+        const string json = """
+            { "streaming": { "segmenter": { "marginMs": 150 }, "speechTrim": { "enabled": true } } }
+            """;
+
+        (string migratedJson, bool migrated) = TranscriptionSettingsService.MigrateMinSpeech(json);
+
+        Assert.False(migrated);
+        Assert.Same(json, migratedJson);
+    }
+
+    [Fact]
+    public void AnExistingMinSpeechIsKeptAndTheOldFloorsAreRemoved()
+    {
+        const string json = """
+            { "streaming": {
+                "minSpeechMs": 200,
+                "segmenter":  { "minUtteranceMs": 300 },
+                "speechTrim": { "minSpeechDurationMs": 400 } } }
+            """;
+
+        (string migratedJson, bool migrated) = TranscriptionSettingsService.MigrateMinSpeech(json);
+
+        Assert.True(migrated);
+        JsonObject streaming = Streaming(migratedJson);
+        Assert.Equal(200, (int)streaming["minSpeechMs"]!);
+        Assert.False(((JsonObject)streaming["segmenter"]!).ContainsKey("minUtteranceMs"));
+        Assert.False(((JsonObject)streaming["speechTrim"]!).ContainsKey("minSpeechDurationMs"));
+    }
+
+    private static JsonObject Streaming(string json)
+        => (JsonObject)JsonNode.Parse(json)!["streaming"]!;
 }

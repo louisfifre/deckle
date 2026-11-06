@@ -156,16 +156,15 @@ public static class SettingsSearch
     public static IReadOnlyList<SettingSearchEntry> StreamingEntries { get; } =
     [
         // "Streaming pipeline" — the switch, first and alone (the cards under it
-        // hide while streaming is off).
+        // show whatever it says: files and recovered takes always use them).
         new SettingSearchEntry
         {
             LabelKey = "WhisperStreamingEnabledCard",
             Keywords = ["realtime", "live", "segmenter", "utterance"],
         },
 
-        // "Voice activity detection" — the VAD group (threshold, minimum speech,
-        // minimum silence, padding ride under it; the fold hides while streaming
-        // is off).
+        // "Voice activity detection" — the VAD group (threshold, minimum silence
+        // and padding ride under it).
         new SettingSearchEntry
         {
             LabelKey = "WhisperVadEnabledCard",
@@ -179,8 +178,8 @@ public static class SettingsSearch
         },
         new SettingSearchEntry
         {
-            LabelKey = "WhisperSegMinUtteranceCard",
-            Keywords = ["blip", "noise", "short", "word", "drop", "cough"],
+            LabelKey = "WhisperMinSpeechCard",
+            Keywords = ["blip", "noise", "short", "word", "drop", "cough", "vad", "silero"],
         },
 
         // "Cut curve" — the curve block with the four hangover anchors in its legend.

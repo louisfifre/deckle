@@ -8,7 +8,7 @@
 
 **Hors périmètre.** Les littéraux XAML (bornes `Minimum`/`Maximum`/`StepFrequency` des sliders), les tables lexicales préfixées `_`, et tout ce qui vit sous `tests/`.
 
-Total : **693 entrées** réparties sur **41 modules**.
+Total : **692 entrées** réparties sur **41 modules**.
 
 | Module | Entrées |
 |---|---|
@@ -48,7 +48,7 @@ Total : **693 entrées** réparties sur **41 modules**.
 | Deckle.Shell.TaskbarCover | 3 |
 | Deckle.Shell.TrayMenu | 2 |
 | Deckle.Speech | 5 |
-| Deckle.Transcription | 61 |
+| Deckle.Transcription | 60 |
 | Deckle.Transcription.Whisper | 1 |
 | Deckle.Vad | 4 |
 | Deckle.Vision | 10 |
@@ -812,7 +812,6 @@ Total : **693 entrées** réparties sur **41 modules**.
 | EnergySegmenterSettings.HangoverCurveX2 | persisted-setting | `0.90` | src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:55 | non | Persisted with no UI anywhere — June inventory gap #5 only. |
 | EnergySegmenterSettings.HangoverCurveY2 | persisted-setting | `0.25` | src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:56 | non | Persisted with no UI anywhere — June inventory gap #5 only. |
 | EnergySegmenterSettings.MarginMs | persisted-setting | `150` | src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:57 | oui |  |
-| EnergySegmenterSettings.MinUtteranceMs | persisted-setting | `250` | src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:58 | oui |  |
 | TranscriptionSettings.ModelsDirectory | persisted-setting | `""` | src/Deckle.Transcription/TranscriptionSettings.cs:16 | oui |  |
 | TranscriptionSettings.FileTranscriptionOutputDirectory | persisted-setting | `""` | src/Deckle.Transcription/TranscriptionSettings.cs:22 | non | Persisted, empty sentinel = Desktop. Absent from the June inventory — likely added after it. |
 | TranscriptionSettings.Engine | persisted-setting | `new()` | src/Deckle.Transcription/TranscriptionSettings.cs:24 | oui | Section container (nested POCO), not a knob itself. |
@@ -824,9 +823,9 @@ Total : **693 entrées** réparties sur **41 modules**.
 | StreamingSettings.Strategy | persisted-setting | `PipelineStrategyKind.Monolithic` | src/Deckle.Transcription/TranscriptionSettings.cs:45 | oui |  |
 | StreamingSettings.Segmenter | persisted-setting | `new()` | src/Deckle.Transcription/TranscriptionSettings.cs:46 | oui | Section container, not a knob. |
 | StreamingSettings.SpeechTrim | persisted-setting | `new()` | src/Deckle.Transcription/TranscriptionSettings.cs:47 | oui | Section container, not a knob. |
+| StreamingSettings.MinSpeechMs | persisted-setting | `250` | src/Deckle.Transcription/TranscriptionSettings.cs:42 | oui | Replaces EnergySegmenterSettings.MinUtteranceMs and SpeechTrimSettings.MinSpeechDurationMs: one floor, read by the segmenter and Silero. |
 | SpeechTrimSettings.Enabled | persisted-setting | `true` | src/Deckle.Transcription/TranscriptionSettings.cs:64 | oui |  |
 | SpeechTrimSettings.Threshold | persisted-setting | `0.5f` | src/Deckle.Transcription/TranscriptionSettings.cs:69 | oui |  |
-| SpeechTrimSettings.MinSpeechDurationMs | persisted-setting | `250` | src/Deckle.Transcription/TranscriptionSettings.cs:72 | oui |  |
 | SpeechTrimSettings.MinSilenceDurationMs | persisted-setting | `100` | src/Deckle.Transcription/TranscriptionSettings.cs:76 | oui |  |
 | SpeechTrimSettings.SpeechPadMs | persisted-setting | `30` | src/Deckle.Transcription/TranscriptionSettings.cs:80 | oui |  |
 | EngineSettings.Model | persisted-setting | `"ggml-base.bin"` | src/Deckle.Transcription/TranscriptionSettings.cs:88 | oui |  |
@@ -865,7 +864,7 @@ Total : **693 entrées** réparties sur **41 modules**.
 | Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
 |---|---|---|---|---|---|
 | Threshold | default-value | `0.5f` | src/Deckle.Vad/SileroVadOptions.cs:11 | non | Sweep said persisted-setting; SileroVadOptions is not itself persisted. June holds the mirrored persisted knob as SpeechTrimSettings.Threshold (0.5f) under Deckle.Transcription — same number, different home. |
-| MinSpeechDurationMs | default-value | `250` | src/Deckle.Vad/SileroVadOptions.cs:14 | non | Sweep said persisted-setting; not persisted here. Mirrors SpeechTrimSettings.MinSpeechDurationMs (250), listed in June under Deckle.Transcription. |
+| MinSpeechDurationMs | default-value | `250` | src/Deckle.Vad/SileroVadOptions.cs:14 | non | Sweep said persisted-setting; not persisted here. Mirrors StreamingSettings.MinSpeechMs (250), which the transcription passes as this option. |
 | MinSilenceDurationMs | default-value | `100` | src/Deckle.Vad/SileroVadOptions.cs:18 | non | Sweep said persisted-setting; not persisted here. Mirrors SpeechTrimSettings.MinSilenceDurationMs (100), listed in June under Deckle.Transcription. |
 | SpeechPadMs | default-value | `30` | src/Deckle.Vad/SileroVadOptions.cs:22 | non | Sweep said persisted-setting; not persisted here. Mirrors SpeechTrimSettings.SpeechPadMs (30), listed in June under Deckle.Transcription. |
 
@@ -890,7 +889,7 @@ Total : **693 entrées** réparties sur **41 modules**.
 
 Reprises **verbatim** de la section « Lacunes / à recouper » de `docs/inventaire-settings.md` (juin 2026). Aucune n'est tranchée ici ; elles restent à l'arbitrage de Louis. Note : la section en compte onze, pas neuf.
 
-- EnergySegmenter defaults: verified source is HangoverMaxMs=5000, HangoverMinMs=500, HangoverRampStartMs=15000, HangoverRampEndMs=120000, MarginMs=150, MinUtteranceMs=250 (src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:48-58). Several reports cited -38/4000/60000/180000/40/100/300 — those appear stale (an older worktree?); reconcile before quoting defaults anywhere. The segmenter's former speech level (−45.0) is now CaptureSettings.VoiceLevelDbfs.
+- EnergySegmenter defaults: verified source is HangoverMaxMs=5000, HangoverMinMs=500, HangoverRampStartMs=15000, HangoverRampEndMs=120000, MarginMs=150 (src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs); the blip floor (250) is now StreamingSettings.MinSpeechMs, shared with Silero. Several reports cited -38/4000/60000/180000/40/100/300 — those appear stale (an older worktree?); reconcile before quoting defaults anywhere. The segmenter's former speech level (−45.0) is now CaptureSettings.VoiceLevelDbfs.
 - SpeechTrimSettings (VAD) defaults: reports disagree (Threshold 0.5 agreed; MinSpeech 250 vs 100; MinSilence 100 vs 300; SpeechPad 30 vs 0). SpeechTrimSettings.cs was not located by glob — verify the actual POCO before quoting VAD defaults.
 - totalSettings=132 is a deduplicated estimate across seven overlapping zone reports that recount the same POCOs; it counts persisted category=='setting' entries (incl. frozen DSP params and dormant Speech skeleton) and excludes category=='diagnostic'/'command' and read-only ids (RewriteProfile.Id). A line-by-line POCO census would firm the exact figure.
 - EnergySegmenter HangoverCurve (X1/Y1/X2/Y2, defaults 0.85/0.10/0.90/0.25) is persisted but has NO UI anywhere (not Settings, not the composed fold, not Playground) — confirm it is intentionally unexposed (cubic-bezier easing) and whether it should ever surface.

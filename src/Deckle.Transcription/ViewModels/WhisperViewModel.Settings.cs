@@ -111,7 +111,7 @@ public partial class WhisperViewModel
     ];
 
     // Voice activity detection — the Silero pre-trim fold. The master is the
-    // VadEnabled toggle; the four detection parameters are its children, hidden by
+    // VadEnabled toggle; the three detection parameters are its children, hidden by
     // the composer while the master is off (it composes the master into each
     // child's VisibleWhen — native masking, no per-child gate here). The bounds
     // are the former hand-authored sliders'.
@@ -122,11 +122,14 @@ public partial class WhisperViewModel
     // neural VAD then keeps the speech inside each finished utterance and drops
     // an utterance with none (docs/transcription-audio-chain.md, "Why two
     // detectors"). Its threshold and paddings decide what reaches the model, so
-    // they are the module's own parameters, exposed with the switch.
+    // they are the module's own parameters, exposed with the switch. Its minimum
+    // speech is not among them: it is the shared floor the segmenter reads too
+    // (MinSpeechMs), in the Segmentation section, since it must stay visible
+    // while this fold is closed.
     //
-    // The whole fold gates on StreamingEnabled at the GROUP's visibleWhen: the
-    // Silero trim runs only on the streaming path, so the entire expander collapses
-    // when streaming is off.
+    // The fold shows whatever the strategy: the Silero trim runs on every
+    // recording, the streaming dictation's utterances, the monolithic take as
+    // one utterance, and the utterances of a file or a recovered take.
     public IReadOnlyList<SettingDescriptor> VadSettings =>
     [
         Setting.Group("WhisperVadEnabledCard",
@@ -138,11 +141,6 @@ public partial class WhisperViewModel
                     value => VadThreshold = value,
                     new MagnitudeArgs(0.1, 0.9),
                     defaultValue: () => new SpeechTrimSettings().Threshold),
-                Setting.Magnitude("WhisperVadMinSpeechCard",
-                    () => Seconds(VadMinSpeechDurationMs),
-                    value => VadMinSpeechDurationMs = Milliseconds(value),
-                    new MagnitudeArgs(0, 1, Unit: "s"),
-                    defaultValue: () => Seconds(new SpeechTrimSettings().MinSpeechDurationMs)),
                 Setting.Magnitude("WhisperVadMinSilenceCard",
                     () => Seconds(VadMinSilenceDurationMs),
                     value => VadMinSilenceDurationMs = Milliseconds(value),
@@ -156,13 +154,14 @@ public partial class WhisperViewModel
                     new MagnitudeArgs(0, 0.4, Unit: "s"),
                     defaultValue: () => Seconds(new SpeechTrimSettings().SpeechPadMs)),
             ],
-            visibleWhen: () => StreamingEnabled,
             defaultValue: () => new SpeechTrimSettings().Enabled),
     ];
 
     // Streaming pipeline — the energy segmenter. The switch is StreamingEnabled
     // (the user-facing on/off projected onto PipelineStrategyKind), a plain card
-    // first and alone; everything under it hides while streaming is off.
+    // first and alone. It chooses the dictation pipeline only: the sections under
+    // it stay visible while streaming is off, since files and recovered takes
+    // are always cut and trimmed with them.
     //
     // The switch's default mirrors the VM's own projection of the segmenter Strategy
     // onto the bool (Load/Push: StreamingEnabled = Strategy == Streaming), read off a
@@ -177,13 +176,16 @@ public partial class WhisperViewModel
     ];
 
     // The segmentation cards of the Streaming page, under the switch and the
-    // speech-filtering fold: the cut margin and the minimum utterance (the two
-    // blip rules, moved here from the Playground's segmentation page), as cards;
-    // the level that makes a frame voice is not here: it is the voice level of
-    // the Recording page (CaptureSettings.VoiceLevelDbfs), since the HUD and
-    // the low-audio warning read it too;
-    // then the cut curve, the segmentation's
-    // instrument, last and at full width, with no fold around it (2026-10-14).
+    // speech-filtering fold: the cut margin and the minimum speech, as cards.
+    // The minimum speech is the one floor the segmenter and Silero share
+    // (Streaming.MinSpeechMs); it sits here and not in the speech-filtering
+    // fold because it is the only guard left when Silero is off or its model is
+    // missing. The level that makes a frame voiced is not here: it is the voice
+    // level of the Recording page (CaptureSettings.VoiceLevelDbfs), since the HUD
+    // and the low-audio warning read it too. Then the cut curve, the
+    // segmentation's instrument, last and at full width, with no fold around it
+    // (2026-10-14). Every descriptor shows whatever the strategy: files and
+    // recovered takes are always cut.
     // The four hangover anchors (max, min, ramp start, ramp end) are the curve's
     // frame and live in its legend, beside the plot, as fields: the doctrine's
     // curve exception puts a curve's values in fields beside the drawing. They
@@ -201,14 +203,12 @@ public partial class WhisperViewModel
             () => Seconds(SegMarginMs),
             value => SegMarginMs = Milliseconds(value),
             new MagnitudeArgs(0, 1, Unit: "s"),
-            visibleWhen: () => StreamingEnabled,
             defaultValue: () => Seconds(new EnergySegmenterSettings().MarginMs)),
-        Setting.Magnitude("WhisperSegMinUtteranceCard",
-            () => Seconds(SegMinUtteranceMs),
-            value => SegMinUtteranceMs = Milliseconds(value),
+        Setting.Magnitude("WhisperMinSpeechCard",
+            () => Seconds(MinSpeechMs),
+            value => MinSpeechMs = Milliseconds(value),
             new MagnitudeArgs(0, 1, Unit: "s"),
-            visibleWhen: () => StreamingEnabled,
-            defaultValue: () => Seconds(new EnergySegmenterSettings().MinUtteranceMs)),
+            defaultValue: () => Seconds(new StreamingSettings().MinSpeechMs)),
         Setting.Curve("WhisperCutCurveCard",
             () => new CurvePoints(SegCurveX1, SegCurveY1, SegCurveX2, SegCurveY2),
             p => { SegCurveX1 = p.X1; SegCurveY1 = p.Y1; SegCurveX2 = p.X2; SegCurveY2 = p.Y2; },
@@ -234,7 +234,6 @@ public partial class WhisperViewModel
                         30, 230, Integer: true, // same 200 s span, same 5 s grain
                         Default: () => Seconds(new EnergySegmenterSettings().HangoverRampEndMs)),
                 ]),
-            visibleWhen: () => StreamingEnabled,
             defaultValue: () =>
             {
                 var d = new EnergySegmenterSettings();

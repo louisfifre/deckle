@@ -22,6 +22,7 @@ public sealed class MicrophonePreviewFeedTests
     private const float Voiced = 0.1f; // well above the default voice level's entry
     private const float Silent = 0f;
     private static readonly double VoiceLevel = new CaptureSettings().VoiceLevelDbfs;
+    private static readonly int MinSpeechMs = new StreamingSettings().MinSpeechMs;
 
     private static EnergySegmenterSettings TestSettings()
         => new()
@@ -39,7 +40,7 @@ public sealed class MicrophonePreviewFeedTests
 
         h.Feed.Start();
 
-        Assert.Equal(new UtteranceProgressMeter(TestSettings(), VoiceLevel).Progress, Assert.Single(h.Progress));
+        Assert.Equal(new UtteranceProgressMeter(TestSettings(), VoiceLevel, MinSpeechMs).Progress, Assert.Single(h.Progress));
         Assert.Empty(h.Levels);
     }
 
@@ -50,7 +51,7 @@ public sealed class MicrophonePreviewFeedTests
         h.Feed.Start();
         var capture = h.WaitForCapture(0);
 
-        var meter = new UtteranceProgressMeter(TestSettings(), VoiceLevel);
+        var meter = new UtteranceProgressMeter(TestSettings(), VoiceLevel, MinSpeechMs);
         var levels = Enumerable.Repeat(Voiced, 8).Concat(Enumerable.Repeat(Silent, 6)).ToArray();
         var expected = new List<UtteranceProgress> { meter.Progress };
         foreach (float rms in levels)
@@ -199,7 +200,7 @@ public sealed class MicrophonePreviewFeedTests
         h.Feed.Start();
 
         // ...starts over, without closing and reopening the device.
-        Assert.Equal(new UtteranceProgressMeter(TestSettings(), VoiceLevel).Progress, h.Progress.Last());
+        Assert.Equal(new UtteranceProgressMeter(TestSettings(), VoiceLevel, MinSpeechMs).Progress, h.Progress.Last());
         capture.Raise(Voiced);
         Assert.Equal(0, h.Progress.Last().CompletedUtterances);
         Assert.Equal(1, h.CaptureCount);
@@ -328,6 +329,7 @@ public sealed class MicrophonePreviewFeedTests
                 deviceId: () => Device,
                 segmenterSettings: TestSettings,
                 voiceLevelDbfs: () => VoiceLevel,
+                minSpeechMs: () => MinSpeechMs,
                 onLevel: Levels.Enqueue,
                 onProgress: Progress.Enqueue,
                 onFailed: failure =>

@@ -60,7 +60,7 @@ A distinction that follows from plausible reformulation. A manifest error, such 
 Two devices carry the word "VAD" and are constantly conflated, yet they differ in kind. One is a model that finds speech in an utterance already cut. The other is a threshold that cuts a live stream. They also produce two different units of "cut", which must not be confused.
 
 **Neural VAD** :
-A device that uses a neural network to find the speech regions of one utterance and trim the silence around them before decoding. It runs inside the segmented session, on each utterance the energy segmenter has cut, after the optional audio processing and before Whisper. It is model-based and works after the fact, so it needs the whole utterance in hand.
+A device that uses a neural network to find the speech regions of one utterance and trim the silence around them before decoding. It runs inside the segmented session, on each utterance the energy segmenter has cut, after the optional audio processing and before Whisper; a monolithic dictation, which the segmenter does not cut, runs it once on the whole take as one utterance. It is model-based and works after the fact, so it needs the whole utterance in hand.
 _Avoid_ : VAD (bare, ambiguous), Silero (vendor-specific, the term should outlive the model).
 
 **Energy segmenter** :

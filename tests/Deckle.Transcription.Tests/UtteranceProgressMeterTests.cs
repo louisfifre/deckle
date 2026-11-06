@@ -16,6 +16,7 @@ public class UtteranceProgressMeterTests
     private const float Voiced = 0.1f;    // well above the default voice level's entry
     private const float Silent = 0f;
     private static readonly double VoiceLevel = new CaptureSettings().VoiceLevelDbfs;
+    private static readonly int MinSpeechMs = new StreamingSettings().MinSpeechMs;
 
     private static EnergySegmenterSettings TestSettings()
         => new()
@@ -44,8 +45,8 @@ public class UtteranceProgressMeterTests
     public void ItReportsTheProgressTheDictationSegmenterReportsAtEveryLevel()
     {
         var settings = TestSettings();
-        var segmenter = new EnergySegmenter(settings, VoiceLevel, _ => { });
-        var meter = new UtteranceProgressMeter(settings, VoiceLevel);
+        var segmenter = new EnergySegmenter(settings, VoiceLevel, MinSpeechMs, _ => { });
+        var meter = new UtteranceProgressMeter(settings, VoiceLevel, MinSpeechMs);
 
         Assert.Equal(segmenter.Progress, meter.Progress);
 
@@ -70,7 +71,7 @@ public class UtteranceProgressMeterTests
     [Fact]
     public void AMeterBeforeItsFirstLevelIsActiveWithNoPauseAndNothingCompleted()
     {
-        var progress = new UtteranceProgressMeter(TestSettings(), VoiceLevel).Progress;
+        var progress = new UtteranceProgressMeter(TestSettings(), VoiceLevel, MinSpeechMs).Progress;
 
         Assert.True(progress.IsActive);
         Assert.False(progress.IsPausing);

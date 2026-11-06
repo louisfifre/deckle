@@ -286,6 +286,7 @@ public sealed partial class TranscriptionEngine
     {
         var segCfg = _host.Transcription.Streaming.Segmenter;
         double voiceLevelDbfs = _host.Audio.VoiceLevelDbfs;
+        int minSpeechMs = _host.Transcription.Streaming.MinSpeechMs;
         DeckleWhispSource.Log.StreamingPipelineStarted();
         DeckleWhispSource.Log.SegmenterSettingsSnapshot(
             voiceLevelDbfs,
@@ -293,28 +294,14 @@ public sealed partial class TranscriptionEngine
             segCfg.HangoverRampStartMs, segCfg.HangoverRampEndMs,
             segCfg.HangoverCurveX1, segCfg.HangoverCurveY1,
             segCfg.HangoverCurveX2, segCfg.HangoverCurveY2,
-            segCfg.MarginMs, segCfg.MinUtteranceMs);
+            segCfg.MarginMs, minSpeechMs);
 
-        var trimCfg = _host.Transcription.Streaming.SpeechTrim;
-        SileroVad? vad = trimCfg.Enabled ? _vadService.EnsureReady() : null;
-        if (trimCfg.Enabled && vad is null)
-            DeckleVadSource.Log.SpeechTrimNotReady();
-
-        var vadOptions = new SileroVadOptions
-        {
-            Threshold            = trimCfg.Threshold,
-            MinSpeechDurationMs  = trimCfg.MinSpeechDurationMs,
-            MinSilenceDurationMs = trimCfg.MinSilenceDurationMs,
-            SpeechPadMs          = trimCfg.SpeechPadMs,
-        };
-        if (vad is not null)
-            DeckleVadSource.Log.SpeechTrimSettingsSnapshot(
-                vadOptions.Threshold, vadOptions.MinSpeechDurationMs,
-                vadOptions.MinSilenceDurationMs, vadOptions.SpeechPadMs);
+        (SileroVad? vad, SileroVadOptions vadOptions) = PrepareSpeechTrim();
 
         return new SegmentedTranscriptionSession<StreamingConsumeResult>(
             segCfg,
             voiceLevelDbfs,
+            minSpeechMs,
             (reader, onDequeue) => Task.Run(() => ConsumeUtterancesAsync(
                 reader,
                 drainCt,
@@ -323,6 +310,72 @@ public sealed partial class TranscriptionEngine
                 vadOptions,
                 primeTask,
                 policy)));
+    }
+
+    // The Silero trim of one take, shared by the segmented session and the
+    // monolithic take: the VAD when the trim is on and the model is ready (null
+    // otherwise, the take then runs untrimmed), and the options built from the
+    // settings, with the shared minimum speech as Silero's span floor.
+    private (SileroVad? Vad, SileroVadOptions Options) PrepareSpeechTrim()
+    {
+        var trimCfg = _host.Transcription.Streaming.SpeechTrim;
+        SileroVad? vad = trimCfg.Enabled ? _vadService.EnsureReady() : null;
+        if (trimCfg.Enabled && vad is null)
+            DeckleVadSource.Log.SpeechTrimNotReady();
+
+        var vadOptions = new SileroVadOptions
+        {
+            Threshold            = trimCfg.Threshold,
+            MinSpeechDurationMs  = _host.Transcription.Streaming.MinSpeechMs,
+            MinSilenceDurationMs = trimCfg.MinSilenceDurationMs,
+            SpeechPadMs          = trimCfg.SpeechPadMs,
+        };
+        if (vad is not null)
+            DeckleVadSource.Log.SpeechTrimSettingsSnapshot(
+                vadOptions.Threshold, vadOptions.MinSpeechDurationMs,
+                vadOptions.MinSilenceDurationMs, vadOptions.SpeechPadMs);
+
+        return (vad, vadOptions);
+    }
+
+    // Trims one buffer to its speech spans. Returns the kept samples, empty when
+    // Silero found no speech, or null when the trim failed: the failure is then
+    // reported to the service, which keeps failures across takes as one
+    // incident closed by the next trim that succeeds, and the caller goes on
+    // with the untrimmed audio. utteranceIndex only labels the log lines.
+    private float[]? TrimSpeech(SileroVad vad, SileroVadOptions vadOptions, float[] samples, int utteranceIndex)
+    {
+        try
+        {
+            long trimStart = Stopwatch.GetTimestamp();
+            SpeechTrimResult trim = vad.Trim(samples, vadOptions);
+            long trimMs = (long)Stopwatch.GetElapsedTime(trimStart).TotalMilliseconds;
+            DeckleVadSource.Log.SpeechTrimmed(
+                utteranceIndex, samples.Length, trim.Samples.Length, trim.SpeechSegments, trimMs);
+            if (trim.SpeechSegments > 0)
+            {
+                int inMs = samples.Length / 16;
+                int keptMs = trim.Samples.Length / 16;
+                int leadingMs = trim.FirstSpeechSample / 16;
+                int trailingMs = (samples.Length - trim.LastSpeechSample) / 16;
+                DeckleVadSource.Log.SpeechTrimBounds(
+                    utteranceIndex, inMs, keptMs, leadingMs, trailingMs,
+                    Math.Max(0, inMs - keptMs - leadingMs - trailingMs));
+            }
+            // A trim that ran, with or without speech found, closes an earlier
+            // take's trim-failure incident.
+            _vadService.ReportTrimSucceeded();
+            return trim.Samples;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _vadService.ReportTrimFailure(utteranceIndex, ex);
+            return null;
+        }
     }
 
     // Drains the utterance channel, transcribing each one as it arrives and
@@ -430,50 +483,26 @@ public sealed partial class TranscriptionEngine
             }
             if (vad is not null)
             {
-                try
-                {
-                    long trimStart = Stopwatch.GetTimestamp();
-                    SpeechTrimResult trim = vad.Trim(samples, vadOptions);
-                    long trimMs = (long)Stopwatch.GetElapsedTime(trimStart).TotalMilliseconds;
-                    DeckleVadSource.Log.SpeechTrimmed(
-                        u.Index, samples.Length, trim.Samples.Length, trim.SpeechSegments, trimMs);
-                    if (trim.SpeechSegments > 0)
-                    {
-                        int inMs = samples.Length / 16;
-                        int keptMs = trim.Samples.Length / 16;
-                        int leadingMs = trim.FirstSpeechSample / 16;
-                        int trailingMs = (samples.Length - trim.LastSpeechSample) / 16;
-                        DeckleVadSource.Log.SpeechTrimBounds(
-                            u.Index, inMs, keptMs, leadingMs, trailingMs,
-                            Math.Max(0, inMs - keptMs - leadingMs - trailingMs));
-                    }
-                    // A trim that ran, with or without speech found, closes an
-                    // earlier take's trim-failure incident.
-                    _vadService.ReportTrimSucceeded();
-                    if (trim.Samples.Length == 0)
-                    {
-                        // No speech — an energy false positive on noise/silence. Drop it
-                        // rather than feed near-silence to whisper, which hallucinates on
-                        // it. The previous tail is left intact: a dropped utterance adds
-                        // no text and must not sever the continuity of the real ones.
-                        DeckleVadSource.Log.UtteranceDroppedNoSpeech(u.Index);
-                        continue;
-                    }
-                    samples = trim.Samples;
-                }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
-                catch (Exception ex)
+                float[]? trimmed = TrimSpeech(vad, vadOptions, samples, u.Index);
+                if (trimmed is null)
                 {
                     // A VAD runtime failure must not lose the dictation: stop trimming
                     // for the rest of this take, and let this utterance through
-                    // untrimmed rather than dropping it or crashing the consumer. The
-                    // service keeps failures across takes as one incident, closed by
-                    // the next trim that succeeds.
-                    _vadService.ReportTrimFailure(u.Index, ex);
+                    // untrimmed rather than dropping it or crashing the consumer.
                     vad = null;
+                }
+                else if (trimmed.Length == 0)
+                {
+                    // No speech — an energy false positive on noise/silence. Drop it
+                    // rather than feed near-silence to whisper, which hallucinates on
+                    // it. The previous tail is left intact: a dropped utterance adds
+                    // no text and must not sever the continuity of the real ones.
+                    DeckleVadSource.Log.UtteranceDroppedNoSpeech(u.Index);
+                    continue;
+                }
+                else
+                {
+                    samples = trimmed;
                 }
             }
             backendChunks?.Add(samples);

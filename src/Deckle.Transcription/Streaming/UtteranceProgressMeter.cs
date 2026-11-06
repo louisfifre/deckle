@@ -26,10 +26,10 @@ public sealed class UtteranceProgressMeter
     private readonly EnergySegmenter _segmenter;
 
     // Settings are read once, here, as a dictation reads them when it starts.
-    public UtteranceProgressMeter(EnergySegmenterSettings settings, double voiceLevelDbfs)
+    public UtteranceProgressMeter(EnergySegmenterSettings settings, double voiceLevelDbfs, int minSpeechMs)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        _segmenter = new EnergySegmenter(settings, voiceLevelDbfs, static _ => { }, logsDetail: false);
+        _segmenter = new EnergySegmenter(settings, voiceLevelDbfs, minSpeechMs, static _ => { }, logsDetail: false);
     }
 
     // Where a take stands before its first level: active, not pausing, nothing

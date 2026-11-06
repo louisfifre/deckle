@@ -36,8 +36,9 @@ namespace Deckle.Transcription;
 //   MarginMs            — CUT POSITION: the kept span ends MarginMs after the
 //                         last voiced frame. Distinct from hangover — the silence
 //                         between the margin and the hangover expiry is dropped.
-//   MinUtteranceMs      — utterances whose VOICED extent is shorter than this
-//                         are dropped as noise blips rather than emitted.
+//
+//   The floor under which an utterance's voiced extent is a blip is not here
+//   either: it is StreamingSettings.MinSpeechMs, which Silero reads too.
 //
 //   CutPreset           — the STORED selection of the cut preset family: a preset
 //                         id (see CutPresets) or "custom". Null in an older file;
@@ -60,7 +61,6 @@ public sealed class EnergySegmenterSettings
     public double HangoverCurveX2     { get; set; } = 0.90;
     public double HangoverCurveY2     { get; set; } = 0.25;
     public int    MarginMs            { get; set; } = 150;
-    public int    MinUtteranceMs      { get; set; } = 250;
     public string?          CutPreset       { get; set; }
     public CutCurveValues?  CutCustomValues { get; set; }
 
