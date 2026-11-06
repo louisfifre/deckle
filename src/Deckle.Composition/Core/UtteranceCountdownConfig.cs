@@ -12,19 +12,16 @@ public sealed record UtteranceCountdownConfig
     //
     // Below 0 the gauge stays closed until the lerped reach crosses zero.
     // Above 1 the wedges pass the corners before the cut, so the last instants
-    // no longer read as a sudden full ring. The start was −0.15 from
-    // 2026-10-13 to hide the short dips between words; on 2026-10-15 Louis
-    // asked for a start at zero with the course below doing the hiding: a
-    // slow start keeps the first part of every pause near the centre, and
-    // the opening still reaches full at the true cut.
+    // no longer read as a sudden full ring. The start is zero rather than
+    // negative: the course below hides the short dips between words, since a
+    // slow start keeps the first part of every pause near the centre, and the
+    // opening still reaches full at the true cut.
     public float StartReach { get; init; } = 0f;
     public float EndReach { get; init; } = 1.75f;
 
     // The course: how the segmenter's linear progress through the pause maps
     // to the reach, as a CSS cubic-bezier on the unit square. The defaults
-    // start slow, run fast through the middle and brake only at the very end
-    // (Louis, 2026-10-15: "commencer à zéro et accélérer doucement jusqu'à
-    // une vitesse assez forte et ralentir juste à la toute fin").
+    // start slow, run fast through the middle and brake only at the very end.
     // (0, 0, 1, 1) is the plain lerp the gauge had before.
     public float CourseEaseP1X { get; init; } = 0.55f;
     public float CourseEaseP1Y { get; init; } = 0f;

@@ -14,8 +14,6 @@ namespace Deckle.Composition;
 // Math is pure: no Composition runtime, no allocations, no IO. Reusable
 // from any Deckle module that needs perceptually-uniform colour output
 // (e.g. Ask-Ollama palette, future status badges).
-//
-// Extracted from HudComposition.cs on 2026-05-02.
 public static class ColorSpace
 {
     // OKLCh → sRGB (gamma-corrected, 8-bit channels), channels clamped.

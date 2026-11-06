@@ -19,7 +19,7 @@ namespace Deckle.Shell;
 // window when it rebuilds the taskbar. The shell starts that taskbar with an
 // empty notification area, so the icon has to be added again, with the icon
 // and tip of the last UpdateStatus. Explorer restarts happen (Windhawk, a
-// crash, a manual restart) and the icon was lost each time until 2026-10-14.
+// crash, a manual restart), and without the re-add the icon stays lost.
 //
 // A double click is delivered by the shell as WM_LBUTTONUP, WM_LBUTTONDBLCLK,
 // WM_LBUTTONUP: the single-click subscriber runs first, then the double-click
