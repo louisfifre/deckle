@@ -6,7 +6,7 @@ namespace Deckle.App;
 public sealed partial class DeckleAppSource
 {
     // The resident Anytype runtime is gone without a failure. outcome:
-    // cancelled (reason shutdown) or skipped (not_provisioned). A runtime that
+    // cancelled (reason shutdown). A runtime that
     // stopped on a failure says so at Error level, in AnytypeRuntimeFailed.
     // ex_type and ex_message are empty when the reason alone is the cause.
     [Event(EvtAnytypeRuntimeEnded,
@@ -20,8 +20,8 @@ public sealed partial class DeckleAppSource
     }
 
     // The resident Anytype runtime stopped on a failure, so the Anytype tools
-    // are gone until the next run. reason: endpoint_conflict, host_start_failed,
-    // exception or supervisor_faulted; ex_type and ex_message are empty when the
+    // are gone until the next run. reason: endpoint_conflict, exception or
+    // supervisor_faulted; ex_type and ex_message are empty when the
     // reason alone is the cause.
     [Event(EvtAnytypeRuntimeFailed,
            Level = EventLevel.Error,
@@ -31,16 +31,5 @@ public sealed partial class DeckleAppSource
     public void AnytypeRuntimeFailed(string reason, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtAnytypeRuntimeFailed, reason, ex_type, ex_message);
-    }
-
-    // reason: timeout (requests outlived the drain budget) or exception.
-    // The host and the API client then stay alive until the process exits.
-    [Event(EvtAnytypeHostDrainIncomplete,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The Anytype MCP host did not drain and stays alive until exit\nreason={0} | elapsed_ms={1}")]
-    public void AnytypeHostDrainIncomplete(string reason, long elapsed_ms)
-    {
-        if (IsEnabled()) WriteEvent(EvtAnytypeHostDrainIncomplete, reason, elapsed_ms);
     }
 }

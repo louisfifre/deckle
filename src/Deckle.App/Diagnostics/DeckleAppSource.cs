@@ -129,7 +129,7 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtThemeUnknown                   = 112;
     public const int EvtAmbientStartFailed             = 113;
     public const int EvtAnytypeRuntimeEnded            = 114;
-    public const int EvtAnytypeHostDrainIncomplete     = 115;
+    // 115 retired (the MCP host drain moved to the Anytype gateway, ADR-0008).
     // 116 retired.
     public const int EvtHotkeyPressIgnored             = 117;
     public const int EvtModuleStarting                 = 118;

@@ -388,6 +388,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Anytype.csproj
 │   │   ├── DeckleAnytypeSource.cs
 │   │   └── GLOSSARY.md  — glossary-deckle-anytype Anytype integration vocabulary, Deckle.Anytype.Mcp included. It separates the b…
+│   ├── Deckle.Anytype.Gateway/
+│   │   ├── Deckle.Anytype.Gateway.csproj
+│   │   ├── GatewayDiagnostics.cs
+│   │   ├── GatewayRuntime.cs
+│   │   └── Program.cs
 │   ├── Deckle.Anytype.Mcp/
 │   │   ├── Http/
 │   │   │   ├── McpClients.cs
