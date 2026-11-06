@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Deckle.Audio.VoiceLevelMeter"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:catalog="using:Deckle.Catalog">
+
+    <!-- The voice meter in the shared preview block, floating under the Voice
+         level card: the microphone's level on a fixed dB track, with the voice
+         level and the detector's entry level marked on it. It shows and never
+         writes; the field above it is the value. Live while Listen is on; off,
+         the block says what Listen does. The note under the block says why the
+         microphone closed when it closed on its own. -->
+    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+        <catalog:PreviewBlock x:Name="Block"
+                              x:Uid="RecordingVoiceMeterBlock">
+
+            <!-- One command, on the meter itself: open the microphone. A toggle,
+                 because the state it starts lasts; page state, not a setting. -->
+            <catalog:PreviewBlock.Commands>
+                <ToggleButton x:Name="ListenToggle"
+                              x:Uid="RecordingVoiceMeterListenToggle"
+                              Click="ListenToggle_Click" />
+            </catalog:PreviewBlock.Commands>
+
+            <!-- The stage: the scale's two ends, the track, the captions of the
+                 two marks. The track and its marks sit on a Canvas laid out by
+                 the code-behind from the canvas's own width (LayoutMarks), so
+                 every position comes from VoiceLevelMeterScale. Drawing order:
+                 the track, the faint voice band, the fill (accent while the
+                 meter's detector says voiced, neutral otherwise; two rectangles
+                 so each keeps its ThemeResource across a theme change), the
+                 peak tick, then the two marks on top. -->
+            <StackPanel VerticalAlignment="Center" Spacing="4">
+                <Grid>
+                    <TextBlock x:Name="ScaleMinText"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               HorizontalAlignment="Left" />
+                    <TextBlock x:Name="ScaleMaxText"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               HorizontalAlignment="Right" />
+                </Grid>
+
+                <Canvas x:Name="MeterCanvas"
+                        Height="20"
+                        HorizontalAlignment="Stretch"
+                        SizeChanged="MeterCanvas_SizeChanged">
+                    <Rectangle x:Name="TrackRect"
+                               Canvas.Top="4"
+                               Height="12"
+                               RadiusX="2"
+                               RadiusY="2"
+                               Fill="{ThemeResource ControlAltFillColorTertiaryBrush}"
+                               Stroke="{ThemeResource CardStrokeColorDefaultBrush}"
+                               StrokeThickness="1" />
+                    <!-- "This side is voice": the band from the voice level to
+                         the track's end, the accent at a faint opacity set on
+                         the element so the shared brush is never mutated. -->
+                    <Rectangle x:Name="VoiceBandRect"
+                               Canvas.Top="4"
+                               Height="12"
+                               Opacity="0.15"
+                               Fill="{ThemeResource AccentFillColorDefaultBrush}" />
+                    <Rectangle x:Name="SilentFillRect"
+                               Canvas.Top="4"
+                               Height="12"
+                               Width="0"
+                               RadiusX="2"
+                               RadiusY="2"
+                               Fill="{ThemeResource ControlStrongFillColorDefaultBrush}" />
+                    <Rectangle x:Name="VoicedFillRect"
+                               Canvas.Top="4"
+                               Height="12"
+                               Width="0"
+                               RadiusX="2"
+                               RadiusY="2"
+                               Visibility="Collapsed"
+                               Fill="{ThemeResource AccentFillColorDefaultBrush}" />
+                    <Rectangle x:Name="PeakRect"
+                               Canvas.Top="4"
+                               Height="12"
+                               Width="2"
+                               Visibility="Collapsed"
+                               Fill="{ThemeResource TextFillColorPrimaryBrush}" />
+                    <!-- The voice level, the detector's exit: solid. -->
+                    <Rectangle x:Name="VoiceMark"
+                               Canvas.Top="0"
+                               Height="20"
+                               Width="2"
+                               Fill="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <!-- The entry level, a few dB above it: dashed. -->
+                    <Line x:Name="EntryMark"
+                          Y1="0"
+                          Y2="20"
+                          StrokeThickness="1"
+                          StrokeDashArray="2,2"
+                          Stroke="{ThemeResource TextFillColorSecondaryBrush}" />
+                </Canvas>
+
+                <!-- The marks' captions: the voice level's ends at its mark, on
+                     the quiet side; the entry's starts at its mark, on the loud
+                     side, so the two never overlap however close the marks. -->
+                <Canvas x:Name="CaptionCanvas" Height="16">
+                    <TextBlock x:Name="VoiceCaption"
+                               x:Uid="RecordingVoiceMeterVoiceCaption"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               SizeChanged="Caption_SizeChanged" />
+                    <TextBlock x:Name="EntryCaption"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               SizeChanged="Caption_SizeChanged" />
+                </Canvas>
+            </StackPanel>
+
+            <!-- Readouts read from the live microphone, never typed: the smoothed
+                 level the bar shows, the meter detector's decision, and the
+                 loudest frame of the last few seconds. Three columns that share
+                 the width. -->
+            <catalog:PreviewBlock.Readouts>
+                <Grid ColumnSpacing="24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <catalog:Readout x:Name="LevelReadout"   x:Uid="RecordingVoiceMeterLevelReadout"
+                                     Grid.Column="0" />
+                    <catalog:Readout x:Name="VoiceReadout"   x:Uid="RecordingVoiceMeterVoiceReadout"
+                                     Grid.Column="1" />
+                    <catalog:Readout x:Name="LoudestReadout" x:Uid="RecordingVoiceMeterLoudestReadout"
+                                     Grid.Column="2" />
+                </Grid>
+            </catalog:PreviewBlock.Readouts>
+        </catalog:PreviewBlock>
+
+        <!-- Why the microphone closed, when it closed without being asked. The
+             wording comes from the code-behind, per cause. -->
+        <InfoBar x:Name="FailureBar"
+                 IsClosable="True"
+                 Severity="Warning"
+                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
+    </StackPanel>
+</UserControl>

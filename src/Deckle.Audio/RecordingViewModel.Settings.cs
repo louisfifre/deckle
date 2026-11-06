@@ -64,7 +64,8 @@ public partial class RecordingViewModel
 
     // The mic level check above measures the RMS of a 5 s sample and compares
     // it to the preprocessing target, to advise whether turning the DSP on is
-    // worth it. It does not measure or set the HUD level window.
+    // worth it, and says how far it sits above or below the voice level. It
+    // sets nothing.
     //
     // The microphone-telemetry opt-in lives in RecordingTelemetryViewModel,
     // composed on the Diagnostics page.

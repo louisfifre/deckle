@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Deckle.Catalog;
 using Deckle.Diagnostics;
 using System.Globalization;
 using System.Threading.Tasks;
@@ -77,7 +78,8 @@ public partial class RecordingViewModel : ObservableObject
     //
     // Four mutually-exclusive advice flags drive four InfoBars (IsOpen is a
     // plain bool, so no value converter is needed); MicResultDetail carries the
-    // raw → normalised dBFS line shown alongside the verdict.
+    // raw → normalised dBFS line, and the margin to the voice level, shown
+    // alongside the verdict.
 
     [ObservableProperty]
     public partial bool IsMeasuringMic { get; set; }
@@ -107,7 +109,7 @@ public partial class RecordingViewModel : ObservableObject
         {
             var capture = CaptureSettingsService.Instance.Current;
             MicLevelAssessment a = await new MicLevelTester()
-                .MeasureAsync(capture.AudioInputDeviceId, capture.Preprocessing);
+                .MeasureAsync(capture.AudioInputDeviceId, capture.Preprocessing, capture.VoiceLevelDbfs);
 
             if (!a.HasSignal)
             {
@@ -115,10 +117,15 @@ public partial class RecordingViewModel : ObservableObject
                 return;
             }
 
-            MicResultDetail = string.Format(
-                CultureInfo.InvariantCulture,
-                "{0:F0} dBFS → {1:F0} dBFS",
-                a.RawRmsDbfs, a.ProcessedRmsDbfs);
+            // Raw → processed, then where the voice sits against the voice
+            // level, "above" or "below" by sign. Rounded to whole dB as
+            // integers, so a margin just under zero never reads -0.
+            int margin = (int)Math.Round(a.VoiceMarginDb);
+            MicResultDetail = Loc.Format(
+                margin >= 0 ? "RecordingPageMicResultAbove_Format" : "RecordingPageMicResultBelow_Format",
+                (int)Math.Round(a.RawRmsDbfs),
+                (int)Math.Round(a.ProcessedRmsDbfs),
+                Math.Abs(margin));
 
             AdviceRecommended = a.Advice == PreprocessingAdvice.Recommended;
             AdviceMarginal    = a.Advice == PreprocessingAdvice.Marginal;

@@ -124,12 +124,13 @@
     <value>Recording</value>
   </data>
   <data name="RecordingPageHeader.Description" xml:space="preserve">
-    <value>Microphone, voice level, recording length and pre-processing, with a listening test.</value>
+    <value>Microphone, voice level with its meter, recording length and pre-processing, with a listening test.</value>
   </data>
-  <!-- Section titles are provisional: the maintainer names them at the end
-       (2026-10-15). -->
+  <!-- The first section is the microphone's: the voice level with its meter,
+       the maximum length, the pre-processing (research note P6, 2026-11-06).
+       The key keeps its old name. -->
   <data name="RecordingPageRecordingSection.Title" xml:space="preserve">
-    <value>Recording</value>
+    <value>Microphone</value>
   </data>
   <data name="RecordingPageChecksSection.Title" xml:space="preserve">
     <value>Checks</value>
@@ -146,6 +147,59 @@
   </data>
   <data name="RecordingVoiceLevelCard.Description" xml:space="preserve">
     <value>The level above which Deckle hears voice. It opens an utterance, lights the outline of the recording window, and decides whether the microphone picked up anyone. Raise it if room noise keeps an utterance open; lower it if soft speech is cut.</value>
+  </data>
+
+  <!-- Voice meter, the instrument under the voice-level card (VoiceLevelMeter,
+       x:Uid on the PreviewBlock, the toggle, the readouts and the voice-level
+       caption) -->
+  <data name="RecordingVoiceMeterBlock.EmptyHeader" xml:space="preserve">
+    <value>Microphone meter</value>
+  </data>
+  <data name="RecordingVoiceMeterBlock.EmptyDescription" xml:space="preserve">
+    <value>Turn Listen on to see your level against the voice level. Nothing is recorded.</value>
+  </data>
+  <data name="RecordingVoiceMeterListenToggle.Content" xml:space="preserve">
+    <value>Listen</value>
+  </data>
+  <data name="RecordingVoiceMeterVoiceCaption.Text" xml:space="preserve">
+    <value>voice level</value>
+  </data>
+  <data name="RecordingVoiceMeterLevelReadout.Label" xml:space="preserve">
+    <value>Level</value>
+  </data>
+  <data name="RecordingVoiceMeterVoiceReadout.Label" xml:space="preserve">
+    <value>Voice</value>
+  </data>
+  <data name="RecordingVoiceMeterLoudestReadout.Label" xml:space="preserve">
+    <value>Loudest</value>
+  </data>
+
+  <!-- Voice meter code-behind (Loc.Get / Loc.Format). Mirrored in
+       src/Deckle.App/Strings/en-US/Resources.resw, which Loc.Get reads; this
+       file stays the source of truth for wording. -->
+  <data name="RecordingVoiceMeter_Dbfs_Format" xml:space="preserve">
+    <value>{0} dBFS</value>
+  </data>
+  <data name="RecordingVoiceMeter_EntryCaption_Format" xml:space="preserve">
+    <value>+{0} dB</value>
+  </data>
+  <data name="RecordingVoiceMeter_Voice" xml:space="preserve">
+    <value>Voice</value>
+  </data>
+  <data name="RecordingVoiceMeter_Silence" xml:space="preserve">
+    <value>Silence</value>
+  </data>
+  <data name="RecordingVoiceMeter_Failure_NotDetected" xml:space="preserve">
+    <value>No microphone found. Check the device above, then turn Listen on again.</value>
+  </data>
+  <data name="RecordingVoiceMeter_Failure_InUse" xml:space="preserve">
+    <value>Another app is using the microphone. Close it, then turn Listen on again.</value>
+  </data>
+  <data name="RecordingVoiceMeter_Failure_Unavailable" xml:space="preserve">
+    <value>Couldn't open the microphone. Check the device above, then turn Listen on again.</value>
+  </data>
+  <data name="RecordingVoiceMeter_Failure_Ended" xml:space="preserve">
+    <value>The microphone stopped. Turn Listen on again.</value>
   </data>
 
   <!-- Composed maximum-recording-length card (composer label key + Choice option keys) -->
@@ -187,7 +241,7 @@
     <value>Microphone level check</value>
   </data>
   <data name="RecordingPageMicCheckCard.Description" xml:space="preserve">
-    <value>Speak for a few seconds. Deckle reads your level and tells you whether pre-processing is worth turning on.</value>
+    <value>Speak for a few seconds. Deckle reads your level, says where it sits against the voice level, and tells you whether pre-processing is worth turning on.</value>
   </data>
   <data name="RecordingPageMicCheckButton.Content" xml:space="preserve">
     <value>Measure</value>
@@ -206,6 +260,15 @@
   </data>
   <data name="RecordingPageMicAdviceError.Title" xml:space="preserve">
     <value>Couldn't read the microphone. Check the device above and try again.</value>
+  </data>
+  <!-- The check's detail line (Loc.Format from RecordingViewModel), one key per
+       side of the voice level: {0} raw dBFS, {1} processed dBFS, {2} the margin
+       in whole dB, always positive. Mirrored in Deckle.App's Resources.resw. -->
+  <data name="RecordingPageMicResultAbove_Format" xml:space="preserve">
+    <value>{0} dBFS → {1} dBFS · {2} dB above your voice level</value>
+  </data>
+  <data name="RecordingPageMicResultBelow_Format" xml:space="preserve">
+    <value>{0} dBFS → {1} dBFS · {2} dB below your voice level</value>
   </data>
 
   <!-- Listening test (bespoke cards + InfoBars) -->

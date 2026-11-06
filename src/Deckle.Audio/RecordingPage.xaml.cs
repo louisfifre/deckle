@@ -25,6 +25,8 @@ public sealed partial class RecordingPage : Page
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
+        // Before LoadAndSync, so the meter's marks follow Load()'s voice level.
+        VoiceMeter.ViewModel = ViewModel;
         ComposeVoiceLevelSection();
         ComposeRecordingLimitSection();
         ComposePreprocessingSection();
@@ -96,10 +98,12 @@ public sealed partial class RecordingPage : Page
     }
 
     // The page is cached, so a listening-test clip would keep playing behind
-    // the next Settings page; leaving the page stops it.
+    // the next Settings page, and the voice meter would keep the microphone
+    // open; leaving the page stops both.
     protected override void OnNavigatedFrom(NavigationEventArgs e)
     {
         ViewModel.StopListeningPlayback();
+        VoiceMeter.Stop();
         base.OnNavigatedFrom(e);
     }
 

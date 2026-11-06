@@ -5,7 +5,8 @@ using Xunit;
 namespace Deckle.Audio.Tests;
 
 // MicLevelCheck judges whether the DSP is worth it from the level deficit to the
-// target alone, with no transcription or WER.
+// target alone, with no transcription or WER, and reports the margin of the
+// measured level to the voice level.
 [Trait("Category", "unit")]
 public class MicLevelCheckTests
 {
@@ -24,6 +25,9 @@ public class MicLevelCheckTests
 
     private const double Target = -20.0;
 
+    // The shipped voice level: the margin is read against it.
+    private static readonly double VoiceLevel = new CaptureSettings().VoiceLevelDbfs;
+
     // A mic whose raw level sits `deficit` dB under the target, so the bars are
     // read from the production constants instead of copied as dB figures.
     private static float[] MicBelowTarget(double deficitDb) => SineAtDbfs(Target - deficitDb);
@@ -39,7 +43,7 @@ public class MicLevelCheckTests
     public void QuietMicIsRecommended()
     {
         double deficit = MicLevelCheck.RecommendDeltaDb + 6.0; // well over the recommend bar
-        var a = MicLevelCheck.Assess(MicBelowTarget(deficit), AtTarget());
+        var a = MicLevelCheck.Assess(MicBelowTarget(deficit), AtTarget(), VoiceLevel);
 
         Assert.True(a.HasSignal);
         Assert.Equal(PreprocessingAdvice.Recommended, a.Advice);
@@ -49,7 +53,7 @@ public class MicLevelCheckTests
     [Fact]
     public void MicAlreadyAtTargetIsNotNeeded()
     {
-        var a = MicLevelCheck.Assess(SineAtDbfs(Target), AtTarget());
+        var a = MicLevelCheck.Assess(SineAtDbfs(Target), AtTarget(), VoiceLevel);
 
         Assert.Equal(PreprocessingAdvice.NotNeeded, a.Advice);
     }
@@ -59,7 +63,7 @@ public class MicLevelCheckTests
     {
         // Midway between the marginal and recommend bars.
         double deficit = (MicLevelCheck.MarginalDeltaDb + MicLevelCheck.RecommendDeltaDb) / 2;
-        var a = MicLevelCheck.Assess(MicBelowTarget(deficit), AtTarget());
+        var a = MicLevelCheck.Assess(MicBelowTarget(deficit), AtTarget(), VoiceLevel);
 
         Assert.Equal(PreprocessingAdvice.Marginal, a.Advice);
     }
@@ -70,7 +74,7 @@ public class MicLevelCheckTests
     public void TheMarginalBarSeparatesNotNeededFromMarginal(double offsetDb)
     {
         var a = MicLevelCheck.Assess(
-            MicBelowTarget(MicLevelCheck.MarginalDeltaDb + offsetDb), AtTarget());
+            MicBelowTarget(MicLevelCheck.MarginalDeltaDb + offsetDb), AtTarget(), VoiceLevel);
 
         Assert.Equal(
             offsetDb < 0 ? PreprocessingAdvice.NotNeeded : PreprocessingAdvice.Marginal,
@@ -83,7 +87,7 @@ public class MicLevelCheckTests
     public void TheRecommendBarSeparatesMarginalFromRecommended(double offsetDb)
     {
         var a = MicLevelCheck.Assess(
-            MicBelowTarget(MicLevelCheck.RecommendDeltaDb + offsetDb), AtTarget());
+            MicBelowTarget(MicLevelCheck.RecommendDeltaDb + offsetDb), AtTarget(), VoiceLevel);
 
         Assert.Equal(
             offsetDb < 0 ? PreprocessingAdvice.Marginal : PreprocessingAdvice.Recommended,
@@ -95,15 +99,29 @@ public class MicLevelCheckTests
     {
         // The "after" the user sees is the real DSP output — it should reach
         // the target, that is the whole point of showing it.
-        var a = MicLevelCheck.Assess(MicBelowTarget(12.0), AtTarget());
+        var a = MicLevelCheck.Assess(MicBelowTarget(12.0), AtTarget(), VoiceLevel);
 
         Assert.Equal(Target, a.ProcessedRmsDbfs, 1.5);
+    }
+
+    // The check says where the voice sits against the voice level the
+    // segmenter cuts on: the raw level minus that level, positive above it and
+    // negative below it.
+    [Theory]
+    [InlineData(-30.0, -45.0)]   // a voice 15 dB above the level
+    [InlineData(-50.0, -40.0)]   // a voice 10 dB under it
+    public void TheVoiceMarginIsTheRawLevelMinusTheVoiceLevel(double voiceDbfs, double voiceLevelDbfs)
+    {
+        var a = MicLevelCheck.Assess(SineAtDbfs(voiceDbfs), AtTarget(), voiceLevelDbfs);
+
+        Assert.Equal(a.RawRmsDbfs - voiceLevelDbfs, a.VoiceMarginDb, 6);
+        Assert.Equal(voiceDbfs - voiceLevelDbfs, a.VoiceMarginDb, 1.0);
     }
 
     [Fact]
     public void EmptyCaptureHasNoSignal()
     {
-        var a = MicLevelCheck.Assess(Array.Empty<float>(), AtTarget());
+        var a = MicLevelCheck.Assess(Array.Empty<float>(), AtTarget(), VoiceLevel);
 
         Assert.False(a.HasSignal);
     }
@@ -115,7 +133,7 @@ public class MicLevelCheckTests
     [Trait("Category", "regression")]
     public void ADigitallySilentCaptureHasNoSignalAndNoRecommendation()
     {
-        var a = MicLevelCheck.Assess(new float[16_000], AtTarget());
+        var a = MicLevelCheck.Assess(new float[16_000], AtTarget(), VoiceLevel);
 
         Assert.False(a.HasSignal);
         Assert.Equal(PreprocessingAdvice.NotNeeded, a.Advice);
@@ -125,7 +143,7 @@ public class MicLevelCheckTests
     [Trait("Category", "regression")]
     public void AVeryQuietButNonZeroCaptureStillHasASignal()
     {
-        var a = MicLevelCheck.Assess(SineAtDbfs(-80.0), AtTarget());
+        var a = MicLevelCheck.Assess(SineAtDbfs(-80.0), AtTarget(), VoiceLevel);
 
         Assert.True(a.HasSignal);
         Assert.Equal(PreprocessingAdvice.Recommended, a.Advice);

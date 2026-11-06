@@ -449,7 +449,7 @@
     <value>Detector confidence</value>
   </data>
   <data name="WhisperVadThresholdCard.Description" xml:space="preserve">
-    <value>How sure the voice detector must be, from 0 to 1 (a probability, not a loudness), to keep a stretch of a cut utterance as speech. Higher can clip soft speech.</value>
+    <value>How sure the speech detector must be before it keeps a span. Higher trims more and may clip soft speech.</value>
   </data>
   <data name="WhisperVadMinSilenceCard.Header" xml:space="preserve">
     <value>Minimum silence</value>
@@ -518,7 +518,7 @@
     <value>An uncertain segment is retried with this much more randomness each time.</value>
   </data>
   <data name="WhisperEntropyCard.Header" xml:space="preserve">
-    <value>Entropy threshold</value>
+    <value>Minimum entropy</value>
   </data>
   <data name="WhisperEntropyCard.Description" xml:space="preserve">
     <value>A segment with less word diversity than this is retried at a higher temperature. Raise it to catch subtler repetitions.</value>
@@ -530,7 +530,7 @@
     <value>A segment decoded below this average confidence is retried at a higher temperature. Closer to 0 is stricter.</value>
   </data>
   <data name="WhisperNoSpeechCard.Header" xml:space="preserve">
-    <value>No-speech threshold</value>
+    <value>No-speech cut-off</value>
   </data>
   <data name="WhisperNoSpeechCard.Description" xml:space="preserve">
     <value>A segment the model hears as silence, with low confidence, is dropped. Lower drops more.</value>

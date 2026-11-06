@@ -1,0 +1,65 @@
+namespace Deckle.Audio;
+
+// ── VoiceLevelMeterScale ──────────────────────────────────────────────────────
+//
+// The arithmetic of the voice meter on the Recording page, kept out of the
+// control so it is testable without XAML: where a dBFS value falls on the
+// track, the smoothing the bar shares with the HUD outline, and how long the
+// peak tick holds. Pure functions; the control owns every piece of state.
+internal static class VoiceLevelMeterScale
+{
+    // The track spans a fixed dB scale, not one that follows the voice level:
+    // the marks have to move when the field changes, or the user would not see
+    // what the edit did. -80 to -10 dBFS puts the shipped default (-45) and the
+    // levels a desk microphone plausibly gives (about -60 to -30) in the middle
+    // third, with room on each side for a quiet room and a loud voice. A level
+    // outside the span pins the bar at its end.
+    public const double MinDbfs = -80.0;
+    public const double MaxDbfs = -10.0;
+
+    // What a frame of exact zeros reads as: the floor the DSP uses for the same
+    // case, far under the track, so a muted microphone leaves the bar empty.
+    public const double SilenceFloorDbfs = -120.0;
+
+    // How long the peak tick holds the loudest value before it follows the
+    // level down: long enough to read a figure, short enough to show the next
+    // word's peak.
+    public const double PeakHoldSeconds = 1.0;
+
+    // The window of the "Loudest" readout.
+    public const double LoudestWindowSeconds = 3.0;
+
+    // Linear RMS → dBFS; zero or less is the silence floor.
+    public static double RmsToDbfs(float rms)
+        => rms <= 0f ? SilenceFloorDbfs : 20.0 * Math.Log10(rms);
+
+    // Where a level sits on the track, from 0 (MinDbfs, left) to 1 (MaxDbfs,
+    // right), clamped. NaN reads as the empty end.
+    public static double Fraction(double dbfs)
+    {
+        if (double.IsNaN(dbfs)) return 0.0;
+        return Math.Clamp((dbfs - MinDbfs) / (MaxDbfs - MinDbfs), 0.0, 1.0);
+    }
+
+    // The HUD's exponential smoothing (AudioLevelMapper.EmaAlpha), applied to
+    // the dB value, one step per 50 ms frame, so the bar and the outline move
+    // alike. The first frame of a run has no previous value and is taken as is.
+    public static double Smooth(double? previousDbfs, double sampleDbfs)
+    {
+        if (previousDbfs is not { } previous) return sampleDbfs;
+        double alpha = AudioLevelMapper.EmaAlpha;
+        return previous * alpha + sampleDbfs * (1.0 - alpha);
+    }
+
+    // The peak tick's next position. A value at or above the held peak takes
+    // its place and restarts the hold; once the hold has run out the tick
+    // follows the level down, frame by frame, without restarting the hold, so
+    // it slides rather than stepping a second at a time.
+    public static (double PeakDbfs, double HeldSinceSeconds) NextPeak(
+        double peakDbfs, double heldSinceSeconds, double valueDbfs, double nowSeconds)
+    {
+        if (valueDbfs >= peakDbfs) return (valueDbfs, nowSeconds);
+        if (nowSeconds - heldSinceSeconds >= PeakHoldSeconds) return (valueDbfs, heldSinceSeconds);
+        return (peakDbfs, heldSinceSeconds);
+    }
+}

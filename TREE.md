@@ -557,7 +557,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RecordingViewModel.Settings.cs
 │   │   ├── SettingsSearch.cs
 │   │   ├── SpeakerOutput.cs
-│   │   └── VoiceDetector.cs
+│   │   ├── VoiceDetector.cs
+│   │   ├── VoiceLevelMeter.xaml
+│   │   ├── VoiceLevelMeter.xaml.cs
+│   │   ├── VoiceLevelMeterFeed.cs
+│   │   └── VoiceLevelMeterScale.cs
 │   ├── Deckle.Autocorrect/
 │   │   ├── Data/
 │   │   │   ├── lexicon-en-globish.tsv.gz
@@ -1931,6 +1935,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PcmConversionTests.cs
 │   │   ├── TranscriptionPreprocessorTests.cs
 │   │   ├── VoiceDetectorTests.cs
+│   │   ├── VoiceLevelMeterFeedTests.cs
+│   │   ├── VoiceLevelMeterScaleTests.cs
 │   │   ├── WaveInBufferRingBugNotes.md
 │   │   ├── WaveInBufferRingTests.cs
 │   │   └── WaveInReleaseBugNotes.md
