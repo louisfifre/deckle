@@ -158,6 +158,14 @@
     <value>{0} becomes {1}.</value>
     <comment>{0} is the original text span; {1} is the proposed replacement.</comment>
   </data>
+  <data name="RewriteTimeout_Title" xml:space="preserve">
+    <value>Rewriter took too long</value>
+    <comment>Title of the overlay card shown when a transcript rewrite hits the hard time cap.</comment>
+  </data>
+  <data name="RewriteTimeout_Body_Format" xml:space="preserve">
+    <value>Over {0} min. Raw transcript copied.</value>
+    <comment>{0} is the hard time cap in minutes.</comment>
+  </data>
 
   <!-- ─── Consent dialogs ────────────────────────────────────────────
        Opt-in prompts for local data capture. Each dialog follows the
