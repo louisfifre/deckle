@@ -20,12 +20,6 @@ param(
     [Parameter(ParameterSetName = 'Snapshot')][string]$LevelPath = '',
     [Parameter(ParameterSetName = 'Snapshot')][ValidateRange(20, 240)][int]$Width = 100,
     [Parameter(ParameterSetName = 'Snapshot')][ValidateRange(8, 100)][int]$Height = 30,
-    # Terminal paints with the console colours of the terminal's scheme;
-    # TrueColor paints with the designed RGB palette, dark or light after the
-    # console background. Redirected output carries no colour either way.
-    [Parameter(ParameterSetName = 'Interactive')]
-    [Parameter(ParameterSetName = 'HostSmokeTest')]
-    [ValidateSet('Terminal', 'TrueColor')][string]$Palette = 'Terminal',
     [Parameter(ParameterSetName = 'HostSmokeTest')][switch]$HostSmokeTest,
     # The scripts folder to serve; the repository root is asked to git.
     [string]$ScriptsRoot
@@ -190,9 +184,9 @@ if ($HostSmokeTest) {
     $smoke = Get-LauncherSnapshot -Name 'Menu'
     $module = Get-Module terminal-interaction
     & $module {
-        param($view, $ownerActionMenu, $focus, $palette, $logo)
+        param($view, $ownerActionMenu, $focus, $logo)
         $originalOutputCodePage = [Console]::OutputEncoding.CodePage
-        $hostState = Start-TerminalHost -Palette $palette
+        $hostState = Start-TerminalHost
         try {
             if ($hostState.UnicodeOutput -ne 'Supported' -or [Console]::OutputEncoding.CodePage -ne 65001) {
                 throw 'The host smoke test could not activate UTF-8 console output.'
@@ -213,7 +207,7 @@ if ($HostSmokeTest) {
         if ([Console]::OutputEncoding.CodePage -ne $originalOutputCodePage) {
             throw 'The host smoke test did not restore the original console output encoding.'
         }
-    } $smoke.View $smoke.Owner $smoke.Focus $Palette $Logo
+    } $smoke.View $smoke.Owner $smoke.Focus $Logo
     return
 }
 
@@ -238,7 +232,7 @@ if ($Snapshot) {
 $ManifestPath = Join-Path $ScriptsRoot '.deckle-scripts\manifest.json'
 $ManifestStamp = if (Test-Path -LiteralPath $ManifestPath) { (Get-Item -LiteralPath $ManifestPath).LastWriteTimeUtc } else { $null }
 
-Start-TerminalInteraction -RootView (Get-LauncherRootView -Context $Context) -Palette $Palette -Logo $Logo -IntentHandler {
+Start-TerminalInteraction -RootView (Get-LauncherRootView -Context $Context) -Logo $Logo -IntentHandler {
     param($request, $sourceView)
     Resolve-LauncherIntent -Request $request -SourceView $sourceView -Context $Context
 }

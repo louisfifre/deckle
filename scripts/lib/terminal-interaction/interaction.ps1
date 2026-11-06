@@ -158,7 +158,6 @@ function Start-TerminalInteraction {
     param(
         [Parameter(Mandatory)][object]$RootView,
         [Parameter(Mandatory)][scriptblock]$IntentHandler,
-        [ValidateSet('Terminal', 'TrueColor')][string]$Palette = 'Terminal',
         # Lines drawn above the Header of every frame when the terminal
         # affords them.
         [AllowEmptyCollection()][string[]]$Logo = @()
@@ -166,7 +165,7 @@ function Start-TerminalInteraction {
 
     $viewStack = [System.Collections.Generic.List[object]]::new()
     $viewStack.Add((New-TerminalViewState -View $RootView))
-    $hostState = Start-TerminalHost -Palette $Palette
+    $hostState = Start-TerminalHost
     try {
         $exitRequested = $false
         $previousFrame = $null

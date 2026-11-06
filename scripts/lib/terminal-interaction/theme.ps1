@@ -1,69 +1,9 @@
-# Semantic presentation roles mapped to terminal attributes, from one of two
-# palettes. Terminal, the default, names every role in the sixteen console
-# colours and lets the terminal's own scheme give them their values. TrueColor
-# carries the designed RGB tokens, sent exactly to VT hosts, with the console
-# colours kept as the fallback of a legacy host.
-
-# The indexed background is only a hint: Windows Terminal sets a profile's RGB
-# background apart from its sixteen-colour table, so Console.BackgroundColor
-# does not tell every profile's real background.
-function Resolve-TerminalThemeVariant {
-    param([Parameter(Mandatory)][ConsoleColor]$BackgroundColor)
-
-    if ($BackgroundColor -in @(
-        [ConsoleColor]::Black,
-        [ConsoleColor]::DarkBlue,
-        [ConsoleColor]::DarkGreen,
-        [ConsoleColor]::DarkCyan,
-        [ConsoleColor]::DarkRed,
-        [ConsoleColor]::DarkMagenta,
-        [ConsoleColor]::DarkYellow,
-        [ConsoleColor]::DarkGray
-    )) {
-        return 'Dark'
-    }
-    return 'Light'
-}
-
-function Resolve-TerminalPalette {
-    param(
-        [Parameter(Mandatory)][ValidateSet('Terminal', 'TrueColor')][string]$Palette,
-        [Parameter(Mandatory)][ConsoleColor]$BackgroundColor
-    )
-
-    if ($Palette -eq 'Terminal') { return 'Terminal' }
-    return 'TrueColor' + (Resolve-TerminalThemeVariant -BackgroundColor $BackgroundColor)
-}
-
-# Tokens from the Figma file "Deckle Scripts", node 22-27: title, sections,
-# action-row title, body text, selection, access, and background.
-# It names no colour for a plain Action, muted chrome, or outcomes; those
-# roles keep their ConsoleColor fallback rather than an invented value.
-function Get-TerminalThemePalette {
-    param([Parameter(Mandatory)][ValidateSet('TrueColorDark', 'TrueColorLight')][string]$Palette)
-
-    if ($Palette -eq 'TrueColorLight') {
-        return [pscustomobject]@{
-            Background = [int[]]@(246, 246, 246)  # F6F6F6
-            Title = [int[]]@(40, 142, 215)        # 288ED7
-            ActionLabel = [int[]]@(29, 117, 109)  # 1D756D
-            Section = [int[]]@(192, 60, 124)      # C03C7C
-            Selection = [int[]]@(53, 53, 53)      # 353535
-            Body = [int[]]@(83, 83, 83)           # 535353
-            Access = [int[]]@(106, 138, 32)       # 6A8A20
-        }
-    }
-    return [pscustomobject]@{
-        Background = [int[]]@(1, 22, 39)          # 011627
-        Title = [int[]]@(130, 170, 255)           # 82AAFF
-        ActionLabel = [int[]]@(119, 207, 192)     # 77CFC0
-        Section = [int[]]@(199, 146, 234)         # C792EA
-        Selection = [int[]]@(255, 255, 255)       # FFFFFF
-        Body = [int[]]@(204, 204, 204)            # CCCCCC
-        Access = [int[]]@(186, 217, 115)          # BAD973
-    }
-}
-
+# Semantic presentation roles mapped to terminal attributes, named in the
+# sixteen console colours only, so the terminal's own scheme gives every role
+# its value and one theme serves light and dark terminals alike. A null colour
+# means the terminal's own default, which the host sends as such: the theme
+# never fills it from the console's reported colours, which Windows Terminal
+# and VS Code give as grey on black whatever the profile shows.
 function Get-TerminalPresentationStyle {
     [CmdletBinding()]
     param(
@@ -76,52 +16,29 @@ function Get-TerminalPresentationStyle {
         )]
         [string]$Role,
         [ValidateSet('Normal', 'Focused', 'Disabled')][string]$State = 'Normal',
-        [ValidateSet('Supported', 'Unsupported', 'Unknown')][string]$ColorCapability = 'Supported',
-        [ValidateSet('Terminal', 'TrueColorDark', 'TrueColorLight')][string]$Palette = 'Terminal'
+        [ValidateSet('Supported', 'Unsupported', 'Unknown')][string]$ColorCapability = 'Supported'
     )
 
     if ($ColorCapability -ne 'Supported') {
         return [pscustomobject]@{
             Foreground = $null
             Background = $null
-            ForegroundRgb = $null
-            BackgroundRgb = $null
         }
     }
 
-    $designed = if ($Palette -eq 'Terminal') { $null } else { Get-TerminalThemePalette -Palette $Palette }
-    $surfaceRgb = if ($null -eq $designed) { $null } else { $designed.Background }
     if ($State -eq 'Disabled') {
         return [pscustomobject]@{
             Foreground = [ConsoleColor]::DarkGray
             Background = $null
-            ForegroundRgb = $null
-            BackgroundRgb = $surfaceRgb
         }
     }
-    if ($State -eq 'Focused' -and $null -eq $designed) {
-        # The console-colour selection: Danger and Error invert to white on
-        # dark red, every other target, Exit included, to black on grey.
+    if ($State -eq 'Focused') {
+        # The selection: Danger and Error invert to white on dark red, every
+        # other target, Exit included, to black on grey.
         $consequence = $Role -in @('Danger', 'Error')
         return [pscustomobject]@{
             Foreground = if ($consequence) { [ConsoleColor]::White } else { [ConsoleColor]::Black }
             Background = if ($consequence) { [ConsoleColor]::DarkRed } else { [ConsoleColor]::Gray }
-            ForegroundRgb = $null
-            BackgroundRgb = $null
-        }
-    }
-    # The designed selection is one for every target, Danger, Error and Exit
-    # included: the focused text takes the background token and the cell the
-    # selection token, so a consequence shows at rest and selection keeps one
-    # language.
-    if ($State -eq 'Focused') {
-        $foreground = if ($Palette -eq 'TrueColorDark') { [ConsoleColor]::Black } else { [ConsoleColor]::White }
-        $background = if ($Palette -eq 'TrueColorDark') { [ConsoleColor]::White } else { [ConsoleColor]::DarkGray }
-        return [pscustomobject]@{
-            Foreground = $foreground
-            Background = $background
-            ForegroundRgb = $designed.Background
-            BackgroundRgb = $designed.Selection
         }
     }
 
@@ -155,27 +72,8 @@ function Get-TerminalPresentationStyle {
         'Error' { [ConsoleColor]::Red }
         default { $null }
     }
-    $foregroundRgb = if ($null -eq $designed) { $null } else {
-        switch ($Role) {
-            'Banner' { $designed.Title }
-            'Section' { $designed.Section }
-            'PanelTitle' { $designed.Section }
-            'PanelSeparator' { $designed.Body }
-            'Action' { $designed.Body }
-            'ActionLabel' { $designed.ActionLabel }
-            'Access' { $designed.Access }
-            'ActionVariant' { $designed.Body }
-            'Adjust' { $designed.Body }
-            'Navigation' { $designed.Body }
-            'Body' { $designed.Body }
-            'CommandKey' { $designed.Body }
-            default { $null }
-        }
-    }
     return [pscustomobject]@{
         Foreground = $foreground
         Background = $null
-        ForegroundRgb = $foregroundRgb
-        BackgroundRgb = $surfaceRgb
     }
 }
