@@ -46,7 +46,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     // 23 retired.
     public const int EvtModelOnDemandLoad                = 24;
     public const int EvtModelIdleUnloadSkipped           = 25;
-    public const int EvtModelUnloadedJalon               = 26;
+    public const int EvtModelUnloadedMilestone              = 26;
     public const int EvtModelUnloaded                    = 27;
     public const int EvtModelIdleTimerSet                = 28;
     public const int EvtModelPathEnvIgnored              = 29;

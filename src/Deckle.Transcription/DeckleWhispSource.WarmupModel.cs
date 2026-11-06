@@ -283,13 +283,13 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtModelIdleUnloadFailed, ex_type, ex_message);
     }
 
-    [Event(EvtModelUnloadedJalon,
+    [Event(EvtModelUnloadedMilestone,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "Model unloaded")]
-    public void ModelUnloadedJalon()
+    public void ModelUnloadedMilestone()
     {
-        if (IsEnabled()) WriteEvent(EvtModelUnloadedJalon);
+        if (IsEnabled()) WriteEvent(EvtModelUnloadedMilestone);
     }
 
     [Event(EvtModelUnloaded,
