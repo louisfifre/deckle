@@ -41,6 +41,11 @@ public static class SettingsSearch
             LabelKey = "LlmActiveProfileCard",
             Keywords = ["profile", "rewrite", "default"],
         },
+        new SettingSearchEntry
+        {
+            LabelKey = "LlmLengthSwitchCard",
+            Keywords = ["length", "long", "characters", "threshold", "step", "minutes"],
+        },
 
         new SettingSearchEntry
         {

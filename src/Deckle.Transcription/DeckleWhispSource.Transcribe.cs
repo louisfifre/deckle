@@ -67,7 +67,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtAutoCalibratedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "new_min_dbfs={0:F0} | new_max_dbfs={1:F0} | session_count={2}")]
+           Message = "new_min_dbfs={0:F1} | new_max_dbfs={1:F1} | session_count={2}")]
     public void AutoCalibratedDetail(double new_min_dbfs, double new_max_dbfs, int session_count)
     {
         if (IsEnabled()) WriteEvent(EvtAutoCalibratedDetail, new_min_dbfs, new_max_dbfs, session_count);

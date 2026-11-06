@@ -131,6 +131,9 @@ public sealed partial class LlmProfilesSection : UserControl
                 settings.ActiveProfileId = null;
                 settings.ActiveProfileName = null;
             }
+            // Its ladder steps go with it: a step names a profile, and one
+            // left behind would hold a threshold nobody can see the use of.
+            settings.LengthSwitch.Steps.RemoveAll(step => step.ProfileId == removed.Id);
             profiles.RemoveAt(vm.ProfileIndex);
             LlmSettingsMigrations.RepairProfileReferences(LlmSettingsService.Instance.Current);
             LlmSettingsService.Instance.Save();
@@ -291,79 +294,28 @@ public sealed partial class LlmProfilesSection : UserControl
         _composed.Add(expander, new ComposedProfileCards(vm, cards));
     }
 
+    // A switch, then the chord it reveals: off is "no shortcut", so the chord
+    // editor needs no unbound state of its own, and switching off keeps the
+    // chord for the next time.
     private IReadOnlyList<SettingDescriptor> ProfileCards(ProfileViewModel vm) =>
     [
-        Setting.Toggle("LlmProfileAutoSelectCard",
-            () => vm.AutoSelect, v => vm.AutoSelect = v,
+        Setting.Toggle("LlmProfileHotkeyEnabledCard",
+            () => vm.HotkeyEnabled, v => vm.HotkeyEnabled = v,
             defaultValue: () => false),
-        Setting.Editor("LlmProfileAutoSelectFromCard",
-            () => vm.AutoSelectFromMinutes, v => vm.AutoSelectFromMinutes = v,
-            new EditorArgs(() => BuildMinutesSlider(vm)),
-            visibleWhen: () => vm.AutoSelect,
-            defaultValue: () => new RewriteProfile().AutoSelectFromMinutes),
         Setting.Hotkey("LlmProfileHotkeyCard",
             () => vm.Hotkey, v => vm.Hotkey = v,
-            new HotkeyArgs(AllowUnbound: true),
-            defaultValue: () => null,
+            new HotkeyArgs(AllowUnbound: false),
+            visibleWhen: () => vm.HotkeyEnabled,
             advisory: () => HotkeyHeldByAnotherProfile(vm)),
     ];
-
-    // A slider over the stops, not over minutes: the stops are uneven (a
-    // minute apart up to ten, coarser beyond), so the thumb moves stop to stop
-    // and the readout beside it says the minutes. Writes on every stop, like
-    // the profile's other sliders; the settings save is debounced.
-    private static FrameworkElement BuildMinutesSlider(ProfileViewModel vm)
-    {
-        IReadOnlyList<int> stops = RewriteProfile.AutoSelectStopsMinutes;
-        var slider = new Slider
-        {
-            Minimum = 0,
-            Maximum = stops.Count - 1,
-            StepFrequency = 1,
-            SmallChange = 1,
-            LargeChange = 1,
-            SnapsTo = SliderSnapsTo.StepValues,
-            MinWidth = 240,
-            VerticalAlignment = VerticalAlignment.Center,
-            ThumbToolTipValueConverter = new MinutesStopConverter(),
-        };
-        var readout = new TextBlock
-        {
-            MinWidth = 56,
-            VerticalAlignment = VerticalAlignment.Center,
-            Style = (Style)Application.Current.Resources["BodyTextBlockStyle"],
-        };
-
-        void Sync()
-        {
-            slider.Value = ProfileViewModel.NearestStopIndex(vm.AutoSelectFromMinutes);
-            readout.Text = MinutesStopConverter.Format(vm.AutoSelectFromMinutes);
-        }
-
-        slider.ValueChanged += (_, e) =>
-        {
-            int minutes = stops[Math.Clamp((int)Math.Round(e.NewValue), 0, stops.Count - 1)];
-            readout.Text = MinutesStopConverter.Format(minutes);
-            vm.AutoSelectFromMinutes = minutes;
-        };
-        vm.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(ProfileViewModel.AutoSelectFromMinutes)) Sync();
-        };
-        Sync();
-
-        var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
-        row.Children.Add(slider);
-        row.Children.Add(readout);
-        return row;
-    }
 
     // Two profiles on one chord: Windows registers it once, so only the first
     // would ever start. The Shortcuts page checks against the other actions.
     private string? HotkeyHeldByAnotherProfile(ProfileViewModel vm)
     {
-        if (vm.Hotkey is not { IsComplete: true } chord) return null;
-        ProfileViewModel? other = Profiles.FirstOrDefault(p => !ReferenceEquals(p, vm) && p.Hotkey == chord);
+        if (!vm.HotkeyEnabled || vm.Hotkey is not { IsComplete: true } chord) return null;
+        ProfileViewModel? other = Profiles.FirstOrDefault(p =>
+            !ReferenceEquals(p, vm) && p.HotkeyEnabled && p.Hotkey == chord);
         return other is null
             ? null
             : string.Format(

@@ -60,12 +60,19 @@ public static class WhisperParamsMapper
         IntPtr langPtr = Marshal.StringToCoTaskMemUTF8(whisp.Engine.Language);
         IntPtr promptPtr = Marshal.StringToCoTaskMemUTF8(prompt);
         wparams.language = langPtr;
+        // initial_prompt is a style sample to imitate, not an instruction: Whisper is
+        // not instruction-tuned, so meta phrases ("here is a transcription...") leak
+        // into the output. Never put a raw-speech to clean-text example in it: Whisper
+        // emits a single text, so the prompt only shows what a clean output looks like.
         wparams.initial_prompt = promptPtr;
         wparams.carry_initial_prompt =
             (byte)(whisp.Engine.CarryInitialPrompt && prompt.Length > 0 ? 1 : 0);
 
         // Decoder guards that drive the fallback and skip decisions on a decoded
         // segment, not voice-activity detection (whisper's own VAD is off below).
+        // entropy_thold is inverted: whisper.cpp falls back to a re-decode when
+        // entropy < threshold, so a HIGH value is strict (re-decodes more often) and
+        // a LOW one permissive. Re-read this before retuning.
         wparams.entropy_thold = (float)whisp.Confidence.EntropyThreshold;
         wparams.logprob_thold = (float)whisp.Confidence.LogprobThreshold;
         wparams.no_speech_thold = (float)whisp.Confidence.NoSpeechThreshold;

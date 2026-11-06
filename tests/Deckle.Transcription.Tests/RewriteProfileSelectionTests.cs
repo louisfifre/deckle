@@ -63,73 +63,83 @@ public sealed class RewriteProfileSelectionTests
         Profiles =
         [
             new RewriteProfile { Id = "base", Name = "Base" },
-            new RewriteProfile { Id = "short", Name = "Short", AutoSelect = true, AutoSelectFromMinutes = 3 },
-            new RewriteProfile { Id = "long", Name = "Long", AutoSelect = true, AutoSelectFromMinutes = 15 },
-            new RewriteProfile { Id = "off", Name = "Off", AutoSelect = false, AutoSelectFromMinutes = 1 },
+            new RewriteProfile { Id = "short", Name = "Short" },
+            new RewriteProfile { Id = "long", Name = "Long" },
+            new RewriteProfile { Id = "other", Name = "Other" },
         ],
+        LengthSwitch = new LengthSwitchSettings
+        {
+            Enabled = true,
+            Steps =
+            [
+                new LengthStep { FromChars = 2000, ProfileId = "short" },
+                new LengthStep { FromChars = 10000, ProfileId = "long" },
+            ],
+        },
     };
 
     [Theory]
-    [InlineData(3 * 60, "short")]
-    [InlineData(14 * 60 + 59, "short")]
-    [InlineData(15 * 60, "long")]
-    [InlineData(90 * 60, "long")]
-    public void TheHighestThresholdReachedChoosesTheProfile(double seconds, string expectedId)
+    [InlineData(2000, "short")]
+    [InlineData(9999, "short")]
+    [InlineData(10000, "long")]
+    [InlineData(60000, "long")]
+    public void TheHighestStepReachedChoosesTheProfile(int chars, string expectedId)
     {
-        Assert.Equal(expectedId, RewriteProfileSelection.ForDictation(Ladder("base"), seconds)?.Id);
+        Assert.Equal(expectedId, RewriteProfileSelection.ForDictation(Ladder("base"), chars)?.Id);
     }
 
     [Fact]
-    public void UnderEveryThresholdTheActiveProfileApplies()
+    public void BelowTheFirstStepTheActiveProfileApplies()
     {
-        Assert.Equal("base", RewriteProfileSelection.ForDictation(Ladder("base"), 2 * 60)?.Id);
+        Assert.Equal("base", RewriteProfileSelection.ForDictation(Ladder("base"), 1999)?.Id);
     }
 
     [Fact]
-    public void UnderEveryThresholdWithoutActiveProfileTheTranscriptStaysRaw()
+    public void BelowTheFirstStepWithoutActiveProfileTheTranscriptStaysRaw()
     {
-        Assert.Null(RewriteProfileSelection.ForDictation(Ladder(), 2 * 60));
+        Assert.Null(RewriteProfileSelection.ForDictation(Ladder(), 1999));
     }
 
     [Fact]
-    public void AProfileWithAutoSelectOffIsNeverChosenByLength()
+    public void ALadderSwitchedOffNeverChooses()
     {
-        Assert.Null(RewriteProfileSelection.ForDictation(Ladder(), 2 * 60));
-        Assert.NotEqual("off", RewriteProfileSelection.ForDictation(Ladder(), 60 * 60)?.Id);
+        var settings = Ladder("base");
+        settings.LengthSwitch.Enabled = false;
+
+        Assert.Equal("base", RewriteProfileSelection.ForDictation(settings, 60000)?.Id);
     }
 
     [Fact]
-    public void OnATieTheFirstProfileInTheListWins()
+    public void AStepWhoseProfileWasDeletedHandsOverToTheStepBelow()
     {
-        var settings = Ladder();
-        settings.Profiles[3].AutoSelect = true;
-        settings.Profiles[3].AutoSelectFromMinutes = 15;
+        var settings = Ladder("base");
+        settings.Profiles.RemoveAll(p => p.Id == "long");
 
-        Assert.Equal("long", RewriteProfileSelection.ForDictation(settings, 20 * 60)?.Id);
+        Assert.Equal("short", RewriteProfileSelection.ForDictation(settings, 60000)?.Id);
     }
 
     [Fact]
-    public void AnUnknownLengthIgnoresTheThresholds()
+    public void AnUnknownLengthIgnoresTheLadder()
     {
-        Assert.Equal("base", RewriteProfileSelection.ForDictation(Ladder("base"), sentAudioSec: null)?.Id);
-        Assert.Null(RewriteProfileSelection.ForDictation(Ladder(), sentAudioSec: null));
+        Assert.Equal("base", RewriteProfileSelection.ForDictation(Ladder("base"), rawChars: null)?.Id);
+        Assert.Null(RewriteProfileSelection.ForDictation(Ladder(), rawChars: null));
     }
 
     [Fact]
     public void AProfileShortcutWinsOverLengthAndHoldsWithRewritingOff()
     {
         var settings = Ladder("base");
-        Assert.Equal("off", RewriteProfileSelection.ForDictation(settings, 60 * 60, "off")?.Id);
+        Assert.Equal("other", RewriteProfileSelection.ForDictation(settings, 60000, "other")?.Id);
 
         settings.Enabled = false;
-        Assert.Equal("off", RewriteProfileSelection.ForDictation(settings, 60 * 60, "off")?.Id);
-        Assert.Null(RewriteProfileSelection.ForDictation(settings, 60 * 60));
+        Assert.Equal("other", RewriteProfileSelection.ForDictation(settings, 60000, "other")?.Id);
+        Assert.Null(RewriteProfileSelection.ForDictation(settings, 60000));
     }
 
     [Fact]
     public void AShortcutToADeletedProfileFallsBackToTheOrdinaryChoice()
     {
-        Assert.Equal("long", RewriteProfileSelection.ForDictation(Ladder("base"), 20 * 60, "gone")?.Id);
+        Assert.Equal("long", RewriteProfileSelection.ForDictation(Ladder("base"), 20000, "gone")?.Id);
     }
 
     [Fact]

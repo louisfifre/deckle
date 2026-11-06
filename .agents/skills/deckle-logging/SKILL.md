@@ -2,7 +2,7 @@
 name: deckle-logging
 description: Use when you add or change an observation point in Deckle code, or write code that starts, skips or abandons work, to write what a person can read and act on later, from a machine they cannot reach.
 metadata:
-  version: "1.1"
+  version: "1.2"
 ---
 
 ## Why
@@ -21,4 +21,4 @@ A degradation that repeats is one incident, closed by one recovery. A loop that 
 
 A line describes the machine: identifiers, counts, durations, paths relative to a known root, and from a provider that reads Home the error type and code. What the person said, typed, captured or keeps in Home stays out, as does any secret.
 
-Every term a person filters on is spelled one way across providers and lives in its enum.
+Every term a person filters on is spelled one way across providers and lives in its enum. Every measure has one unit and one precision, named by its suffix, so that it filters the same way everywhere.
