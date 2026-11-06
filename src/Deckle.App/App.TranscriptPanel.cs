@@ -1,12 +1,15 @@
 using Deckle.Hud;
+using Deckle.Transcription;
 
 namespace Deckle.App;
 
 // Live transcript panel wiring. The panel follows the HUD rather than owning a
-// second state machine: a take opens when the engine starts recording, each
-// transcribed utterance is appended, the take closes when the transcription
-// finishes, and the panel leaves when the HUD leaves. Engine events arrive on
-// background threads; the panel marshals every call to its UI thread.
+// second state machine: a take opens when the engine starts recording, every
+// TranscriptChanged snapshot replaces its text, the take closes when the
+// transcription finishes, the panel leaves when the HUD leaves and comes back
+// when the HUD does mid-take (the paste hides the HUD, "Pasted" shows it
+// again). Engine events arrive on background threads; the panel marshals every
+// call to its UI thread.
 public partial class App
 {
     private TranscriptPanelWindow? _transcriptPanel;
@@ -19,7 +22,8 @@ public partial class App
 
         hud.MainHudVisibilityChanged += (_, visible) =>
         {
-            if (!visible) panel.Hide();
+            if (visible) panel.ShowAgain();
+            else panel.Hide();
         };
 
         // No engine when speech is not provisioned: the panel stays hidden.
@@ -30,7 +34,8 @@ public partial class App
         {
             if (engine.IsRecording) panel.BeginTake();
         };
-        engine.UtteranceTranscribed += u => panel.Append(u.Text, u.EndedOnSilence);
+        engine.TranscriptChanged += snapshot =>
+            panel.SetText(snapshot.Text, snapshot.Kind == TranscriptChangeKind.Revised);
         engine.TranscriptionFinished += _ => panel.EndTake();
     }
 }

@@ -223,16 +223,16 @@ public sealed class DeckleHudSource : DeckleEventSource
 
     // ─── Live transcript panel visibility ──────────────────────────────
     //
-    // Content-free by design: the side and the utterance count, never the
-    // transcript text.
+    // Content-free by design: the side and the length of the text on screen,
+    // never the transcript text.
     [Event(EvtTranscriptPanelVisibilityChanged,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "shown={0} | side={1} | utterances={2}")]
-    public void TranscriptPanelVisibilityChanged(bool shown, string side, int utterances)
+           Message = "shown={0} | side={1} | chars={2}")]
+    public void TranscriptPanelVisibilityChanged(bool shown, string side, int chars)
     {
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtTranscriptPanelVisibilityChanged, shown, side, utterances);
+        WriteEvent(EvtTranscriptPanelVisibilityChanged, shown, side, chars);
     }
 
     // ─── Fade-in ────────────────────────────────────────────────────────

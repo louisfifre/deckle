@@ -50,7 +50,7 @@ public sealed class DeckleHudSourceTests : IDisposable
     {
         using var listener = new TestEventListener("Deckle-Hud");
 
-        DeckleHudSource.Log.TranscriptPanelVisibilityChanged(shown: true, side: "Right", utterances: 3);
+        DeckleHudSource.Log.TranscriptPanelVisibilityChanged(shown: true, side: "Right", chars: 3);
 
         var ev = Assert.Single(listener.Events);
         Assert.Equal(DeckleHudSource.EvtTranscriptPanelVisibilityChanged, ev.EventId);
