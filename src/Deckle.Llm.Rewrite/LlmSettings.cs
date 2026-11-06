@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Deckle.Catalog;
 using Deckle.Llm;
@@ -79,15 +80,25 @@ public sealed class LengthSwitchSettings
     // threshold.
     public const int CharsPerMinute = 700;
 
-    // About 45 seconds to about 45 minutes: tight while a little more text
-    // changes the nature of a dictation, coarser beyond.
-    public static readonly IReadOnlyList<int> StopsChars =
-        [500, 750, 1000, 1500, 2000, 3000, 4000, 5000, 7500, 10000, 15000, 20000, 30000];
+    // A threshold is typed in hundreds of characters, about nine seconds of
+    // speech, the finest difference a person picking a length means. From
+    // one hundred to about forty-five minutes.
+    public const int GrainChars = 100;
+    public const int MinChars = GrainChars;
+    public const int MaxChars = 30000;
 
     public bool Enabled { get; set; }
 
-    // Sorted by FromChars, strictly increasing; each one of StopsChars.
+    // Sorted by FromChars, strictly increasing; each one a multiple of
+    // GrainChars between MinChars and MaxChars.
     public List<LengthStep> Steps { get; set; } = new();
+
+    // The nearest threshold on the grain, within the range.
+    public static int Snap(double chars)
+    {
+        int rounded = (int)Math.Round(chars / GrainChars, MidpointRounding.AwayFromZero) * GrainChars;
+        return Math.Clamp(rounded, MinChars, MaxChars);
+    }
 }
 
 // Legacy duration-rule shape, retained so existing settings deserialize without

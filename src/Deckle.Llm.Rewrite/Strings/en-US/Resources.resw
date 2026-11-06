@@ -332,16 +332,16 @@
     <value>Rewrites a longer dictation with another profile. Below the first step, the rewrite profile above applies. To rewrite only past a certain length, set that profile to (None) and add a step at that length. A dictation rewritten while you speak keeps the profile it started with.</value>
   </data>
   <data name="LlmLengthStep_Header" xml:space="preserve">
-    <value>From</value>
+    <value>From (characters)</value>
   </data>
-  <data name="LlmLengthStep_Stop_Format" xml:space="preserve">
-    <value>{0} characters, about {1} min</value>
+  <data name="LlmLengthStep_Minutes_Format" xml:space="preserve">
+    <value>About {0} min of speech</value>
   </data>
-  <data name="LlmLengthStep_StopUnderMinute_Format" xml:space="preserve">
-    <value>{0} characters, under a minute</value>
+  <data name="LlmLengthStep_UnderMinute" xml:space="preserve">
+    <value>Under a minute of speech</value>
   </data>
   <data name="LlmLengthStep_LengthName" xml:space="preserve">
-    <value>Length</value>
+    <value>Length in characters</value>
   </data>
   <data name="LlmLengthStep_ProfileName" xml:space="preserve">
     <value>Profile</value>

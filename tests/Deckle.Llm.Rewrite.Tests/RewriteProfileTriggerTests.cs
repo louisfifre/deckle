@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Text.Json;
 using Deckle.Catalog;
 using Xunit;
@@ -68,8 +69,8 @@ public sealed class RewriteProfileTriggerTests
 
         Assert.True(read.LengthSwitch.Enabled);
         Assert.Collection(read.LengthSwitch.Steps,
-            step => { Assert.Equal(2000, step.FromChars); Assert.Equal("c", step.ProfileId); },
-            step => { Assert.Equal(10000, step.FromChars); Assert.Equal("b", step.ProfileId); });
+            step => { Assert.Equal(3 * 700, step.FromChars); Assert.Equal("c", step.ProfileId); },
+            step => { Assert.Equal(15 * 700, step.FromChars); Assert.Equal("b", step.ProfileId); });
         Assert.All(read.Profiles, profile => Assert.False(profile.AutoSelect));
 
         Assert.False(LlmSettingsMigrations.Apply(read));
@@ -98,45 +99,86 @@ public sealed class RewriteProfileTriggerTests
         Assert.False(read.Profiles[1].HotkeyEnabled);
     }
 
-    // 4 and 5 minutes both snap to 3,000 characters: the second moves up a
-    // stop instead of losing its step.
+    // A length typed in the field is any hundred, not one of a few presets:
+    // the next load keeps it as it is.
     [Fact]
-    public void TwoThresholdsOnOneStopBothKeepAStep()
+    public void ATypedLengthSurvivesTheNextLoad()
     {
         var ladder = new LengthSwitchSettings
         {
             Steps =
             [
-                new LengthStep { FromChars = 4 * 700, ProfileId = "four" },
-                new LengthStep { FromChars = 5 * 700, ProfileId = "five" },
+                new LengthStep { FromChars = 2300, ProfileId = "a" },
+                new LengthStep { FromChars = 2400, ProfileId = "b" },
+                new LengthStep { FromChars = 17800, ProfileId = "c" },
+            ],
+        };
+
+        Assert.False(LlmSettingsMigrations.NormalizeLadder(ladder));
+
+        Assert.Equal([2300, 2400, 17800], ladder.Steps.Select(step => step.FromChars));
+    }
+
+    // Two thresholds on one value: the second moves just above the first
+    // instead of losing its step.
+    [Fact]
+    public void TwoThresholdsOnOneValueBothKeepAStep()
+    {
+        var ladder = new LengthSwitchSettings
+        {
+            Steps =
+            [
+                new LengthStep { FromChars = 2000, ProfileId = "first" },
+                new LengthStep { FromChars = 2040, ProfileId = "second" },
             ],
         };
 
         LlmSettingsMigrations.NormalizeLadder(ladder);
 
         Assert.Collection(ladder.Steps,
-            step => { Assert.Equal(3000, step.FromChars); Assert.Equal("four", step.ProfileId); },
-            step => { Assert.Equal(4000, step.FromChars); Assert.Equal("five", step.ProfileId); });
+            step => { Assert.Equal(2000, step.FromChars); Assert.Equal("first", step.ProfileId); },
+            step => { Assert.Equal(2100, step.FromChars); Assert.Equal("second", step.ProfileId); });
     }
 
     [Fact]
-    public void TheLadderIsKeptOnStopsStrictlyIncreasing()
+    public void TheLadderIsKeptOnTheGrainWithinRangeStrictlyIncreasing()
     {
         var ladder = new LengthSwitchSettings
         {
             Steps =
             [
-                new LengthStep { FromChars = 10100, ProfileId = "x" },
-                new LengthStep { FromChars = 1900, ProfileId = "y" },
-                new LengthStep { FromChars = 2100, ProfileId = "z" },
+                new LengthStep { FromChars = 10149, ProfileId = "x" },
+                new LengthStep { FromChars = 1950, ProfileId = "y" },
+                new LengthStep { FromChars = 40, ProfileId = "z" },
+                new LengthStep { FromChars = 99999, ProfileId = "w" },
             ],
         };
 
         Assert.True(LlmSettingsMigrations.NormalizeLadder(ladder));
 
         Assert.Collection(ladder.Steps,
+            step => { Assert.Equal(LengthSwitchSettings.MinChars, step.FromChars); Assert.Equal("z", step.ProfileId); },
             step => { Assert.Equal(2000, step.FromChars); Assert.Equal("y", step.ProfileId); },
-            step => { Assert.Equal(3000, step.FromChars); Assert.Equal("z", step.ProfileId); },
-            step => { Assert.Equal(10000, step.FromChars); Assert.Equal("x", step.ProfileId); });
+            step => { Assert.Equal(10100, step.FromChars); Assert.Equal("x", step.ProfileId); },
+            step => { Assert.Equal(LengthSwitchSettings.MaxChars, step.FromChars); Assert.Equal("w", step.ProfileId); });
+    }
+
+    // Only a step pushed past the maximum by the one below it is lost.
+    [Fact]
+    public void AStepPushedPastTheMaximumIsDropped()
+    {
+        var ladder = new LengthSwitchSettings
+        {
+            Steps =
+            [
+                new LengthStep { FromChars = LengthSwitchSettings.MaxChars, ProfileId = "top" },
+                new LengthStep { FromChars = 40000, ProfileId = "over" },
+            ],
+        };
+
+        LlmSettingsMigrations.NormalizeLadder(ladder);
+
+        LengthStep kept = Assert.Single(ladder.Steps);
+        Assert.Equal("top", kept.ProfileId);
     }
 }

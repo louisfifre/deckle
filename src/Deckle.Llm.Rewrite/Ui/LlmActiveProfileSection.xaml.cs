@@ -21,9 +21,9 @@ namespace Deckle.Llm.Rewrite;
 //
 // The ladder is one relation between profiles, so it lives here rather than
 // in each profile: a threshold only means something against the others, and
-// the steps can never overlap. Each step's length list offers only the stops
-// between its neighbours, so a step is bounded by them rather than pushing
-// one out of the ladder.
+// the steps can never overlap. Each step's length field is bounded by its
+// neighbours, so a step stops short of them rather than pushing one out of
+// the ladder.
 
 public sealed partial class LlmActiveProfileSection : UserControl
 {
@@ -38,6 +38,15 @@ public sealed partial class LlmActiveProfileSection : UserControl
     private const string Module = "Deckle.Llm.Rewrite";
 
     private bool _loading;
+
+    // The length field of each step card, in ladder order. A committed length
+    // moves its neighbours' bounds in place: rebuilding the cards would pull
+    // the field out from under the pointer between two clicks on its arrows.
+    private readonly List<NumberBox> _lengthBoxes = new();
+
+    // Set while code writes a length field, so its ValueChanged is not taken
+    // for the person's edit.
+    private bool _syncingLengths;
 
     public LlmActiveProfileSection()
     {
@@ -118,67 +127,125 @@ public sealed partial class LlmActiveProfileSection : UserControl
         RebuildSteps();
     }
 
-    // The next stop after the last step, taken by the first profile not yet
-    // in the ladder other than the rewrite profile (else the first profile).
+    // A new step lands at twice the last one, taken by the first profile not
+    // yet in the ladder other than the rewrite profile (else the first
+    // profile). Doubling keeps the steps growing apart as dictations
+    // lengthen; the field moves it from there.
     private static bool AddStep(LengthSwitchSettings ladder)
     {
-        if (NextFreeStop(ladder) is not { } stop) return false;
+        if (NextStepChars(ladder) is not { } chars) return false;
         var s = LlmSettingsService.Instance.Current;
         if (s.Profiles.Count == 0) return false;
 
         RewriteProfile profile = s.Profiles.FirstOrDefault(p =>
                 p.Id != s.ActiveProfileId && !ladder.Steps.Any(step => step.ProfileId == p.Id))
             ?? s.Profiles[0];
-        ladder.Steps.Add(new LengthStep { FromChars = stop, ProfileId = profile.Id });
+        ladder.Steps.Add(new LengthStep { FromChars = chars, ProfileId = profile.Id });
         return true;
     }
 
-    private static int? NextFreeStop(LengthSwitchSettings ladder)
+    private static int? NextStepChars(LengthSwitchSettings ladder)
     {
-        IReadOnlyList<int> stops = LengthSwitchSettings.StopsChars;
-        if (ladder.Steps.Count == 0) return LlmSettingsMigrations.NearestStop(FirstStepChars);
+        if (ladder.Steps.Count == 0) return FirstStepChars;
         int last = ladder.Steps[^1].FromChars;
-        foreach (int stop in stops)
-            if (stop > last) return stop;
-        return null;
+        if (last >= LengthSwitchSettings.MaxChars) return null;
+        return Math.Min(last * 2, LengthSwitchSettings.MaxChars);
     }
 
     private void RebuildSteps()
     {
         var s = LlmSettingsService.Instance.Current;
-        List<LengthStep> steps = s.LengthSwitch.Steps;
 
         StepsHost.Children.Clear();
-        for (int i = 0; i < steps.Count; i++)
-        {
-            int below = i > 0 ? steps[i - 1].FromChars : 0;
-            int above = i + 1 < steps.Count ? steps[i + 1].FromChars : int.MaxValue;
-            StepsHost.Children.Add(BuildStepCard(s, steps[i], below, above));
-        }
+        _lengthBoxes.Clear();
+        foreach (LengthStep step in s.LengthSwitch.Steps)
+            StepsHost.Children.Add(BuildStepCard(s, step));
 
+        UpdateLengthBounds();
         ApplyLadderState();
     }
 
-    // "From [2,000 characters, about 3 min] [Affinage] [delete]". The length
-    // list offers only the stops between the neighbouring steps.
-    private SettingsCard BuildStepCard(LlmSettings s, LengthStep step, int below, int above)
+    // Each field stops one grain short of its neighbours, so the steps stay
+    // strictly increasing whatever is typed. A step's bounds always hold its
+    // own value, so moving them never changes it.
+    private void UpdateLengthBounds()
     {
-        var lengthCombo = new ComboBox { MinWidth = 240, VerticalAlignment = VerticalAlignment.Center };
-        AutomationProperties.SetName(lengthCombo, Loc.GetFrom(Module, "LlmLengthStep_LengthName"));
-        var allowed = LengthSwitchSettings.StopsChars.Where(stop => stop > below && stop < above).ToList();
-        if (!allowed.Contains(step.FromChars)) allowed.Add(step.FromChars);
-        allowed.Sort();
-        foreach (int stop in allowed)
-            lengthCombo.Items.Add(new ComboBoxItem { Content = FormatStop(stop), Tag = stop });
-        lengthCombo.SelectedIndex = allowed.IndexOf(step.FromChars);
-        lengthCombo.SelectionChanged += (_, _) =>
+        List<LengthStep> steps = LlmSettingsService.Instance.Current.LengthSwitch.Steps;
+        _syncingLengths = true;
+        try
         {
-            if (lengthCombo.SelectedItem is not ComboBoxItem { Tag: int stop } || stop == step.FromChars) return;
-            step.FromChars = stop;
+            for (int i = 0; i < _lengthBoxes.Count && i < steps.Count; i++)
+            {
+                _lengthBoxes[i].Minimum = i > 0
+                    ? steps[i - 1].FromChars + LengthSwitchSettings.GrainChars
+                    : LengthSwitchSettings.MinChars;
+                _lengthBoxes[i].Maximum = i + 1 < steps.Count
+                    ? steps[i + 1].FromChars - LengthSwitchSettings.GrainChars
+                    : LengthSwitchSettings.MaxChars;
+            }
+        }
+        finally { _syncingLengths = false; }
+    }
+
+    // "From (characters) [2000] [Affinage] [delete]", the spoken duration in
+    // the description. The duration is a legend rather than a second field:
+    // it is an estimate (CharsPerMinute), and a legend under the header keeps
+    // every step's fields at the same edge, where text beside the field would
+    // shift the profile list by its own width.
+    private SettingsCard BuildStepCard(LlmSettings s, LengthStep step)
+    {
+        var card = new SettingsCard
+        {
+            Header = Loc.GetFrom(Module, "LlmLengthStep_Header"),
+            Description = FormatSpokenLength(step.FromChars),
+        };
+
+        var lengthBox = new NumberBox
+        {
+            Value = step.FromChars,
+            SmallChange = LengthSwitchSettings.GrainChars,
+            LargeChange = LengthSwitchSettings.GrainChars * 10,
+            // Arrows on hover and focus, in a flyout that pushes no layout.
+            SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
+            ValidationMode = NumberBoxValidationMode.InvalidInputOverwritten,
+            MinWidth = 96,
+            VerticalAlignment = VerticalAlignment.Center,
+            // Digits only, no grouping, as every number field of the app.
+            NumberFormatter = new Windows.Globalization.NumberFormatting.DecimalFormatter
+            {
+                IntegerDigits = 1,
+                FractionDigits = 0,
+                IsGrouped = false,
+            },
+        };
+        AutomationProperties.SetName(lengthBox, Loc.GetFrom(Module, "LlmLengthStep_LengthName"));
+        _lengthBoxes.Add(lengthBox);
+
+        // ValueChanged on a NumberBox is the commit (Enter, focus loss, an
+        // arrow click), the end of the gesture, so it writes at once.
+        lengthBox.ValueChanged += (_, _) =>
+        {
+            if (_syncingLengths) return;
+            // A cleared field gives NaN: the stored length comes back rather
+            // than an empty field. A typed figure is kept on the grain and
+            // between the neighbours, here rather than trusting the control.
+            int chars = double.IsNaN(lengthBox.Value)
+                ? step.FromChars
+                : Math.Clamp(LengthSwitchSettings.Snap(lengthBox.Value),
+                    (int)lengthBox.Minimum, (int)lengthBox.Maximum);
+            if (lengthBox.Value != chars)
+            {
+                _syncingLengths = true;
+                try { lengthBox.Value = chars; }
+                finally { _syncingLengths = false; }
+            }
+            if (chars == step.FromChars) return;
+
+            step.FromChars = chars;
+            card.Description = FormatSpokenLength(chars);
             LlmSettingsService.Instance.Save();
-            // The neighbours' lists depend on this value; rebuilt after the
-            // combo has finished its own selection change.
-            DispatcherQueue.TryEnqueue(RebuildSteps);
+            UpdateLengthBounds();
+            ApplyLadderState();
         };
 
         var profileCombo = new ComboBox { MinWidth = 160, VerticalAlignment = VerticalAlignment.Center };
@@ -209,26 +276,22 @@ public sealed partial class LlmActiveProfileSection : UserControl
         };
 
         var row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
-        row.Children.Add(lengthCombo);
+        row.Children.Add(lengthBox);
         row.Children.Add(profileCombo);
         row.Children.Add(remove);
-
-        return new SettingsCard
-        {
-            Header = Loc.GetFrom(Module, "LlmLengthStep_Header"),
-            Content = row,
-        };
+        card.Content = row;
+        return card;
     }
 
-    // The spoken duration beside the count, since a person judges a
-    // dictation by how long they spoke (LengthSwitchSettings.CharsPerMinute).
-    internal static string FormatStop(int chars)
+    // The spoken duration of a length, since a person judges a dictation by
+    // how long they spoke (LengthSwitchSettings.CharsPerMinute).
+    internal static string FormatSpokenLength(int chars)
     {
-        string count = chars.ToString("N0", CultureInfo.CurrentCulture);
         if (chars < LengthSwitchSettings.CharsPerMinute)
-            return string.Format(Loc.GetFrom(Module, "LlmLengthStep_StopUnderMinute_Format"), count);
+            return Loc.GetFrom(Module, "LlmLengthStep_UnderMinute");
         int minutes = (int)Math.Round(chars / (double)LengthSwitchSettings.CharsPerMinute);
-        return string.Format(Loc.GetFrom(Module, "LlmLengthStep_Stop_Format"), count, minutes);
+        return string.Format(CultureInfo.CurrentCulture,
+            Loc.GetFrom(Module, "LlmLengthStep_Minutes_Format"), minutes);
     }
 
     // Never greyed for batch rewriting: that setting only takes effect on a
@@ -240,7 +303,7 @@ public sealed partial class LlmActiveProfileSection : UserControl
         LengthSwitchSettings ladder = LlmSettingsService.Instance.Current.LengthSwitch;
 
         StepsPanel.Visibility = LengthSwitchToggle.IsOn ? Visibility.Visible : Visibility.Collapsed;
-        AddStepButton.IsEnabled = NextFreeStop(ladder) is not null
+        AddStepButton.IsEnabled = NextStepChars(ladder) is not null
             && LlmSettingsService.Instance.Current.Profiles.Count > 0;
     }
 
