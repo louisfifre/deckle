@@ -2273,6 +2273,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
 │   │   ├── DictationBatcherTests.cs
 │   │   ├── DictationBatchRewriterTests.cs
+│   │   ├── LlmSettingsBugNotes.md
+│   │   ├── LlmSettingsFileTests.cs
 │   │   ├── LlmSettingsMigrationsTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── ParagraphDraftTests.cs

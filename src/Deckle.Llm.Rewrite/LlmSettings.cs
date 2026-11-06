@@ -127,7 +127,7 @@ public sealed class BatchRewriteSettings
     public int ThresholdChars { get; set; } = 600;
 }
 
-public sealed class LlmSettings
+public sealed class LlmSettings : System.Text.Json.Serialization.IJsonOnDeserializing
 {
     public bool Enabled { get; set; } = true;
 
@@ -142,6 +142,14 @@ public sealed class LlmSettings
     // settings.json deserializes without loss; RepairProviders copies it into
     // the Ollama provider once. Never read at runtime.
     public string OllamaEndpoint { get; set; } = "http://localhost:11434/api/generate";
+
+    // A file read from disk starts with no providers, not with the three
+    // defaults below: System.Text.Json keeps a property's initializer when the
+    // key is absent, so a file from the Ollama-only era (no `providers` key)
+    // would otherwise look already migrated, and RepairProviders would never
+    // carry its custom OllamaEndpoint into the Ollama provider. Empty means
+    // "the file had none"; RepairProviders then seeds them.
+    void System.Text.Json.Serialization.IJsonOnDeserializing.OnDeserializing() => Providers = new();
 
     // Where a model is served from. A profile names one by Id. These defaults
     // are the three shapes the market has (a local Ollama, a chat-completions
