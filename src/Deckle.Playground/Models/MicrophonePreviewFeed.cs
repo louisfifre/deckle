@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using Deckle.Audio;
 using Deckle.Transcription;
 
@@ -11,42 +10,30 @@ namespace Deckle.Playground;
 // segmenter (UtteranceProgressMeter). It records nothing: the capture keeps no
 // audio (RetainsAudio) and no meter or telemetry event is emitted for it.
 //
-// Threading. Start and Stop belong to the UI thread. The capture runs on a
-// thread of its own, which raises every level, and all the sinks are called
-// from it, as the live HUD's are. One lock (_gate) orders them against Stop:
-// a sink call holds it, and Stop takes it to close the run, so once Stop
-// returns no sink is running and none will run again. That is what lets the
-// caller change the preview's state right after Stop with no late level
-// landing on the new state.
-//
-// A run that is stopped does not wait for the device to come back. The next
-// run does: it waits for the previous run's thread to finish (bounded by
-// DeviceReleaseTimeout) before it opens, so a quick Stop then Start never
-// asks waveIn for the device while the previous take still holds it.
+// The microphone itself, its thread per run, its ordering of the sinks against
+// Stop and its wait for the device between two runs, is Deckle.Audio's
+// MicrophoneLevelFeed. What is the Playground's own is the gauge beside it:
+// every sink below runs under that feed's lock, so once Stop returns no level
+// and no gauge reaches the preview, and the caller can change the preview's
+// state right after Stop with no late level landing on the new state.
 //
 // Whether waveIn lets this open while a live dictation holds the microphone is
 // not known from the code. Both outcomes are handled the same way: an open
 // that fails is reported to onFailed and the caller moves to the simulation.
 internal sealed class MicrophonePreviewFeed
 {
-    // Long enough for the capture's own drain after a stop, short enough that a
-    // device that never comes back shows as the open failing and not as a
-    // preview that waits for ever.
-    internal static readonly TimeSpan DeviceReleaseTimeout = TimeSpan.FromSeconds(3);
-
-    private readonly Func<IMicrophoneCapture> _createCapture;
+    private readonly MicrophoneLevelFeed _feed;
     private readonly Func<int> _deviceId;
     private readonly Func<EnergySegmenterSettings> _segmenterSettings;
     private readonly Func<double> _voiceLevelDbfs;
     private readonly Func<int> _minSpeechMs;
     private readonly Action<float> _onLevel;
     private readonly Action<UtteranceProgress> _onProgress;
-    private readonly Action<MicrophonePreviewFailure> _onFailed;
 
-    // Guards every Run field below and orders the sinks against Stop.
-    private readonly object _gate = new();
-    private Run? _current;
-    private Thread? _lastThread;
+    // Written on the UI thread while no run is open, or under the feed's lock
+    // through RestartOpenRun; read by the sinks under that lock.
+    private UtteranceProgressMeter? _meter;
+    private PreviewHost? _host;
 
     // createCapture, deviceId, segmenterSettings, voiceLevelDbfs and minSpeechMs
     // are read at each Start, as a dictation reads them when it begins. onLevel and
@@ -62,14 +49,22 @@ internal sealed class MicrophonePreviewFeed
         Action<UtteranceProgress> onProgress,
         Action<MicrophonePreviewFailure> onFailed)
     {
-        _createCapture = createCapture;
         _deviceId = deviceId;
         _segmenterSettings = segmenterSettings;
         _voiceLevelDbfs = voiceLevelDbfs;
         _minSpeechMs = minSpeechMs;
         _onLevel = onLevel;
         _onProgress = onProgress;
-        _onFailed = onFailed;
+        _feed = new MicrophoneLevelFeed(
+            createCapture,
+            host: () => _host!,
+            onLevel: Deliver,
+            onFailed: failure => onFailed(new MicrophonePreviewFailure(failure)),
+            // Where a take stands before its first level, published before the
+            // first one, as the engine does.
+            onOpened: () => _onProgress(_meter!.Progress),
+            // The gauge is dropped as the engine drops it when its capture ends.
+            onClosed: () => _onProgress(default));
     }
 
     // Opens the microphone. When it is already open, the take starts over on the
@@ -77,131 +72,30 @@ internal sealed class MicrophonePreviewFeed
     // does not close and reopen the device each time.
     public void Start()
     {
-        var settings = _segmenterSettings();
         double voiceLevelDbfs = _voiceLevelDbfs();
-        int minSpeechMs = _minSpeechMs();
+        var meter = new UtteranceProgressMeter(_segmenterSettings(), voiceLevelDbfs, _minSpeechMs());
         int device = _deviceId();
 
-        lock (_gate)
-        {
-            if (_current is { } running)
+        if (_feed.RestartOpenRun(() =>
             {
-                running.Meter = new UtteranceProgressMeter(settings, voiceLevelDbfs, minSpeechMs);
-                _onProgress(running.Meter.Progress);
-                return;
-            }
+                _meter = meter;
+                _onProgress(meter.Progress);
+            }))
+            return;
 
-            var run = new Run(
-                new PreviewHost(device, voiceLevelDbfs),
-                new UtteranceProgressMeter(settings, voiceLevelDbfs, minSpeechMs),
-                _lastThread);
-            var thread = new Thread(() => Capture(run))
-            {
-                IsBackground = true,
-                Name = "Deckle.Playground.MicrophonePreview",
-            };
-            _current = run;
-            _lastThread = thread;
-            // Where a take stands before its first level, published before the
-            // first one, as the engine does.
-            _onProgress(run.Meter.Progress);
-            thread.Start();
-        }
+        // No run is open, so no sink reads these until Start opens one.
+        _meter = meter;
+        _host = new PreviewHost(device, voiceLevelDbfs);
+        _feed.Start();
     }
 
-    // Closes the microphone. Final: see the threading note above. The gauge is
-    // dropped as the engine drops it when its capture ends.
-    public void Stop()
-    {
-        lock (_gate)
-        {
-            if (_current is not { } run) return;
-            _current = null;
-            run.Closed = true;
-            _onProgress(default);
-            run.Cancellation.Cancel();
-        }
-    }
+    // Closes the microphone. Final: once it returns, nothing more arrives.
+    public void Stop() => _feed.Stop();
 
-    private void Capture(Run run)
+    private void Deliver(float rms)
     {
-        MicrophonePreviewFailure? failure = null;
-        try
-        {
-            run.Predecessor?.Join(DeviceReleaseTimeout);
-            if (!run.Cancellation.IsCancellationRequested)
-            {
-                using var capture = _createCapture();
-                // Frame stays unsubscribed: the capture then converts no float
-                // buffer, and the level it raises is the RMS the Frame carries.
-                capture.AudioLevel += rms => Deliver(run, rms);
-                CaptureResult result = capture.Record(run.Host, run.Cancellation.Token);
-                failure = FailureOf(result, run.Cancellation.IsCancellationRequested);
-            }
-        }
-        catch (Exception ex)
-        {
-            failure = new MicrophonePreviewFailure(MicrophoneProblem.Faulted, 0, ex.GetType().Name);
-        }
-
-        if (Finish(run) && failure is { } failed)
-            _onFailed(failed);
-    }
-
-    private void Deliver(Run run, float rms)
-    {
-        lock (_gate)
-        {
-            if (run.Closed) return;
-            _onLevel(rms);
-            _onProgress(run.Meter.Push(rms));
-        }
-    }
-
-    // Closes a run the capture ended on its own, and reports whether it was
-    // still open: a run that was stopped has said all it will say.
-    private bool Finish(Run run)
-    {
-        lock (_gate)
-        {
-            bool wasOpen = !run.Closed;
-            if (wasOpen)
-            {
-                run.Closed = true;
-                _onProgress(default);
-            }
-            if (ReferenceEquals(_current, run)) _current = null;
-            // Closed first, so Stop never cancels a disposed source.
-            run.Cancellation.Dispose();
-            return wasOpen;
-        }
-    }
-
-    // The host sets no cap, so the capture returns only when asked to stop or
-    // when it cannot go on.
-    private static MicrophonePreviewFailure? FailureOf(CaptureResult result, bool stopped)
-    {
-        if (result.Outcome == CaptureOutcome.MicError)
-        {
-            var problem = MicrophoneCapture.ClassifyError(result.MmsysErr) switch
-            {
-                MicErrorKind.NotDetected => MicrophoneProblem.NotDetected,
-                MicErrorKind.InUse       => MicrophoneProblem.InUse,
-                _                        => MicrophoneProblem.Unavailable,
-            };
-            return new MicrophonePreviewFailure(problem, result.MmsysErr);
-        }
-        return stopped ? null : new MicrophonePreviewFailure(MicrophoneProblem.Ended);
-    }
-
-    // Guarded fields: Meter (replaced by a restarted take) and Closed.
-    private sealed class Run(PreviewHost host, UtteranceProgressMeter meter, Thread? predecessor)
-    {
-        public PreviewHost Host { get; } = host;
-        public Thread? Predecessor { get; } = predecessor;
-        public CancellationTokenSource Cancellation { get; } = new();
-        public UtteranceProgressMeter Meter { get; set; } = meter;
-        public bool Closed { get; set; }
+        _onLevel(rms);
+        _onProgress(_meter!.Push(rms));
     }
 
     // What a preview takes from the microphone: the configured device, no audio

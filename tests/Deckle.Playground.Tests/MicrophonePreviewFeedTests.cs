@@ -14,6 +14,8 @@ namespace Deckle.Playground.Tests;
 // through a fake capture, so no device is opened: they hold the feed to the
 // segmenter a dictation uses, to what it asks the capture for, and to the
 // promise a caller leans on, that once Stop returns nothing more arrives.
+// The microphone's own discipline (no Frame stream, the wait for the device
+// between two runs) is Deckle.Audio's MicrophoneLevelFeed, tested there.
 [Trait("Category", "unit")]
 public sealed class MicrophonePreviewFeedTests
 {
@@ -80,18 +82,6 @@ public sealed class MicrophonePreviewFeedTests
         Assert.False(host.MicrophoneTelemetryEnabled);
         // A preview must not read as a dictation in the log.
         Assert.NotEqual(((IAudioRecordingHost)new DefaultHost()).RecordingPurpose, host.RecordingPurpose);
-    }
-
-    [Fact]
-    public void ItDoesNotAskForTheFrameStream()
-    {
-        using var h = new Harness();
-        h.Feed.Start();
-        var capture = h.WaitForCapture(0);
-
-        // Unsubscribed, the capture converts no float buffer: the level it
-        // raises is already the RMS the preview needs.
-        Assert.Equal(0, capture.FrameSubscribers);
     }
 
     [Fact]
@@ -204,26 +194,6 @@ public sealed class MicrophonePreviewFeedTests
         capture.Raise(Voiced);
         Assert.Equal(0, h.Progress.Last().CompletedUtterances);
         Assert.Equal(1, h.CaptureCount);
-    }
-
-    [Fact]
-    public void ARestartAfterStopWaitsForTheDeviceToBeReleased()
-    {
-        using var h = new Harness();
-        var first = h.NextCapture(holdDevice: true);
-        h.Feed.Start();
-        h.WaitForCapture(0);
-        h.Feed.Stop();
-
-        h.Feed.Start();
-
-        // The first take still holds the device: the second must not ask for it.
-        Assert.Equal(1, h.CaptureCount);
-        Assert.False(h.TryWaitForCapture(1, TimeSpan.FromMilliseconds(200)));
-
-        first.ReleaseDevice();
-        h.WaitForCapture(1);
-        Assert.True(first.Disposed);
     }
 
     [Fact]

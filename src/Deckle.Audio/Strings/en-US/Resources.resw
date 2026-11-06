@@ -126,11 +126,13 @@
   <data name="RecordingPageHeader.Description" xml:space="preserve">
     <value>Microphone, voice level with its meter, recording length and pre-processing, with a listening test.</value>
   </data>
-  <!-- The first section is the microphone's: the voice level with its meter,
-       the maximum length, the pre-processing (research note P6, 2026-11-06).
-       The key keeps its old name. -->
+  <!-- The first section: the voice level with its meter, the maximum length,
+       the pre-processing (research note P6, 2026-11-06). Titled "Recording",
+       not "Microphone", since it holds more than the microphone's signal and
+       sits right under the Microphone card. Provisional, like every section
+       title of the page. -->
   <data name="RecordingPageRecordingSection.Title" xml:space="preserve">
-    <value>Microphone</value>
+    <value>Recording</value>
   </data>
   <data name="RecordingPageChecksSection.Title" xml:space="preserve">
     <value>Checks</value>
@@ -201,6 +203,9 @@
   <data name="RecordingVoiceMeter_Failure_Ended" xml:space="preserve">
     <value>The microphone stopped. Turn Listen on again.</value>
   </data>
+  <data name="RecordingVoiceMeter_TimedOut" xml:space="preserve">
+    <value>Listen turned itself off after 2 minutes. Turn it on again to keep watching your level.</value>
+  </data>
 
   <!-- Composed maximum-recording-length card (composer label key + Choice option keys) -->
   <data name="RecordingLimitCard.Header" xml:space="preserve">
@@ -263,12 +268,13 @@
   </data>
   <!-- The check's detail line (Loc.Format from RecordingViewModel), one key per
        side of the voice level: {0} raw dBFS, {1} processed dBFS, {2} the margin
-       in whole dB, always positive. Mirrored in Deckle.App's Resources.resw. -->
+       of the loudest tenth of the 50 ms frames, in whole dB, always positive.
+       Mirrored in Deckle.App's Resources.resw. -->
   <data name="RecordingPageMicResultAbove_Format" xml:space="preserve">
-    <value>{0} dBFS → {1} dBFS · {2} dB above your voice level</value>
+    <value>{0} dBFS → {1} dBFS · loudest tenth {2} dB above your voice level</value>
   </data>
   <data name="RecordingPageMicResultBelow_Format" xml:space="preserve">
-    <value>{0} dBFS → {1} dBFS · {2} dB below your voice level</value>
+    <value>{0} dBFS → {1} dBFS · loudest tenth {2} dB below your voice level</value>
   </data>
 
   <!-- Listening test (bespoke cards + InfoBars) -->

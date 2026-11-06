@@ -47,11 +47,15 @@
                               SelectionChanged="AudioInputCombo_SelectionChanged" />
                 </controls:SettingsCard>
 
-                <!-- ── Microphone ──────────────────────────────────────────── -->
-                <!-- What the page sets about the microphone's signal: the voice
-                     level with its meter, the maximum length, the
-                     pre-processing. The section reset spans its three composed
-                     settings; the meter keeps no value. -->
+                <!-- ── Recording ───────────────────────────────────────────── -->
+                <!-- Title provisional: the maintainer names the sections at the
+                     end. "Recording", not "Microphone": the section holds the
+                     maximum length and the pre-processing too, and a second
+                     "Microphone" right under the Microphone card reads twice.
+                     What the page sets about a recording: the voice level with
+                     its meter, the maximum length, the pre-processing. The
+                     section reset spans its three composed settings; the meter
+                     keeps no value. -->
                 <catalog:SettingsSection x:Name="RecordingSection"
                                          x:Uid="RecordingPageRecordingSection"
                                          HasReset="True"

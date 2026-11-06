@@ -378,6 +378,50 @@ public sealed partial class TranscriptionEngine
         }
     }
 
+    // Trims one buffer at its edges only: the samples from the first speech
+    // span's start to the last one's end, pauses in between kept as spoken.
+    // The monolithic take uses it, where TrimSpeech would glue every pause of a
+    // long dictation together and its per-span floor would lose a short word
+    // said after a pause. Returns the slice, empty when Silero found no speech,
+    // or null when the detection failed, reported to the service as TrimSpeech
+    // does. The log lines are TrimSpeech's: kept is the slice's length, so the
+    // inner-gap figure of SpeechTrimBounds reads 0.
+    private float[]? TrimSpeechEdges(SileroVad vad, SileroVadOptions vadOptions, float[] samples, int utteranceIndex)
+    {
+        try
+        {
+            long trimStart = Stopwatch.GetTimestamp();
+            IReadOnlyList<SpeechSegment> segments = vad.DetectSpeech(samples, vadOptions);
+            float[] kept = segments.Count == 0
+                ? Array.Empty<float>()
+                : samples[segments[0].StartSample..segments[^1].EndSample];
+            long trimMs = (long)Stopwatch.GetElapsedTime(trimStart).TotalMilliseconds;
+            DeckleVadSource.Log.SpeechTrimmed(
+                utteranceIndex, samples.Length, kept.Length, segments.Count, trimMs);
+            if (segments.Count > 0)
+            {
+                int inMs = samples.Length / 16;
+                int keptMs = kept.Length / 16;
+                int leadingMs = segments[0].StartSample / 16;
+                int trailingMs = (samples.Length - segments[^1].EndSample) / 16;
+                DeckleVadSource.Log.SpeechTrimBounds(
+                    utteranceIndex, inMs, keptMs, leadingMs, trailingMs,
+                    Math.Max(0, inMs - keptMs - leadingMs - trailingMs));
+            }
+            _vadService.ReportTrimSucceeded();
+            return kept;
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            _vadService.ReportTrimFailure(utteranceIndex, ex);
+            return null;
+        }
+    }
+
     // Drains the utterance channel, transcribing each one as it arrives and
     // accumulating the text. Runs on its own task; the only backend caller at a
     // time. The drainCt check at the top of each iteration is what guarantees a
@@ -481,6 +525,9 @@ public sealed partial class TranscriptionEngine
                 DeckleWhispSource.Log.TranscriptionPreprocessed(
                     processed.InputRmsDbfs, processed.OutputRmsDbfs, processed.MakeupGainDb, processed.OutputPeak);
             }
+            // The full trim, to the speech spans concatenated: an utterance is
+            // short and already cut on a pause, so gluing its spans costs nothing.
+            // The monolithic take trims its edges only (TrimSpeechEdges).
             if (vad is not null)
             {
                 float[]? trimmed = TrimSpeech(vad, vadOptions, samples, u.Index);

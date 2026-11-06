@@ -27,6 +27,11 @@ public sealed partial class RecordingPage : Page
         NavigationCacheMode = NavigationCacheMode.Required;
         // Before LoadAndSync, so the meter's marks follow Load()'s voice level.
         VoiceMeter.ViewModel = ViewModel;
+        // The microphone check and the listening test open the microphone on
+        // their own; Listen closes first, since two waveIn opens of one device
+        // at once are not known to be safe. The page and the view-model live
+        // and die together, so the subscription needs no removal.
+        ViewModel.MicrophoneNeeded += (_, _) => VoiceMeter.Stop();
         ComposeVoiceLevelSection();
         ComposeRecordingLimitSection();
         ComposePreprocessingSection();

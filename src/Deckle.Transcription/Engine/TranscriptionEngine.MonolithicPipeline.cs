@@ -123,14 +123,18 @@ public sealed partial class TranscriptionEngine
             EmitPreprocessedTelemetry(backendAudio);
         }
 
-        // The Silero trim, as the segmented session runs it on each utterance:
-        // the monolithic take is one utterance, index 0, so the log lines read
-        // like the first utterance of a segmented take. It removes the silences
-        // Whisper hallucinates on. A trim failure keeps the untrimmed audio.
+        // The Silero trim, at the edges only: the leading and trailing silence
+        // Whisper hallucinates on go, the pauses inside the take stay. The
+        // segmented session cuts each utterance to its speech spans instead
+        // (TrimSpeech); here that would glue every pause of a long dictation
+        // and its per-span floor would drop a short word said after a pause,
+        // which this path transcribed before the trim existed. The monolithic
+        // take is one utterance, index 0, so the log lines read like the first
+        // utterance of a segmented take. A trim failure keeps the untrimmed audio.
         float[] decodedAudio = backendAudio;
         if (vad is not null)
         {
-            float[]? trimmed = TrimSpeech(vad, vadOptions, backendAudio, utteranceIndex: 0);
+            float[]? trimmed = TrimSpeechEdges(vad, vadOptions, backendAudio, utteranceIndex: 0);
             // A trim that found no speech does not end the take: the whole take
             // is one utterance here, and dropping it would lose what Silero
             // missed with no second chance. The take goes to Whisper untrimmed

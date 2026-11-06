@@ -32,8 +32,10 @@ public static class MicLevelCheck
     private const double SilenceFloorDbfs = -120.0;
 
     // voiceLevelDbfs is the user's voice level (CaptureSettings.VoiceLevelDbfs):
-    // the result says how far the measured level sits above it, so the check
-    // also tells whether the voice clears the level the segmenter cuts on.
+    // the result says how far the loudest tenth of the frames sits above it,
+    // and how many frames clear it, so the check also tells whether the voice
+    // clears the level the segmenter cuts on. Both are read per 50 ms frame,
+    // as the level is applied (MicFrameLevels), not from the capture's average.
     public static MicLevelAssessment Assess(float[] pcm, PreprocessingSettings settings, double voiceLevelDbfs)
     {
         if (pcm is null || pcm.Length == 0)
@@ -59,6 +61,8 @@ public static class MicLevelCheck
           : deficit >= MarginalDeltaDb ? PreprocessingAdvice.Marginal
           :                              PreprocessingAdvice.NotNeeded;
 
+        MicFrameLevelReading frames = MicFrameLevels.Measure(pcm, voiceLevelDbfs);
+
         return new MicLevelAssessment(
             HasSignal:        true,
             RawRmsDbfs:       r.InputRmsDbfs,
@@ -66,7 +70,8 @@ public static class MicLevelCheck
             TargetRmsDbfs:    settings.TargetRmsDbfs,
             MakeupGainDb:     r.MakeupGainDb,
             Advice:           advice,
-            VoiceMarginDb:    r.InputRmsDbfs - voiceLevelDbfs);
+            VoiceMarginDb:    frames.LoudestTenthDbfs - voiceLevelDbfs,
+            VoicedShare:      frames.VoicedShare);
     }
 
     // Nothing usable was captured: no verdict, the silence floor as the level.
@@ -79,7 +84,8 @@ public static class MicLevelCheck
             TargetRmsDbfs:    settings.TargetRmsDbfs,
             MakeupGainDb:     0.0,
             Advice:           PreprocessingAdvice.NotNeeded,
-            VoiceMarginDb:    SilenceFloorDbfs - voiceLevelDbfs);
+            VoiceMarginDb:    SilenceFloorDbfs - voiceLevelDbfs,
+            VoicedShare:      0.0);
 }
 
 // What the check tells the user. NotNeeded ranks first so it is the natural
@@ -93,9 +99,10 @@ public enum PreprocessingAdvice
 
 // The mic-check result. RawRmsDbfs is the captured level; ProcessedRmsDbfs is
 // where the DSP would land it (≈ target when a lift is applied); MakeupGainDb is
-// that lift. VoiceMarginDb is RawRmsDbfs minus the voice level: positive when
-// the voice sits above the level the segmenter cuts on, negative below it.
-// HasSignal is false when nothing usable was captured (mic error or silence) —
+// that lift. VoiceMarginDb is the loudest tenth of the 50 ms frames (their 90th
+// percentile, in dBFS) minus the voice level: positive when the voice sits above
+// the level the segmenter cuts on, negative below it. VoicedShare (0..1) is the
+// share of frames voiced at that level. HasSignal is false when nothing usable was captured (mic error or silence) —
 // the UI then shows a "couldn't read the mic" state, not a verdict.
 public readonly record struct MicLevelAssessment(
     bool HasSignal,
@@ -104,4 +111,5 @@ public readonly record struct MicLevelAssessment(
     double TargetRmsDbfs,
     double MakeupGainDb,
     PreprocessingAdvice Advice,
-    double VoiceMarginDb);
+    double VoiceMarginDb,
+    double VoicedShare);

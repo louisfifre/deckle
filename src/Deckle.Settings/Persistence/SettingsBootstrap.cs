@@ -57,9 +57,12 @@ public static class SettingsBootstrap
         // file is missing the move creates one holding only voiceLevelDbfs,
         // and the dispatch would then skip a legacy "capture" section as
         // "target exists" and lose it.
+        // Only a number moves: a hand-edited string would fail the audio
+        // file's load and lose its device, DSP and cap with it.
         MoveModuleSetting(
             "transcription", ["streaming", "segmenter", "thresholdDbfs"],
-            "audio", "voiceLevelDbfs");
+            "audio", "voiceLevelDbfs",
+            accept: IsNumber);
     }
 
     // Splits the legacy combined settings.json, when there is one, into the
@@ -198,7 +201,8 @@ public static class SettingsBootstrap
         string sourceModuleId,
         string[] sourcePath,
         string targetModuleId,
-        string targetKey)
+        string targetKey,
+        Func<JsonNode, bool>? accept = null)
     {
         string sourceFile = ModuleSettingsFilePath(sourceModuleId);
         if (!File.Exists(sourceFile)) return;
@@ -212,11 +216,14 @@ public static class SettingsBootstrap
                 ? JsonNode.Parse(File.ReadAllText(targetFile)) as JsonObject ?? new JsonObject()
                 : new JsonObject();
 
-            if (!MoveNestedValue(source, sourcePath, target, targetKey)) return;
+            if (!MoveNestedValue(source, sourcePath, target, targetKey, accept)) return;
 
+            File.WriteAllText(sourceFile, source.ToJsonString(_jsonOptions));
+            // A leaf accept turned away reached no target: the target file is
+            // left as it was (not created when missing), and no move is logged.
+            if (target[targetKey] is null) return;
             Directory.CreateDirectory(System.IO.Path.GetDirectoryName(targetFile)!);
             File.WriteAllText(targetFile, target.ToJsonString(_jsonOptions));
-            File.WriteAllText(sourceFile, source.ToJsonString(_jsonOptions));
             DeckleSettingsSource.Log.MigrationDispatched();
             DeckleSettingsSource.Log.MigrationDispatchedDetail(targetKey, targetModuleId);
         }
@@ -230,10 +237,14 @@ public static class SettingsBootstrap
     // The pure half of the move, over parsed documents. Walks sourcePath
     // through nested objects; false when any step is missing or not an object,
     // and then nothing is touched. Otherwise copies the leaf to
-    // target[targetKey] unless that key is already written, removes the leaf
-    // from the source, and returns true.
+    // target[targetKey] unless that key is already written or the leaf fails
+    // accept, removes the leaf from the source, and returns true. A leaf that
+    // fails accept is dropped rather than copied: a hand-edited value of the
+    // wrong type in the target would make the whole target file fail to load
+    // and fall back to its defaults, losing every other value it holds.
     internal static bool MoveNestedValue(
-        JsonObject source, IReadOnlyList<string> sourcePath, JsonObject target, string targetKey)
+        JsonObject source, IReadOnlyList<string> sourcePath, JsonObject target, string targetKey,
+        Func<JsonNode, bool>? accept = null)
     {
         if (sourcePath.Count == 0) return false;
 
@@ -247,12 +258,16 @@ public static class SettingsBootstrap
         string leaf = sourcePath[^1];
         if (parent[leaf] is not JsonNode value) return false;
 
-        if (target[targetKey] is null)
+        if (target[targetKey] is null && (accept is null || accept(value)))
             target[targetKey] = value.DeepClone();
 
         parent.Remove(leaf);
         return true;
     }
+
+    // A JSON number, the only shape a double setting deserializes from.
+    internal static bool IsNumber(JsonNode node)
+        => node.GetValueKind() == JsonValueKind.Number;
 
     private static void RenameModuleSetting(
         string moduleId,

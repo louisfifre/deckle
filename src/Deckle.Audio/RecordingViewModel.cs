@@ -99,10 +99,17 @@ public partial class RecordingViewModel : ObservableObject
     [ObservableProperty]
     public partial string MicResultDetail { get; set; } = "";
 
+    // Raised on the UI thread right before the microphone check or the
+    // listening test opens the microphone, so the page closes whatever else
+    // holds it (the voice meter's Listen). Two waveIn opens of one device at
+    // once are not known to be safe, so the page never tries it.
+    public event EventHandler? MicrophoneNeeded;
+
     [RelayCommand]
     private async Task MeasureMicAsync()
     {
         if (IsMeasuringMic) return;
+        MicrophoneNeeded?.Invoke(this, EventArgs.Empty);
         IsMeasuringMic = true;
         ClearMicResult();
         try
@@ -117,8 +124,9 @@ public partial class RecordingViewModel : ObservableObject
                 return;
             }
 
-            // Raw → processed, then where the voice sits against the voice
-            // level, "above" or "below" by sign. Rounded to whole dB as
+            // Raw → processed (averages over the capture), then where the
+            // loudest tenth of the 50 ms frames sits against the voice level,
+            // which applies per frame, "above" or "below" by sign. Rounded to whole dB as
             // integers, so a margin just under zero never reads -0.
             int margin = (int)Math.Round(a.VoiceMarginDb);
             MicResultDetail = Loc.Format(

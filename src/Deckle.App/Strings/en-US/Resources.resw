@@ -872,10 +872,10 @@
        (Loc.Get / Loc.Format) — duplicated from src/Deckle.Audio/Strings/en-US/
        Resources.resw, which stays the source of truth for wording. -->
   <data name="RecordingPageMicResultAbove_Format" xml:space="preserve">
-    <value>{0} dBFS → {1} dBFS · {2} dB above your voice level</value>
+    <value>{0} dBFS → {1} dBFS · loudest tenth {2} dB above your voice level</value>
   </data>
   <data name="RecordingPageMicResultBelow_Format" xml:space="preserve">
-    <value>{0} dBFS → {1} dBFS · {2} dB below your voice level</value>
+    <value>{0} dBFS → {1} dBFS · loudest tenth {2} dB below your voice level</value>
   </data>
   <data name="RecordingVoiceMeter_Dbfs_Format" xml:space="preserve">
     <value>{0} dBFS</value>
@@ -900,6 +900,9 @@
   </data>
   <data name="RecordingVoiceMeter_Failure_Ended" xml:space="preserve">
     <value>The microphone stopped. Turn Listen on again.</value>
+  </data>
+  <data name="RecordingVoiceMeter_TimedOut" xml:space="preserve">
+    <value>Listen turned itself off after 2 minutes. Turn it on again to keep watching your level.</value>
   </data>
 
   <!-- WhisperPage Reset all dialog -->

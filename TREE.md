@@ -521,6 +521,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Compressor.cs
 │   │   │   ├── HighPassFilter.cs
 │   │   │   ├── Limiter.cs
+│   │   │   ├── MicFrameLevels.cs
 │   │   │   ├── MicLevelCheck.cs
 │   │   │   ├── NoiseGate.cs
 │   │   │   ├── PreprocessingSettings.cs
@@ -547,6 +548,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ListeningTester.cs
 │   │   ├── MicLevelTester.cs
 │   │   ├── MicrophoneCapture.cs
+│   │   ├── MicrophoneLevelFeed.cs
+│   │   ├── MicrophoneLevelFeedFailure.cs
 │   │   ├── ProbeResult.cs
 │   │   ├── RecordingPage.xaml
 │   │   ├── RecordingPage.xaml.cs
@@ -560,7 +563,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── VoiceDetector.cs
 │   │   ├── VoiceLevelMeter.xaml
 │   │   ├── VoiceLevelMeter.xaml.cs
-│   │   ├── VoiceLevelMeterFeed.cs
+│   │   ├── VoiceLevelMeterHost.cs
 │   │   └── VoiceLevelMeterScale.cs
 │   ├── Deckle.Autocorrect/
 │   │   ├── Data/
@@ -1927,6 +1930,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MicLevelCheckBugNotes.md
 │   │   ├── MicLevelCheckTests.cs
 │   │   ├── MicrophoneErrorClassificationTests.cs
+│   │   ├── MicrophoneLevelFeedTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
@@ -1935,7 +1939,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PcmConversionTests.cs
 │   │   ├── TranscriptionPreprocessorTests.cs
 │   │   ├── VoiceDetectorTests.cs
-│   │   ├── VoiceLevelMeterFeedTests.cs
 │   │   ├── VoiceLevelMeterScaleTests.cs
 │   │   ├── WaveInBufferRingBugNotes.md
 │   │   ├── WaveInBufferRingTests.cs

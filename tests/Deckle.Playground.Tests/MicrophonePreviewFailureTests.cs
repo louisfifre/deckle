@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using Deckle.Audio;
 using Xunit;
 
 namespace Deckle.Playground.Tests;
@@ -7,7 +8,8 @@ namespace Deckle.Playground.Tests;
 // The HUD tab tells the person why its Microphone preview gave way to the
 // simulation. These tests hold the sentence to what a reader needs from it:
 // each problem says its own thing, and nothing the machine knows but the
-// person does not need (an exception's type) reaches the window.
+// person does not need (an exception's type) reaches the window. The log
+// spelling of each problem is the feed's, tested in Deckle.Audio.Tests.
 [Trait("Category", "unit")]
 public sealed class MicrophonePreviewFailureTests
 {
@@ -21,15 +23,6 @@ public sealed class MicrophonePreviewFailureTests
 
         Assert.All(reasons, reason => Assert.False(string.IsNullOrWhiteSpace(reason)));
         Assert.Equal(reasons.Length, reasons.Distinct().Count());
-    }
-
-    [Fact]
-    public void EachProblemHasItsOwnLogCause()
-    {
-        var causes = Problems.Select(problem => new MicrophonePreviewFailure(problem).Cause).ToArray();
-
-        Assert.All(causes, cause => Assert.False(string.IsNullOrWhiteSpace(cause)));
-        Assert.Equal(causes.Length, causes.Distinct().Count());
     }
 
     [Fact]

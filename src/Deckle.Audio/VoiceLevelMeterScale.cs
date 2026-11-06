@@ -41,9 +41,10 @@ internal static class VoiceLevelMeterScale
         return Math.Clamp((dbfs - MinDbfs) / (MaxDbfs - MinDbfs), 0.0, 1.0);
     }
 
-    // The HUD's exponential smoothing (AudioLevelMapper.EmaAlpha), applied to
-    // the dB value, one step per 50 ms frame, so the bar and the outline move
-    // alike. The first frame of a run has no previous value and is taken as is.
+    // The HUD's exponential smoothing factor (AudioLevelMapper.EmaAlpha), one
+    // step per 50 ms frame: the same factor, on a different quantity. The HUD
+    // smooths its perceptual 0..1 level, the meter smooths the dB value. The
+    // first frame of a run has no previous value and is taken as is.
     public static double Smooth(double? previousDbfs, double sampleDbfs)
     {
         if (previousDbfs is not { } previous) return sampleDbfs;

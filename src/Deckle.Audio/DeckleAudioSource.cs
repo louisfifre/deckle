@@ -631,16 +631,20 @@ public sealed class DeckleAudioSource : DeckleEventSource
     }
 
     // The values a recording will read: the chosen device (-1 is the system
-    // default), the duration cap (0 is none) and the opt-in DSP switches.
-    // Emitted at load and after each change, at the rate a person edits them.
+    // default), the duration cap (0 is none), the opt-in DSP switch and the
+    // voice level. The voice level is here because a monolithic take writes
+    // no segmenter snapshot: this line is the only trace of the level its
+    // low-audio warning read. Emitted at load and after each change, at the
+    // rate a person edits them, so the object-array WriteEvent costs nothing
+    // that matters.
     [Event(EvtCaptureSettingsResolved,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Version = 1,
-           Message = "device_id={0} | max_recording_s={1} | preprocessing={2}")]
-    public void CaptureSettingsResolved(int device_id, int max_recording_s, bool preprocessing)
+           Message = "device_id={0} | max_recording_s={1} | preprocessing={2} | voice_level_dbfs={3}")]
+    public void CaptureSettingsResolved(int device_id, int max_recording_s, bool preprocessing, double voice_level_dbfs)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtCaptureSettingsResolved, device_id, max_recording_s, preprocessing);
+            WriteEvent(EvtCaptureSettingsResolved, device_id, max_recording_s, preprocessing, voice_level_dbfs);
     }
 }

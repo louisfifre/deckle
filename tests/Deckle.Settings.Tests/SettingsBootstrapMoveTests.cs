@@ -38,6 +38,47 @@ public sealed class SettingsBootstrapMoveTests
         Assert.False(source["streaming"]!["segmenter"]!.AsObject().ContainsKey("thresholdDbfs"));
     }
 
+    // A hand-edited value of the wrong type would make the whole target file
+    // fail to load and fall back to its defaults: it is dropped from the
+    // source and nothing reaches the target.
+    [Theory]
+    [Trait("Category", "regression")]
+    [InlineData("\"-38\"")]
+    [InlineData("\"loud\"")]
+    [InlineData("true")]
+    [InlineData("null")]
+    [InlineData("{\"db\":-38}")]
+    public void ALeafTheGuardRejectsLeavesTheSourceAndReachesNoTarget(string leafJson)
+    {
+        var source = JsonNode.Parse(
+            """{"streaming":{"segmenter":{"thresholdDbfs":""" + leafJson + ""","marginMs":150}}}""")!.AsObject();
+        var target = new JsonObject();
+
+        bool moved = SettingsBootstrap.MoveNestedValue(
+            source, SegmenterLevel, target, "voiceLevelDbfs", SettingsBootstrap.IsNumber);
+
+        var segmenter = source["streaming"]!["segmenter"]!.AsObject();
+        Assert.Empty(target);
+        Assert.Equal(150, segmenter["marginMs"]!.GetValue<int>());
+        // A JSON null reads as no value at all, so there is nothing to move;
+        // every other rejected leaf is removed.
+        Assert.Equal(leafJson != "null", moved);
+        if (leafJson != "null") Assert.False(segmenter.ContainsKey("thresholdDbfs"));
+    }
+
+    [Fact]
+    public void ANumberPassesTheGuard()
+    {
+        var source = JsonNode.Parse("""{"streaming":{"segmenter":{"thresholdDbfs":-38}}}""")!.AsObject();
+        var target = new JsonObject();
+
+        bool moved = SettingsBootstrap.MoveNestedValue(
+            source, SegmenterLevel, target, "voiceLevelDbfs", SettingsBootstrap.IsNumber);
+
+        Assert.True(moved);
+        Assert.Equal(-38.0, target["voiceLevelDbfs"]!.GetValue<double>());
+    }
+
     [Theory]
     [InlineData("""{}""")]
     [InlineData("""{"streaming":{}}""")]

@@ -139,7 +139,8 @@
         </catalog:PreviewBlock>
 
         <!-- Why the microphone closed, when it closed without being asked. The
-             wording comes from the code-behind, per cause. -->
+             wording and the severity come from the code-behind, per cause: a
+             failure warns, the idle timeout informs. -->
         <InfoBar x:Name="FailureBar"
                  IsClosable="True"
                  Severity="Warning"

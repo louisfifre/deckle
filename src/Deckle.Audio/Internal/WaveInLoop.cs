@@ -96,6 +96,9 @@ internal static class WaveInLoop
         // (host.VoiceLevelDbfs) and the same per-buffer RMS, so "voice" means
         // the same thing here and in the cut. It asks Push, not Resume: the
         // question here is whether voice opens, which is what Push answers.
+        // With the default margin of 0 this is the level itself; with a
+        // positive margin the warning asks the same question as the
+        // segmenter's opening.
         var voice = new VoiceDetector(host.VoiceLevelDbfs);
         const int    NormalVoiceSustainedMs   = 200;
         const int    WarnAfterSilenceMs       = 5000;

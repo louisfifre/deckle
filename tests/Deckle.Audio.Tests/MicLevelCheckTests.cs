@@ -105,17 +105,97 @@ public class MicLevelCheckTests
     }
 
     // The check says where the voice sits against the voice level the
-    // segmenter cuts on: the raw level minus that level, positive above it and
-    // negative below it.
+    // segmenter cuts on: a steady level, every frame alike, reads the same
+    // whether averaged or read per frame, positive above and negative below.
     [Theory]
     [InlineData(-30.0, -45.0)]   // a voice 15 dB above the level
     [InlineData(-50.0, -40.0)]   // a voice 10 dB under it
-    public void TheVoiceMarginIsTheRawLevelMinusTheVoiceLevel(double voiceDbfs, double voiceLevelDbfs)
+    public void ASteadyVoiceReadsItsMarginToTheVoiceLevel(double voiceDbfs, double voiceLevelDbfs)
     {
         var a = MicLevelCheck.Assess(SineAtDbfs(voiceDbfs), AtTarget(), voiceLevelDbfs);
 
-        Assert.Equal(a.RawRmsDbfs - voiceLevelDbfs, a.VoiceMarginDb, 6);
         Assert.Equal(voiceDbfs - voiceLevelDbfs, a.VoiceMarginDb, 1.0);
+    }
+
+    // The voice level applies to each 50 ms frame, so the margin is read from
+    // the loudest tenth of the frames, not from the capture's average: words
+    // separated by pauses clear a level their average sits well under.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void TheMarginFollowsTheLoudFramesNotTheAverage()
+    {
+        const double Level = -45.0;
+        const double Words = -40.0;
+        // 5 s: 12 % of the frames at -40 dBFS, the rest at -70 dBFS. The
+        // average sits near -49 dBFS.
+        float[] pcm = FramesAt(Words, loudFrames: 12, quietDbfs: -70.0, totalFrames: 100);
+
+        var a = MicLevelCheck.Assess(pcm, AtTarget(), Level);
+
+        // The average is under the level; the words are 5 dB above it.
+        Assert.True(a.RawRmsDbfs < Level, $"average {a.RawRmsDbfs:F1} dBFS");
+        Assert.Equal(Words - Level, a.VoiceMarginDb, 0.5);
+    }
+
+    [Fact]
+    public void TheVoicedShareIsTheShareOfFramesAtOrAboveTheVoiceLevel()
+    {
+        float[] pcm = FramesAt(-35.0, loudFrames: 30, quietDbfs: -70.0, totalFrames: 100);
+
+        var a = MicLevelCheck.Assess(pcm, AtTarget(), -45.0);
+
+        Assert.Equal(0.30, a.VoicedShare, 3);
+    }
+
+    [Fact]
+    public void ThePerFrameReadingTakesTheNinetiethPercentile()
+    {
+        // Ten frames at ten distinct levels, -80 to -35 dBFS by 5 dB: the
+        // nearest-rank 90th percentile of ten is the ninth, -40.
+        var frames = new List<float>();
+        for (int i = 0; i < 10; i++)
+            frames.AddRange(FrameAt(-80.0 + 5.0 * i));
+
+        var reading = MicFrameLevels.Measure(frames.ToArray(), -45.0);
+
+        Assert.Equal(10, reading.Frames);
+        Assert.Equal(-40.0, reading.LoudestTenthDbfs, 0.1);
+        // -45 and above: the frames at -45, -40 and -35.
+        Assert.Equal(0.3, reading.VoicedShare, 3);
+    }
+
+    [Fact]
+    public void NoSignalHasNoVoicedFrame()
+    {
+        var a = MicLevelCheck.Assess(new float[16_000], AtTarget(), VoiceLevel);
+
+        Assert.Equal(0.0, a.VoicedShare);
+    }
+
+    // One 50 ms frame of a sine at the given RMS level.
+    private static float[] FrameAt(double dbfs)
+    {
+        double amp = Math.Sqrt(2.0) * Math.Pow(10.0, dbfs / 20.0);
+        var x = new float[MicFrameLevels.FrameSamples];
+        double w = 2.0 * Math.PI * 440.0 / SampleRate;
+        for (int i = 0; i < x.Length; i++) x[i] = (float)(amp * Math.Sin(w * i));
+        return x;
+    }
+
+    // loudFrames frames at loudDbfs, spread one in every few, the rest at
+    // quietDbfs, like words between pauses.
+    private static float[] FramesAt(double loudDbfs, int loudFrames, double quietDbfs, int totalFrames)
+    {
+        var x = new List<float>(totalFrames * MicFrameLevels.FrameSamples);
+        int step = totalFrames / loudFrames;
+        int placed = 0;
+        for (int f = 0; f < totalFrames; f++)
+        {
+            bool loud = placed < loudFrames && f % step == 0;
+            if (loud) placed++;
+            x.AddRange(FrameAt(loud ? loudDbfs : quietDbfs));
+        }
+        return x.ToArray();
     }
 
     [Fact]
