@@ -575,6 +575,15 @@
   <data name="GeneralPageApplicationDataSection.Title" xml:space="preserve">
     <value>Application data</value>
   </data>
+  <data name="GeneralPageDeveloperSection.Title" xml:space="preserve">
+    <value>Developer</value>
+  </data>
+  <data name="GeneralShowPlaygroundCard.Header" xml:space="preserve">
+    <value>Show the Playground</value>
+  </data>
+  <data name="GeneralShowPlaygroundCard.Description" xml:space="preserve">
+    <value>Adds the Playground, a test bench for Deckle's own features, to the tray menu and to the window title bars.</value>
+  </data>
 
   <!-- ─── Settings — code-behind dialogs ─────────────────────────────
        ContentDialogs raised programmatically by Settings pages and

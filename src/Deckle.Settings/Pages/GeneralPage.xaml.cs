@@ -26,10 +26,11 @@ public sealed partial class GeneralPage : Page
         ComposeUpdatesSection();
         ComposeApplicationDataSection();
         ComposeDataFolderSection();
+        ComposeDeveloperSection();
 
         foreach (var composer in new[]
                  { _appearanceComposer, _startupComposer, _updatesComposer,
-                   _applicationDataComposer, _dataFolderComposer })
+                   _applicationDataComposer, _dataFolderComposer, _developerComposer })
             composer!.DirtyChanged += (_, _) => GateResetAll();
 
         ViewModel.DataFolderMoveRequested += OnDataFolderMoveRequested;
@@ -73,6 +74,17 @@ public sealed partial class GeneralPage : Page
         _updatesComposer.DirtyChanged += (_, _) =>
             UpdatesSection.IsResetEnabled = _updatesComposer.IsDirty();
         _updatesComposer.Compose(ViewModel.UpdatesSettings);
+    }
+
+    // ── Composed Developer section ────────────────────────────────────────────
+    private SettingsComposer? _developerComposer;
+
+    private void ComposeDeveloperSection()
+    {
+        _developerComposer = new SettingsComposer(DeveloperHost, ViewModel);
+        _developerComposer.DirtyChanged += (_, _) =>
+            DeveloperSection.IsResetEnabled = _developerComposer.IsDirty();
+        _developerComposer.Compose(ViewModel.DeveloperSettings);
     }
 
     // ── Composed backup Location line ─────────────────────────────────────────
@@ -182,7 +194,8 @@ public sealed partial class GeneralPage : Page
             (_startupComposer?.IsDirty() ?? false) ||
             (_updatesComposer?.IsDirty() ?? false) ||
             (_applicationDataComposer?.IsDirty() ?? false) ||
-            (_dataFolderComposer?.IsDirty() ?? false);
+            (_dataFolderComposer?.IsDirty() ?? false) ||
+            (_developerComposer?.IsDirty() ?? false);
     }
 
     // The data folder goes last. Its reset is a move back to the default root,
@@ -193,6 +206,7 @@ public sealed partial class GeneralPage : Page
         _appearanceComposer?.ResetAll();
         _startupComposer?.ResetAll();
         _updatesComposer?.ResetAll();
+        _developerComposer?.ResetAll();
         _applicationDataComposer?.ResetAll();
         _dataFolderComposer?.ResetAll();
         DeckleSettingsUxSource.Log.SectionReset();
@@ -212,6 +226,13 @@ public sealed partial class GeneralPage : Page
         _updatesComposer?.ResetAll();
         DeckleSettingsUxSource.Log.SectionReset();
         DeckleSettingsUxSource.Log.SectionResetDetail("Updates");
+    }
+
+    private void ResetDeveloper_Click(object sender, RoutedEventArgs e)
+    {
+        _developerComposer?.ResetAll();
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Developer");
     }
 
     // The same order as Reset all, for the same reason: the backup location
