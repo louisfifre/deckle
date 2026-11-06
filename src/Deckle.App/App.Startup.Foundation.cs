@@ -178,15 +178,8 @@ public partial class App
         AppDiagnosticsBootstrap.CompleteBoot();
         context.Milestone("diagnostics");
 
-        Deckle.Diagnostics.Telemetry.TelemetryListenerBootstrap.ConfigureGates(name => name switch
-        {
-            "LatencyEnabled"        => TelemetrySettingsService.Instance.Current.LatencyEnabled,
-            "MicrophoneTelemetry"   => TelemetrySettingsService.Instance.Current.MicrophoneTelemetry,
-            "CorpusEnabled"         => TelemetrySettingsService.Instance.Current.CorpusEnabled,
-            "AutocorrectDecisions"  => TelemetrySettingsService.Instance.Current.AutocorrectDecisions,
-            "AutocorrectText"       => TelemetrySettingsService.Instance.Current.AutocorrectText,
-            _                       => false,
-        });
+        Deckle.Diagnostics.Telemetry.TelemetryListenerBootstrap.ConfigureGates(
+            () => TelemetrySettingsService.Instance.Current);
 
         NetworkStatusEmitter.Start();
 

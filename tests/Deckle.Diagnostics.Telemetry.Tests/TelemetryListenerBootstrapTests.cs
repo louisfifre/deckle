@@ -53,7 +53,7 @@ public sealed class TelemetryListenerBootstrapTests
             TelemetryListenerBootstrap.Configure(
                 dispatch, root, validationSubdirectory: false);
             TelemetryListenerBootstrap.ConfigureGates(
-                name => name == "LatencyEnabled");
+                () => new TelemetrySettings { LatencyEnabled = true });
 
             OperationalTelemetrySource.Log.LatencyRecorded("operational");
             Assert.False(File.Exists(latency));
@@ -91,7 +91,7 @@ public sealed class TelemetryListenerBootstrapTests
             TelemetryListenerBootstrap.Configure(
                 dispatch, root, validationSubdirectory: false);
             TelemetryListenerBootstrap.ConfigureGates(
-                _ => throw new InvalidOperationException(failure));
+                () => throw new InvalidOperationException(failure));
 
             TestTelemetrySource.Log.LatencyRecorded("unreadable consent");
             dispatch.FlushSinks();

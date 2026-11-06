@@ -415,17 +415,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Fonts/
 │   │   │   │   └── BitcountSingle.ttf
 │   │   │   ├── Icons/
-│   │   │   │   ├── recording--indicator--false--16px.ico
-│   │   │   │   ├── recording--indicator--false--16px.png
 │   │   │   │   ├── recording--indicator--false--32px.ico
 │   │   │   │   ├── recording--indicator--false--32px.png
-│   │   │   │   ├── recording--indicator--false--incident--true--16px.ico
 │   │   │   │   ├── recording--indicator--false--incident--true--32px.ico
-│   │   │   │   ├── recording--indicator--true--16px.ico
-│   │   │   │   ├── recording--indicator--true--16px.png
 │   │   │   │   ├── recording--indicator--true--32px.ico
 │   │   │   │   ├── recording--indicator--true--32px.png
-│   │   │   │   ├── recording--indicator--true--incident--true--16px.ico
 │   │   │   │   └── recording--indicator--true--incident--true--32px.ico
 │   │   │   └── Sounds/
 │   │   │       └── speech.wav
