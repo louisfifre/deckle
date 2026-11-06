@@ -235,9 +235,12 @@
        Third page in the Settings nav. Hosts six sections rendered as
        UserControls (General, ActiveProfile, Dictation, Profiles,
        Providers, Models).
-       The Ollama InfoBar is inline on the page. -->
+       The Ollama and provider InfoBars are inline on the page. -->
   <data name="LlmPage_OllamaStatusBar.Title" xml:space="preserve">
     <value>Ollama is not reachable</value>
+  </data>
+  <data name="LlmPage_ProviderStatusBar.Title" xml:space="preserve">
+    <value>A provider is not answering</value>
   </data>
 
   <!-- LlmGeneralSection -->

@@ -56,9 +56,15 @@ public readonly record struct RewriteFailureMessage(string Title, string Body)
     /// is null when the caller has no way to look it up; the sentence then
     /// falls back to "The provider".</summary>
     public static RewriteFailureMessage ForException(RewriteProfile profile, LlmProvider? provider, Exception exception) =>
-        new(UnavailableTitle, $"{Cause(profile, provider, exception)} {Outcome}");
+        new(UnavailableTitle, $"{Cause(profile.Model, provider, exception)} {Outcome}");
 
-    static string Cause(RewriteProfile profile, LlmProvider? provider, Exception exception)
+    /// <summary>The cause sentence alone, for a provider that did not answer
+    /// the Settings page's model listing: same seam, same words as the
+    /// rewrite card, without its outcome. No model is involved there.</summary>
+    public static string ForProviderListing(LlmProvider provider, Exception exception) =>
+        Cause(model: null, provider, exception);
+
+    static string Cause(string? model, LlmProvider? provider, Exception exception)
     {
         string subject = provider is null ? "The provider" : NameOf(provider);
         string? where  = HostOf(provider);
@@ -78,7 +84,9 @@ public readonly record struct RewriteFailureMessage(string Title, string Body)
                 case 403:
                     return $"{subject} rejected the API key.";
                 case 404:
-                    return $"{subject} does not know model {profile.Model}.";
+                    return model is null
+                        ? $"{subject} answered HTTP 404."
+                        : $"{subject} does not know model {model}.";
                 case 429:
                     return $"{subject} is rate limiting requests.";
                 case >= 500:
@@ -95,6 +103,11 @@ public readonly record struct RewriteFailureMessage(string Title, string Body)
             case ConnectionFailure.Unreachable:
                 return where is null ? $"{subject} cannot be reached." : $"{subject} cannot be reached at {where}.";
         }
+
+        // The caller's own timeout expired: the request left, nothing came
+        // back in time. Read after the socket errors, which say more.
+        if (Find<OperationCanceledException>(exception) is not null)
+            return $"{subject} did not answer in time.";
 
         return $"{subject} failed: {Detail(exception)}";
     }

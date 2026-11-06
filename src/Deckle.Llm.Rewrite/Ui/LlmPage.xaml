@@ -36,6 +36,17 @@
                          Margin="0,0,0,8"
                          catalog:InfoBarLayout.CollapseWhenClosed="True" />
 
+                <!-- Open only while an enabled hosted provider (Claude, an
+                     OpenAI-compatible server) does not answer the model
+                     listing; the message names each one and why. -->
+                <InfoBar x:Name="ProviderStatusBar"
+                         x:Uid="LlmPage_ProviderStatusBar"
+                         Severity="Warning"
+                         IsOpen="False"
+                         IsClosable="False"
+                         Margin="0,0,0,8"
+                         catalog:InfoBarLayout.CollapseWhenClosed="True" />
+
                 <llm:LlmGeneralSection x:Name="GeneralSection" />
 
                 <!-- Mask-not-grey: the dependent sections collapse out of layout
