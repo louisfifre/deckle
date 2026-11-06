@@ -748,7 +748,6 @@ Total : **691 entrées** réparties sur **41 modules**.
 |---|---|---|---|---|---|
 | NativeRuntimeItemId | tuning-constant | `"native-runtime"` | src/Deckle.Setup/InstallPlan.cs:30 | non | Identity string for an installable plan item. Kept for the same reason as ModuleIds: the item set is what the wizard shows and installs, so the vocabulary is arbitration-relevant even though no single id is settable. |
 | SileroItemId | tuning-constant | `"silero-vad"` | src/Deckle.Setup/InstallPlan.cs:31 | non | Installable plan item id — same rationale as NativeRuntimeItemId. |
-| CamembertItemId | tuning-constant | `"camembert-base"` | src/Deckle.Setup/InstallPlan.cs:32 | non | Installable plan item id — same rationale as NativeRuntimeItemId. |
 | AnytypeItemId | tuning-constant | `"anytype-cli"` | src/Deckle.Setup/InstallPlan.cs:33 | non | Installable plan item id — same rationale as NativeRuntimeItemId. |
 | Location | default-value | `AppPaths.UserDataRoot` | src/Deckle.Setup/SetupContext.cs:31 | non |  |
 | InstallDirectory | default-value | `Deckle.Install.InstallPaths.DefaultInstallDir` | src/Deckle.Setup/SetupContext.cs:81 | non |  |

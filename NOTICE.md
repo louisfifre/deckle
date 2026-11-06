@@ -158,7 +158,7 @@ Whisper model weights downloaded from [ggerganov/whisper.cpp on Hugging Face](ht
 
 - Repository : https://huggingface.co/Xenova/camembert-base — ONNX export of [almanach/camembert-base](https://huggingface.co/almanach/camembert-base) (Inria — Martin, Müller, Suárez et al.).
 - License : MIT — the CamemBERT weights.
-- Used as : the `camembert-base` masked-LM (`model.onnx` + `tokenizer.json` + `sentencepiece.bpe.model`), downloaded on demand to the models directory and run by `Deckle.Autocorrect.Mlm` for the post-sentence reranker. Not redistributed in this repository.
+- Used as : the `camembert-base` masked-LM (`model.onnx` + `tokenizer.json` + `sentencepiece.bpe.model`), fetched on demand to the models directory only by the offline `Deckle.Autocorrect.Mlm` probe (a post-sentence reranker experiment). The app and its setup assistant do not load or install it. Not redistributed in this repository.
 
 ### Qwen3 (ONNX Runtime GenAI)
 
