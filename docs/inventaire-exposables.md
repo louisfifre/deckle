@@ -822,7 +822,7 @@ Total : **692 entrées** réparties sur **41 modules**.
 | TranscriptionSettings.Decoding | persisted-setting | `new()` | src/Deckle.Transcription/TranscriptionSettings.cs:27 | oui | Section container, not a knob. |
 | TranscriptionSettings.Context | persisted-setting | `new()` | src/Deckle.Transcription/TranscriptionSettings.cs:28 | oui | Section container, not a knob. |
 | TranscriptionSettings.Streaming | persisted-setting | `new()` | src/Deckle.Transcription/TranscriptionSettings.cs:29 | oui | Section container, not a knob. |
-| StreamingSettings.Strategy | persisted-setting | `PipelineStrategyKind.Monolithic` | src/Deckle.Transcription/TranscriptionSettings.cs:45 | oui |  |
+| StreamingSettings.Strategy | persisted-setting | `PipelineStrategyKind.Streaming` | src/Deckle.Transcription/TranscriptionSettings.cs:45 | oui |  |
 | StreamingSettings.Segmenter | persisted-setting | `new()` | src/Deckle.Transcription/TranscriptionSettings.cs:46 | oui | Section container, not a knob. |
 | StreamingSettings.SpeechTrim | persisted-setting | `new()` | src/Deckle.Transcription/TranscriptionSettings.cs:47 | oui | Section container, not a knob. |
 | StreamingSettings.MinSpeechMs | persisted-setting | `250` | src/Deckle.Transcription/TranscriptionSettings.cs:42 | oui | Replaces EnergySegmenterSettings.MinUtteranceMs and SpeechTrimSettings.MinSpeechDurationMs: one floor, read by the segmenter and Silero. |

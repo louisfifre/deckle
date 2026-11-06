@@ -165,7 +165,7 @@ public partial class WhisperViewModel
     //
     // The switch's default mirrors the VM's own projection of the segmenter Strategy
     // onto the bool (Load/Push: StreamingEnabled = Strategy == Streaming), read off a
-    // fresh StreamingSettings so the shipped default Strategy (Monolithic → false)
+    // fresh StreamingSettings so the shipped default Strategy (Streaming → true)
     // is the single source — no hand-copied bool.
     public IReadOnlyList<SettingDescriptor> StreamingSwitch =>
     [
