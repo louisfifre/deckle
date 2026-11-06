@@ -242,6 +242,52 @@ public sealed class RewriteFailureMessageTests
         Assert.Equal("Profile \"Lissage\" has no provider. Raw transcript copied.", message.Body);
     }
 
+    // ── The Settings page's provider bar ────────────────────────────────
+    //
+    // The model listing shares the seam and the words, minus the outcome:
+    // the bar names the provider as Settings shows it and says why.
+
+    [Theory]
+    [InlineData(HttpStatusCode.Unauthorized)]
+    [InlineData(HttpStatusCode.Forbidden)]
+    public void ListingRejectedKeySaysTheProviderRejectedIt(HttpStatusCode status)
+    {
+        string cause = RewriteFailureMessage.ForProviderListing(Claude, EngineRefusal(status));
+
+        Assert.Equal("Claude rejected the API key.", cause);
+    }
+
+    [Fact]
+    public void ListingTimeoutSaysTheProviderDidNotAnswerInTime()
+    {
+        // The page's CancellationTokenSource expired: the SDK surfaces it as
+        // a TaskCanceledException, an OperationCanceledException.
+        string cause = RewriteFailureMessage.ForProviderListing(Claude, new TaskCanceledException("A task was canceled."));
+
+        Assert.Equal("Claude did not answer in time.", cause);
+    }
+
+    [Fact]
+    public void ListingUnknownHostSaysTheProviderCannotBeReached()
+    {
+        var ex = new HttpRequestException(
+            HttpRequestError.NameResolutionError,
+            "No such host is known.",
+            new SocketException((int)SocketError.HostNotFound));
+
+        string cause = RewriteFailureMessage.ForProviderListing(LmStudio, ex);
+
+        Assert.Equal("LM Studio cannot be reached at studio.lan:1234.", cause);
+    }
+
+    [Fact]
+    public void ListingNotFoundGivesTheStatusSinceNoModelIsInvolved()
+    {
+        string cause = RewriteFailureMessage.ForProviderListing(Claude, EngineRefusal(HttpStatusCode.NotFound));
+
+        Assert.Equal("Claude answered HTTP 404.", cause);
+    }
+
     // The shape ClaudeEngine and OpenAiCompatibleEngine throw for a refusal:
     // the status on an HttpRequestException, the SDK's exception (here a
     // stand-in) kept as inner.
