@@ -7,7 +7,7 @@
   "take_per_bucket": 2,
   "iterations_per_round": 5,
   "max_rounds": 12,
-  "target_score": 90,
+  "target_score": 98,
   "budget_usd": 12,
   "validation_reserve_usd": 2,
   "validation_iterations": 5,

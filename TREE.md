@@ -95,12 +95,18 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── campaigns/
 │   │   │   │   └── profiles-v2.json
 │   │   │   ├── optimize/
+│   │   │   │   ├── affinage-sonnet-v2.json
 │   │   │   │   ├── affinage-sonnet.json
+│   │   │   │   ├── arrangement-sonnet-v2.json
 │   │   │   │   ├── arrangement-sonnet.json
+│   │   │   │   ├── lissage-opus-v2.json
 │   │   │   │   └── lissage-opus.json
 │   │   │   ├── prompts/
+│   │   │   │   ├── affinage-opt1.md
+│   │   │   │   ├── arrangement-opt1.md
 │   │   │   │   ├── lissage-current.md
-│   │   │   │   └── lissage-literal.md
+│   │   │   │   ├── lissage-literal.md
+│   │   │   │   └── lissage-opt1.md
 │   │   │   ├── .gitignore
 │   │   │   ├── BatchJudge.cs
 │   │   │   ├── Campaign.cs

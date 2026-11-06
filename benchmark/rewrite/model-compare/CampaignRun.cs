@@ -203,10 +203,14 @@ static class CampaignRun
         double total = 0;
         int finished = 0;
 
+        // The judge's latency measures nothing, so its batches run four at a
+        // time inside a lane: a long cell's judging no longer takes longer
+        // than its generation.
         var lanes = resolved.Campaign.Models.Select(model => Task.Run(() =>
         {
-            foreach (var (key, rows) in pending.Where(b => b.Rows[0].Model == model))
+            Parallel.ForEach(pending.Where(b => b.Rows[0].Model == model), new ParallelOptions { MaxDegreeOfParallelism = 4 }, item =>
             {
+                var (key, rows) = item;
                 using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(20));
                 profileNotes.TryGetValue(rows[0].Prompt, out string? note);
                 var batch = BatchJudge.JudgeBatch(client, resolved.Campaign.Judge.Model, note, key, raw[rows[0].Id].Text, rows, cts.Token);
@@ -222,7 +226,7 @@ static class CampaignRun
                     string outcome = batch.Error ?? string.Join("/", batch.Judgements!.Select(j => j?.Verdict?[..Math.Min(3, j.Verdict.Length)] ?? "?"));
                     Console.WriteLine($"[{finished}/{pending.Count}] {Judge.Short(rows[0].Id)} {model,-18} {rows[0].Prompt,-20} #{rows[0].Iteration}-{rows[^1].Iteration} {outcome,-22} tok={batch.JudgePromptTokens}/{batch.JudgeEvalTokens} {batch.JudgeMs}ms ${batch.JudgeCostUsd:F4}");
                 }
-            }
+            });
         })).ToArray();
         Task.WaitAll(lanes);
         batchWriter.Dispose();

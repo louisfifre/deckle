@@ -470,7 +470,18 @@ static class Optimize
         var runs = new List<ValidationRun>();
         var best = Best(ledger)!;
         var baseline = ledger[0];
-        if (best.Round == baseline.Round)
+
+        // What runs on the held-out set: the live profile prompt when the
+        // loop started from a file (so the comparison the app's user needs,
+        // live against best, is in the same table), the start prompt, and
+        // the best when a candidate beat the start.
+        var candidates = new List<(string Label, int Round, string Text)>();
+        if (spec.StartPromptFile is not null)
+            candidates.Add(("live", -1, Corpus.LoadProfilePrompt(spec.Profile).SystemPrompt));
+        candidates.Add(("baseline", baseline.Round, File.ReadAllText(baseline.PromptPath)));
+        if (best.Round != baseline.Round)
+            candidates.Add(($"best-round-{best.Round}", best.Round, File.ReadAllText(best.PromptPath)));
+        if (candidates.Count == 1)
         {
             Console.WriteLine("validation: no candidate beat the start prompt, nothing to validate");
             return runs;
@@ -478,21 +489,24 @@ static class Optimize
 
         int perRound = RewritesPerRound(spec, dictations.Train);
         int perValidation = RewritesPerRound(spec, dictations.HeldOut) * spec.ValidationIterations / spec.IterationsPerRound;
-        double estimate = 2 * (ledger.Average(RoundCost) * perValidation / Math.Max(1, perRound));
+        double estimate = candidates.Count * (ledger.Average(RoundCost) * perValidation / Math.Max(1, perRound));
         if (Spent(ledger) + estimate > spec.BudgetUsd)
         {
             Console.WriteLine($"validation: skipped, ~${estimate:F2} would pass the ${spec.BudgetUsd:F2} budget (spent ${Spent(ledger):F2})");
             return runs;
         }
 
-        foreach (var (label, row) in new[] { ("baseline", baseline), ("best", best) })
+        // The best's folder carries its round: a loop resumed with a higher
+        // target may crown a later round, and a frozen folder named "best"
+        // would validate the old prompt again.
+        foreach (var (label, round, text) in candidates)
         {
             string dir = Path.Combine(outDir, "validation", label);
-            var resolved = CampaignFile.Freeze(BuildCampaign(spec, dictations.HeldOut, $"validation-{label}", File.ReadAllText(row.PromptPath), spec.ValidationIterations), dir);
-            Console.WriteLine($"validation {label}: round {row.Round} prompt {resolved.Prompts[spec.Profile].Hash} on held-out dictations");
+            var resolved = CampaignFile.Freeze(BuildCampaign(spec, dictations.HeldOut, $"validation-{label}", text, spec.ValidationIterations), dir);
+            Console.WriteLine($"validation {label}: prompt {resolved.Prompts[spec.Profile].Hash} on held-out dictations");
             CampaignRun.RunFrozen(resolved, raw, dir, apiKey);
             var result = Score(resolved, dir, raw);
-            runs.Add(new ValidationRun(label, row.Round, resolved.Prompts[spec.Profile].Hash, result));
+            runs.Add(new ValidationRun(label, round, resolved.Prompts[spec.Profile].Hash, result));
             Console.WriteLine($"validation {label}: score {result.Score:F1} faithful={result.Faithful} minor={result.Minor} unfaithful={result.Unfaithful} errors={result.Errors} cost ${result.GenerationCostUsd + result.JudgeCostUsd:F2}");
         }
         File.WriteAllText(Path.Combine(outDir, "validation", "scores.json"), JsonSerializer.Serialize(runs, Json.Pretty));
