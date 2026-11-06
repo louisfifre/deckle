@@ -46,6 +46,21 @@
       "Assembly": "Deckle.Diagnostics.Logging",
       "Key": "SettingsModuleNavLabel",
       "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
+    },
+    {
+      "Assembly": "Deckle.Input.PrecisionScroll",
+      "Key": "SettingsModuleNavLabel",
+      "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
+    },
+    {
+      "Assembly": "Deckle.Orchestration",
+      "Key": "SettingsModuleNavLabel",
+      "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
+    },
+    {
+      "Assembly": "Deckle.Shell.TaskbarCover",
+      "Key": "SettingsModuleNavLabel",
+      "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
     }
   ],
   "IntentionalDivergences": []
