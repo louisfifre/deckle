@@ -201,7 +201,7 @@
     <value>No voice detected</value>
   </data>
   <data name="Engine_LowAudio_Body" xml:space="preserve">
-    <value>Nothing rose above your voice level in the first 5 seconds. Check the microphone, or lower the voice level in Settings &gt; Recording.</value>
+    <value>Nothing above your voice level yet.</value>
   </data>
   <data name="Engine_TranscriptionFailed_Title" xml:space="preserve">
     <value>Transcription failed</value>
