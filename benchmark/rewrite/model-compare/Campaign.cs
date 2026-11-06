@@ -95,11 +95,26 @@ static class CampaignFile
         return resolved;
     }
 
+    // A matrix resolved in code (the optimizer builds one per round) is frozen
+    // the same way: the file wins when it exists, so a resumed round reads the
+    // prompt it was started with even if the candidate file was edited since.
+    public static ResolvedCampaign Freeze(ResolvedCampaign candidate, string outDir)
+    {
+        string frozenPath = Path.Combine(outDir, "campaign.json");
+        if (File.Exists(frozenPath))
+            return JsonSerializer.Deserialize<ResolvedCampaign>(File.ReadAllText(frozenPath), Json.Input)
+                ?? throw new InvalidOperationException($"{frozenPath} is unreadable.");
+        Directory.CreateDirectory(outDir);
+        File.WriteAllText(frozenPath, JsonSerializer.Serialize(candidate, Json.Pretty));
+        return candidate;
+    }
+
     // The n dictations closest to the bucket's median word count, so a
     // "short" cell measures a typical short dictation rather than the
     // three-word one that happens to be the most recent. Ties go to the most
-    // recent.
-    static string[] PickTypical(Dictionary<string, RawDictation> raw, string bucket, int take)
+    // recent. `exclude` lets a held-out set take the next typical ones after
+    // a training set, never the same dictations.
+    public static string[] PickTypical(Dictionary<string, RawDictation> raw, string bucket, int take, ISet<string>? exclude = null)
     {
         var inBucket = raw.Values
             .Where(r => string.Equals(r.Bucket, bucket, StringComparison.OrdinalIgnoreCase))
@@ -110,12 +125,13 @@ static class CampaignFile
         return inBucket
             .OrderBy(r => Math.Abs(r.WordsIn - median))
             .ThenByDescending(r => r.Timestamp)
+            .Where(r => exclude is null || !exclude.Contains(r.Id))
             .Take(take)
             .Select(r => r.Id)
             .ToArray();
     }
 
-    static string Hash(string text)
+    public static string Hash(string text)
     {
         byte[] digest = SHA256.HashData(Encoding.UTF8.GetBytes(text));
         return Convert.ToHexString(digest, 0, 8).ToLowerInvariant();

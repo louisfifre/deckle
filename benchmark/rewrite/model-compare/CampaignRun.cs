@@ -47,6 +47,15 @@ static class CampaignRun
         return 0;
     }
 
+    // The three steps on a matrix already frozen in outDir (Optimize.cs
+    // builds one per round): same files, same resumability, same export.
+    public static void RunFrozen(ResolvedCampaign resolved, Dictionary<string, RawDictation> raw, string outDir, string apiKey)
+    {
+        Generate(resolved, raw, outDir, apiKey);
+        JudgeAll(resolved, raw, outDir, apiKey);
+        Export.Run(outDir);
+    }
+
     // ── generate ─────────────────────────────────────────────────────────────
 
     sealed record WorkItem(RawDictation Dictation, FrozenPrompt Prompt, string Model, int Iteration);

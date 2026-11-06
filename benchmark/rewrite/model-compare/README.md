@@ -71,6 +71,45 @@ cost totals) and the run totals. `judge-batches.jsonl` keeps each batch
 answer whole; `judgements.jsonl` flattens it one row per rewrite with the
 batch's tokens, time and cost split evenly, so `summary` still reads it.
 
+## Optimize: improve one profile's prompt under a budget
+
+A campaign measures prompts; `optimize` improves one. A spec under
+`optimize/` names the profile, the generating model, the buckets, the judge
+note, the proposer model, a target score, a budget and a validation reserve:
+
+```
+& $exe optimize --spec optimize/arrangement-sonnet.json [--out results/opt-<name>]
+```
+
+Round 0 runs the live prompt (or `start_prompt_file`) on the training
+dictations (`take_per_bucket` typical ones per bucket, `iterations_per_round`
+times each) and scores it. Each later round asks the proposer for a revised
+prompt from the best prompt so far, its score, the judge's findings merged
+across that round's rewrites with their counts, and the history of earlier
+candidates; the candidate runs the same matrix and becomes the best when it
+scores higher. The loop stops at the target, at `max_rounds`, or when the
+next round would pass `budget_usd` minus `validation_reserve_usd`. Then the
+start prompt and the best one run on held-out dictations (the next typical
+ones of each bucket, never seen by the loop), `validation_iterations` times
+each: that comparison is the result to quote, the loop's own best being an
+optimistic reading of twenty noisy rewrites.
+
+The score: mean over the round's planned rewrites of 100 for a faithful
+verdict, 50 for minor, 0 for unfaithful, 0 for a call the API refused, minus
+10 for a rewrite longer than its raw or carrying markdown marks or
+separators. Beside it, weighted findings per judged rewrite (3 per inversion,
+2 per term substitution, 1 per dropped hedge, omission or addition).
+
+`results/opt-<name>/` holds `dictations.json` (training and held-out ids),
+`prompts/round-N.md` and `.json` (each candidate with the proposer's
+rationale and cost), one campaign folder per round, `ledger.jsonl` (one line
+per finished round), `validation/`, `best-prompt.md` and
+`optimize-report.md`. Resumable: a restart skips finished rounds, resumes the
+unfinished one and never re-asks the proposer for a candidate already on
+disk. The proposer is told never to copy a finding's span nor allude to the
+dictations' content: check the best prompt before it leaves the results
+folder.
+
 ## Inputs
 
 - **Dictations**: `%LOCALAPPDATA%\Deckle\telemetry\corpus\raw\<bucket>\corpus.jsonl`

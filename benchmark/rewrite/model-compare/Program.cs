@@ -38,6 +38,11 @@ using Deckle.Security;
 //   ModelCompare.exe run --campaign campaigns/profiles-v2.json [--out results/<stamp>] [--only generate|judge|export]
 //   ModelCompare.exe export --in results/<stamp>
 // run is resumable: rerun the same --out and it skips what is already paid.
+//
+// An optimize loop (Optimize.cs) improves one profile's prompt on one model
+// round after round, under a budget, and validates the best on held-out
+// dictations:
+//   ModelCompare.exe optimize --spec optimize/<name>.json [--out results/opt-<name>]
 
 string? command = args.Length > 0 ? args[0] : null;
 try
@@ -55,6 +60,9 @@ try
             Arg("--campaign") ?? throw new ArgumentException("run needs --campaign campaigns/<name>.json"),
             Arg("--out"), Arg("--only"), ApiKey()),
         "export" => Export.Run(Arg("--in") ?? throw new ArgumentException("export needs --in results/<stamp>")),
+        "optimize" => Optimize.Run(
+            Arg("--spec") ?? throw new ArgumentException("optimize needs --spec optimize/<name>.json"),
+            Arg("--out"), ApiKey()),
         _ => Usage(),
     };
 }
@@ -209,7 +217,7 @@ string ApiKey()
 
 int Usage()
 {
-    Console.Error.WriteLine("usage: ModelCompare check|run|export|generate|judge|summary [options] — see README.md");
+    Console.Error.WriteLine("usage: ModelCompare check|run|export|optimize|generate|judge|summary [options] — see README.md");
     return 1;
 }
 
