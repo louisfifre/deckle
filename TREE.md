@@ -2357,6 +2357,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Settings.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── SettingsBackupBugNotes.md
+│   │   ├── SettingsBackupRoundTripTests.cs
 │   │   ├── SettingsBootstrapLegacyTargetTests.cs
 │   │   └── SettingsBootstrapMoveTests.cs
 │   ├── Deckle.Setup.Tests/
