@@ -80,25 +80,46 @@ public sealed class LengthSwitchSettings
     // threshold.
     public const int CharsPerMinute = 700;
 
-    // A threshold is typed in hundreds of characters, about nine seconds of
-    // speech, the finest difference a person picking a length means. From
-    // one hundred to about forty-five minutes.
-    public const int GrainChars = 100;
-    public const int MinChars = GrainChars;
+    // From about nine seconds to about forty-five minutes of speech.
+    public const int MinChars = 100;
     public const int MaxChars = 30000;
 
     public bool Enabled { get; set; }
 
-    // Sorted by FromChars, strictly increasing; each one a multiple of
-    // GrainChars between MinChars and MaxChars.
+    // Sorted by FromChars, strictly increasing; each one on the grain of its
+    // length (GrainAt), between MinChars and MaxChars.
     public List<LengthStep> Steps { get; set; } = new();
 
-    // The nearest threshold on the grain, within the range.
+    // The precision a threshold is held at: about a twentieth of it, on the
+    // 1-2-5 ladder, never under MinChars. A length is meant in relative
+    // terms: 500 against 600 characters is another dictation, 20,000 against
+    // 20,100 is not. That gives 100 up to 4,000, then 200, 500 from 10,000
+    // and 1,000 from 20,000. Each band starts on a multiple of its own grain,
+    // so snapping a snapped value changes nothing.
+    public static int GrainAt(int chars)
+    {
+        int target = Math.Max(chars / 20, MinChars);
+        int grain = MinChars;
+        for (int decade = MinChars; ; decade *= 10)
+            foreach (int factor in (ReadOnlySpan<int>)[1, 2, 5])
+            {
+                if (decade * factor > target) return grain;
+                grain = decade * factor;
+            }
+    }
+
+    // The nearest threshold on the grain of its length, within the range.
     public static int Snap(double chars)
     {
-        int rounded = (int)Math.Round(chars / GrainChars, MidpointRounding.AwayFromZero) * GrainChars;
+        int clamped = (int)Math.Clamp(Math.Round(chars), MinChars, MaxChars);
+        int grain = GrainAt(clamped);
+        int rounded = (int)Math.Round(clamped / (double)grain, MidpointRounding.AwayFromZero) * grain;
         return Math.Clamp(rounded, MinChars, MaxChars);
     }
+
+    // The thresholds next to a snapped one, on either side.
+    public static int Above(int chars) => chars + GrainAt(chars);
+    public static int Below(int chars) => chars - GrainAt(chars - 1);
 }
 
 // Legacy duration-rule shape, retained so existing settings deserialize without

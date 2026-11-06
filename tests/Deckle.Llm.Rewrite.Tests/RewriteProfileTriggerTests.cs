@@ -99,8 +99,8 @@ public sealed class RewriteProfileTriggerTests
         Assert.False(read.Profiles[1].HotkeyEnabled);
     }
 
-    // A length typed in the field is any hundred, not one of a few presets:
-    // the next load keeps it as it is.
+    // A length typed in the field is any value on its grain, not one of a
+    // few presets: the next load keeps it as it is.
     [Fact]
     public void ATypedLengthSurvivesTheNextLoad()
     {
@@ -110,13 +110,45 @@ public sealed class RewriteProfileTriggerTests
             [
                 new LengthStep { FromChars = 2300, ProfileId = "a" },
                 new LengthStep { FromChars = 2400, ProfileId = "b" },
-                new LengthStep { FromChars = 17800, ProfileId = "c" },
+                new LengthStep { FromChars = 17500, ProfileId = "c" },
             ],
         };
 
         Assert.False(LlmSettingsMigrations.NormalizeLadder(ladder));
 
-        Assert.Equal([2300, 2400, 17800], ladder.Steps.Select(step => step.FromChars));
+        Assert.Equal([2300, 2400, 17500], ladder.Steps.Select(step => step.FromChars));
+    }
+
+    // The grain grows with the length: fine on a short dictation, coarse on
+    // a long one, where a hundred characters change nothing.
+    [Theory]
+    [InlineData(2345, 2300)]
+    [InlineData(3960, 4000)]
+    [InlineData(4321, 4400)]
+    [InlineData(12345, 12500)]
+    [InlineData(23456, 23000)]
+    [InlineData(40, LengthSwitchSettings.MinChars)]
+    [InlineData(99999, LengthSwitchSettings.MaxChars)]
+    public void ALengthSnapsToTheGrainOfItsSize(int typed, int expected)
+    {
+        Assert.Equal(expected, LengthSwitchSettings.Snap(typed));
+    }
+
+    // A snapped length snaps to itself, across the band edges too, and its
+    // neighbours on either side are snapped lengths as well: what the field
+    // shows is what the next load reads.
+    [Fact]
+    public void SnappingIsStableAcrossTheWholeRange()
+    {
+        for (int chars = 0; chars <= LengthSwitchSettings.MaxChars + 1000; chars += 7)
+        {
+            int snapped = LengthSwitchSettings.Snap(chars);
+            Assert.Equal(snapped, LengthSwitchSettings.Snap(snapped));
+            if (snapped < LengthSwitchSettings.MaxChars)
+                Assert.Equal(LengthSwitchSettings.Above(snapped), LengthSwitchSettings.Snap(LengthSwitchSettings.Above(snapped)));
+            if (snapped > LengthSwitchSettings.MinChars)
+                Assert.Equal(LengthSwitchSettings.Below(snapped), LengthSwitchSettings.Snap(LengthSwitchSettings.Below(snapped)));
+        }
     }
 
     // Two thresholds on one value: the second moves just above the first
@@ -147,7 +179,7 @@ public sealed class RewriteProfileTriggerTests
         {
             Steps =
             [
-                new LengthStep { FromChars = 10149, ProfileId = "x" },
+                new LengthStep { FromChars = 10240, ProfileId = "x" },
                 new LengthStep { FromChars = 1950, ProfileId = "y" },
                 new LengthStep { FromChars = 40, ProfileId = "z" },
                 new LengthStep { FromChars = 99999, ProfileId = "w" },
@@ -159,7 +191,7 @@ public sealed class RewriteProfileTriggerTests
         Assert.Collection(ladder.Steps,
             step => { Assert.Equal(LengthSwitchSettings.MinChars, step.FromChars); Assert.Equal("z", step.ProfileId); },
             step => { Assert.Equal(2000, step.FromChars); Assert.Equal("y", step.ProfileId); },
-            step => { Assert.Equal(10100, step.FromChars); Assert.Equal("x", step.ProfileId); },
+            step => { Assert.Equal(10000, step.FromChars); Assert.Equal("x", step.ProfileId); },
             step => { Assert.Equal(LengthSwitchSettings.MaxChars, step.FromChars); Assert.Equal("w", step.ProfileId); });
     }
 

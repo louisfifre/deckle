@@ -53,7 +53,7 @@ public static partial class LlmSettingsMigrations
         {
             int snapped = LengthSwitchSettings.Snap(step.FromChars);
             if (normalized.Count > 0 && snapped <= normalized[^1].FromChars)
-                snapped = normalized[^1].FromChars + LengthSwitchSettings.GrainChars;
+                snapped = LengthSwitchSettings.Above(normalized[^1].FromChars);
             if (snapped > LengthSwitchSettings.MaxChars) continue;
             normalized.Add(new LengthStep { FromChars = snapped, ProfileId = step.ProfileId ?? "" });
         }

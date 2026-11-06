@@ -149,7 +149,7 @@ public sealed partial class LlmActiveProfileSection : UserControl
         if (ladder.Steps.Count == 0) return FirstStepChars;
         int last = ladder.Steps[^1].FromChars;
         if (last >= LengthSwitchSettings.MaxChars) return null;
-        return Math.Min(last * 2, LengthSwitchSettings.MaxChars);
+        return LengthSwitchSettings.Snap(last * 2);
     }
 
     private void RebuildSteps()
@@ -167,7 +167,9 @@ public sealed partial class LlmActiveProfileSection : UserControl
 
     // Each field stops one grain short of its neighbours, so the steps stay
     // strictly increasing whatever is typed. A step's bounds always hold its
-    // own value, so moving them never changes it.
+    // own value, so moving them never changes it. The arrows step by the
+    // grain of the current length, so they move finely on a short length and
+    // coarsely on a long one.
     private void UpdateLengthBounds()
     {
         List<LengthStep> steps = LlmSettingsService.Instance.Current.LengthSwitch.Steps;
@@ -176,12 +178,16 @@ public sealed partial class LlmActiveProfileSection : UserControl
         {
             for (int i = 0; i < _lengthBoxes.Count && i < steps.Count; i++)
             {
-                _lengthBoxes[i].Minimum = i > 0
-                    ? steps[i - 1].FromChars + LengthSwitchSettings.GrainChars
+                NumberBox box = _lengthBoxes[i];
+                box.Minimum = i > 0
+                    ? LengthSwitchSettings.Above(steps[i - 1].FromChars)
                     : LengthSwitchSettings.MinChars;
-                _lengthBoxes[i].Maximum = i + 1 < steps.Count
-                    ? steps[i + 1].FromChars - LengthSwitchSettings.GrainChars
+                box.Maximum = i + 1 < steps.Count
+                    ? LengthSwitchSettings.Below(steps[i + 1].FromChars)
                     : LengthSwitchSettings.MaxChars;
+                int grain = LengthSwitchSettings.GrainAt(steps[i].FromChars);
+                box.SmallChange = grain;
+                box.LargeChange = grain * 10;
             }
         }
         finally { _syncingLengths = false; }
@@ -203,8 +209,6 @@ public sealed partial class LlmActiveProfileSection : UserControl
         var lengthBox = new NumberBox
         {
             Value = step.FromChars,
-            SmallChange = LengthSwitchSettings.GrainChars,
-            LargeChange = LengthSwitchSettings.GrainChars * 10,
             // Arrows on hover and focus, in a flyout that pushes no layout.
             SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
             ValidationMode = NumberBoxValidationMode.InvalidInputOverwritten,
