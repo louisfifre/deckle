@@ -64,4 +64,73 @@ public sealed class LlmSettingsFileTests : IDisposable
         ollama = Assert.Single(store.Current.Providers, p => p.Kind == LlmProviderKind.Ollama);
         Assert.Equal(CustomEndpoint, ollama.Endpoint);
     }
+
+    private static readonly string[] LegacyKeys =
+        ["ollamaEndpoint", "primaryRewriteProfileId", "primaryRewriteProfileName",
+         "autoRewriteRules", "ruleMetric", "autoRewriteRulesByWords"];
+
+    private string[] LegacyKeysOnDisk()
+    {
+        using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(FilePath));
+        return LegacyKeys.Where(k => doc.RootElement.TryGetProperty(k, out _)).ToArray();
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void LegacyFieldsAreReadToMigrateButNotWrittenBack()
+    {
+        const string oldFile = """
+            {
+              "ollamaEndpoint": "http://gpu-box:11434/api/generate",
+              "primaryRewriteProfileId": "p1",
+              "primaryRewriteProfileName": "Old",
+              "profiles": [ { "id": "p1", "name": "Old", "model": "llama3", "systemPrompt": "Rewrite." } ]
+            }
+            """;
+        using var store = OpenStore(oldFile);
+
+        Assert.Equal("p1", store.Current.ActiveProfileId);
+        Assert.Equal(CustomEndpoint,
+            Assert.Single(store.Current.Providers, p => p.Kind == LlmProviderKind.Ollama).Endpoint);
+
+        // The store rewrites a migrated file on its own; a later save changes nothing.
+        Assert.Empty(LegacyKeysOnDisk());
+        store.Flush();
+        Assert.Empty(LegacyKeysOnDisk());
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void LegacyRulesOfAnOldFileRoundTripButANewFileCarriesNone()
+    {
+        using var fresh = OpenStore();
+        Assert.Empty(LegacyKeysOnDisk());
+        fresh.Dispose();
+
+        File.WriteAllText(FilePath, """
+            { "autoRewriteRules": [ { "minDurationSeconds": 30, "profileId": "gone", "profileName": "Gone" } ] }
+            """);
+        using var old = OpenStore();
+        old.Flush();
+
+        Assert.Equal(["autoRewriteRules"], LegacyKeysOnDisk());
+        Assert.Single(old.Current.AutoRewriteRules!);
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void AFileSavedByTheNewVersionLoadsWithItsProviders()
+    {
+        using var first = OpenStore();
+        first.Current.Providers.Find(p => p.Kind == LlmProviderKind.Ollama)!.Endpoint = CustomEndpoint;
+        first.Flush();
+        first.Dispose();
+
+        using var second = OpenStore();
+
+        Assert.Equal(CustomEndpoint,
+            Assert.Single(second.Current.Providers, p => p.Kind == LlmProviderKind.Ollama).Endpoint);
+        Assert.Equal(3, second.Current.Providers.Count);
+        Assert.Empty(LegacyKeysOnDisk());
+    }
 }
