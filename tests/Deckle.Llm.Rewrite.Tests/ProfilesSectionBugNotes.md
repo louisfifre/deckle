@@ -5,24 +5,31 @@
 - **Trigger:** opening the Rewriting page with existing profiles, after the
   length threshold and shortcut cards were added to each profile's fold
   (v0.77.0).
-- **Symptom (observed by the maintainer):** the fold of an existing profile
-  showed only its editor card; the "Use for long dictations", "From" and
-  "Shortcut" cards were missing. A freshly added profile behaved differently,
-  not reliably reproduced.
-- **Cause (established from the Community Toolkit source):**
-  `SettingsExpander.Items` is a plain `List<object>`. The expander hands it to
-  its inner `ItemsRepeater` only when its template applies or when the `Items`
-  property is assigned a new list. `LlmProfilesSection.ComposeProfileCards`
-  composed the cards on the expander's `Loaded`, after the template applied,
-  and added them to the existing list, which the repeater never saw. Why a new
-  profile could differ is inferred, not verified: its expander may load before
-  its template applies, so the repeater then reads the already filled list.
-- **Violated invariant:** cards placed into a `SettingsExpander` after its
-  template applied must arrive as a new `Items` list, never by mutating the
-  current one.
-- **Recurrence cue:** any code that calls `expander.Items.Add` or `Remove`
-  outside a constructor. The General page's backup fold inserts into `Items`
-  in its page constructor, before any template, which is why it works.
-- **Guard:** none yet. The behavior lives in a WinUI control inside a running
-  window, which the unit suites do not host; it is checked by eye on the
-  Rewriting page.
+- **Symptom (observed by the maintainer, then read through UI Automation on
+  the running window):** an expanded profile fold held only its editor card;
+  the "Use for long dictations", "From" and "Shortcut" cards were absent from
+  the visual tree, and the diagnostics log held no exception.
+- **Cause, in two layers:**
+  1. `LlmProfilesSection.ComposeProfileCards` ran only when the expander's
+     `DataContext` was a `ProfileViewModel`. The profiles' `ItemsRepeater`
+     uses an `x:Bind` template, and the repeater drives such a template's
+     bindings itself without setting the element's `DataContext`, so the test
+     never matched and nothing was composed. This is inferred from the WinUI
+     `ItemsRepeater` behaviour (DataContext is set only for templates without
+     `x:Bind`) and fits every observation; it is confirmed once the cards show
+     with the profile read from `Tag` instead.
+  2. Had composition run, adding the cards to `SettingsExpander.Items` after
+     the template applied would still have shown nothing: `Items` is a plain
+     `List<object>` the expander hands to its inner repeater only when its
+     template applies or when `Items` is assigned. The first fix (v0.77.1)
+     addressed this layer alone, which is why it changed nothing on screen.
+- **Violated invariants:** an element realized by an `ItemsRepeater` with an
+  `x:Bind` template reads its item from a bound property (here `Tag`), never
+  from `DataContext`; cards placed into a `SettingsExpander` after its
+  template applied arrive as a new `Items` list.
+- **Recurrence cue:** a `DataContext` read or a `DataContextChanged` handler on
+  the root of an `x:Bind` DataTemplate inside an `ItemsRepeater`; any
+  `expander.Items.Add` or `Remove` outside a constructor.
+- **Guard:** none yet. The behaviour lives in WinUI controls inside a running
+  window, which the unit suites do not host; it is checked on the Rewriting
+  page, by eye or through UI Automation.

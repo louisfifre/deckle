@@ -245,15 +245,20 @@ public sealed partial class LlmProfilesSection : UserControl
 
     private readonly ConditionalWeakTable<SettingsExpander, ComposedProfileCards> _composed = new();
 
-    private void ProfileExpander_Loaded(object sender, RoutedEventArgs e)
+    // The profile is read from Tag, never from DataContext: an ItemsRepeater
+    // whose template uses x:Bind drives the bindings itself and leaves the
+    // element's DataContext unset, so a DataContext test never matched and
+    // no card was ever composed. ElementPrepared runs for every realized
+    // expander, a recycled one included, after its x:Bind values are set.
+    private void ProfilesRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
     {
-        if (sender is SettingsExpander expander && expander.DataContext is ProfileViewModel vm)
+        if (args.Element is SettingsExpander expander && expander.Tag is ProfileViewModel vm)
             ComposeProfileCards(expander, vm);
     }
 
-    private void ProfileExpander_DataContextChanged(FrameworkElement sender, DataContextChangedEventArgs args)
+    private void ProfileExpander_Loaded(object sender, RoutedEventArgs e)
     {
-        if (sender is SettingsExpander expander && expander.IsLoaded && args.NewValue is ProfileViewModel vm)
+        if (sender is SettingsExpander expander && expander.Tag is ProfileViewModel vm)
             ComposeProfileCards(expander, vm);
     }
 

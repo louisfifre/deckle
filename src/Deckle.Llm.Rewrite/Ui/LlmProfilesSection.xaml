@@ -23,21 +23,23 @@
                              ResetRequested="ResetSection_Click">
     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-        <ItemsRepeater ItemsSource="{x:Bind Profiles}">
+        <ItemsRepeater ItemsSource="{x:Bind Profiles}"
+                       ElementPrepared="ProfilesRepeater_ElementPrepared">
             <ItemsRepeater.Layout>
                 <StackLayout Spacing="4" />
             </ItemsRepeater.Layout>
             <ItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="vm:ProfileViewModel">
-                    <!-- Loaded composes the length threshold and the shortcut
-                         as cards after the editor card (ComposeProfileCards). -->
+                    <!-- The repeater's ElementPrepared composes the length
+                         threshold and the shortcut as cards after the editor
+                         card (ComposeProfileCards). Tag carries the profile:
+                         the repeater leaves DataContext unset under x:Bind. -->
                     <controls:SettingsExpander
                         Header="{x:Bind Name, Mode=OneWay}"
                         Description="{x:Bind Summary, Mode=OneWay}"
                         IsExpanded="{x:Bind IsNew, Mode=OneWay}"
                         Tag="{x:Bind}"
-                        Loaded="ProfileExpander_Loaded"
-                        DataContextChanged="ProfileExpander_DataContextChanged">
+                        Loaded="ProfileExpander_Loaded">
 
                         <Button Tag="{x:Bind}"
                                 Click="DeleteProfile_Click">
