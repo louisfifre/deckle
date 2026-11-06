@@ -321,7 +321,7 @@
     <value>Switch profile by length</value>
   </data>
   <data name="LlmLengthSwitchCard.Description" xml:space="preserve">
-    <value>Rewrites a longer dictation with another profile. Below the first step, the rewrite profile above applies. A dictation rewritten while you speak keeps the profile it started with.</value>
+    <value>Rewrites a longer dictation with another profile. Below the first step, the rewrite profile above applies. To rewrite only past a certain length, set that profile to (None) and add a step at that length. A dictation rewritten while you speak keeps the profile it started with.</value>
   </data>
   <data name="LlmLengthStep_Header" xml:space="preserve">
     <value>From</value>
