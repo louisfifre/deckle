@@ -33,6 +33,7 @@ public sealed class LiveTranscriptionPipelineTests
             clipboard);
         var statuses = new ConcurrentQueue<string>();
         var segments = new ConcurrentQueue<string>();
+        var snapshots = new ConcurrentQueue<TranscriptSnapshot>();
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         var ready = new TaskCompletionSource(
@@ -46,6 +47,7 @@ public sealed class LiveTranscriptionPipelineTests
                 ready.TrySetResult();
         };
         engine.NewSegment += segment => segments.Enqueue(segment.Text);
+        engine.TranscriptChanged += snapshots.Enqueue;
         engine.TranscriptionFinished += outcome =>
         {
             Interlocked.Increment(ref finishCount);
@@ -79,6 +81,13 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(1, clipboard.WriteCount);
         Assert.Equal("bonjour\n\nDeckle", clipboard.Text);
         Assert.Equal(["bonjour", "Deckle"], segments.ToArray());
+        // Without a rewrite, the live text is the delivered text at every step.
+        Assert.Equal(
+            [
+                new TranscriptSnapshot("bonjour", TranscriptChangeKind.Appended),
+                new TranscriptSnapshot("bonjour\n\nDeckle", TranscriptChangeKind.Appended),
+            ],
+            snapshots.ToArray());
         // The test inference, then the two utterances; never two at once.
         Assert.Equal(3, backend.CallCount);
         Assert.Equal(1, backend.MaxConcurrentCalls);

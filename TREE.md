@@ -1723,6 +1723,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── EnergySegmenterSettings.cs
 │   │   │   ├── SegmentedTranscriptionSession.cs
 │   │   │   ├── TranscribedUtterance.cs
+│   │   │   ├── TranscriptSnapshot.cs
 │   │   │   ├── Utterance.cs
 │   │   │   ├── UtteranceProgress.cs
 │   │   │   └── UtteranceProgressMeter.cs

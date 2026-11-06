@@ -64,14 +64,20 @@ public sealed partial class TranscriptionEngine
     // that unsubscribes it, or null when the take has no batch run. The caller
     // disposes it on every exit, so a later take or a file run never feeds a
     // rewriter that belongs to a finished take.
+    //
+    // The same handle forwards each returned batch as a Revised snapshot of
+    // the whole take, so a surface showing the text sees the rewrite land
+    // where the raw text was, while the speaker is still talking.
     private IDisposable? FeedBatchRewrite(BatchRewriteRun? run)
     {
         if (run is null) return null;
 
         DictationBatchRewriter rewriter = run.Rewriter;
         Action<TranscribedUtterance> handler = u => rewriter.Push(u.Text, u.EndedOnSilence);
+        Action onReturned = () => RaiseTranscriptChanged(rewriter.Snapshot(), TranscriptChangeKind.Revised);
         UtteranceTranscribed += handler;
-        return new UtteranceSubscription(this, handler);
+        rewriter.BatchReturned += onReturned;
+        return new UtteranceSubscription(this, handler, rewriter, onReturned);
     }
 
     // Replaces the whole-take rewrite when the take was batched. The raw text is
@@ -107,10 +113,19 @@ public sealed partial class TranscriptionEngine
             result.LlmEvalTokens);
     }
 
+    // Also used by the recovery feed (TranscriptionEngine.Recovery.cs), which
+    // has no rewriter to unhook.
     private sealed class UtteranceSubscription(
         TranscriptionEngine engine,
-        Action<TranscribedUtterance> handler) : IDisposable
+        Action<TranscribedUtterance> handler,
+        DictationBatchRewriter? rewriter = null,
+        Action? onReturned = null) : IDisposable
     {
-        public void Dispose() => engine.UtteranceTranscribed -= handler;
+        public void Dispose()
+        {
+            engine.UtteranceTranscribed -= handler;
+            if (rewriter is not null && onReturned is not null)
+                rewriter.BatchReturned -= onReturned;
+        }
     }
 }
