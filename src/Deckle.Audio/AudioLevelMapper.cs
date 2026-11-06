@@ -4,23 +4,16 @@ namespace Deckle.Audio;
 //
 // Pure mic-RMS-to-perceptual-level mapping. Lives in Deckle.Audio
 // because it's signal processing of microphone data — sister concept to
-// MicrophoneCapture (the source) and CaptureSettings.LevelWindow (the
-// calibration). Any UI module that wants to react to live mic level
-// (HUD stroke opacity today, Ask-Ollama text glow tomorrow) reads
+// MicrophoneCapture (the source). Any UI module that wants to react to live
+// mic level (HUD stroke opacity today, Ask-Ollama text glow tomorrow) reads
 // `RmsToPerceptualLevel` and consumes the [0, 1] result however it
 // wants.
 //
-// The public statics are written live by the Recording settings sliders,
-// by the App at boot and by engine-side auto-calibration; the Playground
-// reads them through its preview and never writes them. Atomic float
-// reads: the audio thread reads RmsToPerceptualLevel concurrently with
-// the UI thread writing the statics. Single-precision float writes are
-// atomic on all .NET platforms; no lock needed.
-//
-// Auto-calibration (engine-side) and manual sliders (Settings ▸ General
-// ▸ Recording) write through `App.ApplyLevelWindow` which forwards into
-// these statics. Defaults match the shipping calibration documented in
-// CaptureSettings.LevelWindowSettings.
+// The dBFS window is anchored on the user's voice level
+// (CaptureSettings.VoiceLevelDbfs), the same level the segmenter cuts on: the
+// outline is dark at the voice detector's exit level and full 20 dB above it.
+// The app calls Apply at startup and whenever the capture settings change;
+// until then the window sits on the shipped default level.
 //
 // Extracted from Controls/HudChrono.xaml.cs on 2026-05-02 — was on the
 // HUD control by historical accident; the math is purely audio-domain.
@@ -38,47 +31,51 @@ public static class AudioLevelMapper
     // since per-window state shouldn't be a global.
     public static float EmaAlpha = 0.25f;
 
-    // Linear RMS mapped through a dBFS window, then through a power
-    // curve. The window [MinDbfs, MaxDbfs] folds the dBFS range into a
-    // linear [0, 1] parameter t; the power curve t^p then reshapes the
-    // response so the visual reacts softly in the lower half and
-    // aggressively in the upper half of the window.
-    //
-    // MinDbfs −55 is the auto-calibration starting point; the engine
-    // retunes it session-by-session if AutoCalibrationEnabled is on.
-    //
-    // DbfsCurveExponent 1.0 restores the old linear mapping; values
-    // above 1 push the response to the upper end of the window; below
-    // 1 pushes it to the low end (only useful for debugging).
-    public static float MinDbfs           = -55f;
-    public static float MaxDbfs           = -32f;
-    public static float DbfsCurveExponent = 1.0f;
+    // Width of the window above the voice level, in dB.
+    public const float WindowSpanDb = 20f;
+
+    // The curve applied to the position in the window. The map stays
+    // continuous: the HUD must not look like a gate, an outline that switched
+    // on at once would flicker. The square root lifts the bottom of the window
+    // so that a frame a few dB above the level already reads clearly lit,
+    // sqrt(3/20) ≈ 0.39 at 3 dB rather than 0.15 on a straight line: a soft
+    // voice that opens an utterance does not leave the ring almost dark.
+    // Interpretation of the research note's P6, to be checked against the eye.
+    public const float Exponent = 0.5f;
+
+    // The window, swapped whole so a reader never sees a floor from one level
+    // and a ceiling from another. Written at startup and on each settings
+    // change (from whichever thread raises it), read on the audio thread at
+    // every sample; Volatile publishes the new window to that thread.
+    private sealed record Window(float MinDbfs, float MaxDbfs);
+
+    private static Window _window = null!;
+
+    // The defaults' own level, so the HUD is anchored before the app applies
+    // the stored one.
+    static AudioLevelMapper() => Apply(new CaptureSettings().VoiceLevelDbfs);
+
+    // Where the outline is dark: the voice detector's exit level.
+    public static float MinDbfs => Volatile.Read(ref _window).MinDbfs;
+
+    // Where the outline is full: WindowSpanDb above the voice level.
+    public static float MaxDbfs => Volatile.Read(ref _window).MaxDbfs;
+
+    // Anchors the window on a voice level, in dBFS.
+    public static void Apply(double voiceLevelDbfs)
+    {
+        float min = (float)voiceLevelDbfs;
+        Volatile.Write(ref _window, new Window(min, min + WindowSpanDb));
+    }
 
     // Pure RMS → [0, 1] perceptual level. Linear RMS in (zero or less
     // returns 0 — silence / gate). Caller owns the EMA smoother.
     public static float RmsToPerceptualLevel(float rms)
     {
         if (rms <= 0f) return 0f;
+        Window w = Volatile.Read(ref _window);
         float dbfs = 20f * MathF.Log10(rms);
-        float t = (dbfs - MinDbfs) / (MaxDbfs - MinDbfs);
-        t = Math.Clamp(t, 0f, 1f);
-        // Power-curve response. p = 1 is linear; p > 1 compresses the
-        // low end and expands the high end. Guarded against p ≤ 0 so a
-        // zero exponent in the settings file cannot nuke the mapping.
-        float p = DbfsCurveExponent;
-        if (p <= 0f) return t;
-        return MathF.Pow(t, p);
-    }
-
-    // Push a level-window calibration into the mapper statics. The window's three
-    // fields are the mapper's only inputs. Called live by the Recording settings
-    // sliders (same assembly, no shell hop), by the App at boot, and by engine-side
-    // auto-calibration. Null-safe so an unset window is a no-op.
-    public static void Apply(LevelWindowSettings window)
-    {
-        if (window is null) return;
-        MinDbfs           = window.MinDbfs;
-        MaxDbfs           = window.MaxDbfs;
-        DbfsCurveExponent = window.DbfsCurveExponent;
+        float t = Math.Clamp((dbfs - w.MinDbfs) / (w.MaxDbfs - w.MinDbfs), 0f, 1f);
+        return MathF.Pow(t, Exponent);
     }
 }

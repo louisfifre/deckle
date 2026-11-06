@@ -23,33 +23,21 @@ public sealed class CaptureSettings
     // user's own limit is the bound.
     public int MaxRecordingDurationSeconds { get; set; } = 0;
 
-    public LevelWindowSettings LevelWindow { get; set; } = new();
+    // The voice level, in dBFS: the one level above which Deckle calls a 50 ms
+    // frame "voice" (VoiceDetector treats it as its exit level). Read by the
+    // energy segmenter for every cut (dictation, file transcription, recovery
+    // of a take), by the low-audio warning of the capture loop and by the HUD
+    // outline (AudioLevelMapper). It also governs the cuts of file
+    // transcription, whose gain chain is not the microphone's: known and
+    // accepted for now. Moved here from the transcription module's
+    // streaming.segmenter.thresholdDbfs by SettingsBootstrap.
+    public double VoiceLevelDbfs { get; set; } = -45.0;
 
     // Transcription pre-processing DSP: a terminal float[] → float[] signal
     // transform applied between capture and the ASR backend, per utterance by
     // the streaming pipeline, once per take by the monolithic one. It lifts and
     // homogenises a quiet/dynamic mic for machine intelligibility. Off by
     // default; the only knob in Settings ▸ Recording is the opt-in toggle, and
-    // only a hand-edited settings file changes the fine params. Distinct from
-    // LevelWindow above, which drives the HUD display level and never alters
-    // the audio.
+    // only a hand-edited settings file changes the fine params.
     public PreprocessingSettings Preprocessing { get; set; } = new();
-}
-
-// Persisted dBFS window used to map raw microphone RMS
-// onto the [0, 1] perceptual level driving the Recording stroke. Exposed
-// as Settings so the user can calibrate against their own mic+DSP chain
-// without rebuilding — the values land in AudioLevelMapper at app startup
-// and on every change.
-//
-// Auto-calibration (MicrophoneCalibrationCalculator) rewrites MinDbfs and
-// MaxDbfs from the last AutoCalibrationSamples microphone telemetry samples.
-// Off by default: the user opts in to recurring visual-feedback tweaks.
-public sealed class LevelWindowSettings
-{
-    public float MinDbfs                = -55f;
-    public float MaxDbfs                = -32f;
-    public float DbfsCurveExponent      = 1.0f;
-    public bool  AutoCalibrationEnabled = false;
-    public int   AutoCalibrationSamples = 5;
 }

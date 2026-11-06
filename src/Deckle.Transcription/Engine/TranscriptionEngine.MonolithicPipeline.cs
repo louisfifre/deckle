@@ -3,6 +3,7 @@ using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Transcription;
+using Deckle.Vad;
 
 namespace Deckle.Transcription;
 
@@ -12,7 +13,9 @@ public sealed partial class TranscriptionEngine
     //
     // Capture the whole take, then a single backend.TranscribeAsync() that does
     // its own internal windowing (30 s + dynamic seek in Whisper) and
-    // inter-window context propagation. No chunking on the C# side.
+    // inter-window context propagation. No chunking on the C# side; the take
+    // goes through the optional DSP and the Silero trim first, like each
+    // utterance of the segmented session.
     //
     // Owns capture and every state transition through to Transcribing; returns
     // null when it already handled an early exit and raised Finished itself.
@@ -21,6 +24,12 @@ public sealed partial class TranscriptionEngine
     private async Task<PipelineProduction?> ProduceMonolithicAsync(
         CancellationToken producerCt, Task<bool> primeTask)
     {
+        // The Silero model is made ready before the capture, not after Stop:
+        // EnsureReady checks the model file and opens its ONNX session, work
+        // that would otherwise sit on the Stop→text path while the person waits.
+        // The trim itself runs after the DSP, below.
+        (SileroVad? vad, SileroVadOptions vadOptions) = PrepareSpeechTrim();
+
         // ── Capture ───────────────────────────────────────────────────────────
         CaptureResult capture = _capture.Record(_recordingHost, producerCt);
         _recordDrainDuration = capture.DrainDuration;
@@ -48,11 +57,6 @@ public sealed partial class TranscriptionEngine
             {
                 _stopToPipelineSw = System.Diagnostics.Stopwatch.StartNew();
             }
-        }
-
-        if (capture.Telemetry is not null)
-        {
-            TryAutoCalibrate(capture.Telemetry);
         }
 
         float[] audio = capture.Pcm;
@@ -119,8 +123,37 @@ public sealed partial class TranscriptionEngine
             EmitPreprocessedTelemetry(backendAudio);
         }
 
+        // The Silero trim, at the edges only: the leading and trailing silence
+        // Whisper hallucinates on go, the pauses inside the take stay. The
+        // segmented session cuts each utterance to its speech spans instead
+        // (TrimSpeech); here that would glue every pause of a long dictation
+        // and its per-span floor would drop a short word said after a pause,
+        // which this path transcribed before the trim existed. The monolithic
+        // take is one utterance, index 0, so the log lines read like the first
+        // utterance of a segmented take. A trim failure keeps the untrimmed audio.
+        float[] decodedAudio = backendAudio;
+        if (vad is not null)
+        {
+            float[]? trimmed = TrimSpeechEdges(vad, vadOptions, backendAudio, utteranceIndex: 0);
+            // A trim that found no speech does not end the take: the whole take
+            // is one utterance here, and dropping it would lose what Silero
+            // missed with no second chance. The take goes to Whisper untrimmed
+            // and unpadded, as before the trim existed, and the backend's own
+            // no-speech filter judges it. The SpeechTrimmed line already logged
+            // 0 speech segments, which is what a reader needs to see this.
+            if (trimmed is { Length: > 0 })
+            {
+                backendAudio = trimmed;
+                // Whisper sometimes ended the text early when the audio stopped on
+                // near-digital silence after the trim; a noise tail fixed it (see
+                // TrailingNoisePad). The pad goes only to the backend: BackendAudio
+                // keeps the trimmed, unpadded buffer, as in the streaming consumer.
+                decodedAudio = TrailingNoisePad.Append(trimmed);
+            }
+        }
+
         TranscriptionResult? consumed =
-            await ConsumeMonolithicAudioAsync(backendAudio, producerCt).ConfigureAwait(false);
+            await ConsumeMonolithicAudioAsync(decodedAudio, producerCt).ConfigureAwait(false);
         if (consumed is null)
             return null;
 

@@ -8,6 +8,10 @@ namespace Deckle.Transcription.Tests;
 public sealed class SegmentedTranscriptionSessionTests
 {
     private const int FrameSamples = 800;
+    private static readonly double VoiceLevel = new CaptureSettings().VoiceLevelDbfs;
+
+    // Five voiced frames: exactly the 250 ms floor, so each burst is kept.
+    private const int MinSpeechMs = 250;
 
     [Fact]
     public async Task AnyCaptureFrameProducerReachesTheSameOrderedConsumer()
@@ -17,6 +21,8 @@ public sealed class SegmentedTranscriptionSessionTests
         var consumed = new List<int>();
         var session = new SegmentedTranscriptionSession<int>(
             Settings(),
+            VoiceLevel,
+            MinSpeechMs,
             async (reader, onDequeue) =>
             {
                 await releaseConsumer.Task;
@@ -48,6 +54,8 @@ public sealed class SegmentedTranscriptionSessionTests
         var consumed = new List<Utterance>();
         var session = new SegmentedTranscriptionSession<int>(
             Settings(),
+            VoiceLevel,
+            MinSpeechMs,
             async (reader, onDequeue) =>
             {
                 await foreach (Utterance utterance in reader.ReadAllAsync())
@@ -85,6 +93,5 @@ public sealed class SegmentedTranscriptionSessionTests
         HangoverRampStartMs = 50,
         HangoverRampEndMs = 50,
         MarginMs = 0,
-        MinUtteranceMs = 250,
     };
 }

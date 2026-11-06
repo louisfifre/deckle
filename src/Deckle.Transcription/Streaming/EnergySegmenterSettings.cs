@@ -2,12 +2,11 @@ namespace Deckle.Transcription;
 
 // Parameters of the energy segmenter. Auto-properties so the POCO round-trips
 // cleanly through JsonSettingsStore. The segmenter works in 50 ms frames, so
-// every duration below resolves to a whole frame count.
+// every duration below resolves to a whole frame count. The level that makes a
+// frame voiced is not here: it is the Audio module's voice level
+// (CaptureSettings.VoiceLevelDbfs), passed to the segmenter beside these.
 //
-//   ThresholdDbfs       — a frame counts as voiced when its RAW linear RMS is at
-//                         or above this level. The default leaves headroom for
-//                         quieter mics while staying above a broken mic's floor.
-//   HangoverMaxMs       — DECISION delay at the start of an utterance: how much
+//   HangoverMaxMs      — DECISION delay at the start of an utterance: how much
 //                         trailing silence to wait, after the last voiced frame,
 //                         before declaring the utterance ended. Long by default
 //                         so only a true paragraph-break silence cuts.
@@ -37,8 +36,9 @@ namespace Deckle.Transcription;
 //   MarginMs            — CUT POSITION: the kept span ends MarginMs after the
 //                         last voiced frame. Distinct from hangover — the silence
 //                         between the margin and the hangover expiry is dropped.
-//   MinUtteranceMs      — utterances whose VOICED extent is shorter than this
-//                         are dropped as noise blips rather than emitted.
+//
+//   The floor under which an utterance's voiced extent is a blip is not here
+//   either: it is StreamingSettings.MinSpeechMs, which Silero reads too.
 //
 //   CutPreset           — the STORED selection of the cut preset family: a preset
 //                         id (see CutPresets) or "custom". Null in an older file;
@@ -52,7 +52,6 @@ namespace Deckle.Transcription;
 //                         first derivation lands on Custom).
 public sealed class EnergySegmenterSettings
 {
-    public double ThresholdDbfs       { get; set; } = -45.0;
     public int    HangoverMaxMs       { get; set; } = 5_000;
     public int    HangoverMinMs       { get; set; } = 500;
     public int    HangoverRampStartMs { get; set; } = 15_000;
@@ -62,7 +61,6 @@ public sealed class EnergySegmenterSettings
     public double HangoverCurveX2     { get; set; } = 0.90;
     public double HangoverCurveY2     { get; set; } = 0.25;
     public int    MarginMs            { get; set; } = 150;
-    public int    MinUtteranceMs      { get; set; } = 250;
     public string?          CutPreset       { get; set; }
     public CutCurveValues?  CutCustomValues { get; set; }
 

@@ -8,8 +8,11 @@ using Deckle.Catalog;
 namespace Deckle.Transcription;
 
 // The Streaming page of the Transcription module: a host-only page over the
-// WhisperViewModel manifests of the streaming pipeline. Its own view model
-// instance reloads from the persisted settings on every navigation, like
+// WhisperViewModel manifests of the streaming pipeline. The two sections under
+// the switch show whatever the strategy: the switch picks only the dictation
+// pipeline, and files and recovered takes are always cut and trimmed with
+// these settings, so hiding them would hide settings still in use. Its own
+// view model instance reloads from the persisted settings on every navigation, like
 // WhisperPage's, so an edit made on another page of the module is picked up.
 public sealed partial class StreamingPage : Page
 {
@@ -30,12 +33,6 @@ public sealed partial class StreamingPage : Page
         Compose(SegmentationHost, ViewModel.SegmentationSettings);
     }
 
-    // Settings-UX doctrine: an option that only makes sense in a context is hidden
-    // when inapplicable, not greyed. The two sections appear only while the
-    // streaming pipeline is on.
-    private Visibility VisibleWhenStreaming(bool on) =>
-        on ? Visibility.Visible : Visibility.Collapsed;
-
     private void Compose(Panel host, IReadOnlyList<SettingDescriptor> settings)
     {
         var composer = new SettingsComposer(host, ViewModel);
@@ -50,7 +47,7 @@ public sealed partial class StreamingPage : Page
         ViewModel.Load();
 
         // The speech-filtering fold is the page's first subject, so it opens with
-        // the page rather than hiding its four values behind a click. Set on each
+        // the page rather than hiding its three values behind a click. Set on each
         // visit: the page is cached, and a fold left closed would stay closed.
         foreach (UIElement child in VadHost.Children)
             if (child is CommunityToolkit.WinUI.Controls.SettingsExpander expander)

@@ -37,6 +37,7 @@ public partial class RecordingViewModel
     private async Task RecordListeningTakeAsync()
     {
         if (IsRecordingListeningTake) return;
+        MicrophoneNeeded?.Invoke(this, EventArgs.Empty);
         ListeningTestFailed = false;
         IsRecordingListeningTake = true;
         try

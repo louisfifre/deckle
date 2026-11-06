@@ -12,9 +12,10 @@ namespace Deckle.Transcription;
 // preview) needs this and not the engine, which would also load a model and
 // type the result. EnergySegmenter stays internal; this is its one public face.
 //
-// A level is all the segmenter's decision reads: it compares each frame's RMS
-// to the threshold and counts frames. So the meter hands it frames with no
-// samples, and a loud stretch that never ends holds no audio in memory. That is
+// A level is all the segmenter's decision reads: its voice detector judges
+// each frame's RMS against the voice level, and it counts frames. So the meter
+// hands it frames with no samples, and a loud stretch that never ends holds no
+// audio in memory. That is
 // also why it can take the AudioLevel event, whose value is the RMS the Frame
 // event carries: the capture then converts no float buffer at all.
 //
@@ -26,10 +27,10 @@ public sealed class UtteranceProgressMeter
     private readonly EnergySegmenter _segmenter;
 
     // Settings are read once, here, as a dictation reads them when it starts.
-    public UtteranceProgressMeter(EnergySegmenterSettings settings)
+    public UtteranceProgressMeter(EnergySegmenterSettings settings, double voiceLevelDbfs, int minSpeechMs)
     {
         ArgumentNullException.ThrowIfNull(settings);
-        _segmenter = new EnergySegmenter(settings, static _ => { }, logsDetail: false);
+        _segmenter = new EnergySegmenter(settings, voiceLevelDbfs, minSpeechMs, static _ => { }, logsDetail: false);
     }
 
     // Where a take stands before its first level: active, not pausing, nothing

@@ -22,8 +22,10 @@ public partial class App
     {
         ApplyTheme(Settings.SettingsService.Instance.Current.Appearance.Theme);
 
-        // So the first recording reflects the user's calibration, not the defaults.
-        ApplyLevelWindow(Audio.CaptureSettingsService.Instance.Current.LevelWindow);
+        // So the first recording's outline sits on the user's voice level, not
+        // the default, and follows it when the Recording page changes it.
+        ApplyVoiceLevel();
+        Audio.CaptureSettingsService.Instance.Changed += ApplyVoiceLevel;
 
         var cliArgs = Environment.GetCommandLineArgs();
 

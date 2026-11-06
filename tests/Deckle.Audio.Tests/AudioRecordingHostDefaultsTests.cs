@@ -21,5 +21,6 @@ public sealed class AudioRecordingHostDefaultsTests
         public int AudioInputDeviceId => -1;
         public int MaxRecordingDurationSeconds => 0;
         public bool MicrophoneTelemetryEnabled => false;
+        public double VoiceLevelDbfs => new CaptureSettings().VoiceLevelDbfs;
     }
 }

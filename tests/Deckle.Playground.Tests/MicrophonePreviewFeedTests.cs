@@ -14,13 +14,17 @@ namespace Deckle.Playground.Tests;
 // through a fake capture, so no device is opened: they hold the feed to the
 // segmenter a dictation uses, to what it asks the capture for, and to the
 // promise a caller leans on, that once Stop returns nothing more arrives.
+// The microphone's own discipline (no Frame stream, the wait for the device
+// between two runs) is Deckle.Audio's MicrophoneLevelFeed, tested there.
 [Trait("Category", "unit")]
 public sealed class MicrophonePreviewFeedTests
 {
     private static readonly TimeSpan Wait = TimeSpan.FromSeconds(5);
 
-    private const float Voiced = 0.1f; // well above the -45 dBFS threshold
+    private const float Voiced = 0.1f; // well above the default voice level's entry
     private const float Silent = 0f;
+    private static readonly double VoiceLevel = new CaptureSettings().VoiceLevelDbfs;
+    private static readonly int MinSpeechMs = new StreamingSettings().MinSpeechMs;
 
     private static EnergySegmenterSettings TestSettings()
         => new()
@@ -38,7 +42,7 @@ public sealed class MicrophonePreviewFeedTests
 
         h.Feed.Start();
 
-        Assert.Equal(new UtteranceProgressMeter(TestSettings()).Progress, Assert.Single(h.Progress));
+        Assert.Equal(new UtteranceProgressMeter(TestSettings(), VoiceLevel, MinSpeechMs).Progress, Assert.Single(h.Progress));
         Assert.Empty(h.Levels);
     }
 
@@ -49,7 +53,7 @@ public sealed class MicrophonePreviewFeedTests
         h.Feed.Start();
         var capture = h.WaitForCapture(0);
 
-        var meter = new UtteranceProgressMeter(TestSettings());
+        var meter = new UtteranceProgressMeter(TestSettings(), VoiceLevel, MinSpeechMs);
         var levels = Enumerable.Repeat(Voiced, 8).Concat(Enumerable.Repeat(Silent, 6)).ToArray();
         var expected = new List<UtteranceProgress> { meter.Progress };
         foreach (float rms in levels)
@@ -78,18 +82,6 @@ public sealed class MicrophonePreviewFeedTests
         Assert.False(host.MicrophoneTelemetryEnabled);
         // A preview must not read as a dictation in the log.
         Assert.NotEqual(((IAudioRecordingHost)new DefaultHost()).RecordingPurpose, host.RecordingPurpose);
-    }
-
-    [Fact]
-    public void ItDoesNotAskForTheFrameStream()
-    {
-        using var h = new Harness();
-        h.Feed.Start();
-        var capture = h.WaitForCapture(0);
-
-        // Unsubscribed, the capture converts no float buffer: the level it
-        // raises is already the RMS the preview needs.
-        Assert.Equal(0, capture.FrameSubscribers);
     }
 
     [Fact]
@@ -198,30 +190,10 @@ public sealed class MicrophonePreviewFeedTests
         h.Feed.Start();
 
         // ...starts over, without closing and reopening the device.
-        Assert.Equal(new UtteranceProgressMeter(TestSettings()).Progress, h.Progress.Last());
+        Assert.Equal(new UtteranceProgressMeter(TestSettings(), VoiceLevel, MinSpeechMs).Progress, h.Progress.Last());
         capture.Raise(Voiced);
         Assert.Equal(0, h.Progress.Last().CompletedUtterances);
         Assert.Equal(1, h.CaptureCount);
-    }
-
-    [Fact]
-    public void ARestartAfterStopWaitsForTheDeviceToBeReleased()
-    {
-        using var h = new Harness();
-        var first = h.NextCapture(holdDevice: true);
-        h.Feed.Start();
-        h.WaitForCapture(0);
-        h.Feed.Stop();
-
-        h.Feed.Start();
-
-        // The first take still holds the device: the second must not ask for it.
-        Assert.Equal(1, h.CaptureCount);
-        Assert.False(h.TryWaitForCapture(1, TimeSpan.FromMilliseconds(200)));
-
-        first.ReleaseDevice();
-        h.WaitForCapture(1);
-        Assert.True(first.Disposed);
     }
 
     [Fact]
@@ -304,6 +276,7 @@ public sealed class MicrophonePreviewFeedTests
         public int AudioInputDeviceId => 0;
         public int MaxRecordingDurationSeconds => 0;
         public bool MicrophoneTelemetryEnabled => false;
+        public double VoiceLevelDbfs => VoiceLevel;
     }
 
     private sealed class Harness : IDisposable
@@ -325,6 +298,8 @@ public sealed class MicrophonePreviewFeedTests
                 createCapture: CreateCapture,
                 deviceId: () => Device,
                 segmenterSettings: TestSettings,
+                voiceLevelDbfs: () => VoiceLevel,
+                minSpeechMs: () => MinSpeechMs,
                 onLevel: Levels.Enqueue,
                 onProgress: Progress.Enqueue,
                 onFailed: failure =>

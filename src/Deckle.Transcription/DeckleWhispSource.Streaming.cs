@@ -140,9 +140,9 @@ public sealed partial class DeckleWhispSource
     [Event(EvtSegmenterSettingsSnapshot,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "threshold_dbfs={0:F1} | hangover_max_ms={1} | hangover_min_ms={2} | ramp_start_ms={3} | ramp_end_ms={4} | curve=({5:F2},{6:F2},{7:F2},{8:F2}) | margin_ms={9} | min_utterance_ms={10}")]
+           Message = "voice_level_dbfs={0:F1} | hangover_max_ms={1} | hangover_min_ms={2} | ramp_start_ms={3} | ramp_end_ms={4} | curve=({5:F2},{6:F2},{7:F2},{8:F2}) | margin_ms={9} | min_speech_ms={10}")]
     public void SegmenterSettingsSnapshot(
-        double threshold_dbfs,
+        double voice_level_dbfs,
         int hangover_max_ms,
         int hangover_min_ms,
         int ramp_start_ms,
@@ -152,12 +152,12 @@ public sealed partial class DeckleWhispSource
         double curve_x2,
         double curve_y2,
         int margin_ms,
-        int min_utterance_ms)
+        int min_speech_ms)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
             WriteEvent(
                 EvtSegmenterSettingsSnapshot,
-                threshold_dbfs,
+                voice_level_dbfs,
                 hangover_max_ms,
                 hangover_min_ms,
                 ramp_start_ms,
@@ -167,11 +167,12 @@ public sealed partial class DeckleWhispSource
                 curve_x2,
                 curve_y2,
                 margin_ms,
-                min_utterance_ms);
+                min_speech_ms);
     }
 
-    // A voiced span shorter than MinUtteranceMs, discarded as a noise blip. A
-    // flurry of blips says the threshold is too permissive for the room.
+    // A voiced span shorter than the minimum speech (StreamingSettings.MinSpeechMs),
+    // discarded as a noise blip. A flurry of blips says the voice level is too
+    // low for the room.
     [Event(EvtSegmenterBlipDropped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,

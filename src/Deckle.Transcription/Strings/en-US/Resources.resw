@@ -198,10 +198,10 @@
     <value>Your recording is kept.</value>
   </data>
   <data name="Engine_LowAudio_Title" xml:space="preserve">
-    <value>Low audio detected</value>
+    <value>No voice detected</value>
   </data>
   <data name="Engine_LowAudio_Body" xml:space="preserve">
-    <value>Your mic picks up very little.</value>
+    <value>Nothing above your voice level yet.</value>
   </data>
   <data name="Engine_TranscriptionFailed_Title" xml:space="preserve">
     <value>Transcription failed</value>
@@ -449,13 +449,7 @@
     <value>Detector confidence</value>
   </data>
   <data name="WhisperVadThresholdCard.Description" xml:space="preserve">
-    <value>How sure the voice detector must be, from 0 to 1 (a probability, not a loudness), to keep a stretch of a cut utterance as speech. Higher can clip soft speech.</value>
-  </data>
-  <data name="WhisperVadMinSpeechCard.Header" xml:space="preserve">
-    <value>Minimum speech</value>
-  </data>
-  <data name="WhisperVadMinSpeechCard.Description" xml:space="preserve">
-    <value>Shorter speech is dropped as a blip, like a click or a tap.</value>
+    <value>How sure the speech detector must be before it keeps a span. Higher trims more and may clip soft speech.</value>
   </data>
   <data name="WhisperVadMinSilenceCard.Header" xml:space="preserve">
     <value>Minimum silence</value>
@@ -524,7 +518,7 @@
     <value>An uncertain segment is retried with this much more randomness each time.</value>
   </data>
   <data name="WhisperEntropyCard.Header" xml:space="preserve">
-    <value>Entropy threshold</value>
+    <value>Minimum entropy</value>
   </data>
   <data name="WhisperEntropyCard.Description" xml:space="preserve">
     <value>A segment with less word diversity than this is retried at a higher temperature. Raise it to catch subtler repetitions.</value>
@@ -536,7 +530,7 @@
     <value>A segment decoded below this average confidence is retried at a higher temperature. Closer to 0 is stricter.</value>
   </data>
   <data name="WhisperNoSpeechCard.Header" xml:space="preserve">
-    <value>No-speech threshold</value>
+    <value>No-speech cut-off</value>
   </data>
   <data name="WhisperNoSpeechCard.Description" xml:space="preserve">
     <value>A segment the model hears as silence, with low confidence, is dropped. Lower drops more.</value>
@@ -610,7 +604,7 @@
     <value>Streaming</value>
   </data>
   <data name="StreamingPageHeader.Description" xml:space="preserve">
-    <value>Transcribe as you speak, cutting the recording into utterances on silence instead of one pass at Stop.</value>
+    <value>Transcribe as you speak, and how every recording is cut into utterances and cleaned before the model: dictation, files and recovered takes alike.</value>
   </data>
   <data name="StreamingPageSegmentationSection.Title" xml:space="preserve">
     <value>Segmentation</value>
@@ -622,10 +616,10 @@
     <value>Speech filtering</value>
   </data>
   <data name="WhisperPageSpeechFilteringSection.Caption" xml:space="preserve">
-    <value>Silence and noise are removed from each utterance before transcription, the main defence against phantom text.</value>
+    <value>Silence and noise are removed from every utterance of every recording before transcription, the main defence against phantom text.</value>
   </data>
   <data name="StreamingPageSegmentationSection.Caption" xml:space="preserve">
-    <value>Where the live recording is cut into utterances: the level that counts as speech, then how long a pause must last.</value>
+    <value>Where a recording is cut into utterances: how long a pause must last, and the shortest sound that counts as speech. The voice level itself is on the Recording page.</value>
   </data>
   <data name="WhisperPageResetAllLabel.Text" xml:space="preserve">
     <value>Reset all</value>
@@ -668,13 +662,7 @@
     <value>Transcribe as you speak</value>
   </data>
   <data name="WhisperStreamingEnabledCard.Description" xml:space="preserve">
-    <value>Off transcribes in one pass at Stop. Applies on your next recording.</value>
-  </data>
-  <data name="WhisperSegThresholdCard.Header" xml:space="preserve">
-    <value>Speech level</value>
-  </data>
-  <data name="WhisperSegThresholdCard.Description" xml:space="preserve">
-    <value>How loud a 50 ms slice of the microphone must be to count as speech when the recording is cut into utterances. Raise it if background noise keeps an utterance open.</value>
+    <value>Off transcribes a dictation in one pass at Stop, after the silence trim below. Files and recovered takes are always cut as you speak. Applies on your next recording.</value>
   </data>
   <data name="WhisperSegMarginCard.Header" xml:space="preserve">
     <value>Cut margin</value>
@@ -682,11 +670,11 @@
   <data name="WhisperSegMarginCard.Description" xml:space="preserve">
     <value>How much of the pause after your last word stays at the end of an utterance when it is cut. The rest of the pause is dropped. Too short can clip a soft ending.</value>
   </data>
-  <data name="WhisperSegMinUtteranceCard.Header" xml:space="preserve">
-    <value>Minimum utterance</value>
+  <data name="WhisperMinSpeechCard.Header" xml:space="preserve">
+    <value>Minimum speech</value>
   </data>
-  <data name="WhisperSegMinUtteranceCard.Description" xml:space="preserve">
-    <value>Speech shorter than this is dropped as a noise blip (a click, a cough) instead of being transcribed. Too long can drop a short word said alone.</value>
+  <data name="WhisperMinSpeechCard.Description" xml:space="preserve">
+    <value>A sound shorter than this is not speech. The cut drops a lone blip (a click, a cough), and the silence trim drops any shorter span inside an utterance. Too long drops a short word said alone.</value>
   </data>
   <data name="WhisperCutPresetPatient.Content" xml:space="preserve">
     <value>Patient</value>

@@ -31,6 +31,14 @@ public static class SettingsSearch
             Keywords = ["mic", "source"],
         },
 
+        // Voice level (composed number field), with the voice meter under it:
+        // the meter is not a card, so its words find the field it serves.
+        new SettingSearchEntry
+        {
+            LabelKey = "RecordingVoiceLevelCard",
+            Keywords = ["threshold", "dbfs", "speech", "sensitivity", "noise", "segmenter", "meter", "listen"],
+        },
+
         // Maximum recording length picker (composed Choice).
         new SettingSearchEntry
         {

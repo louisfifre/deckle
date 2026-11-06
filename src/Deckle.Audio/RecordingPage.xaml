@@ -6,6 +6,7 @@
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:ui="using:CommunityToolkit.WinUI"
     xmlns:vm="using:Deckle.Audio"
+    xmlns:local="using:Deckle.Audio"
     xmlns:catalog="using:Deckle.Catalog">
 
     <Page.Resources>
@@ -48,12 +49,28 @@
 
                 <!-- ── Recording ───────────────────────────────────────────── -->
                 <!-- Title provisional: the maintainer names the sections at the
-                     end. The section reset spans its two composed settings. -->
+                     end. "Recording", not "Microphone": the section holds the
+                     maximum length and the pre-processing too, and a second
+                     "Microphone" right under the Microphone card reads twice.
+                     What the page sets about a recording: the voice level with
+                     its meter, the maximum length, the pre-processing. The
+                     section reset spans its three composed settings; the meter
+                     keeps no value. -->
                 <catalog:SettingsSection x:Name="RecordingSection"
                                          x:Uid="RecordingPageRecordingSection"
                                          HasReset="True"
                                          ResetRequested="ResetRecording_Click">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+
+                        <!-- Voice level, composed: the level the segmenter, the
+                             low-audio warning and the HUD outline read. -->
+                        <StackPanel x:Name="VoiceLevelHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+
+                        <!-- Its instrument, directly under it: the live meter
+                             with the voice level marked. A floating preview
+                             block, not a card; it shows and never writes. -->
+                        <local:VoiceLevelMeter x:Name="VoiceMeter" />
 
                         <!-- Maximum recording length, composed. -->
                         <StackPanel x:Name="RecordingLimitHost"
@@ -68,8 +85,9 @@
                 </catalog:SettingsSection>
 
                 <!-- ── Checks ──────────────────────────────────────────────── -->
-                <!-- Title provisional, see above. Two commands with their
-                     readouts: nothing here keeps a value, so no reset. -->
+                <!-- Title provisional: the maintainer names the sections at the
+                     end. Two commands with their readouts: nothing here keeps a
+                     value, so no reset. -->
                 <catalog:SettingsSection x:Name="ChecksSection"
                                          x:Uid="RecordingPageChecksSection">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">

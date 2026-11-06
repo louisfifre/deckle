@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Deckle.Catalog;
 using Deckle.Diagnostics;
 using System.Globalization;
 using System.Threading.Tasks;
@@ -11,9 +12,6 @@ namespace Deckle.Audio;
 //
 // Pattern: Load() pulls from the POCOs, property changes push back via
 // PushToSettings(). The _isSyncing flag prevents re-saving during Load().
-// Level window changes also push directly into the AudioLevelMapper
-// statics via AudioLevelMapper.Apply so the HUD reflects the new curve on
-// the next sub-window without restart.
 public partial class RecordingViewModel : ObservableObject
 {
     private bool _isSyncing;
@@ -27,6 +25,22 @@ public partial class RecordingViewModel : ObservableObject
     {
         if (_isSyncing) return;
         DeckleSettingsUxSource.Log.SettingChanged("Audio input device", value.ToString(CultureInfo.InvariantCulture));
+        PushToSettings();
+    }
+
+    // ── Voice level ─────────────────────────────────────────────────────────
+    //
+    // dBFS, the POCO's unit: the level above which Deckle hears voice, read by
+    // the segmenter, the low-audio warning and the HUD outline. A cleared
+    // number field gives NaN, which is not pushed.
+
+    [ObservableProperty]
+    public partial double VoiceLevelDbfs { get; set; }
+
+    partial void OnVoiceLevelDbfsChanged(double value)
+    {
+        if (_isSyncing || double.IsNaN(value)) return;
+        DeckleSettingsUxSource.Log.SettingChanged("VoiceLevelDbfs", value.ToString(CultureInfo.InvariantCulture));
         PushToSettings();
     }
 
@@ -64,7 +78,8 @@ public partial class RecordingViewModel : ObservableObject
     //
     // Four mutually-exclusive advice flags drive four InfoBars (IsOpen is a
     // plain bool, so no value converter is needed); MicResultDetail carries the
-    // raw → normalised dBFS line shown alongside the verdict.
+    // raw → normalised dBFS line, and the margin to the voice level, shown
+    // alongside the verdict.
 
     [ObservableProperty]
     public partial bool IsMeasuringMic { get; set; }
@@ -84,17 +99,24 @@ public partial class RecordingViewModel : ObservableObject
     [ObservableProperty]
     public partial string MicResultDetail { get; set; } = "";
 
+    // Raised on the UI thread right before the microphone check or the
+    // listening test opens the microphone, so the page closes whatever else
+    // holds it (the voice meter's Listen). Two waveIn opens of one device at
+    // once are not known to be safe, so the page never tries it.
+    public event EventHandler? MicrophoneNeeded;
+
     [RelayCommand]
     private async Task MeasureMicAsync()
     {
         if (IsMeasuringMic) return;
+        MicrophoneNeeded?.Invoke(this, EventArgs.Empty);
         IsMeasuringMic = true;
         ClearMicResult();
         try
         {
             var capture = CaptureSettingsService.Instance.Current;
             MicLevelAssessment a = await new MicLevelTester()
-                .MeasureAsync(capture.AudioInputDeviceId, capture.Preprocessing);
+                .MeasureAsync(capture.AudioInputDeviceId, capture.Preprocessing, capture.VoiceLevelDbfs);
 
             if (!a.HasSignal)
             {
@@ -102,10 +124,16 @@ public partial class RecordingViewModel : ObservableObject
                 return;
             }
 
-            MicResultDetail = string.Format(
-                CultureInfo.InvariantCulture,
-                "{0:F0} dBFS → {1:F0} dBFS",
-                a.RawRmsDbfs, a.ProcessedRmsDbfs);
+            // Raw → processed (averages over the capture), then where the
+            // loudest tenth of the 50 ms frames sits against the voice level,
+            // which applies per frame, "above" or "below" by sign. Rounded to whole dB as
+            // integers, so a margin just under zero never reads -0.
+            int margin = (int)Math.Round(a.VoiceMarginDb);
+            MicResultDetail = Loc.Format(
+                margin >= 0 ? "RecordingPageMicResultAbove_Format" : "RecordingPageMicResultBelow_Format",
+                (int)Math.Round(a.RawRmsDbfs),
+                (int)Math.Round(a.ProcessedRmsDbfs),
+                Math.Abs(margin));
 
             AdviceRecommended = a.Advice == PreprocessingAdvice.Recommended;
             AdviceMarginal    = a.Advice == PreprocessingAdvice.Marginal;
@@ -126,55 +154,6 @@ public partial class RecordingViewModel : ObservableObject
         MicResultDetail   = "";
     }
 
-    // ── Level window (calibration) ──────────────────────────────────────────
-
-    [ObservableProperty]
-    public partial double LevelWindowMinDbfs { get; set; }
-
-    [ObservableProperty]
-    public partial double LevelWindowMaxDbfs { get; set; }
-
-    [ObservableProperty]
-    public partial double LevelWindowExponent { get; set; }
-
-    [ObservableProperty]
-    public partial bool LevelWindowAutoCalibration { get; set; }
-
-    // Slider drags fire ValueChanged on every step, so the per-edit log line
-    // stays at Verbose level. PushToSettings is fine on every step (the file
-    // save is debounced inside JsonSettingsStore); AudioLevelMapper.Apply
-    // writes a few static fields, also free.
-    partial void OnLevelWindowMinDbfsChanged(double value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.MinDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
-        PushToSettings();
-        AudioLevelMapper.Apply(CaptureSettingsService.Instance.Current.LevelWindow);
-    }
-
-    partial void OnLevelWindowMaxDbfsChanged(double value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.MaxDbfs", $"{value.ToString("F1", CultureInfo.InvariantCulture)} dBFS");
-        PushToSettings();
-        AudioLevelMapper.Apply(CaptureSettingsService.Instance.Current.LevelWindow);
-    }
-
-    partial void OnLevelWindowExponentChanged(double value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.DbfsCurveExponent", value.ToString("F2", CultureInfo.InvariantCulture));
-        PushToSettings();
-        AudioLevelMapper.Apply(CaptureSettingsService.Instance.Current.LevelWindow);
-    }
-
-    partial void OnLevelWindowAutoCalibrationChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("LevelWindow.AutoCalibration", value.ToString());
-        PushToSettings();
-    }
-
     // The microphone-telemetry opt-in lives in RecordingTelemetryViewModel, the
     // module's contribution to the Diagnostics page.
 
@@ -188,13 +167,9 @@ public partial class RecordingViewModel : ObservableObject
         // single source the composer's reset defaults read. The device id has
         // no composed default (runtime hardware enumeration), so its -1 sentinel
         // stays an explicit literal here.
-        var levelWindow = new LevelWindowSettings();
         AudioInputDeviceId = -1;
+        VoiceLevelDbfs = new CaptureSettings().VoiceLevelDbfs;
         MaxRecordingDurationSeconds = new CaptureSettings().MaxRecordingDurationSeconds;
-        LevelWindowMinDbfs = levelWindow.MinDbfs;
-        LevelWindowMaxDbfs = levelWindow.MaxDbfs;
-        LevelWindowExponent = levelWindow.DbfsCurveExponent;
-        LevelWindowAutoCalibration = levelWindow.AutoCalibrationEnabled;
         PreprocessingEnabled = new PreprocessingSettings().Enabled;
 
         // _isSyncing stays true — Load() will set it to false.
@@ -208,11 +183,8 @@ public partial class RecordingViewModel : ObservableObject
             var capture = CaptureSettingsService.Instance.Current;
 
             AudioInputDeviceId = capture.AudioInputDeviceId;
+            VoiceLevelDbfs = capture.VoiceLevelDbfs;
             MaxRecordingDurationSeconds = capture.MaxRecordingDurationSeconds;
-            LevelWindowMinDbfs = capture.LevelWindow.MinDbfs;
-            LevelWindowMaxDbfs = capture.LevelWindow.MaxDbfs;
-            LevelWindowExponent = capture.LevelWindow.DbfsCurveExponent;
-            LevelWindowAutoCalibration = capture.LevelWindow.AutoCalibrationEnabled;
             PreprocessingEnabled = capture.Preprocessing.Enabled;
         }
         finally
@@ -226,11 +198,8 @@ public partial class RecordingViewModel : ObservableObject
         var capture = CaptureSettingsService.Instance.Current;
 
         capture.AudioInputDeviceId = AudioInputDeviceId;
+        if (!double.IsNaN(VoiceLevelDbfs)) capture.VoiceLevelDbfs = VoiceLevelDbfs;
         capture.MaxRecordingDurationSeconds = MaxRecordingDurationSeconds;
-        capture.LevelWindow.MinDbfs = (float)LevelWindowMinDbfs;
-        capture.LevelWindow.MaxDbfs = (float)LevelWindowMaxDbfs;
-        capture.LevelWindow.DbfsCurveExponent = (float)LevelWindowExponent;
-        capture.LevelWindow.AutoCalibrationEnabled = LevelWindowAutoCalibration;
         capture.Preprocessing.Enabled = PreprocessingEnabled;
 
         CaptureSettingsService.Instance.Save();

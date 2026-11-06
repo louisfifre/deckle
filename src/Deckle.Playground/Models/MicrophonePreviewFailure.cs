@@ -1,34 +1,21 @@
+using Deckle.Audio;
+
 namespace Deckle.Playground;
 
 // What went wrong with the HUD tab's microphone preview, in the terms the tab
-// words for its reader. A failed open keeps the kind the pre-flight probe gives
-// the same error code (MicrophoneCapture.ClassifyError); the last two are the
-// capture ending, or throwing, with no error code to read.
-internal enum MicrophoneProblem
-{
-    NotDetected,
-    InUse,
-    Unavailable,
-    Ended,
-    Faulted,
-}
-
-// MmsysErr is the waveIn code of a failed open, 0 when the problem carries
-// none. ExceptionType is the type name of the exception behind Faulted, empty
-// otherwise; the message stays out, since it can quote a device's name.
+// words for its reader. The problem, its code and its log spelling are the
+// generic feed's (MicrophoneLevelFeedFailure, in Deckle.Audio); the sentence
+// the tab shows is the Playground's own.
 internal readonly record struct MicrophonePreviewFailure(
     MicrophoneProblem Problem, uint MmsysErr = 0, string ExceptionType = "")
 {
-    // The name a log line carries for the problem. One spelling, here, so the
-    // log and a filter on it agree.
-    public string Cause => Problem switch
+    public MicrophonePreviewFailure(MicrophoneLevelFeedFailure failure)
+        : this(failure.Problem, failure.MmsysErr, failure.ExceptionType)
     {
-        MicrophoneProblem.NotDetected => "not-detected",
-        MicrophoneProblem.InUse       => "in-use",
-        MicrophoneProblem.Unavailable => "unavailable",
-        MicrophoneProblem.Ended       => "ended",
-        _                             => "exception",
-    };
+    }
+
+    // The name a log line carries for the problem, spelled once, by the feed.
+    public string Cause => new MicrophoneLevelFeedFailure(Problem, MmsysErr, ExceptionType).Cause;
 
     // What the tab tells the person, one sentence about the microphone. The
     // error code shows only where the problem has nothing plainer to say; the

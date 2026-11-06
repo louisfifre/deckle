@@ -57,18 +57,18 @@ A distinction that follows from plausible reformulation. A manifest error, such 
 
 ## Segmentation, detection vs cutting
 
-Two devices carry the word "VAD" and are constantly conflated, yet they differ in kind. One is a model that finds speech in a finished buffer. The other is a threshold that cuts a live stream. They also produce two different units of "cut", which must not be confused.
+Two devices carry the word "VAD" and are constantly conflated, yet they differ in kind. One is a model that finds speech in an utterance already cut. The other is a threshold that cuts a live stream. They also produce two different units of "cut", which must not be confused.
 
 **Neural VAD** :
-A device that uses a neural network to find the speech regions of a whole captured buffer and trim the silence before decoding. It is model-based and works after the fact, so it needs the full buffer in hand.
+A device that uses a neural network to find the speech regions of one utterance and trim the silence around them before decoding. It runs inside the segmented session, on each utterance the energy segmenter has cut, after the optional audio processing and before Whisper; a monolithic dictation, which the segmenter does not cut, runs it once on the whole take as one utterance. It is model-based and works after the fact, so it needs the whole utterance in hand.
 _Avoid_ : VAD (bare, ambiguous), Silero (vendor-specific, the term should outlive the model).
 
 **Energy segmenter** :
-A device that cuts the live capture into utterances, placing a boundary wherever the signal's energy drops below a threshold. It is neither a model nor speech recognition. It reads energy dips to decide where to cut.
+A device that cuts the live capture into utterances, placing a boundary wherever the signal's energy stays below the voice level long enough. It is neither a model nor speech recognition. It reads energy dips to decide where to cut. Which frames are voiced it reads from a voice detector on the voice level, both defined in `src/Deckle.Audio/GLOSSARY.md`; the HUD outline and the low-audio warning read the same level.
 _Avoid_ : energy VAD (it does not detect voice, it cuts on silence), VAD (bare, ambiguous).
 
 **Utterance** :
-A unit of cut that the energy segmenter emits, a span of speech bounded by detected silence or by the safety ceiling. It is the audio unit handed to the backend for one transcription call.
+A unit of cut that the energy segmenter emits, a span of speech bounded by detected silence or by the end of the take. It has no maximum length. It is the audio unit handed to the backend for one transcription call.
 _Avoid_ : chunk (too vague), segment (the output unit).
 
 **Segment** :

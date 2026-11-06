@@ -33,18 +33,27 @@ public sealed class StreamingSettings
     public PipelineStrategyKind    Strategy   { get; set; } = PipelineStrategyKind.Monolithic;
     public EnergySegmenterSettings Segmenter  { get; set; } = new();
     public SpeechTrimSettings      SpeechTrim { get; set; } = new();
+
+    // The floor under which a sound is not speech. One value, two scopes: the
+    // energy segmenter drops an utterance whose whole voiced extent is shorter,
+    // and Silero drops each speech span inside an utterance that is shorter.
+    // The segmenter's floor is the only guard when Silero is off or its model
+    // is missing.
+    public int MinSpeechMs { get; set; } = 250;
 }
 
-// External Silero VAD pre-trim (Deckle.Vad), applied in the segmented session.
+// External Silero VAD pre-trim (Deckle.Vad), applied to each utterance of the
+// segmented session and, once, to the whole take of a monolithic dictation.
 // It cleans each chunk the energy segmenter cut, keeping only the speech spans
-// (so a mid-utterance pause the energy threshold didn't split is removed) and
+// (so a mid-utterance pause the voice level didn't split is removed) and
 // dropping an utterance with no speech at all (an energy false positive on
 // noise/silence) — the main guard against whisper hallucinating on near-silence.
 // The model (silero_vad.onnx) is provisioned on demand; until it is present the
 // trim is a silent no-op (the first take after enabling triggers a one-time
-// background download and runs untrimmed). The four parameters default to the
+// background download and runs untrimmed). The three parameters default to the
 // Silero reference values (SileroVadOptions) and map straight onto a
-// SileroVadOptions built per take.
+// SileroVadOptions built per take; its minimum speech duration is the shared
+// StreamingSettings.MinSpeechMs.
 public sealed class SpeechTrimSettings
 {
     public bool Enabled { get; set; } = true;
@@ -53,9 +62,6 @@ public sealed class SpeechTrimSettings
     // aggressively (risks clipping soft speech); the release threshold is derived
     // (Threshold - 0.15, hysteresis).
     public float Threshold { get; set; } = 0.5f;
-
-    // A detected speech span shorter than this is discarded as a blip.
-    public int MinSpeechDurationMs { get; set; } = 250;
 
     // A silence shorter than this does not close an open span, so an intra-phrase
     // pause is bridged rather than cut.

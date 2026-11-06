@@ -27,10 +27,6 @@ public partial class WhisperViewModel : ObservableObject
         Language = "fr";
         InitialPrompt = "Bonjour. Voici une transcription en français, avec une ponctuation soignée et des phrases complètes.";
         VadEnabled = true;
-        VadThreshold = 0.5;
-        VadMinSpeechDurationMs = 250;
-        VadMinSilenceDurationMs = 100;
-        VadSpeechPadMs = 30;
         UseBeamSearch = true;
         BeamSize = 5;
         Temperature = 0.0;
@@ -44,21 +40,27 @@ public partial class WhisperViewModel : ObservableObject
         UseContext = true;
         MaxTokens = -1;
         StreamingEnabled = false;
-        SegThresholdDbfs = -45.0;
-        SegHangoverMaxMs = 5_000;
-        SegHangoverMinMs = 500;
-        SegHangoverRampStartMs = 15_000;
-        SegHangoverRampEndMs = 120_000;
-        SegMarginMs = 150;
-        SegMinUtteranceMs = 250;
 
-        // Curve seeds read from the segmenter POCO initializers (their single
+        // Speech-trim seeds read from the POCO initializers (their single
+        // source), overwritten by Load().
+        var speechTrim = new SpeechTrimSettings();
+        VadThreshold = speechTrim.Threshold;
+        VadMinSilenceDurationMs = speechTrim.MinSilenceDurationMs;
+        VadSpeechPadMs = speechTrim.SpeechPadMs;
+
+        // Segmenter seeds read from the segmenter POCO initializers (their single
         // source), overwritten by Load().
         var segmenter = new EnergySegmenterSettings();
+        SegHangoverMaxMs = segmenter.HangoverMaxMs;
+        SegHangoverMinMs = segmenter.HangoverMinMs;
+        SegHangoverRampStartMs = segmenter.HangoverRampStartMs;
+        SegHangoverRampEndMs = segmenter.HangoverRampEndMs;
+        SegMarginMs = segmenter.MarginMs;
         SegCurveX1 = segmenter.HangoverCurveX1;
         SegCurveY1 = segmenter.HangoverCurveY1;
         SegCurveX2 = segmenter.HangoverCurveX2;
         SegCurveY2 = segmenter.HangoverCurveY2;
+        MinSpeechMs = new StreamingSettings().MinSpeechMs;
 
         // A first family bound to a throwaway segmenter: the page composes the
         // selector before Load() runs and only needs the options, and nothing of
@@ -95,7 +97,6 @@ public partial class WhisperViewModel : ObservableObject
             InitialPrompt = s.Engine.InitialPrompt;
             VadEnabled = s.Streaming.SpeechTrim.Enabled;
             VadThreshold = s.Streaming.SpeechTrim.Threshold;
-            VadMinSpeechDurationMs = s.Streaming.SpeechTrim.MinSpeechDurationMs;
             VadMinSilenceDurationMs = s.Streaming.SpeechTrim.MinSilenceDurationMs;
             VadSpeechPadMs = s.Streaming.SpeechTrim.SpeechPadMs;
             UseBeamSearch = s.Decoding.UseBeamSearch;
@@ -111,7 +112,6 @@ public partial class WhisperViewModel : ObservableObject
             UseContext = s.Context.UseContext;
             MaxTokens = s.Context.MaxTokens;
             StreamingEnabled = s.Streaming.Strategy == PipelineStrategyKind.Streaming;
-            SegThresholdDbfs = s.Streaming.Segmenter.ThresholdDbfs;
             SegHangoverMaxMs = s.Streaming.Segmenter.HangoverMaxMs;
             SegHangoverMinMs = s.Streaming.Segmenter.HangoverMinMs;
             SegHangoverRampStartMs = s.Streaming.Segmenter.HangoverRampStartMs;
@@ -121,7 +121,7 @@ public partial class WhisperViewModel : ObservableObject
             SegCurveX2 = s.Streaming.Segmenter.HangoverCurveX2;
             SegCurveY2 = s.Streaming.Segmenter.HangoverCurveY2;
             SegMarginMs = s.Streaming.Segmenter.MarginMs;
-            SegMinUtteranceMs = s.Streaming.Segmenter.MinUtteranceMs;
+            MinSpeechMs = s.Streaming.MinSpeechMs;
 
             // The shell's SettingsService persists these, not TranscriptionSettings.
             var shell = SettingsService.Instance.Current;
@@ -157,7 +157,6 @@ public partial class WhisperViewModel : ObservableObject
 
         s.Streaming.SpeechTrim.Enabled = VadEnabled;
         s.Streaming.SpeechTrim.Threshold = (float)VadThreshold;
-        s.Streaming.SpeechTrim.MinSpeechDurationMs = (int)VadMinSpeechDurationMs;
         s.Streaming.SpeechTrim.MinSilenceDurationMs = (int)VadMinSilenceDurationMs;
         s.Streaming.SpeechTrim.SpeechPadMs = (int)VadSpeechPadMs;
 
@@ -182,7 +181,6 @@ public partial class WhisperViewModel : ObservableObject
         s.Streaming.Strategy = StreamingEnabled
             ? PipelineStrategyKind.Streaming
             : PipelineStrategyKind.Monolithic;
-        s.Streaming.Segmenter.ThresholdDbfs = SegThresholdDbfs;
         if (!double.IsNaN(SegHangoverMaxMs))       s.Streaming.Segmenter.HangoverMaxMs       = (int)SegHangoverMaxMs;
         if (!double.IsNaN(SegHangoverMinMs))       s.Streaming.Segmenter.HangoverMinMs       = (int)SegHangoverMinMs;
         if (!double.IsNaN(SegHangoverRampStartMs)) s.Streaming.Segmenter.HangoverRampStartMs = (int)SegHangoverRampStartMs;
@@ -192,7 +190,7 @@ public partial class WhisperViewModel : ObservableObject
         if (!double.IsNaN(SegCurveX2))             s.Streaming.Segmenter.HangoverCurveX2     = SegCurveX2;
         if (!double.IsNaN(SegCurveY2))             s.Streaming.Segmenter.HangoverCurveY2     = SegCurveY2;
         if (!double.IsNaN(SegMarginMs))           s.Streaming.Segmenter.MarginMs            = (int)SegMarginMs;
-        if (!double.IsNaN(SegMinUtteranceMs))      s.Streaming.Segmenter.MinUtteranceMs      = (int)SegMinUtteranceMs;
+        if (!double.IsNaN(MinSpeechMs))            s.Streaming.MinSpeechMs                   = (int)MinSpeechMs;
 
         TranscriptionSettingsService.Instance.Save();
     }

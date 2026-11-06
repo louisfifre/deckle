@@ -28,3 +28,17 @@ Automatic gain control, a real-time adjustment of the gain while the signal is b
 
 **Normalization** :
 A single scaling of the whole signal to a target peak or RMS level. Transcription pre-processing is a chain of several dynamics steps.
+
+## Voice level and voice detector
+
+**Voice level** :
+The one level, in dBFS, above which Deckle hears voice in a 50 ms frame of the microphone (`CaptureSettings.VoiceLevelDbfs`, Settings > Recording). It is the exit level of the voice detector. The energy segmenter cuts on it, the low-audio warning tests it, and the display level is anchored on it, dark at the voice level.
+_Avoid_ : threshold (in anything a user reads), speech level (the former name), detector confidence (the neural VAD's probability, a different signal and a different scale).
+
+**Voice detector** :
+The small stateful object (`VoiceDetector`) that, fed one frame's RMS at a time, says voiced or silent. A silent frame must reach the entry level to open a voiced run, and a voiced run ends only below the voice level itself. The entry margin between the two is 0 by default, so the entry is the voice level; a positive margin, still to be sized, would gate only the opening of an utterance, since the resume after a pause (`Resume`, which the segmenter asks while an utterance is open) is at the voice level. Each consumer runs its own, on the same level and the same RMS.
+_Avoid_ : VAD (bare, ambiguous with the neural VAD), energy VAD.
+
+**Voice meter** :
+The instrument under the voice level on the Recording page (`VoiceLevelMeter`). While Listen is on it draws the microphone's live level on a fixed dB track, marks the voice level (and the detector's entry level, only when the entry margin is positive), and fills in the accent while its own voice detector says voiced. It shows and never writes: nothing is recorded, nothing persists, and the voice level is changed only in its field.
+_Avoid_ : level meter (bare, it says nothing of the voice level it is read against), VU meter (a different ballistic and scale).

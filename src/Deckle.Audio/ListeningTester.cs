@@ -106,6 +106,7 @@ public sealed class ListeningTester : IDisposable
         public int AudioInputDeviceId => deviceId;
         public int MaxRecordingDurationSeconds => seconds;
         public bool MicrophoneTelemetryEnabled => false;
+        public double VoiceLevelDbfs => CaptureSettingsService.Instance.Current.VoiceLevelDbfs;
         public string RecordingPurpose => "listening_test";
     }
 }

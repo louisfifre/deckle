@@ -19,11 +19,4 @@ public interface ITranscriptionEngineHost
     // The speech model directory: TranscriptionSettings.ModelsDirectory when
     // set, else AppPaths.ModelsDirectory.
     string ResolveModelsDirectory();
-
-    // Auto-calibration writes back to LevelWindow then asks the host to
-    // persist it.
-    void SaveSettings();
-
-    // Pushes the recalibrated LevelWindow into the live audio RMS mapper.
-    void ApplyLevelWindow(LevelWindowSettings lw);
 }

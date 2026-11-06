@@ -60,7 +60,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     // 37 retired.
     // 38 retired.
     public const int EvtRecordingLowAudio                = 39;
-    public const int EvtAutoCalibrated                   = 40;
+    // 40 retired.
     // 41 retired.
     public const int EvtTranscribeStarted                = 42;
     public const int EvtTranscribeStartDetail            = 43;
@@ -155,7 +155,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     // 134 retired.
     // 135 retired.
     // 136 retired.
-    public const int EvtAutoCalibratedDetail             = 137;
+    // 137 retired.
     // 138 retired.
     // 139 retired.
     // 140 retired.

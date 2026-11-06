@@ -12,8 +12,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │       │   └── SKILL.md  — deckle-interface Use when you build or change anything a person sees in a Deckle window, from a…
 │       ├── deckle-logging/
 │       │   └── SKILL.md  — deckle-logging Use when you add or change an observation point in Deckle code, or write code t…
-│       ├── deckle-modularite/
-│       │   └── SKILL.md  — deckle-modularite Use when code is about to grow a module, add a new one, or split a file or a su…
+│       ├── deckle-modularity/
+│       │   └── SKILL.md  — deckle-modularity Use when code is about to grow a module, add a new one, or split a file or a su…
 │       ├── deckle-nomenclature/
 │       │   └── SKILL.md  — deckle-nomenclature Use when you give a name to anything in the Deckle repository or change one, a…
 │       ├── deckle-settings-ux/
@@ -32,14 +32,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │       │   │   ├── voice-and-tone.md
 │       │   │   └── windows-fluent.md
 │       │   └── SKILL.md  — ux-copy Write or review interface wording — CTAs, errors, empty states, confirmations,…
-│       ├── ux-designer/
-│       │   ├── rules/
-│       │   │   ├── accessibility.md
-│       │   │   ├── information-architecture.md
-│       │   │   ├── interaction-design.md
-│       │   │   ├── research.md
-│       │   │   └── visual-design.md
-│       │   └── SKILL.md  — ux-designer Design or review user research, flows, information architecture, wireframes, pr…
 │       └── winui-app/
 │           ├── agents/
 │           │   └── openai.yaml
@@ -163,6 +155,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── wheel_analysis.py
 │   │   ├── research--cerveau-llm--2026-10-13.md  — Cadrage vérifié (2026-10-13) — un cerveau LLM dans Deckle.Llm : les crédits API…
 │   │   ├── research--settings-ux--2026-10-13.md  — Recherche vérifiée (2026-10-13), la direction Settings de Louis passée au cribl…
+│   │   ├── research--seuils-voix--2026-11-06.md  — Cadrage vérifié (2026-11-06) — les seuils de niveau et de détection de voix dup…
 │   │   ├── research--taskbar-sans-windhawk--2026-10-08.md  — Recherche vérifiée (2026-10-08) — remplacer Windhawk par un module Deckle pour…
 │   │   └── research--youtube-maison--2026-10-22.md  — Cadrage (2026-10-22) — un client YouTube maison comme module de Deckle : la nou…
 │   ├── inventaire-exposables.csv
@@ -533,6 +526,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Compressor.cs
 │   │   │   ├── HighPassFilter.cs
 │   │   │   ├── Limiter.cs
+│   │   │   ├── MicFrameLevels.cs
 │   │   │   ├── MicLevelCheck.cs
 │   │   │   ├── NoiseGate.cs
 │   │   │   ├── PreprocessingSettings.cs
@@ -541,7 +535,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── Telemetry/
-│   │   │   ├── MicrophoneCalibrationCalculator.cs
 │   │   │   ├── MicrophoneTelemetryCalculator.cs
 │   │   │   └── MicrophoneTelemetryPayload.cs
 │   │   ├── AudioFileDecoder.cs
@@ -560,6 +553,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ListeningTester.cs
 │   │   ├── MicLevelTester.cs
 │   │   ├── MicrophoneCapture.cs
+│   │   ├── MicrophoneLevelFeed.cs
+│   │   ├── MicrophoneLevelFeedFailure.cs
 │   │   ├── ProbeResult.cs
 │   │   ├── RecordingPage.xaml
 │   │   ├── RecordingPage.xaml.cs
@@ -569,7 +564,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RecordingViewModel.ListeningTest.cs
 │   │   ├── RecordingViewModel.Settings.cs
 │   │   ├── SettingsSearch.cs
-│   │   └── SpeakerOutput.cs
+│   │   ├── SpeakerOutput.cs
+│   │   ├── VoiceDetector.cs
+│   │   ├── VoiceLevelMeter.xaml
+│   │   ├── VoiceLevelMeter.xaml.cs
+│   │   ├── VoiceLevelMeterHost.cs
+│   │   └── VoiceLevelMeterScale.cs
 │   ├── Deckle.Autocorrect/
 │   │   ├── Data/
 │   │   │   ├── lexicon-en-globish.tsv.gz
@@ -1335,6 +1335,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite vocabulary. It draws the Correction / Rewrite boundary, which decides w…
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
+│   │   ├── LlmSettingsMigrations.LengthSwitch.cs
 │   │   ├── LlmSettingsMigrations.Providers.cs
 │   │   ├── LlmSettingsModule.cs
 │   │   ├── LlmSettingsService.cs
@@ -1938,8 +1939,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MicLevelCheckBugNotes.md
 │   │   ├── MicLevelCheckTests.cs
-│   │   ├── MicrophoneCalibrationCalculatorTests.cs
 │   │   ├── MicrophoneErrorClassificationTests.cs
+│   │   ├── MicrophoneLevelFeedTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
@@ -1947,6 +1948,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PcmBufferTests.cs
 │   │   ├── PcmConversionTests.cs
 │   │   ├── TranscriptionPreprocessorTests.cs
+│   │   ├── VoiceDetectorTests.cs
+│   │   ├── VoiceLevelMeterScaleTests.cs
 │   │   ├── WaveInBufferRingBugNotes.md
 │   │   ├── WaveInBufferRingTests.cs
 │   │   └── WaveInReleaseBugNotes.md
@@ -2359,7 +2362,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Settings.Tests/
 │   │   ├── Deckle.Settings.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs
-│   │   └── MilestoneClosersTests.cs
+│   │   ├── MilestoneClosersTests.cs
+│   │   └── SettingsBootstrapMoveTests.cs
 │   ├── Deckle.Setup.Tests/
 │   │   ├── DataRootRelocatorBugNotes.md
 │   │   ├── DataRootRelocatorTests.cs

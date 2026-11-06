@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Deckle.Core;
 
 namespace Deckle.Transcription;
@@ -48,8 +49,59 @@ public sealed class TranscriptionSettingsService
             // internals, not a user workflow step. Keep only anomalies.
             logWarning:  DeckleWhispSource.Log.SettingsLoadWarning,
             logError:    DeckleWhispSource.Log.SettingsLoadError,
+            preDeserializeMigration: MigrateMinSpeech,
             postLoadMigration: ApplyPostLoadMigrations);
     }
+
+    // The segmenter's minimum utterance (streaming.segmenter.minUtteranceMs)
+    // and Silero's minimum speech (streaming.speechTrim.minSpeechDurationMs)
+    // were one floor stored twice; both now read streaming.minSpeechMs. When
+    // the target is absent it takes the one old value the person changed: the
+    // store writes the whole POCO, so a real file carries both keys, and the
+    // one that differs from the shipped default is the one that was edited.
+    // When both differ, or neither, Silero's wins, the final judge. A single
+    // old key is taken as it is. The two old keys are removed whenever they
+    // exist, so the next save writes the file without them. Pure over the
+    // JSON text so it can be tested without a store.
+    internal static (string json, bool migrated) MigrateMinSpeech(string json)
+    {
+        if (JsonNode.Parse(json) is not JsonObject root
+            || root["streaming"] is not JsonObject streaming)
+            return (json, false);
+
+        JsonObject? speechTrim = streaming["speechTrim"] as JsonObject;
+        JsonObject? segmenter  = streaming["segmenter"]  as JsonObject;
+        JsonNode? fromTrim      = speechTrim?["minSpeechDurationMs"];
+        JsonNode? fromSegmenter = segmenter?["minUtteranceMs"];
+
+        bool migrated = false;
+
+        if (!streaming.ContainsKey("minSpeechMs")
+            && PickMinSpeechSource(fromTrim, fromSegmenter) is JsonNode source)
+        {
+            streaming["minSpeechMs"] = source.DeepClone();
+            migrated = true;
+        }
+
+        if (speechTrim is not null && speechTrim.Remove("minSpeechDurationMs")) migrated = true;
+        if (segmenter  is not null && segmenter.Remove("minUtteranceMs"))       migrated = true;
+
+        return migrated ? (root.ToJsonString(_jsonOptions), true) : (json, false);
+    }
+
+    private static JsonNode? PickMinSpeechSource(JsonNode? fromTrim, JsonNode? fromSegmenter)
+    {
+        if (fromTrim is null || fromSegmenter is null)
+            return fromTrim ?? fromSegmenter;
+
+        int shipped = new StreamingSettings().MinSpeechMs;
+        bool trimEdited      = !IsInt(fromTrim, shipped);
+        bool segmenterEdited = !IsInt(fromSegmenter, shipped);
+        return segmenterEdited && !trimEdited ? fromSegmenter : fromTrim;
+    }
+
+    private static bool IsInt(JsonNode node, int expected)
+        => node is JsonValue value && value.TryGetValue(out int actual) && actual == expected;
 
     internal static bool ApplyPostLoadMigrations(TranscriptionSettings settings)
     {

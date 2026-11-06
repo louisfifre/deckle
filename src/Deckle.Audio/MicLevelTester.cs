@@ -25,31 +25,33 @@ public sealed class MicLevelTester
     public async Task<MicLevelAssessment> MeasureAsync(
         int deviceId,
         PreprocessingSettings settings,
+        double voiceLevelDbfs,
         int seconds = DefaultMeasureSeconds,
         CancellationToken ct = default)
     {
         using var capture = new MicrophoneCapture();
-        var host = new MeasureHost(deviceId, seconds);
+        var host = new MeasureHost(deviceId, seconds, voiceLevelDbfs);
 
         // Record blocks for `seconds` (its duration cap) or until ct fires.
         CaptureResult result = await Task.Run(() => capture.Record(host, ct), ct).ConfigureAwait(false);
 
         if (result.Outcome == CaptureOutcome.MicError || result.Pcm.Length == 0)
         {
-            return new MicLevelAssessment(false, -120.0, -120.0, settings.TargetRmsDbfs, 0.0, PreprocessingAdvice.NotNeeded);
+            return MicLevelCheck.NoSignal(settings, voiceLevelDbfs);
         }
 
-        return MicLevelCheck.Assess(result.Pcm, settings);
+        return MicLevelCheck.Assess(result.Pcm, settings, voiceLevelDbfs);
     }
 
     // Throwaway host: the configured device, a hard duration cap so the capture
     // self-terminates, and telemetry emission off — a mic check must not write a
     // per-recording telemetry event the way a real dictation does.
-    private sealed class MeasureHost(int deviceId, int seconds) : IAudioRecordingHost
+    private sealed class MeasureHost(int deviceId, int seconds, double voiceLevelDbfs) : IAudioRecordingHost
     {
         public int AudioInputDeviceId => deviceId;
         public int MaxRecordingDurationSeconds => seconds;
         public bool MicrophoneTelemetryEnabled => false;
+        public double VoiceLevelDbfs => voiceLevelDbfs;
         public string RecordingPurpose => "level_test";
     }
 }

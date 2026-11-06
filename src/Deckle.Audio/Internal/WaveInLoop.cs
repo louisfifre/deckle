@@ -77,23 +77,29 @@ internal static class WaveInLoop
         bool capHit = false;
         int buffersReceived = 0;
 
-        // Live low-audio tracker — "did the user speak at a healthy volume
-        // at least once in the first 5 s?" phrasing. The warning fires once
-        // per recording if the answer is no.
+        // Live low-audio tracker. The question is "did anything cross the
+        // voice level for 200 ms in the first 5 s?". The warning fires once per
+        // recording if the answer is no, which is true both for a broken,
+        // muted or distant microphone and for a voice level set too high: in
+        // either case the segmenter would cut nothing.
         //
-        // Why not just count sub-threshold duration: a short peak (finger
-        // snap, breath hit) spikes above -50 dBFS for 50-100 ms, which would
-        // reset a naive consecutive counter and hide a genuinely broken mic.
-        // Instead we track the positive case — a stretch of ≥200 ms where
-        // dBFS stays ≥-45 is strong evidence of real speech (one full
-        // syllable on a typical USB mic), and we lock the warning off for
-        // the rest of the recording. Peaks are too short to clear 200 ms
-        // consecutively, so they can't fake a pass.
+        // Why not just count silent duration: a short peak (finger snap,
+        // breath hit) crosses the level for 50-100 ms, which would reset a
+        // naive consecutive counter and hide a genuinely broken mic. Instead
+        // the positive case is tracked: a stretch of ≥200 ms the voice
+        // detector calls voiced is strong evidence of real speech (one full
+        // syllable), and the warning is then locked off for the rest of the
+        // recording. Peaks are too short to clear 200 ms consecutively, so
+        // they can't fake a pass.
         //
-        // -45 dBFS leaves headroom for quieter setups (condenser and USB mics
-        // at typing distance) while still catching the broken-mic / unplugged
-        // / miles-away scenarios.
-        const double NormalVoiceDbfsThreshold = -45.0;
+        // The detector is the segmenter's own kind, on the same level
+        // (host.VoiceLevelDbfs) and the same per-buffer RMS, so "voice" means
+        // the same thing here and in the cut. It asks Push, not Resume: the
+        // question here is whether voice opens, which is what Push answers.
+        // With the default margin of 0 this is the level itself; with a
+        // positive margin the warning asks the same question as the
+        // segmenter's opening.
+        var voice = new VoiceDetector(host.VoiceLevelDbfs);
         const int    NormalVoiceSustainedMs   = 200;
         const int    WarnAfterSilenceMs       = 5000;
         int  healthyVoiceConsecutiveMs = 0;
@@ -174,7 +180,7 @@ internal static class WaveInLoop
                         DeckleAudioSource.Log.EmptyBufferRecovered();
 
                     ReadOnlySpan<byte> data = allBytes.Append(hdr.lpData, (int)hdr.dwBytesRecorded);
-                    double bufferDbfs = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
+                    double bufferRms = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
                     buffersReceived++;
                     gotData = true;
 
@@ -184,7 +190,8 @@ internal static class WaveInLoop
 
                     if (!userVoiceConfirmed)
                     {
-                        if (bufferDbfs >= NormalVoiceDbfsThreshold)
+                        bool voiced = voice.Push((float)bufferRms);
+                        if (voiced)
                         {
                             healthyVoiceConsecutiveMs += bufferMs;
                             if (healthyVoiceConsecutiveMs >= NormalVoiceSustainedMs)
@@ -203,7 +210,7 @@ internal static class WaveInLoop
                         lowAudioWarned = true;
                         DeckleAudioSource.Log.LowAudioDetected();
                         DeckleAudioSource.Log.LowAudioDetectedDetail(
-                            recordingMs, NormalVoiceSustainedMs, NormalVoiceDbfsThreshold);
+                            recordingMs, NormalVoiceSustainedMs, voice.ExitDbfs);
                         onLowAudioDetected?.Invoke();
                     }
                 }
@@ -358,7 +365,7 @@ internal static class WaveInLoop
                     // Push the drained tail through the same sub-window mill so
                     // _rmsLog covers the full session (the in-loop path stops as
                     // soon as the cancellation token fires). The drain has no
-                    // low-audio tracker, so the returned buffer dBFS is
+                    // low-audio tracker, so the returned buffer RMS is
                     // intentionally discarded here.
                     _ = EmitSubWindows(data, rmsLog, audioLevelCallback, frameCallback);
                 }
@@ -420,13 +427,13 @@ internal static class WaveInLoop
     // subscription) so the Stop-time mic-telemetry summary reflects the
     // entire session even when the HUD isn't listening.
     //
-    // Returns the whole-buffer dBFS derived from the per-sub-window sumSq this
-    // method already accumulates, so the low-audio tracker needs no second scan
-    // of the buffer. Each completed waveIn buffer is exactly one sub-window (a
-    // 1600-byte / 50 ms buffer == BytesPerSubWin). A partial buffer (< 1600
-    // bytes, only possible at stop) yields zero complete sub-windows and floors
-    // at -120; that path has no low-audio tracker, so the coarseness is
-    // harmless.
+    // Returns the whole-buffer linear RMS derived from the per-sub-window sumSq
+    // this method already accumulates, so the low-audio tracker needs no second
+    // scan of the buffer. Each completed waveIn buffer is exactly one sub-window
+    // (a 1600-byte / 50 ms buffer == BytesPerSubWin), so the tracker's detector
+    // sees the same RMS as the segmenter's. A partial buffer (< 1600 bytes, only
+    // possible at stop) yields zero complete sub-windows and returns 0; that
+    // path has no low-audio tracker, so the coarseness is harmless.
     private static double EmitSubWindows(
         ReadOnlySpan<byte>    pcm16,
         List<float>           rmsLog,
@@ -470,8 +477,7 @@ internal static class WaveInLoop
             offset += BytesPerSubWin;
         }
 
-        if (bufferSamples == 0) return -120.0;
-        double bufferRms = System.Math.Sqrt(bufferSumSq / bufferSamples);
-        return bufferRms > 0 ? 20.0 * System.Math.Log10(bufferRms) : -120.0;
+        if (bufferSamples == 0) return 0.0;
+        return System.Math.Sqrt(bufferSumSq / bufferSamples);
     }
 }

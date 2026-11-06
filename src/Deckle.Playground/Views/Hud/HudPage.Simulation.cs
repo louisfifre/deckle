@@ -19,18 +19,18 @@ public sealed partial class HudPage
     // is one `new()` and the defaults are written once.
     private sealed class SpeechSimulation
     {
-        // The stroke maps the RMS through the shipping level window, −55 to
-        // −32 dBFS by default (AudioLevelMapper). The floor must be silence:
-        // the first default, 0.013, is −38 dBFS, three quarters of the way
-        // up that window, so a pause left the outline at 75 % and the sweep
-        // barely moved. 0 is the one value every window reads as silence.
-        // 0.030 ≈ −30 dBFS clears the window's top, so the sweep spans the
-        // whole visible range.
+        // The stroke maps the RMS through the live level window, anchored on
+        // the voice level: dark at it, full 20 dB above (AudioLevelMapper),
+        // −45 to −25 dBFS at the default level. The floor must be silence:
+        // 0 is the one value every window reads as silence. 0.06 ≈ −24 dBFS
+        // clears the default window's top, so the sweep spans the whole
+        // visible range. The manual value, 0.01 = −40 dBFS, sits above the
+        // default level, so the override shows a lit outline.
         public float RmsMin           = 0f;
-        public float RmsMax           = 0.030f;
+        public float RmsMax           = 0.06f;
         public float RmsPeriodSeconds = 2.0f;
         public bool  ManualOverride   = false;
-        public float ManualValue      = 0.006f;
+        public float ManualValue      = 0.01f;
 
         public double SpeechSeconds = 4;
         public double PauseSeconds  = EnginePauseSeconds();
@@ -91,7 +91,7 @@ public sealed partial class HudPage
     }
 
     // The preview maps the simulated RMS through the live AudioLevelMapper
-    // calibration, which Settings > Recording and auto-calibration own. The
+    // window, which the voice level of Settings > Recording anchors. The
     // Playground reads it and never writes it. No row rebuilds the preview:
     // the timer reads the fields on every tick, and a rebuild would restart
     // the take, its clock and its gauge.
@@ -108,19 +108,20 @@ public sealed partial class HudPage
         AddPreviewSourceRows(section, stack);
         section.Children.Add(stack);
 
-        // Range 0.05: the default window reads everything above 0.025
-        // (−32 dBFS) as full level, so a wider slider spent most of its
+        // Range 0.1: the default window reads everything above 0.056
+        // (−25 dBFS) as full level, so a wider slider spent most of its
         // travel on values that all look the same. Step 0.001: silence sits
-        // under 0.002 in that window, so the floor needs three decimals.
-        AddFloatRow(stack, "SimRmsMin", 0, 0.05, 0.001, _speechSimulation.RmsMin,
+        // under 0.0056 (−45 dBFS) in that window, so the floor needs three
+        // decimals.
+        AddFloatRow(stack, "SimRmsMin", 0, 0.1, 0.001, _speechSimulation.RmsMin,
             v => _speechSimulation.RmsMin = (float)v);
-        AddFloatRow(stack, "SimRmsMax", 0, 0.05, 0.001, _speechSimulation.RmsMax,
+        AddFloatRow(stack, "SimRmsMax", 0, 0.1, 0.001, _speechSimulation.RmsMax,
             v => _speechSimulation.RmsMax = (float)v);
         AddFloatRow(stack, "SimRmsPeriodSeconds", 0.2, 10, 0.1, _speechSimulation.RmsPeriodSeconds,
             v => _speechSimulation.RmsPeriodSeconds = (float)v);
         AddToggleRow(stack, "Manual override", _speechSimulation.ManualOverride,
             v => _speechSimulation.ManualOverride = v);
-        AddFloatRow(stack, "SimRmsManualValue", 0, 0.05, 0.001, _speechSimulation.ManualValue,
+        AddFloatRow(stack, "SimRmsManualValue", 0, 0.1, 0.001, _speechSimulation.ManualValue,
             v => _speechSimulation.ManualValue = (float)v);
 
         stack.Children.Add(TuningHelp(
@@ -175,7 +176,7 @@ public sealed partial class HudPage
         {
             // The pause is silence. The cycle drives the gauge itself, not
             // through a segmenter, so the floor need not sit below the
-            // engine's speech threshold.
+            // voice level.
             rms = speech.RmsMin;
         }
         else if (speech.ManualOverride)

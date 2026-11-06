@@ -20,8 +20,15 @@ public interface IAudioRecordingHost
     // this flag only decides whether it's broadcast.
     bool MicrophoneTelemetryEnabled { get; }
 
+    // The voice level in dBFS (CaptureSettings.VoiceLevelDbfs): the level the
+    // low-audio tracker tests for sustained voice, the same value the segmenter
+    // cuts on. Deliberately not defaulted: a default would quietly hold a
+    // second copy of the level for any host that forgot it.
+    double VoiceLevelDbfs { get; }
+
     // What the take is for, as the recording milestones name it: dictation,
-    // level_test, listening_test or playground. Without it a Settings test
+    // level_test, listening_test, voice_meter or playground. A free string that
+    // only tags log lines, no closed set. Without it a Settings test
     // reads in the log exactly like a dictation. Defaulted so a dictation host
     // needs no change.
     string RecordingPurpose => "dictation";

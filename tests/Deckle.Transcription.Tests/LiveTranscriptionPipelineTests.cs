@@ -736,7 +736,7 @@ public sealed class LiveTranscriptionPipelineTests
             Transcription.Streaming.Segmenter.HangoverRampStartMs = 50;
             Transcription.Streaming.Segmenter.HangoverRampEndMs = 50;
             Transcription.Streaming.Segmenter.MarginMs = 0;
-            Transcription.Streaming.Segmenter.MinUtteranceMs = 250;
+            Transcription.Streaming.MinSpeechMs = 250;
             Transcription.Engine.InitialPrompt = "test prompt";
             Llm.Enabled = false;
         }
@@ -746,8 +746,6 @@ public sealed class LiveTranscriptionPipelineTests
         public TelemetrySettings Telemetry { get; } = new();
         public LlmSettings Llm { get; } = new();
         public string ResolveModelsDirectory() => Path.GetTempPath();
-        public void SaveSettings() { }
-        public void ApplyLevelWindow(LevelWindowSettings lw) { }
     }
 
     internal sealed class ScriptedMicrophoneCapture : IMicrophoneCapture

@@ -16,6 +16,18 @@ namespace Deckle.Audio;
 // neither fits the flat get/set descriptor model.
 public partial class RecordingViewModel
 {
+    // Voice level — a number field in dBFS, no slider: the value is read
+    // against a microphone, not dragged by feel. The default reads the POCO
+    // initializer, like every other default here.
+    public IReadOnlyList<SettingDescriptor> VoiceLevelSettings =>
+    [
+        Setting.Magnitude("RecordingVoiceLevelCard",
+            () => VoiceLevelDbfs,
+            value => VoiceLevelDbfs = value,
+            new MagnitudeArgs(-90, 0, Unit: "dBFS", Slider: false),
+            defaultValue: () => new CaptureSettings().VoiceLevelDbfs),
+    ];
+
     // Maximum recording length — a ComboBox of fixed durations, the Windows 11
     // Settings idiom for a timeout with a "never" state (Screen and sleep). Values
     // are seconds, the POCO's unit, so the VM needs no projection. 0 is the explicit
@@ -50,11 +62,10 @@ public partial class RecordingViewModel
             defaultValue: () => new PreprocessingSettings().Enabled),
     ];
 
-    // The manual voice-level window (floor, ceiling, curve, behind a "set the
-    // window manually" master) is no longer exposed (triage of 2026-10-14): the
-    // level check above measures the window, and three dBFS sliders without a
-    // meter beside them were an expert override nobody could judge. The view
-    // model keeps the LevelWindow* properties and LevelWindowSettings its defaults.
+    // The mic level check above measures the RMS of a 5 s sample and compares
+    // it to the preprocessing target, to advise whether turning the DSP on is
+    // worth it, and says how far it sits above or below the voice level. It
+    // sets nothing.
     //
     // The microphone-telemetry opt-in lives in RecordingTelemetryViewModel,
     // composed on the Diagnostics page.

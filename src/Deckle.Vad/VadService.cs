@@ -84,7 +84,8 @@ public sealed class VadService : IDisposable
         => SileroVadModel.ProvisionAsync(modelDirectory, progress: null, CancellationToken.None);
 
     // Returns the loaded VAD, or null when the model isn't usable yet. Call from a
-    // single thread (the streaming worker) — there is no concurrency on _vad.
+    // single thread (the engine's worker, whichever pipeline it runs) — there
+    // is no concurrency on _vad.
     public SileroVad? EnsureReady()
     {
         if (_vad is not null) return _vad;
@@ -96,7 +97,7 @@ public sealed class VadService : IDisposable
         if (modelPresent)
         {
             // Hash verify and session construction run at most once per service,
-            // on the first streaming take's critical path; timed together.
+            // on the first take that needs it; timed together.
             var sw = Stopwatch.StartNew();
             if (FileMatchesExpectedSha(modelPath, out Exception? readError))
             {
