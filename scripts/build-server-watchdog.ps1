@@ -9,6 +9,14 @@
 # Builds in a burst keep reusing the servers; five minutes after the last one,
 # `dotnet build-server shutdown` stops them all, a hung server included.
 #
+# The same loop keeps the compiler server at low priority. Roslyn starts
+# VBCSCompiler with an explicit NORMAL_PRIORITY_CLASS (BuildServerConnection.cs),
+# which cancels the BelowNormal the MSBuild nodes would otherwise pass down, so
+# `-lowPriority:true` in Directory.Build.rsp never reaches the process that does
+# half of a build's CPU work (measured 2026-11-06: 67 s in VBCSCompiler against
+# 61 s in the four nodes). Every tick lowers whatever server is running; the
+# shared server itself stays, it halves a full rebuild.
+#
 # The state directory carries the state, so builds from every entry point
 # (CLI, scripts, agents, worktrees) share one watchdog:
 #   <Project>.stamp     touched by MSBuild when that project's Build target
@@ -115,11 +123,34 @@ function Write-Heartbeat {
     [IO.File]::WriteAllText($HeartbeatPath, [string]$PID)
 }
 
+# Lowers the given processes to BelowNormal, the class Directory.Build.rsp gives
+# the MSBuild nodes, and returns how many it changed. A process already there,
+# or lower, is left alone: an operator who parked a server at Idle keeps it.
+# Takes processes rather than a name so the rule is testable on any process.
+function Set-BuildServerLowPriority {
+    param([System.Diagnostics.Process[]]$Processes)
+
+    $lowered = 0
+    foreach ($process in @($Processes)) {
+        try {
+            if ($process.PriorityClass -in 'Normal', 'AboveNormal', 'High', 'RealTime') {
+                $process.PriorityClass = 'BelowNormal'
+                $lowered++
+            }
+        } catch {
+            # A server that exited between the listing and the write, or one
+            # owned by another user, is not ours to lower.
+        }
+    }
+    return $lowered
+}
+
 function Invoke-WatchdogLoop {
     $staleSeconds = Get-HeartbeatStaleSeconds -TickSeconds $TickSeconds
     try {
         while ($true) {
             Write-Heartbeat
+            $null = Set-BuildServerLowPriority -Processes @(Get-Process -Name VBCSCompiler -ErrorAction SilentlyContinue)
             Start-Sleep -Seconds $TickSeconds
 
             # Another watchdog took the heartbeat over (two armed in the same
