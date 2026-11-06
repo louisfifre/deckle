@@ -4,7 +4,7 @@ description: Deckle supervises Anytype's headless backend from the resident app,
 
 # ADR-0002 — Supervise the Anytype headless backend from Deckle's resident app
 
-**Status** — accepted 2026-07-09, supersedes [ADR-0001](0001-anytype-headless-service-single-http-mcp-host.md)
+**Status** — accepted 2026-07-09, supersedes [ADR-0001](0001-anytype-headless-service-single-http-mcp-host.md); its MCP host placement is superseded by [ADR-0008](0008-run-anytype-mcp-in-a-supervised-gateway-process.md)
 
 ## Context
 
