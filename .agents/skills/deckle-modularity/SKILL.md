@@ -1,5 +1,5 @@
 ---
-name: deckle-modularite
+name: deckle-modularity
 description: Use when code is about to grow a module, add a new one, or split a file or a surface, to decide where the boundary falls and which way the dependencies point.
 metadata:
   version: "1.0"
