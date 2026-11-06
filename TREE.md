@@ -32,14 +32,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │       │   │   ├── voice-and-tone.md
 │       │   │   └── windows-fluent.md
 │       │   └── SKILL.md  — ux-copy Write or review interface wording — CTAs, errors, empty states, confirmations,…
-│       ├── ux-designer/
-│       │   ├── rules/
-│       │   │   ├── accessibility.md
-│       │   │   ├── information-architecture.md
-│       │   │   ├── interaction-design.md
-│       │   │   ├── research.md
-│       │   │   └── visual-design.md
-│       │   └── SKILL.md
 │       └── winui-app/
 │           ├── agents/
 │           │   └── openai.yaml
