@@ -1,5 +1,15 @@
 # DispatchEventListener bug notes
 
+## A path logged by a provider that never called PathRedaction reached the log files with the account name
+
+- **Trigger:** any `[Event]` method whose string parameter quotes a path under the Windows profile (a file path, a folder, or an exception message such as "Access to the path 'C:\Users\<name>\...' is denied") and whose `WriteEvent` call does not pass it through `PathRedaction.Redact`. Found 2026-11-06 by reading the providers: Whisper, Vad, Anytype and Input redacted; the app base and core providers (shell, settings, setup, orchestration, transcription, lighting, llm, autocorrect, hud, diagnostics) did not.
+- **Observed symptom:** `C:\Users\<name>\...` in the JSONL rows of those providers (established by reading the code paths; no log row was inspected).
+- **Cause (established by reading):** redaction lived only at the event method, so each provider had to remember it for each parameter. The dispatcher, the one place every entry passes, did not apply it.
+- **Violated invariant:** a line describes the machine without naming the account (`deckle-logging`). The invariant is stated at the top of `PathRedaction.cs`, which now describes the two layers.
+- **Recurrence cue:** `C:\Users\` followed by the profile name in a log row, from a provider other than the four that redact at source; a new `[Event]` with a `*_message` or `*path*` parameter that the PathRedaction call sites do not cover.
+
+Regression: `DispatchEventListenerRegressionTests.A_path_logged_by_a_provider_that_never_redacts_reaches_the_sinks_without_the_account_name`. Uncertain: a path outside the profile and outside a registered root (for example `D:\Elsewhere\...`) stays as written, by design.
+
 ## A sink that ignored an entry closed its own incident
 
 - **Trigger:** a sink whose `Write` throws and whose `Wants` rejects the entry the dispatcher reports the fault with (any sink that filters by provider, such as the sinks of `DispatchEventListenerIncidentTests`), seen 2026-10-22 on `ReportsASinkFaultOnceAndItsRecoveryOnce`.
