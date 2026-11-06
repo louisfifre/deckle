@@ -13,7 +13,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │       ├── deckle-logging/
 │       │   └── SKILL.md  — deckle-logging Use when you add or change an observation point in Deckle code, or write code t…
 │       ├── deckle-modularite/
-│       │   └── SKILL.md  — deckle-modularite Use when code is about to grow a module, add a new one, or split a file or a su…
+│       │   └── SKILL.md
 │       ├── deckle-nomenclature/
 │       │   └── SKILL.md  — deckle-nomenclature Use when you give a name to anything in the Deckle repository or change one, a…
 │       ├── deckle-settings-ux/
@@ -39,7 +39,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │       │   │   ├── interaction-design.md
 │       │   │   ├── research.md
 │       │   │   └── visual-design.md
-│       │   └── SKILL.md  — ux-designer Design or review user research, flows, information architecture, wireframes, pr…
+│       │   └── SKILL.md
 │       └── winui-app/
 │           ├── agents/
 │           │   └── openai.yaml
