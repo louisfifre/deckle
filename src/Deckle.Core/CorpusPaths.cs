@@ -36,8 +36,6 @@ public static class CorpusPaths
         return AppPaths.TelemetryDirectory;
     }
 
-    public static string GetDefaultDirectoryPath() => AppPaths.TelemetryDirectory;
-
     // Lowercase ASCII, hyphen-separated slug. Accented characters are
     // transliterated (NFD, then non-spacing marks dropped) so "réécriture"
     // becomes "reecriture" instead of collapsing the accented bytes to

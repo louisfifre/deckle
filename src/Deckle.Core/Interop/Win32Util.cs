@@ -46,18 +46,4 @@ public static class Win32Util
             return $"(describe err: {ex.Message})";
         }
     }
-
-    public static string GetExeName(IntPtr hwnd)
-    {
-        if (hwnd == IntPtr.Zero) return "(unknown)";
-        try
-        {
-            NativeMethods.GetWindowThreadProcessId(hwnd, out uint pid);
-            return Process.GetProcessById((int)pid).ProcessName;
-        }
-        catch
-        {
-            return "(unknown)";
-        }
-    }
 }
