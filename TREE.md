@@ -270,6 +270,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── dotnet-max-node-response-precedence.json
 │   │   │   └── repository-portability.json
 │   │   ├── commands/
+│   │   │   ├── build-server-watchdog.tests.ps1
 │   │   │   ├── publish-native-runtime.tests.ps1
 │   │   │   └── update-readme-stats.tests.ps1
 │   │   └── lib/
@@ -286,6 +287,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │       └── source-metrics.tests.ps1
 │   ├── build-locked.ps1
 │   ├── build-run.ps1  — Build the app Build Deckle for the chosen configuration (x64) and, unless told not to, launch…
+│   ├── build-server-watchdog.ps1
 │   ├── fetch-autocorrect-data.ps1
 │   ├── inspect-context.ps1  — Context inventory Inventory the repository's tracked Markdown context, grouped by loading mode, w…
 │   ├── launch-app.ps1  — Launch the freshest built app Replace the running Deckle instance with the freshest already-built executable…

@@ -141,6 +141,7 @@ public sealed partial class LlmPage : Page
         await RefreshOllamaStateAsync(ollama);
 
         // A snapshot: the list may be edited while a listing is in flight.
+        var problems = new List<string>();
         foreach (var provider in settings.Providers.ToArray())
         {
             if (!provider.Enabled) continue;
@@ -155,9 +156,18 @@ public sealed partial class LlmPage : Page
             }
 
             using var cts = new CancellationTokenSource(ProviderAdminTimeout);
-            IReadOnlyList<string> names = await ProviderModelCatalog.ListAsync(provider, apiKey, cts.Token);
-            ProfilesSection.SetAvailableModelNames(provider.Id, names);
+            ProviderListing listing = await ProviderModelCatalog.ListAsync(provider, apiKey, cts.Token);
+            ProfilesSection.SetAvailableModelNames(provider.Id, listing.Names);
+
+            // Ollama has its own bar above; the hosted providers share this
+            // one, which is the only place a stored key shows whether it
+            // actually opens the API.
+            if (listing.Failure is not null && provider.Kind != LlmProviderKind.Ollama)
+                problems.Add(RewriteFailureMessage.ForProviderListing(provider, listing.Failure));
         }
+
+        ProviderStatusBar.Message = string.Join(Environment.NewLine, problems);
+        ProviderStatusBar.IsOpen = problems.Count > 0;
     }
 
     private async Task RefreshOllamaStateAsync(LlmProvider? ollama)
