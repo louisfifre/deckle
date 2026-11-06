@@ -10,6 +10,10 @@ namespace Deckle.Speech;
 //
 // The real implementation will run the 4-graph pure-ONNX Chatterbox decode:
 // speech_encoder, embed_tokens, language_model_fp16, conditional_decoder.
+// conditional_decoder must run on the CPU: it is ConvTranspose-heavy and
+// fails on AMD DirectML (error 80070057) with no automatic fallback.
+// The other three graphs may use DirectML. The device only changes
+// latency, never the voice.
 public sealed class ChatterboxSpeechBackend : ISpeechBackend
 {
     private const int SampleRate = 24000; // Chatterbox S3Gen output rate
