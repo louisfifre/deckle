@@ -107,6 +107,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── affinage-opt2.md
 │   │   │   │   ├── arrangement-opt1.md
 │   │   │   │   ├── arrangement-opt2.md
+│   │   │   │   ├── arrangement-opt3.md
 │   │   │   │   ├── lissage-current.md
 │   │   │   │   ├── lissage-literal.md
 │   │   │   │   └── lissage-opt1.md

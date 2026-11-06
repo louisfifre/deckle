@@ -6,7 +6,7 @@
   "judge_note": "This profile regroups the speech by theme on purpose and keeps only what the speaker holds at the end of their reflection. A change of order or grouping is never a finding. An idea the speaker restated in other words may appear once, as long as everything its restatements added survives. The trace of the speaker's thinking is not content and its absence is never a finding: an abandoned start later restated, a first position the speaker then changed, a mistake they corrected themselves, a moment of not understanding or not recognising something they identified afterwards, a remark about the act of dictating. Judge only what the speaker still holds at the end: whether its content, its terms, the direction of each statement, its conditions, its options left open and the hedges on the final position survived, and whether anything was added, a conclusion the speaker never reached included.",
   "take_per_bucket": 4,
   "iterations_per_round": 10,
-  "max_rounds": 8,
+  "max_rounds": 7,
   "target_score": 90,
   "budget_usd": 50,
   "validation_reserve_usd": 16,
