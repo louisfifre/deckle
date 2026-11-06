@@ -270,7 +270,6 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
     [InlineData(TakeOutcomes.ClipboardOnly, TakeEndReasons.Delivered, true)]
     [InlineData(TakeOutcomes.None, TakeEndReasons.NoText, true)]
     [InlineData(TakeOutcomes.None, TakeEndReasons.EmptyAudio, true)]
-    [InlineData(TakeOutcomes.None, TakeEndReasons.NoSpeech, true)]
     [InlineData(TakeOutcomes.None, TakeEndReasons.StateLost, false)]
     [InlineData(TakeOutcomes.None, TakeEndReasons.Cancelled, false)]
     [InlineData(TakeOutcomes.Failed, TakeEndReasons.MicrophoneError, false)]

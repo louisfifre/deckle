@@ -26,6 +26,9 @@ public class EnergySegmenterTests
     // Settings used by tests that want the simple, ramp-inactive behaviour:
     // Min == Max means RequiredHangoverFrames stays at 8 regardless of length,
     // and the ramp anchors are pushed far past any synthesis length.
+    private static CaptureFrame FrameAtDbfs(double dbfs)
+        => new(new float[FrameSamples], (float)System.Math.Pow(10.0, dbfs / 20.0));
+
     private static EnergySegmenterSettings TestSettings()
         => new()
         {
@@ -200,6 +203,25 @@ public class EnergySegmenterTests
         PushN(seg, voiced: false, 8);  // real end
 
         Assert.Single(got);
+    }
+
+    // The entry margin gates the opening of an utterance: with a positive
+    // margin, a frame between the level and the entry does not open one, a
+    // frame at the entry does. Levels come from a detector with the same margin.
+    [Fact]
+    public void WithAPositiveMarginOnlyAFrameAtTheEntryOpensAnUtterance()
+    {
+        const double margin = 3.0;
+        var detector = new VoiceDetector(VoiceLevel, margin);
+        double between = (detector.ExitDbfs + detector.EntryDbfs) / 2;
+        var seg = new EnergySegmenter(
+            TestSettings(), VoiceLevel, MinSpeechMs, _ => { }, entryMarginDb: margin);
+
+        seg.Push(FrameAtDbfs(between));
+        Assert.Equal(0, seg.Snapshot().CurrentUtteranceFrames);
+
+        seg.Push(FrameAtDbfs(detector.EntryDbfs));
+        Assert.Equal(1, seg.Snapshot().CurrentUtteranceFrames);
     }
 
     [Fact]

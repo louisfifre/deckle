@@ -83,27 +83,30 @@ public sealed class UtteranceProgressTests
         Assert.Equal(0, segmenter.Progress.CompletedUtterances);
     }
 
-    // The hysteresis of the voice detector, seen from the pause gauge: a frame
-    // that dips between the exit and the entry levels is still speech, so the
-    // pause does not start; only a frame below the exit level starts it. The
-    // levels come from the detector, so the test follows a re-tune of the band.
+    // The entry margin gates only the opening of an utterance. Once a pause has
+    // started, a frame between the exit and the entry levels ends it, as any
+    // frame at or above the level did before the detector existed. The
+    // segmenter is built with a positive margin so the band exists; the levels
+    // come from a detector with the same margin, so the test follows a re-tune.
     [Fact]
-    public void AFrameBetweenExitAndEntryKeepsSpeechAndOnlyBelowExitStartsThePause()
+    public void AFrameBetweenExitAndEntryEndsAPauseThatHasStarted()
     {
-        var detector = new VoiceDetector(VoiceLevel);
+        const double margin = 3.0;
+        var detector = new VoiceDetector(VoiceLevel, margin);
         double between = (detector.ExitDbfs + detector.EntryDbfs) / 2;
-        var segmenter = new EnergySegmenter(Settings(), VoiceLevel, MinSpeechMs, _ => { });
+        var segmenter = new EnergySegmenter(
+            Settings(), VoiceLevel, MinSpeechMs, _ => { }, entryMarginDb: margin);
 
         PushN(segmenter, voiced: true, count: 6);
-        segmenter.Push(FrameAtDbfs(between));
-
-        Assert.False(segmenter.Progress.IsPausing);
-        Assert.Equal(0, segmenter.Progress.SilenceElapsedMs);
-
         segmenter.Push(FrameAtDbfs(detector.ExitDbfs - 0.5));
 
         Assert.True(segmenter.Progress.IsPausing);
         Assert.Equal(50, segmenter.Progress.SilenceElapsedMs);
+
+        segmenter.Push(FrameAtDbfs(between));
+
+        Assert.False(segmenter.Progress.IsPausing);
+        Assert.Equal(0, segmenter.Progress.SilenceElapsedMs);
     }
 
     [Fact]

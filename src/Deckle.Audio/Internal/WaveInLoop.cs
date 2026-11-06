@@ -94,7 +94,8 @@ internal static class WaveInLoop
         //
         // The detector is the segmenter's own kind, on the same level
         // (host.VoiceLevelDbfs) and the same per-buffer RMS, so "voice" means
-        // the same thing here and in the cut.
+        // the same thing here and in the cut. It asks Push, not Resume: the
+        // question here is whether voice opens, which is what Push answers.
         var voice = new VoiceDetector(host.VoiceLevelDbfs);
         const int    NormalVoiceSustainedMs   = 200;
         const int    WarnAfterSilenceMs       = 5000;
@@ -206,7 +207,7 @@ internal static class WaveInLoop
                         lowAudioWarned = true;
                         DeckleAudioSource.Log.LowAudioDetected();
                         DeckleAudioSource.Log.LowAudioDetectedDetail(
-                            recordingMs, NormalVoiceSustainedMs, host.VoiceLevelDbfs);
+                            recordingMs, NormalVoiceSustainedMs, voice.ExitDbfs);
                         onLowAudioDetected?.Invoke();
                     }
                 }

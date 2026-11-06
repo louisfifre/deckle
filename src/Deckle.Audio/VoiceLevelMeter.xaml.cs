@@ -11,7 +11,8 @@ namespace Deckle.Audio;
 //
 // The instrument beside the Voice level field on the Recording page: a live
 // meter of the microphone on a fixed dB track, with the voice level (the voice
-// detector's exit) and the entry level above it marked, so the user sets the
+// detector's exit) marked, and the entry level above it when the detector's
+// entry margin is positive (with the default 0 they coincide), so the user sets the
 // level by eye against their own voice and room. It shows and never writes:
 // nothing is recorded, nothing persists, and Listen is page state, not a
 // setting.
@@ -181,6 +182,15 @@ public sealed partial class VoiceLevelMeter : UserControl
         _entryDbfs = detector.EntryDbfs;
         EntryCaption.Text = Loc.Format("RecordingVoiceMeter_EntryCaption_Format",
             (int)Math.Round(detector.EntryDbfs - detector.ExitDbfs));
+
+        // With the default margin of 0 the entry is the voice level itself: a
+        // second mark on top of the first, captioned "+0 dB", would only say
+        // there is a band where there is none.
+        var entryVisibility = detector.EntryDbfs == detector.ExitDbfs
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+        EntryMark.Visibility = entryVisibility;
+        EntryCaption.Visibility = entryVisibility;
         LayoutMarks();
     }
 

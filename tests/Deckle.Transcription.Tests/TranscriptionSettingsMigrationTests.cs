@@ -79,6 +79,25 @@ public class TranscriptionSettingsMigrationTests
         Assert.True((bool)streaming["speechTrim"]!["enabled"]!);
     }
 
+    // A real file carries both old keys, since the store writes the whole
+    // POCO: the one the person edited is the one off the shipped default.
+    [Fact]
+    public void MinSpeechTakesTheSegmentersValueWhenOnlyItDiffersFromTheDefault()
+    {
+        int shipped = new StreamingSettings().MinSpeechMs;
+        int edited = shipped + 150;
+        string json = $$"""
+            { "streaming": {
+                "segmenter":  { "minUtteranceMs": {{edited}} },
+                "speechTrim": { "minSpeechDurationMs": {{shipped}} } } }
+            """;
+
+        (string migratedJson, bool migrated) = TranscriptionSettingsService.MigrateMinSpeech(json);
+
+        Assert.True(migrated);
+        Assert.Equal(edited, (int)Streaming(migratedJson)["minSpeechMs"]!);
+    }
+
     [Fact]
     public void MinSpeechTakesTheSegmentersValueWhenItIsTheOnlyOldFloor()
     {

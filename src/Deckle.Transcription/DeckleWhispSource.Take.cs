@@ -103,10 +103,6 @@ public static class TakeEndReasons
     // Transcription ran and found no text.
     public const string NoText = "no_text";
 
-    // The silence trim found no speech in the take, so it never reached the
-    // backend.
-    public const string NoSpeech = "no_speech";
-
     // The backend call threw or returned an error code.
     public const string TranscriptionFailed = "transcription_failed";
 

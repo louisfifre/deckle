@@ -13,8 +13,9 @@ namespace Deckle.Transcription;
 // type the result. EnergySegmenter stays internal; this is its one public face.
 //
 // A level is all the segmenter's decision reads: its voice detector judges
-// each frame's RMS against the voice level, and it counts frames. So the meter hands it frames with no
-// samples, and a loud stretch that never ends holds no audio in memory. That is
+// each frame's RMS against the voice level, and it counts frames. So the meter
+// hands it frames with no samples, and a loud stretch that never ends holds no
+// audio in memory. That is
 // also why it can take the AudioLevel event, whose value is the RMS the Frame
 // event carries: the capture then converts no float buffer at all.
 //

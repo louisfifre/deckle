@@ -37,9 +37,9 @@ public static class AudioLevelMapper
     // The curve applied to the position in the window. The map stays
     // continuous: the HUD must not look like a gate, an outline that switched
     // on at once would flicker. The square root lifts the bottom of the window
-    // so that a frame just at the detector's entry level (+3 dB) already reads
-    // clearly lit, sqrt(3/20) ≈ 0.39 rather than 0.15 on a straight line: a
-    // soft voice that opens an utterance does not leave the ring almost dark.
+    // so that a frame a few dB above the level already reads clearly lit,
+    // sqrt(3/20) ≈ 0.39 at 3 dB rather than 0.15 on a straight line: a soft
+    // voice that opens an utterance does not leave the ring almost dark.
     // Interpretation of the research note's P6, to be checked against the eye.
     public const float Exponent = 0.5f;
 

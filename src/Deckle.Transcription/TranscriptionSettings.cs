@@ -42,9 +42,10 @@ public sealed class StreamingSettings
     public int MinSpeechMs { get; set; } = 250;
 }
 
-// External Silero VAD pre-trim (Deckle.Vad), applied in the segmented session.
+// External Silero VAD pre-trim (Deckle.Vad), applied to each utterance of the
+// segmented session and, once, to the whole take of a monolithic dictation.
 // It cleans each chunk the energy segmenter cut, keeping only the speech spans
-// (so a mid-utterance pause the energy threshold didn't split is removed) and
+// (so a mid-utterance pause the voice level didn't split is removed) and
 // dropping an utterance with no speech at all (an energy false positive on
 // noise/silence) — the main guard against whisper hallucinating on near-silence.
 // The model (silero_vad.onnx) is provisioned on demand; until it is present the

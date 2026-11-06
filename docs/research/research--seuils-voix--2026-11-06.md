@@ -68,7 +68,7 @@ Trois familles portent le mot « seuil » sans répondre à la question de la vo
 Deux sources, toutes deux sous consentement dans Diagnostics, donnent de quoi régler les valeurs ci-dessous sans deviner :
 
 - `microphone.jsonl` (« Log microphone level ») : la distribution du niveau par prise, avec p25, p50, p90 en dBFS (`MicrophoneTelemetryCalculator.cs:71-92`). C'est là qu'on lit où la voix de Louis et le silence de sa pièce se placent.
-- Le corpus audio (`WavCorpusWriter`, un WAV 16 kHz par transcription sous `<telemetry-root>/audio/`) : de quoi rejouer un détecteur hors ligne et compter les trames qui changent de camp. Le relecteur a raison que `TakeAudioRecovery` ne sert pas à ça : il ne garde au plus qu'une prise, celle qui a échoué (`TranscriptionEngine.TakeAudio.cs:21-26`).
+- Le corpus audio (`WavCorpusWriter`, un WAV 16 kHz par transcription sous `<telemetry-root>/audio/`) : de quoi rejouer un détecteur hors ligne et compter les trames qui changent de camp. Pour cette mesure, le contenu du corpus doit être réglé sur « AlwaysRaw » (toujours brut) : le contenu par défaut est ce que le backend a reçu, découpé par Silero en Monolithic depuis cette branche, donc privé des silences qu'on veut compter. Le relecteur a raison que `TakeAudioRecovery` ne sert pas à ça : il ne garde au plus qu'une prise, celle qui a échoué (`TranscriptionEngine.TakeAudio.cs:21-26`).
 
 Non vérifié : si ces deux consentements sont actuellement actifs chez Louis, et donc combien de données existent déjà.
 
@@ -118,6 +118,8 @@ La largeur de la bande (3 dB) et son effet sur une voix douce ne se devinent pas
 **Quoi.** Avec P2, la fraction `IsPausing` ne repart plus à chaque creux, parce qu'une trame qui retombe dans la bande reste voisée. Rien de plus à coder que P2 : c'est la tâche « Hystérésis du segmenteur » fermée par le même geste. Je la cite à part pour que Louis sache qu'elle tombe, et parce que `IsPausing` et `SilenceElapsedMs` changent un peu de sens (la pause ne commence qu'à la sortie de la bande).
 
 **Alternative, si P2 est refusé.** Ajouter l'hystérésis dans `EnergySegmenter` seul, avec le même ancrage sur la sortie. Petite, mais ça laisse le HUD incohérent.
+
+**Mise à jour du 2026-11-06 (soir), après relecture du code livré.** Le relecteur a établi que la bande gouvernait aussi la reprise : une trame sous le niveau fait passer le segmenteur en hangover et le détecteur en silence, et de là il fallait de nouveau l'entrée (+3 dB) pour reprendre. Les trames entre le niveau et l'entrée, qui reprenaient la parole avant, comptaient comme pause et pouvaient couper l'utterance : la coupe ne restait pas « exactement » celle d'avant. Décision : la marge vaut 0 par défaut, ce qui rend le comportement livré identique à celui d'avant la branche ; une marge positive ne gouvernerait que l'ouverture d'une utterance, la reprise après une pause se faisant au niveau (`VoiceDetector.Resume`). P3 n'est donc pas livré par P2 : l'hystérésis de la jauge demande un autre mécanisme, en temps et non en niveau, à mesurer sur le corpus.
 
 ### P4. Un seul « minimum de parole »
 

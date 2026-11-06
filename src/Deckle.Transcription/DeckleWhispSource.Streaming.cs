@@ -171,8 +171,8 @@ public sealed partial class DeckleWhispSource
     }
 
     // A voiced span shorter than the minimum speech (StreamingSettings.MinSpeechMs),
-    // discarded as a noise blip. A flurry of blips says the threshold is too
-    // permissive for the room.
+    // discarded as a noise blip. A flurry of blips says the voice level is too
+    // low for the room.
     [Event(EvtSegmenterBlipDropped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,

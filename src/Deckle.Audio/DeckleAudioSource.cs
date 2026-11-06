@@ -311,13 +311,13 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtLowAudioDetectedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "recording_ms={0} | min_sustained_ms={1} | dbfs_threshold={2}")]
-    public void LowAudioDetectedDetail(int recording_ms, int min_sustained_ms, double dbfs_threshold)
+           Message = "recording_ms={0} | min_sustained_ms={1} | voice_level_dbfs={2}")]
+    public void LowAudioDetectedDetail(int recording_ms, int min_sustained_ms, double voice_level_dbfs)
     {
         if (OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Transcription, this,
                 EventLevel.Verbose, (EventKeywords)Keywords.Capture))
-            WriteEvent(EvtLowAudioDetectedDetail, recording_ms, min_sustained_ms, dbfs_threshold);
+            WriteEvent(EvtLowAudioDetectedDetail, recording_ms, min_sustained_ms, voice_level_dbfs);
     }
 
     // buffers_ready is how many 50 ms buffers were waiting when the loop woke
@@ -636,6 +636,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtCaptureSettingsResolved,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
+           Version = 1,
            Message = "device_id={0} | max_recording_s={1} | preprocessing={2}")]
     public void CaptureSettingsResolved(int device_id, int max_recording_s, bool preprocessing)
     {

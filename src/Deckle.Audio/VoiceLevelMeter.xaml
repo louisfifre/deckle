@@ -7,7 +7,8 @@
 
     <!-- The voice meter in the shared preview block, floating under the Voice
          level card: the microphone's level on a fixed dB track, with the voice
-         level and the detector's entry level marked on it. It shows and never
+         level marked on it, and the detector's entry level when its margin is
+         positive. It shows and never
          writes; the field above it is the value. Live while Listen is on; off,
          the block says what Listen does. The note under the block says why the
          microphone closed when it closed on its own. -->
@@ -90,7 +91,8 @@
                                Height="20"
                                Width="2"
                                Fill="{ThemeResource TextFillColorSecondaryBrush}" />
-                    <!-- The entry level, a few dB above it: dashed. -->
+                    <!-- The entry level, the detector's margin above it: dashed.
+                         Collapsed with its caption while the margin is 0. -->
                     <Line x:Name="EntryMark"
                           Y1="0"
                           Y2="20"

@@ -42,20 +42,30 @@ public static class SettingsBootstrap
         // it before either settings singleton opens its file; otherwise
         // Logging loads its off-by-default value and forgets the user's choice.
         MoveModuleSetting("telemetry", "logging", "applicationLogToDisk");
-
-        // The segmenter's speech level became the voice level of the Audio
-        // module, read by the segmenter, the low-audio warning and the HUD.
-        // Moved before either service opens its file: the transcription file
-        // would otherwise drop the key on its next save and the user's level
-        // would be lost.
-        MoveModuleSetting(
-            "transcription", ["streaming", "segmenter", "thresholdDbfs"],
-            "audio", "voiceLevelDbfs");
         RenameModuleSetting(
             "logging",
             "logStreamingTranscriptionActivity",
             "logTranscriptionActivity");
 
+        DispatchLegacyFile();
+
+        // The segmenter's speech level became the voice level of the Audio
+        // module, read by the segmenter, the low-audio warning and the HUD.
+        // Moved before either service opens its file: the transcription file
+        // would otherwise drop the key on its next save and the user's level
+        // would be lost. And moved after the legacy dispatch: when the audio
+        // file is missing the move creates one holding only voiceLevelDbfs,
+        // and the dispatch would then skip a legacy "capture" section as
+        // "target exists" and lose it.
+        MoveModuleSetting(
+            "transcription", ["streaming", "segmenter", "thresholdDbfs"],
+            "audio", "voiceLevelDbfs");
+    }
+
+    // Splits the legacy combined settings.json, when there is one, into the
+    // per-module files.
+    private static void DispatchLegacyFile()
+    {
         string legacyPath = AppPaths.SettingsFilePath;
         if (!File.Exists(legacyPath))
         {

@@ -97,7 +97,7 @@ public sealed class VadService : IDisposable
         if (modelPresent)
         {
             // Hash verify and session construction run at most once per service,
-            // on the first streaming take's critical path; timed together.
+            // on the first take that needs it; timed together.
             var sw = Stopwatch.StartNew();
             if (FileMatchesExpectedSha(modelPath, out Exception? readError))
             {

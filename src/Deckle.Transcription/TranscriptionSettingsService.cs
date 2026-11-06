@@ -56,10 +56,13 @@ public sealed class TranscriptionSettingsService
     // The segmenter's minimum utterance (streaming.segmenter.minUtteranceMs)
     // and Silero's minimum speech (streaming.speechTrim.minSpeechDurationMs)
     // were one floor stored twice; both now read streaming.minSpeechMs. When
-    // the target is absent it takes Silero's value, the final judge, else the
-    // segmenter's; the two old keys are removed whenever they exist, so the
-    // next save writes the file without them. Pure over the JSON text so it
-    // can be tested without a store.
+    // the target is absent it takes the one old value the person changed: the
+    // store writes the whole POCO, so a real file carries both keys, and the
+    // one that differs from the shipped default is the one that was edited.
+    // When both differ, or neither, Silero's wins, the final judge. A single
+    // old key is taken as it is. The two old keys are removed whenever they
+    // exist, so the next save writes the file without them. Pure over the
+    // JSON text so it can be tested without a store.
     internal static (string json, bool migrated) MigrateMinSpeech(string json)
     {
         if (JsonNode.Parse(json) is not JsonObject root
@@ -73,7 +76,8 @@ public sealed class TranscriptionSettingsService
 
         bool migrated = false;
 
-        if (!streaming.ContainsKey("minSpeechMs") && (fromTrim ?? fromSegmenter) is JsonNode source)
+        if (!streaming.ContainsKey("minSpeechMs")
+            && PickMinSpeechSource(fromTrim, fromSegmenter) is JsonNode source)
         {
             streaming["minSpeechMs"] = source.DeepClone();
             migrated = true;
@@ -84,6 +88,20 @@ public sealed class TranscriptionSettingsService
 
         return migrated ? (root.ToJsonString(_jsonOptions), true) : (json, false);
     }
+
+    private static JsonNode? PickMinSpeechSource(JsonNode? fromTrim, JsonNode? fromSegmenter)
+    {
+        if (fromTrim is null || fromSegmenter is null)
+            return fromTrim ?? fromSegmenter;
+
+        int shipped = new StreamingSettings().MinSpeechMs;
+        bool trimEdited      = !IsInt(fromTrim, shipped);
+        bool segmenterEdited = !IsInt(fromSegmenter, shipped);
+        return segmenterEdited && !trimEdited ? fromSegmenter : fromTrim;
+    }
+
+    private static bool IsInt(JsonNode node, int expected)
+        => node is JsonValue value && value.TryGetValue(out int actual) && actual == expected;
 
     internal static bool ApplyPostLoadMigrations(TranscriptionSettings settings)
     {

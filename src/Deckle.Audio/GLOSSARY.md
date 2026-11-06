@@ -36,9 +36,9 @@ The one level, in dBFS, above which Deckle hears voice in a 50 ms frame of the m
 _Avoid_ : threshold (in anything a user reads), speech level (the former name), detector confidence (the neural VAD's probability, a different signal and a different scale).
 
 **Voice detector** :
-The small stateful object (`VoiceDetector`) that, fed one frame's RMS at a time, says voiced or silent, with a hysteresis: a silent frame must reach the entry level, a few decibels above the voice level, to open a voiced run, and a voiced run ends only below the voice level itself. Each consumer runs its own, on the same level and the same RMS, so all reach the same decisions.
+The small stateful object (`VoiceDetector`) that, fed one frame's RMS at a time, says voiced or silent. A silent frame must reach the entry level to open a voiced run, and a voiced run ends only below the voice level itself. The entry margin between the two is 0 by default, so the entry is the voice level; a positive margin, still to be sized, would gate only the opening of an utterance, since the resume after a pause (`Resume`, which the segmenter asks while an utterance is open) is at the voice level. Each consumer runs its own, on the same level and the same RMS.
 _Avoid_ : VAD (bare, ambiguous with the neural VAD), energy VAD.
 
 **Voice meter** :
-The instrument under the voice level on the Recording page (`VoiceLevelMeter`). While Listen is on it draws the microphone's live level on a fixed dB track, marks the voice level and the detector's entry level, and fills in the accent while its own voice detector says voiced. It shows and never writes: nothing is recorded, nothing persists, and the voice level is changed only in its field.
+The instrument under the voice level on the Recording page (`VoiceLevelMeter`). While Listen is on it draws the microphone's live level on a fixed dB track, marks the voice level (and the detector's entry level, only when the entry margin is positive), and fills in the accent while its own voice detector says voiced. It shows and never writes: nothing is recorded, nothing persists, and the voice level is changed only in its field.
 _Avoid_ : level meter (bare, it says nothing of the voice level it is read against), VU meter (a different ballistic and scale).

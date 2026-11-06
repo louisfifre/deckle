@@ -24,6 +24,12 @@ public sealed partial class TranscriptionEngine
     private async Task<PipelineProduction?> ProduceMonolithicAsync(
         CancellationToken producerCt, Task<bool> primeTask)
     {
+        // The Silero model is made ready before the capture, not after Stop:
+        // EnsureReady checks the model file and opens its ONNX session, work
+        // that would otherwise sit on the Stop→text path while the person waits.
+        // The trim itself runs after the DSP, below.
+        (SileroVad? vad, SileroVadOptions vadOptions) = PrepareSpeechTrim();
+
         // ── Capture ───────────────────────────────────────────────────────────
         CaptureResult capture = _capture.Record(_recordingHost, producerCt);
         _recordDrainDuration = capture.DrainDuration;
@@ -120,21 +126,18 @@ public sealed partial class TranscriptionEngine
         // The Silero trim, as the segmented session runs it on each utterance:
         // the monolithic take is one utterance, index 0, so the log lines read
         // like the first utterance of a segmented take. It removes the silences
-        // Whisper hallucinates on, and a take with no speech never reaches the
-        // backend. A trim failure keeps the untrimmed audio.
+        // Whisper hallucinates on. A trim failure keeps the untrimmed audio.
         float[] decodedAudio = backendAudio;
-        (SileroVad? vad, SileroVadOptions vadOptions) = PrepareSpeechTrim();
         if (vad is not null)
         {
             float[]? trimmed = TrimSpeech(vad, vadOptions, backendAudio, utteranceIndex: 0);
-            if (trimmed is { Length: 0 })
-            {
-                DeckleVadSource.Log.UtteranceDroppedNoSpeech(0);
-                RaiseStatus(Loc.Get("Status_Ready"));
-                FinishTake(TranscriptionOutcome.None, TakeEndReasons.NoSpeech);
-                return null;
-            }
-            if (trimmed is not null)
+            // A trim that found no speech does not end the take: the whole take
+            // is one utterance here, and dropping it would lose what Silero
+            // missed with no second chance. The take goes to Whisper untrimmed
+            // and unpadded, as before the trim existed, and the backend's own
+            // no-speech filter judges it. The SpeechTrimmed line already logged
+            // 0 speech segments, which is what a reader needs to see this.
+            if (trimmed is { Length: > 0 })
             {
                 backendAudio = trimmed;
                 // Whisper sometimes ended the text early when the audio stopped on
