@@ -191,11 +191,6 @@ public partial class WhisperViewModel
     // curve exception puts a curve's values in fields beside the drawing. They
     // keep the bounds the former cards had, in the view model's milliseconds;
     // the plot reads seconds.
-    //
-    // The preset selector (Patient / Balanced / Quick / Custom) is set aside
-    // with every preset: the family still runs underneath
-    // (CutPreset, CutPresetStore), so a hand edit still records Custom, but
-    // nothing on the page selects a preset.
     public IReadOnlyList<SettingDescriptor> SegmentationSettings =>
     [
         // 0..1 s: the grain is 0.05 s, which writes both defaults (0.15, 0.25) exactly.

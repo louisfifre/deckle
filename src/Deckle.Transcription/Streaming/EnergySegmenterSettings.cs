@@ -39,17 +39,6 @@ namespace Deckle.Transcription;
 //
 //   The floor under which an utterance's voiced extent is a blip is not here
 //   either: it is StreamingSettings.MinSpeechMs, which Silero reads too.
-//
-//   CutPreset           — the STORED selection of the cut preset family: a preset
-//                         id (see CutPresets) or "custom". Null in an older file;
-//                         the family then derives it once from the eight hangover
-//                         values and stores it. After that the stored id is the
-//                         truth, even if the values no longer equal the preset's.
-//                         Nothing in the segmenter reads it.
-//   CutCustomValues     — the user's own eight hangover values, kept while a
-//                         preset is selected so choosing Custom again brings them
-//                         back. Null until the user first edits by hand (or the
-//                         first derivation lands on Custom).
 public sealed class EnergySegmenterSettings
 {
     public int    HangoverMaxMs       { get; set; } = 5_000;
@@ -61,8 +50,6 @@ public sealed class EnergySegmenterSettings
     public double HangoverCurveX2     { get; set; } = 0.90;
     public double HangoverCurveY2     { get; set; } = 0.25;
     public int    MarginMs            { get; set; } = 150;
-    public string?          CutPreset       { get; set; }
-    public CutCurveValues?  CutCustomValues { get; set; }
 
     // True while the hangover curve still equals the shipped default — i.e. the
     // user has not customized it. Compared against a fresh instance so the four

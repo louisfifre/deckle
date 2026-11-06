@@ -1711,8 +1711,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Setup/
 │   │   │   └── ModelEntry.cs
 │   │   ├── Streaming/
-│   │   │   ├── CutCurveValues.cs
-│   │   │   ├── CutPresets.cs
 │   │   │   ├── EnergySegmenter.cs
 │   │   │   ├── EnergySegmenterSettings.cs
 │   │   │   ├── SegmentedTranscriptionSession.cs
@@ -1725,7 +1723,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
-│   │   │   ├── CutPresetStore.cs
 │   │   │   ├── WhisperTelemetryViewModel.cs
 │   │   │   ├── WhisperViewModel.cs
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
@@ -2425,7 +2422,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── WindowsAppSdkBootstrap.cs
 │   │   └── WindowsAppSdkModuleInitializer.cs
 │   ├── Deckle.Transcription.Tests/
-│   │   ├── CutPresetsTests.cs
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceTests.cs

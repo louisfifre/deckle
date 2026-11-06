@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using Deckle.Presets;
 
 namespace Deckle.Transcription;
 
@@ -92,113 +91,48 @@ public partial class WhisperViewModel
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        NotifyCutValueEdited();
     }
 
     partial void OnSegHangoverMinMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        NotifyCutValueEdited();
     }
 
     partial void OnSegHangoverRampStartMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        NotifyCutValueEdited();
     }
 
     partial void OnSegHangoverRampEndMsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        NotifyCutValueEdited();
     }
 
     partial void OnSegCurveX1Changed(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        NotifyCutValueEdited();
     }
 
     partial void OnSegCurveY1Changed(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        NotifyCutValueEdited();
     }
 
     partial void OnSegCurveX2Changed(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        NotifyCutValueEdited();
     }
 
     partial void OnSegCurveY2Changed(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
-        NotifyCutValueEdited();
-    }
-
-    private PresetFamily<CutCurveValues> _cutPresets;
-
-    // Mirrors the family's stored selection: a preset id or PresetFamily.Custom.
-    [ObservableProperty]
-    public partial string CutPreset { get; set; }
-
-    partial void OnCutPresetChanged(string value)
-    {
-        if (_isSyncing) return;
-        _cutPresets.Select(value);
-    }
-
-    private PresetFamily<CutCurveValues> BuildCutPresets(Func<EnergySegmenterSettings> segmenter, Action save) =>
-        new(CutPresets.All, CutPresets.Default, new CutPresetStore(this, segmenter, save));
-
-    // Skipped while a preset is being applied: the store has not written the new
-    // selection yet, and mirroring would put the old one back on the selector.
-    // _isSyncing keeps OnCutPresetChanged from calling Select again for a change
-    // that came from the family.
-    private void NotifyCutValueEdited()
-    {
-        if (_isSyncing || _cutPresets.IsApplying) return;
-        _cutPresets.NotifyEdited();
-
-        _isSyncing = true;
-        try
-        {
-            CutPreset = _cutPresets.Selection;
-        }
-        finally
-        {
-            _isSyncing = false;
-        }
-    }
-
-    internal CutCurveValues ReadCutValues() => new(
-        (int)SegHangoverMaxMs,
-        (int)SegHangoverMinMs,
-        (int)SegHangoverRampStartMs,
-        (int)SegHangoverRampEndMs,
-        SegCurveX1,
-        SegCurveY1,
-        SegCurveX2,
-        SegCurveY2);
-
-    internal void WriteCutValues(CutCurveValues v)
-    {
-        SegHangoverMaxMs = v.HangoverMaxMs;
-        SegHangoverMinMs = v.HangoverMinMs;
-        SegHangoverRampStartMs = v.HangoverRampStartMs;
-        SegHangoverRampEndMs = v.HangoverRampEndMs;
-        SegCurveX1 = v.CurveX1;
-        SegCurveY1 = v.CurveY1;
-        SegCurveX2 = v.CurveX2;
-        SegCurveY2 = v.CurveY2;
     }
 
     partial void OnSegMarginMsChanged(double value)
