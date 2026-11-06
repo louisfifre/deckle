@@ -162,6 +162,16 @@ public partial class GeneralViewModel
             defaultValue: () => new UpdatesSettings().AutoCheckEnabled),
     ];
 
+    // The App reads the persisted value to show or hide every Playground entry
+    // point, so the toggle needs no side effect beyond PushToSettings.
+    public IReadOnlyList<SettingDescriptor> DeveloperSettings =>
+    [
+        Setting.Toggle("GeneralShowPlaygroundCard",
+            () => ShowPlayground,
+            value => ShowPlayground = value,
+            defaultValue: () => new DeveloperSettings().ShowPlayground),
+    ];
+
     // The backup folder, composed as the child of the page's hand-authored
     // "Settings backup" fold (Compose inFold), so it renders as the Location
     // line alone; the fold carries the title and the sentence.

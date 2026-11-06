@@ -76,7 +76,7 @@ public sealed partial class HudPage : Page
         };
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
-        SettingsService.Instance.OverlayAnimationsChanged += OnOverlayAnimationsChanged;
+        SystemAnimationPreference.Instance.Changed += OnSystemAnimationsChanged;
         HudSettingsService.Instance.Changed += OnHudSettingsChanged;
 
         // Keep the footer spacer as tall as the floating save bar.
@@ -174,7 +174,7 @@ public sealed partial class HudPage : Page
 
     public void DisposeResources()
     {
-        SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
+        SystemAnimationPreference.Instance.Changed -= OnSystemAnimationsChanged;
         HudSettingsService.Instance.Changed -= OnHudSettingsChanged;
         // The device first: nothing below may keep it open if it throws.
         StopMicrophone();
@@ -190,11 +190,11 @@ public sealed partial class HudPage : Page
         _gaugePreview = null;
     }
 
-    private void OnOverlayAnimationsChanged(bool enabled)
+    private void OnSystemAnimationsChanged(bool enabled)
     {
         if (!DispatcherQueue.HasThreadAccess)
         {
-            DispatcherQueue.TryEnqueue(() => OnOverlayAnimationsChanged(enabled));
+            DispatcherQueue.TryEnqueue(() => OnSystemAnimationsChanged(enabled));
             return;
         }
 
@@ -386,7 +386,7 @@ public sealed partial class HudPage : Page
         _nakedPreview = HudComposition.CreateNakedMaskPreview(
             compositor, NakedHudSize, _tuning.ToConfig(), part, arcFill,
             ViewModel.PreviewMaterial, isDark: !isLightTheme,
-            animationsEnabled: SettingsService.Instance.Current.Overlay.Animations);
+            animationsEnabled: SystemAnimationPreference.Instance.AnimationsEnabled);
 
         float inset = (NakedHostDim - _nakedPreview.Container.Size.X) / 2f;
         _nakedPreview.Container.Offset = new Vector3(inset, inset, 0f);
@@ -409,7 +409,7 @@ public sealed partial class HudPage : Page
         _digitRevealPreview = HudComposition.CreateConicClonePreview(
             compositor, NakedHudSize, _tuning.ToConfig(),
             ViewModel.PreviewMaterial, isDark: !isLightTheme,
-            animationsEnabled: SettingsService.Instance.Current.Overlay.Animations);
+            animationsEnabled: SystemAnimationPreference.Instance.AnimationsEnabled);
 
         // Same seat as the XAML reference border, where the live row would sit.
         float insetX = (NakedHostDim - _digitRevealPreview.Container.Size.X) / 2f;

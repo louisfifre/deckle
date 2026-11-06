@@ -41,7 +41,7 @@ public sealed partial class TranscriptionEngine
     // surfaces either way.
     private bool LoadModel(bool silentStatus = false)
     {
-        if (!silentStatus) RaiseStatus(Loc.Get("Status_LoadingModel"));
+        if (!silentStatus) RaiseStatus(StatusPhase.LoadingModel, Loc.Get("Status_LoadingModel"));
         string workId = WorkId.Next();
         // While the incident is open every take retries the load; only the
         // first attempt opens a log pair.
@@ -65,7 +65,7 @@ public sealed partial class TranscriptionEngine
                 Loc.Get("Engine_ModelLoadFailed_Title"),
                 Loc.Format("Engine_ModelLoadFailed_Body_Format", SettingsPageLabel()),
                 FB_REPLACEMENT);
-            if (!silentStatus) RaiseStatus(Loc.Get("Status_Ready"));
+            if (!silentStatus) RaiseStatus(StatusPhase.Ready, Loc.Get("Status_Ready"));
             return false;
         }
 
@@ -86,7 +86,7 @@ public sealed partial class TranscriptionEngine
                     Loc.Format("Engine_ModelLoadFailed_Body_Format", SettingsPageLabel()),
                     FB_REPLACEMENT);
             }
-            if (!silentStatus) RaiseStatus(Loc.Get("Status_Ready"));
+            if (!silentStatus) RaiseStatus(StatusPhase.Ready, Loc.Get("Status_Ready"));
             return false;
         }
 
@@ -98,7 +98,7 @@ public sealed partial class TranscriptionEngine
         else
             DeckleWhispSource.Log.ModelLoaded(workId, result.LoadDurationMs, device);
 
-        if (!silentStatus) RaiseStatus(Loc.Get("Status_Ready"));
+        if (!silentStatus) RaiseStatus(StatusPhase.Ready, Loc.Get("Status_Ready"));
         return true;
     }
 
@@ -138,7 +138,7 @@ public sealed partial class TranscriptionEngine
             // A hotkey may have started a take during the native free.
             if ((PipelineState)Volatile.Read(ref _state) == PipelineState.Idle)
             {
-                RaiseStatus(Loc.Get("Status_Ready"));
+                RaiseStatus(StatusPhase.Ready, Loc.Get("Status_Ready"));
             }
         }
     }

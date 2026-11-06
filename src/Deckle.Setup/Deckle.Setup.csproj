@@ -38,7 +38,6 @@
     <!-- Complete per-module provisioning gestures the install plan composes:
          each backend owns detection, download, placement and validation. -->
     <ProjectReference Include="..\Deckle.Vad\Deckle.Vad.csproj" />
-    <ProjectReference Include="..\Deckle.Autocorrect.Mlm\Deckle.Autocorrect.Mlm.csproj" />
     <ProjectReference Include="..\Deckle.Anytype\Deckle.Anytype.csproj" />
     <!-- Transcription parent owns the wizard-agnostic primitives (ModelEntry,
          Downloader) and the EventSource provider. -->

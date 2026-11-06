@@ -5,7 +5,7 @@ namespace Deckle.Hud;
 // Process-wide projection of the Windows UI animation preference. UISettings
 // owns the system integration; this wrapper adds one cached value and one
 // change signal for all Deckle-authored simple animations.
-internal sealed class SystemAnimationPreference
+public sealed class SystemAnimationPreference
 {
     private static readonly Lazy<SystemAnimationPreference> _instance =
         new(() => new SystemAnimationPreference());

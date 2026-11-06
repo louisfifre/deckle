@@ -138,6 +138,11 @@ public sealed partial class SettingsWindow : Window
     // which picks the frame it needs; the title bar gets the 32 px PNG. A
     // BitmapImage of the .ico decodes its first frame, 16 px, and the bar's DPI
     // scale then stretched it into a blur.
+    // Called on the UI thread by the App when the developer setting changes,
+    // and once when the window is created.
+    public void SetPlaygroundAvailable(bool available)
+        => PlaygroundButton.Visibility = available ? Visibility.Visible : Visibility.Collapsed;
+
     public void SetRecordingState(bool isRecording)
     {
         if (DispatcherQueue.HasThreadAccess) ApplyRecordingState(isRecording);

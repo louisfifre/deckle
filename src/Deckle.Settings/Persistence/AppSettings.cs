@@ -15,6 +15,15 @@ public sealed class AppSettings
     public PasteSettings       Paste       { get; set; } = new();
     public UpdatesSettings     Updates     { get; set; } = new();
     public HotkeysSettings     Hotkeys     { get; set; } = new();
+    public DeveloperSettings   Developer   { get; set; } = new();
+}
+
+// Developer surfaces an ordinary user has no use for. Off by default: the
+// Playground is a test bench for the people building Deckle, so its entry
+// points (tray menu, window title bars) stay hidden until this is turned on.
+public sealed class DeveloperSettings
+{
+    public bool ShowPlayground { get; set; } = false;
 }
 
 // null = unbound. The initializers are the single source of defaults: the
@@ -62,10 +71,10 @@ public sealed class OverlaySettings
     public bool FadeOnProximity { get; set; } = true;
     public string Position { get; set; } = "BottomCenter";
 
-    // Controls Deckle-authored functional HUD feedback: message movement,
-    // processing-material rotations, state blends and microphone response.
-    // Simple fades are excluded and follow the Windows animation preference.
-    public bool Animations { get; set; } = true;
+    // No animations switch lives here: every HUD animation follows the Windows
+    // "Animation effects" preference (Deckle.Hud.SystemAnimationPreference). A
+    // settings file written by an older build may still carry "animations";
+    // the deserializer ignores members this class no longer declares.
 
     // "Left" | "Right": which side of the primary display the live
     // transcript panel sits on.

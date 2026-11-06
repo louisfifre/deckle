@@ -20,7 +20,7 @@ public sealed partial class HudChrono : UserControl
     private bool _renderingHooked;
 
     private HudState _state = HudState.Hidden;
-    private bool _animationsEnabled = SettingsService.Instance.Current.Overlay.Animations;
+    private bool _animationsEnabled = SystemAnimationPreference.Instance.AnimationsEnabled;
     private bool _animationPreferenceSubscribed;
 
     public HudChrono()
@@ -64,8 +64,8 @@ public sealed partial class HudChrono : UserControl
     {
         if (_animationPreferenceSubscribed) return;
         _animationPreferenceSubscribed = true;
-        _animationsEnabled = SettingsService.Instance.Current.Overlay.Animations;
-        SettingsService.Instance.OverlayAnimationsChanged += OnOverlayAnimationsChanged;
+        _animationsEnabled = SystemAnimationPreference.Instance.AnimationsEnabled;
+        SystemAnimationPreference.Instance.Changed += OnSystemAnimationsChanged;
         HudSettingsService.Instance.Changed += OnHudSettingsChanged;
         SetCountdownRecording(_state == HudState.Recording);
     }
@@ -74,7 +74,7 @@ public sealed partial class HudChrono : UserControl
     {
         if (!_animationPreferenceSubscribed) return;
         _animationPreferenceSubscribed = false;
-        SettingsService.Instance.OverlayAnimationsChanged -= OnOverlayAnimationsChanged;
+        SystemAnimationPreference.Instance.Changed -= OnSystemAnimationsChanged;
         HudSettingsService.Instance.Changed -= OnHudSettingsChanged;
         SetCountdownRecording(false);
     }
@@ -107,7 +107,7 @@ public sealed partial class HudChrono : UserControl
         RebuildCountdownVisual();
     }
 
-    private void OnOverlayAnimationsChanged(bool enabled)
+    private void OnSystemAnimationsChanged(bool enabled)
     {
         if (DispatcherQueue.HasThreadAccess)
         {

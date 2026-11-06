@@ -32,6 +32,7 @@ public partial class App
             };
 
             _logWindow = window;
+            window.SetPlaygroundAvailable(PlaygroundEnabled);
             AppDiagnosticsBootstrap.AttachLogWindowSink(window);
             window.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(window);
@@ -61,6 +62,7 @@ public partial class App
             };
 
             _settingsWindow = window;
+            window.SetPlaygroundAvailable(PlaygroundEnabled);
             window.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(window);
             DeckleWindowingSource.Log.WindowLoadComplete("settings", sw.ElapsedMilliseconds);
@@ -70,6 +72,8 @@ public partial class App
 
     private void ShowPlaygroundLazy()
     {
+        // A developer surface: no path opens it while the setting is off.
+        if (!PlaygroundEnabled) return;
         if (_playgroundWindow is null)
         {
             // Not gated: one Stopwatch per window per process, and the provider

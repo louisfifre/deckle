@@ -19,9 +19,6 @@ public partial class WhisperViewModel
     public partial bool OverlayFadeOnProximity { get; set; }
 
     [ObservableProperty]
-    public partial bool OverlayAnimations { get; set; }
-
-    [ObservableProperty]
     public partial string OverlayPosition { get; set; }
 
     partial void OnAutoPasteEnabledChanged(bool value)
@@ -37,12 +34,6 @@ public partial class WhisperViewModel
     }
 
     partial void OnOverlayFadeOnProximityChanged(bool value)
-    {
-        if (_isSyncing) return;
-        PushBehaviourToSettings();
-    }
-
-    partial void OnOverlayAnimationsChanged(bool value)
     {
         if (_isSyncing) return;
         PushBehaviourToSettings();
@@ -75,7 +66,6 @@ public partial class WhisperViewModel
         shell.Paste.AutoPasteEnabled = AutoPasteEnabled;
         shell.Overlay.Enabled = OverlayEnabled;
         shell.Overlay.FadeOnProximity = OverlayFadeOnProximity;
-        shell.Overlay.Animations = OverlayAnimations;
         shell.Overlay.Position = OverlayPosition;
         shell.Overlay.TranscriptPanelSide = TranscriptPanelSide;
         SettingsService.Instance.Save();

@@ -159,7 +159,7 @@ public sealed class BatchRewriteSettings
     public int ThresholdChars { get; set; } = 600;
 }
 
-public sealed class LlmSettings
+public sealed class LlmSettings : System.Text.Json.Serialization.IJsonOnDeserializing
 {
     public bool Enabled { get; set; } = true;
 
@@ -170,10 +170,20 @@ public sealed class LlmSettings
     // Another profile than the active one past a given length.
     public LengthSwitchSettings LengthSwitch { get; set; } = new();
 
-    // Legacy: the one endpoint of the Ollama-only era. Kept so an older
-    // settings.json deserializes without loss; RepairProviders copies it into
-    // the Ollama provider once. Never read at runtime.
-    public string OllamaEndpoint { get; set; } = "http://localhost:11434/api/generate";
+    // Legacy: the one endpoint of the Ollama-only era. Read from an older
+    // settings.json only; RepairProviders copies it into the Ollama provider
+    // and clears it, and null is not written, so a migrated file no longer
+    // carries it. Never read at runtime.
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? OllamaEndpoint { get; set; }
+
+    // A file read from disk starts with no providers, not with the three
+    // defaults below: System.Text.Json keeps a property's initializer when the
+    // key is absent, so a file from the Ollama-only era (no `providers` key)
+    // would otherwise look already migrated, and RepairProviders would never
+    // carry its custom OllamaEndpoint into the Ollama provider. Empty means
+    // "the file had none"; RepairProviders then seeds them.
+    void System.Text.Json.Serialization.IJsonOnDeserializing.OnDeserializing() => Providers = new();
 
     // Where a model is served from. A profile names one by Id. These defaults
     // are the three shapes the market has (a local Ollama, a chat-completions
@@ -193,9 +203,11 @@ public sealed class LlmSettings
     public string? ActiveProfileId { get; set; }
     public string? ActiveProfileName { get; set; }
 
-    // Legacy primary slot, migrated into ActiveProfile* on load, kept so an
-    // older settings.json deserializes without loss. Never read at runtime.
+    // Legacy primary slot, migrated into ActiveProfile* on load and cleared;
+    // null is not written. Never read at runtime.
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public string? PrimaryRewriteProfileId { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public string? PrimaryRewriteProfileName { get; set; }
 
     // Two depths of intervention, decided with Louis on 2026-10-15. The quick
@@ -253,13 +265,18 @@ public sealed class LlmSettings
         }
     };
 
-    // Legacy auto-rules, retained so an older settings file deserializes
-    // without loss. Never evaluated, and a new file starts with none.
-    public List<AutoRewriteRule> AutoRewriteRules { get; set; } = new();
+    // Legacy auto-rules, retained so an older settings file round-trips
+    // without loss (RepairProfileReferences keeps their profile pairs in
+    // step). Never evaluated. null in a new file, and null is not written, so
+    // only a file that already held them carries them.
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public List<AutoRewriteRule>? AutoRewriteRules { get; set; }
 
-    // Legacy auto-rule metric, retained for settings-file compatibility.
-    public string RuleMetric { get; set; } = "Duration";
+    // Legacy auto-rule metric; same rule as the auto-rules above.
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? RuleMetric { get; set; }
 
-    // Legacy word-based auto-rules, retained for settings-file compatibility.
-    public List<AutoRewriteRuleByWords> AutoRewriteRulesByWords { get; set; } = new();
+    // Legacy word-based auto-rules; same rule as the auto-rules above.
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public List<AutoRewriteRuleByWords>? AutoRewriteRulesByWords { get; set; }
 }

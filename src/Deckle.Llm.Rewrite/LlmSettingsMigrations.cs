@@ -65,7 +65,7 @@ public static partial class LlmSettingsMigrations
             return false;
         }
 
-        foreach (var rule in s.AutoRewriteRules)
+        foreach (var rule in s.AutoRewriteRules ?? [])
         {
             string id = rule.ProfileId ?? "";
             string name = rule.ProfileName ?? "";
@@ -77,7 +77,7 @@ public static partial class LlmSettingsMigrations
             }
         }
 
-        foreach (var rule in s.AutoRewriteRulesByWords)
+        foreach (var rule in s.AutoRewriteRulesByWords ?? [])
         {
             string id = rule.ProfileId ?? "";
             string name = rule.ProfileName ?? "";

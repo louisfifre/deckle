@@ -283,13 +283,13 @@ public sealed partial class TranscriptionEngine
             // The load cause sits on ModelUnavailable; this names the file it
             // cost, and LoadModel gave the person the one message.
             DeckleWhispSource.Log.FileTranscriptionFailed(prepared.Index, files, file, "model_not_ready", "", "");
-            RaiseStatus(Loc.Get("Status_ModelNotReady"));
+            RaiseStatus(StatusPhase.ModelNotReady, Loc.Get("Status_ModelNotReady"));
             EndTake(TakeOutcomes.Failed, TakeEndReasons.ModelNotReady);
             return null;
         }
 
         if (announceTranscribing)
-            RaiseStatus(Loc.Get("Status_Transcribing"));
+            RaiseStatus(StatusPhase.Transcribing, Loc.Get("Status_Transcribing"));
 
         var policy = new SegmentedTranscriptionPolicy(
             FixedPrompt: string.Empty,

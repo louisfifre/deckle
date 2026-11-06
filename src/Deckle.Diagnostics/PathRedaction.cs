@@ -9,11 +9,14 @@ namespace Deckle.Diagnostics;
 // The path keeps what a reader needs, the file under a known root, and loses
 // the part that identifies the account.
 //
-// Why a helper the providers call and not a pass inside the serializer. The
-// serializer sees a payload as an untyped value: it cannot tell a path from a
-// sentence that happens to start with a drive letter, and a blanket rewrite of
-// every string would also rewrite text that must stay verbatim. A provider knows
-// which of its parameters is a path, so it is the one place that can name it.
+// Two layers. A provider that knows which of its parameters is a path calls
+// Redact itself, so the event it writes is clean at the source (ETW consumers
+// included). Under it, DispatchEventListener.BuildEntry passes every string
+// payload through Redact before any sink sees it, so an event nobody taught
+// still cannot leak the account name to the log files. That net is safe
+// because Redact only rewrites a known root, never a drive letter or a shape:
+// a sentence without the profile folder comes back unchanged, and the pass is
+// idempotent over the tokens it writes.
 //
 // Roots, narrowest first. The data root (%DECKLE_DATA%) sits inside the profile,
 // so it is tested before the profile (%USERPROFILE%), and the reader sees
@@ -31,6 +34,9 @@ public static class PathRedaction
 {
     public const string UserProfileToken = "%USERPROFILE%";
     public const string DataRootToken = "%DECKLE_DATA%";
+
+    // Read once: the dispatcher calls Redact for every string of every event.
+    private static readonly string s_profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
 
     private static ImmutableArray<(string Root, string Token)> s_added = ImmutableArray<(string, string)>.Empty;
 
@@ -56,7 +62,7 @@ public static class PathRedaction
         foreach ((string root, string token) in s_added)
             result = Replace(result, root, token);
 
-        string profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        string profile = s_profile;
         if (IsUsableRoot(profile))
             result = Replace(result, TrimTrailingSeparators(profile), UserProfileToken);
         return result;
