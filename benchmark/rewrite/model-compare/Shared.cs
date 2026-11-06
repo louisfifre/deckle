@@ -24,7 +24,10 @@ sealed record GenerationRow(
     int? EvalTokens,
     long? TotalMs,
     double? CostUsd,
-    string? Error);
+    string? Error,
+    // The repeat index of a campaign run (1..n); null on the original one-shot
+    // matrix, so the files the first study wrote still read.
+    int? Iteration = null);
 
 // One judge verdict on one generation. Judgement is the judge's JSON as
 // parsed; JudgeRaw keeps the answer when it did not parse, so a run never
@@ -41,7 +44,11 @@ sealed record JudgementRow(
     int? JudgeEvalTokens,
     long? JudgeMs,
     double? JudgeCostUsd,
-    string? Error);
+    string? Error,
+    int? Iteration = null,
+    // The batch this verdict came from when the judge read several rewrites
+    // in one call: its tokens, time and cost are split evenly over the rows.
+    string? Batch = null);
 
 sealed record Finding(string? Raw, string? Rewrite, string? Note);
 
@@ -83,6 +90,10 @@ static class Pricing
         PerMTok.TryGetValue(model, out var p)
             ? (inputTokens * p.In + outputTokens * p.Out) / 1_000_000.0
             : null;
+
+    // The snapshot as data, so an export carries the prices its costs used.
+    public static Dictionary<string, object> Snapshot() =>
+        PerMTok.ToDictionary(kv => kv.Key, kv => (object)new { input_per_mtok = kv.Value.In, output_per_mtok = kv.Value.Out });
 }
 
 static class Transient
@@ -130,6 +141,17 @@ static class Json
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+        Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
+
+    // For the files a person or another session opens whole (the frozen
+    // campaign, the dashboard data): indented, nulls kept so a missing value
+    // reads as missing rather than as an absent key.
+    public static readonly JsonSerializerOptions Pretty = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+        DictionaryKeyPolicy = null,
+        WriteIndented = true,
         Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
     };
 
