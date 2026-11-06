@@ -97,9 +97,11 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtRestoredFromBackupDetail, path);
     }
 
-    // reason: snapshot_invalid (the snapshot is not JSON, live file untouched),
-    // copy_failed (live file untouched), reload_failed (live file replaced, the
-    // in-memory settings may lag until the next launch).
+    // reason: snapshot_invalid (a file of the snapshot is not JSON, live files
+    // untouched), snapshot_empty (the snapshot holds no settings file, live files
+    // untouched), copy_failed (a file could not be copied or swapped in; the live
+    // files swapped before it stay replaced), reload_failed (the shell file was
+    // replaced, the in-memory shell settings may lag until the next launch).
     [Event(EvtRestoreFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
