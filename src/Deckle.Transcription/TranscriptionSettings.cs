@@ -30,7 +30,7 @@ public enum PipelineStrategyKind { Monolithic, Streaming }
 // segmented session, which streaming dictation and file transcription share.
 public sealed class StreamingSettings
 {
-    public PipelineStrategyKind    Strategy   { get; set; } = PipelineStrategyKind.Monolithic;
+    public PipelineStrategyKind    Strategy   { get; set; } = PipelineStrategyKind.Streaming;
     public EnergySegmenterSettings Segmenter  { get; set; } = new();
     public SpeechTrimSettings      SpeechTrim { get; set; } = new();
 

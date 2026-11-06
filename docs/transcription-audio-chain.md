@@ -22,7 +22,7 @@ Most terms are defined in the module vocabularies. This list gives one line each
 
 - **Streaming** is the value `PipelineStrategyKind.Streaming` in `src/Deckle.Transcription/TranscriptionSettings.cs`. It is the pipeline that cuts the dictation into utterances while you speak and transcribes each one as soon as it ends. The text of each utterance then appears in the live transcript panel beside the HUD; there is no word-by-word display inside an utterance.
 - **Monolithic** is the other value of the same enum. It captures the whole take, then makes one transcription call at the end.
-- The code default is Monolithic, and the comment above the enum says the monolithic path "is slated for removal once streaming proves out".
+- The code default is Streaming, and the comment above the enum says the monolithic path "is slated for removal once streaming proves out".
 - **Utterance** vs **segment**: an utterance is the audio span Deckle cuts and sends to Whisper in one call; a segment is a piece of text Whisper returns inside that call. See `src/Deckle.Transcription/GLOSSARY.md`.
 - **Neural VAD** vs **energy segmenter**: the neural VAD (Silero) is a model that finds speech inside one utterance the segmenter has already cut; the energy segmenter is a volume threshold that cuts the live stream. See `src/Deckle.Transcription/GLOSSARY.md`.
 - **Hangover** vs **margin**: the hangover is how long the segmenter waits in silence before it decides an utterance has ended; the margin is how much of that silence it keeps at the end of the cut. See the header comment of `src/Deckle.Transcription/Streaming/EnergySegmenter.cs`.
@@ -233,7 +233,7 @@ Where the settings are shown:
 | `OutputFilters.SuppressNonSpeechTokens` | same | `true` | `outputFilters` | Decoding page (Output filters section, `WhisperSuppressNstCard`) |
 | `OutputFilters.SuppressBlank` | same | `true` | `outputFilters` | Decoding page (Output filters section, `WhisperSuppressBlankCard`) |
 | `OutputFilters.SuppressRegex` | same | `""` | `outputFilters` | Decoding page (Output filters section, `WhisperSuppressRegexCard`) |
-| `Streaming.Strategy` | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `WorkerRun` | `Monolithic` | `streaming` | Streaming page (`WhisperStreamingEnabledCard` toggle: on = Streaming) |
+| `Streaming.Strategy` | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `WorkerRun` | `Streaming` | `streaming` | Streaming page (`WhisperStreamingEnabledCard` toggle: on = Streaming) |
 | `Streaming.Segmenter.HangoverMaxMs` | same | `5000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Max wait", ms) |
 | `Streaming.Segmenter.HangoverMinMs` | same | `500` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Min wait", ms) |
 | `Streaming.Segmenter.HangoverRampStartMs` | same | `15000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Ramp start", ms) |
@@ -249,7 +249,7 @@ Where the settings are shown:
 | `Streaming.SpeechTrim.MinSilenceDurationMs` | same | `100` | `streaming.speechTrim` | Streaming page (`WhisperVadMinSilenceCard`, child of the VAD group) |
 | `Streaming.SpeechTrim.SpeechPadMs` | same | `30` | `streaming.speechTrim` | Streaming page (`WhisperVadSpeechPadCard`, child of the VAD group) |
 
-On the Streaming page, everything under the Streaming switch shows whatever the switch says: the switch picks only the dictation pipeline, and files and recovered takes are always cut and trimmed with these settings. Speech filtering comes first: the VAD group, its switch and its three children (detector confidence, minimum silence, padding), the children hidden while the group is off. Segmentation follows: the margin and minimum speech cards (the minimum speech sits here, not in the VAD group, because it is the only guard left when Silero is off or its model is missing), then the cut curve card at full width, whose legend carries the four hangover anchors (Max wait, Min wait, Ramp start, Ramp end, in ms) beside the curve editor over the four control points. The cut presets (Patient, Balanced, Quick; `src/Deckle.Transcription/Streaming/CutPresets.cs`) still exist in code and the stored selection still flips to Custom on a hand edit, but no page selects one since 2026-10-14.
+On the Streaming page, everything under the Streaming switch shows whatever the switch says: the switch picks only the dictation pipeline, and files and recovered takes are always cut and trimmed with these settings. Speech filtering comes first: the VAD group, its switch and its three children (detector confidence, minimum silence, padding), the children hidden while the group is off. Segmentation follows: the margin and minimum speech cards (the minimum speech sits here, not in the VAD group, because it is the only guard left when Silero is off or its model is missing), then the cut curve card at full width, whose legend carries the four hangover anchors (Max wait, Min wait, Ramp start, Ramp end, in ms) beside the curve editor over the four control points.
 
 ### Audio module — `modules/audio/settings.json`
 
@@ -283,7 +283,7 @@ Under the Voice level card, the Recording page carries the voice meter (`src/Dec
 
 ### Louis's own values
 
-Louis reports that he runs the Streaming strategy with the segmenter threshold (now the voice level) at −38 dBFS. Both values live in his own `settings.json`, outside the repository, so this note cannot establish them. The code defaults stay Monolithic and −45 dBFS.
+Louis reports that he runs the Streaming strategy with the segmenter threshold (now the voice level) at −38 dBFS. Both values live in his own `settings.json`, outside the repository, so this note cannot establish them. The code default strategy is Streaming as well; the code default voice level is −45 dBFS.
 
 ## Latencies
 

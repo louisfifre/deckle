@@ -164,7 +164,7 @@ public partial class WhisperViewModel
     //
     // The switch's default mirrors the VM's own projection of the segmenter Strategy
     // onto the bool (Load/Push: StreamingEnabled = Strategy == Streaming), read off a
-    // fresh StreamingSettings so the shipped default Strategy (Monolithic → false)
+    // fresh StreamingSettings so the shipped default Strategy (Streaming → true)
     // is the single source — no hand-copied bool.
     public IReadOnlyList<SettingDescriptor> StreamingSwitch =>
     [
@@ -190,11 +190,6 @@ public partial class WhisperViewModel
     // curve exception puts a curve's values in fields beside the drawing. They
     // keep the bounds the former cards had, in the view model's milliseconds;
     // the plot reads seconds.
-    //
-    // The preset selector (Patient / Balanced / Quick / Custom) is set aside
-    // with every preset: the family still runs underneath
-    // (CutPreset, CutPresetStore), so a hand edit still records Custom, but
-    // nothing on the page selects a preset.
     public IReadOnlyList<SettingDescriptor> SegmentationSettings =>
     [
         // 0..1 s: the grain is 0.05 s, which writes both defaults (0.15, 0.25) exactly.

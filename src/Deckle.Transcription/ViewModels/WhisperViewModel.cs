@@ -1,5 +1,4 @@
 using CommunityToolkit.Mvvm.ComponentModel;
-using Deckle.Presets;
 using Deckle.Settings;
 
 namespace Deckle.Transcription;
@@ -62,12 +61,6 @@ public partial class WhisperViewModel : ObservableObject
         SegCurveY2 = segmenter.HangoverCurveY2;
         MinSpeechMs = new StreamingSettings().MinSpeechMs;
 
-        // A first family bound to a throwaway segmenter: the page composes the
-        // selector before Load() runs and only needs the options, and nothing of
-        // it may reach the settings file. Load() builds the real one.
-        _cutPresets = BuildCutPresets(() => segmenter, () => { });
-        CutPreset = _cutPresets.Selection;
-
         // Dictation-experience seeds from the shell POCO initializers (the single
         // source the shell's SettingsService persists), overwritten by Load().
         var overlay = new OverlaySettings();
@@ -129,13 +122,6 @@ public partial class WhisperViewModel : ObservableObject
             OverlayFadeOnProximity = shell.Overlay.FadeOnProximity;
             OverlayPosition = (shell.Overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
             TranscriptPanelSide = NormalizeTranscriptPanelSide(shell.Overlay.TranscriptPanelSide);
-
-            // Last: when the file holds no selection, the real family derives one
-            // from the hangover values read above and stores it.
-            _cutPresets = BuildCutPresets(
-                () => TranscriptionSettingsService.Instance.Current.Streaming.Segmenter,
-                TranscriptionSettingsService.Instance.Save);
-            CutPreset = _cutPresets.Selection;
         }
         finally
         {
