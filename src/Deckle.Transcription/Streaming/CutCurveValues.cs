@@ -3,8 +3,9 @@ namespace Deckle.Transcription;
 // The eight values that decide when a pause cuts an utterance: the decision-
 // delay envelope (HangoverMax, HangoverMin, RampStart, RampEnd) and the Bezier
 // shape of its decay (the two control points). This is the group a cut preset
-// fixes. ThresholdDbfs, MarginMs and MinUtteranceMs are excluded on purpose:
-// they are detection rules, and the threshold depends on the microphone.
+// fixes. MarginMs and MinUtteranceMs are excluded on purpose: they are
+// detection rules. The voice level, which depends on the microphone, is not a
+// segmenter setting at all (CaptureSettings.VoiceLevelDbfs).
 //
 // A sealed record class, as Deckle.Presets requires (it holds "no Custom values
 // yet" as null). The family relies on value equality when it derives a

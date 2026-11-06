@@ -16,6 +16,7 @@ internal sealed class SegmentedTranscriptionSession<TResult>
 
     public SegmentedTranscriptionSession(
         EnergySegmenterSettings settings,
+        double voiceLevelDbfs,
         Func<ChannelReader<Utterance>, Func<int>, Task<TResult>> consume)
     {
         ArgumentNullException.ThrowIfNull(settings);
@@ -28,7 +29,7 @@ internal sealed class SegmentedTranscriptionSession<TResult>
             AllowSynchronousContinuations = false,
         });
 
-        _segmenter = new EnergySegmenter(settings, utterance =>
+        _segmenter = new EnergySegmenter(settings, voiceLevelDbfs, utterance =>
         {
             Interlocked.Increment(ref _backlog);
             if (!_utterances.Writer.TryWrite(utterance))

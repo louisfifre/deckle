@@ -10,6 +10,11 @@ public partial class App
 
     private static bool _firstThemeApplyDone;
 
+    // Anchors the HUD outline on the stored voice level: at boot, then on
+    // every change of the audio settings.
+    private static void ApplyVoiceLevel()
+        => Audio.AudioLevelMapper.Apply(Audio.CaptureSettingsService.Instance.Current.VoiceLevelDbfs);
+
     public static void ApplyTheme(string themeName)
     {
         var theme = themeName switch

@@ -380,10 +380,10 @@
     <value>Your recording is kept.</value>
   </data>
   <data name="Engine_LowAudio_Title" xml:space="preserve">
-    <value>Low audio detected</value>
+    <value>No voice detected</value>
   </data>
   <data name="Engine_LowAudio_Body" xml:space="preserve">
-    <value>Your mic picks up very little.</value>
+    <value>Nothing rose above your voice level in the first 5 seconds. Check the microphone, or lower the voice level in Settings &gt; Recording.</value>
   </data>
   <data name="Engine_TranscriptionFailed_Title" xml:space="preserve">
     <value>Transcription failed</value>

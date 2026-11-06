@@ -8,6 +8,7 @@ namespace Deckle.Transcription.Tests;
 public sealed class SegmentedTranscriptionSessionTests
 {
     private const int FrameSamples = 800;
+    private static readonly double VoiceLevel = new CaptureSettings().VoiceLevelDbfs;
 
     [Fact]
     public async Task AnyCaptureFrameProducerReachesTheSameOrderedConsumer()
@@ -17,6 +18,7 @@ public sealed class SegmentedTranscriptionSessionTests
         var consumed = new List<int>();
         var session = new SegmentedTranscriptionSession<int>(
             Settings(),
+            VoiceLevel,
             async (reader, onDequeue) =>
             {
                 await releaseConsumer.Task;
@@ -48,6 +50,7 @@ public sealed class SegmentedTranscriptionSessionTests
         var consumed = new List<Utterance>();
         var session = new SegmentedTranscriptionSession<int>(
             Settings(),
+            VoiceLevel,
             async (reader, onDequeue) =>
             {
                 await foreach (Utterance utterance in reader.ReadAllAsync())

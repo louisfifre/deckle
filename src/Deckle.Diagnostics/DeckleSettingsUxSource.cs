@@ -109,6 +109,7 @@ internal static class SettingValueRedaction
         // Device index, not the device name.
         "Audio input device",
         "MaxRecordingDurationSeconds",
+        "VoiceLevelDbfs",
         "Preprocessing.Enabled",
         "Telemetry.MicrophoneTelemetry",
         "Logging.LogAmbientCaptureActivity",

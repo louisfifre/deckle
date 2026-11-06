@@ -285,9 +285,10 @@ public sealed partial class TranscriptionEngine
         Task<bool> primeTask)
     {
         var segCfg = _host.Transcription.Streaming.Segmenter;
+        double voiceLevelDbfs = _host.Audio.VoiceLevelDbfs;
         DeckleWhispSource.Log.StreamingPipelineStarted();
         DeckleWhispSource.Log.SegmenterSettingsSnapshot(
-            segCfg.ThresholdDbfs,
+            voiceLevelDbfs,
             segCfg.HangoverMaxMs, segCfg.HangoverMinMs,
             segCfg.HangoverRampStartMs, segCfg.HangoverRampEndMs,
             segCfg.HangoverCurveX1, segCfg.HangoverCurveY1,
@@ -313,6 +314,7 @@ public sealed partial class TranscriptionEngine
 
         return new SegmentedTranscriptionSession<StreamingConsumeResult>(
             segCfg,
+            voiceLevelDbfs,
             (reader, onDequeue) => Task.Run(() => ConsumeUtterancesAsync(
                 reader,
                 drainCt,

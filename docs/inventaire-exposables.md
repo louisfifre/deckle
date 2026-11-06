@@ -15,7 +15,7 @@ Total : **693 entrées** réparties sur **41 modules**.
 | Deckle.Anytype | 12 |
 | Deckle.Anytype.Mcp | 3 |
 | Deckle.App | 4 |
-| Deckle.Audio | 45 |
+| Deckle.Audio | 46 |
 | Deckle.Autocorrect | 53 |
 | Deckle.Autocorrect.Lab | 20 |
 | Deckle.Autocorrect.Mlm | 4 |
@@ -48,7 +48,7 @@ Total : **693 entrées** réparties sur **41 modules**.
 | Deckle.Shell.TaskbarCover | 3 |
 | Deckle.Shell.TrayMenu | 2 |
 | Deckle.Speech | 5 |
-| Deckle.Transcription | 62 |
+| Deckle.Transcription | 61 |
 | Deckle.Transcription.Whisper | 1 |
 | Deckle.Vad | 4 |
 | Deckle.Vision | 10 |
@@ -97,14 +97,15 @@ Total : **693 entrées** réparties sur **41 modules**.
 | AudioFileDecoder.TargetChannels | tuning-constant | `1` | src/Deckle.Audio/AudioFileDecoder.cs:30 | non | Same frozen format contract. |
 | AudioFileDecoder.TargetBitsPerSample | tuning-constant | `32` | src/Deckle.Audio/AudioFileDecoder.cs:31 | non | Same frozen format contract. |
 | AudioLevelMapper.EmaAlpha | tuning-constant | `0.25f` | src/Deckle.Audio/AudioLevelMapper.cs:31 | non | Genuine unexposed tuning: HUD stroke smoothing tau ~0.15s. Public static mutable field, nothing writes it today. |
-| AudioLevelMapper.MinDbfs | tuning-constant | `-55f` | src/Deckle.Audio/AudioLevelMapper.cs:35 | oui | Fixed HUD level window floor (const); no setting, no calibration. |
-| AudioLevelMapper.MaxDbfs | tuning-constant | `-32f` | src/Deckle.Audio/AudioLevelMapper.cs:36 | oui | Fixed HUD level window ceiling (const). |
+| AudioLevelMapper.MinDbfs | tuning-constant | `VoiceLevelDbfs` | src/Deckle.Audio/AudioLevelMapper.cs:59 | oui | HUD level window floor, derived: the voice level (CaptureSettings.VoiceLevelDbfs), set through Apply. No setting of its own. |
+| AudioLevelMapper.MaxDbfs | tuning-constant | `VoiceLevelDbfs + 20` | src/Deckle.Audio/AudioLevelMapper.cs:62 | oui | HUD level window ceiling, derived: WindowSpanDb (20 dB) above the voice level. |
 | CaptureSettings.AudioInputDeviceId | persisted-setting | `-1` | src/Deckle.Audio/CaptureSettings.cs:15 | oui | June marks it bespoke (runtime waveIn enumeration). -1 = WAVE_MAPPER. |
+| CaptureSettings.VoiceLevelDbfs | persisted-setting | `-45.0` | src/Deckle.Audio/CaptureSettings.cs:34 | oui | Formerly the segmenter's speech level (streaming.segmenter.thresholdDbfs, Streaming page); moved to the Audio module and the Recording page (RecordingVoiceLevelCard) on 2026-11-06. Read by the segmenter, the low-audio warning and the HUD outline. |
 | CaptureSettings.MaxRecordingDurationSeconds | persisted-setting | `20 * 60 (1200 s)` | src/Deckle.Audio/CaptureSettings.cs:23 | non | Persisted, no UI found in the sweep scope. Sweep value string was the unevaluated expression; real default 1200. 0 = no cap. |
 | CaptureSettings.Preprocessing | persisted-setting | `new PreprocessingSettings()` | src/Deckle.Audio/CaptureSettings.cs:34 | oui | Container property; the opt-in toggle is Preprocessing.Enabled, fine params live in the Playground. |
-| WaveInLoop.NormalVoiceDbfsThreshold | tuning-constant | `-45.0` | src/Deckle.Audio/Internal/WaveInLoop.cs:96 | non | Method-local const. Drives the user-facing low-audio warning - user-perceivable, so kept. |
-| WaveInLoop.NormalVoiceSustainedMs | tuning-constant | `200` | src/Deckle.Audio/Internal/WaveInLoop.cs:97 | non | Method-local const gating the same warning. |
-| WaveInLoop.WarnAfterSilenceMs | tuning-constant | `5000` | src/Deckle.Audio/Internal/WaveInLoop.cs:98 | non | Method-local const: delay before the low-audio warning fires. |
+| VoiceDetector.EntryMarginDb | tuning-constant | `3.0` | src/Deckle.Audio/VoiceDetector.cs:30 | non | Hysteresis band above the voice level (the entry level). An interpretation, to be measured against the audio corpus. Replaces the low-audio warning's own −45 dBFS constant, which now reads the voice level. |
+| WaveInLoop.NormalVoiceSustainedMs | tuning-constant | `200` | src/Deckle.Audio/Internal/WaveInLoop.cs:99 | non | Method-local const gating the same warning. |
+| WaveInLoop.WarnAfterSilenceMs | tuning-constant | `5000` | src/Deckle.Audio/Internal/WaveInLoop.cs:100 | non | Method-local const: delay before the low-audio warning fires. |
 | WaveInLoop.SubWindowMs | tuning-constant | `50` | src/Deckle.Audio/Internal/WaveInLoop.cs:436 | non | Method-local const. Structural cadence: telemetry and MicrophoneTelemetryCalculator.SubWindowSamples=800 assume it. Not independently tunable. |
 | MicrophoneCapture.N_BUFFERS | tuning-constant | `4` | src/Deckle.Audio/MicrophoneCapture.cs:40 | non | waveIn buffer count - implementation detail, but it sets capture latency/robustness. Kept under doubt. |
 | MicLevelTester.DefaultMeasureSeconds | tuning-constant | `5` | src/Deckle.Audio/MicLevelTester.cs:23 | non | Duration of the Settings mic check - directly user-perceivable. |
@@ -802,7 +803,6 @@ Total : **693 entrées** réparties sur **41 modules**.
 | TranscriptionEngine.PrimingTailWords | tuning-constant | `30` | src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs:513 | non | Comment says explicitly 'not exposed and not yet tuned' — a genuine untuned exposable. |
 | RecordingHostAdapter.DISPOSE_WORKER_JOIN_TIMEOUT_MS | tuning-constant | `30_000` | src/Deckle.Transcription/Engine/TranscriptionEngine.cs:428 | non | Shutdown robustness timeout; borderline implementation constant. |
 | EnergySegmenter.FrameMs | tuning-constant | `50.0` | src/Deckle.Transcription/Streaming/EnergySegmenter.cs:57 | non | Hard-coupled to WaveInLoop's 800-sample sub-window — cannot be changed alone. |
-| EnergySegmenterSettings.ThresholdDbfs | persisted-setting | `-45.0` | src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:48 | oui |  |
 | EnergySegmenterSettings.HangoverMaxMs | persisted-setting | `5_000` | src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:49 | oui |  |
 | EnergySegmenterSettings.HangoverMinMs | persisted-setting | `500` | src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:50 | oui |  |
 | EnergySegmenterSettings.HangoverRampStartMs | persisted-setting | `15_000` | src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:51 | oui |  |
@@ -890,7 +890,7 @@ Total : **693 entrées** réparties sur **41 modules**.
 
 Reprises **verbatim** de la section « Lacunes / à recouper » de `docs/inventaire-settings.md` (juin 2026). Aucune n'est tranchée ici ; elles restent à l'arbitrage de Louis. Note : la section en compte onze, pas neuf.
 
-- EnergySegmenter defaults: verified source is ThresholdDbfs=-45.0, HangoverMaxMs=5000, HangoverMinMs=500, HangoverRampStartMs=15000, HangoverRampEndMs=120000, MarginMs=150, MinUtteranceMs=250 (src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:48-58). Several reports cited -38/4000/60000/180000/40/100/300 — those appear stale (an older worktree?); reconcile before quoting defaults anywhere.
+- EnergySegmenter defaults: verified source is HangoverMaxMs=5000, HangoverMinMs=500, HangoverRampStartMs=15000, HangoverRampEndMs=120000, MarginMs=150, MinUtteranceMs=250 (src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:48-58). Several reports cited -38/4000/60000/180000/40/100/300 — those appear stale (an older worktree?); reconcile before quoting defaults anywhere. The segmenter's former speech level (−45.0) is now CaptureSettings.VoiceLevelDbfs.
 - SpeechTrimSettings (VAD) defaults: reports disagree (Threshold 0.5 agreed; MinSpeech 250 vs 100; MinSilence 100 vs 300; SpeechPad 30 vs 0). SpeechTrimSettings.cs was not located by glob — verify the actual POCO before quoting VAD defaults.
 - totalSettings=132 is a deduplicated estimate across seven overlapping zone reports that recount the same POCOs; it counts persisted category=='setting' entries (incl. frozen DSP params and dormant Speech skeleton) and excludes category=='diagnostic'/'command' and read-only ids (RewriteProfile.Id). A line-by-line POCO census would firm the exact figure.
 - EnergySegmenter HangoverCurve (X1/Y1/X2/Y2, defaults 0.85/0.10/0.90/0.25) is persisted but has NO UI anywhere (not Settings, not the composed fold, not Playground) — confirm it is intentionally unexposed (cubic-bezier easing) and whether it should ever surface.

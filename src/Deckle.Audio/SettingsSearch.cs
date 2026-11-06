@@ -31,6 +31,13 @@ public static class SettingsSearch
             Keywords = ["mic", "source"],
         },
 
+        // Voice level (composed number field).
+        new SettingSearchEntry
+        {
+            LabelKey = "RecordingVoiceLevelCard",
+            Keywords = ["threshold", "dbfs", "speech", "sensitivity", "noise", "segmenter"],
+        },
+
         // Maximum recording length picker (composed Choice).
         new SettingSearchEntry
         {

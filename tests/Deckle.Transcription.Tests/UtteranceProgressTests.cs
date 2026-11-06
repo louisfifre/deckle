@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Deckle.Audio;
 using Deckle.Transcription;
@@ -12,8 +13,14 @@ public sealed class UtteranceProgressTests
 {
     private const int FrameSamples = 800;
 
+    // 0.1 RMS (−20 dBFS) is clearly above the entry level, 0 below the exit.
+    private static readonly double VoiceLevel = new CaptureSettings().VoiceLevelDbfs;
+
     private static CaptureFrame Frame(bool voiced)
         => new(new float[FrameSamples], voiced ? 0.1f : 0f);
+
+    private static CaptureFrame FrameAtDbfs(double dbfs)
+        => new(new float[FrameSamples], (float)Math.Pow(10.0, dbfs / 20.0));
 
     private static EnergySegmenterSettings Settings(
         int hangoverMs = 400,
@@ -37,7 +44,7 @@ public sealed class UtteranceProgressTests
     public void ProgressFractionFollowsConsecutiveSilenceUntilCut()
     {
         var emitted = new List<Utterance>();
-        var segmenter = new EnergySegmenter(Settings(), emitted.Add);
+        var segmenter = new EnergySegmenter(Settings(), VoiceLevel, emitted.Add);
 
         PushN(segmenter, voiced: true, count: 6);
         segmenter.Push(Frame(voiced: false));
@@ -63,7 +70,7 @@ public sealed class UtteranceProgressTests
     public void ResumedSpeechClearsPauseProgressWithoutEmitting()
     {
         var emitted = new List<Utterance>();
-        var segmenter = new EnergySegmenter(Settings(), emitted.Add);
+        var segmenter = new EnergySegmenter(Settings(), VoiceLevel, emitted.Add);
 
         PushN(segmenter, voiced: true, count: 6);
         PushN(segmenter, voiced: false, count: 2);
@@ -75,11 +82,34 @@ public sealed class UtteranceProgressTests
         Assert.Equal(0, segmenter.Progress.CompletedUtterances);
     }
 
+    // The hysteresis of the voice detector, seen from the pause gauge: a frame
+    // that dips between the exit and the entry levels is still speech, so the
+    // pause does not start; only a frame below the exit level starts it. The
+    // levels come from the detector, so the test follows a re-tune of the band.
+    [Fact]
+    public void AFrameBetweenExitAndEntryKeepsSpeechAndOnlyBelowExitStartsThePause()
+    {
+        var detector = new VoiceDetector(VoiceLevel);
+        double between = (detector.ExitDbfs + detector.EntryDbfs) / 2;
+        var segmenter = new EnergySegmenter(Settings(), VoiceLevel, _ => { });
+
+        PushN(segmenter, voiced: true, count: 6);
+        segmenter.Push(FrameAtDbfs(between));
+
+        Assert.False(segmenter.Progress.IsPausing);
+        Assert.Equal(0, segmenter.Progress.SilenceElapsedMs);
+
+        segmenter.Push(FrameAtDbfs(detector.ExitDbfs - 0.5));
+
+        Assert.True(segmenter.Progress.IsPausing);
+        Assert.Equal(50, segmenter.Progress.SilenceElapsedMs);
+    }
+
     [Fact]
     public void CompletedCountSurvivesSpeechResumingOnNextFrame()
     {
         var emitted = new List<Utterance>();
-        var segmenter = new EnergySegmenter(Settings(hangoverMs: 100), emitted.Add);
+        var segmenter = new EnergySegmenter(Settings(hangoverMs: 100), VoiceLevel, emitted.Add);
 
         PushN(segmenter, voiced: true, count: 6);
         PushN(segmenter, voiced: false, count: 2);
@@ -102,7 +132,7 @@ public sealed class UtteranceProgressTests
             HangoverRampEndMs   = 1_000,
             MinUtteranceMs      = 50,
         };
-        var segmenter = new EnergySegmenter(settings, emitted.Add);
+        var segmenter = new EnergySegmenter(settings, VoiceLevel, emitted.Add);
 
         PushN(segmenter, voiced: true, count: 25);
         segmenter.Push(Frame(voiced: false));
@@ -122,7 +152,7 @@ public sealed class UtteranceProgressTests
     public void VoicedNoiseBlipDoesNotIncrementCompletedCount()
     {
         var emitted = new List<Utterance>();
-        var segmenter = new EnergySegmenter(Settings(hangoverMs: 100), emitted.Add);
+        var segmenter = new EnergySegmenter(Settings(hangoverMs: 100), VoiceLevel, emitted.Add);
 
         PushN(segmenter, voiced: true, count: 3); // 150 ms < 250 ms minimum
         PushN(segmenter, voiced: false, count: 2);

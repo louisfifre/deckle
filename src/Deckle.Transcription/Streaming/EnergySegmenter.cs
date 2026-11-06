@@ -15,11 +15,14 @@ internal readonly record struct SegmenterSnapshot(
 
 // ── EnergySegmenter ──────────────────────────────────────────────────────────
 //
-// Threshold-on-RMS state machine that places utterance boundaries on the
-// capture stream. NOT a model and NOT speech recognition: it reads energy dips
-// to decide where to cut. It consumes CaptureFrames (50 ms sub-windows + their
-// RAW linear RMS) one at a time and emits an Utterance each time a speech span
-// ends.
+// Energy state machine that places utterance boundaries on the capture stream.
+// NOT a model and NOT speech recognition: it reads energy dips to decide where
+// to cut. It consumes CaptureFrames (50 ms sub-windows + their RAW linear RMS)
+// one at a time and emits an Utterance each time a speech span ends. Whether a
+// frame is voiced it does not decide itself: it reads the answer from its own
+// Deckle.Audio.VoiceDetector, built on the user's voice level; the low-audio
+// warning of the capture loop runs its own on the same level and the same RMS
+// sequence, so both reach the same decisions.
 //
 // Single-threaded by construction: Push and Flush run on the one producer
 // thread, so there is no shared mutable state and no lock.
@@ -49,8 +52,11 @@ internal sealed class EnergySegmenter
     // log exactly like the cuts of a take.
     private readonly bool _logsDetail;
 
+    // The voice decision, with its hysteresis: a frame is voiced from the
+    // entry level up, and stays voiced down to the exit level (the user's).
+    private readonly VoiceDetector _voice;
+
     // Derived from settings once, in frame units.
-    private readonly float _rmsThreshold;       // linear RMS at/above which a frame is voiced
     private readonly int   _hangoverMaxFrames;  // hangover at utterance start
     private readonly int   _hangoverMinFrames;  // hangover floor past the ramp
     private readonly int   _rampStartFrames;    // utterance length above which hangover starts shrinking
@@ -73,13 +79,15 @@ internal sealed class EnergySegmenter
     private int  _nextIndex;   // emission order counter
 
     public EnergySegmenter(
-        EnergySegmenterSettings settings, Action<Utterance> onUtterance, bool logsDetail = true)
+        EnergySegmenterSettings settings,
+        double voiceLevelDbfs,
+        Action<Utterance> onUtterance,
+        bool logsDetail = true)
     {
         _onUtterance = onUtterance;
         _logsDetail = logsDetail;
 
-        // dBFS → linear once, so the per-frame test is a plain comparison (no log).
-        _rmsThreshold      = (float)Math.Pow(10.0, settings.ThresholdDbfs / 20.0);
+        _voice             = new VoiceDetector(voiceLevelDbfs);
         _hangoverMaxFrames = FramesFromMs(settings.HangoverMaxMs,       min: 1);
         _hangoverMinFrames = FramesFromMs(settings.HangoverMinMs,       min: 1);
         _rampStartFrames   = FramesFromMs(settings.HangoverRampStartMs, min: 1);
@@ -117,7 +125,7 @@ internal sealed class EnergySegmenter
 
     public void Push(CaptureFrame frame)
     {
-        bool voiced = frame.Rms >= _rmsThreshold;
+        bool voiced = _voice.Push(frame.Rms);
         long frameIndex = _totalFrames;
         _totalFrames++;
 
@@ -224,7 +232,10 @@ internal sealed class EnergySegmenter
             TotalUtterancesEmitted: _nextIndex);
 
     // Read only on the producer thread, immediately after Push. This shares
-    // the exact frame counter and threshold used by the cutting decision.
+    // the exact frame counter and voice decision used by the cutting decision.
+    // IsPausing starts only when the detector leaves voice, i.e. below the exit
+    // level: a frame that dips into the band between exit and entry is still
+    // speech, so the pause gauge does not restart on every soft syllable.
     internal UtteranceProgress Progress => new(
         IsActive: true,
         IsPausing: _state == State.Hangover,
@@ -248,8 +259,12 @@ internal sealed class EnergySegmenter
         return result;
     }
 
+    // The detector is reset with the state: an utterance that ended on silence
+    // left it silent already, and a Flush mid-speech must not carry its voiced
+    // state into the next take's first frame.
     private void ResetToSilence()
     {
+        _voice.Reset();
         _frames.Clear();
         _lastVoicedIdx = -1;
         _hangoverCount = 0;

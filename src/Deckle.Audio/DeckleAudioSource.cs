@@ -302,7 +302,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtLowAudioDetected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "No clear voice was heard at the start of the recording, so the microphone may be muted or too quiet")]
+           Message = "Nothing rose above the voice level at the start of the recording, so the microphone may be muted or the voice level set too high")]
     public void LowAudioDetected()
     {
         if (IsEnabled()) WriteEvent(EvtLowAudioDetected);

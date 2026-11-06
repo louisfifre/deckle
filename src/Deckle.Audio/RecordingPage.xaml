@@ -48,12 +48,18 @@
 
                 <!-- ── Recording ───────────────────────────────────────────── -->
                 <!-- Title provisional: the maintainer names the sections at the
-                     end. The section reset spans its two composed settings. -->
+                     end. The section reset spans its three composed settings. -->
                 <catalog:SettingsSection x:Name="RecordingSection"
                                          x:Uid="RecordingPageRecordingSection"
                                          HasReset="True"
                                          ResetRequested="ResetRecording_Click">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+
+                        <!-- Voice level, composed: the level the segmenter, the
+                             low-audio warning and the HUD outline read. A live
+                             meter will stand beside it (research note, P6). -->
+                        <StackPanel x:Name="VoiceLevelHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
 
                         <!-- Maximum recording length, composed. -->
                         <StackPanel x:Name="RecordingLimitHost"

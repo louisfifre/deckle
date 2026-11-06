@@ -379,6 +379,7 @@ public sealed partial class TranscriptionEngine : IDisposable
         public int  AudioInputDeviceId         => _h.Audio.AudioInputDeviceId;
         public int  MaxRecordingDurationSeconds => _h.Audio.MaxRecordingDurationSeconds;
         public bool MicrophoneTelemetryEnabled  => _h.Telemetry.MicrophoneTelemetry;
+        public double VoiceLevelDbfs            => _h.Audio.VoiceLevelDbfs;
     }
 
 

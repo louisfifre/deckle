@@ -23,6 +23,16 @@ public sealed class CaptureSettings
     // user's own limit is the bound.
     public int MaxRecordingDurationSeconds { get; set; } = 0;
 
+    // The voice level, in dBFS: the one level above which Deckle calls a 50 ms
+    // frame "voice" (VoiceDetector treats it as its exit level). Read by the
+    // energy segmenter for every cut (dictation, file transcription, recovery
+    // of a take), by the low-audio warning of the capture loop and by the HUD
+    // outline (AudioLevelMapper). It also governs the cuts of file
+    // transcription, whose gain chain is not the microphone's: known and
+    // accepted for now. Moved here from the transcription module's
+    // streaming.segmenter.thresholdDbfs by SettingsBootstrap.
+    public double VoiceLevelDbfs { get; set; } = -45.0;
+
     // Transcription pre-processing DSP: a terminal float[] → float[] signal
     // transform applied between capture and the ASR backend, per utterance by
     // the streaming pipeline, once per take by the monolithic one. It lifts and

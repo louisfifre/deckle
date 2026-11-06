@@ -25,14 +25,27 @@ public sealed partial class RecordingPage : Page
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
+        ComposeVoiceLevelSection();
         ComposeRecordingLimitSection();
         ComposePreprocessingSection();
         LoadAndSync();
     }
 
-    // ── Composed maximum-recording-length card ────────────────────────────────
+    // ── Composed voice-level card ─────────────────────────────────────────────
     //
     // Composed into its own host, the first card of the Recording section.
+    private SettingsComposer? _voiceLevelComposer;
+
+    private void ComposeVoiceLevelSection()
+    {
+        _voiceLevelComposer = new SettingsComposer(VoiceLevelHost, ViewModel);
+        _voiceLevelComposer.Compose(ViewModel.VoiceLevelSettings);
+        _voiceLevelComposer.DirtyChanged += OnComposedDirtyChanged;
+    }
+
+    // ── Composed maximum-recording-length card ────────────────────────────────
+    //
+    // Composed into its own host, under the voice level.
     private SettingsComposer? _recordingLimitComposer;
 
     private void ComposeRecordingLimitSection()
@@ -69,6 +82,7 @@ public sealed partial class RecordingPage : Page
     private void GateResetLink()
     {
         bool dirty =
+            (_voiceLevelComposer?.IsDirty() ?? false) ||
             (_recordingLimitComposer?.IsDirty() ?? false) ||
             (_preprocessingComposer?.IsDirty() ?? false);
         RecordingSection.IsResetEnabled = dirty;
@@ -139,11 +153,12 @@ public sealed partial class RecordingPage : Page
         ViewModel.AudioInputDeviceId = deviceId;
     }
 
-    // The Recording section's reset: its two composed settings only. The
+    // The Recording section's reset: its three composed settings only. The
     // microphone card stands above every section, so the section wheel leaves
     // it alone; only the header's "Reset all" returns it to the system default.
     private void ResetRecording_Click(object sender, RoutedEventArgs e)
     {
+        _voiceLevelComposer?.ResetAll();
         _recordingLimitComposer?.ResetAll();
         _preprocessingComposer?.ResetAll();
 
@@ -157,6 +172,7 @@ public sealed partial class RecordingPage : Page
     // the VM and fight the value just set.
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
+        _voiceLevelComposer?.ResetAll();
         _recordingLimitComposer?.ResetAll();
         _preprocessingComposer?.ResetAll();
 

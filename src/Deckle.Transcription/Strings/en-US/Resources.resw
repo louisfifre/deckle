@@ -198,10 +198,10 @@
     <value>Your recording is kept.</value>
   </data>
   <data name="Engine_LowAudio_Title" xml:space="preserve">
-    <value>Low audio detected</value>
+    <value>No voice detected</value>
   </data>
   <data name="Engine_LowAudio_Body" xml:space="preserve">
-    <value>Your mic picks up very little.</value>
+    <value>Nothing rose above your voice level in the first 5 seconds. Check the microphone, or lower the voice level in Settings &gt; Recording.</value>
   </data>
   <data name="Engine_TranscriptionFailed_Title" xml:space="preserve">
     <value>Transcription failed</value>
@@ -669,12 +669,6 @@
   </data>
   <data name="WhisperStreamingEnabledCard.Description" xml:space="preserve">
     <value>Off transcribes in one pass at Stop. Applies on your next recording.</value>
-  </data>
-  <data name="WhisperSegThresholdCard.Header" xml:space="preserve">
-    <value>Speech level</value>
-  </data>
-  <data name="WhisperSegThresholdCard.Description" xml:space="preserve">
-    <value>How loud a 50 ms slice of the microphone must be to count as speech when the recording is cut into utterances. Raise it if background noise keeps an utterance open.</value>
   </data>
   <data name="WhisperSegMarginCard.Header" xml:space="preserve">
     <value>Cut margin</value>

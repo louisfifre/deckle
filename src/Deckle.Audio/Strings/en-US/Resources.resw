@@ -124,7 +124,7 @@
     <value>Recording</value>
   </data>
   <data name="RecordingPageHeader.Description" xml:space="preserve">
-    <value>Microphone, recording length and pre-processing, with a listening test.</value>
+    <value>Microphone, voice level, recording length and pre-processing, with a listening test.</value>
   </data>
   <!-- Section titles are provisional: the maintainer names them at the end
        (2026-10-15). -->
@@ -138,6 +138,14 @@
   <!-- Microphone device card (x:Uid) -->
   <data name="GeneralMicrophoneCard.Header" xml:space="preserve">
     <value>Microphone</value>
+  </data>
+
+  <!-- Composed voice-level card (composer label key) -->
+  <data name="RecordingVoiceLevelCard.Header" xml:space="preserve">
+    <value>Voice level</value>
+  </data>
+  <data name="RecordingVoiceLevelCard.Description" xml:space="preserve">
+    <value>The level above which Deckle hears voice. It opens an utterance, lights the outline of the recording window, and decides whether the microphone picked up anyone. Raise it if room noise keeps an utterance open; lower it if soft speech is cut.</value>
   </data>
 
   <!-- Composed maximum-recording-length card (composer label key + Choice option keys) -->

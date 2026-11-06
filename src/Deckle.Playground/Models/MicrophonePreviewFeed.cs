@@ -37,6 +37,7 @@ internal sealed class MicrophonePreviewFeed
     private readonly Func<IMicrophoneCapture> _createCapture;
     private readonly Func<int> _deviceId;
     private readonly Func<EnergySegmenterSettings> _segmenterSettings;
+    private readonly Func<double> _voiceLevelDbfs;
     private readonly Action<float> _onLevel;
     private readonly Action<UtteranceProgress> _onProgress;
     private readonly Action<MicrophonePreviewFailure> _onFailed;
@@ -46,14 +47,15 @@ internal sealed class MicrophonePreviewFeed
     private Run? _current;
     private Thread? _lastThread;
 
-    // createCapture, deviceId and segmenterSettings are read at each Start, as a
-    // dictation reads them when it begins. onLevel and onProgress are called
-    // from the capture thread; onFailed too, once, and never for a run that was
-    // stopped.
+    // createCapture, deviceId, segmenterSettings and voiceLevelDbfs are read at
+    // each Start, as a dictation reads them when it begins. onLevel and
+    // onProgress are called from the capture thread; onFailed too, once, and
+    // never for a run that was stopped.
     public MicrophonePreviewFeed(
         Func<IMicrophoneCapture> createCapture,
         Func<int> deviceId,
         Func<EnergySegmenterSettings> segmenterSettings,
+        Func<double> voiceLevelDbfs,
         Action<float> onLevel,
         Action<UtteranceProgress> onProgress,
         Action<MicrophonePreviewFailure> onFailed)
@@ -61,6 +63,7 @@ internal sealed class MicrophonePreviewFeed
         _createCapture = createCapture;
         _deviceId = deviceId;
         _segmenterSettings = segmenterSettings;
+        _voiceLevelDbfs = voiceLevelDbfs;
         _onLevel = onLevel;
         _onProgress = onProgress;
         _onFailed = onFailed;
@@ -72,18 +75,22 @@ internal sealed class MicrophonePreviewFeed
     public void Start()
     {
         var settings = _segmenterSettings();
+        double voiceLevelDbfs = _voiceLevelDbfs();
         int device = _deviceId();
 
         lock (_gate)
         {
             if (_current is { } running)
             {
-                running.Meter = new UtteranceProgressMeter(settings);
+                running.Meter = new UtteranceProgressMeter(settings, voiceLevelDbfs);
                 _onProgress(running.Meter.Progress);
                 return;
             }
 
-            var run = new Run(new PreviewHost(device), new UtteranceProgressMeter(settings), _lastThread);
+            var run = new Run(
+                new PreviewHost(device, voiceLevelDbfs),
+                new UtteranceProgressMeter(settings, voiceLevelDbfs),
+                _lastThread);
             var thread = new Thread(() => Capture(run))
             {
                 IsBackground = true,
@@ -195,12 +202,15 @@ internal sealed class MicrophonePreviewFeed
 
     // What a preview takes from the microphone: the configured device, no audio
     // kept, no cap, no telemetry. The purpose tags the capture's own events, so
-    // a preview does not read as a dictation in the log.
-    private sealed class PreviewHost(int deviceId) : IAudioRecordingHost
+    // a preview does not read as a dictation in the log. The voice level is the
+    // one the meter cuts on; the low-audio warning that reads it stays off for
+    // a take that keeps no audio.
+    private sealed class PreviewHost(int deviceId, double voiceLevelDbfs) : IAudioRecordingHost
     {
         public int AudioInputDeviceId => deviceId;
         public int MaxRecordingDurationSeconds => 0;
         public bool MicrophoneTelemetryEnabled => false;
+        public double VoiceLevelDbfs => voiceLevelDbfs;
         public string RecordingPurpose => "playground";
         public bool RetainsAudio => false;
     }

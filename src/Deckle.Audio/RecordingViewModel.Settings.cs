@@ -16,6 +16,18 @@ namespace Deckle.Audio;
 // neither fits the flat get/set descriptor model.
 public partial class RecordingViewModel
 {
+    // Voice level — a number field in dBFS, no slider: the value is read
+    // against a microphone, not dragged by feel. The default reads the POCO
+    // initializer, like every other default here.
+    public IReadOnlyList<SettingDescriptor> VoiceLevelSettings =>
+    [
+        Setting.Magnitude("RecordingVoiceLevelCard",
+            () => VoiceLevelDbfs,
+            value => VoiceLevelDbfs = value,
+            new MagnitudeArgs(-90, 0, Unit: "dBFS", Slider: false),
+            defaultValue: () => new CaptureSettings().VoiceLevelDbfs),
+    ];
+
     // Maximum recording length — a ComboBox of fixed durations, the Windows 11
     // Settings idiom for a timeout with a "never" state (Screen and sleep). Values
     // are seconds, the POCO's unit, so the VM needs no projection. 0 is the explicit

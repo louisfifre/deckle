@@ -78,6 +78,7 @@ public sealed partial class HudPage
             createCapture: () => new MicrophoneCapture(),
             deviceId: () => CaptureSettingsService.Instance.Current.AudioInputDeviceId,
             segmenterSettings: () => TranscriptionSettingsService.Instance.Current.Streaming.Segmenter,
+            voiceLevelDbfs: () => CaptureSettingsService.Instance.Current.VoiceLevelDbfs,
             onLevel: chrono.UpdateAudioLevel,
             onProgress: progress => chrono.UpdateUtteranceProgress(
                 progress.IsActive, progress.Fraction, progress.CompletedUtterances),

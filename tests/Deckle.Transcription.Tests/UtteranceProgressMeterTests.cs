@@ -13,8 +13,9 @@ namespace Deckle.Transcription.Tests;
 public class UtteranceProgressMeterTests
 {
     private const int FrameSamples = 800; // 50 ms @ 16 kHz
-    private const float Voiced = 0.1f;    // well above the -45 dBFS threshold
+    private const float Voiced = 0.1f;    // well above the default voice level's entry
     private const float Silent = 0f;
+    private static readonly double VoiceLevel = new CaptureSettings().VoiceLevelDbfs;
 
     private static EnergySegmenterSettings TestSettings()
         => new()
@@ -43,8 +44,8 @@ public class UtteranceProgressMeterTests
     public void ItReportsTheProgressTheDictationSegmenterReportsAtEveryLevel()
     {
         var settings = TestSettings();
-        var segmenter = new EnergySegmenter(settings, _ => { });
-        var meter = new UtteranceProgressMeter(settings);
+        var segmenter = new EnergySegmenter(settings, VoiceLevel, _ => { });
+        var meter = new UtteranceProgressMeter(settings, VoiceLevel);
 
         Assert.Equal(segmenter.Progress, meter.Progress);
 
@@ -69,7 +70,7 @@ public class UtteranceProgressMeterTests
     [Fact]
     public void AMeterBeforeItsFirstLevelIsActiveWithNoPauseAndNothingCompleted()
     {
-        var progress = new UtteranceProgressMeter(TestSettings()).Progress;
+        var progress = new UtteranceProgressMeter(TestSettings(), VoiceLevel).Progress;
 
         Assert.True(progress.IsActive);
         Assert.False(progress.IsPausing);

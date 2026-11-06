@@ -27,6 +27,22 @@ public partial class RecordingViewModel : ObservableObject
         PushToSettings();
     }
 
+    // ── Voice level ─────────────────────────────────────────────────────────
+    //
+    // dBFS, the POCO's unit: the level above which Deckle hears voice, read by
+    // the segmenter, the low-audio warning and the HUD outline. A cleared
+    // number field gives NaN, which is not pushed.
+
+    [ObservableProperty]
+    public partial double VoiceLevelDbfs { get; set; }
+
+    partial void OnVoiceLevelDbfsChanged(double value)
+    {
+        if (_isSyncing || double.IsNaN(value)) return;
+        DeckleSettingsUxSource.Log.SettingChanged("VoiceLevelDbfs", value.ToString(CultureInfo.InvariantCulture));
+        PushToSettings();
+    }
+
     // ── Maximum recording length ────────────────────────────────────────────
     //
     // Seconds, the POCO's unit; 0 = no limit (the default). The capture loop
@@ -137,6 +153,7 @@ public partial class RecordingViewModel : ObservableObject
         // no composed default (runtime hardware enumeration), so its -1 sentinel
         // stays an explicit literal here.
         AudioInputDeviceId = -1;
+        VoiceLevelDbfs = new CaptureSettings().VoiceLevelDbfs;
         MaxRecordingDurationSeconds = new CaptureSettings().MaxRecordingDurationSeconds;
         PreprocessingEnabled = new PreprocessingSettings().Enabled;
 
@@ -151,6 +168,7 @@ public partial class RecordingViewModel : ObservableObject
             var capture = CaptureSettingsService.Instance.Current;
 
             AudioInputDeviceId = capture.AudioInputDeviceId;
+            VoiceLevelDbfs = capture.VoiceLevelDbfs;
             MaxRecordingDurationSeconds = capture.MaxRecordingDurationSeconds;
             PreprocessingEnabled = capture.Preprocessing.Enabled;
         }
@@ -165,6 +183,7 @@ public partial class RecordingViewModel : ObservableObject
         var capture = CaptureSettingsService.Instance.Current;
 
         capture.AudioInputDeviceId = AudioInputDeviceId;
+        if (!double.IsNaN(VoiceLevelDbfs)) capture.VoiceLevelDbfs = VoiceLevelDbfs;
         capture.MaxRecordingDurationSeconds = MaxRecordingDurationSeconds;
         capture.Preprocessing.Enabled = PreprocessingEnabled;
 

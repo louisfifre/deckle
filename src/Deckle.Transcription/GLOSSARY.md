@@ -64,7 +64,7 @@ A device that uses a neural network to find the speech regions of one utterance 
 _Avoid_ : VAD (bare, ambiguous), Silero (vendor-specific, the term should outlive the model).
 
 **Energy segmenter** :
-A device that cuts the live capture into utterances, placing a boundary wherever the signal's energy drops below a threshold. It is neither a model nor speech recognition. It reads energy dips to decide where to cut.
+A device that cuts the live capture into utterances, placing a boundary wherever the signal's energy stays below the voice level long enough. It is neither a model nor speech recognition. It reads energy dips to decide where to cut. Which frames are voiced it reads from a voice detector on the voice level, both defined in `src/Deckle.Audio/GLOSSARY.md`; the HUD outline and the low-audio warning read the same level.
 _Avoid_ : energy VAD (it does not detect voice, it cuts on silence), VAD (bare, ambiguous).
 
 **Utterance** :

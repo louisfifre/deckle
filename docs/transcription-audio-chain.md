@@ -234,7 +234,6 @@ Where the settings are shown:
 | `OutputFilters.SuppressBlank` | same | `true` | `outputFilters` | Decoding page (Output filters section, `WhisperSuppressBlankCard`) |
 | `OutputFilters.SuppressRegex` | same | `""` | `outputFilters` | Decoding page (Output filters section, `WhisperSuppressRegexCard`) |
 | `Streaming.Strategy` | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `WorkerRun` | `Monolithic` | `streaming` | Streaming page (`WhisperStreamingEnabledCard` toggle: on = Streaming) |
-| `Streaming.Segmenter.ThresholdDbfs` | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` | `-45.0` | `streaming.segmenter` | Streaming page (`WhisperSegThresholdCard`, magnitude field in dBFS) |
 | `Streaming.Segmenter.HangoverMaxMs` | same | `5000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Max wait", ms) |
 | `Streaming.Segmenter.HangoverMinMs` | same | `500` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Min wait", ms) |
 | `Streaming.Segmenter.HangoverRampStartMs` | same | `15000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Ramp start", ms) |
@@ -251,13 +250,14 @@ Where the settings are shown:
 | `Streaming.SpeechTrim.MinSilenceDurationMs` | same | `100` | `streaming.speechTrim` | Streaming page (`WhisperVadMinSilenceCard`, child of the VAD group) |
 | `Streaming.SpeechTrim.SpeechPadMs` | same | `30` | `streaming.speechTrim` | Streaming page (`WhisperVadSpeechPadCard`, child of the VAD group) |
 
-On the Streaming page, everything under the Streaming switch shows only while the switch is on. Speech filtering comes first: the VAD group, its switch and its four children (threshold, minimum speech, minimum silence, padding), the children hidden while the group is off. Segmentation follows: the silence threshold as a magnitude field, then the cut curve card at full width, whose legend carries the four hangover anchors (Max wait, Min wait, Ramp start, Ramp end, in ms) beside the curve editor over the four control points. The cut presets (Patient, Balanced, Quick; `src/Deckle.Transcription/Streaming/CutPresets.cs`) still exist in code and the stored selection still flips to Custom on a hand edit, but no page selects one since 2026-10-14.
+On the Streaming page, everything under the Streaming switch shows only while the switch is on. Speech filtering comes first: the VAD group, its switch and its four children (threshold, minimum speech, minimum silence, padding), the children hidden while the group is off. Segmentation follows: the margin and minimum utterance cards, then the cut curve card at full width, whose legend carries the four hangover anchors (Max wait, Min wait, Ramp start, Ramp end, in ms) beside the curve editor over the four control points. The cut presets (Patient, Balanced, Quick; `src/Deckle.Transcription/Streaming/CutPresets.cs`) still exist in code and the stored selection still flips to Custom on a hand edit, but no page selects one since 2026-10-14.
 
 ### Audio module — `modules/audio/settings.json`
 
 | Parameter | Acts in | Default in code | Stored in (section) | Exposed where |
 |---|---|---|---|---|
 | `AudioInputDeviceId` | `src/Deckle.Audio/MicrophoneCapture.cs` (`Probe`, `Record`) | `-1` (system default device) | root | Recording (microphone picker, `RecordingPage.xaml.cs`) |
+| `VoiceLevelDbfs` | `src/Deckle.Audio/VoiceDetector.cs`, run by `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` and the low-audio tracker in `src/Deckle.Audio/Internal/WaveInLoop.cs`; `src/Deckle.Audio/AudioLevelMapper.cs` anchors the HUD outline on it | `-45.0`; moved from the transcription file's `streaming.segmenter.thresholdDbfs` by `src/Deckle.Settings/Persistence/SettingsBootstrap.cs` | root | Recording (`RecordingVoiceLevelCard`, "Voice level", magnitude field in dBFS) |
 | `MaxRecordingDurationSeconds` | `src/Deckle.Audio/Internal/WaveInLoop.cs` (cap check, skipped at 0) | `0` (no limit); a file still holding the former 20 min default is migrated to 0 (`src/Deckle.Audio/CaptureSettingsService.cs`) | root | Recording (`RecordingLimitCard`, "Maximum recording length": No limit, 10, 20, 30 min, 1 h, 2 h) |
 | `Preprocessing.Enabled` | `src/Deckle.Audio/Preprocessing/TranscriptionPreprocessor.cs` | `false` | `preprocessing` | Recording (`RecordingPagePreprocessingCard`) |
 | `Preprocessing.HighPassEnabled`, `HighPassHz` | same | `true`, `90` Hz | `preprocessing` | Not exposed |
@@ -268,7 +268,7 @@ On the Streaming page, everything under the Streaming switch shows only while th
 
 The pre-processing has 18 fixed fields after `Enabled`: four stage switches and fourteen values. `PreprocessingSettings.cs` says they are "an engineer's starting point, NOT measured optima". No Settings card and no Playground page edits them.
 
-The HUD outline's level window (−55 to −32 dBFS) is no longer a setting: it is two constants in `src/Deckle.Audio/AudioLevelMapper.cs`. The former `LevelWindow` section and its auto-calibration were removed on 2026-11-06, since they had never been persisted (the class used public fields, which System.Text.Json ignores by default; see `docs/research/research--seuils-voix--2026-11-06.md`).
+The HUD outline's level window is no longer a setting of its own: `src/Deckle.Audio/AudioLevelMapper.cs` anchors it on the voice level, dark at the level and full 20 dB above it, through a square-root curve. The former `LevelWindow` section and its auto-calibration were removed on 2026-11-06, since they had never been persisted (the class used public fields, which System.Text.Json ignores by default; see `docs/research/research--seuils-voix--2026-11-06.md`).
 
 ### Constants in the engine, not stored
 
@@ -278,11 +278,11 @@ The HUD outline's level window (−55 to −32 dBFS) is no longer a setting: it 
 | `MODEL_IDLE_TIMEOUT_MS` | `src/Deckle.Transcription/Engine/TranscriptionEngine.cs` | `5 * 60 * 1000` (5 min) before the model is freed | No |
 | `N_BUFFERS`, `BYTES_PER_BUF` | `src/Deckle.Audio/MicrophoneCapture.cs` | 4 buffers of 50 ms (1600 bytes) | No |
 | `FrameMs` | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` | `50` ms; every segmenter duration is rounded to whole frames | No |
-| Low-audio warning: `NormalVoiceDbfsThreshold`, `NormalVoiceSustainedMs`, `WarnAfterSilenceMs` | `src/Deckle.Audio/Internal/WaveInLoop.cs` (the per-buffer tracker in `Pump`) | If the first 5 s of a take never contain 200 ms in a row at or above −45 dBFS, the capture raises `LowAudioDetected` once, and `OnCaptureLowAudioDetected` in `src/Deckle.Transcription/Engine/TranscriptionEngine.cs` shows the `Engine_LowAudio_Title` / `Engine_LowAudio_Body` overlay | No |
+| Low-audio warning: `NormalVoiceSustainedMs`, `WarnAfterSilenceMs` | `src/Deckle.Audio/Internal/WaveInLoop.cs` (the per-buffer tracker in `Pump`) | If the first 5 s of a take never contain 200 ms in a row that a `VoiceDetector` on the voice level calls voiced, the capture raises `LowAudioDetected` once, and `OnCaptureLowAudioDetected` in `src/Deckle.Transcription/Engine/TranscriptionEngine.cs` shows the `Engine_LowAudio_Title` / `Engine_LowAudio_Body` overlay | No |
 
 ### Louis's own values
 
-Louis reports that he runs the Streaming strategy with the segmenter threshold at −38 dBFS. Both values live in his own `settings.json`, outside the repository, so this note cannot establish them. The code defaults stay Monolithic and −45 dBFS.
+Louis reports that he runs the Streaming strategy with the segmenter threshold (now the voice level) at −38 dBFS. Both values live in his own `settings.json`, outside the repository, so this note cannot establish them. The code defaults stay Monolithic and −45 dBFS.
 
 ## Latencies
 
@@ -331,13 +331,13 @@ Reading: the hangover is the largest built-in delay. An utterance is handed to W
 
 In Streaming, the energy segmenter decides where one utterance ends and the next begins. It listens to the volume only. It does not know what a word is. This section explains its rules, then what happens to an utterance after the cut.
 
-### A frame and the threshold
+### A frame and the voice level
 
 A **frame** is one 50 ms slice of the microphone signal: 800 samples at 16 kHz, with its RMS, the average loudness of those samples on a linear scale from 0 to 1 (`src/Deckle.Audio/CaptureFrame.cs`). The segmenter receives one frame at a time, in order, and decides for each one whether it is **voiced** (loud enough to count as speech) or **silent**.
 
-The test is a single comparison. The constructor turns the threshold from decibels into the same linear scale once: `10^(ThresholdDbfs / 20)`. A frame is voiced when its RMS is at or above that value (`EnergySegmenter` constructor and `Push` in `src/Deckle.Transcription/Streaming/EnergySegmenter.cs`). With the default −45 dBFS, the limit is an RMS of about 0.0056. With −38 dBFS, the value Louis reports using, it is about 0.0126: a frame must be about twice as loud to count as speech.
+The segmenter does not compare the RMS itself: it asks its own `VoiceDetector` (`src/Deckle.Audio/VoiceDetector.cs`), built on the voice level (`VoiceLevelDbfs`, Recording page). The detector has two levels, turned from decibels into the linear scale once: `10^(dB / 20)`. The voice level is the **exit** level: a voiced run ends on the first frame below it. The **entry** level is 3 dB higher (`EntryMarginDb`, an interpretation still to be measured): a silent frame must reach it to open a run. Between the two, a frame keeps the state it had, so a syllable that dips a little does not count as a pause. With the default −45 dBFS, the exit is an RMS of about 0.0056 and the entry about 0.0079. With −38 dBFS, the value Louis reports using, the exit is about 0.0126: a frame must be about twice as loud to count as speech.
 
-Reading: a higher threshold (closer to 0) makes quiet breaths and room noise count as silence, so pauses are detected more easily; it also risks counting the soft end of a word as silence.
+Reading: a higher voice level (closer to 0) makes quiet breaths and room noise count as silence, so pauses are detected more easily; it also risks counting the soft end of a word as silence.
 
 ### Diagram 3 — the three states of the segmenter
 
@@ -359,7 +359,7 @@ How to read it:
 
 - **Silence**: no utterance is open. Silent frames are thrown away. The first voiced frame opens a new utterance, and that frame is its first sample: nothing before it is kept.
 - **Speech**: an utterance is open and the last frame was voiced. Every frame is added to it, voiced or silent.
-- **Hangover**: an utterance is open, and the last frames were silent. The segmenter is not sure yet whether this is a short pause inside a sentence or the end. It counts the silent frames in a row. A voiced frame sets the count back to 0 and returns to Speech. When the count reaches the required hangover, the segmenter cuts and emits the utterance with `EndedOnSilence = true`.
+- **Hangover**: an utterance is open, and the last frames were silent. The segmenter is not sure yet whether this is a short pause inside a sentence or the end. It counts the silent frames in a row. A voiced frame sets the count back to 0 and returns to Speech; since the detector left voice, that frame must reach the entry level again. When the count reaches the required hangover, the segmenter cuts and emits the utterance with `EndedOnSilence = true`.
 - **Flush at Stop**: when you press the hotkey to stop, the open utterance is emitted whatever its state, with `EndedOnSilence = false`. In Silence, Flush does nothing.
 - The step Speech → Hangover also checks the required hangover. With the defaults it never cuts there, because the minimum hangover is 10 frames. It only matters if a hangover rounds to one frame (under 75 ms: `FramesFromMs` uses `Math.Round`, which rounds 75 ms, 1.5 frames, to 2).
 - The segmenter has no maximum utterance length. An utterance only ends on a silence long enough, or at Stop. The header of `EnergySegmenter.cs` says so ("No hard cap"). There is no "safety ceiling" in the code. The only cap is the optional capture limit (`MaxRecordingDurationSeconds`, off by default), which ends the whole take through the same Flush when the user has set one.
@@ -369,7 +369,7 @@ How to read it:
 | Node or transition | File (→ member) |
 |---|---|
 | Silence, Speech, Hangover | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` → `enum State` |
-| Voiced or silent frame | same → `Push` (`frame.Rms >= _rmsThreshold`); threshold computed in the constructor |
+| Voiced or silent frame | same → `Push` (`_voice.Push(frame.Rms)`); the detector is `src/Deckle.Audio/VoiceDetector.cs`, built in the constructor on the voice level |
 | Opens the utterance | same → `Push`, case `State.Silence` (`_utteranceStartFrame`, `_lastVoicedIdx = 0`) |
 | Silence count | same → `_hangoverCount`, cases `State.Speech` and `State.Hangover` |
 | Required hangover | same → `RequiredHangoverFrames`; curve in `src/Deckle.Transcription/Curves/UnitBezier.cs` → `Solve` |
@@ -446,9 +446,9 @@ The consumer takes the utterances one at a time, in order (`ConsumeUtterancesAsy
 4. **Whisper**, one call per utterance (see Diagram 1).
 5. **Phantom filter.** If the utterance yielded text, `PhantomUtteranceFilter.Evaluate` (`src/Deckle.Transcription/Engine/PhantomUtteranceFilter.cs`) judges the decode against the duration of the audio before the pad. Under 1 s only, the text is dropped when it has more than 12 tokens per second, or when its average token probability is under 0.7 and its weakest token under 0.1. A dropped utterance adds no text and clears the carried tail (`UtterancePhantomRejected`).
 
-Why two detectors: the energy segmenter must decide live, frame by frame, with only the volume to go on; the neural VAD can look at one finished utterance as a whole and tell speech from noise. The distinction is defined in `src/Deckle.Transcription/GLOSSARY.md`, section [Segmentation — detection vs cutting](../src/Deckle.Transcription/GLOSSARY.md#segmentation--detection-vs-cutting).
+Why two detectors: the energy segmenter must decide live, frame by frame, with only the volume to go on; the neural VAD can look at one finished utterance as a whole and tell speech from noise. The energy side is one voice level for the whole app: the HUD outline and the low-audio warning read the same `VoiceLevelDbfs` the segmenter cuts on, while Silero keeps its own detector confidence, a probability on a different signal. The distinction is defined in `src/Deckle.Transcription/GLOSSARY.md`, section [Segmentation — detection vs cutting](../src/Deckle.Transcription/GLOSSARY.md#segmentation--detection-vs-cutting).
 
-Reading: the segmenter discards everything before the first voiced frame, and the Silero padding works inside the utterance it receives. So the padding cannot bring back a soft word onset that stayed under the energy threshold.
+Reading: the segmenter discards everything before the first voiced frame, and the Silero padding works inside the utterance it receives. So the padding cannot bring back a soft word onset that stayed under the voice detector's entry level.
 
 ### The paragraph rule
 

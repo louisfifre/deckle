@@ -42,6 +42,15 @@ public static class SettingsBootstrap
         // it before either settings singleton opens its file; otherwise
         // Logging loads its off-by-default value and forgets the user's choice.
         MoveModuleSetting("telemetry", "logging", "applicationLogToDisk");
+
+        // The segmenter's speech level became the voice level of the Audio
+        // module, read by the segmenter, the low-audio warning and the HUD.
+        // Moved before either service opens its file: the transcription file
+        // would otherwise drop the key on its next save and the user's level
+        // would be lost.
+        MoveModuleSetting(
+            "transcription", ["streaming", "segmenter", "thresholdDbfs"],
+            "audio", "voiceLevelDbfs");
         RenameModuleSetting(
             "logging",
             "logStreamingTranscriptionActivity",
@@ -170,35 +179,69 @@ public static class SettingsBootstrap
         string sourceModuleId,
         string targetModuleId,
         string key)
+        => MoveModuleSetting(sourceModuleId, [key], targetModuleId, key);
+
+    // Moves one value from a module file to the root of another, the source
+    // reached through nested objects (sourcePath ends with the leaf key). An
+    // existing target key wins; the source leaf is removed either way.
+    private static void MoveModuleSetting(
+        string sourceModuleId,
+        string[] sourcePath,
+        string targetModuleId,
+        string targetKey)
     {
-        string sourcePath = ModuleSettingsFilePath(sourceModuleId);
-        if (!File.Exists(sourcePath)) return;
+        string sourceFile = ModuleSettingsFilePath(sourceModuleId);
+        if (!File.Exists(sourceFile)) return;
 
         try
         {
-            var source = JsonNode.Parse(File.ReadAllText(sourcePath)) as JsonObject;
-            if (source?[key] is not JsonNode value) return;
+            if (JsonNode.Parse(File.ReadAllText(sourceFile)) is not JsonObject source) return;
 
-            string targetPath = ModuleSettingsFilePath(targetModuleId);
-            var target = File.Exists(targetPath)
-                ? JsonNode.Parse(File.ReadAllText(targetPath)) as JsonObject ?? new JsonObject()
+            string targetFile = ModuleSettingsFilePath(targetModuleId);
+            var target = File.Exists(targetFile)
+                ? JsonNode.Parse(File.ReadAllText(targetFile)) as JsonObject ?? new JsonObject()
                 : new JsonObject();
 
-            if (target[key] is null)
-                target[key] = value.DeepClone();
+            if (!MoveNestedValue(source, sourcePath, target, targetKey)) return;
 
-            source.Remove(key);
-            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(targetPath)!);
-            File.WriteAllText(targetPath, target.ToJsonString(_jsonOptions));
-            File.WriteAllText(sourcePath, source.ToJsonString(_jsonOptions));
+            Directory.CreateDirectory(System.IO.Path.GetDirectoryName(targetFile)!);
+            File.WriteAllText(targetFile, target.ToJsonString(_jsonOptions));
+            File.WriteAllText(sourceFile, source.ToJsonString(_jsonOptions));
             DeckleSettingsSource.Log.MigrationDispatched();
-            DeckleSettingsSource.Log.MigrationDispatchedDetail(key, targetModuleId);
+            DeckleSettingsSource.Log.MigrationDispatchedDetail(targetKey, targetModuleId);
         }
         catch (Exception ex)
         {
             DeckleSettingsSource.Log.InjectFailed(
-                key, targetModuleId, ex.GetType().Name, ex.Message);
+                targetKey, targetModuleId, ex.GetType().Name, ex.Message);
         }
+    }
+
+    // The pure half of the move, over parsed documents. Walks sourcePath
+    // through nested objects; false when any step is missing or not an object,
+    // and then nothing is touched. Otherwise copies the leaf to
+    // target[targetKey] unless that key is already written, removes the leaf
+    // from the source, and returns true.
+    internal static bool MoveNestedValue(
+        JsonObject source, IReadOnlyList<string> sourcePath, JsonObject target, string targetKey)
+    {
+        if (sourcePath.Count == 0) return false;
+
+        JsonObject parent = source;
+        for (int i = 0; i < sourcePath.Count - 1; i++)
+        {
+            if (parent[sourcePath[i]] is not JsonObject next) return false;
+            parent = next;
+        }
+
+        string leaf = sourcePath[^1];
+        if (parent[leaf] is not JsonNode value) return false;
+
+        if (target[targetKey] is null)
+            target[targetKey] = value.DeepClone();
+
+        parent.Remove(leaf);
+        return true;
     }
 
     private static void RenameModuleSetting(

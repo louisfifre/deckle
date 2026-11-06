@@ -49,7 +49,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtRecordingLowAudio,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "The recording sounds too quiet, so a warning was shown on screen")]
+           Message = "No voice rose above the voice level in the first 5 seconds, so a warning was shown on screen")]
     public void RecordingLowAudio()
     {
         if (IsEnabled()) WriteEvent(EvtRecordingLowAudio);

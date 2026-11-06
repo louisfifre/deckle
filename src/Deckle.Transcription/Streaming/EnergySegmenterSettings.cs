@@ -2,12 +2,11 @@ namespace Deckle.Transcription;
 
 // Parameters of the energy segmenter. Auto-properties so the POCO round-trips
 // cleanly through JsonSettingsStore. The segmenter works in 50 ms frames, so
-// every duration below resolves to a whole frame count.
+// every duration below resolves to a whole frame count. The level that makes a
+// frame voiced is not here: it is the Audio module's voice level
+// (CaptureSettings.VoiceLevelDbfs), passed to the segmenter beside these.
 //
-//   ThresholdDbfs       — a frame counts as voiced when its RAW linear RMS is at
-//                         or above this level. The default leaves headroom for
-//                         quieter mics while staying above a broken mic's floor.
-//   HangoverMaxMs       — DECISION delay at the start of an utterance: how much
+//   HangoverMaxMs      — DECISION delay at the start of an utterance: how much
 //                         trailing silence to wait, after the last voiced frame,
 //                         before declaring the utterance ended. Long by default
 //                         so only a true paragraph-break silence cuts.
@@ -52,7 +51,6 @@ namespace Deckle.Transcription;
 //                         first derivation lands on Custom).
 public sealed class EnergySegmenterSettings
 {
-    public double ThresholdDbfs       { get; set; } = -45.0;
     public int    HangoverMaxMs       { get; set; } = 5_000;
     public int    HangoverMinMs       { get; set; } = 500;
     public int    HangoverRampStartMs { get; set; } = 15_000;

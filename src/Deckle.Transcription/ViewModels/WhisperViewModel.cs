@@ -52,7 +52,6 @@ public partial class WhisperViewModel : ObservableObject
         // Segmenter seeds read from the segmenter POCO initializers (their single
         // source), overwritten by Load().
         var segmenter = new EnergySegmenterSettings();
-        SegThresholdDbfs = segmenter.ThresholdDbfs;
         SegHangoverMaxMs = segmenter.HangoverMaxMs;
         SegHangoverMinMs = segmenter.HangoverMinMs;
         SegHangoverRampStartMs = segmenter.HangoverRampStartMs;
@@ -115,7 +114,6 @@ public partial class WhisperViewModel : ObservableObject
             UseContext = s.Context.UseContext;
             MaxTokens = s.Context.MaxTokens;
             StreamingEnabled = s.Streaming.Strategy == PipelineStrategyKind.Streaming;
-            SegThresholdDbfs = s.Streaming.Segmenter.ThresholdDbfs;
             SegHangoverMaxMs = s.Streaming.Segmenter.HangoverMaxMs;
             SegHangoverMinMs = s.Streaming.Segmenter.HangoverMinMs;
             SegHangoverRampStartMs = s.Streaming.Segmenter.HangoverRampStartMs;
@@ -186,7 +184,6 @@ public partial class WhisperViewModel : ObservableObject
         s.Streaming.Strategy = StreamingEnabled
             ? PipelineStrategyKind.Streaming
             : PipelineStrategyKind.Monolithic;
-        s.Streaming.Segmenter.ThresholdDbfs = SegThresholdDbfs;
         if (!double.IsNaN(SegHangoverMaxMs))       s.Streaming.Segmenter.HangoverMaxMs       = (int)SegHangoverMaxMs;
         if (!double.IsNaN(SegHangoverMinMs))       s.Streaming.Segmenter.HangoverMinMs       = (int)SegHangoverMinMs;
         if (!double.IsNaN(SegHangoverRampStartMs)) s.Streaming.Segmenter.HangoverRampStartMs = (int)SegHangoverRampStartMs;

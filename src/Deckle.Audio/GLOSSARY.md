@@ -28,3 +28,13 @@ Automatic gain control, a real-time adjustment of the gain while the signal is b
 
 **Normalization** :
 A single scaling of the whole signal to a target peak or RMS level. Transcription pre-processing is a chain of several dynamics steps.
+
+## Voice level and voice detector
+
+**Voice level** :
+The one level, in dBFS, above which Deckle hears voice in a 50 ms frame of the microphone (`CaptureSettings.VoiceLevelDbfs`, Settings > Recording). It is the exit level of the voice detector. The energy segmenter cuts on it, the low-audio warning tests it, and the display level is anchored on it, dark at the voice level.
+_Avoid_ : threshold (in anything a user reads), speech level (the former name), detector confidence (the neural VAD's probability, a different signal and a different scale).
+
+**Voice detector** :
+The small stateful object (`VoiceDetector`) that, fed one frame's RMS at a time, says voiced or silent, with a hysteresis: a silent frame must reach the entry level, a few decibels above the voice level, to open a voiced run, and a voiced run ends only below the voice level itself. Each consumer runs its own, on the same level and the same RMS, so all reach the same decisions.
+_Avoid_ : VAD (bare, ambiguous with the neural VAD), energy VAD.

@@ -59,9 +59,6 @@ public partial class WhisperViewModel
     public partial bool StreamingEnabled { get; set; }
 
     [ObservableProperty]
-    public partial double SegThresholdDbfs { get; set; }
-
-    [ObservableProperty]
     public partial double SegHangoverMaxMs { get; set; }
 
     [ObservableProperty]
@@ -95,12 +92,6 @@ public partial class WhisperViewModel
     partial void OnStreamingEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        PushToSettings();
-    }
-
-    partial void OnSegThresholdDbfsChanged(double value)
-    {
-        if (_isSyncing || double.IsNaN(value)) return;
         PushToSettings();
     }
 

@@ -13,7 +13,10 @@ public class EnergySegmenterTests
 {
     private const int FrameSamples = 800; // 50 ms @ 16 kHz
 
-    // RMS clearly above/below the -45 dBFS threshold (≈ 0.0056 linear).
+    private static readonly double VoiceLevel = new CaptureSettings().VoiceLevelDbfs;
+
+    // RMS clearly above the entry level and below the exit level of the
+    // default voice level (−45 dBFS ≈ 0.0056 linear).
     private static CaptureFrame Frame(bool voiced)
         => new(new float[FrameSamples], voiced ? 0.1f : 0.0f);
 
@@ -40,7 +43,7 @@ public class EnergySegmenterTests
     public void PureSilenceEmitsNothing()
     {
         var got = new List<Utterance>();
-        var seg = new EnergySegmenter(TestSettings(), got.Add);
+        var seg = new EnergySegmenter(TestSettings(), VoiceLevel, got.Add);
 
         PushN(seg, voiced: false, 20);
         seg.Flush();
@@ -52,7 +55,7 @@ public class EnergySegmenterTests
     public void ShortBurstBelowMinIsDroppedAsBlip()
     {
         var got = new List<Utterance>();
-        var seg = new EnergySegmenter(TestSettings(), got.Add);
+        var seg = new EnergySegmenter(TestSettings(), VoiceLevel, got.Add);
 
         // 3 voiced frames (150 ms) < min 250 ms → dropped when the hangover expires.
         PushN(seg, voiced: true, 3);
@@ -65,7 +68,7 @@ public class EnergySegmenterTests
     public void VoicedThenSilenceEmitsOneUtteranceTrimmedToMargin()
     {
         var got = new List<Utterance>();
-        var seg = new EnergySegmenter(TestSettings(), got.Add);
+        var seg = new EnergySegmenter(TestSettings(), VoiceLevel, got.Add);
 
         // 10 voiced frames (extent ≥ min), then 8 silences → end on silence.
         PushN(seg, voiced: true, 10);
@@ -83,7 +86,7 @@ public class EnergySegmenterTests
     public void IntraPhrasePauseShorterThanHangoverDoesNotSplit()
     {
         var got = new List<Utterance>();
-        var seg = new EnergySegmenter(TestSettings(), got.Add);
+        var seg = new EnergySegmenter(TestSettings(), VoiceLevel, got.Add);
 
         PushN(seg, voiced: true, 10);
         PushN(seg, voiced: false, 5);  // pause < hangover (8) → does not split
@@ -97,7 +100,7 @@ public class EnergySegmenterTests
     public void LongSilenceSeparatesTwoUtterances()
     {
         var got = new List<Utterance>();
-        var seg = new EnergySegmenter(TestSettings(), got.Add);
+        var seg = new EnergySegmenter(TestSettings(), VoiceLevel, got.Add);
 
         PushN(seg, voiced: true, 10);
         PushN(seg, voiced: false, 8);   // → U0 (global frames 0..17)
@@ -127,7 +130,7 @@ public class EnergySegmenterTests
             HangoverRampEndMs   = 1_000,
             MinUtteranceMs      = 50,
         };
-        var seg = new EnergySegmenter(settings, got.Add);
+        var seg = new EnergySegmenter(settings, VoiceLevel, got.Add);
 
         PushN(seg, voiced: true, 25);  // length 25 ≥ 20 → at the floor
         PushN(seg, voiced: false, 3);  // 3 ≥ 2 → cuts
@@ -164,8 +167,8 @@ public class EnergySegmenterTests
             MinUtteranceMs      = linear.MinUtteranceMs,
         };
 
-        var linearSeg = new EnergySegmenter(linear, _ => { });
-        var lateSeg = new EnergySegmenter(lateDrop, _ => { });
+        var linearSeg = new EnergySegmenter(linear, VoiceLevel, _ => { });
+        var lateSeg = new EnergySegmenter(lateDrop, VoiceLevel, _ => { });
 
         PushN(linearSeg, voiced: true, 60);
         PushN(lateSeg, voiced: true, 60);
@@ -190,7 +193,7 @@ public class EnergySegmenterTests
             HangoverRampEndMs   = 6_000,
             MinUtteranceMs      = 50,
         };
-        var seg = new EnergySegmenter(settings, got.Add);
+        var seg = new EnergySegmenter(settings, VoiceLevel, got.Add);
 
         PushN(seg, voiced: true, 10);
         PushN(seg, voiced: false, 5);  // 5 < hangover max 8 → does not split
@@ -204,7 +207,7 @@ public class EnergySegmenterTests
     public void FlushMidWordKeepsInProgressSpeech()
     {
         var got = new List<Utterance>();
-        var seg = new EnergySegmenter(TestSettings(), got.Add);
+        var seg = new EnergySegmenter(TestSettings(), VoiceLevel, got.Add);
 
         PushN(seg, voiced: true, 10); // Stop en pleine parole, aucun silence
         seg.Flush();
@@ -217,7 +220,7 @@ public class EnergySegmenterTests
     public void FlushWithNoOpenUtteranceEmitsNothing()
     {
         var got = new List<Utterance>();
-        var seg = new EnergySegmenter(TestSettings(), got.Add);
+        var seg = new EnergySegmenter(TestSettings(), VoiceLevel, got.Add);
 
         PushN(seg, voiced: true, 10);
         PushN(seg, voiced: false, 8); // → one utterance emitted, back to Silence

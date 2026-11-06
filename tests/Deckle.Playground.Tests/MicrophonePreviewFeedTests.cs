@@ -19,8 +19,9 @@ public sealed class MicrophonePreviewFeedTests
 {
     private static readonly TimeSpan Wait = TimeSpan.FromSeconds(5);
 
-    private const float Voiced = 0.1f; // well above the -45 dBFS threshold
+    private const float Voiced = 0.1f; // well above the default voice level's entry
     private const float Silent = 0f;
+    private static readonly double VoiceLevel = new CaptureSettings().VoiceLevelDbfs;
 
     private static EnergySegmenterSettings TestSettings()
         => new()
@@ -38,7 +39,7 @@ public sealed class MicrophonePreviewFeedTests
 
         h.Feed.Start();
 
-        Assert.Equal(new UtteranceProgressMeter(TestSettings()).Progress, Assert.Single(h.Progress));
+        Assert.Equal(new UtteranceProgressMeter(TestSettings(), VoiceLevel).Progress, Assert.Single(h.Progress));
         Assert.Empty(h.Levels);
     }
 
@@ -49,7 +50,7 @@ public sealed class MicrophonePreviewFeedTests
         h.Feed.Start();
         var capture = h.WaitForCapture(0);
 
-        var meter = new UtteranceProgressMeter(TestSettings());
+        var meter = new UtteranceProgressMeter(TestSettings(), VoiceLevel);
         var levels = Enumerable.Repeat(Voiced, 8).Concat(Enumerable.Repeat(Silent, 6)).ToArray();
         var expected = new List<UtteranceProgress> { meter.Progress };
         foreach (float rms in levels)
@@ -198,7 +199,7 @@ public sealed class MicrophonePreviewFeedTests
         h.Feed.Start();
 
         // ...starts over, without closing and reopening the device.
-        Assert.Equal(new UtteranceProgressMeter(TestSettings()).Progress, h.Progress.Last());
+        Assert.Equal(new UtteranceProgressMeter(TestSettings(), VoiceLevel).Progress, h.Progress.Last());
         capture.Raise(Voiced);
         Assert.Equal(0, h.Progress.Last().CompletedUtterances);
         Assert.Equal(1, h.CaptureCount);
@@ -304,6 +305,7 @@ public sealed class MicrophonePreviewFeedTests
         public int AudioInputDeviceId => 0;
         public int MaxRecordingDurationSeconds => 0;
         public bool MicrophoneTelemetryEnabled => false;
+        public double VoiceLevelDbfs => VoiceLevel;
     }
 
     private sealed class Harness : IDisposable
@@ -325,6 +327,7 @@ public sealed class MicrophonePreviewFeedTests
                 createCapture: CreateCapture,
                 deviceId: () => Device,
                 segmenterSettings: TestSettings,
+                voiceLevelDbfs: () => VoiceLevel,
                 onLevel: Levels.Enqueue,
                 onProgress: Progress.Enqueue,
                 onFailed: failure =>

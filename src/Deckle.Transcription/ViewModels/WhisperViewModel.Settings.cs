@@ -177,9 +177,11 @@ public partial class WhisperViewModel
     ];
 
     // The segmentation cards of the Streaming page, under the switch and the
-    // speech-filtering fold: the speech level, the one value that depends
-    // on the microphone, then the cut margin and the minimum utterance (the two
+    // speech-filtering fold: the cut margin and the minimum utterance (the two
     // blip rules, moved here from the Playground's segmentation page), as cards;
+    // the level that makes a frame voice is not here: it is the voice level of
+    // the Recording page (CaptureSettings.VoiceLevelDbfs), since the HUD and
+    // the low-audio warning read it too;
     // then the cut curve, the segmentation's
     // instrument, last and at full width, with no fold around it (2026-10-14).
     // The four hangover anchors (max, min, ramp start, ramp end) are the curve's
@@ -194,12 +196,6 @@ public partial class WhisperViewModel
     // nothing on the page selects a preset.
     public IReadOnlyList<SettingDescriptor> SegmentationSettings =>
     [
-        Setting.Magnitude("WhisperSegThresholdCard",
-            () => SegThresholdDbfs,
-            value => SegThresholdDbfs = value,
-            new MagnitudeArgs(-90, 0, Unit: "dBFS", Slider: false),
-            visibleWhen: () => StreamingEnabled,
-            defaultValue: () => new EnergySegmenterSettings().ThresholdDbfs),
         // 0..1 s: the grain is 0.05 s, which writes both defaults (0.15, 0.25) exactly.
         Setting.Magnitude("WhisperSegMarginCard",
             () => Seconds(SegMarginMs),

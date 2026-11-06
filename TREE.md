@@ -556,7 +556,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RecordingViewModel.ListeningTest.cs
 │   │   ├── RecordingViewModel.Settings.cs
 │   │   ├── SettingsSearch.cs
-│   │   └── SpeakerOutput.cs
+│   │   ├── SpeakerOutput.cs
+│   │   └── VoiceDetector.cs
 │   ├── Deckle.Autocorrect/
 │   │   ├── Data/
 │   │   │   ├── lexicon-en-globish.tsv.gz
@@ -1929,6 +1930,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PcmBufferTests.cs
 │   │   ├── PcmConversionTests.cs
 │   │   ├── TranscriptionPreprocessorTests.cs
+│   │   ├── VoiceDetectorTests.cs
 │   │   ├── WaveInBufferRingBugNotes.md
 │   │   ├── WaveInBufferRingTests.cs
 │   │   └── WaveInReleaseBugNotes.md
@@ -2341,7 +2343,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Settings.Tests/
 │   │   ├── Deckle.Settings.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs
-│   │   └── MilestoneClosersTests.cs
+│   │   ├── MilestoneClosersTests.cs
+│   │   └── SettingsBootstrapMoveTests.cs
 │   ├── Deckle.Setup.Tests/
 │   │   ├── DataRootRelocatorBugNotes.md
 │   │   ├── DataRootRelocatorTests.cs

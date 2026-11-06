@@ -172,13 +172,6 @@ public static class SettingsSearch
             Keywords = ["vad", "silero", "silence", "trim", "threshold", "padding"],
         },
 
-        // Speech level (composed field): the segmenter's loudness threshold.
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperSegThresholdCard",
-            Keywords = ["silence", "threshold", "dbfs", "level", "sensitivity", "cut"],
-        },
-
         new SettingSearchEntry
         {
             LabelKey = "WhisperSegMarginCard",
