@@ -93,6 +93,23 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public const int EvtBackendWedgedServeEnded       = 68;
     public const int EvtBackendWedgedServeEndRefused  = 69;
     public const int EvtBackendWedgedServeEndDeclined = 70;
+    public const int EvtGatewaySupervisionStarted     = 71;
+    public const int EvtGatewaySupervisionEnded       = 72;
+    public const int EvtGatewayStaged                 = 73;
+    public const int EvtGatewayVersionsPruned         = 74;
+    public const int EvtGatewayAdopted                = 75;
+    public const int EvtGatewayLaunched               = 76;
+    public const int EvtGatewayReplacing              = 77;
+    public const int EvtGatewayStopForced             = 78;
+    public const int EvtGatewayExited                 = 79;
+    public const int EvtGatewayRestartScheduled       = 80;
+    public const int EvtGatewaySupervisionGaveUp      = 81;
+    public const int EvtGatewayEndpointConflict       = 82;
+    public const int EvtGatewaySupervisionFailed      = 83;
+    public const int EvtGatewayPayloadMissing         = 84;
+    public const int EvtDeletionApprovalRelayFailed   = 85;
+    public const int EvtDeletionApprovalRelayListening = 86;
+    public const int EvtDeletionApprovalRelayStopped  = 87;
 
     // ── HTTP transport ──────────────────────────────────────────────────
 
@@ -751,9 +768,9 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
 
     // ── Anytype runtime ───────────────────────────────────────────────────
 
-    // phase names where the composition broke (prepare, supervise, credentials,
-    // tokens, host, mcp_drain, mcp_dispose, api_dispose, supervisor_dispose),
-    // since one resident task runs them all.
+    // phase names where the composition broke (approvals, prepare, supervise,
+    // gateway), since one resident task runs them all. The MCP host's own phases
+    // live in the gateway process (ADR-0008).
     [Event(EvtAnytypeRuntimeFaulted,
            Level = EventLevel.Error,
            Keywords = Lifecycle,
@@ -775,5 +792,198 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public void CredentialsResolved(string profile)
     {
         if (IsEnabled()) WriteEvent(EvtCredentialsResolved, profile);
+    }
+
+    // ── Gateway supervision (ADR-0008) ────────────────────────────────────
+
+    // Pairs with GatewaySupervisionEnded through work_id.
+    [Event(EvtGatewaySupervisionStarted,
+           Level = EventLevel.Informational,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Deckle started supervising the Anytype gateway")]
+    public void GatewaySupervisionStarted(string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewaySupervisionStarted, work_id);
+    }
+
+    // The gateway keeps running after this line whatever the outcome: only the
+    // supervision ended. outcome: cancelled (Deckle shutdown), stopped or
+    // failed. reason: shutdown, not_provisioned, payload_missing,
+    // endpoint_conflict, gave_up, exception.
+    [Event(EvtGatewaySupervisionEnded,
+           Level = EventLevel.Informational,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Deckle stopped supervising the Anytype gateway")]
+    public void GatewaySupervisionEnded(string outcome, string reason, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewaySupervisionEnded, outcome, reason, work_id);
+    }
+
+    // fingerprint names the build, and the versions folder it runs from.
+    [Event(EvtGatewayStaged,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "fingerprint={0}")]
+    public void GatewayStaged(string fingerprint)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayStaged, fingerprint);
+    }
+
+    [Event(EvtGatewayVersionsPruned,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "removed={0}")]
+    public void GatewayVersionsPruned(int removed)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayVersionsPruned, removed);
+    }
+
+    // The gateway listening was already this build: assistants saw no gap.
+    [Event(EvtGatewayAdopted,
+           Level = EventLevel.Informational,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Deckle found the Anytype gateway already running and kept it")]
+    public void GatewayAdopted(int pid, string fingerprint, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayAdopted, pid, fingerprint, work_id);
+    }
+
+    // reason: start (nothing listened), replace (another build was drained
+    // first) or restart (the ladder, after an exit).
+    [Event(EvtGatewayLaunched,
+           Level = EventLevel.Informational,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Deckle started the Anytype gateway")]
+    public void GatewayLaunched(int pid, string fingerprint, string reason, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayLaunched, pid, fingerprint, reason, work_id);
+    }
+
+    // The running gateway carries other code than this Deckle's: it drains and
+    // exits, then this build starts. The one moment the gateway is down on purpose.
+    [Event(EvtGatewayReplacing,
+           Level = EventLevel.Informational,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Deckle is replacing the Anytype gateway with a new build")]
+    public void GatewayReplacing(int old_pid, string fingerprint, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayReplacing, old_pid, fingerprint, work_id);
+    }
+
+    // reason: stop_timeout (asked, did not exit in time) or no_stop_event (the
+    // process never created its stop event). killed is false when Windows
+    // refused the kill.
+    [Event(EvtGatewayStopForced,
+           Level = EventLevel.Warning,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The Anytype gateway did not stop when asked, so Deckle ended it\npid={0} | reason={1} | killed={2} | ex_type={3} | ex_message={4}")]
+    public void GatewayStopForced(int pid, string reason, bool killed, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayStopForced, pid, reason, killed, ex_type, PathRedaction.Redact(ex_message));
+    }
+
+    // An exit the supervisor did not ask for. The gateway's own gateway.jsonl
+    // says why; exit_code follows GatewayContract.ExitCodes, -1 when unreadable.
+    [Event(EvtGatewayExited,
+           Level = EventLevel.Warning,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The Anytype gateway stopped, so assistants cannot reach Anytype until it restarts\npid={0} | exit_code={1} | uptime_s={2:F0} | work_id={3}")]
+    public void GatewayExited(int pid, int exit_code, double uptime_s, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayExited, pid, exit_code, uptime_s, work_id);
+    }
+
+    [Event(EvtGatewayRestartScheduled,
+           Level = EventLevel.Verbose,
+           Keywords = Lifecycle,
+           Message = "attempt={0} | delay_ms={1} | work_id={2}")]
+    public void GatewayRestartScheduled(int attempt, long delay_ms, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayRestartScheduled, attempt, delay_ms, work_id);
+    }
+
+    [Event(EvtGatewaySupervisionGaveUp,
+           Level = EventLevel.Error,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Deckle stopped restarting the Anytype gateway, so assistants cannot reach Anytype until Deckle restarts\nrestarts={0} | work_id={1}")]
+    public void GatewaySupervisionGaveUp(int restarts, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewaySupervisionGaveUp, restarts, work_id);
+    }
+
+    // reason: foreign_owner (a program that is not a staged gateway, such as
+    // an older Deckle hosting MCP itself), ambiguous_owner or owner_unreadable.
+    [Event(EvtGatewayEndpointConflict,
+           Level = EventLevel.Error,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Another program holds the Anytype gateway's port, so Deckle did not start the gateway\nport={0} | reason={1} | owner_pid={2}")]
+    public void GatewayEndpointConflict(int port, string reason, int owner_pid)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayEndpointConflict, port, reason, owner_pid);
+    }
+
+    // step: fingerprint, stage, reconcile, prune or watch.
+    [Event(EvtGatewaySupervisionFailed,
+           Level = EventLevel.Error,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Anytype gateway supervision stopped on an error, so nothing restarts the gateway if it stops\nstep={0} | ex_type={1} | ex_message={2}")]
+    public void GatewaySupervisionFailed(string step, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewaySupervisionFailed, step, ex_type, PathRedaction.Redact(ex_message));
+    }
+
+    // folder is relative to Deckle's own folder.
+    [Event(EvtGatewayPayloadMissing,
+           Level = EventLevel.Error,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The Anytype gateway is missing from Deckle's folder, so assistants cannot reach Anytype\nfolder={0}")]
+    public void GatewayPayloadMissing(string folder)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayPayloadMissing, folder);
+    }
+
+    // ── Delete approval relay ─────────────────────────────────────────────
+
+    // side: gateway (asking) or app (answering). step: connect, request, ask,
+    // answer or listen. On the gateway side the delete is refused as unavailable.
+    // Never the object's name: it can be Home content.
+    [Event(EvtDeletionApprovalRelayFailed,
+           Level = EventLevel.Warning,
+           Keywords = Gesture,
+           Message = "A delete approval could not travel between the Anytype gateway and Deckle\nside={0} | step={1} | ex_type={2} | ex_message={3}")]
+    public void DeletionApprovalRelayFailed(string side, string step, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtDeletionApprovalRelayFailed, side, step, ex_type, PathRedaction.Redact(ex_message));
+    }
+
+    [Event(EvtDeletionApprovalRelayListening,
+           Level = EventLevel.Informational,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Deckle is ready to ask the person before the Anytype gateway deletes")]
+    public void DeletionApprovalRelayListening()
+    {
+        if (IsEnabled()) WriteEvent(EvtDeletionApprovalRelayListening);
+    }
+
+    [Event(EvtDeletionApprovalRelayStopped,
+           Level = EventLevel.Informational,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Deckle stopped answering delete approvals for the Anytype gateway")]
+    public void DeletionApprovalRelayStopped()
+    {
+        if (IsEnabled()) WriteEvent(EvtDeletionApprovalRelayStopped);
     }
 }

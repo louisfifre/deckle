@@ -347,11 +347,18 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── BackendTime.cs
 │   │   ├── Dialogues/
 │   │   │   └── DialogueGestures.cs
+│   │   ├── Gateway/
+│   │   │   ├── GatewayContract.cs
+│   │   │   ├── GatewayPayload.cs
+│   │   │   ├── GatewayProcesses.cs
+│   │   │   ├── GatewayReconciliation.cs
+│   │   │   └── GatewaySupervisor.cs
 │   │   ├── Gestures/
 │   │   │   ├── BlockSections.cs
 │   │   │   ├── CollectionMembershipGestures.cs
 │   │   │   ├── DeleteRefusalReasons.cs
 │   │   │   ├── DeletionApproval.cs
+│   │   │   ├── DeletionApprovalRelay.cs
 │   │   │   ├── DocumentGestures.cs
 │   │   │   ├── LinkedNames.cs
 │   │   │   ├── LiveTagResolver.cs
@@ -1870,11 +1877,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── BackendUserIncidentTests.cs
 │   │   ├── BinLogTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
+│   │   ├── DeletionApprovalRelayTests.cs
 │   │   ├── DevSpaceBugNotes.md
 │   │   ├── DevSpaceTests.cs
 │   │   ├── DialogueGesturesTests.cs
 │   │   ├── DocumentGesturesTests.cs
 │   │   ├── FakeV2Handler.cs
+│   │   ├── GatewayPayloadTests.cs
+│   │   ├── GatewayReconciliationTests.cs
+│   │   ├── GatewaySupervisorTests.cs
 │   │   ├── ListingPagingBugNotes.md
 │   │   ├── ListingPagingTests.cs
 │   │   ├── LiveTagResolverTests.cs
