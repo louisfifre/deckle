@@ -27,10 +27,6 @@ public partial class WhisperViewModel : ObservableObject
         Language = "fr";
         InitialPrompt = "Bonjour. Voici une transcription en français, avec une ponctuation soignée et des phrases complètes.";
         VadEnabled = true;
-        VadThreshold = 0.5;
-        VadMinSpeechDurationMs = 250;
-        VadMinSilenceDurationMs = 100;
-        VadSpeechPadMs = 30;
         UseBeamSearch = true;
         BeamSize = 5;
         Temperature = 0.0;
@@ -44,17 +40,25 @@ public partial class WhisperViewModel : ObservableObject
         UseContext = true;
         MaxTokens = -1;
         StreamingEnabled = false;
-        SegThresholdDbfs = -45.0;
-        SegHangoverMaxMs = 5_000;
-        SegHangoverMinMs = 500;
-        SegHangoverRampStartMs = 15_000;
-        SegHangoverRampEndMs = 120_000;
-        SegMarginMs = 150;
-        SegMinUtteranceMs = 250;
 
-        // Curve seeds read from the segmenter POCO initializers (their single
+        // Speech-trim seeds read from the POCO initializers (their single
+        // source), overwritten by Load().
+        var speechTrim = new SpeechTrimSettings();
+        VadThreshold = speechTrim.Threshold;
+        VadMinSpeechDurationMs = speechTrim.MinSpeechDurationMs;
+        VadMinSilenceDurationMs = speechTrim.MinSilenceDurationMs;
+        VadSpeechPadMs = speechTrim.SpeechPadMs;
+
+        // Segmenter seeds read from the segmenter POCO initializers (their single
         // source), overwritten by Load().
         var segmenter = new EnergySegmenterSettings();
+        SegThresholdDbfs = segmenter.ThresholdDbfs;
+        SegHangoverMaxMs = segmenter.HangoverMaxMs;
+        SegHangoverMinMs = segmenter.HangoverMinMs;
+        SegHangoverRampStartMs = segmenter.HangoverRampStartMs;
+        SegHangoverRampEndMs = segmenter.HangoverRampEndMs;
+        SegMarginMs = segmenter.MarginMs;
+        SegMinUtteranceMs = segmenter.MinUtteranceMs;
         SegCurveX1 = segmenter.HangoverCurveX1;
         SegCurveY1 = segmenter.HangoverCurveY1;
         SegCurveX2 = segmenter.HangoverCurveX2;
