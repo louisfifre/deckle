@@ -2354,6 +2354,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── UserProfilePathBugNotes.md
 │   │   └── UserProfilePathTests.cs
 │   ├── Deckle.Settings.Tests/
+│   │   ├── AppSettingsLegacyFieldTests.cs
 │   │   ├── Deckle.Settings.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs

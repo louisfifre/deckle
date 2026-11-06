@@ -74,7 +74,6 @@ public partial class WhisperViewModel : ObservableObject
         AutoPasteEnabled = new PasteSettings().AutoPasteEnabled;
         OverlayEnabled = overlay.Enabled;
         OverlayFadeOnProximity = overlay.FadeOnProximity;
-        OverlayAnimations = overlay.Animations;
         OverlayPosition = (overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
         TranscriptPanelSide = NormalizeTranscriptPanelSide(overlay.TranscriptPanelSide);
 
@@ -128,7 +127,6 @@ public partial class WhisperViewModel : ObservableObject
             AutoPasteEnabled = shell.Paste.AutoPasteEnabled;
             OverlayEnabled = shell.Overlay.Enabled;
             OverlayFadeOnProximity = shell.Overlay.FadeOnProximity;
-            OverlayAnimations = shell.Overlay.Animations;
             OverlayPosition = (shell.Overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
             TranscriptPanelSide = NormalizeTranscriptPanelSide(shell.Overlay.TranscriptPanelSide);
 

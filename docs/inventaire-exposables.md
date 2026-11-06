@@ -8,7 +8,7 @@
 
 **Hors périmètre.** Les littéraux XAML (bornes `Minimum`/`Maximum`/`StepFrequency` des sliders), les tables lexicales préfixées `_`, et tout ce qui vit sous `tests/`.
 
-Total : **692 entrées** réparties sur **41 modules**.
+Total : **691 entrées** réparties sur **41 modules**.
 
 | Module | Entrées |
 |---|---|
@@ -42,7 +42,7 @@ Total : **692 entrées** réparties sur **41 modules**.
 | Deckle.Notifications | 1 |
 | Deckle.Playground | 63 |
 | Deckle.Security | 1 |
-| Deckle.Settings | 17 |
+| Deckle.Settings | 16 |
 | Deckle.Setup | 9 |
 | Deckle.Shell | 3 |
 | Deckle.Shell.TaskbarCover | 3 |
@@ -434,7 +434,7 @@ Total : **692 entrées** réparties sur **41 modules**.
 | HudWindow.FAR_RADIUS_DIP | tuning-constant | `128` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:59 | non |  |
 | HudWindow.MAX_ALPHA | tuning-constant | `255` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:60 | non |  |
 | HudWindow.MIN_ALPHA | tuning-constant | `40` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:61 | non | Floor alpha of the main-HUD proximity fade. |
-| HudWindow.FADE_IN_MS | tuning-constant | `150` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:103 | non | Animation duration; gated by the persisted Overlay Animations toggle. |
+| HudWindow.FADE_IN_MS | tuning-constant | `150` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:103 | non | Animation duration; gated by the Windows animation preference. |
 | HudWindow.SuccessDuration | tuning-constant | `TimeSpan.FromSeconds(2)` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:246 | non | How long the Copied/Pasted confirmation stays up - directly user-perceivable dwell time. |
 | WindowSlideAnimator.FrameIntervalMs | tuning-constant | `16` | src/Deckle.Hud/Windows/WindowSlideAnimator.cs:24 | non | ~60 Hz tick; implementation cadence rather than a knob. |
 | WindowSlideAnimator.Duration | tuning-constant | `TimeSpan.FromMilliseconds(150)` | src/Deckle.Hud/Windows/WindowSlideAnimator.cs:25 | non |  |
@@ -729,7 +729,6 @@ Total : **692 entrées** réparties sur **41 modules**.
 | OverlaySettings.Enabled | persisted-setting | `true` | src/Deckle.Settings/Persistence/AppSettings.cs:62 | oui |  |
 | OverlaySettings.FadeOnProximity | persisted-setting | `true` | src/Deckle.Settings/Persistence/AppSettings.cs:63 | oui |  |
 | OverlaySettings.Position | persisted-setting | `"BottomCenter"` | src/Deckle.Settings/Persistence/AppSettings.cs:64 | oui | Closed vocabulary documented in-code: BottomCenter \| BottomRight \| TopCenter. |
-| OverlaySettings.Animations | persisted-setting | `true` | src/Deckle.Settings/Persistence/AppSettings.cs:69 | oui |  |
 | PasteSettings.AutoPasteEnabled | persisted-setting | `false` | src/Deckle.Settings/Persistence/AppSettings.cs:49 | oui |  |
 | UpdatesSettings.AutoCheckEnabled | persisted-setting | `true` | src/Deckle.Settings/Persistence/AppSettings.cs:40 | non | Composed card GeneralUpdateAutoCheckCard exists (GeneralViewModel.Settings.cs:72-78); June inventory has no Updates category — likely post-June addition. |
 | PathsSettings.BackupDirectory | persisted-setting | `""` | src/Deckle.Settings/Persistence/AppSettings.cs:85 | non | Empty = auto-resolve via AppPaths.SettingsBackupDirectory. June lists a diagnostics 'Storage directory' but not this backup path — confirm they are distinct. |

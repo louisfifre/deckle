@@ -62,10 +62,10 @@ public sealed class OverlaySettings
     public bool FadeOnProximity { get; set; } = true;
     public string Position { get; set; } = "BottomCenter";
 
-    // Controls Deckle-authored functional HUD feedback: message movement,
-    // processing-material rotations, state blends and microphone response.
-    // Simple fades are excluded and follow the Windows animation preference.
-    public bool Animations { get; set; } = true;
+    // No animations switch lives here: every HUD animation follows the Windows
+    // "Animation effects" preference (Deckle.Hud.SystemAnimationPreference). A
+    // settings file written by an older build may still carry "animations";
+    // the deserializer ignores members this class no longer declares.
 
     // "Left" | "Right": which side of the primary display the live
     // transcript panel sits on.
