@@ -536,7 +536,7 @@ public sealed partial class TranscriptionEngine
             _idleEvent.Set();
             DeckleWhispSource.Log.WorkerStopped(worker, reachedIdle);
             if (reachedIdle)
-                RaiseStatus(Loc.Get("Status_Ready"));
+                RaiseStatus(StatusPhase.Ready, Loc.Get("Status_Ready"));
         }
         if (reachedIdle)
         {
@@ -555,7 +555,7 @@ public sealed partial class TranscriptionEngine
         CloseMicrophoneIncident();
         _hotkeySw?.Stop();
         _recordingSw = System.Diagnostics.Stopwatch.StartNew();
-        RaiseStatus(Loc.Get("Status_Recording"));
+        RaiseStatus(StatusPhase.Recording, Loc.Get("Status_Recording"));
     }
 
 }

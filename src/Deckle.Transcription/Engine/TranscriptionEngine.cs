@@ -37,6 +37,19 @@ public enum TranscriptionOutcome { None, Pasted, ClipboardOnly, SavedToFile }
 //   *            → Disposed     (Dispose, terminal)
 public enum PipelineState { Idle, Starting, Recording, Stopping, Transcribing, Disposed }
 
+// What a status sentence of the engine stands for. The sentences are localized
+// resources; this is the part of them a bridge may act on (HUD, tray).
+public enum StatusPhase
+{
+    LoadingModel,
+    Ready,
+    Recording,
+    Transcribing,
+    Rewriting,
+    ModelNotReady,
+    Failed,
+}
+
 // Returned to App.OnHotkey so the caller drives HUD and log without reading
 // engine state itself: read-then-act is the double-press race.
 public enum ToggleResult
@@ -85,9 +98,16 @@ public sealed partial class TranscriptionEngine : IDisposable
     // inference thread; subscribers marshal to UI.
     public event Action<TranscriptionSegment>? NewSegment;
 
-    private void RaiseStatus(string status)
+    // The same moment as StatusChanged, told as a phase instead of a sentence:
+    // the text is localized display output, so a bridge that must act on what
+    // the engine is doing switches on this. Raised right after StatusChanged,
+    // on the same thread, so each carries its own value and nothing is re-read.
+    public event Action<StatusPhase>? StatusPhaseChanged;
+
+    private void RaiseStatus(StatusPhase phase, string status)
     {
         StatusChanged?.Invoke(status);
+        StatusPhaseChanged?.Invoke(phase);
     }
 
     private void RaiseFinished(TranscriptionOutcome outcome)

@@ -74,7 +74,7 @@ public sealed partial class TranscriptionEngine
             return null;
         }
 
-        RaiseStatus(Loc.Get("Status_Transcribing"));
+        RaiseStatus(StatusPhase.Transcribing, Loc.Get("Status_Transcribing"));
 
         // ── Inference ─────────────────────────────────────────────────────────
         // Prime gate. On a take shorter than the prime it blocks until it finishes;
@@ -96,7 +96,7 @@ public sealed partial class TranscriptionEngine
         {
             // Without this the take vanishes silently; the load cause sits on ModelUnavailable.
             DeckleWhispSource.Log.TakeDropped("model_not_loaded");
-            RaiseStatus(Loc.Get("Status_ModelNotReady"));
+            RaiseStatus(StatusPhase.ModelNotReady, Loc.Get("Status_ModelNotReady"));
             FinishTake(TranscriptionOutcome.None, TakeEndReasons.ModelNotLoaded);
             return null;
         }
@@ -167,7 +167,7 @@ public sealed partial class TranscriptionEngine
 
         if (string.IsNullOrWhiteSpace(fullText))
         {
-            RaiseStatus(Loc.Get("Status_Ready"));
+            RaiseStatus(StatusPhase.Ready, Loc.Get("Status_Ready"));
             FinishTake(TranscriptionOutcome.None, TakeEndReasons.NoText);
             return null;
         }

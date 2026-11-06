@@ -81,7 +81,7 @@ public sealed partial class TranscriptionEngine
             // was lost to the user and whether the recovery file still holds it.
             DeckleWhispSource.Log.DictationNotDelivered("raw_copy_failed", _recovery?.Exists ?? false);
             if (announceCompletion)
-                RaiseStatus(Loc.Get("Status_Ready"));
+                RaiseStatus(StatusPhase.Ready, Loc.Get("Status_Ready"));
             if (announceCompletion)
                 FinishTake(TranscriptionOutcome.None, TakeEndReasons.CopyFailed);
             return TranscriptionOutcome.None;

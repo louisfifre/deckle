@@ -91,7 +91,7 @@ public sealed partial class TranscriptionEngine
     // Stop, since the batches overlap the recording and each other.
     private FinalizeRewrite ApplyBatchRewrite(string rawText, BatchRewriteRun run)
     {
-        RaiseStatus(Loc.Format("Status_Rewriting_Format", run.Profile.Name));
+        RaiseStatus(StatusPhase.Rewriting, Loc.Format("Status_Rewriting_Format", run.Profile.Name));
         DictationBatchResult result = run.Rewriter.Assemble();
 
         string finalText = rawText;

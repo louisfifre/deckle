@@ -35,7 +35,7 @@ public sealed partial class TranscriptionEngine
         if (profile is null)
             return FinalizeRewrite.Verbatim(rawText);
 
-        RaiseStatus(Loc.Format("Status_Rewriting_Format", profile.Name));
+        RaiseStatus(StatusPhase.Rewriting, Loc.Format("Status_Rewriting_Format", profile.Name));
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         var result = _rewrite.Rewrite(rawText, profile);
         stopwatch.Stop();
