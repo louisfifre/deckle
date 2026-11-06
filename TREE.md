@@ -1322,6 +1322,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite vocabulary. It draws the Correction / Rewrite boundary, which decides w…
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
+│   │   ├── LlmSettingsMigrations.LengthSwitch.cs
 │   │   ├── LlmSettingsMigrations.Providers.cs
 │   │   ├── LlmSettingsModule.cs
 │   │   ├── LlmSettingsService.cs

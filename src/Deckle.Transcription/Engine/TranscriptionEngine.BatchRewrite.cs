@@ -38,14 +38,14 @@ public sealed partial class TranscriptionEngine
 
     // Null when batching is off or no profile resolves without the take's
     // length: the take then follows the whole-take rewrite (or none) at
-    // finalize, where the length thresholds can choose.
+    // finalize, where the length ladder can choose.
     private BatchRewriteRun? StartBatchRewrite()
     {
         LlmSettings llm = _host.Llm;
         if (!llm.BatchRewriting.Enabled) return null;
 
         RewriteProfile? profile = RewriteProfileSelection.ForDictation(
-            llm, sentAudioSec: null, TakeProfileId);
+            llm, rawChars: null, TakeProfileId);
         if (profile is null) return null;
 
         // The core does not clamp: a hand-edited settings file could hold any

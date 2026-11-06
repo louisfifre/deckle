@@ -53,7 +53,9 @@ public partial class App
         for (int i = 0; i < profiles.Count; i++)
         {
             Llm.Rewrite.RewriteProfile profile = profiles[i];
-            if (profile.Hotkey is not { IsComplete: true } chord) continue;
+            // A switched-off shortcut keeps its chord in the settings but is
+            // neither registered nor listed on the Shortcuts page.
+            if (!profile.HasActiveHotkey || profile.Hotkey is not { } chord) continue;
             string profileId = profile.Id;
             actions.Add(new(
                 FirstProfileHotkeyId + i,

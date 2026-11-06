@@ -514,14 +514,14 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal("[" + rawTake + "]", clipboard.Text);
     }
 
-    // No active profile, so only the length can choose: a threshold the take
-    // reaches rewrites it, one it does not reach leaves the raw text. The
-    // scripted speech is far below a minute, so a zero threshold stands for
-    // "reached" and an hour for "not reached".
+    // No active profile, so only the length ladder can choose: a step the
+    // take's raw transcript reaches rewrites it, one it does not reach leaves
+    // the raw text. A single character stands for "reached" and a million
+    // for "not reached", whatever the scripted utterances hold.
     [Theory]
-    [InlineData(0, true)]
-    [InlineData(60, false)]
-    public async Task ALengthThresholdChoosesTheProfileOfAStreamedTake(int fromMinutes, bool rewritten)
+    [InlineData(1, true)]
+    [InlineData(1_000_000, false)]
+    public async Task ALengthStepChoosesTheProfileOfAStreamedTake(int fromChars, bool rewritten)
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
@@ -533,8 +533,11 @@ public sealed class LiveTranscriptionPipelineTests
         host.Llm.ActiveProfileName = null;
         RewriteProfile byLength = host.Llm.Profiles[1];
         byLength.Id = "by-length";
-        byLength.AutoSelect = true;
-        byLength.AutoSelectFromMinutes = fromMinutes;
+        host.Llm.LengthSwitch = new LengthSwitchSettings
+        {
+            Enabled = true,
+            Steps = [new LengthStep { FromChars = fromChars, ProfileId = "by-length" }],
+        };
         using var engine = new TranscriptionEngine(host, backend, capture, clipboard, rewrite);
 
         await RunOneTakeAsync(engine, backend, testCancellation);

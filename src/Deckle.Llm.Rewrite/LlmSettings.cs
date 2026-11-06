@@ -30,22 +30,64 @@ public sealed class RewriteProfile
     public double? TopP { get; set; }
     public double? RepeatPenalty { get; set; }
 
-    // Chosen by length: a dictation whose audio sent to transcription lasts
-    // at least AutoSelectFromMinutes takes this profile, the highest threshold
-    // reached winning (RewriteProfileSelection). Off keeps the minutes, so
-    // turning it back on finds the last choice. Minutes rather than characters
-    // because a person judges a dictation by how long they spoke.
+    // Legacy per-profile length threshold (v0.77 to v0.79), retained so such a
+    // file deserializes; LlmSettingsMigrations.MoveProfileThresholdsToLadder
+    // turns it into a LengthSwitch step once and clears AutoSelect. A
+    // threshold only means something against the others, so it now lives in
+    // one page-level ladder. Never read at runtime.
     public bool AutoSelect { get; set; }
     public int AutoSelectFromMinutes { get; set; } = 5;
 
     // Starts a dictation rewritten with this profile, whatever its length.
-    // null = no shortcut. Registered by the App next to the other hotkeys.
+    // Registered by the App next to the other hotkeys only while
+    // HotkeyEnabled is on and the chord is complete; switching it off keeps
+    // the chord, so switching back on finds it.
+    // null only in a file written before the switch existed:
+    // LlmSettingsMigrations.MoveProfileThresholdsToLadder sets it on when
+    // that file already held a chord, so an existing shortcut keeps working.
+    public bool? HotkeyEnabled { get; set; }
     public HotkeyChord? Hotkey { get; set; }
 
-    // The stops the threshold slider snaps to: a minute apart while a minute
-    // still changes the nature of a dictation, coarser beyond.
-    public static readonly IReadOnlyList<int> AutoSelectStopsMinutes =
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 40, 50, 60];
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool HasActiveHotkey => HotkeyEnabled == true && Hotkey is { IsComplete: true };
+}
+
+// One step of the length ladder: a dictation whose raw transcript holds at
+// least FromChars characters is rewritten with ProfileId, the highest step
+// reached winning. Below the first step the active profile applies.
+public sealed class LengthStep
+{
+    public int FromChars { get; set; }
+    public string ProfileId { get; set; } = "";
+}
+
+// Picking the rewrite profile by the length of the dictation.
+//
+// Characters of raw transcript, not minutes: they are counted the same way
+// whichever pipeline transcribed the take, where a duration needed one
+// measure for a monolithic take (the recording) and another for a streamed
+// one (the speech sent). A person judges by how long they spoke, so the page
+// shows each step with its spoken duration beside it (CharsPerMinute).
+//
+// Not applied to a take rewritten batch by batch: its profile is fixed when
+// the first batch leaves, before any length is known.
+public sealed class LengthSwitchSettings
+{
+    // Measured on 2,821 of the maintainer's dictations (latency telemetry,
+    // 2026-11-06): median 786 characters a minute raw, 701 on takes over two
+    // minutes, the ones a ladder is about. A display ratio only, never a
+    // threshold.
+    public const int CharsPerMinute = 700;
+
+    // About 45 seconds to about 45 minutes: tight while a little more text
+    // changes the nature of a dictation, coarser beyond.
+    public static readonly IReadOnlyList<int> StopsChars =
+        [500, 750, 1000, 1500, 2000, 3000, 4000, 5000, 7500, 10000, 15000, 20000, 30000];
+
+    public bool Enabled { get; set; }
+
+    // Sorted by FromChars, strictly increasing; each one of StopsChars.
+    public List<LengthStep> Steps { get; set; } = new();
 }
 
 // Legacy duration-rule shape, retained so existing settings deserialize without
@@ -92,6 +134,9 @@ public sealed class LlmSettings
     // Per-batch rewriting during a dictation; applies the active profile to
     // each batch, then the pasted text is the batches' rewrites in order.
     public BatchRewriteSettings BatchRewriting { get; set; } = new();
+
+    // Another profile than the active one past a given length.
+    public LengthSwitchSettings LengthSwitch { get; set; } = new();
 
     // Legacy: the one endpoint of the Ollama-only era. Kept so an older
     // settings.json deserializes without loss; RepairProviders copies it into

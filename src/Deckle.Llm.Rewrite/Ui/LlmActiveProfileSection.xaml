@@ -12,11 +12,31 @@
                              HasReset="True"
                              IsResetEnabled="True"
                              ResetRequested="ResetSection_Click">
-        <controls:SettingsCard x:Uid="LlmActiveProfileCard"
-                               Tag="LlmActiveProfileCard">
-            <ComboBox x:Name="ActiveProfileCombo"
-                      MinWidth="200"
-                      SelectionChanged="ActiveProfileCombo_SelectionChanged" />
-        </controls:SettingsCard>
+        <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+            <controls:SettingsCard x:Uid="LlmActiveProfileCard"
+                                   Tag="LlmActiveProfileCard">
+                <ComboBox x:Name="ActiveProfileCombo"
+                          MinWidth="200"
+                          SelectionChanged="ActiveProfileCombo_SelectionChanged" />
+            </controls:SettingsCard>
+
+            <!-- The length ladder: a switch, then its steps, one card each. -->
+            <controls:SettingsCard x:Uid="LlmLengthSwitchCard"
+                                   Tag="LlmLengthSwitchCard">
+                <ToggleSwitch x:Name="LengthSwitchToggle"
+                              Toggled="LengthSwitchToggle_Toggled" />
+            </controls:SettingsCard>
+
+            <StackPanel x:Name="StepsPanel"
+                        Spacing="{StaticResource SettingsCardSpacing}"
+                        Visibility="Collapsed">
+                <StackPanel x:Name="StepsHost"
+                            Spacing="{StaticResource SettingsCardSpacing}" />
+                <Button x:Name="AddStepButton"
+                        x:Uid="LlmLengthAddStepButton"
+                        Click="AddStep_Click"
+                        Margin="0,4,0,0" />
+            </StackPanel>
+        </StackPanel>
     </catalog:SettingsSection>
 </UserControl>
