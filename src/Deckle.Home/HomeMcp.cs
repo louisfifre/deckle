@@ -4,8 +4,8 @@ using Deckle.Anytype.Mcp;
 namespace Deckle.Home;
 
 // The complete plug-in unit for Home: client identity, bearer coordinates and
-// the stateless surface mounted by the resident host. Deckle.App chooses
-// whether to compose this client; the generic host has no Home dependency.
+// the stateless surface mounted by the resident host. The Anytype gateway
+// composes this client; the generic host has no Home dependency.
 public static class HomeMcp
 {
     public static readonly McpClientProfile Client = new(

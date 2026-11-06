@@ -35,6 +35,14 @@
     <!-- Program.cs owns Main: the crash dump capture is decided before XAML
          hosts anything. -->
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+    <!-- The app keeps the commit id in its own informational version and its
+         Source Link, which Directory.Build.props drops for the libraries. -->
+    <IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>
+    <EnableSourceLink>true</EnableSourceLink>
+    <!-- The Anytype gateway is an executable this app ships but never loads: a
+         framework-dependent build output copied beside Deckle.exe. The SDK's
+         self-contained match check does not apply to it. -->
+    <ValidateExecutableReferencesMatchSelfContained>false</ValidateExecutableReferencesMatchSelfContained>
   </PropertyGroup>
 
   <ItemGroup>
@@ -104,8 +112,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Anytype\Deckle.Anytype.csproj" />
-    <ProjectReference Include="..\Deckle.Anytype.Mcp\Deckle.Anytype.Mcp.csproj" />
-    <ProjectReference Include="..\Deckle.Home\Deckle.Home.csproj" />
+    <!-- Built first and copied beside Deckle.exe, never referenced: the MCP host
+         and the Home client run in the gateway process (ADR-0008). Built
+         framework-dependent whatever the app's publish settings. -->
+    <ProjectReference Include="..\Deckle.Anytype.Gateway\Deckle.Anytype.Gateway.csproj"
+                      ReferenceOutputAssembly="false"
+                      Private="false"
+                      OutputItemType="DeckleGatewayTarget"
+                      GlobalPropertiesToRemove="RuntimeIdentifier;RuntimeIdentifierOverride;SelfContained" />
     <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Chrono\Deckle.Chrono.csproj" />
@@ -237,5 +251,25 @@
     <Copy SourceFiles="@(_AutocorrectLexicon)"
           DestinationFiles="@(_AutocorrectLexicon->'$(OutDir)Data\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true" />
+  </Target>
+
+  <!-- The Anytype gateway's build output, copied whole into Gateway\ beside
+       Deckle.exe. GatewaySupervisor fingerprints this folder and runs a staged
+       copy of it, never this folder itself, so a running gateway never locks the
+       build. The folder is rebuilt from scratch each time: a file left over from
+       an earlier build would change the fingerprint and ship code that no longer
+       exists. Debug symbols are left out, as the fingerprint ignores them. The
+       release script publishes a self-contained gateway in its place. -->
+  <Target Name="CopyAnytypeGatewayPayload" AfterTargets="Build" Condition="'@(DeckleGatewayTarget)' != ''">
+    <PropertyGroup>
+      <_DeckleGatewayOutDir>@(DeckleGatewayTarget->'%(RootDir)%(Directory)')</_DeckleGatewayOutDir>
+      <_DeckleGatewayPayloadDir>$(OutDir)Gateway\</_DeckleGatewayPayloadDir>
+    </PropertyGroup>
+    <ItemGroup>
+      <_DeckleGatewayFile Include="$(_DeckleGatewayOutDir)**\*" Exclude="$(_DeckleGatewayOutDir)**\*.pdb" />
+    </ItemGroup>
+    <RemoveDir Directories="$(_DeckleGatewayPayloadDir)" />
+    <Copy SourceFiles="@(_DeckleGatewayFile)"
+          DestinationFiles="@(_DeckleGatewayFile->'$(_DeckleGatewayPayloadDir)%(RecursiveDir)%(Filename)%(Extension)')" />
   </Target>
 </Project>

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Anytype gateway: a windowless process that serves the Anytype MCP host
+       apart from Deckle, so assistants keep their access through every Deckle
+       relaunch and rebuild (ADR-0008). Deckle stages its build output and
+       supervises it; it never runs from this project's output folder. -->
+  <PropertyGroup>
+    <!-- WinExe without any UI: no console window, nothing to close by accident. -->
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>Deckle.Anytype.Gateway</RootNamespace>
+    <AssemblyName>Deckle.Anytype.Gateway</AssemblyName>
+    <!-- EventSource-style snake_case payload names stay out of this project, but
+         keep the analyzers quiet on the shared conventions. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Anytype\Deckle.Anytype.csproj" />
+    <ProjectReference Include="..\Deckle.Anytype.Mcp\Deckle.Anytype.Mcp.csproj" />
+    <!-- The Home assistant profile is one of the clients the host serves. -->
+    <ProjectReference Include="..\Deckle.Home\Deckle.Home.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <ProjectReference Include="..\Deckle.Security\Deckle.Security.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Anytype.Gateway.Tests" />
+  </ItemGroup>
+</Project>

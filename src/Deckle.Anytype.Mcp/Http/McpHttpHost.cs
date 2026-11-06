@@ -11,16 +11,16 @@ using Microsoft.Extensions.Logging;
 
 namespace Deckle.Anytype.Mcp;
 
-// The one resident Streamable HTTP MCP host from ADR-0002. Kestrel owns HTTP
+// The one resident Streamable HTTP MCP host, run by the Anytype gateway process
+// apart from Deckle (ADR-0008). Kestrel owns HTTP
 // framing, request draining and the loopback listener; the official MCP SDK owns
 // protocol negotiation and JSON-RPC. Deckle keeps the security boundary around
 // both: a present Origin must be local and every request must authenticate with
 // the bearer that selects its tool surface.
 public sealed class McpHttpHost : IAsyncDisposable
 {
-    // Loopback, outside every neighbour's range: 3100x-3101x is Anytype, 11434 is
-    // Ollama, and the Windows dynamic range opens at 49152.
-    public const int DefaultPort = 33255;
+    // The gateway's port, shared with the supervisor that recognizes it.
+    public const int DefaultPort = GatewayContract.Port;
 
     public const string EndpointPath = "/mcp";
 

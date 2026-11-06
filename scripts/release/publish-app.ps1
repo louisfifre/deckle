@@ -333,6 +333,29 @@ if (-not (Test-Path $exe)) { throw "Deckle.exe missing from publish output — $
 # Without it the app launches windowless. EnableMsixTooling=true in the csproj
 # is what makes Publish emit it; treat its absence as a hard failure.
 if (-not (Test-Path $pri)) { throw "Deckle.pri missing — windowless app. Check EnableMsixTooling in the csproj." }
+# The Anytype gateway (ADR-0008) ships in Gateway\ beside Deckle.exe. Deckle
+# stages that folder and runs the copy, so the gateway must be self-sufficient:
+# the app's own self-contained runtime carries no ASP.NET Core, and a user
+# machine may have no .NET installed. The development build copies a
+# framework-dependent payload there instead (Deckle.App.csproj).
+Write-WorkflowStep -Output $WorkflowOutput -Message 'dotnet publish Anytype gateway (Release, win-x64, self-contained)'
+$gatewayCsproj = Join-Path (Split-Path (Split-Path $Csproj)) 'Deckle.Anytype.Gateway\Deckle.Anytype.Gateway.csproj'
+$gatewayDir = Join-Path $PublishDir 'Gateway'
+if (Test-Path $gatewayDir) { Remove-Item $gatewayDir -Recurse -Force }
+$gatewayExitCode = Invoke-CapturedProcess -FilePath 'dotnet' -ArgumentList @(
+    'publish', $gatewayCsproj,
+    '-c:Release',
+    '-r', 'win-x64',
+    '--self-contained',
+    '-p:Platform=x64',
+    '-o', $gatewayDir,
+    '-v:m', '-nologo',
+    '/m:4'
+)
+if ($gatewayExitCode -ne 0) { throw "dotnet publish (gateway) failed (code $gatewayExitCode)" }
+Get-ChildItem $gatewayDir -Recurse -Filter '*.pdb' | Remove-Item -Force
+if (-not (Test-Path (Join-Path $gatewayDir 'Deckle.Anytype.Gateway.exe'))) { throw "Deckle.Anytype.Gateway.exe missing from $gatewayDir" }
+
 $fileCount = (Get-ChildItem $PublishDir -Recurse -File).Count
 Write-WorkflowMessage -Output $WorkflowOutput -Message "publish folder OK — $fileCount files (Deckle.exe + Deckle.pri present)"
 

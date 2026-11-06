@@ -12,8 +12,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │       │   └── SKILL.md  — deckle-interface Use when you build or change anything a person sees in a Deckle window, from a…
 │       ├── deckle-logging/
 │       │   └── SKILL.md  — deckle-logging Use when you add or change an observation point in Deckle code, or write code t…
-│       ├── deckle-modularity/
-│       │   └── SKILL.md  — deckle-modularity Use when code is about to grow a module, add a new one, or split a file or a su…
+│       ├── deckle-modularite/
+│       │   └── SKILL.md  — deckle-modularite Use when code is about to grow a module, add a new one, or split a file or a su…
 │       ├── deckle-nomenclature/
 │       │   └── SKILL.md  — deckle-nomenclature Use when you give a name to anything in the Deckle repository or change one, a…
 │       ├── deckle-settings-ux/
@@ -32,6 +32,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │       │   │   ├── voice-and-tone.md
 │       │   │   └── windows-fluent.md
 │       │   └── SKILL.md  — ux-copy Write or review interface wording — CTAs, errors, empty states, confirmations,…
+│       ├── ux-designer/
+│       │   ├── rules/
+│       │   │   ├── accessibility.md
+│       │   │   ├── information-architecture.md
+│       │   │   ├── interaction-design.md
+│       │   │   ├── research.md
+│       │   │   └── visual-design.md
+│       │   └── SKILL.md  — ux-designer Design or review user research, flows, information architecture, wireframes, pr…
 │       └── winui-app/
 │           ├── agents/
 │           │   └── openai.yaml
@@ -116,7 +124,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── 0004-reconcile-anytype-backend-by-listener-owner.md  — Deckle reconciles one externally versioned Anytype provider by proving which tr…
 │   │   ├── 0005-serve-anytype-mcp-stateless-with-explicit-recovery.md  — The resident Anytype gateway uses stateless MCP requests and advertises an expl…
 │   │   ├── 0006-signal-user-incidents-as-tray-state.md  — A degraded state the person can fix is declared in a registry and shown as tray…
-│   │   └── 0007-write-message-shape-per-level-in-the-template.md  — Every event's message template carries the shape its level calls for, a sentenc…
+│   │   ├── 0007-write-message-shape-per-level-in-the-template.md  — Every event's message template carries the shape its level calls for, a sentenc…
+│   │   └── 0008-run-anytype-mcp-in-a-supervised-gateway-process.md  — The Anytype MCP host runs in its own gateway process that Deckle stages by cont…
 │   ├── research/
 │   │   ├── taskbar-briefs-2026-10-18/
 │   │   │   ├── brief-csharp-socle.md
@@ -339,11 +348,18 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── BackendTime.cs
 │   │   ├── Dialogues/
 │   │   │   └── DialogueGestures.cs
+│   │   ├── Gateway/
+│   │   │   ├── GatewayContract.cs
+│   │   │   ├── GatewayPayload.cs
+│   │   │   ├── GatewayProcesses.cs
+│   │   │   ├── GatewayReconciliation.cs
+│   │   │   └── GatewaySupervisor.cs
 │   │   ├── Gestures/
 │   │   │   ├── BlockSections.cs
 │   │   │   ├── CollectionMembershipGestures.cs
 │   │   │   ├── DeleteRefusalReasons.cs
 │   │   │   ├── DeletionApproval.cs
+│   │   │   ├── DeletionApprovalRelay.cs
 │   │   │   ├── DocumentGestures.cs
 │   │   │   ├── LinkedNames.cs
 │   │   │   ├── LiveTagResolver.cs
@@ -373,6 +389,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Anytype.csproj
 │   │   ├── DeckleAnytypeSource.cs
 │   │   └── GLOSSARY.md  — glossary-deckle-anytype Anytype integration vocabulary, Deckle.Anytype.Mcp included. It separates the b…
+│   ├── Deckle.Anytype.Gateway/
+│   │   ├── Deckle.Anytype.Gateway.csproj
+│   │   ├── GatewayDiagnostics.cs
+│   │   ├── GatewayRuntime.cs
+│   │   └── Program.cs
 │   ├── Deckle.Anytype.Mcp/
 │   │   ├── Http/
 │   │   │   ├── McpClients.cs
@@ -1862,11 +1883,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── BackendUserIncidentTests.cs
 │   │   ├── BinLogTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
+│   │   ├── DeletionApprovalRelayTests.cs
 │   │   ├── DevSpaceBugNotes.md
 │   │   ├── DevSpaceTests.cs
 │   │   ├── DialogueGesturesTests.cs
 │   │   ├── DocumentGesturesTests.cs
 │   │   ├── FakeV2Handler.cs
+│   │   ├── GatewayPayloadTests.cs
+│   │   ├── GatewayReconciliationTests.cs
+│   │   ├── GatewaySupervisorTests.cs
 │   │   ├── ListingPagingBugNotes.md
 │   │   ├── ListingPagingTests.cs
 │   │   ├── LiveTagResolverTests.cs

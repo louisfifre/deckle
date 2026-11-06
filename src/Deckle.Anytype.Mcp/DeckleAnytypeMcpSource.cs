@@ -50,6 +50,61 @@ public sealed class DeckleAnytypeMcpSource : DeckleEventSource
     public const int EvtHostStartRefused      = 21;
     public const int EvtHostInternalLogCounted = 22;
     public const int EvtTokenVariablesMissing = 23;
+    public const int EvtGatewayStarting       = 24;
+    public const int EvtGatewayEnded          = 25;
+    public const int EvtGatewayStartDeclined  = 26;
+    public const int EvtGatewayFaulted        = 27;
+
+    // ── Gateway process (ADR-0008) ────────────────────────────────────────
+    // The process that hosts the MCP host, apart from Deckle. These lines land in
+    // the gateway's own gateway.jsonl; Deckle's log tells the supervisor's side.
+
+    // Pairs with GatewayEnded through work_id. fingerprint is the build, the
+    // name of the versions folder the process runs from.
+    [Event(EvtGatewayStarting,
+           Level = EventLevel.Informational,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The Anytype gateway is starting")]
+    public void GatewayStarting(int pid, string fingerprint, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayStarting, pid, fingerprint, work_id);
+    }
+
+    // outcome: stopped (asked to stop, drained), not_provisioned, listen_failed.
+    // exit_code is what the supervisor reads (GatewayContract.ExitCodes).
+    [Event(EvtGatewayEnded,
+           Level = EventLevel.Informational,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The Anytype gateway ended")]
+    public void GatewayEnded(string outcome, int exit_code, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayEnded, outcome, exit_code, work_id);
+    }
+
+    // reason: already_running (another gateway holds the instance mutex; it
+    // keeps serving).
+    [Event(EvtGatewayStartDeclined,
+           Level = EventLevel.Informational,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The Anytype gateway did not start because another one is running")]
+    public void GatewayStartDeclined(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayStartDeclined, reason);
+    }
+
+    // An exception nothing else handled ended the process; Deckle restarts it.
+    [Event(EvtGatewayFaulted,
+           Level = EventLevel.Error,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The Anytype gateway stopped on an error, so assistants cannot reach Anytype until Deckle restarts it\nex_type={0} | ex_message={1} | work_id={2}")]
+    public void GatewayFaulted(string ex_type, string ex_message, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayFaulted, ex_type, PathRedaction.Redact(ex_message), work_id);
+    }
 
     // ── Host lifecycle ────────────────────────────────────────────────────
 

@@ -1,7 +1,4 @@
 using Deckle.Anytype;
-using Deckle.Anytype.Mcp;
-using Deckle.Home;
-using Deckle.Security;
 
 namespace Deckle.App;
 
@@ -12,7 +9,8 @@ public partial class App
 
     // Captures the whole Anytype runtime as one owned task. Shutdown cancels and
     // drains this task before resident ownership is released, so no outgoing
-    // Deckle can acquire or spawn a backend after its successor starts.
+    // Deckle can acquire or spawn a backend or a gateway after its successor
+    // starts.
     private void StartAnytypeRuntime()
     {
         var cts = new CancellationTokenSource();
@@ -20,13 +18,16 @@ public partial class App
         _anytypeRuntimeTask = RunAnytypeRuntimeAsync(cts.Token);
     }
 
+    // Deckle's half of the Anytype runtime (ADR-0008): it supervises the
+    // anytype-cli backend and the Anytype gateway, two processes that both
+    // outlive it, and answers the gateway's delete approvals with a toast. The
+    // MCP host itself runs in the gateway, so assistants keep their access while
+    // Deckle relaunches or rebuilds.
     private async Task RunAnytypeRuntimeAsync(CancellationToken ct)
     {
         BackendSupervisor? supervisor = null;
-        AnytypeApiClient? api = null;
-        McpHttpHost? host = null;
-        bool hostStarted = false;
-        bool hostDrained = true;
+        GatewaySupervisor? gateway = null;
+        DeletionApprovalPipeServer? approvals = null;
 
         // The one end line of the resident runtime. The owning providers log
         // each cause in detail; this line says why the runtime is gone.
@@ -41,6 +42,14 @@ public partial class App
 
         try
         {
+            // Listening first: a gateway adopted from an earlier Deckle may ask
+            // for an approval as soon as this Deckle is up.
+            phase = "approvals";
+            approvals = new DeletionApprovalPipeServer(
+                GatewayContract.DeletionApprovalPipeName, DeletionApproval.Current);
+            approvals.Start();
+
+            phase = "prepare";
             await BackendInstallation.PrepareAsync(ct).ConfigureAwait(false);
 
             phase = "supervise";
@@ -55,61 +64,12 @@ public partial class App
             }
             ct.ThrowIfCancellationRequested();
 
-            // The key (vault entry `anytype-api-key`, in %LOCALAPPDATA%\Deckle\
-            // secrets.dat) is written by a script outside the repository and read
-            // here once, when the runtime starts. A newly minted key therefore
-            // needs a real Deckle restart; the running process keeps the old one.
-            phase = "credentials";
-            AnytypeCredentials credentials;
-            try
-            {
-                credentials = AnytypeCredentials.Load();
-                api = AnytypeApiClient.CreateForResidentGateway(credentials);
-            }
-            catch (Exception ex) when (ex is InvalidOperationException or SecretVaultException or UriFormatException)
-            {
-                // InvalidOperationException is AnytypeCredentials.Load's refusal:
-                // the credentials file is absent, unreadable or incomplete.
-                string provisioningReason = ex switch
-                {
-                    SecretVaultException => "vault_error",
-                    UriFormatException   => "bad_endpoint",
-                    _                    => "credentials_missing",
-                };
-                DeckleAnytypeMcpSource.Log.HostProvisioningFailed(
-                    provisioningReason, ex.GetType().Name, ex.Message);
-                (endOutcome, endReason) = ("skipped", "not_provisioned");
-                (endExType, endExMessage) = (ex.GetType().Name, ex.Message);
-                return;
-            }
-
-            phase = "tokens";
-            IReadOnlyList<McpClientProfile> clients =
-                [.. McpClients.All, HomeMcp.Client];
-            var tokens = new McpClientTokens(SecretVault.CreateDefault(), clients);
-            try
-            {
-                tokens.EnsureMinted();
-                tokens.MaterializeEnvironmentVariables();
-            }
-            catch (SecretVaultException ex)
-            {
-                DeckleAnytypeMcpSource.Log.HostProvisioningFailed(
-                    "token_mint_failed", ex.GetType().Name, ex.Message);
-                (endOutcome, endReason) = ("skipped", "not_provisioned");
-                (endExType, endExMessage) = (ex.GetType().Name, ex.Message);
-                return;
-            }
-
-            ct.ThrowIfCancellationRequested();
-            phase = "host";
-            host = new McpHttpHost(api, tokens);
-            hostStarted = host.Start();
-            if (!hostStarted)
-            {
-                (endOutcome, endReason) = ("failed", "host_start_failed");
-                return;
-            }
+            // The gateway reads its own credentials and tokens; a gateway that
+            // finds them missing exits and the supervisor leaves it stopped.
+            phase = "gateway";
+            gateway = new GatewaySupervisor(
+                Path.Combine(AppContext.BaseDirectory, GatewayContract.PayloadFolderName));
+            gateway.Start();
 
             await Task.Delay(Timeout.InfiniteTimeSpan, ct).ConfigureAwait(false);
         }
@@ -128,82 +88,51 @@ public partial class App
         }
         finally
         {
-            try
+            // Supervision only: the gateway and the backend keep running.
+            // Resident ownership may be released only after both supervisors
+            // have stopped every acquisition, spawn and watch path.
+            if (gateway is not null)
             {
-                if (hostStarted && host is not null)
+                try { await gateway.DisposeAsync().ConfigureAwait(false); }
+                catch (Exception ex)
                 {
-                    long drainStarted = System.Diagnostics.Stopwatch.GetTimestamp();
-                    string drainFailure = "timeout";
-                    using var drainCts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
-                    try { hostDrained = await host.StopAsync(drainCts.Token).ConfigureAwait(false); }
-                    catch (Exception ex)
-                    {
-                        hostDrained = false;
-                        drainFailure = "exception";
-                        DeckleAnytypeSource.Log.AnytypeRuntimeFaulted(
-                            "mcp_drain", ex.GetType().Name, ex.Message);
-                    }
-                    // A false return was silent: in-flight MCP requests outlived
-                    // the 5 s budget, so the host and the API stay alive to exit.
-                    if (!hostDrained)
-                    {
-                        DeckleAppSource.Log.AnytypeHostDrainIncomplete(
-                            drainFailure,
-                            (long)System.Diagnostics.Stopwatch.GetElapsedTime(drainStarted).TotalMilliseconds);
-                    }
-                }
-
-                // The API may be disposed only after every MCP request that borrows
-                // it is gone. On a failed drain both stay alive until process exit.
-                if (hostDrained)
-                {
-                    if (host is not null)
-                    {
-                        try { await host.DisposeAsync().ConfigureAwait(false); }
-                        catch (Exception ex)
-                        {
-                            DeckleAppSource.Log.CleanupFailed("anytype_mcp_host", ex.GetType().Name, ex.Message);
-                        }
-                    }
-                    try { api?.Dispose(); }
-                    catch (Exception ex)
-                    {
-                        DeckleAppSource.Log.CleanupFailed("anytype_api", ex.GetType().Name, ex.Message);
-                    }
+                    DeckleAppSource.Log.CleanupFailed("anytype_gateway_supervisor", ex.GetType().Name, ex.Message);
                 }
             }
-            finally
+
+            if (supervisor is not null)
             {
-                // Resident ownership may be released only after the supervisor
-                // has stopped every acquisition and watch path, even when the
-                // HTTP host itself failed to drain.
-                if (supervisor is not null)
+                try { await supervisor.DisposeAsync().ConfigureAwait(false); }
+                catch (Exception ex)
                 {
-                    try { await supervisor.DisposeAsync().ConfigureAwait(false); }
-                    catch (Exception ex)
+                    DeckleAppSource.Log.CleanupFailed("anytype_supervisor", ex.GetType().Name, ex.Message);
+                    // A faulted watch task rethrows here: supervision died
+                    // during the run, which the end line must say when no
+                    // earlier cause already explains the end.
+                    if (endReason == "shutdown")
                     {
-                        DeckleAppSource.Log.CleanupFailed("anytype_supervisor", ex.GetType().Name, ex.Message);
-                        // A faulted watch task rethrows here: supervision died
-                        // during the run, which the end line must say when no
-                        // earlier cause already explains the end.
-                        if (endReason == "shutdown")
-                        {
-                            (endOutcome, endReason) = ("failed", "supervisor_faulted");
-                            (endExType, endExMessage) = (ex.GetType().Name, ex.Message);
-                        }
+                        (endOutcome, endReason) = ("failed", "supervisor_faulted");
+                        (endExType, endExMessage) = (ex.GetType().Name, ex.Message);
                     }
                 }
             }
 
-            // A stop on a failure is an Error; a shutdown or a missing
-            // provisioning is only an end.
+            // Last: an approval the gateway asked during shutdown still gets an
+            // answer, or a clean Unavailable once the pipe is gone.
+            if (approvals is not null)
+            {
+                try { await approvals.DisposeAsync().ConfigureAwait(false); }
+                catch (Exception ex)
+                {
+                    DeckleAppSource.Log.CleanupFailed("anytype_delete_approvals", ex.GetType().Name, ex.Message);
+                }
+            }
+
+            // A stop on a failure is an Error; a shutdown is only an end.
             if (endOutcome == "failed")
                 DeckleAppSource.Log.AnytypeRuntimeFailed(endReason, endExType, endExMessage);
             else
                 DeckleAppSource.Log.AnytypeRuntimeEnded(endOutcome, endReason, endExType, endExMessage);
-
-            GC.KeepAlive(host);
-            GC.KeepAlive(api);
         }
     }
 
