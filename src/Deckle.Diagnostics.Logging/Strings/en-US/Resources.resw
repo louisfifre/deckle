@@ -150,7 +150,7 @@
     <value>Telemetry folder</value>
   </data>
   <data name="GeneralStorageFolderCard.Description" xml:space="preserve">
-    <value>The datasets you turn on under Telemetry. A folder you choose here receives only the dictation audio for now.</value>
+    <value>The datasets you turn on under Telemetry. A folder you choose here receives only the dictation audio.</value>
   </data>
   <data name="DiagnosticsFilesCard.Header" xml:space="preserve">
     <value>Diagnostics folder</value>
