@@ -294,6 +294,16 @@ public sealed class DispatchEventListener : EventListener
         }
     }
 
+    // Hides the account-identifying part of any path a string payload quotes,
+    // for every provider at once, before the entry reaches a sink. A provider
+    // may still call PathRedaction.Redact itself (the result is idempotent: a
+    // token such as %USERPROFILE% matches no root); this is the net under the
+    // events that name a path, or an exception message quoting one, without
+    // having been taught to. See PathRedaction for why the roots are replaced
+    // wherever they appear and not only in parameters named like paths.
+    private static object? RedactPaths(object? value)
+        => value is string text ? PathRedaction.Redact(text) : value;
+
     // The payload keys are the [Event] parameter names (snake_case by Deckle
     // convention); the formatted message is null when the provider declared no
     // Message template.
@@ -310,7 +320,7 @@ public sealed class DispatchEventListener : EventListener
             for (int i = 0; i < count; i++)
             {
                 string key = names![i];
-                object? value = (values is not null && i < values.Count) ? values[i] : null;
+                object? value = (values is not null && i < values.Count) ? RedactPaths(values[i]) : null;
                 dict[key] = value;
             }
             payload = dict;
@@ -322,7 +332,7 @@ public sealed class DispatchEventListener : EventListener
             try
             {
                 var arr = new object?[values.Count];
-                for (int i = 0; i < values.Count; i++) arr[i] = values[i];
+                for (int i = 0; i < values.Count; i++) arr[i] = RedactPaths(values[i]);
                 formatted = string.Format(System.Globalization.CultureInfo.InvariantCulture, e.Message, arr);
             }
             catch (Exception ex)

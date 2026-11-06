@@ -94,4 +94,48 @@ public sealed class DispatchEventListenerRegressionTests
         Assert.Equal("ValueObserved", report.Payload![1]);
         Assert.Equal(nameof(FormatException), report.Payload[2]);
     }
+
+    // A provider that never learned to redact: its message and its path reach
+    // the dispatcher exactly as the code wrote them.
+    [EventSource(Name = "Deckle-DispatchUntaughtPathTests")]
+    private sealed class UntaughtPathSource : EventSource
+    {
+        public static readonly UntaughtPathSource Log = new();
+
+        private UntaughtPathSource() { }
+
+        [Event(1, Level = EventLevel.Warning, Message = "Failed on {0}: {1}")]
+        public void OperationFailed(string path, string ex_message)
+        {
+            if (IsEnabled()) WriteEvent(1, path, ex_message);
+        }
+    }
+
+    private sealed class UntaughtPathSink : ILogSink
+    {
+        public List<EventEntry> Entries { get; } = [];
+
+        public bool Wants(EventEntry entry) => entry.Provider == "Deckle-DispatchUntaughtPathTests";
+
+        public void Write(EventEntry entry) => Entries.Add(entry);
+    }
+
+    [Fact]
+    public void A_path_logged_by_a_provider_that_never_redacts_reaches_the_sinks_without_the_account_name()
+    {
+        string profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        using var dispatch = new DispatchEventListener();
+        dispatch.CompleteBoot();
+        var sink = new UntaughtPathSink();
+        dispatch.AddSink(sink);
+
+        UntaughtPathSource.Log.OperationFailed(
+            Path.Combine(profile, "Documents", "take.wav"),
+            $"Access to the path '{profile}\\Documents\\take.wav' is denied.");
+
+        EventEntry entry = Assert.Single(sink.Entries);
+        Assert.Equal(@"%USERPROFILE%\Documents\take.wav", entry.Payload["path"]);
+        Assert.Equal(@"Access to the path '%USERPROFILE%\Documents\take.wav' is denied.", entry.Payload["ex_message"]);
+        Assert.DoesNotContain(profile, entry.FormattedMessage, StringComparison.OrdinalIgnoreCase);
+    }
 }
