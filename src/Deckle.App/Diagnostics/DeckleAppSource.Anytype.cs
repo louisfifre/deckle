@@ -20,9 +20,11 @@ public sealed partial class DeckleAppSource
     }
 
     // The resident Anytype runtime stopped on a failure, so the Anytype tools
-    // are gone until the next run. reason: endpoint_conflict, exception or
+    // are gone until the next run. reason: endpoint_conflict or
     // supervisor_faulted; ex_type and ex_message are empty when the
-    // reason alone is the cause.
+    // reason alone is the cause. A composition exception is not reported here:
+    // DeckleAnytypeSource.AnytypeRuntimeFaulted already says it at Error, with
+    // its phase.
     [Event(EvtAnytypeRuntimeFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
