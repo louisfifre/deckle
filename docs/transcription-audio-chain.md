@@ -24,7 +24,7 @@ Most terms are defined in the module vocabularies. This list gives one line each
 - **Monolithic** is the other value of the same enum. It captures the whole take, then makes one transcription call at the end.
 - The code default is Monolithic, and the comment above the enum says the monolithic path "is slated for removal once streaming proves out".
 - **Utterance** vs **segment**: an utterance is the audio span Deckle cuts and sends to Whisper in one call; a segment is a piece of text Whisper returns inside that call. See `src/Deckle.Transcription/GLOSSARY.md`.
-- **Neural VAD** vs **energy segmenter**: the neural VAD (Silero) is a model that finds speech inside a finished buffer; the energy segmenter is a volume threshold that cuts the live stream. See `src/Deckle.Transcription/GLOSSARY.md`.
+- **Neural VAD** vs **energy segmenter**: the neural VAD (Silero) is a model that finds speech inside one utterance the segmenter has already cut; the energy segmenter is a volume threshold that cuts the live stream. See `src/Deckle.Transcription/GLOSSARY.md`.
 - **Hangover** vs **margin**: the hangover is how long the segmenter waits in silence before it decides an utterance has ended; the margin is how much of that silence it keeps at the end of the cut. See the header comment of `src/Deckle.Transcription/Streaming/EnergySegmenter.cs`.
 - **Display level** vs **transcription pre-processing**: the display level only drives the HUD outline; pre-processing changes the audio sent to Whisper. See `src/Deckle.Audio/GLOSSARY.md`.
 - **Dictation** vs **file transcription**: the two entry points into the same pipeline. See `src/Deckle.Transcription/GLOSSARY.md`.
@@ -52,6 +52,8 @@ flowchart TD
         SEG["EnergySegmenter.Push<br/>on the capture thread"]
         CHAN["Utterance queued in<br/>an unbounded Channel"]
         CONS["Consumer task<br/>ConsumeUtterancesAsync"]
+        PAD["Trailing noise pad<br/>500 ms at -60 dBFS,<br/>appended before Whisper"]
+        PHANTOM["Phantom filter<br/>text-level judgement<br/>of a short utterance"]
         ASSEMBLE["Text assembly<br/>silence cut = paragraph break"]
         MONO["Monolithic: whole take,<br/>DSP once, one backend call"]
         FIN["FinalizeTranscription<br/>clipboard, optional rewrite,<br/>optional paste"]
@@ -74,7 +76,7 @@ flowchart TD
     HK --> PROBE --> CAP --> FRAME --> FORK
     CAP --> LEVEL --> HUD
     FORK -- Streaming --> SEG --> CHAN --> CONS
-    CONS --> DSP --> TRIM --> ASR --> ASSEMBLE --> FIN
+    CONS --> DSP --> TRIM --> PAD --> ASR --> PHANTOM --> ASSEMBLE --> FIN
     ASSEMBLE -- UtteranceTranscribed --> PANEL
     FORK -- Monolithic --> MONO --> FIN
     FIN --> OUT
@@ -85,7 +87,9 @@ Notes on the diagram:
 - The hotkey is a toggle. The first press starts a take, the second press stops it. It is not push-to-talk (`RequestToggle` in `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs`).
 - The fork is drawn after the frames for clarity. In the code, the strategy is chosen once per take in `WorkerRun`, before capture starts; the Monolithic path does not subscribe to frames.
 - In Streaming, the pre-processing and the Silero trim run once per utterance, inside the consumer. In Monolithic, the pre-processing runs once over the whole take, and the Silero trim does not run at all (`src/Deckle.Transcription/Engine/TranscriptionEngine.MonolithicPipeline.cs`).
+- The noise pad and the phantom filter belong to the consumer, so they run for every take that goes through the segmented session: a live Streaming dictation, a file transcription and an audio recovery. The Monolithic path runs neither (`src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs`, the only place that calls them).
 - File transcription is the second entry point: a tray command decodes an audio file and pushes its frames into the same energy segmenter, channel and consumer, then writes the text beside the file (`src/Deckle.Transcription/GLOSSARY.md`, `src/Deckle.Transcription/Engine/TranscriptionEngine.FilePipeline.cs`). It is left out of the diagrams.
+- Audio recovery is a third way into the same consumer, used at launch when a take died before it was delivered. The audio the take left on disk is decoded to samples and pushed through `StartSegmentedTranscription` like a file, with the dictation's initial prompt and `ApplyPreprocessing` set to true (the pre-processing still applies only if `Preprocessing.Enabled` is on). Unlike a live take it rejects an incomplete result (`RejectIncompleteResults`): a skipped utterance would leave holes in the text, so the run fails and the audio is kept for the next launch. It delivers the raw text to the clipboard, never a paste and never a rewrite (`src/Deckle.Transcription/Engine/TranscriptionEngine.AudioRecovery.cs` → `RecoverTakeFromAudioAsync`, launch-time decision in `src/Deckle.Transcription/Recovery/TakeAudioRecovery.cs`). It is left out of the diagrams.
 
 ### Node → file
 
@@ -102,7 +106,9 @@ Notes on the diagram:
 | Consumer task | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `ConsumeUtterancesAsync` | Takes utterances one by one, in order, and is the only caller of Whisper at a time. Waits at `AwaitPrime` before its first call. |
 | Optional pre-processing | `src/Deckle.Audio/Preprocessing/TranscriptionPreprocessor.cs` → `Process`; `src/Deckle.Audio/Preprocessing/PreprocessingSettings.cs` | Off by default. When on: high-pass filter, noise gate (off), compressor, makeup gain to a target level in two passes, limiter. Works on a copy of the audio. |
 | Optional Silero trim | `src/Deckle.Vad/VadService.cs` → `EnsureReady`; `src/Deckle.Vad/SileroVad.cs` → `Trim`; `src/Deckle.Vad/SileroSpeechTimestamps.cs` | On by default. Keeps only the speech inside the utterance. If no speech is found, the utterance is dropped. If the model file is missing, it starts a background download and this take runs untrimmed. |
+| Trailing noise pad | `src/Deckle.Transcription/Engine/TrailingNoisePad.cs` → `Append`; called in `ConsumeUtterancesAsync` | Always on, not a setting. Appends 500 ms of fixed-seed uniform noise at about −60 dBFS RMS to the audio the backend receives. Replayed on the same audio, digital silence right behind the last word sometimes made Whisper end the text early; noise did not (the file's header gives 8 of 8 against 3 of 8 for the endings). The pad goes to the backend only: the corpus copy (`BackendAudio`) and the phantom filter's duration stay unpadded. |
 | WhisperBackend.TranscribeAsync | `src/Deckle.Transcription.Whisper/WhisperBackend.Transcribe.cs` → `TranscribeSync`; `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs` → `Apply` | One `whisper_full` call per utterance. The prompt is the fixed `InitialPrompt` plus the last 30 words of the previous utterance (`BuildPriming`, `TailOf`, `PrimingTailWords`). Whisper's own VAD is forced off (`wparams.vad = 0`). |
+| Phantom filter | `src/Deckle.Transcription/Engine/PhantomUtteranceFilter.cs` → `Evaluate`; called in `ConsumeUtterancesAsync` | Judges the decoded text of an utterance, not its audio. Only an utterance of less than 1 s of audio (before the pad) can be rejected. It is rejected when it holds more than 12 text tokens per second (`token_rate`), or when its average token probability is under 0.7 and its weakest token under 0.1 (`low_confidence`). A result that reports no text tokens is kept. A rejected utterance contributes no text, its tail is not carried into the next prompt, and `UtterancePhantomRejected` is logged. |
 | Text assembly | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `pendingParagraphBreak = u.EndedOnSilence` | Joins the texts. After an utterance that ended on a silence, the next text starts a new paragraph (`\n\n`); otherwise a space. Only the last utterance of a take can end without a silence (the Flush at Stop), so in a dictation the texts are joined by paragraph breaks. See "The paragraph rule" below. |
 | Monolithic | `src/Deckle.Transcription/Engine/TranscriptionEngine.MonolithicPipeline.cs` → `ProduceMonolithicAsync`; `src/Deckle.Transcription/Engine/TranscriptionEngine.Pipeline.cs` → `ConsumeMonolithicAudioAsync` | Captures the whole take, waits for the prime after Stop, runs the pre-processing once, makes one backend call. Whisper then cuts its own 30 s windows inside that call. |
 | FinalizeTranscription | `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.cs` → `FinalizeTranscription`, `CopyToClipboard`, `DeliverTranscript`, `PasteFromClipboard`; `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.Rewrite.cs` → `ApplyRewrite` | Copies the raw text to the clipboard first. Then, if a rewrite profile applies, rewrites it with Ollama. Then pastes with Ctrl+V only if paste is enabled, the foreground window is not Deckle, and UI Automation confirms the focused element is a text field (Edit or Document). Paste is off by default (`AutoPasteEnabled = false` in `src/Deckle.Settings/Persistence/AppSettings.cs`). |
@@ -201,7 +207,9 @@ Where the files live:
 
 Where the settings are shown:
 
-- **Settings ▸ Dictation**: `src/Deckle.Transcription/ViewModels/WhisperViewModel.Settings.cs` (composed cards, including the cut curve card with its anchors and the curve editor `src/Deckle.Catalog/Composer/CurveEditor.cs`; no preset selector), plus the hand-written cards of `src/Deckle.Transcription/WhisperPage.xaml` and `src/Deckle.Transcription/WhisperPage.xaml.cs` (model, language, initial prompt).
+- **Settings ▸ Dictation**: `src/Deckle.Transcription/WhisperPage.xaml` and `src/Deckle.Transcription/WhisperPage.xaml.cs` (the hand-written cards: model, language, initial prompt), plus the composed GPU and models-folder cards of `src/Deckle.Transcription/ViewModels/WhisperViewModel.Settings.cs`. The two pages below are nested under it in the rail.
+- **Settings ▸ Decoding** (`src/Deckle.Transcription/DecodingPage.xaml`): the decoding, confidence, context and output-filter cards, composed in `WhisperViewModel.Settings.cs`.
+- **Settings ▸ Streaming** (`src/Deckle.Transcription/StreamingPage.xaml`): the streaming toggle, the Silero (VAD) group and the energy segmenter cards, including the cut curve card with its anchors and the curve editor `src/Deckle.Catalog/Composer/CurveEditor.cs` (no preset selector), composed in `WhisperViewModel.Settings.cs`.
 - **Settings ▸ Recording**: `src/Deckle.Audio/RecordingViewModel.Settings.cs`, plus the microphone picker in `src/Deckle.Audio/RecordingPage.xaml.cs`.
 
 ### Transcription module — `modules/transcription/settings.json`
@@ -213,19 +221,19 @@ Where the settings are shown:
 | `Engine.Language` | `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs` | `"fr"` | `engine` | Dictation (`WhisperPage.xaml.cs`) |
 | `Engine.InitialPrompt` | `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs`; in Streaming, the fixed part of every prompt (`ProduceStreamingAsync`) | A French paragraph about coding a Windows app (see the file) | `engine` | Dictation (`WhisperInitialPromptCard`) |
 | `Engine.CarryInitialPrompt` | `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs` | `true` | `engine` | Not exposed |
-| `Confidence.EntropyThreshold` | `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs` | `2.4` | `confidence` | Dictation (`WhisperEntropyCard`) |
-| `Confidence.LogprobThreshold` | same | `-1.0` | `confidence` | Dictation (`WhisperLogprobCard`) |
-| `Confidence.NoSpeechThreshold` | same | `0.6` | `confidence` | Dictation (`WhisperNoSpeechCard`) |
-| `Decoding.Temperature` | same | `0.0` | `decoding` | Dictation (`WhisperTemperatureCard`) |
-| `Decoding.TemperatureIncrement` | same | `0.2` | `decoding` | Dictation (`WhisperTemperatureIncrementCard`) |
-| `Decoding.UseBeamSearch` | same | `true` | `decoding` | Dictation (`WhisperUseBeamSearchCard`) |
-| `Decoding.BeamSize` | same | `5` | `decoding` | Dictation (`WhisperBeamSizeCard`, visible when beam search is on) |
+| `Confidence.EntropyThreshold` | `src/Deckle.Transcription.Whisper/Engine/WhisperParamsMapper.cs` | `2.4` | `confidence` | Decoding page (Confidence section, `WhisperEntropyCard`) |
+| `Confidence.LogprobThreshold` | same | `-1.0` | `confidence` | Decoding page (Confidence section, `WhisperLogprobCard`) |
+| `Confidence.NoSpeechThreshold` | same | `0.6` | `confidence` | Decoding page (Confidence section, `WhisperNoSpeechCard`) |
+| `Decoding.Temperature` | same | `0.0` | `decoding` | Decoding page (Decoding section, `WhisperTemperatureCard`) |
+| `Decoding.TemperatureIncrement` | same | `0.2` | `decoding` | Decoding page (Decoding section, `WhisperTemperatureIncrementCard`) |
+| `Decoding.UseBeamSearch` | same | `true` | `decoding` | Decoding page (Decoding section, `WhisperUseBeamSearchCard`) |
+| `Decoding.BeamSize` | same | `5` | `decoding` | Decoding page (Decoding section, `WhisperBeamSizeCard`, visible when beam search is on) |
 | `Context.UseContext` | same (`no_context`) | `true` | `context` | Decoding page (Context section, `WhisperUseContextCard`) |
 | `Context.MaxTokens` | same (`n_max_text_ctx`) | `-1` (auto) | `context` | Decoding page (Context section, `WhisperMaxTokensCard`) |
 | `OutputFilters.SuppressNonSpeechTokens` | same | `true` | `outputFilters` | Decoding page (Output filters section, `WhisperSuppressNstCard`) |
 | `OutputFilters.SuppressBlank` | same | `true` | `outputFilters` | Decoding page (Output filters section, `WhisperSuppressBlankCard`) |
 | `OutputFilters.SuppressRegex` | same | `""` | `outputFilters` | Decoding page (Output filters section, `WhisperSuppressRegexCard`) |
-| `Streaming.Strategy` | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `WorkerRun` | `Monolithic` | `streaming` | Dictation (`WhisperStreamingEnabledCard` toggle: on = Streaming) |
+| `Streaming.Strategy` | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `WorkerRun` | `Monolithic` | `streaming` | Streaming page (`WhisperStreamingEnabledCard` toggle: on = Streaming) |
 | `Streaming.Segmenter.ThresholdDbfs` | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` | `-45.0` | `streaming.segmenter` | Streaming page (`WhisperSegThresholdCard`, magnitude field in dBFS) |
 | `Streaming.Segmenter.HangoverMaxMs` | same | `5000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Max wait", ms) |
 | `Streaming.Segmenter.HangoverMinMs` | same | `500` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Min wait", ms) |
@@ -251,11 +259,6 @@ On the Streaming page, everything under the Streaming switch shows only while th
 |---|---|---|---|---|
 | `AudioInputDeviceId` | `src/Deckle.Audio/MicrophoneCapture.cs` (`Probe`, `Record`) | `-1` (system default device) | root | Recording (microphone picker, `RecordingPage.xaml.cs`) |
 | `MaxRecordingDurationSeconds` | `src/Deckle.Audio/Internal/WaveInLoop.cs` (cap check, skipped at 0) | `0` (no limit); a file still holding the former 20 min default is migrated to 0 (`src/Deckle.Audio/CaptureSettingsService.cs`) | root | Recording (`RecordingLimitCard`, "Maximum recording length": No limit, 10, 20, 30 min, 1 h, 2 h) |
-| `LevelWindow.MinDbfs` | `src/Deckle.Audio/AudioLevelMapper.cs` (HUD display only) | `-55` | `levelWindow` | Not exposed (removed from Recording, 2026-10-14) |
-| `LevelWindow.MaxDbfs` | same | `-32` | `levelWindow` | Not exposed (removed from Recording, 2026-10-14) |
-| `LevelWindow.DbfsCurveExponent` | same | `1.0` | `levelWindow` | Not exposed (removed from Recording, 2026-10-14) |
-| `LevelWindow.AutoCalibrationEnabled` | `src/Deckle.Transcription/Engine/TranscriptionEngine.Telemetry.cs` → `TryAutoCalibrate` | `false` | `levelWindow` | Not exposed (removed from Recording, 2026-10-14) |
-| `LevelWindow.AutoCalibrationSamples` | same | `5` | `levelWindow` | Not exposed |
 | `Preprocessing.Enabled` | `src/Deckle.Audio/Preprocessing/TranscriptionPreprocessor.cs` | `false` | `preprocessing` | Recording (`RecordingPagePreprocessingCard`) |
 | `Preprocessing.HighPassEnabled`, `HighPassHz` | same | `true`, `90` Hz | `preprocessing` | Not exposed |
 | `Preprocessing.GateEnabled`, `GateThresholdDbfs`, `GateRatio`, `GateAttackMs`, `GateReleaseMs` | same | `false`, `-55`, `2`, `5`, `150` | `preprocessing` | Not exposed |
@@ -265,7 +268,7 @@ On the Streaming page, everything under the Streaming switch shows only while th
 
 The pre-processing has 18 fixed fields after `Enabled`: four stage switches and fourteen values. `PreprocessingSettings.cs` says they are "an engineer's starting point, NOT measured optima". No Settings card and no Playground page edits them.
 
-Reading: `LevelWindowSettings` uses public fields, while every other settings class uses properties "so System.Text.Json round-trips them". Whether the level window survives a restart is not established here.
+The HUD outline's level window (−55 to −32 dBFS) is no longer a setting: it is two constants in `src/Deckle.Audio/AudioLevelMapper.cs`. The former `LevelWindow` section and its auto-calibration were removed on 2026-11-06, since they had never been persisted (the class used public fields, which System.Text.Json ignores by default; see `docs/research/research--seuils-voix--2026-11-06.md`).
 
 ### Constants in the engine, not stored
 
@@ -359,7 +362,7 @@ How to read it:
 - **Hangover**: an utterance is open, and the last frames were silent. The segmenter is not sure yet whether this is a short pause inside a sentence or the end. It counts the silent frames in a row. A voiced frame sets the count back to 0 and returns to Speech. When the count reaches the required hangover, the segmenter cuts and emits the utterance with `EndedOnSilence = true`.
 - **Flush at Stop**: when you press the hotkey to stop, the open utterance is emitted whatever its state, with `EndedOnSilence = false`. In Silence, Flush does nothing.
 - The step Speech → Hangover also checks the required hangover. With the defaults it never cuts there, because the minimum hangover is 10 frames. It only matters if a hangover rounds to one frame (under 75 ms: `FramesFromMs` uses `Math.Round`, which rounds 75 ms, 1.5 frames, to 2).
-- The segmenter has no maximum utterance length. An utterance only ends on a silence long enough, or at Stop. The header of `EnergySegmenter.cs` says so ("No hard cap"). Reading: `src/Deckle.Transcription/Streaming/Utterance.cs` and `src/Deckle.Transcription/GLOSSARY.md` still mention a "safety ceiling"; the code has no such ceiling. The only cap is the optional capture limit (`MaxRecordingDurationSeconds`, off by default), which ends the whole take through the same Flush when the user has set one.
+- The segmenter has no maximum utterance length. An utterance only ends on a silence long enough, or at Stop. The header of `EnergySegmenter.cs` says so ("No hard cap"). There is no "safety ceiling" in the code. The only cap is the optional capture limit (`MaxRecordingDurationSeconds`, off by default), which ends the whole take through the same Flush when the user has set one.
 
 #### Node → file
 
@@ -439,9 +442,11 @@ The consumer takes the utterances one at a time, in order (`ConsumeUtterancesAsy
    - The kept spans are joined end to end. The silence between them is removed.
    - If no span is found, the utterance is dropped (`UtteranceDroppedNoSpeech`) and contributes no text. The tail of the previous text is kept for the next prompt.
    - If the trim throws an error, the utterance goes to Whisper untrimmed and the trim is turned off for the rest of the take.
-3. **Whisper**, one call per utterance (see Diagram 1).
+3. **Trailing noise pad.** 500 ms of noise at about −60 dBFS is appended to the audio, after the trim (`TrailingNoisePad.Append` in `src/Deckle.Transcription/Engine/TrailingNoisePad.cs`). Always on. Only the backend receives it.
+4. **Whisper**, one call per utterance (see Diagram 1).
+5. **Phantom filter.** If the utterance yielded text, `PhantomUtteranceFilter.Evaluate` (`src/Deckle.Transcription/Engine/PhantomUtteranceFilter.cs`) judges the decode against the duration of the audio before the pad. Under 1 s only, the text is dropped when it has more than 12 tokens per second, or when its average token probability is under 0.7 and its weakest token under 0.1. A dropped utterance adds no text and clears the carried tail (`UtterancePhantomRejected`).
 
-Why two detectors: the energy segmenter must decide live, frame by frame, with only the volume to go on; the neural VAD can look at a finished buffer as a whole and tell speech from noise. The distinction is defined in `src/Deckle.Transcription/GLOSSARY.md`, section [Segmentation — detection vs cutting](../src/Deckle.Transcription/GLOSSARY.md#segmentation--detection-vs-cutting).
+Why two detectors: the energy segmenter must decide live, frame by frame, with only the volume to go on; the neural VAD can look at one finished utterance as a whole and tell speech from noise. The distinction is defined in `src/Deckle.Transcription/GLOSSARY.md`, section [Segmentation — detection vs cutting](../src/Deckle.Transcription/GLOSSARY.md#segmentation--detection-vs-cutting).
 
 Reading: the segmenter discards everything before the first voiced frame, and the Silero padding works inside the utterance it receives. So the padding cannot bring back a soft word onset that stayed under the energy threshold.
 
@@ -450,7 +455,7 @@ Reading: the segmenter discards everything before the first voiced frame, and th
 Each utterance carries `EndedOnSilence` (`src/Deckle.Transcription/Streaming/Utterance.cs`): true when the segmenter cut on a pause, false when the Flush at Stop closed it. The consumer uses it to join the texts (`pendingParagraphBreak` in `ConsumeUtterancesAsync`):
 
 - Before the text of an utterance, if text was already written, it adds `\n\n` (a new paragraph) when the previous utterance with text was cut on a silence, and a space otherwise.
-- The flag is only updated by an utterance that yields text. An utterance dropped by Silero, one that fails in Whisper, or one whose text is empty leaves the pending break as it was.
+- The flag is only updated by an utterance that yields text. An utterance dropped by Silero, one that fails in Whisper, one rejected by the phantom filter, or one whose text is empty leaves the pending break as it was.
 
 Every utterance except the last one of a take is cut on a silence, because Flush only runs at Stop. Reading: so in a dictation, two texts are always joined by a paragraph break, and the space branch is not reached; every pause long enough to cut (5 s at the start of an utterance with the defaults) becomes a new paragraph.
 
