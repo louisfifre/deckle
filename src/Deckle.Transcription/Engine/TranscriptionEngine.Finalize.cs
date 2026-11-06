@@ -68,7 +68,10 @@ public sealed partial class TranscriptionEngine
         // The raw copy is the safety net for every later stage. A failed rewrite
         // copy therefore leaves useful text behind, and paste never sees stale data.
         // Every write lands in the Windows clipboard history, so a take writes the
-        // raw text once and at most one rewrite, never per utterance.
+        // raw text once and at most one rewrite, never per utterance. That is the
+        // whole clipboard contract: at most two contents per transcription, the raw
+        // text then the rewritten text when a profile is active, never token by
+        // token, and the sentence as the grain.
         var clipboardStopwatch = System.Diagnostics.Stopwatch.StartNew();
         bool rawCopySucceeded = CopyToClipboard(rawText);
         clipboardStopwatch.Stop();

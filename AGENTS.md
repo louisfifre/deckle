@@ -47,7 +47,7 @@ Everything specialized is discoverable, not pre-chewed here — orient, never re
 - Repo structure (tree, headers, skills) → `TREE.md`, auto-generated.
 - The scripts, what is installed and what is Deckle's own → `scripts/README.md`.
 - Frozen decisions → `docs/adr/`.
-- WinUI/XAML and Windows APIs → Microsoft Learn MCP before local code.
+- WinUI/XAML and Windows APIs → the `microsoft-docs` skill before local code.
 
 ## Worktrees
 
