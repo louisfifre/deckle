@@ -40,6 +40,25 @@ try {
 
     # MSBuild and the script agree on what stale means.
     Assert-Equal 120 (Get-HeartbeatStaleSeconds -TickSeconds 30) 'four ticks of thirty seconds match the 120 s in Directory.Build.targets'
+
+    # A compiler server born at Normal, as Roslyn starts it, ends at BelowNormal;
+    # one already there, or parked lower by hand, is left as it is. Any process
+    # stands in for VBCSCompiler, the rule only reads the priority class.
+    $stand_in = Start-Process -FilePath 'pwsh' -ArgumentList '-NoProfile', '-NonInteractive', '-Command', 'Start-Sleep -Seconds 60' -WindowStyle Hidden -PassThru
+    try {
+        $stand_in.PriorityClass = 'Normal'
+        Assert-Equal 1 (Set-BuildServerLowPriority -Processes @($stand_in)) 'a Normal server is lowered'
+        $stand_in.Refresh()
+        Assert-Equal 'BelowNormal' $stand_in.PriorityClass 'the server ends at BelowNormal'
+        Assert-Equal 0 (Set-BuildServerLowPriority -Processes @($stand_in)) 'a server already at BelowNormal is left alone'
+        $stand_in.PriorityClass = 'Idle'
+        Assert-Equal 0 (Set-BuildServerLowPriority -Processes @($stand_in)) 'a server parked at Idle is not raised'
+        $stand_in.Refresh()
+        Assert-Equal 'Idle' $stand_in.PriorityClass 'the Idle server keeps its class'
+        Assert-Equal 0 (Set-BuildServerLowPriority -Processes @()) 'no server means nothing to lower'
+    } finally {
+        Stop-Process -Id $stand_in.Id -Force -ErrorAction SilentlyContinue
+    }
 } finally {
     Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction SilentlyContinue
 }

@@ -38,7 +38,10 @@
        which runs `dotnet build-server shutdown` once no stamp has moved for five
        minutes. Builds in a burst keep their servers; the delay restarts at each
        project. The watchdog is armed only when its heartbeat is missing or
-       stale, so a full build pays one pwsh start, not one per project.
+       stale, so a full build pays one pwsh start, not one per project. While it
+       runs, it also keeps VBCSCompiler at BelowNormal: Roslyn starts it at
+       Normal on purpose, so the low priority of Directory.Build.rsp would
+       otherwise miss half of a build's CPU work.
 
        The state lives in the user's temp directory because the servers belong
        to the machine, not to a checkout: every worktree feeds the same watchdog.
