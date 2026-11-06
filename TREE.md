@@ -472,6 +472,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.MouseWheel.cs
 │   │   ├── App.Orchestration.cs
 │   │   ├── App.ParagraphRewrite.cs
+│   │   ├── App.PlaygroundAccess.cs
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.SpeechRepair.cs
@@ -505,7 +506,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LogWindow.xaml.cs
 │   │   ├── Program.cs
 │   │   ├── SecondaryWindowPlacement.cs
-│   │   └── TrayIncidentLines.cs
+│   │   ├── TrayIncidentLines.cs
+│   │   └── TrayRightClickMenu.cs
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
 │   │   │   ├── CaptureAnomalyEpisode.cs
@@ -1921,7 +1923,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HudFeedbackSinkTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
-│   │   └── TrayIncidentLinesTests.cs
+│   │   ├── TrayIncidentLinesTests.cs
+│   │   └── TrayRightClickMenuTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── AudioPathRedactionTests.cs
 │   │   ├── AudioRecordingHostDefaultsTests.cs
