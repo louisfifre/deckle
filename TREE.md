@@ -92,11 +92,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── __init__.py
 │   ├── rewrite/
 │   │   ├── model-compare/
+│   │   │   ├── campaigns/
+│   │   │   │   └── profiles-v2.json
 │   │   │   ├── prompts/
 │   │   │   │   ├── lissage-current.md
 │   │   │   │   └── lissage-literal.md
 │   │   │   ├── .gitignore
+│   │   │   ├── BatchJudge.cs
+│   │   │   ├── Campaign.cs
+│   │   │   ├── CampaignRun.cs
 │   │   │   ├── Corpus.cs
+│   │   │   ├── Export.cs
 │   │   │   ├── Judge.cs
 │   │   │   ├── ModelCompare.csproj
 │   │   │   ├── Program.cs
