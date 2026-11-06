@@ -35,9 +35,10 @@
     <!-- Program.cs owns Main: the crash dump capture is decided before XAML
          hosts anything. -->
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
-    <!-- The app keeps the commit id in its own informational version, which
-         Directory.Build.props drops for the libraries. -->
+    <!-- The app keeps the commit id in its own informational version and its
+         Source Link, which Directory.Build.props drops for the libraries. -->
     <IncludeSourceRevisionInInformationalVersion>true</IncludeSourceRevisionInInformationalVersion>
+    <EnableSourceLink>true</EnableSourceLink>
     <!-- The Anytype gateway is an executable this app ships but never loads: a
          framework-dependent build output copied beside Deckle.exe. The SDK's
          self-contained match check does not apply to it. -->
@@ -118,7 +119,7 @@
                       ReferenceOutputAssembly="false"
                       Private="false"
                       OutputItemType="DeckleGatewayTarget"
-                      GlobalPropertiesToRemove="RuntimeIdentifier;SelfContained" />
+                      GlobalPropertiesToRemove="RuntimeIdentifier;RuntimeIdentifierOverride;SelfContained" />
     <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Chrono\Deckle.Chrono.csproj" />

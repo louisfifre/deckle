@@ -58,9 +58,14 @@
          (1.0.0+<sha>), so each commit changes the bytes of every DLL even when
          its code did not move. The Anytype gateway is replaced only when the
          content of its build changes (ADR-0008, GatewayPayload), which needs
-         libraries whose bytes follow their code alone. Deckle.App sets it back
-         for its own assembly. -->
+         libraries whose bytes follow their code alone. Deckle.App sets both
+         back for its own assembly.
+
+         Source Link writes the same commit id into each PDB, and a DLL carries
+         its PDB's identity, so it goes too: the local PDBs still point at the
+         local sources, which is all a debugger here needs. -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <EnableSourceLink>false</EnableSourceLink>
   </PropertyGroup>
 
 </Project>
