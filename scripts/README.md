@@ -16,8 +16,9 @@ The launcher's vocabulary (levels, actions, variants, executions, journals, resu
 
 ```powershell
 pwsh -NoProfile -File scripts/menu.ps1
-pwsh -NoProfile -File scripts/menu.ps1 -Palette TrueColor
 ```
+
+The menu paints with the sixteen colours of the terminal's own scheme and leaves the rest to its defaults, so it blends into any profile, light or dark.
 
 Three switches serve a shell, an agent or a test without taking over the terminal:
 
