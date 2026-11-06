@@ -9,7 +9,67 @@ aggregates both.
 Generations go through `src/Deckle.Llm`'s `ClaudeEngine`, the production path
 (effort low, thinking at the SDK default). The judge calls the Anthropic SDK
 directly at effort high, because finding a flipped negation in a long
-dictation is reasoning work. Everything runs sequentially.
+dictation is reasoning work. The one-shot commands (`generate`, `judge`,
+`summary`) run sequentially; a campaign (`run`) runs one lane per model.
+
+## Campaigns: the whole matrix, repeated, judged in batches, exported
+
+The second study measures the three production profiles on the models they
+could run on, with every cell repeated so latency, cost and verdicts come with
+their spread. A campaign file under `campaigns/` declares it:
+
+```
+{
+  "name": "profiles-v2",
+  "models": ["claude-haiku-5-5", "claude-sonnet-5-5", "claude-opus-5-5"],
+  "iterations": 20,
+  "take_per_bucket": 2,
+  "cells": [ { "profile": "Lissage", "buckets": ["short", "medium"], "judge_note": "..." }, ... ],
+  "dictations": {},
+  "judge": { "model": "claude-opus-5-5", "batch": 5 }
+}
+```
+
+- **cells**: each profile runs on the corpus buckets the app would send it
+  (the app picks a profile by word count), never on sizes it is not meant
+  for. `judge_note` tells the judge what the profile is allowed to do with
+  order, so Arrangement's regrouping by theme is not read as an omission plus
+  an addition.
+- **dictations**: `take_per_bucket` dictations per bucket, the ones closest
+  to the bucket's median word count (ties to the most recent), so a « short »
+  cell measures a typical short dictation and not the three-word one that
+  happens to be last. `"dictations": {"short": ["<id>", ...]}` pins ids
+  instead.
+- **judge**: `batch` rewrites of the same cell (same dictation, profile and
+  model, on separate iterations) go to the judge in one call with the raw read
+  once; the judge is told to judge each against the raw and never against the
+  others. Its answer is one judgement per rewrite, matched by number.
+
+```
+& $exe check
+& $exe run --campaign campaigns/profiles-v2.json [--out results/<stamp>] [--only generate|judge|export]
+& $exe export --in results/<stamp>
+```
+
+`check` opens the API with the vault key and lists the models served, billing
+nothing. `run` freezes the resolved matrix (dictation ids, the live prompts
+byte for byte with a hash) into `results/<stamp>/campaign.json`, generates,
+judges and exports. It is resumable: rerun the same `--out` and every call
+already paid is skipped (a row with an error is redone); `--only` runs one
+step. One lane per model runs in parallel, sequential inside a lane, so a
+model's latency column is never inflated by its own queue.
+
+`results/<stamp>/dashboard-data.json` is the hand-off to whoever builds the
+dashboard: the frozen campaign and its prompts, the pricing snapshot, the
+dictations with their text, one entry per generation (text, tokens, latency,
+cost, code metrics — word and character ratios, paragraphs, `---`
+separators, markdown marks, lexical retention of the speaker's 4+-letter
+words, negation and hedge deltas — and its judgement with verdict, counts,
+findings and judge cost), one aggregate per (profile, bucket, dictation,
+model) cell (verdict counts, mean findings per category, latency mean/p50/p90,
+cost totals) and the run totals. `judge-batches.jsonl` keeps each batch
+answer whole; `judgements.jsonl` flattens it one row per rewrite with the
+batch's tokens, time and cost split evenly, so `summary` still reads it.
 
 ## Inputs
 
