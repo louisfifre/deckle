@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
@@ -129,79 +130,141 @@ public sealed partial class LlmPage : Page
         DictationSection.Reload();
     }
 
+    // ── Provider refresh ────────────────────────────────────────────────────
+    //
     // Asks every enabled provider what it serves (the profiles' model
     // suggestions), and keeps the Ollama administration state for the first
     // enabled Ollama provider, the one the Models section manages.
+    //
+    // Three rules keep the bars in step with the switches:
+    // - a provider switched off or removed loses its message at once, before
+    //   any network call, so its bar follows the click (it used to wait for
+    //   every other provider's answer, a slow Ollama included);
+    // - the providers are asked together, so the wait is the slowest answer,
+    //   not the sum of all of them;
+    // - each refresh takes a generation number, and only the latest one may
+    //   touch the page: an older refresh finishing last cannot reopen a bar
+    //   for a provider switched off meanwhile.
+
+    // The hosted providers' messages, by provider id. Ollama has its own bar.
+    private readonly Dictionary<string, string> _providerProblems = new();
+
+    private int _refreshGeneration;
+
     private async Task RefreshProvidersAsync()
     {
+        int generation = ++_refreshGeneration;
         var settings = LlmSettingsService.Instance.Current;
-        ISecretVault vault = SecretVault.CreateDefault();
-
-        LlmProvider? ollama = settings.Providers.Find(p => p.Enabled && p.Kind == LlmProviderKind.Ollama);
-        await RefreshOllamaStateAsync(ollama);
 
         // A snapshot: the list may be edited while a listing is in flight.
-        var problems = new List<string>();
-        foreach (var provider in settings.Providers.ToArray())
+        LlmProvider[] enabled = settings.Providers.Where(p => p.Enabled).ToArray();
+
+        foreach (string id in _providerProblems.Keys.ToArray())
         {
-            if (!provider.Enabled) continue;
-
-            string? apiKey = null;
-            try { vault.TryGet(LlmProviderSecrets.ApiKeyName(provider.Id), out apiKey); }
-            catch (SecretVaultException ex)
-            {
-                // No key: the catalog answers what it can, and the listing's
-                // own Warning says so if the provider then refuses.
-                DeckleLlmSource.Log.ProviderKeyReadFailedDetail(provider.Name, ex.GetType().Name, ex.Message);
-            }
-
-            using var cts = new CancellationTokenSource(ProviderAdminTimeout);
-            ProviderListing listing = await ProviderModelCatalog.ListAsync(provider, apiKey, cts.Token);
-            ProfilesSection.SetAvailableModelNames(provider.Id, listing.Names);
-
-            // Ollama has its own bar above; the hosted providers share this
-            // one, which is the only place a stored key shows whether it
-            // actually opens the API.
-            if (listing.Failure is not null && provider.Kind != LlmProviderKind.Ollama)
-                problems.Add(RewriteFailureMessage.ForProviderListing(provider, listing.Failure));
+            if (!enabled.Any(p => p.Id == id)) _providerProblems.Remove(id);
         }
+        ShowProviderProblems();
 
-        ProviderStatusBar.Message = string.Join(Environment.NewLine, problems);
-        ProviderStatusBar.IsOpen = problems.Count > 0;
+        LlmProvider? ollama = enabled.FirstOrDefault(p => p.Kind == LlmProviderKind.Ollama);
+        if (ollama is null) ApplyOllamaState(null, available: false, Array.Empty<OllamaModel>());
+
+        // The keys are read before any request leaves, so a vault failure
+        // cannot strand requests already in flight.
+        ISecretVault vault = SecretVault.CreateDefault();
+        string?[] apiKeys = enabled.Select(p => ReadApiKey(vault, p)).ToArray();
+
+        var work = new List<Task>(enabled.Length + 1);
+        if (ollama is not null) work.Add(RefreshOllamaStateAsync(ollama, generation));
+        for (int i = 0; i < enabled.Length; i++)
+            work.Add(RefreshListingAsync(enabled[i], apiKeys[i], generation));
+
+        await Task.WhenAll(work);
     }
 
-    private async Task RefreshOllamaStateAsync(LlmProvider? ollama)
+    private static string? ReadApiKey(ISecretVault vault, LlmProvider provider)
+    {
+        try
+        {
+            vault.TryGet(LlmProviderSecrets.ApiKeyName(provider.Id), out string? apiKey);
+            return apiKey;
+        }
+        catch (SecretVaultException ex)
+        {
+            // No key: the catalog answers what it can, and the listing's own
+            // Warning says so if the provider then refuses.
+            DeckleLlmSource.Log.ProviderKeyReadFailedDetail(provider.Name, ex.GetType().Name, ex.Message);
+            return null;
+        }
+    }
+
+    // Each listing updates its own provider as soon as it answers; a stale
+    // generation drops its answer.
+    private async Task RefreshListingAsync(LlmProvider provider, string? apiKey, int generation)
+    {
+        using var cts = new CancellationTokenSource(ProviderAdminTimeout);
+        ProviderListing listing = await ProviderModelCatalog.ListAsync(provider, apiKey, cts.Token);
+        if (generation != _refreshGeneration) return;
+
+        ProfilesSection.SetAvailableModelNames(provider.Id, listing.Names);
+
+        // Ollama has its own bar above; the hosted providers share this one,
+        // which is the only place a stored key shows whether it actually
+        // opens the API.
+        if (listing.Failure is not null && provider.Kind != LlmProviderKind.Ollama)
+            _providerProblems[provider.Id] = RewriteFailureMessage.ForProviderListing(provider, listing.Failure);
+        else
+            _providerProblems.Remove(provider.Id);
+        ShowProviderProblems();
+    }
+
+    // In the order of the providers list, so the lines do not swap places
+    // with the order the answers arrive in.
+    private void ShowProviderProblems()
+    {
+        var lines = LlmSettingsService.Instance.Current.Providers
+            .Where(p => _providerProblems.ContainsKey(p.Id))
+            .Select(p => _providerProblems[p.Id])
+            .ToList();
+        ProviderStatusBar.Message = string.Join(Environment.NewLine, lines);
+        ProviderStatusBar.IsOpen = lines.Count > 0;
+    }
+
+    private async Task RefreshOllamaStateAsync(LlmProvider ollama, int generation)
     {
         bool available = false;
         IReadOnlyList<OllamaModel> models = Array.Empty<OllamaModel>();
-        OllamaService? service = null;
+        string endpoint = ollama.Endpoint;
+        var service = new OllamaService(() => endpoint);
 
-        if (ollama is not null)
+        // Broad catch: IsAvailableAsync is fail-soft, but ListModelsAsync can
+        // throw (HttpRequest, TaskCanceled when the token expires, JsonException
+        // when Ollama returns an HTML error). "Unavailable" covers every case.
+        try
         {
-            string endpoint = ollama.Endpoint;
-            service = new OllamaService(() => endpoint);
-
-            // Broad catch: IsAvailableAsync is fail-soft, but ListModelsAsync can
-            // throw (HttpRequest, TaskCanceled when the token expires, JsonException
-            // when Ollama returns an HTML error). "Unavailable" covers every case.
-            try
+            available = await service.IsAvailableAsync();
+            if (available)
             {
-                available = await service.IsAvailableAsync();
-                if (available)
-                {
-                    using var cts = new CancellationTokenSource(ProviderAdminTimeout);
-                    models = await service.ListModelsAsync(cts.Token);
-                }
+                using var cts = new CancellationTokenSource(ProviderAdminTimeout);
+                models = await service.ListModelsAsync(cts.Token);
             }
-            catch (Exception ex)
-            {
-                DeckleLlmSource.Log.OllamaRefreshSkipped(ex.GetType().Name, ex.Message);
-                available = false;
-                models = Array.Empty<OllamaModel>();
-            }
-
-            OllamaStatusBar.Message = Loc.Format("Settings_OllamaStatusMessage_Format", ollama.Endpoint);
         }
+        catch (Exception ex)
+        {
+            DeckleLlmSource.Log.OllamaRefreshSkipped(ex.GetType().Name, ex.Message);
+            available = false;
+            models = Array.Empty<OllamaModel>();
+        }
+
+        if (generation != _refreshGeneration) return;
+        ApplyOllamaState(ollama, available, models, service);
+    }
+
+    // A null provider means no Ollama is on: no bar, no Models section.
+    private void ApplyOllamaState(LlmProvider? ollama, bool available,
+        IReadOnlyList<OllamaModel> models, OllamaService? service = null)
+    {
+        if (ollama is not null)
+            OllamaStatusBar.Message = Loc.Format("Settings_OllamaStatusMessage_Format", ollama.Endpoint);
 
         _context.Service = service;
         _context.Available = available;
