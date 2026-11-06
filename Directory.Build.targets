@@ -29,6 +29,45 @@
 
        Replaces the Windows App SDK 1.8 exclusion of the MSIX DirectML.dll, whose
        hook (AddMicrosoftWindowsAppSDKPayloadFilesFromMsix) no longer exists. -->
+  <!-- Shut the .NET build servers down five minutes after the last build.
+       Directory.Build.rsp stops MSBuild worker nodes from outliving a build, but
+       VBCSCompiler (the Roslyn compiler server) stays ten minutes by SDK default
+       and, when it hangs, forever: one hung server kept a CPU core at 100 % for
+       hours. The SDK's keepalive is not settable from a repository, so every
+       project build touches a stamp and arms scripts/build-server-watchdog.ps1,
+       which runs `dotnet build-server shutdown` once no stamp has moved for five
+       minutes. Builds in a burst keep their servers; the delay restarts at each
+       project. The watchdog is armed only when its heartbeat is missing or
+       stale, so a full build pays one pwsh start, not one per project.
+
+       The state lives in the user's temp directory because the servers belong
+       to the machine, not to a checkout: every worktree feeds the same watchdog.
+       Visual Studio keeps its own compiler-server lifecycle, so its builds are
+       left alone. Set DeckleBuildServerWatchdog=false to opt out of one build. -->
+  <PropertyGroup>
+    <DeckleBuildServerWatchdog Condition="'$(DeckleBuildServerWatchdog)' == ''">true</DeckleBuildServerWatchdog>
+    <DeckleBuildStateDir>$([System.IO.Path]::Combine($([System.IO.Path]::GetTempPath()), 'Deckle.Build'))</DeckleBuildStateDir>
+  </PropertyGroup>
+
+  <Target Name="ArmBuildServerWatchdog"
+          AfterTargets="Build"
+          Condition="'$(DeckleBuildServerWatchdog)' == 'true' and '$(BuildingInsideVisualStudio)' != 'true'">
+    <PropertyGroup>
+      <_DeckleWatchdogHeartbeat>$([System.IO.Path]::Combine($(DeckleBuildStateDir), 'watchdog.heartbeat'))</_DeckleWatchdogHeartbeat>
+      <!-- Whole seconds, so the comparison below never meets a culture-specific
+           decimal separator. A missing heartbeat dates from 1601 and reads as stale. -->
+      <_DeckleWatchdogHeartbeatAge>$([System.Convert]::ToInt64($([System.DateTime]::Now.Subtract($([System.IO.File]::GetLastWriteTime('$(_DeckleWatchdogHeartbeat)'))).TotalSeconds)))</_DeckleWatchdogHeartbeatAge>
+    </PropertyGroup>
+    <MakeDir Directories="$(DeckleBuildStateDir)" ContinueOnError="WarnAndContinue" />
+    <Touch Files="$([System.IO.Path]::Combine($(DeckleBuildStateDir), '$(MSBuildProjectName).stamp'))" AlwaysCreate="true" ContinueOnError="WarnAndContinue" />
+    <!-- 120 s is four watchdog ticks: the same staleness the script applies. -->
+    <Exec Condition="$(_DeckleWatchdogHeartbeatAge) &gt; 120"
+          Command="pwsh -NoProfile -NonInteractive -File &quot;$(MSBuildThisFileDirectory)scripts\build-server-watchdog.ps1&quot; -Arm -StateDir &quot;$(DeckleBuildStateDir)&quot;"
+          EchoOff="true"
+          StandardOutputImportance="low"
+          ContinueOnError="WarnAndContinue" />
+  </Target>
+
   <Target Name="ExcludeWindowsMLNativeAssets"
           AfterTargets="ResolveLockFileCopyLocalFiles"
           BeforeTargets="_CopyFilesMarkedCopyLocal">
