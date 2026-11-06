@@ -246,7 +246,7 @@
        deterministically after the build instead. -->
   <Target Name="FlattenAutocorrectLexicons" AfterTargets="Build">
     <ItemGroup>
-      <_AutocorrectLexicon Include="..\Deckle.Autocorrect\Data\**\*" />
+      <_AutocorrectLexicon Include="..\Deckle.Autocorrect\Data\**\*" Exclude="..\Deckle.Autocorrect\Data\lexicon-en.tsv.gz" />
     </ItemGroup>
     <Copy SourceFiles="@(_AutocorrectLexicon)"
           DestinationFiles="@(_AutocorrectLexicon->'$(OutDir)Data\%(RecursiveDir)%(Filename)%(Extension)')"
