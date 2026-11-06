@@ -10,7 +10,6 @@ using Deckle.Playground;
 using Deckle.Setup;
 using Deckle.Shell;
 using Deckle.Shell.TrayMenu;
-using Deckle.Speech;
 using Deckle.Transcription;
 using Deckle.Transcription.Whisper;
 
