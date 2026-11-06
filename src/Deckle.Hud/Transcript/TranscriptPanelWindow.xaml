@@ -60,8 +60,14 @@
                      and the code clips the two copies to complementary bands
                      in TextBlock coordinates (ScrollToEnd): the solid copy
                      from the second visible line down, the faded copy to the
-                     first visible line alone. -->
-                <Grid>
+                     first visible line alone.
+
+                     TranscriptContent carries the opacity of both copies: a
+                     revision (a rewrite landing where raw text was) dips it
+                     and brings it back, so the swap is seen without a motion
+                     of its own. The window alpha belongs to the proximity
+                     fade and stays out of it. -->
+                <Grid x:Name="TranscriptContent">
                     <TextBlock x:Name="TranscriptText"
                                Style="{StaticResource BodyTextBlockStyle}"
                                TextWrapping="Wrap"

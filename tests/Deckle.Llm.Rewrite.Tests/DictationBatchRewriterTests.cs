@@ -76,6 +76,44 @@ public sealed class DictationBatchRewriterTests
     }
 
     [Fact]
+    public void SnapshotShowsTheOpenTextRaw_ThenEachBatchRewrittenAsItReturns()
+    {
+        var gate = new ManualResetEventSlim();
+        var rewriter = new DictationBatchRewriter(
+            new FakeRewriteService(text => { gate.Wait(); return text.ToUpperInvariant(); }),
+            Profile, 20);
+        var returned = new ManualResetEventSlim();
+        rewriter.BatchReturned += returned.Set;
+
+        rewriter.Push("Première phrase ici.", endedOnSilence: true);   // closes on the pause
+        rewriter.Push("Suite ouverte", endedOnSilence: false);          // stays open
+
+        // The rewrite is still running: the closed batch reads raw.
+        Assert.Equal("Première phrase ici.\n\nSuite ouverte", rewriter.Snapshot());
+
+        gate.Set();
+        Assert.True(returned.Wait(TimeSpan.FromSeconds(5)));
+        Assert.Equal("PREMIÈRE PHRASE ICI.\n\nSuite ouverte", rewriter.Snapshot());
+
+        // The final assembly is the last snapshot.
+        Assert.Equal("PREMIÈRE PHRASE ICI.\n\nSUITE OUVERTE", rewriter.Assemble().Text);
+    }
+
+    [Fact]
+    public void SnapshotKeepsTheRawTextOfABatchThatFellBack()
+    {
+        var rewriter = new DictationBatchRewriter(
+            new FakeRewriteService(_ => "  "), Profile, 20);
+        var returned = new ManualResetEventSlim();
+        rewriter.BatchReturned += returned.Set;
+
+        rewriter.Push("Brut texte qui reste.", endedOnSilence: true);
+        Assert.True(returned.Wait(TimeSpan.FromSeconds(5)));
+
+        Assert.Equal("Brut texte qui reste.", rewriter.Snapshot());
+    }
+
+    [Fact]
     public void CompleteIsIdempotent()
     {
         var service = new FakeRewriteService(text => text);

@@ -1002,7 +1002,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HudSettings.cs
 │   │   │   └── HudSettingsService.cs
 │   │   ├── Transcript/
-│   │   │   ├── TranscriptHistory.cs
 │   │   │   ├── TranscriptPanelLayout.cs
 │   │   │   ├── TranscriptPanelWindow.Proximity.cs
 │   │   │   ├── TranscriptPanelWindow.xaml
@@ -1718,6 +1717,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── EnergySegmenterSettings.cs
 │   │   │   ├── SegmentedTranscriptionSession.cs
 │   │   │   ├── TranscribedUtterance.cs
+│   │   │   ├── TranscriptSnapshot.cs
 │   │   │   ├── Utterance.cs
 │   │   │   ├── UtteranceProgress.cs
 │   │   │   └── UtteranceProgressMeter.cs
@@ -2171,7 +2171,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── OverlayCardCloseObservabilityTests.cs
 │   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
-│   │   ├── TranscriptHistoryTests.cs
 │   │   ├── TranscriptPanelBugNotes.md
 │   │   ├── TranscriptPanelLayoutTests.cs
 │   │   ├── UtteranceCountdownBugNotes.md

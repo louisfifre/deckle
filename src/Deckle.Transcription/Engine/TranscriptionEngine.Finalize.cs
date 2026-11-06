@@ -93,6 +93,12 @@ public sealed partial class TranscriptionEngine
         ClearRecovery();
 
         FinalizeRewrite rewrite = ApplyRewrite(rawText, isFileRun, production.BatchRewrite);
+        // The surfaces showing the live text learn the final text before the
+        // delivery, so what they show when the HUD says Pasted or Copied is
+        // what landed. A batched take already showed each batch; its final
+        // text then equals the last snapshot and the reader has nothing to do.
+        if (rewrite.Text != rawText)
+            RaiseTranscriptChanged(rewrite.Text, TranscriptChangeKind.Revised);
         FinalizeDelivery delivered = DeliverTranscript(rewrite.Text, delivery);
 
         RecordPipelineMetrics(

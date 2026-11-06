@@ -21,6 +21,25 @@ internal static class TranscriptPanelLayout
     public static int VisibleLines(int contentLines, int maxLines) =>
         Math.Max(1, Math.Min(contentLines, maxLines));
 
+    // Keeps the end of the text within the budget. The head is dropped at a
+    // paragraph break when one falls soon after the cut, at a space
+    // otherwise, so the oldest visible line never starts mid-word. The text
+    // itself comes whole from the engine; this bounds the layout only.
+    public static string TrimToBudget(string text, int maxCharacters)
+    {
+        if (text.Length <= maxCharacters) return text;
+
+        int cut = text.Length - maxCharacters;
+        int paragraph = text.IndexOf("\n\n", cut, StringComparison.Ordinal);
+        if (paragraph >= 0 && text.Length - paragraph >= maxCharacters / 2)
+            return text[(paragraph + 2)..];
+
+        int space = text.IndexOf(' ', cut);
+        return space >= 0 && text.Length - space >= maxCharacters / 2
+            ? text[(space + 1)..]
+            : text[cut..];
+    }
+
     public static RectInt32 ComputeRectPx(
         RectInt32 workAreaPx, double dpiScale, bool rightSide,
         int widthDip, int edgeMarginDip, int verticalPaddingDip, double lineHeightDip, int visibleLines)

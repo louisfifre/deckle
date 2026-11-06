@@ -89,4 +89,29 @@ public sealed class TranscriptPanelLayoutTests
     {
         Assert.Equal(expected, TranscriptPanelLayout.VisibleLines(contentLines, maxLines));
     }
+
+    [Fact]
+    public void TrimToBudget_LeavesATextWithinTheBudgetAlone()
+    {
+        Assert.Equal("bonjour Deckle", TranscriptPanelLayout.TrimToBudget("bonjour Deckle", 14));
+    }
+
+    [Fact]
+    public void TrimToBudget_DropsTheHeadAtAParagraphBreak_WhenOneFallsSoonAfterTheCut()
+    {
+        // 23 chars; budget 14 cuts at index 9, the break at 10-11 leaves 12 chars.
+        Assert.Equal("Deckle ici.", TranscriptPanelLayout.TrimToBudget("bonjour là\n\nDeckle ici.", 14));
+    }
+
+    [Fact]
+    public void TrimToBudget_DropsTheHeadAtASpace_WhenNoParagraphBreakIsNear()
+    {
+        Assert.Equal("cccc dddd", TranscriptPanelLayout.TrimToBudget("aaaa bbbb cccc dddd", 12));
+    }
+
+    [Fact]
+    public void TrimToBudget_CutsMidWord_WhenNoBoundaryLeavesEnoughText()
+    {
+        Assert.Equal("efghij", TranscriptPanelLayout.TrimToBudget("abcdefghij", 6));
+    }
 }

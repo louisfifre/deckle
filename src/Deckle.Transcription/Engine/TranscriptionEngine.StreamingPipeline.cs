@@ -54,7 +54,8 @@ public sealed partial class TranscriptionEngine
             FixedPrompt: _host.Transcription.Engine.InitialPrompt ?? "",
             ApplyPreprocessing: true,
             RejectIncompleteResults: false,
-            StopCaptureOnPrimeFailure: true);
+            StopCaptureOnPrimeFailure: true,
+            DeliveredText: batchRewrite is null ? null : batchRewrite.Rewriter.Snapshot);
         SegmentedTranscriptionSession<StreamingConsumeResult> session =
             StartSegmentedTranscription(policy, drainCt, primeTask);
 
@@ -669,6 +670,12 @@ public sealed partial class TranscriptionEngine
                 sb.Append(text);
                 pendingParagraphBreak = u.EndedOnSilence;
                 UtteranceTranscribed?.Invoke(new TranscribedUtterance(u.Index, text, u.EndedOnSilence));
+                // After the utterance feeds: with a batch run, the delivered
+                // text is the rewriter's view (batches already rewritten, this
+                // utterance in its open batch), not the raw assembly.
+                RaiseTranscriptChanged(
+                    policy.DeliveredText?.Invoke() ?? sb.ToString(),
+                    TranscriptChangeKind.Appended);
             }
 
             DeckleWhispSource.Log.ConsumerUtterance(
@@ -734,11 +741,16 @@ public sealed partial class TranscriptionEngine
     // StopCaptureOnPrimeFailure: the live dictation, whose capture keeps running
     // while the consumer waits at the prime gate, ends it when the prime fails.
     // A file batch has no capture to stop and handles the failed gate itself.
+    //
+    // DeliveredText, when set, is where the take's delivered text differs from
+    // the consumer's raw assembly: a live take with a batch run reads it from
+    // the rewriter, so the Appended snapshots carry the rewrites already back.
     private readonly record struct SegmentedTranscriptionPolicy(
         string FixedPrompt,
         bool ApplyPreprocessing,
         bool RejectIncompleteResults,
-        bool StopCaptureOnPrimeFailure = false);
+        bool StopCaptureOnPrimeFailure = false,
+        Func<string>? DeliveredText = null);
 
     internal static bool IsFileTranscriptionResultUsable(TranscriptionResult result) =>
         !result.Aborted && result.ResultCode == 0;

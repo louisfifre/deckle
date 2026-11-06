@@ -3,6 +3,7 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Windows.Foundation;
 using WinRT.Interop;
 using Deckle.Core;
@@ -12,17 +13,26 @@ using Deckle.Shell;
 
 namespace Deckle.Hud;
 
-// Live transcript panel: shows the dictated text of the current take as each
-// utterance arrives, beside the HUD, bottom-aligned with it on the side chosen
-// by Overlay.TranscriptPanelSide. Created once at boot and never destroyed,
-// like HudWindow.
+// Live transcript panel: shows the text of the current take as the engine
+// delivers it, beside the HUD, bottom-aligned with it on the side chosen by
+// Overlay.TranscriptPanelSide. Created once at boot and never destroyed, like
+// HudWindow.
+//
+// The panel owns no text model: the engine's TranscriptChanged snapshot is
+// the whole text as it will be delivered, rewrites included, and the panel
+// shows it as is. So what the panel shows is what the clipboard gets, and
+// the join rule of the take lives in one place.
 //
 // Lifecycle, driven by the App composition root:
-//   BeginTake → a take opens, the history is cleared, nothing is shown yet;
-//   Append    → text joins the history; the first text of a take shows the
-//               window (an empty box would say nothing the HUD does not);
-//   EndTake   → later Append calls are ignored, the window stays;
-//   Hide      → fade out, SW_HIDE, the take closes.
+//   BeginTake → a take opens, the text is cleared, nothing is shown yet;
+//   SetText   → the snapshot replaces the text; the first text of a take
+//               shows the window (an empty box would say nothing the HUD
+//               does not); a revision cross-fades the content;
+//   EndTake   → later SetText calls are ignored, the window stays;
+//   Hide      → fade out, SW_HIDE, the take closes;
+//   ShowAgain → after a Hide that the HUD caused mid-take (the paste hides
+//               the HUD), the panel comes back with the HUD, so the final
+//               text is read beside "Pasted" as it is beside "Copied".
 // Every public method is thread-safe: engine events arrive on background
 // threads and each call marshals to the UI thread through EnqueueUI.
 //
@@ -43,16 +53,21 @@ public sealed partial class TranscriptPanelWindow : Window
     private const int HORIZONTAL_PADDING_DIP = 2 * 16;
     private const int VERTICAL_PADDING_DIP = 2 * 12;
 
-    // Bounds memory on a long take only; the viewport does the visible
-    // trimming. Large enough to fill any screen column.
-    private const int HISTORY_BUDGET_CHARS = 8000;
+    // Bounds the laid-out text on a long take only; the viewport does the
+    // visible trimming. Large enough to fill any screen column.
+    private const int TEXT_BUDGET_CHARS = 8000;
+
+    // A revision dips the content, swaps the text, and brings it back: short
+    // enough to read as one change, long enough to be seen. The return uses
+    // the same 150 ms cubic ease-out as the HUD's own fades.
+    private const int REVISION_DIP_MS = 80;
+    private const int REVISION_RETURN_MS = 150;
 
     private static readonly UIntPtr SubclassId = new(0x5452504E); // "TRPN"
 
     private readonly IntPtr _hwnd;
     private readonly CursorMovementSignal _cursorSignal;
     private readonly LayeredAlphaAnimator _fade;
-    private readonly TranscriptHistory _history = new(HISTORY_BUDGET_CHARS);
 
     // Cached window scale (DPI/96): seeded in the ctor, refreshed on show and
     // from WM_DPICHANGED. Read by the proximity handler on every mouse move.
@@ -62,10 +77,19 @@ public sealed partial class TranscriptPanelWindow : Window
     private NativeMethods.SubclassProc? _subclassDelegate;
 
     // UI-thread state.
+    private string _text = "";
     private bool _takeOpen;
     private bool _shown;
     private bool _rightSide = true;
     private double _lineHeightDip; // 0 until measured on first render
+
+    // True after a Hide while the take was open and text was on screen: the
+    // HUD hid for the paste, and the panel comes back when the HUD does.
+    private bool _hiddenWithText;
+
+    // The revision cross-fade in flight, if any. A new text during the dip is
+    // simply the text the return shows: the swap reads _text when it runs.
+    private Storyboard? _revisionDip;
 
     public TranscriptPanelWindow(CursorMovementSignal cursorSignal)
     {
@@ -165,29 +189,51 @@ public sealed partial class TranscriptPanelWindow : Window
         // goes from "Copied" straight back to Recording without hiding): the
         // old text leaves, the new take shows on its own first text.
         HideCore();
-        _history.Clear();
+        _text = "";
+        _hiddenWithText = false;
         _takeOpen = true;
     });
 
-    public void Append(string text, bool endedOnSilence) => EnqueueUI(() =>
+    // The whole text of the take as the engine will deliver it. revised says
+    // that text already shown was replaced (a rewrite came back), which the
+    // panel makes visible with a cross-fade; an append just lays out the
+    // longer text. An identical text changes nothing on screen.
+    public void SetText(string text, bool revised) => EnqueueUI(() =>
     {
         if (!_takeOpen) return;
-        _history.Append(text, endedOnSilence);
+        string next = TranscriptPanelLayout.TrimToBudget(text, TEXT_BUDGET_CHARS);
+        if (next == _text) return;
+        _text = next;
 
-        if (_shown)
+        if (!_shown)
         {
-            Render();
+            if (_text.Length > 0) ShowFirst();
             return;
         }
-        ShowFirst();
+
+        if (revised && SystemAnimationPreference.Instance.AnimationsEnabled)
+            CrossFade();
+        else
+            Render();
     });
 
     public void EndTake() => EnqueueUI(() => _takeOpen = false);
 
     public void Hide() => EnqueueUI(() =>
     {
+        _hiddenWithText = _takeOpen && _shown;
         _takeOpen = false;
         HideCore();
+    });
+
+    // The HUD came back after hiding mid-take: the panel comes back with it,
+    // with the text it had, until the HUD hides again. A new take clears the
+    // flag in BeginTake, so a stale text never reappears at the next start.
+    public void ShowAgain() => EnqueueUI(() =>
+    {
+        if (!_hiddenWithText || _shown) return;
+        _hiddenWithText = false;
+        if (_text.Length > 0) ShowFirst();
     });
 
     // ── Show / hide (UI thread) ──────────────────────────────────────────────
@@ -221,7 +267,7 @@ public sealed partial class TranscriptPanelWindow : Window
         _proximityAlpha = target;
         _fade.FadeTo(target, onComplete: BeginProximity);
 
-        DeckleHudSource.Log.TranscriptPanelVisibilityChanged(true, SideName, _history.UtteranceCount);
+        DeckleHudSource.Log.TranscriptPanelVisibilityChanged(true, SideName, _text.Length);
     }
 
     private void HideCore()
@@ -231,10 +277,51 @@ public sealed partial class TranscriptPanelWindow : Window
         EndProximity();
         _fade.FadeTo(0, onComplete: () => NativeMethods.ShowWindow(_hwnd, NativeMethods.SW_HIDE));
 
-        DeckleHudSource.Log.TranscriptPanelVisibilityChanged(false, SideName, _history.UtteranceCount);
+        DeckleHudSource.Log.TranscriptPanelVisibilityChanged(false, SideName, _text.Length);
     }
 
     private string SideName => _rightSide ? "Right" : "Left";
+
+    // ── Revision cross-fade (UI thread) ──────────────────────────────────────
+
+    // Dip the content, swap the text at the bottom of the dip, bring it back.
+    // The window rect follows the new text at the swap, inside the dip, so
+    // the resize is not seen as a motion of its own. A dip already running
+    // keeps going: its swap shows whatever _text holds by then.
+    private void CrossFade()
+    {
+        if (_revisionDip is not null) return;
+
+        var dip = new Storyboard();
+        var toZero = new DoubleAnimation
+        {
+            To = 0,
+            Duration = new Duration(TimeSpan.FromMilliseconds(REVISION_DIP_MS)),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn },
+        };
+        Storyboard.SetTarget(toZero, TranscriptContent);
+        Storyboard.SetTargetProperty(toZero, "Opacity");
+        dip.Children.Add(toZero);
+        dip.Completed += (_, _) =>
+        {
+            _revisionDip = null;
+            Render();
+
+            var back = new Storyboard();
+            var toOne = new DoubleAnimation
+            {
+                To = 1,
+                Duration = new Duration(TimeSpan.FromMilliseconds(REVISION_RETURN_MS)),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut },
+            };
+            Storyboard.SetTarget(toOne, TranscriptContent);
+            Storyboard.SetTargetProperty(toOne, "Opacity");
+            back.Children.Add(toOne);
+            back.Begin();
+        };
+        _revisionDip = dip;
+        dip.Begin();
+    }
 
     // ── Text layout (UI thread) ──────────────────────────────────────────────
 
@@ -245,8 +332,8 @@ public sealed partial class TranscriptPanelWindow : Window
     private void Render()
     {
         EnsureLineHeight();
-        TranscriptText.Text = _history.Text;
-        TranscriptFadeText.Text = _history.Text;
+        TranscriptText.Text = _text;
+        TranscriptFadeText.Text = _text;
 
         // The text column width, set on the TextBlock so the layout wraps at
         // exactly the width the line count below is measured at. Redundant

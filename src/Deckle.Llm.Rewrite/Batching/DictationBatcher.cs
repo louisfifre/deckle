@@ -38,6 +38,10 @@ public sealed class DictationBatcher
         _hardCap = 2 * thresholdChars;
     }
 
+    // The text of the open batch, carry included: what a reader of the take
+    // sees after the closed batches, before the model has touched it.
+    public string OpenText => _open.ToString().Trim();
+
     // Appends one utterance and returns the batch it closed, or null while the
     // batch stays open. Blank utterances are ignored and leave the pending
     // pause untouched, like a dropped utterance in the take assembly.
