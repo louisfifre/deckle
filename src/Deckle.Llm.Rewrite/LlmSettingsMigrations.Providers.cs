@@ -28,6 +28,25 @@ public static partial class LlmSettingsMigrations
             mutated = true;
         }
 
+        // Recovery for a file an earlier build already migrated: that build
+        // dropped the custom endpoint from the provider (see LlmSettings
+        // .OnDeserializing) but kept writing the legacy field, which is then
+        // the last copy of it. A legacy value other than the default, next to
+        // an Ollama provider still on the default, is adopted before the
+        // legacy field is cleared. Accepted trade-off: someone who deliberately
+        // reset the provider to the default while a stale custom value sat in
+        // the legacy field gets that value back once.
+        string defaultEndpoint = new LlmSettings().Providers.Find(p => p.Kind == LlmProviderKind.Ollama)!.Endpoint;
+        LlmProvider? providerOllama = s.Providers.Find(p => p.Kind == LlmProviderKind.Ollama);
+        if (providerOllama is not null
+            && !string.IsNullOrWhiteSpace(s.OllamaEndpoint)
+            && s.OllamaEndpoint != defaultEndpoint
+            && providerOllama.Endpoint == defaultEndpoint)
+        {
+            providerOllama.Endpoint = s.OllamaEndpoint;
+            mutated = true;
+        }
+
         // The legacy endpoint has done its job, or is stale next to providers
         // the user already edited: either way it leaves the file.
         if (s.OllamaEndpoint is not null)

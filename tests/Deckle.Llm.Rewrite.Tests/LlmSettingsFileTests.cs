@@ -65,6 +65,34 @@ public sealed class LlmSettingsFileTests : IDisposable
         Assert.Equal(CustomEndpoint, ollama.Endpoint);
     }
 
+    // Already migrated by an earlier build: providers present and on the
+    // default URL, the custom endpoint left only in the legacy field.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void CustomEndpointLeftOnlyInTheLegacyFieldIsRecoveredOnce()
+    {
+        const string migratedByEarlierBuild = """
+            {
+              "ollamaEndpoint": "http://gpu-box:11434/api/generate",
+              "providers": [
+                { "id": "ollama", "name": "Ollama", "kind": "Ollama", "endpoint": "http://localhost:11434/api/generate" }
+              ],
+              "profiles": [ { "id": "p1", "name": "Old", "providerId": "ollama", "model": "llama3", "systemPrompt": "Rewrite." } ]
+            }
+            """;
+        using var store = OpenStore(migratedByEarlierBuild);
+
+        Assert.Equal(CustomEndpoint,
+            Assert.Single(store.Current.Providers, p => p.Kind == LlmProviderKind.Ollama).Endpoint);
+
+        store.Flush();
+        store.Reload();
+
+        Assert.Equal(CustomEndpoint,
+            Assert.Single(store.Current.Providers, p => p.Kind == LlmProviderKind.Ollama).Endpoint);
+        Assert.DoesNotContain("ollamaEndpoint", LegacyKeysOnDisk());
+    }
+
     private static readonly string[] LegacyKeys =
         ["ollamaEndpoint", "primaryRewriteProfileId", "primaryRewriteProfileName",
          "autoRewriteRules", "ruleMetric", "autoRewriteRulesByWords"];
@@ -76,7 +104,7 @@ public sealed class LlmSettingsFileTests : IDisposable
     }
 
     [Fact]
-    [Trait("Category", "unit")]
+    [Trait("Category", "integration")]
     public void LegacyFieldsAreReadToMigrateButNotWrittenBack()
     {
         const string oldFile = """
@@ -100,7 +128,7 @@ public sealed class LlmSettingsFileTests : IDisposable
     }
 
     [Fact]
-    [Trait("Category", "unit")]
+    [Trait("Category", "integration")]
     public void LegacyRulesOfAnOldFileRoundTripButANewFileCarriesNone()
     {
         using var fresh = OpenStore();
@@ -118,7 +146,7 @@ public sealed class LlmSettingsFileTests : IDisposable
     }
 
     [Fact]
-    [Trait("Category", "unit")]
+    [Trait("Category", "integration")]
     public void AFileSavedByTheNewVersionLoadsWithItsProviders()
     {
         using var first = OpenStore();

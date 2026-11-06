@@ -19,5 +19,11 @@
 - **Recurrence cue:** a migration that tests a collection property for
   emptiness while that property has a non-empty initializer.
 - **Guard:** `LlmSettingsFileTests.CustomOllamaEndpointSurvivesTheMigrationOfAnOllamaOnlyFile`.
-  Files already migrated by an earlier build keep the default endpoint; the
-  custom value may still sit in their legacy `ollamaEndpoint` field.
+- **Recovery for files an earlier build already migrated:** such a file has
+  the default endpoint in the Ollama provider and the custom value only in the
+  legacy `ollamaEndpoint` field, which the earlier build kept writing.
+  `RepairProviders` adopts the legacy value into the provider when it differs
+  from the default and the provider is still on the default, then clears the
+  legacy field. Trade-off, accepted: a user who deliberately reset the provider
+  to the default while a stale custom value sat in the legacy field gets that
+  value back once. Guard: `CustomEndpointLeftOnlyInTheLegacyFieldIsRecoveredOnce`.
