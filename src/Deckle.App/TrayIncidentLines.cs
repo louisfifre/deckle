@@ -1,5 +1,8 @@
+using Deckle.Audio;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
+using Deckle.Input.PrecisionScroll;
+using Deckle.Lighting.Ambient;
 using Deckle.Modules;
 using Deckle.Shell.TrayMenu;
 using Deckle.Transcription;
@@ -27,22 +30,19 @@ internal static class TrayIncidentLines
     internal const string RecordingModule     = "recording";
     internal const string NotificationsModule = "notifications";
 
-    private const string RecordingPageTag       = "Deckle.Audio.RecordingPage, Deckle.Audio";
-    private const string PrecisionScrollPageTag = "Deckle.Input.PrecisionScroll.PrecisionScrollPage, Deckle.Input.PrecisionScroll";
-    private const string AmbientPageTag         = "Deckle.Lighting.Ambient.AmbientPage, Deckle.Lighting.Ambient";
     // Anytype has no page of its own yet, and the elevated toasts' explanation
     // sits on General (its InfoBar).
-    private const string GeneralPageTag         = "Deckle.Settings.GeneralPage";
+    private const string GeneralPageTag = "Deckle.Settings.GeneralPage";
 
     internal static IReadOnlyList<Source> Sources { get; } =
     [
-        new(UserIncidents.PrecisionScroll, ModuleIds.PrecisionScroll,   PrecisionScrollPageTag),
-        new(UserIncidents.Microphone,      RecordingModule,             RecordingPageTag),
+        new(UserIncidents.PrecisionScroll, ModuleIds.PrecisionScroll,   PrecisionScrollSettingsModule.PageTag),
+        new(UserIncidents.Microphone,      RecordingModule,             RecordingSettingsModule.PageTag),
         new(UserIncidents.WhisperModel,    ModuleIds.Transcription,     WhisperSettingsModule.PageTag),
         new(UserIncidents.VadModel,        ModuleIds.Transcription,     WhisperSettingsModule.StreamingPageTag),
         new(UserIncidents.AnytypeBackend,  ModuleIds.Anytype,           GeneralPageTag),
-        new(UserIncidents.HueEvents,       ModuleIds.Ambient,           AmbientPageTag),
-        new(UserIncidents.HuePush,         ModuleIds.Ambient,           AmbientPageTag),
+        new(UserIncidents.HueEvents,       ModuleIds.Ambient,           AmbientSettingsModule.PageTag),
+        new(UserIncidents.HuePush,         ModuleIds.Ambient,           AmbientSettingsModule.PageTag),
         new(UserIncidents.ToastsElevated,  NotificationsModule,         GeneralPageTag),
     ];
 

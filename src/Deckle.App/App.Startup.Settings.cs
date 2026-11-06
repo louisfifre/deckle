@@ -54,7 +54,7 @@ public partial class App
             bool ok = await setup.Completion;
             if (ok)
                 RestartApp(ModulePresence.IsPresent(ModuleIds.Transcription)
-                    ? "Deckle.Transcription.WhisperPage, Deckle.Transcription"
+                    ? WhisperSettingsModule.PageTag
                     : null);
         };
 

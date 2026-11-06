@@ -8,10 +8,12 @@ namespace Deckle.Lighting.Ambient;
 // declares its page and its icon here; the composition root supplies only the Order.
 public static class AmbientSettingsModule
 {
+    public const string PageTag = "Deckle.Lighting.Ambient.AmbientPage, Deckle.Lighting.Ambient";
+
     public static SettingsModuleDescriptor Describe(int order) => new()
     {
         Id = "ambient",
-        PageTag = "Deckle.Lighting.Ambient.AmbientPage, Deckle.Lighting.Ambient",
+        PageTag = PageTag,
         OwningAssembly = "Deckle.Lighting.Ambient",
         Glyph = Glyphs.Lightbulb,
         Order = order,
