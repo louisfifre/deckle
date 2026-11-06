@@ -257,12 +257,17 @@ public sealed partial class LlmProfilesSection : UserControl
             ComposeProfileCards(expander, vm);
     }
 
+    // SettingsExpander.Items is a plain List the expander hands to its inner
+    // repeater once, when its template applies: adding to that list later
+    // shows nothing. Assigning a new list is what makes the expander rebind,
+    // so the composed cards always arrive as a fresh Items.
     private void ComposeProfileCards(SettingsExpander expander, ProfileViewModel vm)
     {
+        var items = new List<object>(expander.Items);
         if (_composed.TryGetValue(expander, out ComposedProfileCards? done))
         {
             if (ReferenceEquals(done.Profile, vm)) return;
-            foreach (UIElement card in done.Cards) expander.Items.Remove(card);
+            foreach (UIElement card in done.Cards) items.Remove(card);
             _composed.Remove(expander);
         }
 
@@ -274,9 +279,10 @@ public sealed partial class LlmProfilesSection : UserControl
         {
             UIElement card = host.Children[0];
             host.Children.RemoveAt(0);
-            expander.Items.Add(card);
+            items.Add(card);
             cards.Add(card);
         }
+        expander.Items = items;
         _composed.Add(expander, new ComposedProfileCards(vm, cards));
     }
 

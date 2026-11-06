@@ -2260,6 +2260,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── ParagraphDraftTests.cs
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
+│   │   ├── ProfilesSectionBugNotes.md
 │   │   ├── RewriteDiffGateTests.cs
 │   │   ├── RewriteFailureMessageTests.cs
 │   │   ├── RewriteLogTests.cs
