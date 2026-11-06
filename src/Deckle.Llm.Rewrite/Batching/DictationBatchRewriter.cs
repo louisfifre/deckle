@@ -10,8 +10,9 @@ namespace Deckle.Llm.Rewrite;
 // batch is left to wait for at Stop.
 //
 // Threads: the transcription consumer calls Push, the engine's worker calls
-// Complete and Assemble. One lock guards the batcher and the batch list;
-// Assemble releases it before waiting, so a slow rewrite never blocks a Push.
+// Complete and Assemble, Snapshot may come from any thread. One lock guards
+// the batcher and the batch list; Assemble releases it before waiting, so a
+// slow rewrite never blocks a Push.
 //
 // A batch whose rewrite fails or comes back blank keeps its raw text. Losing
 // a stretch of the dictation would be worse than pasting it unrewritten, and
@@ -23,7 +24,7 @@ public sealed class DictationBatchRewriter
     readonly RewriteProfile _profile;
     readonly DictationBatcher _batcher;
     readonly object _gate = new();
-    readonly List<(DictationBatch Batch, Task<BatchOutcome> Rewrite)> _batches = new();
+    readonly List<BatchSlot> _batches = new();
 
     public DictationBatchRewriter(IRewriteService service, RewriteProfile profile, int thresholdChars)
     {
@@ -37,6 +38,10 @@ public sealed class DictationBatchRewriter
     {
         get { lock (_gate) return _batches.Count; }
     }
+
+    // Raised on the thread-pool thread of each batch once its rewrite has
+    // returned, rewritten or fallen back, after Snapshot already reflects it.
+    public event Action? BatchReturned;
 
     public void Push(string text, bool endedOnSilence)
     {
@@ -60,6 +65,39 @@ public sealed class DictationBatchRewriter
         }
     }
 
+    // The take as it would be delivered right now: every closed batch in
+    // order, rewritten once its rewrite has returned with text and raw until
+    // then (or for good, when it fell back), then the open text still with the
+    // batcher. Same join rule as Assemble, whose text is this snapshot's final
+    // value. Never blocks.
+    public string Snapshot()
+    {
+        BatchSlot[] batches;
+        string open;
+        lock (_gate)
+        {
+            batches = _batches.ToArray();
+            open = _batcher.OpenText;
+        }
+
+        var text = new StringBuilder();
+        DictationBatch? previous = null;
+        foreach (BatchSlot slot in batches)
+        {
+            if (previous is not null) text.Append(previous.EndsOnPause ? "\n\n" : " ");
+            text.Append(slot.RewrittenText ?? slot.Batch.Text);
+            previous = slot.Batch;
+        }
+
+        if (open.Length > 0)
+        {
+            if (previous is not null) text.Append(previous.EndsOnPause ? "\n\n" : " ");
+            text.Append(open);
+        }
+
+        return text.ToString();
+    }
+
     // Blocks until every rewrite has returned, then joins the batches in
     // order: a paragraph break after a batch that ended on a pause, a space
     // otherwise. Call it from a background thread.
@@ -67,7 +105,7 @@ public sealed class DictationBatchRewriter
     {
         Complete();
 
-        (DictationBatch Batch, Task<BatchOutcome> Rewrite)[] batches;
+        BatchSlot[] batches;
         lock (_gate) batches = _batches.ToArray();
 
         var text = new StringBuilder();
@@ -76,12 +114,13 @@ public sealed class DictationBatchRewriter
         int promptTokens = 0, evalTokens = 0;
         DictationBatch? previous = null;
 
-        foreach (var (batch, rewrite) in batches)
+        foreach (BatchSlot slot in batches)
         {
+            DictationBatch batch = slot.Batch;
             BatchOutcome outcome;
             try
             {
-                outcome = rewrite.GetAwaiter().GetResult();
+                outcome = slot.Rewrite.GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
@@ -118,16 +157,21 @@ public sealed class DictationBatchRewriter
             llmMs, loadMs, promptEvalMs, evalMs, promptTokens, evalTokens);
     }
 
-    // Called under _gate, so batches enter the list in Index order.
+    // Called under _gate, so batches enter the list in Index order. The slot
+    // is listed before its task starts, so a Snapshot taken from BatchReturned
+    // always sees the batch the event is about.
     void Start(DictationBatch batch)
     {
         DeckleLlmSource.Log.BatchRewriteSent();
         DeckleLlmSource.Log.BatchRewriteSentDetail(batch.Index, batch.Text.Length, _profile.Name);
-        _batches.Add((batch, Task.Run(() => RewriteOne(batch))));
+        var slot = new BatchSlot(batch);
+        _batches.Add(slot);
+        slot.Rewrite = Task.Run(() => RewriteOne(slot));
     }
 
-    BatchOutcome RewriteOne(DictationBatch batch)
+    BatchOutcome RewriteOne(BatchSlot slot)
     {
+        DictationBatch batch = slot.Batch;
         var sw = Stopwatch.StartNew();
         GenerationResult result = default;
         Exception? thrown = null;
@@ -159,7 +203,22 @@ public sealed class DictationBatchRewriter
             DeckleLlmSource.Log.BatchRewriteReturnedDetail(
                 batch.Index, sw.ElapsedMilliseconds, batch.Text.Length, rewritten.Length);
         }
+
+        // Published before the event, so a Snapshot taken from the handler
+        // reads the rewrite; the task itself completes only after this returns.
+        slot.RewrittenText = rewritten;
+        BatchReturned?.Invoke();
         return new BatchOutcome(rewritten, sw.ElapsedMilliseconds, result);
+    }
+
+    // One closed batch and the rewrite in flight for it. RewrittenText is
+    // null while the rewrite runs and stays null when it falls back: either
+    // way the batch reads raw.
+    sealed class BatchSlot(DictationBatch batch)
+    {
+        public DictationBatch Batch { get; } = batch;
+        public Task<BatchOutcome> Rewrite { get; set; } = Task.FromResult(new BatchOutcome(null, 0, default));
+        public volatile string? RewrittenText;
     }
 
     // Text is the trimmed rewrite, or null when the batch keeps its raw text.
