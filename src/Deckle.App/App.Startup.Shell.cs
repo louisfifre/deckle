@@ -65,14 +65,22 @@ public partial class App
                 _playgroundWindow?.SetRecordingState(isRecording);
                 _settingsWindow?.SetRecordingState(isRecording);
 
-                // StartsWith matches the en-US resource text, the only one
-                // shipped, and its ellipsis variants; a translation breaks it.
                 if (isRecording)
                     _hudWindow.ShowRecording();
-                else if (status.StartsWith("Transcribing"))
-                    _hudWindow.SwitchToTranscribing();
-                else if (status.StartsWith("Rewriting"))
-                    _hudWindow.SwitchToRewriting();
+            };
+            // The HUD follows the phase the engine names, never its sentence.
+            _engine.StatusPhaseChanged += phase =>
+            {
+                if (_engine.IsRecording) return;
+                switch (phase)
+                {
+                    case StatusPhase.Transcribing:
+                        _hudWindow.SwitchToTranscribing();
+                        break;
+                    case StatusPhase.Rewriting:
+                        _hudWindow.SwitchToRewriting();
+                        break;
+                }
             };
             _engine.TranscriptionFinished += outcome =>
             {

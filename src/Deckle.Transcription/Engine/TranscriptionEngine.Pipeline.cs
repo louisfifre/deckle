@@ -44,7 +44,7 @@ public sealed partial class TranscriptionEngine
                 Loc.Get("Engine_TranscriptionFailed_Title"),
                 Loc.Get("Engine_TranscriptionFailed_Body"),
                 FB_REPLACEMENT);
-            RaiseStatus(Loc.Get("Status_TranscriptionFailed"));
+            RaiseStatus(StatusPhase.Failed, Loc.Get("Status_TranscriptionFailed"));
             FinishTake(
                 TranscriptionOutcome.None,
                 ex is OperationCanceledException
@@ -64,7 +64,7 @@ public sealed partial class TranscriptionEngine
                 Loc.Get("Engine_TranscriptionFailed_Title"),
                 Loc.Get("Engine_TranscriptionFailed_Body"),
                 FB_REPLACEMENT);
-            RaiseStatus(Loc.Get("Status_TranscriptionFailed"));
+            RaiseStatus(StatusPhase.Failed, Loc.Get("Status_TranscriptionFailed"));
             FinishTake(TranscriptionOutcome.None, TakeEndReasons.TranscriptionFailed);
             return null;
         }

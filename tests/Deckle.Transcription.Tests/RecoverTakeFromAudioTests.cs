@@ -77,6 +77,29 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
         Assert.False(textStore.Exists);
     }
 
+    // The HUD bridge used to read the phase out of the localized sentence
+    // (StartsWith "Transcribing"), which a translation or a rewording would
+    // break silently. The phase is its own signal now, whatever the text says.
+    [Fact]
+    public async Task ThePhaseIsReportedApartFromTheLocalizedStatusText()
+    {
+        var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(), backend, new ScriptedMicrophoneCapture(utteranceCount: 0),
+            new RecordingClipboardWriter());
+        var statuses = new ConcurrentQueue<string>();
+        var phases = new ConcurrentQueue<StatusPhase>();
+        engine.StatusChanged += statuses.Enqueue;
+        engine.StatusPhaseChanged += phases.Enqueue;
+
+        await engine.RecoverTakeFromAudioAsync(Utterances(2))
+            .WaitAsync(TimeSpan.FromSeconds(10), TestContext.Current.CancellationToken);
+
+        Assert.Equal([StatusPhase.Transcribing, StatusPhase.Ready], phases.ToArray());
+        // One phase per sentence: a phase never depends on what the sentence says.
+        Assert.Equal(statuses.Count, phases.Count);
+    }
+
     [Fact]
     public async Task AColdModelIsPrimedBeforeTheRecoveredAudioIsTranscribed()
     {
