@@ -144,17 +144,11 @@ public partial class App
         _trayMenu = new TrayMenuHost(_messageHost.Hwnd, "tray-popup")
         {
             GetIconRect = () => _tray.GetIconRect(),
-            Entries =
-            [
-                new TrayMenuCommand("logs",       () => Loc.Get("TrayMenu_Logs"),       () => ShowLogWindowLazy()),
-                new TrayMenuCommand("settings",   () => Loc.Get("TrayMenu_Settings"),   () => ShowSettingsWindowLazy()),
-                new TrayMenuCommand("playground", () => Loc.Get("TrayMenu_Playground"), () => ShowPlaygroundLazy()),
-                new TrayMenuSeparator(),
-                new TrayMenuCommand("restart",    () => Loc.Get("TrayMenu_Restart"),    () => RestartAppFromTray()),
-                new TrayMenuCommand("quit",       () => Loc.Get("TrayMenu_Quit"),       () => QuitApp()),
-            ],
+            Entries = ComposeRightClickTray(),
         };
-        _tray.RightClickRequested += () => _trayMenu.Show();
+        // The Playground entry follows the developer setting (App.PlaygroundAccess.cs).
+        _tray.RightClickRequested += ShowRightClickTray;
+        WirePlaygroundAccess(Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
 
         // Left click, three groups behind separators, read from the top: the
         // background switches (set once, left on or off), then Ambient Light

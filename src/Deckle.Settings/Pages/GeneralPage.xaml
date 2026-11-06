@@ -137,6 +137,17 @@
                 </StackPanel>
                 </catalog:SettingsSection>
 
+                <!-- ── Developer ───────────────────────────────────────────── -->
+                <!-- Last on the page: a switch only the people building Deckle
+                     reach for. It shows the Playground's entry points. -->
+                <catalog:SettingsSection x:Name="DeveloperSection"
+                                         x:Uid="GeneralPageDeveloperSection"
+                                         HasReset="True"
+                                         ResetRequested="ResetDeveloper_Click">
+                    <StackPanel x:Name="DeveloperHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
+
             </StackPanel>
         </Grid>
     </ScrollViewer>

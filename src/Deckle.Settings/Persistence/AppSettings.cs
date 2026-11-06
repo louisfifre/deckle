@@ -15,6 +15,15 @@ public sealed class AppSettings
     public PasteSettings       Paste       { get; set; } = new();
     public UpdatesSettings     Updates     { get; set; } = new();
     public HotkeysSettings     Hotkeys     { get; set; } = new();
+    public DeveloperSettings   Developer   { get; set; } = new();
+}
+
+// Developer surfaces an ordinary user has no use for. Off by default: the
+// Playground is a test bench for the people building Deckle, so its entry
+// points (tray menu, window title bars) stay hidden until this is turned on.
+public sealed class DeveloperSettings
+{
+    public bool ShowPlayground { get; set; } = false;
 }
 
 // null = unbound. The initializers are the single source of defaults: the
