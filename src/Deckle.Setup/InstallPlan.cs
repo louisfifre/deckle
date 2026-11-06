@@ -4,7 +4,6 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Deckle.Anytype;
-using Deckle.Autocorrect.Mlm;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Modules;
@@ -15,8 +14,8 @@ using Deckle.Vad;
 namespace Deckle.Setup;
 
 // Maps the wizard's module selection to the install items those modules need.
-// Autocorrect brings the CamemBERT reranker by decision: the contextual
-// correction is part of what installing Autocorrect means, not an option.
+// Autocorrect brings nothing to download here for now: its sentence judge is
+// staged by hand (models\sentence-judge) and has no pinned source yet.
 // Anytype brings the pinned anytype-cli binary; the bot account and API key are
 // a later, interactive provisioning step. Each module owns its provisioning
 // gesture; this plan only composes them.
@@ -24,7 +23,6 @@ public static class InstallPlan
 {
     public const string NativeRuntimeItemId = "native-runtime";
     public const string SileroItemId        = "silero-vad";
-    public const string CamembertItemId     = "camembert-base";
     public const string AnytypeItemId       = "anytype-cli";
 
     // The one question the App asks before opening the wizard on the
@@ -113,10 +111,6 @@ public static class InstallPlan
             if (context.SelectedModel is { } model) items.Add(WhisperModelItem(model));
             items.Add(SileroItem());
         }
-        else if (moduleId == ModuleIds.Autocorrect)
-        {
-            items.Add(CamembertItem());
-        }
         else if (moduleId == ModuleIds.Anytype)
         {
             items.Add(AnytypeItem());
@@ -160,21 +154,6 @@ public static class InstallPlan
         RunAsync    = (progress, ct) =>
             SileroVadModel.ProvisionAsync(AppPaths.ModelsDirectory, progress, ct),
     };
-
-    // ── Autocorrect ───────────────────────────────────────────────────────────
-
-    private static InstallItem CamembertItem() => new()
-    {
-        Id          = CamembertItemId,
-        DisplayName = Loc.Get("Setup_Item_Camembert"),
-        SizeBytes   = CamembertAssets.TotalSizeBytes,
-        IsInstalled = () => CamembertAssets.IsInstalled(CamembertDirectory),
-        RunAsync    = (progress, ct) =>
-            CamembertAssets.ProvisionAsync(CamembertDirectory, progress, ct),
-    };
-
-    private static string CamembertDirectory =>
-        Path.Combine(AppPaths.ModelsDirectory, CamembertAssets.DirectoryName);
 
     // ── Anytype ───────────────────────────────────────────────────────────────
 
