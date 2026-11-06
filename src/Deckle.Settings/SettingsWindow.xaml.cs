@@ -40,6 +40,7 @@ public sealed partial class SettingsWindow : Window
     {
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
+        InstallFocusDismiss();
 
         // Idle until the App says otherwise: it calls SetRecordingState right
         // after creating the window, and on every engine state change.

@@ -1523,6 +1523,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SettingsSearch.cs
 │   │   ├── SettingsSearchIndex.cs
 │   │   ├── SettingSuggestion.cs
+│   │   ├── SettingsWindow.FocusDismiss.cs
 │   │   ├── SettingsWindow.Search.cs
 │   │   ├── SettingsWindow.TitleBarProbe.cs
 │   │   ├── SettingsWindow.xaml
