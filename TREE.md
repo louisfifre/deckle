@@ -1620,6 +1620,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── Ui/
+│   │   │   ├── Controls/
+│   │   │   │   ├── ApproachPreview.xaml
+│   │   │   │   └── ApproachPreview.xaml.cs
 │   │   │   ├── TaskbarCoverPage.xaml
 │   │   │   └── TaskbarCoverPage.xaml.cs
 │   │   ├── ViewModels/
