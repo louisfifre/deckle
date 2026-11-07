@@ -154,7 +154,8 @@ public sealed class OrchestrationViewModel
 
     private AppEntryRow CreateRow(AppEntry entry)
     {
-        var row = new AppEntryRow(entry, OnRowEnabledChanged, OnRowKindChanged, OnRowRemoved, OnRowHdrChanged);
+        var row = new AppEntryRow(entry, OnRowEnabledChanged, OnRowKindChanged, OnRowRemoved, OnRowHdrChanged,
+            ExecutableIconCache.Shared);
         row.SetMonitors(_hdrMonitors);
         return row;
     }
