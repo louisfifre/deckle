@@ -1007,6 +1007,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptPanelWindow.xaml
 │   │   │   └── TranscriptPanelWindow.xaml.cs
 │   │   ├── Windows/
+│   │   │   ├── AnimationPreference.cs
 │   │   │   ├── HudOverlayManager.cs
 │   │   │   ├── HudOverlayWindow.xaml
 │   │   │   ├── HudOverlayWindow.xaml.cs
@@ -1017,7 +1018,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HudWindow.xaml
 │   │   │   ├── HudWindow.xaml.cs
 │   │   │   ├── ProximityFade.cs
-│   │   │   ├── SystemAnimationPreference.cs
 │   │   │   └── WindowSlideAnimator.cs
 │   │   ├── AnimationGate.cs
 │   │   ├── Deckle.Hud.csproj
@@ -2177,6 +2177,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── MessageTemplateDoctrineTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── AnimationGateTests.cs
+│   │   ├── AnimationPreferenceBugNotes.md
+│   │   ├── AnimationPreferenceTests.cs
 │   │   ├── ConfigOverridesBugNotes.md
 │   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj

@@ -31,6 +31,11 @@ public static class SettingsSearch
             LabelKey = "GeneralAppThemeCard",
             Keywords = ["appearance", "dark mode", "color"],
         },
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralAnimationsCard",
+            Keywords = ["motion", "reduce motion", "accessibility", "effects", "outline", "hud"],
+        },
 
         // ── Startup (composed: GeneralViewModel.StartupSettings) ──
         new SettingSearchEntry

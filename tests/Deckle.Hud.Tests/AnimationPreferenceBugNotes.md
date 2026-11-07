@@ -1,0 +1,11 @@
+# Animation preference bug notes
+
+## The processing outline stood still in Transcribing and Rewriting
+
+- **Trigger:** a dictation on a machine where the Windows "Animation effects" preference (Settings ▸ Accessibility ▸ Visual effects) is off, from commit 14ae67cc (2026-11-06) on.
+- **Observed symptom:** reported by the maintainer (2026-11-07): after the recording outline was fixed (6129afdd), the outline still showed no motion in Transcribing and Rewriting. The clock is stopped in those states, so nothing on the HUD said that work was going on. Not reproduced on screen by an agent.
+- **Cause:** 14ae67cc made every Deckle animation follow the Windows preference alone. With it off, `CreateRotationPropertySet` (HudComposition.Animations.cs) does not start the Forever rotations of the processing stroke and of the digit reveal, and `ProcessingStroke.SetAnimationsEnabled` parks them. That behavior is by design for a person who needs reduced motion. The defect is that the Windows switch is the only input, and it also serves people who turn it off only because Windows's own animations are slow, as the maintainer does. Such a person had no way to keep Deckle's animations. Established: `SystemParametersInfo(SPI_GETCLIENTAREAANIMATION)` returns false on the maintainer's machine. Inferred from the code: that the rotations never started.
+- **Invariant:** Deckle's own animations follow Deckle's `Appearance.Animations` setting. Windows decides only under its default, "System" (ADR-0009). The rule lives in `AnimationPreference.Resolve`.
+- **Fix:** `AnimationPreference` (renamed from `SystemAnimationPreference`) combines the setting with the Windows preference and signals a change of either. The General page shows the setting beside the theme: Same as Windows, On, Reduced.
+- **Recurrence cue:** a new animation that reads `UISettings.AnimationsEnabled` directly instead of `AnimationPreference`, or a new gate that treats the Windows switch as the person's final answer.
+- **Regression coverage:** `AnimationPreferenceTests.DeckleAnimatesWhenItsSettingIsOn_EvenWithWindowsAnimationsOff` pins the rule. That a window really reads `AnimationPreference` has no headless seam: Composition needs a compositor. Manual check: with Windows animations off and the setting at On, dictate and watch the outline turn during the processing.

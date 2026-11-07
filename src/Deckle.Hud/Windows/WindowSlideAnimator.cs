@@ -10,8 +10,8 @@ namespace Deckle.Hud;
 // restarts from the current interpolated value so transitions collapse instead
 // of queueing.
 //
-// Both follow the Windows animation preference (UISettings.AnimationsEnabled)
-// through SystemAnimationPreference, the process's single source.
+// Both follow AnimationPreference, the process's single source: Deckle's
+// Animations setting, which defers to Windows by default (ADR-0009).
 
 // Slides an HWND from its tracked position to a target via SetWindowPos.
 // The animator owns the canonical position — callers should never bypass it
@@ -168,7 +168,7 @@ internal sealed class LayeredAlphaAnimator
         _timer.Interval = TimeSpan.FromMilliseconds(FrameIntervalMs);
         _timer.IsRepeating = true;
         _timer.Tick += OnTick;
-        _gate = new AnimationGate(SystemAnimationPreference.Instance.AnimationsEnabled);
+        _gate = new AnimationGate(AnimationPreference.Instance.AnimationsEnabled);
         _gate.Disabled += CompleteImmediately;
     }
 

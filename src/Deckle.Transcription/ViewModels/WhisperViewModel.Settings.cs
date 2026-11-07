@@ -31,8 +31,8 @@ public partial class WhisperViewModel
     // relocated from GeneralPage. The overlay is a Group (master OverlayEnabled +
     // fade/position children, each masked while the master is off); the
     // position Choice matches the normalized "TopCenter"/"BottomCenter" the VM seeds.
-    // Overlay animations are not a Deckle setting: they follow the Windows
-    // animation preference (Deckle.Hud.SystemAnimationPreference).
+    // Overlay animations are not set here: they follow the app-wide Animations
+    // setting on the General page (Deckle.Hud.AnimationPreference, ADR-0009).
     // The transcript panel side Choice ("Left"/"Right") sits in the same group, since the
     // panel is part of the HUD and follows its master toggle.
     // Defaults read the shell POCO initializers (OverlaySettings / PasteSettings), the
