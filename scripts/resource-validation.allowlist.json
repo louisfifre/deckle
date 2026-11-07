@@ -58,6 +58,11 @@
       "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
     },
     {
+      "Assembly": "Deckle.Shell.Taskbar",
+      "Key": "SettingsModuleNavLabel",
+      "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
+    },
+    {
       "Assembly": "Deckle.Shell.TaskbarCover",
       "Key": "SettingsModuleNavLabel",
       "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."

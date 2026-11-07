@@ -102,6 +102,7 @@ public partial class App
         TryShutdown("speech_engine_dispose", () => _speechEngine?.Dispose());
         TryShutdown("trackpad_shutdown", ShutdownTrackpad);
         TryShutdown("taskbar_cover_shutdown", ShutdownTaskbarCover);
+        TryShutdown("taskbar_shutdown", ShutdownTaskbar);
         // After the cover, which reads it. UnhookWinEvent only succeeds on the UI
         // thread that started the watcher; from any other caller the hooks still
         // die with the process at Environment.Exit.

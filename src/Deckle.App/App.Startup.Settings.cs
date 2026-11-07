@@ -185,7 +185,9 @@ public partial class App
             RegisterSettingsModule(Input.PrecisionScroll.PrecisionScrollSettingsModule.Describe(order: 550), Input.PrecisionScroll.SettingsSearch.Entries);
         if (context.OrchestrationPresent)
             RegisterSettingsModule(Orchestration.OrchestrationSettingsModule.Describe(order: 560), Orchestration.SettingsSearch.Entries);
-        // Taskbar cover is always composed, so its page is always registered.
+        // Taskbar and its cover are always composed, so their pages are always
+        // registered.
+        RegisterSettingsModule(Shell.Taskbar.TaskbarSettingsModule.Describe(order: 580), Shell.Taskbar.SettingsSearch.Entries);
         RegisterSettingsModule(Shell.TaskbarCover.TaskbarCoverSettingsModule.Describe(order: 580), Shell.TaskbarCover.SettingsSearch.Entries);
         // Diagnostics is shell-level observability, not a presence module —
         // always registered.

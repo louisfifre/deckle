@@ -506,6 +506,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Startup.Modules.cs
 │   │   ├── App.Startup.Settings.cs
 │   │   ├── App.Startup.Shell.cs
+│   │   ├── App.Taskbar.cs
 │   │   ├── App.TaskbarCover.cs
 │   │   ├── App.Theme.cs
 │   │   ├── App.Trackpad.cs

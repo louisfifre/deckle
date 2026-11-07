@@ -44,6 +44,7 @@ public partial class App
         context.Milestone("hudwindow");
 
         _tray = new TrayIconManager();
+        _tray.TaskbarCreated += ReapplyTaskbarTrayAfterExplorerRestart;
         context.Milestone("tray");
 
         // Engine events arrive on background threads: LogWindow and HudWindow
