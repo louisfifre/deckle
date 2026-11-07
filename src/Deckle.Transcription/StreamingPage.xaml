@@ -4,13 +4,15 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:catalog="using:Deckle.Catalog">
 
-    <!-- The Streaming page of the Transcription module: the pipeline switch
-         alone at the top, then speech filtering (the Silero detector and its three
-         parameters), then segmentation (the cut margin and the minimum speech,
-         then the cut curve with its anchors in its legend). Both sections show
-         whatever the switch says: it picks only the dictation pipeline, while
-         files and recovered takes are always cut and trimmed with these
-         settings. Every card is composed from WhisperViewModel's manifests. -->
+    <!-- The Streaming page of the Transcription module, graph first
+         (2026-11-07): the pipeline switch alone at the top, then segmentation,
+         which is the cut curve alone (its corners drag the ramp and the waits,
+         its pause strip the cut margin and the minimum speech), then speech
+         filtering (the Silero detector and its three parameters, in its fold,
+         closed until opened). Both sections show whatever the switch says: it
+         picks only the dictation pipeline, while files and recovered takes are
+         always cut and trimmed with these settings. Every card is composed from
+         WhisperViewModel's manifests. -->
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
                   HorizontalScrollBarVisibility="Disabled">
@@ -31,20 +33,21 @@
                 <StackPanel x:Name="SwitchHost"
                             Spacing="{StaticResource SettingsCardSpacing}" />
 
+                <!-- ── Segmentation ────────────────────────────────────────── -->
+                <catalog:SettingsSection x:Uid="StreamingPageSegmentationSection">
+                    <!-- The cut curve at full width, its plot following the
+                         page's height, with the four hangover anchors, the
+                         control points and the pause strip's two durations as
+                         fields under it (WhisperViewModel.SegmentationSettings). -->
+                    <StackPanel x:Name="SegmentationHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
+
                 <!-- ── Speech filtering ────────────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="WhisperPageSpeechFilteringSection">
                     <!-- The VAD group: its switch, then the three detection
                          parameters while it is on (WhisperViewModel.VadSettings). -->
                     <StackPanel x:Name="VadHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
-                </catalog:SettingsSection>
-
-                <!-- ── Segmentation ────────────────────────────────────────── -->
-                <catalog:SettingsSection x:Uid="StreamingPageSegmentationSection">
-                    <!-- The cut margin and the minimum speech, then the cut curve at full width
-                         with the four hangover anchors in its legend
-                         (WhisperViewModel.SegmentationSettings). -->
-                    <StackPanel x:Name="SegmentationHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
 
