@@ -1795,6 +1795,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SileroVad.cs
 │   │   ├── SileroVadModel.cs
 │   │   ├── SileroVadOptions.cs
+│   │   ├── SpeechEdges.cs
 │   │   ├── SpeechSegment.cs
 │   │   ├── SpeechTrimResult.cs
 │   │   └── VadService.cs
@@ -2530,6 +2531,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── SileroSpeechTimestampsTests.cs
+│   │   ├── SpeechEdgesTests.cs
 │   │   ├── VadBugNotes.md
 │   │   ├── VadObservabilityCollection.cs
 │   │   ├── VadPathRedactionTests.cs
