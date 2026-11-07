@@ -46,6 +46,26 @@ public class MicrophoneCaptureTests
         Assert.Equal(code, result.ErrorCode);
     }
 
+    // portaudio.dll beside the wrong folder reached the user as a bare -10000,
+    // the same code a device refusal can carry. The stage is what tells a
+    // library that did not load from a device that did not answer.
+    [Theory]
+    [InlineData("load")]
+    [InlineData("resolve")]
+    [InlineData("open")]
+    [Trait("Category", "regression")]
+    public void Probe_WhenOpenFails_NamesTheStageThatRefused(string stage)
+    {
+        var provider = new FakeEndpointProvider(
+            (_, _) => CaptureOpenResult.Failed(stage, PortAudioInterop.NotInitialized, Device, []));
+        using var capture = new MicrophoneCapture(provider, _ => { });
+
+        ProbeResult result = capture.Probe("");
+
+        Assert.False(result.Ok);
+        Assert.Equal(stage, result.Stage);
+    }
+
     [Fact]
     [Trait("Category", "integration")]
     public void Probe_WhenOpenSucceeds_ReleasesTheEndpointAndNeverStartsIt()

@@ -96,7 +96,7 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
         if (open.Endpoint is null)
         {
             uint code = unchecked((uint)open.ErrorCode);
-            return new ProbeResult(false, ClassifyError(code), code);
+            return new ProbeResult(false, ClassifyError(code), code, open.FailedStage);
         }
 
         open.Endpoint.Dispose();
@@ -112,6 +112,10 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
     // HRESULT in hex as Microsoft writes it (0x88890004), a PortAudio error in
     // decimal as its header lists it (-9996).
     public static string FormatErrorCode(uint code) => CaptureErrors.Format(code);
+
+    // The symbol of an error code (paNotInitialized, AUDCLNT_E_DEVICE_IN_USE),
+    // for a reader who does not have the headers at hand.
+    public static string ErrorName(uint code) => CaptureErrors.Name(code);
 
     // ── Audio recording ──────────────────────────────────────────────────────
     //

@@ -53,6 +53,12 @@ internal static class CrashSupervisor
     {
         if (App.IsTransactionalMode(args)) return false;
 
+        // The self-check reads its caller's exit code. Supervised, a crash would
+        // be relaunched and the launcher would return 0 whatever the child did.
+        // It also decides on the data root before AppPaths is touched, which
+        // Supervise does.
+        if (App.IsSelfCheckMode(args)) return false;
+
         if (Environment.GetEnvironmentVariable(CrashRelaunchPolicy.SupervisedVariable) is not null)
         {
             BecomeSupervisedChild();

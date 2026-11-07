@@ -306,6 +306,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── menu.ps1
 │   ├── README.md  — readme-scripts Dev workflows entry point for Deckle: the menu.ps1 launcher installed from Deck…
 │   ├── resource-validation.allowlist.json
+│   ├── self-check.ps1  — Run the built Deckle once in its self-check mode and judge its report. Takes the already-built Deckle.exe of this checkout (it never builds), runs it…
 │   ├── stats.ps1  — Repository statistics Walk every project under src\ and build one file inventory per Deckle module, w…
 │   └── update-readme-stats.ps1  — Update the README pulse Regenerate the small "Development pulse" section in README.md from the local Gi…
 ├── src/
@@ -471,6 +472,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Engine/
 │   │   │   ├── AppAmbientEngineHost.cs
 │   │   │   └── AppTranscriptionEngineHost.cs
+│   │   ├── SelfCheck/
+│   │   │   ├── SelfCheckDataRootGate.cs
+│   │   │   └── SelfCheckReport.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -493,6 +497,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.PlaygroundAccess.cs
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
+│   │   ├── App.SelfCheck.cs
 │   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs
 │   │   ├── App.Startup.CrashDumps.cs
@@ -1930,6 +1935,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── ReswMirrorTests.cs
+│   │   ├── SelfCheckTests.cs
 │   │   ├── TrayIncidentLinesTests.cs
 │   │   └── TrayRightClickMenuTests.cs
 │   ├── Deckle.Audio.Tests/

@@ -142,15 +142,7 @@ public partial class App
 
         // Before any module is composed or registered: every gate below reads
         // these flags.
-        AppModules.RegisterAll();
-        context.TranscriptionPresent = ModulePresence.IsPresent(ModuleIds.Transcription);
-        context.RewritePresent = ModulePresence.IsPresent(ModuleIds.Rewrite);
-        context.AutocorrectPresent = ModulePresence.IsPresent(ModuleIds.Autocorrect);
-        context.AmbientPresent = ModulePresence.IsPresent(ModuleIds.Ambient);
-        context.TrackpadPresent = ModulePresence.IsPresent(ModuleIds.Trackpad);
-        context.PrecisionScrollPresent = ModulePresence.IsPresent(ModuleIds.PrecisionScroll);
-        context.OrchestrationPresent = ModulePresence.IsPresent(ModuleIds.Orchestration);
-        context.AnytypePresent = ModulePresence.IsPresent(ModuleIds.Anytype);
+        RegisterModulesAndReadPresence(context);
         context.Milestone("modules");
 
         // Injected so Deckle.Core reads the storage directory without depending
@@ -206,6 +198,21 @@ public partial class App
         if (context.AutocorrectPresent)
             dispatcher.Catalog.Register(AutocorrectNotifications.All);
         context.Milestone("notifications");
+    }
+
+    // Shared with the self-check: the registry first, then the presence flags
+    // that every gate of the composition reads.
+    private static void RegisterModulesAndReadPresence(StartupContext context)
+    {
+        AppModules.RegisterAll();
+        context.TranscriptionPresent = ModulePresence.IsPresent(ModuleIds.Transcription);
+        context.RewritePresent = ModulePresence.IsPresent(ModuleIds.Rewrite);
+        context.AutocorrectPresent = ModulePresence.IsPresent(ModuleIds.Autocorrect);
+        context.AmbientPresent = ModulePresence.IsPresent(ModuleIds.Ambient);
+        context.TrackpadPresent = ModulePresence.IsPresent(ModuleIds.Trackpad);
+        context.PrecisionScrollPresent = ModulePresence.IsPresent(ModuleIds.PrecisionScroll);
+        context.OrchestrationPresent = ModulePresence.IsPresent(ModuleIds.Orchestration);
+        context.AnytypePresent = ModulePresence.IsPresent(ModuleIds.Anytype);
     }
 
     private const string BuildConfiguration =
