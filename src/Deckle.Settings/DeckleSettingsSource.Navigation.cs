@@ -155,22 +155,15 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtNavCompleted);
     }
 
+    // duration_ms runs from nav-start (NavClock) to Navigate's return. It once
+    // had a line of its own repeating the page (NavTiming, event 70, retired).
     [Event(EvtNavCompletedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "page={0}")]
-    public void NavCompletedDetail(string page_name)
-    {
-        if (IsEnabled()) WriteEvent(EvtNavCompletedDetail, page_name);
-    }
-
-    [Event(EvtNavTiming,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "page={0} | duration_ms={1}")]
-    public void NavTiming(string page_name, long duration_ms)
+    public void NavCompletedDetail(string page_name, long duration_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtNavTiming, page_name, duration_ms);
+        if (IsEnabled()) WriteEvent(EvtNavCompletedDetail, page_name, duration_ms);
     }
 
     // Time from nav-start (NavClock) to the destination page's first Loaded,

@@ -195,13 +195,20 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtModelLoadRetrying, work_id);
     }
 
+    // The whisper.cpp context the load created, printed in hex as native
+    // handles are, so two loads of one run tell apart; 0x0 means init failed,
+    // which ReportLoadFailure then says in a sentence. Model-load internals,
+    // so the Details verbosity admits it.
     [Event(EvtModelInitFromFile,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "ctx={0}")]
+           Message = "ctx=0x{0:X}")]
     public void ModelInitFromFile(long ctx)
     {
-        if (IsEnabled()) WriteEvent(EvtModelInitFromFile, ctx);
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtModelInitFromFile, ctx);
     }
 
     // Opens the "no transcription" incident, once until a load succeeds.

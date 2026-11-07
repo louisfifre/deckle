@@ -74,9 +74,9 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtTranscribeSkipped                = 51;
     // 52 retired.
     // 53 retired.
-    public const int EvtClipboardGlobalAlloc             = 54;
+    // 54 retired: ClipboardGlobalAlloc, folded into ClipboardCopyComplete.
     public const int EvtClipboardAllocFailed             = 55;
-    public const int EvtClipboardOpen                    = 56;
+    // 56 retired: ClipboardOpen, folded into ClipboardCopyComplete.
     public const int EvtClipboardOpenFailed              = 57;
     public const int EvtClipboardSetDataFailed           = 58;
     public const int EvtClipboardVerifyMissing           = 59;
@@ -185,7 +185,8 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     // 164 retired.
     public const int EvtModelFallback                    = 165;
     // 166 retired: its configured and installed names moved into EvtModelFallback.
-    public const int EvtTranscriptionCorrelation         = 167;
+    // 167 retired: TranscriptionCorrelation, a line carrying only the
+    // transcription_id that TakeStarted, the milestone after it, carries too.
 
     public const int EvtTranscribePromptConfigured       = 168;
     public const int EvtTranscribeRepetitionLoopMetrics  = 169;

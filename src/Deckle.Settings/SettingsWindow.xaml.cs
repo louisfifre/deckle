@@ -561,7 +561,8 @@ public sealed partial class SettingsWindow : Window
         DeckleSettingsSource.Log.NavStarted();
         DeckleSettingsSource.Log.NavStartedDetail(pageType.Name);
         // One nav-start timestamp for both measures: this restart feeds the
-        // Navigate-return NavTiming below and the page's first-Loaded PageReady.
+        // Navigate-return duration on NavCompletedDetail below and the page's
+        // first-Loaded PageReady.
         DeckleSettingsSource.NavClock.Restart();
         try
         {
@@ -577,8 +578,8 @@ public sealed partial class SettingsWindow : Window
             else
             {
                 DeckleSettingsSource.Log.NavCompleted();
-                DeckleSettingsSource.Log.NavCompletedDetail(pageType.Name);
-                DeckleSettingsSource.Log.NavTiming(pageType.Name, DeckleSettingsSource.NavClock.ElapsedMilliseconds);
+                DeckleSettingsSource.Log.NavCompletedDetail(
+                    pageType.Name, DeckleSettingsSource.NavClock.ElapsedMilliseconds);
                 ReportPageReadyOnFirstLoad(pageType.Name);
             }
         }
@@ -590,7 +591,7 @@ public sealed partial class SettingsWindow : Window
     }
 
     // Navigate returns before the page has run its Loaded work (ViewModel.Load,
-    // control sync), so NavTiming alone misses what the user waits for. The
+    // control sync), so its duration alone misses what the user waits for. The
     // handler is one-shot because a cached page raises Loaded on every return,
     // and each navigation subscribes afresh.
     private void ReportPageReadyOnFirstLoad(string pageName)
