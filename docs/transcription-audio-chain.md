@@ -41,7 +41,7 @@ flowchart TD
 
     subgraph AUDIO["Deckle.Audio"]
         PROBE["Mic probe"]
-        CAP["waveIn capture<br/>16 kHz mono PCM16<br/>4 buffers of 50 ms"]
+        CAP["PortAudio capture (WASAPI)<br/>device rate, float32,<br/>mono and 16 kHz in Deckle's code"]
         FRAME["One CaptureFrame<br/>per 50 ms, with its RMS"]
         LEVEL["AudioLevel event<br/>to AudioLevelMapper"]
         DSP["Optional pre-processing<br/>high-pass, gate off, compressor,<br/>two-pass makeup, limiter"]
@@ -97,8 +97,9 @@ Notes on the diagram:
 |---|---|---|
 | Hotkey press | `src/Deckle.App/App.Hotkeys.cs` → `ToggleRecordingFromHotkey` → `_engine.RequestToggle`; `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `RequestToggle` | The chord is `HotkeysSettings.Record` in `src/Deckle.Settings/Persistence/AppSettings.cs`: Win + the key left of 1 (scan code `0x29`) by default, editable in Settings ▸ General. The Record button of the tray panel lands on the same method. The press carries no rewrite profile: the active profile applies at finalize. A press while Idle starts; a press while Recording stops; any other state ignores the press. |
 | Mic probe | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `TryStartFromIdleLocked` (`_capture.Probe`) | Checks the microphone before anything else. On failure, an error is shown and no take starts. Then the worker thread starts at AboveNormal priority. |
-| waveIn capture | `src/Deckle.Audio/MicrophoneCapture.cs` → `Record` (`N_BUFFERS = 4`, `BYTES_PER_BUF` = 50 ms) | Opens the microphone at 16 kHz, mono, 16-bit, with a ring of four 50 ms buffers. |
-| One CaptureFrame per 50 ms | `src/Deckle.Audio/Internal/WaveInLoop.cs` → `Pump`, `EmitSubWindows`; `src/Deckle.Audio/CaptureFrame.cs` | Cuts each buffer into 50 ms frames of 800 samples, computes the RMS (the average loudness) of each, and raises the `Frame` and `AudioLevel` events. The same loop runs the low-audio tracker described under the engine constants. |
+| PortAudio capture | `src/Deckle.Audio/MicrophoneCapture.cs` → `Record`; `src/Deckle.Audio/Internal/PortAudioEndpointProvider.cs` → `Open`, `OpenStream`; `src/Deckle.Audio/Internal/PortAudioCaptureEndpoint.cs`; `src/Deckle.Audio/Internal/PortAudioHost.cs` | Opens the microphone through PortAudio's WASAPI host API, in blocking mode (no callback), in the device's own format: float32 at its sample rate and channel count, so neither Windows nor PortAudio converts anything. The processing mode is the rawest the device gives: raw first, default as a fallback (logged as `CaptureModeFallback`). Exclusive access is tried first only when `CaptureSettings.ExclusiveMode` is on; the order is then exclusive raw, exclusive default, shared raw, shared default. The mic probe opens it shared. `CaptureStarted` fires once the stream has started. |
+| Capture loop and signal path | `src/Deckle.Audio/Internal/CaptureLoop.cs` → `Pump`; `src/Deckle.Audio/Internal/CapturePipeline.cs` → `Accept`; `src/Deckle.Audio/Internal/MonoConverter.cs`; `src/Deckle.Audio/Internal/StreamingResampler.cs` | The loop polls `Available()` and reads exactly the frames that are ready, sleeping `CaptureLoop.PollIntervalMs` (4 ms) when none are. Each read goes through the pipeline: mean of the channels (`MonoConverter`), then resampling to 16 kHz (`StreamingResampler`, a windowed-sinc filter written in Deckle's code, bypassed when the device is already at 16 kHz). No gain, filter or compressor sits on this path. |
+| One CaptureFrame per 50 ms | `src/Deckle.Audio/Internal/SubWindowAssembler.cs` → `Push`; `src/Deckle.Audio/Internal/CapturePipeline.cs` → `OnWindow`; `src/Deckle.Audio/CaptureFrame.cs` | Cuts the 16 kHz mono stream into 50 ms frames of 800 samples, whatever the size of the device packets, computes the RMS (the average loudness) of each, and raises the `Frame` and `AudioLevel` events. The same pipeline runs the low-audio tracker described under the engine constants. |
 | AudioLevel event | `src/Deckle.Audio/MicrophoneCapture.cs` → `AudioLevel`; `src/Deckle.App/App.Startup.Shell.cs` → `_engine.AudioLevel += _hudWindow.OnAudioLevel`; `src/Deckle.Audio/AudioLevelMapper.cs`; `src/Deckle.Hud/Chrono/HudChrono.Stroke.cs` | About 20 times per second, the RMS goes to the HUD, which maps it to the brightness of the outline. Display only. |
 | Streaming.Strategy | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `WorkerRun` | Reads the strategy from the live settings at each take, so a change applies to the next dictation without restart. |
 | EnergySegmenter.Push | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` → `Push`, `Flush`; called from `OnFrame` in `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` | Decides, frame by frame, whether you are speaking, pausing, or done. Runs on the capture thread. Detailed in the next section. |
@@ -137,7 +138,7 @@ sequenceDiagram
     Note over WB: Model load, then a dummy inference on speech.wav
     W->>C: Start consumer task
     C->>C: AwaitPrime, phase during_recording
-    W->>W: waveInStart
+    W->>W: Open the PortAudio stream, start it
     W->>HUD: OnCaptureStarted raises Recording
     loop Every 50 ms while recording
         W->>W: CaptureFrame to EnergySegmenter.Push
@@ -152,7 +153,7 @@ sequenceDiagram
     HK->>HK: Press 2 - state Recording to Stopping
     HK->>HUD: SwitchToTranscribing at once
     HK->>W: Cancel the capture token
-    W->>W: Drain - waveInStop, then sleep 100 ms
+    W->>W: Drain - read what is ready, then stop the stream
     W->>C: Flush emits the open utterance, channel completed
     WB-->>C: Text 2
     C->>WB: TranscribeAsync last utterance
@@ -181,14 +182,14 @@ Notes on the diagram:
 | Worker thread | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `WorkerRun` (`ThreadPriority.AboveNormal`) |
 | BeginPrime, dummy inference | `src/Deckle.Transcription/Engine/TranscriptionEngine.Lifecycle.cs` → `BeginPrime`, `EnsurePrimed`, `TryLoadWarmupClip` (reads `Assets/Sounds/speech.wav` next to the exe) |
 | Consumer task, AwaitPrime | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `StartSegmentedTranscription`, `ConsumeUtterancesAsync`; `src/Deckle.Transcription/Engine/TranscriptionEngine.Lifecycle.cs` → `AwaitPrime` |
-| waveInStart, Recording | `src/Deckle.Audio/MicrophoneCapture.cs` → `CaptureStarted`; `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `OnCaptureStarted` |
+| Stream start, Recording | `src/Deckle.Audio/MicrophoneCapture.cs` → `Record` (`endpoint.Start`, then `CaptureStarted`); `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `OnCaptureStarted` |
 | Frames to the segmenter | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `ProduceStreamingAsync` (`OnFrame`); `src/Deckle.Transcription/Streaming/SegmentedTranscriptionSession.cs` → `Push` |
 | Utterance queued | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` → `EmitOnSilence`; `src/Deckle.Transcription/Streaming/SegmentedTranscriptionSession.cs` → `TryWrite` |
 | TranscribeAsync | `src/Deckle.Transcription.Whisper/WhisperBackend.Transcribe.cs` → `TranscribeAsync` |
 | UtteranceTranscribed, Append | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `ConsumeUtterancesAsync`; `src/Deckle.App/App.TranscriptPanel.cs`; `src/Deckle.Hud/Transcript/TranscriptPanelWindow.xaml.cs` → `Append` |
 | Press 2, Recording → Stopping | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `RequestToggle` (`_recordCts.Cancel`) |
 | SwitchToTranscribing at once | `src/Deckle.App/App.Hotkeys.cs` → `ToggleResult.Stopped` |
-| Drain | `src/Deckle.Audio/Internal/WaveInLoop.cs` → `waveInStop`, `Thread.Sleep(100)`, last `EmitSubWindows` pass |
+| Drain | `src/Deckle.Audio/Internal/CaptureLoop.cs` → `Pump` (after the loop: a last `DrainReady`, then `endpoint.Stop()`, then `pipeline.Finish`) |
 | Flush, channel completed | `src/Deckle.Transcription/Streaming/SegmentedTranscriptionSession.cs` → `Complete`; `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` → `Flush` |
 | Stopping → Transcribing | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `ProduceStreamingAsync` (CAS after `session.Completion`) |
 | Finalize | `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.cs` → `FinalizeTranscription` |
@@ -255,9 +256,10 @@ On the Streaming page, everything under the Streaming switch shows whatever the 
 
 | Parameter | Acts in | Default in code | Stored in (section) | Exposed where |
 |---|---|---|---|---|
-| `AudioInputDeviceId` | `src/Deckle.Audio/MicrophoneCapture.cs` (`Probe`, `Record`) | `-1` (system default device) | root | Recording (microphone picker, `RecordingPage.xaml.cs`) |
-| `VoiceLevelDbfs` | `src/Deckle.Audio/VoiceDetector.cs`, run by `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` and the low-audio tracker in `src/Deckle.Audio/Internal/WaveInLoop.cs`; `src/Deckle.Audio/AudioLevelMapper.cs` anchors the HUD outline on it | `-45.0`; moved from the transcription file's `streaming.segmenter.thresholdDbfs` by `src/Deckle.Settings/Persistence/SettingsBootstrap.cs` | root | Recording (`RecordingVoiceLevelCard`, "Voice level", magnitude field in dBFS, with the voice meter under it) |
-| `MaxRecordingDurationSeconds` | `src/Deckle.Audio/Internal/WaveInLoop.cs` (cap check, skipped at 0) | `0` (no limit); a file still holding the former 20 min default is migrated to 0 (`src/Deckle.Audio/CaptureSettingsService.cs`) | root | Recording (`RecordingLimitCard`, "Maximum recording length": No limit, 10, 20, 30 min, 1 h, 2 h) |
+| `AudioInputEndpointId` | `src/Deckle.Audio/MicrophoneCapture.cs` (`Probe`, `Record`), resolved in `src/Deckle.Audio/Internal/PortAudioEndpointProvider.cs` | `""` (system default device, resolved at each take); replaces the former waveIn index `AudioInputDeviceId`, which `src/Deckle.Audio/CaptureSettingsService.cs` migrates (schema version 2) | root | Recording (microphone picker, `RecordingPage.xaml.cs`) |
+| `VoiceLevelDbfs` | `src/Deckle.Audio/VoiceDetector.cs`, run by `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` and the low-audio tracker in `src/Deckle.Audio/Internal/LowAudioTracker.cs`; `src/Deckle.Audio/AudioLevelMapper.cs` anchors the HUD outline on it | `-45.0`; moved from the transcription file's `streaming.segmenter.thresholdDbfs` by `src/Deckle.Settings/Persistence/SettingsBootstrap.cs` | root | Recording (`RecordingVoiceLevelCard`, "Voice level", magnitude field in dBFS, with the voice meter under it) |
+| `ExclusiveMode` | `src/Deckle.Audio/Internal/PortAudioEndpointProvider.cs` → `Open` (`options.Exclusive` adds the two exclusive attempts before the shared ones); read by `MicrophoneCapture.Record` | `false`; a refused exclusive open falls back to shared and is logged | root | Recording (`RecordingExclusiveModeCard`, toggle) |
+| `MaxRecordingDurationSeconds` | `src/Deckle.Audio/Internal/CaptureLoop.cs` (cap check, skipped at 0) | `0` (no limit); a file still holding the former 20 min default is migrated to 0 (`src/Deckle.Audio/CaptureSettingsService.cs`) | root | Recording (`RecordingLimitCard`, "Maximum recording length": No limit, 10, 20, 30 min, 1 h, 2 h) |
 | `Preprocessing.Enabled` | `src/Deckle.Audio/Preprocessing/TranscriptionPreprocessor.cs` | `false` | `preprocessing` | Recording (`RecordingPagePreprocessingCard`) |
 | `Preprocessing.HighPassEnabled`, `HighPassHz` | same | `true`, `90` Hz | `preprocessing` | Not exposed |
 | `Preprocessing.GateEnabled`, `GateThresholdDbfs`, `GateRatio`, `GateAttackMs`, `GateReleaseMs` | same | `false`, `-55`, `2`, `5`, `150` | `preprocessing` | Not exposed |
@@ -277,9 +279,11 @@ Under the Voice level card, the Recording page carries the voice meter (`src/Dec
 |---|---|---|---|
 | `PrimingTailWords` | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` | `30` words of the previous utterance added to the prompt | No |
 | `MODEL_IDLE_TIMEOUT_MS` | `src/Deckle.Transcription/Engine/TranscriptionEngine.cs` | `5 * 60 * 1000` (5 min) before the model is freed | No |
-| `N_BUFFERS`, `BYTES_PER_BUF` | `src/Deckle.Audio/MicrophoneCapture.cs` | 4 buffers of 50 ms (1600 bytes) | No |
+| `PollIntervalMs` | `src/Deckle.Audio/Internal/CaptureLoop.cs` | `4` ms of sleep when the device has no frame ready | No |
+| `LagThresholdMs` | `src/Deckle.Audio/Internal/CaptureLoop.cs` | `60` ms: audio found waiting at one wake that counts as the loop having fallen behind (`CaptureLagDetected`) | No |
+| `WindowMs`, `WindowSamples` | `src/Deckle.Audio/Internal/SubWindowAssembler.cs` | `50` ms, 800 samples at 16 kHz | No |
 | `FrameMs` | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` | `50` ms; every segmenter duration is rounded to whole frames | No |
-| Low-audio warning: `NormalVoiceSustainedMs`, `WarnAfterSilenceMs` | `src/Deckle.Audio/Internal/WaveInLoop.cs` (the per-buffer tracker in `Pump`) | If the first 5 s of a take never contain 200 ms in a row that a `VoiceDetector` on the voice level calls voiced, the capture raises `LowAudioDetected` once, and `OnCaptureLowAudioDetected` in `src/Deckle.Transcription/Engine/TranscriptionEngine.cs` shows the `Engine_LowAudio_Title` / `Engine_LowAudio_Body` overlay | No |
+| Low-audio warning: `NormalVoiceSustainedMs`, `WarnAfterSilenceMs` | `src/Deckle.Audio/Internal/LowAudioTracker.cs` (fed one 50 ms frame at a time by `CapturePipeline`; only a take that retains audio has one) | If the first 5 s of a take never contain 200 ms in a row that a `VoiceDetector` on the voice level calls voiced, the capture raises `LowAudioDetected` once, and `OnCaptureLowAudioDetected` in `src/Deckle.Transcription/Engine/TranscriptionEngine.cs` shows the `Engine_LowAudio_Title` / `Engine_LowAudio_Body` overlay | No |
 
 ### Louis's own values
 
@@ -294,8 +298,8 @@ At the end of each dictation, `RecordPipelineMetrics` emits the `LatencyRecorded
 | Field | Start → end | Where it is measured |
 |---|---|---|
 | `model_load_ms` | Model load, cold takes only; 0 when warm | `LoadModel` in `src/Deckle.Transcription/Engine/TranscriptionEngine.Lifecycle.cs` |
-| `hotkey_to_capture_ms` | Start press → `waveInStart` | `_hotkeySw`, started in `TryStartFromIdleLocked`, stopped in `OnCaptureStarted` |
-| `record_drain_ms` | `waveInStop` → last buffers read | `DrainDuration` in `src/Deckle.Audio/Internal/WaveInLoop.cs` |
+| `hotkey_to_capture_ms` | Start press → stream started (`CaptureStarted`) | `_hotkeySw`, started in `TryStartFromIdleLocked`, stopped in `OnCaptureStarted` |
+| `record_drain_ms` | Loop leaves → last ready frames read, stream stopped, resampler flushed | `DrainDuration`, measured in `CaptureLoop.Pump` (`src/Deckle.Audio/Internal/CaptureLoop.cs`) |
 | `stop_to_pipeline_ms` | Stop press → Streaming: consumer finished draining; Monolithic: handoff to the backend | `_stopToPipelineSw`, started in `RequestToggle`, stopped in `ProduceStreamingAsync` or `ProduceMonolithicAsync` |
 | `whisper_init_ms` | The init stopwatch, summed over all utterances. It starts just before `whisper_full` and stops at the first `encoder_begin_callback`, so it times whisper.cpp's pre-decode setup (mel spectrogram, VAD when enabled, state reset). A call that never reaches the encoder stops it when `whisper_full` returns | `InitDurationMs` of each `TranscriptionResult` (`_whisperInitSw` in `src/Deckle.Transcription.Whisper/WhisperBackend.Transcribe.cs`) |
 | `whisper_ms` | Whisper's total time minus `whisper_init_ms`, summed over all utterances: the encode and decode | same |
@@ -317,10 +321,11 @@ These are fixed by the code. They are not measured; they are the minimum or the 
 
 | Delay | Value | Where |
 |---|---|---|
-| Capture frame | 50 ms (800 samples at 16 kHz) | `src/Deckle.Audio/Internal/WaveInLoop.cs` → `EmitSubWindows` |
-| Capture ring | 4 × 50 ms = 200 ms of headroom before the driver drops audio | `src/Deckle.Audio/MicrophoneCapture.cs` |
-| Capture poll | `WaitForSingleObject(hEvent, 100)`: wakes on each buffer, or after 100 ms at most | `src/Deckle.Audio/Internal/WaveInLoop.cs` |
-| Drain after Stop | `waveInStop`, then `Thread.Sleep(100)`: at least 100 ms | `src/Deckle.Audio/Internal/WaveInLoop.cs` |
+| Capture frame | 50 ms (800 samples at 16 kHz) | `src/Deckle.Audio/Internal/SubWindowAssembler.cs` |
+| Device period | set by the device; the code comment gives 10 ms on a shared WASAPI stream. The stream's input latency is reported by PortAudio and logged at the start of the take | `src/Deckle.Audio/Internal/PortAudioEndpointProvider.cs` (`SuggestedLatency`, `InputLatency`), `src/Deckle.Audio/Internal/CaptureLoop.cs` (header comment) |
+| Capture poll | `Available()` is asked, and the loop sleeps 4 ms when nothing is ready; the real wake can be later, since `Thread.Sleep` rounds up to the system timer | `CaptureLoop.PollIntervalMs` in `src/Deckle.Audio/Internal/CaptureLoop.cs` |
+| Lag threshold | 60 ms of audio found waiting at one wake counts as the loop having fallen behind | `CaptureLoop.LagThresholdMs` in `src/Deckle.Audio/Internal/CaptureLoop.cs` |
+| Drain after Stop | no fixed delay: the loop reads what is ready, then stops the stream; the duration is measured, not set | `src/Deckle.Audio/Internal/CaptureLoop.cs` → `Pump` |
 | Margin | 150 ms of silence kept after the last voiced frame | `EnergySegmenterSettings.MarginMs` |
 | Hangover | 500 ms to 5 s of silence before a cut, depending on how long the utterance already is | `EnergySegmenterSettings.HangoverMinMs`, `HangoverMaxMs` |
 | Heartbeat log | once per second (every 20 frames), only when verbose logging is on | `OnFrame` in `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` |
@@ -473,7 +478,7 @@ Nothing queued is lost on a user Stop: the consumer is cancelled only by `drainC
 
 ### What is not exposed
 
-- The 50 ms frame (`FrameMs` in `EnergySegmenter.cs`) and the ring of four 50 ms capture buffers (`src/Deckle.Audio/MicrophoneCapture.cs`) are fixed in code.
+- The 50 ms frame (`FrameMs` in `EnergySegmenter.cs`) and the capture loop's poll interval and lag threshold (`src/Deckle.Audio/Internal/CaptureLoop.cs`) are fixed in code.
 - The Silero window (512 samples) and the release gap (0.15) are fixed in `src/Deckle.Vad/SileroSpeechTimestamps.cs`.
 
 ### Unverified
