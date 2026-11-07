@@ -174,35 +174,30 @@ public partial class WhisperViewModel
             defaultValue: () => new StreamingSettings().Strategy == PipelineStrategyKind.Streaming),
     ];
 
-    // The segmentation cards of the Streaming page, under the switch and the
-    // speech-filtering fold: the cut margin and the minimum speech, as cards.
+    // The segmentation section of the Streaming page: the cut curve, with the
+    // cut margin and the minimum speech in its pause strip.
     // The minimum speech is the one floor the segmenter and Silero share
     // (Streaming.MinSpeechMs); it sits here and not in the speech-filtering
     // fold because it is the only guard left when Silero is off or its model is
     // missing. The level that makes a frame voiced is not here: it is the voice
     // level of the Recording page (CaptureSettings.VoiceLevelDbfs), since the HUD
-    // and the low-audio warning read it too. Then the cut curve, the
-    // segmentation's instrument, last and at full width, with no fold around it
-    // (2026-10-14). Every descriptor shows whatever the strategy: files and
-    // recovered takes are always cut.
-    // The four hangover anchors (max, min, ramp start, ramp end) are the curve's
-    // frame and live in its legend, beside the plot, as fields: the doctrine's
-    // curve exception puts a curve's values in fields beside the drawing. They
-    // keep the bounds the former cards had, in the view model's milliseconds;
-    // the plot reads seconds.
+    // and the low-audio warning read it too. The curve is the segmentation's
+    // instrument, at full width, with no fold around it (2026-10-14). Every
+    // value shows whatever the strategy: files and recovered takes are always
+    // cut. The four hangover anchors (max, min, ramp start, ramp end) are the
+    // curve's frame and keep the bounds the former cards had, in the view
+    // model's milliseconds; the plot reads seconds.
+    //
+    // Since 2026-11-07 the curve card is the whole section, edited by direct
+    // manipulation: each anchor's Role binds it to the frame coordinate it is,
+    // so the curve's two corners drag the ramp and the waits; the cut margin
+    // and the minimum speech, once two cards beside the curve, are the pause
+    // strip under it (CurveArgs.Pause), a pause at the scale of a word, since on
+    // the curve's 140 s axis they would be under a pixel. Every value keeps its
+    // field, its bounds, its default and its description, under the card's one
+    // reset.
     public IReadOnlyList<SettingDescriptor> SegmentationSettings =>
     [
-        // 0..1 s: the grain is 0.05 s, which writes both defaults (0.15, 0.25) exactly.
-        Setting.Magnitude("WhisperSegMarginCard",
-            () => Seconds(SegMarginMs),
-            value => SegMarginMs = Milliseconds(value),
-            new MagnitudeArgs(0, 1, Unit: "s"),
-            defaultValue: () => Seconds(new EnergySegmenterSettings().MarginMs)),
-        Setting.Magnitude("WhisperMinSpeechCard",
-            () => Seconds(MinSpeechMs),
-            value => MinSpeechMs = Milliseconds(value),
-            new MagnitudeArgs(0, 1, Unit: "s"),
-            defaultValue: () => Seconds(new StreamingSettings().MinSpeechMs)),
         Setting.Curve("WhisperCutCurveCard",
             () => new CurvePoints(SegCurveX1, SegCurveY1, SegCurveX2, SegCurveY2),
             p => { SegCurveX1 = p.X1; SegCurveY1 = p.Y1; SegCurveX2 = p.X2; SegCurveY2 = p.Y2; },
@@ -214,20 +209,38 @@ public partial class WhisperViewModel
                     new CurveAnchor("WhisperSegHangoverMaxCard",
                         () => Seconds(SegHangoverMaxMs), value => SegHangoverMaxMs = Milliseconds(value),
                         0.5, 15,
-                        Default: () => Seconds(new EnergySegmenterSettings().HangoverMaxMs)),
+                        Default: () => Seconds(new EnergySegmenterSettings().HangoverMaxMs),
+                        Role: CurveAnchorRole.OriginY),
                     new CurveAnchor("WhisperSegHangoverMinCard",
                         () => Seconds(SegHangoverMinMs), value => SegHangoverMinMs = Milliseconds(value),
                         0.1, 2,
-                        Default: () => Seconds(new EnergySegmenterSettings().HangoverMinMs)),
+                        Default: () => Seconds(new EnergySegmenterSettings().HangoverMinMs),
+                        Role: CurveAnchorRole.EndY),
                     new CurveAnchor("WhisperSegHangoverRampStartCard",
                         () => Seconds(SegHangoverRampStartMs), value => SegHangoverRampStartMs = Milliseconds(value),
                         0, 200, Integer: true, // a 200 s span gives the 5 s grain
-                        Default: () => Seconds(new EnergySegmenterSettings().HangoverRampStartMs)),
+                        Default: () => Seconds(new EnergySegmenterSettings().HangoverRampStartMs),
+                        Role: CurveAnchorRole.OriginX),
                     new CurveAnchor("WhisperSegHangoverRampEndCard",
                         () => Seconds(SegHangoverRampEndMs), value => SegHangoverRampEndMs = Milliseconds(value),
                         30, 230, Integer: true, // same 200 s span, same 5 s grain
-                        Default: () => Seconds(new EnergySegmenterSettings().HangoverRampEndMs)),
-                ]),
+                        Default: () => Seconds(new EnergySegmenterSettings().HangoverRampEndMs),
+                        Role: CurveAnchorRole.EndX),
+                ],
+                Pause: new PauseStripArgs("WhisperCutPauseStrip",
+                    // 0..1 s: the grain is 0.05 s, which writes both defaults
+                    // (0.25, 0.15) exactly.
+                    MinimumSpeech: new CurveAnchor("WhisperMinSpeechCard",
+                        () => Seconds(MinSpeechMs), value => MinSpeechMs = Milliseconds(value),
+                        0, 1,
+                        Default: () => Seconds(new StreamingSettings().MinSpeechMs)),
+                    Margin: new CurveAnchor("WhisperSegMarginCard",
+                        () => Seconds(SegMarginMs), value => SegMarginMs = Milliseconds(value),
+                        0, 1,
+                        Default: () => Seconds(new EnergySegmenterSettings().MarginMs)),
+                    // The shortest pause that cuts: the minimum wait, where a
+                    // long utterance ends.
+                    CutAfter: () => Seconds(SegHangoverMinMs))),
             defaultValue: () =>
             {
                 var d = new EnergySegmenterSettings();
@@ -245,9 +258,12 @@ public partial class WhisperViewModel
 
     // The frame of the cut curve: X is the open-utterance length in seconds, from
     // 0 to a little past the ramp end; Y is the decision delay in seconds, from 0
-    // to the maximum hangover. The unit square runs from (ramp start, max) down
-    // to (ramp end, min), the decay the segmenter eases between. The view model
-    // keeps the anchors in milliseconds, the plot reads seconds.
+    // to a quarter above the maximum hangover. The unit square runs from (ramp
+    // start, max) down to (ramp end, min), the decay the segmenter eases
+    // between. The view model keeps the anchors in milliseconds, the plot reads
+    // seconds. The room above the maximum and past the ramp end is where the
+    // curve's corners can be dragged: the plot's scale holds still during a
+    // drag and follows the new values at the release (2026-11-07).
     private CurveFrame CutCurveFrame()
     {
         double max = Math.Max(SegHangoverMaxMs / 1000.0, 1e-3);
@@ -255,7 +271,8 @@ public partial class WhisperViewModel
         double start = Math.Max(0, SegHangoverRampStartMs / 1000.0);
         double end = Math.Max(start, SegHangoverRampEndMs / 1000.0);
         double xMax = end + Math.Max((end - start) * 0.15, 5.0);
-        return new CurveFrame(start, max, end, min, xMax, max, Axes: true, XUnit: "s", YUnit: "s");
+        double yMax = max * 1.25;
+        return new CurveFrame(start, max, end, min, xMax, yMax, Axes: true, XUnit: "s", YUnit: "s");
     }
 
     // The plain-language reading of the envelope the curve eases, the Playground

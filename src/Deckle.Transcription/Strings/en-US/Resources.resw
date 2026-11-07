@@ -664,22 +664,46 @@
   <data name="WhisperStreamingEnabledCard.Description" xml:space="preserve">
     <value>Off transcribes a dictation in one pass at Stop, after the silence trim below. Files and recovered takes are always cut as you speak. Applies on your next recording.</value>
   </data>
+  <!-- The cut margin and the minimum speech: once two cards, now the two
+       values of the cut curve's pause strip (WhisperViewModel.SegmentationSettings,
+       CurveArgs.Pause). Header is the caption of each one's field under the plot
+       and the accessible name of its handle on the strip, with the unit as the
+       other fields' captions carry it; Description is the field's tooltip. -->
   <data name="WhisperSegMarginCard.Header" xml:space="preserve">
-    <value>Cut margin</value>
+    <value>Cut margin, s</value>
   </data>
   <data name="WhisperSegMarginCard.Description" xml:space="preserve">
     <value>How much of the pause after your last word stays at the end of an utterance when it is cut. The rest of the pause is dropped. Too short can clip a soft ending.</value>
   </data>
   <data name="WhisperMinSpeechCard.Header" xml:space="preserve">
-    <value>Minimum speech</value>
+    <value>Minimum speech, s</value>
   </data>
   <data name="WhisperMinSpeechCard.Description" xml:space="preserve">
     <value>A sound shorter than this is not speech. The cut drops a lone blip (a click, a cough), and the silence trim drops any shorter span inside an utterance. Too long drops a short word said alone.</value>
   </data>
+  <!-- The pause strip under the cut curve: its caption, then the words drawn on
+       it. Read by the Catalog composer (PauseStripArgs.LabelKey); no element
+       carries this name as an x:Uid. -->
+  <data name="WhisperCutPauseStrip.Header" xml:space="preserve">
+    <value>One pause, zoomed</value>
+  </data>
+  <data name="WhisperCutPauseStrip.MinimumSpeech" xml:space="preserve">
+    <value>minimum speech</value>
+  </data>
+  <data name="WhisperCutPauseStrip.Kept" xml:space="preserve">
+    <value>kept</value>
+  </data>
+  <data name="WhisperCutPauseStrip.Dropped" xml:space="preserve">
+    <value>dropped</value>
+  </data>
+  <data name="WhisperCutPauseStrip.Cut" xml:space="preserve">
+    <value>cut</value>
+  </data>
   <!-- The cut curve: the card's description is replaced at runtime by the
        sentence that reads the current values (WhisperViewModel.CutCurveSentence);
-       the four anchor entries are the legend fields beside the plot, their
-       Header the field's caption and their Description its tooltip. -->
+       the four anchor entries are the legend fields under the plot, their
+       Header the field's caption (and, joined two by two, the accessible name
+       of the curve's corner handles) and their Description its tooltip. -->
   <data name="WhisperCutCurveCard.Header" xml:space="preserve">
     <value>Pause before cutting</value>
   </data>
