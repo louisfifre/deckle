@@ -61,11 +61,6 @@ public sealed partial class AutocorrectEngine : IDisposable
     // verbatim capture, not a word model.
     private readonly TypingStream? _stream;
 
-    // The lane owns the background inference thread; the coordinator owns the
-    // sentence model.
-    private readonly SentenceRerankCoordinator? _coordinator;
-    private readonly IRerankLane? _lane;
-
     private volatile FocusedSurface _surface = FocusedSurface.Unknown;
 
     // Apps already offered for enrollment this run — a would-be correction on an
@@ -73,7 +68,7 @@ public sealed partial class AutocorrectEngine : IDisposable
     private readonly HashSet<string> _suggested = new(StringComparer.OrdinalIgnoreCase);
 
     // Monotonic per-word id, input thread only. Stamps each evaluated word so its
-    // synchronous decision line and the deferred reranker verdict join on one id.
+    // decision line carries an id.
     private long _wordId;
 
     // One coalesced foreign SendInput burst. Only Backspace + VK_PACKET text is
@@ -131,14 +126,9 @@ public sealed partial class AutocorrectEngine : IDisposable
         PersonalDictionary? dictionary = null,
         IFrequencyLexicon? french = null,
         IFrequencyLexicon? english = null,
-        ISentenceReranker? reranker = null,
-        IAmbiguityProbe? probe = null,
-        IAmbiguityProbe? wholeSentenceProbe = null,
         Func<bool>? decisionTelemetry = null,
         Func<bool>? textTelemetry = null,
-        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null,
-        ICaretTextReader? caretTextReader = null,
-        IRerankLane? rerankLaneOverride = null)
+        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null)
     {
         _host = host;
         _decoder = decoder;
@@ -152,37 +142,10 @@ public sealed partial class AutocorrectEngine : IDisposable
         _english = english;
         _decisionTelemetry = decisionTelemetry;
         _textTelemetry = textTelemetry;
-        _caretTextReader = caretTextReader;
         _corpus = textTelemetry is null ? null : new SentenceCorpus { Completed = EmitText };
         _stream = textTelemetry is null ? null : new TypingStream { Completed = EmitStreamRun };
         _mistouch = mistouchFamilies is { Count: > 0 }
             ? new MistouchFamilyCorrector(mistouchFamilies, IsProtectedWord)
             : null;
-
-        if (reranker is not null && rerankLaneOverride is not null)
-            throw new ArgumentException(
-                "A reranker lane override cannot be combined with a reranker.",
-                nameof(rerankLaneOverride));
-
-        // The contextual stage exists only with both a model and a probe. The lane
-        // marshals inference off this thread and the verdict back via the host pump.
-        if (probe is not null && (reranker is not null || rerankLaneOverride is not null))
-        {
-            // Production never supplies an override and retains the background
-            // lane. An internal measurement seam can inject a synchronous lane to
-            // prove request absence without converting a scheduling timeout into
-            // a generator-coverage result.
-            _lane = rerankLaneOverride
-                ?? new BackgroundRerankLane(reranker!, host, caretTextReader);
-            _coordinator = new SentenceRerankCoordinator(
-                lane: _lane,
-                probe: probe,
-                injector: injector,
-                currentPartial: () => tracker.CurrentWord,
-                realignLastCommitted: tracker.ReplaceLastCommitted,
-                onApplied: OnCoordinatorApplied,
-                decisionTelemetry: decisionTelemetry,
-                wholeSentenceProbe: wholeSentenceProbe);
-        }
     }
 }

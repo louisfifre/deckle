@@ -99,23 +99,27 @@ function Test-WatchdogAlive {
     return $age.TotalSeconds -lt $StaleSeconds
 }
 
-# True when build-locked.ps1 is holding the machine-wide build mutex. Taking
-# it for an instant is the only way to ask; an abandoned mutex (a killed build)
-# counts as free, exactly as build-locked.ps1 treats it.
+# True when build-locked.ps1 holds any of its build slots. Taking each one for
+# an instant is the only way to ask; an abandoned mutex (a killed build) counts
+# as free, exactly as build-locked.ps1 treats it. The names are build-locked.ps1's
+# slot names: change them together.
 function Test-BuildLockHeld {
-    $mutex = [System.Threading.Mutex]::new($false, 'Global\Deckle.Build')
-    try {
-        $acquired = $false
+    foreach ($name in 'Global\Deckle.Build', 'Global\Deckle.Build.2', 'Global\Deckle.Build.3') {
+        $mutex = [System.Threading.Mutex]::new($false, $name)
         try {
-            $acquired = $mutex.WaitOne(0)
-        } catch [System.Threading.AbandonedMutexException] {
-            $acquired = $true
+            $acquired = $false
+            try {
+                $acquired = $mutex.WaitOne(0)
+            } catch [System.Threading.AbandonedMutexException] {
+                $acquired = $true
+            }
+            if ($acquired) { $mutex.ReleaseMutex() }
+            if (-not $acquired) { return $true }
+        } finally {
+            $mutex.Dispose()
         }
-        if ($acquired) { $mutex.ReleaseMutex() }
-        return -not $acquired
-    } finally {
-        $mutex.Dispose()
     }
+    return $false
 }
 
 function Write-Heartbeat {

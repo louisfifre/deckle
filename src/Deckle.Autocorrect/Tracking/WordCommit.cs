@@ -7,8 +7,7 @@ namespace Deckle.Autocorrect;
 // one word later. The two together are the commit stage's left context.
 // Reopened is set when this commit came from a word the user backspaced into
 // and retyped: the deliberate keystroke asserts intent, so the commit stage
-// must leave it literal — only the sentence stage, with full context, keeps
-// the right to revise it.
+// must leave it literal.
 // PrecedingSeparators is the on-screen run between PreviousWord and this word
 // as the tracker saw it typed (";" in « qu;il », ", " after a spaced comma) —
 // the mistouch boundary families read it. Empty when unknown: after a reset, a

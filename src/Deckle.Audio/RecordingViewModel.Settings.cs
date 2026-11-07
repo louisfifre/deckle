@@ -28,26 +28,26 @@ public partial class RecordingViewModel
             defaultValue: () => new CaptureSettings().VoiceLevelDbfs),
     ];
 
-    // Maximum recording length — a ComboBox of fixed durations, the Windows 11
-    // Settings idiom for a timeout with a "never" state (Screen and sleep). Values
-    // are seconds, the POCO's unit, so the VM needs no projection. 0 is the explicit
-    // "No limit" option and the default, read from the POCO initializer like every
-    // other default here. A stored value outside the list (hand-edited file) shows
-    // as no selection, as Windows does.
+    // Maximum recording length — a group: the master switch "Limit recording
+    // duration", off by default (the POCO's 0 = no limit), reveals one length in
+    // minutes, a field with a slider (a length is swept by feel, unlike the voice
+    // level). The POCO and the capture loop keep seconds; RecordingLimit and the
+    // two VM accessors do the conversion. The child's default is the length the
+    // switch restores, so the section reset returns the group to off.
     public IReadOnlyList<SettingDescriptor> RecordingLimitSettings =>
     [
-        Setting.Choice<int>("RecordingLimitCard",
-            () => MaxRecordingDurationSeconds,
-            value => MaxRecordingDurationSeconds = value,
+        Setting.Group("RecordingLimitCard",
+            () => LimitRecordingDuration,
+            value => LimitRecordingDuration = value,
             [
-                (0, "RecordingLimitNone"),
-                (600, "RecordingLimit10Min"),
-                (1200, "RecordingLimit20Min"),
-                (1800, "RecordingLimit30Min"),
-                (3600, "RecordingLimit1Hour"),
-                (7200, "RecordingLimit2Hours"),
+                Setting.Magnitude("RecordingLimitDurationCard",
+                    () => MaxRecordingDurationMinutes,
+                    value => MaxRecordingDurationMinutes = value,
+                    new MagnitudeArgs(RecordingLimit.MinMinutes, RecordingLimit.MaxMinutes,
+                        Unit: "min", Integer: true),
+                    defaultValue: () => RecordingLimit.DefaultMinutes),
             ],
-            defaultValue: () => new CaptureSettings().MaxRecordingDurationSeconds),
+            defaultValue: () => RecordingLimit.IsLimited(new CaptureSettings().MaxRecordingDurationSeconds)),
     ];
 
     // Exclusive access to the microphone, off by default (it locks every other
@@ -63,11 +63,10 @@ public partial class RecordingViewModel
 
     // Transcription pre-processing (the DSP black box), a single opt-in toggle
     // composed as the master of a fold with no composed child. The fold holds
-    // the two checks that serve it, the level check and the listening test,
-    // which the page adds to its items by hand (they are commands, not values).
-    // The composer gates only its own children on the master, so the checks
-    // stay visible with the toggle off: they are what tells the person whether
-    // to turn it on (2026-11-07 review, change 3).
+    // the listening test, which the page adds to its items by hand (a command,
+    // not a value). The composer gates only its own children on the master, so
+    // the test stays visible with the toggle off: it is what tells the person
+    // whether to turn it on (2026-11-07 review, change 3).
     // The default selector reads the POCO initializer (new PreprocessingSettings().Enabled),
     // so the resettable default and the persisted default are the one same literal —
     // the fold's reset goes active exactly when the toggle leaves that value.
@@ -80,7 +79,7 @@ public partial class RecordingViewModel
             defaultValue: () => new PreprocessingSettings().Enabled),
     ];
 
-    // The mic level check in that fold measures the RMS of a 5 s sample and compares
+    // The mic level check, in the Voice section, measures the RMS of a 5 s sample and compares
     // it to the preprocessing target, to advise whether turning the DSP on is
     // worth it, and says how far it sits above or below the voice level. It
     // sets nothing.

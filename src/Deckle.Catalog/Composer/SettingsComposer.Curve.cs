@@ -39,14 +39,23 @@ public sealed partial class SettingsComposer
         CurveFrame frame = args.Frame?.Invoke() ?? CurveFrame.Unit;
         var editor = new CurveEditor
         {
-            // The height an axes plot keeps where no ScrollViewer surrounds it.
-            WideHeight = 320.0,
-            ViewportShare = frame.Axes ? 0.5 : 0,
             AllowOutside = args.AllowOutside,
             Frame = frame,
             Floor = args.Floor?.Invoke(),
             Points = AsPoints(s.GetValue()),
         };
+
+        // A curve that describes itself carries its sentence under the plot, so
+        // the card's own header and description would only repeat it above the
+        // section's title (2026-11-07 review: the second header is removed). The
+        // card keeps its name for a screen reader through the editor.
+        if (args.Describe is not null)
+        {
+            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(editor, ResolveHeader(s.LabelKey));
+            card.Header = null!;
+            card.Description = null!;
+            editor.Summary = args.Describe(AsPoints(s.GetValue())) ?? ResolveDescription(s.LabelKey);
+        }
 
         editor.PointsCommitted += (_, _) =>
         {
@@ -116,12 +125,7 @@ public sealed partial class SettingsComposer
             editor.Frame = args.Frame?.Invoke() ?? CurveFrame.Unit;
             editor.Floor = args.Floor?.Invoke();
             if (args.Describe is not null)
-            {
-                // The sentence is a legend in words, in the place of the .resw
-                // description it replaces.
-                string? sentence = args.Describe(points);
-                card.Description = sentence ?? ResolveDescription(s.LabelKey);
-            }
+                editor.Summary = args.Describe(points) ?? ResolveDescription(s.LabelKey);
             updateReset?.Invoke();
             ApplyReactiveState(card, s);
         });
@@ -232,8 +236,10 @@ public sealed partial class SettingsComposer
             MinimumSpeechName: ResolveHeader(pause.MinimumSpeech.LabelKey),
             MarginName: ResolveHeader(pause.Margin.LabelKey)))
         {
-            LeftInset = CurveEditor.DataLeftInset,
-            RightInset = CurveEditor.DataRightInset,
+            // The strip has a frame of its own now, so it no longer shares the
+            // curve's edges; the insets leave room for the ruler's end labels.
+            LeftInset = 24,
+            RightInset = 24,
             MinimumSpeechLimit = Limit(pause.MinimumSpeech)!,
             CutMarginLimit = Limit(pause.Margin)!,
             MinimumSpeech = pause.MinimumSpeech.Get(),

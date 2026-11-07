@@ -11,7 +11,6 @@ public static class AutocorrectLexiconArtifacts
 {
     public const string FrenchFileName = "lexicon-fr.tsv.gz";
     public const string PairBigramsFrenchFileName = "pair-bigrams-fr.tsv.gz";
-    public const string VerbMorphologyFrenchFileName = "verbs-fr.tsv.gz";
     public const string GlobalEnglishSeedFileName = "lexicon-en-globish.tsv.gz";
 
     // Deckle.App's FlattenAutocorrectLexicons target puts the derived artifacts

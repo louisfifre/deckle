@@ -4,10 +4,6 @@ namespace Deckle.Autocorrect;
 // default path, serialized indented so the file is humanly inspectable.
 public sealed class PersonalDictionaryData
 {
-    // Schema 2: clean recurrence across distinct days plus a protection category.
-    public const int CurrentSchemaVersion = 2;
-
-    public int SchemaVersion { get; set; }
     public List<WordEntry> Words { get; set; } = new();
     public List<SuppressionEntry> Suppressions { get; set; } = new();
 }

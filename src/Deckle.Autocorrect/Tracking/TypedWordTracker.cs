@@ -63,10 +63,6 @@ public sealed class TypedWordTracker
 
     public string CurrentWord => _buffer.ToString();
 
-    // Allocation-free presence check for the engine's per-key path;
-    // CurrentWord allocates a snapshot.
-    internal bool HasCurrentWord => _buffer.Length > 0;
-
     public void OnKeystroke(Keystroke k)
     {
         switch (k.Kind)

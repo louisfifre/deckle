@@ -17,12 +17,16 @@ internal static class GatewayRuntime
     {
         // The key (vault entry `anytype-api-key`) is written by a script outside
         // the repository and read here once, at start. A newly minted key
-        // therefore needs a gateway restart: rebuild the gateway, or end its
-        // process and let Deckle start a fresh one.
+        // therefore needs a gateway restart. Deckle's supervisor asks for the
+        // fingerprint below on /health and replaces a gateway whose key is out of
+        // date, so nobody has to end the process by hand.
         AnytypeApiClient api;
+        string keyFingerprint;
         try
         {
-            api = AnytypeApiClient.CreateForResidentGateway(AnytypeCredentials.Load());
+            AnytypeCredentials credentials = AnytypeCredentials.Load();
+            keyFingerprint = GatewayKeyFingerprint.Of(credentials.ApiKey);
+            api = AnytypeApiClient.CreateForResidentGateway(credentials);
         }
         catch (Exception ex) when (ex is InvalidOperationException or SecretVaultException or UriFormatException)
         {
@@ -69,7 +73,7 @@ internal static class GatewayRuntime
                 catch (ObjectDisposedException) { }
             };
 
-            host = new McpHttpHost(api, tokens);
+            host = new McpHttpHost(api, tokens, keyFingerprint: keyFingerprint);
             if (!host.Start())
                 return (GatewayContract.ExitCodes.ListenFailed, "listen_failed");
 

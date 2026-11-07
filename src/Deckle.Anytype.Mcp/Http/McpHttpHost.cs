@@ -36,6 +36,7 @@ public sealed class McpHttpHost : IAsyncDisposable
     private readonly int _port;
     private readonly McpRequestRateLimit _requestRateLimit;
     private readonly object _stateGate = new();
+    private readonly string? _keyFingerprint;
 
     private WebApplication? _application;
     private Task? _disposeTask;
@@ -45,8 +46,11 @@ public sealed class McpHttpHost : IAsyncDisposable
     // hence Interlocked.
     private int _rejectedInIncident;
 
-    public McpHttpHost(AnytypeApiClient api, McpClientTokens tokens, int port = DefaultPort)
-        : this(api, tokens, port, McpRequestRateLimit.Default)
+    // keyFingerprint is GatewayKeyFingerprint.Of the API key api was built with;
+    // without it the host serves no health answer.
+    public McpHttpHost(
+        AnytypeApiClient api, McpClientTokens tokens, int port = DefaultPort, string? keyFingerprint = null)
+        : this(api, tokens, port, McpRequestRateLimit.Default, keyFingerprint)
     {
     }
 
@@ -54,7 +58,8 @@ public sealed class McpHttpHost : IAsyncDisposable
         AnytypeApiClient api,
         McpClientTokens tokens,
         int port,
-        McpRequestRateLimit requestRateLimit)
+        McpRequestRateLimit requestRateLimit,
+        string? keyFingerprint = null)
     {
         ArgumentNullException.ThrowIfNull(api);
         ArgumentNullException.ThrowIfNull(tokens);
@@ -63,6 +68,7 @@ public sealed class McpHttpHost : IAsyncDisposable
         _tokens = tokens;
         _port = port;
         _requestRateLimit = requestRateLimit;
+        _keyFingerprint = keyFingerprint;
     }
 
     public string BaseUrl => $"http://127.0.0.1:{_port}{EndpointPath}";
@@ -170,6 +176,7 @@ public sealed class McpHttpHost : IAsyncDisposable
         application.UseRateLimiter();
         application.Use(CloseRejectionIncidentAsync);
         application.MapMcp(EndpointPath).RequireRateLimiting(RateLimitPolicy);
+        application.MapGet(GatewayContract.HealthPath, ServeHealth);
         return application;
     }
 
@@ -232,6 +239,22 @@ public sealed class McpHttpHost : IAsyncDisposable
 
         context.Items[ClientProfileKey] = client;
         await next(context).ConfigureAwait(false);
+    }
+
+    // Open to any local caller, like the port itself, but it answers a browser
+    // page nothing: a present Origin must be local, as for /mcp. What it holds is
+    // a digest of the key, never the key.
+    private IResult ServeHealth(HttpContext context)
+    {
+        string origin = context.Request.Headers.Origin.ToString();
+        if (origin.Length > 0 && !IsLocalOrigin(origin))
+            return Results.StatusCode(StatusCodes.Status403Forbidden);
+        if (_keyFingerprint is null)
+            return Results.NotFound();
+        return Results.Json(new Dictionary<string, string>
+        {
+            [GatewayContract.KeyFingerprintProperty] = _keyFingerprint,
+        });
     }
 
     private static string? ReadBearer(string authorization)

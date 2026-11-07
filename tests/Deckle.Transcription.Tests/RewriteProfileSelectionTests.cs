@@ -13,14 +13,6 @@ public sealed class RewriteProfileSelectionTests
         {
             Enabled = true,
             Profiles = [new RewriteProfile { Id = "a1", Name = "Clean up" }],
-            AutoRewriteRules =
-            [
-                new AutoRewriteRule
-                {
-                    MinDurationSeconds = 0,
-                    ProfileName = "Clean up",
-                },
-            ],
         };
 
         Assert.Null(RewriteProfileSelection.ForDictation(settings));

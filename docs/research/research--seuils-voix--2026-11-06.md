@@ -4,6 +4,8 @@ description: "Cadrage vérifié (2026-11-06) — les seuils de niveau et de dét
 
 # Un seul signal de voix. Les seuils dupliqués de la transcription et ce qu'on en fait
 
+> Note du 2026-11-07 : la capture décrite ci-dessous (WaveInLoop, waveIn) a été remplacée par la capture PortAudio (WASAPI) en v0.87.0. L'avertissement « micro faible » vit désormais dans src/Deckle.Audio/Internal/LowAudioTracker.cs, alimenté par CaptureLoop.cs et CapturePipeline.cs. Les numéros de ligne WaveInLoop.cs cités plus bas ne correspondent plus à aucun fichier.
+
 Commande de Louis (2026-11-06, dictée) : il y a des dB à plusieurs endroits, pour les utterances et pour la détection de voix ; on démarre l'utterance quand on parle, donc le seuil qui dit « il y a de la voix » et celui qui ouvre l'utterance doivent être le même ; ré-homogénéiser tout ça pour l'UX et pour le code, en se calant sur ce qui existe ; vérifier comment le VAD et le streaming s'imbriquent, parce que le VAD sert aussi en streaming à jeter les utterances de bruit.
 
 Méthode : trois agents ont cartographié le code (inventaire de toutes les valeurs de niveau et de seuil dans `src/`, carte détecteur × pipeline, audit UX des réglages). J'ai recoupé dans le code chaque affirmation sur laquelle une proposition repose. Un relecteur a ensuite attaqué les propositions sur le code ; ses objections confirmées sont intégrées, et deux propositions ont changé de forme (P2 : la tuyauterie et le sens de l'hystérésis ; P5 : l'ordre). Chaque point est marqué **établi** (lu dans le code, fichier cité), **interprétation** (ce que j'en conclus) ou **non vérifié** (seule l'app en marche ou une mesure le dirait). Les chemins sont relatifs à la racine du dépôt.

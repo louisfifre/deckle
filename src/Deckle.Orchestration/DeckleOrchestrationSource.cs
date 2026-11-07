@@ -92,6 +92,7 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public const int EvtForegroundDeliveryRecovered = 75;
     public const int EvtExitWatchCallbackFailedDetail = 76;
     public const int EvtExitWatchCallbackRecovered = 77;
+    public const int EvtIconReadFailed = 78;
 
     // The settings store reports in free text; the text carries its own cause.
     [Event(EvtSettingsLoadWarning,
@@ -703,6 +704,19 @@ public sealed class DeckleOrchestrationSource : DeckleEventSource
     public void ForegroundDeliveryFailedDetail(int pid, string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtForegroundDeliveryFailedDetail, pid, ex_type, ex_message);
+    }
+
+    // The shell failed to give an executable's icon for a reason other than
+    // "the file is gone or protected" (those are expected and silent). The
+    // entry shows without an icon. Remembered per path, so one line per file
+    // and session.
+    [Event(EvtIconReadFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "An app icon could not be read, so the app shows without one\nfile_name={0} | ex_type={1} | hresult={2}")]
+    public void IconReadFailed(string file_name, string ex_type, int hresult)
+    {
+        if (IsEnabled()) WriteEvent(EvtIconReadFailed, file_name, ex_type, hresult);
     }
 
     [Event(EvtForegroundDeliveryRecovered,

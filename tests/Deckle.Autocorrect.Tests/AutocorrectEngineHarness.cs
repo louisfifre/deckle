@@ -45,15 +45,10 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         IFrequencyLexicon? english = null,
         Func<bool>? decisionTelemetry = null,
         Func<bool>? textTelemetry = null,
-        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null,
-        ISentenceReranker? reranker = null,
-        IAmbiguityProbe? probe = null,
-        IAmbiguityProbe? wholeSentenceProbe = null,
-        ICaretTextReader? caretTextReader = null)
+        IReadOnlyList<MistouchFamilyRecord>? mistouchFamilies = null)
     {
         Policy = policy ?? NeverCorrects;
         Injector = new RecordingInjector(Surface);
-        Host.DeferDrain = reranker is not null;
 
         // Fake layout: a key produces whatever char Type() registered for its
         // synthetic VK. Control/navigation keys are classified by the decoder
@@ -69,11 +64,8 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         Engine = new AutocorrectEngine(
             Host, _decoder, Tracker, Prober, Policy, Injector,
             () => Settings, dictionary, french, english,
-            reranker: reranker, probe: probe,
-            wholeSentenceProbe: wholeSentenceProbe,
             decisionTelemetry: decisionTelemetry, textTelemetry: textTelemetry,
-            mistouchFamilies: mistouchFamilies,
-            caretTextReader: caretTextReader);
+            mistouchFamilies: mistouchFamilies);
 
         Engine.SurfaceChanged += (s, e) => SurfaceChanges.Add((s, e));
         Engine.CorrectionApplied += d => Applied.Add(d);
@@ -105,10 +97,6 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         Surface.Backspace();
         RaiseDown(0x08); // VK_BACK
     }
-    // Starts from a known hard-return boundary without adding that pre-existing
-    // boundary to the simulated field. Sentence tests that exercise fully
-    // observed typing use this instead of accidentally relying on startup state.
-    public void BeginObservedSentence() => RaiseDown(0x0D); // VK_RETURN
     public void Enter() { Surface.Type('\n'); RaiseDown(0x0D); } // VK_RETURN
     public void ShiftEnter()
     {
@@ -132,26 +120,6 @@ internal sealed class AutocorrectEngineHarness : IDisposable
         RaiseTransition(0x11, isDown: false);
     }
     public void Pointer() => Host.RaisePointer();
-
-    // Waits for a background sentence verdict, then delivers it through the
-    // fake host's input-pump boundary on the calling test thread.
-    public bool PumpDrain(TimeSpan timeout)
-    {
-        if (!SpinWait.SpinUntil(() => Host.HasPendingDrain, timeout))
-            return false;
-        Host.Drain();
-        return true;
-    }
-
-    // Multiple ambiguous slots can complete sequentially: applying one verdict
-    // may submit the next. Keep pumping until the observable outcome is reached.
-    public bool PumpUntil(Func<bool> condition, TimeSpan timeout) =>
-        SpinWait.SpinUntil(() =>
-        {
-            if (Host.HasPendingDrain)
-                Host.Drain();
-            return condition();
-        }, timeout);
 
     public void RefocusOn(FocusedSurface surface)
     {
@@ -263,28 +231,11 @@ internal sealed class FakeKeyboardInputHost : IKeyboardInputHost
     public bool StartResult = true;
     public int StartCount;
     public int StopCount;
-    public bool DeferDrain;
-    private int _pendingDrains;
-    public bool HasPendingDrain => Volatile.Read(ref _pendingDrains) > 0;
 
     public bool Start() { StartCount++; return StartResult; }
     public void Stop() => StopCount++;
     public void SetWheelInterceptor(IWheelInterceptor? interceptor) { }
-    public void RequestDrain()
-    {
-        if (!DeferDrain)
-        {
-            DrainRequested?.Invoke();
-            return;
-        }
-        Interlocked.Increment(ref _pendingDrains);
-    }
-
-    public void Drain()
-    {
-        while (Interlocked.Exchange(ref _pendingDrains, 0) > 0)
-            DrainRequested?.Invoke();
-    }
+    public void RequestDrain() => DrainRequested?.Invoke();
     public void RaiseKey(KeyboardKeyEvent e) => KeyReceived?.Invoke(e);
     public void RaisePointer() => PointerInteraction?.Invoke();
     public void RaiseWheel(MouseWheelEvent e) => WheelObserved?.Invoke(e);

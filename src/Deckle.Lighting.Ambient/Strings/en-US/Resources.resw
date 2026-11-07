@@ -174,17 +174,17 @@
   <!-- Preset options, read as "<key>.Content" (the preset's LabelKey). The
        Settings page no longer selects a preset; the Playground Ambient page
        and the tray still do. -->
-  <data name="AmbientPresetGame.Content" xml:space="preserve">
-    <value>Game</value>
+  <data name="AmbientPresetVividFast.Content" xml:space="preserve">
+    <value>Vivid Fast</value>
   </data>
-  <data name="AmbientPresetVivid.Content" xml:space="preserve">
-    <value>Vivid</value>
+  <data name="AmbientPresetVividSlow.Content" xml:space="preserve">
+    <value>Vivid Slow</value>
   </data>
-  <data name="AmbientPresetMovie.Content" xml:space="preserve">
-    <value>Movie</value>
+  <data name="AmbientPresetRealisticFast.Content" xml:space="preserve">
+    <value>Realistic Fast</value>
   </data>
-  <data name="AmbientPresetAmbient.Content" xml:space="preserve">
-    <value>Ambient</value>
+  <data name="AmbientPresetRealisticSlow.Content" xml:space="preserve">
+    <value>Realistic Slow</value>
   </data>
   <data name="AmbientPresetCustom.Content" xml:space="preserve">
     <value>Custom</value>
@@ -488,6 +488,24 @@
   <!-- The Output readout while Ambient Light is off: the preview captures, no light receives anything. -->
   <data name="AmbientPreview_Output_Off" xml:space="preserve">
     <value>Off</value>
+  </data>
+  <data name="AmbientPreview_ScanFailed_Title" xml:space="preserve">
+    <value>The preview can't read your display</value>
+  </data>
+  <data name="AmbientPreview_ScanFailed_Message" xml:space="preserve">
+    <value>Deckle couldn't start the screen capture. Try again, or pick another display in Capture display.</value>
+  </data>
+  <data name="AmbientPreview_NoFrames_Title" xml:space="preserve">
+    <value>The capture sends no image</value>
+  </data>
+  <data name="AmbientPreview_NoFrames_Message" xml:space="preserve">
+    <value>Your display isn't giving the preview any frame. Try again to restart the capture.</value>
+  </data>
+  <data name="AmbientPreviewRetryButton.Content" xml:space="preserve">
+    <value>Try again</value>
+  </data>
+  <data name="AmbientHue_ListGroups_StoredGone" xml:space="preserve">
+    <value>The room you chose isn't on this bridge any more. Pick another one.</value>
   </data>
 
   <!-- LightZonesCard (x:Uid). -->
