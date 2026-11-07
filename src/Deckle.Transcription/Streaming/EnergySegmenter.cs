@@ -52,6 +52,9 @@ internal sealed class EnergySegmenter
     private const double FrameMs  = 50.0;
     private const double FrameSec = FrameMs / 1000.0;
 
+    // Continuous silent frames (200 ms) before Progress reports a pause.
+    internal const int PauseDisplayFrames = 4;
+
     private readonly Action<Utterance> _onUtterance;
 
     // False for a segmenter that is not cutting a dictation (the live pause
@@ -120,9 +123,15 @@ internal sealed class EnergySegmenter
     // cubic-Bézier curve (see UnitBezier), which declines from the very start of
     // the ramp (no built-in plateau, whole-frame rounding aside), with entry and
     // exit slopes set by the two control points.
+    //
+    // The length read here is the speech length (up to the last voiced frame),
+    // frozen at the first silent frame. _frames.Count would also count the pause
+    // frames: the longer the pause lasted, the shorter the delay it was waiting
+    // for, so a pause late in a long utterance cut sooner than the delay shown
+    // when it began.
     private int RequiredHangoverFrames()
     {
-        int len = _frames.Count;
+        int len = _lastVoicedIdx + 1;
         if (len <= _rampStartFrames) return _hangoverMaxFrames;
         if (len >= _rampEndFrames)   return _hangoverMinFrames;
 
@@ -251,12 +260,24 @@ internal sealed class EnergySegmenter
     // level starts the pause, and a frame at or above the level ends it. The
     // entry margin plays no part here; it only gates the opening of an
     // utterance.
-    internal UtteranceProgress Progress => new(
-        IsActive: true,
-        IsPausing: _state == State.Hangover,
-        SilenceElapsedMs: (int)(_hangoverCount * FrameMs),
-        SilenceRequiredMs: RequiredHangoverFrames() * (int)FrameMs,
-        CompletedUtterances: _nextIndex);
+    //
+    // Display debounce: the pause shows only after PauseDisplayFrames of
+    // continuous silence, so a 100 ms dip between two syllables never flashes
+    // the gauge. Display only: the hangover counter starts at the first silent
+    // frame, so the cut falls where it always did.
+    internal UtteranceProgress Progress
+    {
+        get
+        {
+            bool showsPause = _state == State.Hangover && _hangoverCount >= PauseDisplayFrames;
+            return new(
+                IsActive: true,
+                IsPausing: showsPause,
+                SilenceElapsedMs: showsPause ? (int)(_hangoverCount * FrameMs) : 0,
+                SilenceRequiredMs: RequiredHangoverFrames() * (int)FrameMs,
+                CompletedUtterances: _nextIndex);
+        }
+    }
 
     private float[] Concat(int frameCount)
     {
