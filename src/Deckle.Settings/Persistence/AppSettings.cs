@@ -24,6 +24,11 @@ public sealed class AppSettings
 public sealed class DeveloperSettings
 {
     public bool ShowPlayground { get; set; } = false;
+
+    // Shows the developer tools on the General page, the interface capture
+    // first: every open Deckle window and every settings page to PNG files,
+    // for a reviewer who judges the interface from images.
+    public bool DeveloperMode { get; set; } = false;
 }
 
 // null = unbound. The initializers are the single source of defaults: the

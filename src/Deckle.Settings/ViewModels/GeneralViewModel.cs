@@ -188,6 +188,17 @@ public partial class GeneralViewModel : ObservableObject
         PushToSettings();
     }
 
+    // Read by the page alone: it shows the developer tools while this is on.
+    [ObservableProperty]
+    public partial bool DeveloperMode { get; set; }
+
+    partial void OnDeveloperModeChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsUxSource.Log.SettingChanged("Developer.DeveloperMode", value.ToString());
+        PushToSettings();
+    }
+
     // ── Backup ───────────────────────────────────────────────────────────────
     //
     // BackupDirectory is the user override for where snapshots live (empty =
@@ -254,6 +265,7 @@ public partial class GeneralViewModel : ObservableObject
         BackupDirectory = paths.BackupDirectory;
         UpdateAutoCheckEnabled = updates.AutoCheckEnabled;
         ShowPlayground = new DeveloperSettings().ShowPlayground;
+        DeveloperMode = new DeveloperSettings().DeveloperMode;
         LoadHotkeys(new HotkeysSettings());
 
         // _isSyncing stays true — Load() will set it to false.
@@ -276,6 +288,7 @@ public partial class GeneralViewModel : ObservableObject
             BackupDirectory = shell.Paths.BackupDirectory;
             UpdateAutoCheckEnabled = shell.Updates.AutoCheckEnabled;
             ShowPlayground = shell.Developer.ShowPlayground;
+            DeveloperMode = shell.Developer.DeveloperMode;
             LoadHotkeys(shell.Hotkeys);
         }
         finally
@@ -309,6 +322,7 @@ public partial class GeneralViewModel : ObservableObject
         shell.Paths.BackupDirectory = BackupDirectory ?? "";
         shell.Updates.AutoCheckEnabled = UpdateAutoCheckEnabled;
         shell.Developer.ShowPlayground = ShowPlayground;
+        shell.Developer.DeveloperMode = DeveloperMode;
         SettingsService.Instance.Save();
     }
 

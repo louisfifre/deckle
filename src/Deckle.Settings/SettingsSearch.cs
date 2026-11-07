@@ -93,6 +93,11 @@ public static class SettingsSearch
             LabelKey = "GeneralShowPlaygroundCard",
             Keywords = ["developer", "playground", "test bench", "advanced", "debug"],
         },
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralDeveloperModeCard",
+            Keywords = ["developer", "screenshot", "capture", "review", "debug"],
+        },
     ];
 
     // In the page's order: Dictation, Input, Display and lights.
