@@ -83,7 +83,9 @@ public sealed partial class AmbientPage : Page
     // inside says on its own whether the engine gives it something live. The
     // column's width is the user's too, written on the ColumnDefinition by the
     // splitter at each drag, and kept for the page's lifetime only: nothing is
-    // persisted in this pass.
+    // persisted in this pass. Opening the pane with Ambient Light off starts
+    // the engine's preview scan, the capture with no light output; closing
+    // it, or leaving the page, releases the display.
 
     private GridLength _paneWidth;
     private double _paneMinWidth;
@@ -124,6 +126,10 @@ public sealed partial class AmbientPage : Page
         var visibility = _paneOpen ? Visibility.Visible : Visibility.Collapsed;
         PreviewSplitter.Visibility = visibility;
         PreviewPane.Visibility     = visibility;
+
+        // A collapsed pane keeps its control loaded, so the control is told:
+        // the preview scan and the refresh run only while the pane is open.
+        Preview.IsActive = _paneOpen;
     }
 
     // The grip shows while the pointer is over the splitter, while it is

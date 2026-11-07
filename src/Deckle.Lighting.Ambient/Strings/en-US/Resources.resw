@@ -406,13 +406,13 @@
     <value>Watch what the capture samples and the colour each light receives, beside the page, while you tune.</value>
   </data>
 
-  <!-- AmbientPreviewCard (x:Uid). The block's empty text shows while the
-       engine is off. -->
+  <!-- AmbientPreviewCard (x:Uid). The block's empty text shows only
+       when no display can be read; otherwise the stage shows the display's frame. -->
   <data name="AmbientPreviewBlock.EmptyHeader" xml:space="preserve">
     <value>Live preview</value>
   </data>
   <data name="AmbientPreviewBlock.EmptyDescription" xml:space="preserve">
-    <value>Turn Ambient Light on to see what the capture samples and the colour each light receives.</value>
+    <value>Deckle can't find a display to preview.</value>
   </data>
   <data name="AmbientPreviewZonesToggle.Content" xml:space="preserve">
     <value>Zones</value>
@@ -462,6 +462,14 @@
   </data>
   <data name="AmbientPreview_Output_Rest" xml:space="preserve">
     <value>REST</value>
+  </data>
+  <!-- The Capture readout before any capture: the display's size, read from Windows. -->
+  <data name="AmbientPreview_Display_Format" xml:space="preserve">
+    <value>{0} × {1}</value>
+  </data>
+  <!-- The Output readout while Ambient Light is off: the preview captures, no light receives anything. -->
+  <data name="AmbientPreview_Output_Off" xml:space="preserve">
+    <value>Off</value>
   </data>
 
   <!-- LightZonesCard (x:Uid). -->

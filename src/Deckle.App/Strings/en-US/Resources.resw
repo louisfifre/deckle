@@ -1236,6 +1236,14 @@
   <data name="AmbientPreview_Output_Rest" xml:space="preserve">
     <value>REST</value>
   </data>
+  <!-- The Capture readout before any capture: the display's size, read from Windows. -->
+  <data name="AmbientPreview_Display_Format" xml:space="preserve">
+    <value>{0} × {1}</value>
+  </data>
+  <!-- The Output readout while Ambient Light is off: the preview captures, no light receives anything. -->
+  <data name="AmbientPreview_Output_Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
   <data name="AmbientLights_Zone_None" xml:space="preserve">
     <value>No zone</value>
   </data>
