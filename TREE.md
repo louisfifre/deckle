@@ -1908,6 +1908,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HudFeedbackSinkTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── ReswMirrorTests.cs
 │   │   ├── TrayIncidentLinesTests.cs
 │   │   └── TrayRightClickMenuTests.cs
 │   ├── Deckle.Audio.Tests/
