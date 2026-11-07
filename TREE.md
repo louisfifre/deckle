@@ -1387,9 +1387,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── DisplayTarget.cs
 │   │   │   ├── DisplayTargets.cs
 │   │   │   └── HdrStateSwitch.cs
+│   │   ├── Icons/
+│   │   │   ├── ExecutableIcon.cs
+│   │   │   ├── ExecutableIconCache.cs
+│   │   │   └── ExecutableIconReader.cs
 │   │   ├── Interop/
 │   │   │   ├── DisplayConfigNativeMethods.cs
-│   │   │   └── ProcessNativeMethods.cs
+│   │   │   ├── ProcessNativeMethods.cs
+│   │   │   └── ShellIconNativeMethods.cs
 │   │   ├── Processes/
 │   │   │   └── RunningApps.cs
 │   │   ├── Registry/
@@ -2348,6 +2353,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Orchestration.Tests.csproj
 │   │   ├── DeckleOrchestrationSourceTests.cs
 │   │   ├── DisplayConfigLayoutTests.cs
+│   │   ├── ExecutableIconTests.cs
 │   │   ├── ExecutableLocatorTests.cs
 │   │   ├── Fixture.cs
 │   │   ├── ForegroundChangeMappingTests.cs
