@@ -95,6 +95,18 @@ public class TaskbarCoverSettingsTests
         Assert.Equal(expected, settings.ApproachDistanceDip);
     }
 
+    // Regression: the card showed "px" beside a DIP figure, and the
+    // maintainer read it as physical pixels ("still in pixels, not in DIP").
+    [Trait("Category", "regression")]
+    [Theory]
+    [InlineData("px")]
+    [InlineData("pixels")]
+    public void TheUnitBesideTheFigureIsNeverAPixelWord(string pixelWord)
+    {
+        Assert.False(string.Equals(pixelWord, ApproachDistance.UnitLabel, StringComparison.OrdinalIgnoreCase));
+        Assert.Equal("DIP", ApproachDistance.UnitLabel);
+    }
+
     [Fact]
     public void TheDefaultSitsInsideTheRange()
     {
