@@ -37,6 +37,15 @@ namespace Deckle.Lighting.Ambient;
 /// display refreshes (up to 140 per second on a 120 Hz display), so the cap
 /// must start from the refresh rate Windows announces and not from what DXGI
 /// delivers; <c>CapturePacer</c> then paces to the target.
+/// <para>
+/// History, so it is not lost. Until 2026-11-07 the rate was a user setting
+/// (15, 30 or 60 Hz). It was dropped by the settings triage of 2026-10-14
+/// and put back on 2026-10-15, because the maintainer looked for the 60 fps
+/// choice and found nothing. On 2026-11-07, after the cost measurement above,
+/// he decided to remove the setting for good: a value the code can decide is
+/// decided in code, by tiers, with a global Performance mode for weak PCs
+/// (<c>deckle-settings-ux</c>). Do not bring the setting back; change a tier.
+/// </para>
 /// </remarks>
 public static class AmbientCaptureCap
 {
