@@ -2062,6 +2062,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MagnitudeGrainIntegerTests.cs
 │   │   ├── MagnitudeGrainTests.cs
 │   │   ├── PauseScaleTests.cs
+│   │   ├── ResetWheelBugNotes.md
 │   │   ├── SentinelNumberFormatterTests.cs
 │   │   ├── SettingFactoryTests.cs
 │   │   └── SettingsExpanderItemsBugNotes.md
