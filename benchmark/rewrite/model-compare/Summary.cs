@@ -22,8 +22,10 @@ static partial class Summary
         var judgements = File.Exists(judgePath) ? Json.ReadLines<JudgementRow>(judgePath) : [];
         var raw = Corpus.LoadRaw();
 
+        // Keyed with the iteration: a campaign judges every repeat of a cell,
+        // and without it the last repeat's verdict would stand for all ten.
         var byKey = judgements
-            .GroupBy(j => (j.Id, j.Model, j.Prompt, j.Source))
+            .GroupBy(j => (j.Id, j.Model, j.Prompt, j.Source, j.Iteration))
             .ToDictionary(g => g.Key, g => g.Last()); // a rerun judge appends; the last verdict wins
 
         var md = new StringBuilder();
@@ -44,7 +46,7 @@ static partial class Summary
         {
             var rows = group.ToList();
             var judged = rows
-                .Select(g => byKey.TryGetValue((g.Id, g.Model, g.Prompt, g.Source), out var j) ? j : null)
+                .Select(g => byKey.TryGetValue((g.Id, g.Model, g.Prompt, g.Source, g.Iteration), out var j) ? j : null)
                 .Where(j => j is not null).Select(j => j!).ToList();
             var parsed = judged.Where(j => j.Judgement is not null).Select(j => j.Judgement!).ToList();
 
@@ -91,7 +93,7 @@ static partial class Summary
                 var m = raw.TryGetValue(gen.Id, out var r) ? Markers.Delta(r.Text, gen.Text!) : null;
                 string counts = m is null ? "" :
                     $" — words {m.RawWords}→{m.RewriteWords}, negations (excl. ne) {m.RawNegationsNoNe}→{m.RewriteNegationsNoNe}, hedges {m.RawHedges}→{m.RewriteHedges}";
-                byKey.TryGetValue((gen.Id, gen.Model, gen.Prompt, gen.Source), out var j);
+                byKey.TryGetValue((gen.Id, gen.Model, gen.Prompt, gen.Source, gen.Iteration), out var j);
                 string verdict = j is null ? "not judged" : j.Error ?? j.Judgement?.Verdict ?? "judge answer did not parse";
                 md.AppendLine($"**{gen.Id}** ({gen.Bucket}) — {verdict}{counts}");
                 if (j?.Judgement is null) continue;
