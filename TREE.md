@@ -2026,6 +2026,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SentenceCanonicalLatencyCommandTests.cs
 │   │   ├── SentenceCorpusTests.cs
 │   │   ├── SentenceDecisionInventoryTests.cs
+│   │   ├── SentenceJudgeBugNotes.md
 │   │   ├── SentenceOrderAblationTests.cs
 │   │   ├── SentenceProfileTests.cs
 │   │   ├── SentenceProposalGateTests.cs
