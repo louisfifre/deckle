@@ -90,11 +90,21 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
     // as a dictation would first try it. If it passes, we know the recording
     // session can start; otherwise the code maps to a MicErrorKind for the
     // orchestrator to localize. An empty id is the system default device.
+    //
+    // A refused probe logs the step that refused, as a refused Record() does.
+    // The code alone cannot tell a missing portaudio.dll (stage load) from a
+    // device that refuses (stage open): both can end as the same PortAudio error.
+    private const string ProbePurpose = "probe";
+
     public ProbeResult Probe(string endpointId)
     {
         CaptureOpenResult open = _provider.Open(endpointId ?? "", new CaptureOptions(Exclusive: false));
         if (open.Endpoint is null)
         {
+            CaptureDeviceIdentity device = open.Device;
+            DeckleAudioSource.Log.MicrophoneOpenFailed(
+                ProbePurpose, open.FailedStage ?? "open", CaptureErrors.Format(open.ErrorCode), CaptureErrors.Name(open.ErrorCode),
+                device.EndpointId, device.Name);
             uint code = unchecked((uint)open.ErrorCode);
             return new ProbeResult(false, ClassifyError(code), code, open.FailedStage);
         }

@@ -55,7 +55,7 @@ public sealed class DeckleWhispSourceTests : IDisposable
     {
         using var listener = new TestEventListener("Deckle-Whisp");
 
-        DeckleWhispSource.Log.MicrophoneUnavailable("probe", 2);
+        DeckleWhispSource.Log.MicrophoneUnavailable("probe", "0x80070002");
         DeckleWhispSource.Log.MicrophoneRecovered();
         DeckleWhispSource.Log.ModelUnavailable("w1", "file_not_found", "", "");
         DeckleWhispSource.Log.ModelRecovered("w2", 1200, "CPU");
@@ -66,6 +66,21 @@ public sealed class DeckleWhispSourceTests : IDisposable
             e => Assert.Equal(DeckleWhispSource.EvtMicrophoneRecovered, e.EventId),
             e => Assert.Equal(DeckleWhispSource.EvtModelUnavailable, e.EventId),
             e => Assert.Equal(DeckleWhispSource.EvtModelRecovered, e.EventId));
+    }
+
+    // Version 2 passed the code as a uint: no typed WriteEvent overload takes
+    // it, and the listener read its bytes as text ("�￿").
+    [Theory]
+    [InlineData(0x88890004u, "0x88890004")]
+    [InlineData(0xFFFFD8F0u, "-10000")]
+    public void TheMicrophoneIncidentCarriesItsCodeAsAPersonQuotesIt(uint code, string expected)
+    {
+        using var listener = new TestEventListener("Deckle-Whisp");
+
+        DeckleWhispSource.Log.MicrophoneUnavailable("probe", Deckle.Audio.MicrophoneCapture.FormatErrorCode(code));
+
+        var e = Assert.Single(listener.Events);
+        Assert.Equal(expected, e.Payload![e.PayloadNames!.IndexOf("error_code")]);
     }
 
     [Fact]
