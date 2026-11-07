@@ -135,20 +135,8 @@ public partial class App
         // file in its constructor, and one that ran first would find its module
         // file missing, write defaults and defeat the migration.
         Settings.SettingsBootstrap.MigrateLegacyToPerModule();
-        OperationalLogAdmission.Configure(activity => activity switch
-        {
-            OperationalLogActivity.Ambient =>
-                LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity,
-            OperationalLogActivity.Transcription =>
-                LoggingSettingsService.Instance.Current.LogTranscriptionActivity,
-            OperationalLogActivity.Autocorrect =>
-                LoggingSettingsService.Instance.Current.LogAutocorrectActivity,
-            OperationalLogActivity.Input =>
-                LoggingSettingsService.Instance.Current.LogInputActivity,
-            OperationalLogActivity.Windowing =>
-                LoggingSettingsService.Instance.Current.LogWindowingActivity,
-            _ => false,
-        });
+        OperationalLogAdmission.Configure(
+            activity => LoggingSettingsService.Instance.Current.Verbosity(activity));
         EmitLoggingPolicy();
         context.Milestone("settings-bootstrap");
 
@@ -321,11 +309,11 @@ public partial class App
     {
         var logging = LoggingSettingsService.Instance.Current;
         DeckleAppSource.Log.LoggingPolicy(
-            ambient:         logging.LogAmbientCaptureActivity,
-            transcription:   logging.LogTranscriptionActivity,
-            autocorrect:     logging.LogAutocorrectActivity,
-            input:           logging.LogInputActivity,
-            windowing:       logging.LogWindowingActivity,
+            ambient:         logging.AmbientVerbosity.ToString(),
+            transcription:   logging.TranscriptionVerbosity.ToString(),
+            autocorrect:     logging.AutocorrectVerbosity.ToString(),
+            input:           logging.InputVerbosity.ToString(),
+            windowing:       logging.WindowingVerbosity.ToString(),
             app_log_to_disk: logging.ApplicationLogToDisk);
     }
 }

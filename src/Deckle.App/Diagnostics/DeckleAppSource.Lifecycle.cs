@@ -59,19 +59,20 @@ public sealed partial class DeckleAppSource
     }
 
     // What the logs of this run can contain: a reader who finds no
-    // transcription detail learns here that the activity was off, not that
-    // nothing happened.
+    // transcription detail learns here that the activity was at Summary or
+    // Off, not that nothing happened. Each activity carries its verbosity
+    // word: Off, Summary or Details.
     [Event(EvtLoggingPolicy,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
            Message = "Logging policy")]
     public void LoggingPolicy(
-        bool ambient,
-        bool transcription,
-        bool autocorrect,
-        bool input,
-        bool windowing,
+        string ambient,
+        string transcription,
+        string autocorrect,
+        string input,
+        string windowing,
         bool app_log_to_disk)
     {
         if (IsEnabled())

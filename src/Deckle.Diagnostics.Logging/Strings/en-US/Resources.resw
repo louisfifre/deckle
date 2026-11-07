@@ -70,39 +70,50 @@
     <value>What Deckle logs and records about itself, and where it keeps it.</value>
   </data>
 
-  <!-- Logging section (x:Uid header + composed card label key) -->
+  <!-- Logging section (x:Uid header + composed card label key). Each card is a
+       verbosity control; its description says what Summary and Details add,
+       in that order, since milestones, warnings and errors pass at every level. -->
   <data name="DiagnosticsPageLoggingSection.Title" xml:space="preserve">
-    <value>Logging details</value>
+    <value>Log verbosity</value>
+  </data>
+  <data name="LoggingVerbosityOff.Content" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="LoggingVerbositySummary.Content" xml:space="preserve">
+    <value>Summary</value>
+  </data>
+  <data name="LoggingVerbosityDetails.Content" xml:space="preserve">
+    <value>Details</value>
   </data>
   <data name="LoggingAmbientCard.Header" xml:space="preserve">
-    <value>Ambient details</value>
+    <value>Ambient lighting</value>
   </data>
   <data name="LoggingAmbientCard.Description" xml:space="preserve">
-    <value>Frame analysis, colours, light pushes and heartbeats.</value>
+    <value>Summary: a heartbeat every 5 seconds. Details: also light pushes, colours and frame analysis.</value>
   </data>
   <data name="LoggingTranscriptionCard.Header" xml:space="preserve">
-    <value>Transcription details</value>
+    <value>Transcription</value>
   </data>
   <data name="LoggingTranscriptionCard.Description" xml:space="preserve">
-    <value>Technical detail of dictation and file transcription. Transcript text stays in the corpus only.</value>
+    <value>Summary: a heartbeat every second and the figures of each take. Details: also each utterance and segment. Transcript text stays in the corpus only.</value>
   </data>
   <data name="LoggingAutocorrectCard.Header" xml:space="preserve">
-    <value>Autocorrect details</value>
+    <value>Autocorrect</value>
   </data>
   <data name="LoggingAutocorrectCard.Description" xml:space="preserve">
-    <value>Focus probes, decisions, reranking and learning. Typed text stays in its own datasets.</value>
-  </data>
-  <data name="LoggingWindowingCard.Header" xml:space="preserve">
-    <value>Windowing details</value>
+    <value>Summary: activity counts every 30 seconds. Details: also focus probes, decisions and learning. Typed text stays in its own datasets.</value>
   </data>
   <data name="LoggingInputCard.Header" xml:space="preserve">
-    <value>Input activity</value>
+    <value>Input</value>
   </data>
   <data name="LoggingInputCard.Description" xml:space="preserve">
-    <value>Raw Input summaries and Trackpad gesture details.</value>
+    <value>Summary: touchpad frame counts. Details: also Trackpad gestures.</value>
+  </data>
+  <data name="LoggingWindowingCard.Header" xml:space="preserve">
+    <value>Windowing</value>
   </data>
   <data name="LoggingWindowingCard.Description" xml:space="preserve">
-    <value>Window placement, DPI, overlay stacking, popups and resize frames.</value>
+    <value>Details: window placement, DPI, overlay stacking, popups and resize frames. No summary yet.</value>
   </data>
 
   <!-- Telemetry section (x:Uid header + composed card label keys). The General*
