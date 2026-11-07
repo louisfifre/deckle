@@ -143,6 +143,35 @@ public class EnergySegmenterTests
         Assert.Single(got);
     }
 
+    // Past the end of the ramp the delay is the floor and nothing else: the cut
+    // lands on the floor's own frame, not one before, and keeps the speech plus
+    // what the pause gave of the margin (the pause is shorter than the margin
+    // here, so everything collected is kept).
+    [Fact]
+    public void PastTheRampTheCutLandsExactlyOnTheFloorFrame()
+    {
+        var got = new List<Utterance>();
+        var settings = new EnergySegmenterSettings
+        {
+            HangoverMaxMs       = 400,
+            HangoverMinMs       = 100,   // floor: 2 frames
+            HangoverRampStartMs = 500,
+            HangoverRampEndMs   = 1_000, // ramp ends at 20 frames
+        };
+        var seg = new EnergySegmenter(settings, VoiceLevel, minSpeechMs: 50, got.Add);
+
+        PushN(seg, voiced: true, 25);
+        Assert.Equal(2, seg.Snapshot().RequiredHangoverFrames);
+
+        seg.Push(Frame(voiced: false));
+        Assert.Empty(got);               // 1 silent frame < floor
+
+        seg.Push(Frame(voiced: false));  // 2 = floor → cut
+        var u = Assert.Single(got);
+        Assert.Equal(27, FrameCount(u)); // 25 voiced + 2 silent (margin 3 not reached)
+        Assert.True(u.EndedOnSilence);
+    }
+
     [Fact]
     public void BezierControlPointsShapeIntermediateHangover()
     {
@@ -222,6 +251,85 @@ public class EnergySegmenterTests
 
         seg.Push(FrameAtDbfs(detector.EntryDbfs));
         Assert.Equal(1, seg.Snapshot().CurrentUtteranceFrames);
+    }
+
+    // A dip of two silent frames (100 ms) between syllables is not a pause the
+    // person should see: the gauge waits for 4 continuous silent frames.
+    [Fact]
+    public void ADipOf100MsNeverReportsAPause()
+    {
+        var seg = new EnergySegmenter(TestSettings(), VoiceLevel, MinSpeechMs, _ => { });
+
+        PushN(seg, voiced: true, 10);
+        for (int i = 0; i < 2; i++)
+        {
+            seg.Push(Frame(voiced: false));
+            Assert.False(seg.Progress.IsPausing);
+            Assert.Equal(0, seg.Progress.SilenceElapsedMs);
+        }
+        seg.Push(Frame(voiced: true));
+        Assert.False(seg.Progress.IsPausing);
+    }
+
+    // The display waits, the cut does not: the hangover counts from the first
+    // silent frame, so the 8th silent frame (400 ms) cuts, with the pause shown
+    // from the 4th. Kept = 10 voiced + 3 margin.
+    [Fact]
+    public void TheCutLandsExactlyAtTheRequiredFramesWhateverTheDisplayDebounce()
+    {
+        var got = new List<Utterance>();
+        var seg = new EnergySegmenter(TestSettings(), VoiceLevel, MinSpeechMs, got.Add);
+
+        PushN(seg, voiced: true, 10);
+        for (int silent = 1; silent <= 7; silent++)
+        {
+            seg.Push(Frame(voiced: false));
+            Assert.Empty(got);
+            Assert.Equal(silent >= EnergySegmenter.PauseDisplayFrames, seg.Progress.IsPausing);
+        }
+        Assert.Equal(350, seg.Progress.SilenceElapsedMs);
+
+        seg.Push(Frame(voiced: false)); // 8th silent frame
+
+        var u = Assert.Single(got);
+        Assert.Equal(13, FrameCount(u));
+    }
+
+    // Linear curve, ramp 10 → 20 frames, delay 8 → 2 frames. After 12 voiced
+    // frames the delay is 7 (p = 0.2). With the old length (voiced + pause frames)
+    // the delay shrank as the pause went on and the cut fell on the 4th silent
+    // frame. Now it is frozen at the first silent frame.
+    [Fact]
+    public void ALatePauseDoesNotShortenTheRequiredDelay()
+    {
+        var got = new List<Utterance>();
+        var settings = new EnergySegmenterSettings
+        {
+            HangoverMaxMs       = 400,
+            HangoverMinMs       = 100,
+            HangoverRampStartMs = 500,
+            HangoverRampEndMs   = 1_000,
+            HangoverCurveX1     = 0.0,
+            HangoverCurveY1     = 0.0,
+            HangoverCurveX2     = 1.0,
+            HangoverCurveY2     = 1.0,
+        };
+        var seg = new EnergySegmenter(settings, VoiceLevel, minSpeechMs: 50, got.Add);
+
+        PushN(seg, voiced: true, 12);
+        int required = seg.Snapshot().RequiredHangoverFrames;
+        Assert.Equal(7, required);
+
+        for (int silent = 1; silent < required; silent++)
+        {
+            seg.Push(Frame(voiced: false));
+            Assert.Empty(got);
+            Assert.Equal(required, seg.Snapshot().RequiredHangoverFrames);
+            Assert.Equal(required * 50, seg.Progress.SilenceRequiredMs);
+        }
+
+        seg.Push(Frame(voiced: false));
+        Assert.Single(got);
     }
 
     [Fact]

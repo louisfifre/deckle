@@ -397,7 +397,10 @@ public sealed partial class TranscriptionEngine
     // span's start to the last one's end, pauses in between kept as spoken.
     // The monolithic take uses it, where TrimSpeech would glue every pause of a
     // long dictation together and its per-span floor would lose a short word
-    // said after a pause. Returns the slice, empty when Silero found no speech,
+    // said after a pause; the edge detection also lowers that floor to one
+    // frame, since a short word can be the first or last of the take (the
+    // slicing and the floor are SpeechEdges, in Deckle.Vad, tested there).
+    // Returns the slice, empty when Silero found no speech,
     // or null when the detection failed, reported to the service as TrimSpeech
     // does. The log lines are TrimSpeech's: kept is the slice's length, so the
     // inner-gap figure of SpeechTrimBounds reads 0.
@@ -406,10 +409,11 @@ public sealed partial class TranscriptionEngine
         try
         {
             long trimStart = Stopwatch.GetTimestamp();
-            IReadOnlyList<SpeechSegment> segments = vad.DetectSpeech(samples, vadOptions);
-            float[] kept = segments.Count == 0
-                ? Array.Empty<float>()
-                : samples[segments[0].StartSample..segments[^1].EndSample];
+            // The span floor is lowered to one frame (SpeechEdges): at a take's
+            // edge a span under the shared floor is a short word, not a blip.
+            IReadOnlyList<SpeechSegment> segments =
+                vad.DetectSpeech(samples, SpeechEdges.OptionsFor(vadOptions));
+            float[] kept = SpeechEdges.Slice(samples, segments);
             long trimMs = (long)Stopwatch.GetElapsedTime(trimStart).TotalMilliseconds;
             DeckleVadSource.Log.SpeechTrimmed(
                 utteranceIndex, samples.Length, kept.Length, segments.Count, trimMs);
