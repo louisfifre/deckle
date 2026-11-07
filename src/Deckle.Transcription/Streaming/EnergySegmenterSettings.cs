@@ -42,7 +42,7 @@ namespace Deckle.Transcription;
 public sealed class EnergySegmenterSettings
 {
     public int    HangoverMaxMs       { get; set; } = 5_000;
-    public int    HangoverMinMs       { get; set; } = 500;
+    public int    HangoverMinMs       { get; set; } = 1_000;
     public int    HangoverRampStartMs { get; set; } = 15_000;
     public int    HangoverRampEndMs   { get; set; } = 120_000;
     public double HangoverCurveX1     { get; set; } = 0.85;

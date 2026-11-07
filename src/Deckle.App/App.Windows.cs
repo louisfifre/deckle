@@ -7,7 +7,11 @@ namespace Deckle.App;
 
 public partial class App
 {
-    private void ShowLogWindowLazy()
+    private void ShowLogWindowLazy() => EnsureLogWindow().ShowAndActivate();
+
+    // The window created and wired, not shown: the self-check shows it without
+    // activating it (SelfCheck/OffscreenWindow.cs).
+    private LogWindow EnsureLogWindow()
     {
         if (_logWindow is null)
         {
@@ -38,10 +42,13 @@ public partial class App
             ApplyThemeToSingle(window);
             DeckleWindowingSource.Log.WindowLoadComplete("log", sw.ElapsedMilliseconds);
         }
-        _logWindow.ShowAndActivate();
+        return _logWindow;
     }
 
     private void ShowSettingsWindowLazy(string? pageTag = null)
+        => EnsureSettingsWindow().ShowAndActivate(pageTag);
+
+    private Settings.SettingsWindow EnsureSettingsWindow()
     {
         if (_settingsWindow is null)
         {
@@ -67,13 +74,18 @@ public partial class App
             ApplyThemeToSingle(window);
             DeckleWindowingSource.Log.WindowLoadComplete("settings", sw.ElapsedMilliseconds);
         }
-        _settingsWindow.ShowAndActivate(pageTag);
+        return _settingsWindow;
     }
 
     private void ShowPlaygroundLazy()
     {
         // A developer surface: no path opens it while the setting is off.
         if (!PlaygroundEnabled) return;
+        EnsurePlaygroundWindow().ShowAndActivate();
+    }
+
+    private PlaygroundWindow EnsurePlaygroundWindow()
+    {
         if (_playgroundWindow is null)
         {
             // Not gated: one Stopwatch per window per process, and the provider
@@ -97,7 +109,7 @@ public partial class App
             ApplyThemeToSingle(window);
             DeckleWindowingSource.Log.WindowLoadComplete("playground", sw.ElapsedMilliseconds);
         }
-        _playgroundWindow.ShowAndActivate();
+        return _playgroundWindow;
     }
 
     // The constructor is where XAML parsing and page composition fail. The

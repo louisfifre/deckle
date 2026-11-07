@@ -197,7 +197,8 @@ public static partial class HudComposition
 
         // How one level sample reaches the recording outline. The level is a
         // live measurement, like the countdown's progress, not a decorative
-        // motion: with the Windows "Animation effects" preference off, every
+        // motion: with animations reduced (Deckle's setting, or Windows's
+        // "Animation effects" under the default "Same as Windows"), every
         // sample is still written, only without the glide between samples
         // (as HudChrono.UpdateUtteranceCountdown passes interpolate: false).
         // Returning no step there once left the outline frozen at full
