@@ -1,4 +1,5 @@
 using Deckle.Anytype;
+using Deckle.Diagnostics;
 using Xunit;
 
 namespace Deckle.Anytype.Tests;
@@ -119,6 +120,60 @@ public sealed class GatewaySupervisorTests : IDisposable
 
         Assert.False(_processes.Process(_processes.LastSpawnedId).HasExited);
         Assert.Empty(_processes.StopRequests);
+    }
+
+    private static bool IsOpen => UserIncidentRegistry.Instance.IsOpen(UserIncidents.AnytypeGateway);
+
+    [Fact]
+    public async Task A_gateway_that_keeps_crashing_is_given_up_and_shown_as_a_user_incident()
+    {
+        UserIncidentRegistry.Instance.Close(UserIncidents.AnytypeGateway);
+        GatewaySupervisor supervisor = Supervisor();
+        supervisor.Start();
+
+        // The first start and four restarts all die at once: the ladder is spent.
+        for (int spawned = 1; spawned <= 5; spawned++)
+        {
+            await Until(() => _processes.Spawned.Count == spawned);
+            _processes.Process(_processes.LastSpawnedId).Exit(GatewayContract.ExitCodes.Faulted);
+        }
+        await supervisor.Completion.WaitAsync(Patience);
+        await supervisor.DisposeAsync();
+
+        Assert.Equal(
+            "gave_up",
+            UserIncidentRegistry.Instance.Snapshot().Single(i => i.Id == UserIncidents.AnytypeGateway).Reason);
+        UserIncidentRegistry.Instance.Close(UserIncidents.AnytypeGateway);
+    }
+
+    [Fact]
+    public async Task A_gateway_that_stops_for_missing_credentials_is_no_user_incident()
+    {
+        UserIncidentRegistry.Instance.Close(UserIncidents.AnytypeGateway);
+        GatewaySupervisor supervisor = Supervisor();
+        supervisor.Start();
+        await Until(() => _processes.Spawned.Count == 1);
+
+        _processes.Process(_processes.LastSpawnedId).Exit(GatewayContract.ExitCodes.NotProvisioned);
+        await supervisor.Completion.WaitAsync(Patience);
+        await supervisor.DisposeAsync();
+
+        Assert.False(IsOpen);
+    }
+
+    [Fact]
+    public async Task A_gateway_that_serves_again_closes_the_incident_an_earlier_give_up_left()
+    {
+        UserIncidentRegistry.Instance.Open(UserIncidents.AnytypeGateway, "gave_up");
+        _processes.Running(77, StagedExecutable, listening: true);
+
+        await using (GatewaySupervisor supervisor = Supervisor())
+        {
+            supervisor.Start();
+            await Until(() => !IsOpen);
+        }
+
+        Assert.False(IsOpen);
     }
 
     private static async Task Until(Func<bool> condition)

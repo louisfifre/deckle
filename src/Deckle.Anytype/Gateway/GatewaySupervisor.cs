@@ -107,6 +107,10 @@ public sealed class GatewaySupervisor : IAsyncDisposable
                     return;
                 }
 
+                // A gateway serves again (adopted or started): an incident left
+                // by an earlier give-up no longer describes it.
+                UserIncidentRegistry.Instance.Close(UserIncidents.AnytypeGateway);
+
                 step = "prune";
                 int removed = GatewayPayload.Prune(_versionsRoot, fingerprint);
                 if (removed > 0)
@@ -131,6 +135,8 @@ public sealed class GatewaySupervisor : IAsyncDisposable
                 if (restarts >= RestartLadder.Length)
                 {
                     DeckleAnytypeSource.Log.GatewaySupervisionGaveUp(restarts, workId);
+                    // Nothing restarts it before Deckle does: the tray says so.
+                    UserIncidentRegistry.Instance.Open(UserIncidents.AnytypeGateway, "gave_up");
                     (outcome, reason) = ("failed", "gave_up");
                     return;
                 }

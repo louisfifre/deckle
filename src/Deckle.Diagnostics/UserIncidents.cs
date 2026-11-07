@@ -27,6 +27,10 @@ public static class UserIncidents
     // The Anytype backend stopped, stopped answering, or cannot be supervised.
     public const string AnytypeBackend = "anytype_backend";
 
+    // The Anytype gateway, which serves the MCP clients, stopped and Deckle
+    // gave up restarting it.
+    public const string AnytypeGateway = "anytype_gateway";
+
     // Ambient Light kept failing to push colours to the Hue bridge.
     public const string HuePush = "hue_push";
 
@@ -40,6 +44,6 @@ public static class UserIncidents
     public static IReadOnlyList<string> All { get; } =
     [
         PrecisionScroll, Microphone, WhisperModel, VadModel,
-        AnytypeBackend, HuePush, HueEvents, ToastsElevated,
+        AnytypeBackend, AnytypeGateway, HuePush, HueEvents, ToastsElevated,
     ];
 }
