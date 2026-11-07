@@ -1,5 +1,5 @@
 ---
-description: "Où passe le temps de build et de test de Deckle (mesuré le 2026-11-06/07 sur le worktree build-time-49b2a9) : le compilateur XAML des 17 projets WinUI pèse ~62 % d'un build propre et refait tout son travail à chaque build, défaut connu en amont (microsoft-ui-xaml #11264) que deux propriétés non documentées contournent (build sans changement 115 s → 44 s) ; coût d'un projet simple négligeable ; construire seulement le module touché (4 s au lieu de 115 s) ; 37 suites de tests, 83 à 130 s, dont des attentes et des tests d'appareillage vérifiés ; quatre propositions classées avec gain mesuré ou estimé, effort et coût de conception."
+description: "Où passe le temps de build et de test de Deckle (mesuré le 2026-11-06/07 sur le worktree build-time-49b2a9) : le compilateur XAML des 17 projets WinUI pèse ~62 % d'un build propre et refait tout son travail à chaque build, défaut connu en amont (microsoft-ui-xaml #11264) que deux propriétés non documentées contournent (build sans changement 115 s → 44 s), contournement ensuite refusé parce qu'il laisse du code XAML généré périmé (§9) ; coût d'un projet simple négligeable ; construire seulement le module touché (4 s au lieu de 115 s) ; 37 suites de tests, 83 à 130 s, dont des attentes et des tests d'appareillage vérifiés ; quatre propositions classées avec gain mesuré ou estimé, effort et coût de conception."
 ---
 
 # Temps de build et de test — où il passe, ce qu'on peut en faire
@@ -12,7 +12,7 @@ Convention de lecture : chaque affirmation est marquée **mesuré** (j'ai un chi
 
 1. **Mesuré** — Un build propre de toute la solution prend **174 à 184 s**. Un build **sans aucun changement** prend encore **108 à 138 s** (115 à 119 s sans journal de mesure), soit 60 à 70 % d'un build propre.
 2. **Mesuré** — La cause est le **compilateur XAML** (le programme qui transforme les fichiers d'interface `.xaml` en code), lancé en deux passes dans chacun des 17 projets WinUI, à chaque build : 118 s de travail cumulé, plus ~25 s de génération des ressources (fichiers PRI). Le compilateur C# ne pèse que ~13 % d'un build propre.
-3. **Vérifié** — Ce n'est pas propre à Deckle. C'est un défaut connu du compilateur XAML de Windows App SDK, signalé en amont (ticket [#11264](https://github.com/microsoft/microsoft-ui-xaml/issues/11264)) : le build sans changement refait toutes les pages. Un contournement par deux propriétés MSBuild y est rapporté. **Mesuré ici** : avec ce contournement, le build sans changement tombe à **43,6 à 45,4 s** (contre 108 à 119 s), sans fichier XAML généré différent d'un état à l'autre (§6.2). Ce n'est **pas** un réglage pris en charge par Microsoft.
+3. **Vérifié** — Ce n'est pas propre à Deckle. C'est un défaut connu du compilateur XAML de Windows App SDK, signalé en amont (ticket [#11264](https://github.com/microsoft/microsoft-ui-xaml/issues/11264)) : le build sans changement refait toutes les pages. Un contournement par deux propriétés MSBuild y est rapporté. **Mesuré ici** : avec ce contournement, le build sans changement tombe à **43,6 à 45,4 s** (contre 108 à 119 s), sans fichier XAML généré différent d'un état à l'autre (§6.2). Ce n'est **pas** un réglage pris en charge par Microsoft. **Refusé ensuite** : un essai de plus a montré du code généré périmé (§9).
 4. **Mesuré** — Le nombre de projets ne coûte presque rien **pour les projets simples** (~0,4 s chacun). Il coûte **5,6 à 8,8 s par projet WinUI**, et ce prix est fixe : 1 fichier XAML ou 9, c'est à peu près la même durée.
 5. **Mesuré** — Modifier un fichier ne coûte presque rien de plus que ne rien modifier. Seul un changement de **surface publique** de `Deckle.Core` recompile les 88 projets (+25 s).
 6. **Mesuré, décisif pour le quotidien** — Construire **seulement le projet de test du module touché** prend **3,8 s** pour un module simple (contre 115 s pour la solution), 26 à 30 s pour Autocorrect, 39 à 45 s pour Transcription.
@@ -284,6 +284,8 @@ Classement par rapport gain / effort / risque, après l'approfondissement. Le nu
 
 ### 6.2 Proposition 2 — Ne plus refaire le travail du compilateur XAML (gain mesuré, effort faible, risque à surveiller)
 
+> **Refusée le 2026-11-07, voir §9.** Le contournement laisse du code XAML généré périmé quand une propriété d'un contrôle partagé change dans le C# d'un autre projet. Ce qui suit reste la recherche telle qu'elle a été faite.
+
 **Réponse à la question « existe-t-il une voie officielle ? »** : non. Il existe un **défaut connu en amont**, un **correctif pas encore livré dans une version stable** (d'après les pages lues), et un **contournement par deux propriétés non documentées**. Verdict : **contournement seulement** (« hack only »), mais minuscule, réversible, et mesuré ici.
 
 **État en amont** (pages GitHub lues le 2026-11-07 ; les dates et versions sont celles qu'elles indiquent) :
@@ -383,3 +385,22 @@ Les pistes restent **séparées** : chacune est un petit changement indépendant
 ## 8. Fichiers de mesure
 
 Les chiffres bruts (CSV de mesures, journaux binaires, empreintes, notes des agents) sont dans le dossier de travail de la session (scratchpad) ; ils ne sont pas copiés dans le dépôt. Les fichiers temporaires de test (`BuildTimeProbe.cs`, les modifications de `Directory.Build.props`, `ModelEntry.cs`, `ChoicesPage.xaml`, `TrackpadPage.xaml`) ont tous été retirés ; `git status` du worktree ne montre que ce rapport.
+
+## 9. Suites données (2026-11-07, branche `build-time-68b5b8`)
+
+Un juge indépendant a relu chaque proposition contre le code. Ce qui suit est ce qu'il en est resté, après vérification.
+
+**Le contournement XAML (§6.2) est refusé.** **Mesuré** : deux scénarios de plus, chacun construit avec et sans le contournement (builds de `Deckle.App` sous verrou, empreintes des 292 fichiers XAML générés).
+
+- **Style et dictionnaire de ressources modifiés** (`App.xaml`, `Deckle.Catalog/Themes/Icons.xaml`) : les mêmes 6 fichiers sont régénérés dans les deux modes, et tout revient à l'identique après l'annulation. Pas de problème.
+- **Type d'une propriété d'un contrôle partagé changé dans le C# seul** (`SettingsPageHeader.HasResetAll`, de `bool` en `object`, dans Catalog ; des pages d'autres projets lui donnent une valeur en XAML). Sans le contournement, 19 fichiers générés changent dans 9 projets. Avec, au premier essai, **aucun** ne change : la sortie est périmée, en silence. Au second essai, ces fichiers suivent le changement, mais après le retour à `bool` le build **échoue** (`CS0266`) dans 6 projets dont le `XamlTypeInfo.g.cs` décrit encore `object`. Le compilateur XAML n'a pas été relancé après un changement C# de Catalog.
+
+**Interprétation** : le cas `x:Bind` du §6.2 s'était bien régénéré, ce cas-ci non, et le comportement change d'un essai à l'autre. Un raccourci qui manque un changement de Catalog, le projet de contrôles partagés le plus modifié, n'est pas acceptable. Le gain de 70 s attendra un correctif livré par Microsoft (#12062 dans une version stable de Windows App SDK) ; à cette montée de version, remesurer un build sans changement.
+
+**Appliqué.**
+
+- `scripts/build-locked.ps1` n'est **pas** installé depuis deckle-scripts (absent de `scripts/.deckle-scripts/manifest.json`), contrairement à ce que dit le §1. Ses paramètres se lient désormais par leur nom seulement, et son en-tête dit d'écrire les arguments de MSBuild avec une barre oblique. **Reproduit** en plus des trois pièges du §1 : `-p:Nom=Valeur` échoue aussi, et `--` ne protège rien.
+- `AGENTS.md` nomme ce script et la cible par défaut (§6.1), avec le build de la solution avant une fusion.
+- La traîne de capture de Transcription (§4.4) devient injectable par le constructeur interne, pour les tests seulement.
+
+**Écarté** : la suite partagée des tests de doctrine (la logique est déjà dans `Deckle.TestSupport`, et les copies de `MilestoneClosersTests` portent les fermetures propres à chaque module) ; le parallélisme des 5 suites (coupé exprès, pour une raison que le code documente) ; les délais de `JsonSettingsStoreTests` et d'Anytype (environ 1 s chacun, pour un test qui prouverait moins). **Reporté** : la troncature de `PeImportsTests`, la classe Qwen (cause de sa lenteur inconnue) et le script de mesure (§6.4), qui n'a plus d'objet sans le contournement.
