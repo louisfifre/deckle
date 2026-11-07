@@ -1013,6 +1013,12 @@
   <data name="LogWindowSearchIconButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Search logs</value>
   </data>
+  <data name="LogWindowSearchBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Search logs</value>
+  </data>
+  <data name="LogWindowSearchIconButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Search logs</value>
+  </data>
   <data name="LogWindowCopyAllText.Text" xml:space="preserve">
     <value>Copy all</value>
   </data>
