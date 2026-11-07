@@ -24,6 +24,7 @@ public partial class App
     private const string SpeechModule            = "speech";
     private const string ForegroundWatcherModule = "foreground_watcher";
     private const string TaskbarCoverModule      = "taskbar_cover";
+    private const string TaskbarModule           = "taskbar";
     private const string InputHostModule         = "input_host";
     private const string MouseWheelModule        = "mouse_wheel";
 
@@ -113,6 +114,12 @@ public partial class App
         });
 
         context.Compose(TaskbarCoverModule, InitializeTaskbarCover);
+
+        // Registry-only: it reads and writes the user's own keys and reaches
+        // into no other process. The tray icons are promoted here when the
+        // setting is on; the Recommended policy is only ever touched by the
+        // page.
+        context.Compose(TaskbarModule, InitializeTaskbar);
 
         // Created before its consumers, which reference-count it.
         context.Compose(InputHostModule, InitializeInputHost);

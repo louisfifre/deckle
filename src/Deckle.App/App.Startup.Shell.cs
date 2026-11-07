@@ -44,6 +44,7 @@ public partial class App
         context.Milestone("hudwindow");
 
         _tray = new TrayIconManager();
+        _tray.TaskbarCreated += ReapplyTaskbarTrayAfterExplorerRestart;
         context.Milestone("tray");
 
         // Lives as long as the process, so it is never disposed: the process
