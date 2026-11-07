@@ -60,6 +60,11 @@ public sealed partial class CurveEditor : UserControl
     private const double PadTop = 8.0;
     private const double PadRight = 14.0;
     private const double Pad = 0.0;
+
+    // Where an axes plot's data area starts and ends inside the editor, so a
+    // PlotFooter view at another scale can share its edges.
+    public const double DataLeftInset = GutterLeft;
+    public const double DataRightInset = PadRight;
     private const double SquareSide = 220.0;
     private const double StackBelowWidth = 560.0;
     private const double AxisLegendWidth = 120.0;

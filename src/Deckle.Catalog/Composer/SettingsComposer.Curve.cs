@@ -18,24 +18,32 @@ public sealed partial class SettingsComposer
     // bounds and the description says what the current points do.
     //
     // The anchors (CurveArgs.Anchors) are the frame's values as fields in the
-    // editor's legend, beside the plot: the doctrine's curve exception puts a
-    // curve's values in fields beside the drawing, and the legend slot is a first
-    // form of the still-open legend block, to confirm with Louis. Each writes at
-    // its commit; the ones with a Default join the card's reset and dirtiness, so
-    // the one wheel restores the curve and its frame.
+    // editor's legend: the doctrine's curve exception puts a curve's values in
+    // fields beside the drawing, which is also how a screen reader edits them.
+    // An anchor with a Role is also moved in the drawing, by the endpoint handle
+    // of the frame coordinate it stands for, and written at the handle's release.
+    // Each writes at its commit; the ones with a Default join the card's reset
+    // and dirtiness, so the one wheel restores the curve and its frame.
+    //
+    // On an axes frame the curve is its page's instrument (2026-11-07): the plot
+    // takes the card's full width and half the page's visible height, the pause
+    // strip (CurveArgs.Pause) sits under it with its two durations, whose fields
+    // follow the control points, and the reset ends the legend's row instead of
+    // a column beside the plot, so the drawing has even margins.
     private void BuildCurve(SettingsCard card, SettingDescriptor s)
     {
         var args = (CurveArgs)s.Args!;
 
         HostVertically(card);
 
+        CurveFrame frame = args.Frame?.Invoke() ?? CurveFrame.Unit;
         var editor = new CurveEditor
         {
-            // Taller than the Playground's plot: here the curve is the page's
-            // main instrument, at full card width (2026-10-14).
+            // The height an axes plot keeps where no ScrollViewer surrounds it.
             WideHeight = 320.0,
+            ViewportShare = frame.Axes ? 0.5 : 0,
             AllowOutside = args.AllowOutside,
-            Frame = args.Frame?.Invoke() ?? CurveFrame.Unit,
+            Frame = frame,
             Floor = args.Floor?.Invoke(),
             Points = AsPoints(s.GetValue()),
         };
@@ -59,6 +67,26 @@ public sealed partial class SettingsComposer
                 if (anchor.Default is not null) defaultedAnchors.Add(anchor);
             }
             editor.Legend.Children.Add(CurveEditor.FieldGrid(fields));
+            BindEndpoints(editor, anchors);
+        }
+
+        if (args.Pause is { } pause && frame.Axes)
+        {
+            PauseStrip strip = BuildPauseStrip(pause);
+            editor.PlotFooter = strip;
+            editor.LegendAfter.Children.Add(CurveEditor.FieldGrid(
+            [
+                BuildAnchorField(pause.MinimumSpeech, anchorRefreshers),
+                BuildAnchorField(pause.Margin, anchorRefreshers),
+            ]));
+            foreach (CurveAnchor value in new[] { pause.MinimumSpeech, pause.Margin })
+                if (value.Default is not null) defaultedAnchors.Add(value);
+            anchorRefreshers.Add(() =>
+            {
+                strip.MinimumSpeech = pause.MinimumSpeech.Get();
+                strip.CutMargin = pause.Margin.Get();
+                strip.CutAfter = pause.CutAfter();
+            });
         }
 
         bool AnchorsDirty()
@@ -76,7 +104,8 @@ public sealed partial class SettingsComposer
 
         (FrameworkElement content, Action? updateReset) = WrapWithTrailingReset(card, editor, s,
             extraDirty: defaultedAnchors.Count > 0 ? AnchorsDirty : null,
-            extraReset: defaultedAnchors.Count > 0 ? ResetAnchors : null);
+            extraReset: defaultedAnchors.Count > 0 ? ResetAnchors : null,
+            resetHost: frame.Axes ? editor.LegendTrailing : null);
         card.Content = content;
 
         _refreshers.Add(() =>
@@ -143,6 +172,96 @@ public sealed partial class SettingsComposer
 
         return CurveEditor.LabelledField(ResolveHeader(anchor.LabelKey), box);
     }
+
+    // The endpoint handles of the anchors that carry a Role: each axis takes
+    // its anchor's bounds and its field's grain, each handle is named by its
+    // anchors' captions, and a moved frame writes back every anchor it changed,
+    // clamped as its field would clamp it. No anchor with a Role, no handle.
+    private void BindEndpoints(CurveEditor editor, IReadOnlyList<CurveAnchor> anchors)
+    {
+        CurveAnchor? Find(CurveAnchorRole role)
+        {
+            foreach (CurveAnchor anchor in anchors)
+                if (anchor.Role == role) return anchor;
+            return null;
+        }
+
+        CurveAnchor? originX = Find(CurveAnchorRole.OriginX), originY = Find(CurveAnchorRole.OriginY);
+        CurveAnchor? endX = Find(CurveAnchorRole.EndX), endY = Find(CurveAnchorRole.EndY);
+        var limits = new CurveEndpointLimits(Limit(originX), Limit(originY), Limit(endX), Limit(endY));
+        if (!limits.OriginMovable && !limits.EndMovable) return;
+
+        editor.EndpointLimits = limits;
+        editor.OriginHandleName = Name(originX, originY);
+        editor.EndHandleName = Name(endX, endY);
+        editor.FrameCommitted += (_, moved) =>
+        {
+            if (_syncingFromModel) return;
+            Write(originX, moved.OriginX);
+            Write(originY, moved.OriginY);
+            Write(endX, moved.EndX);
+            Write(endY, moved.EndY);
+        };
+
+        string Name(CurveAnchor? x, CurveAnchor? y)
+        {
+            var parts = new List<string>();
+            if (x is not null) parts.Add(ResolveHeader(x.LabelKey));
+            if (y is not null) parts.Add(ResolveHeader(y.LabelKey));
+            return string.Join(", ", parts);
+        }
+
+        static void Write(CurveAnchor? anchor, double value)
+        {
+            if (anchor is null) return;
+            double clamped = Math.Clamp(value, anchor.Minimum, anchor.Maximum);
+            if (anchor.Get() != clamped) anchor.Set(clamped);
+        }
+    }
+
+    // The pause strip and its two handles, each bounded and grained as its
+    // field, each writing at its release or arrow key.
+    private PauseStrip BuildPauseStrip(PauseStripArgs pause)
+    {
+        var strip = new PauseStrip(new PauseStripText(
+            Caption: ResolveHeader(pause.LabelKey),
+            MinimumSpeech: ResolveEntry(pause.LabelKey, "MinimumSpeech"),
+            Kept: ResolveEntry(pause.LabelKey, "Kept"),
+            Dropped: ResolveEntry(pause.LabelKey, "Dropped"),
+            Cut: ResolveEntry(pause.LabelKey, "Cut"),
+            MinimumSpeechName: ResolveHeader(pause.MinimumSpeech.LabelKey),
+            MarginName: ResolveHeader(pause.Margin.LabelKey)))
+        {
+            LeftInset = CurveEditor.DataLeftInset,
+            RightInset = CurveEditor.DataRightInset,
+            MinimumSpeechLimit = Limit(pause.MinimumSpeech)!,
+            CutMarginLimit = Limit(pause.Margin)!,
+            MinimumSpeech = pause.MinimumSpeech.Get(),
+            CutMargin = pause.Margin.Get(),
+            CutAfter = pause.CutAfter(),
+        };
+        strip.MinimumSpeechCommitted += (_, value) =>
+        {
+            if (_syncingFromModel) return;
+            pause.MinimumSpeech.Set(Math.Clamp(value, pause.MinimumSpeech.Minimum, pause.MinimumSpeech.Maximum));
+        };
+        strip.CutMarginCommitted += (_, value) =>
+        {
+            if (_syncingFromModel) return;
+            pause.Margin.Set(Math.Clamp(value, pause.Margin.Minimum, pause.Margin.Maximum));
+        };
+        return strip;
+    }
+
+    // An anchor's bounds with its field's grain, the step a handle lands on.
+    private static AxisLimit? Limit(CurveAnchor? anchor) => anchor is null
+        ? null
+        : new AxisLimit(anchor.Minimum, anchor.Maximum, MagnitudeGrain.StepFor(anchor.Minimum, anchor.Maximum, anchor.Integer));
+
+    // A named entry of a module's strings beside a label's Header, such as
+    // "<LabelKey>/Kept"; the composer's own strings when no module is set.
+    private string ResolveEntry(string labelKey, string entry)
+        => _module is null ? Loc.Get($"{labelKey}/{entry}") : Loc.GetFrom(_module, $"{labelKey}/{entry}");
 
     private static CurvePoints AsPoints(object? value)
         => value as CurvePoints ?? new CurvePoints(0.42, 0.0, 0.58, 1.0);

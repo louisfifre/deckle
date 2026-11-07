@@ -833,6 +833,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── IPathControl.cs
 │   │   │   ├── MagnitudeGrain.cs
 │   │   │   ├── PauseScale.cs
+│   │   │   ├── PauseStrip.cs
 │   │   │   ├── PreviewBlock.cs
 │   │   │   ├── Readout.cs
 │   │   │   ├── Setting.cs
