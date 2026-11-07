@@ -2236,6 +2236,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   ├── HueLocalDiscoveryRegressionTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs
+│   │   ├── HueRestRestoreRegressionTests.cs
 │   │   ├── LightingCancellationLogTests.cs
 │   │   ├── LightingObservabilityCollection.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
