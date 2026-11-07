@@ -730,16 +730,7 @@ public sealed partial class CurveEditor : UserControl
         _rulers.Add(element);
     }
 
-    // "Nice" tick step (1 / 2 / 5 × 10ⁿ) so a ruler lands on round values.
-    private static double NiceStep(double range, int targetTicks)
-    {
-        if (range <= 0 || targetTicks <= 0) return 0;
-        double raw = range / targetTicks;
-        double mag = Math.Pow(10, Math.Floor(Math.Log10(raw)));
-        double norm = raw / mag;
-        double step = norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10;
-        return step * mag;
-    }
+    private static double NiceStep(double range, int targetTicks) => AxisTicks.NiceStep(range, targetTicks);
 
     private static void SetLine(Line line, Point a, Point b)
     {

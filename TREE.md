@@ -820,8 +820,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── StaleWorkProbeCommand.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
+│   │   │   ├── AxisTicks.cs
 │   │   │   ├── CubicBezier.cs
 │   │   │   ├── CurveEditor.cs
+│   │   │   ├── CurveEndpointLimits.cs
 │   │   │   ├── DefaultValueText.cs
 │   │   │   ├── GestureHold.cs
 │   │   │   ├── HotkeyChordText.cs
@@ -829,6 +831,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── InfoBarLayout.cs
 │   │   │   ├── IPathControl.cs
 │   │   │   ├── MagnitudeGrain.cs
+│   │   │   ├── PauseScale.cs
 │   │   │   ├── PreviewBlock.cs
 │   │   │   ├── Readout.cs
 │   │   │   ├── Setting.cs
@@ -2081,6 +2084,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── CubicBezierTests.cs
+│   │   ├── CurveEndpointLimitsTests.cs
 │   │   ├── Deckle.Catalog.Tests.csproj
 │   │   ├── DefaultValueTextTests.cs
 │   │   ├── GestureHoldTests.cs
@@ -2089,6 +2093,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MagnitudeGrainBugNotes.md
 │   │   ├── MagnitudeGrainIntegerTests.cs
 │   │   ├── MagnitudeGrainTests.cs
+│   │   ├── PauseScaleTests.cs
 │   │   ├── SettingFactoryTests.cs
 │   │   └── SettingsExpanderItemsBugNotes.md
 │   ├── Deckle.Chrono.Tests/
