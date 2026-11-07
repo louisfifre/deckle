@@ -532,19 +532,4 @@
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Ambient Light</value>
   </data>
-  <data name="AmbientCaptureRate15.Content" xml:space="preserve">
-    <value>15 fps</value>
-  </data>
-  <data name="AmbientCaptureRate60.Content" xml:space="preserve">
-    <value>60 fps</value>
-  </data>
-  <data name="AmbientCaptureRateCard.Description" xml:space="preserve">
-    <value>Higher is smoother and quicker, lower eases the load on a slower PC.</value>
-  </data>
-  <data name="AmbientCaptureRateCard.Header" xml:space="preserve">
-    <value>Capture rate</value>
-  </data>
-  <data name="AmbientCaptureRate30.Content" xml:space="preserve">
-    <value>30 fps</value>
-  </data>
 </root>

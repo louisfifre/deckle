@@ -133,27 +133,4 @@ public partial class AmbientViewModel
             defaultValue: () => new AmbientSettings().SaturationBoost),
     ];
 
-    // Configuration: the capture rate (60 / 30 / 15 fps), after the bespoke
-    // display picker. Dropped by the triage of 2026-10-14 and put back the
-    // same evening: Louis looked for the 60 fps choice and found nothing
-    // ("j'ai plus d'options"). A dropdown, not radio buttons: three figures
-    // nobody compares at a glance, and the flat group read loud for what it
-    // decides (Louis, 2026-10-15). The preview block still reads the rate the
-    // capture really holds, which may sit under the one chosen here. The getter
-    // snaps like the engine does (AmbientStartSettings): a hand-edited 45 in
-    // the file runs at 60, and the dropdown must show that choice rather than
-    // none.
-    public IReadOnlyList<SettingDescriptor> CaptureSettings =>
-    [
-        Setting.Choice<int>(
-            "AmbientCaptureRateCard",
-            () => AmbientCaptureRate.Snap(CaptureFrameRateHz),
-            value => CaptureFrameRateHz = value,
-            [
-                (60, "AmbientCaptureRate60"),
-                (30, "AmbientCaptureRate30"),
-                (15, "AmbientCaptureRate15"),
-            ],
-            defaultValue: () => new AmbientSettings().CaptureFrameRateHz),
-    ];
 }

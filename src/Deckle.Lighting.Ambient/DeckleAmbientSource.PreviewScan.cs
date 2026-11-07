@@ -10,7 +10,8 @@ namespace Deckle.Lighting.Ambient;
 // why in Skipped.
 public sealed partial class DeckleAmbientSource
 {
-    // capture_hz = the rate the capture was asked for, the user's setting.
+    // capture_hz = the rate the capture was asked for (CaptureRateChosen
+    // says how it was decided).
     [Event(EvtPreviewScanStarting,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -75,7 +76,6 @@ public static class AmbientPreviewScanEndReasons
     // The capture ended on its own; Deckle-Vision logged its cause.
     public const string CaptureLost = "capture_lost";
 
-    // The display or the capture rate changed; the preview starts a new scan
-    // with the new values.
+    // The display changed; the preview starts a new scan with the new value.
     public const string SettingsChanged = "settings_changed";
 }

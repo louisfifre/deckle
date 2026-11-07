@@ -60,7 +60,7 @@ public sealed partial class AmbientEngine
 
             var ambient = _host.Ambient;
             string scanId = WorkId.Next();
-            int rateHz = AmbientCaptureRate.Snap(ambient.CaptureFrameRateHz);
+            int rateHz = ChooseCaptureRateHz(scanId, ambient);
             DeckleAmbientSource.Log.PreviewScanStarting(scanId, rateHz);
             long startedAt = Stopwatch.GetTimestamp();
 

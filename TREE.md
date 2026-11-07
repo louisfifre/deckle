@@ -1157,6 +1157,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientColorPipeline.cs
 │   │   │   ├── AmbientColorSmoother.cs
 │   │   │   ├── AmbientEngine.CaptureEvents.cs
+│   │   │   ├── AmbientEngine.CaptureRate.cs
 │   │   │   ├── AmbientEngine.cs
 │   │   │   ├── AmbientEngine.FirstFrame.cs
 │   │   │   ├── AmbientEngine.GroupPush.cs
@@ -1205,6 +1206,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientTuning.cs
 │   │   ├── Deckle.Lighting.Ambient.csproj
 │   │   ├── DeckleAmbientSource.CaptureAndSampling.cs
+│   │   ├── DeckleAmbientSource.CaptureRate.cs
 │   │   ├── DeckleAmbientSource.cs
 │   │   ├── DeckleAmbientSource.Lifecycle.cs
 │   │   ├── DeckleAmbientSource.LightPlacement.cs
@@ -2202,6 +2204,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── AmbientRunBugNotes.md
 │   │   ├── AmbientRunLogTests.cs
+│   │   ├── AmbientSettingsMigrationTests.cs
 │   │   ├── AmbientStartSettingsTests.cs
 │   │   ├── AmbientTableTemplateTests.cs
 │   │   ├── AmbientUserIncidentTests.cs
