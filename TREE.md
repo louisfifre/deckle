@@ -1973,9 +1973,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TestCaptureDoubles.cs
 │   │   ├── TranscriptionPreprocessorTests.cs
 │   │   ├── VoiceDetectorTests.cs
-│   │   ├── VoiceLevelMeterScaleTests.cs
-│   │   ├── WaveInBufferRingBugNotes.md
-│   │   └── WaveInReleaseBugNotes.md
+│   │   └── VoiceLevelMeterScaleTests.cs
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs

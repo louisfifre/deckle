@@ -251,12 +251,6 @@
        resolves the host app's root map, so each key is mirrored in
        Deckle.App's Resources.resw. This copy is the source of truth for
        wording — keep the mirror in sync. -->
-  <data name="FileTranscription_Busy_Title" xml:space="preserve">
-    <value>Transcription in progress</value>
-  </data>
-  <data name="FileTranscription_Busy_Body" xml:space="preserve">
-    <value>Finish the current one before starting another.</value>
-  </data>
   <data name="FileTranscription_DecodeFailed_Title" xml:space="preserve">
     <value>Couldn't read the audio file</value>
   </data>

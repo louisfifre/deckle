@@ -97,7 +97,7 @@ public sealed class MicrophonePreviewFeedTests
         int levels = h.Levels.Count;
         int progress = h.Progress.Count;
 
-        // The capture thread is still inside Record, as it is while waveIn
+        // The capture thread is still inside Record, as it is while the device
         // drains, and keeps raising what it had.
         capture.Raise(Voiced);
         capture.Raise(Voiced);
@@ -207,7 +207,7 @@ public sealed class MicrophonePreviewFeedTests
         Assert.Equal(0, h.CaptureCount);
     }
 
-    // The fake stands where waveIn stands: Record blocks on the recording
+    // The fake stands where the real capture stands: Record blocks on the recording
     // thread, raises levels there, and returns once the token fires and the
     // device is let go.
     private sealed class FakeCapture : IMicrophoneCapture

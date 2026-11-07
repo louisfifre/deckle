@@ -4,7 +4,7 @@ using Xunit;
 namespace Deckle.Audio.Tests;
 
 // The watchdog closes a blind spot: a microphone that opens and starts but
-// never hands back audio, with every waveIn call reporting success. Times are
+// never hands back audio, with every device call reporting success. Times are
 // the capture clock in milliseconds, driven by hand; every bound is expressed
 // from ThresholdMs so the tests follow a tuned threshold.
 [Trait("Category", "unit")]

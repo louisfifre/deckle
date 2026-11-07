@@ -592,12 +592,6 @@
        them — same Loc-mirror-pattern as the AmbientPage block below : the
        module copy is the source of truth for wording, keep this mirror in
        sync with it. -->
-  <data name="FileTranscription_Busy_Title" xml:space="preserve">
-    <value>Transcription in progress</value>
-  </data>
-  <data name="FileTranscription_Busy_Body" xml:space="preserve">
-    <value>Finish the current one before starting another.</value>
-  </data>
   <data name="FileTranscription_DecodeFailed_Title" xml:space="preserve">
     <value>Couldn't read the audio file</value>
   </data>
