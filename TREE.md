@@ -84,13 +84,41 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── __init__.py
 │   ├── rewrite/
 │   │   ├── model-compare/
+│   │   │   ├── campaigns/
+│   │   │   │   ├── lissage-lean.json
+│   │   │   │   └── profiles-v2.json
+│   │   │   ├── optimize/
+│   │   │   │   ├── affinage-sonnet-v2.json
+│   │   │   │   ├── affinage-sonnet.json
+│   │   │   │   ├── arrangement-sonnet-v2.json
+│   │   │   │   ├── arrangement-sonnet-v3.json
+│   │   │   │   ├── arrangement-sonnet.json
+│   │   │   │   ├── lissage-opus-v2.json
+│   │   │   │   └── lissage-opus.json
 │   │   │   ├── prompts/
+│   │   │   │   ├── affinage-court.md
+│   │   │   │   ├── affinage-opt1.md
+│   │   │   │   ├── affinage-opt2.md
+│   │   │   │   ├── arrangement-court.md
+│   │   │   │   ├── arrangement-opt1.md
+│   │   │   │   ├── arrangement-opt2.md
+│   │   │   │   ├── arrangement-opt3.md
+│   │   │   │   ├── lissage-bref.md
+│   │   │   │   ├── lissage-court.md
 │   │   │   │   ├── lissage-current.md
-│   │   │   │   └── lissage-literal.md
+│   │   │   │   ├── lissage-libre.md
+│   │   │   │   ├── lissage-literal.md
+│   │   │   │   ├── lissage-opt1.md
+│   │   │   │   └── lissage-opt2.md
 │   │   │   ├── .gitignore
+│   │   │   ├── BatchJudge.cs
+│   │   │   ├── Campaign.cs
+│   │   │   ├── CampaignRun.cs
 │   │   │   ├── Corpus.cs
+│   │   │   ├── Export.cs
 │   │   │   ├── Judge.cs
 │   │   │   ├── ModelCompare.csproj
+│   │   │   ├── Optimize.cs
 │   │   │   ├── Program.cs
 │   │   │   ├── README.md
 │   │   │   ├── Shared.cs
@@ -154,6 +182,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── wheel-session.ps1
 │   │   │   └── wheel_analysis.py
 │   │   ├── research--cerveau-llm--2026-10-13.md  — Cadrage vérifié (2026-10-13) — un cerveau LLM dans Deckle.Llm : les crédits API…
+│   │   ├── research--courbe-manipulation-directe--2026-11-07.md  — Note de conception du changement 7 de la revue de cohérence des pages audio (20…
+│   │   ├── research--prompts-de-reecriture--2026-11-07.md  — Ce que la boucle d'optimisation des prompts de réécriture et la campagne « prom…
 │   │   ├── research--settings-ux--2026-10-13.md  — Recherche vérifiée (2026-10-13), la direction Settings de Louis passée au cribl…
 │   │   ├── research--seuils-voix--2026-11-06.md  — Cadrage vérifié (2026-11-06) — les seuils de niveau et de détection de voix dup…
 │   │   ├── research--taskbar-sans-windhawk--2026-10-08.md  — Recherche vérifiée (2026-10-08) — remplacer Windhawk par un module Deckle pour…
