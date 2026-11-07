@@ -2230,6 +2230,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientBrightnessBugNotes.md
 │   │   ├── AmbientBrightnessCurveTests.cs
+│   │   ├── AmbientCaptureCostInteractiveTests.cs
 │   │   ├── AmbientCaptureRateTests.cs
 │   │   ├── AmbientColorSmootherTests.cs
 │   │   ├── AmbientHeartbeatWindowTests.cs
