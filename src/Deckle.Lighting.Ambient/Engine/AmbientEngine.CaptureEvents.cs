@@ -17,11 +17,15 @@ public sealed partial class AmbientEngine
     {
         EnsureFrameProcessingEpisodeSession();
 
-        var sampler = _sampler;
+        // The handler is attached before the capture starts, so the first
+        // frame may arrive before the start path has built the sampler: build
+        // it here rather than drop that frame (EnsureSampler).
+        var sampler = _sampler ?? EnsureSampler(_capture);
         if (sampler is null) return;
 
         if (sampler.Process(frame))
         {
+            NoteFrameSampled();
             CompleteFrameProcessingEpisode();
         }
         else

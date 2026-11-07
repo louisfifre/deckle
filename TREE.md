@@ -1196,6 +1196,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientColorSmoother.cs
 │   │   │   ├── AmbientEngine.CaptureEvents.cs
 │   │   │   ├── AmbientEngine.cs
+│   │   │   ├── AmbientEngine.FirstFrame.cs
 │   │   │   ├── AmbientEngine.GroupPush.cs
 │   │   │   ├── AmbientEngine.Heartbeat.cs
 │   │   │   ├── AmbientEngine.HueEvents.cs
