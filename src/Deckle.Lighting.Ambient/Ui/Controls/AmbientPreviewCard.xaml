@@ -11,7 +11,32 @@
          has the display's frame: the run's capture while Ambient Light runs,
          the preview scan while it is off, the frame alone without a capture.
          The block's empty text shows only when no display can be read. -->
+    <Grid RowSpacing="12">
+    <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <!-- A problem with the picture, said in words: the stage alone would
+         stay grey (Louis, 2026-11-07, "no error message anywhere"). Title
+         and message are set by the code-behind per problem; the button
+         asks the scan again. -->
+    <InfoBar x:Name="ProblemBar"
+             Grid.Row="0"
+             IsClosable="False"
+             IsOpen="False"
+             Severity="Warning"
+             catalog:InfoBarLayout.CollapseWhenClosed="True">
+        <InfoBar.ActionButton>
+            <Button x:Name="RetryButton"
+                    x:Uid="AmbientPreviewRetryButton"
+                    HorizontalAlignment="Right"
+                    Click="RetryButton_Click" />
+        </InfoBar.ActionButton>
+    </InfoBar>
+
     <catalog:PreviewBlock x:Name="Block"
+                          Grid.Row="1"
                           x:Uid="AmbientPreviewBlock">
 
         <!-- The readouts' two layouts, switched by the code-behind on the
@@ -141,4 +166,5 @@
             </Grid>
         </catalog:PreviewBlock.Readouts>
     </catalog:PreviewBlock>
+    </Grid>
 </UserControl>

@@ -1206,6 +1206,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientEngineState.cs
 │   │   │   ├── AmbientHeartbeatWindow.cs
 │   │   │   ├── AmbientHueChangeAttributor.cs
+│   │   │   ├── AmbientPreviewHealth.cs
 │   │   │   ├── AmbientPushCadence.cs
 │   │   │   ├── AmbientPushGate.cs
 │   │   │   ├── AmbientZoneSampler.cs
@@ -2257,6 +2258,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientPresetSelectionLogTests.cs
 │   │   ├── AmbientPresetsTests.cs
 │   │   ├── AmbientPreviewGeometryTests.cs
+│   │   ├── AmbientPreviewRobustnessTests.cs
 │   │   ├── AmbientPreviewScanLogTests.cs
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
