@@ -918,7 +918,7 @@
     <value>Reset all settings?</value>
   </data>
   <data name="Settings_ResetDiagnosticsDialog_Content" xml:space="preserve">
-    <value>Every logging and telemetry opt-in on this page will be turned off and the storage-folder override cleared. Nothing is recorded again until you opt back in.</value>
+    <value>Each log verbosity goes back to its default. The trace and every telemetry dataset are turned off, and the telemetry folder returns to its default location.</value>
   </data>
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
