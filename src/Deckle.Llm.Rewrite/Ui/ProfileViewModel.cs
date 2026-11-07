@@ -84,13 +84,15 @@ public partial class ProfileViewModel : ObservableObject
     {
         get
         {
-            string model = string.IsNullOrWhiteSpace(Model) ? "(no model)" : Model;
-            string provider = string.IsNullOrWhiteSpace(ProviderName) ? "(no provider)" : ProviderName;
+            string model = string.IsNullOrWhiteSpace(Model) ? Loc.Get("LlmProfile_NoModel") : Model;
+            string provider = string.IsNullOrWhiteSpace(ProviderName) ? Loc.Get("LlmProfile_NoProvider") : ProviderName;
             string summary = $"{provider}  ·  {model}";
             if (ShowsGenerationHints)
             {
                 int idx = Math.Clamp((int)CtxIndex, 0, CtxKSteps.Length - 1);
-                summary += $"  ·  {CtxKSteps[idx]}K ctx  ·  temp {Temperature:F2}";
+                // The field labels' own words (Context size, Temperature), not
+                // the abbreviations "ctx" and "temp".
+                summary += "  ·  " + Loc.Format("LlmProfile_Hints_Format", CtxKSteps[idx], Temperature.ToString("F2"));
             }
             // The shortcut that starts it, readable with the fold closed.
             if (HotkeyEnabled && HotkeyChordText.Format(Hotkey) is { } chord)

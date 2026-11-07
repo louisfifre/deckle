@@ -27,10 +27,6 @@ namespace Deckle.Llm.Rewrite;
 
 public sealed partial class LlmActiveProfileSection : UserControl
 {
-    // Means "plain transcription". Stored as null in settings, never as this
-    // string.
-    private const string NoneSentinel = "(None)";
-
     // Where a first step lands when the ladder starts empty: about three
     // minutes, the length past which a dictation starts reading as a text.
     private const int FirstStepChars = 2000;
@@ -61,7 +57,7 @@ public sealed partial class LlmActiveProfileSection : UserControl
         // Match the saved choice by stable id (survives renames), then by name
         // for a choice saved without an id. Nothing resolves → (None).
         ActiveProfileCombo.Items.Clear();
-        ActiveProfileCombo.Items.Add(new ComboBoxItem { Content = NoneSentinel });
+        ActiveProfileCombo.Items.Add(new ComboBoxItem { Content = Loc.GetFrom(Module, "LlmActiveProfile_None") });
         for (int i = 0; i < s.Profiles.Count; i++)
             ActiveProfileCombo.Items.Add(new ComboBoxItem { Content = s.Profiles[i].Name });
         int index = ResolveProfileIndex(s, s.ActiveProfileId, s.ActiveProfileName);
@@ -94,8 +90,9 @@ public sealed partial class LlmActiveProfileSection : UserControl
     {
         if (_loading || ActiveProfileCombo.SelectedIndex < 0) return;
         var s = LlmSettingsService.Instance.Current;
-        // Index-based: item 0 is (None), item i+1 is Profiles[i]. A profile
-        // literally named "(None)" is never confused with the sentinel.
+        // Index-based: item 0 is "None" (plain transcription, stored as null),
+        // item i+1 is Profiles[i]. A profile literally named "None" is never
+        // confused with it.
         int profileIndex = ActiveProfileCombo.SelectedIndex - 1;
         RewriteProfile? profile = profileIndex >= 0 && profileIndex < s.Profiles.Count
             ? s.Profiles[profileIndex]
