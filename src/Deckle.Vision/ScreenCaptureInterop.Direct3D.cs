@@ -13,6 +13,7 @@ internal static partial class ScreenCaptureInterop
     // used with the default adapter, keeps WARP out.
     private const int D3D_DRIVER_TYPE_UNKNOWN  = 0;
     private const int D3D_DRIVER_TYPE_HARDWARE = 1;
+    private const int D3D_DRIVER_TYPE_WARP     = 5;
     private const uint D3D11_CREATE_DEVICE_BGRA_SUPPORT = 0x00000020;
     private const uint D3D11_SDK_VERSION = 7;
 
@@ -42,10 +43,20 @@ internal static partial class ScreenCaptureInterop
     // featureLevel is the raw D3D_FEATURE_LEVEL; FormatFeatureLevel turns
     // it into the "11_1" spelling of the documentation.
     public static IDirect3DDevice CreateDirect3DDevice(nint pAdapter, out int featureLevel)
+        => CreateDirect3DDevice(
+            pAdapter,
+            pAdapter == 0 ? D3D_DRIVER_TYPE_HARDWARE : D3D_DRIVER_TYPE_UNKNOWN,
+            out featureLevel);
+
+    // The software rasteriser (WARP): a device that needs no GPU and no
+    // display, for the tests that run the sampler's shaders on a build agent.
+    internal static IDirect3DDevice CreateWarpDirect3DDevice()
+        => CreateDirect3DDevice(0, D3D_DRIVER_TYPE_WARP, out _);
+
+    private static IDirect3DDevice CreateDirect3DDevice(nint pAdapter, int driverType, out int featureLevel)
     {
         // BGRA_SUPPORT is required to share the frames with the DirectX
         // composition stack (Win2D, CanvasBitmap).
-        int driverType = pAdapter == 0 ? D3D_DRIVER_TYPE_HARDWARE : D3D_DRIVER_TYPE_UNKNOWN;
         D3D11CreateDevice(
             pAdapter:        pAdapter,
             driverType:      driverType,
