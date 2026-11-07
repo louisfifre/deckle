@@ -145,4 +145,5 @@ public sealed partial class DeckleAmbientSource : DeckleEventSource
     public const int EvtPreviewScanStartFailed          = 108;
     public const int EvtPreviewScanStopped              = 109;
     public const int EvtPreviewScanSkipped              = 110;
+    public const int EvtCaptureRateChosen               = 111;
 }

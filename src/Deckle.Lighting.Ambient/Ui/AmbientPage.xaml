@@ -224,10 +224,6 @@
                                           MinWidth="280"
                                           SelectionChanged="MonitorCombo_SelectionChanged" />
                             </controls:SettingsCard>
-
-                            <!-- Composed: the capture rate (AmbientViewModel.CaptureSettings). -->
-                            <StackPanel x:Name="CaptureHost"
-                                        Spacing="{StaticResource SettingsCardSpacing}" />
                         </StackPanel>
                     </catalog:SettingsSection>
 

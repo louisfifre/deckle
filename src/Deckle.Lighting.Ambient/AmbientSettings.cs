@@ -43,13 +43,11 @@ public sealed class AmbientSettings
     /// disconnected.</summary>
     public string? SelectedMonitorDeviceName { get; set; }
 
-    /// <summary>Screen-capture rate in Hz, a closed choice among
-    /// <see cref="AmbientCaptureRate.Allowed"/>; the engine snaps any other
-    /// stored value with <see cref="AmbientCaptureRate.Snap"/>. 30 or 15
-    /// lighten the GPU readback on weaker machines. The push to the lights
-    /// keeps its own transport rate. Read at engine start; the app restarts
-    /// a running engine when it changes (<see cref="AmbientStartSettings"/>).</summary>
-    public int CaptureFrameRateHz { get; set; } = AmbientCaptureRate.Default;
+    // No capture-rate setting: the rate is decided in code, the display's
+    // refresh rate held to a tier ceiling (AmbientCaptureCap). A settings
+    // file written before 2026-11-07 may still carry "captureFrameRateHz";
+    // the deserializer ignores members this class no longer declares, and the
+    // next save drops the key (AmbientSettingsMigrationTests holds it).
 
     // ── Preset selection (Deckle.Presets) ──────────────────────────
     //

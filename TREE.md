@@ -164,6 +164,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── wheel_analysis.py
 │   │   ├── benchmark-conclusions.md
 │   │   ├── research--cerveau-llm--2026-10-13.md  — Cadrage vérifié (2026-10-13) — un cerveau LLM dans Deckle.Llm : les crédits API…
+│   │   ├── research--courbe-manipulation-directe--2026-11-07.md  — Note de conception du changement 7 de la revue de cohérence des pages audio (20…
 │   │   ├── research--cout-de-capture--2026-11-07.md  — Mesure (2026-11-07) : ce que coûte la capture Ambient à 60 Hz et au-delà sur l'…
 │   │   ├── research--prompts-de-reecriture--2026-11-07.md  — Ce que la boucle d'optimisation des prompts de réécriture et la campagne « prom…
 │   │   ├── research--settings-ux--2026-10-13.md  — Recherche vérifiée (2026-10-13), la direction Settings de Louis passée au cribl…
@@ -771,8 +772,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── OnnxSlotReranker.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
+│   │   │   ├── AxisTicks.cs
 │   │   │   ├── CubicBezier.cs
 │   │   │   ├── CurveEditor.cs
+│   │   │   ├── CurveEditor.Endpoints.cs
+│   │   │   ├── CurveEndpointLimits.cs
 │   │   │   ├── DefaultValueText.cs
 │   │   │   ├── GestureHold.cs
 │   │   │   ├── HotkeyChordText.cs
@@ -780,6 +784,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── InfoBarLayout.cs
 │   │   │   ├── IPathControl.cs
 │   │   │   ├── MagnitudeGrain.cs
+│   │   │   ├── PauseScale.cs
+│   │   │   ├── PauseStrip.cs
 │   │   │   ├── PreviewBlock.cs
 │   │   │   ├── Readout.cs
 │   │   │   ├── SentinelNumberFormatter.cs
@@ -924,6 +930,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DiagnosticsSettingsModule.cs
 │   │   ├── DiagnosticsViewModel.cs
 │   │   ├── DiagnosticsViewModel.Settings.cs
+│   │   ├── LogAutoScroll.cs
 │   │   ├── LogFilterDimension.cs
 │   │   ├── LogFilterSelection.cs
 │   │   ├── LogFilterToken.cs
@@ -1158,6 +1165,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueLight.cs
 │   │   │   ├── HueLightOutputFactory.cs
 │   │   │   ├── HueLightState.cs
+│   │   │   ├── HueLightStateRestorer.cs
 │   │   │   ├── HueLocalDiscovery.cs
 │   │   │   ├── HueLocalDiscovery.Interop.cs
 │   │   │   ├── HueProjectedState.cs
@@ -1179,6 +1187,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientColorPipeline.cs
 │   │   │   ├── AmbientColorSmoother.cs
 │   │   │   ├── AmbientEngine.CaptureEvents.cs
+│   │   │   ├── AmbientEngine.CaptureRate.cs
 │   │   │   ├── AmbientEngine.cs
 │   │   │   ├── AmbientEngine.FirstFrame.cs
 │   │   │   ├── AmbientEngine.GroupPush.cs
@@ -1216,7 +1225,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ViewModels/
 │   │   │   ├── AmbientViewModel.cs
 │   │   │   └── AmbientViewModel.Settings.cs
-│   │   ├── AmbientCaptureRate.cs
+│   │   ├── AmbientCaptureCap.cs
 │   │   ├── AmbientCaptureTarget.cs
 │   │   ├── AmbientPresets.cs
 │   │   ├── AmbientPresetStore.cs
@@ -1227,6 +1236,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientTuning.cs
 │   │   ├── Deckle.Lighting.Ambient.csproj
 │   │   ├── DeckleAmbientSource.CaptureAndSampling.cs
+│   │   ├── DeckleAmbientSource.CaptureRate.cs
 │   │   ├── DeckleAmbientSource.cs
 │   │   ├── DeckleAmbientSource.Lifecycle.cs
 │   │   ├── DeckleAmbientSource.LightPlacement.cs
@@ -2037,6 +2047,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── CubicBezierTests.cs
+│   │   ├── CurveEndpointLimitsTests.cs
 │   │   ├── Deckle.Catalog.Tests.csproj
 │   │   ├── DefaultValueTextTests.cs
 │   │   ├── GestureHoldTests.cs
@@ -2045,6 +2056,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MagnitudeGrainBugNotes.md
 │   │   ├── MagnitudeGrainIntegerTests.cs
 │   │   ├── MagnitudeGrainTests.cs
+│   │   ├── PauseScaleTests.cs
 │   │   ├── SentinelNumberFormatterTests.cs
 │   │   ├── SettingFactoryTests.cs
 │   │   └── SettingsExpanderItemsBugNotes.md
@@ -2066,6 +2078,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── WindowDescriptionBugNotes.md
 │   ├── Deckle.Diagnostics.Logging.Tests/
 │   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
+│   │   ├── LogAutoScrollTests.cs
 │   │   ├── LogFilterSelectionTests.cs
 │   │   ├── LoggingSettingsTests.cs
 │   │   ├── LogTransferTests.cs
@@ -2218,8 +2231,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientBrightnessBugNotes.md
 │   │   ├── AmbientBrightnessCurveTests.cs
+│   │   ├── AmbientCaptureCapTests.cs
 │   │   ├── AmbientCaptureCostInteractiveTests.cs
-│   │   ├── AmbientCaptureRateTests.cs
 │   │   ├── AmbientCaptureStartBugNotes.md
 │   │   ├── AmbientColorSmootherTests.cs
 │   │   ├── AmbientHeartbeatWindowTests.cs
@@ -2234,6 +2247,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── AmbientRunBugNotes.md
 │   │   ├── AmbientRunLogTests.cs
+│   │   ├── AmbientSettingsMigrationTests.cs
 │   │   ├── AmbientStartSettingsTests.cs
 │   │   ├── AmbientTableTemplateTests.cs
 │   │   ├── AmbientUserIncidentTests.cs
@@ -2267,6 +2281,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   ├── HueLocalDiscoveryRegressionTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs
+│   │   ├── HueRestRestoreRegressionTests.cs
 │   │   ├── LightingCancellationLogTests.cs
 │   │   ├── LightingObservabilityCollection.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
@@ -2361,6 +2376,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeveloperSettingsTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── PerformanceSettingsTests.cs
 │   │   ├── SettingsBackupBugNotes.md
 │   │   ├── SettingsBackupRoundTripTests.cs
 │   │   ├── SettingsBootstrapLegacyTargetTests.cs

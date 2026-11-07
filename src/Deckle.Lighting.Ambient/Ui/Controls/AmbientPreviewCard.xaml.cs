@@ -86,7 +86,6 @@ public sealed partial class AmbientPreviewCard : UserControl
     // What the running scan was started with; a change restarts it, so the
     // preview follows the display and rate the run would use.
     private string? _scanMonitor;
-    private int _scanRateHz;
 
     private SolidColorBrush[]? _cellBrushes;
     private int _cols;
@@ -171,14 +170,14 @@ public sealed partial class AmbientPreviewCard : UserControl
             callback: OnSettingsChangedOnUi,
             rejectSource: "AMBIENT", rejectWhat: "preview settings");
 
-    // A new display or capture rate restarts the scan; any other change
-    // (zone mode, band depth) only redraws.
+    // A new display restarts the scan; any other change (zone mode, band
+    // depth) only redraws. The performance mode is not watched: it lives in
+    // the shell's settings, and the next scan reads it.
     private void OnSettingsChangedOnUi()
     {
         var settings = AmbientSettingsService.Instance.Current;
         if (_engine is { IsPreviewScanning: true } engine
-            && (!string.Equals(settings.SelectedMonitorDeviceName, _scanMonitor, StringComparison.Ordinal)
-                || AmbientCaptureRate.Snap(settings.CaptureFrameRateHz) != _scanRateHz))
+            && !string.Equals(settings.SelectedMonitorDeviceName, _scanMonitor, StringComparison.Ordinal))
         {
             _ = RestartScanAsync(engine);
             return;
@@ -250,7 +249,6 @@ public sealed partial class AmbientPreviewCard : UserControl
         {
             var settings = AmbientSettingsService.Instance.Current;
             _scanMonitor = settings.SelectedMonitorDeviceName;
-            _scanRateHz = AmbientCaptureRate.Snap(settings.CaptureFrameRateHz);
             if (!await engine.StartPreviewScanAsync()) _scanHeld = true;
         }
         finally

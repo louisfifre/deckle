@@ -2,29 +2,31 @@ namespace Deckle.Lighting.Ambient;
 
 /// <summary>
 /// The settings <see cref="AmbientEngine"/> reads only when it starts: the
-/// capture monitor, the pipeline shape and the capture rate. The app keeps
-/// the values a running engine started with and restarts it when one of
-/// them changes, so every setting acts without a manual off and on. The Hue
-/// bridge fields and the group are also read only at start, but they are not
-/// part of this set: changing them does not restart a running engine.
+/// capture monitor, the pipeline shape and the performance mode, which sets
+/// the capture rate's ceiling. The app keeps the values a running engine
+/// started with and restarts it when one of them changes, so every setting
+/// acts without a manual off and on. The Hue bridge fields and the group are
+/// also read only at start, but they are not part of this set: changing them
+/// does not restart a running engine.
 /// </summary>
 public readonly record struct AmbientStartSettings(
     string? SelectedMonitorDeviceName,
     bool UseMultiLight,
-    int CaptureFrameRateHz)
+    bool PerformanceMode)
 {
-    /// <summary>Reads the start-time values, with the capture rate snapped
-    /// the way the engine snaps it, so an unsnapped stored value does not
-    /// look like a change.</summary>
-    public static AmbientStartSettings From(AmbientSettings settings)
+    /// <summary>Reads the start-time values. The performance mode is the
+    /// shell's shared signal, not an Ambient setting, so the caller passes it
+    /// in.</summary>
+    public static AmbientStartSettings From(AmbientSettings settings, bool performanceMode)
         => new(
             settings.SelectedMonitorDeviceName,
             settings.UseMultiLight,
-            AmbientCaptureRate.Snap(settings.CaptureFrameRateHz));
+            performanceMode);
 
-    /// <summary>Names of the <see cref="AmbientSettings"/> properties that
-    /// differ from <paramref name="other"/>, comma-separated; empty when
-    /// none differs.</summary>
+    /// <summary>Names of the start-time values that differ from
+    /// <paramref name="other"/>, comma-separated; empty when none differs.
+    /// The first two are <see cref="AmbientSettings"/> property names; the
+    /// third is the shared mode's name.</summary>
     public string ChangedSettings(AmbientStartSettings other)
     {
         var changed = new List<string>(3);
@@ -32,8 +34,8 @@ public readonly record struct AmbientStartSettings(
             changed.Add(nameof(AmbientSettings.SelectedMonitorDeviceName));
         if (UseMultiLight != other.UseMultiLight)
             changed.Add(nameof(AmbientSettings.UseMultiLight));
-        if (CaptureFrameRateHz != other.CaptureFrameRateHz)
-            changed.Add(nameof(AmbientSettings.CaptureFrameRateHz));
+        if (PerformanceMode != other.PerformanceMode)
+            changed.Add(nameof(PerformanceMode));
         return string.Join(",", changed);
     }
 }

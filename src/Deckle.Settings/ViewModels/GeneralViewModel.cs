@@ -176,6 +176,18 @@ public partial class GeneralViewModel : ObservableObject
         PushToSettings();
     }
 
+    // ── Performance ──────────────────────────────────────────────────────────
+
+    [ObservableProperty]
+    public partial bool PerformanceMode { get; set; }
+
+    partial void OnPerformanceModeChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsUxSource.Log.SettingChanged("Performance.PerformanceMode", value.ToString());
+        PushToSettings();
+    }
+
     // ── Developer ────────────────────────────────────────────────────────────
 
     [ObservableProperty]
@@ -264,6 +276,7 @@ public partial class GeneralViewModel : ObservableObject
         ElevatedStartupEnabled = ElevatedStartupService.DefaultEnabled;
         BackupDirectory = paths.BackupDirectory;
         UpdateAutoCheckEnabled = updates.AutoCheckEnabled;
+        PerformanceMode = new PerformanceSettings().PerformanceMode;
         ShowPlayground = new DeveloperSettings().ShowPlayground;
         DeveloperMode = new DeveloperSettings().DeveloperMode;
         LoadHotkeys(new HotkeysSettings());
@@ -287,6 +300,7 @@ public partial class GeneralViewModel : ObservableObject
             AutostartEnabled = elevated || AutostartService.IsEnabled();
             BackupDirectory = shell.Paths.BackupDirectory;
             UpdateAutoCheckEnabled = shell.Updates.AutoCheckEnabled;
+            PerformanceMode = shell.Performance.PerformanceMode;
             ShowPlayground = shell.Developer.ShowPlayground;
             DeveloperMode = shell.Developer.DeveloperMode;
             LoadHotkeys(shell.Hotkeys);
@@ -321,6 +335,7 @@ public partial class GeneralViewModel : ObservableObject
         shell.Appearance.Theme = Theme;
         shell.Paths.BackupDirectory = BackupDirectory ?? "";
         shell.Updates.AutoCheckEnabled = UpdateAutoCheckEnabled;
+        shell.Performance.PerformanceMode = PerformanceMode;
         shell.Developer.ShowPlayground = ShowPlayground;
         shell.Developer.DeveloperMode = DeveloperMode;
         SettingsService.Instance.Save();

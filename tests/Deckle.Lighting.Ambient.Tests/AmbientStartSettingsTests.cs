@@ -10,36 +10,36 @@ public sealed class AmbientStartSettingsTests
     {
         var settings = new AmbientSettings();
 
-        var started = AmbientStartSettings.From(settings);
+        var started = AmbientStartSettings.From(settings, performanceMode: false);
         settings.SmoothingAlpha = 0.5;
         settings.ChangeThreshold = 20;
 
-        Assert.Equal("", started.ChangedSettings(AmbientStartSettings.From(settings)));
+        Assert.Equal("", started.ChangedSettings(AmbientStartSettings.From(settings, performanceMode: false)));
     }
 
     [Fact]
     public void EachStartSettingIsNamedWhenItChanges()
     {
         var settings = new AmbientSettings();
-        var started = AmbientStartSettings.From(settings);
+        var started = AmbientStartSettings.From(settings, performanceMode: false);
 
         settings.SelectedMonitorDeviceName = @"\\.\DISPLAY2";
         settings.UseMultiLight = !settings.UseMultiLight;
-        settings.CaptureFrameRateHz = 15;
 
         Assert.Equal(
-            "SelectedMonitorDeviceName,UseMultiLight,CaptureFrameRateHz",
-            started.ChangedSettings(AmbientStartSettings.From(settings)));
+            "SelectedMonitorDeviceName,UseMultiLight,PerformanceMode",
+            started.ChangedSettings(AmbientStartSettings.From(settings, performanceMode: true)));
     }
 
     [Fact]
-    public void AStoredRateThatSnapsToTheSameRateIsNotAChange()
+    public void TurningThePerformanceModeOnOrOffIsAStartChange()
     {
-        var settings = new AmbientSettings { CaptureFrameRateHz = AmbientCaptureRate.Default };
-        var started = AmbientStartSettings.From(settings);
+        var settings = new AmbientSettings();
 
-        settings.CaptureFrameRateHz = AmbientCaptureRate.Default - 1;
+        var normal = AmbientStartSettings.From(settings, performanceMode: false);
+        var lowPower = AmbientStartSettings.From(settings, performanceMode: true);
 
-        Assert.Equal("", started.ChangedSettings(AmbientStartSettings.From(settings)));
+        Assert.Equal("PerformanceMode", normal.ChangedSettings(lowPower));
+        Assert.Equal("PerformanceMode", lowPower.ChangedSettings(normal));
     }
 }

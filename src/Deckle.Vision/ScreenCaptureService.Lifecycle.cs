@@ -114,6 +114,25 @@ public sealed partial class ScreenCaptureService
         }
     }
 
+    /// <summary>
+    /// The refresh rate Windows announces for the display
+    /// <see cref="Start"/> would capture (the named one, else the primary),
+    /// in whole Hz; 0 when unknown. It is the ceiling a caller should give
+    /// the target rate: DXGI can deliver more frames than the display
+    /// refreshes (measured up to 140 per second on a 120 Hz display), and the
+    /// pacer only paces to the rate it is given.
+    /// </summary>
+    public static int GetDisplayRefreshRateHz(string? targetMonitorDeviceName = null)
+    {
+        nint hmon = string.IsNullOrEmpty(targetMonitorDeviceName)
+            ? 0
+            : ScreenCaptureInterop.FindMonitorByDeviceName(targetMonitorDeviceName);
+        if (hmon == 0) hmon = ScreenCaptureInterop.GetPrimaryMonitor();
+
+        string deviceName = ScreenCaptureInterop.GetMonitorDeviceName(hmon);
+        return deviceName == "unknown" ? 0 : ScreenCaptureInterop.GetRefreshRateHz(deviceName);
+    }
+
     private nint ResolveTargetMonitor(string? targetMonitorDeviceName)
     {
         if (string.IsNullOrEmpty(targetMonitorDeviceName))
