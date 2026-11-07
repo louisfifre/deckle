@@ -7,6 +7,213 @@ the project adheres to [Semantic Versioning](https://semver.org/).
 
 This file is generated from the Conventional Commits history by `scripts/git/changelog.ps1`; do not edit it by hand.
 
+## [0.96.0](https://github.com/louisfifre/deckle/compare/release/v0.76.1...release/v0.96.0) — 2026-11-07
+
+### Added
+
+- **transcription:** Choose the rewrite profile by the length of the take
+- **llm-rewrite:** Set a profile's length threshold and shortcut in its fold
+- **app:** Register each rewrite profile's shortcut and list it on Shortcuts
+- **build:** Shut the .NET build servers down five minutes after the last build
+- **settings:** Leave a page field by clicking an empty part of the window
+- **benchmark:** Run a campaign of repeated cells judged in batches
+- **llm:** Return the exception when a provider does not answer the model listing
+- **llm-rewrite:** Word a provider listing failure from the rewrite card's own causes
+- **llm-rewrite:** Show which hosted provider refuses the model listing and why
+- **anytype:** Stage and supervise a standalone gateway process
+- **mcp:** Serve the Anytype MCP host from the gateway process
+- **llm-rewrite:** Choose the rewrite profile from a page-level length ladder
+- **audio:** One voice level, read by the segmenter, the low-audio warning and the HUD
+- **transcription:** One minimum speech, and the same detectors on every pipeline
+- **audio:** A live meter beside the voice level on the Recording page
+- **benchmark:** Optimize a profile's prompt round after round under a budget
+- **benchmark:** Validate an optimize loop against the live prompt and run its judge in parallel
+- **llm-rewrite:** Expose the live text of a batched take
+- **transcription:** Raise the delivered text as one snapshot
+- **hud:** The transcript panel shows the delivered text and its revisions
+- **benchmark:** Keep only the speaker's conclusions in Arrangement and land the second-pass Affinage prompt
+- **settings:** Add a developer switch that shows the Playground
+- **app:** Show the Playground entry points only when the developer setting is on
+- **llm-rewrite:** Type a length step's threshold instead of picking a preset
+- **llm-rewrite:** Keep only what the controls do not show in the Dictation section
+- **setup:** Stop installing the CamemBERT reranker with Autocorrect
+- **llm-rewrite:** Hold a length step to a grain that grows with its length
+- **benchmark:** Land the Arrangement prompt optimized under the conclusions-only rule
+- **benchmark:** Hand-shortened prompts for the three profiles
+- **benchmark:** Run a candidate prompt file as a campaign cell
+- **benchmark:** Add the lean Lissage candidates and their campaign
+- **vision:** Name the sampling grid a source size gets
+- **ambient:** Derive the preview's frame and zone bands without a capture
+- **settings:** Let a magnitude preview follow the slider during a drag
+- **taskbar-cover:** Set the approach distance in DIP with a field and a slider
+- **lighting:** Read and write back a Hue light's state
+- **ambient:** Scan the display for the preview while the lights are off
+- **taskbar-cover:** Preview the approach zone on the screen as the slider moves
+- **ambient:** Open the live preview on the display's frame when Ambient Light is off
+- **diagnostics:** Give operational-log admission verbosity levels
+- **logging:** Replace the detail toggles with verbosity levels
+- **benchmark:** Snapshot the Lissage prompt the optimize loop validated
+- **vision:** Capture a window to PNG with an index of the captures
+- **settings:** Add Developer mode and the Capture the interface card
+- **app:** Run the interface capture over every open Deckle window
+- **transcription:** Read the dictation lines as a table
+- **ambient:** Keep the heartbeat at Summary and read it as a table
+- **input:** Admit the activity rollups at the Summary verbosity
+- **catalog:** Add the arithmetic of the curve's endpoint handles and pause strip
+- **catalog:** Drag the curve's endpoints and let its plot follow the page
+- **catalog:** Compose the curve's corner handles and its pause strip
+- **audio:** Move the microphone checks into the pre-processing fold
+- **transcription:** Move the cut margin and minimum speech into the cut curve
+- **transcription:** Put the cut curve first on the Streaming page
+- **audio:** Put a compact meter and its slider inside the voice-level card
+- **transcription:** Gather the silence guards in one collapsed fold
+- **vision:** Read the display's announced refresh rate
+- **settings:** Add the shared performance mode
+- **ambient:** Decide the capture rate in code, drop the setting
+- **ambient:** Brightness floor as a fold, its level in percent
+- **logging:** Pause auto-scroll while the reader scrolls back up
+- **vision:** Add the frame reduction compute shader and its D3D11 bindings
+- **vision:** Reduce the desktop frame with a compute shader, without the full-size copy
+- **vision:** Read the grid back through a ring of staging buffers, one frame late
+- **audio:** Capture the microphone through PortAudio in raw mode
+- **audio:** Name the stage that refused a microphone probe
+- **settings:** Report how each page of the walk loaded
+- **app:** Add the --self-check mode
+- **shell:** Raise TaskbarCreated when Explorer rebuilds the taskbar
+- **transcription:** Start the rewrite at the first length step during dictation
+- **transcription:** Finish the work in flight before the host quits
+- **audio:** Set the recording limit with a switch and a length in minutes
+- **shell:** Log the end of a Windows session and drain the log
+- **app:** Open the Diagnostics page from the dropped-entries notice
+- **hud:** Follow and log a theme change of the transcript panel
+- **settings:** Choose whether Deckle animates, apart from Windows
+- **catalog:** Compact cut curve with responsive values, live sentence and framed pause view
+- **transcription:** Say why RecordCorpus wrote nothing
+- **orchestration:** Show each app's own icon in its header, nothing when unreadable
+- **anytype:** Stop restarting the backend after 8 consecutive failures
+- **ambient:** Recompose the presets on two axes, rendering and speed
+- **app:** Keep the self-check off the desktop and render whole pages
+- **anytype:** Show a gateway Deckle gave up restarting in the tray
+- **taskbar:** Add the Taskbar module with its setting and log provider
+- **taskbar:** Promote every tray icon and keep it promoted
+- **taskbar:** Hide the Start menu Recommended section by policy
+- **taskbar:** Add the Taskbar settings page with the tray and Recommended cards
+- **app:** Compose the Taskbar module and drive the tray promoter
+- **taskbar-cover:** Nest the cover under the Taskbar node in Settings
+- **anytype:** Replace a gateway that holds an outdated API key
+
+### Changed
+
+- **audio:** Remove the never-persisted HUD level window and its auto-calibration
+- **transcription:** Seed the view-model defaults from the settings POCOs
+- **core:** Remove members nothing calls
+- **transcription:** Name the model-unloaded event in English
+- **telemetry:** Read the consent gates from typed settings
+- **settings:** Use each module's page tag constant
+- **diagnostics:** Name exception fields ex_type and ex_message
+- **hud:** Follow the Windows animation preference and drop Overlay.Animations
+- **transcription:** Remove the unselected cut presets
+- **transcription:** Report the engine status phase apart from its localized text
+- **transcription:** Default the dictation strategy to streaming
+- **autocorrect:** Remove the contextual sentence stage
+- **autocorrect:** Remove the morphology, elision and grammar corrections
+- **ambient:** Not-paired banner right under the module switch
+- **orchestration:** Add-by-hand buttons in a card, page description names the HDR rule
+- **lighting:** Share the light snapshot and restore between Hue outputs
+- **audio:** Fold the tail headline into the tail figures
+- **transcription:** Give each clipboard copy one line
+- **settings:** Fold the navigation timing into its completion line
+- **audio:** Move the microphone level check under the voice level
+- **diagnostics:** One spelling of ex_type through ExceptionTypeName
+- **settings:** Drop the code that converted old settings files
+
+### Removed
+
+- **autocorrect:** Keep only typo spell-fix and diacritics restoration
+
+### Fixed
+
+- **llm-rewrite:** Show the threshold and shortcut cards in every profile's fold
+- **llm-rewrite:** Compose a profile's threshold and shortcut cards from its bound Tag
+- **llm-rewrite:** Keep the provider bars in step with the provider switches
+- **transcription:** Log the auto-calibrated dBFS bounds with one decimal like every other dbfs field
+- **transcription:** Keep the cut as it was, the entry margin gates the opening only
+- **transcription:** Keep the no-voice overlay body on one line of the HUD card
+- **audio:** Second review lot on the voice level
+- **build:** Keep the Roslyn compiler server at low priority
+- **llm-rewrite:** Say how to rewrite only past a length in the ladder card
+- **logging:** Drop 'for now' from the telemetry folder description
+- **settings:** Migrate the legacy whisp section into the transcription folder
+- **transcription:** Make Reset all cover only the cards of the page
+- **trackpad:** Hide the drag section while the module is off
+- **settings:** Index the update, version and beam size cards for search
+- **llm-rewrite:** Localize the rewrite timeout card
+- **anytype:** Report a runtime exception once at Error
+- **llm:** Keep a custom Ollama endpoint when an Ollama-only settings file migrates
+- **settings:** Back up and restore every module settings file
+- **llm:** Stop writing the legacy settings fields back to disk
+- **diagnostics:** Redact profile paths from every string payload in the dispatcher
+- **llm:** Recover a custom Ollama endpoint left only in the legacy field
+- **scripts:** Bind build-locked parameters by name only
+- **autocorrect:** Stop shutting ONNX Runtime GenAI down when a judge is released
+- **autocorrect:** Release a discarded runtime before another build can start
+- **benchmark:** Key the summary's judgements by iteration
+- **composition:** Keep the recording outline on the microphone with animation effects off
+- **lighting:** Name a Hue group listing the bridge never answered
+- **ambient:** Search for the bridge when Load rooms goes unanswered
+- **ambient:** Keep the capture's first frame for the sampler
+- **lighting:** Hand the lights back their state when Entertainment stops
+- **catalog:** Align the curve legend on one field width and one grid
+- **settings:** Hold the audio pages to one sentence per card
+- **llm:** Tell the truth in the remove and reset dialogs, one name for the rewrite profile
+- **orchestration:** Point the elevation advisory at General, where Start elevated lives
+- **diagnostics:** Align the Logging caption and the reset dialog with verbosity levels, caption the Trace section
+- **autocorrect,transcription:** Complete the autocorrect switch, plain wording, a reset the keyboard can see
+- **settings:** One word per thing in Shortcuts, Backup, Setup wizard and data folder wording
+- **setup:** One wording and one card spacing across the wizard pages
+- **trackpad:** Name the settings section Dragging, not the switch's own label
+- **lighting:** Hand the lights back their state when the REST fallback stops
+- **ambient:** List what Reset all restores now
+- **settings:** Align the live dialog texts with what the buttons do
+- **installer:** Default the data-deletion prompt to the safe answer
+- **app:** Read the tray's first tooltip status from the catalog
+- **logs:** Give the log search box and its icon button an accessible name
+- **settings:** Show the search notice in secondary text, not disabled
+- **hud:** Say it in the person's words, not the code's
+- **ambient:** Tell the person what comes after confirming a new pairing
+- **settings:** Name every General section in the page description, describe each shortcut
+- **diagnostics:** Name the files the diagnostics folder really holds
+- **setup:** Say the result once, in the step header, and keep the bar for the fact
+- **catalog:** Name the reset wheels for screen readers
+- **catalog:** Read the curve control-point names from the resources
+- **settings:** Move the tuning controls' words into the resources
+- **strings:** Align the module copies on the wording the app shows
+- **audio:** Harden the PortAudio capture against what review found
+- **catalog:** Stop the reset wheel label from calling itself
+- **audio:** Put portaudio.dll beside the app executable
+- **transcription:** Log the microphone incident code as readable text
+- **audio:** Log the stage a refused microphone check stopped at
+- **settings:** Page Reset all restores values and keeps the module switch
+- **app:** Close the rail flyout before a self-check capture
+- **catalog:** Make every consent dialog default to Cancel through one ConsentService
+- **settings:** Mark the data folder move destructive so Enter cancels
+- **setup:** Open the update window from the toast and ask for Install there
+- **diagnostics:** Declare event fields as the types WriteEvent writes
+- **diagnostics:** Let the header confirm the page reset
+- **taskbar-cover:** Show the approach distance unit as DIP, not px
+- **transcription:** Name the model file and the device on ModelUnavailable
+- **ambient:** Keep the chosen room when the room list loads
+- **ambient:** Draw only used zones, bound the scan release, say preview failures
+- **transcription:** Freeze the hangover length at the first silent frame and debounce the pause gauge
+- **transcription:** Keep a short word at the edge of a monolithic take
+- **recovery:** Expire a stale audio marker and let a failed recovery lead
+- **app:** Shorten the recovery failure messages to fit the HUD card
+- **scripts:** Let self-check pass when no resident Deckle runs
+- **app:** Log the ignored second close request at Informational
+- **hud:** Fit the microphone error with its hex code on one line
+- **catalog:** Track where the pause values sit instead of comparing WinRT parents
+- **transcription:** Give the take-audio and corpus events their own ids
+
 ## [0.76.1](https://github.com/louisfifre/deckle/compare/release/v0.72.4...release/v0.76.1) — 2026-11-04
 
 ### Added
