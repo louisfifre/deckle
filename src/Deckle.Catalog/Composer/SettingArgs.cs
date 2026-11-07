@@ -19,13 +19,16 @@ public abstract record SettingArgs;
 // so every field ends at the same edge. Slider false keeps the field alone, for a figure
 // that is typed rather than swept. Integer marks a count: the grain never drops
 // below one, so the field shows no decimals. An integer model still travels as a
-// double through the selectors.
+// double through the selectors. Auto names the one value that means "let the
+// engine decide" (a -1 sentinel): the field and the reset tooltip show the word
+// Auto in its place, never the number.
 public sealed record MagnitudeArgs(
     double Minimum,
     double Maximum,
     string? Unit = null,
     bool Slider = true,
-    bool Integer = false) : SettingArgs;
+    bool Integer = false,
+    double? Auto = null) : SettingArgs;
 
 // ── TextArgs ──────────────────────────────────────────────────────────────────
 //

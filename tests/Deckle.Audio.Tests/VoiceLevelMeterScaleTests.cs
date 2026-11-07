@@ -20,6 +20,22 @@ public sealed class VoiceLevelMeterScaleTests
         Assert.InRange(f, 1.0 / 3, 2.0 / 3);
     }
 
+    // The slider under the track writes the voice level, and its thumb is the
+    // level's mark: every whole-dB level the field can hold, the shipped one
+    // included, must fall on one of its detents, or the thumb would sit beside
+    // the mark.
+    [Fact]
+    public void EveryWholeDecibelOnTheScaleIsADetentOfTheSlider()
+    {
+        double step = VoiceLevelMeterScale.SliderStepDb;
+        double span = (Max - Min) / step;
+
+        Assert.Equal(Math.Round(span), span, 9);
+        Assert.Equal(0.0, (1.0 / step) % 1.0, 9);
+        double fromMin = (new CaptureSettings().VoiceLevelDbfs - Min) / step;
+        Assert.Equal(Math.Round(fromMin), fromMin, 9);
+    }
+
     [Fact]
     public void TheTrackRunsFromItsMinimumToItsMaximumLinearly()
     {
