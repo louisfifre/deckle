@@ -2233,6 +2233,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientBrightnessBugNotes.md
 │   │   ├── AmbientBrightnessCurveTests.cs
 │   │   ├── AmbientCaptureRateTests.cs
+│   │   ├── AmbientCaptureStartBugNotes.md
 │   │   ├── AmbientColorSmootherTests.cs
 │   │   ├── AmbientHeartbeatWindowTests.cs
 │   │   ├── AmbientHueChangeAttributorTests.cs
