@@ -1159,6 +1159,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueBridgeClient.Dtos.cs
 │   │   │   ├── HueBridgeClient.EventStream.cs
 │   │   │   ├── HueBridgeClient.Identity.cs
+│   │   │   ├── HueBridgeClient.LightState.cs
 │   │   │   ├── HueBridgeClient.Pairing.cs
 │   │   │   ├── HueBridgeClient.V2.cs
 │   │   │   ├── HueClientKeyStore.cs
@@ -1174,6 +1175,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueGroup.cs
 │   │   │   ├── HueLight.cs
 │   │   │   ├── HueLightOutputFactory.cs
+│   │   │   ├── HueLightState.cs
 │   │   │   ├── HueLocalDiscovery.cs
 │   │   │   ├── HueLocalDiscovery.Interop.cs
 │   │   │   ├── HueProjectedState.cs
