@@ -1,5 +1,7 @@
 using Deckle.Anytype;
+using System.Diagnostics.Tracing;
 using Deckle.Diagnostics;
+using Deckle.TestSupport;
 using Xunit;
 
 namespace Deckle.Anytype.Tests;
@@ -122,6 +124,70 @@ public sealed class GatewaySupervisorTests : IDisposable
         Assert.Empty(_processes.StopRequests);
     }
 
+    private const string OldKey = "old-key-0123456789abcdef";
+    private const string NewKey = "new-key-fedcba9876543210";
+
+    [Fact]
+    public async Task A_gateway_holding_the_current_key_is_adopted()
+    {
+        _processes.Running(77, StagedExecutable, listening: true);
+        _processes.CurrentKey = GatewayKeyFingerprint.Of(NewKey);
+        _processes.HeldKey = GatewayKeyFingerprint.Of(NewKey);
+
+        await using (GatewaySupervisor supervisor = Supervisor())
+        {
+            supervisor.Start();
+            await Until(() => _processes.Opened.Contains(77));
+        }
+
+        Assert.Empty(_processes.Spawned);
+        Assert.Empty(_processes.StopRequests);
+    }
+
+    [Fact]
+    public async Task A_gateway_holding_an_outdated_key_is_drained_and_replaced_without_leaking_either_key()
+    {
+        using var listener = new TestEventListener("Deckle-Anytype");
+        _processes.Running(77, StagedExecutable, listening: true);
+        _processes.CurrentKey = GatewayKeyFingerprint.Of(NewKey);
+        _processes.HeldKey = GatewayKeyFingerprint.Of(OldKey);
+
+        await using (GatewaySupervisor supervisor = Supervisor())
+        {
+            supervisor.Start();
+            await Until(() => _processes.Spawned.Count == 1);
+        }
+
+        Assert.Equal([77], _processes.StopRequests);
+        Assert.Equal(StagedExecutable, _processes.Spawned[0], ignoreCase: true);
+        Assert.Contains(listener.Events, e => e.EventId == DeckleAnytypeSource.EvtGatewayKeyChanged);
+        Assert.All(listener.Events, e =>
+        {
+            string everything = e.Message + string.Join(" ", e.Payload ?? []);
+            foreach (string secret in new[] { OldKey, NewKey, GatewayKeyFingerprint.Of(OldKey), GatewayKeyFingerprint.Of(NewKey) })
+                Assert.DoesNotContain(secret, everything, StringComparison.Ordinal);
+        });
+    }
+
+    [Theory]
+    [InlineData(null, "abc")]
+    [InlineData("abc", null)]
+    public async Task A_key_check_that_cannot_be_made_keeps_the_gateway(string? current, string? held)
+    {
+        _processes.Running(77, StagedExecutable, listening: true);
+        _processes.CurrentKey = current;
+        _processes.HeldKey = held;
+
+        await using (GatewaySupervisor supervisor = Supervisor())
+        {
+            supervisor.Start();
+            await Until(() => _processes.Opened.Contains(77));
+        }
+
+        Assert.Empty(_processes.Spawned);
+        Assert.Empty(_processes.StopRequests);
+    }
+
     private static bool IsOpen => UserIncidentRegistry.Instance.IsOpen(UserIncidents.AnytypeGateway);
 
     [Fact]
@@ -194,6 +260,11 @@ public sealed class GatewaySupervisorTests : IDisposable
         private readonly Dictionary<int, string> _paths = new();
         private int _listenerOwner;
         private int _nextId = 1000;
+
+        public string? CurrentKey { get; set; }
+        public string? HeldKey { get; set; }
+        public string? CurrentKeyFingerprint() => CurrentKey;
+        public Task<string?> ReadHeldKeyFingerprintAsync(CancellationToken ct) => Task.FromResult(HeldKey);
 
         public List<string> Spawned { get; } = new();
         public List<int> StopRequests { get; } = new();

@@ -111,6 +111,8 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public const int EvtDeletionApprovalRelayListening = 86;
     public const int EvtDeletionApprovalRelayStopped  = 87;
     public const int EvtBackendRestartsExhausted      = 88;
+    public const int EvtGatewayKeyChanged             = 89;
+    public const int EvtGatewayKeyCheckSkipped        = 90;
 
     // ── HTTP transport ──────────────────────────────────────────────────
 
@@ -891,6 +893,32 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public void GatewayReplacing(int old_pid, string fingerprint, string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtGatewayReplacing, old_pid, fingerprint, work_id);
+    }
+
+    // The gateway holds an API key other than the one in the vault, so it drains
+    // like a gateway of another build and a fresh one reads the new key. Neither
+    // key nor fingerprint is written.
+    [Event(EvtGatewayKeyChanged,
+           Level = EventLevel.Informational,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The Anytype gateway holds an outdated API key, so Deckle is replacing it")]
+    public void GatewayKeyChanged(int old_pid, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayKeyChanged, old_pid, work_id);
+    }
+
+    // The comparison did not happen and the gateway is kept as it is. reason:
+    // key_unreadable (the vault or the credentials gave no key) or
+    // gateway_unreachable (/health gave no fingerprint, in time or at all).
+    [Event(EvtGatewayKeyCheckSkipped,
+           Level = EventLevel.Warning,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Deckle could not check the API key of the running Anytype gateway, so it keeps it\nreason={0} | pid={1} | work_id={2}")]
+    public void GatewayKeyCheckSkipped(string reason, int pid, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayKeyCheckSkipped, reason, pid, work_id);
     }
 
     // reason: stop_timeout (asked, did not exit in time) or no_stop_event (the

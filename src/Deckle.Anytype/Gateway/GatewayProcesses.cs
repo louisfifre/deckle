@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Net.Http;
+using System.Text.Json;
 
 namespace Deckle.Anytype;
 
@@ -25,11 +27,54 @@ internal interface IGatewayProcesses
     // Sets the stop event the gateway process created for itself. False when
     // the event does not exist (the process is gone, or never got that far).
     bool RequestStop(int processId);
+    // GatewayKeyFingerprint.Of the API key Deckle would give a gateway now, null
+    // when no key can be read.
+    string? CurrentKeyFingerprint();
+    // What the listening gateway says it holds on its health path, null when it
+    // does not answer or answers no fingerprint.
+    Task<string?> ReadHeldKeyFingerprintAsync(CancellationToken ct);
 }
 
 internal sealed class GatewayProcesses : IGatewayProcesses
 {
+    private static readonly HttpClient Health = new() { Timeout = TimeSpan.FromSeconds(3) };
+
     private readonly BackendListenerOwner _listener = new(GatewayContract.Port);
+
+    public string? CurrentKeyFingerprint()
+    {
+        try
+        {
+            return GatewayKeyFingerprint.Of(AnytypeCredentials.Load().ApiKey);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or Deckle.Security.SecretVaultException)
+        {
+            return null;
+        }
+    }
+
+    public async Task<string?> ReadHeldKeyFingerprintAsync(CancellationToken ct)
+    {
+        try
+        {
+            using HttpResponseMessage response = await Health
+                .GetAsync($"http://127.0.0.1:{GatewayContract.Port}{GatewayContract.HealthPath}", ct)
+                .ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode) return null;
+            using JsonDocument body = await JsonDocument.ParseAsync(
+                await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false), cancellationToken: ct)
+                .ConfigureAwait(false);
+            return body.RootElement.TryGetProperty(GatewayContract.KeyFingerprintProperty, out JsonElement value)
+                && value.ValueKind == JsonValueKind.String
+                ? value.GetString()
+                : null;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException or JsonException
+            && !ct.IsCancellationRequested)
+        {
+            return null;
+        }
+    }
 
     public BackendListenerSnapshot InspectListener() => _listener.Inspect();
 

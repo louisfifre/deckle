@@ -362,6 +362,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── DialogueGestures.cs
 │   │   ├── Gateway/
 │   │   │   ├── GatewayContract.cs
+│   │   │   ├── GatewayKeyFingerprint.cs
 │   │   │   ├── GatewayPayload.cs
 │   │   │   ├── GatewayProcesses.cs
 │   │   │   ├── GatewayReconciliation.cs
@@ -1844,6 +1845,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensBugNotes.md
 │   │   ├── McpClientTokensTests.cs
+│   │   ├── McpHealthEndpointTests.cs
 │   │   ├── McpHostBugNotes.md
 │   │   ├── McpHttpHostTests.cs
 │   │   ├── McpObservabilityTests.cs
@@ -1898,6 +1900,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DialogueGesturesTests.cs
 │   │   ├── DocumentGesturesTests.cs
 │   │   ├── FakeV2Handler.cs
+│   │   ├── GatewayKeyFingerprintTests.cs
 │   │   ├── GatewayPayloadTests.cs
 │   │   ├── GatewayReconciliationTests.cs
 │   │   ├── GatewaySupervisorTests.cs
