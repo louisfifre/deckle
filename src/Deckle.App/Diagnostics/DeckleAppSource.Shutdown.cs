@@ -15,6 +15,17 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtShutdownRequested, work_id);
     }
 
+    // A second close or restart request while the first still waits for the
+    // work in flight (App.Lifetime.cs): only the first one is served.
+    [Event(EvtShutdownRequestIgnored,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A close request was ignored, because Deckle is already closing")]
+    public void ShutdownRequestIgnored()
+    {
+        if (IsEnabled()) WriteEvent(EvtShutdownRequestIgnored);
+    }
+
     // One line per failing step, cause included: the log says which
     // teardown broke, not only that one did.
     [Event(EvtShutdownStepFailed,
