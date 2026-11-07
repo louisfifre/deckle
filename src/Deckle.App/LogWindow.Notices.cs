@@ -19,6 +19,11 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         DroppedEntriesInfoBar.IsOpen = true;
     }
 
+    // The App hands in the action (it owns the Settings window); a window
+    // built without it shows the bar and the button does nothing.
+    private void OnDroppedEntriesSettingsClick(object sender, RoutedEventArgs e)
+        => OnShowSettingsRequested?.Invoke();
+
     private void ResetDroppedEntries()
     {
         _droppedEntryCount = 0;
