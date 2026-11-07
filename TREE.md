@@ -93,6 +93,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── rewrite/
 │   │   ├── model-compare/
 │   │   │   ├── campaigns/
+│   │   │   │   ├── lissage-lean.json
 │   │   │   │   └── profiles-v2.json
 │   │   │   ├── optimize/
 │   │   │   │   ├── affinage-sonnet-v2.json
@@ -110,8 +111,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── arrangement-opt1.md
 │   │   │   │   ├── arrangement-opt2.md
 │   │   │   │   ├── arrangement-opt3.md
+│   │   │   │   ├── lissage-bref.md
 │   │   │   │   ├── lissage-court.md
 │   │   │   │   ├── lissage-current.md
+│   │   │   │   ├── lissage-libre.md
 │   │   │   │   ├── lissage-literal.md
 │   │   │   │   └── lissage-opt1.md
 │   │   │   ├── .gitignore
