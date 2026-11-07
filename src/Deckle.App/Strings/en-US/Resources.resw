@@ -1219,7 +1219,7 @@
     <value>Replace the paired bridge?</value>
   </data>
   <data name="AmbientHue_RepairDialog_Content" xml:space="preserve">
-    <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones.</value>
+    <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones. Then press the link button on the bridge.</value>
   </data>
 
   <!-- AmbientPage Reset all dialog — duplicated from
