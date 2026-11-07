@@ -539,7 +539,7 @@
     <value>No-speech cut-off</value>
   </data>
   <data name="WhisperNoSpeechCard.Description" xml:space="preserve">
-    <value>A segment the model hears as silence, with low confidence, is dropped; lower drops more.</value>
+    <value>Drops a segment the model hears as silence when it is also under Minimum confidence, on the Decoding page; lower drops more.</value>
   </data>
   <data name="WhisperModelsDirCard.Header" xml:space="preserve">
     <value>Models folder</value>
@@ -592,7 +592,7 @@
     <value>Confidence</value>
   </data>
   <data name="DecodingPageConfidenceSection.Caption" xml:space="preserve">
-    <value>When Whisper retries a segment or treats it as silence.</value>
+    <value>When Whisper retries a segment.</value>
   </data>
   <data name="WhisperPageOutputFiltersSection.Title" xml:space="preserve">
     <value>Output filters</value>
@@ -618,11 +618,14 @@
   <data name="WhisperPageModelEngineSection.Title" xml:space="preserve">
     <value>Model and engine</value>
   </data>
-  <data name="WhisperPageSpeechFilteringSection.Title" xml:space="preserve">
-    <value>Speech filtering</value>
+  <!-- The one fold of the guards against text from silence and noise, on the
+       Streaming page (WhisperViewModel.SilenceGuardSettings, 2026-11-07 review,
+       change 6): named for what it spares the person, not for its detectors. -->
+  <data name="WhisperSilenceGuardsFold.Header" xml:space="preserve">
+    <value>Silence and noise filtering</value>
   </data>
-  <data name="WhisperPageSpeechFilteringSection.Caption" xml:space="preserve">
-    <value>Removes silence and noise from every utterance before transcription.</value>
+  <data name="WhisperSilenceGuardsFold.Description" xml:space="preserve">
+    <value>Keeps Whisper from writing words you never said when it hears silence or noise.</value>
   </data>
   <data name="StreamingPageSegmentationSection.Caption" xml:space="preserve">
     <value>The voice level that opens an utterance is on the Recording page.</value>
