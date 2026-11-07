@@ -152,6 +152,17 @@ public partial class GeneralViewModel
             defaultValue: () => ElevatedStartupService.DefaultEnabled),
     ];
 
+    // The shared performance signal (PerformanceSettings). Modules read the
+    // persisted value where they need it, so the toggle needs no side effect
+    // beyond PushToSettings.
+    public IReadOnlyList<SettingDescriptor> PerformanceSettings =>
+    [
+        Setting.Toggle("GeneralPerformanceModeCard",
+            () => PerformanceMode,
+            value => PerformanceMode = value,
+            defaultValue: () => new PerformanceSettings().PerformanceMode),
+    ];
+
     // The App-side update loop reads the persisted value on each tick, so the
     // toggle needs no side effect beyond PushToSettings.
     public IReadOnlyList<SettingDescriptor> UpdatesSettings =>

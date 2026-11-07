@@ -16,6 +16,18 @@ public sealed class AppSettings
     public UpdatesSettings     Updates     { get; set; } = new();
     public HotkeysSettings     Hotkeys     { get; set; } = new();
     public DeveloperSettings   Developer   { get; set; } = new();
+    public PerformanceSettings Performance { get; set; } = new();
+}
+
+// The one shared signal for a machine that cannot spare much. Any module
+// that has a cost it can lower reads PerformanceMode and picks its cheaper
+// values from tiers it owns in code (Ambient's capture cap is the first
+// reader). Off by default: a typical PC runs the normal tiers. It is a
+// shell setting, not a module's, because no module acts on "the machine is
+// weak"; each acts on its own cost.
+public sealed class PerformanceSettings
+{
+    public bool PerformanceMode { get; set; } = false;
 }
 
 // Developer surfaces an ordinary user has no use for. Off by default: the
