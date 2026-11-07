@@ -27,13 +27,9 @@ public sealed partial class AutocorrectPage : Page
 
         ComposeSettings();
 
-        // The page-level "Reset all" gate follows the composer's dirtiness.
-        _settingsComposer!.DirtyChanged += (_, _) => GateResetAll();
-
         ViewModel.ExcludedWords.CollectionChanged += OnExclusionsChanged;
         ViewModel.PropertyChanged += OnViewModelChanged;
         RefreshExclusionsVisibility();
-        GateResetAll();
     }
 
     // The composer subscribes to the ViewModel, so the composed toggles reflect
@@ -51,28 +47,14 @@ public sealed partial class AutocorrectPage : Page
         // page that sat cached reflects the live model.
         ViewModel.Load();
         RefreshExclusionsVisibility();
-        // Load() may raise no PropertyChanged when nothing moved, so no composer
-        // DirtyChanged would fire: settle the page-reset gate off the fresh values.
-        GateResetAll();
     }
 
-    // ── Whole-page "Reset all" ────────────────────────────────────────────────
+    // ── No whole-page "Reset all" ─────────────────────────────────────────────
     //
-    // Drives the master switch back to its default. Active-when-dirty: enabled
-    // only while a composed value differs from its default. The excluded-words
-    // register is not touched — it is a list the user authors, not a setting
-    // with a default. The header block asks before firing ResetAllRequested
-    // (the generic wording).
-    private void GateResetAll()
-    {
-        Header.IsResetAllEnabled = _settingsComposer?.IsDirty() ?? false;
-    }
-
-    private void ResetAll_Click(object sender, RoutedEventArgs e)
-    {
-        _settingsComposer?.ResetAll();
-    }
-
+    // The only composed setting is the master switch, and a reset never turns a
+    // feature on or off (2026-11-07); the excluded-words register is a list the
+    // user authors, not a setting with a default. Nothing is left to reset, so
+    // the header carries no Reset all button.
     private void OnExclusionsChanged(object? sender, NotifyCollectionChangedEventArgs e)
         => RefreshExclusionsVisibility();
 

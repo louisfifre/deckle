@@ -470,9 +470,6 @@
   </data>
   <!-- No longer an x:Uid: ResetAll_Click reads it with Loc.Get for the
        confirmation dialog's primary button. -->
-  <data name="LlmPageResetAllLabel.Text" xml:space="preserve">
-    <value>Reset all</value>
-  </data>
 
   <!-- ─── Settings — code-behind dialogs ─────────────────────────────
        ContentDialogs raised programmatically by Settings pages and
@@ -486,11 +483,8 @@
   <!-- WhisperPage Reset all dialog -->
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
-  <data name="Settings_ResetLlmDialog_Title" xml:space="preserve">
-    <value>Reset all rewriting settings?</value>
-  </data>
-  <data name="Settings_ResetLlmDialog_Content" xml:space="preserve">
-    <value>Every rewriting setting goes back to its default: the switch, the rewrite profile, the length steps and rewriting while you speak. The providers and profiles, shortcuts included, are replaced by the defaults. API keys stay saved. Your custom prompts and parameters will be lost.</value>
+  <data name="Settings_ResetLlmDialog_Detail" xml:space="preserve">
+    <value>The providers and profiles, shortcuts included, are replaced by the defaults, so your custom prompts and parameters are lost. API keys and the rewriting switch stay as they are.</value>
   </data>
   <data name="Settings_OllamaStatusMessage_Format" xml:space="preserve">
     <value>Start Ollama or check the provider's address ({0}).</value>

@@ -129,18 +129,11 @@
     <value>Mirror your screen to your Philips Hue lights. Works best with HDR content.</value>
   </data>
 
-  <!-- The page's own Reset all confirmation dialog. The keys are read by
-       Loc.Get in AmbientPage.xaml.cs (AmbientPageResetAllLabel.Text is the
-       dialog's primary button) and mirrored in
+  <!-- What the page's Reset all keeps, added to the header's own dialog. Read
+       by Loc.Get in AmbientPage.xaml.cs and mirrored in
        src/Deckle.App/Strings/en-US/Resources.resw. -->
-  <data name="AmbientPageResetAllLabel.Text" xml:space="preserve">
-    <value>Reset all</value>
-  </data>
-  <data name="Settings_ResetAmbientDialog_Title" xml:space="preserve">
-    <value>Reset all settings?</value>
-  </data>
-  <data name="Settings_ResetAmbientDialog_Content" xml:space="preserve">
-    <value>This will restore the colour and motion tuning, the brightness floor, the edge band each zone reads, and whether the lights follow their zones or share one colour to their default values. Your Hue bridge pairing, the selected light group, the display, per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
+  <data name="Settings_ResetAmbientDialog_Detail" xml:space="preserve">
+    <value>Your Hue bridge pairing, the selected light group, the display, the per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
   </data>
 
   <!-- ── Switch, banner and preview ────────────────────────── -->

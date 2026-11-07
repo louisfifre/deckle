@@ -57,9 +57,8 @@ public sealed partial class WhisperPage : Page
             throw;
         }
 
-        // The page asks with its own wording (it says what the reset keeps), so the
-        // header's generic confirmation stays off.
-        Header.ConfirmsReset = false;
+        // The header asks; the page adds what its reset keeps.
+        Header.ResetDetail = Loc.Get("Settings_ResetWhisperDialog_Detail");
 
         // Make the Page focusable so clicking on the background can
         // steal focus from the active control (triggering LostFocus →
@@ -472,18 +471,9 @@ public sealed partial class WhisperPage : Page
 
     // ── Reset all ──────────────────────────────────────────────────────────
 
-    private async void ResetAll_Click(object sender, RoutedEventArgs e)
+    // The header has already confirmed, as on every page.
+    private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
-        bool confirmed = await ConfirmationService.RequestAsync(
-            this.XamlRoot,
-            new ConfirmationRequest(
-                Loc.Get("Settings_ResetWhisperDialog_Title"),
-                Loc.Get("Settings_ResetWhisperDialog_Content"),
-                Loc.Get("WhisperPageResetAllLabel.Text"),
-                IsDestructive: true));
-        if (!confirmed)
-            return;
-
         DeckleWhispSource.Log.PageResetAll();
 
         // Resets exactly the cards this page shows, the way DecodingPage and

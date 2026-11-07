@@ -48,9 +48,8 @@ public sealed partial class AmbientPage : Page
     {
         InitializeComponent();
 
-        // The page asks with its own wording (it says what the reset keeps), so
-        // the header does not add its generic confirmation on top.
-        Header.ConfirmsReset = false;
+        // The header asks; the page adds what its reset keeps.
+        Header.ResetDetail = Loc.Get("Settings_ResetAmbientDialog_Detail");
 
         // Load before composing so every composed card starts on the stored
         // value rather than the view model's constructor seed.
@@ -243,20 +242,11 @@ public sealed partial class AmbientPage : Page
     //
     // The page-level reset: every value the page tunes goes back to its
     // default; pairing, group, display, per-light rows and the on/off state
-    // stay. Confirmed first because it wipes several groups at once. The
-    // view model writes once and saves; Changed reloads the page.
+    // stay. The header confirms first, as on every page. The view model
+    // writes once and saves; Changed reloads the page.
 
-    private async void ResetAll_Click(object sender, RoutedEventArgs e)
+    private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
-        bool confirmed = await ConfirmationService.RequestAsync(
-            this.XamlRoot,
-            new ConfirmationRequest(
-                Loc.Get("Settings_ResetAmbientDialog_Title"),
-                Loc.Get("Settings_ResetAmbientDialog_Content"),
-                Loc.Get("AmbientPageResetAllLabel.Text"),
-                IsDestructive: true));
-        if (!confirmed) return;
-
         DeckleSettingsUxSource.Log.SectionReset();
         DeckleSettingsUxSource.Log.SectionResetDetail("Ambient page");
         ViewModel.ResetDefaults();

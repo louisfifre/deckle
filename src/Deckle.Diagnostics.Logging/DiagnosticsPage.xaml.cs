@@ -24,9 +24,7 @@ public sealed partial class DiagnosticsPage : Page
     public DiagnosticsPage()
     {
         InitializeComponent();
-        // The page asks with its own wording (it says what the reset clears), so the
-        // header's generic confirmation stays off.
-        Header.ConfirmsReset = false;
+        Header.ResetDetail = Loc.Get("Settings_ResetDiagnosticsDialog_Detail");
         NavigationCacheMode = NavigationCacheMode.Required;
         ComposeLoggingSection();
         ComposeApplicationLogSection();
@@ -207,23 +205,14 @@ public sealed partial class DiagnosticsPage : Page
     }
 
     // Clears recorded consents (the application-log opt-in and every
-    // contributed dataset), so it goes through the destructive confirmation,
-    // whose words promise every opt-in on the page goes off. The composers'
+    // contributed dataset); the header's destructive confirmation, whose detail
+    // promises every opt-in on the page goes off. The composers'
     // ResetAll returns each consent to its default, off; each contribution
     // also turns its own datasets off, so the promise holds whatever a
     // contribution declares. The composers re-sync off the resulting
     // PropertyChanged.
-    private async void ResetAllDiagnostics_Click(object sender, RoutedEventArgs e)
+    private void ResetAllDiagnostics_Click(object sender, RoutedEventArgs e)
     {
-        bool confirmed = await ConfirmationService.RequestAsync(
-            this.XamlRoot,
-            new ConfirmationRequest(
-                Loc.Get("Settings_ResetDiagnosticsDialog_Title"),
-                Loc.Get("Settings_ResetDiagnosticsDialog_Content"),
-                Loc.Get("Common_Reset"),
-                IsDestructive: true));
-        if (!confirmed) return;
-
         ViewModel.ResetLoggingDefaults();
         ViewModel.ResetApplicationLogDefaults();
         // Clears the wheel capture and the storage folder together.
