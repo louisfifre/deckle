@@ -4,6 +4,14 @@ using Deckle.Diagnostics.Telemetry;
 
 namespace Deckle.Transcription;
 
+// Closed `reason` vocabulary of CorpusRecordSkipped.
+internal static class CorpusSkipReasons
+{
+    public const string CorpusDisabled = "corpus_disabled";
+    public const string FileRun = "file_run";
+    public const string NoProfile = "no_profile";
+}
+
 public sealed partial class TranscriptionEngine
 {
     private void RecordPipelineMetrics(
@@ -99,8 +107,16 @@ public sealed partial class TranscriptionEngine
         long whisperMs)
     {
         var telemetrySettings = _host.Telemetry;
-        if (!telemetrySettings.CorpusEnabled || isFileRun)
+        if (!telemetrySettings.CorpusEnabled)
+        {
+            DeckleWhispSource.Log.CorpusRecordSkipped(CorpusSkipReasons.CorpusDisabled);
             return;
+        }
+        if (isFileRun)
+        {
+            DeckleWhispSource.Log.CorpusRecordSkipped(CorpusSkipReasons.FileRun);
+            return;
+        }
 
         var asrSettings = _host.Transcription.Engine;
         int rawWordCount = TextMetrics.CountWords(rawText);
@@ -138,7 +154,10 @@ public sealed partial class TranscriptionEngine
             audio_content:         corpusContent);
 
         if (rewrite.Profile is null)
+        {
+            DeckleWhispSource.Log.CorpusRecordSkipped(CorpusSkipReasons.NoProfile);
             return;
+        }
 
         int rewriteWordCount = TextMetrics.CountWords(rewrite.Text);
         string rewriteBucket = CorpusPaths.Sanitize(
