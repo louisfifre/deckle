@@ -65,48 +65,6 @@ _Generated from `git ls-files` — do not edit by hand._
 ├── .vscode/
 │   ├── launch.json
 │   └── tasks.json
-├── benchmark/
-│   ├── autoresearch/
-│   │   ├── campaigns/
-│   │   │   ├── interactive-autocorrect/
-│   │   │   │   ├── PROTOCOL.md  — interactive-autocorrect-protocol Metric, latency, integrity, and data contract for the interactive autocorrect c…
-│   │   │   │   └── README.md  — interactive-autocorrect-research Reproducible campaign for safe, local, interactive whole-sentence autocorrectio…
-│   │   │   └── README.md  — readme-autoresearch-campaigns How to store individual autoresearch campaign folders.
-│   │   └── README.md  — readme-autoresearch Generic autoresearch workspace for measurable iterative generation, editing, ju…
-│   ├── lib/
-│   │   ├── monitor/
-│   │   │   ├── gpu_monitor.ps1
-│   │   │   └── joiner.py
-│   │   ├── env.py
-│   │   ├── event_log.py
-│   │   ├── paths.py
-│   │   ├── _base_compat.py
-│   │   └── __init__.py
-│   ├── rewrite/
-│   │   ├── model-compare/
-│   │   │   ├── prompts/
-│   │   │   │   ├── lissage-current.md
-│   │   │   │   └── lissage-literal.md
-│   │   │   ├── .gitignore
-│   │   │   ├── Corpus.cs
-│   │   │   ├── Judge.cs
-│   │   │   ├── ModelCompare.csproj
-│   │   │   ├── Program.cs
-│   │   │   ├── README.md
-│   │   │   ├── Shared.cs
-│   │   │   └── Summary.cs
-│   │   └── paragraph-gate/
-│   │       ├── .gitignore
-│   │       ├── ParagraphGate.csproj
-│   │       ├── Program.cs
-│   │       ├── README.md
-│   │       └── samples.jsonl
-│   ├── viewers/
-│   │   ├── build_html.py
-│   │   └── __init__.py
-│   ├── Directory.Build.props
-│   ├── Directory.Packages.props
-│   └── README.md  — readme-benchmark Index for Deckle benchmark workspaces — routes autoresearch, paragraph-rewrite…
 ├── docs/
 │   ├── adr/
 │   │   ├── 0000-template.md  — Fill-in template for a Deckle ADR — copy it to start one, record no decision he…

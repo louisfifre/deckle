@@ -17,7 +17,8 @@ namespace Deckle.Llm.Rewrite;
 // Severity is the calibration stance: a false reject costs one offer, a
 // false accept would cost the trust the corrector is built on. The two
 // constants below are the gate's only knobs, and they are code-level, tuned
-// against the paragraph-gate benchmark, never exposed as settings.
+// against a prompt sample (docs/research/benchmark-conclusions.md), never
+// exposed as settings.
 
 public static class RewriteDiffGate
 {

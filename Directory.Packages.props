@@ -10,10 +10,7 @@
        the versions listed here, closing the door on silent transitive drift.
        CentralPackageVersionOverrideEnabled=false forbids a project from quietly
        overriding a central version with VersionOverride — versions move here or
-       not at all.
-
-       The benchmark workspace opts out with its own Directory.Packages.props and
-       keeps its experimental inline versions. -->
+       not at all. -->
 
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>

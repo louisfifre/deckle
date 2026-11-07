@@ -7,7 +7,7 @@ public enum JsonlSchema
 {
     // { timestamp, kind, session, payload }. Used by the dataset channels
     // (latency, microphone, corpus): a stable machine contract consumed by
-    // benchmark tooling, so it never gains envelope fields.
+    // offline analysis tooling, so it never gains envelope fields.
     PayloadOnly,
 
     // { timestamp, kind, session, provider, event, level, source, message, line, payload }.
