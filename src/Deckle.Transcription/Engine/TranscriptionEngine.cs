@@ -226,7 +226,7 @@ public sealed partial class TranscriptionEngine : IDisposable
     private void OpenMicrophoneIncident(string phase, uint errorCode)
     {
         if (Interlocked.Exchange(ref _microphoneIncidentOpen, 1) != 0) return;
-        DeckleWhispSource.Log.MicrophoneUnavailable(phase, errorCode);
+        DeckleWhispSource.Log.MicrophoneUnavailable(phase, MicrophoneCapture.FormatErrorCode(errorCode));
         // The HUD told the person at the take; the tray keeps it shown after the
         // HUD fades. It closes only on the engine's next capture: plugging a
         // microphone in, or a successful test in Settings, does not close it
