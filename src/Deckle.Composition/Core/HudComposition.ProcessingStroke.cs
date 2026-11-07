@@ -51,6 +51,10 @@ public static partial class HudComposition
         CanvasDeviceLost?.Invoke($"CanvasDevice.DeviceLost fired (live strokes = {_liveStrokeCount})");
     }
 
+    // One microphone level sample as the recording outline takes it: the
+    // opacity it reaches and the glide that gets it there (zero: at once).
+    public readonly record struct RecordingLevelStep(float Opacity, TimeSpan Glide);
+
     public sealed class ProcessingStroke : IDisposable
     {
         public ContainerVisual Visual { get; }
@@ -177,20 +181,36 @@ public static partial class HudComposition
         // opacity, so HudChrono gates the call.
         public void UpdateLevel(float level)
         {
-            if (!_animationsEnabled) return;
+            var step = LevelStep(level, _animationsEnabled);
+            if (step.Glide == TimeSpan.Zero)
+            {
+                SetScalar(_strokeVisual, "Opacity", step.Opacity);
+                return;
+            }
 
-            float clamped = Math.Clamp(level, 0f, 1f);
             var anim = _compositor.CreateScalarKeyFrameAnimation();
             anim.InsertExpressionKeyFrame(0f, "this.CurrentValue");
-            anim.InsertKeyFrame(1f, clamped);
-            anim.Duration = TimeSpan.FromMilliseconds(50);
+            anim.InsertKeyFrame(1f, step.Opacity);
+            anim.Duration = step.Glide;
             _strokeVisual.StartAnimation("Opacity", anim);
         }
 
+        // How one level sample reaches the recording outline. The level is a
+        // live measurement, like the countdown's progress, not a decorative
+        // motion: with the Windows "Animation effects" preference off, every
+        // sample is still written, only without the glide between samples
+        // (as HudChrono.UpdateUtteranceCountdown passes interpolate: false).
+        // Returning no step there once left the outline frozen at full
+        // opacity while dictating (bug note in tests/Deckle.Hud.Tests).
+        public static RecordingLevelStep LevelStep(float level, bool animationsEnabled)
+            => new(Math.Clamp(level, 0f, 1f),
+                   animationsEnabled ? TimeSpan.FromMilliseconds(50) : TimeSpan.Zero);
+
         // Applies the functional HUD animation preference live. Disabling
         // cancels finite blends, parks continuous rotations at their canonical
-        // phase and gives Recording a steady neutral outline. Enabling restarts
-        // only the continuous rotations; no past blend or mic sample is replayed.
+        // phase. Recording keeps following the microphone, sample by sample
+        // without the glide (LevelStep). Enabling restarts only the continuous
+        // rotations; no past blend or mic sample is replayed.
         public void SetAnimationsEnabled(
             bool enabled,
             ProcessingVariant variant,
@@ -226,11 +246,7 @@ public static partial class HudComposition
             }
 
             if (!enabled)
-            {
                 ApplyVariant(variant, isDark);
-                if (variant == ProcessingVariant.Recording)
-                    SetScalar(_strokeVisual, "Opacity", 1f);
-            }
         }
 
         private void AnimateScalar(
