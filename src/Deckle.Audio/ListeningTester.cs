@@ -30,15 +30,16 @@ public sealed class ListeningTester : IDisposable
     private CancellationTokenSource? _playCts;
     private bool _disposed;
 
-    // Records a take of TakeSeconds from `deviceId`. Returns null when the
+    // Records a take of TakeSeconds from `endpointId` (empty: the system
+    // default). Returns null when the
     // microphone failed or captured nothing. Stops any playback first, so the
     // speakers are not heard in the take.
-    public async Task<ListeningTake?> RecordAsync(int deviceId, CancellationToken ct = default)
+    public async Task<ListeningTake?> RecordAsync(string endpointId, CancellationToken ct = default)
     {
         StopPlayback();
 
         using var capture = new MicrophoneCapture();
-        var host = new TakeHost(deviceId, TakeSeconds);
+        var host = new TakeHost(endpointId, TakeSeconds);
 
         // Record blocks for TakeSeconds (its duration cap) or until ct fires.
         CaptureResult result = await Task.Run(() => capture.Record(host, ct), ct).ConfigureAwait(false);
@@ -101,9 +102,9 @@ public sealed class ListeningTester : IDisposable
     // Throwaway host: the chosen device, a hard cap so the capture stops
     // itself, and telemetry off — a listening take must not write the
     // per-recording telemetry event a real dictation does.
-    private sealed class TakeHost(int deviceId, int seconds) : IAudioRecordingHost
+    private sealed class TakeHost(string endpointId, int seconds) : IAudioRecordingHost
     {
-        public int AudioInputDeviceId => deviceId;
+        public string AudioInputEndpointId => endpointId;
         public int MaxRecordingDurationSeconds => seconds;
         public bool MicrophoneTelemetryEnabled => false;
         public double VoiceLevelDbfs => CaptureSettingsService.Instance.Current.VoiceLevelDbfs;

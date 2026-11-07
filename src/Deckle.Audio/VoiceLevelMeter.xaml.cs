@@ -4,6 +4,7 @@ using Deckle.Catalog;
 using Deckle.Shell;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Audio;
 
@@ -17,9 +18,14 @@ namespace Deckle.Audio;
 // nothing is recorded, nothing persists, and Listen is page state, not a
 // setting.
 //
-// The fill takes the accent while the meter's own VoiceDetector says voiced,
-// fed the same RMS sequence the segmenter would be fed, so the colour is the
-// exact decision a dictation would take. The marks follow the field as it is
+// The bar follows each device packet (CaptureLevel, about 10 ms), with a fast
+// rise and a slow fall (VoiceLevelMeterScale.Ballistic), so it moves with the
+// voice as it is spoken. The fill takes the accent while the meter's own
+// VoiceDetector says voiced, fed the same 50 ms RMS sequence the segmenter
+// would be fed, so the colour is the exact decision a dictation would take;
+// the peak tick and the Loudest readout read those same 50 ms values, the
+// quantity the voice level is compared with. The Signal readout says what
+// Windows granted: the raw signal, or its default processing. The marks follow the field as it is
 // edited (the ViewModel's VoiceLevelDbfs); the capture is not restarted for it.
 // A change of microphone while listening does restart it, on the new device.
 //
@@ -27,17 +33,21 @@ namespace Deckle.Audio;
 // ListenTimeout, when the window is hidden or minimized, when the page is left,
 // and when the page's microphone check or listening test needs the device.
 //
-// Threading. The capture thread (MicrophoneLevelFeed) delivers each frame's RMS
-// to OnLevel, which feeds the detector and the smoothing under _levelLock; the
-// UI thread replaces the detector under the same lock when the level changes.
-// A DispatcherTimer at the capture's own 50 ms cadence reads the latest values
-// under the lock and paints; it runs only while listening. A failure arrives on
-// the capture thread and is marshalled to the UI thread, where a run number
-// drops one that belongs to a run already stopped.
+// Threading. The capture thread (MicrophoneLevelFeed) delivers each packet's
+// level to OnPulse (the bar) and each 50 ms frame's RMS to OnLevel (the
+// detector and the peak), both under _levelLock; the UI thread replaces the
+// detector under the same lock when the level changes. The paint runs on
+// CompositionTarget.Rendering, once per frame the compositor draws, only while
+// listening: it reads the latest values under the lock, so the bar is at most
+// one display frame behind the packet. The readouts' text changes at
+// ReadoutInterval, slow enough to be read. A failure, and the source once the
+// device is open, arrive on the capture thread and are marshalled to the UI
+// thread, where a run number drops what belongs to a run already stopped.
 public sealed partial class VoiceLevelMeter : UserControl
 {
-    // The capture's own cadence: one paint per frame.
-    private static readonly TimeSpan RefreshInterval = TimeSpan.FromMilliseconds(50);
+    // How often the readouts' figures change: a number rewritten at the display
+    // rate cannot be read.
+    private const double ReadoutInterval = 0.1;
 
     // A meter is looked at, not left on: past this, Listen turns itself off and
     // says so, so a microphone opened to set a level does not stay open for
@@ -48,7 +58,8 @@ public sealed partial class VoiceLevelMeter : UserControl
     // Space between a mark and its caption.
     private const double CaptionGap = 4;
 
-    private readonly DispatcherTimer _timer = new() { Interval = RefreshInterval };
+    private bool _painting;
+    private double _readoutsAt = double.NegativeInfinity;
     private readonly DispatcherTimer _listenTimer = new() { Interval = ListenTimeout };
     private readonly MicrophoneLevelFeed _feed;
 
@@ -65,7 +76,7 @@ public sealed partial class VoiceLevelMeter : UserControl
     // Shared with the capture thread, guarded by _levelLock.
     private readonly object _levelLock = new();
     private VoiceDetector _detector = new(new CaptureSettings().VoiceLevelDbfs);
-    private double? _smoothedDbfs;
+    private double? _barDbfs;
     private bool _voiced;
     private double _framePeakDbfs = double.NegativeInfinity;
 
@@ -87,8 +98,9 @@ public sealed partial class VoiceLevelMeter : UserControl
             createCapture: () => new MicrophoneCapture(),
             host: () => _nextHost!,
             onLevel: OnLevel,
-            onFailed: OnFeedFailed);
-        _timer.Tick += (_, _) => Refresh();
+            onFailed: OnFeedFailed,
+            onPulse: OnPulse,
+            onSource: OnFeedSource);
         _listenTimer.Tick += (_, _) => OnListenTimedOut();
         Loaded += (_, _) => WatchHostVisibility();
         Unloaded += (_, _) =>
@@ -127,7 +139,7 @@ public sealed partial class VoiceLevelMeter : UserControl
     {
         _feed.Stop();
         Interlocked.Increment(ref _run);
-        _timer.Stop();
+        StopPainting();
         _listenTimer.Stop();
         ListenToggle.IsChecked = false;
         Block.IsLive = false;
@@ -146,14 +158,47 @@ public sealed partial class VoiceLevelMeter : UserControl
         ClearLive();
 
         var capture = CaptureSettingsService.Instance.Current;
-        int device = _viewModel?.AudioInputDeviceId ?? capture.AudioInputDeviceId;
+        string device = _viewModel?.AudioInputEndpointId ?? capture.AudioInputEndpointId;
         _nextHost = new VoiceLevelMeterHost(device, capture.VoiceLevelDbfs);
         _feed.Start();
 
         ListenToggle.IsChecked = true;
         Block.IsLive = true;
-        _timer.Start();
+        StartPainting();
         _listenTimer.Start();
+    }
+
+    private void StartPainting()
+    {
+        if (_painting) return;
+        _painting = true;
+        CompositionTarget.Rendering += OnRendering;
+    }
+
+    private void StopPainting()
+    {
+        if (!_painting) return;
+        _painting = false;
+        CompositionTarget.Rendering -= OnRendering;
+    }
+
+    private void OnRendering(object? sender, object e) => Refresh();
+
+    // Capture thread, under the feed's lock, once the device is open.
+    private void OnFeedSource(CaptureSource source)
+    {
+        int run = Volatile.Read(ref _run);
+        _dispatcher.TryEnqueueObserved(
+            operation: "ui-update", caller: "voice-level-meter",
+            callback: () =>
+            {
+                if (run != _run) return;
+                SignalReadout.Value = Loc.Get(source.Mode == CaptureMode.Raw
+                    ? "RecordingVoiceMeter_Signal_Raw"
+                    : "RecordingVoiceMeter_Signal_Default");
+                SignalReadout.Status = source.Mode == CaptureMode.Raw ? ReadoutStatus.Neutral : ReadoutStatus.Caution;
+            },
+            rejectSource: "SETTINGS", rejectWhat: "voice meter source");
     }
 
     // Capture thread, under the feed's lock: the run number read here is the
@@ -227,7 +272,7 @@ public sealed partial class VoiceLevelMeter : UserControl
             case nameof(RecordingViewModel.VoiceLevelDbfs):
                 RebuildDetector();
                 break;
-            case nameof(RecordingViewModel.AudioInputDeviceId) when ListenToggle.IsChecked == true:
+            case nameof(RecordingViewModel.AudioInputEndpointId) when ListenToggle.IsChecked == true:
                 Stop();
                 StartListening();
                 break;
@@ -236,14 +281,24 @@ public sealed partial class VoiceLevelMeter : UserControl
 
     // ── Capture thread ────────────────────────────────────────────────────────
 
+    // Each 50 ms frame: the decision and the peak, on the segmenter's quantity.
     private void OnLevel(float rms)
     {
         double dbfs = VoiceLevelMeterScale.RmsToDbfs(rms);
         lock (_levelLock)
         {
             _voiced = _detector.Push(rms);
-            _smoothedDbfs = VoiceLevelMeterScale.Smooth(_smoothedDbfs, dbfs);
             if (dbfs > _framePeakDbfs) _framePeakDbfs = dbfs;
+        }
+    }
+
+    // Each device packet: the bar.
+    private void OnPulse(CaptureLevel level)
+    {
+        double dbfs = VoiceLevelMeterScale.RmsToDbfs(level.Rms);
+        lock (_levelLock)
+        {
+            _barDbfs = VoiceLevelMeterScale.Ballistic(_barDbfs, dbfs, level.DurationMs);
         }
     }
 
@@ -328,19 +383,19 @@ public sealed partial class VoiceLevelMeter : UserControl
 
     private void Refresh()
     {
-        double? smoothed;
+        double? bar;
         bool voiced;
         double framePeak;
         lock (_levelLock)
         {
-            smoothed = _smoothedDbfs;
+            bar = _barDbfs;
             voiced = _voiced;
             framePeak = _framePeakDbfs;
             _framePeakDbfs = double.NegativeInfinity;
         }
 
         // Nothing yet from the microphone: the meter stays empty.
-        if (smoothed is not { } level) return;
+        if (bar is not { } level) return;
 
         double now = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
         if (!double.IsNegativeInfinity(framePeak))
@@ -353,6 +408,8 @@ public sealed partial class VoiceLevelMeter : UserControl
 
         PaintBar(level, voiced);
 
+        if (now - _readoutsAt < ReadoutInterval) return;
+        _readoutsAt = now;
         LevelReadout.Value = FormatDbfs(level);
         VoiceReadout.Value = Loc.Get(voiced ? "RecordingVoiceMeter_Voice" : "RecordingVoiceMeter_Silence");
         VoiceReadout.Status = voiced ? ReadoutStatus.Success : ReadoutStatus.Neutral;
@@ -386,7 +443,7 @@ public sealed partial class VoiceLevelMeter : UserControl
     {
         lock (_levelLock)
         {
-            _smoothedDbfs = null;
+            _barDbfs = null;
             _voiced = false;
             _framePeakDbfs = double.NegativeInfinity;
             _detector.Reset();
@@ -394,6 +451,7 @@ public sealed partial class VoiceLevelMeter : UserControl
         _peakDbfs = double.NegativeInfinity;
         _peakHeldSince = 0;
         _recent.Clear();
+        _readoutsAt = double.NegativeInfinity;
 
         VoicedFillRect.Width = 0;
         SilentFillRect.Width = 0;
@@ -405,6 +463,8 @@ public sealed partial class VoiceLevelMeter : UserControl
         VoiceReadout.Value = null;
         VoiceReadout.Status = ReadoutStatus.None;
         LoudestReadout.Value = null;
+        SignalReadout.Value = null;
+        SignalReadout.Status = ReadoutStatus.None;
     }
 
     // Rounded to the dB, as integers so a level just under zero never reads -0.

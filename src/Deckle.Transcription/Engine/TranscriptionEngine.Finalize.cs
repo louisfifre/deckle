@@ -17,13 +17,14 @@ public sealed partial class TranscriptionEngine
     // ── Microphone error localization ──────────────────────────────────────────
     //
     // Capture stays free of any Loc.Get dependency; the engine localizes. The
-    // raw MMSYSERR code goes verbatim into the Unavailable body so users can
-    // quote it when reporting.
+    // raw error code (an HRESULT) goes into the Unavailable body in hex, the
+    // form Microsoft documents it in, so users can quote and look it up.
     private static (string Title, string Body) LocalizeMicError(MicErrorKind kind, uint err) => kind switch
     {
         MicErrorKind.NotDetected => (Loc.Get("MicError_NotDetected_Title"), Loc.Get("MicError_NotDetected_Body")),
         MicErrorKind.InUse       => (Loc.Get("MicError_InUse_Title"),       Loc.Get("MicError_InUse_Body")),
-        _                        => (Loc.Get("MicError_Unavailable_Title"), Loc.Format("MicError_Unavailable_Body_Format", err)),
+        _                        => (Loc.Get("MicError_Unavailable_Title"),
+                                     Loc.Format("MicError_Unavailable_Body_Format", MicrophoneCapture.FormatErrorCode(err))),
     };
 
 

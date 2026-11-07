@@ -6,31 +6,8 @@ namespace Deckle.Core;
 
 public static partial class NativeMethods
 {
-    // ── waveIn (capture audio PCM) ────────────────────────────────────────────
-
-    [DllImport("winmm.dll")]
-    public static extern uint waveInOpen(
-        out IntPtr phwi, uint uDeviceID,
-        ref WAVEFORMATEX pwfx,
-        IntPtr dwCallback, IntPtr dwInstance, uint fdwOpen);
-
-    [DllImport("winmm.dll")]
-    public static extern uint waveInPrepareHeader(IntPtr hwi, IntPtr pwh, uint cbwh);
-
-    [DllImport("winmm.dll")]
-    public static extern uint waveInAddBuffer(IntPtr hwi, IntPtr pwh, uint cbwh);
-
-    [DllImport("winmm.dll")]
-    public static extern uint waveInStart(IntPtr hwi);
-
-    [DllImport("winmm.dll")]
-    public static extern uint waveInStop(IntPtr hwi);
-
-    [DllImport("winmm.dll")]
-    public static extern uint waveInUnprepareHeader(IntPtr hwi, IntPtr pwh, uint cbwh);
-
-    [DllImport("winmm.dll")]
-    public static extern uint waveInClose(IntPtr hwi);
+    // The microphone is captured through WASAPI (Deckle.Audio's WasapiInterop),
+    // so only the waveOut render side is declared here.
 
     // ── waveOut (render audio PCM) ──────────────────────────────────────────
 
@@ -54,27 +31,6 @@ public static partial class NativeMethods
 
     [DllImport("winmm.dll")]
     public static extern uint waveOutClose(IntPtr hwo);
-
-    // ── waveIn: Input Device Enumeration ────────────────────────────────────
-
-    [DllImport("winmm.dll")]
-    public static extern uint waveInGetNumDevs();
-
-    [DllImport("winmm.dll", CharSet = CharSet.Unicode)]
-    public static extern uint waveInGetDevCapsW(uint uDeviceID, ref WAVEINCAPSW pwic, uint cbwic);
-
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct WAVEINCAPSW
-    {
-        public ushort wMid;
-        public ushort wPid;
-        public uint vDriverVersion;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
-        public string szPname;
-        public uint dwFormats;
-        public ushort wChannels;
-        public ushort wReserved1;
-    }
 
     // ── kernel32 (event, handle) ─────────────────────────────────────────────
 

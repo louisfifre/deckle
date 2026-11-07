@@ -1,16 +1,18 @@
 namespace Deckle.Audio;
 
 // Watches one capture run for a microphone that opens and starts but never
-// hands back audio: waveIn then reports success on every call while the take
-// stays empty, and nothing else in the loop notices. Like
+// hands back audio: WASAPI then reports success on every call (the buffer is
+// simply empty) while the take stays empty, and nothing else in the loop
+// notices. Like
 // CaptureAnomalyEpisode, the first stall opens the only warning of the run and
 // the first audio after it closes it; later stalls only count toward the
 // terminal detail.
 internal struct CaptureDataWatchdog
 {
-    // waveIn returns a 50 ms buffer about every 50 ms once started. A full
-    // second without audio is twenty missed buffers, far past scheduling
-    // jitter, and short enough to show up while the user is still speaking.
+    // A WASAPI stream hands over a packet every device period (10 ms on most
+    // microphones) once started. A full second without audio is a hundred
+    // missed packets, far past scheduling jitter, and short enough to show up
+    // while the user is still speaking.
     public const int ThresholdMs = 1000;
 
     private long _lastDataMs;

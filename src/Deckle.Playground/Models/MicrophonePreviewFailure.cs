@@ -7,15 +7,15 @@ namespace Deckle.Playground;
 // generic feed's (MicrophoneLevelFeedFailure, in Deckle.Audio); the sentence
 // the tab shows is the Playground's own.
 internal readonly record struct MicrophonePreviewFailure(
-    MicrophoneProblem Problem, uint MmsysErr = 0, string ExceptionType = "")
+    MicrophoneProblem Problem, uint ErrorCode = 0, string ExceptionType = "")
 {
     public MicrophonePreviewFailure(MicrophoneLevelFeedFailure failure)
-        : this(failure.Problem, failure.MmsysErr, failure.ExceptionType)
+        : this(failure.Problem, failure.ErrorCode, failure.ExceptionType)
     {
     }
 
     // The name a log line carries for the problem, spelled once, by the feed.
-    public string Cause => new MicrophoneLevelFeedFailure(Problem, MmsysErr, ExceptionType).Cause;
+    public string Cause => new MicrophoneLevelFeedFailure(Problem, ErrorCode, ExceptionType).Cause;
 
     // What the tab tells the person, one sentence about the microphone. The
     // error code shows only where the problem has nothing plainer to say; the
@@ -24,7 +24,7 @@ internal readonly record struct MicrophonePreviewFailure(
     {
         MicrophoneProblem.NotDetected => "No microphone found.",
         MicrophoneProblem.InUse       => "The microphone is in use by another app.",
-        MicrophoneProblem.Unavailable => $"The microphone can't be opened (error {MmsysErr}).",
+        MicrophoneProblem.Unavailable => $"The microphone can't be opened (error {MicrophoneCapture.FormatErrorCode(ErrorCode)}).",
         MicrophoneProblem.Ended       => "The microphone stopped sending sound.",
         _                             => "The microphone failed unexpectedly.",
     };

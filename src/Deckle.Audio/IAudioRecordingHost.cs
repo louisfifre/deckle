@@ -7,8 +7,9 @@ namespace Deckle.Audio;
 // since the previous call.
 public interface IAudioRecordingHost
 {
-    // waveIn device index. -1 = WAVE_MAPPER (system default device).
-    int AudioInputDeviceId { get; }
+    // MMDevice endpoint id of the microphone ({0.0.1.00000000}.{guid}). Empty =
+    // the system default capture device, resolved when the take starts.
+    string AudioInputEndpointId { get; }
 
     // Hard cap on a single recording's duration, in seconds. Snapshotted at
     // the start of each recording. 0 = no cap.

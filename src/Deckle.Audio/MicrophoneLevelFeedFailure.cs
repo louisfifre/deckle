@@ -13,11 +13,11 @@ public enum MicrophoneProblem
     Faulted,
 }
 
-// MmsysErr is the waveIn code of a failed open, 0 when the problem carries
-// none. ExceptionType is the type name of the exception behind Faulted, empty
+// ErrorCode is the HRESULT of a failed open (WASAPI or MMDevice), 0 when the
+// problem carries none. ExceptionType is the type name of the exception behind Faulted, empty
 // otherwise; the message stays out, since it can quote a device's name.
 public readonly record struct MicrophoneLevelFeedFailure(
-    MicrophoneProblem Problem, uint MmsysErr = 0, string ExceptionType = "")
+    MicrophoneProblem Problem, uint ErrorCode = 0, string ExceptionType = "")
 {
     // The name a log line carries for the problem. One spelling, here, so the
     // log and a filter on it agree.

@@ -120,15 +120,18 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     // carry the device detail; this one names what was asked and what was
     // obtained, so a reader of the log does not take it for a dictation
     // that failed. cause: in-use, not-detected, unavailable or exception.
-    // mmsys_err is 0 and ex_type empty when the cause does not carry them.
+    // hresult is 0 and ex_type empty when the cause does not carry them
+    // (version 2: the WASAPI error code; version 1 carried the waveIn
+    // MMSYSERR code as mmsys_err).
     [Event(EvtMicrophonePreviewFellBack,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "The HUD preview fell back from the microphone to the simulation\ncause={0} | mmsys_err={1} | ex_type={2}")]
-    public void MicrophonePreviewFellBack(string cause, uint mmsys_err, string ex_type)
+           Version = 2,
+           Message = "The HUD preview fell back from the microphone to the simulation\ncause={0} | hresult={1} | ex_type={2}")]
+    public void MicrophonePreviewFellBack(string cause, uint hresult, string ex_type)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Capture))
-            WriteEvent(EvtMicrophonePreviewFellBack, cause, mmsys_err, ex_type);
+            WriteEvent(EvtMicrophonePreviewFellBack, cause, hresult, ex_type);
     }
 
     // ── ViewModel setters (tuning sliders) ──────────────────────────────────

@@ -6,8 +6,15 @@ namespace Deckle.Audio;
 // nothing: the base of every "show me my microphone" surface, the Recording
 // page's voice meter and the Playground's HUD preview. The caller's host says
 // what is opened and how the capture's own log lines read (its purpose); the
-// feed only subscribes AudioLevel, so the capture converts no float buffer and
-// the level it raises is the RMS a Frame would carry.
+// feed subscribes AudioLevel, the RMS a Frame would carry, and no Frame, so the
+// capture allocates no per-frame copy.
+//
+// Two optional sinks sit beside the 50 ms level. onPulse receives the level of
+// each device packet (about 10 ms), as soon as the device delivers it: it is
+// what a meter paints, so the bar moves with the voice instead of a frame late.
+// It decides nothing; the 50 ms level stays the one a "voice or not" reading
+// uses, the one the segmenter cuts on. onSource receives what the capture
+// obtained (device, raw or default mode, rate, period) once the device is open.
 //
 // Threading.
 // - A thread per run. Start and Stop belong to the UI thread; the capture runs
@@ -19,7 +26,7 @@ namespace Deckle.Audio;
 //   a sink that reaches the UI marshals to it.
 // - A run that is stopped does not wait for the device. The next run does: it
 //   joins the previous run's thread (bounded by DeviceReleaseTimeout) before it
-//   opens, so a quick Stop then Start never asks waveIn for a device the
+//   opens, so a quick Stop then Start never asks Windows for a device the
 //   previous take still holds.
 //
 // No log of its own: MicrophoneCapture writes the take's start, end and any
@@ -38,6 +45,8 @@ public sealed class MicrophoneLevelFeed
     private readonly Action<MicrophoneLevelFeedFailure> _onFailed;
     private readonly Action? _onOpened;
     private readonly Action? _onClosed;
+    private readonly Action<CaptureLevel>? _onPulse;
+    private readonly Action<CaptureSource>? _onSource;
 
     // Guards every Run field below and orders the sinks against Stop.
     private readonly object _gate = new();
@@ -49,14 +58,17 @@ public sealed class MicrophoneLevelFeed
     // the caller's thread when a run opens, before its first level; onClosed
     // once when an open run closes, by Stop or on its own, before onFailed;
     // onFailed once, on the capture thread, when a run ends without being
-    // stopped, and never for a run that was stopped.
+    // stopped, and never for a run that was stopped. onPulse and onSource, on
+    // the capture thread, under the gate, never after Stop returned.
     public MicrophoneLevelFeed(
         Func<IMicrophoneCapture> createCapture,
         Func<IAudioRecordingHost> host,
         Action<float> onLevel,
         Action<MicrophoneLevelFeedFailure> onFailed,
         Action? onOpened = null,
-        Action? onClosed = null)
+        Action? onClosed = null,
+        Action<CaptureLevel>? onPulse = null,
+        Action<CaptureSource>? onSource = null)
     {
         _createCapture = createCapture;
         _host = host;
@@ -64,6 +76,8 @@ public sealed class MicrophoneLevelFeed
         _onFailed = onFailed;
         _onOpened = onOpened;
         _onClosed = onClosed;
+        _onPulse = onPulse;
+        _onSource = onSource;
     }
 
     public bool IsRunning
@@ -131,6 +145,10 @@ public sealed class MicrophoneLevelFeed
             {
                 using var capture = _createCapture();
                 capture.AudioLevel += rms => Deliver(run, rms);
+                // Subscribed only when asked: an unsubscribed Level costs the
+                // capture nothing per packet.
+                if (_onPulse is { } onPulse) capture.Level += level => DeliverUnderGate(run, onPulse, level);
+                if (_onSource is { } onSource) capture.Opened += source => DeliverUnderGate(run, onSource, source);
                 CaptureResult result = capture.Record(run.Host, run.Cancellation.Token);
                 failure = FailureOf(result, run.Cancellation.IsCancellationRequested);
             }
@@ -150,6 +168,15 @@ public sealed class MicrophoneLevelFeed
         {
             if (run.Closed) return;
             _onLevel(rms);
+        }
+    }
+
+    private void DeliverUnderGate<T>(Run run, Action<T> sink, T value)
+    {
+        lock (_gate)
+        {
+            if (run.Closed) return;
+            sink(value);
         }
     }
 
@@ -178,13 +205,13 @@ public sealed class MicrophoneLevelFeed
     {
         if (result.Outcome == CaptureOutcome.MicError)
         {
-            var problem = MicrophoneCapture.ClassifyError(result.MmsysErr) switch
+            var problem = MicrophoneCapture.ClassifyError(result.ErrorCode) switch
             {
                 MicErrorKind.NotDetected => MicrophoneProblem.NotDetected,
                 MicErrorKind.InUse       => MicrophoneProblem.InUse,
                 _                        => MicrophoneProblem.Unavailable,
             };
-            return new MicrophoneLevelFeedFailure(problem, result.MmsysErr);
+            return new MicrophoneLevelFeedFailure(problem, result.ErrorCode);
         }
         return stopped ? null : new MicrophoneLevelFeedFailure(MicrophoneProblem.Ended);
     }
