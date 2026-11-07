@@ -2449,6 +2449,21 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FullscreenGeometryTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   └── MilestoneClosersTests.cs
+│   ├── Deckle.Shell.Taskbar.Tests/
+│   │   ├── Deckle.Shell.Taskbar.Tests.csproj
+│   │   ├── IsolatedDataRoot.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── MilestoneClosersTests.cs
+│   │   ├── PolicyElevationTests.cs
+│   │   ├── RecommendedSectionPolicyTests.cs
+│   │   ├── TaskbarObservabilityCollection.cs
+│   │   ├── TaskbarProfileCollection.cs
+│   │   ├── TaskbarSettingsModuleTests.cs
+│   │   ├── TaskbarSettingsTests.cs
+│   │   ├── TaskbarViewModelTests.cs
+│   │   ├── TrayIconPromoterTests.cs
+│   │   ├── TrayIconPromotionTests.cs
+│   │   └── TraySnapshotStoreTests.cs
 │   ├── Deckle.Shell.TaskbarCover.Tests/
 │   │   ├── CoverGeometryTests.cs
 │   │   ├── CoverStackingTests.cs
