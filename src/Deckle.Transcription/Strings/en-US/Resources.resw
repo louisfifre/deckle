@@ -297,7 +297,7 @@
     <value>Microphone unavailable</value>
   </data>
   <data name="MicError_Unavailable_Body_Format" xml:space="preserve">
-    <value>Mic won't open (error {0}).</value>
+    <value>Mic won't open ({0}).</value>
   </data>
 
   <!-- ─── HUD ────────────────────────────────────────────────────────
