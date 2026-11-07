@@ -24,22 +24,6 @@ public static class PresenceFile
 
     private sealed record Payload(int Version, List<string> Present, List<string>? Known = null);
 
-    // The catalogue a version-1 file was written against. That shape had no
-    // "known", and these six were the whole offer then; a module added since is
-    // not in this list, so a file written before it existed keeps it present.
-    // A fixed list, never read from the registry: it is a fact about old files,
-    // not the current catalogue. It names the ids through ModuleIds, whose
-    // values are the strings those files hold.
-    private static readonly string[] _legacyKnown =
-    [
-        ModuleIds.Transcription,
-        ModuleIds.Rewrite,
-        ModuleIds.Autocorrect,
-        ModuleIds.Ambient,
-        ModuleIds.Trackpad,
-        ModuleIds.Anytype,
-    ];
-
     private static readonly JsonSerializerOptions _options = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -59,11 +43,11 @@ public static class PresenceFile
                 return null;
             }
 
-            // Keyed on the field being absent, not on the version number: a file
-            // that lacks "known" cannot say what was offered, whatever it claims.
+            // A file without "known" offered nothing that it can name, so no
+            // module reads as declined.
             return new PresenceChoice(
                 new HashSet<string>(payload.Present, StringComparer.Ordinal),
-                new HashSet<string>(payload.Known ?? [.. _legacyKnown], StringComparer.Ordinal));
+                new HashSet<string>(payload.Known ?? [], StringComparer.Ordinal));
         }
         catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
@@ -72,10 +56,7 @@ public static class PresenceFile
         }
     }
 
-    // Write-then-rename, so a crash never leaves a half-written choice. Always
-    // the current shape: a version-1 file is read as it stands and replaced at
-    // the next write, which a change in the module selector and every install
-    // or update make.
+    // Write-then-rename, so a crash never leaves a half-written choice.
     public static void SaveTo(
         string path, IReadOnlyCollection<string> present, IReadOnlyCollection<string> known)
     {

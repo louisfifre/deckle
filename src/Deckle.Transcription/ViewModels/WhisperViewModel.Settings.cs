@@ -55,13 +55,7 @@ public partial class WhisperViewModel
                         ("TopCenter", "GeneralOverlayPositionTop"),
                         ("BottomCenter", "GeneralOverlayPositionBottom"),
                     ],
-                    // Fold a possible legacy corner default through the same
-                    // Top→TopCenter / else→BottomCenter rule the VM applies on Load,
-                    // so the reset targets a real picker option.
-                    defaultValue: () =>
-                        (new OverlaySettings().Position ?? "").StartsWith("Top")
-                            ? "TopCenter"
-                            : "BottomCenter"),
+                    defaultValue: () => new OverlaySettings().Position),
                 Setting.Choice<string>("GeneralTranscriptPanelSideCard",
                     () => TranscriptPanelSide,
                     value => TranscriptPanelSide = value,

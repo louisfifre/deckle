@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using Deckle.Audio;
 
 namespace Deckle.Audio;
@@ -6,29 +5,12 @@ namespace Deckle.Audio;
 // Microphone capture settings.
 public sealed class CaptureSettings
 {
-    // Version of the persisted shape. 0 means the file was written before the
-    // settings were versioned; the post-load migration in
-    // CaptureSettingsService stamps CurrentSchemaVersion once it has run.
-    //   1  the recording limit's former default became "no limit".
-    //   2  the microphone is kept as an MMDevice endpoint id, no longer as a
-    //      waveIn index.
-    public const int CurrentSchemaVersion = 2;
-    public int SchemaVersion { get; set; } = 0;
-
     // The microphone, as its MMDevice endpoint id ({0.0.1.00000000}.{guid}).
     // Empty = the system default capture device, resolved when each take starts,
     // so changing the default in Windows is followed. The id names the device
     // itself, so it survives other devices being plugged or unplugged, which a
     // position in a list did not.
     public string AudioInputEndpointId { get; set; } = "";
-
-    // The microphone as the waveIn capture kept it: a device index, -1 for the
-    // system default. Read only to migrate old files (see
-    // CaptureSettingsService.ApplyPostLoadMigrations), which turn it into
-    // AudioInputEndpointId and clear it. It stays in the file only while the
-    // device it names is not plugged in, until a launch finds it.
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public int? AudioInputDeviceId { get; set; }
 
     // Hold the microphone alone while recording (WASAPI exclusive mode): the
     // stream goes to the device directly, past the Windows audio engine, and
@@ -53,8 +35,7 @@ public sealed class CaptureSettings
     // of a take), by the low-audio warning of the capture loop and by the HUD
     // outline (AudioLevelMapper). It also governs the cuts of file
     // transcription, whose gain chain is not the microphone's: known and
-    // accepted for now. Moved here from the transcription module's
-    // streaming.segmenter.thresholdDbfs by SettingsBootstrap.
+    // accepted for now.
     public double VoiceLevelDbfs { get; set; } = -45.0;
 
     // Transcription pre-processing DSP: a terminal float[] → float[] signal

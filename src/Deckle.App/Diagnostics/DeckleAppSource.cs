@@ -136,14 +136,13 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtModuleRefused                  = 119;
     public const int EvtLaunchContextDetail            = 120;
     public const int EvtPreviousRunEndedUncleanly      = 121;
-    public const int EvtLegacySettingsMigrationFailed  = 122;
+    // 122 retired (the legacy settings layout move was removed).
     public const int EvtAnytypeRuntimeFailed           = 123;
     public const int EvtSecondInstanceRejected         = 124;
     public const int EvtSecondInstancesRejected        = 125;
     public const int EvtSurvivedException              = 126;
     public const int EvtSurvivedExceptionRepeated      = 127;
-    public const int EvtLegacyLogFilesRenamed          = 128;
-    public const int EvtLegacyLogFileRenameFailed      = 129;
+    // 128 and 129 retired (the legacy log file rename was removed).
     public const int EvtSpeechRepairOffered            = 130;
     public const int EvtSpeechRepairEnded              = 131;
     public const int EvtSpeechRepairFailed             = 132;

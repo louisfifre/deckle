@@ -18,26 +18,8 @@ public sealed class TaskbarCoverSettings : IJsonOnDeserialized
     /// </summary>
     public int ApproachDistanceDip { get; set; } = ApproachDistance.DefaultDip;
 
-    // The named level an older file carries under "approach". Read once and
-    // folded into ApproachDistanceDip, then cleared, and null is not written,
-    // so the next save drops the key. Never read at runtime.
-    [JsonPropertyName("approach")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public ApproachLevel? LegacyApproach { get; set; }
-
     // The fade curve stays a constant in CoverGeometry.
 
-    // A file written before the DIP figure existed holds only the level, so
-    // the level decides; a file never holds both, since the level is cleared
-    // before the first save that writes the figure. Then a hand-edited figure
-    // is brought into range.
-    public void OnDeserialized()
-    {
-        if (LegacyApproach is { } level)
-        {
-            ApproachDistanceDip = ApproachDistance.FromLevel(level);
-            LegacyApproach = null;
-        }
-        ApproachDistanceDip = ApproachDistance.Clamp(ApproachDistanceDip);
-    }
+    // A hand-edited figure outside the range lands on its nearest bound.
+    public void OnDeserialized() => ApproachDistanceDip = ApproachDistance.Clamp(ApproachDistanceDip);
 }

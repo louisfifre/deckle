@@ -106,7 +106,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
 
     // reason is exception (Play threw: ex_type and ex_message say why) or
     // device_unavailable (Play returned false: SpeakerOutput logged the
-    // mmsys_err under the audio provider, and ex_type stays empty).
+    // failure under the audio provider, and ex_type stays empty).
     [Event(EvtSpeechPlaybackFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
