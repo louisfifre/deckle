@@ -58,6 +58,10 @@ internal static class CaptureLoop
     // data the device discarded, so the backlog is the only sign of it.
     internal const double LagThresholdMs = 60.0;
 
+    // How far past the duration cap the clock may run while the device
+    // delivers nothing, before the take ends anyway.
+    internal const int CapClockGraceSeconds = 2;
+
     // Frames read in one call at most, so the conversion buffer stays small
     // and a long backlog is consumed in several passes.
     private const int MaxFramesPerRead = 4800;
@@ -182,6 +186,19 @@ internal static class CaptureLoop
                     DeckleAudioSource.Log.NoAudioDataDetected(
                         "no_data", dataWatchdog.MsSinceData(idleMs),
                         info.Device.EndpointId, info.Device.Name);
+                }
+
+                // The cap counts audio, and a device that delivers none would
+                // never reach it: a Settings check that relies on its cap to
+                // end, with no token to stop it, would then never return. So
+                // the cap is also held against the clock, with a grace past it
+                // for a device that delivers late.
+                if (maxDurationSec > 0 && idleMs >= (maxDurationSec + CapClockGraceSeconds) * 1000L)
+                {
+                    capHit = true;
+                    DeckleAudioSource.Log.DurationCapReached();
+                    DeckleAudioSource.Log.DurationCapReachedDetail(pipeline.Seconds, maxDurationSec);
+                    break;
                 }
 
                 if (captureDetailEnabled) (diagWaitWatch ??= new Stopwatch()).Restart();

@@ -99,8 +99,10 @@ public class CaptureSettingsMigrationTests
         Assert.Null(settings.AudioInputDeviceId);
     }
 
+    // A headset unplugged on the day of the upgrade must not lose its place:
+    // the default is used meanwhile, and the index waits for the next launch.
     [Fact]
-    public void ALegacyIndexThatMatchesNoDeviceFallsBackToTheSystemDefault()
+    public void ALegacyIndexThatMatchesNoDeviceYetIsKeptForTheNextLaunch()
     {
         var settings = new CaptureSettings { SchemaVersion = 1, AudioInputDeviceId = 5 };
 
@@ -108,6 +110,13 @@ public class CaptureSettingsMigrationTests
 
         Assert.True(migrated);
         Assert.Equal("", settings.AudioInputEndpointId);
+        Assert.Equal(5, settings.AudioInputDeviceId);
+
+        bool again = CaptureSettingsService.ApplyPostLoadMigrations(
+            settings, index => index == 5 ? "{0.0.1.00000000}.{mic-5}" : null);
+
+        Assert.True(again);
+        Assert.Equal("{0.0.1.00000000}.{mic-5}", settings.AudioInputEndpointId);
         Assert.Null(settings.AudioInputDeviceId);
     }
 

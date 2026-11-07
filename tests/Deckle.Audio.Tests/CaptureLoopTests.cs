@@ -159,5 +159,24 @@ public class CaptureLoopTests
         Assert.Empty(result.Pcm);
         Assert.Equal(3200, result.TotalSamples);
     }
+
+    // Found in review: the cap counted audio only, so a device that started
+    // and never delivered kept a capped take, and the Settings level check that
+    // relies on its cap with no token, running for ever.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void ACappedTakeEndsOnTheClockWhenTheDeviceDeliversNothing()
+    {
+        var endpoint = new ScriptedCaptureEndpoint([]);
+        var host = new FakeRecordingHost { MaxRecordingDurationSeconds = 1 };
+
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        PumpResult result = Pump(endpoint, host, CancellationToken.None, ms => Thread.Sleep(ms * 10));
+
+        Assert.Equal(LoopExit.CapHit, result.Exit);
+        Assert.Equal(0, result.TotalSamples);
+        Assert.InRange(clock.Elapsed.TotalSeconds, 1 + CaptureLoop.CapClockGraceSeconds - 0.1, 10);
+        Assert.Equal("Stop", endpoint.Calls[^1]);
+    }
 }
 

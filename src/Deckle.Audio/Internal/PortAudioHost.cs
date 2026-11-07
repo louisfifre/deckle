@@ -9,14 +9,14 @@ namespace Deckle.Audio.Internal;
 //   Name           the friendly name Windows shows.
 //   Channels / SampleRate   the device's mix format, what a shared stream
 //                  delivers without conversion.
-//   LowLatencySeconds       the latency PortAudio suggests for an interactive stream.
+//   HighLatencySeconds      the latency PortAudio suggests for a robust stream.
 internal readonly record struct PortAudioInputDevice(
     int Index,
     string EndpointId,
     string Name,
     int Channels,
     double SampleRate,
-    double LowLatencySeconds,
+    double HighLatencySeconds,
     bool IsDefault);
 
 // The one place PortAudio is initialised, listed and asked to open or close a
@@ -85,7 +85,7 @@ internal static class PortAudioHost
     public static unsafe IReadOnlyList<PortAudioInputDevice> ListInputs()
     {
         if (EnsureInitialized() != 0) return [];
-        if (s_openStreams == 0) PortAudioInterop.PaWasapi_UpdateDeviceList();
+        if (s_openStreams == 0) RefreshDevices();
 
         int api = PortAudioInterop.Pa_HostApiTypeIdToHostApiIndex(PortAudioInterop.HostApiWasapi);
         if (api < 0) return [];
@@ -113,10 +113,36 @@ internal static class PortAudioHost
                 name.Length == 0 ? CaptureDeviceIdentity.UnknownName : name,
                 device->MaxInputChannels,
                 device->DefaultSampleRate,
-                device->DefaultLowInputLatency,
+                device->DefaultHighInputLatency,
                 index == info->DefaultInputDevice));
         }
         return devices;
+    }
+
+    // Rebuilds the device list, the cheap way when it is enough. PortAudio's
+    // front end counts the devices once, at Pa_Initialize, and refuses to open
+    // an index at or past that count (pa_front.c, deviceCount_), while
+    // PaWasapi_UpdateDeviceList only rebuilds the WASAPI list under it. The
+    // DLL pads that list to 32 slots so the count usually stays put, but not
+    // when it was empty at initialisation (Deckle started before any audio
+    // device was up) or when the machine has more endpoints than that. So when
+    // the two counts disagree, or the update failed and left the list empty,
+    // PortAudio is terminated and initialised again, which recounts.
+    // Host thread only, and only while no stream is open.
+    private static unsafe void RefreshDevices()
+    {
+        int updated = PortAudioInterop.PaWasapi_UpdateDeviceList();
+        int api = PortAudioInterop.Pa_HostApiTypeIdToHostApiIndex(PortAudioInterop.HostApiWasapi);
+        PortAudioInterop.PaHostApiInfo* info = api >= 0 ? PortAudioInterop.Pa_GetHostApiInfo(api) : null;
+        bool consistent = updated == 0
+            && info != null
+            && info->DeviceCount > 0
+            && info->DeviceCount == PortAudioInterop.Pa_GetDeviceCount();
+        if (consistent) return;
+
+        PortAudioInterop.Pa_Terminate();
+        s_initialized = false;
+        EnsureInitialized();
     }
 
     // Bookkeeping of the open streams, so the device list is never rebuilt
@@ -132,7 +158,11 @@ internal static class PortAudioHost
     public static unsafe int ReasonOf(int paError)
     {
         if (paError >= 0) return paError;
+        // paInsufficientMemory is what pa_win_wasapi.c returns when
+        // IMMDevice::Activate fails, a device gone between the list and the
+        // open among others, with the HRESULT logged beside it.
         if (paError is not (PortAudioInterop.UnanticipatedHostError
+                            or PortAudioInterop.InsufficientMemory
                             or PortAudioInterop.InvalidDevice
                             or PortAudioInterop.DeviceUnavailable
                             or PortAudioInterop.InvalidSampleRate

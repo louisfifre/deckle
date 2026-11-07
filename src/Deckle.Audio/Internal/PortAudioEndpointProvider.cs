@@ -10,16 +10,34 @@ namespace Deckle.Audio.Internal;
 //
 // The mode is the rawest the device gives, tried in this order, each step down
 // recorded as a CaptureModeFallback for the log:
-//   exclusive + raw, exclusive + default   only when the setting asks for exclusive
-//   shared + raw, shared + default
-// PortAudio applies raw through IAudioClient2::SetClientProperties before
-// IAudioClient::Initialize; a device without raw then refuses Initialize and
-// the open fails, which is the signal to step down. A refusal that no other
-// mode can fix (the device is gone, access is denied, the audio service is
-// down) ends the attempts at once.
+//   exclusive      only when the setting asks for it
+//   shared + raw
+//   shared + default
+// An exclusive stream goes to the device past the Windows audio engine and its
+// effects, so it is raw by nature and the raw option adds nothing to it. In
+// shared mode PortAudio applies raw through IAudioClient2::SetClientProperties
+// before IAudioClient::Initialize; a device without raw then refuses
+// Initialize and the open fails, which is the signal to step down. (PortAudio
+// ignores a refused SetClientProperties itself, but that call only fails where
+// IAudioClient2 is missing, before Windows 8.1.) A refusal that no other mode
+// can fix (the device is gone, access is denied, the audio service is down)
+// ends the attempts at once.
+//
+// The buffer. In shared mode PortAudio sizes the device buffer from the
+// suggested latency (pa_win_wasapi.c, _CalculateFramesPerHostBuffer), and a
+// polled capture stream that is not read in time loses the oldest audio
+// without a word: PortAudio never reads the capture flags that would say so.
+// The device's low latency (about 3 ms) would leave a buffer of one or two
+// packets, which a garbage collection pause empties into the void. The shared
+// stream therefore asks for SharedBufferSeconds: packets still arrive every
+// device period, the buffer only holds more of them when the loop is late. An
+// exclusive stream keeps the device's high latency, which there is also its
+// packet period.
 internal sealed class PortAudioEndpointProvider : ICaptureEndpointProvider
 {
     private readonly record struct Attempt(bool Exclusive, bool Raw);
+
+    internal const double SharedBufferSeconds = 0.2;
 
     public CaptureOpenResult Open(string endpointId, CaptureOptions options)
     {
@@ -60,7 +78,7 @@ internal sealed class PortAudioEndpointProvider : ICaptureEndpointProvider
         var identity = new CaptureDeviceIdentity(device.EndpointId, device.Name, endpointId.Length == 0);
 
         Attempt[] attempts = options.Exclusive
-            ? [new(true, true), new(true, false), new(false, true), new(false, false)]
+            ? [new(true, false), new(false, true), new(false, false)]
             : [new(false, true), new(false, false)];
 
         var fallbacks = new List<CaptureModeFallback>();
@@ -74,7 +92,7 @@ internal sealed class PortAudioEndpointProvider : ICaptureEndpointProvider
                 PortAudioHost.StreamOpened();
                 var info = new CaptureEndpointInfo(
                     identity,
-                    attempt.Raw ? CaptureMode.Raw : CaptureMode.Default,
+                    attempt.Raw || attempt.Exclusive ? CaptureMode.Raw : CaptureMode.Default,
                     attempt.Exclusive,
                     new CaptureFormat((int)Math.Round(sampleRate), device.Channels),
                     latencySeconds * 1000.0);
@@ -104,7 +122,7 @@ internal sealed class PortAudioEndpointProvider : ICaptureEndpointProvider
             Device = device.Index,
             ChannelCount = device.Channels,
             SampleFormat = PortAudioInterop.SampleFormatFloat32,
-            SuggestedLatency = device.LowLatencySeconds,
+            SuggestedLatency = attempt.Exclusive ? device.HighLatencySeconds : SharedBufferSeconds,
             HostApiSpecificStreamInfo = &wasapi,
         };
 

@@ -213,8 +213,10 @@ public sealed partial class RecordingPage : Page
         {
             launched = await Windows.System.Launcher.LaunchUriAsync(uri);
         }
-        catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
+        catch (Exception)
         {
+            // An async void handler: whatever the launcher throws would
+            // otherwise reach the dispatcher and take the app down for a link.
             launched = false;
         }
         if (!launched)

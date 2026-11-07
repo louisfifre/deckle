@@ -25,7 +25,8 @@ public sealed class CaptureSettings
     // The microphone as the waveIn capture kept it: a device index, -1 for the
     // system default. Read only to migrate old files (see
     // CaptureSettingsService.ApplyPostLoadMigrations), which turn it into
-    // AudioInputEndpointId and clear it; it is never written back.
+    // AudioInputEndpointId and clear it. It stays in the file only while the
+    // device it names is not plugged in, until a launch finds it.
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? AudioInputDeviceId { get; set; }
 

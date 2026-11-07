@@ -1,5 +1,10 @@
 using System.Runtime.InteropServices;
 
+// Native libraries load from beside the assembly (portaudio.dll) or from
+// System32 (winmm, ole32), never from the current directory or the PATH,
+// where another portaudio.dll could stand.
+[assembly: DefaultDllImportSearchPaths(DllImportSearchPath.AssemblyDirectory | DllImportSearchPath.System32)]
+
 namespace Deckle.Audio.Internal;
 
 // The P/Invoke surface of portaudio.dll, the one native library the capture
@@ -164,6 +169,11 @@ internal static unsafe partial class PortAudioInterop
 
     [LibraryImport(Library)]
     public static partial int Pa_HostApiTypeIdToHostApiIndex(int type);
+
+    // Devices across all host APIs, as the front end counted them at
+    // Pa_Initialize: an index at or past it is refused by Pa_OpenStream.
+    [LibraryImport(Library)]
+    public static partial int Pa_GetDeviceCount();
 
     [LibraryImport(Library)]
     public static partial PaHostApiInfo* Pa_GetHostApiInfo(int hostApi);
