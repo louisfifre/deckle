@@ -81,6 +81,9 @@ public sealed partial class WhisperPage : Page
         WireHover(LanguageCard, LanguageReset);
         InitialPromptCard.PointerEntered += (_, _) => InitialPromptReset.Opacity = 1;
         InitialPromptCard.PointerExited += (_, _) => InitialPromptReset.Opacity = 0;
+        PrepareResetButton(ModelReset);
+        PrepareResetButton(LanguageReset);
+        PrepareResetButton(InitialPromptReset);
 
         Loaded += (_, _) =>
         {
@@ -236,6 +239,19 @@ public sealed partial class WhisperPage : Page
     // Model is an AutoSuggestBox (no dropdown chevron) populated dynamically
     // from disk: filtering by substring while typing, full list on focus
     // when empty. Language is an editable ComboBox with ComboBoxItem children.
+
+    // The hover-revealed reset says the same words as the composed cards' reset
+    // (one shared resource, not a literal in the style), and shows when the
+    // keyboard reaches it: at opacity 0 it stays focusable, so a person tabbing
+    // would land on a button they cannot see.
+    private static void PrepareResetButton(Button resetButton)
+    {
+        string label = Loc.Get("SettingsSection_ResetTooltip");
+        ToolTipService.SetToolTip(resetButton, label);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(resetButton, label);
+        resetButton.GotFocus += (_, _) => resetButton.Opacity = 1;
+        resetButton.LostFocus += (_, _) => resetButton.Opacity = 0;
+    }
 
     private static void WireHover(SettingsCard card, Button resetButton)
     {
