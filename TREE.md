@@ -1773,6 +1773,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SpeechTrimResult.cs
 │   │   └── VadService.cs
 │   └── Deckle.Vision/
+│       ├── Shaders/
+│       │   ├── FrameReduce.cso
+│       │   └── FrameReduce.hlsl
 │       ├── CapturedFrame.cs
 │       ├── CaptureIncidents.cs
 │       ├── CaptureMonitor.cs
@@ -1786,6 +1789,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │       ├── FrameSampler.cs
 │       ├── FrameSampler.Process.cs
 │       ├── FrameSampler.Readback.cs
+│       ├── FrameSampler.Reduction.cs
 │       ├── FrameSampler.Resources.cs
 │       ├── IFrameAnalyzer.cs
 │       ├── InterfaceCaptureIndex.cs
@@ -2497,10 +2501,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ContentPeakReleaseTests.cs
 │   │   ├── Deckle.Vision.Tests.csproj
 │   │   ├── DeckleVisionSourceTests.cs
+│   │   ├── FrameReductionTests.cs
 │   │   ├── InterfaceCaptureNamesTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
-│   │   └── SamplingGridTests.cs
+│   │   ├── SamplingGridTests.cs
+│   │   └── WarpRig.cs
 │   ├── Directory.Build.props
 │   └── GLOSSARY.md  — glossary-deckle-tests Test taxonomy. It names the four categories inside the automatic scope (unit, i…
 ├── .editorconfig

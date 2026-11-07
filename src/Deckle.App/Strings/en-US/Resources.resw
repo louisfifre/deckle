@@ -1547,4 +1547,16 @@
   <data name="Setup_Module_NoDownload" xml:space="preserve">
     <value>No download</value>
   </data>
+  <!-- ProfileViewModel (Loc.Get / Loc.Format) — mirrored from
+       src/Deckle.Llm.Rewrite/Strings/en-US/Resources.resw, which stays the
+       source of truth for wording; Loc.Get reads this file only. -->
+  <data name="LlmProfile_NoModel" xml:space="preserve">
+    <value>(no model)</value>
+  </data>
+  <data name="LlmProfile_NoProvider" xml:space="preserve">
+    <value>(no provider)</value>
+  </data>
+  <data name="LlmProfile_Hints_Format" xml:space="preserve">
+    <value>context {0}K  ·  temperature {1}</value>
+  </data>
 </root>
