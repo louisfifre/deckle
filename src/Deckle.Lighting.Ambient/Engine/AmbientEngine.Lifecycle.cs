@@ -36,6 +36,12 @@ public sealed partial class AmbientEngine
         DeckleAmbientSource.Log.PipelineStarting(runId);
         long startRequestedAt = Stopwatch.GetTimestamp();
 
+        // The preview scan holds the display while the engine is off; it
+        // ends here, its duplication released, before the run builds its
+        // own capture. A scan asked for from now on finds the engine
+        // Starting and is skipped (AmbientEngine.PreviewScan.cs).
+        await EndPreviewScanAsync(AmbientPreviewScanEndReasons.EngineStarting).ConfigureAwait(false);
+
         // Wait for the deferred cleanup spun by the previous Stop()
         // before we touch the owned deps. The cleanup task awaits the
         // push loop's exit and disposes capture / sampler / output —

@@ -1202,6 +1202,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientEngine.HueEvents.cs
 │   │   │   ├── AmbientEngine.Lifecycle.cs
 │   │   │   ├── AmbientEngine.MultiLightPush.cs
+│   │   │   ├── AmbientEngine.PreviewScan.cs
 │   │   │   ├── AmbientEngine.PushHealth.cs
 │   │   │   ├── AmbientEngine.PushLoop.cs
 │   │   │   ├── AmbientEngineState.cs
@@ -1246,6 +1247,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleAmbientSource.Lifecycle.cs
 │   │   ├── DeckleAmbientSource.LightPlacement.cs
 │   │   ├── DeckleAmbientSource.Pairing.cs
+│   │   ├── DeckleAmbientSource.PreviewScan.cs
 │   │   ├── DeckleAmbientSource.Push.cs
 │   │   ├── DeckleAmbientSource.UiAndSettings.cs
 │   │   ├── IAmbientEngineHost.cs
@@ -2239,6 +2241,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientPresetSelectionLogTests.cs
 │   │   ├── AmbientPresetsTests.cs
 │   │   ├── AmbientPreviewGeometryTests.cs
+│   │   ├── AmbientPreviewScanLogTests.cs
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── AmbientRunBugNotes.md
