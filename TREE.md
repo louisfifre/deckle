@@ -1004,6 +1004,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Transcript/
 │   │   │   ├── TranscriptPanelLayout.cs
 │   │   │   ├── TranscriptPanelWindow.Proximity.cs
+│   │   │   ├── TranscriptPanelWindow.Theme.cs
 │   │   │   ├── TranscriptPanelWindow.xaml
 │   │   │   └── TranscriptPanelWindow.xaml.cs
 │   │   ├── Windows/

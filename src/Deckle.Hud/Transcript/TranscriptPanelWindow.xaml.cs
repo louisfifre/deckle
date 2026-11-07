@@ -164,6 +164,8 @@ public sealed partial class TranscriptPanelWindow : Window
         TranscriptScroller.SizeChanged += (_, _) => ScrollToEnd();
         TranscriptText.SizeChanged += (_, _) => ScrollToEnd();
 
+        WireThemeTracking();
+
         // Never destroyed: closing only hides it.
         AppWindow.Closing += (_, args) =>
         {
