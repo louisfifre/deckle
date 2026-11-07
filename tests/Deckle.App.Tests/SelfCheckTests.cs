@@ -240,6 +240,53 @@ public class SelfCheckTests
         Assert.Equal("settings/home", read.Current);
     }
 
+    // ── The images ───────────────────────────────────────────────────────────
+
+    // RenderTargetBitmap hands over premultiplied BGRA with a transparent page
+    // background: the image must come out opaque, on the surface's colour.
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Flatten_PutsTransparentPixelsOnTheSurfaceAndKeepsOpaqueOnes()
+    {
+        var surface = Windows.UI.Color.FromArgb(255, 0xF9, 0xF9, 0xF9);
+        byte[] bgra =
+        [
+            0, 0, 0, 0,          // transparent
+            10, 20, 30, 255,     // opaque, kept
+        ];
+
+        SelfCheck.ElementImage.FlattenOnto(bgra, surface);
+
+        Assert.Equal(new byte[] { 0xF9, 0xF9, 0xF9, 255, 10, 20, 30, 255 }, bgra);
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Flatten_AddsTheSurfaceInProportionToWhatTheAlphaLetsThrough()
+    {
+        var surface = Windows.UI.Color.FromArgb(255, 200, 200, 200);
+        // Premultiplied half-covered black: colour 0, alpha 128.
+        byte[] bgra = [0, 0, 0, 128];
+
+        SelfCheck.ElementImage.FlattenOnto(bgra, surface);
+
+        Assert.Equal(200 * (255 - 128) / 255, bgra[0]);
+        Assert.Equal(255, bgra[3]);
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Verdict_FailsWhenAPageRenderedNothingAndSaysWhy()
+    {
+        SelfCheckReport report = PassingReport();
+        report.Surfaces[0] = report.Surfaces[0] with { Png = null, Error = "InvalidOperationException: empty" };
+
+        report.Judge();
+
+        Assert.Equal("failed", report.Outcome);
+        Assert.Contains(report.Failures, f => f.Contains("empty"));
+    }
+
     // ── The run's log ────────────────────────────────────────────────────────
 
     [Fact]

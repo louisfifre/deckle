@@ -127,7 +127,7 @@ public sealed partial class HudOverlayWindow : Window
         // The fade animator owns the layered alpha from here on; proximity goes
         // through it with instant FadeTo updates.
         _fade = new LayeredAlphaAnimator(_hwnd, DispatcherQueue, initialAlpha: 0);
-        SystemAnimationPreference.Instance.Changed += OnSystemAnimationsChanged;
+        AnimationPreference.Instance.Changed += OnAnimationPreferenceChanged;
 
         // Theme tracing only: the event helps correlate a stroke glitch with a
         // theme switch while a card is floating.
@@ -153,7 +153,7 @@ public sealed partial class HudOverlayWindow : Window
 
     public IntPtr Hwnd => _hwnd;
 
-    private void OnSystemAnimationsChanged(bool enabled)
+    private void OnAnimationPreferenceChanged(bool enabled)
     {
         if (DispatcherQueue.HasThreadAccess)
         {
@@ -164,7 +164,7 @@ public sealed partial class HudOverlayWindow : Window
         DispatcherQueue.TryEnqueueObserved(
             "ui-update", "hud-overlay-window",
             () => _fade?.SetAnimationsEnabled(enabled),
-            "HUD", "system animation preference change");
+            "HUD", "animation preference change");
     }
 
     // MessagePayload.Duration is unused here: the manager owns the per-card
@@ -308,7 +308,7 @@ public sealed partial class HudOverlayWindow : Window
 
     public void ForceClose()
     {
-        SystemAnimationPreference.Instance.Changed -= OnSystemAnimationsChanged;
+        AnimationPreference.Instance.Changed -= OnAnimationPreferenceChanged;
         EndProximityMode();
         EndFadeIn("cancelled");
         _fade?.Cancel();

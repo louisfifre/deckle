@@ -197,12 +197,15 @@ public partial class App
         string captures = Path.Combine(outputFolder, "captures");
         InterfaceCaptureRun run = InterfaceCaptureRun.Begin(DateTimeOffset.Now, captures);
 
+        // Windows are shown off every monitor and never activated
+        // (OffscreenWindow), and each page is rendered whole by its own XAML
+        // (ElementImage), so nothing appears on the person's desktop and no
+        // image is cut at a window edge.
         Step("settings");
-        ShowSettingsWindowLazy();
-        if (_settingsWindow is not { } settings)
-            throw new InvalidOperationException("The Settings window was not created.");
-        nint settingsHwnd = WindowNative.GetWindowHandle(settings);
+        Settings.SettingsWindow settings = EnsureSettingsWindow();
+        OffscreenWindow.ShowInactive(settings);
         await WaitUntilLoadedAsync(settings);
+        report.Surfaces.Add(await CaptureWindowFrameAsync(run, settings, "settings", "window", null, true, 0));
 
         string currentPage = "";
         string currentLabel = "";
@@ -211,12 +214,29 @@ public partial class App
             {
                 string slug = InterfaceCaptureNames.PageSlug(visit.Tag);
                 (int closed, int left) = await CloseTransientPopupsAsync(settings);
-                bool shot = visit.Loaded
-                    && await run.CaptureAsync(settingsHwnd, "settings", slug, visit.Label);
-                report.Surfaces.Add(new SelfCheckSurface(
-                    "settings", slug, visit.Label, visit.Loaded, visit.LoadMs,
-                    shot && run.LastFile is { } file ? Path.Combine("captures", file) : null,
-                    closed, left));
+                SelfCheckSurface surface = new("settings", slug, visit.Label, visit.Loaded, visit.LoadMs, null,
+                    closed, left, "page-render");
+                if (visit.Loaded && settings.CurrentPage is { } page)
+                {
+                    try
+                    {
+                        ElementImage.Result image = await ElementImage.CapturePageAsync(
+                            page, Path.Combine(captures, $"settings-{slug}"));
+                        string[] files = [.. image.Files.Select(f => Path.GetRelativePath(outputFolder, f))];
+                        surface = surface with
+                        {
+                            Png = files[0],
+                            Parts = files.Length > 1 ? files : null,
+                            Width = image.Width,
+                            Height = image.Height,
+                        };
+                    }
+                    catch (Exception ex)
+                    {
+                        surface = surface with { Error = $"{ex.GetType().Name}: {ex.Message}" };
+                    }
+                }
+                report.Surfaces.Add(surface);
                 Step($"settings/{slug} done");
             },
             starting: (tag, label) =>
@@ -227,10 +247,10 @@ public partial class App
             });
 
         Step("log");
-        await OpenAndCaptureAsync(report, run, outputFolder, "log", ShowLogWindowLazy, () => _logWindow);
+        await OpenAndCaptureAsync(report, run, outputFolder, "log", EnsureLogWindow);
 
         Step("playground");
-        await OpenAndCaptureAsync(report, run, outputFolder, "playground", ShowPlaygroundLazy, () => _playgroundWindow);
+        await OpenAndCaptureAsync(report, run, outputFolder, "playground", EnsurePlaygroundWindow);
 
         run.Complete();
         Settings.SettingsService.Instance.Flush();
@@ -241,20 +261,62 @@ public partial class App
         InterfaceCaptureRun run,
         string outputFolder,
         string name,
-        Action open,
-        Func<Microsoft.UI.Xaml.Window?> window)
+        Func<Microsoft.UI.Xaml.Window> ensure)
     {
         var clock = System.Diagnostics.Stopwatch.StartNew();
-        open();
-        Microsoft.UI.Xaml.Window? opened = window();
-        bool loaded = opened is not null && await WaitUntilLoadedAsync(opened);
-        (int closed, int left) = loaded ? await CloseTransientPopupsAsync(opened!) : (0, 0);
-        bool shot = loaded && await run.CaptureAsync(WindowNative.GetWindowHandle(opened!), name);
-        report.Surfaces.Add(new SelfCheckSurface(
-            name, null, null, loaded, clock.ElapsedMilliseconds,
-            shot && run.LastFile is { } file ? Path.Combine("captures", file) : null,
-            closed, left));
+        Microsoft.UI.Xaml.Window window = ensure();
+        OffscreenWindow.ShowInactive(window);
+        bool loaded = await WaitUntilLoadedAsync(window);
+        (int closed, int left) = loaded ? await CloseTransientPopupsAsync(window) : (0, 0);
+        report.Surfaces.Add(await CaptureWindowFrameAsync(
+            run, window, name, null, null, loaded, clock.ElapsedMilliseconds, closed, left));
         report.Save(outputFolder);
+    }
+
+    // The window as a whole. The pixels DWM composed for it (WindowSnapshot) are
+    // the truest, backdrop and caption buttons included; a window nobody can see
+    // may deliver none, and then its XAML content is rendered instead, which the
+    // technique field of the report says.
+    private static async Task<SelfCheckSurface> CaptureWindowFrameAsync(
+        InterfaceCaptureRun run,
+        Microsoft.UI.Xaml.Window window,
+        string name,
+        string? page,
+        string? label,
+        bool loaded,
+        long ms,
+        int closed = 0,
+        int left = 0)
+    {
+        string technique = "window-capture";
+        string? file = null;
+        int width = 0, height = 0;
+        string? error = null;
+        if (loaded)
+        {
+            nint hwnd = WindowNative.GetWindowHandle(window);
+            if (await run.CaptureAsync(hwnd, name, page, label) && run.LastFile is { } captured)
+            {
+                file = Path.Combine("captures", captured);
+            }
+            else
+            {
+                technique = "window-render";
+                try
+                {
+                    string target = Path.Combine(run.Directory, page is null ? $"{name}.png" : $"{name}-{page}.png");
+                    ElementImage.Result image = await ElementImage.CaptureWindowContentAsync(window, target);
+                    file = Path.Combine("captures", Path.GetFileName(image.Files[0]));
+                    width = image.Width;
+                    height = image.Height;
+                }
+                catch (Exception ex)
+                {
+                    error = $"{ex.GetType().Name}: {ex.Message}";
+                }
+            }
+        }
+        return new SelfCheckSurface(name, page, label, loaded, ms, file, closed, left, technique, width, height, null, error);
     }
 
     // A capture shows the page alone. The walk itself leaves transient UI open:

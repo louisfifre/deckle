@@ -28,6 +28,17 @@ public partial class GeneralViewModel
                 ("Dark", "GeneralThemeDark"),
             ],
             defaultValue: () => new AppearanceSettings().Theme),
+        // Beside the theme, its twin: "System" defers to Windows, the two
+        // others override it (ADR-0009).
+        Setting.Choice<string>("GeneralAnimationsCard",
+            () => Animations,
+            value => Animations = value,
+            [
+                ("System", "GeneralAnimationsSystem"),
+                ("On", "GeneralAnimationsOn"),
+                ("Reduced", "GeneralAnimationsReduced"),
+            ],
+            defaultValue: () => new AppearanceSettings().Animations),
     ];
 
     // ── Shortcuts ────────────────────────────────────────────────────────────

@@ -29,6 +29,18 @@ public partial class GeneralViewModel : ObservableObject
         SettingsHost.ApplyTheme?.Invoke(value);
     }
 
+    // "System" | "On" | "Reduced". Deckle.Hud.AnimationPreference reads the
+    // saved value through SettingsService.Changed, so no host hook is needed.
+    [ObservableProperty]
+    public partial string Animations { get; set; }
+
+    partial void OnAnimationsChanged(string value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsUxSource.Log.SettingChanged("Appearance.Animations", value);
+        PushToSettings();
+    }
+
     // ── Hotkeys ──────────────────────────────────────────────────────────────
     //
     // One chord per hotkey action, null = unbound. The composer writes only
@@ -269,6 +281,7 @@ public partial class GeneralViewModel : ObservableObject
         var updates = new UpdatesSettings();
 
         Theme = appearance.Theme;
+        Animations = appearance.Animations;
         // Autostart is OS-backed (registry + scheduled task), not an AppSettings
         // POCO — its conceptual default lives on the startup facade, and the
         // elevated vehicle's on its own service; both read off until Load() probes.
@@ -291,6 +304,7 @@ public partial class GeneralViewModel : ObservableObject
         {
             var shell = SettingsService.Instance.Current;
             Theme = shell.Appearance.Theme;
+            Animations = shell.Appearance.Animations;
             // The task probe runs schtasks.exe on the UI thread; read it once,
             // and ask the Run key alone for the other vehicle. The facade's
             // StartsAtLogon would probe the task a second time whenever the Run
@@ -333,6 +347,7 @@ public partial class GeneralViewModel : ObservableObject
     {
         var shell = SettingsService.Instance.Current;
         shell.Appearance.Theme = Theme;
+        shell.Appearance.Animations = Animations;
         shell.Paths.BackupDirectory = BackupDirectory ?? "";
         shell.Updates.AutoCheckEnabled = UpdateAutoCheckEnabled;
         shell.Performance.PerformanceMode = PerformanceMode;
