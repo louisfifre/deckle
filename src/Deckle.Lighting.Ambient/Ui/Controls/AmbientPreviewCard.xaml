@@ -7,8 +7,10 @@
 
     <!-- The Ambient preview in the shared preview block, floating in the page's
          pane: the sampled grid as the stage, the commands and the colours sent
-         on the row above it, the engine's readouts under it. Live while the
-         engine runs; off, the block says what to turn on. -->
+         on the row above it, the engine's readouts under it. The stage always
+         has the display's frame: the run's capture while Ambient Light runs,
+         the preview scan while it is off, the frame alone without a capture.
+         The block's empty text shows only when no display can be read. -->
     <catalog:PreviewBlock x:Name="Block"
                           x:Uid="AmbientPreviewBlock">
 
@@ -87,9 +89,13 @@
              sourceWidth / cols wide and sourceHeight / rows high in source
              pixels, and the Viewbox scales the whole stage uniformly into the
              room the layer gives it. The zone overlay shares those
-             coordinates. -->
+             coordinates. The backdrop is the display's frame under the cells:
+             it shows while no capture has filled them, so the stage keeps the
+             screen's shape with Ambient Light off (Louis, 2026-11-07). -->
         <Viewbox Stretch="Uniform">
             <Grid x:Name="Stage">
+                <Rectangle x:Name="ScreenBackdrop"
+                           Fill="{ThemeResource SolidBackgroundFillColorBaseAltBrush}" />
                 <Grid x:Name="CellsGrid" />
                 <Canvas x:Name="ZoneOverlay"
                         IsHitTestVisible="False">
