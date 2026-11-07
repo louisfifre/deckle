@@ -65,7 +65,9 @@ public sealed partial class AmbientEngine
                         DeckleAmbientSource.Log,
                         EventLevel.Verbose,
                         (EventKeywords)Keywords.Push);
-                bool heartbeatDetailEnabled = OperationalLogAdmission.IsDetailEnabled(
+                // The heartbeat is the loop's summary: admitted from the
+                // Summary verbosity, and still one line per period at Details.
+                bool heartbeatDetailEnabled = OperationalLogAdmission.IsSummaryEnabled(
                     OperationalLogActivity.Ambient,
                     DeckleAmbientSource.Log,
                     EventLevel.Verbose,

@@ -2243,6 +2243,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientRunBugNotes.md
 │   │   ├── AmbientRunLogTests.cs
 │   │   ├── AmbientStartSettingsTests.cs
+│   │   ├── AmbientTableTemplateTests.cs
 │   │   ├── AmbientUserIncidentTests.cs
 │   │   ├── AssemblyInfo.cs
 │   │   ├── CredentialPayloadTests.cs
