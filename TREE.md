@@ -2132,6 +2132,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SinkCallbackFaultTests.cs
 │   │   ├── SurvivedExceptionBugNotes.md
 │   │   ├── SurvivedExceptionLedgerTests.cs
+│   │   ├── TableTemplateTests.cs
 │   │   ├── TemplateDoctrineTests.cs
 │   │   ├── ThreadingHotLoopCountTests.cs
 │   │   ├── UserIncidentListenerFaultTests.cs
@@ -2430,6 +2431,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LoopbackHttpListenerLease.cs
 │   │   ├── ProviderManifest.cs
 │   │   ├── SharedFileReader.cs
+│   │   ├── TableTemplate.cs
 │   │   ├── TemplateDoctrine.cs
 │   │   ├── TestEventListener.cs
 │   │   ├── WindowsAppSdkBootstrap.cs
