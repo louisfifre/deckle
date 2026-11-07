@@ -6,8 +6,8 @@ namespace Deckle.Audio.Internal;
 // does not depend on how the device chunks its audio (a 10 ms period gives
 // five packets per window, a 3 ms period seventeen).
 //
-// A partial window left at the end of a take yields nothing, as the waveIn
-// capture's partial last buffer did; its samples still reach the take's audio.
+// A partial window left at the end of a take yields nothing, so every window the
+// consumers read is a full 50 ms; its samples still reach the take's audio.
 internal sealed class SubWindowAssembler
 {
     public const int SampleRate = 16000;

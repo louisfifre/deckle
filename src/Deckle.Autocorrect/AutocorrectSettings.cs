@@ -26,23 +26,11 @@ public sealed class AutocorrectSettings : IJsonOnDeserialized
     // and NFC) so an entry matches the lexicon keys it removes.
     public List<string> ExcludedWords { get; set; } = new();
 
-    // Legacy allow-list, still found in old settings files. Read once and folded
-    // into Apps, then never written again.
-    [JsonPropertyName("enrolledProcesses")]
-    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public List<string>? EnrolledProcesses { get; set; }
-
     // System.Text.Json rebuilds Apps with the default ordinal comparer, so
-    // restore the case-insensitive one; then fold any legacy allow-list in (a
-    // listed app becomes enabled) and drop it so it is never written back.
+    // restore the case-insensitive one.
     public void OnDeserialized()
     {
         Apps = new Dictionary<string, bool>(Apps, StringComparer.OrdinalIgnoreCase);
-        if (EnrolledProcesses is { Count: > 0 })
-            foreach (string process in EnrolledProcesses)
-                if (process.Length > 0)
-                    Apps[process] = true;
-        EnrolledProcesses = null;
 
         // The exclusion register removes lexicon keys, so it must be spelled
         // the way the lexicon is. Re-normalize on load — the file is editable

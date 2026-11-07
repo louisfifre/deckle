@@ -267,38 +267,10 @@ public sealed class PersonalDictionaryTests : IDisposable
     }
 
     [Fact]
-    public void LegacyPreSchemaTwoFileIsPurgedAndStampedOnLoad()
+    public void ExistingFileIsReadAsIs()
     {
-        System.IO.File.WriteAllText(_path, """
-            {
-              "schemaVersion": 1,
-              "words": [
-                { "word": "café", "weight": 3.0, "lastSeenUtc": "2026-06-12T00:00:00+00:00" }
-              ],
-              "suppressions": [
-                { "original": "cable", "replacement": "câble", "createdUtc": "2026-06-12T00:00:00+00:00" }
-              ]
-            }
-            """);
-
-        using var dict = New();
-
-        Assert.Empty(dict.SnapshotWords());
-        Assert.Empty(dict.SnapshotSuppressions());
-
-        dict.Flush();
-        var onDisk = JsonSerializer.Deserialize<PersonalDictionaryData>(
-            System.IO.File.ReadAllText(_path),
-            CamelCase);
-        Assert.NotNull(onDisk);
-        Assert.Equal(PersonalDictionaryData.CurrentSchemaVersion, onDisk!.SchemaVersion);
-    }
-
-    [Fact]
-    public void CurrentVersionFileIsNotRePurged()
-    {
-        var stamped = new PersonalDictionaryData { SchemaVersion = PersonalDictionaryData.CurrentSchemaVersion };
-        stamped.Words.Add(new WordEntry
+        var stored = new PersonalDictionaryData();
+        stored.Words.Add(new WordEntry
         {
             Word = "café",
             Category = PersonalWordCategory.Other,
@@ -311,7 +283,7 @@ public sealed class PersonalDictionaryTests : IDisposable
             FirstSeenUtc = _now,
             LastSeenUtc = _now.AddDays(1),
         });
-        System.IO.File.WriteAllText(_path, JsonSerializer.Serialize(stamped, CamelCase));
+        System.IO.File.WriteAllText(_path, JsonSerializer.Serialize(stored, CamelCase));
 
         using var dict = New();
 
@@ -322,16 +294,16 @@ public sealed class PersonalDictionaryTests : IDisposable
     [Fact]
     public void CurrentFileDropsRejectedWordsAndPreservesAcceptedState()
     {
-        var stamped = new PersonalDictionaryData { SchemaVersion = PersonalDictionaryData.CurrentSchemaVersion };
-        stamped.Words.Add(AdoptedEntry("prepare", PersonalWordCategory.Anglicism));
-        stamped.Words.Add(AdoptedEntry("telemetry", PersonalWordCategory.Anglicism));
-        stamped.Suppressions.Add(new SuppressionEntry
+        var stored = new PersonalDictionaryData();
+        stored.Words.Add(AdoptedEntry("prepare", PersonalWordCategory.Anglicism));
+        stored.Words.Add(AdoptedEntry("telemetry", PersonalWordCategory.Anglicism));
+        stored.Suppressions.Add(new SuppressionEntry
         {
             Original = "docs",
             Replacement = "dos",
             CreatedUtc = _now,
         });
-        System.IO.File.WriteAllText(_path, JsonSerializer.Serialize(stamped, CamelCase));
+        System.IO.File.WriteAllText(_path, JsonSerializer.Serialize(stored, CamelCase));
 
         using var dict = New(word => word != "prepare");
 
@@ -343,7 +315,7 @@ public sealed class PersonalDictionaryTests : IDisposable
     }
 
     [Fact]
-    public void CorruptFileFallsBackStampedSoLaterLearningSurvives()
+    public void CorruptFileFallsBackToDefaultsSoLaterLearningSurvives()
     {
         System.IO.File.WriteAllText(_path, "{ this is not valid json ");
 

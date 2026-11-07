@@ -130,7 +130,7 @@ public sealed class SpeechEngine : IDisposable
             if (!played)
             {
                 // The render device could not be opened (SpeakerOutput logged the
-                // mmsys error under [AUDIO]); surface it in the speech narrative too
+                // playback failure under [AUDIO]); surface it in the speech narrative too
                 // so a reader following [SPEECH] sees the read produced no sound.
                 DeckleSpeechSource.Log.SpeechPlaybackFailed("device_unavailable", "", "");
                 reason = "playback_failed";

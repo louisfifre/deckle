@@ -25,12 +25,10 @@ namespace Deckle.Core;
 // no diagnostics-module dependency). Each caller passes lambdas that
 // route to its own EventSource provider or local sink.
 //
-// Two optional migration hooks let callers patch the on-disk format
-// before strict deserialization (preDeserializeMigration: e.g. legacy
-// JSON key renames) and rewrite the in-memory POCO after load
-// (postLoadMigration: e.g. fill missing ids on first launch). Either
-// hook reporting a change flags the load as migrated, and the
-// constructor, Reload and the watcher then flush the cleanup back to disk.
+// An optional post-load hook (postLoadMigration) lets a caller complete the
+// in-memory POCO after load, e.g. fill missing ids on first launch. When it
+// reports a change, the load counts as migrated, and the constructor, Reload
+// and the watcher then flush the result back to disk.
 //
 // Thread-safety: Current is read under a lock; mutations to the POCO
 // graph itself are the caller's responsibility (the typical pattern is
@@ -59,7 +57,6 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
     private readonly Action<string>? _logVerbose;
     private readonly Action<string>? _logWarning;
     private readonly Action<string>? _logError;
-    private readonly Func<string, (string json, bool migrated)>? _preDeserializeMigration;
     private readonly Func<T, bool>? _postLoadMigration;
 
     private readonly object _lock = new();
@@ -102,7 +99,6 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
         Action<string>? logVerbose = null,
         Action<string>? logWarning = null,
         Action<string>? logError = null,
-        Func<string, (string json, bool migrated)>? preDeserializeMigration = null,
         Func<T, bool>? postLoadMigration = null)
     {
         _path = path;
@@ -112,7 +108,6 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
         _logVerbose = logVerbose;
         _logWarning = logWarning;
         _logError = logError;
-        _preDeserializeMigration = preDeserializeMigration;
         _postLoadMigration = postLoadMigration;
 
         _current = Load(out bool migrated);
@@ -135,8 +130,8 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
     /// <summary>
     /// Load from disk. Missing file or parse failure falls back to defaults
     /// (also written to disk for the missing case so the next launch sees a
-    /// well-formed file). `migrated` is true when the on-disk JSON was
-    /// rewritten in memory by either of the migration hooks.
+    /// well-formed file). `migrated` is true when the post-load hook changed
+    /// what was read.
     /// </summary>
     public T Load(out bool migrated)
     {
@@ -216,25 +211,13 @@ public sealed class JsonSettingsStore<T> : IDisposable where T : class, new()
         }
     }
 
-    // Run the file's text through the migration hooks and the serializer.
+    // Run the file's text through the serializer and the post-load hook.
     // Throws on invalid JSON; the callers decide what a failure means (Load
     // falls back to defaults, the watcher waits for the next write).
     private T Parse(string raw, out bool migrated)
     {
-        migrated = false;
-        string json = raw;
-
-        if (_preDeserializeMigration is not null)
-        {
-            (json, bool preMigrated) = _preDeserializeMigration(json);
-            if (preMigrated) migrated = true;
-        }
-
-        var parsed = JsonSerializer.Deserialize<T>(json, _jsonOptions) ?? new T();
-
-        if (_postLoadMigration is not null && _postLoadMigration(parsed))
-            migrated = true;
-
+        var parsed = JsonSerializer.Deserialize<T>(raw, _jsonOptions) ?? new T();
+        migrated = _postLoadMigration is not null && _postLoadMigration(parsed);
         return parsed;
     }
 
