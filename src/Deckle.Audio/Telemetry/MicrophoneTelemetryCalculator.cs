@@ -23,10 +23,9 @@ public static class MicrophoneTelemetryCalculator
         //
         // Root-mean-square of the last 12 sub-windows: sums the squared
         // sub-window RMS values and re-roots, the correct way to combine RMS
-        // samples (NOT a plain mean of RMS).
-        //
-        // The operational sentence (DescribeTail) is built separately so this
-        // functional telemetry calculation never allocates it before admission.
+        // samples (NOT a plain mean of RMS). TailState is the word the log
+        // carries: active, still speaking at Stop (the last words may be
+        // clipped), or silent (the capture ended cleanly).
         int tailCount = System.Math.Min(12, n);
         double tailSumSq = 0;
         for (int i = n - tailCount; i < n; i++)
@@ -42,10 +41,6 @@ public static class MicrophoneTelemetryCalculator
         return new TailDiagnostic(tailRms, tailDbfs, tailMs, tailActive, tailState);
     }
 
-    public static string DescribeTail(TailDiagnostic tail)
-        => tail.TailActive
-            ? "You were still speaking at Stop — the last words may be clipped."
-            : "You stopped after a silence — capture ends cleanly.";
 
     public static MicrophoneTelemetryPayload? Compute(
         System.Collections.Generic.IReadOnlyList<float> rmsLog,

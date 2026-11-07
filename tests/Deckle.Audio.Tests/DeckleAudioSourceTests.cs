@@ -26,8 +26,7 @@ public sealed class DeckleAudioSourceTests : IDisposable
     {
         using var listener = new TestEventListener("Deckle-Audio");
 
-        DeckleAudioSource.Log.RecordingTailSummary("headline");
-        DeckleAudioSource.Log.RecordingTailSummaryDetail(600, -42);
+        DeckleAudioSource.Log.RecordingTailSummaryDetail(600, -42, "active");
         DeckleAudioSource.Log.MicrophoneTelemetryEmpty();
 
         Assert.Empty(listener.Events);
@@ -40,14 +39,16 @@ public sealed class DeckleAudioSourceTests : IDisposable
             static activity => activity == OperationalLogActivity.Transcription);
         using var listener = new TestEventListener("Deckle-Audio");
 
-        DeckleAudioSource.Log.RecordingTailSummary("headline");
-        DeckleAudioSource.Log.RecordingTailSummaryDetail(600, -42);
+        DeckleAudioSource.Log.RecordingTailSummaryDetail(600, -42, "active");
         DeckleAudioSource.Log.MicrophoneTelemetryEmpty();
 
         Assert.Collection(
             listener.Events,
-            e => Assert.Equal(DeckleAudioSource.EvtRecordingTailSummary, e.EventId),
-            e => Assert.Equal(DeckleAudioSource.EvtRecordingTailSummaryDetail, e.EventId),
+            e =>
+            {
+                Assert.Equal(DeckleAudioSource.EvtRecordingTailSummaryDetail, e.EventId);
+                Assert.Equal("active", PayloadOf(e, "tail_state"));
+            },
             e => Assert.Equal(DeckleAudioSource.EvtMicrophoneTelemetryEmpty, e.EventId));
     }
 

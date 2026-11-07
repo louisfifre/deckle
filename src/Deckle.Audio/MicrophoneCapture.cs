@@ -306,13 +306,11 @@ public sealed class MicrophoneCapture : IMicrophoneCapture
                     EventLevel.Verbose,
                     (EventKeywords)Keywords.Capture))
             {
-                // The sentence and its payload exist only for admitted detail.
-                // The tail measurements themselves remain functional input to
+                // The line exists only for admitted detail. The tail
+                // measurements themselves remain functional input to
                 // telemetry and auto-calibration below.
-                string headline = MicrophoneTelemetryCalculator.DescribeTail(tail.Value);
-                DeckleAudioSource.Log.RecordingTailSummary(headline);
                 DeckleAudioSource.Log.RecordingTailSummaryDetail(
-                    tail.Value.TailMs, tail.Value.TailDbfs);
+                    tail.Value.TailMs, tail.Value.TailDbfs, tail.Value.TailState);
             }
 
             telemetry = MicrophoneTelemetryCalculator.Compute(_rmsLog, tail.Value);

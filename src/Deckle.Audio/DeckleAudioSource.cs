@@ -27,7 +27,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     // 8 retired.
     public const int EvtCaptureCompleted          = 9;
     public const int EvtMicrophoneTelemetryEmpty  = 10;
-    public const int EvtRecordingTailSummary      = 11;
+    // 11 retired: the tail headline, folded into RecordingTailSummaryDetail's tail_state.
     public const int EvtMicrophoneTelemetryRecorded = 12;
     public const int EvtSettingsLoaded            = 13;
     public const int EvtSettingsLoadComplete      = 14;
@@ -169,30 +169,22 @@ public sealed class DeckleAudioSource : DeckleEventSource
             WriteEvent(EvtCaptureDrainDetail, drain_ms, tail_ms, tail_reads);
     }
 
-    // Optional per-take diagnosis. Both the sentence and its measurements are
-    // admitted detail; neither belongs to the permanent workflow timeline.
-    [Event(EvtRecordingTailSummary,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "tail_headline={0}")]
-    public void RecordingTailSummary(string tail_headline)
-    {
-        if (OperationalLogAdmission.IsScopedDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
-            WriteEvent(EvtRecordingTailSummary, tail_headline);
-    }
-
+    // Optional per-take diagnosis of the last tail_ms of the recording, admitted
+    // detail outside the permanent workflow timeline. tail_state (closed
+    // vocabulary): active, the person was still speaking at Stop and the last
+    // words may be clipped; silent, they stopped after a silence and the
+    // capture ended cleanly. The sentence that once said so on its own line
+    // (event 11, retired) carried nothing more than this word.
     [Event(EvtRecordingTailSummaryDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "tail_ms={0,4} | tail_dbfs={1,6:F1}")]
-    public void RecordingTailSummaryDetail(int tail_ms, double tail_dbfs)
+           Message = "tail_ms={0,4} | tail_dbfs={1,6:F1} | tail_state={2}")]
+    public void RecordingTailSummaryDetail(int tail_ms, double tail_dbfs, string tail_state)
     {
         if (OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Transcription, this,
                 EventLevel.Verbose, (EventKeywords)Keywords.Capture))
-            WriteEvent(EvtRecordingTailSummaryDetail, tail_ms, tail_dbfs);
+            WriteEvent(EvtRecordingTailSummaryDetail, tail_ms, tail_dbfs, tail_state);
     }
 
     // ── Microphone open and start ───────────────────────────────────────

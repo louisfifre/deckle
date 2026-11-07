@@ -38,14 +38,12 @@ public class MicrophoneTelemetryCalculatorTests
     }
 
     [Fact]
-    public void TailHeadlineIsBuiltSeparatelyFromTheDiagnostic()
+    public void TheTailIsActiveWhenTheVoiceRunsUntilStop()
     {
-        var active = new MicrophoneTelemetryCalculator.TailDiagnostic(
-            0.1, -20, 600, true, "active");
-        var silent = new MicrophoneTelemetryCalculator.TailDiagnostic(
-            0.001, -60, 600, false, "silent");
+        float[] speaking = Enumerable.Repeat(0.1f, 20).ToArray();
+        float[] silent = Enumerable.Repeat(0.0001f, 20).ToArray();
 
-        Assert.Contains("still speaking", MicrophoneTelemetryCalculator.DescribeTail(active));
-        Assert.Contains("after a silence", MicrophoneTelemetryCalculator.DescribeTail(silent));
+        Assert.Equal("active", MicrophoneTelemetryCalculator.ComputeTail(speaking)!.Value.TailState);
+        Assert.Equal("silent", MicrophoneTelemetryCalculator.ComputeTail(silent)!.Value.TailState);
     }
 }

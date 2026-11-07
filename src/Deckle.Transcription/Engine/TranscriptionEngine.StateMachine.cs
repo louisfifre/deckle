@@ -416,7 +416,6 @@ public sealed partial class TranscriptionEngine
             primeTask = BeginPrime(drainCts.Token);
 
             _transcriptionId = System.Guid.NewGuid().ToString("N");
-            DeckleWhispSource.Log.TranscriptionCorrelation(_transcriptionId);
             BeginTake(TakeKinds.Dictation);
             // The take's audio goes to disk from the first frame on
             // (TranscriptionEngine.TakeAudio.cs); the take's end settles it.

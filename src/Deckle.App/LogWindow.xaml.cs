@@ -48,6 +48,11 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     private ScrollViewer? _listScrollViewer;
     private bool _autoScrollPending;
 
+    // Reading back up pauses Auto-scroll, returning to the bottom resumes it;
+    // the toggle shows the state and the reader can still set it by hand.
+    private readonly LogAutoScroll _autoScroll = new();
+    private bool _scrollObserverAttached;
+
     private readonly LogFilterSelection _filterSelection = LogWindowFilterSession.Selection;
     private string _currentSearch = "";
     private bool _isRecording;
@@ -66,6 +71,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         _hwnd = WindowNative.GetWindowHandle(this);
 
         LogItems.ItemsSource = _visible;
+        LogItems.Loaded += (_, _) => AttachScrollObserver();
         FilterBar.Selection = _filterSelection;
         UpdateFiltersToggleLabel();
 
@@ -150,6 +156,32 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         if (_listScrollViewer is not null) return _listScrollViewer;
         _listScrollViewer = FindDescendant<ScrollViewer>(LogItems);
         return _listScrollViewer;
+    }
+
+    // Once, after the first layout pass has built the ListView's ScrollViewer.
+    // Intermediate views count too: a drag of the scroll bar is the reader
+    // reading back up long before it settles.
+    private void AttachScrollObserver()
+    {
+        if (_scrollObserverAttached) return;
+        ScrollViewer? viewer = GetListViewScrollViewer();
+        if (viewer is null) return;
+
+        _scrollObserverAttached = true;
+        viewer.ViewChanged += (_, _) =>
+        {
+            if (_autoScroll.Observe(viewer.VerticalOffset, viewer.ScrollableHeight, viewer.ExtentHeight))
+                AutoScrollToggle.IsChecked = _autoScroll.IsFollowing;
+        };
+    }
+
+    // Click fires on the reader's gesture only, never on the IsChecked the
+    // observer above writes, so the two cannot feed each other.
+    private void OnAutoScrollToggleClick(object sender, RoutedEventArgs e)
+    {
+        bool following = AutoScrollToggle.IsChecked == true;
+        _autoScroll.SetFollowing(following);
+        if (following && _isVisible) RequestScrollToBottom();
     }
 
     private static T? FindDescendant<T>(DependencyObject parent) where T : DependencyObject

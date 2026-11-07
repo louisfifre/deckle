@@ -26,8 +26,8 @@ public sealed class CaptureTableTemplateTests
         },
         {
             nameof(DeckleAudioSource.RecordingTailSummaryDetail),
-            [50, -9.5],
-            [600, -120.0]
+            [50, -9.5, "active"],
+            [600, -120.0, "silent"]
         },
     };
 
