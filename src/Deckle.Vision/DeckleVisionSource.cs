@@ -84,6 +84,8 @@ public sealed partial class DeckleVisionSource : DeckleEventSource
     public const int EvtInterfaceWindowCaptureFailed    = 66;
     public const int EvtInterfaceCaptureCompleted       = 67;
     public const int EvtInterfaceCaptureStopped         = 68;
+    public const int EvtSamplerPathSelected             = 69;
+    public const int EvtSamplerPathFallback             = 70;
 
     // Capture-loop detail belongs to the Ambient workflow while it runs; the
     // scoped form leaves it ungoverned outside that workflow.
@@ -501,6 +503,29 @@ public sealed partial class DeckleVisionSource : DeckleEventSource
     public void SamplerInitialized(int cols, int rows, int target_mip, string tone_map, double peak_lum)
     {
         if (IsEnabled()) WriteEvent(EvtSamplerInitialized, cols, rows, target_mip, tone_map, peak_lum);
+    }
+
+    // Which way the sampler reduces the desktop frame, written when the
+    // choice changes rather than at every sampler build: a log read later
+    // must tell the compute-shader path from the legacy mip chain.
+    [Event(EvtSamplerPathSelected,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
+           Tags = ObservationTags.Milestone,
+           Message = "Frame sampler path selected")]
+    public void SamplerPathSelected(string path, string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtSamplerPathSelected, path, reason);
+    }
+
+    [Event(EvtSamplerPathFallback,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Lifecycle),
+           Tags = ObservationTags.Milestone,
+           Message = "Frame sampler fell back to the legacy path\nasked={0} | obtained={1} | hr=0x{2:X8} | reason={3}")]
+    public void SamplerPathFallback(string asked, string obtained, int hr, string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtSamplerPathFallback, asked, obtained, hr, reason);
     }
 
     // Per-frame sampler failures stay Verbose: the consumer aggregates them

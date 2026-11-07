@@ -11,9 +11,15 @@ using Deckle.Diagnostics;
 namespace Deckle.Vision;
 
 // FrameSampler — GPU downsample + CPU readback for ambient-lighting pixel
-// analysis. Each frame is copied into mip 0 of an intermediate texture,
-// GenerateMips builds the pyramid on the GPU, and only the small target mip
-// reaches a staging texture the CPU reads, never the full-size source.
+// analysis. A compute shader (Shaders/FrameReduce.hlsl) averages the desktop
+// texture straight into the grid, so the full-size frame is read once and
+// never copied; only the grid-sized result reaches a buffer the CPU reads.
+//
+// The legacy path stays until the shader path has been seen on screen: each
+// frame is copied into mip 0 of an intermediate texture, GenerateMips builds
+// the pyramid, and the target mip is read back. DECKLE_AMBIENT_SAMPLER_PATH=
+// legacy selects it; it is also the fallback when the device refuses the
+// shader or cannot bind the desktop texture to it.
 //
 // The per-cell grid stays in sRGB bytes; AmbientZoneSampler.SampleZone
 // re-linearises it on its own.
@@ -64,6 +70,10 @@ public sealed partial class FrameSampler : IAsyncDisposable
 
     private double _exposureEv = 0.0;
 
+    // How the desktop frame is reduced to the grid; falls from
+    // GpuReduction to Legacy for good if the device refuses the shader path.
+    private FrameSamplerPath _path;
+
     private nint _d3dDevice;
     private nint _d3dContext;
     private nint _intermediateTex;
@@ -106,7 +116,18 @@ public sealed partial class FrameSampler : IAsyncDisposable
         SizeInt32 sourceSize,
         DirectXPixelFormat poolFormat,
         float peakLuminance)
+        : this(device, sourceSize, poolFormat, peakLuminance, DefaultPath)
     {
+    }
+
+    internal FrameSampler(
+        IDirect3DDevice device,
+        SizeInt32 sourceSize,
+        DirectXPixelFormat poolFormat,
+        float peakLuminance,
+        FrameSamplerPath path)
+    {
+        _path = path;
         _sourceWidth  = sourceSize.Width;
         _sourceHeight = sourceSize.Height;
         _peakLuminance = peakLuminance > 0 ? peakLuminance : 80f;
@@ -133,40 +154,24 @@ public sealed partial class FrameSampler : IAsyncDisposable
             _d3dContext = ctxPtr;
         }
 
-        _intermediateTex = CreateIntermediateTexture();
-        bool resourceDetailOpen = OperationalLogAdmission.IsScopedDetailEnabled(
-            OperationalLogActivity.Ambient,
-            DeckleResourceSource.Log,
-            EventLevel.Verbose,
-            (EventKeywords)Keywords.Resource);
-        _intermediateTexAcquiredTicks = resourceDetailOpen ? Stopwatch.GetTimestamp() : 0;
-        // size_bytes counts mip 0 only; the full mip chain is about 4/3 of
-        // that.
-        if (resourceDetailOpen)
+        if (_path == FrameSamplerPath.GpuReduction)
         {
-            int bytesPerPixel = _isHdr ? 8 : 4;
-            DeckleResourceSource.Log.ResourceAcquired(
-                "d3d11-texture", (long)_intermediateTex,
-                _sourceWidth * _sourceHeight * bytesPerPixel, "frame-sampler");
+            try
+            {
+                CreateReductionResources();
+            }
+            catch (Exception ex)
+            {
+                // No compute support, or the bytecode was refused: the
+                // legacy path needs nothing the device may lack.
+                ReleaseReductionResources();
+                _path = FrameSamplerPath.Legacy;
+                LogPathFallback(ex.HResult, ex.GetType().Name);
+            }
         }
 
-        _intermediateSrv = CreateIntermediateSrv();
-        // An SRV is a view with no memory of its own: size_bytes 0.
-        if (resourceDetailOpen)
-        {
-            DeckleResourceSource.Log.ResourceAcquired(
-                "dxgi-resource", (long)_intermediateSrv, 0, "frame-sampler");
-        }
-
-        _stagingTex = CreateStagingTexture();
-        _stagingTexAcquiredTicks = resourceDetailOpen ? Stopwatch.GetTimestamp() : 0;
-        if (resourceDetailOpen)
-        {
-            int bytesPerPixel = _isHdr ? 8 : 4;
-            DeckleResourceSource.Log.ResourceAcquired(
-                "d3d11-texture", (long)_stagingTex,
-                _gridCols * _gridRows * bytesPerPixel, "frame-sampler");
-        }
+        if (_path == FrameSamplerPath.Legacy) CreateLegacyResources();
+        LogPathSelected();
 
         DeckleVisionSource.Log.SamplerInitialized(
             _gridCols, _gridRows, _targetMip,
