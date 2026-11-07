@@ -13,7 +13,14 @@ namespace Deckle.Catalog;
 // formatted, so the service owes nothing to any page's .resw. Cancel is the one
 // string it owns, because every confirmation shares it.
 
-public sealed record ConfirmationRequest(string Title, string Body, string PrimaryVerb, bool IsDestructive = false);
+public sealed record ConfirmationRequest(string Title, string Body, string PrimaryVerb, bool IsDestructive = false)
+{
+    // A destructive action defaults to the SAFE button: Enter commits
+    // nothing, the user has to reach for the verb on purpose. A merely
+    // confirming (non-destructive) action keeps Primary as default.
+    public ContentDialogButton DefaultButton =>
+        IsDestructive ? ContentDialogButton.Close : ContentDialogButton.Primary;
+}
 
 public static class ConfirmationService
 {
@@ -31,12 +38,7 @@ public static class ConfirmationService
             },
             PrimaryButtonText = request.PrimaryVerb,
             CloseButtonText = Loc.Get("Common_Cancel"),
-            // A destructive action defaults to the SAFE button: Enter commits
-            // nothing, the user has to reach for the verb on purpose. A merely
-            // confirming (non-destructive) action keeps Primary as default.
-            DefaultButton = request.IsDestructive
-                ? ContentDialogButton.Close
-                : ContentDialogButton.Primary,
+            DefaultButton = request.DefaultButton,
             XamlRoot = root
         };
 

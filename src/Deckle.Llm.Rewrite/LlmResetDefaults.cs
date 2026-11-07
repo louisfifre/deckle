@@ -11,7 +11,7 @@ public static class LlmResetDefaults
         // Fresh defaults carry no profile ids: reconcile them before the
         // instance goes live.
         var fresh = new LlmSettings { Enabled = current.Enabled };
-        LlmSettingsMigrations.Apply(fresh);
+        LlmSettingsNormalizer.Apply(fresh);
         return fresh;
     }
 }

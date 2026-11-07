@@ -10,8 +10,18 @@ namespace Deckle.Setup;
 // (Loc reads the root map only).
 public static class SetupNotifications
 {
+    public const string ViewActionId = "view";
+
+    // The toast only opens the update window; installing is a separate,
+    // explicit choice made there. A click on the toast body is a stray-click
+    // risk (Windows raises it for any press on the toast), so it must never
+    // do more than the "View update" button does.
+    //
     // "Later", or ignoring the toast, leaves the offer parked in
     // UpdateService.Available, still reachable from Settings.
+    public static bool ShouldOpenUpdateWindow(NotificationResponse? response) =>
+        response is { ActionId: ViewActionId or NotificationResponse.BodyActionId };
+
     public static readonly NotificationDescriptor UpdateAvailable = new(
         Id: "setup.update_available",
         Category: "setup",
@@ -21,7 +31,7 @@ public static class SetupNotifications
         Channel: NotificationChannel.Toast,
         Actions: new[]
         {
-            new NotificationAction("install", "SetupNotifications_UpdateAvailable_Install"),
+            new NotificationAction(ViewActionId, "SetupNotifications_UpdateAvailable_View"),
             new NotificationAction("later", "SetupNotifications_UpdateAvailable_Later"),
         });
 

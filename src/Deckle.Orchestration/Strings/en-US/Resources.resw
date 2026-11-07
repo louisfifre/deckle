@@ -67,40 +67,55 @@
     <value>Apps and games</value>
   </data>
   <data name="OrchestrationPageHeader.Description" xml:space="preserve">
-    <value>Add the apps and games Deckle should recognize when they run, and choose what happens to HDR while they do.</value>
+    <value>Deckle watches for the apps and games in your list. While one runs, it sets HDR on each monitor the way you chose, then restores it when the app closes.</value>
   </data>
   <data name="OrchestrationPageAppsSection.Title" xml:space="preserve">
     <value>Your apps and games</value>
+  </data>
+  <data name="OrchestrationPageAppsSection.Caption" xml:space="preserve">
+    <value>HDR (high dynamic range) gives brighter highlights and richer colors on monitors that support it. Open an entry to choose, for each of those monitors, whether Deckle turns HDR on, off or leaves it alone.</value>
+  </data>
+  <!-- The Settings search reads a bespoke section's label from "<Tag>/Header"
+       (the two sections below have no card, so no x:Uid carries one). Keep each
+       equal to the section's Title. -->
+  <data name="OrchestrationPage_Section_Apps.Header" xml:space="preserve">
+    <value>Your apps and games</value>
+  </data>
+  <data name="OrchestrationPage_Section_Scan.Header" xml:space="preserve">
+    <value>Scan</value>
   </data>
   <data name="OrchestrationPageScanSection.Title" xml:space="preserve">
     <value>Scan</value>
   </data>
   <data name="OrchestrationPageScanSection.Caption" xml:space="preserve">
-    <value>Adds the apps and games found in your Steam libraries and in the folders below.</value>
+    <value>Deckle adds the apps and games it finds in your Steam libraries and in the folders below.</value>
   </data>
   <data name="OrchestrationPage_AddCard.Header" xml:space="preserve">
     <value>Add an app or a game</value>
   </data>
+  <data name="OrchestrationPage_AddCard.Description" xml:space="preserve">
+    <value>Browse for a program file, or choose one that is open right now.</value>
+  </data>
   <data name="OrchestrationPage_AddAppButton.Content" xml:space="preserve">
-    <value>Add app…</value>
+    <value>Browse for an app…</value>
   </data>
   <data name="OrchestrationPage_AddRunningButton.Content" xml:space="preserve">
-    <value>Add running app…</value>
+    <value>Choose a running app…</value>
   </data>
   <data name="OrchestrationPage_DuplicateInfo.Message" xml:space="preserve">
     <value>This app is already in your list.</value>
   </data>
   <data name="OrchestrationPage_ElevationAdvisory.Message" xml:space="preserve">
-    <value>Deckle only notices apps starting when it runs elevated. Turn on Start elevated in the General settings.</value>
+    <value>Deckle can't see your apps start, so their HDR choices may not apply. Turn on Start elevated in General settings.</value>
   </data>
   <data name="OrchestrationPage_Empty.Text" xml:space="preserve">
-    <value>No apps yet. Add an app or a game to see it here.</value>
+    <value>Your list is empty. Browse for an app, choose a running one, or scan to fill it.</value>
   </data>
   <data name="OrchestrationPage_RemoveButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Remove</value>
+    <value>Remove from list</value>
   </data>
   <data name="OrchestrationPage_RemoveButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Remove</value>
+    <value>Remove from list</value>
   </data>
   <data name="OrchestrationPage_KindCard.Header" xml:space="preserve">
     <value>Type</value>
@@ -115,13 +130,13 @@
     <value>Executable</value>
   </data>
   <data name="OrchestrationPage_ChangeButton.Content" xml:space="preserve">
-    <value>Change…</value>
+    <value>Choose another file…</value>
   </data>
   <data name="OrchestrationPage_MonitorHdrCard.Description" xml:space="preserve">
-    <value>HDR while this app runs</value>
+    <value>HDR while this app runs. Deckle restores it when the app closes.</value>
   </data>
   <data name="OrchestrationPage_HdrLeave.Content" xml:space="preserve">
-    <value>Don't change</value>
+    <value>Leave as is</value>
   </data>
   <data name="OrchestrationPage_HdrOn.Content" xml:space="preserve">
     <value>On</value>
@@ -133,7 +148,7 @@
     <value>Look for new apps and games</value>
   </data>
   <data name="OrchestrationPage_ScanButton.Content" xml:space="preserve">
-    <value>Scan</value>
+    <value>Scan now</value>
   </data>
   <data name="OrchestrationPage_NothingNew.Text" xml:space="preserve">
     <value>Nothing new found</value>
@@ -142,7 +157,7 @@
     <value>Folders to scan</value>
   </data>
   <data name="OrchestrationPage_FoldersExpander.Description" xml:space="preserve">
-    <value>Each subfolder with a game in it becomes a game. Apps lying directly in the folder are added too.</value>
+    <value>Each subfolder that holds a game is added as a game. Apps directly inside the folder are added as apps.</value>
   </data>
   <data name="OrchestrationPage_AddFolderButton.Content" xml:space="preserve">
     <value>Add folder…</value>
@@ -154,7 +169,7 @@
     <value>Remove folder</value>
   </data>
   <data name="RunningProcessDialog.Title" xml:space="preserve">
-    <value>Add a running app</value>
+    <value>Choose a running app</value>
   </data>
   <data name="RunningProcessDialog.PrimaryButtonText" xml:space="preserve">
     <value>Add</value>
@@ -166,6 +181,6 @@
     <value>Choose an app that has a window open.</value>
   </data>
   <data name="RunningProcessDialog_Empty.Text" xml:space="preserve">
-    <value>No other app has a window open, or every open app is already in your list.</value>
+    <value>No app to add. Open the app first, or check that it isn't already in your list.</value>
   </data>
 </root>

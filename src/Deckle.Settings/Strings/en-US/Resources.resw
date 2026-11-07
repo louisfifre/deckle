@@ -462,6 +462,22 @@
   <data name="GeneralThemeDark.Content" xml:space="preserve">
     <value>Dark</value>
   </data>
+  <!-- ADR-0009: Deckle's own animations, apart from the Windows switch. -->
+  <data name="GeneralAnimationsCard.Header" xml:space="preserve">
+    <value>Animations</value>
+  </data>
+  <data name="GeneralAnimationsCard.Description" xml:space="preserve">
+    <value>For the motion Deckle draws itself, such as the overlay outline. Reduced keeps every state visible, without motion.</value>
+  </data>
+  <data name="GeneralAnimationsSystem.Content" xml:space="preserve">
+    <value>Same as Windows</value>
+  </data>
+  <data name="GeneralAnimationsOn.Content" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="GeneralAnimationsReduced.Content" xml:space="preserve">
+    <value>Reduced</value>
+  </data>
   <data name="GeneralAutostartCard.Header" xml:space="preserve">
     <value>Start with Windows</value>
   </data>
@@ -491,7 +507,7 @@
     <value>Version</value>
   </data>
   <data name="GeneralInstallUpdateButton.Content" xml:space="preserve">
-    <value>Install now</value>
+    <value>View update</value>
   </data>
   <data name="GeneralUpdateAvailableLabel_Format" xml:space="preserve">
     <value>Version {0} is available</value>
@@ -503,7 +519,7 @@
     <value>Move the data folder?</value>
   </data>
   <data name="Settings_MoveDataDialog_Content_Format" xml:space="preserve">
-    <value>Deckle copies {0} of data to {1}, then restarts. The old folder is removed afterwards.</value>
+    <value>Deckle copies {0} of data to {1}, then restarts. The old folder is deleted afterwards.</value>
   </data>
   <data name="Settings_MoveDataDialog_PrimaryButton" xml:space="preserve">
     <value>Move and restart</value>

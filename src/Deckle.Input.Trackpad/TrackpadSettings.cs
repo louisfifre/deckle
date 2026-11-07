@@ -22,6 +22,5 @@ public sealed class TrackpadSettings
     /// </summary>
     public bool RecordFrames { get; set; } = false;
 
-    // Grace delay and start threshold are TrackpadEngine constants, not
-    // settings; a legacy "Tuning" object in an existing settings.json is ignored.
+    // Grace delay and start threshold are TrackpadEngine constants, not settings.
 }

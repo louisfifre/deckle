@@ -78,8 +78,9 @@ public partial class App
                                 var response = await dispatcher.PromptAsync(
                                     SetupNotifications.UpdateAvailable, new object?[] { update.Version })
                                     .ConfigureAwait(false);
-                                if (response is { ActionId: "install" }
-                                    or { ActionId: NotificationResponse.BodyActionId })
+                                // Opens the update window only; the window asks
+                                // for the explicit Install.
+                                if (SetupNotifications.ShouldOpenUpdateWindow(response))
                                     dq.TryEnqueue(StartUpdateFlow);
                             }
                         }

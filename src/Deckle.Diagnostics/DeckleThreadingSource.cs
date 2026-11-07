@@ -122,13 +122,10 @@ public sealed class DeckleThreadingSource : DeckleEventSource
            Keywords = (EventKeywords)Keywords.Threading,
            Tags = ObservationTags.Milestone,
            Message = "The UI thread is responsive again")]
-    public void MarshalStallRecovered(int stalls, int worst_wait_ms, long duration_ms)
+    public void MarshalStallRecovered(long stalls, long worst_wait_ms, long duration_ms)
     {
         if (!IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Threading)) return;
-        // Explicit array: with (int, int, long) the compiler would bind the
-        // (int, long, long, long) overload and write every field as a long,
-        // out of step with the declared signature.
-        WriteEvent(EvtMarshalStallRecovered, new object[] { stalls, worst_wait_ms, duration_ms });
+        WriteEvent(EvtMarshalStallRecovered, stalls, worst_wait_ms, duration_ms);
     }
 
     // Specialized: `TryEnqueue` returned false (queue shut down). In the

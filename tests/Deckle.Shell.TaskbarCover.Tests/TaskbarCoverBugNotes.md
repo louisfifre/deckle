@@ -1,5 +1,14 @@
 # Taskbar cover bug notes
 
+## Approach distance read as physical pixels
+
+- **Trigger:** Open the Taskbar cover page on build 0.87.15, where the approach distance is a DIP figure with the unit "px" beside it.
+- **Observed symptom:** Louis reported on 2026-11-07 that the distance was "still in pixels, not in DIP". Established by reading the code: the stored value is a DIP figure (`ApproachDistanceDip`), converted per monitor in `CoverGeometry.ApproachSpan` with `GetDpiForMonitor` (effective DPI), once, in `CoverBand.Place`; the migration of the old level keeps 32/64/128 and is covered by `TaskbarCoverSettingsTests`. Nothing is stored or applied in physical pixels. Not run on screen by me; the 0.87.15 behaviour is read from source.
+- **Cause:** Wording only. The unit label was "px" (the Windows word for an effective pixel), which a person reads as physical pixels, the misreading the DIP change was made to remove. The description ("Set at 100% scale, it grows with your display scale") did not name DIP.
+- **Violated invariant:** The unit shown beside the figure says what the figure is. See the comment on `ApproachDistance.UnitLabel`.
+- **Recurrence cue:** A unit string "px" on a setting that holds a DIP figure, or a new distance setting that copies the old card's unit.
+- **Regression coverage:** `TaskbarCoverSettingsTests.TheUnitBesideTheFigureIsNeverAPixelWord` guards the constant the card reads, not the rendered text; the description's wording has no test.
+
 ## Band left under a re-created or restacked taskbar
 
 - **Trigger:** `TaskbarCreated` (Explorer restart, or a Windhawk mod re-injecting into the taskbar), `WM_SETTINGCHANGE` or `WM_DISPLAYCHANGE` reached the band while it was visible, and `ABM_GETTASKBARPOS` returned the same rect and edge as before.
