@@ -126,6 +126,32 @@ public class SelfCheckTests
         Assert.Equal("failed", report.Outcome);
     }
 
+    // The Autocorrect group's flyout stayed open over the Diagnostics image.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void Verdict_FailsWhenAnImageWasTakenWithAPopupOpen()
+    {
+        SelfCheckReport report = PassingReport();
+        report.Surfaces[0] = report.Surfaces[0] with { PopupsClosed = 1, PopupsStillOpen = 1 };
+
+        report.Judge();
+
+        Assert.Equal("failed", report.Outcome);
+        Assert.Contains(report.Failures, f => f.Contains("popup"));
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public void Verdict_AcceptsAPopupThatWasClosedBeforeTheImage()
+    {
+        SelfCheckReport report = PassingReport();
+        report.Surfaces[0] = report.Surfaces[0] with { PopupsClosed = 1 };
+
+        report.Judge();
+
+        Assert.Equal("passed", report.Outcome);
+    }
+
     [Theory]
     [InlineData("settings")]
     [InlineData("log")]
