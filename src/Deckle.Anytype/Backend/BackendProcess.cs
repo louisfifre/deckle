@@ -142,38 +142,43 @@ internal sealed class BackendProcessHost : IBackendProcessHost
     }
 }
 
+// What one reading of an exited process could establish. A value the process
+// refused to give stays null: a made-up -1 or 0 would read as a real measure.
+internal readonly record struct BackendExit(double? UptimeSeconds, int? ExitCode);
+
 internal static class BackendProcessReport
 {
     // One reading of the exited process for the reconciler and the supervisor
-    // alike. Returns the uptime in seconds, -1 when the start time is unreadable.
-    // The Warning that the log keeps: a first start that died, or the
+    // alike. The Warning that the log keeps: a first start that died, or the
     // serve whose death opens a restart incident. workId pairs it with what it
     // ends.
-    internal static double Stopped(IBackendProcess process, string workId)
+    internal static BackendExit Stopped(IBackendProcess process, string workId)
     {
-        (double uptimeSeconds, int? exitCode) = Read(process);
+        BackendExit exit = Read(process);
         DeckleAnytypeSource.Log.BackendStopped(
-            process.Id, exitCode ?? 0, exitCode.HasValue, uptimeSeconds, workId);
-        return uptimeSeconds;
+            process.Id, exit.ExitCode ?? 0, exit.ExitCode.HasValue,
+            exit.UptimeSeconds ?? 0, workId, exit.UptimeSeconds.HasValue);
+        return exit;
     }
 
     // The same reading for a serve that an attempt of the ladder spawned and
     // that died again: part of the incident already open, so Verbose.
-    internal static double AttemptStopped(IBackendProcess process, string workId)
+    internal static BackendExit AttemptStopped(IBackendProcess process, string workId)
     {
-        (double uptimeSeconds, int? exitCode) = Read(process);
+        BackendExit exit = Read(process);
         DeckleAnytypeSource.Log.BackendRestartAttemptStopped(
-            process.Id, exitCode ?? 0, exitCode.HasValue, uptimeSeconds, workId);
-        return uptimeSeconds;
+            process.Id, exit.ExitCode ?? 0, exit.ExitCode.HasValue,
+            exit.UptimeSeconds ?? 0, workId, exit.UptimeSeconds.HasValue);
+        return exit;
     }
 
-    private static (double UptimeSeconds, int? ExitCode) Read(IBackendProcess process)
+    private static BackendExit Read(IBackendProcess process)
     {
         DateTimeOffset? started = process.StartedAt;
-        double uptimeSeconds = started is { } at
+        double? uptimeSeconds = started is { } at
             ? Math.Max(0, (DateTimeOffset.UtcNow - at).TotalSeconds)
-            : -1;
-        return (uptimeSeconds, process.ExitCode);
+            : null;
+        return new BackendExit(uptimeSeconds, process.ExitCode);
     }
 }
 
