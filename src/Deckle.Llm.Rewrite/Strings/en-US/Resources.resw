@@ -296,7 +296,7 @@
     <value>System prompt</value>
   </data>
   <data name="LlmProfile_SystemPromptBox.PlaceholderText" xml:space="preserve">
-    <value>System prompt sent with every rewrite request...</value>
+    <value>How the model should rewrite your text...</value>
   </data>
   <data name="LlmProfile_SystemPromptBody.Text" xml:space="preserve">
     <value>Instructions sent with every request.</value>
@@ -329,7 +329,7 @@
     <value>Switch profile by length</value>
   </data>
   <data name="LlmLengthSwitchCard.Description" xml:space="preserve">
-    <value>To rewrite only long dictations, set the rewrite profile to (None), then add a step. Ignored for a dictation rewritten while you speak.</value>
+    <value>A longer dictation can use another profile. To rewrite only long dictations, set the rewrite profile to None, then add a step. Not used when rewriting while you speak.</value>
   </data>
   <data name="LlmLengthStep_Header" xml:space="preserve">
     <value>From (characters)</value>
@@ -419,8 +419,23 @@
   <data name="LlmActiveProfileCard.Header" xml:space="preserve">
     <value>Rewrite profile</value>
   </data>
+  <data name="LlmActiveProfileBlock.Caption" xml:space="preserve">
+    <value>Which profile rewrites a dictation when you stop.</value>
+  </data>
+  <data name="LlmActiveProfile_None" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="LlmProfile_NoModel" xml:space="preserve">
+    <value>(no model)</value>
+  </data>
+  <data name="LlmProfile_NoProvider" xml:space="preserve">
+    <value>(no provider)</value>
+  </data>
+  <data name="LlmProfile_Hints_Format" xml:space="preserve">
+    <value>context {0}K  ·  temperature {1}</value>
+  </data>
   <data name="LlmActiveProfileCard.Description" xml:space="preserve">
-    <value>(None) keeps your dictation as spoken.</value>
+    <value>None keeps your dictation as spoken.</value>
   </data>
 
   <!-- LlmDictationSection -->
@@ -428,13 +443,13 @@
     <value>While you dictate</value>
   </data>
   <data name="LlmDictationBlock.Caption" xml:space="preserve">
-    <value>What the active profile does before you stop.</value>
+    <value>What the rewrite profile does before you stop.</value>
   </data>
   <data name="LlmBatchRewriteGroup.Header" xml:space="preserve">
     <value>Rewrite while you speak</value>
   </data>
   <data name="LlmBatchRewriteGroup.Description" xml:space="preserve">
-    <value>Sends each stretch of speech to the active profile as soon as you pause, so little is left to rewrite when you stop. Each batch is rewritten on its own, so a profile that regroups a whole text by subject does not suit it. Switching profile by length does not apply: the length is not known when the first batch leaves.</value>
+    <value>Sends each stretch of speech to the rewrite profile as soon as you pause, so little is left to rewrite when you stop. Needs a rewrite profile: with None, nothing is rewritten while you speak. Each batch is rewritten on its own, so a profile that regroups a whole text by subject does not suit it. The length steps do not apply: the length is not known when the first batch leaves.</value>
   </data>
   <data name="LlmBatchSizeCard.Header" xml:space="preserve">
     <value>Batch size</value>
@@ -475,7 +490,7 @@
     <value>Reset all rewriting settings?</value>
   </data>
   <data name="Settings_ResetLlmDialog_Content" xml:space="preserve">
-    <value>This wipes the providers, profiles, rules, and shortcut bindings, then puts the default providers and profiles back. API keys stay saved. Your custom prompts and parameters will be lost.</value>
+    <value>Every rewriting setting goes back to its default: the switch, the rewrite profile, the length steps and rewriting while you speak. The providers and profiles, shortcuts included, are replaced by the defaults. API keys stay saved. Your custom prompts and parameters will be lost.</value>
   </data>
   <data name="Settings_OllamaStatusMessage_Format" xml:space="preserve">
     <value>Start Ollama or check the provider's address ({0}).</value>
@@ -522,7 +537,7 @@
     <value>Remove this profile?</value>
   </data>
   <data name="Settings_RemoveProfileDialog_Content_Format" xml:space="preserve">
-    <value>"{0}" will be removed. Any rule or shortcut that pointed to it will need a new profile picked. They're not deleted, they go blank until you reassign them.</value>
+    <value>"{0}" and its shortcut will be removed. If it is the rewrite profile, dictations go back to plain transcription. Any length step that used it is removed too.</value>
   </data>
   <data name="Settings_ResetProfilesDialog_Title" xml:space="preserve">
     <value>Reset profiles to defaults?</value>
