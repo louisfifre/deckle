@@ -370,7 +370,7 @@
     <value>Swap it in Settings › {0}.</value>
   </data>
   <data name="Engine_PipelineCrashed_Title" xml:space="preserve">
-    <value>Pipeline crashed</value>
+    <value>Something went wrong</value>
   </data>
   <data name="Engine_PipelineCrashed_Body" xml:space="preserve">
     <value>Try again. Check logs if it persists.</value>
@@ -388,7 +388,7 @@
     <value>No voice detected</value>
   </data>
   <data name="Engine_LowAudio_Body" xml:space="preserve">
-    <value>Nothing above your voice level yet.</value>
+    <value>Speak closer to the mic.</value>
   </data>
   <data name="Engine_TranscriptionFailed_Title" xml:space="preserve">
     <value>Transcription failed</value>
@@ -418,13 +418,13 @@
     <value>Clipboard may be incomplete</value>
   </data>
   <data name="Engine_ClipboardIncomplete_Unverified_Body" xml:space="preserve">
-    <value>Text is copied but unverified.</value>
+    <value>Copied. Check it before pasting.</value>
   </data>
   <data name="Engine_ClipboardIncomplete_LengthMismatch_Title" xml:space="preserve">
     <value>Clipboard may be incomplete</value>
   </data>
   <data name="Engine_ClipboardIncomplete_LengthMismatch_Body" xml:space="preserve">
-    <value>Length mismatch on read-back.</value>
+    <value>May be cut short. Check it.</value>
   </data>
 
   <!-- ─── Microphone errors ──────────────────────────────────────────
@@ -448,7 +448,7 @@
     <value>Microphone unavailable</value>
   </data>
   <data name="MicError_Unavailable_Body_Format" xml:space="preserve">
-    <value>Mic open failed (MMSYSERR {0}).</value>
+    <value>Mic won't open (error {0}).</value>
   </data>
 
   <!-- ─── HUD feedback from the host ─────────────────────────────────
@@ -466,7 +466,7 @@
     <value>Shortcuts unavailable</value>
   </data>
   <data name="Feedback_HotkeysUnavailable_Body" xml:space="preserve">
-    <value>Record from the tray panel.</value>
+    <value>Record from the tray menu.</value>
   </data>
   <data name="Feedback_HotkeyUnavailable_Title_Format" xml:space="preserve">
     <value>{0} shortcut</value>
