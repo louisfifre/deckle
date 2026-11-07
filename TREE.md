@@ -1805,6 +1805,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │       ├── CaptureStopReasons.cs
 │       ├── Deckle.Vision.csproj
 │       ├── DeckleVisionSource.cs
+│       ├── DeckleVisionSource.InterfaceCapture.cs
 │       ├── FrameAnalysisHint.cs
 │       ├── FrameFailure.cs
 │       ├── FrameSampler.cs
@@ -1812,6 +1813,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │       ├── FrameSampler.Readback.cs
 │       ├── FrameSampler.Resources.cs
 │       ├── IFrameAnalyzer.cs
+│       ├── InterfaceCaptureIndex.cs
+│       ├── InterfaceCaptureNames.cs
+│       ├── InterfaceCaptureRun.cs
 │       ├── SampledFrame.cs
 │       ├── ScreenCaptureInterop.cs
 │       ├── ScreenCaptureInterop.D3D11.cs
@@ -1822,7 +1826,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │       ├── ScreenCaptureService.Dispose.cs
 │       ├── ScreenCaptureService.Lifecycle.cs
 │       ├── ScreenCaptureService.Loop.cs
-│       └── ScreenCaptureService.Recovery.cs
+│       ├── ScreenCaptureService.Recovery.cs
+│       ├── WindowSnapshot.cs
+│       └── WindowSnapshotInterop.cs
 ├── tests/
 │   ├── Deckle.Anytype.Mcp.Tests/
 │   │   ├── AnytypeUtilityToolCatalogTests.cs
@@ -2512,6 +2518,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ContentPeakReleaseTests.cs
 │   │   ├── Deckle.Vision.Tests.csproj
 │   │   ├── DeckleVisionSourceTests.cs
+│   │   ├── InterfaceCaptureNamesTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   └── MilestoneClosersTests.cs
 │   ├── Directory.Build.props
