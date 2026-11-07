@@ -782,6 +782,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── MagnitudeGrain.cs
 │   │   │   ├── PreviewBlock.cs
 │   │   │   ├── Readout.cs
+│   │   │   ├── SentinelNumberFormatter.cs
 │   │   │   ├── Setting.cs
 │   │   │   ├── SettingArgs.cs
 │   │   │   ├── SettingDescriptor.cs
@@ -2044,6 +2045,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MagnitudeGrainBugNotes.md
 │   │   ├── MagnitudeGrainIntegerTests.cs
 │   │   ├── MagnitudeGrainTests.cs
+│   │   ├── SentinelNumberFormatterTests.cs
 │   │   ├── SettingFactoryTests.cs
 │   │   └── SettingsExpanderItemsBugNotes.md
 │   ├── Deckle.Chrono.Tests/

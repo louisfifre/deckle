@@ -50,20 +50,15 @@ public sealed partial class SettingsComposer
         var defaultedAnchors = new List<CurveAnchor>();
         if (args.Anchors is { Count: > 0 } anchors)
         {
-            // Two fields per row, the shape the control points take under them.
-            var rows = new StackPanel { Spacing = 8 };
-            StackPanel? row = null;
+            // The legend's one grid, the one the control points take under them,
+            // so both blocks share their width and their columns.
+            var fields = new List<FrameworkElement>();
             foreach (CurveAnchor anchor in anchors)
             {
-                if (row is null || row.Children.Count == 2)
-                {
-                    row = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
-                    rows.Children.Add(row);
-                }
-                row.Children.Add(BuildAnchorField(anchor, anchorRefreshers));
+                fields.Add(BuildAnchorField(anchor, anchorRefreshers));
                 if (anchor.Default is not null) defaultedAnchors.Add(anchor);
             }
-            editor.Legend.Children.Add(rows);
+            editor.Legend.Children.Add(CurveEditor.FieldGrid(fields));
         }
 
         bool AnchorsDirty()
@@ -104,7 +99,8 @@ public sealed partial class SettingsComposer
     }
 
     // A legend field: the anchor's header as caption, its description as tooltip,
-    // a NumberBox at the magnitude grain of its range. The box writes at its
+    // a NumberBox at the magnitude grain of its range, at the legend's one width
+    // (CurveEditor.LabelledField sets it). The box writes at its
     // commit (ValueChanged on a NumberBox) and is re-read on every refresh under
     // the model-sync guard, like a Magnitude card's field.
     private FrameworkElement BuildAnchorField(CurveAnchor anchor, List<Action> refreshers)
@@ -116,7 +112,6 @@ public sealed partial class SettingsComposer
             Maximum = anchor.Maximum,
             SmallChange = step,
             LargeChange = step * 10,
-            Width = 112,
             SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
             ValidationMode = NumberBoxValidationMode.InvalidInputOverwritten,
             NumberFormatter = new DecimalFormatter

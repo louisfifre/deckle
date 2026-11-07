@@ -97,19 +97,30 @@ public partial class RecordingViewModel : ObservableObject
     // alongside the verdict.
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasMicCheckNote))]
     public partial bool IsMeasuringMic { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasMicCheckNote))]
     public partial bool AdviceRecommended { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasMicCheckNote))]
     public partial bool AdviceMarginal { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasMicCheckNote))]
     public partial bool AdviceNotNeeded { get; set; }
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasMicCheckNote))]
     public partial bool AdviceError { get; set; }
+
+    // Whether the check has a note to show: its progress while it measures, or
+    // its verdict once done. The page shows the row that holds the InfoBars
+    // only then, so a closed row leaves no empty padding in the fold.
+    public bool HasMicCheckNote =>
+        IsMeasuringMic || AdviceRecommended || AdviceMarginal || AdviceNotNeeded || AdviceError;
 
     [ObservableProperty]
     public partial string MicResultDetail { get; set; } = "";

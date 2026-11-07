@@ -10,13 +10,19 @@ namespace Deckle.Audio;
 
 // ── VoiceLevelMeter ───────────────────────────────────────────────────────────
 //
-// The instrument beside the Voice level field on the Recording page: a live
+// The instrument inside the Voice level card on the Recording page: a live
 // meter of the microphone on a fixed dB track, with the voice level (the voice
 // detector's exit) marked, and the entry level above it when the detector's
 // entry margin is positive (with the default 0 they coincide), so the user sets the
-// level by eye against their own voice and room. It shows and never writes:
-// nothing is recorded, nothing persists, and Listen is page state, not a
-// setting.
+// level by eye against their own voice and room. The meter shows and never
+// writes: nothing is recorded, and Listen is page state, not a setting.
+//
+// Under the track, a slider on the meter's own scale writes the voice level,
+// the same value as the field in the card's header row (2026-11-07 review,
+// change 4): the thumb is the mark, so dragging it shows what passes over the
+// level. While the thumb is dragged the marks and the meter's detector follow
+// it; the value is written once, at the release (GestureHold, the composer's
+// gesture rule), and a keyboard step writes at once.
 //
 // The bar follows each device packet (CaptureLevel, about 10 ms), with a fast
 // rise and a slow fall (VoiceLevelMeterScale.Ballistic), so it moves with the
@@ -90,6 +96,11 @@ public sealed partial class VoiceLevelMeter : UserControl
     private double _peakHeldSince;
     private double _canvasWidth;
 
+    // The slider's gesture and the guard that keeps a programmatic Value set
+    // (the model moving it, or the coercion of a bound change) from writing.
+    private readonly GestureHold _sliderHold = new();
+    private bool _syncingSlider;
+
     public VoiceLevelMeter()
     {
         InitializeComponent();
@@ -111,7 +122,86 @@ public sealed partial class VoiceLevelMeter : UserControl
 
         ScaleMinText.Text = FormatDbfs(VoiceLevelMeterScale.MinDbfs);
         ScaleMaxText.Text = FormatDbfs(VoiceLevelMeterScale.MaxDbfs);
+        ConfigureSlider();
+        ApplyThumbInset();
         RebuildDetector();
+    }
+
+    // ── Slider ────────────────────────────────────────────────────────────────
+
+    private void ConfigureSlider()
+    {
+        _syncingSlider = true;
+        try
+        {
+            LevelSlider.Minimum = VoiceLevelMeterScale.MinDbfs;
+            LevelSlider.Maximum = VoiceLevelMeterScale.MaxDbfs;
+            LevelSlider.StepFrequency = VoiceLevelMeterScale.SliderStepDb;
+            LevelSlider.SmallChange = VoiceLevelMeterScale.SliderStepDb;
+            LevelSlider.LargeChange = VoiceLevelMeterScale.SliderStepDb * 5;
+        }
+        finally { _syncingSlider = false; }
+
+        // The Thumb takes the press and captures the pointer, so the slider sees
+        // these only with handledEventsToo. Release, capture loss and cancel all
+        // end the gesture, so the hold cannot stay armed once the pointer is gone.
+        LevelSlider.AddHandler(PointerPressedEvent,
+            new Microsoft.UI.Xaml.Input.PointerEventHandler((_, _) => _sliderHold.Begin()), handledEventsToo: true);
+        var endGesture = new Microsoft.UI.Xaml.Input.PointerEventHandler((_, _) =>
+        {
+            if (_sliderHold.End() is double held) WriteVoiceLevel(held);
+        });
+        LevelSlider.AddHandler(PointerReleasedEvent, endGesture, handledEventsToo: true);
+        LevelSlider.AddHandler(PointerCaptureLostEvent, endGesture, handledEventsToo: true);
+        LevelSlider.AddHandler(PointerCanceledEvent, endGesture, handledEventsToo: true);
+    }
+
+    // The thumb's centre travels from half a thumb inside the slider's left edge
+    // to half a thumb inside its right edge; the scale row, the track and the
+    // captions take the same inset, so a value sits at one x on all of them.
+    // The width is the theme's own (SliderHorizontalThumbWidth), read rather
+    // than copied; 18, its WinUI value, only if the resource is missing.
+    private void ApplyThumbInset()
+    {
+        double thumb = 18.0;
+        try
+        {
+            // The indexer searches the merged XamlControlsResources, where the
+            // theme's slider metrics live; a missing key throws.
+            if (Application.Current.Resources["SliderHorizontalThumbWidth"] is double width) thumb = width;
+        }
+        catch (Exception) { }
+        var inset = new Thickness(thumb / 2, 0, thumb / 2, 0);
+        ScaleRow.Margin = inset;
+        MeterCanvas.Margin = inset;
+        CaptionCanvas.Margin = inset;
+    }
+
+    private void LevelSlider_ValueChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        if (_syncingSlider) return;
+        // The marks and the meter's own detector follow the thumb at once; the
+        // model waits for the gesture's end.
+        ShowLevel(e.NewValue);
+        if (_sliderHold.Offer(e.NewValue)) WriteVoiceLevel(e.NewValue);
+    }
+
+    private void WriteVoiceLevel(double dbfs)
+    {
+        if (_viewModel is null || _viewModel.VoiceLevelDbfs == dbfs) return;
+        _viewModel.VoiceLevelDbfs = dbfs;
+    }
+
+    // The thumb follows the model, clamped to the scale by the slider itself;
+    // the guard keeps the coerced value from writing back.
+    private void SyncSlider(double dbfs)
+    {
+        _syncingSlider = true;
+        try
+        {
+            if (LevelSlider.Value != dbfs) LevelSlider.Value = dbfs;
+        }
+        finally { _syncingSlider = false; }
     }
 
     // The page's ViewModel: the voice level the marks follow and the microphone
@@ -304,14 +394,23 @@ public sealed partial class VoiceLevelMeter : UserControl
 
     // ── Detector and marks ────────────────────────────────────────────────────
 
-    // A detector on the current voice level, its two levels for the marks. The
-    // new detector starts silent, like a dictation's; the next frame decides.
-    // A cleared field (NaN) keeps the marks where they were.
+    // A detector on the current voice level, its two levels for the marks, and
+    // the thumb on the same value. The new detector starts silent, like a
+    // dictation's; the next frame decides. A cleared field (NaN) keeps the
+    // marks where they were.
     private void RebuildDetector()
     {
         double level = _viewModel?.VoiceLevelDbfs ?? CaptureSettingsService.Instance.Current.VoiceLevelDbfs;
         if (double.IsNaN(level)) return;
 
+        SyncSlider(level);
+        ShowLevel(level);
+    }
+
+    // The marks and the meter's detector on a level, the model's or the one
+    // under a thumb being dragged.
+    private void ShowLevel(double level)
+    {
         var detector = new VoiceDetector(level);
         lock (_levelLock)
         {

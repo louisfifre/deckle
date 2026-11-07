@@ -12,8 +12,8 @@ namespace Deckle.Audio;
 //
 // The microphone ComboBox (runtime PortAudio enumeration, the page's untitled top
 // card) and the mic-check and listening-test commands + InfoBars (diagnostic
-// readouts in the Checks section, not values) stay hand-authored in the page —
-// neither fits the flat get/set descriptor model.
+// readouts inside the pre-processing fold, not values) stay hand-authored in
+// the page — neither fits the flat get/set descriptor model.
 public partial class RecordingViewModel
 {
     // Voice level — a number field in dBFS, no slider: the value is read
@@ -61,19 +61,26 @@ public partial class RecordingViewModel
             defaultValue: () => new CaptureSettings().ExclusiveMode),
     ];
 
-    // Transcription pre-processing (the DSP black box). A single opt-in toggle.
+    // Transcription pre-processing (the DSP black box), a single opt-in toggle
+    // composed as the master of a fold with no composed child. The fold holds
+    // the two checks that serve it, the level check and the listening test,
+    // which the page adds to its items by hand (they are commands, not values).
+    // The composer gates only its own children on the master, so the checks
+    // stay visible with the toggle off: they are what tells the person whether
+    // to turn it on (2026-11-07 review, change 3).
     // The default selector reads the POCO initializer (new PreprocessingSettings().Enabled),
     // so the resettable default and the persisted default are the one same literal —
-    // the per-card reset goes active exactly when the toggle leaves that value.
+    // the fold's reset goes active exactly when the toggle leaves that value.
     public IReadOnlyList<SettingDescriptor> PreprocessingSettings =>
     [
-        Setting.Toggle("RecordingPagePreprocessingCard",
+        Setting.Group("RecordingPagePreprocessingCard",
             () => PreprocessingEnabled,
             value => PreprocessingEnabled = value,
+            [],
             defaultValue: () => new PreprocessingSettings().Enabled),
     ];
 
-    // The mic level check above measures the RMS of a 5 s sample and compares
+    // The mic level check in that fold measures the RMS of a 5 s sample and compares
     // it to the preprocessing target, to advise whether turning the DSP on is
     // worth it, and says how far it sits above or below the voice level. It
     // sets nothing.
