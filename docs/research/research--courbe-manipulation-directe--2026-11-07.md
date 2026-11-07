@@ -46,6 +46,12 @@ Pas de code ici. Ce qu'il faudrait, et ce que ce travail prépare :
 5. **L'édition** : ajouter un point au survol de la courbe, le retirer au clavier (Suppr) ou en le tirant hors du dessin, 6 au plus ; les poignées carrées de ce travail sont déjà la forme d'un point sur la courbe. Les poignées rondes hors courbe disparaissent avec la Bézier.
 6. **L'emplacement `PlotFooter`** sert à Ambient pour une vue zoomée du même genre (une transition, à l'échelle d'une seconde).
 
-## 4. Ce qui n'est pas vérifié
+## 4. Ce que la construction a ajouté
+
+- **Défaut probable corrigé en passant** : le glisser d'un point de contrôle repartait à chaque pas de la valeur arrondie au centième. `DragDeltaEventArgs.HorizontalChange` est le déplacement depuis le pas précédent (**établi**, doc UWP de la même classe), donc un glisser lent, à pas plus petits qu'un demi-centième, revenait sans cesse à sa valeur et restait sur place. Le pointeur s'accumule maintenant sans arrondi ; seule la valeur est arrondie. Les poignées d'extrémité et de la bande suivent la même règle. **Incertain** : le défaut n'a pas été vu à l'écran, il est déduit du code.
+- **Recherche** : les mots qui trouvaient les deux cartes retirées (marge, parole minimale) trouvent maintenant la carte de la courbe.
+- Les légendes des deux champs prennent l'unité, comme celles des ancres (« Cut margin, s », « Minimum speech, s ») ; la bande a ses propres mots (« minimum speech », « kept », « dropped », « cut »).
+
+## 5. Ce qui n'est pas vérifié
 
 Tout le rendu : le dépôt valide par un build sans lancement, et l'application résidente n'est ni arrêtée ni relancée. Les tailles (hauteur de la bande, lisibilité de 0,15 s, place des libellés dans la bande quand une valeur est petite), le comportement du glisser (finesse, figement du cadre), la lecture par Narrateur des poignées, et l'enchaînement des focus au clavier sont à regarder à l'écran.
