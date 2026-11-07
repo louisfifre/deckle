@@ -18,7 +18,16 @@ namespace Deckle.Benchmark.ModelCompare;
 // results/<stamp>/campaign.json, so a resumed run and the dashboard read the
 // same matrix even if the corpus grew or a prompt changed in Settings.
 
-sealed record CampaignCell(string Profile, string[] Buckets, string? JudgeNote);
+// A cell runs one prompt on some buckets. By default the prompt is the live
+// one of `Profile`, read from settings.json; `PromptFile` runs a candidate
+// wording instead, under the same profile (so the export still says which
+// production profile it stands for) and with its own judge note, since a
+// candidate may allow what the live prompt forbids. `Key` is what the rows
+// record as their prompt: the profile's name, or the file's, or `Name`.
+sealed record CampaignCell(string Profile, string[] Buckets, string? JudgeNote, string? Name = null, string? PromptFile = null)
+{
+    public string Key => Name ?? (PromptFile is null ? Profile : Path.GetFileNameWithoutExtension(PromptFile));
+}
 
 sealed record CampaignJudge(string Model, int Batch);
 
@@ -51,6 +60,8 @@ static class CampaignFile
         if (campaign.Iterations < 1) throw new ArgumentException("A campaign runs at least one iteration.");
         if (campaign.Cells is not { Length: > 0 }) throw new ArgumentException("A campaign has at least one cell.");
         if (campaign.Judge is null || campaign.Judge.Batch < 1) throw new ArgumentException("A campaign names its judge model and a batch size of at least 1.");
+        var duplicate = campaign.Cells.GroupBy(c => c.Key, StringComparer.OrdinalIgnoreCase).FirstOrDefault(g => g.Count() > 1);
+        if (duplicate is not null) throw new ArgumentException($"Two cells share the prompt key '{duplicate.Key}': give one of them a name.");
         return campaign;
     }
 
@@ -84,9 +95,13 @@ static class CampaignFile
         var prompts = new Dictionary<string, FrozenPrompt>(StringComparer.OrdinalIgnoreCase);
         foreach (var cell in campaign.Cells)
         {
-            if (prompts.ContainsKey(cell.Profile)) continue;
-            var variant = Corpus.LoadProfilePrompt(cell.Profile);
-            prompts[cell.Profile] = new FrozenPrompt(cell.Profile, variant.Name, Hash(variant.SystemPrompt), variant.SystemPrompt);
+            if (prompts.ContainsKey(cell.Key)) continue;
+            // A file candidate is named by the cell's key, a live profile by
+            // Corpus's "profile:<name>", so a row's prompt says which it was.
+            var variant = cell.PromptFile is { } file
+                ? Corpus.LoadPromptFile(file) with { Name = cell.Key }
+                : Corpus.LoadProfilePrompt(cell.Profile);
+            prompts[cell.Key] = new FrozenPrompt(cell.Profile, variant.Name, Hash(variant.SystemPrompt), variant.SystemPrompt);
         }
 
         var resolved = new ResolvedCampaign(campaign, dictations, prompts, DateTimeOffset.Now);

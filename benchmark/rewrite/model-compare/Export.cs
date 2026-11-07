@@ -123,9 +123,11 @@ static partial class Export
             });
         }
 
+        // Grouped by prompt as well as profile: a campaign can run several
+        // wordings of one profile side by side, and their cells must not merge.
         var cells = generations
-            .GroupBy(g => (Profile: ProfileOf(g.Prompt), g.Bucket, g.Id, g.Model))
-            .OrderBy(c => c.Key.Profile).ThenBy(c => c.Key.Bucket).ThenBy(c => c.Key.Id).ThenBy(c => c.Key.Model)
+            .GroupBy(g => (Profile: ProfileOf(g.Prompt), g.Prompt, g.Bucket, g.Id, g.Model))
+            .OrderBy(c => c.Key.Profile).ThenBy(c => c.Key.Prompt).ThenBy(c => c.Key.Bucket).ThenBy(c => c.Key.Id).ThenBy(c => c.Key.Model)
             .Select(c =>
             {
                 var ok = c.Where(g => g.Error is null).ToList();
@@ -137,6 +139,7 @@ static partial class Export
                 return new
                 {
                     profile = c.Key.Profile,
+                    prompt = c.Key.Prompt,
                     bucket = c.Key.Bucket,
                     id = c.Key.Id,
                     model = c.Key.Model,

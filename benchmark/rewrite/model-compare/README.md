@@ -34,7 +34,12 @@ their spread. A campaign file under `campaigns/` declares it:
   (the app picks a profile by word count), never on sizes it is not meant
   for. `judge_note` tells the judge what the profile is allowed to do with
   order, so Arrangement's regrouping by theme is not read as an omission plus
-  an addition.
+  an addition. A cell runs the live prompt of its `profile` unless it names a
+  `prompt_file`: then that wording runs under the same profile, recorded as
+  the file's name (or the cell's `name`), with its own `judge_note`, so
+  several wordings of one profile compare in one run
+  (`campaigns/lissage-lean.json` runs the live Lissage beside two shorter
+  candidates). Two cells never share a prompt key.
 - **dictations**: `take_per_bucket` dictations per bucket, the ones closest
   to the bucket's median word count (ties to the most recent), so a « short »
   cell measures a typical short dictation and not the three-word one that

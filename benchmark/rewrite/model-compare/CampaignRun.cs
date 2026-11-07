@@ -33,7 +33,7 @@ static class CampaignRun
         foreach (var (bucket, ids) in resolved.Dictations)
             Console.WriteLine($"  {bucket,-10} {string.Join(", ", ids.Select(id => $"{Judge.Short(id)} ({raw[id].WordsIn} w)"))}");
         foreach (var cell in campaign.Cells)
-            Console.WriteLine($"  {cell.Profile,-12} on {string.Join("+", cell.Buckets)}  prompt {resolved.Prompts[cell.Profile].Hash}");
+            Console.WriteLine($"  {cell.Key,-20} on {string.Join("+", cell.Buckets)}  prompt {resolved.Prompts[cell.Key].Hash} ({resolved.Prompts[cell.Key].SystemPrompt.Length} chars)");
         Console.WriteLine($"-> {Path.GetFullPath(outDir)}");
         Console.WriteLine();
 
@@ -75,7 +75,7 @@ static class CampaignRun
         foreach (string id in resolved.Dictations[bucket])
         foreach (string model in resolved.Campaign.Models)
         for (int iteration = 1; iteration <= resolved.Campaign.Iterations; iteration++)
-            items.Add(new WorkItem(raw[id], resolved.Prompts[cell.Profile], model, iteration));
+            items.Add(new WorkItem(raw[id], resolved.Prompts[cell.Key], model, iteration));
 
         var pending = items.Where(i => !done.Contains(GenKey(i))).ToList();
         Console.WriteLine($"generate: {items.Count} calls planned, {items.Count - pending.Count} already done, {pending.Count} to run");
@@ -179,7 +179,7 @@ static class CampaignRun
             StringComparer.Ordinal);
 
         var profileNotes = resolved.Campaign.Cells
-            .ToDictionary(c => resolved.Prompts[c.Profile].Name, c => c.JudgeNote, StringComparer.OrdinalIgnoreCase);
+            .ToDictionary(c => resolved.Prompts[c.Key].Name, c => c.JudgeNote, StringComparer.OrdinalIgnoreCase);
 
         int batchSize = resolved.Campaign.Judge.Batch;
         var batches = new List<(string Key, List<GenerationRow> Rows)>();
