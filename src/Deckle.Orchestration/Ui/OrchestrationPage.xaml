@@ -155,14 +155,17 @@
                                  catalog:InfoBarLayout.CollapseWhenClosed="True"
                                  Margin="0,0,0,8" />
 
-                        <StackPanel Orientation="Horizontal"
-                                    Spacing="8"
-                                    Margin="0,0,0,8">
-                            <Button x:Uid="OrchestrationPage_AddAppButton"
-                                    Click="OnAddAppClick" />
-                            <Button x:Uid="OrchestrationPage_AddRunningButton"
-                                    Click="OnAddRunningClick" />
-                        </StackPanel>
+                        <!-- A section is cards: the two ways to add by hand sit in
+                             one, as the Scan card does above. -->
+                        <controls:SettingsCard x:Uid="OrchestrationPage_AddCard">
+                            <StackPanel Orientation="Horizontal"
+                                        Spacing="8">
+                                <Button x:Uid="OrchestrationPage_AddAppButton"
+                                        Click="OnAddAppClick" />
+                                <Button x:Uid="OrchestrationPage_AddRunningButton"
+                                        Click="OnAddRunningClick" />
+                            </StackPanel>
+                        </controls:SettingsCard>
 
                         <!-- One inline channel for "already in your list"; closed on
                              the next successful gesture or navigation. -->
