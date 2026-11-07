@@ -511,7 +511,7 @@ public sealed class RawInputHost : IDisposable
 
     private void TrackRollup(ContactFrame frame, ContactFrameAssembler assembler)
     {
-        if (!DeckleInputSource.IsInputActivityDetailEnabled(
+        if (!DeckleInputSource.IsInputActivitySummaryEnabled(
                 System.Diagnostics.Tracing.EventLevel.Verbose,
                 (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Heartbeat))
         {

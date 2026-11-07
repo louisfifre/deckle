@@ -5,7 +5,7 @@ namespace Deckle.Diagnostics.Logging;
 // Process-wide activity state for a complete transcription workflow: dictation
 // (monolithic or streaming) and file transcription, including final delivery.
 // Sister to AmbientCaptureGate, same shape, same rationale: transcription
-// producers combine it with LoggingSettings.LogTranscriptionActivity before
+// producers combine it with LoggingSettings.TranscriptionVerbosity before
 // emitting Verbose detail, and the gate itself emits no event.
 public static class TranscriptionActivityGate
 {

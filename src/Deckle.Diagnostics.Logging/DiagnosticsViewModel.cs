@@ -14,19 +14,19 @@ public partial class DiagnosticsViewModel : ObservableObject
     private bool _isSyncing;
 
     [ObservableProperty]
-    public partial bool LogAmbientCaptureActivity { get; set; }
+    public partial OperationalLogVerbosity AmbientVerbosity { get; set; }
 
     [ObservableProperty]
-    public partial bool LogTranscriptionActivity { get; set; }
+    public partial OperationalLogVerbosity TranscriptionVerbosity { get; set; }
 
     [ObservableProperty]
-    public partial bool LogAutocorrectActivity { get; set; }
+    public partial OperationalLogVerbosity AutocorrectVerbosity { get; set; }
 
     [ObservableProperty]
-    public partial bool LogInputActivity { get; set; }
+    public partial OperationalLogVerbosity InputVerbosity { get; set; }
 
     [ObservableProperty]
-    public partial bool LogWindowingActivity { get; set; }
+    public partial OperationalLogVerbosity WindowingVerbosity { get; set; }
 
     // ── Telemetry — opt-in disk persistence ─────────────────────────────────
 
@@ -40,38 +40,38 @@ public partial class DiagnosticsViewModel : ObservableObject
     [ObservableProperty]
     public partial string TelemetryStorageDirectory { get; set; }
 
-    partial void OnLogAmbientCaptureActivityChanged(bool value)
+    partial void OnAmbientVerbosityChanged(OperationalLogVerbosity value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogAmbientCaptureActivity", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Logging.AmbientVerbosity", value.ToString());
         PushLoggingToSettings();
     }
 
-    partial void OnLogTranscriptionActivityChanged(bool value)
+    partial void OnTranscriptionVerbosityChanged(OperationalLogVerbosity value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogTranscriptionActivity", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Logging.TranscriptionVerbosity", value.ToString());
         PushLoggingToSettings();
     }
 
-    partial void OnLogAutocorrectActivityChanged(bool value)
+    partial void OnAutocorrectVerbosityChanged(OperationalLogVerbosity value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogAutocorrectActivity", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Logging.AutocorrectVerbosity", value.ToString());
         PushLoggingToSettings();
     }
 
-    partial void OnLogInputActivityChanged(bool value)
+    partial void OnInputVerbosityChanged(OperationalLogVerbosity value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogInputActivity", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Logging.InputVerbosity", value.ToString());
         PushLoggingToSettings();
     }
 
-    partial void OnLogWindowingActivityChanged(bool value)
+    partial void OnWindowingVerbosityChanged(OperationalLogVerbosity value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Logging.LogWindowingActivity", value.ToString());
+        DeckleSettingsUxSource.Log.SettingChanged("Logging.WindowingVerbosity", value.ToString());
         PushLoggingToSettings();
     }
 
@@ -109,11 +109,11 @@ public partial class DiagnosticsViewModel : ObservableObject
         // The placeholders read the defaults from the settings classes that
         // own them, the same source the resets below use.
         var logging = new LoggingSettings();
-        LogAmbientCaptureActivity = logging.LogAmbientCaptureActivity;
-        LogTranscriptionActivity = logging.LogTranscriptionActivity;
-        LogAutocorrectActivity = logging.LogAutocorrectActivity;
-        LogInputActivity = logging.LogInputActivity;
-        LogWindowingActivity = logging.LogWindowingActivity;
+        AmbientVerbosity = logging.AmbientVerbosity;
+        TranscriptionVerbosity = logging.TranscriptionVerbosity;
+        AutocorrectVerbosity = logging.AutocorrectVerbosity;
+        InputVerbosity = logging.InputVerbosity;
+        WindowingVerbosity = logging.WindowingVerbosity;
         ApplicationLogToDisk = logging.ApplicationLogToDisk;
         RecordWheelEvents = new Deckle.Input.MouseWheelSettings().RecordEvents;
         TelemetryStorageDirectory = new TelemetrySettings().StorageDirectory;
@@ -127,11 +127,11 @@ public partial class DiagnosticsViewModel : ObservableObject
         try
         {
             var l = LoggingSettingsService.Instance.Current;
-            LogAmbientCaptureActivity = l.LogAmbientCaptureActivity;
-            LogTranscriptionActivity = l.LogTranscriptionActivity;
-            LogAutocorrectActivity = l.LogAutocorrectActivity;
-            LogInputActivity = l.LogInputActivity;
-            LogWindowingActivity = l.LogWindowingActivity;
+            AmbientVerbosity = l.AmbientVerbosity;
+            TranscriptionVerbosity = l.TranscriptionVerbosity;
+            AutocorrectVerbosity = l.AutocorrectVerbosity;
+            InputVerbosity = l.InputVerbosity;
+            WindowingVerbosity = l.WindowingVerbosity;
             ApplicationLogToDisk = l.ApplicationLogToDisk;
             RecordWheelEvents = Deckle.Input.MouseWheelSettingsService.Instance.Current.RecordEvents;
 
@@ -147,11 +147,11 @@ public partial class DiagnosticsViewModel : ObservableObject
     private void PushLoggingToSettings()
     {
         var l = LoggingSettingsService.Instance.Current;
-        l.LogAmbientCaptureActivity = LogAmbientCaptureActivity;
-        l.LogTranscriptionActivity = LogTranscriptionActivity;
-        l.LogAutocorrectActivity = LogAutocorrectActivity;
-        l.LogInputActivity = LogInputActivity;
-        l.LogWindowingActivity = LogWindowingActivity;
+        l.AmbientVerbosity = AmbientVerbosity;
+        l.TranscriptionVerbosity = TranscriptionVerbosity;
+        l.AutocorrectVerbosity = AutocorrectVerbosity;
+        l.InputVerbosity = InputVerbosity;
+        l.WindowingVerbosity = WindowingVerbosity;
         l.ApplicationLogToDisk = ApplicationLogToDisk;
         LoggingSettingsService.Instance.Save();
     }
@@ -175,11 +175,11 @@ public partial class DiagnosticsViewModel : ObservableObject
         _isSyncing = true;
         try
         {
-            LogAmbientCaptureActivity = defaults.LogAmbientCaptureActivity;
-            LogTranscriptionActivity = defaults.LogTranscriptionActivity;
-            LogAutocorrectActivity = defaults.LogAutocorrectActivity;
-            LogInputActivity = defaults.LogInputActivity;
-            LogWindowingActivity = defaults.LogWindowingActivity;
+            AmbientVerbosity = defaults.AmbientVerbosity;
+            TranscriptionVerbosity = defaults.TranscriptionVerbosity;
+            AutocorrectVerbosity = defaults.AutocorrectVerbosity;
+            InputVerbosity = defaults.InputVerbosity;
+            WindowingVerbosity = defaults.WindowingVerbosity;
         }
         finally { _isSyncing = false; }
         PushLoggingToSettings();

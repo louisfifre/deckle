@@ -43,13 +43,17 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtFileTranscriptionCompleted);
     }
 
+    // The take's latency figures: a summary record, admitted from the Summary
+    // verbosity, and a table row so that takes compare with each other.
     [Event(EvtPipelineTimings,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "audio_s={0:F1} | model_load_ms={1} | hotkey_to_capture_ms={2} | record_drain_ms={3} | stop_to_pipeline_ms={4} | whisper_init_ms={5} | whisper_ms={6} | llm_ms={7} | clipboard_ms={8} | paste_ms={9}")]
+           Message = "audio_s={0,6:F1} | model_load_ms={1,6} | hotkey_to_capture_ms={2,5} | record_drain_ms={3,5} | stop_to_pipeline_ms={4,6} | whisper_init_ms={5,6} | whisper_ms={6,6} | llm_ms={7,6} | clipboard_ms={8,5} | paste_ms={9,5}")]
     public void PipelineTimings(double audio_s, long model_load_ms, long hotkey_to_capture_ms, long record_drain_ms, long stop_to_pipeline_ms, long whisper_init_ms, long whisper_ms, long llm_ms, long clipboard_ms, long paste_ms)
     {
-        if (!IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline)) return;
+        if (!OperationalLogAdmission.IsSummaryEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
         WriteEvent(EvtPipelineTimings, audio_s, model_load_ms, hotkey_to_capture_ms, record_drain_ms, stop_to_pipeline_ms, whisper_init_ms, whisper_ms, llm_ms, clipboard_ms, paste_ms);
     }
 
@@ -100,7 +104,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPipelineLlmMetrics,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "ollama_load_ms={0} | prompt_eval_ms={1} | eval_ms={2} | prompt_tokens={3} | eval_tokens={4}")]
+           Message = "ollama_load_ms={0,6} | prompt_eval_ms={1,6} | eval_ms={2,6} | prompt_tokens={3,6} | eval_tokens={4,6}")]
     public void PipelineLlmMetrics(long ollama_load_ms, long prompt_eval_ms, long eval_ms, int prompt_tokens, int eval_tokens)
     {
         if (OperationalLogAdmission.IsDetailEnabled(
@@ -109,13 +113,15 @@ public sealed partial class DeckleWhispSource
             WriteEvent(EvtPipelineLlmMetrics, ollama_load_ms, prompt_eval_ms, eval_ms, prompt_tokens, eval_tokens);
     }
 
+    // What the take delivered: a summary record. The profile is a name the
+    // person chose, of any length, so it closes the row and moves no column.
     [Event(EvtPipelineOutputs,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "n_seg={0} | chars={1} | words={2} | strategy={3} | profile={4} | outcome={5}")]
+           Message = "n_seg={0,3} | chars={1,6} | words={2,5} | strategy={3,-7} | outcome={5,-13} | profile={4}")]
     public void PipelineOutputs(int n_seg, int chars, int words, string strategy, string profile, string outcome)
     {
-        if (OperationalLogAdmission.IsDetailEnabled(
+        if (OperationalLogAdmission.IsSummaryEnabled(
                 OperationalLogActivity.Transcription, this,
                 EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
             WriteEvent(EvtPipelineOutputs, n_seg, chars, words, strategy, profile, outcome);

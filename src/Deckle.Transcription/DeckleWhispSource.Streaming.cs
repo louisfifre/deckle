@@ -19,10 +19,13 @@ public sealed partial class DeckleWhispSource
     [Event(EvtStreamingDrainedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "utterances={0} | audio_s={1:F1} | whisper_ms={2} | words={3} | n_seg={4}")]
+           Message = "utterances={0,3} | audio_s={1,6:F1} | whisper_ms={2,6} | words={3,5} | n_seg={4,3}")]
     public void StreamingDrainedDetail(int n_utterances, double audio_s, long whisper_ms, int words, int n_seg)
     {
-        if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
+        // The take's utterance totals: a summary record.
+        if (OperationalLogAdmission.IsSummaryEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
             WriteEvent(EvtStreamingDrainedDetail, n_utterances, audio_s, whisper_ms, words, n_seg);
     }
 
@@ -43,7 +46,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtUtteranceSkippedRepeat,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "index={0} | ex_type={1} | ex_message={2}")]
+           Message = "index={0,3} | ex_type={1} | ex_message={2}")]
     public void UtteranceSkippedRepeat(int index, string ex_type, string ex_message)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
@@ -95,7 +98,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtUtteranceSentToBackend,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "index={0} | audio_ms={1} | rms_dbfs={2:F1} | peak_dbfs={3:F1} | pad_ms={4}")]
+           Message = "index={0,3} | audio_ms={1,6} | rms_dbfs={2,6:F1} | peak_dbfs={3,6:F1} | pad_ms={4,4}")]
     public void UtteranceSentToBackend(int index, int audio_ms, double rms_dbfs, double peak_dbfs, int pad_ms)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
@@ -107,22 +110,27 @@ public sealed partial class DeckleWhispSource
     [Event(EvtSegmenterUtteranceEmitted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "index={0} | voiced_frames={1} | kept_frames={2} | start_s={3:F2} | end_s={4:F2} | hangover_used_ms={5}")]
+           Message = "index={0,3} | voiced_frames={1,5} | kept_frames={2,5} | start_s={3,7:F2} | end_s={4,7:F2} | hangover_used_ms={5,5}")]
     public void SegmenterUtteranceEmitted(int index, int voiced_frames, int kept_frames, double start_s, double end_s, int hangover_used_ms)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
             WriteEvent(EvtSegmenterUtteranceEmitted, index, voiced_frames, kept_frames, start_s, end_s, hangover_used_ms);
     }
 
-    // Once per second during streaming capture, instead of one event per frame.
+    // Once per second during streaming capture, instead of one event per frame:
+    // the take's heartbeat, so the Summary verbosity admits it. rms_dbfs is the
+    // energy mean of the second and rms_max_dbfs its loudest 50 ms frame; state
+    // is the segmenter's at the tick. A table row (DictationTableTemplateTests).
     [Event(EvtStreamingHeartbeat,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "state={0,-8} | rms_dbfs={1,6:F1} | utterance_ms={2,6} | hangover_required_ms={3,5} | backlog={4,3} | emitted={5,3} | recording_s={6,5}")]
-    public void StreamingHeartbeat(string state, double rms_dbfs, int utterance_ms, int hangover_required_ms, int backlog, int emitted, int recording_s)
+           Message = "state={0,-8} | rms_dbfs={1,6:F1} | rms_max_dbfs={2,6:F1} | utterance_ms={3,6} | hangover_required_ms={4,5} | backlog={5,3} | emitted={6,3} | recording_s={7,5}")]
+    public void StreamingHeartbeat(string state, double rms_dbfs, double rms_max_dbfs, int utterance_ms, int hangover_required_ms, int backlog, int emitted, int recording_s)
     {
-        if (IsTakeDetailEnabled((EventKeywords)Keywords.Heartbeat))
-            WriteEvent(EvtStreamingHeartbeat, state, rms_dbfs, utterance_ms, hangover_required_ms, backlog, emitted, recording_s);
+        if (OperationalLogAdmission.IsSummaryEnabled(
+                OperationalLogActivity.Transcription, this,
+                EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat))
+            WriteEvent(EvtStreamingHeartbeat, state, rms_dbfs, rms_max_dbfs, utterance_ms, hangover_required_ms, backlog, emitted, recording_s);
     }
 
     [Event(EvtStreamingPipelineStarted,
@@ -176,7 +184,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtSegmenterBlipDropped,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "voiced_frames={0} | voiced_ms={1}")]
+           Message = "voiced_frames={0,3} | voiced_ms={1,4}")]
     public void SegmenterBlipDropped(int voiced_frames, int voiced_ms)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
@@ -188,7 +196,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtConsumerUtterance,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "index={0} | whisper_ms={1} | words={2} | segments={3} | backlog_after={4} | aborted={5}")]
+           Message = "index={0,3} | whisper_ms={1,6} | words={2,4} | segments={3,3} | backlog_after={4,3} | aborted={5}")]
     public void ConsumerUtterance(int index, long whisper_ms, int words, int segments, int backlog_after, bool aborted)
     {
         if (IsTakeDetailEnabled((EventKeywords)Keywords.Pipeline))
