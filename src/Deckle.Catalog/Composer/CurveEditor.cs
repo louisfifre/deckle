@@ -231,6 +231,7 @@ public sealed partial class CurveEditor : UserControl
         _side.Children.Add(_legend);
         _side.Children.Add(_pointsRow);
         _side.Children.Add(_legendAfter);
+        _afterHost = _side;
         _side.Children.Add(_trailing);
 
         // Rows and columns are Reflow's: it declares only those that hold a
@@ -554,6 +555,7 @@ public sealed partial class CurveEditor : UserControl
     // one already in place.
     private (bool Axes, bool Stack, bool Footer, bool Legend, bool After, bool Trailing) _layout;
     private bool _laidOut;
+    private Panel _afterHost = null!;
 
     private void Reflow(double width)
     {
@@ -581,10 +583,12 @@ public sealed partial class CurveEditor : UserControl
         // With a footer on an axes plot, the values of the footer's view live in
         // its frame; otherwise they follow the control points in the legend.
         Panel afterHost = axes && footer ? _footerStack : _side;
-        if (!ReferenceEquals(_legendAfter.Parent, afterHost))
+        if (!ReferenceEquals(_afterHost, afterHost))
         {
-            (_legendAfter.Parent as Panel)?.Children.Remove(_legendAfter);
+            // Tracked in a field: a WinRT Parent is not reference-comparable.
+            _afterHost.Children.Remove(_legendAfter);
             afterHost.Children.Add(_legendAfter);
+            _afterHost = afterHost;
         }
 
         _root.RowDefinitions.Clear();
@@ -629,7 +633,7 @@ public sealed partial class CurveEditor : UserControl
         _side.ColumnDefinitions.Clear();
         var blocks = new List<FrameworkElement>();
         foreach (FrameworkElement block in new FrameworkElement[] { _legend, _pointsRow, _legendAfter })
-            if (block.Visibility == Visibility.Visible && ReferenceEquals(block.Parent, _side)) blocks.Add(block);
+            if (block.Visibility == Visibility.Visible && (!ReferenceEquals(block, _legendAfter) || ReferenceEquals(_afterHost, _side))) blocks.Add(block);
         bool trailing = _trailing.Visibility == Visibility.Visible;
 
         if (horizontal)
@@ -1041,7 +1045,7 @@ public sealed partial class CurveEditor : UserControl
         _floor.Stroke = Brush("SystemFillColorCautionBrush");
         _readout.Foreground = Brush("TextFillColorSecondaryBrush");
         _summary.Foreground = Brush("TextFillColorSecondaryBrush");
-        _footer.Background = Brush("CardBackgroundFillColorSecondaryBrush");
+        _footer.Background = Brush("LayerFillColorDefaultBrush");
         _footer.BorderBrush = Brush("CardStrokeColorDefaultBrush");
         _xLegendName.Foreground = Brush("TextFillColorSecondaryBrush");
         _yLegendName.Foreground = Brush("TextFillColorSecondaryBrush");
