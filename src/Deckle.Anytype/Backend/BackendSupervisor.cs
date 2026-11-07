@@ -25,6 +25,14 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
     // early enough that the warning still explains a missing Anytype.
     private const int RestartsFailingThreshold = 3;
 
+    // The ladder never runs forever: after this many consecutive failures, a
+    // restart that failed or a serve that died before StableUptime, supervision
+    // stops, the log keeps one Error with the cause, and the person is told.
+    // Eight is the 4-rung ladder twice over, about 4 minutes at the 60 s rung:
+    // long enough for a slow disk or a reboot of a dependency, short enough that
+    // a backend that cannot start is not hammered for the rest of the session.
+    internal const int MaxConsecutiveFailures = 8;
+
     // A live process does not prove a serving REST listener: a wedged serve
     // keeps its handle while every call times out. The probe runs on real time,
     // not IBackendTime, so the restart ladder's controlled clock stays untouched.
@@ -48,6 +56,7 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
     private Task? _watchTask;
     private Task? _disposalTask;
     private bool _disposed;
+    private bool _exhausted;
 
     public BackendSupervisor(BackendHealthProbe health)
         : this(BackendReconciler.CreateDefault(health), health, new BackendTime())
@@ -130,14 +139,21 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
                     return result.Outcome;
                 }
                 IBackendProcess process = result.Process;
-                _watchTask = SuperviseAsync(ct => WatchAsync(process, ct), _lifetimeCts.Token);
+                _watchTask = SuperviseAsync(ct => WatchAsync(process, 0, ct), _lifetimeCts.Token);
             }
         }
         else if (result.Outcome is BackendStartOutcome.EndpointConflict)
         {
             // Another program holds the backend's port: nothing in Deckle will
             // free it, so the person has to.
+            DeckleAnytypeSource.Log.BackendSupervisionGaveUp("endpoint_conflict", result.ReconciliationId);
             OpenUserIncident("endpoint_conflict");
+        }
+        else if (result.Outcome is BackendStartOutcome.NotProvisioned)
+        {
+            // No backend installed: no incident, since the person may not use
+            // Anytype at all, but supervision ends here and the log says so.
+            DeckleAnytypeSource.Log.BackendSupervisionGaveUp("not_provisioned", result.ReconciliationId);
         }
         else if (result.Outcome is BackendStartOutcome.StartRejected or BackendStartOutcome.TimedOut)
         {
@@ -150,7 +166,7 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
                     int pendingId = result.Outcome is BackendStartOutcome.TimedOut
                         ? result.PendingProcessId : 0;
                     _watchTask = SuperviseAsync(
-                        ct => RecoverAsync(startId, pendingId, startedAt, ct), _lifetimeCts.Token);
+                        ct => RecoverAsync(startId, pendingId, startedAt, 0, ct), _lifetimeCts.Token);
                 }
             }
         }
@@ -178,17 +194,39 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
         }
     }
 
-    private async Task RecoverAsync(
-        string incidentId, int pendingProcessId, long unreadySince, CancellationToken ct)
+    // A person's gesture after the ladder stopped: the count of failures starts
+    // over and the ladder runs again from its first rung. False when there is
+    // nothing to resume (supervision is running, gave up for another reason, or
+    // Deckle is leaving).
+    public bool Resume()
     {
-        (IBackendProcess? process, _) = await RestartAsync(
-            BackendTriggers.StartFailed, attempt: 0, incidentId, ct,
-            pendingProcessId, unreadySince).ConfigureAwait(false);
-        if (process is not null)
-            await WatchAsync(process, ct).ConfigureAwait(false);
+        lock (_gate)
+        {
+            if (_disposed || !_exhausted) return false;
+            _exhausted = false;
+            string incidentId = WorkId.Next();
+            long since = _time.GetTimestamp();
+            _watchTask = SuperviseAsync(
+                ct => RecoverAsync(incidentId, 0, since, 0, ct), _lifetimeCts.Token);
+            return true;
+        }
     }
 
-    private async Task WatchAsync(IBackendProcess process, CancellationToken ct)
+    private async Task RecoverAsync(
+        string incidentId, int pendingProcessId, long unreadySince, int streak, CancellationToken ct)
+    {
+        (IBackendProcess? process, _, streak) = await RestartAsync(
+            BackendTriggers.StartFailed, attempt: 0, streak, incidentId, ct,
+            pendingProcessId, unreadySince).ConfigureAwait(false);
+        if (process is not null)
+            await WatchAsync(process, streak, ct).ConfigureAwait(false);
+    }
+
+    // streak counts the consecutive failures since the last stable run. A serve
+    // that dies before StableUptime adds one, even when the restart that follows
+    // succeeds: without it a backend that starts and dies at once would be
+    // restarted forever, each success wiping the count of the one before.
+    private async Task WatchAsync(IBackendProcess process, int streak, CancellationToken ct)
     {
         IBackendProcess? current = process;
         int attempt = 0;
@@ -200,13 +238,21 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
                 // The death opens an incident; its id travels on every line
                 // that follows until the backend is back or supervision ends.
                 string incidentId = WorkId.Next();
-                double uptimeSeconds = BackendProcessReport.Stopped(current, incidentId);
+                BackendExit exit = BackendProcessReport.Stopped(current, incidentId);
                 current.Dispose();
                 current = null;
 
-                attempt = uptimeSeconds >= StableUptime.TotalSeconds ? 0 : attempt;
-                (current, attempt) = await RestartAsync(
-                    BackendTriggers.ProcessExit, attempt, incidentId, ct).ConfigureAwait(false);
+                // An unreadable start time proves nothing: it is not a stable run.
+                bool stable = exit.UptimeSeconds >= StableUptime.TotalSeconds;
+                attempt = stable ? 0 : attempt;
+                streak = stable ? 0 : streak + 1;
+                if (streak >= MaxConsecutiveFailures)
+                {
+                    Exhaust(streak, "process-exit", exit.ExitCode, "", "", incidentId);
+                    return;
+                }
+                (current, attempt, streak) = await RestartAsync(
+                    BackendTriggers.ProcessExit, attempt, streak, incidentId, ct).ConfigureAwait(false);
             }
         }
         finally
@@ -230,8 +276,8 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
     // The streak starts over when the pid changes or a result is not a timed-out
     // wait on a live serve. pendingProcessId / unreadySince seed it with the
     // startup wait that opened the incident.
-    private async Task<(IBackendProcess? Process, int Attempt)> RestartAsync(
-        string trigger, int attempt, string incidentId, CancellationToken ct,
+    private async Task<(IBackendProcess? Process, int Attempt, int Streak)> RestartAsync(
+        string trigger, int attempt, int streak, string incidentId, CancellationToken ct,
         int pendingProcessId = 0, long unreadySince = 0)
     {
         long downSince = _time.GetTimestamp();
@@ -305,29 +351,53 @@ public sealed class BackendSupervisor : IDisposable, IAsyncDisposable
                 DeckleAnytypeSource.Log.BackendRecovered(
                     failures + 1, _time.GetElapsedTime(downSince).TotalSeconds, incidentId);
                 CloseUserIncident();
-                return (result.Process, attempt);
+                return (result.Process, attempt, streak);
             }
             if (result?.Outcome is BackendStartOutcome.NotProvisioned)
             {
                 DeckleAnytypeSource.Log.BackendSupervisionGaveUp("not_provisioned", incidentId);
                 OpenUserIncident("not_provisioned");
-                return (null, attempt);
+                return (null, attempt, streak);
             }
             if (result?.Outcome is BackendStartOutcome.EndpointConflict)
             {
                 DeckleAnytypeSource.Log.BackendSupervisionGaveUp("endpoint_conflict", incidentId);
                 OpenUserIncident("endpoint_conflict");
-                return (null, attempt);
+                return (null, attempt, streak);
             }
 
             failures++;
+            // A live serve that has not been asked to make way yet is the wedge
+            // case: the replacement comes first, only then do its waits count.
+            // Otherwise the bound would end the ladder before WedgedServeGrace.
+            bool awaitsReplacement = result is { Outcome: BackendStartOutcome.TimedOut, PendingProcessId: not 0 }
+                && !asked.Contains(result.PendingProcessId);
+            if (!awaitsReplacement) streak++;
             DeckleAnytypeSource.Log.BackendRestartAttemptFailed(failures, outcome, exType, exMessage, incidentId);
             if (failures == RestartsFailingThreshold)
             {
                 DeckleAnytypeSource.Log.BackendRestartsFailing(failures, outcome, exType, exMessage, incidentId);
                 OpenUserIncident("restarts_failing");
             }
+            if (streak >= MaxConsecutiveFailures)
+            {
+                Exhaust(streak, outcome, result?.ExitCode, exType, exMessage, incidentId);
+                return (null, attempt, streak);
+            }
         }
+    }
+
+    // The terminal failed state: nothing restarts the backend until Resume or a
+    // stable start. One Error carries the cause; the tray incident replaces the
+    // earlier "failing" one, whose reason would now be stale.
+    private void Exhaust(
+        int streak, string lastOutcome, int? exitCode, string exType, string exMessage, string incidentId)
+    {
+        DeckleAnytypeSource.Log.BackendRestartsExhausted(
+            streak, lastOutcome, exitCode ?? 0, exitCode.HasValue, exType, exMessage, incidentId);
+        lock (_gate) _exhausted = true;
+        UserIncidentRegistry.Instance.Close(UserIncidents.AnytypeBackend);
+        OpenUserIncident("restarts_exhausted");
     }
 
     private async Task WaitForExitAsync(IBackendProcess process, CancellationToken ct)

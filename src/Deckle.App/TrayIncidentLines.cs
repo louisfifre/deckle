@@ -41,6 +41,7 @@ internal static class TrayIncidentLines
         new(UserIncidents.WhisperModel,    ModuleIds.Transcription,     WhisperSettingsModule.PageTag),
         new(UserIncidents.VadModel,        ModuleIds.Transcription,     WhisperSettingsModule.StreamingPageTag),
         new(UserIncidents.AnytypeBackend,  ModuleIds.Anytype,           GeneralPageTag),
+        new(UserIncidents.AnytypeGateway,  ModuleIds.Anytype,           GeneralPageTag),
         new(UserIncidents.HueEvents,       ModuleIds.Ambient,           AmbientSettingsModule.PageTag),
         new(UserIncidents.HuePush,         ModuleIds.Ambient,           AmbientSettingsModule.PageTag),
         new(UserIncidents.ToastsElevated,  NotificationsModule,         GeneralPageTag),
