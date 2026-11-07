@@ -811,7 +811,7 @@
     <value>Move the data folder?</value>
   </data>
   <data name="Settings_MoveDataDialog_Content_Format" xml:space="preserve">
-    <value>Deckle copies {0} of data to {1}, then restarts. The old folder is removed afterwards.</value>
+    <value>Deckle copies {0} of data to {1}, then restarts. The old folder is deleted afterwards.</value>
   </data>
   <data name="Settings_MoveDataDialog_PrimaryButton" xml:space="preserve">
     <value>Move and restart</value>
@@ -1475,14 +1475,20 @@
   <data name="Setup_StepSubtitle_UpdateApply" xml:space="preserve">
     <value>Replacing the app files. Deckle restarts when it is done.</value>
   </data>
+  <data name="Setup_StepTitle_UpdateReady" xml:space="preserve">
+    <value>Update Deckle</value>
+  </data>
+  <data name="Setup_StepSubtitle_UpdateReady_Format" xml:space="preserve">
+    <value>Version {0} is ready. Deckle restarts to finish the update.</value>
+  </data>
   <data name="SetupNotifications_UpdateAvailable_Title" xml:space="preserve">
     <value>Deckle update available</value>
   </data>
   <data name="SetupNotifications_UpdateAvailable_Body_Format" xml:space="preserve">
-    <value>Deckle {0} is ready to install.</value>
+    <value>Version {0} is ready to download.</value>
   </data>
-  <data name="SetupNotifications_UpdateAvailable_Install" xml:space="preserve">
-    <value>Install now</value>
+  <data name="SetupNotifications_UpdateAvailable_View" xml:space="preserve">
+    <value>View update</value>
   </data>
   <data name="SetupNotifications_UpdateAvailable_Later" xml:space="preserve">
     <value>Later</value>

@@ -115,7 +115,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Message = "whisper_ms={0} | n_seg={1} | chars={2}")]
-    public void TranscribeCompleteDetail(long whisper_ms, int n_seg, int chars)
+    public void TranscribeCompleteDetail(long whisper_ms, long n_seg, long chars)
     {
         if (IsEnabled()) WriteEvent(EvtTranscribeCompleteDetail, whisper_ms, n_seg, chars);
     }

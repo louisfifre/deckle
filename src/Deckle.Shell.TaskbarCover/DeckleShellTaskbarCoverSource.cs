@@ -74,7 +74,7 @@ public sealed class DeckleShellTaskbarCoverSource : DeckleEventSource
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "hwnd=0x{0:X} | thread_id={1}")]
-    public void HostStartedDetail(long hwnd, int thread_id)
+    public void HostStartedDetail(long hwnd, long thread_id)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtHostStartedDetail, hwnd, thread_id);
