@@ -152,6 +152,13 @@
   <data name="SettingsComposer_ValueAuto" xml:space="preserve">
     <value>Auto</value>
   </data>
+  <!-- The accessible name of the curve editor's two draggable control points
+       (CurveEditor, Catalog), which Narrator reads as each handle takes focus.
+       Composer-owned like the reset tooltips above. -->
+  <data name="CurveEditor_ControlPoint_Format" xml:space="preserve">
+    <value>Control point {0}</value>
+    <comment>{0} is 1 or 2, the handle's position along the curve.</comment>
+  </data>
   <!-- The page header block (SettingsPageHeader, Catalog): the Reset all
        command every page carries, its tooltip and its generic confirmation.
        Composer-owned and module-agnostic, resolved from this root map. -->

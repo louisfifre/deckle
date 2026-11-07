@@ -146,7 +146,7 @@ public sealed partial class SettingsComposer
         void Update()
         {
             reset.IsEnabled = Dirty();
-            ToolTipService.SetToolTip(reset, tooltip);
+            LabelResetButton(reset, tooltip);
         }
 
         if (resetHost is not null)

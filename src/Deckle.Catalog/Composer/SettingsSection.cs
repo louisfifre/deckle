@@ -79,7 +79,10 @@ public sealed partial class SettingsSection : UserControl
             IsEnabled = false,
             Content = new FontIcon { Glyph = Glyphs.Reset, FontSize = 14 },
         };
-        ToolTipService.SetToolTip(_reset, Loc.Get("SettingsSection_ResetTooltip"));
+        // An icon alone: its tooltip is also its accessible name.
+        string resetTooltip = Loc.Get("SettingsSection_ResetTooltip");
+        ToolTipService.SetToolTip(_reset, resetTooltip);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(_reset, resetTooltip);
         _reset.Click += (_, e) => ResetRequested?.Invoke(this, e);
 
         // The link in the control's own style (accent text, the subtle fill on
