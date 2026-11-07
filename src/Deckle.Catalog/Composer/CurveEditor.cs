@@ -26,10 +26,11 @@ namespace Deckle.Catalog;
 // Two layouts from one frame (CurveFrame). With axes, the plot spans the data
 // space (rulers on "nice" steps, unit labels, dashed guides at the box's edges),
 // the unit square sits where the frame puts it — the dictation's decay from the
-// ramp start to the ramp end — and the plot is the instrument: full width, its
-// height following the page when ViewportShare is set, an optional PlotFooter
-// view under it at another scale (the pause strip), and the legend under both,
-// its blocks in one row while they fit. With EndpointLimits the square's two
+// ramp start to the ramp end — and the plot is compact (a 360 px column) with
+// the owner's sentence (Summary) under it, and its values beside it while the
+// width allows, under it when it does not. An optional PlotFooter view at
+// another scale (the pause strip) sits in a frame of its own under both, with
+// the values that belong to it (LegendAfter). With EndpointLimits the square's two
 // fixed corners get handles of their own that move the frame (the endpoints
 // partial). Without axes, the plot is the unit square alone, square, the
 // Ambient brightness response, with the legend beside it, or under it below a
@@ -66,6 +67,10 @@ public sealed partial class CurveEditor : UserControl
     public const double DataLeftInset = GutterLeft;
     public const double DataRightInset = PadRight;
     private const double SquareSide = 220.0;
+    // The compact axes plot: a column of this width (smaller when the room is),
+    // the Playground's proportions, instead of the card's full width.
+    private const double PlotColumnWidth = 360.0;
+    private const double CompactPlotHeight = 210.0;
     private const double StackBelowWidth = 560.0;
     private const double AxisLegendWidth = 120.0;
     private const double Outside = 0.25;
@@ -99,7 +104,20 @@ public sealed partial class CurveEditor : UserControl
     private readonly StackPanel _legend = new() { Spacing = 8, Visibility = Visibility.Collapsed };
     private readonly StackPanel _legendAfter = new() { Spacing = 8, Visibility = Visibility.Collapsed };
     private readonly StackPanel _trailing = new() { Orientation = Orientation.Horizontal, Spacing = 4, Visibility = Visibility.Collapsed };
+    // The pause view's own frame: a bordered surface under the curve block, so the
+    // zoomed view reads as a second instrument and not as part of the main plot.
+    // It holds the owner's footer view, then the values that belong to it.
     private readonly Border _footer = new() { Visibility = Visibility.Collapsed };
+    private readonly StackPanel _footerStack = new() { Spacing = 12 };
+    private UIElement? _footerContent;
+    // The plot with the live sentence under it, one column.
+    private readonly StackPanel _plotColumn = new();
+    private readonly TextBlock _summary = new()
+    {
+        TextWrapping = TextWrapping.Wrap,
+        Margin = new Thickness(0, 8, 0, 0),
+        Visibility = Visibility.Collapsed,
+    };
     private readonly Border _plotFrame;
     private readonly Canvas _plot = new();
     private readonly Polyline _curve;
@@ -219,9 +237,16 @@ public sealed partial class CurveEditor : UserControl
         // visible element, since a WinUI Grid pays its spacing even before an
         // empty row (the 12 px of void the 2026-11-07 review measured under the
         // plot).
-        _root.ColumnSpacing = 16;
+        _summary.Style = Application.Current.Resources["BodyTextBlockStyle"] as Style;
+        _plotColumn.Children.Add(_plotFrame);
+        _plotColumn.Children.Add(_summary);
+        _footer.Child = _footerStack;
+        _footer.BorderThickness = new Thickness(1);
+        _footer.CornerRadius = (CornerRadius)Application.Current.Resources["ControlCornerRadius"];
+        _footer.Padding = new Thickness(12);
+        _root.ColumnSpacing = 24;
         _root.RowSpacing = StackedRowGap;
-        _root.Children.Add(_plotFrame);
+        _root.Children.Add(_plotColumn);
         _root.Children.Add(_footer);
         _root.Children.Add(_side);
         Content = _root;
@@ -324,11 +349,10 @@ public sealed partial class CurveEditor : UserControl
         set => SetValue(YAxisLegendProperty, value);
     }
 
-    private double _wideHeight = 280.0;
+    private double _wideHeight = CompactPlotHeight;
 
-    // The plot's height when the frame carries axes. 280 is the Playground's;
-    // the Settings composer raises it to 320, where the plot is the
-    // segmentation's main instrument at full card width (2026-10-14). A plain
+    // The plot's height when the frame carries axes: compact, beside its values
+    // (2026-11-07 review: the full-width plot was far too big). A plain
     // property, set once by the owner after construction: nothing binds it.
     public double WideHeight
     {
@@ -376,11 +400,25 @@ public sealed partial class CurveEditor : UserControl
     // (the pause strip). Null takes no room. The owner builds and wires it.
     public UIElement? PlotFooter
     {
-        get => _footer.Child;
+        get => _footerContent;
         set
         {
-            _footer.Child = value;
+            if (_footerContent is not null) _footerStack.Children.Remove(_footerContent);
+            _footerContent = value;
+            if (value is not null) _footerStack.Children.Insert(0, value);
             Reflow(ActualWidth);
+        }
+    }
+
+    // The sentence that reads the current values, under the plot and re-set by
+    // the owner whenever they change; null or empty takes no room.
+    public string? Summary
+    {
+        get => _summary.Text;
+        set
+        {
+            _summary.Text = value ?? string.Empty;
+            _summary.Visibility = Shown(!string.IsNullOrWhiteSpace(value));
         }
     }
 
@@ -522,34 +560,56 @@ public sealed partial class CurveEditor : UserControl
         _legend.Visibility = Shown(_legend.Children.Count > 0);
         _legendAfter.Visibility = Shown(_legendAfter.Children.Count > 0);
         _trailing.Visibility = Shown(_trailing.Children.Count > 0);
-        _footer.Visibility = Shown(_footer.Child is not null);
+        _footer.Visibility = Shown(_footerContent is not null);
 
         bool axes = Frame.Axes;
-        bool footer = _footer.Child is not null;
+        bool footer = _footerContent is not null;
         bool stack = axes
-            ? width > 0 && LegendRowWidth() > width
+            ? width > 0 && PlotColumnWidth + _root.ColumnSpacing + SideWidth() > width
             : width > 0 && width < StackBelowWidth + (_axisLegend.Visibility == Visibility.Visible ? AxisLegendWidth + 24 : 0);
+
+        // The plot column's width: a compact plot, never wider than the room.
+        // Set on every pass, since it follows the width while stacked.
+        _plotColumn.HorizontalAlignment = HorizontalAlignment.Left;
+        _plotColumn.Width = axes ? (width > 0 ? Math.Min(width, PlotColumnWidth) : PlotColumnWidth) : double.NaN;
+
         var layout = (axes, stack, footer, _legend.Children.Count > 0, _legendAfter.Children.Count > 0, _trailing.Children.Count > 0);
         if (_laidOut && layout == _layout) return;
         _layout = layout;
         _laidOut = true;
 
+        // With a footer on an axes plot, the values of the footer's view live in
+        // its frame; otherwise they follow the control points in the legend.
+        Panel afterHost = axes && footer ? _footerStack : _side;
+        if (!ReferenceEquals(_legendAfter.Parent, afterHost))
+        {
+            (_legendAfter.Parent as Panel)?.Children.Remove(_legendAfter);
+            afterHost.Children.Add(_legendAfter);
+        }
+
         _root.RowDefinitions.Clear();
         _root.ColumnDefinitions.Clear();
-        _root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         if (axes)
         {
+            // The plot column, then the values beside it while there is room or
+            // under it when there is not, and the footer's frame below both.
+            _root.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            if (!stack) _root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            int span = stack ? 1 : 2;
             int row = 0;
-            Place(_root, _plotFrame, row++, 0);
-            if (footer) Place(_root, _footer, row++, 0);
-            Place(_root, _side, row++, 0);
+            Place(_root, _plotColumn, row, 0);
+            if (stack) { row++; Place(_root, _side, row, 0); }
+            else Place(_root, _side, row, 1);
+            row++;
+            if (footer) Place(_root, _footer, row++, 0, span);
             for (int i = 0; i < row; i++) _root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         }
         else
         {
+            _root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             _root.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             int row = 0;
-            Place(_root, _plotFrame, row++, 0, stack ? 2 : 1);
+            Place(_root, _plotColumn, row++, 0, stack ? 2 : 1);
             if (footer) Place(_root, _footer, row++, 0, stack ? 2 : 1);
             if (stack) Place(_root, _side, row++, 0, 2);
             else { Place(_root, _side, 0, 1); Grid.SetRowSpan(_side, row); }
@@ -558,7 +618,7 @@ public sealed partial class CurveEditor : UserControl
         // Top in every layout: centred beside a tall plot, the fields floated
         // mid-height with nothing to align to (2026-10-14).
         _side.VerticalAlignment = VerticalAlignment.Top;
-        LayoutLegend(horizontal: axes && !stack, stretch: axes);
+        LayoutLegend(horizontal: false, stretch: false);
     }
 
     // The legend's blocks in one row (each block a column, a star column
@@ -569,7 +629,7 @@ public sealed partial class CurveEditor : UserControl
         _side.ColumnDefinitions.Clear();
         var blocks = new List<FrameworkElement>();
         foreach (FrameworkElement block in new FrameworkElement[] { _legend, _pointsRow, _legendAfter })
-            if (block.Visibility == Visibility.Visible) blocks.Add(block);
+            if (block.Visibility == Visibility.Visible && ReferenceEquals(block.Parent, _side)) blocks.Add(block);
         bool trailing = _trailing.Visibility == Visibility.Visible;
 
         if (horizontal)
@@ -613,20 +673,18 @@ public sealed partial class CurveEditor : UserControl
         }
     }
 
-    // What the legend's blocks need side by side: their own widths, measured
-    // unconstrained, plus the gaps; the trailing slot counts with its gap.
-    private double LegendRowWidth()
+    // What the values beside the plot need: the widest of their blocks, measured
+    // unconstrained, which decides whether they fit next to the plot.
+    private double SideWidth()
     {
-        double total = 0;
-        int count = 0;
-        foreach (FrameworkElement block in new FrameworkElement[] { _legend, _pointsRow, _legendAfter, _trailing })
+        double widest = 0;
+        foreach (FrameworkElement block in new FrameworkElement[] { _legend, _pointsRow, _trailing })
         {
             if (block.Visibility != Visibility.Visible) continue;
             block.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            total += block.DesiredSize.Width;
-            count++;
+            widest = Math.Max(widest, block.DesiredSize.Width);
         }
-        return total + Math.Max(0, count - 1) * BlockColumnGap;
+        return widest;
     }
 
     private static void Place(Grid grid, FrameworkElement element, int row, int column, int columnSpan = 1)
@@ -982,6 +1040,9 @@ public sealed partial class CurveEditor : UserControl
         _guideEnd.Stroke = Brush("DividerStrokeColorDefaultBrush");
         _floor.Stroke = Brush("SystemFillColorCautionBrush");
         _readout.Foreground = Brush("TextFillColorSecondaryBrush");
+        _summary.Foreground = Brush("TextFillColorSecondaryBrush");
+        _footer.Background = Brush("CardBackgroundFillColorSecondaryBrush");
+        _footer.BorderBrush = Brush("CardStrokeColorDefaultBrush");
         _xLegendName.Foreground = Brush("TextFillColorSecondaryBrush");
         _yLegendName.Foreground = Brush("TextFillColorSecondaryBrush");
         foreach (TextBlock letter in _legendLetters) letter.Foreground = Brush("TextFillColorTertiaryBrush");
