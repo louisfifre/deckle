@@ -814,6 +814,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Icons.xaml
 │   │   │   └── SettingsPageHeaderBrushes.xaml
 │   │   ├── ConfirmationService.cs
+│   │   ├── ConsentService.cs
 │   │   ├── Deckle.Catalog.csproj
 │   │   ├── DiagnosticsRegistry.cs
 │   │   ├── Glyphs.cs
@@ -2063,6 +2064,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── CurveEndpointLimitsTests.cs
 │   │   ├── Deckle.Catalog.Tests.csproj
 │   │   ├── DefaultValueTextTests.cs
+│   │   ├── DialogDefaultButtonTests.cs
 │   │   ├── GestureHoldTests.cs
 │   │   ├── HotkeyChordTests.cs
 │   │   ├── HotkeyChordTextTests.cs
@@ -2410,7 +2412,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SetupPathRedactionTests.cs
 │   │   ├── SetupStringMirrorTests.cs
 │   │   ├── UpdateHandoffBugNotes.md
-│   │   └── UpdatePredecessorTests.cs
+│   │   ├── UpdatePredecessorTests.cs
+│   │   └── UpdateToastRoutingTests.cs
 │   ├── Deckle.Shell.Foreground.Tests/
 │   │   ├── Deckle.Shell.Foreground.Tests.csproj
 │   │   ├── FullscreenGeometryTests.cs
