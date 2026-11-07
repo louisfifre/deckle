@@ -18,7 +18,8 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
 {
     public static readonly DeckleSettingsSource Log = new();
 
-    // Restarted once per navigation in OnNavSelectionChanged; NavTiming reads it.
+    // Restarted once per navigation in OnNavSelectionChanged; NavCompletedDetail
+    // reads it.
     // Static so a destination page, which has no window reference, can time its
     // first Loaded against it (PageReady). Single-window UI-thread nav, so no
     // contention.
@@ -117,7 +118,7 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
 
     // ── Page navigation timing (ms) ──
     // Numbers ⇒ Verbose only.
-    public const int EvtNavTiming                         = 70;
+    // 70 retired: NavTiming, folded into NavCompletedDetail's duration_ms.
     public const int EvtPageReady                         = 71;
 
     // ── Settings module nav registry ──
