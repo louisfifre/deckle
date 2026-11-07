@@ -1231,6 +1231,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientViewModel.cs
 │   │   │   └── AmbientViewModel.Settings.cs
 │   │   ├── AmbientCaptureRate.cs
+│   │   ├── AmbientCaptureTarget.cs
 │   │   ├── AmbientPresets.cs
 │   │   ├── AmbientPresetStore.cs
 │   │   ├── AmbientSettings.cs
@@ -2236,6 +2237,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientObservabilityCollection.cs
 │   │   ├── AmbientPresetSelectionLogTests.cs
 │   │   ├── AmbientPresetsTests.cs
+│   │   ├── AmbientPreviewGeometryTests.cs
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── AmbientRunBugNotes.md
