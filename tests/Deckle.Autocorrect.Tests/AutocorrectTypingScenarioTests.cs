@@ -110,10 +110,7 @@ public sealed class AutocorrectTypingScenarioTests
         string path = Path.Combine(
             Path.GetTempPath(), $"deckle-typing-dict-{Guid.NewGuid():N}.json");
 
-        var data = new PersonalDictionaryData
-        {
-            SchemaVersion = PersonalDictionaryData.CurrentSchemaVersion,
-        };
+        var data = new PersonalDictionaryData();
         data.Words.Add(Adopted("prepare"));
         data.Words.Add(Adopted("telemetry"));
         File.WriteAllText(path, JsonSerializer.Serialize(data, new JsonSerializerOptions

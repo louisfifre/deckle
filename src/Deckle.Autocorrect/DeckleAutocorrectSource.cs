@@ -54,7 +54,8 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtSystemLanguagesFallback = 47;
     public const int EvtLearningStoreUnreadable = 48;
     public const int EvtLearningStoreLoaded   = 49;
-    public const int EvtPersonalDictionaryReset = 50;
+    // 50 retired: the personal dictionary reset on an older schema; the schema
+    // version is gone, so nothing resets it any more.
     public const int EvtDomainPackManifestUnreadable = 52;
     public const int EvtSettingsLoadWarning = 53;
     public const int EvtSettingsLoadError = 54;
@@ -146,18 +147,6 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtPersonalDictionarySanitized, removed);
-    }
-
-    // An older personal-dictionary schema is discarded wholesale: the user loses
-    // learned words and explicit suppressions, so it is a Warning, with counts
-    // only. The words stay out of the log.
-    [Event(EvtPersonalDictionaryReset,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The personal dictionary was reset for a new format, so learned words and suppressions are lost\nfrom_version={0} | to_version={1} | words={2} | suppressions={3}")]
-    public void PersonalDictionaryReset(int from_version, int to_version, int words, int suppressions)
-    {
-        if (IsEnabled()) WriteEvent(EvtPersonalDictionaryReset, from_version, to_version, words, suppressions);
     }
 
     // The Windows language list could not be read, so the lexicon defaults come

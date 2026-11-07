@@ -1,10 +1,22 @@
 # build-locked.ps1 - Run one dotnet build or test under the machine-wide Deckle build lock.
 #
-# AGENTS.md forbids two builds at once on this machine, whatever the session.
-# Parallel agents cannot see each other, so this script gives them one gate:
-# it takes the named mutex `Global\Deckle.Build`, waits as long as another
-# build holds it, then runs `dotnet build` (or `dotnet test`) with the
-# project's mandatory flags, and releases the mutex when dotnet exits.
+# AGENTS.md allows at most three builds at once on this machine, whatever the
+# session. Parallel agents cannot see each other, so this script gives them one
+# gate: three named mutexes, one per slot. It takes the first free slot, waits
+# as long as all three are held, then runs `dotnet build` (or `dotnet test`)
+# with the project's mandatory flags, and releases its slot when dotnet exits.
+#
+# Why three slots and not one: with a single slot, fourteen sessions queued
+# for over an hour behind one build while the machine sat at 25 % CPU
+# (2026-11-07, 8 cores / 16 logical processors). Each worktree builds into its
+# own bin/ and obj/, and the shared VBCSCompiler server takes concurrent
+# compilations, so builds in different worktrees do not collide. Three builds
+# of four nodes each leave four logical processors to the desktop, at low
+# priority. If memory runs short, lower the slot count here.
+#
+# Why mutexes and not a semaphore: a killed build abandons its mutex, which
+# the next waiter takes over; a semaphore count a killed build never released
+# would stay lost until every process holding the semaphore exits.
 # Directory.Build.rsp still applies (low priority, no node reuse); the
 # explicit `/m:4` stays because the CLI applies its default node count after
 # response files.
@@ -49,26 +61,33 @@ $verb = if ($Test) { 'test' } else { 'build' }
 $arguments = @($verb, "$resolved", '-c', $Configuration, '-p:Platform=x64', '/m:4') + @($DotnetArgs)
 
 # Global, so a build started from another session or another worktree of the
-# same machine is seen. Abandoned mutexes (a killed build) are taken over: the
-# lock protects the machine's build servers, not any shared state.
-$mutex = [System.Threading.Mutex]::new($false, 'Global\Deckle.Build')
-$acquired = $false
+# same machine is seen. The first slot keeps the old single-lock name, so a
+# worktree still running an older copy of this script, which knows only that
+# name, counts as one of the three. build-server-watchdog.ps1 reads the same
+# names: change them together. Abandoned mutexes (a killed build) are taken
+# over: the lock protects the machine's capacity, not any shared state.
+$slotNames = 'Global\Deckle.Build', 'Global\Deckle.Build.2', 'Global\Deckle.Build.3'
+$slots = [System.Threading.Mutex[]]@($slotNames | ForEach-Object { [System.Threading.Mutex]::new($false, $_) })
+$held = [System.Threading.WaitHandle]::WaitTimeout
 try {
-    while (-not $acquired) {
+    while ($held -eq [System.Threading.WaitHandle]::WaitTimeout) {
         try {
-            $acquired = $mutex.WaitOne([TimeSpan]::FromSeconds(30))
+            $held = [System.Threading.WaitHandle]::WaitAny($slots, [TimeSpan]::FromSeconds(30))
         } catch [System.Threading.AbandonedMutexException] {
-            $acquired = $true
+            # PowerShell may wrap the .NET exception; the slot index is on it.
+            $abandoned = $_.Exception
+            if ($abandoned -isnot [System.Threading.AbandonedMutexException]) { $abandoned = $abandoned.InnerException }
+            $held = $abandoned.MutexIndex
         }
-        if (-not $acquired) {
-            Write-Host "build-locked: another dotnet build is running, waiting..." -ForegroundColor DarkGray
+        if ($held -eq [System.Threading.WaitHandle]::WaitTimeout) {
+            Write-Host "build-locked: $($slots.Count) dotnet builds are running, waiting..." -ForegroundColor DarkGray
         }
     }
 
-    Write-Host "build-locked: dotnet $($arguments -join ' ')" -ForegroundColor DarkGray
+    Write-Host "build-locked: slot $($held + 1)/$($slots.Count), dotnet $($arguments -join ' ')" -ForegroundColor DarkGray
     & dotnet @arguments
     exit $LASTEXITCODE
 } finally {
-    if ($acquired) { $mutex.ReleaseMutex() }
-    $mutex.Dispose()
+    if ($held -ne [System.Threading.WaitHandle]::WaitTimeout) { $slots[$held].ReleaseMutex() }
+    foreach ($slot in $slots) { $slot.Dispose() }
 }

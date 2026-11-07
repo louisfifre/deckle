@@ -13,7 +13,7 @@ namespace Deckle.App;
 // Boot-time wiring of the one EventListener (DispatchEventListener); every
 // consumer is a passive ILogSink registered on it, and admission already
 // happened at the producer. Phase order is load-bearing: InitializeLocalSinks
-// runs before settings migration, the operational sinks after it, and telemetry
+// runs before the settings load, the operational sinks after it, and telemetry
 // registers only consented datasets under telemetry/. The listener keeps the
 // boot history until CompleteBoot, so a sink of a later phase still starts at
 // AppStarting. JSONL sinks write through bounded queues, so every exit crosses
@@ -28,9 +28,6 @@ internal static class AppDiagnosticsBootstrap
     private static LogWindowSink? _logWindowSink;
     private static string? _diagnosticsDirectory;
     private static bool _hudAttached;
-
-    // What InitializeLocalSinks found of the legacy log file names.
-    public static LegacyFileRename? LegacyFileRename { get; private set; }
 
     // The crash detail and stack events are Verbose, so a level predicate alone
     // would split a crash across files; the log allowlists them by name.
@@ -54,11 +51,6 @@ internal static class AppDiagnosticsBootstrap
         if (_dispatch is not null) return;
 
         _diagnosticsDirectory = diagnosticsDirectory;
-
-        // Before any sink opens its file: the log and the trace still carry
-        // their pre-v0.68.1 names on an older install. No sink exists yet to say
-        // how it went, so the host reports the result after AppStarting.
-        LegacyFileRename = DiagnosticsFiles.RenameLegacyFiles(diagnosticsDirectory);
 
         var dispatch = Dispatch;
 

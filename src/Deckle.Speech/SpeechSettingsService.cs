@@ -12,7 +12,7 @@ public sealed class SpeechSettingsService
     {
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        // Tolerate case differences when reading legacy/hand-edited files.
+        // Tolerate case differences when reading hand-edited files.
         PropertyNameCaseInsensitive = true,
     };
 

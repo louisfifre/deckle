@@ -6,8 +6,7 @@ using Xunit;
 namespace Deckle.Llm.Rewrite.Tests;
 
 // What starts a profile, the length ladder and a profile's shortcut, survives
-// the settings file, and the per-profile thresholds of v0.77 to v0.79 move
-// into the ladder once.
+// the settings file.
 [Trait("Category", "unit")]
 public sealed class RewriteProfileTriggerTests
 {
@@ -25,7 +24,7 @@ public sealed class RewriteProfileTriggerTests
     public void LadderAndShortcutRoundTripThroughTheSettingsFile()
     {
         var settings = new LlmSettings();
-        LlmSettingsMigrations.Apply(settings);
+        LlmSettingsNormalizer.Apply(settings);
         settings.LengthSwitch.Enabled = true;
         settings.LengthSwitch.Steps.Add(new LengthStep { FromChars = 3000, ProfileId = settings.Profiles[1].Id });
         settings.Profiles[0].HotkeyEnabled = true;
@@ -40,63 +39,6 @@ public sealed class RewriteProfileTriggerTests
         Assert.True(read.Profiles[0].HasActiveHotkey);
         Assert.Equal(settings.Profiles[0].Hotkey, read.Profiles[0].Hotkey);
         Assert.False(read.Profiles[1].HasActiveHotkey);
-    }
-
-    [Fact]
-    public void AFileWrittenBeforeTheLadderLeavesItOffAndEmpty()
-    {
-        LlmSettings read = JsonSerializer.Deserialize<LlmSettings>(
-            """{ "profiles": [ { "id": "a", "name": "Old" } ] }""", FileOptions)!;
-        LlmSettingsMigrations.Apply(read);
-
-        Assert.False(read.LengthSwitch.Enabled);
-        Assert.Empty(read.LengthSwitch.Steps);
-        Assert.False(read.Profiles[0].HasActiveHotkey);
-    }
-
-    [Fact]
-    public void PerProfileThresholdsMoveIntoTheLadderOnce()
-    {
-        LlmSettings read = JsonSerializer.Deserialize<LlmSettings>(
-            """
-            { "profiles": [
-                { "id": "a", "name": "Base" },
-                { "id": "b", "name": "Long", "autoSelect": true, "autoSelectFromMinutes": 15 },
-                { "id": "c", "name": "Short", "autoSelect": true, "autoSelectFromMinutes": 3 } ] }
-            """, FileOptions)!;
-
-        Assert.True(LlmSettingsMigrations.Apply(read));
-
-        Assert.True(read.LengthSwitch.Enabled);
-        Assert.Collection(read.LengthSwitch.Steps,
-            step => { Assert.Equal(3 * 700, step.FromChars); Assert.Equal("c", step.ProfileId); },
-            step => { Assert.Equal(15 * 700, step.FromChars); Assert.Equal("b", step.ProfileId); });
-        Assert.All(read.Profiles, profile => Assert.False(profile.AutoSelect));
-
-        Assert.False(LlmSettingsMigrations.Apply(read));
-        Assert.Equal(2, read.LengthSwitch.Steps.Count);
-    }
-
-    [Fact]
-    public void AnExistingChordKeepsWorkingAfterTheSwitchArrives()
-    {
-        // A v0.77 file: a chord, and no switch (HotkeyEnabled absent → null).
-        var written = new LlmSettings
-        {
-            Profiles =
-            [
-                new RewriteProfile { Id = "a", Name = "Bound",
-                    Hotkey = new HotkeyChord(HotkeyModifiers.Control | HotkeyModifiers.Win, 0x29) },
-                new RewriteProfile { Id = "b", Name = "Unbound" },
-            ],
-        };
-        LlmSettings read = RoundTrip(written);
-        Assert.Null(read.Profiles[0].HotkeyEnabled);
-
-        LlmSettingsMigrations.Apply(read);
-
-        Assert.True(read.Profiles[0].HotkeyEnabled);
-        Assert.False(read.Profiles[1].HotkeyEnabled);
     }
 
     // A length typed in the field is any value on its grain, not one of a
@@ -114,7 +56,7 @@ public sealed class RewriteProfileTriggerTests
             ],
         };
 
-        Assert.False(LlmSettingsMigrations.NormalizeLadder(ladder));
+        Assert.False(LlmSettingsNormalizer.NormalizeLadder(ladder));
 
         Assert.Equal([2300, 2400, 17500], ladder.Steps.Select(step => step.FromChars));
     }
@@ -165,7 +107,7 @@ public sealed class RewriteProfileTriggerTests
             ],
         };
 
-        LlmSettingsMigrations.NormalizeLadder(ladder);
+        LlmSettingsNormalizer.NormalizeLadder(ladder);
 
         Assert.Collection(ladder.Steps,
             step => { Assert.Equal(2000, step.FromChars); Assert.Equal("first", step.ProfileId); },
@@ -186,7 +128,7 @@ public sealed class RewriteProfileTriggerTests
             ],
         };
 
-        Assert.True(LlmSettingsMigrations.NormalizeLadder(ladder));
+        Assert.True(LlmSettingsNormalizer.NormalizeLadder(ladder));
 
         Assert.Collection(ladder.Steps,
             step => { Assert.Equal(LengthSwitchSettings.MinChars, step.FromChars); Assert.Equal("z", step.ProfileId); },
@@ -208,7 +150,7 @@ public sealed class RewriteProfileTriggerTests
             ],
         };
 
-        LlmSettingsMigrations.NormalizeLadder(ladder);
+        LlmSettingsNormalizer.NormalizeLadder(ladder);
 
         LengthStep kept = Assert.Single(ladder.Steps);
         Assert.Equal("top", kept.ProfileId);

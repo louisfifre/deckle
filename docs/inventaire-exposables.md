@@ -14,8 +14,8 @@ Total : **625 entrées** réparties sur **38 modules**.
 |---|---|
 | Deckle.Anytype | 12 |
 | Deckle.Anytype.Mcp | 3 |
-| Deckle.App | 3 |
-| Deckle.Audio | 46 |
+| Deckle.App | 4 |
+| Deckle.Audio | 45 |
 | Deckle.Autocorrect | 37 |
 | Deckle.Autocorrect.Lab | 17 |
 | Deckle.Catalog | 2 |
@@ -97,15 +97,14 @@ Total : **625 entrées** réparties sur **38 modules**.
 | AudioLevelMapper.MaxDbfs | tuning-constant | `VoiceLevelDbfs + 20` | src/Deckle.Audio/AudioLevelMapper.cs:62 | oui | HUD level window ceiling, derived: WindowSpanDb (20 dB) above the voice level. |
 | VoiceLevelMeterScale.MinDbfs | tuning-constant | `-80.0` | src/Deckle.Audio/VoiceLevelMeterScale.cs:17 | non | Left end of the voice meter's fixed dB track (Recording page). Fixed so the marks move when the voice level changes; puts the default -45 in the middle third. |
 | VoiceLevelMeterScale.MaxDbfs | tuning-constant | `-10.0` | src/Deckle.Audio/VoiceLevelMeterScale.cs:18 | non | Right end of the same track. |
-| CaptureSettings.AudioInputDeviceId | persisted-setting | `-1` | src/Deckle.Audio/CaptureSettings.cs:15 | oui | June marks it bespoke (runtime waveIn enumeration). -1 = WAVE_MAPPER. |
+| CaptureSettings.AudioInputEndpointId | persisted-setting | `""` | src/Deckle.Audio/CaptureSettings.cs:13 | non | The microphone as its MMDevice endpoint id; empty = the system default capture device, resolved when each take starts. Bespoke: values come from a runtime device enumeration. Replaces the former waveIn device index (AudioInputDeviceId, retired in v0.87.0). |
 | CaptureSettings.VoiceLevelDbfs | persisted-setting | `-45.0` | src/Deckle.Audio/CaptureSettings.cs:34 | oui | Formerly the segmenter's speech level (streaming.segmenter.thresholdDbfs, Streaming page); moved to the Audio module and the Recording page (RecordingVoiceLevelCard) on 2026-11-06. Read by the segmenter, the low-audio warning and the HUD outline. |
 | CaptureSettings.MaxRecordingDurationSeconds | persisted-setting | `20 * 60 (1200 s)` | src/Deckle.Audio/CaptureSettings.cs:23 | non | Persisted, no UI found in the sweep scope. Sweep value string was the unevaluated expression; real default 1200. 0 = no cap. |
 | CaptureSettings.Preprocessing | persisted-setting | `new PreprocessingSettings()` | src/Deckle.Audio/CaptureSettings.cs:34 | oui | Container property; the opt-in toggle is Preprocessing.Enabled, fine params live in the Playground. |
 | VoiceDetector.DefaultEntryMarginDb | tuning-constant | `0.0` | src/Deckle.Audio/VoiceDetector.cs:33 | non | Margin above the voice level that a silent frame must reach to open an utterance (the entry level); it gates the opening only, the resume after a pause stays at the voice level. 0 keeps the behaviour from before the detector; a positive value is to be sized against the audio corpus. Replaces the low-audio warning's own −45 dBFS constant, which now reads the voice level. |
-| WaveInLoop.NormalVoiceSustainedMs | tuning-constant | `200` | src/Deckle.Audio/Internal/WaveInLoop.cs:99 | non | Method-local const gating the same warning. |
-| WaveInLoop.WarnAfterSilenceMs | tuning-constant | `5000` | src/Deckle.Audio/Internal/WaveInLoop.cs:100 | non | Method-local const: delay before the low-audio warning fires. |
-| WaveInLoop.SubWindowMs | tuning-constant | `50` | src/Deckle.Audio/Internal/WaveInLoop.cs:436 | non | Method-local const. Structural cadence: telemetry and MicrophoneTelemetryCalculator.SubWindowSamples=800 assume it. Not independently tunable. |
-| MicrophoneCapture.N_BUFFERS | tuning-constant | `4` | src/Deckle.Audio/MicrophoneCapture.cs:40 | non | waveIn buffer count - implementation detail, but it sets capture latency/robustness. Kept under doubt. |
+| LowAudioTracker.NormalVoiceSustainedMs | tuning-constant | `200` | src/Deckle.Audio/Internal/LowAudioTracker.cs:23 | non | Public const gating the low-audio warning: a voiced stretch this long locks the warning off. |
+| LowAudioTracker.WarnAfterSilenceMs | tuning-constant | `5000` | src/Deckle.Audio/Internal/LowAudioTracker.cs:24 | non | Public const: delay before the low-audio warning fires. |
+| SubWindowAssembler.WindowMs | tuning-constant | `50` | src/Deckle.Audio/Internal/SubWindowAssembler.cs:14 | non | Structural cadence: the capture cuts its stream into windows of this length; telemetry (MicrophoneTelemetryCalculator.SubWindowSamples=800) and EnergySegmenter.FrameMs assume it. Not independently tunable. |
 | MicLevelTester.DefaultMeasureSeconds | tuning-constant | `5` | src/Deckle.Audio/MicLevelTester.cs:23 | non | Duration of the Settings mic check - directly user-perceivable. |
 | MicLevelCheck.RecommendDeltaDb | tuning-constant | `6.0` | src/Deckle.Audio/Preprocessing/MicLevelCheck.cs:26 | non | Self-declared provisional engineer guess; decides the 'enable the lift' recommendation shown to the user. |
 | MicLevelCheck.MarginalDeltaDb | tuning-constant | `2.0` | src/Deckle.Audio/Preprocessing/MicLevelCheck.cs:30 | non | Same provisional advice thresholds. |
@@ -129,7 +128,7 @@ Total : **625 entrées** réparties sur **38 modules**.
 | PreprocessingSettings.LimiterCeilingDbfs | persisted-setting | `-1f` | src/Deckle.Audio/Preprocessing/PreprocessingSettings.cs:71 | oui |  |
 | PreprocessingSettings.LimiterReleaseMs | persisted-setting | `50f` | src/Deckle.Audio/Preprocessing/PreprocessingSettings.cs:72 | oui |  |
 | TranscriptionPreprocessor.SampleRate | tuning-constant | `16000.0` | src/Deckle.Audio/Preprocessing/TranscriptionPreprocessor.cs:42 | non | Frozen module-wide capture format the DSP time constants depend on. Not a knob. |
-| MicrophoneTelemetryCalculator.SubWindowSamples | tuning-constant | `800` | src/Deckle.Audio/Telemetry/MicrophoneTelemetryCalculator.cs:135 | non | 800 samples = 50 ms @16 kHz; must stay in lock-step with WaveInLoop.SubWindowMs. Structural, not tunable. |
+| MicrophoneTelemetryCalculator.SubWindowSamples | tuning-constant | `800` | src/Deckle.Audio/Telemetry/MicrophoneTelemetryCalculator.cs:99 | non | 800 samples = 50 ms @16 kHz; must equal SubWindowAssembler.WindowMs (50 ms), the cut the capture emits. Structural, not tunable. |
 
 ## Deckle.Autocorrect
 
@@ -298,12 +297,12 @@ Total : **625 entrées** réparties sur **38 modules**.
 | Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
 |---|---|---|---|---|---|
 | ApplicationLogToDisk | persisted-setting | `false` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:14 | oui | June inventory locates it on TelemetrySettings.cs:30; it now lives on LoggingSettings. Same user-facing setting, moved module POCO — verify no duplicate persisted key survives in telemetry.json. |
-| LogAmbientCaptureActivity | persisted-setting | `false` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:19 | oui |  |
-| LogTranscriptionActivity | persisted-setting | `false` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:26 | oui | June inventory names it LogStreamingTranscriptionActivity; that identifier no longer exists in source. Treated as a rename, not a new exposable. |
-| LogAutocorrectActivity | persisted-setting | `false` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:38 | oui |  |
-| LogInputActivity | persisted-setting | `false` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:44 | non | Absent from the June inventory — added since. Gates the Raw Input contact-frame rollup and per-gesture Trackpad detail. |
-| LogWindowingActivity | persisted-setting | `false` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:54 | oui |  |
-| LogWindowVisibilityMode | removed-setting | `LogWindowVisibilityMode.All (June); no longer present in source` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs (June: :54) | oui | June-only. Grep over src/ returns zero hits for the identifier; line 54 is now LogWindowingActivity. Kept as an added-from-June row so the deletion is visible, not silently lost. Not an exposable today. |
+| AmbientVerbosity | persisted-setting | `OperationalLogVerbosity.Summary` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:26 | non | Replaces LogAmbientCaptureActivity. Summary: push-loop heartbeat; Details: per-change push lines. |
+| TranscriptionVerbosity | persisted-setting | `OperationalLogVerbosity.Summary` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:32 | non | Replaces LogTranscriptionActivity. Summary: streaming heartbeat and per-take figures; Details: per utterance and per segment. |
+| AutocorrectVerbosity | persisted-setting | `OperationalLogVerbosity.Summary` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:40 | non | Replaces LogAutocorrectActivity. Summary: activity and keyboard rollups; Details: SurfaceChanged probe and learning signals. |
+| InputVerbosity | persisted-setting | `OperationalLogVerbosity.Summary` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:46 | non | Replaces LogInputActivity. Summary: Raw Input contact-frame rollup; Details: per-gesture Trackpad detail. |
+| WindowingVerbosity | persisted-setting | `OperationalLogVerbosity.Off` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:52 | non | Replaces LogWindowingActivity. Ships Off: windowing probes have no summary record, so only Off and Details apply. |
+| LogWindowVisibilityMode | removed-setting | `LogWindowVisibilityMode.All (June); no longer present in source` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs (June: :54) | oui | June-only. Grep over src/ returns zero hits for the identifier; the windowing control is now WindowingVerbosity. Kept as an added-from-June row so the deletion is visible, not silently lost. Not an exposable today. |
 
 ## Deckle.Diagnostics.Telemetry
 
@@ -443,7 +442,7 @@ Total : **625 entrées** réparties sur **38 modules**.
 | AmbientSettings.HueBridgeId | persisted-setting | `null` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:39 | oui |  |
 | AmbientSettings.HueUsername | persisted-setting | `null` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:45 | oui | Credential-ish (CLIP API key). Written in clear JSON by design; the DTLS clientkey lives in the DPAPI vault instead. |
 | AmbientSettings.HueLastGroupId | persisted-setting | `null` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:50 | oui |  |
-| AmbientSettings.SelectedMonitorDeviceName | persisted-setting | `null` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:63 | non | Absent from the June inventory. Bespoke like CaptureSettings.AudioInputDeviceId: values come from a runtime monitor enumeration; null = follow primary. |
+| AmbientSettings.SelectedMonitorDeviceName | persisted-setting | `null` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:63 | non | Absent from the June inventory. Bespoke like CaptureSettings.AudioInputEndpointId: values come from a runtime monitor enumeration; null = follow primary. |
 | AmbientSettings.Preset | persisted-setting | `null` (derived once: "ambient") | src/Deckle.Lighting.Ambient/AmbientSettings.cs | oui | Since 2026-10-12: the stored preset id (game / vivid / movie / ambient / custom) of the Deckle.Presets family on AmbientSettingsService.Presets. Replaces the integer `Mode` enum, which older files still hold and which is ignored. Picking a preset writes the eight AmbientTuning values; a hand edit of one of them turns the selection to Custom. Composed as Setting.Choice<string>. |
 | AmbientSettings.CustomTuning | persisted-setting | `null` | src/Deckle.Lighting.Ambient/AmbientSettings.cs | non | The user's own eight tuning values, kept while a preset is selected so picking Custom brings them back. Written by the family, never shown as such. |
 | AmbientSettings.UseMultiLight | persisted-setting | `false` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:103 | oui |  |
@@ -718,7 +717,7 @@ Total : **625 entrées** réparties sur **38 modules**.
 | WavCorpusWriter.AudioSubfolder | tuning-constant | `"audio"` | src/Deckle.Transcription/Corpus/WavCorpusWriter.cs:35 | non | Corpus folder name; path convention, not a tuning knob. |
 | TranscriptionEngine.PrimingTailWords | tuning-constant | `30` | src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs:513 | non | Comment says explicitly 'not exposed and not yet tuned' — a genuine untuned exposable. |
 | RecordingHostAdapter.DISPOSE_WORKER_JOIN_TIMEOUT_MS | tuning-constant | `30_000` | src/Deckle.Transcription/Engine/TranscriptionEngine.cs:428 | non | Shutdown robustness timeout; borderline implementation constant. |
-| EnergySegmenter.FrameMs | tuning-constant | `50.0` | src/Deckle.Transcription/Streaming/EnergySegmenter.cs:57 | non | Hard-coupled to WaveInLoop's 800-sample sub-window — cannot be changed alone. |
+| EnergySegmenter.FrameMs | tuning-constant | `50.0` | src/Deckle.Transcription/Streaming/EnergySegmenter.cs:52 | non | Hard-coupled to SubWindowAssembler's 800-sample sub-window (WindowMs = 50) — cannot be changed alone. |
 | EnergySegmenterSettings.HangoverMaxMs | persisted-setting | `5_000` | src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:49 | oui |  |
 | EnergySegmenterSettings.HangoverMinMs | persisted-setting | `500` | src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:50 | oui |  |
 | EnergySegmenterSettings.HangoverRampStartMs | persisted-setting | `15_000` | src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:51 | oui |  |

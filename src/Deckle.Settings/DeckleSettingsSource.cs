@@ -4,9 +4,8 @@ using Deckle.Diagnostics;
 
 namespace Deckle.Settings;
 
-// Settings module provider: legacy → per-module migration (SettingsBootstrap),
-// the SettingsWindow shell and General page, the backup service and the shell
-// settings persistence (SettingsService).
+// Settings module provider: the SettingsWindow shell and General page, the
+// backup service and the shell settings persistence (SettingsService).
 //
 // An Info milestone is a short Capital sentence; ids and paths live in a
 // Verbose mirror that follows it. A Warning or Error carries its own cause in
@@ -27,22 +26,9 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
 
     private DeckleSettingsSource() { }
 
-    // ── Bootstrap (legacy → per-module migration) ──
-    public const int EvtMigrationDispatched               = 1;
-    public const int EvtMigrationDispatchSkipped          = 2;
-    public const int EvtMigrationModelsDirectoryDispatched = 3;
-    public const int EvtSettingsSplitIntoPerModuleFiles   = 4;
-    // 5 retired.
-    // 6 retired.
-    public const int EvtModuleFolderMigrated              = 7;
-    public const int EvtModuleRenameDetail                = 8;
-    // 9 retired.
-    // 10 retired.
-    public const int EvtRenamedRootKey                    = 11;
-    public const int EvtMigratedCorpusToTelemetry         = 12;
-    public const int EvtMigratedLlmManualToSlotA          = 13;
-    public const int EvtMigratedLlmSlotAToPrimary         = 14;
-    public const int EvtMigratedLlmSlotBToSecondary       = 15;
+    // ── Retired: the legacy → per-module migration ──
+    // 1 to 15 retired; the migration they reported (SettingsBootstrap) was
+    // removed. Never reuse.
 
     // ── Backup ──
     public const int EvtBackupSkippedSourceMissing        = 16;
@@ -92,12 +78,12 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
     public const int EvtSettingsLoadError                 = 46;
 
     // ── Verbose mirrors ──
-    public const int EvtMigrationDispatchedDetail         = 47;
+    // 47 retired (migration detail).
     // 48 retired.
     // 49 retired.
-    public const int EvtModuleFolderMigratedDetail        = 50;
+    // 50 retired (migration detail).
     // 51 retired.
-    public const int EvtRenamedRootKeyDetail              = 52;
+    // 52 retired (migration detail).
     public const int EvtBackupSkippedSourceMissingDetail  = 53;
     public const int EvtBackupCreatedDetail               = 54;
     // 55 retired.
@@ -154,9 +140,7 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
 
     // ── Failure milestones carrying their cause ──
     // They replace the cause-less milestone + Verbose mirror pairs retired above.
-    public const int EvtPerModuleMigrationFailed          = 82;
-    public const int EvtInjectFailed                      = 83;
-    public const int EvtModuleFolderRenameFailed          = 84;
+    // 82, 83 and 84 retired (migration failures).
     public const int EvtBackupFailed                      = 85;
     public const int EvtBackupListFailed                  = 86;
     public const int EvtRestoreFailed                     = 87;

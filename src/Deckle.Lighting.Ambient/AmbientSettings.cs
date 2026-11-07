@@ -47,7 +47,7 @@ public sealed class AmbientSettings
     // refresh rate held to a tier ceiling (AmbientCaptureCap). A settings
     // file written before 2026-11-07 may still carry "captureFrameRateHz";
     // the deserializer ignores members this class no longer declares, and the
-    // next save drops the key (AmbientSettingsMigrationTests holds it).
+    // next save drops the key.
 
     // ── Preset selection (Deckle.Presets) ──────────────────────────
     //
@@ -57,14 +57,12 @@ public sealed class AmbientSettings
     // low-saturation restitution of the scene's light, the one that
     // reads as room lighting rather than as an effect.
     //
-    // An older file may hold an integer "mode" instead; it is ignored and
-    // the selection is derived once from the values (the preset they
-    // equal, else Custom with those values kept).
+    // While no selection is stored, it is derived once from the values (the
+    // preset they equal, else Custom with those values kept).
 
     /// <summary>The stored selection: a preset id from
     /// <see cref="AmbientPresets"/>, or <c>"custom"</c>. Null until the
-    /// family derives it from the values, on the first load of an older
-    /// file.</summary>
+    /// family derives it from the values, on the first load.</summary>
     public string? Preset { get; set; }
 
     /// <summary>The user's own tuning, kept while a preset is selected so

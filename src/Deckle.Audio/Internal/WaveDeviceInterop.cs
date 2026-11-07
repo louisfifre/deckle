@@ -16,8 +16,8 @@ internal readonly record struct WaveDeviceIdentity(int DeviceId, string Name, bo
         => new(requestedDeviceId, UnknownName, requestedDeviceId < 0);
 }
 
-// winmm and kernel32 entry points the playback (SpeakerOutput) and the capture's
-// event handle need and that Deckle.Core.NativeMethods does not declare. Kept
+// winmm and kernel32 entry points the playback (SpeakerOutput) needs and that
+// Deckle.Core.NativeMethods does not declare. Kept
 // module-local so the device identity and the native error names stay beside
 // the events that carry them.
 internal static class WaveDeviceInterop
