@@ -24,7 +24,7 @@ namespace Deckle.Lighting;
 // username in the URL path). The Entertainment catalog and streaming
 // switch, the EventStream and the v1 ↔ v2 id maps use CLIP v2 (the
 // `hue-application-key` header).
-public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBridgeClient
+public sealed partial class HueBridgeClient : IDisposable, IHueRestBridgeClient
 {
     // Hue caps the `devicetype` string at 40 chars total. "deckle#" is
     // 7 chars, so we have 33 left for the machine name suffix.

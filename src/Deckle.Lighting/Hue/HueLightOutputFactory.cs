@@ -62,6 +62,7 @@ public static class HueLightOutputFactory
         ct.ThrowIfCancellationRequested();
 
         string restReason = "no_client_key";
+        ILightOutput? failedEntertainment = null;
         if (!string.IsNullOrWhiteSpace(bridge.Credentials?.ClientKey))
         {
             var (area, areaReason) = await TryResolveEntertainmentAreaAsync(bridge, groupId, ct).ConfigureAwait(false);
@@ -85,6 +86,7 @@ public static class HueLightOutputFactory
                     await DisposeOutputBestEffortAsync(entertainment).ConfigureAwait(false);
                     LogEntertainmentFallback("connect_failed", ex);
                     restReason = "connect_failed";
+                    failedEntertainment = entertainment;
                     // The bridge may expose Entertainment but reject the
                     // session at runtime (UDP/DTLS/firmware/firewall).
                     // Keep Ambient usable through the established REST path.
@@ -93,6 +95,7 @@ public static class HueLightOutputFactory
         }
 
         var rest = bridge.CreateRestOutput(groupId);
+        InheritStatesFromFailedStart(rest, failedEntertainment);
         await rest.ConnectAsync(ct).ConfigureAwait(false);
         DeckleLightingSource.Log.LightOutputSelected(RestOutputName, restReason);
         return rest;
@@ -125,6 +128,7 @@ public static class HueLightOutputFactory
             LogEntertainmentFallback("connect_failed", ex);
 
             var rest = bridge.CreateRestOutput(groupId);
+            InheritStatesFromFailedStart(rest, output);
             await rest.ConnectAsync(ct).ConfigureAwait(false);
             DeckleLightingSource.Log.LightOutputSelected(RestOutputName, "connect_failed");
             return rest;
@@ -229,6 +233,16 @@ public static class HueLightOutputFactory
         return bestOverlap > 0 ? best : null;
     }
 
+    // The failed Entertainment start read the lights before its pre-prime
+    // dimmed them. The REST output takes that reading rather than taking its
+    // own after the fact, so the snapshot stays the one from before any
+    // light was touched, even if the Entertainment restore itself fell short.
+    private static void InheritStatesFromFailedStart(ILightOutput rest, ILightOutput? failed)
+    {
+        if (rest is HueRestLightOutput restOutput && failed is HueEntertainmentLightOutput entertainment)
+            restOutput.InheritStatesBeforeStreaming(entertainment.StatesBeforeStreaming);
+    }
+
     private static async Task DisposeOutputBestEffortAsync(ILightOutput output)
     {
         try { await output.DisposeAsync().ConfigureAwait(false); }
@@ -265,7 +279,7 @@ public static class HueLightOutputFactory
             => new HueEntertainmentLightOutput(_client, area, clientKey);
 
         public ILightOutput CreateRestOutput(string groupId)
-            => new HueRestLightOutput(_client, groupId);
+            => new HueRestLightOutput(_client, groupId, restoreStates: true);
     }
 }
 
