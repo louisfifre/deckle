@@ -1611,6 +1611,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ForegroundWatcher.cs
 │   │   ├── ForegroundWatcher.Probe.cs
 │   │   └── FullscreenGeometry.cs
+│   ├── Deckle.Shell.Taskbar/
+│   │   ├── Deckle.Shell.Taskbar.csproj
+│   │   ├── DeckleShellTaskbarSource.cs
+│   │   ├── SettingsSearch.cs
+│   │   ├── TaskbarSettings.cs
+│   │   ├── TaskbarSettingsModule.cs
+│   │   └── TaskbarSettingsService.cs
 │   ├── Deckle.Shell.TaskbarCover/
 │   │   ├── Interop/
 │   │   │   └── TaskbarCoverNativeMethods.cs
