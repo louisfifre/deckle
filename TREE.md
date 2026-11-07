@@ -2257,6 +2257,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientObservabilityCollection.cs
 │   │   ├── AmbientPresetSelectionLogTests.cs
 │   │   ├── AmbientPresetsTests.cs
+│   │   ├── AmbientPreviewBugNotes.md
 │   │   ├── AmbientPreviewGeometryTests.cs
 │   │   ├── AmbientPreviewRobustnessTests.cs
 │   │   ├── AmbientPreviewScanLogTests.cs
