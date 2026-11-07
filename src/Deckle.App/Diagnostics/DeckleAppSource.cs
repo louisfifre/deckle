@@ -146,4 +146,5 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtSpeechRepairOffered            = 130;
     public const int EvtSpeechRepairEnded              = 131;
     public const int EvtSpeechRepairFailed             = 132;
+    public const int EvtShutdownRequestIgnored         = 133;
 }
