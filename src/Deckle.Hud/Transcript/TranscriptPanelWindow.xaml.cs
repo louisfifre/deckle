@@ -157,7 +157,7 @@ public sealed partial class TranscriptPanelWindow : Window
             NativeMethods.SWP_NOZORDER | NativeMethods.SWP_NOACTIVATE);
 
         _fade = new LayeredAlphaAnimator(_hwnd, DispatcherQueue, initialAlpha: 0);
-        SystemAnimationPreference.Instance.Changed += OnSystemAnimationsChanged;
+        AnimationPreference.Instance.Changed += OnAnimationPreferenceChanged;
 
         // Keep the newest line at the bottom whenever the viewport (window
         // resize) or the extent (new text) changes size.
@@ -211,7 +211,7 @@ public sealed partial class TranscriptPanelWindow : Window
             return;
         }
 
-        if (revised && SystemAnimationPreference.Instance.AnimationsEnabled)
+        if (revised && AnimationPreference.Instance.AnimationsEnabled)
             CrossFade();
         else
             Render();
@@ -435,7 +435,7 @@ public sealed partial class TranscriptPanelWindow : Window
         }
     }
 
-    private void OnSystemAnimationsChanged(bool enabled) =>
+    private void OnAnimationPreferenceChanged(bool enabled) =>
         EnqueueUI(() => _fade.SetAnimationsEnabled(enabled));
 
     private IntPtr SubclassCallback(

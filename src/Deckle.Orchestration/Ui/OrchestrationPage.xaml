@@ -204,12 +204,15 @@
                                          Info switch leaves it shown. -->
                                     <controls:SettingsExpander Header="{x:Bind DisplayName}"
                                                                Description="{x:Bind Description, Mode=OneWay}"
+                                                               HeaderIcon="{x:Bind HeaderIcon, Mode=OneWay}"
                                                                ItemsSource="{x:Bind Items}"
                                                                ItemTemplate="{StaticResource EntryItemTemplateSelector}">
-                                        <!-- No header icon, the app/game glyph
-                                             included: the rail carries the page
-                                             icon (2026-10-14), and the kind reads
-                                             in words on the Kind card inside. -->
+                                        <!-- The header icon is the executable's own,
+                                             read from the file (2026-10-12, Louis:
+                                             "if we can get it we show it, otherwise
+                                             nothing"). No stand-in glyph: with no
+                                             icon the header has none, and the kind
+                                             reads in words on the Kind card inside. -->
                                         <StackPanel Orientation="Horizontal"
                                                     Spacing="8"
                                                     VerticalAlignment="Center">
