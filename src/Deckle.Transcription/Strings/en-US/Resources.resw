@@ -630,9 +630,6 @@
   <data name="StreamingPageSegmentationSection.Caption" xml:space="preserve">
     <value>The voice level that opens an utterance is on the Recording page.</value>
   </data>
-  <data name="WhisperPageResetAllLabel.Text" xml:space="preserve">
-    <value>Reset all</value>
-  </data>
 
   <!-- ─── Settings — code-behind dialogs ─────────────────────────────
        ContentDialogs raised programmatically by Settings pages and
@@ -644,11 +641,8 @@
   <!-- GeneralPage Audio input ComboBox items -->
 
   <!-- WhisperPage Reset all dialog -->
-  <data name="Settings_ResetWhisperDialog_Title" xml:space="preserve">
-    <value>Reset all settings?</value>
-  </data>
-  <data name="Settings_ResetWhisperDialog_Content" xml:space="preserve">
-    <value>This will restore every transcription setting on this page to its default value.</value>
+  <data name="Settings_ResetWhisperDialog_Detail" xml:space="preserve">
+    <value>The Decoding and Streaming pages keep their own values.</value>
   </data>
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->

@@ -793,6 +793,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── PauseStrip.cs
 │   │   │   ├── PreviewBlock.cs
 │   │   │   ├── Readout.cs
+│   │   │   ├── ResetAllWording.cs
 │   │   │   ├── SentinelNumberFormatter.cs
 │   │   │   ├── Setting.cs
 │   │   │   ├── SettingArgs.cs
@@ -1335,6 +1336,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── LlmGeneralViewModel.Settings.cs
 │   │   ├── Deckle.Llm.Rewrite.csproj
 │   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite vocabulary. It draws the Correction / Rewrite boundary, which decides w…
+│   │   ├── LlmResetDefaults.cs
 │   │   ├── LlmSettings.cs
 │   │   ├── LlmSettingsMigrations.cs
 │   │   ├── LlmSettingsMigrations.LengthSwitch.cs

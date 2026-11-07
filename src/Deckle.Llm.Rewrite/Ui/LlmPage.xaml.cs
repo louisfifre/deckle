@@ -34,9 +34,8 @@ public sealed partial class LlmPage : Page
     {
         InitializeComponent();
 
-        // The page asks with its own wording (it says what the reset wipes), so
-        // the header does not add its generic confirmation on top.
-        Header.ConfirmsReset = false;
+        // The header asks; the page adds what its reset keeps and what it loses.
+        Header.ResetDetail = Loc.Get("Settings_ResetLlmDialog_Detail");
 
         // The reset spans profiles, providers and slots that no composer
         // models, so a dirty check cannot be computed from the page's composers
@@ -307,23 +306,11 @@ public sealed partial class LlmPage : Page
     {
         // async void: the try/catch keeps an exception (Save IO, UI hydration)
         // from bubbling to the dispatcher.
+        // The header has already asked (title, verb and body are the same on
+        // every page); this only carries the reset out.
         try
         {
-            bool confirmed = await ConfirmationService.RequestAsync(
-                this.XamlRoot,
-                new ConfirmationRequest(
-                    Loc.Get("Settings_ResetLlmDialog_Title"),
-                    Loc.Get("Settings_ResetLlmDialog_Content"),
-                    Loc.Get("LlmPageResetAllLabel.Text"),
-                    IsDestructive: true));
-            if (!confirmed)
-                return;
-
-            // Fresh defaults carry no profile ids: reconcile them before the
-            // instance goes live.
-            var fresh = new LlmSettings();
-            LlmSettingsMigrations.Apply(fresh);
-            LlmSettingsService.Instance.Replace(fresh);
+            LlmSettingsService.Instance.Replace(LlmResetDefaults.From(LlmSettingsService.Instance.Current));
             Hydrate();
             await RefreshProvidersAsync();
         }

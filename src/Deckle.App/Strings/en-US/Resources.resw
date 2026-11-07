@@ -172,7 +172,12 @@
     <value>Reset this page?</value>
   </data>
   <data name="SettingsPageHeader_ResetAllDialogBody" xml:space="preserve">
-    <value>Every setting on this page goes back to its default value.</value>
+    <value>The values on this page go back to their defaults.</value>
+  </data>
+  <!-- The sentence a page adds when it has a module switch: a reset restores
+       values, never the person's choice to have the feature on or off. -->
+  <data name="SettingsPageHeader_ResetKeepsSwitch" xml:space="preserve">
+    <value>The on/off switch stays as you set it.</value>
   </data>
   <!-- A Magnitude card's header when its value has a unit: the unit joins the
        header, PowerToys style, so the field beside the slider ends at the same
@@ -843,12 +848,6 @@
        Page titles, subtitles, and section headers rendered as plain
        TextBlocks (not Cards). x:Uid resolves <Uid>.Text automatically.
        Values mirror the raw Surface_Purpose entries for code-behind. -->
-  <data name="WhisperPageResetAllLabel.Text" xml:space="preserve">
-    <value>Reset all</value>
-  </data>
-  <data name="LlmPageResetAllLabel.Text" xml:space="preserve">
-    <value>Reset all</value>
-  </data>
 
   <!-- ─── Settings — code-behind dialogs ─────────────────────────────
        ContentDialogs raised programmatically by Settings pages and
@@ -925,27 +924,18 @@
   </data>
 
   <!-- WhisperPage Reset all dialog -->
-  <data name="Settings_ResetWhisperDialog_Title" xml:space="preserve">
-    <value>Reset all settings?</value>
-  </data>
-  <data name="Settings_ResetWhisperDialog_Content" xml:space="preserve">
-    <value>This will restore every transcription setting on this page to its default value.</value>
+  <data name="Settings_ResetWhisperDialog_Detail" xml:space="preserve">
+    <value>The Decoding and Streaming pages keep their own values.</value>
   </data>
 
   <!-- DiagnosticsPage Telemetry + whole-page reset dialogs -->
-  <data name="Settings_ResetDiagnosticsDialog_Title" xml:space="preserve">
-    <value>Reset all settings?</value>
-  </data>
-  <data name="Settings_ResetDiagnosticsDialog_Content" xml:space="preserve">
-    <value>Each log verbosity goes back to its default. The trace and every telemetry dataset are turned off, and the telemetry folder returns to its default location.</value>
+  <data name="Settings_ResetDiagnosticsDialog_Detail" xml:space="preserve">
+    <value>The trace and every telemetry dataset are turned off, and the telemetry folder returns to its default location.</value>
   </data>
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
-  <data name="Settings_ResetLlmDialog_Title" xml:space="preserve">
-    <value>Reset all rewriting settings?</value>
-  </data>
-  <data name="Settings_ResetLlmDialog_Content" xml:space="preserve">
-    <value>Every rewriting setting goes back to its default: the switch, the rewrite profile, the length steps and rewriting while you speak. The providers and profiles, shortcuts included, are replaced by the defaults. API keys stay saved. Your custom prompts and parameters will be lost.</value>
+  <data name="Settings_ResetLlmDialog_Detail" xml:space="preserve">
+    <value>The providers and profiles, shortcuts included, are replaced by the defaults, so your custom prompts and parameters are lost. API keys and the rewriting switch stay as they are.</value>
   </data>
   <data name="Settings_OllamaStatusMessage_Format" xml:space="preserve">
     <value>Start Ollama or check the provider's address ({0}).</value>
@@ -1239,14 +1229,8 @@
   <!-- AmbientPage Reset all dialog — duplicated from
        src/Deckle.Lighting.Ambient/Strings/en-US/Resources.resw, which
        stays the source of truth for wording. -->
-  <data name="AmbientPageResetAllLabel.Text" xml:space="preserve">
-    <value>Reset all</value>
-  </data>
-  <data name="Settings_ResetAmbientDialog_Title" xml:space="preserve">
-    <value>Reset all settings?</value>
-  </data>
-  <data name="Settings_ResetAmbientDialog_Content" xml:space="preserve">
-    <value>This will restore the colour and motion tuning, the brightness floor, the edge band each zone reads, and whether the lights follow their zones or share one colour to their default values. Your Hue bridge pairing, the selected light group, the display, per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
+  <data name="Settings_ResetAmbientDialog_Detail" xml:space="preserve">
+    <value>Your Hue bridge pairing, the selected light group, the display, the per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
   </data>
 
   <!-- AmbientPreviewCard and LightZonesCard code-behind (Loc.Get) —
