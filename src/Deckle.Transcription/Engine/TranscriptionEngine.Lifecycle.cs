@@ -71,7 +71,8 @@ public sealed partial class TranscriptionEngine
 
         if (!result.Success)
         {
-            OpenModelIncident(workId, result.ErrorReason ?? "load_failed", "", "");
+            OpenModelIncident(workId, result.ErrorReason ?? "load_failed", "", "",
+                result.ModelPath ?? "", result.GpuRequested);
             if (result.ErrorReason == "file_not_found")
             {
                 EmitUserFeedback(FB_ERROR,

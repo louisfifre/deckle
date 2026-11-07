@@ -16,6 +16,7 @@ namespace Deckle.Diagnostics;
 // window is added to the project):
 //   "hud"         — HudWindow (bottom-center, long-lived)
 //   "hud-overlay" — HudOverlayWindow (stacked transient card)
+//   "transcript"  — TranscriptPanelWindow (live text beside the HUD)
 //   "settings"    — SettingsWindow
 //   "log"         — LogWindow
 //   "setup"       — SetupWindow first-run wizard

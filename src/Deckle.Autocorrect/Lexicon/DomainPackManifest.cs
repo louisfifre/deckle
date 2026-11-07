@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Deckle.Diagnostics;
 
 namespace Deckle.Autocorrect;
 
@@ -74,7 +75,7 @@ public sealed record DomainPackManifest
             // is shipped build output, not user data, so its parser message is
             // safe to log.
             DeckleAutocorrectSource.Log.DomainPackManifestUnreadable(
-                pack.Id, ex.GetType().FullName ?? ex.GetType().Name, ex.Message);
+                pack.Id, ExceptionTypeName.Of(ex), ex.Message);
             return null;
         }
     }

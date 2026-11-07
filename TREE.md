@@ -363,6 +363,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── DialogueGestures.cs
 │   │   ├── Gateway/
 │   │   │   ├── GatewayContract.cs
+│   │   │   ├── GatewayKeyFingerprint.cs
 │   │   │   ├── GatewayPayload.cs
 │   │   │   ├── GatewayProcesses.cs
 │   │   │   ├── GatewayReconciliation.cs
@@ -869,6 +870,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DiagnosticsFiles.cs
 │   │   ├── DispatchEventListener.cs
 │   │   ├── EventEntry.cs
+│   │   ├── ExceptionTypeName.cs
 │   │   ├── GLOSSARY.md  — glossary-deckle-diagnostics Observability vocabulary for the Diagnostics family, .Logging and .Telemetry in…
 │   │   ├── IFlushableLogSink.cs
 │   │   ├── ILogSink.cs
@@ -972,6 +974,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Transcript/
 │   │   │   ├── TranscriptPanelLayout.cs
 │   │   │   ├── TranscriptPanelWindow.Proximity.cs
+│   │   │   ├── TranscriptPanelWindow.Theme.cs
 │   │   │   ├── TranscriptPanelWindow.xaml
 │   │   │   └── TranscriptPanelWindow.xaml.cs
 │   │   ├── Windows/
@@ -1175,10 +1178,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientEngineState.cs
 │   │   │   ├── AmbientHeartbeatWindow.cs
 │   │   │   ├── AmbientHueChangeAttributor.cs
+│   │   │   ├── AmbientPreviewHealth.cs
 │   │   │   ├── AmbientPushCadence.cs
 │   │   │   ├── AmbientPushGate.cs
 │   │   │   ├── AmbientZoneSampler.cs
 │   │   │   ├── HueEndpointResolver.cs
+│   │   │   ├── HueGroupSelection.cs
 │   │   │   ├── HuePairingService.cs
 │   │   │   ├── LightPlacementResolver.cs
 │   │   │   ├── LightZone.cs
@@ -1569,6 +1574,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageOnlyHost.cs
 │   │   ├── ResizeCoalescer.cs
 │   │   ├── ResizeGesture.cs
+│   │   ├── SessionEndSignal.cs
+│   │   ├── SessionEndWatcher.cs
 │   │   ├── StartupService.cs
 │   │   ├── TrayIconManager.cs
 │   │   └── TrayIconRegistration.cs
@@ -1673,6 +1680,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptionEngine.MonolithicPipeline.cs
 │   │   │   ├── TranscriptionEngine.Pipeline.cs
 │   │   │   ├── TranscriptionEngine.Recovery.cs
+│   │   │   ├── TranscriptionEngine.Shutdown.cs
 │   │   │   ├── TranscriptionEngine.StateMachine.cs
 │   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
 │   │   │   ├── TranscriptionEngine.Take.cs
@@ -1815,6 +1823,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensBugNotes.md
 │   │   ├── McpClientTokensTests.cs
+│   │   ├── McpHealthEndpointTests.cs
 │   │   ├── McpHostBugNotes.md
 │   │   ├── McpHttpHostTests.cs
 │   │   ├── McpObservabilityTests.cs
@@ -1869,6 +1878,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DialogueGesturesTests.cs
 │   │   ├── DocumentGesturesTests.cs
 │   │   ├── FakeV2Handler.cs
+│   │   ├── GatewayKeyFingerprintTests.cs
 │   │   ├── GatewayPayloadTests.cs
 │   │   ├── GatewayReconciliationTests.cs
 │   │   ├── GatewaySupervisorTests.cs
@@ -2066,6 +2076,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DispatchEventListenerIncidentTests.cs
 │   │   ├── DispatchEventListenerRegressionTests.cs
 │   │   ├── DispatchEventListenerTests.cs
+│   │   ├── ExceptionTypeNameTests.cs
 │   │   ├── JsonlLineSerializerRegressionTests.cs
 │   │   ├── JsonlLineSerializerTests.cs
 │   │   ├── JsonlSinkBugNotes.md
@@ -2198,7 +2209,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientObservabilityCollection.cs
 │   │   ├── AmbientPresetSelectionLogTests.cs
 │   │   ├── AmbientPresetsTests.cs
+│   │   ├── AmbientPreviewBugNotes.md
 │   │   ├── AmbientPreviewGeometryTests.cs
+│   │   ├── AmbientPreviewRobustnessTests.cs
 │   │   ├── AmbientPreviewScanLogTests.cs
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
@@ -2375,6 +2388,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── ResizeGestureTests.cs
+│   │   ├── SessionEndSignalTests.cs
 │   │   ├── ShellObservabilityCollection.cs
 │   │   ├── TrayIconBugNotes.md
 │   │   ├── TrayIconFallbackObservabilityTests.cs
@@ -2416,6 +2430,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs
 │   │   ├── FileTranscriptionResultTests.cs
+│   │   ├── LengthStepBatchRewriteTests.cs
 │   │   ├── LiveTranscriptionPipelineTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
@@ -2423,6 +2438,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PhantomUtteranceBugNotes.md
 │   │   ├── PhantomUtteranceFilterTests.cs
 │   │   ├── PreparedFileChannelTests.cs
+│   │   ├── QuitDuringWorkTests.cs
 │   │   ├── RecoverTakeFromAudioTests.cs
 │   │   ├── RewriteAvailabilityTests.cs
 │   │   ├── RewriteProfileSelectionTests.cs
