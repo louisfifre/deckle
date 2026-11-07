@@ -4,7 +4,7 @@ namespace Deckle.Audio;
 //
 // The arithmetic of the voice meter on the Recording page, kept out of the
 // control so it is testable without XAML: where a dBFS value falls on the
-// track, the smoothing the bar shares with the HUD outline, and how long the
+// track, how the bar rises and falls between two packets, and how long the
 // peak tick holds. Pure functions; the control owns every piece of state.
 internal static class VoiceLevelMeterScale
 {
@@ -41,15 +41,25 @@ internal static class VoiceLevelMeterScale
         return Math.Clamp((dbfs - MinDbfs) / (MaxDbfs - MinDbfs), 0.0, 1.0);
     }
 
-    // The HUD's exponential smoothing factor (AudioLevelMapper.EmaAlpha), one
-    // step per 50 ms frame: the same factor, on a different quantity. The HUD
-    // smooths its perceptual 0..1 level, the meter smooths the dB value. The
-    // first frame of a run has no previous value and is taken as is.
-    public static double Smooth(double? previousDbfs, double sampleDbfs)
+    // The bar's ballistics, in time rather than per call: it follows each
+    // packet's level (CaptureLevel, about 10 ms of audio) with a fast rise and a
+    // slow fall, the way a hardware level meter does. The rise is near instant,
+    // so a syllable shows as it is spoken; the fall is slow enough that the eye
+    // can read the level between two words instead of a flicker. Both are time
+    // constants of an exponential, applied to the dB value over the audio the
+    // packet covers, so a 3 ms and a 10 ms device move the bar at the same speed.
+    public const double AttackMs = 5.0;
+    public const double ReleaseMs = 300.0;
+
+    // The bar's next value after `elapsedMs` of audio at `sampleDbfs`. The first
+    // packet of a run has no previous value and is taken as is.
+    public static double Ballistic(double? previousDbfs, double sampleDbfs, double elapsedMs)
     {
         if (previousDbfs is not { } previous) return sampleDbfs;
-        double alpha = AudioLevelMapper.EmaAlpha;
-        return previous * alpha + sampleDbfs * (1.0 - alpha);
+        if (elapsedMs <= 0) return previous;
+        double tau = sampleDbfs > previous ? AttackMs : ReleaseMs;
+        double keep = Math.Exp(-elapsedMs / tau);
+        return previous * keep + sampleDbfs * (1.0 - keep);
     }
 
     // The peak tick's next position. A value at or above the held peak takes

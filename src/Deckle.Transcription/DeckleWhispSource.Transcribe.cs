@@ -26,14 +26,17 @@ public sealed partial class DeckleWhispSource
     }
 
     // Opens the microphone incident, once until a capture succeeds. phase
-    // (closed vocabulary): probe | capture. mmsys_err is the raw MMSYSERR code.
+    // (closed vocabulary): probe | capture. hresult is the raw WASAPI or
+    // MMDevice error code of the open (version 2; version 1 carried the waveIn
+    // MMSYSERR code as mmsys_err).
     [Event(EvtMicrophoneUnavailable,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "The microphone is unavailable, so dictation cannot record until it comes back\nphase={0} | mmsys_err={1}")]
-    public void MicrophoneUnavailable(string phase, int mmsys_err)
+           Version = 2,
+           Message = "The microphone is unavailable, so dictation cannot record until it comes back\nphase={0} | hresult={1}")]
+    public void MicrophoneUnavailable(string phase, uint hresult)
     {
-        if (IsEnabled()) WriteEvent(EvtMicrophoneUnavailable, phase, mmsys_err);
+        if (IsEnabled()) WriteEvent(EvtMicrophoneUnavailable, phase, hresult);
     }
 
     [Event(EvtMicrophoneRecovered,

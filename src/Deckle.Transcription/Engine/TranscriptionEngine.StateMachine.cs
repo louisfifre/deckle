@@ -16,8 +16,8 @@ public sealed partial class TranscriptionEngine
     // ── StateMachine partial — RequestToggle + WorkerRun + state transitions ────────────────────────────────────────
 
     // How long capture keeps running after the Stop press. The press lands
-    // while the user is still finishing the last word, and the waveIn loop
-    // would otherwise stop within one 50 ms buffer, cutting that word. The tail
+    // while the user is still finishing the last word, and the capture loop
+    // would otherwise stop within one device period, cutting that word. The tail
     // catches its end plus a little real trailing silence, which Whisper also
     // ends on better than on a clipped word. The HUD has already switched to
     // "transcribing" on the press, so the tail is hidden behind that transition.
@@ -293,11 +293,11 @@ public sealed partial class TranscriptionEngine
             // Probe the audio device BEFORE "Recording" can fire. If the mic is
             // absent or busy, short-circuit the entire pipeline: no HUD chrono,
             // no worker thread, no empty transcription.
-            var probe = _capture.Probe(_host.Audio.AudioInputDeviceId);
+            var probe = _capture.Probe(_host.Audio.AudioInputEndpointId);
             if (!probe.Ok)
             {
-                var (title, body) = LocalizeMicError(probe.Kind, probe.MmsysErr);
-                OpenMicrophoneIncident("probe", probe.MmsysErr);
+                var (title, body) = LocalizeMicError(probe.Kind, probe.ErrorCode);
+                OpenMicrophoneIncident("probe", probe.ErrorCode);
                 EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
                 return ToggleResult.IgnoredBusy;
             }
@@ -323,7 +323,7 @@ public sealed partial class TranscriptionEngine
                 return ToggleResult.IgnoredDisposed;
             }
 
-            // AboveNormal, not Normal: this thread runs the waveIn capture loop,
+            // AboveNormal, not Normal: this thread runs the WASAPI capture loop,
             // which only needs to be scheduled promptly when the buffer-done event
             // fires (every 50 ms) and sleeps the rest of the time. At Normal it
             // loses its slot to the concurrent Whisper inference on the thread
@@ -546,7 +546,7 @@ public sealed partial class TranscriptionEngine
         }
     }
 
-    // Fired by MicrophoneCapture the instant waveInStart confirms the mic is
+    // Fired by MicrophoneCapture the instant the stream start confirms the mic is
     // live, on the worker thread inside Record. Everything glued to the actual
     // start of capture happens here, so the HUD chrono does not lead the audio
     // by the device-open latency. On a cold worker "Recording" fires while the

@@ -425,7 +425,7 @@
   <!-- ─── Microphone errors ──────────────────────────────────────────
        UserFeedback pairs raised by TranscriptionEngine.LocalizeMicError when
        MicrophoneCapture.Probe / Record returns a MicErrorKind. The
-       Unavailable body interpolates the raw MMSYSERR code as {0}
+       Unavailable body interpolates the raw error code as {0} (a Windows HRESULT in hex, or a PortAudio error in decimal)
        for diagnostic clarity. -->
   <data name="MicError_NotDetected_Title" xml:space="preserve">
     <value>No microphone detected</value>
@@ -443,7 +443,7 @@
     <value>Microphone unavailable</value>
   </data>
   <data name="MicError_Unavailable_Body_Format" xml:space="preserve">
-    <value>Mic open failed (MMSYSERR {0}).</value>
+    <value>Mic open failed (error {0}).</value>
   </data>
 
   <!-- ─── HUD feedback from the host ─────────────────────────────────
@@ -867,6 +867,9 @@
   <data name="Settings_AudioInput_Device_Format" xml:space="preserve">
     <value>Device {0}</value>
   </data>
+  <data name="Settings_AudioInput_Missing" xml:space="preserve">
+    <value>Saved microphone (not connected)</value>
+  </data>
 
   <!-- RecordingPage mic-check detail line and VoiceLevelMeter code-behind
        (Loc.Get / Loc.Format) — duplicated from src/Deckle.Audio/Strings/en-US/
@@ -888,6 +891,16 @@
   </data>
   <data name="RecordingVoiceMeter_Silence" xml:space="preserve">
     <value>Silence</value>
+  </data>
+
+  <!-- The Signal readout: what Windows granted the capture. Raw is the
+       microphone with no Windows effects, gain control or noise suppression;
+       Processed is the fallback, Windows's default processing for the device. -->
+  <data name="RecordingVoiceMeter_Signal_Raw" xml:space="preserve">
+    <value>Raw</value>
+  </data>
+  <data name="RecordingVoiceMeter_Signal_Default" xml:space="preserve">
+    <value>Processed</value>
   </data>
   <data name="RecordingVoiceMeter_Failure_NotDetected" xml:space="preserve">
     <value>No microphone found. Check the device above, then turn Listen on again.</value>

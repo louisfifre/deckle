@@ -45,7 +45,7 @@ public partial class RecordingViewModel
             // RecordAsync stops any playback first, so the speakers are not
             // heard in the new take.
             ListeningTake? take = await _listeningTester.RecordAsync(
-                CaptureSettingsService.Instance.Current.AudioInputDeviceId);
+                CaptureSettingsService.Instance.Current.AudioInputEndpointId);
             // A failed retake keeps the previous take: the play buttons stay
             // usable and the error InfoBar says what went wrong.
             if (take is not null) _listeningTake = take;

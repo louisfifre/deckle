@@ -28,14 +28,29 @@ public sealed partial class RecordingPage : Page
         // Before LoadAndSync, so the meter's marks follow Load()'s voice level.
         VoiceMeter.ViewModel = ViewModel;
         // The microphone check and the listening test open the microphone on
-        // their own; Listen closes first, since two waveIn opens of one device
-        // at once are not known to be safe. The page and the view-model live
+        // their own; Listen closes first, so the take is not shared with a
+        // meter that would hold the device open beside it. The page and the view-model live
         // and die together, so the subscription needs no removal.
         ViewModel.MicrophoneNeeded += (_, _) => VoiceMeter.Stop();
         ComposeVoiceLevelSection();
         ComposeRecordingLimitSection();
         ComposePreprocessingSection();
+        ComposeExclusiveModeCard();
         LoadAndSync();
+    }
+
+    // ── Composed exclusive-mode card ──────────────────────────────────────────
+    //
+    // Under the microphone and its Windows properties: it says how the device
+    // is opened, so it belongs with the device, outside the Recording section
+    // and its reset. The header's "Reset all" turns it back off.
+    private SettingsComposer? _exclusiveModeComposer;
+
+    private void ComposeExclusiveModeCard()
+    {
+        _exclusiveModeComposer = new SettingsComposer(ExclusiveModeHost, ViewModel);
+        _exclusiveModeComposer.Compose(ViewModel.ExclusiveModeSettings);
+        _exclusiveModeComposer.DirtyChanged += OnComposedDirtyChanged;
     }
 
     // ── Composed voice-level card ─────────────────────────────────────────────
@@ -93,7 +108,7 @@ public sealed partial class RecordingPage : Page
             (_recordingLimitComposer?.IsDirty() ?? false) ||
             (_preprocessingComposer?.IsDirty() ?? false);
         RecordingSection.IsResetEnabled = dirty;
-        Header.IsResetAllEnabled = dirty;
+        Header.IsResetAllEnabled = dirty || (_exclusiveModeComposer?.IsDirty() ?? false);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -129,37 +144,81 @@ public sealed partial class RecordingPage : Page
 
     // ── Audio input ──────────────────────────────────────────────────────────
     //
-    // Dynamically populated through Win32 waveIn; stays in code-behind because
-    // this is hardware enumeration, not a setting. The combo has "System
-    // default" at index 0, so comboIndex ↔ deviceId requires conversion.
+    // Populated from the active capture endpoints, through the same enumerator
+    // the capture opens them with; stays in code-behind because this is
+    // hardware enumeration, not a setting. The combo shows names, and
+    // _audioInputIds holds the endpoint id at each index: "System default"
+    // (empty id) at index 0, then the devices in the order Windows lists them.
+    //
+    // A saved microphone that is not plugged in keeps its place in the list,
+    // named as missing, rather than showing "System default": the setting still
+    // names it, and the capture will look for it again once it is back. Showing
+    // the default would say something the setting does not.
+    private readonly List<string> _audioInputIds = [];
 
     private void PopulateAudioInputDevices()
     {
         AudioInputCombo.Items.Clear();
-        AudioInputCombo.Items.Add(Loc.Get("Settings_AudioInput_SystemDefault"));
+        _audioInputIds.Clear();
 
-        uint numDevs = NativeMethods.waveInGetNumDevs();
-        for (uint i = 0; i < numDevs; i++)
+        AudioInputCombo.Items.Add(Loc.Get("Settings_AudioInput_SystemDefault"));
+        _audioInputIds.Add("");
+
+        IReadOnlyList<Internal.MicrophoneEndpoint> endpoints = Internal.MicrophoneEndpointCatalog.Active();
+        for (int i = 0; i < endpoints.Count; i++)
         {
-            var caps = new NativeMethods.WAVEINCAPSW();
-            uint err = NativeMethods.waveInGetDevCapsW(i, ref caps,
-                (uint)System.Runtime.InteropServices.Marshal.SizeOf<NativeMethods.WAVEINCAPSW>());
-            string name = err == 0 ? caps.szPname : Loc.Format("Settings_AudioInput_Device_Format", i);
+            Internal.MicrophoneEndpoint endpoint = endpoints[i];
+            string name = endpoint.Name == Internal.CaptureDeviceIdentity.UnknownName
+                ? Loc.Format("Settings_AudioInput_Device_Format", i + 1)
+                : endpoint.Name;
             AudioInputCombo.Items.Add(name);
+            _audioInputIds.Add(endpoint.Id);
         }
 
-        int deviceId = ViewModel.AudioInputDeviceId;
-        int comboIndex = deviceId < 0 ? 0 : deviceId + 1;
-        if (comboIndex >= AudioInputCombo.Items.Count)
-            comboIndex = 0;
+        string saved = ViewModel.AudioInputEndpointId;
+        int comboIndex = _audioInputIds.IndexOf(saved);
+        if (comboIndex < 0)
+        {
+            AudioInputCombo.Items.Add(Loc.Get("Settings_AudioInput_Missing"));
+            _audioInputIds.Add(saved);
+            comboIndex = _audioInputIds.Count - 1;
+        }
         AudioInputCombo.SelectedIndex = comboIndex;
     }
 
     private void AudioInputCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
-        if (_initializing || AudioInputCombo.SelectedIndex < 0) return;
-        int deviceId = AudioInputCombo.SelectedIndex <= 0 ? -1 : AudioInputCombo.SelectedIndex - 1;
-        ViewModel.AudioInputDeviceId = deviceId;
+        int index = AudioInputCombo.SelectedIndex;
+        if (_initializing || index < 0 || index >= _audioInputIds.Count) return;
+        ViewModel.AudioInputEndpointId = _audioInputIds[index];
+    }
+
+    // ── Windows microphone properties ────────────────────────────────────────
+    //
+    // A command, not a setting: it opens the page of Windows Settings where the
+    // selected microphone's input volume is set. That volume is the endpoint's
+    // own gain, applied before any processing mode, the raw one included, so it
+    // is the one dial that decides how close to clipping the signal Deckle
+    // receives sits; Deckle neither reads nor writes it. With "System default"
+    // selected, Windows opens the default input device's page; with a device,
+    // that device's page, named by its endpoint id.
+    private async void MicrophoneProperties_Click(object sender, RoutedEventArgs e)
+    {
+        string id = ViewModel.AudioInputEndpointId;
+        var uri = new Uri(id.Length == 0
+            ? "ms-settings:sound-defaultinputproperties"
+            : "ms-settings:sound-properties?endpointId=" + Uri.EscapeDataString(id));
+        bool launched;
+        try
+        {
+            launched = await Windows.System.Launcher.LaunchUriAsync(uri);
+        }
+        catch (Exception ex) when (ex is ArgumentException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
+        {
+            launched = false;
+        }
+        if (!launched)
+            DeckleAudioSource.Log.MicrophonePropertiesLaunchFailed(id.Length == 0 ? "default" : "device");
     }
 
     // The Recording section's reset: its three composed settings only. The
@@ -176,20 +235,21 @@ public sealed partial class RecordingPage : Page
     }
 
     // The microphone device is not composed, so its reset is written here. The VM
-    // assignment is the write that persists (system default, -1); the combo then
-    // follows under the _initializing guard so SelectedIndex = 0 does not re-enter
-    // the VM and fight the value just set.
+    // assignment is the write that persists (system default, the POCO's empty
+    // id); the list is rebuilt under the _initializing guard, so a saved device
+    // shown as missing leaves it and SelectedIndex = 0 does not re-enter the VM.
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
         _voiceLevelComposer?.ResetAll();
         _recordingLimitComposer?.ResetAll();
         _preprocessingComposer?.ResetAll();
+        _exclusiveModeComposer?.ResetAll();
 
-        ViewModel.AudioInputDeviceId = -1;
+        ViewModel.AudioInputEndpointId = new CaptureSettings().AudioInputEndpointId;
         _initializing = true;
         try
         {
-            AudioInputCombo.SelectedIndex = 0;
+            PopulateAudioInputDevices();
         }
         finally { _initializing = false; }
 

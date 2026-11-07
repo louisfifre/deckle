@@ -527,13 +527,26 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Internal/
 │   │   │   ├── CaptureAnomalyEpisode.cs
 │   │   │   ├── CaptureDataWatchdog.cs
+│   │   │   ├── CaptureErrors.cs
+│   │   │   ├── CaptureFormat.cs
+│   │   │   ├── CaptureLoop.cs
+│   │   │   ├── CapturePipeline.cs
+│   │   │   ├── FloatTakeBuffer.cs
+│   │   │   ├── ICaptureEndpoint.cs
+│   │   │   ├── LegacyWaveInDeviceMap.cs
+│   │   │   ├── LowAudioTracker.cs
 │   │   │   ├── MediaFoundationInterop.cs
-│   │   │   ├── Pcm16Buffer.cs
+│   │   │   ├── MicrophoneEndpointCatalog.cs
+│   │   │   ├── MonoConverter.cs
 │   │   │   ├── PcmBuffer.cs
 │   │   │   ├── PcmConversion.cs
-│   │   │   ├── WaveDeviceInterop.cs
-│   │   │   ├── WaveInBufferRing.cs
-│   │   │   └── WaveInLoop.cs
+│   │   │   ├── PortAudioCaptureEndpoint.cs
+│   │   │   ├── PortAudioEndpointProvider.cs
+│   │   │   ├── PortAudioHost.cs
+│   │   │   ├── PortAudioInterop.cs
+│   │   │   ├── StreamingResampler.cs
+│   │   │   ├── SubWindowAssembler.cs
+│   │   │   └── WaveDeviceInterop.cs
 │   │   ├── Native/
 │   │   │   └── win-x64/
 │   │   │       ├── portaudio.dll
@@ -558,9 +571,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AudioFileDecodeResult.cs
 │   │   ├── AudioLevelMapper.cs
 │   │   ├── CaptureFrame.cs
+│   │   ├── CaptureLevel.cs
 │   │   ├── CaptureResult.cs
 │   │   ├── CaptureSettings.cs
 │   │   ├── CaptureSettingsService.cs
+│   │   ├── CaptureSource.cs
 │   │   ├── Deckle.Audio.csproj
 │   │   ├── DeckleAudioSource.cs
 │   │   ├── GLOSSARY.md  — glossary-deckle-audio Audio vocabulary. It separates display level from transcription pre-processing,…
@@ -1910,14 +1925,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
-│   │   ├── Pcm16BufferTests.cs
 │   │   ├── PcmBufferTests.cs
 │   │   ├── PcmConversionTests.cs
 │   │   ├── TranscriptionPreprocessorTests.cs
 │   │   ├── VoiceDetectorTests.cs
 │   │   ├── VoiceLevelMeterScaleTests.cs
 │   │   ├── WaveInBufferRingBugNotes.md
-│   │   ├── WaveInBufferRingTests.cs
 │   │   └── WaveInReleaseBugNotes.md
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs

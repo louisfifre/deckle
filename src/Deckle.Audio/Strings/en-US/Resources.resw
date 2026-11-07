@@ -143,6 +143,25 @@
     <value>Microphone</value>
   </data>
 
+  <!-- Link to the selected microphone's page in Windows Settings (x:Uid on a
+       clickable card). The endpoint volume set there applies before any
+       processing mode, raw included, so it is the dial for headroom. -->
+  <data name="RecordingMicrophonePropertiesCard.Header" xml:space="preserve">
+    <value>Microphone input volume</value>
+  </data>
+  <data name="RecordingMicrophonePropertiesCard.Description" xml:space="preserve">
+    <value>Set in Windows Settings. Keep it just below the point where your loudest speech distorts: Windows applies it before Deckle hears anything.</value>
+  </data>
+
+  <!-- Composed exclusive-mode toggle (composer label key). Off by default:
+       while on, no other app can use the microphone during a dictation. -->
+  <data name="RecordingExclusiveModeCard.Header" xml:space="preserve">
+    <value>Exclusive microphone access</value>
+  </data>
+  <data name="RecordingExclusiveModeCard.Description" xml:space="preserve">
+    <value>While you dictate, Deckle takes the microphone directly and other apps can't use it. If another app is already using it, Deckle shares it.</value>
+  </data>
+
   <!-- Composed voice-level card (composer label key) -->
   <data name="RecordingVoiceLevelCard.Header" xml:space="preserve">
     <value>Voice level</value>
@@ -176,6 +195,10 @@
     <value>Loudest</value>
   </data>
 
+  <data name="RecordingVoiceMeterSignalReadout.Label" xml:space="preserve">
+    <value>Signal</value>
+  </data>
+
   <!-- Voice meter code-behind (Loc.Get / Loc.Format). Mirrored in
        src/Deckle.App/Strings/en-US/Resources.resw, which Loc.Get reads; this
        file stays the source of truth for wording. -->
@@ -190,6 +213,16 @@
   </data>
   <data name="RecordingVoiceMeter_Silence" xml:space="preserve">
     <value>Silence</value>
+  </data>
+
+  <!-- The Signal readout: what Windows granted the capture. Raw is the
+       microphone with no Windows effects, gain control or noise suppression;
+       Processed is the fallback, Windows's default processing for the device. -->
+  <data name="RecordingVoiceMeter_Signal_Raw" xml:space="preserve">
+    <value>Raw</value>
+  </data>
+  <data name="RecordingVoiceMeter_Signal_Default" xml:space="preserve">
+    <value>Processed</value>
   </data>
   <data name="RecordingVoiceMeter_Failure_NotDetected" xml:space="preserve">
     <value>No microphone found. Check the device above, then turn Listen on again.</value>
@@ -318,6 +351,11 @@
   </data>
   <data name="Settings_AudioInput_Device_Format" xml:space="preserve">
     <value>Device {0}</value>
+  </data>
+  <!-- The saved microphone when it is not plugged in: the setting still names
+       it, so the list keeps it rather than showing the system default. -->
+  <data name="Settings_AudioInput_Missing" xml:space="preserve">
+    <value>Saved microphone (not connected)</value>
   </data>
 
   <!-- Microphone-telemetry opt-in, composed on Settings > Diagnostics

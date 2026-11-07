@@ -117,13 +117,14 @@
                 </Canvas>
             </StackPanel>
 
-            <!-- Readouts read from the live microphone, never typed: the smoothed
-                 level the bar shows, the meter detector's decision, and the
-                 loudest frame of the last few seconds. Three columns that share
-                 the width. -->
+            <!-- Readouts read from the live microphone, never typed: the level
+                 the bar shows, the meter detector's decision, the loudest frame
+                 of the last few seconds, and the signal Windows granted (raw, or
+                 its default processing). Four columns that share the width. -->
             <catalog:PreviewBlock.Readouts>
                 <Grid ColumnSpacing="24">
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
@@ -134,6 +135,8 @@
                                      Grid.Column="1" />
                     <catalog:Readout x:Name="LoudestReadout" x:Uid="RecordingVoiceMeterLoudestReadout"
                                      Grid.Column="2" />
+                    <catalog:Readout x:Name="SignalReadout"  x:Uid="RecordingVoiceMeterSignalReadout"
+                                     Grid.Column="3" />
                 </Grid>
             </catalog:PreviewBlock.Readouts>
         </catalog:PreviewBlock>
