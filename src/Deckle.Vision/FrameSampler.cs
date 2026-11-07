@@ -119,7 +119,7 @@ public sealed partial class FrameSampler : IAsyncDisposable
         _displayPeakScRgb = _isHdr ? MathF.Max(_peakLuminance / 80f, 1f) : 1f;
 
         (_targetMip, _gridCols, _gridRows) =
-            ComputeTargetMip(_sourceWidth, _sourceHeight, targetCols: 30, targetRows: 17);
+            ComputeTargetMip(_sourceWidth, _sourceHeight, TargetCols, TargetRows);
 
         _d3dDevice = ScreenCaptureInterop.GetD3D11Device(device);
 
@@ -171,6 +171,23 @@ public sealed partial class FrameSampler : IAsyncDisposable
         DeckleVisionSource.Log.SamplerInitialized(
             _gridCols, _gridRows, _targetMip,
             _isHdr ? "scrgb_to_srgb" : "none", _peakLuminance);
+    }
+
+    // The smallest grid the sampler accepts; the mip chain stops at the
+    // last level that still covers it.
+    private const int TargetCols = 30;
+    private const int TargetRows = 17;
+
+    /// <summary>The grid a source of this pixel size is sampled into,
+    /// without capturing anything: the same halving the sampler applies, so
+    /// a consumer that knows the display's size alone (the Ambient preview
+    /// while no capture runs) draws the cells the capture will deliver.
+    /// (0, 0) for an empty size.</summary>
+    public static (int Cols, int Rows) GridFor(int sourceWidth, int sourceHeight)
+    {
+        if (sourceWidth <= 0 || sourceHeight <= 0) return (0, 0);
+        var (_, cols, rows) = ComputeTargetMip(sourceWidth, sourceHeight, TargetCols, TargetRows);
+        return (cols, rows);
     }
 
     // Stops before the halving that would drop below the target on either
