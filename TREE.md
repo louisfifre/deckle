@@ -1434,9 +1434,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Playground/
 │   │   ├── Models/
-│   │   │   ├── CorrectionApplicationEvidence.cs
-│   │   │   ├── CorrectionApplicationFixture.cs
-│   │   │   ├── CorrectionApplicationTrial.cs
 │   │   │   ├── MicrophonePreviewFailure.cs
 │   │   │   ├── MicrophonePreviewFeed.cs
 │   │   │   ├── TuningModel.cs
@@ -1455,10 +1452,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── AmbientPage.ScreenCapture.cs
 │   │   │   │   ├── AmbientPage.xaml
 │   │   │   │   └── AmbientPage.xaml.cs
-│   │   │   ├── Autocorrect/
-│   │   │   │   ├── CorrectionApplicationPage.xaml
-│   │   │   │   ├── CorrectionApplicationPage.xaml.cs
-│   │   │   │   └── RichEditCorrectionSurface.cs
 │   │   │   ├── Hud/
 │   │   │   │   ├── HudPage.Expanders.cs
 │   │   │   │   ├── HudPage.Gauge.cs
@@ -2338,8 +2331,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SteamLibraryScanEdgeCaseTests.cs
 │   │   └── SteamLibraryTests.cs
 │   ├── Deckle.Playground.Tests/
-│   │   ├── CorrectionApplicationEvidenceTests.cs
-│   │   ├── CorrectionApplicationTrialTests.cs
 │   │   ├── Deckle.Playground.Tests.csproj
 │   │   ├── HudTargetControlsTests.cs
 │   │   ├── HudTuningBugNotes.md
