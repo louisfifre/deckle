@@ -1137,6 +1137,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueLight.cs
 │   │   │   ├── HueLightOutputFactory.cs
 │   │   │   ├── HueLightState.cs
+│   │   │   ├── HueLightStateRestorer.cs
 │   │   │   ├── HueLocalDiscovery.cs
 │   │   │   ├── HueLocalDiscovery.Interop.cs
 │   │   │   ├── HueProjectedState.cs
@@ -2237,6 +2238,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   ├── HueLocalDiscoveryRegressionTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs
+│   │   ├── HueRestRestoreRegressionTests.cs
 │   │   ├── LightingCancellationLogTests.cs
 │   │   ├── LightingObservabilityCollection.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
