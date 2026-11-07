@@ -120,6 +120,26 @@ public sealed class DeckleAudioSourceTests : IDisposable
             });
     }
 
+    // A missing portaudio.dll and a refusing device end as the same PortAudio
+    // code; only the stage tells them apart, so a refused probe must log it.
+    [Fact]
+    public void ARefusedProbeLogsTheStageThatRefused()
+    {
+        var provider = new FakeEndpointProvider((id, _) => Internal.CaptureOpenResult.Failed(
+            "load", Internal.PortAudioInterop.NotInitialized, Internal.CaptureDeviceIdentity.Unresolved(id), []));
+        using var capture = new MicrophoneCapture(provider, _ => { });
+        using var listener = new TestEventListener("Deckle-Audio");
+
+        capture.Probe("");
+
+        EventWrittenEventArgs e = Assert.Single(listener.Events);
+        Assert.Equal(DeckleAudioSource.EvtMicrophoneOpenFailed, e.EventId);
+        Assert.Equal("probe", PayloadOf(e, "purpose"));
+        Assert.Equal("load", PayloadOf(e, "stage"));
+        Assert.Equal("-10000", PayloadOf(e, "error_code"));
+        Assert.Equal("paNotInitialized", PayloadOf(e, "error_name"));
+    }
+
     private static void AssertMilestoneLine(EventWrittenEventArgs e, int eventId, string workId)
     {
         Assert.Equal(eventId, e.EventId);
