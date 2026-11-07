@@ -62,7 +62,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscribeDecodeUsed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "offset_s={0:F2} | prompt_chars={1} | continues_previous={2} | no_context={3} | temp_start={4:F2} | temp_inc={5:F2} | segments={6} | last_end_s={7:F2} | audio_s={8:F2} | aborted={9}")]
+           Message = "offset_s={0,7:F2} | prompt_chars={1,4} | continues_previous={2,-5} | no_context={3,-5} | temp_start={4:F2} | temp_inc={5:F2} | segments={6,3} | last_end_s={7,7:F2} | audio_s={8,7:F2} | aborted={9}")]
     public void TranscribeDecodeUsed(
         double offset_s, int prompt_chars, bool continues_previous, bool no_context,
         double temp_start, double temp_inc, int segments, double last_end_s,

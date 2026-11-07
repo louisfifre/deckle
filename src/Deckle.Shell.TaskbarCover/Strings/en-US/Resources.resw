@@ -76,16 +76,27 @@
     <value>Approach distance</value>
   </data>
   <data name="TaskbarCoverPage_ApproachCard.Description" xml:space="preserve">
-    <value>How close the mouse must come before the taskbar starts to show.</value>
+    <value>How close the mouse must come before the taskbar starts to show. Set at 100% scale, it grows with your display scale.</value>
   </data>
-  <data name="TaskbarCoverPage_ApproachNear.Content" xml:space="preserve">
-    <value>Near · 32 px</value>
+  <data name="TaskbarCoverApproachPreviewBlock.EmptyHeader" xml:space="preserve">
+    <value>Screen preview</value>
   </data>
-  <data name="TaskbarCoverPage_ApproachStandard.Content" xml:space="preserve">
-    <value>Standard · 64 px</value>
+  <data name="TaskbarCoverApproachPreviewBlock.EmptyDescription" xml:space="preserve">
+    <value>The preview appears once Windows shows its taskbar.</value>
   </data>
-  <data name="TaskbarCoverPage_ApproachFar.Content" xml:space="preserve">
-    <value>Far · 128 px</value>
+  <data name="TaskbarCoverApproachPreviewDisplayReadout.Label" xml:space="preserve">
+    <value>Display</value>
+  </data>
+  <data name="TaskbarCoverApproachPreviewReachReadout.Label" xml:space="preserve">
+    <value>Reach on this display</value>
+  </data>
+  <data name="TaskbarCoverApproachPreview_Display_Format" xml:space="preserve">
+    <value>{0} × {1}, {2}% scale</value>
+    <comment>{0} width and {1} height in physical pixels, {2} the display scale in percent.</comment>
+  </data>
+  <data name="TaskbarCoverApproachPreview_Reach_Format" xml:space="preserve">
+    <value>{0} physical pixels</value>
+    <comment>{0} the approach distance converted to this display's pixels.</comment>
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Taskbar cover</value>

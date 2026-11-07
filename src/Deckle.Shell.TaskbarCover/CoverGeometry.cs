@@ -21,30 +21,18 @@ public enum TaskbarEdge
 // band: transparent on the band, opaque again at the zone's outer boundary.
 public static class CoverGeometry
 {
-    // The approach span of each named level: how far past the band the zone
-    // reaches and the distance the fade runs over, in device-independent
-    // pixels (96 DPI). A fixed distance rather than a multiple of the band
-    // thickness (Louis, 2026-10-15): a reveal gesture is a mouse movement,
-    // and a movement of 64 px should feel the same whether the taskbar is
-    // 40 or 60 px thick. Each level is a step of the design-system scale
-    // (Spacing), three consecutive ones, provisional until Louis checks them
-    // on screen. The span is set in DIP so a level means one hand movement
-    // on every monitor; the pixel figure comes from ApproachSpan, scaled by
-    // the band monitor's DPI. A number outside the enum (the converter
-    // accepts integers from a hand-edited settings file) falls back to
-    // Standard.
-    public static int ApproachSpanDip(ApproachDistance level) => level switch
-    {
-        ApproachDistance.Near => Spacing.Medium,
-        ApproachDistance.Far  => Spacing.XLarge,
-        _                     => Spacing.Large,
-    };
-
-    // The span in physical pixels for a monitor at dpiScale (1.0 at 96 DPI,
-    // 1.5 at 144): the cursor and the band rect are physical pixels, so the
-    // zone must be too.
-    public static int ApproachSpan(ApproachDistance level, double dpiScale)
-        => Dpi.ToPixels(ApproachSpanDip(level), dpiScale);
+    // The approach span: how far past the band the zone reaches and the
+    // distance the fade runs over. A fixed distance rather than a multiple of
+    // the band thickness (Louis, 2026-10-15): a reveal gesture is a mouse
+    // movement, and a movement of 64 DIP should feel the same whether the
+    // taskbar is 40 or 60 px thick. The setting is in device-independent
+    // pixels (ApproachDistance); this is the one conversion to the physical
+    // pixels of a monitor at dpiScale (1.0 at 96 DPI, 1.5 at 144), since the
+    // cursor and the band rect are physical pixels, so the zone must be too.
+    // Each band calls it with its own monitor's scale, so a taskbar on a
+    // 200% screen and one on a 100% screen reach the same distance by hand.
+    public static int ApproachSpan(int approachDip, double dpiScale)
+        => Dpi.ToPixels(approachDip, dpiScale);
 
     public static int Thickness(NativeMethods.RECT band, TaskbarEdge edge)
         => edge is TaskbarEdge.Left or TaskbarEdge.Right
@@ -73,9 +61,9 @@ public static class CoverGeometry
     // screen edge. It spans only the band's extent along the edge: a cursor
     // near the same screen edge on another monitor stays out of it.
     public static NativeMethods.RECT ApproachZone(
-        NativeMethods.RECT band, TaskbarEdge edge, ApproachDistance level, double dpiScale)
+        NativeMethods.RECT band, TaskbarEdge edge, int approachDip, double dpiScale)
     {
-        int depth = Thickness(band, edge) + ApproachSpan(level, dpiScale);
+        int depth = Thickness(band, edge) + ApproachSpan(approachDip, dpiScale);
         return edge switch
         {
             TaskbarEdge.Left   => new() { left = band.left,           top = band.top,            right = band.left + depth, bottom = band.bottom },
@@ -104,11 +92,11 @@ public static class CoverGeometry
     // Smoothstep over the span beyond the band, the same curve as the HUD's
     // proximity fade, so both surfaces ease the same way.
     public static double Opacity(
-        NativeMethods.RECT band, TaskbarEdge edge, POINT p, ApproachDistance level, double dpiScale)
+        NativeMethods.RECT band, TaskbarEdge edge, POINT p, int approachDip, double dpiScale)
     {
-        if (!Contains(ApproachZone(band, edge, level, dpiScale), p)) return 1.0;
+        if (!Contains(ApproachZone(band, edge, approachDip, dpiScale), p)) return 1.0;
 
-        int span = ApproachSpan(level, dpiScale);
+        int span = ApproachSpan(approachDip, dpiScale);
         if (span <= 0) return 1.0;
 
         double t = (double)DistanceToBand(band, edge, p) / span;

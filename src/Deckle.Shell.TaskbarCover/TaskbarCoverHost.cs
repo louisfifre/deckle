@@ -58,10 +58,10 @@ public sealed partial class TaskbarCoverHost : IDisposable
 
     private volatile bool _running;
 
-    // Level asked for by the App, written from its thread and read by the
-    // cover thread at each layout rebuild. Kept across Stop/Start, so a
-    // restart builds its zones at the last level relayed.
-    private volatile ApproachDistance _requestedApproach = ApproachDistance.Standard;
+    // Distance in DIP asked for by the App, written from its thread and read
+    // by the cover thread at each layout rebuild. Kept across Stop/Start, so
+    // a restart builds its zones at the last distance relayed.
+    private volatile int _requestedApproachDip = ApproachDistance.DefaultDip;
 
     // ── State machine — worker thread only ───────────────────────────────
     // _bands           : one per taskbar the last layout found, the primary's
@@ -75,7 +75,7 @@ public sealed partial class TaskbarCoverHost : IDisposable
     private bool _layoutKnown;
     private bool _layoutFailureLogged;
     private bool _bandCreateFailureLogged;
-    // Level the bands were last placed at; differs from _requestedApproach
-    // until the cover thread rebuilds the layout.
-    private ApproachDistance _approach = ApproachDistance.Standard;
+    // Distance the bands were last placed at; differs from
+    // _requestedApproachDip until the cover thread rebuilds the layout.
+    private int _approachDip = ApproachDistance.DefaultDip;
 }

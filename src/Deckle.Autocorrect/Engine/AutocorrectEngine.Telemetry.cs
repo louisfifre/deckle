@@ -90,7 +90,7 @@ public sealed partial class AutocorrectEngine
     }
 
     private static bool IsActivityRollupEnabled()
-        => DeckleAutocorrectSource.IsActivityDetailEnabled(
+        => DeckleAutocorrectSource.IsActivitySummaryEnabled(
             EventLevel.Verbose,
             (EventKeywords)Keywords.Heartbeat);
 

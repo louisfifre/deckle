@@ -93,12 +93,12 @@ public sealed partial class TaskbarCoverHost
                 return IntPtr.Zero;
 
             case WM_APP_APPROACH:
-                // Posted by the Approach setter and by Start; the level is
-                // read here, so a burst of posts converges on the latest one
-                // and a post that finds the zones already at that level costs
-                // nothing. The zones are rebuilt through the layout path, the
-                // one place that computes them.
-                if (_requestedApproach != _approach) RebuildLayout("approach_change");
+                // Posted by the ApproachDistanceDip setter and by Start; the
+                // distance is read here, so a burst of posts converges on the
+                // latest one and a post that finds the zones already at that
+                // distance costs nothing. The zones are rebuilt through the
+                // layout path, the one place that computes them.
+                if (_requestedApproachDip != _approachDip) RebuildLayout("approach_change");
                 return IntPtr.Zero;
 
             case WM_SETTINGCHANGE:

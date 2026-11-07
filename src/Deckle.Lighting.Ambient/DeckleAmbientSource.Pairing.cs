@@ -77,8 +77,9 @@ public sealed partial class DeckleAmbientSource
         if (IsEnabled()) WriteEvent(EvtBridgeForgotten);
     }
 
-    // reason = probe_failed | identity_mismatch: why the cached endpoint was
-    // distrusted and a local discovery pass started.
+    // reason = probe_failed | identity_mismatch | no_answer: why the cached
+    // endpoint was distrusted and a local discovery pass started. no_answer
+    // comes from the Settings page, after the group listing went unanswered.
     [Event(EvtBridgeEndpointRecoveryStarting,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

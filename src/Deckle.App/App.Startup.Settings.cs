@@ -83,6 +83,9 @@ public partial class App
             .OfType<Settings.ProfileHotkey>()
             .ToList();
 
+        // Developer mode's "Capture the interface" (App.InterfaceCapture.cs).
+        Settings.SettingsHost.CaptureInterface = CaptureInterfaceAsync;
+
         // Each module page declares its own nav identity in its own assembly; the
         // composition root supplies only the Order, which leaves gaps so a later
         // module can land between two. A page registers only when the presence

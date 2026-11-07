@@ -12,6 +12,11 @@ public readonly record struct TaskbarPlacement(
     IntPtr Monitor,
     double DpiScale)
 {
+    // The monitor's own rect, in physical pixels: the frame the Settings
+    // preview draws the taskbar and its approach zone in. Outside the
+    // positional members because the host never reads it.
+    public NativeMethods.RECT MonitorRect { get; init; }
+
     // Desktop order, top to bottom then left to right. The locator sorts the
     // secondary taskbars by it so a band keeps the same taskbar from one
     // layout to the next whatever the z-order FindWindowEx walks them in;

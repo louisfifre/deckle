@@ -278,7 +278,7 @@ public sealed partial class AmbientEngine
 
             // Open the capture-active window. From here on, each producer
             // admits Verbose AMBIENT / SCREEN / HUE detail from this activity
-            // scope plus the LogAmbientCaptureActivity toggle ; the start and
+            // scope plus the AmbientVerbosity level; the start and
             // stop milestones do not consult it. Stop()'s cleanup closes it.
             AmbientCaptureGate.SetActive(true);
 

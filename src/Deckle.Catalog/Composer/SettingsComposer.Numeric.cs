@@ -102,6 +102,9 @@ public sealed partial class SettingsComposer
                 coordinating = true;
                 try { if (box.Value != snapped) box.Value = snapped; }
                 finally { coordinating = false; }
+                // Every detent reaches the preview, held or not: it is the
+                // gesture's live readout, the write still waits for the release.
+                args.Preview?.Invoke(snapped);
                 if (_syncingFromModel) return;
                 if (hold.Offer(snapped)) s.SetValue(snapped);
             };
@@ -125,6 +128,7 @@ public sealed partial class SettingsComposer
                 if (slider is not null && slider.Value != snapped) slider.Value = snapped;
             }
             finally { coordinating = false; }
+            args.Preview?.Invoke(snapped);
             if (_syncingFromModel) return;
             s.SetValue(snapped);
         };

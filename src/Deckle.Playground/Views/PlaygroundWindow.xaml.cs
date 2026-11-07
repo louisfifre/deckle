@@ -17,8 +17,7 @@ namespace Deckle.Playground;
 // ─── Playground window shell ─────────────────────────────────────────────────
 //
 // Native TitleBar + Mica backdrop + compact NavigationView + Frame. Hosts
-// five pages : HomePage, HudPage, AmbientPage, and
-// CorrectionApplicationPage — each owning
+// three pages : HomePage, HudPage and AmbientPage — each owning
 // its tuning surface, ViewModel, and runtime resources. The window itself only
 // routes navigation and forwards the lifecycle calls the App makes
 // (SetRecordingState, ShowAndActivate, Closed→DisposeResources).
@@ -54,8 +53,6 @@ public sealed partial class PlaygroundWindow : Window
     // tree on every interaction.
     private HudPage? _hudPage;
     private AmbientPage? _ambientPage;
-    private CorrectionApplicationPage? _correctionApplicationPage;
-    private PlaygroundWindowActivation _windowActivation;
 
     public PlaygroundWindow()
     {
@@ -84,8 +81,6 @@ public sealed partial class PlaygroundWindow : Window
         // selected state without holding a back-reference to this
         // Window.
         PlaygroundShell.NavigateTo = NavigateTo;
-        PlaygroundShell.ReadWindowActivation = () => _windowActivation;
-        Activated += OnWindowActivated;
 
         Title = "Deckle Playground";
         // Default 1800×1440 DIPs — comfortable two-column footprint (preview
@@ -265,7 +260,6 @@ public sealed partial class PlaygroundWindow : Window
         // alive behind the tray.
         try { _hudPage?.DisposeResources(); } catch { /* best effort */ }
         try { _ambientPage?.DisposeResources(); } catch { /* best effort */ }
-        try { _correctionApplicationPage?.DisposeResources(); } catch { /* best effort */ }
 
         // Drop the shell's nav callback so a stale page reference can't
         // route into a destroyed window. ReferenceEquals (not ==) because
@@ -277,8 +271,6 @@ public sealed partial class PlaygroundWindow : Window
         {
             PlaygroundShell.NavigateTo = null;
         }
-        PlaygroundShell.ReadWindowActivation = null;
-        Activated -= OnWindowActivated;
     }
 
     // ── Navigation routing ──────────────────────────────────────────────────
@@ -335,9 +327,6 @@ public sealed partial class PlaygroundWindow : Window
                 case AmbientPage amb:
                     _ambientPage = amb;
                     break;
-                case CorrectionApplicationPage correction:
-                    _correctionApplicationPage = correction;
-                    break;
             }
         }
         catch (Exception ex)
@@ -362,7 +351,6 @@ public sealed partial class PlaygroundWindow : Window
             "home"         => "Deckle.Playground.HomePage",
             "hud"          => "Deckle.Playground.HudPage",
             "ambient"      => "Deckle.Playground.AmbientPage",
-            "correction"   => "Deckle.Playground.CorrectionApplicationPage",
             _              => "",
         };
         if (string.IsNullOrEmpty(fullTag)) return;
@@ -377,15 +365,6 @@ public sealed partial class PlaygroundWindow : Window
                 return;
             }
         }
-    }
-
-    private void OnWindowActivated(object sender, WindowActivatedEventArgs args)
-    {
-        _windowActivation = new PlaygroundWindowActivation(
-            IsKnown: true,
-            IsActive: args.WindowActivationState != WindowActivationState.Deactivated,
-            Generation: checked(_windowActivation.Generation + 1));
-        PlaygroundShell.PublishWindowActivation(_windowActivation);
     }
 
     // ── NavigationView tooltip i18n override ────────────────────────────────

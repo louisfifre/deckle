@@ -18,7 +18,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtTranscriptionPreprocessed,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "input_dbfs={0:F1} | output_dbfs={1:F1} | makeup_db={2:+0.0;-0.0} | output_peak={3:F3}")]
+           Message = "input_dbfs={0,6:F1} | output_dbfs={1,6:F1} | makeup_db={2,5:+0.0;-0.0} | output_peak={3:F3}")]
     public void TranscriptionPreprocessed(double input_dbfs, double output_dbfs, double makeup_db, double output_peak)
     {
         // Once per utterance on the streaming path.

@@ -14,7 +14,7 @@ public static class SettingsSearch
         new SettingSearchEntry
         {
             LabelKey = "TaskbarCoverPage_ApproachCard",
-            Keywords = ["approach", "distance", "reveal", "hover", "near", "far"],
+            Keywords = ["approach", "distance", "reveal", "hover", "pixels", "scale", "dpi"],
         },
     ];
 }

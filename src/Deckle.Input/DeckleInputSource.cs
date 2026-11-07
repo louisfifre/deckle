@@ -26,6 +26,17 @@ public sealed class DeckleInputSource : DeckleEventSource
         => OperationalLogAdmission.IsDetailEnabled(
             OperationalLogActivity.Input, Log, level, keywords);
 
+    // The rollups are the summaries of their loops, admitted from Summary up:
+    // the keyboard rollup on Autocorrect's control while that activity runs,
+    // the contact-frame rollup on Input's.
+    internal static bool IsAutocorrectSummaryEnabled(EventLevel level, EventKeywords keywords)
+        => OperationalLogAdmission.IsScopedSummaryEnabled(
+            OperationalLogActivity.Autocorrect, Log, level, keywords);
+
+    internal static bool IsInputActivitySummaryEnabled(EventLevel level, EventKeywords keywords)
+        => OperationalLogAdmission.IsSummaryEnabled(
+            OperationalLogActivity.Input, Log, level, keywords);
+
     // Host names carried by the events both input hosts share.
     internal const string TouchpadHost = "touchpad";
     internal const string KeyboardHost = "keyboard";
@@ -220,7 +231,7 @@ public sealed class DeckleInputSource : DeckleEventSource
         int count, double rate_hz, double max_gap_ms, int max_tips,
         int fragmented, long orphans, long flushes, long scan_mismatches)
     {
-        if (IsInputActivityDetailEnabled(
+        if (IsInputActivitySummaryEnabled(
                 EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat))
             WriteEvent(EvtFrameRollup,
             count, rate_hz, max_gap_ms, max_tips, fragmented, orphans, flushes, scan_mismatches);
@@ -363,7 +374,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Message = "keys={0} | injected_filtered={1} | pointer_downs={2} | wheel={3} | focus_changes={4}")]
     public void KeyboardRollup(int keys, int injected_filtered, int pointer_downs, int wheel, int focus_changes)
     {
-        if (!IsAutocorrectDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        if (!IsAutocorrectSummaryEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtKeyboardRollup, keys, injected_filtered, pointer_downs, wheel, focus_changes);
     }
 

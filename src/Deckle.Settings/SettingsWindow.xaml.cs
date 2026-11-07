@@ -565,7 +565,10 @@ public sealed partial class SettingsWindow : Window
         DeckleSettingsSource.NavClock.Restart();
         try
         {
-            bool ok = PageFrame.Navigate(pageType, null, new EntranceNavigationTransitionInfo());
+            NavigationTransitionInfo transition = _suppressPageTransition
+                ? new SuppressNavigationTransitionInfo()
+                : new EntranceNavigationTransitionInfo();
+            bool ok = PageFrame.Navigate(pageType, null, transition);
             if (!ok)
             {
                 DeckleSettingsSource.Log.NavFailedFrameRejected();

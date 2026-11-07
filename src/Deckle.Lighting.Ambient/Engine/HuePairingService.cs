@@ -283,6 +283,44 @@ public sealed class HuePairingService : IDisposable
     }
 
     /// <summary>
+    /// Searches the local network for the paired bridge after its cached
+    /// address stopped answering, and adopts the address where the same
+    /// bridge accepts the stored credentials, with no link-button press.
+    /// Skips the probe <see cref="GetAvailableBridgeAsync"/> starts with,
+    /// since the caller has just watched that address time out. Throws
+    /// <see cref="HueBridgeUnreachableException"/> when no single
+    /// candidate is found.
+    /// </summary>
+    public async Task<HueBridgeClient> RelocateBridgeAsync(Exception cause, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(cause);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        await _availabilityGate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            HueBridgeClient current;
+            HueBridge cachedBridge;
+            lock (_gate)
+            {
+                ObjectDisposedException.ThrowIf(_disposed, this);
+                current = GetRequiredBridgeUnsafe();
+                cachedBridge = _pairedBridge
+                    ?? throw new InvalidOperationException("Paired bridge identity is unavailable.");
+            }
+
+            // Recovery also lands on the same address when only the old
+            // client had gone stale: a fresh client replaces it either way.
+            return await RecoverEndpointAsync(
+                current, cachedBridge, current.Credentials!, "no_answer", cause, ct)
+                .ConfigureAwait(false);
+        }
+        finally
+        {
+            _availabilityGate.Release();
+        }
+    }
+
+    /// <summary>
     /// Lists the groups (rooms, zones, entertainment areas) configured
     /// on the active bridge. Throws InvalidOperationException if no
     /// bridge is paired.

@@ -6,18 +6,21 @@ namespace Deckle.Shell.TaskbarCover;
 public sealed partial class TaskbarCoverHost
 {
     /// <summary>
-    /// How far from a taskbar the pointer starts to reveal it. Safe from any
-    /// thread: a change on a running host posts WM_APP_APPROACH and the cover
-    /// thread rebuilds its zones; a stopped host builds them at this level on
-    /// its next Start.
+    /// How far past a taskbar the pointer starts to reveal it, in
+    /// device-independent pixels, brought into ApproachDistance's range. Each
+    /// band converts it with its own monitor's scale when it builds its zone.
+    /// Safe from any thread: a change on a running host posts WM_APP_APPROACH
+    /// and the cover thread rebuilds its zones; a stopped host builds them at
+    /// this distance on its next Start.
     /// </summary>
-    public ApproachDistance Approach
+    public int ApproachDistanceDip
     {
-        get => _requestedApproach;
+        get => _requestedApproachDip;
         set
         {
-            if (_requestedApproach == value) return;
-            _requestedApproach = value;
+            value = ApproachDistance.Clamp(value);
+            if (_requestedApproachDip == value) return;
+            _requestedApproachDip = value;
             // Same hand-off as OnForegroundChanged: only the anchor handle is
             // read here, and a post racing a Stop fails harmlessly.
             if (_running) PostMessage(_hwnd, WM_APP_APPROACH, IntPtr.Zero, IntPtr.Zero);

@@ -19,13 +19,17 @@ public abstract record SettingArgs;
 // so every field ends at the same edge. Slider false keeps the field alone, for a figure
 // that is typed rather than swept. Integer marks a count: the grain never drops
 // below one, so the field shows no decimals. An integer model still travels as a
-// double through the selectors.
+// double through the selectors. Preview, when given, receives every value the
+// controls show, each detent of a drag included, while the model is still
+// written once at the release: a preview beside the card follows the thumb.
+// It shows and never writes, so it must not touch the model.
 public sealed record MagnitudeArgs(
     double Minimum,
     double Maximum,
     string? Unit = null,
     bool Slider = true,
-    bool Integer = false) : SettingArgs;
+    bool Integer = false,
+    Action<double>? Preview = null) : SettingArgs;
 
 // ── TextArgs ──────────────────────────────────────────────────────────────────
 //

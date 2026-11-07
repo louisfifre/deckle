@@ -143,10 +143,12 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtCaptureCompleted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "audio_sec={0:F1} | buffers={1} | bytes={2} | rms_avg={3:F4} | rms_peak={4:F4} | dbfs_avg={5:F1}")]
+           Message = "audio_sec={0,6:F1} | buffers={1,5} | bytes={2,9} | rms_avg={3:F4} | rms_peak={4:F4} | dbfs_avg={5,6:F1}")]
     public void CaptureCompleted(double audio_sec, int buffers, int bytes, double rms_avg, double rms_peak, double dbfs_avg)
     {
-        if (OperationalLogAdmission.IsScopedDetailEnabled(
+        // The take's capture figures: a summary record of the dictation, so
+        // the Summary verbosity admits it during a take.
+        if (OperationalLogAdmission.IsScopedSummaryEnabled(
                 OperationalLogActivity.Transcription, this,
                 EventLevel.Verbose, (EventKeywords)Keywords.Capture))
             WriteEvent(EvtCaptureCompleted, audio_sec, buffers, bytes, rms_avg, rms_peak, dbfs_avg);
@@ -158,7 +160,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
            Version = 2,
-           Message = "drain_ms={0} | tail_ms={1} | tail_reads={2}")]
+           Message = "drain_ms={0,5} | tail_ms={1,4} | tail_reads={2,2}")]
     public void CaptureDrainDetail(long drain_ms, int tail_ms, int tail_reads)
     {
         if (OperationalLogAdmission.IsScopedDetailEnabled(
@@ -184,7 +186,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtRecordingTailSummaryDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "tail_ms={0} | tail_dbfs={1:F1}")]
+           Message = "tail_ms={0,4} | tail_dbfs={1,6:F1}")]
     public void RecordingTailSummaryDetail(int tail_ms, double tail_dbfs)
     {
         if (OperationalLogAdmission.IsScopedDetailEnabled(

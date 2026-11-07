@@ -83,9 +83,9 @@ public sealed partial class TaskbarCoverHost
             _bandCreateFailureLogged = false;
         }
 
-        var approach = _requestedApproach;
+        int approachDip = _requestedApproachDip;
         _layoutKnown = true;
-        _approach = approach;
+        _approachDip = approachDip;
 
         bool anyPlaced = false;
         for (int i = 0; i < _bands.Count; i++)
@@ -99,7 +99,7 @@ public sealed partial class TaskbarCoverHost
             // that moved to another monitor — or a layout that was unknown
             // while the foreground changed — re-evaluates suppression now
             // rather than at the next foreground change.
-            if (!band.PlacementDiffers(placement, approach))
+            if (!band.PlacementDiffers(placement, approachDip))
             {
                 UpdateAppSuppressed(band, _foreground.Current);
                 // Same rect, but Explorer may have re-created or restacked the
@@ -112,7 +112,7 @@ public sealed partial class TaskbarCoverHost
                 continue;
             }
 
-            band.Place(placement, approach);
+            band.Place(placement, approachDip);
             anyPlaced = true;
             DeckleShellTaskbarCoverSource.Log.LayoutRebuiltDetail(
                 band.Index, placements.Count, band.Edge.ToString(),

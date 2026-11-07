@@ -57,6 +57,16 @@ public static class SettingsHost
     // App lists them; the Shortcuts page shows them and checks its own chords
     // against them. Unwired (null) lists none.
     public static Func<IReadOnlyList<ProfileHotkey>>? ProfileHotkeys;
+
+    // The developer mode's interface capture: every open Deckle window, then
+    // every settings page, to PNG files. The App owns the windows and the
+    // capture (Deckle.Vision), so it runs the whole of it; the answer is null
+    // when developer mode is off. Unwired (null) hides the capture card.
+    public static Func<Task<InterfaceCaptureOutcome?>>? CaptureInterface;
 }
 
 public sealed record ProfileHotkey(string ProfileName, Deckle.Catalog.HotkeyChord Chord);
+
+// What an interface capture wrote: the folder, the images saved in it, and the
+// windows or pages that could not be captured (listed in its index.json).
+public sealed record InterfaceCaptureOutcome(string Folder, int Captured, int Failed);
