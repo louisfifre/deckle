@@ -261,11 +261,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── update-tree.ps1
 │   ├── tests/
 │   │   ├── BugExamples/
+│   │   │   ├── build-locked-positional-dotnet-args.json
 │   │   │   ├── build-only-stops-resident.json
 │   │   │   ├── dotnet-max-node-response-precedence.json
 │   │   │   ├── repository-portability.json
 │   │   │   └── roslyn-server-escapes-low-priority.json
 │   │   ├── commands/
+│   │   │   ├── build-locked.tests.ps1
 │   │   │   ├── build-server-watchdog.tests.ps1
 │   │   │   ├── publish-native-runtime.tests.ps1
 │   │   │   └── update-readme-stats.tests.ps1
@@ -473,6 +475,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.MouseWheel.cs
 │   │   ├── App.Orchestration.cs
 │   │   ├── App.ParagraphRewrite.cs
+│   │   ├── App.PlaygroundAccess.cs
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.SpeechRepair.cs
@@ -506,7 +509,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LogWindow.xaml.cs
 │   │   ├── Program.cs
 │   │   ├── SecondaryWindowPlacement.cs
-│   │   └── TrayIncidentLines.cs
+│   │   ├── TrayIncidentLines.cs
+│   │   └── TrayRightClickMenu.cs
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
 │   │   │   ├── CaptureAnomalyEpisode.cs
@@ -1712,8 +1716,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Setup/
 │   │   │   └── ModelEntry.cs
 │   │   ├── Streaming/
-│   │   │   ├── CutCurveValues.cs
-│   │   │   ├── CutPresets.cs
 │   │   │   ├── EnergySegmenter.cs
 │   │   │   ├── EnergySegmenterSettings.cs
 │   │   │   ├── SegmentedTranscriptionSession.cs
@@ -1726,7 +1728,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
-│   │   │   ├── CutPresetStore.cs
 │   │   │   ├── WhisperTelemetryViewModel.cs
 │   │   │   ├── WhisperViewModel.cs
 │   │   │   ├── WhisperViewModel.DictationExperience.cs
@@ -1922,7 +1923,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HudFeedbackSinkTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
-│   │   └── TrayIncidentLinesTests.cs
+│   │   ├── TrayIncidentLinesTests.cs
+│   │   └── TrayRightClickMenuTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── AudioPathRedactionTests.cs
 │   │   ├── AudioRecordingHostDefaultsTests.cs
@@ -2274,6 +2276,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
 │   │   ├── DictationBatcherTests.cs
 │   │   ├── DictationBatchRewriterTests.cs
+│   │   ├── LlmSettingsBugNotes.md
+│   │   ├── LlmSettingsFileTests.cs
 │   │   ├── LlmSettingsMigrationsTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── ParagraphDraftTests.cs
@@ -2355,9 +2359,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── UserProfilePathBugNotes.md
 │   │   └── UserProfilePathTests.cs
 │   ├── Deckle.Settings.Tests/
+│   │   ├── AppSettingsLegacyFieldTests.cs
 │   │   ├── Deckle.Settings.Tests.csproj
+│   │   ├── DeveloperSettingsTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── SettingsBackupBugNotes.md
+│   │   ├── SettingsBackupRoundTripTests.cs
 │   │   ├── SettingsBootstrapLegacyTargetTests.cs
 │   │   └── SettingsBootstrapMoveTests.cs
 │   ├── Deckle.Setup.Tests/
@@ -2426,7 +2434,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── WindowsAppSdkBootstrap.cs
 │   │   └── WindowsAppSdkModuleInitializer.cs
 │   ├── Deckle.Transcription.Tests/
-│   │   ├── CutPresetsTests.cs
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── DeckleLlmSourceTests.cs
 │   │   ├── DeckleWhispSourceTests.cs

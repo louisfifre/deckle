@@ -12,11 +12,21 @@
 # Examples:
 #   pwsh -File scripts/build-locked.ps1 -Project src/Deckle.App/Deckle.App.csproj
 #   pwsh -File scripts/build-locked.ps1 -Test -Project tests/Deckle.Shell.TaskbarCover.Tests/Deckle.Shell.TaskbarCover.Tests.csproj
+#   pwsh -File scripts/build-locked.ps1 -Project Deckle.Tests.sln /v:q /bl:artifacts/build.binlog
+#
+# Extra dotnet arguments: write MSBuild switches with a slash (`/v:q`,
+# `/bl:path`, `/p:Name=Value`) and dotnet options with two dashes
+# (`--no-restore`). PowerShell reads any `-name:value` token as one of its own
+# parameters before this script sees it: `-v:q` becomes `-Verbose`, `-p:x`
+# collides with `-Project`, `-bl:path` is split in two. No param block can
+# forward those intact, `--` included, so the slash form is the contract.
 #
 # No Header on purpose: -Project is mandatory, so the menu could not run
 # this script without asking, and agents call it from their own builds.
 
-[CmdletBinding()]
+# Named parameters only: with positional binding, the first extra argument
+# after -Project landed in -Configuration and failed its ValidateSet.
+[CmdletBinding(PositionalBinding = $false)]
 param(
     # Project or solution to build. Relative paths resolve against the current
     # directory, so a worktree builds its own copy.

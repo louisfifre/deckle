@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "id": "developer-tooling-2026-11-07-build-locked-positional-dotnet-args",
+  "status": "active",
+  "modules": ["DeveloperTooling"],
+  "classes": ["argument-forwarding", "powershell-parameter-binding"],
+  "trigger": {
+    "operation": "build-locked-with-extra-dotnet-arguments"
+  },
+  "symptom": "scripts/build-locked.ps1 failed in about 1.6 s, before dotnet ran, when given extra dotnet arguments: '/v:q' right after -Project failed the Configuration ValidateSet; '-v:q' failed with 'Cannot convert System.String to SwitchParameter' on -Verbose; '-p:Name=Value' failed with 'parameter p is specified more than once'; '-bl:path' reached MSBuild as '-bl:' and 'path', which read the path as a second project (MSB1008).",
+  "cause": "[CmdletBinding()] made every unattributed parameter positional, so the first unnamed token after -Project bound to -Configuration (position 1). Separately, PowerShell reads any '-name:value' token as one of its own parameters, prefix-matched against the script's and the common ones, before ValueFromRemainingArguments sees it. Reproduced on 2026-11-07 on a copy of the param block, called with -File and directly; '--' does not help in either mode.",
+  "violatedInvariant": "Extra arguments given to build-locked.ps1 reach dotnet unchanged; the script's own parameters bind only by name (comment at the CmdletBinding line, usage in the header).",
+  "contract": {
+    "must": [
+      "Keep [CmdletBinding(PositionalBinding = $false)] so an extra argument never lands in -Configuration.",
+      "Write extra MSBuild switches in the slash form (/v:q, /bl:path, /p:Name=Value) and dotnet options with two dashes (--no-restore)."
+    ],
+    "mustNot": [
+      "Pass dotnet arguments of the form -name:value: PowerShell captures or splits them whatever the param block."
+    ]
+  },
+  "automation": {
+    "tier": "scripted",
+    "test": "scripts/tests/commands/build-locked.tests.ps1",
+    "residual": "The test checks positional binding through PowerShell's static binder without running dotnet. The -name:value traps are PowerShell's parsing rules and are documented, not tested.",
+    "reviewPaths": [
+      "scripts/build-locked.ps1"
+    ]
+  },
+  "provenance": {
+    "observedAt": "2026-11-06",
+    "redaction": "synthetic"
+  }
+}
