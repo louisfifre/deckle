@@ -1,3 +1,4 @@
+using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Transcription;
 
@@ -53,6 +54,20 @@ public partial class App
             // Continues off the UI thread; the HUD, the clipboard and the files
             // are safe from there, as the engine's own worker uses them too.
             TakeAudioRecoveryResult result = await pending.ConfigureAwait(false);
+            if (result.Failed)
+            {
+                // The failure leads. The text copy is still restored (it may be
+                // all that is left), but without its "recovered" success, which
+                // would tell the person the whole take is back.
+                bool textRestored = RestoreInterruptedDictation(announce: false);
+                _hudWindow?.ShowError(
+                    Loc.Get("Hud_DictationRecoveryFailed_Title"),
+                    Loc.Get(textRestored
+                        ? "Hud_DictationRecoveryFailed_TextOnly_Body"
+                        : "Hud_DictationRecoveryFailed_Body"));
+                return;
+            }
+
             if (!result.Recovered)
             {
                 RestoreInterruptedDictation();
@@ -82,11 +97,13 @@ public partial class App
         }
     }
 
-    private void RestoreInterruptedDictation()
+    // Returns true when the text reached the clipboard. announce=false keeps the
+    // HUD silent for a caller that tells the outcome itself.
+    private bool RestoreInterruptedDictation(bool announce = true)
     {
         var store = new DictationRecoveryStore(AppPaths.DictationRecoveryFilePath);
         DictationRecoveryReadStatus status = store.TryRead(out string text);
-        if (status == DictationRecoveryReadStatus.Missing) return;
+        if (status == DictationRecoveryReadStatus.Missing) return false;
 
         DeckleAppSource.Log.DictationRecoveryFound();
 
@@ -97,7 +114,7 @@ public partial class App
             string reason = status == DictationRecoveryReadStatus.Unreadable ? "unreadable" : "empty";
             bool deleted = store.Delete();
             DeckleAppSource.Log.DictationRecoveryUnreadable(reason, deleted);
-            return;
+            return false;
         }
 
         // The file is the only copy: it goes only once the clipboard has the text.
@@ -105,14 +122,15 @@ public partial class App
         if (!write.Landed)
         {
             DeckleAppSource.Log.DictationRecoveryClipboardFailed(ClipboardFailureReason(write.Status), text.Length);
-            return;
+            return false;
         }
 
-        _hudWindow?.ShowDictationRecovered();
+        if (announce) _hudWindow?.ShowDictationRecovered();
         DeckleAppSource.Log.DictationRecovered();
         DeckleAppSource.Log.DictationRecoveredDetail(text.Length);
         if (!store.Delete())
             DeckleAppSource.Log.DictationRecoveryKept("delete_failed");
+        return true;
     }
 
     // Shared with LogWindow's copy, so a clipboard status reads the same

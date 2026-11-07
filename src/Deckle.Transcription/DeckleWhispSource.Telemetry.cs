@@ -121,4 +121,17 @@ public sealed partial class DeckleWhispSource
             ollama_endpoint, ollama_model, prompt_template_hash,
             text, text_words, text_chars, elapsed_ms);
     }
+
+    // RecordCorpus returned without writing one of its events. reason names the
+    // gate, never text: corpus_disabled and file_run (nothing is recorded),
+    // no_profile (the ASR line was written, the rewrite line was not).
+    [Event(EvtCorpusRecordSkipped,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Heartbeat,
+           Message = "reason={0}")]
+    public void CorpusRecordSkipped(string reason)
+    {
+        if (!base.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        WriteEvent(EvtCorpusRecordSkipped, reason);
+    }
 }

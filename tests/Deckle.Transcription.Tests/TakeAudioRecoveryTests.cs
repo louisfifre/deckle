@@ -166,6 +166,104 @@ public sealed class TakeAudioRecoveryTests : IDisposable
         Assert.True(_text.Exists);
     }
 
+    // Weakness (a): the marker blocked the recovery for good. A crash left it,
+    // and nothing ever took it away, so every later take's audio was skipped
+    // too. Past a day the marker is dropped (with a warning) and the newer
+    // take's audio runs.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task AMarkerOlderThanADayExpiresAndTheNewerTakeIsRecovered()
+    {
+        LeaveALostTake();
+        Assert.True(_audio.MarkAttempted());
+        File.SetLastWriteTimeUtc(_audio.AttemptedFilePath, DateTime.UtcNow - TimeSpan.FromHours(25));
+        // A newer take has since written its own file.
+        float[] newer = Ramp(800);
+        Assert.True(_audio.TryBegin());
+        Assert.True(_audio.TryAppend(newer));
+        _audio.Close();
+        float[]? received = null;
+
+        TakeAudioRecoveryResult result = await Recovery(audio =>
+        {
+            received = audio;
+            return Task.FromResult(new RecoveredTake(RecoveredTakeStatus.Delivered, 7));
+        }).TryRecoverAsync();
+
+        Assert.True(result.Recovered);
+        Assert.Equal(newer, received);
+        Assert.False(_audio.AttemptedExists);
+        Assert.False(_audio.Exists);
+    }
+
+    [Fact]
+    [Trait("Category", "observability")]
+    public async Task AnExpiredMarkerWarnsWithItsAgeAndNoContent()
+    {
+        LeaveALostTake();
+        Assert.True(_audio.MarkAttempted());
+        File.SetLastWriteTimeUtc(_audio.AttemptedFilePath, DateTime.UtcNow - TimeSpan.FromHours(30));
+        using var listener = new TestEventListener("Deckle-Whisp");
+
+        await Recovery(_ => Task.FromResult(new RecoveredTake(RecoveredTakeStatus.Delivered, 1)))
+            .TryRecoverAsync();
+
+        EventWrittenEventArgs expired = Assert.Single(
+            listener.Events, e => e.EventName == nameof(DeckleWhispSource.TakeAudioAttemptExpired));
+        Assert.Equal(EventLevel.Warning, expired.Level);
+        Assert.True(Deckle.Diagnostics.ObservationTags.IsMilestone(
+            ProviderManifest.EventsOf(typeof(DeckleWhispSource))
+                .Single(d => d.Name == nameof(DeckleWhispSource.TakeAudioAttemptExpired)).Tags));
+        Assert.Equal(true, PayloadOf(expired, "deleted"));
+    }
+
+    // Weakness (c): a failed audio recovery used to fall through to the text
+    // restore, which ends on the "recovered" success. The result says the audio
+    // failed so the app can lead with the failure.
+    [Theory]
+    [InlineData(RecoveredTakeStatus.Failed)]
+    [InlineData(RecoveredTakeStatus.NotStarted)]
+    [Trait("Category", "regression")]
+    public async Task AFailedRunReportsTheFailure(RecoveredTakeStatus status)
+    {
+        LeaveALostTake();
+
+        TakeAudioRecoveryResult result = await Recovery(
+            _ => Task.FromResult(new RecoveredTake(status))).TryRecoverAsync();
+
+        Assert.False(result.Recovered);
+        Assert.True(result.Failed);
+    }
+
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task AThrowingRunAndAPreviousCrashReportTheFailure()
+    {
+        LeaveALostTake();
+        TakeAudioRecoveryResult thrown = await Recovery(
+            _ => throw new InvalidOperationException("scripted")).TryRecoverAsync();
+        Assert.True(thrown.Failed);
+
+        Assert.True(_audio.MarkAttempted());
+        TakeAudioRecoveryResult crashed = await Recovery(
+            _ => Task.FromResult(new RecoveredTake(RecoveredTakeStatus.Delivered, 1))).TryRecoverAsync();
+        Assert.True(crashed.Failed);
+    }
+
+    [Fact]
+    public async Task ADeliveredRunAndAnAudioWithoutSpeechAreNotFailures()
+    {
+        LeaveALostTake();
+        TakeAudioRecoveryResult noSpeech = await Recovery(
+            _ => Task.FromResult(new RecoveredTake(RecoveredTakeStatus.NoText))).TryRecoverAsync();
+        Assert.False(noSpeech.Failed);
+
+        LeaveALostTake();
+        TakeAudioRecoveryResult delivered = await Recovery(
+            _ => Task.FromResult(new RecoveredTake(RecoveredTakeStatus.Delivered, 3))).TryRecoverAsync();
+        Assert.False(delivered.Failed);
+    }
+
     [Fact]
     public async Task AnUnreadableFileIsKeptWithoutRunning()
     {

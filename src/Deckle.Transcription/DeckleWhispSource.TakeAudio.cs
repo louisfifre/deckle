@@ -129,4 +129,18 @@ public sealed partial class DeckleWhispSource
     {
         if (IsEnabled()) WriteEvent(EvtTakeAudioRecoverySkipped, reason, kept);
     }
+
+    // A ".attempted" marker older than a day was dropped, so the audio waiting
+    // behind it can run. The marker's audio is gone (deleted=true) unless the
+    // delete was refused, in which case the marker still blocks. age_hours is
+    // the marker's age, never content.
+    [Event(EvtTakeAudioAttemptExpired,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Milestone,
+           Message = "A recovery attempt that never finished has expired, its audio is dropped\nage_hours={0:F1} | deleted={1}")]
+    public void TakeAudioAttemptExpired(double age_hours, bool deleted)
+    {
+        if (IsEnabled()) WriteEvent(EvtTakeAudioAttemptExpired, age_hours, deleted);
+    }
 }

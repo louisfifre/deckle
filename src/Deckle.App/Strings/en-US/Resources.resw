@@ -508,6 +508,18 @@
   <data name="Hud_DictationRecovered_Title" xml:space="preserve">
     <value>Recovered dictation copied</value>
   </data>
+  <!-- Shown once at launch when the audio of an interrupted dictation could not
+    be transcribed. It leads over the text copy: the person must not read a
+    partial text as the whole dictation. -->
+  <data name="Hud_DictationRecoveryFailed_Title" xml:space="preserve">
+    <value>Dictation not fully recovered</value>
+  </data>
+  <data name="Hud_DictationRecoveryFailed_Body" xml:space="preserve">
+    <value>Its audio was not transcribed.</value>
+  </data>
+  <data name="Hud_DictationRecoveryFailed_TextOnly_Body" xml:space="preserve">
+    <value>Only the saved text was copied.</value>
+  </data>
   <!-- File transcription completion. The saved .txt file is the primary
        outcome; the hint reminds the user it's also on the clipboard. -->
   <data name="Hud_FileSaved_Title" xml:space="preserve">
