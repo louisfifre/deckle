@@ -6,9 +6,9 @@ namespace Deckle.Core;
 // is used and two steps relate by a power of two. A step is a DIP, never a
 // physical pixel: at the point where a value meets a screen it goes through
 // Dpi.ToPixels with that monitor's scale, so a Large gap is the same hand
-// movement, the same visual gap, at 100% as at 250%. Medium, Large and
-// XLarge are the first three in use (the taskbar cover's approach levels);
-// the other steps are the scale's natural fill, named now so a new distance
+// movement, the same visual gap, at 100% as at 250%. Large is the taskbar
+// cover's default approach distance, and Medium and XLarge the figures its
+// former Near and Far levels migrate to; the other steps are the scale's natural fill, named now so a new distance
 // picks a step instead of a number.
 public static class Spacing
 {

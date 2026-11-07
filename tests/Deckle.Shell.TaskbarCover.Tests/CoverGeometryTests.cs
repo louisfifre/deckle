@@ -13,6 +13,9 @@ public class CoverGeometryTests
     private const double Dpi100 = 1.0;
     private const double Dpi150 = 1.5;
 
+    // The default distance, 64 DIP, the one every edge is checked at.
+    private const int Standard = ApproachDistance.DefaultDip;
+
     private static NativeMethods.RECT Rect(int left, int top, int right, int bottom) =>
         new() { left = left, top = top, right = right, bottom = bottom };
 
@@ -46,54 +49,60 @@ public class CoverGeometryTests
     private static POINT FromBand(TaskbarEdge edge, int distance)
         => FromScreenEdge(edge, CoverGeometry.Thickness(Band(edge), edge) + distance);
 
-    // The Standard level at 96 DPI, the shape every edge is checked in.
-    private static int Span => CoverGeometry.ApproachSpan(ApproachDistance.Standard, Dpi100);
+    // The default distance at 96 DPI, the shape every edge is checked in.
+    private static int Span => CoverGeometry.ApproachSpan(Standard, Dpi100);
 
     private static int ZoneDepth(TaskbarEdge edge)
         => CoverGeometry.Thickness(Band(edge), edge) + Span;
 
     private static NativeMethods.RECT Zone(TaskbarEdge edge)
-        => CoverGeometry.ApproachZone(Band(edge), edge, ApproachDistance.Standard, Dpi100);
+        => CoverGeometry.ApproachZone(Band(edge), edge, Standard, Dpi100);
 
     private static double Opacity(TaskbarEdge edge, POINT p)
-        => CoverGeometry.Opacity(Band(edge), edge, p, ApproachDistance.Standard, Dpi100);
+        => CoverGeometry.Opacity(Band(edge), edge, p, Standard, Dpi100);
 
     public static TheoryData<TaskbarEdge> Edges =>
         new(TaskbarEdge.Left, TaskbarEdge.Top, TaskbarEdge.Right, TaskbarEdge.Bottom);
 
-    // ── The span of each level ───────────────────────────────────────────────
+    // ── The span, from DIP to the monitor's pixels ───────────────────────────
 
-    [Theory]
-    [InlineData(ApproachDistance.Near,     Spacing.Medium)]
-    [InlineData(ApproachDistance.Standard, Spacing.Large)]
-    [InlineData(ApproachDistance.Far,      Spacing.XLarge)]
-    public void EachLevelStandsForAStepOfTheScale(ApproachDistance level, int dip)
+    [Fact]
+    public void ADipIsAPixelAt100Percent()
     {
-        // Three consecutive steps, the provisional choice of 2026-10-15,
-        // pinned so a change is a decision and not a slip. The steps' own
-        // numbers are the scale's promise, pinned in Deckle.Core.Tests.
-        Assert.Equal(dip, CoverGeometry.ApproachSpanDip(level));
-        Assert.Equal(dip, CoverGeometry.ApproachSpan(level, Dpi100));
+        Assert.Equal(Standard, CoverGeometry.ApproachSpan(Standard, Dpi100));
     }
 
     [Theory]
-    [InlineData(ApproachDistance.Near,     1.5,  48)]
-    [InlineData(ApproachDistance.Standard, 1.5,  96)]
-    [InlineData(ApproachDistance.Far,      1.5,  192)]
-    [InlineData(ApproachDistance.Standard, 1.25, 80)]
-    [InlineData(ApproachDistance.Near,     1.25, 40)]
-    public void SpanScalesWithTheMonitorDpi(ApproachDistance level, double dpiScale, int pixels)
+    [InlineData(32,  1.5,  48)]
+    [InlineData(64,  1.5,  96)]
+    [InlineData(128, 1.5,  192)]
+    [InlineData(64,  1.25, 80)]
+    [InlineData(32,  1.25, 40)]
+    // The maintainer's 4K display at 200 %: the former Far level is 256
+    // pixels there, not the 128 its old label suggested.
+    [InlineData(128, 2.0,  256)]
+    // 17.5 pixels round half up, the Dpi rule.
+    [InlineData(10,  1.75, 18)]
+    [InlineData(ApproachDistance.MaximumDip, 2.5, 800)]
+    public void SpanIsTheDistanceInTheMonitorsPixels(int approachDip, double dpiScale, int pixels)
     {
-        Assert.Equal(pixels, CoverGeometry.ApproachSpan(level, dpiScale));
+        Assert.Equal(pixels, CoverGeometry.ApproachSpan(approachDip, dpiScale));
     }
 
     [Fact]
-    public void AValueOutsideTheEnumFallsBackToStandard()
+    public void OneDistanceReachesAsFarByHandOnMonitorsOfDifferentScales()
     {
-        // The JSON converter lets an integer through from a hand-edited file.
-        Assert.Equal(
-            CoverGeometry.ApproachSpanDip(ApproachDistance.Standard),
-            CoverGeometry.ApproachSpanDip((ApproachDistance)42));
+        // The same setting on two taskbars, one on a 100 % monitor and one
+        // on a 200 % monitor: each zone is converted with its own monitor's
+        // scale, so past its band it reaches the same distance in DIP.
+        var band100 = Rect(0, 1040, 1920, 1080);
+        var band200 = Rect(1920, 2080, 5760, 2160);
+
+        var zone100 = CoverGeometry.ApproachZone(band100, TaskbarEdge.Bottom, Standard, Dpi100);
+        var zone200 = CoverGeometry.ApproachZone(band200, TaskbarEdge.Bottom, Standard, 2.0);
+
+        Assert.Equal(Standard,     band100.top - zone100.top);
+        Assert.Equal(Standard * 2, band200.top - zone200.top);
     }
 
     // ── The zone ─────────────────────────────────────────────────────────────
@@ -121,14 +130,14 @@ public class CoverGeometryTests
     }
 
     [Theory]
-    [InlineData(ApproachDistance.Near)]
-    [InlineData(ApproachDistance.Standard)]
-    [InlineData(ApproachDistance.Far)]
-    public void ApproachZoneOfEachLevelEndsItsSpanPastTheBand(ApproachDistance level)
+    [InlineData(32)]
+    [InlineData(64)]
+    [InlineData(128)]
+    public void ApproachZoneOfEachDistanceEndsItsSpanPastTheBand(int approachDip)
     {
         var band = Band(TaskbarEdge.Left);
-        var zone = CoverGeometry.ApproachZone(band, TaskbarEdge.Left, level, Dpi100);
-        int depth = CoverGeometry.Thickness(band, TaskbarEdge.Left) + CoverGeometry.ApproachSpan(level, Dpi100);
+        var zone = CoverGeometry.ApproachZone(band, TaskbarEdge.Left, approachDip, Dpi100);
+        int depth = CoverGeometry.Thickness(band, TaskbarEdge.Left) + CoverGeometry.ApproachSpan(approachDip, Dpi100);
 
         Assert.True(CoverGeometry.Contains(zone, Point(depth - 1, 700)));
         Assert.False(CoverGeometry.Contains(zone, Point(depth, 700)));
@@ -142,8 +151,8 @@ public class CoverGeometryTests
         var thin  = Rect(0, 1400, 2560, 1440);
         var thick = Rect(0, 1380, 2560, 1440);
 
-        var thinZone  = CoverGeometry.ApproachZone(thin,  TaskbarEdge.Bottom, ApproachDistance.Standard, Dpi100);
-        var thickZone = CoverGeometry.ApproachZone(thick, TaskbarEdge.Bottom, ApproachDistance.Standard, Dpi100);
+        var thinZone  = CoverGeometry.ApproachZone(thin,  TaskbarEdge.Bottom, Standard, Dpi100);
+        var thickZone = CoverGeometry.ApproachZone(thick, TaskbarEdge.Bottom, Standard, Dpi100);
 
         Assert.Equal(thin.top  - Span, thinZone.top);
         Assert.Equal(thick.top - Span, thickZone.top);
@@ -153,7 +162,7 @@ public class CoverGeometryTests
     public void ApproachZoneScalesWithTheMonitorDpi()
     {
         // Left 44 px band at 150 %: 44 + 96 = 140.
-        var zone = CoverGeometry.ApproachZone(Band(TaskbarEdge.Left), TaskbarEdge.Left, ApproachDistance.Standard, Dpi150);
+        var zone = CoverGeometry.ApproachZone(Band(TaskbarEdge.Left), TaskbarEdge.Left, Standard, Dpi150);
 
         Assert.True(CoverGeometry.Contains(zone, Point(139, 700)));
         Assert.False(CoverGeometry.Contains(zone, Point(140, 700)));
@@ -211,17 +220,17 @@ public class CoverGeometryTests
     }
 
     [Theory]
-    [InlineData(ApproachDistance.Near)]
-    [InlineData(ApproachDistance.Standard)]
-    [InlineData(ApproachDistance.Far)]
-    public void OpacityOfEachLevelFadesOverItsSpan(ApproachDistance level)
+    [InlineData(32)]
+    [InlineData(64)]
+    [InlineData(128)]
+    public void OpacityOfEachDistanceFadesOverItsSpan(int approachDip)
     {
         var band = Band(TaskbarEdge.Bottom);
-        int span = CoverGeometry.ApproachSpan(level, Dpi100);
+        int span = CoverGeometry.ApproachSpan(approachDip, Dpi100);
 
-        Assert.Equal(0.0, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 0), level, Dpi100));
-        Assert.Equal(0.5, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, span / 2), level, Dpi100), precision: 9);
-        Assert.Equal(1.0, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, span), level, Dpi100));
+        Assert.Equal(0.0, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 0), approachDip, Dpi100));
+        Assert.Equal(0.5, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, span / 2), approachDip, Dpi100), precision: 9);
+        Assert.Equal(1.0, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, span), approachDip, Dpi100));
     }
 
     [Fact]
@@ -232,9 +241,9 @@ public class CoverGeometryTests
         // opaque.
         var band = Band(TaskbarEdge.Bottom);
 
-        Assert.Equal(0.5, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 48), ApproachDistance.Standard, Dpi150), precision: 9);
-        Assert.True(CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 64), ApproachDistance.Standard, Dpi150) < 1.0);
-        Assert.Equal(1.0, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 96), ApproachDistance.Standard, Dpi150));
+        Assert.Equal(0.5, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 48), Standard, Dpi150), precision: 9);
+        Assert.True(CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 64), Standard, Dpi150) < 1.0);
+        Assert.Equal(1.0, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 96), Standard, Dpi150));
     }
 
     [Fact]

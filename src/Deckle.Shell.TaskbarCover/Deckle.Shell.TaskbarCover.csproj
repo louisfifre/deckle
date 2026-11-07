@@ -22,6 +22,10 @@
     <ProjectReference Include="..\Deckle.Shell.Foreground\Deckle.Shell.Foreground.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Shell.TaskbarCover.Tests" />
+  </ItemGroup>
+
   <PropertyGroup>
     <!-- EventSource [Event] parameters use snake_case so the ETW
          payload keys land directly in the JSONL output and must

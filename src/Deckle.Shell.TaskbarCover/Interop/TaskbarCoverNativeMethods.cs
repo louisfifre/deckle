@@ -166,8 +166,8 @@ internal static class TaskbarCoverNativeMethods
 
     public const uint WM_APP_FOREGROUND = 0x8000 + 1;
 
-    // Same hand-off for the approach level: the App writes it through
-    // TaskbarCoverHost.Approach from its own thread, the cover thread reads
+    // Same hand-off for the approach distance: the App writes it through
+    // TaskbarCoverHost.ApproachDistanceDip from its own thread, the cover thread reads
     // it when this message lands and rebuilds the zones.
     public const uint WM_APP_APPROACH = 0x8000 + 2;
 

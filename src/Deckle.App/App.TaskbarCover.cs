@@ -17,15 +17,17 @@ public partial class App
     }
 
     // Start and Stop are idempotent, so unrelated settings changes cost nothing.
-    // The approach level is relayed first, so a Start builds its zone at the
-    // saved level; on a running host a level that differs from the one it
-    // holds posts WM_APP_APPROACH to the cover thread, an equal one does nothing.
+    // The approach distance is relayed first, in DIP, so a Start builds its
+    // zones at the saved distance; on a running host a distance that differs
+    // from the one it holds posts WM_APP_APPROACH to the cover thread, an
+    // equal one does nothing. The host converts it per band, with each
+    // taskbar's monitor scale.
     private void ReconcileTaskbarCover()
     {
         if (_taskbarCover is null) return;
 
         TaskbarCoverSettings settings = TaskbarCoverSettingsService.Instance.Current;
-        _taskbarCover.Approach = settings.Approach;
+        _taskbarCover.ApproachDistanceDip = settings.ApproachDistanceDip;
 
         if (settings.Enabled) _taskbarCover.Start();
         else                  _taskbarCover.Stop();
