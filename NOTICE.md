@@ -63,7 +63,6 @@ Open-source packages.
 - `CommunityToolkit.WinUI.Controls.Sizers` 8.2.250402 — MIT — .NET Foundation and Contributors. Read from the nuspec license expression. Provides the GridSplitter of the Ambient page's preview pane.
 - `Microsoft.ML.OnnxRuntime.DirectML` 1.23.0 — MIT — Microsoft. Read from the nuspec license file `LICENSE`. Runs the external Silero VAD on the CPU execution provider of this build.
 - `Microsoft.ML.OnnxRuntimeGenAI.DirectML` 0.13.0 — MIT — Microsoft. Read from the nuspec license file `LICENSE`. Runs the local closed-candidate sentence judge through ONNX Runtime GenAI, using DirectML or CPU as selected.
-- `Microsoft.ML.Tokenizers` 2.0.0 — MIT — Microsoft. Read from the nuspec license expression. Tokenizes text for the CamemBERT masked-language-model probe.
 - `System.Security.Cryptography.ProtectedData` 6.0.0 — MIT — Microsoft. Read from the nuspec license expression. Seals local data at rest with Windows DPAPI: the secret vault, the dictation and take-audio recovery stores, and the autocorrect CLI's observation data.
 - `System.Management` 10.0.12 — MIT — Microsoft. Read from the nuspec license expression. Watches process starts through WMI in `Deckle.Orchestration`.
 - `BouncyCastle.Cryptography` 2.6.2 — MIT — Legion of the Bouncy Castle Inc. Read from the nuspec license expression. Provides the DTLS-PSK transport used for Philips Hue Entertainment.
@@ -76,7 +75,6 @@ Other third-party packages pulled in transitively by `Deckle.App`, read from its
 - `CommunityToolkit.Common` 8.2.1, `CommunityToolkit.WinUI.Extensions`, `.Helpers` and `.Triggers` 8.2.250402 — MIT — nuspec license expressions.
 - `Microsoft.ML.OnnxRuntime.Managed` 1.23.0 and `Microsoft.ML.OnnxRuntimeGenAI.Managed` 0.13.0 — MIT — nuspec license files.
 - `Microsoft.Web.WebView2` 1.0.3719.77 — BSD-style license, Copyright (C) Microsoft Corporation — nuspec license file `LICENSE.txt`. Pulled in by `Microsoft.WindowsAppSDK.WinUI`.
-- `Google.Protobuf` 3.30.2 — BSD-3-Clause — Google Inc. — nuspec license expression. Pulled in by `Microsoft.ML.Tokenizers`.
 - `Humanizer.Core` 3.0.10 — MIT — Claire Novotny, Mehdi Khalili — nuspec license expression. Pulled in by `JsonPointer.Net`.
 
 ## Bundled assets
@@ -153,12 +151,6 @@ Whisper model weights downloaded from [ggerganov/whisper.cpp on Hugging Face](ht
 - Repository : https://github.com/snakers4/silero-vad
 - License : MIT — Copyright (c) 2020-present Silero Team.
 - Used as : the `silero_vad.onnx` v6.2 model, downloaded on demand to the models directory and run by `Deckle.Inference.Onnx` for external voice activity detection. Not redistributed in this repository.
-
-### CamemBERT (ONNX)
-
-- Repository : https://huggingface.co/Xenova/camembert-base — ONNX export of [almanach/camembert-base](https://huggingface.co/almanach/camembert-base) (Inria — Martin, Müller, Suárez et al.).
-- License : MIT — the CamemBERT weights.
-- Used as : the `camembert-base` masked-LM (`model.onnx` + `tokenizer.json` + `sentencepiece.bpe.model`), fetched on demand to the models directory only by the offline `Deckle.Autocorrect.Mlm` probe (a post-sentence reranker experiment). The app and its setup assistant do not load or install it. Not redistributed in this repository.
 
 ### Qwen3 (ONNX Runtime GenAI)
 

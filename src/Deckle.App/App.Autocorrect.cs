@@ -154,9 +154,8 @@ public partial class App
                 dictionary: dictionary,
                 french: french,
                 english: english,
-                // A slot-only masked LM such as CamemBERT cannot satisfy this
-                // stage's global decision contract, so it never stands in when
-                // the whole-sentence judge is unavailable.
+                // Without the whole-sentence judge there is no reranker: the stage
+                // stays on deterministic rules only.
                 reranker: sentenceReranker,
                 probe: policies.AmbiguityProbe,
                 wholeSentenceProbe: policies.WholeSentenceProbe,

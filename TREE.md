@@ -726,13 +726,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PairModelTrainer.cs
 │   │   ├── RestorationEvaluator.cs
 │   │   └── RestorationReport.cs
-│   ├── Deckle.Autocorrect.Mlm/
-│   │   ├── CamembertAssets.cs
-│   │   ├── CamembertMlmScorer.cs
-│   │   ├── CamembertReranker.cs
-│   │   ├── CamembertSentenceReranker.cs
-│   │   ├── Deckle.Autocorrect.Mlm.csproj
-│   │   └── MlmProbe.cs
 │   ├── Deckle.Autocorrect.Onnx/
 │   │   ├── CandidateCompletionPlan.cs
 │   │   ├── Deckle.Autocorrect.Onnx.csproj
@@ -1930,7 +1923,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── BackgroundRerankLaneTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── BuildDataMaintenanceTests.cs
-│   │   ├── CamembertRerankerIntegrationTests.cs
 │   │   ├── CandidateCompletionPlanTests.cs
 │   │   ├── CaretParagraphContextTests.cs
 │   │   ├── CaretSentenceContextTests.cs

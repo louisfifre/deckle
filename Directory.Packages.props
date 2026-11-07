@@ -57,10 +57,6 @@
          and is the version that was verified to load. -->
     <PackageVersion Include="Microsoft.ML.OnnxRuntimeGenAI.DirectML" Version="0.13.0" />
 
-    <!-- Managed SentencePiece/BPE tokenizers (no native lib, no Python) — used by
-         the autocorrect CLI's CamemBERT MLM reranker probe to segment text. -->
-    <PackageVersion Include="Microsoft.ML.Tokenizers" Version="2.0.0" />
-
     <!-- DPAPI (CurrentUser) seals data at rest: the secret vault (Deckle.Security),
          the dictation and take-audio recovery stores (Deckle.Transcription) and the
          autocorrect CLI's `harvest` sink (Deckle.Autocorrect.Lab), whose raw typed-word

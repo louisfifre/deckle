@@ -47,7 +47,7 @@ Sources : support.claude.com/en/articles/12429409, mixed-news.com/en/claude-max-
 
 ## 3. ONNX, ce qui est tranché
 
-**Établi.** Les juges ONNX d'autocorrect (`Deckle.Autocorrect.Onnx`, `Deckle.Autocorrect.Mlm`) sont insérés sur place. Ils notent des candidats fermés : une Correction au sens du CONTEXT racine, pas une génération. Ils ne bougent pas.
+**Établi.** Le juge ONNX d'autocorrect (`Deckle.Autocorrect.Onnx`) est inséré sur place. Il note des candidats fermés : une Correction au sens du CONTEXT racine, pas une génération. Il ne bouge pas.
 
 **Établi, mais seulement dans un glossaire.** `src/Deckle.Llm.Rewrite/CONTEXT.md` dit : cible décidée ONNX in-process pour le moteur de réécriture, Ollama jusqu'à cette migration. Aucun ADR dans `docs/adr` ne le fige. Le souvenir de Louis (« pas de truc pour ONNX, l'insérer à droite à gauche ») est juste pour les juges, pas pour la génération.
 

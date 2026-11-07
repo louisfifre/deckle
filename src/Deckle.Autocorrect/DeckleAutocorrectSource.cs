@@ -232,7 +232,6 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public static class RerankerEngines
     {
         public const string SentenceJudge = "sentence_judge"; // ONNX GenAI Qwen judge (DirectML)
-        public const string Camembert     = "camembert";      // masked-LM reranker
         public const string None          = "none";           // deterministic rules only
     }
 
