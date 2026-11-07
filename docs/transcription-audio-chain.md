@@ -236,7 +236,7 @@ Where the settings are shown:
 | `OutputFilters.SuppressRegex` | same | `""` | `outputFilters` | Decoding page (Output filters section, `WhisperSuppressRegexCard`) |
 | `Streaming.Strategy` | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `WorkerRun` | `Streaming` | `streaming` | Streaming page (`WhisperStreamingEnabledCard` toggle: on = Streaming) |
 | `Streaming.Segmenter.HangoverMaxMs` | same | `5000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Max wait", ms) |
-| `Streaming.Segmenter.HangoverMinMs` | same | `500` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Min wait", ms) |
+| `Streaming.Segmenter.HangoverMinMs` | same | `1000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Min wait", ms) |
 | `Streaming.Segmenter.HangoverRampStartMs` | same | `15000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Ramp start", ms) |
 | `Streaming.Segmenter.HangoverRampEndMs` | same | `120000` | `streaming.segmenter` | Streaming page (cut curve card, legend field "Ramp end", ms) |
 | `Streaming.Segmenter.HangoverCurveX1` | same (via `src/Deckle.Transcription/Curves/UnitBezier.cs`) | `0.85` | `streaming.segmenter` | Streaming page (cut curve card, full-width editor, `WhisperCutCurveCard`) |
@@ -327,7 +327,7 @@ These are fixed by the code. They are not measured; they are the minimum or the 
 | Lag threshold | 60 ms of audio found waiting at one wake counts as the loop having fallen behind | `CaptureLoop.LagThresholdMs` in `src/Deckle.Audio/Internal/CaptureLoop.cs` |
 | Drain after Stop | no fixed delay: the loop reads what is ready, then stops the stream; the duration is measured, not set | `src/Deckle.Audio/Internal/CaptureLoop.cs` → `Pump` |
 | Margin | 150 ms of silence kept after the last voiced frame | `EnergySegmenterSettings.MarginMs` |
-| Hangover | 500 ms to 5 s of silence before a cut, depending on how long the utterance already is | `EnergySegmenterSettings.HangoverMinMs`, `HangoverMaxMs` |
+| Hangover | 1 s to 5 s of silence before a cut, depending on how long the utterance already is | `EnergySegmenterSettings.HangoverMinMs`, `HangoverMaxMs` |
 | Heartbeat log | once per second (every 20 frames), only when verbose logging is on | `OnFrame` in `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` |
 | Idle unload | model freed 5 min after the last take | `MODEL_IDLE_TIMEOUT_MS` in `src/Deckle.Transcription/Engine/TranscriptionEngine.cs` |
 
@@ -390,14 +390,15 @@ How to read it:
 The required hangover is not fixed. It gets shorter as the open utterance gets longer, so that a long monologue is cut on shorter pauses than a short sentence (`RequiredHangoverFrames` in `src/Deckle.Transcription/Streaming/EnergySegmenter.cs`):
 
 - While the open utterance is at or below `HangoverRampStartMs` (15 s), the required hangover is `HangoverMaxMs` (5 s).
-- At or above `HangoverRampEndMs` (120 s), it is `HangoverMinMs` (500 ms).
+- At or above `HangoverRampEndMs` (120 s), it is `HangoverMinMs` (1 s).
 - In between, it goes from the maximum down to the minimum along a curve. The progress through the ramp (0 at its start, 1 at its end) goes into `UnitBezier.Solve`, which returns how far the delay has dropped (0 = still at the maximum, 1 = at the minimum). The curve is a cubic Bézier, the same function as CSS `cubic-bezier(x1, y1, x2, y2)`, with the control points `HangoverCurveX1`, `HangoverCurveY1`, `HangoverCurveX2`, `HangoverCurveY2` (`src/Deckle.Transcription/Curves/UnitBezier.cs`). The defaults (0.85, 0.10, 0.90, 0.25) keep the delay near the maximum for most of the ramp, then drop it late.
 
 Three details from the code:
 
-- Every duration is rounded to whole 50 ms frames once, in the constructor (`FramesFromMs`). 5000 ms is 100 frames, 500 ms is 10 frames, 150 ms is 3 frames.
+- Every duration is rounded to whole 50 ms frames once, in the constructor (`FramesFromMs`). 5000 ms is 100 frames, 1000 ms is 20 frames, 150 ms is 3 frames.
 - If `HangoverMinMs` is set above `HangoverMaxMs`, the minimum is lowered to the maximum. If `HangoverRampEndMs` is set below `HangoverRampStartMs`, the end is raised to the start. So the delay can only stay the same or shrink as the utterance grows.
-- The length that drives the ramp is the number of frames in the open utterance, and that includes the silent frames of the current hangover. Reading: during a long pause, the requirement can therefore shrink a little while the pause goes on; with the defaults this changes at most a few frames.
+- The length that drives the ramp is the speech length: the frames up to the last voiced frame (`_lastVoicedIdx + 1`), frozen at the first silent frame. The silent frames of the pause are not counted, so the requirement does not shrink while a pause goes on: a late pause waits for the delay it showed when it began. (Before this was fixed the length included the pause frames, and a pause late in a long utterance cut sooner than the delay shown.)
+- The pause gauge (`Progress.IsPausing`, `SilenceElapsedMs`) is debounced for display: it reports a pause only after 4 frames (200 ms) of continuous silence, so a 100 ms dip between syllables never flashes it. The hangover counter still starts at the first silent frame, so the cut falls at the same frame with or without the debounce.
 
 Required hangover at a given utterance length, with the default values. **Computed from the code, not measured**: the values come from reproducing `UnitBezier.Solve` (Newton-Raphson, then bisection, precision 1e-6) and the rounding of `RequiredHangoverFrames`.
 
@@ -405,12 +406,12 @@ Required hangover at a given utterance length, with the default values. **Comput
 |---|---|---|---|
 | 0 s | before the ramp | — | 100 frames = 5000 ms |
 | 15 s | ramp start (included in the maximum) | — | 100 frames = 5000 ms |
-| 30 s | 0.143 | 0.018 | 98 frames = 4900 ms |
-| 60 s | 0.429 | 0.072 | 93 frames = 4650 ms |
-| 90 s | 0.714 | 0.196 | 82 frames = 4100 ms |
-| 120 s | ramp end | — | 10 frames = 500 ms |
+| 30 s | 0.143 | 0.018 | 99 frames = 4950 ms |
+| 60 s | 0.429 | 0.072 | 94 frames = 4700 ms |
+| 90 s | 0.714 | 0.196 | 84 frames = 4200 ms |
+| 120 s | ramp end | — | 20 frames = 1000 ms |
 
-The drop is late, as the comment in `src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs` says: with the same calculation, 105 s still requires 3350 ms, and the curve only falls steeply in the last 15 s before 120 s. Reading: in practice, with the defaults, an utterance under a minute needs a pause of more than 4.5 seconds to be cut.
+The drop is late, as the comment in `src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs` says: with the same calculation, 105 s still requires more than 3400 ms, and the curve only falls steeply in the last 15 s before 120 s. Reading: in practice, with the defaults, an utterance under a minute needs a pause of more than 4.5 seconds to be cut.
 
 ### Hangover vs margin
 
@@ -448,7 +449,7 @@ The consumer takes the utterances one at a time, in order (`ConsumeUtterancesAsy
    - The kept spans are joined end to end. The silence between them is removed.
    - If no span is found, the utterance is dropped (`UtteranceDroppedNoSpeech`) and contributes no text. The tail of the previous text is kept for the next prompt.
    - If the trim throws an error, the utterance goes to Whisper untrimmed and the trim is turned off for the rest of the take.
-   - The Monolithic take runs the same detection once, on the whole take as utterance 0 (`ProduceMonolithicAsync`), but removes the leading and trailing silence only (`TrimSpeechEdges`): it keeps the audio from the start of the first span to the end of the last, pauses in between included, so a long dictation is not glued together and a short word after a pause is not dropped by the 250 ms floor. No span found sends the take to Whisper untrimmed and unpadded, where the backend's own no-speech filter judges it; an error also sends the take untrimmed.
+   - The Monolithic take runs the same detection once, on the whole take as utterance 0 (`ProduceMonolithicAsync`), but removes the leading and trailing silence only (`TrimSpeechEdges`): it keeps the audio from the start of the first span to the end of the last, pauses in between included, so a long dictation is not glued together and a short word after a pause is not dropped by the 250 ms floor. The edge detection also runs with a floor of one 50 ms frame (`SpeechEdges.OptionsFor` in `src/Deckle.Vad/SpeechEdges.cs`), so a short word that is the first or the last of the take is kept; the slicing is `SpeechEdges.Slice`. No span found sends the take to Whisper untrimmed and unpadded, where the backend's own no-speech filter judges it; an error also sends the take untrimmed.
 3. **Trailing noise pad.** 500 ms of noise at about −60 dBFS is appended to the audio, after the trim (`TrailingNoisePad.Append` in `src/Deckle.Transcription/Engine/TrailingNoisePad.cs`). Always on. Only the backend receives it.
 4. **Whisper**, one call per utterance (see Diagram 1).
 5. **Phantom filter.** If the utterance yielded text, `PhantomUtteranceFilter.Evaluate` (`src/Deckle.Transcription/Engine/PhantomUtteranceFilter.cs`) judges the decode against the duration of the audio before the pad. Under 1 s only, the text is dropped when it has more than 12 tokens per second, or when its average token probability is under 0.7 and its weakest token under 0.1. A dropped utterance adds no text and clears the carried tail (`UtterancePhantomRejected`).
