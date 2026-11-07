@@ -67,8 +67,8 @@ public class DeckleThreadingSourceTests
         var recovered = listener.Events[3];
         Assert.Equal(DeckleThreadingSource.EvtMarshalStallRecovered, recovered.EventId);
         Assert.Equal(EventLevel.Informational, recovered.Level);
-        Assert.Equal(3, recovered.Payload?[0]);
-        Assert.Equal(late + 900, recovered.Payload?[1]);
+        Assert.Equal(3L, recovered.Payload?[0]);
+        Assert.Equal((long)(late + 900), recovered.Payload?[1]);
         Assert.Equal(500L, recovered.Payload?[2]);
     }
 

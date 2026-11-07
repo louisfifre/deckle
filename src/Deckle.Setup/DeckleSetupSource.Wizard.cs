@@ -66,7 +66,7 @@ public sealed partial class DeckleSetupSource
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "The previous app was still running after the hand-off wait\npid={0} | timeout_ms={1}")]
-    public void PredecessorWaitTimedOut(int pid, long timeout_ms)
+    public void PredecessorWaitTimedOut(long pid, long timeout_ms)
     {
         if (IsEnabled(EventLevel.Warning, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtPredecessorWaitTimedOut, pid, timeout_ms);
