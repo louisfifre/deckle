@@ -2466,6 +2466,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── UtteranceProgressMeterTests.cs
 │   │   ├── UtteranceProgressTests.cs
 │   │   ├── VadServiceIncidentTests.cs
+│   │   ├── WhispEventIdBugNotes.md
 │   │   ├── WhispModelLifecycleBugNotes.md
 │   │   └── WhispModelLifecycleTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/
