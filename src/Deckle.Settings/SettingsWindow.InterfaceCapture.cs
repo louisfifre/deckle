@@ -6,6 +6,11 @@ using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Settings;
 
+// How one page of the walk went: Loaded is false when the frame did not hold
+// the page, loaded, within PageLoadTimeout (the navigation threw, was refused,
+// or the page never reached Loaded). LoadMs is the time that took.
+public readonly record struct SettingsPageVisit(string Tag, string Label, bool Loaded, long LoadMs);
+
 // ── Interface capture: one image per settings page ───────────────────────────
 //
 // The developer mode's interface capture shows each settings page in turn and
@@ -31,7 +36,17 @@ public sealed partial class SettingsWindow
 
     // Calls capturePage(pageTag, railLabel) once per page, the page shown and
     // settled. Runs on the UI thread.
-    public async Task CaptureEachPageAsync(Func<string, string, Task> capturePage)
+    public Task CaptureEachPageAsync(Func<string, string, Task> capturePage)
+        => WalkPagesAsync(visit => capturePage(visit.Tag, visit.Label));
+
+    // The walk itself: calls visit once per page with how the page loaded, the
+    // page shown and settled. The self-check reads Loaded from it; the interface
+    // capture ignores it and photographs whatever is there.
+    //
+    // starting is called with a page's tag before the window opens it: a
+    // native crash while opening the page ends the process before visit could
+    // say anything, so a caller that must name that page notes it here first.
+    public async Task WalkPagesAsync(Func<SettingsPageVisit, Task> visit, Action<string, string>? starting = null)
     {
         object? previous = Nav.SelectedItem;
         _suppressPageTransition = true;
@@ -39,8 +54,11 @@ public sealed partial class SettingsWindow
         {
             foreach (NavigationViewItem item in PageItems())
             {
-                await ShowPageAsync(item);
-                await capturePage((string)item.Tag, item.Content as string ?? "");
+                starting?.Invoke((string)item.Tag, item.Content as string ?? "");
+                var clock = System.Diagnostics.Stopwatch.StartNew();
+                bool loaded = await ShowPageAsync(item);
+                await visit(new SettingsPageVisit(
+                    (string)item.Tag, item.Content as string ?? "", loaded, clock.ElapsedMilliseconds));
             }
         }
         finally
@@ -70,25 +88,33 @@ public sealed partial class SettingsWindow
         return Walk(Nav.MenuItems).Concat(Walk(Nav.FooterMenuItems)).ToList();
     }
 
-    private async Task ShowPageAsync(NavigationViewItem item)
+    // True when the page reached Loaded in the frame before the timeout.
+    private async Task<bool> ShowPageAsync(NavigationViewItem item)
     {
-        if (item.Tag is not string tag) return;
+        if (item.Tag is not string tag) return false;
         SelectPage(tag);
 
         Type? pageType = Type.GetType(tag);
         var waited = System.Diagnostics.Stopwatch.StartNew();
+        bool loaded = false;
         while (waited.Elapsed < PageLoadTimeout)
         {
             if (PageFrame.Content is FrameworkElement page
                 && (pageType is null || page.GetType() == pageType)
                 && page.IsLoaded)
+            {
+                // A tag that names no type cannot be a loaded page, whatever the
+                // frame holds.
+                loaded = pageType is not null;
                 break;
+            }
             await Task.Delay(30);
         }
 
         await NextFrameAsync();
         await NextFrameAsync();
         await Task.Delay(PageSettleDelay);
+        return loaded;
     }
 
     // Completes on the next composition frame, so the image is taken after

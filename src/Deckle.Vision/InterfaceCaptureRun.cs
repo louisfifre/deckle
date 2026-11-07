@@ -43,11 +43,19 @@ public sealed class InterfaceCaptureRun
     public int Captured => _index.Captures.Count;
     public int Failed => _index.Failures.Count;
 
+    // The file the last CaptureAsync wrote, relative to Directory; null when it
+    // failed. Lets a caller that reports per image name the file.
+    public string? LastFile { get; private set; }
+
     // Throws when the folder cannot be made, after logging the run's start,
     // its stop and its end.
     public static InterfaceCaptureRun Begin(DateTimeOffset startedAt)
+        => Begin(startedAt, Path.Combine(CapturesDirectory, InterfaceCaptureNames.FolderName(startedAt)));
+
+    // The same run in a folder the caller names, for a run whose images must
+    // outlive the data root (the self-check writes them beside its report).
+    public static InterfaceCaptureRun Begin(DateTimeOffset startedAt, string directory)
     {
-        string directory = Path.Combine(CapturesDirectory, InterfaceCaptureNames.FolderName(startedAt));
         var run = new InterfaceCaptureRun(directory, startedAt);
         DeckleVisionSource.Log.InterfaceCaptureStarted(run._workId, RelativeToDataRoot(directory));
         try
@@ -84,6 +92,7 @@ public sealed class InterfaceCaptureRun
         string file = name + InterfaceCaptureNames.FileExtension;
         string path = Path.Combine(Directory, file);
         var clock = Stopwatch.StartNew();
+        LastFile = null;
         try
         {
             (int width, int height) = await WindowSnapshot.CaptureToPngAsync(hwnd, path);
@@ -91,6 +100,7 @@ public sealed class InterfaceCaptureRun
             _index.Add(new InterfaceCaptureEntry(file, InterfaceCaptureNames.Slug(window), pageLabel, title, width, height));
             DeckleVisionSource.Log.InterfaceWindowCaptured(
                 _workId, RelativeToDataRoot(path), width, height, clock.ElapsedMilliseconds);
+            LastFile = file;
             return true;
         }
         catch (WindowSnapshotException ex)
