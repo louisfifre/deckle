@@ -36,7 +36,7 @@ public class SentenceCorpusTests
     }
 
     [Fact]
-    public void EllipsisClosesTheSameSentenceForCorpusAndReranker()
+    public void EllipsisClosesTheSentence()
     {
         var (c, done) = New();
 
@@ -212,33 +212,6 @@ public class SentenceCorpusTests
         c.Word("ecole", "école", '.');
 
         Assert.Equal("#0=marche»commit:marché|#1=ecole»commit:école", done[0].History);
-    }
-
-    [Fact]
-    public void RecordsASentenceStageRewriteFromBehind()
-    {
-        var (c, done) = New();
-        c.Word("la", "la", ' ');
-        c.SentenceEdit("la", "là");       // deferred rewrite, sentence still open
-        c.Word("bas", "bas", '.');
-
-        Assert.Equal("la bas.", done[0].Typed);
-        Assert.Equal("là bas.", done[0].Final);
-        Assert.Equal("#0=la»sentence:là", done[0].History);
-    }
-
-    [Fact]
-    public void DropsASentenceRewriteThatLandsAfterFlush()
-    {
-        // A verdict for the last word arriving after the sentence flushed finds no
-        // open slot — a post-close edit, invisible by design.
-        var (c, done) = New();
-        c.Word("la", "la", '.');
-        c.SentenceEdit("la", "là");
-
-        Assert.Single(done);
-        Assert.Equal("la.", done[0].Final);
-        Assert.Equal("", done[0].History);
     }
 
     [Fact]

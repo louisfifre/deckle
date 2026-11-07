@@ -43,8 +43,8 @@ public sealed partial class TranscriptionEngine
         // the take. On an abandoned production (a null return) the batches
         // already sent finish on their own and their results are dropped with
         // the rewriter.
-        BatchRewriteRun? batchRewrite = StartBatchRewrite();
-        using IDisposable? batchFeed = FeedBatchRewrite(batchRewrite);
+        BatchRewriteTake? batchTake = StartBatchRewrite();
+        using IDisposable? batchFeed = FeedBatchRewrite(batchTake);
 
         // Crash-safety copy of the raw text (TranscriptionEngine.Recovery.cs),
         // with the same lifetime as the batch feed.
@@ -55,7 +55,7 @@ public sealed partial class TranscriptionEngine
             ApplyPreprocessing: true,
             RejectIncompleteResults: false,
             StopCaptureOnPrimeFailure: true,
-            DeliveredText: batchRewrite is null ? null : batchRewrite.Rewriter.Snapshot);
+            DeliveredText: batchTake is null ? null : batchTake.Snapshot);
         SegmentedTranscriptionSession<StreamingConsumeResult> session =
             StartSegmentedTranscription(policy, drainCt, primeTask);
 
@@ -279,6 +279,11 @@ public sealed partial class TranscriptionEngine
         // runs while the finalize copies the raw text. Only here, on the path
         // that finalizes: an abandoned take must not send a request whose
         // result nobody reads.
+        //
+        // A run opened at a length step is checked against the final length
+        // first: when the take belongs to another profile the run is dropped
+        // here, and the finalize rewrites the whole take as it always did.
+        BatchRewriteRun? batchRewrite = batchTake?.RunForFinalize(consumed.Text.Length);
         batchRewrite?.Rewriter.Complete();
 
         return new PipelineProduction(
@@ -397,7 +402,10 @@ public sealed partial class TranscriptionEngine
     // span's start to the last one's end, pauses in between kept as spoken.
     // The monolithic take uses it, where TrimSpeech would glue every pause of a
     // long dictation together and its per-span floor would lose a short word
-    // said after a pause. Returns the slice, empty when Silero found no speech,
+    // said after a pause; the edge detection also lowers that floor to one
+    // frame, since a short word can be the first or last of the take (the
+    // slicing and the floor are SpeechEdges, in Deckle.Vad, tested there).
+    // Returns the slice, empty when Silero found no speech,
     // or null when the detection failed, reported to the service as TrimSpeech
     // does. The log lines are TrimSpeech's: kept is the slice's length, so the
     // inner-gap figure of SpeechTrimBounds reads 0.
@@ -406,10 +414,11 @@ public sealed partial class TranscriptionEngine
         try
         {
             long trimStart = Stopwatch.GetTimestamp();
-            IReadOnlyList<SpeechSegment> segments = vad.DetectSpeech(samples, vadOptions);
-            float[] kept = segments.Count == 0
-                ? Array.Empty<float>()
-                : samples[segments[0].StartSample..segments[^1].EndSample];
+            // The span floor is lowered to one frame (SpeechEdges): at a take's
+            // edge a span under the shared floor is a short word, not a blip.
+            IReadOnlyList<SpeechSegment> segments =
+                vad.DetectSpeech(samples, SpeechEdges.OptionsFor(vadOptions));
+            float[] kept = SpeechEdges.Slice(samples, segments);
             long trimMs = (long)Stopwatch.GetElapsedTime(trimStart).TotalMilliseconds;
             DeckleVadSource.Log.SpeechTrimmed(
                 utteranceIndex, samples.Length, kept.Length, segments.Count, trimMs);
@@ -760,12 +769,14 @@ public sealed partial class TranscriptionEngine
     // DeliveredText, when set, is where the take's delivered text differs from
     // the consumer's raw assembly: a live take with a batch run reads it from
     // the rewriter, so the Appended snapshots carry the rewrites already back.
+    // The function returns null while the take has no run yet (a take waiting
+    // for its first length step): the raw assembly then stands.
     private readonly record struct SegmentedTranscriptionPolicy(
         string FixedPrompt,
         bool ApplyPreprocessing,
         bool RejectIncompleteResults,
         bool StopCaptureOnPrimeFailure = false,
-        Func<string>? DeliveredText = null);
+        Func<string?>? DeliveredText = null);
 
     internal static bool IsFileTranscriptionResultUsable(TranscriptionResult result) =>
         !result.Aborted && result.ResultCode == 0;

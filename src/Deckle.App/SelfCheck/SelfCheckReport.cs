@@ -69,7 +69,7 @@ internal sealed class SelfCheckReport
             if (!surface.Loaded)
                 failures.Add($"{surface.Name}: did not load (navigation did not complete in {surface.Ms} ms).");
             else if (surface.Png is null)
-                failures.Add($"{surface.Name}: loaded but its image could not be taken.");
+                failures.Add($"{surface.Name}: loaded but its image could not be taken ({surface.Error ?? "no pixels"}).");
             else if (surface.PopupsStillOpen > 0)
                 failures.Add($"{surface.Name}: its image was taken with {surface.PopupsStillOpen} popup(s) open over the page.");
         }
@@ -145,9 +145,17 @@ internal sealed class SelfCheckReport
 //   PopupsClosed    popups found open over the window and closed before the image
 //                   (a flyout the walk left open); informational.
 //   PopupsStillOpen popups that stayed open: the image shows something over the page.
+//   Technique       how the image was made: page-render (the page's whole XAML
+//                   content), window-capture (DWM pixels of the window) or
+//                   window-render (the window's XAML content, when DWM gave none).
+//   Width, Height   the image's size in pixels; 0 when the technique does not say.
+//   Parts           the files, in order, when a page was too tall for one image.
+//   Error           why an image could not be made, when it threw.
 internal sealed record SelfCheckSurface(
     string Window, string? Page, string? Label, bool Loaded, long Ms, string? Png,
-    int PopupsClosed = 0, int PopupsStillOpen = 0)
+    int PopupsClosed = 0, int PopupsStillOpen = 0,
+    string? Technique = null, int Width = 0, int Height = 0,
+    string[]? Parts = null, string? Error = null)
 {
     [JsonIgnore]
     public string Name => Page is null ? Window : $"{Window}/{Page}";

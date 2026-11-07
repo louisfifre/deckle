@@ -49,6 +49,28 @@ public sealed partial class DeckleLlmSource
         if (IsEnabled()) WriteEvent(EvtBatchRewriteReturnedDetail, new object[] { batch_index, elapsed_ms, in_chars, out_chars });
     }
 
+    // A run opened at a length step of the ladder was dropped at Stop because
+    // the final length points to another profile (or to none): the whole take
+    // is rewritten at once instead. The batches already sent are wasted work.
+    [Event(EvtBatchRewriteDiscarded,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "The batches sent during the dictation were dropped: the final length calls for another profile")]
+    public void BatchRewriteDiscarded()
+    {
+        if (IsEnabled()) WriteEvent(EvtBatchRewriteDiscarded);
+    }
+
+    // final_profile is empty when the final length resolves to no profile.
+    [Event(EvtBatchRewriteDiscardedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "batches={0} | started_profile={1} | final_profile={2}")]
+    public void BatchRewriteDiscardedDetail(int batches, string started_profile, string final_profile)
+    {
+        if (IsEnabled()) WriteEvent(EvtBatchRewriteDiscardedDetail, new object[] { batches, started_profile, final_profile });
+    }
+
     // reason: no_result (the service gave no text; its own Warning just
     // before says why), blank (it answered whitespace), exception (it threw;
     // ex_type and ex_message say what), task_faulted (the batch task itself

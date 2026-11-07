@@ -38,13 +38,6 @@ public sealed partial class WhisperBackend
             string modelPath = ResolveModelPath();
             string modelName = Path.GetFileName(modelPath);
 
-            if (!File.Exists(modelPath))
-            {
-                ReportLoadFailure(
-                    "file_not_found", modelName, modelPath, 0, gpuRequested: false, device: "", failedDevice: "");
-                return new ModelLoadResult(false, 0, null, "file_not_found");
-            }
-
             var sw = Stopwatch.StartNew();
             IntPtr ctxParamsPtr = WhisperPInvoke.whisper_context_default_params_by_ref();
             WhisperContextParams ctxParams = Marshal.PtrToStructure<WhisperContextParams>(ctxParamsPtr);
@@ -57,6 +50,16 @@ public sealed partial class WhisperBackend
             WhisperContextParamsMapper.Apply(ref ctxParams, _host.Transcription);
 
             bool gpuRequested = ctxParams.use_gpu != 0;
+
+            // Read before the existence check so a missing file still says which
+            // device the load asked for.
+            if (!File.Exists(modelPath))
+            {
+                ReportLoadFailure(
+                    "file_not_found", modelName, modelPath, 0, gpuRequested, device: "", failedDevice: "");
+                return new ModelLoadResult(false, 0, null, "file_not_found", modelPath, gpuRequested);
+            }
+
             bool logHookInstalled = Volatile.Read(ref s_logHookInstalled) != 0;
 
             // Ungated: what was asked and which runtime answers are the first
@@ -95,7 +98,7 @@ public sealed partial class WhisperBackend
                     gpuRequested,
                     s_computeDevice.DeviceOfCurrentLoad(gpuRequested),
                     s_computeDevice.FailedGpuDevice);
-                return new ModelLoadResult(false, sw.ElapsedMilliseconds, null, "init_failed");
+                return new ModelLoadResult(false, sw.ElapsedMilliseconds, null, "init_failed", modelPath, gpuRequested);
             }
 
             _loadFailureOpen = false;

@@ -27,7 +27,7 @@ public static partial class LexiconBuilder
             writer.Write($"{form}\t{map[form].ToString("0.####", CultureInfo.InvariantCulture)}\n");
     }
 
-    private static void SelfCheck(string frenchOut, string englishOut, string verbsOut, string globishOut)
+    private static void SelfCheck(string frenchOut, string englishOut, string globishOut)
     {
         Console.WriteLine();
         Console.WriteLine("Self-check (reload via FrequencyLexicon.LoadTsvGz):");
@@ -57,22 +57,12 @@ public static partial class LexiconBuilder
             Console.WriteLine("  Globish count                    absent");
         }
 
-        var vb = VerbMorphology.LoadTsvGz(verbsOut);
-
-        Console.WriteLine($"  Verb    forms           {vb.Count,12:N0}");
-        // manges → manger ind:pre:2s; the 1s slot of the same lemma is "mange".
-        Console.WriteLine($"    manges is verb        {vb.IsVerb("manges"),12}");
-        Console.WriteLine($"    manger ind:pre:1s     {vb.Conjugate("manger", "ind", "pre", "1s"),12}");
-        // "ferme" is fermer-the-verb but also a noun — ambiguous, never agreed.
-        Console.WriteLine($"    ferme ambiguous       {vb.IsAmbiguous("ferme"),12}");
-
         Console.WriteLine();
         Console.WriteLine("File sizes:");
         Console.WriteLine($"  {Path.GetFileName(frenchOut),-24}{new FileInfo(frenchOut).Length,12:N0} bytes");
         Console.WriteLine($"  {Path.GetFileName(englishOut),-24}{new FileInfo(englishOut).Length,12:N0} bytes");
         if (File.Exists(globishOut))
             Console.WriteLine($"  {Path.GetFileName(globishOut),-24}{new FileInfo(globishOut).Length,12:N0} bytes");
-        Console.WriteLine($"  {Path.GetFileName(verbsOut),-24}{new FileInfo(verbsOut).Length,12:N0} bytes");
     }
 
     // ── Filters / parsing ──────────────────────────────────────────────────

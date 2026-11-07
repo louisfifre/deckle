@@ -118,8 +118,10 @@ public sealed partial class SettingsWindow
     }
 
     // Completes on the next composition frame, so the image is taken after
-    // the layout pass has reached the screen.
-    private static Task NextFrameAsync()
+    // the layout pass has reached the screen. A window nobody can see (the
+    // self-check's, kept off every monitor) may be given no frame: the wait ends
+    // after a second so the walk goes on instead of hanging.
+    private static async Task NextFrameAsync()
     {
         var rendered = new TaskCompletionSource();
         void OnRendering(object? sender, object e)
@@ -128,6 +130,10 @@ public sealed partial class SettingsWindow
             rendered.TrySetResult();
         }
         CompositionTarget.Rendering += OnRendering;
-        return rendered.Task;
+        await Task.WhenAny(rendered.Task, Task.Delay(1000));
+        CompositionTarget.Rendering -= OnRendering;
     }
+
+    // The page the frame holds now, for a caller that renders it itself.
+    public FrameworkElement? CurrentPage => PageFrame.Content as FrameworkElement;
 }

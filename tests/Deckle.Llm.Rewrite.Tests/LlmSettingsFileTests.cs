@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Deckle.Llm.Rewrite.Tests;
 
-// LlmSettings through the real store and the real migration hook, from a file
+// LlmSettings through the real store and the real normalizer hook, from a file
 // on disk: the load, the save and the reload a person's settings.json goes
 // through. The options mirror LlmSettingsService's.
 public sealed class LlmSettingsFileTests : IDisposable
@@ -35,116 +35,42 @@ public sealed class LlmSettingsFileTests : IDisposable
         if (initialText is not null) File.WriteAllText(FilePath, initialText);
         return new JsonSettingsStore<LlmSettings>(
             FilePath, $"Deckle-Llm-Test-{Guid.NewGuid():N}", Options,
-            postLoadMigration: LlmSettingsMigrations.Apply);
+            postLoadMigration: LlmSettingsNormalizer.Apply);
     }
 
-    // A file from the Ollama-only era: one endpoint, profiles without a
-    // provider, and no providers list at all.
-    private const string OllamaOnlyEraFile = """
-        {
-          "enabled": true,
-          "ollamaEndpoint": "http://gpu-box:11434/api/generate",
-          "profiles": [ { "name": "Old", "model": "llama3", "systemPrompt": "Rewrite." } ]
-        }
-        """;
-
-    [Fact]
-    [Trait("Category", "regression")]
-    public void CustomOllamaEndpointSurvivesTheMigrationOfAnOllamaOnlyFile()
-    {
-        using var store = OpenStore(OllamaOnlyEraFile);
-
-        LlmProvider ollama = Assert.Single(store.Current.Providers, p => p.Kind == LlmProviderKind.Ollama);
-        Assert.Equal(CustomEndpoint, ollama.Endpoint);
-        Assert.All(store.Current.Profiles, p => Assert.Equal(ollama.Id, p.ProviderId));
-
-        store.Flush();
-        store.Reload();
-
-        ollama = Assert.Single(store.Current.Providers, p => p.Kind == LlmProviderKind.Ollama);
-        Assert.Equal(CustomEndpoint, ollama.Endpoint);
-    }
-
-    // Already migrated by an earlier build: providers present and on the
-    // default URL, the custom endpoint left only in the legacy field.
-    [Fact]
-    [Trait("Category", "regression")]
-    public void CustomEndpointLeftOnlyInTheLegacyFieldIsRecoveredOnce()
-    {
-        const string migratedByEarlierBuild = """
-            {
-              "ollamaEndpoint": "http://gpu-box:11434/api/generate",
-              "providers": [
-                { "id": "ollama", "name": "Ollama", "kind": "Ollama", "endpoint": "http://localhost:11434/api/generate" }
-              ],
-              "profiles": [ { "id": "p1", "name": "Old", "providerId": "ollama", "model": "llama3", "systemPrompt": "Rewrite." } ]
-            }
-            """;
-        using var store = OpenStore(migratedByEarlierBuild);
-
-        Assert.Equal(CustomEndpoint,
-            Assert.Single(store.Current.Providers, p => p.Kind == LlmProviderKind.Ollama).Endpoint);
-
-        store.Flush();
-        store.Reload();
-
-        Assert.Equal(CustomEndpoint,
-            Assert.Single(store.Current.Providers, p => p.Kind == LlmProviderKind.Ollama).Endpoint);
-        Assert.DoesNotContain("ollamaEndpoint", LegacyKeysOnDisk());
-    }
-
-    private static readonly string[] LegacyKeys =
+    private static readonly string[] RetiredKeys =
         ["ollamaEndpoint", "primaryRewriteProfileId", "primaryRewriteProfileName",
          "autoRewriteRules", "ruleMetric", "autoRewriteRulesByWords"];
 
-    private string[] LegacyKeysOnDisk()
+    private string[] RetiredKeysOnDisk()
     {
         using JsonDocument doc = JsonDocument.Parse(File.ReadAllText(FilePath));
-        return LegacyKeys.Where(k => doc.RootElement.TryGetProperty(k, out _)).ToArray();
+        return RetiredKeys.Where(k => doc.RootElement.TryGetProperty(k, out _)).ToArray();
     }
 
+    // The settings are read as they are: a key the model no longer has is
+    // ignored, and the next save does not write it back.
     [Fact]
     [Trait("Category", "integration")]
-    public void LegacyFieldsAreReadToMigrateButNotWrittenBack()
+    public void AKeyTheModelNoLongerHasIsIgnoredAndNotWrittenBack()
     {
-        const string oldFile = """
+        const string withRetiredKeys = """
             {
               "ollamaEndpoint": "http://gpu-box:11434/api/generate",
               "primaryRewriteProfileId": "p1",
-              "primaryRewriteProfileName": "Old",
-              "profiles": [ { "id": "p1", "name": "Old", "model": "llama3", "systemPrompt": "Rewrite." } ]
+              "autoRewriteRules": [ { "minDurationSeconds": 30, "profileId": "p1", "profileName": "Old" } ],
+              "profiles": [ { "id": "p1", "name": "Old", "providerId": "ollama", "model": "llama3", "systemPrompt": "Rewrite." } ]
             }
             """;
-        using var store = OpenStore(oldFile);
+        using var store = OpenStore(withRetiredKeys);
 
-        Assert.Equal("p1", store.Current.ActiveProfileId);
-        Assert.Equal(CustomEndpoint,
-            Assert.Single(store.Current.Providers, p => p.Kind == LlmProviderKind.Ollama).Endpoint);
+        Assert.Equal("p1", Assert.Single(store.Current.Profiles).Id);
+        Assert.Null(store.Current.ActiveProfileId);
 
-        // The store rewrites a migrated file on its own; a later save changes nothing.
-        Assert.Empty(LegacyKeysOnDisk());
+        store.Replace(store.Current);
         store.Flush();
-        Assert.Empty(LegacyKeysOnDisk());
+        Assert.Empty(RetiredKeysOnDisk());
     }
-
-    [Fact]
-    [Trait("Category", "integration")]
-    public void LegacyRulesOfAnOldFileRoundTripButANewFileCarriesNone()
-    {
-        using var fresh = OpenStore();
-        Assert.Empty(LegacyKeysOnDisk());
-        fresh.Dispose();
-
-        File.WriteAllText(FilePath, """
-            { "autoRewriteRules": [ { "minDurationSeconds": 30, "profileId": "gone", "profileName": "Gone" } ] }
-            """);
-        using var old = OpenStore();
-        old.Flush();
-
-        Assert.Equal(["autoRewriteRules"], LegacyKeysOnDisk());
-        Assert.Single(old.Current.AutoRewriteRules!);
-    }
-
     [Fact]
     [Trait("Category", "integration")]
     public void AFileSavedByTheNewVersionLoadsWithItsProviders()
@@ -159,6 +85,6 @@ public sealed class LlmSettingsFileTests : IDisposable
         Assert.Equal(CustomEndpoint,
             Assert.Single(second.Current.Providers, p => p.Kind == LlmProviderKind.Ollama).Endpoint);
         Assert.Equal(3, second.Current.Providers.Count);
-        Assert.Empty(LegacyKeysOnDisk());
+        Assert.Empty(RetiredKeysOnDisk());
     }
 }

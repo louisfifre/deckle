@@ -165,7 +165,7 @@ public partial class ProfileViewModel : ObservableObject
         TopP = profile.TopP ?? double.NaN;
         RepeatPenalty = profile.RepeatPenalty ?? double.NaN;
 
-        HotkeyEnabled = profile.HotkeyEnabled == true;
+        HotkeyEnabled = profile.HotkeyEnabled;
         Hotkey = profile.Hotkey;
 
         _isSyncing = false;

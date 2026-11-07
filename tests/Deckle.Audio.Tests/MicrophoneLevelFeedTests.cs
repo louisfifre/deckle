@@ -42,7 +42,7 @@ public sealed class MicrophoneLevelFeedTests
         capture.Raise(0.2f);
 
         h.Feed.Stop();
-        // The capture thread is still inside Record, as while waveIn drains.
+        // The capture thread is still inside Record, as while the device drains.
         capture.Raise(0.3f);
 
         Assert.Equal(new[] { 0.1f, 0.2f }, h.Levels.ToArray());

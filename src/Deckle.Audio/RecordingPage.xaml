@@ -70,8 +70,9 @@
 
                 <!-- ── Voice ───────────────────────────────────────────────── -->
                 <!-- What Deckle hears: the voice level and its meter, one card
-                     (2026-11-07 review, change 4). Its reset is the voice
-                     level's; the meter keeps no value. -->
+                     (2026-11-07 review, change 4), then the microphone level
+                     check. Its reset is the voice level's; the meter and the
+                     check keep no value. -->
                 <catalog:SettingsSection x:Name="VoiceSection"
                                          x:Uid="RecordingPageVoiceSection"
                                          HasReset="True"
@@ -85,6 +86,7 @@
                          code-behind, which also gives the meter the card's
                          padding (FrameVoiceLevelCard). The alternative, a fold
                          kept open, would let the instrument be folded away. -->
+                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
                     <Border x:Name="VoiceLevelFrame"
                             Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                             BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -100,12 +102,65 @@
                             <local:VoiceLevelMeter x:Name="VoiceMeter" />
                         </StackPanel>
                     </Border>
+
+                    <!-- Microphone level check, a command with its verdict: it
+                         measures the voice against the voice level above and
+                         advises whether the pre-processing toggle is worth
+                         turning on; the user decides, nothing is switched on
+                         for them. It stands here, with the voice level it is
+                         read against, not in the pre-processing fold
+                         (maintainer, 2026-11-07). No value, no reset. -->
+                    <controls:SettingsCard x:Name="MicCheckCard"
+                                           x:Uid="RecordingPageMicCheckCard"
+                                           Tag="RecordingPageMicCheckCard">
+                        <Button x:Uid="RecordingPageMicCheckButton"
+                                MinWidth="120"
+                                Command="{x:Bind ViewModel.MeasureMicCommand}" />
+                    </controls:SettingsCard>
+
+                    <controls:SettingsCard Background="{x:Null}"
+                                           BorderThickness="0"
+                                           Visibility="{x:Bind ViewModel.HasMicCheckNote, Mode=OneWay}">
+                        <StackPanel>
+                            <InfoBar x:Uid="RecordingPageMicCheckListening"
+                                     IsClosable="False"
+                                     Severity="Informational"
+                                     IsOpen="{x:Bind ViewModel.IsMeasuringMic, Mode=OneWay}"
+                                     catalog:InfoBarLayout.CollapseWhenClosed="True">
+                                <InfoBar.Content>
+                                    <ProgressRing IsActive="True" Width="20" Height="20"
+                                                  HorizontalAlignment="Left" Margin="0,0,0,12" />
+                                </InfoBar.Content>
+                            </InfoBar>
+                            <InfoBar x:Uid="RecordingPageMicAdviceRecommended"
+                                     IsClosable="False" Severity="Success"
+                                     IsOpen="{x:Bind ViewModel.AdviceRecommended, Mode=OneWay}"
+                                     Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
+                                     catalog:InfoBarLayout.CollapseWhenClosed="True" />
+                            <InfoBar x:Uid="RecordingPageMicAdviceMarginal"
+                                     IsClosable="False" Severity="Warning"
+                                     IsOpen="{x:Bind ViewModel.AdviceMarginal, Mode=OneWay}"
+                                     Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
+                                     catalog:InfoBarLayout.CollapseWhenClosed="True" />
+                            <InfoBar x:Uid="RecordingPageMicAdviceNotNeeded"
+                                     IsClosable="False" Severity="Informational"
+                                     IsOpen="{x:Bind ViewModel.AdviceNotNeeded, Mode=OneWay}"
+                                     Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
+                                     catalog:InfoBarLayout.CollapseWhenClosed="True" />
+                            <InfoBar x:Uid="RecordingPageMicAdviceError"
+                                     IsClosable="False" Severity="Error"
+                                     IsOpen="{x:Bind ViewModel.AdviceError, Mode=OneWay}"
+                                     catalog:InfoBarLayout.CollapseWhenClosed="True" />
+                        </StackPanel>
+                    </controls:SettingsCard>
+
+                    </StackPanel>
                 </catalog:SettingsSection>
 
                 <!-- ── Recording ───────────────────────────────────────────── -->
                 <!-- Title provisional: the maintainer names the sections at the
                      end. What the page sets about a take: the maximum length
-                     and the pre-processing with its two checks. The section
+                     and the pre-processing with its listening test. The section
                      reset spans its two composed settings. -->
                 <catalog:SettingsSection x:Name="RecordingSection"
                                          x:Uid="RecordingPageRecordingSection"
@@ -124,9 +179,9 @@
                         <StackPanel x:Name="PreprocessingHost"
                                     Spacing="{StaticResource SettingsCardSpacing}" />
 
-                        <!-- The two checks that serve the pre-processing, the
-                             former Checks section (2026-11-07 review, change 3).
-                             Declared here for their x:Bind, then moved by the
+                        <!-- The listening test, which serves the pre-processing
+                             (the level check stands in the Voice section).
+                             Declared here for its x:Bind, then moved by the
                              code-behind into the composed fold's items, which
                              accept SettingsCards only: each InfoBar sits in a
                              frameless card shown only while it has something to
@@ -139,53 +194,6 @@
                              spacing if it stayed visible. -->
                         <StackPanel x:Name="PreprocessingChecks"
                                     Visibility="Collapsed">
-
-                            <!-- Microphone level check: it advises whether the
-                                 pre-processing toggle is worth turning on; the user
-                                 decides, nothing is switched on for them. -->
-                            <controls:SettingsCard x:Name="MicCheckCard"
-                                                   x:Uid="RecordingPageMicCheckCard"
-                                                   Tag="RecordingPageMicCheckCard">
-                                <Button x:Uid="RecordingPageMicCheckButton"
-                                        MinWidth="120"
-                                        Command="{x:Bind ViewModel.MeasureMicCommand}" />
-                            </controls:SettingsCard>
-
-                            <controls:SettingsCard Background="{x:Null}"
-                                                   BorderThickness="0"
-                                                   Visibility="{x:Bind ViewModel.HasMicCheckNote, Mode=OneWay}">
-                                <StackPanel>
-                                    <InfoBar x:Uid="RecordingPageMicCheckListening"
-                                             IsClosable="False"
-                                             Severity="Informational"
-                                             IsOpen="{x:Bind ViewModel.IsMeasuringMic, Mode=OneWay}"
-                                             catalog:InfoBarLayout.CollapseWhenClosed="True">
-                                        <InfoBar.Content>
-                                            <ProgressRing IsActive="True" Width="20" Height="20"
-                                                          HorizontalAlignment="Left" Margin="0,0,0,12" />
-                                        </InfoBar.Content>
-                                    </InfoBar>
-                                    <InfoBar x:Uid="RecordingPageMicAdviceRecommended"
-                                             IsClosable="False" Severity="Success"
-                                             IsOpen="{x:Bind ViewModel.AdviceRecommended, Mode=OneWay}"
-                                             Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
-                                             catalog:InfoBarLayout.CollapseWhenClosed="True" />
-                                    <InfoBar x:Uid="RecordingPageMicAdviceMarginal"
-                                             IsClosable="False" Severity="Warning"
-                                             IsOpen="{x:Bind ViewModel.AdviceMarginal, Mode=OneWay}"
-                                             Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
-                                             catalog:InfoBarLayout.CollapseWhenClosed="True" />
-                                    <InfoBar x:Uid="RecordingPageMicAdviceNotNeeded"
-                                             IsClosable="False" Severity="Informational"
-                                             IsOpen="{x:Bind ViewModel.AdviceNotNeeded, Mode=OneWay}"
-                                             Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
-                                             catalog:InfoBarLayout.CollapseWhenClosed="True" />
-                                    <InfoBar x:Uid="RecordingPageMicAdviceError"
-                                             IsClosable="False" Severity="Error"
-                                             IsOpen="{x:Bind ViewModel.AdviceError, Mode=OneWay}"
-                                             catalog:InfoBarLayout.CollapseWhenClosed="True" />
-                                </StackPanel>
-                            </controls:SettingsCard>
 
                             <!-- Listening test: one take played back on the default
                                  output device in four pre-processing strengths.

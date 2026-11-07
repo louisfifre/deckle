@@ -54,45 +54,7 @@ public sealed class LoggingSettingsService
             mutexName:   $"{AppPaths.AppFolderName}-Settings-Logging-Save",
             jsonOptions: _jsonOptions,
             logWarning:  msg => Report(msg, DeckleDiagnosticsSource.Log.SettingsLoadWarning),
-            logError:    msg => Report(msg, DeckleDiagnosticsSource.Log.SettingsLoadError),
-            preDeserializeMigration: MigrateDetailToggles);
-    }
-
-    // The controls were on/off "detail" toggles before they took levels
-    // (2026-11-07). A toggle that was on keeps everything it admitted:
-    // Details. One that was off becomes Summary, the new default, so the
-    // activity now leaves its heartbeat or rollup where it left nothing;
-    // Windowing has no summary, so off stays Off there. A level already in
-    // the file wins over a stale toggle beside it.
-    private static readonly (string Toggle, string Level, string Off)[] LegacyToggles =
-    [
-        ("logAmbientCaptureActivity", "ambientVerbosity",       nameof(OperationalLogVerbosity.Summary)),
-        ("logTranscriptionActivity",  "transcriptionVerbosity", nameof(OperationalLogVerbosity.Summary)),
-        ("logAutocorrectActivity",    "autocorrectVerbosity",   nameof(OperationalLogVerbosity.Summary)),
-        ("logInputActivity",          "inputVerbosity",         nameof(OperationalLogVerbosity.Summary)),
-        ("logWindowingActivity",      "windowingVerbosity",     nameof(OperationalLogVerbosity.Off)),
-    ];
-
-    public static (string json, bool migrated) MigrateDetailToggles(string json)
-    {
-        if (System.Text.Json.Nodes.JsonNode.Parse(json) is not System.Text.Json.Nodes.JsonObject root)
-            return (json, false);
-
-        bool migrated = false;
-        foreach ((string toggle, string level, string off) in LegacyToggles)
-        {
-            if (!root.TryGetPropertyValue(toggle, out var node)) continue;
-            if (!root.ContainsKey(level))
-            {
-                bool on = node is not null
-                    && node.GetValueKind() == JsonValueKind.True;
-                root[level] = on ? nameof(OperationalLogVerbosity.Details) : off;
-            }
-            root.Remove(toggle);
-            migrated = true;
-        }
-
-        return migrated ? (root.ToJsonString(), true) : (json, false);
+            logError:    msg => Report(msg, DeckleDiagnosticsSource.Log.SettingsLoadError));
     }
 
     private void Report(string message, Action<string> emit)

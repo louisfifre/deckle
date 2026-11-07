@@ -74,6 +74,52 @@ public partial class RecordingViewModel : ObservableObject
         PushToSettings();
     }
 
+    // The page's two faces of that one value: a switch and a length in minutes
+    // (RecordingLimit holds the conversion). Both read and write
+    // MaxRecordingDurationSeconds, so the POCO stays the single truth. The last
+    // length lives only here, for the session: switching off writes 0, and
+    // switching on again restores it.
+    private int _lastLimitMinutes = RecordingLimit.DefaultMinutes;
+
+    public bool LimitRecordingDuration
+    {
+        get => RecordingLimit.IsLimited(MaxRecordingDurationSeconds);
+        set
+        {
+            if (value == LimitRecordingDuration) return;
+            if (value) MaxRecordingDurationSeconds = RecordingLimit.SecondsFor(_lastLimitMinutes);
+            else
+            {
+                _lastLimitMinutes = RecordingLimit.MinutesToShow(MaxRecordingDurationSeconds, _lastLimitMinutes);
+                MaxRecordingDurationSeconds = 0;
+            }
+        }
+    }
+
+    // A cleared number field gives NaN, which is ignored.
+    public double MaxRecordingDurationMinutes
+    {
+        get => RecordingLimit.MinutesToShow(MaxRecordingDurationSeconds, _lastLimitMinutes);
+        set
+        {
+            if (double.IsNaN(value)) return;
+            _lastLimitMinutes = RecordingLimit.Clamp((int)Math.Round(value));
+            if (LimitRecordingDuration) MaxRecordingDurationSeconds = RecordingLimit.SecondsFor(_lastLimitMinutes);
+            else OnPropertyChanged(nameof(MaxRecordingDurationMinutes)); // seconds did not move
+        }
+    }
+
+    // The two accessors above are derived from the seconds: tell the page when
+    // they move, whichever way the seconds changed (a switch, the field, Load,
+    // a reset).
+    partial void OnMaxRecordingDurationSecondsChanged(int oldValue, int newValue)
+    {
+        // Any non-zero length, from the file or a field, is the one to restore.
+        if (newValue > 0) _lastLimitMinutes = RecordingLimit.MinutesToShow(newValue, _lastLimitMinutes);
+        OnPropertyChanged(nameof(LimitRecordingDuration));
+        OnPropertyChanged(nameof(MaxRecordingDurationMinutes));
+    }
+
     // ── Transcription pre-processing (DSP black box) ──────────────────────────
 
     [ObservableProperty]
@@ -127,7 +173,7 @@ public partial class RecordingViewModel : ObservableObject
 
     // Raised on the UI thread right before the microphone check or the
     // listening test opens the microphone, so the page closes whatever else
-    // holds it (the voice meter's Listen). Two waveIn opens of one device at
+    // holds it (the voice meter's Listen). Two captures of one device at
     // once are not known to be safe, so the page never tries it.
     public event EventHandler? MicrophoneNeeded;
 

@@ -277,7 +277,15 @@
                          IsClosable="True"
                          IsOpen="False"
                          catalog:InfoBarLayout.CollapseWhenClosed="True"
-                         Margin="12,0,12,8" />
+                         Margin="12,0,12,8">
+                    <!-- The same action as the title bar's Settings button: the
+                         bar tells that entries were skipped, and the Diagnostics
+                         page is where what this window may show is edited. -->
+                    <InfoBar.ActionButton>
+                        <Button x:Uid="LogWindowDroppedSettingsButton"
+                                Click="OnDroppedEntriesSettingsClick" />
+                    </InfoBar.ActionButton>
+                </InfoBar>
             </StackPanel>
 
             <ListView x:Name="LogItems"

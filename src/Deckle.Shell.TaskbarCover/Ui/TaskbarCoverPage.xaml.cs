@@ -16,6 +16,7 @@ public sealed partial class TaskbarCoverPage : Page
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
+        Header.ResetDetail = Loc.Get("SettingsPageHeader_ResetKeepsSwitch");
         _switchComposer = new SettingsComposer(SwitchHost, ViewModel);
         _switchComposer.Compose(ViewModel.SwitchManifest);
         _revealComposer = new SettingsComposer(RevealHost, ViewModel);
@@ -67,16 +68,16 @@ public sealed partial class TaskbarCoverPage : Page
         }
     }
 
+    // The module switch (_switchComposer) is the person's choice, not a value:
+    // neither the gate nor the reset reads it (2026-11-07). The header asks
+    // before firing.
     private void GateResetAll()
     {
-        Header.IsResetAllEnabled = _switchComposer.IsDirty() || _revealComposer.IsDirty();
+        Header.IsResetAllEnabled = _revealComposer.IsDirty();
     }
 
-    // The header asks before firing (generic wording: nothing user-authored is
-    // lost here).
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
-        _switchComposer.ResetAll();
         _revealComposer.ResetAll();
     }
 }

@@ -78,6 +78,38 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtDisposeWorkerJoined, join_ms);
     }
 
+    // The three lines of a quit that waits for the work in flight. work_id is
+    // the one of the App's ShutdownRequested, so the file pairs them.
+    [Event(EvtShutdownDrainStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Deckle waits for the work in progress before it closes")]
+    public void ShutdownDrainStarted(string work_id, string state, int bound_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtShutdownDrainStarted, work_id, state, bound_ms);
+    }
+
+    [Event(EvtShutdownDrainFinished,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The work in progress ended, so Deckle closes")]
+    public void ShutdownDrainFinished(string work_id, long waited_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtShutdownDrainFinished, work_id, waited_ms);
+    }
+
+    [Event(EvtShutdownDrainTimedOut,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The work in progress did not end in time, so Deckle closes and keeps what it has for the next launch\nwork_id={0} | state={1} | waited_ms={2}")]
+    public void ShutdownDrainTimedOut(string work_id, string state, long waited_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtShutdownDrainTimedOut, work_id, state, waited_ms);
+    }
+
     [Event(EvtPageInitStart,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,

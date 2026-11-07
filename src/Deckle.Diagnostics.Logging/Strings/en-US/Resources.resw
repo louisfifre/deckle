@@ -253,11 +253,8 @@
 
   <!-- Reset dialogs (Loc.Get from code-behind). Source of truth for the wording;
        Loc.Get resolves the runtime copy from Deckle.App's root map. -->
-  <data name="Settings_ResetDiagnosticsDialog_Title" xml:space="preserve">
-    <value>Reset all settings?</value>
-  </data>
-  <data name="Settings_ResetDiagnosticsDialog_Content" xml:space="preserve">
-    <value>Each log verbosity goes back to its default. The trace and every telemetry dataset are turned off, and the telemetry folder returns to its default location.</value>
+  <data name="Settings_ResetDiagnosticsDialog_Detail" xml:space="preserve">
+    <value>The trace and every telemetry dataset are turned off, and the telemetry folder returns to its default location.</value>
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Diagnostics</value>

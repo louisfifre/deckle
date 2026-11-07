@@ -20,7 +20,6 @@ public sealed partial class AutocorrectEngine
         if (!settings.Enabled || !surface.IsTextEditable || surface.IsPassword)
         {
             if (rollupEnabled) _rollupGated++;
-            _coordinator?.Invalidate(ResetReason.PasswordSurface);
             MaybeRollup(commit.TimestampMs, rollupEnabled);
             return;
         }
@@ -35,7 +34,6 @@ public sealed partial class AutocorrectEngine
         {
             FeedCorpus(commit, commit.Word); // on-screen is the verbatim typed word
             if (rollupEnabled) _rollupGated++;
-            _coordinator?.Invalidate(ResetReason.FocusChanged);
             MaybeRollup(commit.TimestampMs, rollupEnabled);
             return;
         }
@@ -51,7 +49,7 @@ public sealed partial class AutocorrectEngine
 
         // A word the user reopened and retyped is exempt from the commit stage:
         // the deliberate keystroke asserts intent, so the literal stands here and
-        // no decision is computed. The sentence stage keeps its full rights below.
+        // no decision is computed.
         // The decision ledger is otherwise built only on an enrolled surface and
         // only when the opt-in toggle is on — null, and the chain runs at no cost.
         CorrectionTrace? trace = !commit.Reopened && enabledHere && _decisionTelemetry?.Invoke() == true
@@ -72,7 +70,6 @@ public sealed partial class AutocorrectEngine
         {
             long wordId = ++_wordId;
             bool surfaceKnown = true;
-            string precedingSeparators = commit.PrecedingSeparators;
 
             // Learning feeds on words the engine leaves alone. A corrected commit
             // must NOT reinforce the bare typo, or a few repetitions would adopt
@@ -89,10 +86,7 @@ public sealed partial class AutocorrectEngine
             // was left alone: never two injections off one keystroke.
             if (decision is null && surfaceKnown)
             {
-                surfaceKnown = TryApplyMistouchRepair(
-                    commit, out string? repairedPrecedingSeparators);
-                if (repairedPrecedingSeparators is not null)
-                    precedingSeparators = repairedPrecedingSeparators;
+                surfaceKnown = TryApplyMistouchRepair(commit);
             }
 
             if (trace is not null)
@@ -110,17 +104,6 @@ public sealed partial class AutocorrectEngine
             }
 
             FeedCorpus(commit, decision?.Replacement ?? commit.Word);
-
-            // Feed the contextual stage both the typed literal and the on-screen
-            // form. It may weigh literals the commit stage left alone, and may
-            // take back diacritics corrections from full sentence context; typo,
-            // elision and grammar edits stay outside its rights.
-            _coordinator?.OnWordCommitted(
-                commit.Word, decision?.Replacement ?? commit.Word, commit.Boundary,
-                sentenceMayEvaluate:
-                    !_sentenceContextDiscontinuous && SentenceStageMayEvaluate(decision),
-                wordId,
-                precedingSeparators: precedingSeparators);
         }
         else
         {
@@ -131,7 +114,6 @@ public sealed partial class AutocorrectEngine
             // Correction withheld, so the on-screen form is the typed word itself.
             FeedCorpus(commit, commit.Word);
             if (rollupEnabled) _rollupGated++;
-            _coordinator?.Invalidate(ResetReason.FocusChanged);
         }
 
         MaybeRollup(commit.TimestampMs, rollupEnabled);
@@ -168,13 +150,9 @@ public sealed partial class AutocorrectEngine
     // (« qu;il » → « qu'il »). A learned suppression vetoes it like any
     // correction; the corpus records the separator change on the final side so
     // the emitted sentence stays glued to the screen (the typed side keeps the
-    // faulty run — the mining pair). The repaired separator is returned to the
-    // sentence coordinator so any deferred tail rewrite stays screen-exact.
-    private bool TryApplyMistouchRepair(
-        WordCommit commit,
-        out string? repairedPrecedingSeparators)
+    // faulty run — the mining pair).
+    private bool TryApplyMistouchRepair(WordCommit commit)
     {
-        repairedPrecedingSeparators = null;
         if (_mistouch is null) return true;
         MistouchFamilyCorrector.SpanRepair? repair = _mistouch.Evaluate(commit);
         if (repair is null) return true;
@@ -195,7 +173,6 @@ public sealed partial class AutocorrectEngine
             LogCorrectionDetail(decision, plan.Backspaces);
             if (CanCollectText())
                 _corpus?.SeparatorEdit(repair.Previous, repair.OldSeparators, repair.NewSeparators);
-            repairedPrecedingSeparators = repair.NewSeparators;
             CorrectionApplied?.Invoke(decision);
             return true;
         }
@@ -294,11 +271,4 @@ public sealed partial class AutocorrectEngine
         if (IsActivityRollupEnabled()) _rollupLearning++;
         DeckleAutocorrectSource.Log.LearningSignal("commit");
     }
-
-    private static bool SentenceStageMayEvaluate(CorrectionDecision? decision) =>
-        decision is null
-        || decision.Reason is CorrectionReason.LexicalGate
-            or CorrectionReason.ContextPair
-            or CorrectionReason.FrequencyDominance
-            or CorrectionReason.PersonalWord;
 }

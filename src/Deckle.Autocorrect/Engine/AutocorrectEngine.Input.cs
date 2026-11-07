@@ -20,8 +20,6 @@ public sealed partial class AutocorrectEngine
 
     private void OnDrainRequested()
     {
-        DrainCaretSentenceRecoveries();
-
         if (Interlocked.Exchange(ref _discardCorpusRequested, 0) != 0)
         {
             _corpus?.Discard();
@@ -36,7 +34,6 @@ public sealed partial class AutocorrectEngine
             uint deckleTag = unchecked((uint)SendInputInterop.InjectionTag.ToInt64());
             if (e.ExtraInfo == deckleTag)
                 return;
-            if (e.IsKeyDown) AdvanceCaretRecoveryRevision();
             ObserveForeignMutation(e);
             return;
         }
@@ -46,16 +43,7 @@ public sealed partial class AutocorrectEngine
 
         var stroke = _decoder.Decode(e);
         if (stroke is null) return;
-        AdvanceCaretRecoveryRevision();
         var k = stroke.Value;
-        bool terminalSentenceGesture = IsTerminalSentenceGesture(k);
-        bool recoverClosedSentence =
-            _sentenceContextDiscontinuous && terminalSentenceGesture;
-
-        // The coordinator sees the live word as it stood BEFORE the tracker
-        // consumes this stroke — so a Backspace into committed text invalidates its
-        // model. Resets proper arrive via OnTrackerReset.
-        _coordinator?.NotePhysicalKey(k, _tracker.HasCurrentWord);
 
         // The typing stream captures the verbatim stroke before the tracker
         // interprets it. Gated per stroke — enrolled surfaces only, consent live;
@@ -64,22 +52,7 @@ public sealed partial class AutocorrectEngine
             _stream?.OnKeystroke(k);
 
         _tracker.OnKeystroke(k);
-
-        // Sentence closure is a keyboard gesture, not necessarily a word commit:
-        // after caret navigation the final word may already exist on screen and
-        // only the punctuation is new. Recovery must still get its one chance.
-        if (terminalSentenceGesture)
-        {
-            if (recoverClosedSentence)
-                RequestCaretSentenceRecovery();
-            _sentenceContextDiscontinuous = false;
-        }
     }
-
-    private static bool IsTerminalSentenceGesture(Keystroke key) =>
-        key.Kind == KeystrokeKind.Text
-        && key.Text.Length == 1
-        && CaretSentenceContext.IsTerminalPunctuation(key.Text[0]);
 
     private void ObserveForeignMutation(KeyboardKeyEvent e)
     {
@@ -91,7 +64,6 @@ public sealed partial class AutocorrectEngine
             _foreignMutationOpen = true;
             _stream?.NotifyExternalMutation();
             _corpus?.Reset(ResetReason.ExternalMutation);
-            _coordinator?.Invalidate(ResetReason.ExternalMutation);
 
             // Password text is never buffered, even when a synthetic producer
             // exposes its UTF-16 unit in the scan-code field.
@@ -167,7 +139,6 @@ public sealed partial class AutocorrectEngine
 
     private void OnPointerInteraction()
     {
-        AdvanceCaretRecoveryRevision();
         ClearForeignMutation();
         _tracker.NotifyPointerInteraction();
         // Ungated: a span must close on every caret move, or a stale run would
@@ -185,8 +156,7 @@ public sealed partial class AutocorrectEngine
         _tracker.NotifyExternalMutation();
     }
 
-    // The tracker reset (Enter, focus, pointer, navigation, …) clears the sentence
-    // model. No contextual verdict may survive a discontinuity.
+    // The tracker reset (Enter, focus, pointer, navigation, …) closes the corpus run.
     private void OnTrackerReset(ResetReason reason, bool droppedPartialWord)
     {
         // Close the corpus sentence first (Enter emits it tagged "enter", any other
@@ -199,23 +169,10 @@ public sealed partial class AutocorrectEngine
         // next word suspect and drops it.
         if (droppedPartialWord)
             _corpus?.MarkNextWordSuspect();
-        _coordinator?.Invalidate(reason);
-        _sentenceContextDiscontinuous = reason != ResetReason.Enter;
-    }
-
-    private void OnCoordinatorApplied(CorrectionDecision decision, InjectionPlan plan)
-    {
-        if (IsActivityRollupEnabled()) _rollupCorrections++;
-        DeckleAutocorrectSource.Log.CorrectionApplied();
-        LogCorrectionDetail(decision, plan.Backspaces);
-        if (CanCollectText())
-            _corpus?.SentenceEdit(decision.Original, decision.Replacement);
-        CorrectionApplied?.Invoke(decision);
     }
 
     private void OnFocusChanged()
     {
-        AdvanceCaretRecoveryRevision();
         ClearForeignMutation();
         var surface = _prober.Probe();
         // The reset synchronously closes the corpus run and the typing-stream

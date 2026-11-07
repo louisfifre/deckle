@@ -28,9 +28,10 @@ namespace Deckle.Catalog;
 //
 // Reset all restores the whole page. It is active only once something on the
 // page differs from its default (the page gates IsResetAllEnabled off its
-// composers' DirtyChanged) and asks before acting, with the shell's generic
-// wording; a page whose reset needs its own words, to say what is kept, sets
-// ConfirmsReset false and asks itself before honouring ResetAllRequested.
+// composers' DirtyChanged) and asks before acting, the same way on every page:
+// one destructive dialog whose body says the values go back to their defaults,
+// then the page's ResetDetail for what stays or is lost. A module switch is not
+// a value: a page's reset and its gate leave it alone (2026-11-07).
 public sealed partial class SettingsPageHeader : UserControl
 {
     private readonly BreadcrumbBar _crumbs = new();
@@ -200,9 +201,11 @@ public sealed partial class SettingsPageHeader : UserControl
         set => SetValue(HasResetAllProperty, value);
     }
 
-    // True asks with the shell's generic wording before raising ResetAllRequested.
-    // A page that must say what its reset keeps sets this false and asks itself.
-    public bool ConfirmsReset { get; set; } = true;
+    // What the page's reset keeps or loses beyond the plain "values go back to
+    // their defaults": the module switch that stays, a list that is replaced.
+    // Set in code by the page, from its own resources; empty adds nothing. The
+    // header asks, so no page writes a dialog of its own (see ResetAllWording).
+    public string ResetDetail { get; set; } = string.Empty;
 
     // ── Behaviour ────────────────────────────────────────────────────────────
 
@@ -295,17 +298,14 @@ public sealed partial class SettingsPageHeader : UserControl
 
     private async void OnResetAllClick(object sender, RoutedEventArgs e)
     {
-        if (ConfirmsReset)
-        {
-            bool confirmed = await ConfirmationService.RequestAsync(
-                XamlRoot,
-                new ConfirmationRequest(
-                    Loc.Get("SettingsPageHeader_ResetAllDialogTitle"),
-                    Loc.Get("SettingsPageHeader_ResetAllDialogBody"),
-                    Loc.Get("SettingsPageHeader_ResetAll"),
-                    IsDestructive: true));
-            if (!confirmed) return;
-        }
+        bool confirmed = await ConfirmationService.RequestAsync(
+            XamlRoot,
+            new ConfirmationRequest(
+                Loc.Get("SettingsPageHeader_ResetAllDialogTitle"),
+                ResetAllWording.Body(Loc.Get("SettingsPageHeader_ResetAllDialogBody"), ResetDetail),
+                Loc.Get("SettingsPageHeader_ResetAll"),
+                IsDestructive: true));
+        if (!confirmed) return;
         ResetAllRequested?.Invoke(this, e);
     }
 }

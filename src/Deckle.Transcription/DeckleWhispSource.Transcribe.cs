@@ -34,8 +34,8 @@ public sealed partial class DeckleWhispSource
     // A string, not a number, because only the formatter knows which of the
     // two kinds a code is. Version 3. Version 2 passed a uint, which no typed
     // WriteEvent overload takes: the call bound to (string, long) and the
-    // listener decoded those bytes as text. Version 1 carried the waveIn
-    // MMSYSERR code as mmsys_err.
+    // listener decoded those bytes as text. Version 1 carried a Windows
+    // multimedia error code as mmsys_err.
     [Event(EvtMicrophoneUnavailable,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Capture,

@@ -37,11 +37,11 @@
                 <!-- ── Segmentation ────────────────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="StreamingPageSegmentationSection">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
-                        <!-- The cut curve at full width, its plot following the
-                             page's height, with the four hangover anchors, the
-                             control points and the pause strip's two durations
-                             as fields under it
-                             (WhisperViewModel.SegmentationSettings). -->
+                        <!-- The cut curve, compact: the plot with its sentence
+                             under it, the four hangover anchors and the control
+                             points beside it (under it on a narrow page), then
+                             the pause view in a frame of its own with its two
+                             durations (WhisperViewModel.SegmentationSettings). -->
                         <StackPanel x:Name="SegmentationHost"
                                     Spacing="{StaticResource SettingsCardSpacing}" />
 

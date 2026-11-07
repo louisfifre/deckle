@@ -107,6 +107,10 @@ public sealed class GatewaySupervisor : IAsyncDisposable
                     return;
                 }
 
+                // A gateway serves again (adopted or started): an incident left
+                // by an earlier give-up no longer describes it.
+                UserIncidentRegistry.Instance.Close(UserIncidents.AnytypeGateway);
+
                 step = "prune";
                 int removed = GatewayPayload.Prune(_versionsRoot, fingerprint);
                 if (removed > 0)
@@ -131,6 +135,8 @@ public sealed class GatewaySupervisor : IAsyncDisposable
                 if (restarts >= RestartLadder.Length)
                 {
                     DeckleAnytypeSource.Log.GatewaySupervisionGaveUp(restarts, workId);
+                    // Nothing restarts it before Deckle does: the tray says so.
+                    UserIncidentRegistry.Instance.Open(UserIncidents.AnytypeGateway, "gave_up");
                     (outcome, reason) = ("failed", "gave_up");
                     return;
                 }
@@ -170,6 +176,14 @@ public sealed class GatewaySupervisor : IAsyncDisposable
         switch (decision.Action)
         {
             case GatewayAction.Adopt:
+                // Same build is not same key: the gateway read its key at start.
+                if (await HoldsOutdatedKeyAsync(decision.ProcessId, workId, ct).ConfigureAwait(false))
+                {
+                    DeckleAnytypeSource.Log.GatewayKeyChanged(decision.ProcessId, workId);
+                    await StopAsync(decision.ProcessId, ct).ConfigureAwait(false);
+                    launchReason = "key_changed";
+                    break;
+                }
                 IGatewayProcess? adopted = _processes.Open(decision.ProcessId);
                 if (adopted is not null)
                 {
@@ -213,6 +227,26 @@ public sealed class GatewaySupervisor : IAsyncDisposable
         // Whether it binds or exits, the caller's watch reads the outcome.
         await WaitForListenerAsync(spawned.Id, spawned, ct).ConfigureAwait(false);
         return spawned;
+    }
+
+    // True only when both sides gave a fingerprint and they differ. Anything less
+    // keeps the gateway: replacing one that merely did not answer would turn a
+    // slow start into a gap in service.
+    private async Task<bool> HoldsOutdatedKeyAsync(int processId, string workId, CancellationToken ct)
+    {
+        string? current = _processes.CurrentKeyFingerprint();
+        if (current is null)
+        {
+            DeckleAnytypeSource.Log.GatewayKeyCheckSkipped("key_unreadable", processId, workId);
+            return false;
+        }
+        string? held = await _processes.ReadHeldKeyFingerprintAsync(ct).ConfigureAwait(false);
+        if (held is null)
+        {
+            DeckleAnytypeSource.Log.GatewayKeyCheckSkipped("gateway_unreachable", processId, workId);
+            return false;
+        }
+        return !string.Equals(held, current, StringComparison.Ordinal);
     }
 
     private async Task<bool> WaitForListenerAsync(int processId, IGatewayProcess? process, CancellationToken ct)

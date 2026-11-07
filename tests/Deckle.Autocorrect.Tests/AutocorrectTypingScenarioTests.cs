@@ -110,10 +110,7 @@ public sealed class AutocorrectTypingScenarioTests
         string path = Path.Combine(
             Path.GetTempPath(), $"deckle-typing-dict-{Guid.NewGuid():N}.json");
 
-        var data = new PersonalDictionaryData
-        {
-            SchemaVersion = PersonalDictionaryData.CurrentSchemaVersion,
-        };
+        var data = new PersonalDictionaryData();
         data.Words.Add(Adopted("prepare"));
         data.Words.Add(Adopted("telemetry"));
         File.WriteAllText(path, JsonSerializer.Serialize(data, new JsonSerializerOptions
@@ -125,18 +122,18 @@ public sealed class AutocorrectTypingScenarioTests
         {
             var admission = new PersonalWordAdmission(french, AccentIndex.Build(french), english);
             using var dictionary = new PersonalDictionary(path, wordAdmission: admission.Allows);
-            VerbMorphology verbs = VerbMorphology.LoadTsvGz(Path.Combine(
-                dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName));
-            using var h = Harness(french, english, dictionary, context, verbs);
+            using var h = Harness(french, english, dictionary, context);
 
             h.Type("Je prepare le terrain.");
 
             Assert.Equal(1, dictionary.RemovedOnLoad);
             Assert.False(dictionary.IsAdopted("prepare"));
             Assert.True(dictionary.IsAdopted("telemetry"));
-            Assert.Equal("Je prépare le terrain.", h.VisibleText);
-            Assert.Contains(h.Applied, correction =>
-                correction.Original == "prepare" && correction.Replacement == "prépare");
+            // The purge is the point: the adopted bare form no longer shields itself.
+            // Subject-verb accent morphology (je prepare -> je prépare) left the product,
+            // so the ambiguous literal now stays as typed.
+            Assert.Equal("Je prepare le terrain.", h.VisibleText);
+            Assert.Empty(h.Applied);
         }
         finally
         {
@@ -144,52 +141,18 @@ public sealed class AutocorrectTypingScenarioTests
         }
     }
 
-    [Fact]
-    public void SubjectAgreementTypoOutranksAnAccentOnlyFalseFriend()
-    {
-        string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
-        FrequencyLexicon french = FrequencyLexicon.LoadTsvGz(Path.Combine(
-            dataDir, AutocorrectLexiconArtifacts.FrenchFileName));
-        var english = new GlobalEnglishLexicon(
-            AutocorrectLexiconArtifacts.LoadGlobalEnglishSeed(dataDir));
-        AccentIndex index = AccentIndex.Build(french);
-        var typo = new ConservativeTypoCorrector(
-            french,
-            english,
-            accentIndex: index,
-            verbs: VerbMorphology.LoadTsvGz(Path.Combine(
-                dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName)));
-        var policy = new CompositeCorrectionPolicy(
-            new ElisionCorrector(french, english),
-            typo,
-            new DiacriticsRestorer(french, english, index));
-        using var h = new AutocorrectEngineHarness(policy, french: french, english: english);
-        h.Settings.Apps["codex"] = true;
-        h.Prober.Surface = AutocorrectEngineHarness.Editable("codex");
-        Assert.True(h.Start());
-
-        h.Type("ce que tu proposees me convient.");
-
-        Assert.Equal("ce que tu proposes me convient.", h.VisibleText);
-        Assert.Contains(h.Applied, correction =>
-            correction.Original == "proposees" && correction.Replacement == "proposes");
-        Assert.DoesNotContain(h.Applied, correction => correction.Replacement == "proposées");
-    }
-
     private static AutocorrectEngineHarness Harness(
         FrequencyLexicon french,
         IFrequencyLexicon? english = null,
         PersonalDictionary? dictionary = null,
-        IPairDisambiguator? context = null,
-        VerbMorphology? verbs = null)
+        IPairDisambiguator? context = null)
     {
         AutocorrectPolicySet policies = AutocorrectPolicySet.Create(
             french,
             english,
             AccentIndex.Build(french),
             context,
-            dictionary,
-            verbs: verbs);
+            dictionary);
         var harness = new AutocorrectEngineHarness(
             policies.Policy,
             dictionary: dictionary,

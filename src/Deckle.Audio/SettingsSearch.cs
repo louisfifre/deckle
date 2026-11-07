@@ -54,7 +54,7 @@ public static class SettingsSearch
             Keywords = ["threshold", "dbfs", "speech", "sensitivity", "noise", "segmenter", "meter", "listen"],
         },
 
-        // Maximum recording length picker (composed Choice).
+        // Maximum recording length (composed group: switch + length in minutes).
         new SettingSearchEntry
         {
             LabelKey = "RecordingLimitCard",

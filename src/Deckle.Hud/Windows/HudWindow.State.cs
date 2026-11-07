@@ -272,7 +272,7 @@ public sealed partial class HudWindow : Window
     }
 
     private static bool ShouldFadeIn(bool wasShown) =>
-        !wasShown && SystemAnimationPreference.Instance.AnimationsEnabled;
+        !wasShown && AnimationPreference.Instance.AnimationsEnabled;
 
     private void ApplyShowAlpha(byte targetAlpha, bool shouldFadeIn)
     {

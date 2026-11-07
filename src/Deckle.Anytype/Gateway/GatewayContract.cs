@@ -31,6 +31,13 @@ public static class GatewayContract
     // per process id so a replacement never stops the wrong instance.
     public static string StopEventName(int processId) => $@"Local\Deckle.Anytype.Gateway.Stop.{processId}";
 
+    // GET on the gateway's port, no bearer, loopback only: answers a JSON object
+    // whose KeyFingerprintProperty is GatewayKeyFingerprint.Of the API key the
+    // gateway holds. It exists so a supervisor can tell a gateway that holds an
+    // outdated key from one that holds the current key, without ever seeing the key.
+    public const string HealthPath = "/health";
+    public const string KeyFingerprintProperty = "keyFingerprint";
+
     // The gateway's exit codes the supervisor acts on.
     public static class ExitCodes
     {

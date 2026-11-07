@@ -9,7 +9,10 @@ internal sealed record BackendReconciliationResult(
     string ReconciliationId,
     string Decision,
     int PendingProcessId = 0,
-    BackendReplacement? Replacement = null);
+    BackendReplacement? Replacement = null,
+    // The exit code of a serve that died before serving, null when it could
+    // not be read or when no serve died: the supervisor names it as the cause.
+    int? ExitCode = null);
 
 // What became of a request to replace a serve. Declined means the identity
 // re-check said no and the serve was left alone (the reconciler wrote why);
@@ -244,9 +247,13 @@ internal sealed class BackendReconciler : IBackendReconciler
                 }
                 else if (spawned is not null && spawned.HasExited)
                 {
-                    if (inRestart) BackendProcessReport.AttemptStopped(spawned, id);
-                    else BackendProcessReport.Stopped(spawned, id);
-                    return Result(BackendStartOutcome.StartRejected, null, id, "start-rejected");
+                    BackendExit exit = inRestart
+                        ? BackendProcessReport.AttemptStopped(spawned, id)
+                        : BackendProcessReport.Stopped(spawned, id);
+                    return Result(BackendStartOutcome.StartRejected, null, id, "start-rejected") with
+                    {
+                        ExitCode = exit.ExitCode,
+                    };
                 }
 
                 IReadOnlyList<IBackendProcess> running = _processes.FindRunning(

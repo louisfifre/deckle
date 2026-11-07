@@ -241,7 +241,9 @@ public sealed partial class TranscriptionEngine : IDisposable
         UserIncidentRegistry.Instance.Close(UserIncidents.Microphone);
     }
 
-    private void OpenModelIncident(string workId, string reason, string exType, string exMessage)
+    private void OpenModelIncident(
+        string workId, string reason, string exType, string exMessage,
+        string modelPath = "", bool useGpu = false)
     {
         if (Interlocked.Exchange(ref _modelIncidentOpen, 1) != 0)
         {
@@ -251,7 +253,7 @@ public sealed partial class TranscriptionEngine : IDisposable
         // Loads run one at a time under _idleUnloadLock, so no other attempt
         // reads this between the exchange above and here.
         _modelIncidentWorkId = workId;
-        DeckleWhispSource.Log.ModelUnavailable(workId, reason, exType, exMessage);
+        DeckleWhispSource.Log.ModelUnavailable(workId, reason, modelPath, useGpu, exType, exMessage);
         // A load_exception (GPU, driver) is not always the person's to fix, but
         // the next good load closes it and the Whisper page is still where to look.
         UserIncidentRegistry.Instance.Open(UserIncidents.WhisperModel, reason);
