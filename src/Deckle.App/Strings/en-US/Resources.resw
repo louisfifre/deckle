@@ -213,7 +213,7 @@
     <value>Replace</value>
   </data>
   <data name="Common_Browse" xml:space="preserve">
-    <value>Browse...</value>
+    <value>Browse…</value>
   </data>
 
   <!-- ─── Consent dialogs ────────────────────────────────────────────
@@ -637,10 +637,10 @@
        Step header text is set programmatically by ChoicesPage via
        SetStepHeader. Cards in XAML use x:Uid for header/description. -->
   <data name="Setup_StepTitle_Choices" xml:space="preserve">
-    <value>Transcription</value>
+    <value>Set up transcription</value>
   </data>
   <data name="Setup_StepSubtitle_Choices" xml:space="preserve">
-    <value>Choose the speech model transcription runs on, and check its speech engine.</value>
+    <value>Check the speech engine, then choose the speech model transcription runs on.</value>
   </data>
   <data name="Setup_NextLabel_Install" xml:space="preserve">
     <value>Install</value>
@@ -649,13 +649,13 @@
     <value>Installed</value>
   </data>
   <data name="Setup_Native_Replace" xml:space="preserve">
-    <value>Replace...</value>
+    <value>Replace…</value>
   </data>
   <data name="Setup_Native_BrowseLocal" xml:space="preserve">
-    <value>Use local copy...</value>
+    <value>Use local copy…</value>
   </data>
   <data name="Setup_Native_Missing_Format" xml:space="preserve">
-    <value>Missing {0} file(s)</value>
+    <value>Missing files: {0}</value>
   </data>
   <data name="Setup_Native_WillDownload_Format" xml:space="preserve">
     <value>Will be downloaded (~{0})</value>
@@ -691,13 +691,13 @@
        Inline Cancel install button in XAML uses x:Uid. All progress
        and status strings are emitted from C# during the run. -->
   <data name="Setup_StepTitle_Installing" xml:space="preserve">
-    <value>Installing</value>
+    <value>Downloading</value>
   </data>
   <data name="Setup_StepSubtitle_Installing" xml:space="preserve">
     <value>Downloading the models and tools your modules need. This can take a while on a slow link.</value>
   </data>
   <data name="Setup_Install_Connecting" xml:space="preserve">
-    <value>Connecting...</value>
+    <value>Connecting…</value>
   </data>
   <data name="Setup_Install_Done_Format" xml:space="preserve">
     <value>Done. {0}</value>
@@ -753,7 +753,7 @@
     <value>Stored under {0}.</value>
   </data>
   <data name="Setup_Result_FailedCount_Format" xml:space="preserve">
-    <value>{0} of {1} item(s) failed.</value>
+    <value>Failed: {0} of {1}.</value>
   </data>
   <data name="Setup_OpenDiagnosticsFolder" xml:space="preserve">
     <value>Open diagnostics folder</value>
@@ -1460,10 +1460,10 @@
     <value>Later</value>
   </data>
   <data name="Setup_StepTitle_Relocate" xml:space="preserve">
-    <value>Moving app data</value>
+    <value>Moving the data folder</value>
   </data>
   <data name="Setup_StepSubtitle_Relocate" xml:space="preserve">
-    <value>Copying the data to its new folder. Deckle restarts when it is done.</value>
+    <value>Copying the data to its new location. Deckle restarts when it is done.</value>
   </data>
   <data name="Setup_Relocate_Checking" xml:space="preserve">
     <value>Checking free space…</value>

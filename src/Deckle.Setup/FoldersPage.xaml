@@ -8,7 +8,7 @@
 
     <!-- The window scrolls the page. The space check stays here: it reads per
          drive, not the one total the window band shows. -->
-    <StackPanel Spacing="16">
+    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
         <controls:SettingsCard x:Uid="SetupFoldersAppCard"
                                HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Folder}}">
