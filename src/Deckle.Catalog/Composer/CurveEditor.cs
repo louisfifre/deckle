@@ -60,6 +60,18 @@ public sealed partial class CurveEditor : UserControl
     private const double AxisLegendWidth = 120.0;
     private const double Outside = 0.25;
 
+    // Every field of the legend, the owner's frame values and the four control
+    // points alike, takes this one width, in columns of this one width, at this
+    // one spacing (FieldGrid). Two widths and two layouts had put the second
+    // column 16 px apart from one block to the next (2026-11-07 review). 112
+    // fits a three-digit value with the compact spin buttons.
+    public const double FieldWidth = 112.0;
+    private const double FieldColumnGap = 12.0;
+    private const double FieldRowGap = 8.0;
+
+    // The gap between the plot and the legend when the legend moves under it.
+    private const double StackedRowGap = 12.0;
+
     private readonly Grid _root = new();
     private readonly StackPanel _side = new() { Spacing = 12 };
     private readonly StackPanel _legend = new() { Spacing = 8, Visibility = Visibility.Collapsed };
@@ -75,7 +87,7 @@ public sealed partial class CurveEditor : UserControl
     private readonly List<FrameworkElement> _rulers = new();
     private readonly Thumb _handle1;
     private readonly Thumb _handle2;
-    private readonly Grid _fields = new();
+    private readonly StackPanel _fields = new();
     private readonly Grid _pointsRow = new();
     private readonly StackPanel _axisLegend = new() { Spacing = 8, VerticalAlignment = VerticalAlignment.Top };
     private readonly List<TextBlock> _legendLetters = new();
@@ -166,12 +178,15 @@ public sealed partial class CurveEditor : UserControl
         _side.Children.Add(_legend);
         _side.Children.Add(_pointsRow);
 
+        // One row while the legend sits beside the plot; Reflow adds the second
+        // when it moves under. A WinUI Grid pays its RowSpacing even before an
+        // empty row, so a second row kept in the wide layout left 12 px of void
+        // under the plot.
         _root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         _root.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         _root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        _root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         _root.ColumnSpacing = 16;
-        _root.RowSpacing = 12;
+        _root.RowSpacing = StackedRowGap;
         _root.Children.Add(_plotFrame);
         _root.Children.Add(_side);
         Content = _root;
@@ -290,17 +305,41 @@ public sealed partial class CurveEditor : UserControl
     public Panel Legend => _legend;
 
     // Caption over a field, the form the four control points use, so an owner's
-    // legend field looks like them.
+    // legend field looks like them. The field takes the legend's one width; a
+    // caption longer than the column ends in an ellipsis rather than widening
+    // it, so the columns of every block stay aligned.
     public static FrameworkElement LabelledField(string caption, FrameworkElement field)
     {
+        field.Width = FieldWidth;
         var stack = new StackPanel { Spacing = 4 };
         stack.Children.Add(new TextBlock
         {
             Text = caption,
             Style = Application.Current.Resources["CaptionTextBlockStyle"] as Style,
+            TextTrimming = TextTrimming.CharacterEllipsis,
         });
         stack.Children.Add(field);
         return stack;
+    }
+
+    // The legend's one grid: fields two to a row, in columns of FieldWidth, at
+    // the same spacing for the owner's block and the control points, so the
+    // second column starts at the same x in both. Fixed columns, not Auto: an
+    // Auto column follows its widest child, and the two blocks hold different
+    // children.
+    public static Grid FieldGrid(IReadOnlyList<FrameworkElement> fields)
+    {
+        var grid = new Grid { ColumnSpacing = FieldColumnGap, RowSpacing = FieldRowGap };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(FieldWidth) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(FieldWidth) });
+        for (int i = 0; i < fields.Count; i++)
+        {
+            if (i % 2 == 0) grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Grid.SetRow(fields[i], i / 2);
+            Grid.SetColumn(fields[i], i % 2);
+            grid.Children.Add(fields[i]);
+        }
+        return grid;
     }
 
     private static void OnPointChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -356,6 +395,10 @@ public sealed partial class CurveEditor : UserControl
     {
         double threshold = StackBelowWidth + (_axisLegend.Visibility == Visibility.Visible ? AxisLegendWidth + 24 : 0);
         bool stack = width > 0 && width < threshold;
+        if (stack && _root.RowDefinitions.Count == 1)
+            _root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        else if (!stack && _root.RowDefinitions.Count == 2)
+            _root.RowDefinitions.RemoveAt(1);
         Grid.SetRow(_plotFrame, 0);
         Grid.SetColumn(_plotFrame, 0);
         Grid.SetColumnSpan(_plotFrame, stack ? 2 : 1);
@@ -367,30 +410,18 @@ public sealed partial class CurveEditor : UserControl
         _legend.Visibility = _legend.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
+    // The control points in the legend's one grid, the readout under it rather
+    // than spanning its columns, so its monospace width never moves them.
     private void BuildFieldGrid()
     {
-        _fields.ColumnSpacing = 12;
-        _fields.RowSpacing = 8;
-        _fields.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        _fields.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        _fields.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        _fields.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        _fields.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        AddField("x1", _x1Box, 0, 0);
-        AddField("y1", _y1Box, 0, 1);
-        AddField("x2", _x2Box, 1, 0);
-        AddField("y2", _y2Box, 1, 1);
-        Grid.SetRow(_readout, 2);
-        Grid.SetColumnSpan(_readout, 2);
+        _fields.Children.Add(FieldGrid(
+        [
+            LabelledField("x1", _x1Box),
+            LabelledField("y1", _y1Box),
+            LabelledField("x2", _x2Box),
+            LabelledField("y2", _y2Box),
+        ]));
         _fields.Children.Add(_readout);
-    }
-
-    private void AddField(string label, NumberBox box, int row, int column)
-    {
-        FrameworkElement stack = LabelledField(label, box);
-        Grid.SetRow(stack, row);
-        Grid.SetColumn(stack, column);
-        _fields.Children.Add(stack);
     }
 
     private NumberBox BuildField()
@@ -401,7 +432,6 @@ public sealed partial class CurveEditor : UserControl
             Maximum = 1,
             SmallChange = 0.01,
             LargeChange = 0.1,
-            Width = 96,
             SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
             ValidationMode = NumberBoxValidationMode.InvalidInputOverwritten,
             NumberFormatter = new DecimalFormatter
