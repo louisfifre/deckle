@@ -58,6 +58,67 @@ internal static partial class ScreenCaptureInterop
     [return: MarshalAs(UnmanagedType.Bool)]
     private static extern bool EnumDisplayMonitors(nint hdc, nint lprcClip, MonitorEnumProc lpfnEnum, nint dwData);
 
+    // DEVMODEW as EnumDisplaySettingsW fills it. The two unions are spelled as
+    // the display members' size (position, orientation, fixed output = 16
+    // bytes) because only the display half is read; dmSize and the field
+    // offsets must match the native struct (220 bytes), or the call returns
+    // shifted values.
+    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
+    private unsafe struct DEVMODEW
+    {
+        public fixed char  DmDeviceName[32];
+        public ushort DmSpecVersion;
+        public ushort DmDriverVersion;
+        public ushort DmSize;
+        public ushort DmDriverExtra;
+        public uint   DmFields;
+        public uint   DmUnion0;
+        public uint   DmUnion1;
+        public uint   DmUnion2;
+        public uint   DmUnion3;
+        public short  DmColor;
+        public short  DmDuplex;
+        public short  DmYResolution;
+        public short  DmTtOption;
+        public short  DmCollate;
+        public fixed char  DmFormName[32];
+        public ushort DmLogPixels;
+        public uint   DmBitsPerPel;
+        public uint   DmPelsWidth;
+        public uint   DmPelsHeight;
+        public uint   DmDisplayFlags;
+        public uint   DmDisplayFrequency;
+        public uint   DmIcmMethod;
+        public uint   DmIcmIntent;
+        public uint   DmMediaType;
+        public uint   DmDitherType;
+        public uint   DmReserved1;
+        public uint   DmReserved2;
+        public uint   DmPanningWidth;
+        public uint   DmPanningHeight;
+    }
+
+    private const int ENUM_CURRENT_SETTINGS = -1;
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool EnumDisplaySettingsW(string? lpszDeviceName, int iModeNum, ref DEVMODEW lpDevMode);
+
+    /// <summary>
+    /// The refresh rate Windows announces for the display's current mode, in
+    /// whole Hz (a 119.88 Hz mode reads 120 or 119, as the driver rounds it).
+    /// 0 when it cannot be read or the driver reports the "hardware default"
+    /// values 0 and 1; the caller then has no rate to follow.
+    /// </summary>
+    public static int GetRefreshRateHz(string deviceName)
+    {
+        var mode = new DEVMODEW();
+        unsafe { mode.DmSize = (ushort)sizeof(DEVMODEW); }
+        if (!EnumDisplaySettingsW(deviceName, ENUM_CURRENT_SETTINGS, ref mode)) return 0;
+        uint hz = mode.DmDisplayFrequency;
+        return hz <= 1 || hz > int.MaxValue ? 0 : (int)hz;
+    }
+
     public static nint GetPrimaryMonitor()
     {
         // The primary monitor's origin is always (0,0) on the virtual

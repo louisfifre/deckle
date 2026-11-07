@@ -1226,7 +1226,7 @@
     <value>Reset all settings?</value>
   </data>
   <data name="Settings_ResetAmbientDialog_Content" xml:space="preserve">
-    <value>This will restore the mode, the fine tuning, the colour per zone with its edge band, and the capture rate to their default values. Your Hue bridge pairing, light group, display, per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
+    <value>This will restore the colour and motion tuning, the brightness floor, the edge band each zone reads, and whether the lights follow their zones or share one colour to their default values. Your Hue bridge pairing, the selected light group, the display, per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
   </data>
 
   <!-- AmbientPreviewCard and LightZonesCard code-behind (Loc.Get) —

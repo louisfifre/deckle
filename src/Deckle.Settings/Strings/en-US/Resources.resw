@@ -454,6 +454,12 @@
   <data name="GeneralPageUpdatesSection.Title" xml:space="preserve">
     <value>Updates</value>
   </data>
+  <data name="GeneralPerformanceModeCard.Header" xml:space="preserve">
+    <value>Performance mode</value>
+  </data>
+  <data name="GeneralPerformanceModeCard.Description" xml:space="preserve">
+    <value>For low-power PCs. Deckle does its background work at a lower rate, such as capturing the screen for Ambient lighting less often, so the lights follow the screen a little less closely.</value>
+  </data>
   <data name="GeneralUpdateAutoCheckCard.Header" xml:space="preserve">
     <value>Check for updates automatically</value>
   </data>

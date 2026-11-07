@@ -58,7 +58,6 @@ public sealed partial class AmbientPage : Page
         ComposeRegion(StateHost, ViewModel.StateSettings);
         ComposeRegion(BehaviourHost, ViewModel.BehaviourSettings);
         ComposeRegion(TuningHost, ViewModel.TuningSettings);
-        ComposeRegion(CaptureHost, ViewModel.CaptureSettings);
 
         ViewModel.PropertyChanged += OnViewModelPropertyChanged;
         Header.IsResetAllEnabled = ViewModel.CanReset;
