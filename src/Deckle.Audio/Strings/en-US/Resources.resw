@@ -124,7 +124,7 @@
     <value>Recording</value>
   </data>
   <data name="RecordingPageHeader.Description" xml:space="preserve">
-    <value>Microphone, voice level with its meter, recording length and pre-processing, with a listening test.</value>
+    <value>Your microphone, and what Deckle hears.</value>
   </data>
   <!-- The first section: the voice level with its meter, the maximum length,
        the pre-processing (research note P6, 2026-11-06). Titled "Recording",
@@ -148,7 +148,7 @@
     <value>Voice level</value>
   </data>
   <data name="RecordingVoiceLevelCard.Description" xml:space="preserve">
-    <value>The level above which Deckle hears voice. It opens an utterance, lights the outline of the recording window, and decides whether the microphone picked up anyone. Raise it if room noise keeps an utterance open; lower it if soft speech is cut.</value>
+    <value>Above this level, Deckle hears voice.</value>
   </data>
 
   <!-- Voice meter, the instrument under the voice-level card (VoiceLevelMeter,
@@ -158,7 +158,7 @@
     <value>Microphone meter</value>
   </data>
   <data name="RecordingVoiceMeterBlock.EmptyDescription" xml:space="preserve">
-    <value>Turn Listen on to see your level against the voice level. Nothing is recorded.</value>
+    <value>Listen shows your level against the voice level, without recording anything.</value>
   </data>
   <data name="RecordingVoiceMeterListenToggle.Content" xml:space="preserve">
     <value>Listen</value>
@@ -238,7 +238,7 @@
     <value>Microphone pre-processing</value>
   </data>
   <data name="RecordingPagePreprocessingCard.Description" xml:space="preserve">
-    <value>Lifts and evens out a quiet microphone before transcription. A microphone already at a good level passes through untouched.</value>
+    <value>Lifts a quiet microphone before transcription.</value>
   </data>
 
   <!-- Microphone level check (x:Uid) -->
@@ -246,7 +246,7 @@
     <value>Microphone level check</value>
   </data>
   <data name="RecordingPageMicCheckCard.Description" xml:space="preserve">
-    <value>Speak for a few seconds. Deckle reads your level, says where it sits against the voice level, and tells you whether pre-processing is worth turning on.</value>
+    <value>Speak for a few seconds to learn whether pre-processing would help.</value>
   </data>
   <data name="RecordingPageMicCheckButton.Content" xml:space="preserve">
     <value>Measure</value>
@@ -255,13 +255,13 @@
     <value>Listening. Speak now…</value>
   </data>
   <data name="RecordingPageMicAdviceRecommended.Title" xml:space="preserve">
-    <value>Your microphone is quiet. Turning pre-processing on is recommended.</value>
+    <value>Your microphone is quiet: pre-processing is recommended.</value>
   </data>
   <data name="RecordingPageMicAdviceMarginal.Title" xml:space="preserve">
-    <value>Borderline. Pre-processing would help a little.</value>
+    <value>Borderline: pre-processing would help a little.</value>
   </data>
   <data name="RecordingPageMicAdviceNotNeeded.Title" xml:space="preserve">
-    <value>Your microphone is already at a good level. Pre-processing isn't needed.</value>
+    <value>Your microphone is at a good level: pre-processing isn't needed.</value>
   </data>
   <data name="RecordingPageMicAdviceError.Title" xml:space="preserve">
     <value>Couldn't read the microphone. Check the device above and try again.</value>
@@ -282,7 +282,7 @@
     <value>Listening test</value>
   </data>
   <data name="RecordingPageListeningTestCard.Description" xml:space="preserve">
-    <value>Record a few seconds and play them back to hear what pre-processing does. Nothing is saved or transcribed.</value>
+    <value>Record a few seconds to hear what pre-processing does; nothing is saved or transcribed.</value>
   </data>
   <data name="RecordingPageListeningRecordButton.Content" xml:space="preserve">
     <value>Record</value>

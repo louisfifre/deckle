@@ -259,13 +259,17 @@ public partial class WhisperViewModel
     }
 
     // The plain-language reading of the envelope the curve eases, the Playground
-    // Segmentation page's sentence.
-    private string CutCurveSentence()
+    // Segmentation page's sentence. Its words live in the module's .resw like
+    // every other string of the page; a missing entry falls back to the card's
+    // static description.
+    private string? CutCurveSentence()
     {
+        string? format = Loc.GetFromOptional("Deckle.Transcription", "WhisperCutCurveSentence_Format");
+        if (format is null) return null;
         double start = SegHangoverRampStartMs / 1000.0;
         double end = Math.Max(start, SegHangoverRampEndMs / 1000.0);
-        return $"Waits {SegHangoverMaxMs / 1000.0:F1} s of silence for utterances up to {start:F0} s, " +
-               $"then tightens to {SegHangoverMinMs / 1000.0:F1} s by {end:F0} s.";
+        return string.Format(System.Globalization.CultureInfo.CurrentCulture, format,
+            SegHangoverMaxMs / 1000.0, start, SegHangoverMinMs / 1000.0, end);
     }
 
     // Decoding — four flat cards under the page's "Decoding" section: beam
@@ -332,9 +336,11 @@ public partial class WhisperViewModel
     ];
 
     // Output filters — three flat cards under the page's "Output filters"
-    // section, after Decoding and Confidence: what the model's text loses before
-    // it is pasted. Not decoding, so not under that title; still the module's
-    // own, so still on the page (2026-10-14). SuppressRegex is a one-line
+    // section, after Decoding and Confidence. Despite the title they remove
+    // nothing after the fact: whisper.cpp applies all three to the decoder's
+    // tokens, forbidding some before they are written (upstream documentation,
+    // not checked in the shipped v1.9.1 source; their descriptions say so since
+    // the 2026-11-07 review). SuppressRegex is a one-line
     // free-text field; its placeholder reuses the WhisperSuppressRegexBox
     // .PlaceholderText entry. Defaults read the OutputFilterSettings POCO
     // initializer.
@@ -356,11 +362,13 @@ public partial class WhisperViewModel
     ];
 
     // Context — two flat cards under the page's "Context" section, last:
-    // whether each segment primes the next and how much text a segment may
-    // produce. UseContext is a Toggle; MaxTokens is a field-only magnitude over
-    // the -1..448 range (the VM's OnMaxTokensChanged NaN-guard is the same guard
-    // the composer applies, so a cleared field never persists). Defaults read
-    // the ContextSettings POCO initializer.
+    // whether each segment primes the next and how many tokens of the previous
+    // text prime it (whisper.cpp's n_max_text_ctx, WhisperParamsMapper). UseContext
+    // is a Toggle; MaxTokens is a field-only magnitude over the -1..448 range
+    // (the VM's OnMaxTokensChanged NaN-guard is the same guard the composer
+    // applies, so a cleared field never persists), whose -1 sentinel, "leave
+    // whisper.cpp's default", the field shows as Auto. Defaults read the
+    // ContextSettings POCO initializer.
     public IReadOnlyList<SettingDescriptor> ContextSettingsManifest =>
     [
         Setting.Toggle("WhisperUseContextCard",
@@ -370,7 +378,7 @@ public partial class WhisperViewModel
         Setting.Magnitude("WhisperMaxTokensCard",
             () => MaxTokens,
             value => MaxTokens = value,
-            new MagnitudeArgs(-1, 448, Slider: false, Integer: true),
+            new MagnitudeArgs(-1, 448, Slider: false, Integer: true, Auto: -1),
             defaultValue: () => new ContextSettings().MaxTokens),
     ];
 }
