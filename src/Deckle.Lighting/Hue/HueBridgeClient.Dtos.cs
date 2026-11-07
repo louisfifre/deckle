@@ -50,6 +50,9 @@ public sealed partial class HueBridgeClient
         [JsonPropertyName("on")]             public bool?     On             { get; set; }
         [JsonPropertyName("bri")]            public byte?     Brightness     { get; set; }
         [JsonPropertyName("xy")]             public double[]? Xy             { get; set; }
+        [JsonPropertyName("ct")]             public int?      Ct             { get; set; }
+        [JsonPropertyName("hue")]            public int?      Hue            { get; set; }
+        [JsonPropertyName("sat")]            public byte?     Saturation     { get; set; }
         [JsonPropertyName("transitiontime")] public int?      TransitionTime { get; set; }
     }
 
@@ -62,7 +65,14 @@ public sealed partial class HueBridgeClient
 
     private sealed class HueLightStateDto
     {
-        [JsonPropertyName("reachable")] public bool? Reachable { get; set; }
+        [JsonPropertyName("reachable")] public bool?     Reachable  { get; set; }
+        [JsonPropertyName("on")]        public bool?     On         { get; set; }
+        [JsonPropertyName("bri")]       public byte?     Brightness { get; set; }
+        [JsonPropertyName("colormode")] public string?   ColorMode  { get; set; }
+        [JsonPropertyName("xy")]        public double[]? Xy         { get; set; }
+        [JsonPropertyName("ct")]        public int?      Ct         { get; set; }
+        [JsonPropertyName("hue")]       public int?      Hue        { get; set; }
+        [JsonPropertyName("sat")]       public byte?     Saturation { get; set; }
     }
 
     private sealed class HueAlertRequest
