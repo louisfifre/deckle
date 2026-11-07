@@ -103,7 +103,7 @@ public class TaskbarCoverSettingsTests
     [InlineData("pixels")]
     public void TheUnitBesideTheFigureIsNeverAPixelWord(string pixelWord)
     {
-        Assert.NotEqual(pixelWord, ApproachDistance.UnitLabel, ignoreCase: true);
+        Assert.False(string.Equals(pixelWord, ApproachDistance.UnitLabel, StringComparison.OrdinalIgnoreCase));
         Assert.Equal("DIP", ApproachDistance.UnitLabel);
     }
 
