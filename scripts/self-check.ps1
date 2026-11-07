@@ -159,7 +159,11 @@ else {
     }
 }
 
-if ($Before.Count -ne $After.Count -or (Compare-Object $Before $After)) {
+# With no resident Deckle both lists are empty, and Compare-Object refuses a
+# null reference set: compare only when there is something to compare.
+$Before = @($Before)
+$After = @($After)
+if ($Before.Count -ne $After.Count -or ($Before.Count -gt 0 -and (Compare-Object $Before $After))) {
     $failures.Add("the other Deckle processes changed during the run: before [$($Before -join ', ')], after [$($After -join ', ')].")
 }
 

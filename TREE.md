@@ -126,7 +126,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── 0005-serve-anytype-mcp-stateless-with-explicit-recovery.md  — The Anytype gateway uses stateless MCP requests and advertises an explicit ambi…
 │   │   ├── 0006-signal-user-incidents-as-tray-state.md  — A degraded state the person can fix is declared in a registry and shown as tray…
 │   │   ├── 0007-write-message-shape-per-level-in-the-template.md  — Every event's message template carries the shape its level calls for, a sentenc…
-│   │   └── 0008-run-anytype-mcp-in-a-supervised-gateway-process.md  — The Anytype MCP host runs in its own gateway process that Deckle stages by cont…
+│   │   ├── 0008-run-anytype-mcp-in-a-supervised-gateway-process.md  — The Anytype MCP host runs in its own gateway process that Deckle stages by cont…
+│   │   └── 0009-own-animation-setting-defaulting-to-windows.md  — Deckle's own animations follow a Deckle setting, Same as Windows by default, be…
 │   ├── research/
 │   │   ├── taskbar-briefs-2026-10-18/
 │   │   │   ├── brief-csharp-socle.md
@@ -1008,6 +1009,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptPanelWindow.xaml
 │   │   │   └── TranscriptPanelWindow.xaml.cs
 │   │   ├── Windows/
+│   │   │   ├── AnimationPreference.cs
 │   │   │   ├── HudOverlayManager.cs
 │   │   │   ├── HudOverlayWindow.xaml
 │   │   │   ├── HudOverlayWindow.xaml.cs
@@ -1018,7 +1020,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HudWindow.xaml
 │   │   │   ├── HudWindow.xaml.cs
 │   │   │   ├── ProximityFade.cs
-│   │   │   ├── SystemAnimationPreference.cs
 │   │   │   └── WindowSlideAnimator.cs
 │   │   ├── AnimationGate.cs
 │   │   ├── Deckle.Hud.csproj
@@ -1389,9 +1390,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── DisplayTarget.cs
 │   │   │   ├── DisplayTargets.cs
 │   │   │   └── HdrStateSwitch.cs
+│   │   ├── Icons/
+│   │   │   ├── ExecutableIcon.cs
+│   │   │   ├── ExecutableIconCache.cs
+│   │   │   └── ExecutableIconReader.cs
 │   │   ├── Interop/
 │   │   │   ├── DisplayConfigNativeMethods.cs
-│   │   │   └── ProcessNativeMethods.cs
+│   │   │   ├── ProcessNativeMethods.cs
+│   │   │   └── ShellIconNativeMethods.cs
 │   │   ├── Processes/
 │   │   │   └── RunningApps.cs
 │   │   ├── Registry/
@@ -2181,6 +2187,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── MessageTemplateDoctrineTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── AnimationGateTests.cs
+│   │   ├── AnimationPreferenceBugNotes.md
+│   │   ├── AnimationPreferenceTests.cs
 │   │   ├── ConfigOverridesBugNotes.md
 │   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
@@ -2353,6 +2361,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Orchestration.Tests.csproj
 │   │   ├── DeckleOrchestrationSourceTests.cs
 │   │   ├── DisplayConfigLayoutTests.cs
+│   │   ├── ExecutableIconTests.cs
 │   │   ├── ExecutableLocatorTests.cs
 │   │   ├── Fixture.cs
 │   │   ├── ForegroundChangeMappingTests.cs
