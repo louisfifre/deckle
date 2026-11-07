@@ -101,8 +101,79 @@ $psi.Environment['DECKLE_DATA_ROOT'] = $DataRoot
 
 Write-Host "self-check: $ExePath"
 Write-Host "self-check: data root $DataRoot"
+# The guard: the run must never be seen nor take the focus. While the app runs,
+# this script samples every 20 ms which window has the foreground and where the
+# app's visible windows stand. A foreground window owned by the app, or a window
+# rectangle that touches a monitor, is a failure whatever the report says.
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -TypeDefinition @'
+using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+public static class DeckleSelfCheckGuard
+{
+    [StructLayout(LayoutKind.Sequential)] struct RECT { public int left, top, right, bottom; }
+    delegate bool EnumProc(IntPtr hwnd, IntPtr lParam);
+    [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
+    [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr hwnd, out uint pid);
+    [DllImport("user32.dll")] static extern bool EnumWindows(EnumProc proc, IntPtr lParam);
+    [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr hwnd);
+    [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr hwnd, out RECT rect);
+
+    public static long Foreground() { return GetForegroundWindow().ToInt64(); }
+
+    public static uint ForegroundPid()
+    {
+        uint pid; GetWindowThreadProcessId(GetForegroundWindow(), out pid); return pid;
+    }
+
+    // Visible top-level windows of a process: "hwnd:left,top,right,bottom".
+    public static List<string> VisibleWindows(uint ownerPid)
+    {
+        var found = new List<string>();
+        EnumWindows((hwnd, l) =>
+        {
+            uint pid; GetWindowThreadProcessId(hwnd, out pid);
+            RECT r;
+            if (pid == ownerPid && IsWindowVisible(hwnd) && GetWindowRect(hwnd, out r)
+                && r.right > r.left && r.bottom > r.top)
+                found.Add(hwnd.ToInt64() + ":" + r.left + "," + r.top + "," + r.right + "," + r.bottom);
+            return true;
+        }, IntPtr.Zero);
+        return found;
+    }
+}
+'@
+
+$monitors = @([System.Windows.Forms.Screen]::AllScreens | ForEach-Object { $_.Bounds })
+$guardViolations = [System.Collections.Generic.List[string]]::new()
+$foregroundBefore = [DeckleSelfCheckGuard]::Foreground()
+$foregroundSeen = [System.Collections.Generic.HashSet[long]]::new()
+[void]$foregroundSeen.Add($foregroundBefore)
+$windowsSeen = 0
+
 $process = [System.Diagnostics.Process]::Start($psi)
-$timedOut = -not $process.WaitForExit($TimeoutSeconds * 1000)
+$deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+while (-not $process.HasExited -and [DateTime]::UtcNow -lt $deadline) {
+    [void]$foregroundSeen.Add([DeckleSelfCheckGuard]::Foreground())
+    if ([DeckleSelfCheckGuard]::ForegroundPid() -eq [uint32]$process.Id) {
+        $guardViolations.Add('a window of the self-check had the foreground')
+    }
+    foreach ($entry in [DeckleSelfCheckGuard]::VisibleWindows([uint32]$process.Id)) {
+        $windowsSeen++
+        $rect = ($entry -split ':')[1] -split ','
+        $l = [int]$rect[0]; $t = [int]$rect[1]; $r = [int]$rect[2]; $b = [int]$rect[3]
+        foreach ($m in $monitors) {
+            if ($l -lt $m.Right -and $r -gt $m.Left -and $t -lt $m.Bottom -and $b -gt $m.Top) {
+                $guardViolations.Add("a self-check window ($l,$t,$r,$b) touched the monitor at $($m.Left),$($m.Top),$($m.Right),$($m.Bottom)")
+            }
+        }
+    }
+    Start-Sleep -Milliseconds 20
+}
+$foregroundAfter = [DeckleSelfCheckGuard]::Foreground()
+[void]$foregroundSeen.Add($foregroundAfter)
+$timedOut = -not $process.HasExited
 if ($timedOut) {
     # The tree: a hung app may have started helpers.
     try { $process.Kill($true) } catch { }
@@ -124,6 +195,10 @@ $crashNames = @{
 
 $failures = [System.Collections.Generic.List[string]]::new()
 $warnings = [System.Collections.Generic.List[string]]::new()
+
+foreach ($violation in @($guardViolations | Select-Object -Unique)) {
+    $failures.Add("seen or focused: $violation.")
+}
 
 $ReportPath = Join-Path $OutputFolder 'report.json'
 $report = $null
@@ -181,6 +256,7 @@ if ($report -and $report.microphone) {
     Write-Host ("microphone: {0} (stage {1}, {2})" -f $report.microphone.outcome, $report.microphone.stage, $report.microphone.error_name)
 }
 if ($report -and $report.version) { Write-Host "version: $($report.version) ($($report.build))" }
+Write-Host ("foreground window: before 0x{0:X}, after 0x{1:X}, {2} distinct during the run; the app's visible windows were sampled {3} time(s)" -f $foregroundBefore, $foregroundAfter, $foregroundSeen.Count, $windowsSeen)
 Write-Host "resident Deckle processes before: [$($Before -join ', ')]  after: [$($After -join ', ')]"
 foreach ($w in $warnings) { Write-Host "warning: $w" -ForegroundColor Yellow }
 foreach ($f in $failures) { Write-Host "FAILED: $f" -ForegroundColor Red }

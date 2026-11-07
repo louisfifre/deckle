@@ -126,8 +126,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── 0005-serve-anytype-mcp-stateless-with-explicit-recovery.md  — The Anytype gateway uses stateless MCP requests and advertises an explicit ambi…
 │   │   ├── 0006-signal-user-incidents-as-tray-state.md  — A degraded state the person can fix is declared in a registry and shown as tray…
 │   │   ├── 0007-write-message-shape-per-level-in-the-template.md  — Every event's message template carries the shape its level calls for, a sentenc…
-│   │   ├── 0008-run-anytype-mcp-in-a-supervised-gateway-process.md  — The Anytype MCP host runs in its own gateway process that Deckle stages by cont…
-│   │   └── 0009-own-animation-setting-defaulting-to-windows.md  — Deckle's own animations follow a Deckle setting, Same as Windows by default, be…
+│   │   └── 0008-run-anytype-mcp-in-a-supervised-gateway-process.md  — The Anytype MCP host runs in its own gateway process that Deckle stages by cont…
 │   ├── research/
 │   │   ├── taskbar-briefs-2026-10-18/
 │   │   │   ├── brief-csharp-socle.md
@@ -474,6 +473,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AppAmbientEngineHost.cs
 │   │   │   └── AppTranscriptionEngineHost.cs
 │   │   ├── SelfCheck/
+│   │   │   ├── ElementImage.cs
+│   │   │   ├── OffscreenWindow.cs
 │   │   │   ├── SelfCheckDataRootGate.cs
 │   │   │   └── SelfCheckReport.cs
 │   │   ├── Strings/
@@ -597,7 +598,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MicrophoneLevelFeed.cs
 │   │   ├── MicrophoneLevelFeedFailure.cs
 │   │   ├── ProbeResult.cs
-│   │   ├── RecordingLimit.cs
 │   │   ├── RecordingPage.xaml
 │   │   ├── RecordingPage.xaml.cs
 │   │   ├── RecordingSettingsModule.cs
@@ -816,7 +816,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Icons.xaml
 │   │   │   └── SettingsPageHeaderBrushes.xaml
 │   │   ├── ConfirmationService.cs
-│   │   ├── ConsentService.cs
 │   │   ├── Deckle.Catalog.csproj
 │   │   ├── DiagnosticsRegistry.cs
 │   │   ├── Glyphs.cs
@@ -1009,7 +1008,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptPanelWindow.xaml
 │   │   │   └── TranscriptPanelWindow.xaml.cs
 │   │   ├── Windows/
-│   │   │   ├── AnimationPreference.cs
 │   │   │   ├── HudOverlayManager.cs
 │   │   │   ├── HudOverlayWindow.xaml
 │   │   │   ├── HudOverlayWindow.xaml.cs
@@ -1020,6 +1018,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HudWindow.xaml
 │   │   │   ├── HudWindow.xaml.cs
 │   │   │   ├── ProximityFade.cs
+│   │   │   ├── SystemAnimationPreference.cs
 │   │   │   └── WindowSlideAnimator.cs
 │   │   ├── AnimationGate.cs
 │   │   ├── Deckle.Hud.csproj
@@ -1390,14 +1389,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── DisplayTarget.cs
 │   │   │   ├── DisplayTargets.cs
 │   │   │   └── HdrStateSwitch.cs
-│   │   ├── Icons/
-│   │   │   ├── ExecutableIcon.cs
-│   │   │   ├── ExecutableIconCache.cs
-│   │   │   └── ExecutableIconReader.cs
 │   │   ├── Interop/
 │   │   │   ├── DisplayConfigNativeMethods.cs
-│   │   │   ├── ProcessNativeMethods.cs
-│   │   │   └── ShellIconNativeMethods.cs
+│   │   │   └── ProcessNativeMethods.cs
 │   │   ├── Processes/
 │   │   │   └── RunningApps.cs
 │   │   ├── Registry/
@@ -1803,7 +1797,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SileroVad.cs
 │   │   ├── SileroVadModel.cs
 │   │   ├── SileroVadOptions.cs
-│   │   ├── SpeechEdges.cs
 │   │   ├── SpeechSegment.cs
 │   │   ├── SpeechTrimResult.cs
 │   │   └── VadService.cs
@@ -1977,7 +1970,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PortAudioDeploymentBugNotes.md
 │   │   ├── PortAudioDeploymentTests.cs
 │   │   ├── PortAudioInteropTests.cs
-│   │   ├── RecordingLimitTests.cs
 │   │   ├── StreamingResamplerTests.cs
 │   │   ├── SubWindowAssemblerTests.cs
 │   │   ├── TestCaptureDoubles.cs
@@ -2073,7 +2065,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── CurveEndpointLimitsTests.cs
 │   │   ├── Deckle.Catalog.Tests.csproj
 │   │   ├── DefaultValueTextTests.cs
-│   │   ├── DialogDefaultButtonTests.cs
 │   │   ├── GestureHoldTests.cs
 │   │   ├── HotkeyChordTests.cs
 │   │   ├── HotkeyChordTextTests.cs
@@ -2187,8 +2178,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── MessageTemplateDoctrineTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── AnimationGateTests.cs
-│   │   ├── AnimationPreferenceBugNotes.md
-│   │   ├── AnimationPreferenceTests.cs
 │   │   ├── ConfigOverridesBugNotes.md
 │   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
@@ -2361,7 +2350,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Orchestration.Tests.csproj
 │   │   ├── DeckleOrchestrationSourceTests.cs
 │   │   ├── DisplayConfigLayoutTests.cs
-│   │   ├── ExecutableIconTests.cs
 │   │   ├── ExecutableLocatorTests.cs
 │   │   ├── Fixture.cs
 │   │   ├── ForegroundChangeMappingTests.cs
@@ -2424,8 +2412,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SetupPathRedactionTests.cs
 │   │   ├── SetupStringMirrorTests.cs
 │   │   ├── UpdateHandoffBugNotes.md
-│   │   ├── UpdatePredecessorTests.cs
-│   │   └── UpdateToastRoutingTests.cs
+│   │   └── UpdatePredecessorTests.cs
 │   ├── Deckle.Shell.Foreground.Tests/
 │   │   ├── Deckle.Shell.Foreground.Tests.csproj
 │   │   ├── FullscreenGeometryTests.cs
@@ -2545,7 +2532,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Vad.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── SileroSpeechTimestampsTests.cs
-│   │   ├── SpeechEdgesTests.cs
 │   │   ├── VadBugNotes.md
 │   │   ├── VadObservabilityCollection.cs
 │   │   ├── VadPathRedactionTests.cs
