@@ -1,6 +1,6 @@
 # What the benchmarks and offline probes concluded
 
-The `benchmark/` workspace, `src/Deckle.Autocorrect.Probe` and `src/Deckle.Autocorrect.Mlm` are removed (branch `chore/remove-benchmarks`). A bench is cheap to rewrite: a prompt, a corpus, a judge model beside it. This note keeps what each one asked and what is still worth knowing. It is written from the READMEs, the commit bodies and the headers of the removed code.
+The `benchmark/` workspace, `src/Deckle.Autocorrect.Probe` and `src/Deckle.Autocorrect.Mlm` are removed (branch `chore/remove-benchmarks`), except `benchmark/rewrite`, which still serves the rewrite prompts and stays in the repository. A bench is cheap to rewrite: a prompt, a corpus, a judge model beside it. This note keeps what each one asked and what is still worth knowing. It is written from the READMEs, the commit bodies and the headers of the removed code.
 
 **Limit of this record.** Raw runs, corpora and result tables were local and never versioned. For most campaigns no result table survives in the repository, so only the figures quoted below are established. Anything else would be a guess. The removed code stays reachable in git history (last commit before the removal: the parent of the commit that deletes `benchmark/`).
 
@@ -62,7 +62,7 @@ Measured on 16 typed-style samples: with `ministral-3:14b`, 11 offers and 1 iden
 
 Question: which Claude model and which wording of the Lissage system prompt best keep a dictation's meaning when the profile rewrites it whole? Method: a model by prompt matrix on real dictations, a stronger reasoning call (effort high) listing meaning changes per rewrite (term substitutions, meaning inversions, dropped hedges, omissions, additions), plus deterministic marker deltas (negations with and without « ne », hedges per 100 words).
 
-No result table was kept, so no model ranking is recorded here. What is established and worth keeping when it is rebuilt:
+The study is kept and still in use; its later campaigns are in `docs/research/research--prompts-de-reecriture--2026-11-07.md`. No result table was kept from the first matrix, so no model ranking is recorded here. What it established:
 
 - The judge is a lead, not ground truth: read the flagged spans before trusting a count.
 - Marker deltas are blunt. Restoring a dropped « ne » is normal cleaning, so watch the negation column without « ne ».

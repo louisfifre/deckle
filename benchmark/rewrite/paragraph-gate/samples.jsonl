@@ -1,0 +1,16 @@
+{"id":"accents-elisions","expect":"offer","note":"missing accents, glued elisions, no punctuation","text":"jai relu le cadrage hier soir et je pense que ca tient la route il faut juste quon tranche le nommage avant de commencer"}
+{"id":"propre","expect":"identity","note":"already clean — the model must return it untouched","text":"Le service est en place depuis mardi. Les tests passent et la latence reste sous les trois secondes."}
+{"id":"doublon-mot","expect":"offer","note":"typed duplicates le le / qui qui","text":"le le gate rejette tout ce qui qui derive cest exactement ce quon veut"}
+{"id":"glue-phonetique","expect":"offer","note":"the framing example: samarreter, jusqua","text":"je me suis retrouve a bosser samarreter jusqua deux heures du matin"}
+{"id":"termes-anglais","expect":"offer","note":"English terms must survive untouched","text":"le build passe en local mais le publish reste un geste mainteneur je touche pas au workflow pour linstant"}
+{"id":"nombres","expect":"offer","note":"numbers must not drift","text":"la purge du 18 juillet a fait passer le corpus de 54 a 19 fiches et rien na ete perdu"}
+{"id":"derive-longue","expect":"open","note":"long rambling paragraph — strongest paraphrase temptation","text":"alors en fait je me disais que pour lencart on pourrait partir sur une fenetre non focusable au dessus du champ avec un reveal par proximite comme sur la fenetre hue mais bon il faut voir si ca marche avec les surfaces electron parce que la sonde uia est deja fragile la dessus et je veux pas rajouter un truc qui casse"}
+{"id":"phrase-inachevee","expect":"open","note":"unfinished sentence — completion temptation, gate must catch any added content","text":"je voulais aussi te dire que pour le"}
+{"id":"majuscules-ponctuation","expect":"offer","note":"capitalization and sentence boundaries to create","text":"bon la fenetre marche enfin le backdrop saffiche correctement et le theme suit le systeme"}
+{"id":"registre-familier","expect":"offer","note":"casual register must be kept, never promoted","text":"ca marche pas des masses mais on va faire avec pour linstant"}
+{"id":"bequille-tic","expect":"offer","note":"crutches euh / du coup / tu vois","text":"euh du coup je pense que lencart doit rester discret tu vois je veux pas dun truc qui clignote"}
+{"id":"noms-propres","expect":"offer","note":"proper nouns Ollama / Deckle untouched","text":"jai branche Ollama sur le port par defaut et Deckle le voit direct sans config"}
+{"id":"deja-ponctue-typos","expect":"offer","note":"already punctuated, only accents to restore","text":"L'alignement est monotone, strict. Chaque edit doit etre explique par une regle, sinon on jette tout."}
+{"id":"anacoluthe","expect":"open","note":"twisted syntax — partial retaille rather than a rebuild","text":"le gate lui au moins quand ca derive tout saute dun coup"}
+{"id":"vocabulaire-tentant","expect":"offer","note":"verbs the model may want to upgrade (virer, verbeux)","text":"on a vire lancien systeme de logs parce quil etait trop verbeux et pas lisible"}
+{"id":"liste-orale","expect":"offer","note":"oral enumeration to re-punctuate without reshaping","text":"il reste trois trucs a faire le dataset le cablage et les calibrations apres on ferme la tranche"}

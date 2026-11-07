@@ -65,6 +65,29 @@ _Generated from `git ls-files` — do not edit by hand._
 ├── .vscode/
 │   ├── launch.json
 │   └── tasks.json
+├── benchmark/
+│   ├── rewrite/
+│   │   ├── model-compare/
+│   │   │   ├── prompts/
+│   │   │   │   ├── lissage-current.md
+│   │   │   │   └── lissage-literal.md
+│   │   │   ├── .gitignore
+│   │   │   ├── Corpus.cs
+│   │   │   ├── Judge.cs
+│   │   │   ├── ModelCompare.csproj
+│   │   │   ├── Program.cs
+│   │   │   ├── README.md
+│   │   │   ├── Shared.cs
+│   │   │   └── Summary.cs
+│   │   └── paragraph-gate/
+│   │       ├── .gitignore
+│   │       ├── ParagraphGate.csproj
+│   │       ├── Program.cs
+│   │       ├── README.md
+│   │       └── samples.jsonl
+│   ├── Directory.Build.props
+│   ├── Directory.Packages.props
+│   └── README.md  — readme-benchmark Index for Deckle's remaining benchmark workspace: the rewrite evaluations, kept…
 ├── docs/
 │   ├── adr/
 │   │   ├── 0000-template.md  — Fill-in template for a Deckle ADR — copy it to start one, record no decision he…
@@ -2065,6 +2088,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── OverlayCardCloseObservabilityTests.cs
 │   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
+│   │   ├── RecordingLevelStepTests.cs
+│   │   ├── RecordingOutlineBugNotes.md
 │   │   ├── TranscriptPanelBugNotes.md
 │   │   ├── TranscriptPanelLayoutTests.cs
 │   │   ├── UtteranceCountdownBugNotes.md
