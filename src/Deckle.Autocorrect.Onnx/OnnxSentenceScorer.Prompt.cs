@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Deckle.Autocorrect;
 using Microsoft.ML.OnnxRuntimeGenAI;
+using Deckle.Diagnostics;
 
 namespace Deckle.Autocorrect.Onnx;
 
@@ -32,7 +33,7 @@ public sealed partial class OnnxSentenceScorer
                 if (Interlocked.Exchange(ref _chatTemplateFallbackReported, 1) == 0)
                     DeckleAutocorrectSource.Log.SentenceJudgeFeatureUnavailable(
                         DeckleAutocorrectSource.SentenceJudgeFeatures.ChatTemplate,
-                        ex.GetType().FullName ?? ex.GetType().Name,
+                        ExceptionTypeName.Of(ex),
                         ex.Message);
             }
         }

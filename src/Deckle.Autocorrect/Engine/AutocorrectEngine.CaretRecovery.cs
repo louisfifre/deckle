@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Deckle.Core;
+using Deckle.Diagnostics;
 
 namespace Deckle.Autocorrect;
 
@@ -123,7 +124,7 @@ public sealed partial class AutocorrectEngine
             return;
         _caretRecoveryIncidentOpen = true;
         DeckleAutocorrectSource.Log.CaretRecoveryFailing(
-            fault.GetType().FullName ?? fault.GetType().Name, fault.Message);
+            ExceptionTypeName.Of(fault), fault.Message);
     }
 
     private static void LogCaretRecovery(

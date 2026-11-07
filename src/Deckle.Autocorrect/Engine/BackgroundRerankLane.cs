@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Threading;
 using Deckle.Input;
+using Deckle.Diagnostics;
 
 namespace Deckle.Autocorrect;
 
@@ -157,14 +158,14 @@ public sealed class BackgroundRerankLane : IRerankLane
             // deterministic corrections.
             _workerOutcome = "failed";
             DeckleAutocorrectSource.Log.RerankWorkerFaulted(
-                ex.GetType().FullName ?? ex.GetType().Name, ex.Message, ex.HResult);
+                ExceptionTypeName.Of(ex), ex.Message, ex.HResult);
         }
     }
 
     private void TrackFailure(string source, Exception failure)
     {
         _consecutiveFailures++;
-        string exType = failure.GetType().FullName ?? failure.GetType().Name;
+        string exType = ExceptionTypeName.Of(failure);
         DeckleAutocorrectSource.Log.RerankFailureDetail(
             source, exType, failure.Message, failure.HResult, _consecutiveFailures);
         if (!_failureIncidentOpen && _consecutiveFailures >= FailureIncidentThreshold)

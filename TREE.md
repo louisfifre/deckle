@@ -900,6 +900,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DiagnosticsFiles.cs
 │   │   ├── DispatchEventListener.cs
 │   │   ├── EventEntry.cs
+│   │   ├── ExceptionTypeName.cs
 │   │   ├── GLOSSARY.md  — glossary-deckle-diagnostics Observability vocabulary for the Diagnostics family, .Logging and .Telemetry in…
 │   │   ├── IFlushableLogSink.cs
 │   │   ├── ILogSink.cs
@@ -2125,6 +2126,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DispatchEventListenerIncidentTests.cs
 │   │   ├── DispatchEventListenerRegressionTests.cs
 │   │   ├── DispatchEventListenerTests.cs
+│   │   ├── ExceptionTypeNameTests.cs
 │   │   ├── JsonlLineSerializerRegressionTests.cs
 │   │   ├── JsonlLineSerializerTests.cs
 │   │   ├── JsonlSinkBugNotes.md

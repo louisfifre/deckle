@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Deckle.Autocorrect;
 using Microsoft.ML.OnnxRuntimeGenAI;
+using Deckle.Diagnostics;
 
 namespace Deckle.Autocorrect.Onnx;
 
@@ -82,7 +83,7 @@ public sealed partial class OnnxSentenceScorer
                 config?.Dispose();
                 retried = true;
                 DeckleAutocorrectSource.Log.RerankerLoadRetried(
-                    executionProvider, ex.GetType().FullName ?? ex.GetType().Name, ex.Message);
+                    executionProvider, ExceptionTypeName.Of(ex), ex.Message);
                 Thread.Sleep(250);
             }
             catch
@@ -133,7 +134,7 @@ public sealed partial class OnnxSentenceScorer
             // calibrated margin was measured on.
             DeckleAutocorrectSource.Log.SentenceJudgeFeatureUnavailable(
                 DeckleAutocorrectSource.SentenceJudgeFeatures.BosToken,
-                ex.GetType().FullName ?? ex.GetType().Name,
+                ExceptionTypeName.Of(ex),
                 ex.Message);
             return null;
         }
