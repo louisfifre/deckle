@@ -18,7 +18,14 @@ public sealed partial class OnnxSentenceScorer : ISentenceScorer, IDisposable
     private const string SystemPrompt =
         "You are Deckle's local French autocorrect judge. You choose only among closed candidates.";
 
-    private readonly OgaHandle _ogaHandle;
+    // No OgaHandle, here or anywhere in the process. Its constructor does
+    // nothing native; its Dispose and its finalizer call OgaShutdown, which
+    // tears down ONNX Runtime GenAI's process-wide state (the ORT environment,
+    // the DirectML device). Every later Model construction in the process
+    // then reads freed state and dies on an access violation no catch can
+    // stop: a domain-pack rebuild, which releases this judge and loads the
+    // next, crashed the app that way. Without a handle that state lives until
+    // the process exits; measured with 0.13.0, the process exits cleanly.
     private readonly Config _config;
     private readonly Model _model;
     private readonly Tokenizer _tokenizer;

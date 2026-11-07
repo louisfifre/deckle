@@ -80,7 +80,8 @@ internal static class QwenAdapterCrossModelCommand
         QwenAdapterCompatibilityPlan plan,
         QwenAdapterArtifactPlan control)
     {
-        OgaHandle? ogaHandle = null;
+        // No OgaHandle: releasing one shuts ONNX Runtime GenAI down for the
+        // whole process (see OnnxSentenceScorer).
         Config? firstConfig = null;
         Config? secondConfig = null;
         Model? firstModel = null;
@@ -97,7 +98,6 @@ internal static class QwenAdapterCrossModelCommand
         var cleanupFailures = new List<string>();
         try
         {
-            ogaHandle = new OgaHandle();
             firstConfig = CpuConfig(
                 plan.ModelDirectory,
                 cleanupFailures,
@@ -181,7 +181,6 @@ internal static class QwenAdapterCrossModelCommand
             TryDispose(firstModel, "first_model_dispose", cleanupFailures);
             TryDispose(secondConfig, "second_config_dispose", cleanupFailures);
             TryDispose(firstConfig, "first_config_dispose", cleanupFailures);
-            TryDispose(ogaHandle, "oga_dispose", cleanupFailures);
         }
 
         bool exactFailure = string.Equals(
