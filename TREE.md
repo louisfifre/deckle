@@ -547,7 +547,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AutocorrectEngine.Telemetry.cs
 │   │   │   ├── AutocorrectPolicySet.cs
 │   │   │   ├── BigramPairDisambiguator.cs
-│   │   │   ├── CandidateSearchObservation.cs
 │   │   │   ├── CasePattern.cs
 │   │   │   ├── CompositeCorrectionPolicy.cs
 │   │   │   ├── ConservativeTypoCorrector.cs
