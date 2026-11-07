@@ -77,7 +77,7 @@ public sealed partial class SettingsComposer
     // name: Narrator reads "Reset to 0.50", not an unnamed button.
     private static void LabelResetButton(Button reset, string tooltip)
     {
-        LabelResetButton(reset, tooltip);
+        ToolTipService.SetToolTip(reset, tooltip);
         AutomationProperties.SetName(reset, tooltip);
     }
 
