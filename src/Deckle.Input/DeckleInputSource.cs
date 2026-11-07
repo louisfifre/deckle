@@ -120,7 +120,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "hwnd={0} | thread_id={1}")]
-    public void HostStartedDetail(long hwnd, int thread_id)
+    public void HostStartedDetail(long hwnd, long thread_id)
     {
         if (IsEnabled()) WriteEvent(EvtHostStartedDetail, hwnd, thread_id);
     }
@@ -317,7 +317,7 @@ public sealed class DeckleInputSource : DeckleEventSource
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "hwnd={0} | thread_id={1}")]
-    public void KeyboardHostStartedDetail(long hwnd, int thread_id)
+    public void KeyboardHostStartedDetail(long hwnd, long thread_id)
     {
         if (IsEnabled()) WriteEvent(EvtKeyboardHostStartedDetail, hwnd, thread_id);
     }
