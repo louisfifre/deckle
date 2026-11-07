@@ -56,7 +56,20 @@ public sealed partial class FrameSampler
     private nint _reduceParams;
     private nint _reduceOutput;
     private nint _reduceOutputUav;
-    private nint _readbackBuffer;
+    // Ring of staging buffers: the grid is copied into the next slot and
+    // read from the newest slot the GPU has finished, so the capture thread
+    // never waits for the frame it just submitted.
+    private const int RingSize = 3;
+    private readonly nint[] _ring = new nint[RingSize];
+    private readonly long[] _ringTicks = new long[RingSize];
+    private readonly long[] _ringSequence = new long[RingSize];
+    private readonly bool[] _ringPending = new bool[RingSize];
+    private int _ringHead;
+    private long _submitted;
+
+    // Set while some slot holds a frame not yet published, so a reader with
+    // nothing to finish skips the lock.
+    private int _hasPending;
 
     private int BytesPerCell => _isHdr ? 8 : 4;
     private int GridBytes => _gridCols * _gridRows * BytesPerCell;
@@ -146,9 +159,12 @@ public sealed partial class FrameSampler
                 Usage = ScreenCaptureInterop.D3D11_USAGE_STAGING,
                 CPUAccessFlags = ScreenCaptureInterop.D3D11_CPU_ACCESS_READ,
             };
-            nint readback;
-            Marshal.ThrowExceptionForHR(createBuffer(_d3dDevice, &readbackDesc, null, &readback));
-            _readbackBuffer = readback;
+            for (int slot = 0; slot < RingSize; slot++)
+            {
+                nint readback;
+                Marshal.ThrowExceptionForHR(createBuffer(_d3dDevice, &readbackDesc, null, &readback));
+                _ring[slot] = readback;
+            }
         }
     }
 
@@ -157,7 +173,7 @@ public sealed partial class FrameSampler
     // textures of the legacy path, which weigh megabytes, still are.
     private void ReleaseReductionResources()
     {
-        ReleaseAndClear(ref _readbackBuffer);
+        for (int slot = 0; slot < RingSize; slot++) ReleaseAndClear(ref _ring[slot]);
         ReleaseAndClear(ref _reduceOutputUav);
         ReleaseAndClear(ref _reduceOutput);
         ReleaseAndClear(ref _reduceParams);
@@ -236,41 +252,129 @@ public sealed partial class FrameSampler
 
             var copyResource = (delegate* unmanaged<nint, nint, nint, void>)
                 ctxVtbl[ScreenCaptureInterop.D3D11Vtbl.Context_CopyResource];
-            copyResource(_d3dContext, _readbackBuffer, _reduceOutput);
+            int slot = _ringHead;
+            _ringHead = (slot + 1) % RingSize;
+            copyResource(_d3dContext, _ring[slot], _reduceOutput);
+            _ringTicks[slot] = frame.TimestampTicks;
+            _ringSequence[slot] = ++_submitted;
+            _ringPending[slot] = true;
+            Volatile.Write(ref _hasPending, 1);
 
-            return ReadReadback(frame, _readbackBuffer);
+            // The very first frame is waited for, as the legacy path did: a
+            // still screen delivers no second frame to read it late. Every
+            // later frame is read if the GPU is done and left for the next
+            // call if not.
+            return DrainRing(wait: _latestSample is null);
         }
     }
 
-    // Maps a readback buffer and publishes the grid it holds. A buffer maps
-    // with no row pitch; the grid is tight, one row is cols * bytes per cell.
-    private unsafe ReduceOutcome ReadReadback(CapturedFrame frame, nint readback)
+    // Publishes the newest finished frame in the ring and drops the older
+    // ones it supersedes. A slot the GPU has not finished answers
+    // WAS_STILL_DRAWING at once (DO_NOT_WAIT) and stays pending for a later
+    // call; with `wait`, the newest slot is mapped without the flag and
+    // blocks.
+    //
+    // One frame of latency is the price: the frame submitted a moment ago is
+    // usually still in flight, so the sample published is the one before it,
+    // about one capture interval old. Lamps are fed at 50 Hz, one colour per
+    // 20 ms, so a frame of lateness at 60 Hz or more is below what they show.
+    // Caller holds _lock.
+    private unsafe ReduceOutcome DrainRing(bool wait)
     {
         var ctxVtbl = *(nint**)_d3dContext;
         var map = (delegate* unmanaged<nint, nint, uint, uint, uint, ScreenCaptureInterop.D3D11_MAPPED_SUBRESOURCE*, int>)
             ctxVtbl[ScreenCaptureInterop.D3D11Vtbl.Context_Map];
-        ScreenCaptureInterop.D3D11_MAPPED_SUBRESOURCE mapped;
-        int hr = map(_d3dContext, readback, 0, ScreenCaptureInterop.D3D11_MAP_READ, 0, &mapped);
-        if (hr != 0)
-        {
-            Volatile.Write(ref _lastFailure, new FrameFailure("sampler_map", hr, "", ""));
-            DeckleVisionSource.Log.SamplerMapFailedDetail(hr);
-            return ReduceOutcome.Failed;
-        }
 
+        // Walk the pending slots from the newest down: `below` is the
+        // sequence of the last slot found unfinished.
+        long below = long.MaxValue;
+        bool newest = true;
+        while (true)
+        {
+            int slot = -1;
+            for (int i = 0; i < RingSize; i++)
+            {
+                if (_ringPending[i] && _ringSequence[i] < below
+                    && (slot < 0 || _ringSequence[i] > _ringSequence[slot])) slot = i;
+            }
+            if (slot < 0)
+            {
+                Volatile.Write(ref _hasPending, AnyPending() ? 1 : 0);
+                return ReduceOutcome.Sampled;
+            }
+
+            uint flags = wait && newest ? 0 : ScreenCaptureInterop.D3D11_MAP_FLAG_DO_NOT_WAIT;
+            ScreenCaptureInterop.D3D11_MAPPED_SUBRESOURCE mapped;
+            int hr = map(_d3dContext, _ring[slot], 0, ScreenCaptureInterop.D3D11_MAP_READ, flags, &mapped);
+            if (hr == ScreenCaptureInterop.DXGI_ERROR_WAS_STILL_DRAWING)
+            {
+                below = _ringSequence[slot];
+                newest = false;
+                continue;
+            }
+            if (hr != 0)
+            {
+                // Drop the slot so a persistent error is not retried by
+                // every reader.
+                _ringPending[slot] = false;
+                Volatile.Write(ref _hasPending, AnyPending() ? 1 : 0);
+                Volatile.Write(ref _lastFailure, new FrameFailure("sampler_map", hr, "", ""));
+                DeckleVisionSource.Log.SamplerMapFailedDetail(hr);
+                return ReduceOutcome.Failed;
+            }
+
+            try
+            {
+                mapped.RowPitch = (uint)(_gridCols * BytesPerCell);
+                PublishMapped(_ringTicks[slot], in mapped);
+            }
+            finally
+            {
+                var unmap = (delegate* unmanaged<nint, nint, uint, void>)
+                    ctxVtbl[ScreenCaptureInterop.D3D11Vtbl.Context_Unmap];
+                unmap(_d3dContext, _ring[slot], 0);
+            }
+
+            // Everything older than the frame just published is stale.
+            long published = _ringSequence[slot];
+            for (int i = 0; i < RingSize; i++)
+            {
+                if (_ringSequence[i] <= published) _ringPending[i] = false;
+            }
+            Volatile.Write(ref _hasPending, AnyPending() ? 1 : 0);
+            return ReduceOutcome.Sampled;
+        }
+    }
+
+    private bool AnyPending()
+    {
+        for (int i = 0; i < RingSize; i++) if (_ringPending[i]) return true;
+        return false;
+    }
+
+    // Finishes a frame whose read was left for later. Called by readers of
+    // LatestSample so that the last frame before the screen goes still is
+    // not stranded in the ring: DXGI delivers nothing more until something
+    // changes, so no later Process would ever pick it up. Never blocks: if
+    // Process holds the lock, it is already doing the same work.
+    private void CompletePending()
+    {
+        if (Volatile.Read(ref _hasPending) == 0) return;
+        if (!Monitor.TryEnter(_lock)) return;
         try
         {
-            mapped.RowPitch = (uint)(_gridCols * BytesPerCell);
-            PublishMapped(frame.TimestampTicks, in mapped);
+            if (_disposed || _path != FrameSamplerPath.GpuReduction) return;
+            DrainRing(wait: false);
+        }
+        catch (Exception ex)
+        {
+            Volatile.Write(ref _lastFailure, new FrameFailure(
+                "sampler_process", ex.HResult, ex.GetType().Name, ex.Message));
         }
         finally
         {
-            var unmap = (delegate* unmanaged<nint, nint, uint, void>)
-                ctxVtbl[ScreenCaptureInterop.D3D11Vtbl.Context_Unmap];
-            unmap(_d3dContext, readback, 0);
+            Monitor.Exit(_lock);
         }
-
-        return ReduceOutcome.Sampled;
     }
 
     // Turns a mapped grid into the published sample; shared by both paths.

@@ -91,7 +91,17 @@ public sealed partial class FrameSampler : IAsyncDisposable
 
     private FrameFailure? _lastFailure;
 
-    public SampledFrame? LatestSample => Volatile.Read(ref _latestSample);
+    // On the shader path a frame is read one call late; reading the sample
+    // first finishes any frame the GPU has completed since, so the newest
+    // frame is never left in the ring on a still screen.
+    public SampledFrame? LatestSample
+    {
+        get
+        {
+            CompletePending();
+            return Volatile.Read(ref _latestSample);
+        }
+    }
 
     // Last cause behind a false Process(), for the consumer's incident
     // milestone; the per-frame failure itself stays a governed Verbose.

@@ -139,6 +139,84 @@ public sealed class FrameReductionTests
         Assert.Equal(FrameSamplerPath.GpuReduction, normal.ActivePath);
     }
 
+    // ── The read-back ring ───────────────────────────────────────────────
+
+    [Fact]
+    public async Task TheFirstFrameIsPublishedWithoutAnotherFrame()
+    {
+        const int width = 1920, height = 1056;
+        using var rig = new WarpRig();
+        nint red = rig.CreateTexture(width, height, hdr: false, Uniform(width, height, b: 0, g: 0, r: 255));
+        await using var sampler = rig.CreateSampler(width, height, hdr: false, FrameSamplerPath.GpuReduction);
+
+        Assert.True(sampler.Process(new CapturedFrame(red, width, height, 1)));
+
+        // A still screen sends no second frame: the first must already be
+        // readable.
+        Assert.Equal(Color.FromArgb(255, 255, 0, 0), sampler.LatestSample!.Grid[0]);
+    }
+
+    [Fact]
+    public async Task TheLastFrameBeforeTheScreenGoesStillIsNotStrandedInTheRing()
+    {
+        const int width = 1920, height = 1056;
+        using var rig = new WarpRig();
+        nint red = rig.CreateTexture(width, height, hdr: false, Uniform(width, height, b: 0, g: 0, r: 255));
+        nint blue = rig.CreateTexture(width, height, hdr: false, Uniform(width, height, b: 255, g: 0, r: 0));
+        await using var sampler = rig.CreateSampler(width, height, hdr: false, FrameSamplerPath.GpuReduction);
+
+        for (int i = 0; i < 6; i++)
+            Assert.True(sampler.Process(new CapturedFrame(red, width, height, 1 + i)));
+        Assert.True(sampler.Process(new CapturedFrame(blue, width, height, 100)));
+
+        // No further Process: reading the sample alone must reach the last
+        // frame, within a few attempts while the GPU finishes.
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        Color last;
+        do
+        {
+            last = sampler.LatestSample!.Grid[0];
+            if (last == Color.FromArgb(255, 0, 0, 255)) break;
+            await Task.Delay(5, TestContext.Current.CancellationToken);
+        }
+        while (DateTime.UtcNow < deadline);
+
+        Assert.Equal(Color.FromArgb(255, 0, 0, 255), last);
+    }
+
+    [Fact]
+    public async Task AFrameNeverGoesBackToAnOlderOne()
+    {
+        const int width = 1920, height = 1056;
+        using var rig = new WarpRig();
+        nint[] shades = Enumerable.Range(0, 8)
+            .Select(i => rig.CreateTexture(width, height, hdr: false,
+                Uniform(width, height, b: 0, g: (byte)(30 * (i + 1)), r: 0)))
+            .ToArray();
+        await using var sampler = rig.CreateSampler(width, height, hdr: false, FrameSamplerPath.GpuReduction);
+
+        int previous = -1;
+        for (int i = 0; i < shades.Length; i++)
+        {
+            Assert.True(sampler.Process(new CapturedFrame(shades[i], width, height, 1 + i)));
+            int green = sampler.LatestSample!.Grid[0].G;
+            Assert.True(green >= previous, $"frame {i} published green {green} after {previous}");
+            previous = green;
+        }
+    }
+
+    private static byte[] Uniform(int width, int height, byte b, byte g, byte r)
+    {
+        var pixels = new byte[width * height * 4];
+        for (int i = 0; i < pixels.Length; i += 4)
+        {
+            pixels[i] = b;
+            pixels[i + 1] = g;
+            pixels[i + 2] = r;
+            pixels[i + 3] = 255;
+        }
+        return pixels;
+    }
     // ── Synthetic desktops ───────────────────────────────────────────────
 
     // Smooth gradients on every channel, plus a hard-edged bright block whose
