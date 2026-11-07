@@ -2072,6 +2072,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MagnitudeGrainIntegerTests.cs
 │   │   ├── MagnitudeGrainTests.cs
 │   │   ├── PauseScaleTests.cs
+│   │   ├── ResetAllWordingTests.cs
 │   │   ├── ResetWheelBugNotes.md
 │   │   ├── SentinelNumberFormatterTests.cs
 │   │   ├── SettingFactoryTests.cs
@@ -2306,6 +2307,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
 │   │   ├── DictationBatcherTests.cs
 │   │   ├── DictationBatchRewriterTests.cs
+│   │   ├── LlmResetDefaultsTests.cs
 │   │   ├── LlmSettingsBugNotes.md
 │   │   ├── LlmSettingsFileTests.cs
 │   │   ├── LlmSettingsMigrationsTests.cs
