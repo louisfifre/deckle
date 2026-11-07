@@ -59,7 +59,9 @@ public partial class App
                 // localized status text.
                 bool isRecording = _engine.IsRecording;
                 DeckleAppSource.Log.StatusChanged(status, isRecording);
-                _tray.UpdateStatus(status, isRecording);
+                // A quit waiting for the work keeps saying so in the tooltip.
+                _tray.UpdateStatus(
+                    _quitPending ? QuitPendingStatus(status) : status, isRecording);
                 _lastRecordingState = isRecording;
                 _logWindow?.SetRecordingState(isRecording);
                 _playgroundWindow?.SetRecordingState(isRecording);

@@ -263,6 +263,9 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtTranscribeDecodeUsed             = 240;
     public const int EvtTakeStarted                      = 241;
     public const int EvtTakeEnded                        = 242;
+    public const int EvtShutdownDrainStarted             = 255;
+    public const int EvtShutdownDrainFinished            = 256;
+    public const int EvtShutdownDrainTimedOut            = 257;
     public const int EvtModelLoadRetrying                = 243;
     public const int EvtWarmupTestFailed                 = 244;
     public const int EvtTakeAudioWriteFailed             = 245;
