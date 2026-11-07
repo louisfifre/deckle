@@ -42,7 +42,7 @@ namespace Deckle.Transcription;
 public sealed class EnergySegmenterSettings
 {
     public int    HangoverMaxMs       { get; set; } = 5_000;
-    public int    HangoverMinMs       { get; set; } = 500;
+    public int    HangoverMinMs       { get; set; } = 1_000;
     public int    HangoverRampStartMs { get; set; } = 15_000;
     public int    HangoverRampEndMs   { get; set; } = 120_000;
     public double HangoverCurveX1     { get; set; } = 0.85;
@@ -50,6 +50,15 @@ public sealed class EnergySegmenterSettings
     public double HangoverCurveX2     { get; set; } = 0.90;
     public double HangoverCurveY2     { get; set; } = 0.25;
     public int    MarginMs            { get; set; } = 150;
+
+    // Which generation of defaults this file was last carried to. Absent in a
+    // file written before it existed, so it reads 0 there: that is how a stored
+    // value that equals an OLD default (HangoverMinMs 500) is told from the
+    // same value chosen later on purpose. Set by TranscriptionSettingsService.
+    // Not a setting: no page shows it.
+    //   1 — HangoverMinMs default moved from 500 ms to 1 s.
+    public const int CurrentDefaultsRevision = 1;
+    public int    DefaultsRevision    { get; set; }
 
     // True while the hangover curve still equals the shipped default — i.e. the
     // user has not customized it. Compared against a fresh instance so the four

@@ -74,9 +74,15 @@ public sealed class PasteSettings
 
 // Theme = "System" | "Light" | "Dark". A ShowDescriptions key left in an older
 // file is ignored: nothing reads it any more.
+//
+// Animations = "System" | "On" | "Reduced", for the animations Deckle draws
+// itself (Deckle.Hud.AnimationPreference, ADR-0009). "System" follows the
+// Windows "Animation effects" preference; the two others override it, because
+// that one switch also serves people who only dislike Windows's own motion.
 public sealed class AppearanceSettings
 {
     public string Theme { get; set; } = "System";
+    public string Animations { get; set; } = "System";
 }
 
 // HUD overlay displayed during recording/transcription.
@@ -88,10 +94,10 @@ public sealed class OverlaySettings
     public bool FadeOnProximity { get; set; } = true;
     public string Position { get; set; } = "BottomCenter";
 
-    // No animations switch lives here: every HUD animation follows the Windows
-    // "Animation effects" preference (Deckle.Hud.SystemAnimationPreference). A
-    // settings file written by an older build may still carry "animations";
-    // the deserializer ignores members this class no longer declares.
+    // No animations switch lives here: every HUD animation follows
+    // Appearance.Animations (Deckle.Hud.AnimationPreference). A settings file
+    // written by an older build may still carry "animations"; the deserializer
+    // ignores members this class no longer declares.
 
     // "Left" | "Right": which side of the primary display the live
     // transcript panel sits on.

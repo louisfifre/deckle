@@ -21,10 +21,10 @@ public partial class TaskbarCoverViewModel
     // A magnitude in device-independent pixels, a field with a slider
     // (2026-11-07), where three named levels sat in a ComboBox since
     // 2026-10-15: the maintainer asked for a distance to sweep while the
-    // preview under the card shows it on the screen. The unit is "px", the
-    // Windows word for an effective pixel, the unit XAML lays out in; the
-    // description says it follows the display scale, and the preview's
-    // readout gives the figure in this display's own pixels. The slider's
+    // preview under the card shows it on the screen. The unit is "DIP", not
+    // "px": "px" read as physical pixels (the maintainer's report on the first
+    // build of this card). The description defines DIP once, and the
+    // preview's readout gives the figure in this display's own pixels. The slider's
     // every detent reaches ApproachDistancePreviewed; the setting itself is
     // written at the release.
     public IReadOnlyList<SettingDescriptor> RevealManifest =>
@@ -36,7 +36,7 @@ public partial class TaskbarCoverViewModel
             new MagnitudeArgs(
                 ApproachDistance.MinimumDip,
                 ApproachDistance.MaximumDip,
-                Unit: "px",
+                Unit: ApproachDistance.UnitLabel,
                 Integer: true,
                 Preview: value => ApproachDistancePreviewed?.Invoke(ApproachDistance.Clamp((int)Math.Round(value)))),
             visibleWhen: () => Enabled,

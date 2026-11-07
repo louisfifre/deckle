@@ -1,7 +1,10 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Deckle.Catalog;
+using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace Deckle.Orchestration;
 
@@ -23,6 +26,12 @@ public sealed partial class AppEntryRow : ObservableObject
     // mistaken for a user change.
     private bool _syncing;
 
+    private readonly ExecutableIconCache _icons;
+
+    // Cancelled when the executable changes or the row is dropped, so a slow
+    // read never lands an old icon on a new path.
+    private CancellationTokenSource? _iconLoad;
+
     public string Id { get; }
 
     public string DisplayName { get; }
@@ -40,6 +49,11 @@ public sealed partial class AppEntryRow : ObservableObject
     [ObservableProperty]
     public partial int KindIndex { get; set; }
 
+    // The executable's own icon, or null: no icon is drawn, never a stand-in.
+    // Set once the shell has answered, so the header first shows without it.
+    [ObservableProperty]
+    public partial IconElement? HeaderIcon { get; set; }
+
     // The cards inside the expander: kind, executable, then one per
     // HDR-capable monitor.
     public ObservableCollection<object> Items { get; } = new();
@@ -49,8 +63,10 @@ public sealed partial class AppEntryRow : ObservableObject
         Action<AppEntryRow, bool> onEnabledChanged,
         Action<AppEntryRow, AppKind> onKindChanged,
         Action<AppEntryRow> onRemoved,
-        Action<AppEntryRow, string, HdrRule> onHdrChanged)
+        Action<AppEntryRow, string, HdrRule> onHdrChanged,
+        ExecutableIconCache icons)
     {
+        _icons = icons;
         Id = entry.Id;
         DisplayName = entry.DisplayName;
         _onEnabledChanged = onEnabledChanged;
@@ -88,6 +104,9 @@ public sealed partial class AppEntryRow : ObservableObject
         _syncing = true;
         try
         {
+            if (!string.Equals(ExecutablePath, entry.ExecutablePath, StringComparison.OrdinalIgnoreCase)
+                || (HeaderIcon is null && _iconLoad is null))
+                LoadIcon(entry.ExecutablePath);
             ExecutablePath = entry.ExecutablePath;
             Description = entry.ExecutablePath ?? entry.InstallDirectory;
             Enabled = entry.Enabled;
@@ -99,6 +118,32 @@ public sealed partial class AppEntryRow : ObservableObject
         finally
         {
             _syncing = false;
+        }
+    }
+
+    // Fire and forget by design: the icon is a courtesy. The await resumes on
+    // the UI thread (the row is built there), where the bitmap must be made.
+    private async void LoadIcon(string? path)
+    {
+        _iconLoad?.Cancel();
+        _iconLoad?.Dispose();
+        _iconLoad = null;
+        HeaderIcon = null;
+        if (path is null) return;
+
+        var load = _iconLoad = new CancellationTokenSource();
+        try
+        {
+            ExecutableIcon? icon = await _icons.GetAsync(path, load.Token);
+            if (icon is null || load.IsCancellationRequested) return;
+
+            var bitmap = new WriteableBitmap(icon.Width, icon.Height);
+            icon.Bgra.CopyTo(bitmap.PixelBuffer);
+            HeaderIcon = new ImageIcon { Source = bitmap };
+        }
+        catch (OperationCanceledException)
+        {
+            // The executable changed or the row went away: nothing to show.
         }
     }
 

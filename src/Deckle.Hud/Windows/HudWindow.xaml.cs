@@ -99,7 +99,7 @@ public sealed partial class HudWindow : Window
 
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
-        SystemAnimationPreference.Instance.Changed += OnSystemAnimationsChanged;
+        AnimationPreference.Instance.Changed += OnAnimationPreferenceChanged;
 
         _dpiScale = Dpi.ScaleOf(NativeMethods.GetDpiForWindow(_hwnd));
 
@@ -214,7 +214,7 @@ public sealed partial class HudWindow : Window
     public void OnUtteranceProgress(bool active, float progress, int completed)
         => Chrono.UpdateUtteranceProgress(active, progress, completed);
 
-    private void OnSystemAnimationsChanged(bool enabled)
+    private void OnAnimationPreferenceChanged(bool enabled)
     {
         EnqueueUI(() =>
         {

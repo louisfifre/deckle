@@ -48,15 +48,16 @@ public sealed class UtteranceProgressTests
         var segmenter = new EnergySegmenter(Settings(), VoiceLevel, MinSpeechMs, emitted.Add);
 
         PushN(segmenter, voiced: true, count: 6);
-        segmenter.Push(Frame(voiced: false));
+        // The pause shows after 4 silent frames (200 ms), not before.
+        PushN(segmenter, voiced: false, count: 4);
 
         Assert.Empty(emitted);
         Assert.True(segmenter.Progress.IsPausing);
-        Assert.Equal(50, segmenter.Progress.SilenceElapsedMs);
+        Assert.Equal(200, segmenter.Progress.SilenceElapsedMs);
         Assert.Equal(400, segmenter.Progress.SilenceRequiredMs);
-        Assert.Equal(0.125f, segmenter.Progress.Fraction, 3);
+        Assert.Equal(0.5f, segmenter.Progress.Fraction, 3);
 
-        PushN(segmenter, voiced: false, count: 6);
+        PushN(segmenter, voiced: false, count: 3);
         Assert.Empty(emitted);
         Assert.Equal(0.875f, segmenter.Progress.Fraction, 3);
         segmenter.Push(Frame(voiced: false));
@@ -98,10 +99,11 @@ public sealed class UtteranceProgressTests
             Settings(), VoiceLevel, MinSpeechMs, _ => { }, entryMarginDb: margin);
 
         PushN(segmenter, voiced: true, count: 6);
-        segmenter.Push(FrameAtDbfs(detector.ExitDbfs - 0.5));
+        for (int i = 0; i < EnergySegmenter.PauseDisplayFrames; i++)
+            segmenter.Push(FrameAtDbfs(detector.ExitDbfs - 0.5));
 
         Assert.True(segmenter.Progress.IsPausing);
-        Assert.Equal(50, segmenter.Progress.SilenceElapsedMs);
+        Assert.Equal(200, segmenter.Progress.SilenceElapsedMs);
 
         segmenter.Push(FrameAtDbfs(between));
 
@@ -140,9 +142,10 @@ public sealed class UtteranceProgressTests
         PushN(segmenter, voiced: true, count: 25);
         segmenter.Push(Frame(voiced: false));
 
+        // Counting has started (the cut below proves it) but the display waits.
         Assert.Empty(emitted);
-        Assert.True(segmenter.Progress.IsPausing);
-        Assert.Equal(50, segmenter.Progress.SilenceElapsedMs);
+        Assert.False(segmenter.Progress.IsPausing);
+        Assert.Equal(0, segmenter.Progress.SilenceElapsedMs);
         Assert.Equal(100, segmenter.Progress.SilenceRequiredMs);
 
         segmenter.Push(Frame(voiced: false));
