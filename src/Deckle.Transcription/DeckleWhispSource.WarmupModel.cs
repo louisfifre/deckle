@@ -214,15 +214,20 @@ public sealed partial class DeckleWhispSource
     // Opens the "no transcription" incident, once until a load succeeds.
     // reason is the backend's ErrorReason, load_failed when it gave none, or
     // load_exception when the load threw; ex_type and ex_message are empty
-    // unless it threw. The backend's own ModelLoadFailed carries the device.
+    // unless it threw. model_path is the file the load aimed at (redacted to
+    // its root token) and use_gpu what it asked for, as ModelLoadStarting says
+    // it; both are empty/false when the load threw before the backend could
+    // report them. The backend's own ModelLoadFailed carries the device that
+    // answered.
     [Event(EvtModelUnavailable,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The transcription model could not be loaded, so dictation cannot be transcribed\nwork_id={0} | reason={1} | ex_type={2} | ex_message={3}")]
-    public void ModelUnavailable(string work_id, string reason, string ex_type, string ex_message)
+           Message = "The transcription model could not be loaded, so dictation cannot be transcribed\nwork_id={0} | reason={1} | model_path={2} | use_gpu={3} | ex_type={4} | ex_message={5}")]
+    public void ModelUnavailable(string work_id, string reason, string model_path, bool use_gpu, string ex_type, string ex_message)
     {
-        if (IsEnabled()) WriteEvent(EvtModelUnavailable, work_id, reason, ex_type, ex_message);
+        if (IsEnabled())
+            WriteEvent(EvtModelUnavailable, work_id, reason, PathRedaction.Redact(model_path), use_gpu, ex_type, ex_message);
     }
 
     // A later attempt that fails while the incident is open.
