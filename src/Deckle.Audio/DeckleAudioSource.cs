@@ -18,7 +18,8 @@ public sealed class DeckleAudioSource : DeckleEventSource
     // ── EventIds: sequential from 1, never reused (public in the ETW manifest)
     // 1 retired.
     // 2 retired.
-    public const int EvtEmptyBufferReceived       = 3;
+    // 3 retired: the empty waveIn buffer; PortAudio reports no such buffer, a
+    //   device that delivers nothing is NoAudioDataDetected.
     public const int EvtLowAudioDetected          = 4;
     public const int EvtCaptureLagDetected        = 5;
     public const int EvtDurationCapReached        = 6;
@@ -33,7 +34,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     public const int EvtSettingsLoadWarning       = 15;
     public const int EvtSettingsLoadError         = 16;
     // 17 retired.
-    public const int EvtEmptyBufferReceivedDetail = 18;
+    // 18 retired: see 3.
     public const int EvtLowAudioDetectedDetail    = 19;
     public const int EvtCaptureLagDetectedDetail  = 20;
     public const int EvtDurationCapReachedDetail  = 21;
@@ -45,14 +46,14 @@ public sealed class DeckleAudioSource : DeckleEventSource
     public const int EvtAudioFileDecodedDetail     = 27;
     // 28 retired.
     // 29 retired.
-    public const int EvtEmptyBufferRecovered       = 30;
+    // 30 retired: see 3.
     // 31 retired: the per-take anomaly counts are RecordingAnomaliesSummary.
     public const int EvtCaptureLagRecovered        = 32;
     // 33 retired: see 31.
     public const int EvtRecordingStarted           = 34;
     public const int EvtCaptureStarted             = 35;
     public const int EvtMicrophoneOpenFailed       = 36;
-    public const int EvtMicrophoneStartFailed      = 37;
+    // 37 retired: folded into MicrophoneOpenFailed, whose stage names the call that failed.
     public const int EvtRecordingCompleted         = 38;
     public const int EvtRecordingFailed            = 39;
     public const int EvtNoAudioDataDetected        = 40;
@@ -73,6 +74,9 @@ public sealed class DeckleAudioSource : DeckleEventSource
     public const int EvtCaptureReleaseDetail       = 55;
     public const int EvtCaptureDrainDetail         = 56;
     public const int EvtRecordingAnomaliesSummary  = 57;
+    public const int EvtCaptureModeFallback        = 58;
+    public const int EvtMicrophoneDeviceLost       = 59;
+    public const int EvtMicrophonePropertiesLaunchFailed = 60;
 
     // ── Recording lifecycle (milestones + verbose mirrors) ──────────────
 
@@ -85,27 +89,34 @@ public sealed class DeckleAudioSource : DeckleEventSource
     // and share a work_id, so the file alone shows a recording that never
     // ended. The no-data, empty-buffer and lag warnings that fall between them
     // belong to it by position, and RecordingAnomaliesSummary closes their count.
+    // capture_mode is the processing mode obtained, raw or default; exclusive
+    // says Deckle held the device alone. The format is the device's own, which
+    // Deckle converts to 16 kHz mono itself, always 32-bit float. endpoint_id is
+    // the MMDevice id the settings keep.
     [Event(EvtRecordingStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
            Tags = ObservationTags.Milestone,
+           Version = 2,
            Message = "Recording started")]
-    public void RecordingStarted(string purpose, string device_name, int device_id, bool default_device, int sample_rate, int channels, int bits_per_sample, string work_id)
+    public void RecordingStarted(string purpose, string device_name, string endpoint_id, bool default_device, string capture_mode, bool exclusive, int sample_rate, int channels, string work_id)
     {
         if (IsEnabled())
-            WriteEvent(EvtRecordingStarted, purpose, device_name, device_id, default_device, sample_rate, channels, bits_per_sample, work_id);
+            WriteEvent(EvtRecordingStarted, purpose, device_name, endpoint_id, default_device, capture_mode, exclusive, sample_rate, channels, work_id);
     }
 
+    // input_latency_ms is the latency PortAudio reports for the opened stream.
     [Event(EvtCaptureStarted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "requested_device_id={0} | buffers={1} | buffer_bytes={2} | max_recording_s={3}")]
-    public void CaptureStarted(int requested_device_id, int buffers, int buffer_bytes, int max_recording_s)
+           Version = 2,
+           Message = "requested_endpoint_id={0} | input_latency_ms={1:F1} | exclusive={2} | max_recording_s={3}")]
+    public void CaptureStarted(string requested_endpoint_id, double input_latency_ms, bool exclusive, int max_recording_s)
     {
         if (OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Transcription, this,
                 EventLevel.Verbose, (EventKeywords)Keywords.Capture))
-            WriteEvent(EvtCaptureStarted, requested_device_id, buffers, buffer_bytes, max_recording_s);
+            WriteEvent(EvtCaptureStarted, requested_endpoint_id, input_latency_ms, exclusive, max_recording_s);
     }
 
     [Event(EvtRecordingCompleted,
@@ -143,19 +154,19 @@ public sealed class DeckleAudioSource : DeckleEventSource
             WriteEvent(EvtCaptureCompleted, audio_sec, buffers, bytes, rms_avg, rms_peak, dbfs_avg);
     }
 
-    // pending_buffers counts the headers still queued after waveInStop and the
-    // drain sleep: waveInStop returns only the current buffer, so a non-zero
-    // value is ordinary; tail_bytes is what the drain recovered.
+    // tail_ms is the audio still waiting in the device when the stop came,
+    // which the drain read in tail_reads reads before stopping the stream.
     [Event(EvtCaptureDrainDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "drain_ms={0,5} | tail_bytes={1,6} | pending_buffers={2,2}")]
-    public void CaptureDrainDetail(long drain_ms, int tail_bytes, int pending_buffers)
+           Version = 2,
+           Message = "drain_ms={0,5} | tail_ms={1,4} | tail_reads={2,2}")]
+    public void CaptureDrainDetail(long drain_ms, int tail_ms, int tail_reads)
     {
         if (OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Transcription, this,
                 EventLevel.Verbose, (EventKeywords)Keywords.Capture))
-            WriteEvent(EvtCaptureDrainDetail, drain_ms, tail_bytes, pending_buffers);
+            WriteEvent(EvtCaptureDrainDetail, drain_ms, tail_ms, tail_reads);
     }
 
     // Optional per-take diagnosis. Both the sentence and its measurements are
@@ -186,41 +197,75 @@ public sealed class DeckleAudioSource : DeckleEventSource
 
     // ── Microphone open and start ───────────────────────────────────────
 
+    // The microphone could not be made to deliver. stage names the step that
+    // was refused: load (portaudio.dll missing or not the expected build),
+    // initialize (Pa_Initialize), resolve (no default microphone, or the saved
+    // one is not plugged in), open (every mode refused) or start. error_code is
+    // the HRESULT Windows gave, in hex, or PortAudio's own error, in decimal,
+    // when Windows gave none (CaptureErrors).
     [Event(EvtMicrophoneOpenFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "The microphone could not be opened, so nothing is recorded\nmmsys_err={1} | mmsys_name={2} | device={4} | device_id={3} | purpose={0}")]
-    public void MicrophoneOpenFailed(string purpose, uint mmsys_err, string mmsys_name, int device_id, string device_name)
+           Version = 2,
+           Message = "The microphone could not be opened, so nothing is recorded\nstage={1} | error_code={2} | error_name={3} | device={5} | endpoint_id={4} | purpose={0}")]
+    public void MicrophoneOpenFailed(string purpose, string stage, string error_code, string error_name, string endpoint_id, string device_name)
     {
-        if (IsEnabled()) WriteEvent(EvtMicrophoneOpenFailed, purpose, mmsys_err, mmsys_name, device_id, device_name);
+        if (IsEnabled()) WriteEvent(EvtMicrophoneOpenFailed, purpose, stage, error_code, error_name, endpoint_id, device_name);
     }
 
-    // The device opened but could not be made to deliver: event creation
-    // (win32_error), header preparation, buffer queueing or waveInStart
-    // (mmsys_err). Before this event those codes were ignored and the take
-    // ran silent.
-    [Event(EvtMicrophoneStartFailed,
+    // The device was lost during a take: unplugged, disabled, or its format
+    // changed under the stream. The audio captured before it is kept and goes on
+    // through the pipeline; the take ends there.
+    [Event(EvtMicrophoneDeviceLost,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)(Keywords.Capture | Keywords.Lifecycle),
-           Message = "The microphone opened but could not start recording, so nothing is recorded\nstage={1} | mmsys_err={2} | mmsys_name={3} | win32_error={4} | device={6} | device_id={5} | purpose={0}")]
-    public void MicrophoneStartFailed(string purpose, string stage, uint mmsys_err, string mmsys_name, int win32_error, int device_id, string device_name)
+           Message = "The microphone was lost during the recording, so it ends here\nerror_code={1} | error_name={2} | elapsed_ms={5} | device={4} | endpoint_id={3} | purpose={0}")]
+    public void MicrophoneDeviceLost(string purpose, string error_code, string error_name, string endpoint_id, string device_name, long elapsed_ms)
     {
-        if (IsEnabled())
-            WriteEvent(EvtMicrophoneStartFailed, purpose, stage, mmsys_err, mmsys_name, win32_error, device_id, device_name);
+        if (IsEnabled()) WriteEvent(EvtMicrophoneDeviceLost, purpose, error_code, error_name, endpoint_id, device_name, elapsed_ms);
     }
 
-    // waveInReset, waveInStop, waveInUnprepareHeader or waveInClose refused at
-    // the end of a take. A refused close leaves the device held by this
-    // process, so a later open can fail with MMSYSERR_ALLOCATED. One incident
+    // What was asked of the audio stack and what it gave, one line per step
+    // down. reason is exclusive_refused (the device could not be held alone,
+    // so it is shared) or raw_refused (the device refused the raw processing
+    // mode, so the default one, with the driver's effects, is used). A fallback
+    // is a degradation, so it is a Warning, not a line of detail: the
+    // maintainer asked for the rawest signal and must see when the microphone
+    // did not give it.
+    [Event(EvtCaptureModeFallback,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "The microphone was opened in a less direct mode than asked for\nreason={1} | error_code={2} | error_name={3} | device={5} | endpoint_id={4} | purpose={0}")]
+    public void CaptureModeFallback(string purpose, string reason, string error_code, string error_name, string endpoint_id, string device_name)
+    {
+        if (IsEnabled()) WriteEvent(EvtCaptureModeFallback, purpose, reason, error_code, error_name, endpoint_id, device_name);
+    }
+
+    // The Recording page's link to the Windows microphone properties did not
+    // open them: the launcher refused the ms-settings URI or threw. target is
+    // default (the system default input) or device (the selected endpoint).
+    // The person clicked and nothing happened, so it is a Warning.
+    [Event(EvtMicrophonePropertiesLaunchFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "The Windows microphone properties did not open\ntarget={0}")]
+    public void MicrophonePropertiesLaunchFailed(string target)
+    {
+        if (IsEnabled()) WriteEvent(EvtMicrophonePropertiesLaunchFailed, target);
+    }
+
+    // The stream refused to stop at the end of a take. A device that will not
+    // let go can fail the next open with AUDCLNT_E_DEVICE_IN_USE. One incident
     // across takes: it opens on the first take that ends this way and closes
     // on the first clean one, which carries how many takes failed between.
     [Event(EvtCaptureReleaseFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "The microphone was not released cleanly, so the next recording may fail to open it\nstage={0} | mmsys_err={1} | mmsys_name={2}")]
-    public void CaptureReleaseFailed(string stage, uint mmsys_err, string mmsys_name)
+           Version = 2,
+           Message = "The microphone was not released cleanly, so the next recording may fail to open it\nstage={0} | error_code={1} | error_name={2}")]
+    public void CaptureReleaseFailed(string stage, string error_code, string error_name)
     {
-        if (IsEnabled()) WriteEvent(EvtCaptureReleaseFailed, stage, mmsys_err, mmsys_name);
+        if (IsEnabled()) WriteEvent(EvtCaptureReleaseFailed, stage, error_code, error_name);
     }
 
     [Event(EvtCaptureReleaseRecovered,
@@ -236,28 +281,31 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtCaptureReleaseDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "stage={0} | mmsys_err={1} | failures={2}")]
-    public void CaptureReleaseDetail(string stage, uint mmsys_err, int failures)
+           Version = 2,
+           Message = "stage={0} | error_code={1} | failures={2}")]
+    public void CaptureReleaseDetail(string stage, string error_code, int failures)
     {
         if (OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Transcription, this,
                 EventLevel.Verbose, (EventKeywords)Keywords.Capture))
-            WriteEvent(EvtCaptureReleaseDetail, stage, mmsys_err, failures);
+            WriteEvent(EvtCaptureReleaseDetail, stage, error_code, failures);
     }
 
-    // ── Anomalies Captured In The waveIn Loop ───────────────────────────
+    // ── Anomalies Captured In The Capture Loop ───────────────────────────
 
-    // A device that opens and starts but hands back nothing: every waveIn call
-    // succeeded, so no other event says the take is empty. reason is no_buffer
-    // when no buffer came back at all, empty_buffers when buffers came back
-    // with zero bytes.
+    // A device that opens and starts but hands back nothing: every call
+    // succeeded, so no other event says the take is empty. reason is no_data:
+    // no frame became ready for a second. A muted microphone, or one blocked
+    // by the Windows privacy setting, still delivers frames of silence, which
+    // the low-audio warning catches instead.
     [Event(EvtNoAudioDataDetected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "The microphone delivers no audio, so the recording is silent\nreason={0} | waited_ms={1} | device={3} | device_id={2}")]
-    public void NoAudioDataDetected(string reason, long waited_ms, int device_id, string device_name)
+           Version = 2,
+           Message = "The microphone delivers no audio, so the recording is silent\nreason={0} | waited_ms={1} | device={3} | endpoint_id={2}")]
+    public void NoAudioDataDetected(string reason, long waited_ms, string endpoint_id, string device_name)
     {
-        if (IsEnabled()) WriteEvent(EvtNoAudioDataDetected, reason, waited_ms, device_id, device_name);
+        if (IsEnabled()) WriteEvent(EvtNoAudioDataDetected, reason, waited_ms, endpoint_id, device_name);
     }
 
     [Event(EvtAudioDataRecovered,
@@ -268,37 +316,6 @@ public sealed class DeckleAudioSource : DeckleEventSource
     public void AudioDataRecovered(long waited_ms)
     {
         if (IsEnabled()) WriteEvent(EvtAudioDataRecovered, waited_ms);
-    }
-
-    [Event(EvtEmptyBufferReceived,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "An empty capture buffer was received")]
-    public void EmptyBufferReceived()
-    {
-        if (IsEnabled()) WriteEvent(EvtEmptyBufferReceived);
-    }
-
-    [Event(EvtEmptyBufferReceivedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "index={0}")]
-    public void EmptyBufferReceivedDetail(int index)
-    {
-        if (OperationalLogAdmission.IsScopedDetailEnabled(
-                OperationalLogActivity.Transcription, this,
-                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
-            WriteEvent(EvtEmptyBufferReceivedDetail, index);
-    }
-
-    [Event(EvtEmptyBufferRecovered,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Milestone,
-           Message = "Capture buffers recovered")]
-    public void EmptyBufferRecovered()
-    {
-        if (IsEnabled()) WriteEvent(EvtEmptyBufferRecovered);
     }
 
     [Event(EvtLowAudioDetected,
@@ -322,32 +339,36 @@ public sealed class DeckleAudioSource : DeckleEventSource
             WriteEvent(EvtLowAudioDetectedDetail, recording_ms, min_sustained_ms, voice_level_dbfs);
     }
 
-    // buffers_ready is how many 50 ms buffers were waiting when the loop woke
-    // (3 or more is the threshold) and behind_ms is the audio they hold, the
-    // least the consumer had fallen behind by. The first lag of a recording
-    // opens the incident; later ones only count in RecordingAnomaliesSummary.
+    // behind_ms is the audio waiting in the device when the loop woke (60 ms
+    // or more is the threshold, CaptureLoop.LagThresholdMs): the least the
+    // consumer had fallen behind by. PortAudio does not report audio the device
+    // discarded, so a backlog is the only sign the loop came close to losing
+    // some. The first lag of a recording opens the incident; later ones only
+    // count in RecordingAnomaliesSummary.
     [Event(EvtCaptureLagDetected,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "The capture loop fell behind the microphone\nbuffers_ready={0} | behind_ms={1}")]
-    public void CaptureLagDetected(int buffers_ready, int behind_ms)
+           Version = 2,
+           Message = "The capture loop fell behind the microphone\nbehind_ms={0}")]
+    public void CaptureLagDetected(int behind_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtCaptureLagDetected, buffers_ready, behind_ms);
+        if (IsEnabled()) WriteEvent(EvtCaptureLagDetected, behind_ms);
     }
 
     // gc0/gc1/gc2 are the collections that happened DURING the lagging
     // iteration (the one whose body caused the pile-up), not a running total
-    // since recording start — so a non-zero value indicts that GC directly.
+    // since recording start, so a non-zero value indicts that GC directly.
     [Event(EvtCaptureLagDetectedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "buffers_ready={0} | iter={1} | wait_ms={2} | prev_iter_ms={3} | gc0={4} | gc1={5} | gc2={6}")]
-    public void CaptureLagDetectedDetail(int buffers_ready, long iter, long wait_ms, long prev_iter_ms, int gc0, int gc1, int gc2)
+           Version = 2,
+           Message = "behind_ms={0} | iter={1} | wait_ms={2} | prev_iter_ms={3} | gc0={4} | gc1={5} | gc2={6}")]
+    public void CaptureLagDetectedDetail(int behind_ms, long iter, long wait_ms, long prev_iter_ms, int gc0, int gc1, int gc2)
     {
         if (OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Transcription, this,
                 EventLevel.Verbose, (EventKeywords)Keywords.Capture))
-            WriteEvent(EvtCaptureLagDetectedDetail, buffers_ready, iter, wait_ms, prev_iter_ms, gc0, gc1, gc2);
+            WriteEvent(EvtCaptureLagDetectedDetail, behind_ms, iter, wait_ms, prev_iter_ms, gc0, gc1, gc2);
     }
 
     [Event(EvtCaptureLagRecovered,
@@ -360,29 +381,28 @@ public sealed class DeckleAudioSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtCaptureLagRecovered);
     }
 
-    // One line per recording that met any of the three anomalies above, written
-    // when the loop ends and whatever the verbosity: a recording that ends while
-    // an anomaly is still open leaves the Warning in the log and no closer,
-    // so this is the line that says how far it went. A recording with none of
-    // them writes nothing. *_recovered is false when the anomaly was still open
-    // at the end (and when its own count is 0); lag_max_buffers_ready is the
-    // worst pile-up seen.
+    // One line per recording that met either anomaly above, written when the
+    // loop ends and whatever the verbosity: a recording that ends while an
+    // anomaly is still open leaves the Warning in the log and no closer, so
+    // this is the line that says how far it went. A recording with neither
+    // writes nothing. *_recovered is false when the anomaly was still open at
+    // the end (and when its own count is 0); lag_max_behind_ms is the worst
+    // backlog seen.
     [Event(EvtRecordingAnomaliesSummary,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Capture,
            Tags = ObservationTags.Milestone,
+           Version = 2,
            Message = "Recording anomalies")]
     public void RecordingAnomaliesSummary(
         int no_data_stalls, long no_data_longest_gap_ms, bool no_data_recovered,
-        int empty_buffer_occurrences, bool empty_buffer_recovered,
-        int lag_occurrences, bool lag_recovered, int lag_max_buffers_ready,
+        int lag_occurrences, bool lag_recovered, int lag_max_behind_ms,
         int recording_ms, string work_id)
     {
         if (IsEnabled())
             WriteEvent(EvtRecordingAnomaliesSummary,
                 no_data_stalls, no_data_longest_gap_ms, no_data_recovered,
-                empty_buffer_occurrences, empty_buffer_recovered,
-                lag_occurrences, lag_recovered, lag_max_buffers_ready,
+                lag_occurrences, lag_recovered, lag_max_behind_ms,
                 recording_ms, work_id);
     }
 
@@ -632,8 +652,8 @@ public sealed class DeckleAudioSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 
-    // The values a recording will read: the chosen device (-1 is the system
-    // default), the duration cap (0 is none), the opt-in DSP switch and the
+    // The values a recording will read: the chosen microphone's endpoint id (empty
+    // is the system default), the duration cap (0 is none), the opt-in DSP switch and the
     // voice level. The voice level is here because a monolithic take writes
     // no segmenter snapshot: this line is the only trace of the level its
     // low-audio warning read. Emitted at load and after each change, at the
@@ -642,11 +662,11 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtCaptureSettingsResolved,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Version = 1,
-           Message = "device_id={0} | max_recording_s={1} | preprocessing={2} | voice_level_dbfs={3}")]
-    public void CaptureSettingsResolved(int device_id, int max_recording_s, bool preprocessing, double voice_level_dbfs)
+           Version = 2,
+           Message = "endpoint_id={0} | max_recording_s={1} | preprocessing={2} | voice_level_dbfs={3}")]
+    public void CaptureSettingsResolved(string endpoint_id, int max_recording_s, bool preprocessing, double voice_level_dbfs)
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtCaptureSettingsResolved, device_id, max_recording_s, preprocessing, voice_level_dbfs);
+            WriteEvent(EvtCaptureSettingsResolved, endpoint_id, max_recording_s, preprocessing, voice_level_dbfs);
     }
 }

@@ -797,7 +797,7 @@ public sealed class LiveTranscriptionPipelineTests
         // Set to make the next probes fail the way an unplugged microphone does.
         public bool ProbeFails { get; set; }
 
-        public ProbeResult Probe(int deviceId) => ProbeFails
+        public ProbeResult Probe(string endpointId) => ProbeFails
             ? new(false, MicErrorKind.NotDetected, 2)
             : new(true, MicErrorKind.None, 0);
 
@@ -832,7 +832,7 @@ public sealed class LiveTranscriptionPipelineTests
                 Telemetry: null,
                 _outcome,
                 TimeSpan.Zero,
-                MmsysErr: 0);
+                ErrorCode: 0);
         }
 
         public void Dispose() { }

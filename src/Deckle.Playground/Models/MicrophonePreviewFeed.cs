@@ -17,13 +17,14 @@ namespace Deckle.Playground;
 // and no gauge reaches the preview, and the caller can change the preview's
 // state right after Stop with no late level landing on the new state.
 //
-// Whether waveIn lets this open while a live dictation holds the microphone is
-// not known from the code. Both outcomes are handled the same way: an open
+// Whether Windows lets this open while a live dictation holds the microphone
+// is not known from the code (a shared-mode WASAPI stream usually can, raw
+// mode included, but a driver may refuse). Both outcomes are handled the same way: an open
 // that fails is reported to onFailed and the caller moves to the simulation.
 internal sealed class MicrophonePreviewFeed
 {
     private readonly MicrophoneLevelFeed _feed;
-    private readonly Func<int> _deviceId;
+    private readonly Func<string> _endpointId;
     private readonly Func<EnergySegmenterSettings> _segmenterSettings;
     private readonly Func<double> _voiceLevelDbfs;
     private readonly Func<int> _minSpeechMs;
@@ -35,13 +36,13 @@ internal sealed class MicrophonePreviewFeed
     private UtteranceProgressMeter? _meter;
     private PreviewHost? _host;
 
-    // createCapture, deviceId, segmenterSettings, voiceLevelDbfs and minSpeechMs
+    // createCapture, endpointId, segmenterSettings, voiceLevelDbfs and minSpeechMs
     // are read at each Start, as a dictation reads them when it begins. onLevel and
     // onProgress are called from the capture thread; onFailed too, once, and
     // never for a run that was stopped.
     public MicrophonePreviewFeed(
         Func<IMicrophoneCapture> createCapture,
-        Func<int> deviceId,
+        Func<string> endpointId,
         Func<EnergySegmenterSettings> segmenterSettings,
         Func<double> voiceLevelDbfs,
         Func<int> minSpeechMs,
@@ -49,7 +50,7 @@ internal sealed class MicrophonePreviewFeed
         Action<UtteranceProgress> onProgress,
         Action<MicrophonePreviewFailure> onFailed)
     {
-        _deviceId = deviceId;
+        _endpointId = endpointId;
         _segmenterSettings = segmenterSettings;
         _voiceLevelDbfs = voiceLevelDbfs;
         _minSpeechMs = minSpeechMs;
@@ -74,7 +75,7 @@ internal sealed class MicrophonePreviewFeed
     {
         double voiceLevelDbfs = _voiceLevelDbfs();
         var meter = new UtteranceProgressMeter(_segmenterSettings(), voiceLevelDbfs, _minSpeechMs());
-        int device = _deviceId();
+        string device = _endpointId();
 
         if (_feed.RestartOpenRun(() =>
             {
@@ -103,9 +104,9 @@ internal sealed class MicrophonePreviewFeed
     // a preview does not read as a dictation in the log. The voice level is the
     // one the meter cuts on; the low-audio warning that reads it stays off for
     // a take that keeps no audio.
-    private sealed class PreviewHost(int deviceId, double voiceLevelDbfs) : IAudioRecordingHost
+    private sealed class PreviewHost(string endpointId, double voiceLevelDbfs) : IAudioRecordingHost
     {
-        public int AudioInputDeviceId => deviceId;
+        public string AudioInputEndpointId => endpointId;
         public int MaxRecordingDurationSeconds => 0;
         public bool MicrophoneTelemetryEnabled => false;
         public double VoiceLevelDbfs => voiceLevelDbfs;

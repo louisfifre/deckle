@@ -19,8 +19,10 @@ public sealed class CaptureTableTemplateTests
         },
         {
             nameof(DeckleAudioSource.CaptureDrainDetail),
+            // tail_ms is bounded by the shared device buffer (200 ms), so four
+            // digits hold it with room; tail_reads is a handful of reads.
             [0L, 0, 0],
-            [99999L, 999999, 4]
+            [99999L, 9999, 99]
         },
         {
             nameof(DeckleAudioSource.RecordingTailSummaryDetail),

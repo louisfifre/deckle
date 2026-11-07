@@ -18,13 +18,28 @@ public partial class RecordingViewModel : ObservableObject
 
     // ── Microphone ──────────────────────────────────────────────────────────
 
+    // The MMDevice endpoint id of the chosen microphone; empty is the system
+    // default, followed as Windows changes it.
     [ObservableProperty]
-    public partial int AudioInputDeviceId { get; set; }
+    public partial string AudioInputEndpointId { get; set; } = "";
 
-    partial void OnAudioInputDeviceIdChanged(int value)
+    partial void OnAudioInputEndpointIdChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Audio input device", value.ToString(CultureInfo.InvariantCulture));
+        // The id names a device, not a person: an endpoint id is a GUID Windows
+        // assigns, safe to log.
+        DeckleSettingsUxSource.Log.SettingChanged("Audio input device", value.Length == 0 ? "system default" : value);
+        PushToSettings();
+    }
+
+    // Hold the microphone alone while dictating (CaptureSettings.ExclusiveMode).
+    [ObservableProperty]
+    public partial bool ExclusiveMode { get; set; }
+
+    partial void OnExclusiveModeChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsUxSource.Log.SettingChanged("ExclusiveMode", value.ToString());
         PushToSettings();
     }
 
@@ -116,7 +131,7 @@ public partial class RecordingViewModel : ObservableObject
         {
             var capture = CaptureSettingsService.Instance.Current;
             MicLevelAssessment a = await new MicLevelTester()
-                .MeasureAsync(capture.AudioInputDeviceId, capture.Preprocessing, capture.VoiceLevelDbfs);
+                .MeasureAsync(capture.AudioInputEndpointId, capture.Preprocessing, capture.VoiceLevelDbfs);
 
             if (!a.HasSignal)
             {
@@ -164,10 +179,11 @@ public partial class RecordingViewModel : ObservableObject
         _isSyncing = true;
 
         // Seed from the POCO initializers, not hand-copied literals — the same
-        // single source the composer's reset defaults read. The device id has
-        // no composed default (runtime hardware enumeration), so its -1 sentinel
-        // stays an explicit literal here.
-        AudioInputDeviceId = -1;
+        // single source the composer's reset defaults read. The device has no
+        // composed default (runtime hardware enumeration); the POCO's empty id,
+        // the system default, is its default.
+        AudioInputEndpointId = new CaptureSettings().AudioInputEndpointId;
+        ExclusiveMode = new CaptureSettings().ExclusiveMode;
         VoiceLevelDbfs = new CaptureSettings().VoiceLevelDbfs;
         MaxRecordingDurationSeconds = new CaptureSettings().MaxRecordingDurationSeconds;
         PreprocessingEnabled = new PreprocessingSettings().Enabled;
@@ -182,7 +198,8 @@ public partial class RecordingViewModel : ObservableObject
         {
             var capture = CaptureSettingsService.Instance.Current;
 
-            AudioInputDeviceId = capture.AudioInputDeviceId;
+            AudioInputEndpointId = capture.AudioInputEndpointId;
+            ExclusiveMode = capture.ExclusiveMode;
             VoiceLevelDbfs = capture.VoiceLevelDbfs;
             MaxRecordingDurationSeconds = capture.MaxRecordingDurationSeconds;
             PreprocessingEnabled = capture.Preprocessing.Enabled;
@@ -197,7 +214,8 @@ public partial class RecordingViewModel : ObservableObject
     {
         var capture = CaptureSettingsService.Instance.Current;
 
-        capture.AudioInputDeviceId = AudioInputDeviceId;
+        capture.AudioInputEndpointId = AudioInputEndpointId;
+        capture.ExclusiveMode = ExclusiveMode;
         if (!double.IsNaN(VoiceLevelDbfs)) capture.VoiceLevelDbfs = VoiceLevelDbfs;
         capture.MaxRecordingDurationSeconds = MaxRecordingDurationSeconds;
         capture.Preprocessing.Enabled = PreprocessingEnabled;

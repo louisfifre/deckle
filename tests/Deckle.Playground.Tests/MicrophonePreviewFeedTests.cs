@@ -71,12 +71,12 @@ public sealed class MicrophonePreviewFeedTests
     [Fact]
     public void ItOpensTheConfiguredDeviceAndKeepsNoAudio()
     {
-        using var h = new Harness { Device = 7 };
+        using var h = new Harness { Device = "{0.0.1.00000000}.{mic-7}" };
         h.Feed.Start();
         var capture = h.WaitForCapture(0);
 
         var host = Assert.IsAssignableFrom<IAudioRecordingHost>(capture.Host);
-        Assert.Equal(7, host.AudioInputDeviceId);
+        Assert.Equal("{0.0.1.00000000}.{mic-7}", host.AudioInputEndpointId);
         Assert.False(host.RetainsAudio);
         Assert.Equal(0, host.MaxRecordingDurationSeconds);
         Assert.False(host.MicrophoneTelemetryEnabled);
@@ -129,10 +129,10 @@ public sealed class MicrophonePreviewFeedTests
     }
 
     [Theory]
-    [InlineData(2u, "not-detected")]
-    [InlineData(6u, "not-detected")]
-    [InlineData(4u, "in-use")]
-    [InlineData(7u, "unavailable")]
+    [InlineData(0x80070490u, "not-detected")]
+    [InlineData(0x88890004u, "not-detected")]
+    [InlineData(0x8889000Au, "in-use")]
+    [InlineData(0x80004005u, "unavailable")]
     public void AFailedOpenIsReportedWithItsKindAndCode(uint code, string cause)
     {
         using var h = new Harness();
@@ -142,7 +142,7 @@ public sealed class MicrophonePreviewFeedTests
         var failure = h.WaitForFailure();
 
         Assert.Equal(cause, failure.Cause);
-        Assert.Equal(code, failure.MmsysErr);
+        Assert.Equal(code, failure.ErrorCode);
         Assert.Equal(default, h.Progress.Last());
     }
 
@@ -157,7 +157,7 @@ public sealed class MicrophonePreviewFeedTests
 
         Assert.Equal("exception", failure.Cause);
         Assert.Equal(nameof(InvalidOperationException), failure.ExceptionType);
-        Assert.Equal(0u, failure.MmsysErr);
+        Assert.Equal(0u, failure.ErrorCode);
         Assert.DoesNotContain("private", failure.ToString());
         Assert.Equal(default, h.Progress.Last());
     }
@@ -245,7 +245,7 @@ public sealed class MicrophonePreviewFeedTests
         public void Raise(float rms) => AudioLevel?.Invoke(rms);
         public void ReleaseDevice() => _deviceHeld.Set();
 
-        public ProbeResult Probe(int deviceId) => new(true, MicErrorKind.None, 0);
+        public ProbeResult Probe(string endpointId) => new(true, MicErrorKind.None, 0);
 
         public CaptureResult Record(IAudioRecordingHost host, CancellationToken cancellationToken)
         {
@@ -273,7 +273,7 @@ public sealed class MicrophonePreviewFeedTests
     // The defaults a dictation's host carries, to compare the purpose against.
     private sealed class DefaultHost : IAudioRecordingHost
     {
-        public int AudioInputDeviceId => 0;
+        public string AudioInputEndpointId => "";
         public int MaxRecordingDurationSeconds => 0;
         public bool MicrophoneTelemetryEnabled => false;
         public double VoiceLevelDbfs => VoiceLevel;
@@ -289,14 +289,14 @@ public sealed class MicrophonePreviewFeedTests
         public ConcurrentQueue<float> Levels { get; } = new();
         public ConcurrentQueue<UtteranceProgress> Progress { get; } = new();
         public ConcurrentQueue<MicrophonePreviewFailure> Failures { get; } = new();
-        public int Device { get; set; } = 1;
+        public string Device { get; set; } = "{0.0.1.00000000}.{mic-1}";
         public MicrophonePreviewFeed Feed { get; }
 
         public Harness()
         {
             Feed = new MicrophonePreviewFeed(
                 createCapture: CreateCapture,
-                deviceId: () => Device,
+                endpointId: () => Device,
                 segmenterSettings: TestSettings,
                 voiceLevelDbfs: () => VoiceLevel,
                 minSpeechMs: () => MinSpeechMs,

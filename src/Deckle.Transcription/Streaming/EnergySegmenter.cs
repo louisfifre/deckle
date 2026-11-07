@@ -47,7 +47,7 @@ internal readonly record struct SegmenterSnapshot(
 // All durations resolve to whole 50 ms frames (the capture sub-window size).
 internal sealed class EnergySegmenter
 {
-    // A capture sub-window is a fixed 50 ms / 800-sample frame (WaveInLoop only
+    // A capture sub-window is a fixed 50 ms / 800-sample frame (the capture's SubWindowAssembler only
     // emits full sub-windows), so every frame carries the same duration.
     private const double FrameMs  = 50.0;
     private const double FrameSec = FrameMs / 1000.0;

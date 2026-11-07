@@ -156,7 +156,7 @@
   <!-- ─── Microphone errors ──────────────────────────────────────────
        UserFeedback pairs raised by TranscriptionEngine.LocalizeMicError when
        MicrophoneCapture.Probe / Record returns a MicErrorKind. The
-       Unavailable body interpolates the raw MMSYSERR code as {0}
+       Unavailable body interpolates the raw error code as {0} (a Windows HRESULT in hex, or a PortAudio error in decimal)
        for diagnostic clarity. -->
 
   <!-- ─── HUD ────────────────────────────────────────────────────────

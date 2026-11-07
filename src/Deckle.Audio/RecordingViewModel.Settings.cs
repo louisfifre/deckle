@@ -10,7 +10,7 @@ namespace Deckle.Audio;
 // its kind, its localization key, its glyph, and typed selectors onto this VM's
 // own properties — and SettingsComposer turns the list into SettingsCards.
 //
-// The microphone ComboBox (runtime waveIn enumeration, the page's untitled top
+// The microphone ComboBox (runtime PortAudio enumeration, the page's untitled top
 // card) and the mic-check and listening-test commands + InfoBars (diagnostic
 // readouts in the Checks section, not values) stay hand-authored in the page —
 // neither fits the flat get/set descriptor model.
@@ -48,6 +48,17 @@ public partial class RecordingViewModel
                 (7200, "RecordingLimit2Hours"),
             ],
             defaultValue: () => new CaptureSettings().MaxRecordingDurationSeconds),
+    ];
+
+    // Exclusive access to the microphone, off by default (it locks every other
+    // application out of the microphone while a dictation runs). The default
+    // reads the POCO initializer.
+    public IReadOnlyList<SettingDescriptor> ExclusiveModeSettings =>
+    [
+        Setting.Toggle("RecordingExclusiveModeCard",
+            () => ExclusiveMode,
+            value => ExclusiveMode = value,
+            defaultValue: () => new CaptureSettings().ExclusiveMode),
     ];
 
     // Transcription pre-processing (the DSP black box). A single opt-in toggle.

@@ -28,9 +28,18 @@ public sealed class MicrophonePreviewFailureTests
     [Fact]
     public void AnUnexplainedOpenFailureNamesItsErrorCode()
     {
-        var failure = new MicrophonePreviewFailure(MicrophoneProblem.Unavailable, 32);
+        // An HRESULT from Windows, as Microsoft documents it: in hex.
+        var failure = new MicrophonePreviewFailure(MicrophoneProblem.Unavailable, 0x80004005);
 
-        Assert.Contains("32", failure.Reason);
+        Assert.Contains("0x80004005", failure.Reason);
+    }
+
+    [Fact]
+    public void APortAudioErrorIsNamedInDecimalAsItsHeaderListsIt()
+    {
+        var failure = new MicrophonePreviewFailure(MicrophoneProblem.Unavailable, unchecked((uint)-9986));
+
+        Assert.Contains("-9986", failure.Reason);
     }
 
     [Fact]

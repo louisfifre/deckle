@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Deckle.Audio.Internal;
 using Deckle.Core;
 
 namespace Deckle.Audio;
@@ -49,7 +50,7 @@ public sealed class CaptureSettingsService
             logVerbose:  msg => DeckleAudioSource.Log.SettingsLoadComplete(msg),
             logWarning:  msg => DeckleAudioSource.Log.SettingsLoadWarning(msg),
             logError:    msg => DeckleAudioSource.Log.SettingsLoadError(msg),
-            postLoadMigration: ApplyPostLoadMigrations);
+            postLoadMigration: settings => ApplyPostLoadMigrations(settings));
 
         // The values every recording reads, once at load and again after each
         // save, reload or external edit, so a take's device and cap can be
@@ -60,7 +61,7 @@ public sealed class CaptureSettingsService
 
     private static void LogResolved(CaptureSettings settings)
         => DeckleAudioSource.Log.CaptureSettingsResolved(
-            settings.AudioInputDeviceId,
+            settings.AudioInputEndpointId,
             settings.MaxRecordingDurationSeconds,
             settings.Preprocessing?.Enabled ?? false,
             settings.VoiceLevelDbfs);
@@ -76,16 +77,68 @@ public sealed class CaptureSettingsService
     //
     // The SchemaVersion stamp makes the rewrite run once. Without it, a user
     // who later picks 20 minutes on purpose would see that choice wiped back
-    // to "no limit" at every launch.
-    internal static bool ApplyPostLoadMigrations(CaptureSettings settings)
+    // to "no limit" at every launch; each step therefore runs only for a file
+    // older than the version that introduced it.
+    //
+    // resolveLegacyDevice turns a waveIn device index into an endpoint id; the
+    // production one asks the driver, a test passes its own.
+    internal static bool ApplyPostLoadMigrations(
+        CaptureSettings settings, Func<int, string?>? resolveLegacyDevice = null)
     {
-        if (settings.SchemaVersion >= CaptureSettings.CurrentSchemaVersion)
+        bool changed = false;
+
+        if (settings.SchemaVersion < 1)
+        {
+            if (settings.MaxRecordingDurationSeconds == LegacyDefaultMaxRecordingDurationSeconds)
+                settings.MaxRecordingDurationSeconds = 0;
+            changed = true;
+        }
+
+        // The microphone moved from a waveIn index to an endpoint id. Keyed on
+        // the legacy value being present, not on the version, so a file that
+        // somehow carries both is still cleaned.
+        // A saved device that is not plugged in at this launch cannot be
+        // resolved: its index is then kept, and the migration tries again at
+        // the next launch, so a choice is not lost to a headset left unplugged
+        // on the day of the upgrade. Meanwhile the system default is used.
+        if (settings.AudioInputDeviceId is int legacyIndex)
+        {
+            if (MigrateLegacyDevice(settings, legacyIndex, resolveLegacyDevice ?? LegacyWaveInDeviceMap.EndpointIdOf))
+            {
+                settings.AudioInputDeviceId = null;
+                changed = true;
+            }
+        }
+
+        if (settings.SchemaVersion < CaptureSettings.CurrentSchemaVersion)
+        {
+            settings.SchemaVersion = CaptureSettings.CurrentSchemaVersion;
+            changed = true;
+        }
+        return changed;
+    }
+
+    // -1 was the system default, which is what an empty endpoint id means. An
+    // index that resolves to no endpoint (the device is unplugged, or the
+    // driver does not answer) leaves the system default in use for now and
+    // says so. True when the legacy index is settled and can be dropped.
+    private static bool MigrateLegacyDevice(
+        CaptureSettings settings, int legacyIndex, Func<int, string?> resolve)
+    {
+        if (legacyIndex < 0 || !string.IsNullOrEmpty(settings.AudioInputEndpointId))
+            return true;
+
+        string? endpointId = resolve(legacyIndex);
+        if (endpointId is null)
+        {
+            DeckleAudioSource.Log.SettingsLoadWarning(
+                $"The saved microphone (waveIn index {legacyIndex}) matches no device now, so the system default microphone is used until it is found");
             return false;
+        }
 
-        if (settings.MaxRecordingDurationSeconds == LegacyDefaultMaxRecordingDurationSeconds)
-            settings.MaxRecordingDurationSeconds = 0;
-
-        settings.SchemaVersion = CaptureSettings.CurrentSchemaVersion;
+        settings.AudioInputEndpointId = endpointId;
+        DeckleAudioSource.Log.SettingsLoaded(
+            $"The saved microphone (waveIn index {legacyIndex}) was migrated to endpoint {endpointId}");
         return true;
     }
 

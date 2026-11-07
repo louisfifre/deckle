@@ -202,8 +202,8 @@ public sealed partial class TranscriptionEngine
 
         if (capture.Outcome == CaptureOutcome.MicError)
         {
-            var (title, body) = LocalizeMicError(MicErrorKind.Unavailable, capture.MmsysErr);
-            OpenMicrophoneIncident("capture", capture.MmsysErr);
+            var (title, body) = LocalizeMicError(MicErrorKind.Unavailable, capture.ErrorCode);
+            OpenMicrophoneIncident("capture", capture.ErrorCode);
             EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
             FinishTake(TranscriptionOutcome.None, TakeEndReasons.MicrophoneError);
             return null;
