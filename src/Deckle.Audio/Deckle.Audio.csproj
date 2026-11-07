@@ -21,12 +21,16 @@
 
   <!-- portaudio.dll, the microphone capture's native backend, built by
        scripts/setup/build-portaudio.ps1 and committed with its license and
-       provenance. Content flows to every project that references this one
-       (the app, the tests) and into a publish, at the output root where the
-       P/Invoke loader looks first. -->
+       provenance. A None item, not Content: with EnableMsixTooling, a
+       library's Content lands in the app under a folder named after the
+       library (Deckle.Audio\portaudio.dll), where the P/Invoke loader, held to
+       the assembly directory and System32 (PortAudioInterop.cs), never looks;
+       the tests got it at their root, so they passed while the app had no
+       microphone. None flows to every referencing project and to a publish at
+       the output root. -->
   <ItemGroup>
-    <Content Include="Native\win-x64\portaudio.dll" Link="portaudio.dll" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="Native\win-x64\portaudio.LICENSE.txt" Link="portaudio.LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Native\win-x64\portaudio.dll" Link="portaudio.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="Native\win-x64\portaudio.LICENSE.txt" Link="portaudio.LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1959,6 +1959,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PcmBufferTests.cs
 │   │   ├── PcmConversionTests.cs
 │   │   ├── PortAudioCaptureSystemTests.cs
+│   │   ├── PortAudioDeploymentBugNotes.md
+│   │   ├── PortAudioDeploymentTests.cs
 │   │   ├── PortAudioInteropTests.cs
 │   │   ├── StreamingResamplerTests.cs
 │   │   ├── SubWindowAssemblerTests.cs
