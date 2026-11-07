@@ -3,7 +3,7 @@ namespace Deckle.Autocorrect;
 public enum CorrectionReason
 {
     /// <summary>Accent restoration settled without the pair model: a single accented
-    /// variant, or a morphological rule of the typo stage.</summary>
+    /// variant.</summary>
     LexicalGate,
     /// <summary>Ambiguity resolved by the left-context pair model, above margin.</summary>
     ContextPair,
@@ -13,12 +13,8 @@ public enum CorrectionReason
     PersonalWord,
     /// <summary>A non-word spell-fixed to a common French word one or two keyboard edits away.</summary>
     TypoCorrection,
-    /// <summary>A dropped elision apostrophe restored in a glued proclitic (cest → c'est).</summary>
-    Elision,
     /// <summary>The first word of a sentence raised to a capital.</summary>
     Capitalization,
-    /// <summary>A verb re-conjugated to agree with its adjacent subject pronoun.</summary>
-    SubjectVerbAgreement,
     /// <summary>Dev-only toy hotstring.</summary>
     ToyHotstring,
     /// <summary>An approved mistouch family repaired the span behind the caret (qu;il → qu'il).</summary>

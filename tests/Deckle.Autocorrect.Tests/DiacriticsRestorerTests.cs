@@ -297,33 +297,6 @@ public class DiacriticsRestorerTests
         Assert.Equal(CorrectionReason.LexicalGate, ecole.Reason);
     }
 
-    [Fact]
-    [Trait("Category", "integration")]
-    public void PackagedMorphologyRestoresPrepareAfterJe()
-    {
-        string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
-        FrequencyLexicon french = FrequencyLexicon.LoadTsvGz(Path.Combine(
-            dataDir, AutocorrectLexiconArtifacts.FrenchFileName));
-        AutocorrectPolicySet policies = AutocorrectPolicySet.Create(
-            french,
-            english: null,
-            AccentIndex.Build(french),
-            context: BigramPairDisambiguator.LoadTsvGz(Path.Combine(
-                dataDir, AutocorrectLexiconArtifacts.PairBigramsFrenchFileName)),
-            verbs: VerbMorphology.LoadTsvGz(Path.Combine(
-                dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName)));
-        var trace = new CorrectionTrace();
-
-        CorrectionDecision? decision = policies.Policy.Evaluate("prepare", ["je"], trace);
-
-        Assert.True(
-            decision is not null,
-            $"{trace.RenderTrail()} | {trace.RenderCandidates()} | {trace.RenderGauges()}");
-        Assert.True(
-            decision!.Replacement == "prépare",
-            $"{trace.RenderTrail()} | {trace.RenderCandidates()} | {trace.RenderGauges()}");
-    }
-
     // ── Stubs ───────────────────────────────────────────────────────────────
 
     private sealed class StubDisambiguator(string? chosen) : IPairDisambiguator

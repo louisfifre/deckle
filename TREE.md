@@ -538,8 +538,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── pack-en-it.tsv.gz
 │   │   │   ├── pack-fr-it.manifest.json
 │   │   │   ├── pack-fr-it.tsv.gz
-│   │   │   ├── pair-bigrams-fr.tsv.gz
-│   │   │   └── verbs-fr.tsv.gz
+│   │   │   └── pair-bigrams-fr.tsv.gz
 │   │   ├── Engine/
 │   │   │   ├── AutocorrectEngine.Commit.cs
 │   │   │   ├── AutocorrectEngine.cs
@@ -552,12 +551,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── CasePattern.cs
 │   │   │   ├── CompositeCorrectionPolicy.cs
 │   │   │   ├── ConservativeTypoCorrector.cs
-│   │   │   ├── ConservativeTypoCorrector.Morphology.cs
 │   │   │   ├── CorrectionDecision.cs
 │   │   │   ├── CorrectionTrace.cs
 │   │   │   ├── DiacriticsRestorer.cs
-│   │   │   ├── ElisionCorrector.cs
-│   │   │   ├── GrammarCorrector.cs
 │   │   │   ├── IPairDisambiguator.cs
 │   │   │   ├── MistouchFamilyCorrector.cs
 │   │   │   ├── QwertyAdjacency.cs
@@ -592,8 +588,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── GlobalEnglishLexicon.cs
 │   │   │   ├── IFrequencyLexicon.cs
 │   │   │   ├── LexicalDomain.cs
-│   │   │   ├── SystemLanguages.cs
-│   │   │   └── VerbMorphology.cs
+│   │   │   └── SystemLanguages.cs
 │   │   ├── Recovery/
 │   │   │   ├── CaretParagraphContext.cs
 │   │   │   └── CaretTextReader.cs
@@ -1859,9 +1854,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DomainActivationTests.cs
 │   │   ├── DomainPackManifestTests.cs
 │   │   ├── EffectiveLexiconTests.cs
-│   │   ├── ElisionCorrectorTests.cs
 │   │   ├── FrequencyLexiconTests.cs
-│   │   ├── GrammarCorrectorTests.cs
 │   │   ├── HarvestDataTests.cs
 │   │   ├── HarvestFilterTests.cs
 │   │   ├── InjectionPlanTests.cs
@@ -1873,7 +1866,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MistouchMinerTests.cs
 │   │   ├── MistouchMiningMaintenanceTests.cs
 │   │   ├── MorphalouReaderTests.cs
-│   │   ├── MorphologyCorrectionTests.cs
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── PersonalWordAdmissionTests.cs
@@ -1885,7 +1877,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SurfaceProfileStoreTests.cs
 │   │   ├── TypedWordTrackerTests.cs
 │   │   ├── TypingStreamTests.cs
-│   │   ├── VerbMorphologyTests.cs
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── CubicBezierTests.cs

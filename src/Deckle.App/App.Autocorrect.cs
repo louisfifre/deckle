@@ -32,7 +32,6 @@ public partial class App
             string dataDir = AutocorrectLexiconArtifacts.DataDirectory;
             string frenchPath = Path.Combine(dataDir, AutocorrectLexiconArtifacts.FrenchFileName);
             string pairPath = Path.Combine(dataDir, AutocorrectLexiconArtifacts.PairBigramsFrenchFileName);
-            string verbsPath = Path.Combine(dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName);
 
             if (!File.Exists(frenchPath))
             {
@@ -54,7 +53,7 @@ public partial class App
             // The heavy step is pure CPU and IO with no UI affinity, so it runs on
             // the thread pool.
             var loadStopwatch = Stopwatch.StartNew();
-            var (french, english, index, context, verbs) = await Task.Run(() =>
+            var (french, english, index, context) = await Task.Run(() =>
             {
                 var fr = ComposeEffectiveLexicon(frenchPath, dataDir, activePacks, excludedWords);
                 var en = new GlobalEnglishLexicon(
@@ -65,12 +64,7 @@ public partial class App
                     : null;
                 if (ctx is null)
                     DeckleAppSource.Log.AutocorrectAssetSkipped("pair_bigrams", "file_missing");
-                // Without verb morphology the engine runs without subject-verb
-                // agreement correction.
-                var vb = File.Exists(verbsPath) ? VerbMorphology.LoadTsvGz(verbsPath) : null;
-                if (vb is null)
-                    DeckleAppSource.Log.AutocorrectAssetSkipped("verb_morphology", "file_missing");
-                return (fr, en, idx, ctx, vb);
+                return (fr, en, idx, ctx);
             }).ConfigureAwait(false);
             loadStopwatch.Stop();
             DeckleAutocorrectSource.Log.LexiconLoadComplete(
@@ -98,8 +92,7 @@ public partial class App
                 index,
                 context,
                 dictionary,
-                BuildAutocorrectPersonalVariants(dictionary),
-                verbs);
+                BuildAutocorrectPersonalVariants(dictionary));
 
             engine = new AutocorrectEngine(
                 host: host,

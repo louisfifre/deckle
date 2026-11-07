@@ -133,10 +133,7 @@ public sealed class CorrectionTrace
     public static class StageNames
     {
         public const string Diacritics = "diacritics";
-        public const string Elision    = "elision";
-        public const string Morphology = "morphology";
         public const string Typo       = "typo";
-        public const string Grammar    = "grammar";
         public const string None       = "none";
     }
 
@@ -146,7 +143,6 @@ public sealed class CorrectionTrace
         public const string Index       = "index";       // the accent index variants
         public const string Literal     = "literal";     // the typed form, itself valid French
         public const string Personal    = "personal";    // the user's adopted dictionary
-        public const string Conjugation = "conjugation"; // synthesised from the verb paradigm
     }
 
     // Every guard exit and firing reason a stage can record. Closed vocabulary —
@@ -182,31 +178,13 @@ public sealed class CorrectionTrace
         public const string FrequencyDominance = "frequency_dominance"; // fired: top variant overwhelms
         public const string NotDominant        = "not_dominant";        // dominance ratio / floor not met
 
-        // Elision outcomes.
-        public const string NoProclitic = "no_proclitic"; // no glued proclitic+vowel split into valid French
-        public const string Elision     = "elision";      // fired: apostrophe restored
-
         // Typo outcomes. (A valid French word is the diacritics gate's domain and
         // exits this stage with the shared ValidFrench reason above.)
         public const string NoNeighbour = "no_neighbour"; // no in-lexicon word within edit distance
         public const string TooRare   = "too_rare";        // best neighbour below the frequency floor
         public const string TypoNear  = "typo_near";       // fired: one edit away
         public const string TypoFar   = "typo_far";        // fired: two edits away
-        public const string TypoSubjectAgreement = "typo_subject_agreement";
-        public const string NoAgreementCandidate = "no_agreement_candidate";
         public const string AccentFoldPreferred = "accent_fold_preferred";
-        public const string AuxiliaryParticiple = "auxiliary_participle";
-        public const string DeterminerAccent = "determiner_accent";
-        public const string RegularPluralAccent = "regular_plural_accent";
-
-        // Grammar outcomes.
-        public const string NoSubjectPronoun = "no_subject_pronoun"; // no subject pronoun immediately before
-        public const string NotAVerb         = "not_a_verb";          // the form carries no verb reading
-        public const string VerbAmbiguous    = "verb_ambiguous";      // form doubles as a noun/adjective
-        public const string NotFinite        = "not_finite";          // no person-bearing reading to agree
-        public const string AlreadyAgrees    = "already_agrees";      // a reading already matches the subject
-        public const string NoUniqueTarget   = "no_unique_target";    // zero or several agreeing forms — unsafe
-        public const string SubjectVerbAgreement = "subject_verb_agreement"; // fired: re-conjugated to the subject
     }
 }
 

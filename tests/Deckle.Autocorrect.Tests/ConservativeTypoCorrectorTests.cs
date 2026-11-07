@@ -203,28 +203,6 @@ public class ConservativeTypoCorrectorTests
     }
 
     [Fact]
-    [Trait("Category", "integration")]
-    public void PackagedLexiconPrefersTheDeduplicatedFrenchVerb()
-    {
-        string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
-        FrequencyLexicon french = FrequencyLexicon.LoadTsvGz(Path.Combine(
-            dataDir, AutocorrectLexiconArtifacts.FrenchFileName));
-        var corrector = new ConservativeTypoCorrector(
-            french,
-            accentIndex: AccentIndex.Build(french),
-            verbs: VerbMorphology.LoadTsvGz(Path.Combine(
-                dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName)));
-
-        var trace = new CorrectionTrace();
-        CorrectionDecision? decision = corrector.Evaluate("proposees", ["tu"], trace);
-
-        Assert.True(
-            decision is not null,
-            $"{trace.RenderTrail()} | {trace.RenderCandidates()} | {trace.RenderGauges()}");
-        Assert.Equal("proposes", decision!.Replacement);
-    }
-
-    [Fact]
     [Trait("Category", "unit")]
     public void CamelCaseIdentifierIsLeftAlone()
     {

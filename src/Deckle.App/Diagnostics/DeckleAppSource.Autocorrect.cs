@@ -32,8 +32,7 @@ public sealed partial class DeckleAppSource
     }
 
     // An optional asset was left out and autocorrect runs without what it
-    // brings. asset: pair_bigrams, verb_morphology or
-    // pack:<id>. reason: file_missing.
+    // brings. asset: pair_bigrams or pack:<id>. reason: file_missing.
     [Event(EvtAutocorrectAssetSkipped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,

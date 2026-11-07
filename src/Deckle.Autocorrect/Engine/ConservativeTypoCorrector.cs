@@ -18,14 +18,13 @@ namespace Deckle.Autocorrect;
 // against accented forms behind the repaired fold. This composes one physical
 // slip with missing diacritics ("preaprer" → "préparer") without relaxing either
 // tier's frequency or dominance bars.
-public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy
+public sealed class ConservativeTypoCorrector : ICorrectionPolicy
 {
     private readonly IFrequencyLexicon _french;
     private readonly IFrequencyLexicon? _english;
     private readonly IPersonalLexicon? _personal;
     private readonly TypoOptions _options;
     private readonly AccentIndex? _accentIndex;
-    private readonly VerbMorphology? _verbs;
     private readonly CandidateSearchObserver? _candidateSearchObserver;
 
     public ConservativeTypoCorrector(
@@ -33,10 +32,9 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy
         IFrequencyLexicon? english = null,
         IPersonalLexicon? personal = null,
         TypoOptions? options = null,
-        AccentIndex? accentIndex = null,
-        VerbMorphology? verbs = null)
+        AccentIndex? accentIndex = null)
         : this(
-            french, english, personal, options, accentIndex, verbs,
+            french, english, personal, options, accentIndex,
             candidateSearchObserver: null)
     {
     }
@@ -47,7 +45,6 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy
         IPersonalLexicon? personal,
         TypoOptions? options,
         AccentIndex? accentIndex,
-        VerbMorphology? verbs,
         CandidateSearchObserver? candidateSearchObserver)
     {
         _french = french;
@@ -55,7 +52,6 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy
         _personal = personal;
         _options = options ?? new TypoOptions();
         _accentIndex = accentIndex;
-        _verbs = verbs;
         _candidateSearchObserver = candidateSearchObserver;
     }
 
@@ -64,76 +60,48 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy
         IReadOnlyList<string> leftContext,
         CorrectionTrace? trace = null)
     {
-        StageTrace? morphology = trace?.Open(CorrectionTrace.StageNames.Morphology);
+        StageTrace? st = trace?.Open(CorrectionTrace.StageNames.Typo);
 
         if (word.Length < _options.MinWordLength)
-            return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.TooShort);
+            return Abstain(st, CorrectionTrace.Reasons.TooShort);
 
         // Letters only: an apostrophe, hyphen or digit takes the token out of
         // scope — elisions, compounds and identifiers are not plain typos.
         foreach (char c in word)
             if (!char.IsLetter(c))
-                return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.NonWordChar);
+                return Abstain(st, CorrectionTrace.Reasons.NonWordChar);
 
         // camelCase/PascalCase identifiers and already-accented forms are never
         // typo-corrected: the user meant the identifier, and an accented form is
         // another stage's concern.
         if (WordShape.HasInternalUpper(word))
-            return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.InternalCaps);
+            return Abstain(st, CorrectionTrace.Reasons.InternalCaps);
         if (AccentFolding.HasDiacritics(word))
-            return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.AlreadyAccented);
+            return Abstain(st, CorrectionTrace.Reasons.AlreadyAccented);
 
         // A capitalised word mid-utterance is almost always a proper noun (a
         // name, a brand): never spell-fix it. Sentence-initial capitals are
         // exempt — there a capital is the ordinary case.
         if (leftContext.Count > 0 && WordShape.IsTitleCase(word))
-            return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.ProperNounGuard);
+            return Abstain(st, CorrectionTrace.Reasons.ProperNounGuard);
 
         string lower = word.ToLowerInvariant();
 
-        bool literalValid = _french.Contains(lower);
-
-        // Protected literals stay outside both the morphology priority and the
-        // ordinary typo path.
+        // Protected literals stay out of the typo path.
         if (_english?.Contains(lower) == true)
-            return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.ValidEnglish);
+            return Abstain(st, CorrectionTrace.Reasons.ValidEnglish);
         if (_personal?.IsAdopted(lower) == true)
-            return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.UserAdopted);
-
-        // The morphology priority may settle an accent ambiguity even when the
-        // bare form is itself valid; the ordinary typo stage still refuses every
-        // valid French literal without exception.
-        CorrectionDecision? morphological = EvaluateMorphologicalAccent(
-            word, lower, literalValid, leftContext, morphology);
-        if (morphological is not null)
-            return morphological;
+            return Abstain(st, CorrectionTrace.Reasons.UserAdopted);
 
         // The defining gate: this stage only ever acts on a NON-word. A valid
         // French form is the diacritics gate's business.
-        if (literalValid)
-            return AbstainBoth(trace, morphology, CorrectionTrace.Reasons.ValidFrench);
-
-        string requiredPerson = string.Empty;
-        bool hasSubject = _verbs is not null
-            && GrammarCorrector.TryGetRequiredPerson(leftContext, out requiredPerson);
-        if (!hasSubject)
-            morphology?.Abstain(CorrectionTrace.Reasons.NoSubjectPronoun);
+        if (_french.Contains(lower))
+            return Abstain(st, CorrectionTrace.Reasons.ValidFrench);
 
         var near = ValidNeighbours(
             lower, twoEdits: false, CandidateSearchPath.Commit);
         if (near.Count > 0)
         {
-            if (hasSubject)
-            {
-                CorrectionDecision? agreeing = DecideAgreement(
-                    word, near, _options.MinFrequencyPerMillion, _options.DominanceRatio,
-                    requiredPerson, morphology);
-                if (agreeing is not null)
-                    return agreeing;
-            }
-
-            StageTrace? typo = trace?.Open(CorrectionTrace.StageNames.Typo);
-
             // A direct accent restoration costs no physical edit. A keyboard
             // neighbour may outrank it only with the same strong frequency
             // dominance required between typo rivals (bine -> bien, while
@@ -141,10 +109,10 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy
             if (_accentIndex is not null
                 && _accentIndex.VariantsOf(lower) is { Count: > 0 } accents
                 && near[0].Frequency < accents[0].FrequencyPerMillion * _options.DominanceRatio)
-                return Abstain(typo, CorrectionTrace.Reasons.AccentFoldPreferred);
+                return Abstain(st, CorrectionTrace.Reasons.AccentFoldPreferred);
 
             return Decide(word, near, _options.MinFrequencyPerMillion, _options.DominanceRatio,
-                typo, CorrectionTrace.Reasons.TypoNear);
+                st, CorrectionTrace.Reasons.TypoNear);
         }
 
         if (_options.MaxEditDistance >= 2
@@ -154,27 +122,12 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy
             var far = ValidNeighbours(
                 lower, twoEdits: true, CandidateSearchPath.Commit);
             if (far.Count > 0)
-            {
-                if (hasSubject)
-                {
-                    CorrectionDecision? agreeing = DecideAgreement(
-                        word, far, _options.Edits2MinFrequencyPerMillion,
-                        _options.Edits2DominanceRatio, requiredPerson, morphology);
-                    if (agreeing is not null)
-                        return agreeing;
-                }
-
-                StageTrace? typo = trace?.Open(CorrectionTrace.StageNames.Typo);
                 return Decide(
                     word, far, _options.Edits2MinFrequencyPerMillion, _options.Edits2DominanceRatio,
-                    typo, CorrectionTrace.Reasons.TypoFar);
-            }
+                    st, CorrectionTrace.Reasons.TypoFar);
         }
 
-        if (hasSubject)
-            morphology?.Abstain(CorrectionTrace.Reasons.NoNeighbour);
-        return Abstain(trace?.Open(CorrectionTrace.StageNames.Typo),
-            CorrectionTrace.Reasons.NoNeighbour);
+        return Abstain(st, CorrectionTrace.Reasons.NoNeighbour);
     }
 
     private static CorrectionDecision? Abstain(StageTrace? st, string reason)
@@ -182,16 +135,6 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy
         st?.Abstain(reason);
         return null;
     }
-
-    private static CorrectionDecision? AbstainBoth(
-        CorrectionTrace? trace,
-        StageTrace? morphology,
-        string reason)
-    {
-        morphology?.Abstain(reason);
-        return Abstain(trace?.Open(CorrectionTrace.StageNames.Typo), reason);
-    }
-
     // The word length past which the far tier is skipped: its candidate space
     // grows with the square of the length, and a very long token is rarely a
     // two-slip typo of a common word anyway. Bounds the per-word cost.
@@ -217,39 +160,6 @@ public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy
         st?.Fire(fireReason);
         return new CorrectionDecision(
             word, CasePattern.Apply(word, top.Form), CorrectionReason.TypoCorrection);
-    }
-
-    // A subject can settle a crowded physical-typo neighbourhood before the
-    // frequency fallback: exactly one candidate must be an unambiguous finite
-    // form for the required person (tu proposees → tu proposes).
-    private CorrectionDecision? DecideAgreement(
-        string word,
-        List<Candidate> candidates,
-        double minFrequency,
-        double dominanceRatio,
-        string requiredPerson,
-        StageTrace? st)
-    {
-        TraceEvidence(candidates, minFrequency, dominanceRatio, st);
-
-        Candidate? agreeing = null;
-        foreach (Candidate candidate in candidates)
-        {
-            if (!_verbs!.HasUnambiguousFiniteReading(candidate.Form, requiredPerson))
-                continue;
-            if (agreeing is not null)
-                return Abstain(st, CorrectionTrace.Reasons.NoAgreementCandidate);
-            agreeing = candidate;
-        }
-
-        if (agreeing is not Candidate verb)
-            return Abstain(st, CorrectionTrace.Reasons.NoAgreementCandidate);
-        if (verb.Frequency < minFrequency)
-            return Abstain(st, CorrectionTrace.Reasons.TooRare);
-
-        st?.Fire(CorrectionTrace.Reasons.TypoSubjectAgreement);
-        return new CorrectionDecision(
-            word, CasePattern.Apply(word, verb.Form), CorrectionReason.TypoCorrection);
     }
 
     private static void TraceEvidence(

@@ -11,11 +11,10 @@ public sealed record AutocorrectPolicySet(ICorrectionPolicy Policy)
         AccentIndex accentIndex,
         IPairDisambiguator? context = null,
         IPersonalLexicon? personal = null,
-        Func<string, IReadOnlyList<AccentVariant>>? personalVariants = null,
-        VerbMorphology? verbs = null)
+        Func<string, IReadOnlyList<AccentVariant>>? personalVariants = null)
         => CreateCore(
             french, english, accentIndex, context, personal, personalVariants,
-            verbs, candidateSearchObserver: null);
+            candidateSearchObserver: null);
 
     internal static AutocorrectPolicySet CreateWithCandidateSearchObserver(
         IFrequencyLexicon french,
@@ -24,11 +23,10 @@ public sealed record AutocorrectPolicySet(ICorrectionPolicy Policy)
         IPairDisambiguator? context,
         IPersonalLexicon? personal,
         Func<string, IReadOnlyList<AccentVariant>>? personalVariants,
-        VerbMorphology? verbs,
         CandidateSearchObserver candidateSearchObserver)
         => CreateCore(
             french, english, accentIndex, context, personal, personalVariants,
-            verbs, candidateSearchObserver);
+            candidateSearchObserver);
 
     private static AutocorrectPolicySet CreateCore(
         IFrequencyLexicon french,
@@ -37,7 +35,6 @@ public sealed record AutocorrectPolicySet(ICorrectionPolicy Policy)
         IPairDisambiguator? context,
         IPersonalLexicon? personal,
         Func<string, IReadOnlyList<AccentVariant>>? personalVariants,
-        VerbMorphology? verbs,
         CandidateSearchObserver? candidateSearchObserver)
     {
         var diacritics = new DiacriticsRestorer(
@@ -45,24 +42,15 @@ public sealed record AutocorrectPolicySet(ICorrectionPolicy Policy)
             personalVariants: personalVariants);
         var typo = candidateSearchObserver is null
             ? new ConservativeTypoCorrector(
-                french, english, personal, accentIndex: accentIndex, verbs: verbs)
+                french, english, personal, accentIndex: accentIndex)
             : new ConservativeTypoCorrector(
                 french, english, personal, options: null,
-                accentIndex: accentIndex, verbs: verbs,
+                accentIndex: accentIndex,
                 candidateSearchObserver: candidateSearchObserver);
-        var policies = new List<ICorrectionPolicy>
-        {
-            // Apostrophe repair precedes spell-fix so cest cannot collapse to est.
-            new ElisionCorrector(french, english, personal),
-            // One lexical pass arbitrates morphology and physical slips. A
-            // confident slip may beat a rare accent-only false friend; morphology
-            // gets priority when subject agreement or a closed accent proof exists.
-            typo,
-            diacritics,
-        };
-        if (verbs is not null)
-            policies.Add(new GrammarCorrector(verbs, personal));
 
-        return new AutocorrectPolicySet(new CompositeCorrectionPolicy(policies.ToArray()));
+        // Spell-fix first, then accents: a confident keyboard slip may beat a
+        // rare accent-only false friend, and each stage leaves the other's
+        // words alone.
+        return new AutocorrectPolicySet(new CompositeCorrectionPolicy(typo, diacritics));
     }
 }
