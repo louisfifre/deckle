@@ -354,7 +354,10 @@ public sealed partial class GeneralPage : Page
             new ConfirmationRequest(
                 Loc.Get("Settings_MoveDataDialog_Title"),
                 Loc.Format("Settings_MoveDataDialog_Content_Format", FormatBytes(required), target),
-                Loc.Get("Settings_MoveDataDialog_PrimaryButton")));
+                Loc.Get("Settings_MoveDataDialog_PrimaryButton"),
+                // The old folder is deleted and the resident app restarts:
+                // Enter must not trigger that.
+                IsDestructive: true));
         if (!confirmed) return;
 
         SettingsHost.RelocateDataRoot!.Invoke(target);

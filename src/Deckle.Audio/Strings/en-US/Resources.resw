@@ -240,30 +240,15 @@
     <value>Listen turned itself off after 2 minutes. Turn it on again to keep watching your level.</value>
   </data>
 
-  <!-- Composed maximum-recording-length card (composer label key + Choice option keys) -->
+  <!-- Composed maximum-recording-length group (switch + length field) -->
   <data name="RecordingLimitCard.Header" xml:space="preserve">
-    <value>Maximum recording length</value>
+    <value>Limit recording duration</value>
   </data>
   <data name="RecordingLimitCard.Description" xml:space="preserve">
-    <value>Recording stops on its own at this length and is transcribed as usual.</value>
+    <value>Recording stops on its own at the length you set and is transcribed as usual.</value>
   </data>
-  <data name="RecordingLimitNone.Content" xml:space="preserve">
-    <value>No limit</value>
-  </data>
-  <data name="RecordingLimit10Min.Content" xml:space="preserve">
-    <value>10 minutes</value>
-  </data>
-  <data name="RecordingLimit20Min.Content" xml:space="preserve">
-    <value>20 minutes</value>
-  </data>
-  <data name="RecordingLimit30Min.Content" xml:space="preserve">
-    <value>30 minutes</value>
-  </data>
-  <data name="RecordingLimit1Hour.Content" xml:space="preserve">
-    <value>1 hour</value>
-  </data>
-  <data name="RecordingLimit2Hours.Content" xml:space="preserve">
-    <value>2 hours</value>
+  <data name="RecordingLimitDurationCard.Header" xml:space="preserve">
+    <value>Maximum length</value>
   </data>
 
   <!-- Composed pre-processing card (composer label key) -->

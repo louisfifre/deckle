@@ -299,7 +299,7 @@ public sealed partial class DeckleVisionSource : DeckleEventSource
            Keywords = (EventKeywords)Keywords.Capture,
            Tags = ObservationTags.Milestone,
            Message = "Screen capture reads frames again")]
-    public void AcquireFrameRecovered(int failures, long duration_ms)
+    public void AcquireFrameRecovered(long failures, long duration_ms)
     {
         if (IsEnabled()) WriteEvent(EvtAcquireFrameRecovered, failures, duration_ms);
     }
@@ -320,7 +320,7 @@ public sealed partial class DeckleVisionSource : DeckleEventSource
            Keywords = (EventKeywords)Keywords.Capture,
            Tags = ObservationTags.Milestone,
            Message = "Screen capture holds the display again")]
-    public void CaptureAccessRecovered(int losses, long duration_ms)
+    public void CaptureAccessRecovered(long losses, long duration_ms)
     {
         if (IsEnabled()) WriteEvent(EvtCaptureAccessRecovered, losses, duration_ms);
     }

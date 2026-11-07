@@ -491,7 +491,7 @@
     <value>Version</value>
   </data>
   <data name="GeneralInstallUpdateButton.Content" xml:space="preserve">
-    <value>Install now</value>
+    <value>View update</value>
   </data>
   <data name="GeneralUpdateAvailableLabel_Format" xml:space="preserve">
     <value>Version {0} is available</value>
@@ -503,7 +503,7 @@
     <value>Move the data folder?</value>
   </data>
   <data name="Settings_MoveDataDialog_Content_Format" xml:space="preserve">
-    <value>Deckle copies {0} of data to {1}, then restarts. The old folder is removed afterwards.</value>
+    <value>Deckle copies {0} of data to {1}, then restarts. The old folder is deleted afterwards.</value>
   </data>
   <data name="Settings_MoveDataDialog_PrimaryButton" xml:space="preserve">
     <value>Move and restart</value>

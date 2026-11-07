@@ -76,7 +76,7 @@
     <value>Approach distance</value>
   </data>
   <data name="TaskbarCoverPage_ApproachCard.Description" xml:space="preserve">
-    <value>How close the mouse must come before the taskbar starts to show. Set at 100% scale, it grows with your display scale.</value>
+    <value>How close the mouse must come before the taskbar starts to show. A DIP is one pixel at 100% scale, so the distance feels the same on every display.</value>
   </data>
   <data name="TaskbarCoverApproachPreviewBlock.EmptyHeader" xml:space="preserve">
     <value>Screen preview</value>

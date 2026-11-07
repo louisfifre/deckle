@@ -97,6 +97,36 @@ public sealed class TemplateDoctrineTests
         Assert.Contains("stale: FakeSource.Renamed", failure);
     }
 
+    // MicrophoneUnavailable(string, uint) wrote its code as text in v0.88.0:
+    // the call bound to WriteEvent(string, long).
+    [Theory]
+    [InlineData(nameof(BindingSource.Widened))]
+    [InlineData(nameof(BindingSource.MixedIntAndLong))]
+    public void ASignatureThatWidensIntoATypedOverloadIsABreach(string name)
+    {
+        Assert.NotNull(TemplateDoctrine.WidenedBinding(typeof(BindingSource).GetMethod(name)!));
+    }
+
+    [Theory]
+    [InlineData(nameof(BindingSource.Exact))]
+    [InlineData(nameof(BindingSource.Empty))]
+    [InlineData(nameof(BindingSource.ThroughTheParamsOverload))]
+    [InlineData(nameof(BindingSource.ABoolAlone))]
+    public void ASignatureThatReachesWriteEventAsDeclaredPasses(string name)
+    {
+        Assert.Null(TemplateDoctrine.WidenedBinding(typeof(BindingSource).GetMethod(name)!));
+    }
+
+    [Fact]
+    public void AWidenedBindingIsReportedEvenWithoutATemplateBreach()
+    {
+        IReadOnlyList<string> failures = TemplateDoctrine.Violations(
+            [typeof(BindingSource)], new Dictionary<string, string>());
+
+        Assert.Equal(2, failures.Count);
+        Assert.All(failures, f => Assert.StartsWith("binding: BindingSource.", f));
+    }
+
     // Only the [Event] attributes are read, so the methods need no EventSource.
     private sealed class FakeSource
     {
@@ -105,5 +135,26 @@ public sealed class TemplateDoctrineTests
 
         [Event(2, Level = EventLevel.Informational, Message = "The work started | work_id={0}")]
         public void Unshaped(string work_id) { }
+    }
+
+    private sealed class BindingSource
+    {
+        [Event(1, Level = EventLevel.Informational, Message = "A")]
+        public void Widened(string phase, uint code) { }
+
+        [Event(2, Level = EventLevel.Informational, Message = "B")]
+        public void MixedIntAndLong(int count, long duration_ms) { }
+
+        [Event(3, Level = EventLevel.Informational, Message = "C")]
+        public void Exact(string phase, int count) { }
+
+        [Event(4, Level = EventLevel.Informational, Message = "D")]
+        public void Empty() { }
+
+        [Event(5, Level = EventLevel.Informational, Message = "E")]
+        public void ThroughTheParamsOverload(string phase, uint code, string name) { }
+
+        [Event(6, Level = EventLevel.Informational, Message = "F")]
+        public void ABoolAlone(bool on) { }
     }
 }

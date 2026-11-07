@@ -27,7 +27,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
            Message = "bytes={0} | h_mem=0x{1:X}")]
-    public void ClipboardAllocFailedDetail(int bytes, long h_mem)
+    public void ClipboardAllocFailedDetail(long bytes, long h_mem)
     {
         if (IsEnabled()) WriteEvent(EvtClipboardAllocFailedDetail, bytes, h_mem);
     }
@@ -93,7 +93,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
            Message = "chars={0,6} | bytes={1,7} | h_mem=0x{2:X}")]
-    public void ClipboardCopyComplete(int chars, int bytes, long h_mem)
+    public void ClipboardCopyComplete(long chars, long bytes, long h_mem)
     {
         if (IsEnabled()) WriteEvent(EvtClipboardCopyComplete, chars, bytes, h_mem);
     }
