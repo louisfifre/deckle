@@ -48,8 +48,9 @@ public sealed partial class StreamingPage : Page
 
         // The guards' fold stays as the person left it: collapsed at first, the
         // Toolkit's default, since its five values are the ones almost nobody
-        // moves (2026-11-07 review, change 6). It used to be forced open on
-        // every visit, when Silero was the page's first subject.
+        // moves and the cut curve is the page's first subject (2026-11-07
+        // review, changes 6 and 7). It used to be forced open on every visit,
+        // when Silero was the page's first subject.
         // Load() may raise no PropertyChanged on a clean profile, so no composer
         // DirtyChanged would fire — settle the gate off the freshly-loaded values.
         GateResetAll();

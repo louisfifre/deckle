@@ -4,12 +4,13 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:catalog="using:Deckle.Catalog">
 
-    <!-- The Streaming page of the Transcription module: the pipeline switch
-         alone at the top, then segmentation (the cut margin and the minimum
-         speech, then the cut curve with its anchors in its legend), then, under
-         it, the one fold of the guards against text from silence and noise:
-         the Silero trim with its three parameters and Whisper's no-speech
-         cut-off, collapsed (2026-11-07 review, change 6). Everything shows
+    <!-- The Streaming page of the Transcription module, graph first
+         (2026-11-07): the pipeline switch alone at the top, then segmentation,
+         which is the cut curve (its corners drag the ramp and the waits, its
+         pause strip the cut margin and the minimum speech), then, under it, the
+         one fold of the guards against text from silence and noise: the Silero
+         trim with its three parameters and Whisper's no-speech cut-off,
+         collapsed (2026-11-07 review, changes 6 and 7). Everything shows
          whatever the switch says: it picks only the dictation pipeline, while
          files and recovered takes are always cut and trimmed with these
          settings. Every card is composed from WhisperViewModel's manifests. -->
@@ -36,9 +37,11 @@
                 <!-- ── Segmentation ────────────────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="StreamingPageSegmentationSection">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
-                        <!-- The cut margin and the minimum speech, then the cut
-                             curve at full width with the four hangover anchors in
-                             its legend (WhisperViewModel.SegmentationSettings). -->
+                        <!-- The cut curve at full width, its plot following the
+                             page's height, with the four hangover anchors, the
+                             control points and the pause strip's two durations
+                             as fields under it
+                             (WhisperViewModel.SegmentationSettings). -->
                         <StackPanel x:Name="SegmentationHost"
                                     Spacing="{StaticResource SettingsCardSpacing}" />
 
