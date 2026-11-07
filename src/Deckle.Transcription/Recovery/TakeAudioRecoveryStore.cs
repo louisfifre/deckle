@@ -223,6 +223,30 @@ public sealed class TakeAudioRecoveryStore(string filePath)
         lock (_gate) CloseStream();
     }
 
+    /// <summary>
+    /// How long ago the recovery run set the audio aside, null when there is no
+    /// marker or its time cannot be read. MarkAttempted stamps the marker, so
+    /// this is the age of the attempt, not of the audio.
+    /// </summary>
+    public TimeSpan? AttemptedAge
+    {
+        get
+        {
+            try
+            {
+                return File.Exists(AttemptedFilePath)
+                    ? DateTime.UtcNow - File.GetLastWriteTimeUtc(AttemptedFilePath)
+                    : null;
+            }
+            catch (Exception ex)
+            {
+                // Unknown age keeps the marker blocking, the safe side.
+                DeckleWhispSource.Log.TeardownExceptionIgnored("take_audio_attempt_age", ex.GetType().Name, ex.Message);
+                return null;
+            }
+        }
+    }
+
     /// <summary>Size of the file now, 0 when it is missing or unreadable.</summary>
     public long Length
     {
@@ -275,6 +299,15 @@ public sealed class TakeAudioRecoveryStore(string filePath)
             try
             {
                 File.Move(FilePath, AttemptedFilePath, overwrite: false);
+                // A move keeps the write time of the last record. The marker
+                // must date the attempt, or audio that waited days would look
+                // expired the moment it crashed the app.
+                try { File.SetLastWriteTimeUtc(AttemptedFilePath, DateTime.UtcNow); }
+                catch (Exception stampEx) when (stampEx is IOException or UnauthorizedAccessException)
+                {
+                    DeckleWhispSource.Log.TeardownExceptionIgnored(
+                        "take_audio_stamp_attempted", stampEx.GetType().Name, stampEx.Message);
+                }
                 return true;
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

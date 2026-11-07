@@ -220,6 +220,40 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
         Assert.Equal(2 * SamplesPerUtterance, store.TryRead().Samples.Length);
     }
 
+    // Weakness (b): one utterance fails, the other is delivered. The person gets
+    // a partial text, and the audio of the failed part is deleted with the rest.
+    //
+    // Reproduced (this test failed on the store.Exists line before it was
+    // skipped). Not fixed in this change: keeping the audio "until the next
+    // full delivery" needs a second slot beside take-audio.dat, because the next
+    // take's TryBegin replaces that file, plus a size cap and a recovery rule for
+    // a take whose text was already pasted. Keeping it in the single slot would
+    // only last until the next hotkey press. To pick up: the Anytype task
+    // "Durcir le filet audio des prises", weakness 2.
+    [Fact(Skip = "Weakness (b) reproduced, fix needs a second audio slot: see the comment above.")]
+    [Trait("Category", "regression")]
+    public async Task APartialTakeKeepsItsAudioForTheFailedPart()
+    {
+        CancellationToken testCancellation = TestContext.Current.CancellationToken;
+        TakeAudioRecoveryStore store = NewStore();
+        var clipboard = new RecordingClipboardWriter();
+        // The test inference and the first utterance pass; the second throws.
+        using var engine = new TranscriptionEngine(
+            new StreamingHost(),
+            new SequencedBackend([TestInference, "bonjour"]),
+            new ScriptedMicrophoneCapture(utteranceCount: 2),
+            clipboard,
+            takeAudio: store,
+            captureTail: TestCaptureTail);
+
+        TranscriptionOutcome outcome = await RunTakeAsync(engine, calls: null, testCancellation);
+
+        Assert.NotEqual(TranscriptionOutcome.None, outcome);
+        Assert.Equal(1, clipboard.WriteCount);
+        Assert.True(store.Exists);
+        Assert.Equal(2 * SamplesPerUtterance, store.TryRead().Samples.Length);
+    }
+
     [Fact]
     [Trait("Category", "regression")]
     public async Task DisposingTheEngineMidTakeKeepsTheAudioRecordedSoFar()
