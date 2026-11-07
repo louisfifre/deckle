@@ -129,6 +129,20 @@ public sealed class TranscriptionSettingsService
             migrated = true;
         }
 
+        // The floor default went from 500 ms to 1 s. A stored 500 is the old
+        // default only if the person never chose it: a revision stamp tells
+        // the two apart, so a 500 set later, on purpose, is not moved back at
+        // every launch. Runs last, so the two repairs above (which key on 500)
+        // see the value they expect. A customized curve already returned above:
+        // that person tuned the whole shape, the floor included.
+        if (segmenter.DefaultsRevision < EnergySegmenterSettings.CurrentDefaultsRevision)
+        {
+            if (segmenter.HangoverMinMs == 500)
+                segmenter.HangoverMinMs = new EnergySegmenterSettings().HangoverMinMs;
+            segmenter.DefaultsRevision = EnergySegmenterSettings.CurrentDefaultsRevision;
+            migrated = true;
+        }
+
         return migrated;
     }
 

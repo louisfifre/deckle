@@ -25,6 +25,12 @@ public static class ApproachDistance
     public const int MinimumDip = 10;
     public const int MaximumDip = 320;
 
+    // The unit the page shows beside the figure. Never "px": a person reads
+    // that as physical pixels, the very misreading that made the setting a DIP
+    // figure, and the page's reach readout is where physical pixels appear
+    // (2026-11-07, bug note "Approach distance read as physical pixels").
+    public const string UnitLabel = "DIP";
+
     // The former Standard level, a step of the design-system scale.
     public const int DefaultDip = Spacing.Large;
 
