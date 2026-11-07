@@ -1615,8 +1615,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Interop/
 │   │   │   └── TaskbarNativeMethods.cs
 │   │   ├── Registry/
+│   │   │   ├── ElevatedProcessRunner.cs
+│   │   │   ├── IElevatedProcessRunner.cs
 │   │   │   ├── NotifyIconSettingsKey.cs
 │   │   │   ├── NotifyIconSettingsWatcher.cs
+│   │   │   ├── PolicyElevation.cs
+│   │   │   ├── PolicyKey.cs
+│   │   │   ├── PolicyOutcome.cs
+│   │   │   ├── RecommendedSectionPolicy.cs
 │   │   │   ├── TrayIconPromoter.cs
 │   │   │   ├── TrayIconPromotion.cs
 │   │   │   ├── TrayOutcome.cs
