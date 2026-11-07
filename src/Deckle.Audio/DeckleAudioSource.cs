@@ -161,7 +161,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
            Keywords = (EventKeywords)Keywords.Capture,
            Version = 2,
            Message = "drain_ms={0,5} | tail_ms={1,4} | tail_reads={2,2}")]
-    public void CaptureDrainDetail(long drain_ms, int tail_ms, int tail_reads)
+    public void CaptureDrainDetail(long drain_ms, long tail_ms, long tail_reads)
     {
         if (OperationalLogAdmission.IsScopedDetailEnabled(
                 OperationalLogActivity.Transcription, this,

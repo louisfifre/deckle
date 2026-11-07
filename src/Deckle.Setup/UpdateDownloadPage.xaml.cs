@@ -17,7 +17,8 @@ using Deckle.Install;
 
 namespace Deckle.Setup;
 
-// The running app's leg of an update: fetch the new payload into a unique temp
+// The running app's leg of an update: wait for the person's explicit Install,
+// then fetch the new payload into a unique temp
 // folder (sidecar SHA-256 verified by the shared Downloader), extract it, and
 // hand off to the NEW payload's own `Deckle.exe --update-apply`. The binary
 // swap cannot run in this process, whose image is among the files to replace.
@@ -45,12 +46,7 @@ public sealed partial class UpdateDownloadPage : Page
         _context    = setup.Context;
         _dispatcher = DispatcherQueue.GetForCurrentThread();
 
-        setup.SetStepHeader(
-            Loc.Get("Setup_StepTitle_Update"),
-            Loc.Get("Setup_StepSubtitle_Update"));
         setup.SetBackEnabled(false);
-        setup.SetNextEnabled(false);
-        setup.SetNextVisible(false);
         setup.SetCancelVisible(true);
 
         RetryButton.Content = Loc.Get("Setup_Deploy_Retry");
@@ -60,6 +56,37 @@ public sealed partial class UpdateDownloadPage : Page
         // page never navigates away, so the window teardown is the abort signal.
         setup.Closed += (_, _) => _cts?.Cancel();
 
+        // Opened by the app (a toast click, or Settings), not by an explicit
+        // decision to install: nothing is fetched until the person says so.
+        // An update ends with the app quitting, so it is never a side effect
+        // of opening this window. Same shape as the repair offer in
+        // InstallingPage.
+        string version = _context.PendingUpdate?.Version ?? "";
+        setup.SetStepHeader(
+            Loc.Get("Setup_StepTitle_UpdateReady"),
+            Loc.Format("Setup_StepSubtitle_UpdateReady_Format", version));
+        DownloadProgress.Visibility = Visibility.Collapsed;
+        setup.SetNextLabel(Loc.Get("Setup_NextLabel_Install"));
+        setup.SetNextVisible(true);
+        setup.SetNextEnabled(true);
+        setup.NextRequested += OnInstallRequested;
+    }
+
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        if (_setup is not null) _setup.NextRequested -= OnInstallRequested;
+    }
+
+    private void OnInstallRequested()
+    {
+        if (_setup is null) return;
+        _setup.NextRequested -= OnInstallRequested;
+        _setup.SetStepHeader(
+            Loc.Get("Setup_StepTitle_Update"),
+            Loc.Get("Setup_StepSubtitle_Update"));
+        _setup.SetNextVisible(false);
+        _setup.SetNextEnabled(false);
+        DownloadProgress.Visibility = Visibility.Visible;
         _ = DownloadAsync();
     }
 

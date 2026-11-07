@@ -57,6 +57,50 @@ public class TranscriptionSettingsMigrationTests
         Assert.Equal(60_000, settings.Streaming.Segmenter.HangoverRampStartMs);
     }
 
+    [Fact]
+    public void MovesTheOldHangoverFloorDefaultToOneSecond()
+    {
+        var settings = new TranscriptionSettings();
+        settings.Streaming.Segmenter.HangoverMinMs = 500;
+        settings.Streaming.Segmenter.DefaultsRevision = 0;
+
+        bool migrated = TranscriptionSettingsService.ApplyPostLoadMigrations(settings);
+
+        Assert.True(migrated);
+        Assert.Equal(1_000, settings.Streaming.Segmenter.HangoverMinMs);
+        Assert.Equal(EnergySegmenterSettings.CurrentDefaultsRevision, settings.Streaming.Segmenter.DefaultsRevision);
+    }
+
+    [Fact]
+    public void LeavesAChosenHangoverFloorAlone()
+    {
+        var settings = new TranscriptionSettings();
+        settings.Streaming.Segmenter.HangoverMinMs = 750;
+        settings.Streaming.Segmenter.DefaultsRevision = 0;
+
+        TranscriptionSettingsService.ApplyPostLoadMigrations(settings);
+
+        Assert.Equal(750, settings.Streaming.Segmenter.HangoverMinMs);
+    }
+
+    // A 500 chosen after the migration ran is a choice, not the old default.
+    [Fact]
+    public void DoesNotMoveA500ChosenAfterTheMigration()
+    {
+        var settings = new TranscriptionSettings();
+        settings.Streaming.Segmenter.DefaultsRevision = EnergySegmenterSettings.CurrentDefaultsRevision;
+        settings.Streaming.Segmenter.HangoverMinMs = 500;
+
+        bool migrated = TranscriptionSettingsService.ApplyPostLoadMigrations(settings);
+
+        Assert.False(migrated);
+        Assert.Equal(500, settings.Streaming.Segmenter.HangoverMinMs);
+    }
+
+    [Fact]
+    public void TheShippedHangoverFloorIsOneSecond()
+        => Assert.Equal(1_000, new EnergySegmenterSettings().HangoverMinMs);
+
     // The segmenter's minimum utterance and Silero's minimum speech were one
     // floor stored twice; streaming.minSpeechMs replaces both.
 

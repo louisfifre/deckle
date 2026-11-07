@@ -70,6 +70,8 @@ internal sealed class SelfCheckReport
                 failures.Add($"{surface.Name}: did not load (navigation did not complete in {surface.Ms} ms).");
             else if (surface.Png is null)
                 failures.Add($"{surface.Name}: loaded but its image could not be taken.");
+            else if (surface.PopupsStillOpen > 0)
+                failures.Add($"{surface.Name}: its image was taken with {surface.PopupsStillOpen} popup(s) open over the page.");
         }
 
         foreach (string window in RequiredWindows)
@@ -140,7 +142,12 @@ internal sealed class SelfCheckReport
 //   Loaded   the surface was on screen and loaded before the timeout.
 //   Ms       how long that took.
 //   Png      the image, relative to the report's folder; null when none was taken.
-internal sealed record SelfCheckSurface(string Window, string? Page, string? Label, bool Loaded, long Ms, string? Png)
+//   PopupsClosed    popups found open over the window and closed before the image
+//                   (a flyout the walk left open); informational.
+//   PopupsStillOpen popups that stayed open: the image shows something over the page.
+internal sealed record SelfCheckSurface(
+    string Window, string? Page, string? Label, bool Loaded, long Ms, string? Png,
+    int PopupsClosed = 0, int PopupsStillOpen = 0)
 {
     [JsonIgnore]
     public string Name => Page is null ? Window : $"{Window}/{Page}";

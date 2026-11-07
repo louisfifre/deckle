@@ -1,85 +1,29 @@
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
 using Deckle.Catalog;
 using Deckle.Core;
 
 namespace Deckle.Settings;
 
-// ─── AudioCorpusConsentDialog ──────────────────────────────────────────────
+// ─── AudioCorpusConsentDialog ─────────────────────────────────────────────
 //
-// Opt-in consent for the WAV-audio side of corpus logging. Audio capture is
-// a stronger privacy posture than text (voice is biometric-adjacent), so it
-// has its own dialog rather than being folded into the text-corpus prompt —
-// the user consents to each data class explicitly. Same consent form as
-// CorpusConsentDialog.
+// Opt-in consent for the WAV-audio side of corpus logging. Audio is a stronger
+// privacy posture than text (voice is biometric-adjacent), so it has its own
+// dialog and the person consents to each data class explicitly.
 //
 // The <profile> segment of the where path is a literal placeholder for the
 // user, never translated.
-
 internal static class AudioCorpusConsentDialog
 {
-    public static async Task<bool> ShowAsync(XamlRoot root)
+    public static Task<bool> ShowAsync(XamlRoot root)
     {
-        string textRoot = CorpusPaths.GetDirectoryPath();
-        string where = Path.Combine(textRoot, "<profile>", "audio");
 
-        var body = new StackPanel { Spacing = 12 };
-
-        body.Children.Add(new TextBlock
-        {
-            TextWrapping = TextWrapping.Wrap,
-            Text = Loc.Get("AudioCorpusConsent_Body_Intro")
-        });
-
-        body.Children.Add(new TextBlock
-        {
-            Text = Loc.Get("Common_Consent_WhatHeader"),
-            Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"]
-        });
-
-        body.Children.Add(new TextBlock
-        {
-            TextWrapping = TextWrapping.Wrap,
-            Text = Loc.Get("AudioCorpusConsent_Body_What")
-        });
-
-        body.Children.Add(new TextBlock
-        {
-            Text = Loc.Get("Common_Consent_WhereHeader"),
-            Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"]
-        });
-
-        body.Children.Add(new TextBlock
-        {
-            TextWrapping = TextWrapping.Wrap,
-            Text = where
-        });
-
-        body.Children.Add(new TextBlock
-        {
-            Text = Loc.Get("Common_Consent_RemindHeader"),
-            Style = (Style)Application.Current.Resources["BodyStrongTextBlockStyle"]
-        });
-
-        body.Children.Add(new TextBlock
-        {
-            TextWrapping = TextWrapping.Wrap,
-            Text = Loc.Get("AudioCorpusConsent_Body_Remind")
-        });
-
-        var dialog = new ContentDialog
-        {
-            Title = Loc.Get("AudioCorpusConsent_Title"),
-            Content = body,
-            PrimaryButtonText = Loc.Get("Common_Enable"),
-            CloseButtonText = Loc.Get("Common_Cancel"),
-            DefaultButton = ContentDialogButton.Primary,
-            XamlRoot = root
-        };
-
-        var result = await dialog.ShowAsync();
-        return result == ContentDialogResult.Primary;
+        return ConsentService.RequestAsync(root, new ConsentRequest(
+            Title:  Loc.Get("AudioCorpusConsent_Title"),
+            Intro:  Loc.Get("AudioCorpusConsent_Body_Intro"),
+            What:   Loc.Get("AudioCorpusConsent_Body_What"),
+            Where:  Path.Combine(CorpusPaths.GetDirectoryPath(), "<profile>", "audio"),
+            Remind: Loc.Get("AudioCorpusConsent_Body_Remind")));
     }
 }

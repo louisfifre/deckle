@@ -210,11 +210,13 @@ public partial class App
             async visit =>
             {
                 string slug = InterfaceCaptureNames.PageSlug(visit.Tag);
+                (int closed, int left) = await CloseTransientPopupsAsync(settings);
                 bool shot = visit.Loaded
                     && await run.CaptureAsync(settingsHwnd, "settings", slug, visit.Label);
                 report.Surfaces.Add(new SelfCheckSurface(
                     "settings", slug, visit.Label, visit.Loaded, visit.LoadMs,
-                    shot && run.LastFile is { } file ? Path.Combine("captures", file) : null));
+                    shot && run.LastFile is { } file ? Path.Combine("captures", file) : null,
+                    closed, left));
                 Step($"settings/{slug} done");
             },
             starting: (tag, label) =>
@@ -246,11 +248,37 @@ public partial class App
         open();
         Microsoft.UI.Xaml.Window? opened = window();
         bool loaded = opened is not null && await WaitUntilLoadedAsync(opened);
+        (int closed, int left) = loaded ? await CloseTransientPopupsAsync(opened!) : (0, 0);
         bool shot = loaded && await run.CaptureAsync(WindowNative.GetWindowHandle(opened!), name);
         report.Surfaces.Add(new SelfCheckSurface(
             name, null, null, loaded, clock.ElapsedMilliseconds,
-            shot && run.LastFile is { } file ? Path.Combine("captures", file) : null));
+            shot && run.LastFile is { } file ? Path.Combine("captures", file) : null,
+            closed, left));
         report.Save(outputFolder);
+    }
+
+    // A capture shows the page alone. The walk itself leaves transient UI open:
+    // in the compact rail, selecting a child of a group opens the group's
+    // flyout, and it stays over the next pages (seen on the Diagnostics image).
+    // Every popup open over the window is closed before its image is taken; the
+    // count closed is recorded, and one that refuses to close is a failure of
+    // that image, so a reviewer never judges a page hidden behind a popup.
+    private static async Task<(int Closed, int StillOpen)> CloseTransientPopupsAsync(Microsoft.UI.Xaml.Window window)
+    {
+        if (window.Content?.XamlRoot is not { } root) return (0, 0);
+
+        var open = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetOpenPopupsForXamlRoot(root);
+        int closed = 0;
+        foreach (Microsoft.UI.Xaml.Controls.Primitives.Popup popup in open)
+        {
+            popup.IsOpen = false;
+            closed++;
+        }
+        if (closed == 0) return (0, 0);
+
+        // The close reaches the screen on the next frames.
+        await Task.Delay(300);
+        return (closed, Microsoft.UI.Xaml.Media.VisualTreeHelper.GetOpenPopupsForXamlRoot(root).Count);
     }
 
     // The window's content reached Loaded, then two frames and a short settle,

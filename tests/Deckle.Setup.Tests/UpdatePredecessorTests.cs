@@ -58,7 +58,7 @@ public sealed class UpdatePredecessorTests
         EventWrittenEventArgs timedOut = Assert.Single(
             listener.Events, e => e.EventId == DeckleSetupSource.EvtPredecessorWaitTimedOut);
         Assert.Equal(EventLevel.Warning, timedOut.Level);
-        Assert.Equal(int.MaxValue, timedOut.Payload?[0]);
+        Assert.Equal((long)int.MaxValue, timedOut.Payload?[0]);
         Assert.Equal(50L, timedOut.Payload?[1]);
     }
 

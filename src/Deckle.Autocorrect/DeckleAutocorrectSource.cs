@@ -105,7 +105,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "load_ms={0} | entries={1}")]
-    public void LexiconLoadComplete(long load_ms, int entries)
+    public void LexiconLoadComplete(long load_ms, long entries)
     {
         if (IsEnabled()) WriteEvent(EvtLexiconLoadComplete, load_ms, entries);
     }
