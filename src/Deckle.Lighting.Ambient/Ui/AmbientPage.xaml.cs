@@ -167,6 +167,7 @@ public sealed partial class AmbientPage : Page
         ViewModel.Load();
         ResyncFromSettings();
         SyncHueBridgeUi();
+        _ = LoadStoredHueGroupAsync();
 
         AmbientSettingsService.Instance.Changed += OnSettingsChanged;
         HuePairingService.Instance.BridgeChanged += OnHueBridgeChanged;

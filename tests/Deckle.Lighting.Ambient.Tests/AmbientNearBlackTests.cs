@@ -190,7 +190,7 @@ public sealed class AmbientNearBlackTests
         var settings = new AmbientSettings();
         if (ambientPreset)
         {
-            AmbientPresets.All.Single(p => p.Id == AmbientPresets.Ambient).Values.ApplyTo(settings);
+            AmbientPresets.All.Single(p => p.Id == AmbientPresets.RealisticSlow).Values.ApplyTo(settings);
         }
         else
         {
