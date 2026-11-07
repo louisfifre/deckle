@@ -93,7 +93,6 @@ The autocorrect module (`Deckle.Autocorrect`) ships compact derived lexicons und
 - Project : http://www.lexique.org — New, Pallier, Brysbaert et al.
 - License : CC BY-SA 4.0 (the data).
 - Used as : source of French inflected forms and frequencies, reduced to the derived `lexicon-fr.tsv.gz` (form + occurrences per million). The derived file remains under CC BY-SA 4.0 with this attribution.
-- Also used as : source of `verbs-fr.tsv.gz` (form, lemma, inflection codes, verb-only flag), derived from Lexique's verb morphology by the same build-data gesture. The derived file stays under CC BY-SA 4.0.
 
 ### Morphalou 3.1
 

@@ -8,7 +8,7 @@
 
 **Hors périmètre.** Les littéraux XAML (bornes `Minimum`/`Maximum`/`StepFrequency` des sliders), les tables lexicales préfixées `_`, et tout ce qui vit sous `tests/`.
 
-Total : **627 entrées** réparties sur **38 modules**.
+Total : **625 entrées** réparties sur **38 modules**.
 
 | Module | Entrées |
 |---|---|
@@ -16,8 +16,8 @@ Total : **627 entrées** réparties sur **38 modules**.
 | Deckle.Anytype.Mcp | 3 |
 | Deckle.App | 3 |
 | Deckle.Audio | 46 |
-| Deckle.Autocorrect | 38 |
-| Deckle.Autocorrect.Lab | 18 |
+| Deckle.Autocorrect | 37 |
+| Deckle.Autocorrect.Lab | 17 |
 | Deckle.Catalog | 2 |
 | Deckle.Composition | 62 |
 | Deckle.Core | 9 |
@@ -172,7 +172,6 @@ Total : **627 entrées** réparties sur **38 modules**.
 | TypedWordTracker.SeparatorRunCap | tuning-constant | `8` | src/Deckle.Autocorrect/Tracking/TypedWordTracker.cs:55 | non | Canonical site. |
 | TypingStream.RunCap | tuning-constant | `512` | src/Deckle.Autocorrect/Tracking/TypingStream.cs:47 | non |  |
 | WordBoundaries.RightSingleQuote | tuning-constant | `'’'` | src/Deckle.Autocorrect/Tracking/WordBoundaries.cs:19 | non | Typographic apostrophe; frozen linguistic fact, kept only for doubt. |
-| QwertyAdjacency.Rows | tuning-constant | `["qwertyuiop", "asdfghjkl", "zxcvbnm"]` | src/Deckle.Autocorrect/Engine/QwertyAdjacency.cs:10 | non | DOUBT: a hardcoded QWERTY layout drives the physical-slip model. An AZERTY typist gets a mismatched adjacency map. Either a real exposable (keyboard layout) or a defect. |
 
 ## Deckle.Autocorrect.Lab
 
@@ -181,7 +180,6 @@ Total : **627 entrées** réparties sur **38 modules**.
 | DataSet.FrenchFile | tuning-constant | `"lexicon-fr.tsv.gz"` | src/Deckle.Autocorrect.Lab/DataSet.cs:13 | non | Dataset artifact filename, not a tuning knob; kept because it names which lexicon the Lab reads. |
 | DataSet.EnglishFile | tuning-constant | `"lexicon-en.tsv.gz"` | src/Deckle.Autocorrect.Lab/DataSet.cs:14 | non | Dataset artifact filename, not a tuning knob; kept because it names which lexicon the Lab reads. |
 | DataSet.PairFile | tuning-constant | `"pair-bigrams-fr.tsv.gz"` | src/Deckle.Autocorrect.Lab/DataSet.cs:15 | non | Dataset artifact filename, not a tuning knob; kept because it names which pair model the Lab reads. |
-| DataSet.VerbsFile | tuning-constant | `"verbs-fr.tsv.gz"` | src/Deckle.Autocorrect.Lab/DataSet.cs:16 | non | Dataset artifact filename, not a tuning knob; kept because it names which verb table the Lab reads. |
 | DomainPackBuilder.FloorFrequencyPerMillion | tuning-constant | `0.2` | src/Deckle.Autocorrect.Lab/DomainPackBuilder.cs:32 | non |  |
 | DomainPackBuilder.MaskingExclusionPerMillion | tuning-constant | `20.0` | src/Deckle.Autocorrect.Lab/DomainPackBuilder.cs:38 | non |  |
 | DomainPackBuilder.MaskingGrayZonePerMillion | tuning-constant | `1.0` | src/Deckle.Autocorrect.Lab/DomainPackBuilder.cs:39 | non |  |

@@ -4,9 +4,9 @@ namespace Deckle.Llm;
 //
 // Every consumer that needs a model to write text goes through this seam:
 // today the rewrite service (transcription finalization, the paragraph
-// rewrite, the sentence stage's escalations), tomorrow any module that asks a
-// model a question. The engine behind it is one provider's transport: Ollama,
-// a chat-completions server (LM Studio, llama.cpp, a hosted API), Claude. The
+// rewrite), tomorrow any module that asks a model a question.
+// The engine behind it is one provider's transport: Ollama, a
+// chat-completions server (LM Studio, llama.cpp, a hosted API), Claude. The
 // provider list (LlmProvider) names which one serves a request, so the engine
 // can change without the consumers knowing.
 //

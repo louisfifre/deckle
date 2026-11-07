@@ -90,7 +90,7 @@
     <value>Autocorrect details</value>
   </data>
   <data name="LoggingAutocorrectCard.Description" xml:space="preserve">
-    <value>Focus probes, decisions, reranking and learning. Typed text stays in its own datasets.</value>
+    <value>Focus probes, decisions and learning. Typed text stays in its own datasets.</value>
   </data>
   <data name="LoggingWindowingCard.Header" xml:space="preserve">
     <value>Windowing details</value>
