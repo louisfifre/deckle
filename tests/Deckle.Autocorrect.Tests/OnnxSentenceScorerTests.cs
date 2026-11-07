@@ -38,6 +38,70 @@ public sealed class OnnxSentenceScorerTests
         }
     }
 
+    // Each load once owned an OgaHandle and released it on failure as on
+    // dispose; releasing one shuts ONNX Runtime GenAI down for the whole
+    // process, and the next model construction died on an access violation
+    // no catch can stop. A config whose model file is missing reaches model
+    // construction without a real model or a GPU, so two failed loads replay
+    // what a domain-pack rebuild did to the live judge.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void ALoadAfterAnEarlierOneWasReleasedReportsItsOwnOutcome()
+    {
+        string dir = Directory.CreateTempSubdirectory().FullName;
+        try
+        {
+            File.WriteAllText(Path.Combine(dir, "genai_config.json"), ConfigWithoutModelFile);
+
+            for (int attempt = 0; attempt < 2; attempt++)
+            {
+                Assert.Null(OnnxSentenceScorer.TryLoad(
+                    dir, margin: 0.0, executionProvider: "cpu", out Exception? error));
+                Assert.NotNull(error);
+            }
+        }
+        finally
+        {
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    // A decoder-only config that parses, then names a model file the
+    // directory does not hold.
+    private const string ConfigWithoutModelFile = """
+        {
+          "model": {
+            "type": "qwen3",
+            "context_length": 64,
+            "vocab_size": 16,
+            "bos_token_id": 0,
+            "eos_token_id": 1,
+            "pad_token_id": 0,
+            "decoder": {
+              "filename": "model.onnx",
+              "head_size": 8,
+              "hidden_size": 16,
+              "num_attention_heads": 2,
+              "num_hidden_layers": 1,
+              "num_key_value_heads": 1,
+              "inputs": {
+                "input_ids": "input_ids",
+                "attention_mask": "attention_mask",
+                "position_ids": "position_ids",
+                "past_key_names": "past_key_values.%d.key",
+                "past_value_names": "past_key_values.%d.value"
+              },
+              "outputs": {
+                "logits": "logits",
+                "present_key_names": "present.%d.key",
+                "present_value_names": "present.%d.value"
+              }
+            }
+          },
+          "search": { "max_length": 64 }
+        }
+        """;
+
     [Fact]
     [Trait("Category", "system")]
     public void ModelLoadsWhenStaged()

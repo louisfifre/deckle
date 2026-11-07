@@ -136,11 +136,16 @@ public partial class App
                     _autocorrectRuntime = runtime;
                     retained = true;
                 }
+                else
+                {
+                    // Released under the lock, as ReconcileAutocorrect releases
+                    // a stale runtime: a build started by the next reconcile
+                    // never loads its judge while this one's is being freed.
+                    runtime?.Dispose();
+                }
             }
 
-            if (!retained)
-                runtime?.Dispose();
-            else
+            if (retained)
             {
                 // A pack may have been flipped while this build ran, leaving the
                 // engine just published reading the previous table. One more

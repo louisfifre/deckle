@@ -11,7 +11,8 @@ internal sealed class OnnxQwenAdapterProbeRuntimeFactory : IQwenAdapterProbeRunt
 
     private sealed class Runtime : IQwenAdapterProbeRuntime
     {
-        private readonly OgaHandle _ogaHandle;
+        // No OgaHandle: releasing one shuts ONNX Runtime GenAI down for the
+        // whole process (see OnnxSentenceScorer).
         private readonly Config _config;
         private readonly Model _model;
         private readonly Tokenizer _tokenizer;
@@ -23,21 +24,18 @@ internal sealed class OnnxQwenAdapterProbeRuntimeFactory : IQwenAdapterProbeRunt
         public Runtime(QwenAdapterCompatibilityPlan plan)
         {
             long started = Stopwatch.GetTimestamp();
-            OgaHandle? ogaHandle = null;
             Config? config = null;
             Model? model = null;
             Tokenizer? tokenizer = null;
             Adapters? adapters = null;
             try
             {
-                ogaHandle = new OgaHandle();
                 config = new Config(plan.ModelDirectory);
                 config.ClearProviders();
                 model = new Model(config);
                 tokenizer = new Tokenizer(model);
                 adapters = new Adapters(model);
 
-                _ogaHandle = ogaHandle;
                 _config = config;
                 _model = model;
                 _tokenizer = tokenizer;
@@ -51,7 +49,6 @@ internal sealed class OnnxQwenAdapterProbeRuntimeFactory : IQwenAdapterProbeRunt
                 TryCleanup(tokenizer, "tokenizer_dispose", cleanupFailures);
                 TryCleanup(model, "model_dispose", cleanupFailures);
                 TryCleanup(config, "config_dispose", cleanupFailures);
-                TryCleanup(ogaHandle, "oga_dispose", cleanupFailures);
                 throw new QwenAdapterRuntimeCreationException(
                     exception,
                     cleanupFailures.AsReadOnly());
@@ -139,7 +136,6 @@ internal sealed class OnnxQwenAdapterProbeRuntimeFactory : IQwenAdapterProbeRunt
             TryCleanup(_tokenizer.Dispose, "tokenizer_dispose");
             TryCleanup(_model.Dispose, "model_dispose");
             TryCleanup(_config.Dispose, "config_dispose");
-            TryCleanup(_ogaHandle.Dispose, "oga_dispose");
         }
 
         private void TryCleanup(Action cleanup, string stage)

@@ -19,18 +19,14 @@ public sealed partial class OnnxSentenceScorer
             ? "cpu"
             : executionProvider.Trim();
 
-        OgaHandle? ogaHandle = null;
         Config? config = null;
         Model? model = null;
         Tokenizer? tokenizer = null;
         try
         {
-            ogaHandle = new OgaHandle();
-
             (config, model) = CreateModel(modelDir, _executionProvider, out bool retried);
             tokenizer = new Tokenizer(model);
 
-            _ogaHandle = ogaHandle;
             _config = config;
             _model = model;
             _tokenizer = tokenizer;
@@ -48,7 +44,6 @@ public sealed partial class OnnxSentenceScorer
             tokenizer?.Dispose();
             model?.Dispose();
             config?.Dispose();
-            ogaHandle?.Dispose();
             throw;
         }
     }
@@ -195,11 +190,11 @@ public sealed partial class OnnxSentenceScorer
         return false;
     }
 
+    // Releases this judge only: no OgaHandle to release, see the field comment.
     public void Dispose()
     {
         _tokenizer.Dispose();
         _model.Dispose();
         _config.Dispose();
-        _ogaHandle.Dispose();
     }
 }
