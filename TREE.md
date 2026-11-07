@@ -2457,6 +2457,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── TaskbarCoverBugNotes.md
+│   │   ├── TaskbarCoverSettingsModuleTests.cs
 │   │   ├── TaskbarCoverSettingsTests.cs
 │   │   └── TaskbarPlacementTests.cs
 │   ├── Deckle.Shell.Tests/
