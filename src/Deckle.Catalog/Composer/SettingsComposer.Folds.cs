@@ -96,7 +96,7 @@ public sealed partial class SettingsComposer
             updateGroupReset = () =>
             {
                 reset.IsEnabled = GroupDirty();
-                ToolTipService.SetToolTip(reset, tooltip);
+                LabelResetButton(reset, tooltip);
             };
         }
         else
@@ -173,7 +173,7 @@ public sealed partial class SettingsComposer
             updateSectionReset = () =>
             {
                 reset.IsEnabled = SectionDirty();
-                ToolTipService.SetToolTip(reset, tooltip);
+                LabelResetButton(reset, tooltip);
             };
         }
 
@@ -307,7 +307,7 @@ public sealed partial class SettingsComposer
             updateReset = () =>
             {
                 reset.IsEnabled = ModeDirty();
-                ToolTipService.SetToolTip(reset, tooltip);
+                LabelResetButton(reset, tooltip);
             };
         }
         else

@@ -727,7 +727,8 @@ public sealed partial class CurveEditor : UserControl
             IsTabStop = true,
             UseSystemFocusVisuals = true,
         };
-        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(thumb, first ? "Control point 1" : "Control point 2");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(
+            thumb, Loc.Format("CurveEditor_ControlPoint_Format", first ? 1 : 2));
 
         // The handle's look: an accent dot of 14 px with a ring in the base
         // background colour so it reads as floating over the curve, in a 24 px

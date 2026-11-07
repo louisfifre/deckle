@@ -50,16 +50,16 @@
                 <!-- GotFocus reveals it so a keyboard user sees it when tabbing
                      to it, not only on hover. -->
                 <Button x:Name="ResetButton" Grid.Column="1"
+                        x:Uid="TuningCardResetButton"
                         Style="{ThemeResource SubtleButtonStyle}"
                         VerticalAlignment="Top"
                         Opacity="0"
-                        ToolTipService.ToolTip="Reset this section to its defaults"
                         Click="OnResetClick"
                         GotFocus="OnResetGotFocus"
                         LostFocus="OnResetLostFocus">
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <FontIcon Glyph="{StaticResource Icon.Reset}" FontSize="14" />
-                        <TextBlock x:Name="ResetLabelText" Text="Reset section" />
+                        <TextBlock x:Name="ResetLabelText" x:Uid="TuningCardResetLabel" />
                     </StackPanel>
                 </Button>
             </Grid>
