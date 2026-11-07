@@ -336,12 +336,6 @@
   <data name="Setup_NextLabel_Retry" xml:space="preserve">
     <value>Retry</value>
   </data>
-  <data name="Setup_Result_CompleteTitle" xml:space="preserve">
-    <value>Installation complete</value>
-  </data>
-  <data name="Setup_Result_IncompleteTitle" xml:space="preserve">
-    <value>Installation incomplete</value>
-  </data>
   <data name="Setup_Result_StoredUnder_Format" xml:space="preserve">
     <value>Stored under {0}.</value>
   </data>

@@ -385,23 +385,44 @@
   <data name="GeneralHotkeyRecordCard.Header" xml:space="preserve">
     <value>Start or stop dictation</value>
   </data>
+  <data name="GeneralHotkeyRecordCard.Description" xml:space="preserve">
+    <value>Press once to start recording, again to stop and transcribe.</value>
+  </data>
   <data name="GeneralHotkeyPrecisionScrollCard.Header" xml:space="preserve">
     <value>Turn Precision scrolling on or off</value>
+  </data>
+  <data name="GeneralHotkeyPrecisionScrollCard.Description" xml:space="preserve">
+    <value>Smooth, touchpad-like scrolling from the mouse wheel. Same switch as in the tray menu.</value>
   </data>
   <data name="GeneralHotkeyTrackpadCard.Header" xml:space="preserve">
     <value>Turn Trackpad on or off</value>
   </data>
+  <data name="GeneralHotkeyTrackpadCard.Description" xml:space="preserve">
+    <value>Three-finger drag on the precision touchpad. Same switch as in the tray menu.</value>
+  </data>
   <data name="GeneralHotkeyTaskbarCoverCard.Header" xml:space="preserve">
     <value>Turn Taskbar cover on or off</value>
+  </data>
+  <data name="GeneralHotkeyTaskbarCoverCard.Description" xml:space="preserve">
+    <value>Hides the taskbar behind a black band until the mouse comes near. Same switch as in the tray menu.</value>
   </data>
   <data name="GeneralHotkeyAutocorrectCard.Header" xml:space="preserve">
     <value>Turn Autocorrect on or off</value>
   </data>
+  <data name="GeneralHotkeyAutocorrectCard.Description" xml:space="preserve">
+    <value>Corrects what you type, as you type. Same switch as in the tray menu.</value>
+  </data>
   <data name="GeneralHotkeyRewriteCard.Header" xml:space="preserve">
     <value>Turn Rewriting on or off</value>
   </data>
+  <data name="GeneralHotkeyRewriteCard.Description" xml:space="preserve">
+    <value>Turns the rewriting of your dictations on or off. Same switch as in the tray menu.</value>
+  </data>
   <data name="GeneralHotkeyAmbientLightCard.Header" xml:space="preserve">
     <value>Turn Ambient Light on or off</value>
+  </data>
+  <data name="GeneralHotkeyAmbientLightCard.Description" xml:space="preserve">
+    <value>Your Hue lights follow what&apos;s on screen. Same switch as in the tray menu.</value>
   </data>
   <!-- Advisory under a hotkey card whose chord another action already holds.
        {0} is that action's card header. -->
@@ -569,7 +590,7 @@
     <value>General</value>
   </data>
   <data name="GeneralPageHeader.Description" xml:space="preserve">
-    <value>Theme, startup, updates, backups and application data.</value>
+    <value>Theme, startup, performance, updates, backups, application data and developer tools.</value>
   </data>
   <!-- ─── RecordingPage ───────────────────────────────────────────────
        Page extracted from GeneralPage in slice S3. Owns microphone

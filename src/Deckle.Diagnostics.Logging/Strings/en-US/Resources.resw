@@ -170,7 +170,7 @@
     <value>Diagnostics folder</value>
   </data>
   <data name="DiagnosticsFilesCard.Description" xml:space="preserve">
-    <value>The setup log, the error log and the trace. Open it when you report a problem.</value>
+    <value>Holds log.jsonl, setup.jsonl, the trace (trace.jsonl) when it is on, and crash dumps. Open it when you report a problem.</value>
   </data>
 
   <!-- Shared log filter bar. The live Log Window and the trace.jsonl settings
