@@ -1612,6 +1612,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ForegroundWatcher.Probe.cs
 │   │   └── FullscreenGeometry.cs
 │   ├── Deckle.Shell.Taskbar/
+│   │   ├── Interop/
+│   │   │   └── TaskbarNativeMethods.cs
+│   │   ├── Registry/
+│   │   │   ├── NotifyIconSettingsKey.cs
+│   │   │   ├── NotifyIconSettingsWatcher.cs
+│   │   │   ├── TrayIconPromoter.cs
+│   │   │   ├── TrayIconPromotion.cs
+│   │   │   ├── TrayOutcome.cs
+│   │   │   └── TraySnapshotStore.cs
 │   │   ├── Deckle.Shell.Taskbar.csproj
 │   │   ├── DeckleShellTaskbarSource.cs
 │   │   ├── SettingsSearch.cs
