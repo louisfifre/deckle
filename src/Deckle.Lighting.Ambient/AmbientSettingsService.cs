@@ -52,6 +52,12 @@ public sealed class AmbientSettingsService
             logWarning:  msg => DeckleAmbientSource.Log.SettingsLoadWarning(msg),
             logError:    msg => DeckleAmbientSource.Log.SettingsLoadError(msg));
 
+        // A file that stored a preset of the former set follows its
+        // replacement (saved with the next edit); the family below then finds
+        // a known id.
+        if (AmbientPresets.MigrateRetiredSelection(Current) is { } retired)
+            DeckleAmbientSource.Log.PresetSelectionReplaced(retired, Current.Preset ?? "");
+
         Presets = new PresetFamily<AmbientTuning>(
             AmbientPresets.All,
             AmbientPresets.Default,
