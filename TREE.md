@@ -66,22 +66,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── launch.json
 │   └── tasks.json
 ├── benchmark/
-│   ├── autoresearch/
-│   │   ├── campaigns/
-│   │   │   ├── interactive-autocorrect/
-│   │   │   │   ├── PROTOCOL.md  — interactive-autocorrect-protocol Metric, latency, integrity, and data contract for the interactive autocorrect c…
-│   │   │   │   └── README.md  — interactive-autocorrect-research Reproducible campaign for safe, local, interactive whole-sentence autocorrectio…
-│   │   │   └── README.md  — readme-autoresearch-campaigns How to store individual autoresearch campaign folders.
-│   │   └── README.md  — readme-autoresearch Generic autoresearch workspace for measurable iterative generation, editing, ju…
-│   ├── lib/
-│   │   ├── monitor/
-│   │   │   ├── gpu_monitor.ps1
-│   │   │   └── joiner.py
-│   │   ├── env.py
-│   │   ├── event_log.py
-│   │   ├── paths.py
-│   │   ├── _base_compat.py
-│   │   └── __init__.py
 │   ├── rewrite/
 │   │   ├── model-compare/
 │   │   │   ├── prompts/
@@ -101,12 +85,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │       ├── Program.cs
 │   │       ├── README.md
 │   │       └── samples.jsonl
-│   ├── viewers/
-│   │   ├── build_html.py
-│   │   └── __init__.py
 │   ├── Directory.Build.props
 │   ├── Directory.Packages.props
-│   └── README.md  — readme-benchmark Index for Deckle benchmark workspaces — routes autoresearch, paragraph-rewrite…
+│   └── README.md  — readme-benchmark Index for Deckle's remaining benchmark workspace: the rewrite evaluations, kept…
 ├── docs/
 │   ├── adr/
 │   │   ├── 0000-template.md  — Fill-in template for a Deckle ADR — copy it to start one, record no decision he…
@@ -153,6 +134,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── README.md
 │   │   │   ├── wheel-session.ps1
 │   │   │   └── wheel_analysis.py
+│   │   ├── benchmark-conclusions.md
 │   │   ├── research--cerveau-llm--2026-10-13.md  — Cadrage vérifié (2026-10-13) — un cerveau LLM dans Deckle.Llm : les crédits API…
 │   │   ├── research--settings-ux--2026-10-13.md  — Recherche vérifiée (2026-10-13), la direction Settings de Louis passée au cribl…
 │   │   ├── research--seuils-voix--2026-11-06.md  — Cadrage vérifié (2026-11-06) — les seuils de niveau et de détection de voix dup…
@@ -725,13 +707,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PairModelTrainer.cs
 │   │   ├── RestorationEvaluator.cs
 │   │   └── RestorationReport.cs
-│   ├── Deckle.Autocorrect.Mlm/
-│   │   ├── CamembertAssets.cs
-│   │   ├── CamembertMlmScorer.cs
-│   │   ├── CamembertReranker.cs
-│   │   ├── CamembertSentenceReranker.cs
-│   │   ├── Deckle.Autocorrect.Mlm.csproj
-│   │   └── MlmProbe.cs
 │   ├── Deckle.Autocorrect.Onnx/
 │   │   ├── CandidateCompletionPlan.cs
 │   │   ├── Deckle.Autocorrect.Onnx.csproj
@@ -742,52 +717,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── OnnxSentenceScorer.Scoring.cs
 │   │   ├── OnnxSentenceScoringProfile.cs
 │   │   └── OnnxSlotReranker.cs
-│   ├── Deckle.Autocorrect.Probe/
-│   │   ├── AnticipationLeadOracleCommand.cs
-│   │   ├── AnticipationTransactionJoinCommand.cs
-│   │   ├── AutocorrectBenchmark.cs
-│   │   ├── AutocorrectBenchmarkCommand.cs
-│   │   ├── AutocorrectBenchmarkCorpus.cs
-│   │   ├── AutocorrectItPackCorpus.cs
-│   │   ├── BenchmarkKeyboardSession.cs
-│   │   ├── CaretContextProbeCommand.cs
-│   │   ├── CorrectionBenchmarkCase.cs
-│   │   ├── CorrectionBenchmarkCommand.cs
-│   │   ├── CorrectionBenchmarkCorpus.cs
-│   │   ├── CorrectionBenchmarkResult.cs
-│   │   ├── CorrectionBenchmarkSummary.cs
-│   │   ├── Deckle.Autocorrect.Probe.csproj
-│   │   ├── ModelPathResolver.cs
-│   │   ├── ProbeArguments.cs
-│   │   ├── Program.cs
-│   │   ├── QwenAdapterArtifactGate.cs
-│   │   ├── QwenAdapterCompatibilityCommand.cs
-│   │   ├── QwenAdapterCompatibilityPlan.cs
-│   │   ├── QwenAdapterCompatibilityProtocol.cs
-│   │   ├── QwenAdapterCompatibilityRuntime.cs
-│   │   ├── QwenAdapterCrossModelCommand.cs
-│   │   ├── QwenAdapterGraphContract.cs
-│   │   ├── QwenAdapterManifestGate.cs
-│   │   ├── QwenAdapterResourceSampler.cs
-│   │   ├── SentenceBatchExperimentCommand.cs
-│   │   ├── SentenceBatchExperimentFixture.cs
-│   │   ├── SentenceBatchTokenizationCommand.cs
-│   │   ├── SentenceCalibrationCommand.cs
-│   │   ├── SentenceCalibrationFixture.cs
-│   │   ├── SentenceCanonicalLatencyCommand.cs
-│   │   ├── SentenceDecisionInventory.cs
-│   │   ├── SentenceDecisionInventoryCommand.cs
-│   │   ├── SentenceDecisionInventoryEvaluation.cs
-│   │   ├── SentenceOrderAblationCommand.cs
-│   │   ├── SentenceOrderAblationFixture.cs
-│   │   ├── SentenceProfileCommand.cs
-│   │   ├── SentenceProfileFixture.cs
-│   │   ├── SentenceUnanimityBundle.cs
-│   │   ├── SentenceUnanimityBundleCommand.cs
-│   │   ├── SentenceUnanimityBundleEvaluation.cs
-│   │   ├── SentenceUnanimityMorphology.cs
-│   │   ├── SingleProbeCommand.cs
-│   │   └── StaleWorkProbeCommand.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
 │   │   │   ├── CubicBezier.cs
@@ -1954,8 +1883,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
-│   │   ├── AnticipationLeadOracleTests.cs
-│   │   ├── AnticipationTransactionJoinTests.cs
 │   │   ├── AutocorrectDecisionMapTests.cs
 │   │   ├── AutocorrectEngineBackspaceTests.cs
 │   │   ├── AutocorrectEngineCaretRecoveryTests.cs
@@ -1968,7 +1895,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AutocorrectEngineMistouchTests.cs
 │   │   ├── AutocorrectEngineObservabilityTests.cs
 │   │   ├── AutocorrectHotLoopCountTests.cs
-│   │   ├── AutocorrectKeyboardQualityTests.cs
 │   │   ├── AutocorrectLexiconArtifactsTests.cs
 │   │   ├── AutocorrectObservabilityCollection.cs
 │   │   ├── AutocorrectSentenceTypingScenarioTests.cs
@@ -1978,7 +1904,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── BackgroundRerankLaneTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── BuildDataMaintenanceTests.cs
-│   │   ├── CamembertRerankerIntegrationTests.cs
 │   │   ├── CandidateCompletionPlanTests.cs
 │   │   ├── CaretParagraphContextTests.cs
 │   │   ├── CaretSentenceContextTests.cs
@@ -1986,12 +1911,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── CompositeAmbiguityProbeTests.cs
 │   │   ├── ConservativeTypoCorrectorTests.cs
 │   │   ├── CorpusReaderTests.cs
-│   │   ├── CorrectionBenchmarkSummaryTests.cs
 │   │   ├── CorrectionTraceTests.cs
 │   │   ├── Deckle.Autocorrect.Tests.csproj
 │   │   ├── DiacriticsRestorerTests.cs
 │   │   ├── DomainActivationTests.cs
-│   │   ├── DomainPackMaintenanceTests.cs
 │   │   ├── DomainPackManifestTests.cs
 │   │   ├── EffectiveLexiconTests.cs
 │   │   ├── ElisionCorrectorTests.cs
@@ -2018,27 +1941,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── PersonalWordAdmissionTests.cs
-│   │   ├── ProbeBenchmarkSupportTests.cs
-│   │   ├── QwenAdapterCompatibilityProtocolTests.cs
-│   │   ├── QwenAdapterCompatibilityTests.cs
 │   │   ├── ReplayRunnerTests.cs
 │   │   ├── RestorationEvaluatorTests.cs
 │   │   ├── SentenceAlignmentTests.cs
-│   │   ├── SentenceBatchExperimentTests.cs
-│   │   ├── SentenceCalibrationTests.cs
-│   │   ├── SentenceCanonicalLatencyCommandTests.cs
 │   │   ├── SentenceCorpusTests.cs
-│   │   ├── SentenceDecisionInventoryTests.cs
 │   │   ├── SentenceJudgeBugNotes.md
-│   │   ├── SentenceOrderAblationTests.cs
-│   │   ├── SentenceProfileTests.cs
 │   │   ├── SentenceProposalGateTests.cs
 │   │   ├── SentenceProposalReplayMaintenanceTests.cs
 │   │   ├── SentenceProposalVerifierTests.cs
 │   │   ├── SentenceReplayMaintenanceTests.cs
 │   │   ├── SentenceReplayTests.cs
 │   │   ├── SentenceRerankCoordinatorTests.cs
-│   │   ├── SentenceUnanimityBundleTests.cs
 │   │   ├── SimulatedTextSurface.cs
 │   │   ├── SurfaceProfileMaintenanceTests.cs
 │   │   ├── SurfaceProfilerTests.cs

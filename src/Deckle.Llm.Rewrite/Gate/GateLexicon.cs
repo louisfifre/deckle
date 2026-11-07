@@ -5,8 +5,9 @@ namespace Deckle.Llm.Rewrite;
 // The two word lists the gate's rules lean on. Both are deliberately small:
 // severe calibration is the framing decision — a false reject costs one
 // offer, a false accept would cost the trust the whole corrector is built
-// on. Growing either list is a calibration act checked against the
-// paragraph-gate benchmark, not an editing convenience.
+// on. Growing either list is a calibration act checked against a
+// prompt sample (docs/research/benchmark-conclusions.md), not an editing
+// convenience.
 //
 // Entries are NORMALIZED forms (see GateTokenizer.Normalize): lowercase, no
 // diacritics, no apostrophes — "où" and "ou" are one entry, "l'" is "l".

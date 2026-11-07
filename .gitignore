@@ -14,10 +14,7 @@ whisper.cpp/
 # ─────────────────────────────────────────────────────────────────────────
 
 # .NET build output. src/ and tests/ build into artifacts/ (ArtifactsPath in
-# Directory.Build.props); benchmark/ has its own props and keeps per-project
-# bin/ and obj/.
-benchmark/**/bin/
-benchmark/**/obj/
+# Directory.Build.props).
 
 # Deployment output — rebuildable via dotnet publish.
 publish/
@@ -149,31 +146,18 @@ crashdumps/
 # temporary by doctrine, never committed.
 /logs/
 
-# ─────────────────────────────────────────────────────────────────────────
-#  Benchmark — runtime artifacts, never versioned
-# ─────────────────────────────────────────────────────────────────────────
-#
-#   telemetry/  raw Deckle capture (corpus JSONL + WAVs, latency, app log).
-#               Layout: <slug>/corpus.jsonl, <slug>/audio/*.wav, …
-#   reports/    per-run benchmark output (last_<name>_run.{json,txt},
-#               per-experiment snapshots). Regenerated each run.
-#   logs/       step-by-step log of the benchmark script itself —
-#               kept so a crashed run can be resumed.
-#   results.tsv journal at benchmark/ root, one row per experiment.
-benchmark/**/__pycache__/
-benchmark/telemetry/
-benchmark/reports/
-benchmark/logs/
-benchmark/results.tsv
-benchmark/runs/
-# Each contributor brings their own samples, never on Git (private audio,
-# the user's Whisper transcriptions).
-benchmark/corpora/
-benchmark/external/
-benchmark/models-cache/
+# Only benchmark/rewrite stays in the repository. A checkout that ran the
+# removed benches still holds their local runs, which may contain
+# dictations: everything else under benchmark/ is ignored so it can never be
+# committed. Drop the first rule once no checkout keeps those folders.
+/benchmark/*
+!/benchmark/rewrite/
+!/benchmark/Directory.Build.props
+!/benchmark/Directory.Packages.props
+!/benchmark/README.md
 
 # ─────────────────────────────────────────────────────────────────────────
-#  Python tooling — caches and virtualenvs (benchmark/ + ad hoc scripts)
+#  Python tooling — caches and virtualenvs (ad hoc scripts)
 # ─────────────────────────────────────────────────────────────────────────
 
 **/__pycache__/

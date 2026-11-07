@@ -4,10 +4,11 @@ namespace Deckle.Llm.Rewrite;
 //
 // What the gate hands back: an all-or-nothing acceptance plus the edit script
 // that justified it. The script is not a debugging extra: it is the change
-// list the offer window shows as-is, and the rejection histogram of the
-// paragraph-gate benchmark. On rejection the script is still complete: every
-// edit is there, the violating ones flagged, so a rejection can always answer
-// "why".
+// list the offer window shows as-is, and the rejection histogram a
+// calibration pass reads (see
+// docs/research/benchmark-conclusions.md). On rejection the script is still
+// complete: every edit is there, the violating ones flagged, so a rejection
+// can always answer "why".
 
 /// <summary>How one edit of the script was ruled. Allowed rulings map to the
 /// three framing rules; Rejected rulings are their negations.</summary>

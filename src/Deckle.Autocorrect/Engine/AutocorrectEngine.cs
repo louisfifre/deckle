@@ -169,7 +169,7 @@ public sealed partial class AutocorrectEngine : IDisposable
         if (probe is not null && (reranker is not null || rerankLaneOverride is not null))
         {
             // Production never supplies an override and retains the background
-            // lane. The internal benchmark seam can inject a synchronous lane to
+            // lane. An internal measurement seam can inject a synchronous lane to
             // prove request absence without converting a scheduling timeout into
             // a generator-coverage result.
             _lane = rerankLaneOverride

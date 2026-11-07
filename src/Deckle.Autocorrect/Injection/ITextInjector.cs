@@ -13,6 +13,6 @@ public interface ITextInjector
 
     // The Win32 error behind the last short send, 0 when the last send went
     // through or the implementation has none to report. A default member, so
-    // test and benchmark injectors need not grow one.
+    // test injectors need not grow one.
     int LastWin32Error => 0;
 }

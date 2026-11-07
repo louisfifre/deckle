@@ -1,6 +1,7 @@
 namespace Deckle.Autocorrect;
 
-// Internal measurement seam for the offline benchmark. Production constructs
+// Internal measurement seam for offline tooling (its benchmark consumer was
+// removed). Production constructs
 // the corrector without an observer, so no per-candidate payload or allocation
 // exists on the live path. The observation counts the strings the existing
 // generate-and-test search actually creates, the distinct forms it looks up,

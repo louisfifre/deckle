@@ -2,13 +2,13 @@
 
 > Support de consultation pour l'arbitrage — 30 juillet 2026.
 
-**Portée.** Toutes les valeurs déclarées dans le code des 41 modules balayés : réglages persistés, constantes de tuning, paramètres Playground, valeurs figées par construction. Chaque module a été relu à la source, ligne par ligne, par un agent dédié : les faux positifs du balayage automatique ont été retirés, les entrées manquées ont été ajoutées à la main, les entrées douteuses ont été conservées et signalées.
+**Portée.** Toutes les valeurs déclarées dans le code des 39 modules balayés : réglages persistés, constantes de tuning, paramètres Playground, valeurs figées par construction. Chaque module a été relu à la source, ligne par ligne, par un agent dédié : les faux positifs du balayage automatique ont été retirés, les entrées manquées ont été ajoutées à la main, les entrées douteuses ont été conservées et signalées.
 
 **Ce document ne tranche rien.** Il expose et il signale. Exposer, geler, déplacer ou supprimer reste une décision de Louis. La colonne « Juin » indique si l'entrée figurait déjà dans `docs/inventaire-settings.md` (juin 2026). La colonne « Doute » porte la réserve de l'agent qui a vérifié l'entrée — c'est là que se lisent les arbitrages à rendre.
 
 **Hors périmètre.** Les littéraux XAML (bornes `Minimum`/`Maximum`/`StepFrequency` des sliders), les tables lexicales préfixées `_`, et tout ce qui vit sous `tests/`.
 
-Total : **691 entrées** réparties sur **41 modules**.
+Total : **646 entrées** réparties sur **39 modules**.
 
 | Module | Entrées |
 |---|---|
@@ -18,9 +18,7 @@ Total : **691 entrées** réparties sur **41 modules**.
 | Deckle.Audio | 46 |
 | Deckle.Autocorrect | 53 |
 | Deckle.Autocorrect.Lab | 20 |
-| Deckle.Autocorrect.Mlm | 4 |
 | Deckle.Autocorrect.Onnx | 1 |
-| Deckle.Autocorrect.Probe | 41 |
 | Deckle.Catalog | 2 |
 | Deckle.Composition | 62 |
 | Deckle.Core | 9 |
@@ -218,66 +216,11 @@ Total : **691 entrées** réparties sur **41 modules**.
 | RestorationEvaluator.SentenceBreaks | tuning-constant | `{ '.', '!', '?', ';', ':', '…' }` | src/Deckle.Autocorrect.Lab/RestorationEvaluator.cs:24 | non |  |
 | EvaluatorOptions.MaxTokens | default-value | `0` | src/Deckle.Autocorrect.Lab/RestorationEvaluator.cs:414 | non |  |
 
-## Deckle.Autocorrect.Mlm
-
-| Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
-|---|---|---|---|---|---|
-| CamembertAssets.DirectoryName | tuning-constant | `"camembert-base"` | src/Deckle.Autocorrect.Mlm/CamembertAssets.cs:22 | non |  |
-| AssetFile.BaseUrl | tuning-constant | `"https://huggingface.co/Xenova/camembert-base/resolve/main"` | src/Deckle.Autocorrect.Mlm/CamembertAssets.cs:30 | non | Remote asset origin (HuggingFace). Network-facing default, relevant to the local-compute doctrine. |
-| CamembertSentenceReranker.FreqFloor | tuning-constant | `0.01` | src/Deckle.Autocorrect.Mlm/CamembertSentenceReranker.cs:28 | non |  |
-| MlmProbe.SentenceBreaks | tuning-constant | `{ '.', '!', '?', ';', ':', '…', '\n' }` | src/Deckle.Autocorrect.Mlm/MlmProbe.cs:38 | non |  |
-
 ## Deckle.Autocorrect.Onnx
 
 | Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
 |---|---|---|---|---|---|
 | OnnxSlotReranker.MinSentenceWordTokens | tuning-constant | `4` | src/Deckle.Autocorrect.Onnx/OnnxSlotReranker.cs:26 | non |  |
-
-## Deckle.Autocorrect.Probe
-
-| Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
-|---|---|---|---|---|---|
-| AnticipationLeadOracle.DecisionBudgetsMilliseconds | tuning-constant | `[50, 100, 150, 250, 500, 945]` | src/Deckle.Autocorrect.Probe/AnticipationLeadOracleCommand.cs:79 | non |  |
-| AnticipationLeadOracle.TriggerDelaysMilliseconds | tuning-constant | `[0, 50, 100, 150, 250]` | src/Deckle.Autocorrect.Probe/AnticipationLeadOracleCommand.cs:80 | non |  |
-| AnticipationTransactionJoinCommand.TriggerDelaysMilliseconds | tuning-constant | `[0, 50, 100]` | src/Deckle.Autocorrect.Probe/AnticipationTransactionJoinCommand.cs:17 | non |  |
-| AnticipationTransactionJoinCommand.TerminalBranches | tuning-constant | `['.', '?', '!', '…']` | src/Deckle.Autocorrect.Probe/AnticipationTransactionJoinCommand.cs:18 | non | Terminal punctuation set driving branch policy; linguistic, shared with the Mlm/Lab sentence-break sets. |
-| CorrectionBenchmarkCommand.PrimaryThreshold | tuning-constant | `0.25` | src/Deckle.Autocorrect.Probe/CorrectionBenchmarkCommand.cs:9 | non |  |
-| ProbeArguments.Provider | default-value | `"dml"` | src/Deckle.Autocorrect.Probe/ProbeArguments.cs:46 | non |  |
-| QwenAdapterCompatibilityPlanReader.FrozenExperimentId | tuning-constant | `"ACX-0023"` | src/Deckle.Autocorrect.Probe/QwenAdapterCompatibilityPlan.cs:91 | non | Frozen experiment identity pin (ACX-0023), not a knob; kept because it pins what the probe runs. |
-| QwenAdapterCompatibilityPlanReader.FrozenPhase | tuning-constant | `"A"` | src/Deckle.Autocorrect.Probe/QwenAdapterCompatibilityPlan.cs:92 | non | Frozen experiment identity pin, not a knob. |
-| QwenAdapterCompatibilityPlanReader.FrozenProvider | tuning-constant | `"cpu"` | src/Deckle.Autocorrect.Probe/QwenAdapterCompatibilityPlan.cs:93 | non | Frozen execution provider (cpu) for the compatibility plan; a real choice, frozen by protocol. |
-| QwenAdapterCompatibilityPlanReader.FrozenRepository | tuning-constant | `"Qwen/Qwen3-0.6B"` | src/Deckle.Autocorrect.Probe/QwenAdapterCompatibilityPlan.cs:94 | non | Frozen base model repository; a real choice, frozen by protocol. |
-| QwenAdapterCompatibilityPlanReader.FrozenRevision | tuning-constant | `"c1899de289a04d12100db370d81485cdf75e47ca"` | src/Deckle.Autocorrect.Probe/QwenAdapterCompatibilityPlan.cs:95 | non | Frozen base model revision hash; a real choice, frozen by protocol. |
-| QwenAdapterResourceSampler.SamplePeriodMilliseconds | tuning-constant | `50` | src/Deckle.Autocorrect.Probe/QwenAdapterResourceSampler.cs:31 | non |  |
-| QwenAdapterResourceSampler.QuiescenceMilliseconds | tuning-constant | `250` | src/Deckle.Autocorrect.Probe/QwenAdapterResourceSampler.cs:32 | non |  |
-| SentenceBatchExperimentCommand.StabilityThresholds | tuning-constant | `[0.0, 0.5, 1.0]` | src/Deckle.Autocorrect.Probe/SentenceBatchExperimentCommand.cs:9 | non |  |
-| SentenceBatchExperimentFixture.WarmupPairs | tuning-constant | `2` | src/Deckle.Autocorrect.Probe/SentenceBatchExperimentFixture.cs:5 | non |  |
-| SentenceBatchExperimentFixture.LatencyBlocks | tuning-constant | `5` | src/Deckle.Autocorrect.Probe/SentenceBatchExperimentFixture.cs:6 | non |  |
-| SentenceBatchExperimentFixture.MaximumMedianBlockRatio | tuning-constant | `0.75` | src/Deckle.Autocorrect.Probe/SentenceBatchExperimentFixture.cs:7 | non |  |
-| SentenceBatchExperimentFixture.MinimumFasterBlocks | tuning-constant | `4` | src/Deckle.Autocorrect.Probe/SentenceBatchExperimentFixture.cs:8 | non |  |
-| SentenceBatchExperimentFixture.SecondaryLatencyReferenceMilliseconds | tuning-constant | `300.0` | src/Deckle.Autocorrect.Probe/SentenceBatchExperimentFixture.cs:9 | non |  |
-| SentenceCalibrationFixture.OrdinaryRounds | tuning-constant | `20` | src/Deckle.Autocorrect.Probe/SentenceCalibrationFixture.cs:5 | non |  |
-| SentenceCalibrationFixture.CalibrationBlocksPerStratum | tuning-constant | `16` | src/Deckle.Autocorrect.Probe/SentenceCalibrationFixture.cs:6 | non |  |
-| SentenceCalibrationFixture.CalibrationCandidateCounts | tuning-constant | `[2]` | src/Deckle.Autocorrect.Probe/SentenceCalibrationFixture.cs:8 | non |  |
-| SentenceCanonicalLatencyCommand.Rounds | tuning-constant | `20` | src/Deckle.Autocorrect.Probe/SentenceCanonicalLatencyCommand.cs:9 | non |  |
-| SentenceDecisionInventory.SourceCorpus | tuning-constant | `"public_visible_development"` | src/Deckle.Autocorrect.Probe/SentenceDecisionInventory.cs:8 | non | Corpus selector string; identifies which corpus the inventory measures. |
-| SentenceDecisionInventoryCommand.Seed | tuning-constant | `20260730` | src/Deckle.Autocorrect.Probe/SentenceDecisionInventoryCommand.cs:9 | non |  |
-| SentenceDecisionInventoryCommand.WarmupEvaluationCount | tuning-constant | `1_000` | src/Deckle.Autocorrect.Probe/SentenceDecisionInventoryCommand.cs:10 | non |  |
-| SentenceDecisionInventoryCommand.MeasuredEvaluationCount | tuning-constant | `10_000` | src/Deckle.Autocorrect.Probe/SentenceDecisionInventoryCommand.cs:11 | non |  |
-| SentenceOrderAblationCommand.StabilityThresholds | tuning-constant | `[0.0, 0.5, 1.0]` | src/Deckle.Autocorrect.Probe/SentenceOrderAblationCommand.cs:9 | non |  |
-| SentenceOrderAblationFixture.Seed | tuning-constant | `20260730` | src/Deckle.Autocorrect.Probe/SentenceOrderAblationFixture.cs:5 | non |  |
-| SentenceOrderAblationFixture.WarmupCycles | tuning-constant | `2` | src/Deckle.Autocorrect.Probe/SentenceOrderAblationFixture.cs:6 | non |  |
-| SentenceOrderAblationFixture.LatencyBlocks | tuning-constant | `20` | src/Deckle.Autocorrect.Probe/SentenceOrderAblationFixture.cs:7 | non |  |
-| SentenceOrderAblationFixture.ContinuousHotForwardP95ReferenceMilliseconds | tuning-constant | `300.0` | src/Deckle.Autocorrect.Probe/SentenceOrderAblationFixture.cs:8 | non |  |
-| SentenceProfileCommand.OverheadPairs | tuning-constant | `5` | src/Deckle.Autocorrect.Probe/SentenceProfileCommand.cs:9 | non |  |
-| SentenceProfileFixture.Seed | tuning-constant | `20260730` | src/Deckle.Autocorrect.Probe/SentenceProfileFixture.cs:5 | non |  |
-| SentenceProfileFixture.CandidateCounts | tuning-constant | `[2, 4, 8, 13]` | src/Deckle.Autocorrect.Probe/SentenceProfileFixture.cs:7 | non |  |
-| SentenceProfileFixture.Transaction | tuning-constant | `CreateTransaction()` | src/Deckle.Autocorrect.Probe/SentenceProfileFixture.cs:9 | non | Static fixture object built by CreateTransaction(), not a scalar value; the sweep read it as a default. Kept as the experiment input. |
-| SentenceUnanimityBundleCommand.Seed | tuning-constant | `20260730` | src/Deckle.Autocorrect.Probe/SentenceUnanimityBundleCommand.cs:9 | non |  |
-| SentenceUnanimityBundleCommand.WarmupEvaluationCount | tuning-constant | `1_000` | src/Deckle.Autocorrect.Probe/SentenceUnanimityBundleCommand.cs:10 | non |  |
-| SentenceUnanimityBundleCommand.MeasuredEvaluationCount | tuning-constant | `10_000` | src/Deckle.Autocorrect.Probe/SentenceUnanimityBundleCommand.cs:11 | non |  |
-| SentenceUnanimityBundleCommand.WarmP95ReferenceMilliseconds | tuning-constant | `1.0` | src/Deckle.Autocorrect.Probe/SentenceUnanimityBundleCommand.cs:12 | non |  |
-| StaleWorkProbeCommand.StaleHoldMilliseconds | tuning-constant | `250` | src/Deckle.Autocorrect.Probe/StaleWorkProbeCommand.cs:14 | non |  |
 
 ## Deckle.Catalog
 

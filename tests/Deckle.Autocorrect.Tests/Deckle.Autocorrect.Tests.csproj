@@ -2,9 +2,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
     <ProjectReference Include="..\..\src\Deckle.Autocorrect.Lab\Deckle.Autocorrect.Lab.csproj" />
-    <ProjectReference Include="..\..\src\Deckle.Autocorrect.Mlm\Deckle.Autocorrect.Mlm.csproj" />
     <ProjectReference Include="..\..\src\Deckle.Autocorrect.Onnx\Deckle.Autocorrect.Onnx.csproj" />
-    <ProjectReference Include="..\..\src\Deckle.Autocorrect.Probe\Deckle.Autocorrect.Probe.csproj" />
     <!-- Whole-sentence proposal maintenance replay composes the rewrite proposer
          with the autocorrect verifier without coupling their production modules. -->
     <ProjectReference Include="..\..\src\Deckle.Llm.Rewrite\Deckle.Llm.Rewrite.csproj" />

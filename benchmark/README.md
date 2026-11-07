@@ -1,20 +1,16 @@
 ---
 name: readme-benchmark
-description: "Index for Deckle benchmark workspaces — routes autoresearch, paragraph-rewrite evaluation and shared plumbing instead of mixing them at the root."
+description: "Index for Deckle's remaining benchmark workspace: the rewrite evaluations, kept beside the app but outside its release discipline."
 module: benchmark
 ---
 
-# `benchmark/` — Deckle benchmark workspaces
+# `benchmark/` — Deckle benchmark workspace
 
-Top-level container for experimental harnesses that are useful to keep near Deckle but are not product code.
-
-## Layout
+Experimental harnesses kept near Deckle but not product code. Only the rewrite evaluations remain; the other benches were removed and what they concluded is in [`docs/research/benchmark-conclusions.md`](../docs/research/benchmark-conclusions.md).
 
 | Folder | Responsibility |
 |---|---|
-| [`autoresearch/`](autoresearch/) | Generic Karpathy-style autoresearch workspace: define a goal, generate or edit candidates, measure them with explicit criteria, keep/discard, and iterate. |
-| [`lib/`](lib/) | Cross-benchmark infrastructure only: path resolution, env loading, event logs, resource monitoring. |
-| [`rewrite/`](rewrite/) | Evaluation of the rewrites: the paragraph-gate study ([`rewrite/paragraph-gate`](rewrite/paragraph-gate/)) running the production paragraph prompt, engine and diff gate on a local model, and the model-compare study ([`rewrite/model-compare`](rewrite/model-compare/)) running Claude models × prompt variants on the whole-dictation rewrite, judged by an LLM. |
-| [`viewers/`](viewers/) | Generic benchmark result viewers. |
+| [`rewrite/paragraph-gate`](rewrite/paragraph-gate/) | Runs the production paragraph prompt, engine and diff gate on a local model. |
+| [`rewrite/model-compare`](rewrite/model-compare/) | Runs Claude models × prompt variants on the whole-dictation rewrite, judged by an LLM, and optimizes a profile's prompt in campaigns. |
 
-Keep reusable code inside the workspace that owns the concept. Shared plumbing that could serve another benchmark stays under `lib/` or `viewers/`.
+`Directory.Build.props` and `Directory.Packages.props` here cut the bench projects off from the root build conventions and from Central Package Management, so each study keeps its own package versions.
