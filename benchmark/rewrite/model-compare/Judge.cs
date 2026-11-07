@@ -24,13 +24,21 @@ static class Judge
     // stays under the SDK's non-streaming timeout.
     const int MaxOutputTokens = 16_000;
 
-    public const string SystemPrompt = """
+    // Assembled from parts: the batch judge (BatchJudge.cs) shares the
+    // category rules and the verdict scale word for word, so a verdict means
+    // the same thing whether the judge read one rewrite or five. Only the
+    // framing and the answer schema differ.
+    public const string SystemPrompt = SingleIntro + "\n\n" + CategoryRules + "\n\n" + VerdictRule + "\n\n" + SingleSchema;
+
+    const string SingleIntro = """
         You audit the fidelity of an automatic rewrite of French dictated speech.
 
         The text inside <raw> is a speech-recognition transcript of one person speaking French. It carries everything speech carries: hesitations, fillers, false starts, fragments repeated by the flow of speech, dropped "ne", run-on sentences, and recognition errors. The text inside <rewrite> is supposed to be that same speech cleaned into written prose: the same content, in the same order, in the speaker's register and words, with nothing summarised and nothing added.
 
         Your task is to find every place where the rewrite changes what the speaker meant. Compare meaning, not style. A rewrite may read very differently from the raw and still be faithful; a rewrite may change one word and betray the speaker.
+        """;
 
+    public const string CategoryRules = """
         Report findings in five categories.
 
         term_substitutions: a proper noun, project name, tool or product name, identifier, or technical term in the raw that the rewrite replaced with a different word. Speech recognition often spells such terms phonetically or splits them into ordinary words. A term the rewrite leaves as the raw has it, however odd it looks, is correct and is not reported. A term restored to the name the speaker obviously meant is correct. A term turned into a common word, a different technical term, or another name that appears elsewhere in the text is a substitution, even when the result reads more naturally.
@@ -46,9 +54,13 @@ static class Judge
         Normal cleaning is never reported: removed fillers and hesitations, removed false starts and repetitions, restored "ne", punctuation, paragraphing, capitalisation, agreement and conjugation fixes, a recognition error corrected into the common word the context makes obvious, and light reordering inside a sentence that keeps its meaning.
 
         For each finding, quote the shortest span of the raw and the shortest span of the rewrite that show the change, copied exactly from the texts, in French, and add a short note in English saying what changed in meaning. Report every instance separately. Report each change once, in the most specific category: a dropped negation is a meaning inversion, not an omission.
+        """;
 
+    public const string VerdictRule = """
         Verdict: "faithful" when you report nothing; "minor" when every finding is small enough that a reader would take away the same content; "unfaithful" when at least one finding changes a claim, a decision, a term the reader needs, or the speaker's certainty on a point that matters.
+        """;
 
+    const string SingleSchema = """
         Answer with one JSON object and nothing else: no prose, no code fence. Use empty arrays when a category has no finding. The schema:
 
         {
@@ -160,7 +172,7 @@ static class Judge
 
     // The prompt asks for bare JSON, but a code fence or a stray sentence
     // around it must not cost the judgement: take the outermost {...} span.
-    static Judgement? Parse(string answer)
+    public static Judgement? Parse(string answer)
     {
         int start = answer.IndexOf('{');
         int end = answer.LastIndexOf('}');
@@ -175,7 +187,7 @@ static class Judge
         }
     }
 
-    static string Short(string id) => id.Length > 8 ? id[..8] : id;
+    public static string Short(string id) => id.Length > 8 ? id[..8] : id;
 
     static string Abbrev(string category) => category switch
     {

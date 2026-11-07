@@ -1,0 +1,17 @@
+{
+  "name": "arrangement-sonnet",
+  "profile": "Arrangement",
+  "model": "claude-sonnet-5-5",
+  "buckets": ["long"],
+  "judge_note": "This profile regroups the speech by theme on purpose: paragraphs are reordered and sentences said in different places are gathered under the theme they belong to. A change of order or grouping is never a finding. An idea the speaker restated in other words may appear once, as long as everything its restatements added survives: a vanished restatement that added nothing is not an omission. Judge only whether the content, the terms, the direction of each statement and the hedges survived the regrouping.",
+  "take_per_bucket": 2,
+  "iterations_per_round": 10,
+  "max_rounds": 12,
+  "target_score": 90,
+  "budget_usd": 24,
+  "validation_reserve_usd": 5,
+  "validation_iterations": 10,
+  "proposer_model": "claude-opus-5-5",
+  "judge": { "model": "claude-opus-5-5", "batch": 5 },
+  "start_prompt_file": null
+}
