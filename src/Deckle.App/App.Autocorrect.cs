@@ -5,29 +5,19 @@ using System.IO;
 using System.Threading.Tasks;
 using Deckle.Core;
 using Deckle.Autocorrect;
-using Deckle.Autocorrect.Onnx;
 using Deckle.Input;
 using Deckle.Notifications;
 
 namespace Deckle.App;
 
-// The sentence judge model lives under the user data root (models\sentence-judge\),
-// staged by hand and never shipped in the build.
 public partial class App
 {
-    // Chosen on the precision side: an abstention is invisible, a wrong change
-    // erodes trust. Margins are per-export: this one is calibrated on the DML int4
-    // export the live path loads, and must be recalibrated if the export changes.
-    private const double SentenceJudgeMargin = 1.0;
-
     // Reached only once the module switch is on: a disabled module never opens
-    // the lexicons and never maps the optional GPU reranker.
+    // the lexicons.
     private async Task<AutocorrectRuntime?> BuildAutocorrectRuntimeAsync()
     {
         AutocorrectEngine? engine = null;
         PersonalDictionary? dictionary = null;
-        FrenchSentenceReranker? sentenceReranker = null;
-        ISentenceReranker? loadedReranker = null;
 
         try
         {
@@ -42,7 +32,6 @@ public partial class App
             string dataDir = AutocorrectLexiconArtifacts.DataDirectory;
             string frenchPath = Path.Combine(dataDir, AutocorrectLexiconArtifacts.FrenchFileName);
             string pairPath = Path.Combine(dataDir, AutocorrectLexiconArtifacts.PairBigramsFrenchFileName);
-            string verbsPath = Path.Combine(dataDir, AutocorrectLexiconArtifacts.VerbMorphologyFrenchFileName);
 
             if (!File.Exists(frenchPath))
             {
@@ -64,7 +53,7 @@ public partial class App
             // The heavy step is pure CPU and IO with no UI affinity, so it runs on
             // the thread pool.
             var loadStopwatch = Stopwatch.StartNew();
-            var (french, english, index, context, reranker, rerankerEngine, rerankerLoadMs, verbs) = await Task.Run(() =>
+            var (french, english, index, context) = await Task.Run(() =>
             {
                 var fr = ComposeEffectiveLexicon(frenchPath, dataDir, activePacks, excludedWords);
                 var en = new GlobalEnglishLexicon(
@@ -75,45 +64,11 @@ public partial class App
                     : null;
                 if (ctx is null)
                     DeckleAppSource.Log.AutocorrectAssetSkipped("pair_bigrams", "file_missing");
-                // Without verb morphology the engine runs without subject-verb
-                // agreement correction.
-                var vb = File.Exists(verbsPath) ? VerbMorphology.LoadTsvGz(verbsPath) : null;
-                if (vb is null)
-                    DeckleAppSource.Log.AutocorrectAssetSkipped("verb_morphology", "file_missing");
-                // The whole-sentence judge, resident on the GPU, when its model
-                // directory is present; otherwise deterministic rules only.
-                var rerankerStopwatch = Stopwatch.StartNew();
-                string judgeDir = Path.Combine(AppPaths.ModelsDirectory, "sentence-judge");
-                // Named once: the load asks for it and a failure reports it.
-                const string judgeProvider = "dml";
-                ISentenceReranker? rr = OnnxSlotReranker.TryLoad(
-                    judgeDir,
-                    margin: SentenceJudgeMargin,
-                    executionProvider: judgeProvider,
-                    out Exception? judgeLoadError);
-                string engine = DeckleAutocorrectSource.RerankerEngines.SentenceJudge;
-                if (rr is null && judgeLoadError is not null)
-                {
-                    DeckleAutocorrectSource.Log.RerankerLoadFailure(
-                        DeckleAutocorrectSource.RerankerEngines.SentenceJudge,
-                        judgeProvider,
-                        judgeLoadError.GetType().Name,
-                        judgeLoadError.Message);
-                }
-                // An absent directory is the normal state (the model is staged
-                // by hand) and RerankerStatus already says engine=none. A present
-                // directory that loads nothing without an exception is not.
-                if (rr is null && judgeLoadError is null && Directory.Exists(judgeDir))
-                    DeckleAppSource.Log.AutocorrectAssetSkipped("sentence_judge", "load_returned_null");
-                if (rr is null)
-                    engine = DeckleAutocorrectSource.RerankerEngines.None;
-                rerankerStopwatch.Stop();
-                return (fr, en, idx, ctx, rr, engine, rerankerStopwatch.ElapsedMilliseconds, vb);
+                return (fr, en, idx, ctx);
             }).ConfigureAwait(false);
-            loadedReranker = reranker;
             loadStopwatch.Stop();
             DeckleAutocorrectSource.Log.LexiconLoadComplete(
-                loadStopwatch.ElapsedMilliseconds - rerankerLoadMs, french.Count);
+                loadStopwatch.ElapsedMilliseconds, french.Count);
 
             // Persisted text, kept under the user data root: inspectable and removable.
             string dictPath = Path.Combine(
@@ -137,11 +92,7 @@ public partial class App
                 index,
                 context,
                 dictionary,
-                BuildAutocorrectPersonalVariants(dictionary),
-                verbs);
-
-            sentenceReranker = new FrenchSentenceReranker(loadedReranker);
-            loadedReranker = null; // ownership moved into the wrapper
+                BuildAutocorrectPersonalVariants(dictionary));
 
             engine = new AutocorrectEngine(
                 host: host,
@@ -154,27 +105,19 @@ public partial class App
                 dictionary: dictionary,
                 french: french,
                 english: english,
-                // Without the whole-sentence judge there is no reranker: the stage
-                // stays on deterministic rules only.
-                reranker: sentenceReranker,
-                probe: policies.AmbiguityProbe,
-                wholeSentenceProbe: policies.WholeSentenceProbe,
                 // Read live so a Settings flip takes effect without a rebuild.
                 decisionTelemetry: () =>
                     Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Current.AutocorrectDecisions,
                 // The heaviest text capture, behind its own consent toggle.
                 textTelemetry: () =>
                     Deckle.Diagnostics.Telemetry.TelemetrySettingsService.Instance.Current.AutocorrectText,
-                mistouchFamilies: mistouchFamilies,
-                caretTextReader: new UIAutomationCaretTextReader());
-            sentenceReranker = null; // ownership moved into the engine's lane
+                mistouchFamilies: mistouchFamilies);
 
             // Raised on the engine's input thread: the prompt is detached so it
             // never blocks typing.
             engine.EnrollmentSuggested += p => _ = PromptAutocorrectEnrollmentAsync(p);
 
-            var runtime = new AutocorrectRuntime(
-                engine, dictionary, rerankerEngine, rerankerLoadMs, lexiconKey);
+            var runtime = new AutocorrectRuntime(engine, dictionary, lexiconKey);
             engine = null;
             dictionary = null;
             return runtime;
@@ -187,8 +130,6 @@ public partial class App
             try
             {
                 engine?.Dispose();
-                sentenceReranker?.Dispose();
-                (loadedReranker as IDisposable)?.Dispose();
             }
             finally
             {

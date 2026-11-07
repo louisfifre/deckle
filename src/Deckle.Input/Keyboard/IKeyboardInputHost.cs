@@ -20,7 +20,7 @@ public interface IKeyboardInputHost
 
     /// <summary>
     /// Raised on the input thread after <see cref="RequestDrain"/> posted to the pump. The
-    /// marshalling point for a background consumer (the autocorrect reranker) to apply a result
+    /// marshalling point for a background consumer (the autocorrect engine's consent change) to act
     /// back on the input thread, where the engine's state lives.
     /// </summary>
     event Action? DrainRequested;

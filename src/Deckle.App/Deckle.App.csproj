@@ -13,7 +13,7 @@
     <UseWinUI>true</UseWinUI>
     <WindowsPackageType>None</WindowsPackageType>
     <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
-    <!-- Deckle owns ONNX Runtime and DirectML through the autocorrect stack.
+    <!-- Deckle owns ONNX Runtime and DirectML through Deckle.Inference.Onnx (the Silero VAD).
          Windows App SDK ML is not used, so its automatic ONNX Runtime
          initialization must not compete with the host's runtime. -->
     <DisableWindowsAppSDKMLAutoInitialize>true</DisableWindowsAppSDKMLAutoInitialize>
@@ -132,7 +132,6 @@
     <ProjectReference Include="..\Deckle.Install\Deckle.Install.csproj" />
     <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
     <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
-    <ProjectReference Include="..\Deckle.Autocorrect.Onnx\Deckle.Autocorrect.Onnx.csproj" />
     <ProjectReference Include="..\Deckle.Input.Trackpad\Deckle.Input.Trackpad.csproj" />
     <ProjectReference Include="..\Deckle.Input.PrecisionScroll\Deckle.Input.PrecisionScroll.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />

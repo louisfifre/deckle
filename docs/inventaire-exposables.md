@@ -2,13 +2,13 @@
 
 > Support de consultation pour l'arbitrage — 30 juillet 2026.
 
-**Portée.** Toutes les valeurs déclarées dans le code des 39 modules balayés : réglages persistés, constantes de tuning, paramètres Playground, valeurs figées par construction. Chaque module a été relu à la source, ligne par ligne, par un agent dédié : les faux positifs du balayage automatique ont été retirés, les entrées manquées ont été ajoutées à la main, les entrées douteuses ont été conservées et signalées.
+**Portée.** Toutes les valeurs déclarées dans le code des 38 modules balayés : réglages persistés, constantes de tuning, paramètres Playground, valeurs figées par construction. Chaque module a été relu à la source, ligne par ligne, par un agent dédié : les faux positifs du balayage automatique ont été retirés, les entrées manquées ont été ajoutées à la main, les entrées douteuses ont été conservées et signalées.
 
 **Ce document ne tranche rien.** Il expose et il signale. Exposer, geler, déplacer ou supprimer reste une décision de Louis. La colonne « Juin » indique si l'entrée figurait déjà dans `docs/inventaire-settings.md` (juin 2026). La colonne « Doute » porte la réserve de l'agent qui a vérifié l'entrée — c'est là que se lisent les arbitrages à rendre.
 
 **Hors périmètre.** Les littéraux XAML (bornes `Minimum`/`Maximum`/`StepFrequency` des sliders), les tables lexicales préfixées `_`, et tout ce qui vit sous `tests/`.
 
-Total : **645 entrées** réparties sur **39 modules**.
+Total : **625 entrées** réparties sur **38 modules**.
 
 | Module | Entrées |
 |---|---|
@@ -16,9 +16,8 @@ Total : **645 entrées** réparties sur **39 modules**.
 | Deckle.Anytype.Mcp | 3 |
 | Deckle.App | 4 |
 | Deckle.Audio | 45 |
-| Deckle.Autocorrect | 53 |
-| Deckle.Autocorrect.Lab | 20 |
-| Deckle.Autocorrect.Onnx | 1 |
+| Deckle.Autocorrect | 37 |
+| Deckle.Autocorrect.Lab | 17 |
 | Deckle.Catalog | 2 |
 | Deckle.Composition | 62 |
 | Deckle.Core | 9 |
@@ -82,7 +81,6 @@ Total : **645 entrées** réparties sur **39 modules**.
 
 | Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
 |---|---|---|---|---|---|
-| SentenceJudgeMargin | tuning-constant | `1.0` | src/Deckle.App/App.Autocorrect.cs:37 | non | Strongest keeper of the batch. Comment documents a maintainer-decided precision/coverage tradeoff (92.2%/20.8% at 1.0 vs 90.8%/41.0% at 0.5) and says it is to be relaxed as the corpus grows. Per-export: must be recalibrated if the DML int4 export changes — so exposing it needs a per-export guard. |
 | EntryDrainBatchSize | tuning-constant | `256` | src/Deckle.App/LogWindow.Model.cs:15 | non | UI drain batching for the log window. Perceivable only as responsiveness under load; likely frozen-in-code rather than a setting. |
 | MaxEntries | tuning-constant | `5000` | src/Deckle.App/LogWindow.Model.cs:96 | non | Sweep reports declaration 'field'; it is actually a method-local const inside the enqueue loop, so exposing it means hoisting it first. Value verified. User-perceivable: it caps log window scrollback. |
 | SearchCollapseThreshold | tuning-constant | `520.0` | src/Deckle.App/LogWindow.xaml.cs:72 | non | Responsive breakpoint (DIPs) at which the log window SearchBox collapses to an icon. Comment pins it to the Windows 11 Task Manager pattern — a design constant, probably not exposable. |
@@ -145,7 +143,6 @@ Total : **645 entrées** réparties sur **39 modules**.
 | RestorerOptions.DominanceRatio | tuning-constant | `20.0` | src/Deckle.Autocorrect/Engine/RestorerOptions.cs:19 | non | Not persisted. |
 | RestorerOptions.MinDominantFrequencyPerMillion | tuning-constant | `1.0` | src/Deckle.Autocorrect/Engine/RestorerOptions.cs:23 | non | Not persisted. |
 | RestorerOptions.MinCandidateFrequencyPerMillion | tuning-constant | `0.0` | src/Deckle.Autocorrect/Engine/RestorerOptions.cs:27 | non | Not persisted. |
-| RestorerOptions.MinCandidateFrequencyRatio | tuning-constant | `0.01` | src/Deckle.Autocorrect/Engine/RestorerOptions.cs:41 | non | Not persisted. Sentence-stage rarity gate, empirically grounded (100x floor over the maintainer's corpus). |
 | RestorerOptions.CorrectValidFormsWithContext | tuning-constant | `false` | src/Deckle.Autocorrect/Engine/RestorerOptions.cs:46 | non | Eval-only flag by doctrine; Lab/Playground territory, not Settings. |
 | RestorerOptions.GuardCapitalizedMidSentence | tuning-constant | `false` | src/Deckle.Autocorrect/Engine/RestorerOptions.cs:54 | non | Proper-noun guard, off by default. Plausibly a real user-perceivable knob. |
 | TypoOptions.MinWordLength | tuning-constant | `3` | src/Deckle.Autocorrect/Engine/TypoOptions.cs:19 | non | Kind corrected: NOT persisted. Defaults-only in ConservativeTypoCorrector.cs:62. |
@@ -159,20 +156,7 @@ Total : **645 entrées** réparties sur **39 modules**.
 | DisambiguatorOptions.LiteralBias | tuning-constant | `2.0` | src/Deckle.Autocorrect/Engine/BigramPairDisambiguator.cs:266 | non | Not persisted. |
 | DisambiguatorOptions.MinEvidence | tuning-constant | `5` | src/Deckle.Autocorrect/Engine/BigramPairDisambiguator.cs:269 | non | Not persisted. |
 | DisambiguatorOptions.MaxContextOrder | tuning-constant | `3` | src/Deckle.Autocorrect/Engine/BigramPairDisambiguator.cs:274 | non | Not persisted. |
-| ConservativeTypoCorrector.SentenceCandidateCap | tuning-constant | `4` | src/Deckle.Autocorrect/Engine/ConservativeTypoCorrector.cs:27 | non | Perf/ambiguity bound; borderline exposable. |
-| ConservativeTypoCorrector.ContextualFarMaxWordLength | tuning-constant | `5` | src/Deckle.Autocorrect/Engine/ConservativeTypoCorrector.cs:28 | non |  |
 | ConservativeTypoCorrector.Edits2MaxWordLength | tuning-constant | `14` | src/Deckle.Autocorrect/Engine/ConservativeTypoCorrector.cs:209 | non | Cost bound on the far tier; kept because it changes what gets corrected. |
-| SentenceProposalGate.MaxTextLength | tuning-constant | `512` | src/Deckle.Autocorrect/Engine/SentenceProposalGate.cs:10 | non | Safety budget for whole-sentence proposals; arguably frozen-by-doctrine rather than a knob. |
-| SentenceProposalGate.MaxBackspaces | tuning-constant | `160` | src/Deckle.Autocorrect/Engine/SentenceProposalGate.cs:11 | non | Safety budget. |
-| SentenceProposalGate.MaxInsertedChars | tuning-constant | `192` | src/Deckle.Autocorrect/Engine/SentenceProposalGate.cs:12 | non | Safety budget. |
-| SentenceProposalGate.AbsoluteEditCap | tuning-constant | `24` | src/Deckle.Autocorrect/Engine/SentenceProposalGate.cs:13 | non | Safety budget. |
-| SentenceProposalGate.RelativeEditCap | tuning-constant | `0.15` | src/Deckle.Autocorrect/Engine/SentenceProposalGate.cs:14 | non | Safety budget. |
-| SentenceRerankCoordinator.BufferCap | tuning-constant | `40` | src/Deckle.Autocorrect/Engine/SentenceRerankCoordinator.cs:65 | non |  |
-| SentenceRerankCoordinator.ContextWindow | tuning-constant | `12` | src/Deckle.Autocorrect/Engine/SentenceRerankCoordinator.cs:69 | non | Words each side handed to the masked-LM; latency/quality trade. |
-| SentenceRerankCoordinator.SeparatorRunCap | tuning-constant | `8` | src/Deckle.Autocorrect/Engine/SentenceRerankCoordinator.cs:73 | non | Deliberate duplicate of TypedWordTracker.SeparatorRunCap (comment says 'mirrors'). Two declaration sites, one knob. |
-| SentenceRerankCoordinator.MaxRewriteTailChars | tuning-constant | `256` | src/Deckle.Autocorrect/Engine/SentenceRerankCoordinator.cs:78 | non | Intrusiveness bound; user-perceivable. |
-| SentenceRerankCoordinator.MaxSentenceEditCandidates | tuning-constant | `12` | src/Deckle.Autocorrect/Engine/SentenceRerankCoordinator.cs:83 | non |  |
-| SentenceRerankCoordinator.SentenceEnders | tuning-constant | `{ '.', '!', '?', '…' }` | src/Deckle.Autocorrect/Engine/SentenceRerankCoordinator.cs:87 | non | Linguistic table; kept in doubt, arguably frozen. |
 | AutocorrectEngine.RollupPeriodMs | tuning-constant | `30_000` | src/Deckle.Autocorrect/Engine/AutocorrectEngine.cs:25 | non | Telemetry roll-up period. Diagnostic, not user-facing. |
 | PersonalDictionary.RequiredCleanOccurrences | tuning-constant | `3` | src/Deckle.Autocorrect/Learning/PersonalDictionary.cs:14 | non | How fast a typed literal is adopted into the personal lexicon; strongly user-perceivable. |
 | PersonalDictionary.RequiredDistinctDays | tuning-constant | `2` | src/Deckle.Autocorrect/Learning/PersonalDictionary.cs:15 | non | Same adoption gate. |
@@ -180,15 +164,13 @@ Total : **645 entrées** réparties sur **39 modules**.
 | PersonalWordAdmission.FrenchCollisionFloorPerMillion | tuning-constant | `1.0` | src/Deckle.Autocorrect/Learning/PersonalWordAdmission.cs:15 | non | Mirrors RestorerOptions.MinDominantFrequencyPerMillion by intent; coupled constants that would have to move together. |
 | GlobalEnglishLexicon.OverlayFrequency | tuning-constant | `1.0` | src/Deckle.Autocorrect/Lexicon/GlobalEnglishLexicon.cs:11 | non | Weight of the restricted English literal overlay, i.e. the 'lexique anglais restreint' of the arbitrated correcteur contract. |
 | CaretParagraphContext.MaxParagraphLength | tuning-constant | `4096` | src/Deckle.Autocorrect/Recovery/CaretParagraphContext.cs:8 | non |  |
-| CaretSentenceContext.MaxSentenceLength | tuning-constant | `512` | src/Deckle.Autocorrect/Recovery/CaretSentenceContext.cs:10 | non |  |
 | UIAutomationCaretTextReader.MaxCharacters | tuning-constant | `1024` | src/Deckle.Autocorrect/Recovery/CaretTextReader.cs:15 | non |  |
 | UIAutomationCaretTextReader.InitialSettle | tuning-constant | `TimeSpan.FromMilliseconds(35)` | src/Deckle.Autocorrect/Recovery/CaretTextReader.cs:16 | non | Latency knob for UIA sampling; perceivable as responsiveness. |
 | UIAutomationCaretTextReader.VerificationGap | tuning-constant | `TimeSpan.FromMilliseconds(75)` | src/Deckle.Autocorrect/Recovery/CaretTextReader.cs:17 | non | Latency knob. |
 | TypedWordTracker.BufferCap | tuning-constant | `64` | src/Deckle.Autocorrect/Tracking/TypedWordTracker.cs:25 | non |  |
-| TypedWordTracker.SeparatorRunCap | tuning-constant | `8` | src/Deckle.Autocorrect/Tracking/TypedWordTracker.cs:55 | non | Canonical site; SentenceRerankCoordinator.SeparatorRunCap duplicates it. |
+| TypedWordTracker.SeparatorRunCap | tuning-constant | `8` | src/Deckle.Autocorrect/Tracking/TypedWordTracker.cs:55 | non | Canonical site. |
 | TypingStream.RunCap | tuning-constant | `512` | src/Deckle.Autocorrect/Tracking/TypingStream.cs:47 | non |  |
 | WordBoundaries.RightSingleQuote | tuning-constant | `'’'` | src/Deckle.Autocorrect/Tracking/WordBoundaries.cs:19 | non | Typographic apostrophe; frozen linguistic fact, kept only for doubt. |
-| QwertyAdjacency.Rows | tuning-constant | `["qwertyuiop", "asdfghjkl", "zxcvbnm"]` | src/Deckle.Autocorrect/Engine/QwertyAdjacency.cs:10 | non | DOUBT: a hardcoded QWERTY layout drives the physical-slip model. An AZERTY typist gets a mismatched adjacency map. Either a real exposable (keyboard layout) or a defect. |
 
 ## Deckle.Autocorrect.Lab
 
@@ -197,7 +179,6 @@ Total : **645 entrées** réparties sur **39 modules**.
 | DataSet.FrenchFile | tuning-constant | `"lexicon-fr.tsv.gz"` | src/Deckle.Autocorrect.Lab/DataSet.cs:13 | non | Dataset artifact filename, not a tuning knob; kept because it names which lexicon the Lab reads. |
 | DataSet.EnglishFile | tuning-constant | `"lexicon-en.tsv.gz"` | src/Deckle.Autocorrect.Lab/DataSet.cs:14 | non | Dataset artifact filename, not a tuning knob; kept because it names which lexicon the Lab reads. |
 | DataSet.PairFile | tuning-constant | `"pair-bigrams-fr.tsv.gz"` | src/Deckle.Autocorrect.Lab/DataSet.cs:15 | non | Dataset artifact filename, not a tuning knob; kept because it names which pair model the Lab reads. |
-| DataSet.VerbsFile | tuning-constant | `"verbs-fr.tsv.gz"` | src/Deckle.Autocorrect.Lab/DataSet.cs:16 | non | Dataset artifact filename, not a tuning knob; kept because it names which verb table the Lab reads. |
 | DomainPackBuilder.FloorFrequencyPerMillion | tuning-constant | `0.2` | src/Deckle.Autocorrect.Lab/DomainPackBuilder.cs:32 | non |  |
 | DomainPackBuilder.MaskingExclusionPerMillion | tuning-constant | `20.0` | src/Deckle.Autocorrect.Lab/DomainPackBuilder.cs:38 | non |  |
 | DomainPackBuilder.MaskingGrayZonePerMillion | tuning-constant | `1.0` | src/Deckle.Autocorrect.Lab/DomainPackBuilder.cs:39 | non |  |
@@ -210,16 +191,8 @@ Total : **645 entrées** réparties sur **39 modules**.
 | TrainerOptions.MaxPrevPerSlot | default-value | `64` | src/Deckle.Autocorrect.Lab/PairModelTrainer.cs:239 | non |  |
 | TrainerOptions.MaxOrder | default-value | `3` | src/Deckle.Autocorrect.Lab/PairModelTrainer.cs:243 | non |  |
 | SurfaceProfiler.minTimedSentences | tuning-constant | `30` | src/Deckle.Autocorrect.Lab/Profiling/SurfaceProfiler.cs:45 | non | Method-local const, not a field as the sweep claimed; declaration corrected to local. |
-| ReplayRunner.DefaultThresholds | tuning-constant | `{ 0.0, 0.25, 0.5, 1.0, 1.5, 2.0, 3.0, 5.0 }` | src/Deckle.Autocorrect.Lab/Replay/ReplayRunner.cs:27 | non |  |
-| TruthOverlay.FileName | tuning-constant | `"autocorrect.truth-review.md"` | src/Deckle.Autocorrect.Lab/Replay/TruthOverlay.cs:33 | non | Output artifact filename of the truth-review overlay; borderline, no tuning effect. |
 | RestorationEvaluator.SentenceBreaks | tuning-constant | `{ '.', '!', '?', ';', ':', '…' }` | src/Deckle.Autocorrect.Lab/RestorationEvaluator.cs:24 | non |  |
 | EvaluatorOptions.MaxTokens | default-value | `0` | src/Deckle.Autocorrect.Lab/RestorationEvaluator.cs:414 | non |  |
-
-## Deckle.Autocorrect.Onnx
-
-| Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
-|---|---|---|---|---|---|
-| OnnxSlotReranker.MinSentenceWordTokens | tuning-constant | `4` | src/Deckle.Autocorrect.Onnx/OnnxSlotReranker.cs:26 | non |  |
 
 ## Deckle.Catalog
 

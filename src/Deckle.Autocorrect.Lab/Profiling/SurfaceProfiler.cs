@@ -7,7 +7,7 @@ namespace Deckle.Autocorrect.Lab;
 // Splits the typed-sentence corpus into surface profiles: one per-application
 // portrait of how typing behaves there, computed from each record's closure and
 // timing. Everything here is measured, never configured: the profiles show where
-// the sentence stage arrives too late (Enter-heavy surfaces) and give the pause
+// a sentence-level pass would arrive too late (Enter-heavy surfaces) and give the pause
 // pass its gap distribution. Pure over parsed corpus entries; the gesture owns
 // file I/O and report placement.
 public static class SurfaceProfiler
