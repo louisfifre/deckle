@@ -19,6 +19,16 @@
     <InternalsVisibleTo Include="Deckle.Audio.Tests" />
   </ItemGroup>
 
+  <!-- portaudio.dll, the microphone capture's native backend, built by
+       scripts/setup/build-portaudio.ps1 and committed with its license and
+       provenance. Content flows to every project that references this one
+       (the app, the tests) and into a publish, at the output root where the
+       P/Invoke loader looks first. -->
+  <ItemGroup>
+    <Content Include="Native\win-x64\portaudio.dll" Link="portaudio.dll" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Native\win-x64\portaudio.LICENSE.txt" Link="portaudio.LICENSE.txt" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.WindowsAppSDK" />
     <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
