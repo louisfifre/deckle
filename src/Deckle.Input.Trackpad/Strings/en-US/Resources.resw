@@ -118,7 +118,7 @@
 
   <!-- ─── TrackpadPage ───────────────────────────────────────────────
        Settings page for the Trackpad module. Title + subtitle, then
-       two sections in order: Three-finger drag, Windows integration.
+       two sections in order: Dragging, Windows integration.
        x:Uid keys follow TrackpadPage_<Element>.<Property>
        (plain TextBlocks bind .Text); code-behind flip-labels use the
        Surface_Purpose form resolved via Loc.Get — those three are
@@ -134,7 +134,7 @@
 
   <!-- Three-finger drag -->
   <data name="TrackpadPageDragSection.Title" xml:space="preserve">
-    <value>Three-finger drag</value>
+    <value>Dragging</value>
   </data>
   <data name="TrackpadPage_DragCard.Header" xml:space="preserve">
     <value>Three-finger drag</value>
