@@ -1627,6 +1627,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TrayIconPromotion.cs
 │   │   │   ├── TrayOutcome.cs
 │   │   │   └── TraySnapshotStore.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Ui/
+│   │   │   ├── TaskbarPage.xaml
+│   │   │   └── TaskbarPage.xaml.cs
+│   │   ├── ViewModels/
+│   │   │   ├── TaskbarViewModel.cs
+│   │   │   ├── TaskbarViewModel.Recommended.cs
+│   │   │   └── TaskbarViewModel.Settings.cs
 │   │   ├── Deckle.Shell.Taskbar.csproj
 │   │   ├── DeckleShellTaskbarSource.cs
 │   │   ├── SettingsSearch.cs
