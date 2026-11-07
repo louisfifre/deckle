@@ -9,8 +9,6 @@ namespace Deckle.Transcription;
 //      profile of the highest step the raw transcript reached;
 //   3. else the active profile, which so acts as the default below the
 //      first step. No active profile keeps the raw result: that is the floor.
-// Legacy auto-rule, shortcut-slot and per-profile threshold settings still
-// on disk are ignored.
 internal static class RewriteProfileSelection
 {
     // rawChars null = length not known yet (a batched take picks its profile

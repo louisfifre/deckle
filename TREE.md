@@ -541,7 +541,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── CapturePipeline.cs
 │   │   │   ├── FloatTakeBuffer.cs
 │   │   │   ├── ICaptureEndpoint.cs
-│   │   │   ├── LegacyWaveInDeviceMap.cs
 │   │   │   ├── LowAudioTracker.cs
 │   │   │   ├── MediaFoundationInterop.cs
 │   │   │   ├── MicrophoneEndpointCatalog.cs
@@ -1336,10 +1335,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Llm.Rewrite.csproj
 │   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite vocabulary. It draws the Correction / Rewrite boundary, which decides w…
 │   │   ├── LlmSettings.cs
-│   │   ├── LlmSettingsMigrations.cs
-│   │   ├── LlmSettingsMigrations.LengthSwitch.cs
-│   │   ├── LlmSettingsMigrations.Providers.cs
 │   │   ├── LlmSettingsModule.cs
+│   │   ├── LlmSettingsNormalizer.cs
 │   │   ├── LlmSettingsService.cs
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Modules/
@@ -1512,7 +1509,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Persistence/
 │   │   │   ├── AppSettings.cs
 │   │   │   ├── SettingsBackupService.cs
-│   │   │   ├── SettingsBootstrap.cs
 │   │   │   └── SettingsService.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
@@ -1525,7 +1521,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Settings.csproj
 │   │   ├── DeckleSettingsSource.Backup.cs
 │   │   ├── DeckleSettingsSource.cs
-│   │   ├── DeckleSettingsSource.Migration.cs
 │   │   ├── DeckleSettingsSource.Navigation.cs
 │   │   ├── DeckleSettingsSource.Persistence.cs
 │   │   ├── DeckleSettingsSource.Search.cs
@@ -1946,7 +1941,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── CaptureErrorsTests.cs
 │   │   ├── CaptureLoopTests.cs
 │   │   ├── CapturePipelineTests.cs
-│   │   ├── CaptureSettingsMigrationTests.cs
 │   │   ├── CaptureTableTemplateTests.cs
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── DeckleAudioSourceTests.cs
@@ -2079,7 +2073,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleChronoSourceTests.cs
 │   │   └── MessageTemplateDoctrineTests.cs
 │   ├── Deckle.Core.Tests/
-│   │   ├── AppPathsLegacyMigrationTests.cs
 │   │   ├── Deckle.Core.Tests.csproj
 │   │   ├── DpiTests.cs
 │   │   ├── JsonSettingsStoreBugNotes.md
@@ -2117,7 +2110,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleThemeSourceTests.cs
 │   │   ├── DeckleThreadingSourceTests.cs
 │   │   ├── DeckleWindowingSourceTests.cs
-│   │   ├── DiagnosticsFilesTests.cs
 │   │   ├── DiagnosticsProviderCollection.cs
 │   │   ├── DispatchEventListenerBugNotes.md
 │   │   ├── DispatchEventListenerIncidentTests.cs
@@ -2259,7 +2251,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── AmbientRunBugNotes.md
 │   │   ├── AmbientRunLogTests.cs
-│   │   ├── AmbientSettingsMigrationTests.cs
 │   │   ├── AmbientStartSettingsTests.cs
 │   │   ├── AmbientTableTemplateTests.cs
 │   │   ├── AmbientUserIncidentTests.cs
@@ -2304,7 +2295,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DictationBatchRewriterTests.cs
 │   │   ├── LlmSettingsBugNotes.md
 │   │   ├── LlmSettingsFileTests.cs
-│   │   ├── LlmSettingsMigrationsTests.cs
+│   │   ├── LlmSettingsNormalizerTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── ParagraphDraftTests.cs
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
@@ -2390,9 +2381,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── PerformanceSettingsTests.cs
 │   │   ├── SettingsBackupBugNotes.md
-│   │   ├── SettingsBackupRoundTripTests.cs
-│   │   ├── SettingsBootstrapLegacyTargetTests.cs
-│   │   └── SettingsBootstrapMoveTests.cs
+│   │   └── SettingsBackupRoundTripTests.cs
 │   ├── Deckle.Setup.Tests/
 │   │   ├── DataRootRelocatorBugNotes.md
 │   │   ├── DataRootRelocatorTests.cs
@@ -2495,7 +2484,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TranscriptionAppNameTests.cs
 │   │   ├── TranscriptionDeliveryTests.cs
 │   │   ├── TranscriptionObservabilityContractTests.cs
-│   │   ├── TranscriptionSettingsMigrationTests.cs
 │   │   ├── UnitBezierTests.cs
 │   │   ├── UtteranceProgressMeterTests.cs
 │   │   ├── UtteranceProgressTests.cs

@@ -50,16 +50,4 @@ public sealed class EnergySegmenterSettings
     public double HangoverCurveX2     { get; set; } = 0.90;
     public double HangoverCurveY2     { get; set; } = 0.25;
     public int    MarginMs            { get; set; } = 150;
-
-    // True while the hangover curve still equals the shipped default — i.e. the
-    // user has not customized it. Compared against a fresh instance so the four
-    // default control points live in exactly one place: the initializers above.
-    public bool HasDefaultHangoverCurve()
-    {
-        var d = new EnergySegmenterSettings();
-        return HangoverCurveX1 == d.HangoverCurveX1
-            && HangoverCurveY1 == d.HangoverCurveY1
-            && HangoverCurveX2 == d.HangoverCurveX2
-            && HangoverCurveY2 == d.HangoverCurveY2;
-    }
 }

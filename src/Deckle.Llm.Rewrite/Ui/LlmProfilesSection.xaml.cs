@@ -107,8 +107,7 @@ public sealed partial class LlmProfilesSection : UserControl
 
         // Removing the active profile clears the active choice (back to plain
         // transcription), so the page and the engine agree instead of keeping
-        // an orphan the ComboBox shows as (None). Legacy auto-rule references
-        // stay untouched for lossless deserialization.
+        // an orphan the ComboBox shows as (None).
         bool confirmed = await ConfirmationService.RequestAsync(
             this.XamlRoot,
             new ConfirmationRequest(
@@ -135,7 +134,7 @@ public sealed partial class LlmProfilesSection : UserControl
             // left behind would hold a threshold nobody can see the use of.
             settings.LengthSwitch.Steps.RemoveAll(step => step.ProfileId == removed.Id);
             profiles.RemoveAt(vm.ProfileIndex);
-            LlmSettingsMigrations.RepairProfileReferences(LlmSettingsService.Instance.Current);
+            LlmSettingsNormalizer.RepairProfileReferences(LlmSettingsService.Instance.Current);
             LlmSettingsService.Instance.Save();
         }
         Reload();
@@ -348,9 +347,9 @@ public sealed partial class LlmProfilesSection : UserControl
         ProfilesChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    // Scope: the Profiles list only, replaced by the defaults. The migration
-    // gives the fresh defaults their ids, points them at their provider and
-    // re-pairs the active profile and legacy references to them by name.
+    // Scope: the Profiles list only, replaced by the defaults. The normalizer
+    // gives the fresh defaults their ids and re-pairs the active profile to
+    // them by name.
     private async void ResetSection_Click(object sender, RoutedEventArgs e)
     {
         bool confirmed = await ConfirmationService.RequestAsync(
@@ -365,7 +364,7 @@ public sealed partial class LlmProfilesSection : UserControl
 
         var defaults = new LlmSettings();
         LlmSettingsService.Instance.Current.Profiles = defaults.Profiles;
-        LlmSettingsMigrations.Apply(LlmSettingsService.Instance.Current);
+        LlmSettingsNormalizer.Apply(LlmSettingsService.Instance.Current);
         LlmSettingsService.Instance.Save();
         Reload();
         ProfilesChanged?.Invoke(this, EventArgs.Empty);

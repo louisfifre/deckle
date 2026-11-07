@@ -173,7 +173,6 @@ public partial class App
         AppDiagnosticsBootstrap.InitializeLocalSinks(AppPaths.DiagnosticsDirectory);
         DeckleAppSource.Log.AppStarting();
         EmitRunIdentity();
-        Settings.SettingsBootstrap.MigrateLegacyToPerModule();
         OperationalLogAdmission.Configure(
             activity => LoggingSettingsService.Instance.Current.Verbosity(activity));
         var context = new StartupContext();

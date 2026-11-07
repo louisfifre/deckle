@@ -114,7 +114,7 @@ public partial class App
 
     private void InitializeStartupFoundation(StartupContext context)
     {
-        // First, before settings migration: a listener only sees events emitted
+        // First, before any settings load: a listener only sees events emitted
         // after it subscribes, so these ungated local sinks must exist for a
         // failure in the very first boot step to land in log.jsonl.
         // Before the first event: a provider hides the data root in the paths
@@ -126,19 +126,13 @@ public partial class App
         DeckleAppSource.Log.AppStarting();
         EmitRunIdentity();
         ReportPreviousRunEnd();
-        ReportLegacyLayoutMigration();
-        ReportLegacyLogFileRename();
         ReportRejectedSecondInstances();
         context.Milestone("diagnostics-local");
 
-        // Before any module SettingsService is touched: each singleton loads its
-        // file in its constructor, and one that ran first would find its module
-        // file missing, write defaults and defeat the migration.
-        Settings.SettingsBootstrap.MigrateLegacyToPerModule();
         OperationalLogAdmission.Configure(
             activity => LoggingSettingsService.Instance.Current.Verbosity(activity));
         EmitLoggingPolicy();
-        context.Milestone("settings-bootstrap");
+        context.Milestone("logging-policy");
 
         // Before any module is composed or registered: every gate below reads
         // these flags.
@@ -279,30 +273,6 @@ public partial class App
 
         foreach (NoteFile.Note note in notes)
             DeckleAppSource.Log.SecondInstanceRejected(note.At, note.Text);
-    }
-    // AppPaths moved the legacy settings layout while its static constructor
-    // ran, before this process had a sink: the failure it kept is reported here.
-    private static void ReportLegacyLayoutMigration()
-    {
-        if (AppPaths.LegacyLayoutMigrationFailure is not { } failure) return;
-
-        DeckleAppSource.Log.LegacySettingsMigrationFailed(failure.GetType().Name, failure.Message);
-    }
-
-    // InitializeLocalSinks renamed the legacy log files before the sinks
-    // opened them, when no sink could say so yet: it is reported here.
-    private static void ReportLegacyLogFileRename()
-    {
-        if (AppDiagnosticsBootstrap.LegacyFileRename is not { } rename) return;
-
-        if (rename.Failure is { } failure)
-        {
-            DeckleAppSource.Log.LegacyLogFileRenameFailed(
-                rename.FailedFile ?? "unknown", rename.Renamed, failure.GetType().Name, failure.Message);
-            return;
-        }
-        if (rename.Renamed > 0)
-            DeckleAppSource.Log.LegacyLogFilesRenamed(rename.Renamed);
     }
 
     // Idempotent and limited to this run's own mark, so it can be called from

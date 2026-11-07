@@ -10,9 +10,8 @@
 // setters, which report every write as an edit. NotifyEdited ignores those
 // reports while IsApplying is true, so the consumer needs no guard of its own.
 //
-// Migration: a store whose Selection is null (a file written before the
-// selection existed) gets it derived once from its values — the preset they
-// equal, else Custom with those values kept.
+// A store whose Selection is null (nothing chosen yet) gets it derived once
+// from its values — the preset they equal, else Custom with those values kept.
 //
 // A stored selection that names no preset (a preset retired, a file edited by
 // hand) is derived the same way, and the optional onSelectionReplaced callback is
@@ -75,7 +74,7 @@ public sealed class PresetFamily<T> where T : class
             string? asked = _store.Selection;
             DeriveSelectionFromValues();
 
-            // A null selection is the migration of an older file, not a loss.
+            // A null selection is a first derivation, not a loss.
             // An id that names no preset is one: the values the person sees
             // may no longer be the preset they chose.
             if (asked is not null)
