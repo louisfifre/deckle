@@ -25,9 +25,6 @@ public sealed partial class DiagnosticsPage : Page
     {
         InitializeComponent();
         Header.ResetDetail = Loc.Get("Settings_ResetDiagnosticsDialog_Detail");
-        // The page asks with its own wording (it says what the reset clears), so the
-        // header's generic confirmation stays off.
-        Header.ConfirmsReset = false;
         NavigationCacheMode = NavigationCacheMode.Required;
         ComposeLoggingSection();
         ComposeApplicationLogSection();
