@@ -823,6 +823,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AxisTicks.cs
 │   │   │   ├── CubicBezier.cs
 │   │   │   ├── CurveEditor.cs
+│   │   │   ├── CurveEditor.Endpoints.cs
 │   │   │   ├── CurveEndpointLimits.cs
 │   │   │   ├── DefaultValueText.cs
 │   │   │   ├── GestureHold.cs
