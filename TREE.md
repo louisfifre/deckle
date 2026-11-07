@@ -2259,6 +2259,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Lighting.Tests.csproj
 │   │   ├── DeckleLightingSourceTests.cs
 │   │   ├── HueBridgeClientIdentityTests.cs
+│   │   ├── HueBridgeClientNoAnswerRegressionTests.cs
 │   │   ├── HueCredentialPayloadBugNotes.md
 │   │   ├── HueCredentialVaultTests.cs
 │   │   ├── HueEntertainmentFrameBuilderTests.cs
