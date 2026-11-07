@@ -126,13 +126,16 @@
   <data name="RecordingPageHeader.Description" xml:space="preserve">
     <value>Your microphone, and what Deckle hears.</value>
   </data>
-  <!-- The first section: the voice level with its meter, the maximum length,
-       the pre-processing (research note P6, 2026-11-06). Titled "Recording",
-       not "Microphone", since it holds more than the microphone's signal and
-       sits right under the Microphone card. Provisional, like every section
-       title of the page. -->
+  <!-- The section of a take: the maximum length and the pre-processing with
+       its checks (2026-11-07 review). Provisional, like every section title of
+       the page. -->
   <data name="RecordingPageRecordingSection.Title" xml:space="preserve">
     <value>Recording</value>
+  </data>
+  <!-- The section of the voice level and its meter, one card (2026-11-07
+       review, change 4). Provisional, like every section title of the page. -->
+  <data name="RecordingPageVoiceSection.Title" xml:space="preserve">
+    <value>Voice</value>
   </data>
 
   <!-- Microphone device card (x:Uid) -->
@@ -148,17 +151,17 @@
     <value>Above this level, Deckle hears voice.</value>
   </data>
 
-  <!-- Voice meter, the instrument under the voice-level card (VoiceLevelMeter,
-       x:Uid on the PreviewBlock, the toggle, the readouts and the voice-level
-       caption) -->
-  <data name="RecordingVoiceMeterBlock.EmptyHeader" xml:space="preserve">
-    <value>Microphone meter</value>
-  </data>
-  <data name="RecordingVoiceMeterBlock.EmptyDescription" xml:space="preserve">
-    <value>Listen shows your level against the voice level, without recording anything.</value>
-  </data>
+  <!-- Voice meter, the instrument inside the voice-level card (VoiceLevelMeter,
+       x:Uid on the toggle, the slider, the readouts and the voice-level
+       caption). The compact block shows no empty text: the track is its own
+       empty state. -->
   <data name="RecordingVoiceMeterListenToggle.Content" xml:space="preserve">
     <value>Listen</value>
+  </data>
+  <!-- The slider under the meter writes the voice level: its accessible name
+       is the setting's. -->
+  <data name="RecordingVoiceMeterLevelSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Voice level</value>
   </data>
   <data name="RecordingVoiceMeterVoiceCaption.Text" xml:space="preserve">
     <value>voice level</value>

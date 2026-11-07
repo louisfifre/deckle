@@ -17,6 +17,13 @@ internal static class VoiceLevelMeterScale
     public const double MinDbfs = -80.0;
     public const double MaxDbfs = -10.0;
 
+    // The slider under the track spans the same scale, so its thumb is the
+    // voice level's mark. It steps by a whole dB, the precision the field and
+    // the readouts show, rather than by the magnitude grain of its span (2 dB):
+    // every stored level then falls on a detent, so the thumb can never be
+    // snapped beside the mark of a level such as -45 or -47.
+    public const double SliderStepDb = 1.0;
+
     // What a frame of exact zeros reads as: the floor the DSP uses for the same
     // case, far under the track, so a muted microphone leaves the bar empty.
     public const double SilenceFloorDbfs = -120.0;

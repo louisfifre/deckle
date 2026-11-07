@@ -47,30 +47,50 @@
                               SelectionChanged="AudioInputCombo_SelectionChanged" />
                 </controls:SettingsCard>
 
+                <!-- ── Voice ───────────────────────────────────────────────── -->
+                <!-- What Deckle hears: the voice level and its meter, one card
+                     (2026-11-07 review, change 4). Its reset is the voice
+                     level's; the meter keeps no value. -->
+                <catalog:SettingsSection x:Name="VoiceSection"
+                                         x:Uid="RecordingPageVoiceSection"
+                                         HasReset="True"
+                                         ResetRequested="ResetVoice_Click">
+                    <!-- One card: the composed voice-level row on top (header,
+                         sentence, field and reset), the compact meter under it
+                         with the slider that writes the same value. A
+                         SettingsCard has no slot under its row, so the frame is
+                         a Border in the card's own theme materials and the
+                         composed card inside it is made frameless by the
+                         code-behind, which also gives the meter the card's
+                         padding (FrameVoiceLevelCard). The alternative, a fold
+                         kept open, would let the instrument be folded away. -->
+                    <Border x:Name="VoiceLevelFrame"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{ThemeResource ControlCornerRadius}">
+                        <StackPanel>
+                            <!-- Voice level, composed: the level the segmenter,
+                                 the low-audio warning and the HUD outline read. -->
+                            <StackPanel x:Name="VoiceLevelHost" />
+
+                            <!-- Its instrument: the live meter with the voice
+                                 level marked, and the slider on its scale. -->
+                            <local:VoiceLevelMeter x:Name="VoiceMeter" />
+                        </StackPanel>
+                    </Border>
+                </catalog:SettingsSection>
+
                 <!-- ── Recording ───────────────────────────────────────────── -->
                 <!-- Title provisional: the maintainer names the sections at the
-                     end. "Recording", not "Microphone": the section holds the
-                     maximum length and the pre-processing too, and a second
-                     "Microphone" right under the Microphone card reads twice.
-                     What the page sets about a recording: the voice level with
-                     its meter, the maximum length, the pre-processing. The
-                     section reset spans its three composed settings; the meter
-                     keeps no value. -->
+                     end. What the page sets about a take: the maximum length
+                     and the pre-processing with its two checks. The section
+                     reset spans its two composed settings. -->
                 <catalog:SettingsSection x:Name="RecordingSection"
                                          x:Uid="RecordingPageRecordingSection"
                                          HasReset="True"
                                          ResetRequested="ResetRecording_Click">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
-
-                        <!-- Voice level, composed: the level the segmenter, the
-                             low-audio warning and the HUD outline read. -->
-                        <StackPanel x:Name="VoiceLevelHost"
-                                    Spacing="{StaticResource SettingsCardSpacing}" />
-
-                        <!-- Its instrument, directly under it: the live meter
-                             with the voice level marked. A floating preview
-                             block, not a card; it shows and never writes. -->
-                        <local:VoiceLevelMeter x:Name="VoiceMeter" />
 
                         <!-- Maximum recording length, composed. -->
                         <StackPanel x:Name="RecordingLimitHost"
