@@ -130,6 +130,9 @@
   <data name="DiagnosticsPageApplicationLogSection.Title" xml:space="preserve">
     <value>Trace</value>
   </data>
+  <data name="DiagnosticsPageApplicationLogSection.Caption" xml:space="preserve">
+    <value>A copy of what Deckle logs, kept on this device, to follow an issue across restarts.</value>
+  </data>
   <data name="GeneralAppLogCard.Header" xml:space="preserve">
     <value>Keep a trace on disk</value>
   </data>
@@ -254,12 +257,12 @@
     <value>Reset all settings?</value>
   </data>
   <data name="Settings_ResetDiagnosticsDialog_Content" xml:space="preserve">
-    <value>Every logging and telemetry opt-in on this page will be turned off and the storage-folder override cleared. Nothing is recorded again until you opt back in.</value>
+    <value>Each log verbosity goes back to its default. The trace and every telemetry dataset are turned off, and the telemetry folder returns to its default location.</value>
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Diagnostics</value>
   </data>
   <data name="DiagnosticsPageLoggingSection.Caption" xml:space="preserve">
-    <value>Verbose lines per module. Incidents, warnings and errors are always logged.</value>
+    <value>How much each part of Deckle logs. Milestones, warnings and errors are always logged.</value>
   </data>
 </root>

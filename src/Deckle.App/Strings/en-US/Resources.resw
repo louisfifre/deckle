@@ -218,7 +218,7 @@
     <value>Replace</value>
   </data>
   <data name="Common_Browse" xml:space="preserve">
-    <value>Browse...</value>
+    <value>Browse…</value>
   </data>
 
   <!-- ─── Consent dialogs ────────────────────────────────────────────
@@ -642,10 +642,10 @@
        Step header text is set programmatically by ChoicesPage via
        SetStepHeader. Cards in XAML use x:Uid for header/description. -->
   <data name="Setup_StepTitle_Choices" xml:space="preserve">
-    <value>Transcription</value>
+    <value>Set up transcription</value>
   </data>
   <data name="Setup_StepSubtitle_Choices" xml:space="preserve">
-    <value>Choose the speech model transcription runs on, and check its speech engine.</value>
+    <value>Check the speech engine, then choose the speech model transcription runs on.</value>
   </data>
   <data name="Setup_NextLabel_Install" xml:space="preserve">
     <value>Install</value>
@@ -654,13 +654,13 @@
     <value>Installed</value>
   </data>
   <data name="Setup_Native_Replace" xml:space="preserve">
-    <value>Replace...</value>
+    <value>Replace…</value>
   </data>
   <data name="Setup_Native_BrowseLocal" xml:space="preserve">
-    <value>Use local copy...</value>
+    <value>Use local copy…</value>
   </data>
   <data name="Setup_Native_Missing_Format" xml:space="preserve">
-    <value>Missing {0} file(s)</value>
+    <value>Missing files: {0}</value>
   </data>
   <data name="Setup_Native_WillDownload_Format" xml:space="preserve">
     <value>Will be downloaded (~{0})</value>
@@ -696,13 +696,13 @@
        Inline Cancel install button in XAML uses x:Uid. All progress
        and status strings are emitted from C# during the run. -->
   <data name="Setup_StepTitle_Installing" xml:space="preserve">
-    <value>Installing</value>
+    <value>Downloading</value>
   </data>
   <data name="Setup_StepSubtitle_Installing" xml:space="preserve">
     <value>Downloading the models and tools your modules need. This can take a while on a slow link.</value>
   </data>
   <data name="Setup_Install_Connecting" xml:space="preserve">
-    <value>Connecting...</value>
+    <value>Connecting…</value>
   </data>
   <data name="Setup_Install_Done_Format" xml:space="preserve">
     <value>Done. {0}</value>
@@ -758,7 +758,7 @@
     <value>Stored under {0}.</value>
   </data>
   <data name="Setup_Result_FailedCount_Format" xml:space="preserve">
-    <value>{0} of {1} item(s) failed.</value>
+    <value>Failed: {0} of {1}.</value>
   </data>
   <data name="Setup_OpenDiagnosticsFolder" xml:space="preserve">
     <value>Open diagnostics folder</value>
@@ -804,7 +804,7 @@
     <value>Version {0} is available</value>
   </data>
   <data name="Settings_MoveDataDialog_Title" xml:space="preserve">
-    <value>Move app data?</value>
+    <value>Move the data folder?</value>
   </data>
   <data name="Settings_MoveDataDialog_Content_Format" xml:space="preserve">
     <value>Deckle copies {0} of data to {1}, then restarts. The old folder is removed afterwards.</value>
@@ -813,7 +813,7 @@
     <value>Move and restart</value>
   </data>
   <data name="Settings_MoveDataSameTarget" xml:space="preserve">
-    <value>The app data is already in this folder.</value>
+    <value>The data folder is already there.</value>
   </data>
   <data name="Settings_MoveDataInvalidTarget" xml:space="preserve">
     <value>Pick an empty folder outside the current data folder.</value>
@@ -859,7 +859,7 @@
     <value>Restore settings?</value>
   </data>
   <data name="Settings_RestoreDialog_Content_Format" xml:space="preserve">
-    <value>This will overwrite your current settings with the snapshot from {0}. Your current settings will not be saved unless you back them up first.</value>
+    <value>This will overwrite your current settings with the backup from {0}. Your current settings will not be saved unless you back them up first.</value>
   </data>
   <data name="Settings_RestoreDialog_PrimaryButton" xml:space="preserve">
     <value>Restore</value>
@@ -936,7 +936,7 @@
     <value>Reset all settings?</value>
   </data>
   <data name="Settings_ResetDiagnosticsDialog_Content" xml:space="preserve">
-    <value>Every logging and telemetry opt-in on this page will be turned off and the storage-folder override cleared. Nothing is recorded again until you opt back in.</value>
+    <value>Each log verbosity goes back to its default. The trace and every telemetry dataset are turned off, and the telemetry folder returns to its default location.</value>
   </data>
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
@@ -1478,10 +1478,10 @@
     <value>Later</value>
   </data>
   <data name="Setup_StepTitle_Relocate" xml:space="preserve">
-    <value>Moving app data</value>
+    <value>Moving the data folder</value>
   </data>
   <data name="Setup_StepSubtitle_Relocate" xml:space="preserve">
-    <value>Copying the data to its new folder. Deckle restarts when it is done.</value>
+    <value>Copying the data to its new location. Deckle restarts when it is done.</value>
   </data>
   <data name="Setup_Relocate_Checking" xml:space="preserve">
     <value>Checking free space…</value>
