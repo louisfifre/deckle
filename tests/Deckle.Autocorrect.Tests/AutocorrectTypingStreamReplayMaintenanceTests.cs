@@ -35,7 +35,6 @@ public sealed class AutocorrectTypingStreamReplayMaintenanceTests
             : null;
         var policy = new CompositeCorrectionPolicy(
             new DiacriticsRestorer(french, english, index, context: context),
-            new ElisionCorrector(french, english),
             new ConservativeTypoCorrector(french, english, accentIndex: index));
 
         AutocorrectEngineHarness? harness = null;

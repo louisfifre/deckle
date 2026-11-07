@@ -8,9 +8,12 @@ public sealed partial class TranscriptionEngine
     // batchRewrite is the live take's batch run, when it had one: its batches
     // were already sent during the recording, so the take is assembled from
     // them (TranscriptionEngine.BatchRewrite.cs) instead of rewritten whole.
-    // A batched take keeps the profile it started with: its length was not
-    // known then, so the length ladder only chooses for a whole-take rewrite,
-    // by the characters of the raw transcript it is about to rewrite.
+    // A batched take keeps the profile its run opened with. A run opened by an
+    // active profile never meets the length ladder; one opened at a step of
+    // the ladder reaches this point only when the final length points to the
+    // same profile (BatchRewriteTake.RunForFinalize), otherwise the take comes
+    // here without a run and the ladder chooses for the whole take, by the
+    // characters of the raw transcript it is about to rewrite.
     private FinalizeRewrite ApplyRewrite(
         string rawText, bool isFileRun, BatchRewriteRun? batchRewrite = null)
     {

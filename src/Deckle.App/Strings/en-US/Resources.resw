@@ -527,6 +527,9 @@
        .resw entries land under "<ModuleName>/Resources/" and are
        invisible to the default loader. The {0} placeholder receives a
        Status_* string from TranscriptionEngine. -->
+  <data name="Status_QuitPending_Format" xml:space="preserve">
+    <value>{0}, then closing</value>
+  </data>
   <data name="Tray_Tooltip_Format" xml:space="preserve">
     <value>Deckle - {0}</value>
   </data>

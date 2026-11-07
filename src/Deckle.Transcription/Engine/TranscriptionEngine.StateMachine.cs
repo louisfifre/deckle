@@ -169,7 +169,9 @@ public sealed partial class TranscriptionEngine
 
     private ToggleResult TryStartFileTranscriptionLocked(FileTranscriptionBatch batch)
     {
-        if (_disposed) return ToggleResult.IgnoredDisposed;
+        // _finishing: the host is closing (TranscriptionEngine.Shutdown.cs). The
+        // batch stays queued and is never started.
+        if (_disposed || _finishing) return ToggleResult.IgnoredDisposed;
 
         // CAS Idle → Starting up front, exactly as TryStartFromIdle does for the
         // hotkey. A file request that lands while a pipeline is in flight rebounds
@@ -264,6 +266,10 @@ public sealed partial class TranscriptionEngine
 
     private ToggleResult TryStartFromIdleLocked(bool shouldPaste, string? rewriteProfileId)
     {
+        // The host is closing (TranscriptionEngine.Shutdown.cs): a press now
+        // would start a take nobody waits for. Silent, like a press after Dispose.
+        if (_finishing) return ToggleResult.IgnoredDisposed;
+
         if (Interlocked.CompareExchange(
                 ref _state,
                 (int)PipelineState.Starting,

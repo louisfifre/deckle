@@ -85,174 +85,6 @@ public static class RestorationEvaluator
         return report;
     }
 
-    // Like Evaluate, with the post-sentence reranker stage: the gate runs per word
-    // first, leaving ambiguous slots as literals; once the sentence is complete
-    // the reranker reconsiders each ambiguous slot with the FULL bidirectional
-    // context and may override the literal. Binning sees the final output.
-    public static RestorationReport EvaluateReranked(
-        TextReader reference,
-        ICorrectionPolicy policy,
-        IAmbiguityProbe probe,
-        ISentenceReranker reranker,
-        EvaluatorOptions? options = null)
-    {
-        var opts = options ?? new EvaluatorOptions();
-        var report = new RestorationReport();
-        var missed = new Dictionary<string, long>(StringComparer.Ordinal);
-        var wrongForm = new Dictionary<string, long>(StringComparer.Ordinal);
-        var falseCorrections = new Dictionary<string, long>(StringComparer.Ordinal);
-        var byStage = new Dictionary<CorrectionReason, StageTally>();
-
-        string? line;
-        bool capped = false;
-        while (!capped && (line = reference.ReadLine()) is not null)
-        {
-            foreach (string sentence in SplitSentences(line))
-            {
-                // Pass 1 — the gate, word by word, collecting the sentence's word
-                // outputs and marking the ambiguous slots it left as literals.
-                var words = new List<WordEval>();
-                string? prev1 = null;
-                string? prev2 = null;
-
-                foreach (string token in WordBoundaries.Tokenize(sentence))
-                {
-                    if (!HasLetter(token))
-                    {
-                        prev2 = prev1;
-                        prev1 = token.ToLowerInvariant();
-                        continue;
-                    }
-                    if (opts.MaxTokens > 0 && report.TotalTokens >= opts.MaxTokens)
-                    {
-                        capped = true;
-                        break;
-                    }
-
-                    string typed = AccentFolding.StripDiacritics(token);
-                    CorrectionDecision? decision = policy.Evaluate(typed, LeftContext(prev2, prev1));
-                    string output = decision?.Replacement ?? typed;
-
-                    // The live sentence stage may reopen diacritics/personal decisions
-                    // by adding the exact typed literal to the closed candidate set.
-                    // It never reopens typo, elision or grammar commits.
-                    IReadOnlyList<AccentVariant> candidates =
-                        SentenceStageCandidates(probe, typed, output, decision);
-
-                    words.Add(new WordEval(token, typed, output, decision, candidates));
-                    report.TotalTokens++;
-                    prev2 = prev1;
-                    prev1 = output.ToLowerInvariant();
-                }
-
-                // Pass 2 — rerank ambiguous slots with the full sentence context,
-                // left to right so a resolved slot informs the next.
-                var sequence = new List<string>(words.Count);
-                foreach (var w in words) sequence.Add(w.Output);
-
-                for (int i = 0; i < words.Count; i++)
-                {
-                    var w = words[i];
-                    if (w.Candidates.Count < 2)
-                        continue;
-                    string? chosen = reranker.Rerank(sequence, i, w.Candidates).Chosen;
-                    if (chosen is null)
-                        continue;
-                    string newOutput = CasePattern.Apply(w.Typed, chosen);
-                    if (string.Equals(newOutput, w.Output, StringComparison.Ordinal))
-                        continue;
-                    words[i] = w with
-                    {
-                        Output = newOutput,
-                        Decision = new CorrectionDecision(w.Typed, newOutput, CorrectionReason.SentenceReranker),
-                    };
-                    sequence[i] = newOutput;
-                }
-
-                // Pass 3 — bin the final outputs.
-                foreach (var w in words)
-                    Classify(report, w.Reference, w.Typed, w.Output, w.Decision, byStage,
-                        missed, wrongForm, falseCorrections);
-
-                if (capped)
-                    break;
-            }
-        }
-
-        report.ByStage = byStage;
-        report.TopMissed = Top(missed);
-        report.TopWrongForm = Top(wrongForm);
-        report.TopFalseCorrections = Top(falseCorrections);
-        return report;
-    }
-
-    // Runs the gate then the post-sentence reranker over a line AS TYPED: no
-    // scoring, no reference. It answers "what would the engine do to this exact
-    // text?", word by word. `strip` simulates a typist from already-accented
-    // text.
-    public static IReadOnlyList<WordOutcome> RestoreLine(
-        string line,
-        ICorrectionPolicy policy,
-        IAmbiguityProbe probe,
-        ISentenceReranker reranker,
-        bool strip = false)
-    {
-        var outcomes = new List<WordOutcome>();
-
-        foreach (string sentence in SplitSentences(line))
-        {
-            // Pass 1 — the gate, word by word. Non-word tokens are skipped: they
-            // are not corrected and the reranker scores a word-only sequence.
-            var words = new List<WordEval>();
-            foreach (string token in WordBoundaries.Tokenize(sentence))
-            {
-                if (!HasLetter(token))
-                    continue;
-
-                string typed = strip ? AccentFolding.StripDiacritics(token) : token;
-                // Reranker-direct mode carries no bigram, so the gate never
-                // reads left context — an empty context is exactly what the live
-                // engine would feed it here.
-                CorrectionDecision? decision = policy.Evaluate(typed, Array.Empty<string>());
-                string output = decision?.Replacement ?? typed;
-
-                IReadOnlyList<AccentVariant> candidates =
-                    SentenceStageCandidates(probe, typed, output, decision);
-
-                words.Add(new WordEval(typed, typed, output, decision, candidates));
-            }
-
-            // Pass 2 — rerank ambiguous slots with the full sentence context,
-            // left to right so a resolved slot informs the next.
-            var sequence = new List<string>(words.Count);
-            foreach (var w in words) sequence.Add(w.Output);
-
-            for (int i = 0; i < words.Count; i++)
-            {
-                var w = words[i];
-                if (w.Candidates.Count < 2)
-                    continue;
-                string? chosen = reranker.Rerank(sequence, i, w.Candidates).Chosen;
-                if (chosen is null)
-                    continue;
-                string newOutput = CasePattern.Apply(w.Typed, chosen);
-                if (string.Equals(newOutput, w.Output, StringComparison.Ordinal))
-                    continue;
-                words[i] = w with
-                {
-                    Output = newOutput,
-                    Decision = new CorrectionDecision(w.Typed, newOutput, CorrectionReason.SentenceReranker),
-                };
-                sequence[i] = newOutput;
-            }
-
-            foreach (var w in words)
-                outcomes.Add(new WordOutcome(w.Typed, w.Output, w.Decision?.Reason, w.Candidates.Count >= 2));
-        }
-
-        return outcomes;
-    }
-
     // Output is compared to the reference ordinally: accents and case must match.
     private static void Classify(
         RestorationReport report,
@@ -354,36 +186,11 @@ public static class RestorationEvaluator
         return false;
     }
 
-    // Mirrors AutocorrectEngine.SentenceStageMayEvaluate: the sentence model can
-    // arbitrate accent/personal choices, including by returning to the typed
-    // literal, but it has no right to undo typo, elision or grammar corrections.
-    private static IReadOnlyList<AccentVariant> SentenceStageCandidates(
-        IAmbiguityProbe probe, string typed, string output, CorrectionDecision? decision)
-    {
-        if (!SentenceStageMayEvaluate(decision))
-            return Array.Empty<AccentVariant>();
-
-        return string.Equals(output, typed, StringComparison.Ordinal)
-            ? probe.AmbiguousCandidates(typed)
-            : probe.CorrectionCandidates(typed);
-    }
-
-    private static bool SentenceStageMayEvaluate(CorrectionDecision? decision) =>
-        decision is null
-        || decision.Reason is CorrectionReason.LexicalGate
-            or CorrectionReason.ContextPair
-            or CorrectionReason.FrequencyDominance
-            or CorrectionReason.PersonalWord;
-
     // Most recent last, as the policy expects.
     private static IReadOnlyList<string> LeftContext(string? prev2, string? prev1) =>
         prev1 is null ? Array.Empty<string>()
         : prev2 is null ? new[] { prev1 }
         : new[] { prev2, prev1 };
-
-    private readonly record struct WordEval(
-        string Reference, string Typed, string Output,
-        CorrectionDecision? Decision, IReadOnlyList<AccentVariant> Candidates);
 }
 
 public sealed record EvaluatorOptions
@@ -391,8 +198,3 @@ public sealed record EvaluatorOptions
     // Scored tokens before stopping; 0 means no cap.
     public int MaxTokens { get; init; } = 0;
 }
-
-// Reason null = left untouched. WasAmbiguous: the reranker was offered the slot;
-// with a SentenceReranker reason it resolved it, with no change it abstained.
-public readonly record struct WordOutcome(
-    string Typed, string Output, CorrectionReason? Reason, bool WasAmbiguous);
