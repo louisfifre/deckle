@@ -73,7 +73,8 @@ public sealed partial class SummaryPage : Page
         _setup.SetTotalEstimate(InstallPlan.DescribeTotal(_context));
 
         ResultBar.Severity = ok ? InfoBarSeverity.Success : InfoBarSeverity.Warning;
-        ResultBar.Title    = Loc.Get(ok ? "Setup_Result_CompleteTitle" : "Setup_Result_IncompleteTitle");
+        // No title: the step header above already says whether it worked, so the bar holds only the fact the header does not (where, or how many).
+        ResultBar.Title    = "";
         ResultBar.Message  = ok
             ? Loc.Format("Setup_Result_StoredUnder_Format", _context.Location)
             : Loc.Format("Setup_Result_FailedCount_Format", CountFailed(_context), _context.Results.Count);
