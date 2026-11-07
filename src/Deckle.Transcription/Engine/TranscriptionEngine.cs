@@ -330,6 +330,9 @@ public sealed partial class TranscriptionEngine : IDisposable
     // session.
     private readonly VadService _vadService;
 
+    // CAPTURE_TAIL_AFTER_STOP_MS in production; tests shorten it.
+    private readonly TimeSpan _captureTail;
+
     public TranscriptionEngine(
         ITranscriptionEngineHost host,
         IAsrBackend backend,
@@ -354,7 +357,8 @@ public sealed partial class TranscriptionEngine : IDisposable
         IClipboardWriter clipboard,
         IRewriteService? rewrite = null,
         DictationRecoveryStore? recovery = null,
-        TakeAudioRecoveryStore? takeAudio = null)
+        TakeAudioRecoveryStore? takeAudio = null,
+        TimeSpan? captureTail = null)
     {
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(backend);
@@ -367,6 +371,7 @@ public sealed partial class TranscriptionEngine : IDisposable
         _clipboard = clipboard;
         _recovery = recovery;
         _takeAudio = takeAudio;
+        _captureTail = captureTail ?? TimeSpan.FromMilliseconds(CAPTURE_TAIL_AFTER_STOP_MS);
         _vadService = new VadService(_host.ResolveModelsDirectory);
 
         _rewrite = rewrite ?? new RewriteService();

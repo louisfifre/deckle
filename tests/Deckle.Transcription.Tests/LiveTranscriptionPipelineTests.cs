@@ -30,7 +30,8 @@ public sealed class LiveTranscriptionPipelineTests
             new StreamingHost(),
             backend,
             capture,
-            clipboard);
+            clipboard,
+            captureTail: TestCaptureTail);
         var statuses = new ConcurrentQueue<string>();
         var segments = new ConcurrentQueue<string>();
         var snapshots = new ConcurrentQueue<TranscriptSnapshot>();
@@ -113,7 +114,8 @@ public sealed class LiveTranscriptionPipelineTests
             new StreamingHost(),
             backend,
             capture,
-            new RecordingClipboardWriter());
+            new RecordingClipboardWriter(),
+            captureTail: TestCaptureTail);
 
         Assert.Equal(ToggleResult.IgnoredBusy, engine.RequestToggle(shouldPaste: false));
 
@@ -145,7 +147,8 @@ public sealed class LiveTranscriptionPipelineTests
             new StreamingHost(),
             backend,
             capture,
-            new RecordingClipboardWriter());
+            new RecordingClipboardWriter(),
+            captureTail: TestCaptureTail);
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
@@ -232,7 +235,8 @@ public sealed class LiveTranscriptionPipelineTests
             new StreamingHost(),
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 2),
-            clipboard);
+            clipboard,
+            captureTail: TestCaptureTail);
 
         await RunOneTakeAsync(engine, backend, testCancellation);
 
@@ -251,7 +255,8 @@ public sealed class LiveTranscriptionPipelineTests
             new StreamingHost(),
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 2),
-            new RecordingClipboardWriter());
+            new RecordingClipboardWriter(),
+            captureTail: TestCaptureTail);
 
         await RunOneTakeAsync(engine, backend, testCancellation);
 
@@ -276,7 +281,8 @@ public sealed class LiveTranscriptionPipelineTests
             new StreamingHost(),
             backend,
             capture,
-            clipboard);
+            clipboard,
+            captureTail: TestCaptureTail);
         var utterances = new ConcurrentQueue<TranscribedUtterance>();
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
             TaskCreationOptions.RunContinuationsAsynchronously);
@@ -327,7 +333,8 @@ public sealed class LiveTranscriptionPipelineTests
                 backend,
                 capture,
                 new RecordingClipboardWriter(),
-                recovery: store);
+                recovery: store,
+                captureTail: TestCaptureTail);
             var finished = new TaskCompletionSource<TranscriptionOutcome>(
                 TaskCreationOptions.RunContinuationsAsynchronously);
             var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -382,7 +389,8 @@ public sealed class LiveTranscriptionPipelineTests
                 new SequencedBackend([TestInference, "bonjour", "Deckle"]),
                 new ScriptedMicrophoneCapture(utteranceCount: 2, CaptureOutcome.MicError),
                 clipboard,
-                recovery: store);
+                recovery: store,
+                captureTail: TestCaptureTail);
 
             await RunTakeToIdleAsync(engine, store, "bonjour\n\nDeckle", shouldPaste: false, testCancellation);
 
@@ -413,7 +421,8 @@ public sealed class LiveTranscriptionPipelineTests
                 new SequencedBackend([TestInference, "bonjour", "Deckle"]),
                 new ScriptedMicrophoneCapture(utteranceCount: 2),
                 clipboard,
-                recovery: store);
+                recovery: store,
+                captureTail: TestCaptureTail);
             engine.OnReadyToPaste = () => throw new InvalidOperationException("paste failed");
 
             await RunTakeToIdleAsync(engine, store, "bonjour\n\nDeckle", shouldPaste: true, testCancellation);
@@ -481,7 +490,8 @@ public sealed class LiveTranscriptionPipelineTests
             backend,
             capture,
             clipboard,
-            rewrite);
+            rewrite,
+            captureTail: TestCaptureTail);
 
         await RunOneTakeAsync(engine, backend, testCancellation);
 
@@ -513,7 +523,8 @@ public sealed class LiveTranscriptionPipelineTests
             backend,
             capture,
             clipboard,
-            rewrite);
+            rewrite,
+            captureTail: TestCaptureTail);
 
         await RunOneTakeAsync(engine, backend, testCancellation);
 
@@ -547,7 +558,7 @@ public sealed class LiveTranscriptionPipelineTests
             Enabled = true,
             Steps = [new LengthStep { FromChars = fromChars, ProfileId = "by-length" }],
         };
-        using var engine = new TranscriptionEngine(host, backend, capture, clipboard, rewrite);
+        using var engine = new TranscriptionEngine(host, backend, capture, clipboard, rewrite, captureTail: TestCaptureTail);
 
         await RunOneTakeAsync(engine, backend, testCancellation);
 
@@ -568,7 +579,7 @@ public sealed class LiveTranscriptionPipelineTests
         StreamingHost host = RewritingHost(batchRewriting: false);
         host.Llm.Enabled = false;
         host.Llm.Profiles[1].Id = "shortcut";
-        using var engine = new TranscriptionEngine(host, backend, capture, clipboard, rewrite);
+        using var engine = new TranscriptionEngine(host, backend, capture, clipboard, rewrite, captureTail: TestCaptureTail);
 
         await RunOneTakeAsync(engine, backend, testCancellation, rewriteProfileId: "shortcut");
 
@@ -586,7 +597,8 @@ public sealed class LiveTranscriptionPipelineTests
             new StreamingHost(),
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 2),
-            new RecordingClipboardWriter());
+            new RecordingClipboardWriter(),
+            captureTail: TestCaptureTail);
 
         await RunOneTakeAsync(engine, backend, testCancellation);
 
@@ -612,7 +624,8 @@ public sealed class LiveTranscriptionPipelineTests
             new StreamingHost(),
             new SequencedBackend([TestInference]),
             new ScriptedMicrophoneCapture(utteranceCount: 0),
-            new RecordingClipboardWriter());
+            new RecordingClipboardWriter(),
+            captureTail: TestCaptureTail);
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         var ready = new TaskCompletionSource(
@@ -829,6 +842,13 @@ public sealed class LiveTranscriptionPipelineTests
     // is always that one, whether the model was loaded or not; the utterances
     // follow. Its text never reaches the take.
     internal const string TestInference = "test inference";
+
+    // The capture tail of the engines these tests build, in place of the
+    // 400 ms the product keeps after a stop press, which every take of the
+    // suite would otherwise pay. Not zero, so capture still runs a little past
+    // the press. CaptureKeepsRunningForAShortTailAfterTheStopPress keeps the
+    // product value, since the tail is what it proves.
+    internal static readonly TimeSpan TestCaptureTail = TimeSpan.FromMilliseconds(20);
 
     internal sealed class SequencedBackend : IAsrBackend
     {

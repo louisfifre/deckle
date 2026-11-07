@@ -23,7 +23,9 @@ public sealed partial class TranscriptionEngine
     // "transcribing" on the press, so the tail is hidden behind that transition.
     // 400 ms: long enough to cover the end of a word and a breath, short enough
     // that the added wait stays under the threshold where a stop feels laggy.
-    // Not a setting: nobody should tune it per take.
+    // Not a setting: nobody should tune it per take. Only tests pass another
+    // value, through the internal constructor, so that the suites do not wait
+    // 400 ms after every stop press (_captureTail).
     private const int CAPTURE_TAIL_AFTER_STOP_MS = 400;
 
     // ── Hotkey toggle entry point ───────────────────────────────────────────
@@ -79,7 +81,7 @@ public sealed partial class TranscriptionEngine
             // CancelAfter is safe even if Record() has already returned or the
             // worker has disposed the source (ObjectDisposedException caught;
             // disposing the source also disposes its pending timer).
-            try { _recordCts?.CancelAfter(CAPTURE_TAIL_AFTER_STOP_MS); }
+            try { _recordCts?.CancelAfter(_captureTail); }
             catch (ObjectDisposedException) { /* worker raced our cancel */ }
             return ToggleResult.Stopped;
         }

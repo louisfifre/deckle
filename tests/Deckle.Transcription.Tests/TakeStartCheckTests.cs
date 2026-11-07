@@ -47,7 +47,8 @@ public sealed class TakeStartCheckTests
             new LiveTranscriptionPipelineTests.StreamingHost(),
             backend,
             new LiveTranscriptionPipelineTests.ScriptedMicrophoneCapture(utteranceCount: 2),
-            clipboard);
+            clipboard,
+            captureTail: LiveTranscriptionPipelineTests.TestCaptureTail);
         var finished = NewFinishedSignal(engine);
         Task ready = NewReadySignal(engine);
 
@@ -102,7 +103,8 @@ public sealed class TakeStartCheckTests
             new LiveTranscriptionPipelineTests.StreamingHost(),
             backend,
             capture,
-            clipboard);
+            clipboard,
+            captureTail: LiveTranscriptionPipelineTests.TestCaptureTail);
         var finished = NewFinishedSignal(engine);
         Task ready = NewReadySignal(engine);
 
@@ -165,7 +167,8 @@ public sealed class TakeStartCheckTests
             new LiveTranscriptionPipelineTests.StreamingHost(),
             backend,
             new LiveTranscriptionPipelineTests.ScriptedMicrophoneCapture(utteranceCount: 1),
-            new LiveTranscriptionPipelineTests.RecordingClipboardWriter());
+            new LiveTranscriptionPipelineTests.RecordingClipboardWriter(),
+            captureTail: LiveTranscriptionPipelineTests.TestCaptureTail);
         var finished = NewFinishedSignal(engine);
         Task ready = NewReadySignal(engine);
 
@@ -198,7 +201,8 @@ public sealed class TakeStartCheckTests
             host,
             backend,
             new LiveTranscriptionPipelineTests.ScriptedMicrophoneCapture(utteranceCount: 1),
-            clipboard);
+            clipboard,
+            captureTail: LiveTranscriptionPipelineTests.TestCaptureTail);
         var finished = NewFinishedSignal(engine);
         Task ready = NewReadySignal(engine);
 
@@ -286,7 +290,8 @@ public sealed class TakeStartCheckTests
             new LiveTranscriptionPipelineTests.StreamingHost(),
             backend,
             new LiveTranscriptionPipelineTests.ScriptedMicrophoneCapture(utteranceCount: 0),
-            new LiveTranscriptionPipelineTests.RecordingClipboardWriter());
+            new LiveTranscriptionPipelineTests.RecordingClipboardWriter(),
+            captureTail: LiveTranscriptionPipelineTests.TestCaptureTail);
         var finished = NewFinishedSignal(engine);
         Task ready = NewReadySignal(engine);
 
