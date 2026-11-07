@@ -942,6 +942,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DiagnosticsSettingsModule.cs
 │   │   ├── DiagnosticsViewModel.cs
 │   │   ├── DiagnosticsViewModel.Settings.cs
+│   │   ├── LogAutoScroll.cs
 │   │   ├── LogFilterDimension.cs
 │   │   ├── LogFilterSelection.cs
 │   │   ├── LogFilterToken.cs
@@ -2080,6 +2081,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── WindowDescriptionBugNotes.md
 │   ├── Deckle.Diagnostics.Logging.Tests/
 │   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
+│   │   ├── LogAutoScrollTests.cs
 │   │   ├── LogFilterSelectionTests.cs
 │   │   ├── LoggingSettingsTests.cs
 │   │   ├── LogTransferTests.cs
