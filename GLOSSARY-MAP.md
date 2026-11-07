@@ -29,7 +29,6 @@ The nearest `GLOSSARY.md` up the tree governs the code you're touching. This map
 - **Audio → Transcription**: Audio captures and pre-processes the buffer; Transcription cuts it into utterances and decodes them
 - **Vad ← Transcription**: the neural VAD (`Deckle.Vad`) trims silence in both Transcription paths (once on the whole take in the monolithic path, per utterance in the segmented session); the energy segmenter is Transcription's own live device — the two must not be conflated
 - **Input → Input.Trackpad**: Input assembles contact frames; the Trackpad recognizer consumes them into gesture intentions
-- **Autocorrect ↔ Llm.Rewrite**: both sit on the Correction / Rewrite boundary, drawn in Llm.Rewrite — Autocorrect owns bounded corrections, the rewrite service carries every free regeneration (including the sentence stage's escalations)
-- **Diagnostics → everything**: the observability vocabulary governs every module's log stream; the `observability` test category (Tests) exercises it
+- **Autocorrect ↔ Llm.Rewrite**: both sit on the Correction / Rewrite boundary, drawn in Llm.Rewrite — Autocorrect owns bounded corrections, the rewrite service carries every free regeneration- **Diagnostics → everything**: the observability vocabulary governs every module's log stream; the `observability` test category (Tests) exercises it
 - **Security → everything**: Security classifies captured content and its custody boundary wherever a module stores, exports, or transmits it
 - **Home → Anytype**: Home owns the inventory language and guards; Anytype provides the local storage and schema coordinates
