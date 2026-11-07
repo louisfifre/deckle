@@ -223,7 +223,6 @@ public sealed partial class LlmProvidersSection : UserControl
             return;
 
         LlmSettingsService.Instance.Current.Providers = new LlmSettings().Providers;
-        LlmSettingsMigrations.Apply(LlmSettingsService.Instance.Current);
         LlmSettingsService.Instance.Save();
         Reload();
         ProvidersChanged?.Invoke(this, EventArgs.Empty);

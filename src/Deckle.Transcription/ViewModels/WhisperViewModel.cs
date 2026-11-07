@@ -67,7 +67,7 @@ public partial class WhisperViewModel : ObservableObject
         AutoPasteEnabled = new PasteSettings().AutoPasteEnabled;
         OverlayEnabled = overlay.Enabled;
         OverlayFadeOnProximity = overlay.FadeOnProximity;
-        OverlayPosition = (overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
+        OverlayPosition = overlay.Position;
         TranscriptPanelSide = NormalizeTranscriptPanelSide(overlay.TranscriptPanelSide);
 
         // The dataset consents (latency, corpus) live in WhisperTelemetryViewModel,
@@ -120,7 +120,7 @@ public partial class WhisperViewModel : ObservableObject
             AutoPasteEnabled = shell.Paste.AutoPasteEnabled;
             OverlayEnabled = shell.Overlay.Enabled;
             OverlayFadeOnProximity = shell.Overlay.FadeOnProximity;
-            OverlayPosition = (shell.Overlay.Position ?? "").StartsWith("Top") ? "TopCenter" : "BottomCenter";
+            OverlayPosition = shell.Overlay.Position;
             TranscriptPanelSide = NormalizeTranscriptPanelSide(shell.Overlay.TranscriptPanelSide);
         }
         finally

@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Deckle.Autocorrect.Tests;
 
-// The per-app decision model and its one-way migration off the v1 allow-list.
+// The per-app decision model.
 [Trait("Category", "unit")]
 public sealed class AutocorrectSettingsTests
 {
@@ -11,18 +11,6 @@ public sealed class AutocorrectSettingsTests
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
     };
-
-    [Fact]
-    public void LegacyEnrolledProcessesMigrateIntoApps()
-    {
-        const string legacy = """{"enabled":true,"enrolledProcesses":["signal","claude"]}""";
-
-        var s = JsonSerializer.Deserialize<AutocorrectSettings>(legacy, Options)!;
-
-        Assert.True(s.Apps["claude"]);
-        Assert.True(s.Apps["SIGNAL"]);      // non-default: only migration can set it, and case-insensitively
-        Assert.Null(s.EnrolledProcesses);   // folded in and dropped, never written again
-    }
 
     [Fact]
     public void AppsRoundTripAndStayCaseInsensitive()

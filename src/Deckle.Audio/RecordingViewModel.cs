@@ -173,7 +173,7 @@ public partial class RecordingViewModel : ObservableObject
 
     // Raised on the UI thread right before the microphone check or the
     // listening test opens the microphone, so the page closes whatever else
-    // holds it (the voice meter's Listen). Two waveIn opens of one device at
+    // holds it (the voice meter's Listen). Two captures of one device at
     // once are not known to be safe, so the page never tries it.
     public event EventHandler? MicrophoneNeeded;
 

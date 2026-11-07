@@ -23,7 +23,7 @@ public static class ParagraphRewrite
     /// <summary>Typed text in any enrolled app stays on the local provider,
     /// whatever the dictation profiles point at: it is private by nature and
     /// the offer deadline leaves no room for a network round trip. The id is
-    /// the one the settings migration gives the Ollama provider.</summary>
+    /// the one the default settings give the Ollama provider.</summary>
     public const string ProviderId = "ollama";
 
     /// <summary>The capacity floor for the interactive retaille. The 3B

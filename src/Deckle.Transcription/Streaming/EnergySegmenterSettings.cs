@@ -50,25 +50,4 @@ public sealed class EnergySegmenterSettings
     public double HangoverCurveX2     { get; set; } = 0.90;
     public double HangoverCurveY2     { get; set; } = 0.25;
     public int    MarginMs            { get; set; } = 150;
-
-    // Which generation of defaults this file was last carried to. Absent in a
-    // file written before it existed, so it reads 0 there: that is how a stored
-    // value that equals an OLD default (HangoverMinMs 500) is told from the
-    // same value chosen later on purpose. Set by TranscriptionSettingsService.
-    // Not a setting: no page shows it.
-    //   1 — HangoverMinMs default moved from 500 ms to 1 s.
-    public const int CurrentDefaultsRevision = 1;
-    public int    DefaultsRevision    { get; set; }
-
-    // True while the hangover curve still equals the shipped default — i.e. the
-    // user has not customized it. Compared against a fresh instance so the four
-    // default control points live in exactly one place: the initializers above.
-    public bool HasDefaultHangoverCurve()
-    {
-        var d = new EnergySegmenterSettings();
-        return HangoverCurveX1 == d.HangoverCurveX1
-            && HangoverCurveY1 == d.HangoverCurveY1
-            && HangoverCurveX2 == d.HangoverCurveX2
-            && HangoverCurveY2 == d.HangoverCurveY2;
-    }
 }

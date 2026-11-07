@@ -41,10 +41,6 @@ public sealed class SettingsService
     private SettingsService()
     {
         // No CreateDirectory: the AppPaths static ctor creates UserDataRoot.
-        //
-        // No migration hooks here: SettingsBootstrap.MigrateLegacyToPerModule
-        // runs in OnLaunched before this singleton initializes, so the store
-        // parses the already-slimmed shell-only file.
         _store = new JsonSettingsStore<AppSettings>(
             path:        AppPaths.SettingsFilePath,
             mutexName:   AppPaths.SettingsMutexName,
