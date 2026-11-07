@@ -146,6 +146,12 @@ crashdumps/
 # temporary by doctrine, never committed.
 /logs/
 
+# The benchmark workspace was removed from the repository, but a checkout
+# that ran it still holds its local runs, which may contain dictations.
+# Ignored so they can never be committed; drop this rule once no checkout
+# keeps the folder.
+/benchmark/
+
 # ─────────────────────────────────────────────────────────────────────────
 #  Python tooling — caches and virtualenvs (ad hoc scripts)
 # ─────────────────────────────────────────────────────────────────────────
