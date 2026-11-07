@@ -189,7 +189,7 @@ public sealed partial class DeckleLightingSource
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
            Message = "Hue event monitoring stopped while it was unavailable")]
-    public void EventStreamIncidentAbandoned(long duration_ms, int failures)
+    public void EventStreamIncidentAbandoned(long duration_ms, long failures)
     {
         if (IsEnabled()) WriteEvent(EvtEventStreamIncidentAbandoned, duration_ms, failures);
     }
@@ -198,7 +198,7 @@ public sealed partial class DeckleLightingSource
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
            Message = "duration_ms={0} | failures={1}")]
-    public void EventStreamRecoveryDetail(long duration_ms, int failures)
+    public void EventStreamRecoveryDetail(long duration_ms, long failures)
     {
         if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
         WriteEvent(EvtEventStreamRecoveryDetail, duration_ms, failures);
