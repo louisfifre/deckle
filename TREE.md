@@ -116,7 +116,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── lissage-current.md
 │   │   │   │   ├── lissage-libre.md
 │   │   │   │   ├── lissage-literal.md
-│   │   │   │   └── lissage-opt1.md
+│   │   │   │   ├── lissage-opt1.md
+│   │   │   │   └── lissage-opt2.md
 │   │   │   ├── .gitignore
 │   │   │   ├── BatchJudge.cs
 │   │   │   ├── Campaign.cs
