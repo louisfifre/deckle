@@ -1,4 +1,5 @@
 using System.Globalization;
+using Deckle.Diagnostics;
 
 namespace Deckle.Autocorrect;
 
@@ -57,7 +58,7 @@ public static class SystemLanguages
         if (failure is not null)
             DeckleAutocorrectSource.Log.SystemLanguagesFallback(
                 string.Join(',', languages.Order(StringComparer.OrdinalIgnoreCase)),
-                failure.GetType().FullName ?? failure.GetType().Name,
+                ExceptionTypeName.Of(failure),
                 failure.Message);
         return languages;
     }

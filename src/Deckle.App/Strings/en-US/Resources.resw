@@ -1574,4 +1574,15 @@
   <data name="LlmProfile_Hints_Format" xml:space="preserve">
     <value>context {0}K  ·  temperature {1}</value>
   </data>
+  <!-- Action of the same notice: opens the Diagnostics page. The label names
+       the page as its nav label does (Deckle.Diagnostics.Logging). -->
+  <data name="LogWindowDroppedSettingsButton.Content" xml:space="preserve">
+    <value>Open Diagnostics settings</value>
+  </data>
+  <data name="LogWindowDroppedSettingsButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Open Diagnostics settings</value>
+  </data>
+  <data name="LogWindowDroppedSettingsButton.AutomationProperties.HelpText" xml:space="preserve">
+    <value>Shows the controls that decide what this window can show.</value>
+  </data>
 </root>

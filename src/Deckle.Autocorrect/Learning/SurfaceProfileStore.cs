@@ -1,5 +1,6 @@
 using System.IO;
 using System.Text.Json;
+using Deckle.Diagnostics;
 
 namespace Deckle.Autocorrect;
 
@@ -71,7 +72,7 @@ public static class SurfaceProfileStore
             // data; the position locates the fault without it.
             DeckleAutocorrectSource.Log.LearningStoreUnreadable(
                 StoreName, DeckleAutocorrectSource.LearningStoreReasons.MalformedJson,
-                ex.GetType().FullName ?? ex.GetType().Name,
+                ExceptionTypeName.Of(ex),
                 $"line={ex.LineNumber} byte={ex.BytePositionInLine}");
             return Array.Empty<SurfaceProfileRecord>();
         }
@@ -79,7 +80,7 @@ public static class SurfaceProfileStore
         {
             DeckleAutocorrectSource.Log.LearningStoreUnreadable(
                 StoreName, DeckleAutocorrectSource.LearningStoreReasons.ReadFailed,
-                ex.GetType().FullName ?? ex.GetType().Name, ex.Message);
+                ExceptionTypeName.Of(ex), ex.Message);
             return Array.Empty<SurfaceProfileRecord>();
         }
     }
