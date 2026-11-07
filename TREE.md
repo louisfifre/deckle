@@ -2412,7 +2412,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SetupPathRedactionTests.cs
 │   │   ├── SetupStringMirrorTests.cs
 │   │   ├── UpdateHandoffBugNotes.md
-│   │   └── UpdatePredecessorTests.cs
+│   │   ├── UpdatePredecessorTests.cs
+│   │   └── UpdateToastRoutingTests.cs
 │   ├── Deckle.Shell.Foreground.Tests/
 │   │   ├── Deckle.Shell.Foreground.Tests.csproj
 │   │   ├── FullscreenGeometryTests.cs
