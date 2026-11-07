@@ -16,29 +16,34 @@ namespace Deckle.Catalog;
 
 // ── CurveEditor ───────────────────────────────────────────────────────────────
 //
-// The one curve component of the settings surfaces (the Playground
-// Segmentation form): a plot of a two-point cubic Bézier with its two
-// draggable handles, taking the width it is given, and beside it a legend: the
-// frame's own values when the owner fills the Legend slot (the cut's four
-// anchors), then the four control points as fields in a two-by-two grid with the
-// `cubic-bezier(…)` readout under them. Below a comfortable width the legend
-// moves under the plot.
+// The one curve component of the settings surfaces: a plot of a two-point
+// cubic Bézier with its two draggable control points, taking the width it is
+// given, and a legend: the frame's own values when the owner fills the Legend
+// slot (the cut's four anchors), then the four control points as fields in a
+// two-by-two grid with the `cubic-bezier(…)` readout under them, then the
+// owner's LegendAfter values and its LegendTrailing slot (the reset).
 //
-// Two layouts from one frame (CurveFrame): with axes, the plot spans the data
-// space (rulers on "nice" steps, unit labels, dashed guides at the box's edges)
-// and the unit square sits where the frame puts it — the dictation's decay from
-// the ramp start to the ramp end; without axes, the plot is the unit square
-// alone, square, the Ambient brightness response. A dashed reference shows the
-// straight line between the fixed endpoints, two faint stems tie each endpoint
-// to its handle, and an optional floor guide draws a level the engine holds.
+// Two layouts from one frame (CurveFrame). With axes, the plot spans the data
+// space (rulers on "nice" steps, unit labels, dashed guides at the box's edges),
+// the unit square sits where the frame puts it — the dictation's decay from the
+// ramp start to the ramp end — and the plot is the instrument: full width, its
+// height following the page when ViewportShare is set, an optional PlotFooter
+// view under it at another scale (the pause strip), and the legend under both,
+// its blocks in one row while they fit. With EndpointLimits the square's two
+// fixed corners get handles of their own that move the frame (the endpoints
+// partial). Without axes, the plot is the unit square alone, square, the
+// Ambient brightness response, with the legend beside it, or under it below a
+// comfortable width. A dashed reference shows the straight line between the
+// fixed endpoints, two faint stems tie each endpoint to its control point, and
+// an optional floor guide draws a level the engine holds.
 //
 // Writes follow the gesture rule: a handle moves the drawing while it is dragged
-// and writes the points at its release; a field writes at its commit; an arrow
-// key on a focused handle nudges by a hundredth (a tenth with Shift) and writes
-// at once. X stays in [0,1] so the curve remains a function; Y may overshoot by a
-// quarter when AllowOutside is set. The plot has no fill or frame of its own: it
-// floats on its host's surface, its y labels flush with the host's text edge. The drawing is a tree of XAML shapes updated
-// in place on every change, with no Win2D.
+// and writes at its release; a field writes at its commit; an arrow key on a
+// focused handle nudges by a step and writes at once. X stays in [0,1] so the
+// curve remains a function; Y may overshoot by a quarter when AllowOutside is
+// set. The plot has no fill or frame of its own: it floats on its host's
+// surface, its y labels flush with the host's text edge. The drawing is a tree
+// of XAML shapes updated in place on every change, with no Win2D.
 public sealed partial class CurveEditor : UserControl
 {
     private const int SampleCount = 96;
@@ -55,6 +60,11 @@ public sealed partial class CurveEditor : UserControl
     private const double PadTop = 8.0;
     private const double PadRight = 14.0;
     private const double Pad = 0.0;
+
+    // Where an axes plot's data area starts and ends inside the editor, so a
+    // PlotFooter view at another scale can share its edges.
+    public const double DataLeftInset = GutterLeft;
+    public const double DataRightInset = PadRight;
     private const double SquareSide = 220.0;
     private const double StackBelowWidth = 560.0;
     private const double AxisLegendWidth = 120.0;
@@ -72,9 +82,24 @@ public sealed partial class CurveEditor : UserControl
     // The gap between the plot and the legend when the legend moves under it.
     private const double StackedRowGap = 12.0;
 
+    // The legend's blocks (the owner's frame values, the control points, the
+    // owner's values after them): a column gap between blocks laid side by side
+    // under an axes plot, the stacked gap when they no longer fit one row.
+    private const double BlockColumnGap = 32.0;
+    private const double BlockRowGap = 16.0;
+
+    // The plot's height when it follows the page (ViewportShare): never so low
+    // that the rulers crowd the curve, never so tall that the values under it
+    // leave the window on a large screen.
+    private const double MinShareHeight = 240.0;
+    private const double MaxShareHeight = 560.0;
+
     private readonly Grid _root = new();
-    private readonly StackPanel _side = new() { Spacing = 12 };
+    private readonly Grid _side = new();
     private readonly StackPanel _legend = new() { Spacing = 8, Visibility = Visibility.Collapsed };
+    private readonly StackPanel _legendAfter = new() { Spacing = 8, Visibility = Visibility.Collapsed };
+    private readonly StackPanel _trailing = new() { Orientation = Orientation.Horizontal, Spacing = 4, Visibility = Visibility.Collapsed };
+    private readonly Border _footer = new() { Visibility = Visibility.Collapsed };
     private readonly Border _plotFrame;
     private readonly Canvas _plot = new();
     private readonly Polyline _curve;
@@ -98,8 +123,11 @@ public sealed partial class CurveEditor : UserControl
     private readonly TextBlock _readout;
 
     // The handle positions while a drag is in flight, in unit coordinates; the
-    // dependency properties are written at the release.
+    // dependency properties are written at the release. The pointer's own
+    // position is kept unsnapped (_dragPixel), so a slow drag whose every step
+    // is smaller than a hundredth still adds up instead of snapping back.
     private double _dragX1, _dragY1, _dragX2, _dragY2;
+    private Point _dragPixel;
     private bool _dragging;
     private bool _syncing;
 
@@ -123,6 +151,8 @@ public sealed partial class CurveEditor : UserControl
 
         _handle1 = BuildHandle(first: true);
         _handle2 = BuildHandle(first: false);
+        _originHandle = BuildEndpointHandle(origin: true);
+        _endHandle = BuildEndpointHandle(origin: false);
 
         _plot.Children.Add(_reference);
         _plot.Children.Add(_guideStart);
@@ -131,6 +161,10 @@ public sealed partial class CurveEditor : UserControl
         _plot.Children.Add(_curve);
         _plot.Children.Add(_stem1);
         _plot.Children.Add(_stem2);
+        // The endpoints under the control points: where both meet, the smaller,
+        // off-curve handle stays the one on top.
+        _plot.Children.Add(_originHandle);
+        _plot.Children.Add(_endHandle);
         _plot.Children.Add(_handle1);
         _plot.Children.Add(_handle2);
         _plot.SizeChanged += (_, _) => Redraw();
@@ -173,27 +207,33 @@ public sealed partial class CurveEditor : UserControl
         _pointsRow.Children.Add(_fields);
         _pointsRow.Children.Add(_axisLegend);
 
-        // The side column: the owner's legend first, the control points (and the
-        // axis legend beside them) under it.
+        // The legend: the owner's frame values first, the control points (and
+        // the axis legend beside them), the owner's values after them, then the
+        // trailing slot (the composer's reset). Reflow lays them out.
         _side.Children.Add(_legend);
         _side.Children.Add(_pointsRow);
+        _side.Children.Add(_legendAfter);
+        _side.Children.Add(_trailing);
 
-        // One row while the legend sits beside the plot; Reflow adds the second
-        // when it moves under. A WinUI Grid pays its RowSpacing even before an
-        // empty row, so a second row kept in the wide layout left 12 px of void
-        // under the plot.
-        _root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        _root.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        _root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        // Rows and columns are Reflow's: it declares only those that hold a
+        // visible element, since a WinUI Grid pays its spacing even before an
+        // empty row (the 12 px of void the 2026-11-07 review measured under the
+        // plot).
         _root.ColumnSpacing = 16;
         _root.RowSpacing = StackedRowGap;
         _root.Children.Add(_plotFrame);
+        _root.Children.Add(_footer);
         _root.Children.Add(_side);
         Content = _root;
 
         SizeChanged += (_, e) => Reflow(e.NewSize.Width);
         ActualThemeChanged += (_, _) => ApplyBrushes();
-        Loaded += (_, _) => { ApplyBrushes(); Reflow(ActualWidth); Redraw(); SyncFields(); };
+        Loaded += (_, _) =>
+        {
+            AttachViewport();
+            ApplyBrushes(); Reflow(ActualWidth); Redraw(); SyncFields();
+        };
+        Unloaded += (_, _) => DetachViewport();
     }
 
     // ── Properties ───────────────────────────────────────────────────────────
@@ -296,13 +336,53 @@ public sealed partial class CurveEditor : UserControl
         set
         {
             _wideHeight = value;
-            if (Frame.Axes) _plotFrame.Height = value;
+            ApplyPlotHeight();
+        }
+    }
+
+    private double _viewportShare;
+    private ScrollViewer? _viewport;
+
+    // When above zero, the axes plot's height follows the page instead of
+    // WideHeight: this share of the visible height of the nearest ScrollViewer
+    // around the editor, between MinShareHeight and MaxShareHeight, so the plot
+    // takes most of the window on the page where it is the instrument. Zero
+    // keeps WideHeight. A plain property, set once by the owner.
+    public double ViewportShare
+    {
+        get => _viewportShare;
+        set
+        {
+            _viewportShare = value;
+            if (IsLoaded) AttachViewport();
+            ApplyPlotHeight();
         }
     }
 
     // The slot above the control points for the values that frame the curve. The
     // owner fills it with fields it builds and wires itself; empty takes no room.
     public Panel Legend => _legend;
+
+    // The slot after the control points, for the owner's values that belong to
+    // a view under the plot (the pause strip's two durations). Empty takes no
+    // room.
+    public Panel LegendAfter => _legendAfter;
+
+    // The slot that ends the legend's row, at its trailing edge (the composer's
+    // reset, beside the values it restores). Empty takes no room.
+    public Panel LegendTrailing => _trailing;
+
+    // A view under the plot at another scale, between the plot and the legend
+    // (the pause strip). Null takes no room. The owner builds and wires it.
+    public UIElement? PlotFooter
+    {
+        get => _footer.Child;
+        set
+        {
+            _footer.Child = value;
+            Reflow(ActualWidth);
+        }
+    }
 
     // Caption over a field, the form the four control points use, so an owner's
     // legend field looks like them. The field takes the legend's one width; a
@@ -353,13 +433,48 @@ public sealed partial class CurveEditor : UserControl
     private void OnFrameChanged()
     {
         bool axes = Frame.Axes;
-        _plotFrame.Height = axes ? WideHeight : SquareSide;
         _plotFrame.Width = axes ? double.NaN : SquareSide;
         _plotFrame.HorizontalAlignment = axes ? HorizontalAlignment.Stretch : HorizontalAlignment.Left;
         _guideStart.Visibility = axes ? Visibility.Visible : Visibility.Collapsed;
         _guideEnd.Visibility = axes ? Visibility.Visible : Visibility.Collapsed;
+        ApplyPlotHeight();
+        Reflow(ActualWidth);
         Redraw();
     }
+
+    private void ApplyPlotHeight()
+    {
+        if (!Frame.Axes)
+        {
+            _plotFrame.Height = SquareSide;
+            return;
+        }
+        double height = WideHeight;
+        if (_viewportShare > 0 && _viewport is { ViewportHeight: > 0 } viewport)
+            height = Math.Clamp(viewport.ViewportHeight * _viewportShare, MinShareHeight, MaxShareHeight);
+        if (_plotFrame.Height != height) _plotFrame.Height = height;
+    }
+
+    // The nearest ScrollViewer around the editor, the page's: its visible height
+    // is what "most of the window" means for a page that scrolls.
+    private void AttachViewport()
+    {
+        DetachViewport();
+        if (_viewportShare <= 0) return;
+        DependencyObject? node = VisualTreeHelper.GetParent(this);
+        while (node is not null and not ScrollViewer) node = VisualTreeHelper.GetParent(node);
+        _viewport = node as ScrollViewer;
+        if (_viewport is not null) _viewport.SizeChanged += OnViewportSizeChanged;
+        ApplyPlotHeight();
+    }
+
+    private void DetachViewport()
+    {
+        if (_viewport is not null) _viewport.SizeChanged -= OnViewportSizeChanged;
+        _viewport = null;
+    }
+
+    private void OnViewportSizeChanged(object sender, SizeChangedEventArgs e) => ApplyPlotHeight();
 
     // ── Layout ───────────────────────────────────────────────────────────────
 
@@ -391,24 +506,138 @@ public sealed partial class CurveEditor : UserControl
         return stack;
     }
 
+    // Three layouts. With axes (the cut curve), the plot takes the full width,
+    // the footer view sits under it, and the legend under both: its blocks side
+    // by side when they fit the width, stacked when they do not, the trailing
+    // slot at the row's end. Without axes (the square), the legend sits beside
+    // the plot, or under it below a comfortable width, as before. Only rows and
+    // columns that hold a visible element are declared (a Grid pays its spacing
+    // even before an empty one), and nothing is rebuilt when the layout is the
+    // one already in place.
+    private (bool Axes, bool Stack, bool Footer, bool Legend, bool After, bool Trailing) _layout;
+    private bool _laidOut;
+
     private void Reflow(double width)
     {
-        double threshold = StackBelowWidth + (_axisLegend.Visibility == Visibility.Visible ? AxisLegendWidth + 24 : 0);
-        bool stack = width > 0 && width < threshold;
-        if (stack && _root.RowDefinitions.Count == 1)
-            _root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        else if (!stack && _root.RowDefinitions.Count == 2)
-            _root.RowDefinitions.RemoveAt(1);
-        Grid.SetRow(_plotFrame, 0);
-        Grid.SetColumn(_plotFrame, 0);
-        Grid.SetColumnSpan(_plotFrame, stack ? 2 : 1);
-        Grid.SetRow(_side, stack ? 1 : 0);
-        Grid.SetColumn(_side, stack ? 0 : 1);
-        // Top in both layouts: centred beside a tall plot, the fields floated
+        _legend.Visibility = Shown(_legend.Children.Count > 0);
+        _legendAfter.Visibility = Shown(_legendAfter.Children.Count > 0);
+        _trailing.Visibility = Shown(_trailing.Children.Count > 0);
+        _footer.Visibility = Shown(_footer.Child is not null);
+
+        bool axes = Frame.Axes;
+        bool footer = _footer.Child is not null;
+        bool stack = axes
+            ? width > 0 && LegendRowWidth() > width
+            : width > 0 && width < StackBelowWidth + (_axisLegend.Visibility == Visibility.Visible ? AxisLegendWidth + 24 : 0);
+        var layout = (axes, stack, footer, _legend.Children.Count > 0, _legendAfter.Children.Count > 0, _trailing.Children.Count > 0);
+        if (_laidOut && layout == _layout) return;
+        _layout = layout;
+        _laidOut = true;
+
+        _root.RowDefinitions.Clear();
+        _root.ColumnDefinitions.Clear();
+        _root.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        if (axes)
+        {
+            int row = 0;
+            Place(_root, _plotFrame, row++, 0);
+            if (footer) Place(_root, _footer, row++, 0);
+            Place(_root, _side, row++, 0);
+            for (int i = 0; i < row; i++) _root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        }
+        else
+        {
+            _root.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            int row = 0;
+            Place(_root, _plotFrame, row++, 0, stack ? 2 : 1);
+            if (footer) Place(_root, _footer, row++, 0, stack ? 2 : 1);
+            if (stack) Place(_root, _side, row++, 0, 2);
+            else { Place(_root, _side, 0, 1); Grid.SetRowSpan(_side, row); }
+            for (int i = 0; i < row; i++) _root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        }
+        // Top in every layout: centred beside a tall plot, the fields floated
         // mid-height with nothing to align to (2026-10-14).
         _side.VerticalAlignment = VerticalAlignment.Top;
-        _legend.Visibility = _legend.Children.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        LayoutLegend(horizontal: axes && !stack, stretch: axes);
     }
+
+    // The legend's blocks in one row (each block a column, a star column
+    // before the trailing slot so it hugs the edge) or one column.
+    private void LayoutLegend(bool horizontal, bool stretch)
+    {
+        _side.RowDefinitions.Clear();
+        _side.ColumnDefinitions.Clear();
+        var blocks = new List<FrameworkElement>();
+        foreach (FrameworkElement block in new FrameworkElement[] { _legend, _pointsRow, _legendAfter })
+            if (block.Visibility == Visibility.Visible) blocks.Add(block);
+        bool trailing = _trailing.Visibility == Visibility.Visible;
+
+        if (horizontal)
+        {
+            _side.ColumnSpacing = BlockColumnGap;
+            _side.RowSpacing = 0;
+            _side.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            int column = 0;
+            foreach (FrameworkElement block in blocks)
+            {
+                _side.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                Place(_side, block, 0, column++);
+            }
+            if (trailing)
+            {
+                _side.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                _side.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+                Place(_side, _trailing, 0, column + 1);
+                _trailing.HorizontalAlignment = HorizontalAlignment.Right;
+            }
+            return;
+        }
+
+        _side.ColumnSpacing = 0;
+        _side.RowSpacing = stretch ? BlockRowGap : 12;
+        _side.ColumnDefinitions.Add(new ColumnDefinition
+        {
+            Width = stretch ? new GridLength(1, GridUnitType.Star) : GridLength.Auto,
+        });
+        int r = 0;
+        foreach (FrameworkElement block in blocks)
+        {
+            _side.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Place(_side, block, r++, 0);
+        }
+        if (trailing)
+        {
+            _side.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+            Place(_side, _trailing, r, 0);
+            _trailing.HorizontalAlignment = stretch ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+        }
+    }
+
+    // What the legend's blocks need side by side: their own widths, measured
+    // unconstrained, plus the gaps; the trailing slot counts with its gap.
+    private double LegendRowWidth()
+    {
+        double total = 0;
+        int count = 0;
+        foreach (FrameworkElement block in new FrameworkElement[] { _legend, _pointsRow, _legendAfter, _trailing })
+        {
+            if (block.Visibility != Visibility.Visible) continue;
+            block.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            total += block.DesiredSize.Width;
+            count++;
+        }
+        return total + Math.Max(0, count - 1) * BlockColumnGap;
+    }
+
+    private static void Place(Grid grid, FrameworkElement element, int row, int column, int columnSpan = 1)
+    {
+        Grid.SetRow(element, row);
+        Grid.SetColumn(element, column);
+        Grid.SetColumnSpan(element, columnSpan);
+        Grid.SetRowSpan(element, 1);
+    }
+
+    private static Visibility Shown(bool visible) => visible ? Visibility.Visible : Visibility.Collapsed;
 
     // The control points in the legend's one grid, the readout under it rather
     // than spanning its columns, so its monospace width never moves them.
@@ -515,6 +744,7 @@ public sealed partial class CurveEditor : UserControl
         {
             _dragging = true;
             _dragX1 = X1; _dragY1 = Y1; _dragX2 = X2; _dragY2 = Y2;
+            _dragPixel = Geometry().FromUnit(first ? X1 : X2, first ? Y1 : Y2);
         };
         thumb.DragDelta += (_, e) => OnHandleDragDelta(first, e);
         thumb.DragCompleted += (_, _) =>
@@ -531,11 +761,8 @@ public sealed partial class CurveEditor : UserControl
         PlotRect g = Geometry();
         if (!g.Valid) return;
 
-        double u = first ? _dragX1 : _dragX2;
-        double v = first ? _dragY1 : _dragY2;
-        Point px = g.FromUnit(u, v);
-        Point moved = new(px.X + e.HorizontalChange, px.Y + e.VerticalChange);
-        (double nu, double nv) = g.ToUnit(moved);
+        _dragPixel = new Point(_dragPixel.X + e.HorizontalChange, _dragPixel.Y + e.VerticalChange);
+        (double nu, double nv) = g.ToUnit(_dragPixel);
         nu = Snap(Math.Clamp(nu, 0, 1));
         nv = Snap(ClampY(nv));
         if (first) { _dragX1 = nu; _dragY1 = nv; } else { _dragX2 = nu; _dragY2 = nv; }
@@ -613,13 +840,19 @@ public sealed partial class CurveEditor : UserControl
 
         public (double U, double V) ToUnit(Point p)
         {
-            double x = (p.X - Left) / (Right - Left) * XMax;
-            double y = (Bottom - p.Y) / (Bottom - Top) * YMax;
+            (double x, double y) = ToData(p);
             return (Frame.UnitU(x), Frame.UnitV(y));
         }
+
+        public (double X, double Y) ToData(Point p)
+            => ((p.X - Left) / (Right - Left) * XMax, (Bottom - p.Y) / (Bottom - Top) * YMax);
     }
 
-    private PlotRect Geometry() => new(_plot.ActualWidth, _plot.ActualHeight, Frame);
+    // The frame as drawn: the one an endpoint drag is moving while it is in
+    // flight, the owner's otherwise.
+    private CurveFrame DrawnFrame => _frameDrag ?? Frame;
+
+    private PlotRect Geometry() => new(_plot.ActualWidth, _plot.ActualHeight, DrawnFrame);
 
     private void Redraw()
     {
@@ -651,6 +884,7 @@ public sealed partial class CurveEditor : UserControl
         Canvas.SetTop(_handle1, h1.Y - HandleRadius);
         Canvas.SetLeft(_handle2, h2.X - HandleRadius);
         Canvas.SetTop(_handle2, h2.Y - HandleRadius);
+        PlaceEndpoints(g, p0, p3);
 
         // The floor guide.
         if (Floor is double floor)
@@ -730,16 +964,7 @@ public sealed partial class CurveEditor : UserControl
         _rulers.Add(element);
     }
 
-    // "Nice" tick step (1 / 2 / 5 × 10ⁿ) so a ruler lands on round values.
-    private static double NiceStep(double range, int targetTicks)
-    {
-        if (range <= 0 || targetTicks <= 0) return 0;
-        double raw = range / targetTicks;
-        double mag = Math.Pow(10, Math.Floor(Math.Log10(raw)));
-        double norm = raw / mag;
-        double step = norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10;
-        return step * mag;
-    }
+    private static double NiceStep(double range, int targetTicks) => AxisTicks.NiceStep(range, targetTicks);
 
     private static void SetLine(Line line, Point a, Point b)
     {

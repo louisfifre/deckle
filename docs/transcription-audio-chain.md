@@ -243,8 +243,8 @@ Where the settings are shown:
 | `Streaming.Segmenter.HangoverCurveY1` | same | `0.10` | `streaming.segmenter` | Streaming page (cut curve card) |
 | `Streaming.Segmenter.HangoverCurveX2` | same | `0.90` | `streaming.segmenter` | Streaming page (cut curve card) |
 | `Streaming.Segmenter.HangoverCurveY2` | same | `0.25` | `streaming.segmenter` | Streaming page (cut curve card) |
-| `Streaming.Segmenter.MarginMs` | same | `150` | `streaming.segmenter` | Streaming page (`WhisperSegMarginCard`, seconds) |
-| `Streaming.MinSpeechMs` | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` (the floor on an utterance's voiced extent) and `src/Deckle.Vad/SileroSpeechTimestamps.cs` (via `SileroVadOptions.MinSpeechDurationMs`, the floor on each speech span) | `250` | `streaming` | Streaming page (`WhisperMinSpeechCard`, Segmentation section, seconds) |
+| `Streaming.Segmenter.MarginMs` | same | `150` | `streaming.segmenter` | Streaming page (`WhisperSegMarginCard`, the cut curve's pause strip, seconds) |
+| `Streaming.MinSpeechMs` | `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` (the floor on an utterance's voiced extent) and `src/Deckle.Vad/SileroSpeechTimestamps.cs` (via `SileroVadOptions.MinSpeechDurationMs`, the floor on each speech span) | `250` | `streaming` | Streaming page (`WhisperMinSpeechCard`, the cut curve's pause strip, seconds) |
 | `Streaming.SpeechTrim.Enabled` | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `PrepareSpeechTrim`, called by `StartSegmentedTranscription` and `ProduceMonolithicAsync` | `true` | `streaming.speechTrim` | Streaming page (`WhisperVadEnabledCard`, the VAD group's switch, visible whatever the strategy) |
 | `Streaming.SpeechTrim.Threshold` | `src/Deckle.Vad/SileroSpeechTimestamps.cs` (via `src/Deckle.Vad/SileroVadOptions.cs`) | `0.5` | `streaming.speechTrim` | Streaming page (`WhisperVadThresholdCard`, child of the VAD group, shown while the group is on) |
 | `Streaming.SpeechTrim.MinSilenceDurationMs` | same | `100` | `streaming.speechTrim` | Streaming page (`WhisperVadMinSilenceCard`, child of the VAD group) |

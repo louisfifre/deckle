@@ -176,22 +176,15 @@ public static class SettingsSearch
             Keywords = ["vad", "silero", "silence", "trim", "threshold", "padding"],
         },
 
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperSegMarginCard",
-            Keywords = ["pause", "silence", "end", "clip", "cut", "trailing"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "WhisperMinSpeechCard",
-            Keywords = ["blip", "noise", "short", "word", "drop", "cough", "vad", "silero"],
-        },
-
-        // "Cut curve" — the curve block with the four hangover anchors in its legend.
+        // "Pause before cutting" — the curve block: the four hangover anchors,
+        // and the cut margin and the minimum speech in its pause strip, so the
+        // words that found those two cards find the card that now holds them.
         new SettingSearchEntry
         {
             LabelKey = "WhisperCutCurveCard",
-            Keywords = ["hangover", "pause", "cut", "ramp", "wait"],
+            Keywords = ["hangover", "pause", "cut", "ramp", "wait",
+                        "margin", "silence", "end", "clip", "trailing",
+                        "minimum", "speech", "blip", "noise", "short", "word", "drop", "cough"],
         },
     ];
 
