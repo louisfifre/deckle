@@ -109,11 +109,21 @@ public partial class WhisperViewModel
             defaultValue: () => new TranscriptionSettings().ModelsDirectory),
     ];
 
-    // Voice activity detection — the Silero pre-trim fold. The master is the
-    // VadEnabled toggle; the three detection parameters are its children, hidden by
-    // the composer while the master is off (it composes the master into each
-    // child's VisibleWhen — native masking, no per-child gate here). The bounds
-    // are the former hand-authored sliders'.
+    // The guards against text from silence and noise — one fold with no master
+    // on the Streaming page, collapsed (2026-11-07 review, change 6). Two of the
+    // five guards the pipeline runs are settings: the Silero trim before the
+    // model, and Whisper's no-speech cut-off after it; for a person both answer
+    // "there was no voice there", so they share one fold named for that. The
+    // other three stay where they are or stay hidden: the minimum speech is
+    // also the segmenter's floor and lives with the cut, the phantom filter and
+    // the known-hallucination catalog are not settings. A Section, not a Group
+    // inside a fold: folds never nest, so the Silero switch is a plain child and
+    // its three parameters hide while it is off through their own VisibleWhen.
+    // The no-speech cut-off left the Decoding page's Confidence section; it
+    // still works with Minimum confidence, which stays there, and its
+    // description says so.
+    //
+    // The Silero trim. The bounds are the former hand-authored sliders'.
     //
     // Back on the page after the 2026-10-14 triage removed them: the Silero trim
     // is the second detector of the streaming chain, not a detail of the
@@ -129,21 +139,25 @@ public partial class WhisperViewModel
     // The fold shows whatever the strategy: the Silero trim runs on every
     // recording, the streaming dictation's utterances, the monolithic take as
     // one utterance, and the utterances of a file or a recovered take.
-    public IReadOnlyList<SettingDescriptor> VadSettings =>
+    public IReadOnlyList<SettingDescriptor> SilenceGuardSettings =>
     [
-        Setting.Group("WhisperVadEnabledCard",
-            () => VadEnabled,
-            value => VadEnabled = value,
+        Setting.Section("WhisperSilenceGuardsFold",
             [
+                Setting.Toggle("WhisperVadEnabledCard",
+                    () => VadEnabled,
+                    value => VadEnabled = value,
+                    defaultValue: () => new SpeechTrimSettings().Enabled),
                 Setting.Magnitude("WhisperVadThresholdCard",
                     () => VadThreshold,
                     value => VadThreshold = value,
                     new MagnitudeArgs(0.1, 0.9),
+                    visibleWhen: () => VadEnabled,
                     defaultValue: () => new SpeechTrimSettings().Threshold),
                 Setting.Magnitude("WhisperVadMinSilenceCard",
                     () => Seconds(VadMinSilenceDurationMs),
                     value => VadMinSilenceDurationMs = Milliseconds(value),
                     new MagnitudeArgs(0, 1, Unit: "s"),
+                    visibleWhen: () => VadEnabled,
                     defaultValue: () => Seconds(new SpeechTrimSettings().MinSilenceDurationMs)),
                 // 0..0.4 s, not 0..0.2: the grain follows the span, and 0.01 s
                 // is the one that writes the 0.03 s default exactly.
@@ -151,9 +165,15 @@ public partial class WhisperViewModel
                     () => Seconds(VadSpeechPadMs),
                     value => VadSpeechPadMs = Milliseconds(value),
                     new MagnitudeArgs(0, 0.4, Unit: "s"),
+                    visibleWhen: () => VadEnabled,
                     defaultValue: () => Seconds(new SpeechTrimSettings().SpeechPadMs)),
-            ],
-            defaultValue: () => new SpeechTrimSettings().Enabled),
+                // Bounds verbatim from the Confidence section it left: 0.05..0.80.
+                Setting.Magnitude("WhisperNoSpeechCard",
+                    () => NoSpeechThreshold,
+                    value => NoSpeechThreshold = value,
+                    new MagnitudeArgs(0.05, 0.80, Slider: false),
+                    defaultValue: () => new ConfidenceSettings().NoSpeechThreshold),
+            ]),
     ];
 
     // Streaming pipeline — the energy segmenter. The switch is StreamingEnabled
@@ -174,12 +194,12 @@ public partial class WhisperViewModel
             defaultValue: () => new StreamingSettings().Strategy == PipelineStrategyKind.Streaming),
     ];
 
-    // The segmentation cards of the Streaming page, under the switch and the
-    // speech-filtering fold: the cut margin and the minimum speech, as cards.
+    // The segmentation cards of the Streaming page, under the switch and above
+    // the silence guards' fold: the cut margin and the minimum speech, as cards.
     // The minimum speech is the one floor the segmenter and Silero share
-    // (Streaming.MinSpeechMs); it sits here and not in the speech-filtering
-    // fold because it is the only guard left when Silero is off or its model is
-    // missing. The level that makes a frame voiced is not here: it is the voice
+    // (Streaming.MinSpeechMs); it sits here and not in the guards' fold
+    // because it is the cut's own floor, and the guard left when Silero is off
+    // or its model is missing. The level that makes a frame voiced is not here: it is the voice
     // level of the Recording page (CaptureSettings.VoiceLevelDbfs), since the HUD
     // and the low-audio warning read it too. Then the cut curve, the
     // segmentation's instrument, last and at full width, with no fold around it
@@ -259,13 +279,17 @@ public partial class WhisperViewModel
     }
 
     // The plain-language reading of the envelope the curve eases, the Playground
-    // Segmentation page's sentence.
-    private string CutCurveSentence()
+    // Segmentation page's sentence. Its words live in the module's .resw like
+    // every other string of the page; a missing entry falls back to the card's
+    // static description.
+    private string? CutCurveSentence()
     {
+        string? format = Loc.GetFromOptional("Deckle.Transcription", "WhisperCutCurveSentence_Format");
+        if (format is null) return null;
         double start = SegHangoverRampStartMs / 1000.0;
         double end = Math.Max(start, SegHangoverRampEndMs / 1000.0);
-        return $"Waits {SegHangoverMaxMs / 1000.0:F1} s of silence for utterances up to {start:F0} s, " +
-               $"then tightens to {SegHangoverMinMs / 1000.0:F1} s by {end:F0} s.";
+        return string.Format(System.Globalization.CultureInfo.CurrentCulture, format,
+            SegHangoverMaxMs / 1000.0, start, SegHangoverMinMs / 1000.0, end);
     }
 
     // Decoding — four flat cards under the page's "Decoding" section: beam
@@ -306,12 +330,14 @@ public partial class WhisperViewModel
                 : null),
     ];
 
-    // Confidence — three flat cards under the page's "Confidence" section. The
-    // Min/Max live in MagnitudeArgs, where a code-built control sets them without
-    // the WinUI XAML parser ever seeing a Minimum above a default. Bounds
-    // verbatim: Entropy 1.5..3.5; Logprob -1.5..-0.4; NoSpeech 0.05..0.80.
-    // Defaults read the ConfidenceSettings POCO initializer. Fields alone, as
-    // in the Decoding manifest above.
+    // Confidence — two flat cards under the page's "Confidence" section, the
+    // two triggers of a retry. The no-speech cut-off moved to the Streaming
+    // page's silence guards (SilenceGuardSettings, 2026-11-07). The Min/Max
+    // live in MagnitudeArgs, where a code-built control sets them without the
+    // WinUI XAML parser ever seeing a Minimum above a default. Bounds verbatim:
+    // Entropy 1.5..3.5; Logprob -1.5..-0.4. Defaults read the
+    // ConfidenceSettings POCO initializer. Fields alone, as in the Decoding
+    // manifest above.
     public IReadOnlyList<SettingDescriptor> ConfidenceSettingsManifest =>
     [
         Setting.Magnitude("WhisperEntropyCard",
@@ -324,17 +350,14 @@ public partial class WhisperViewModel
             value => LogprobThreshold = value,
             new MagnitudeArgs(-1.5, -0.4, Slider: false),
             defaultValue: () => new ConfidenceSettings().LogprobThreshold),
-        Setting.Magnitude("WhisperNoSpeechCard",
-            () => NoSpeechThreshold,
-            value => NoSpeechThreshold = value,
-            new MagnitudeArgs(0.05, 0.80, Slider: false),
-            defaultValue: () => new ConfidenceSettings().NoSpeechThreshold),
     ];
 
     // Output filters — three flat cards under the page's "Output filters"
-    // section, after Decoding and Confidence: what the model's text loses before
-    // it is pasted. Not decoding, so not under that title; still the module's
-    // own, so still on the page (2026-10-14). SuppressRegex is a one-line
+    // section, after Decoding and Confidence. Despite the title they remove
+    // nothing after the fact: whisper.cpp applies all three to the decoder's
+    // tokens, forbidding some before they are written (upstream documentation,
+    // not checked in the shipped v1.9.1 source; their descriptions say so since
+    // the 2026-11-07 review). SuppressRegex is a one-line
     // free-text field; its placeholder reuses the WhisperSuppressRegexBox
     // .PlaceholderText entry. Defaults read the OutputFilterSettings POCO
     // initializer.
@@ -356,11 +379,13 @@ public partial class WhisperViewModel
     ];
 
     // Context — two flat cards under the page's "Context" section, last:
-    // whether each segment primes the next and how much text a segment may
-    // produce. UseContext is a Toggle; MaxTokens is a field-only magnitude over
-    // the -1..448 range (the VM's OnMaxTokensChanged NaN-guard is the same guard
-    // the composer applies, so a cleared field never persists). Defaults read
-    // the ContextSettings POCO initializer.
+    // whether each segment primes the next and how many tokens of the previous
+    // text prime it (whisper.cpp's n_max_text_ctx, WhisperParamsMapper). UseContext
+    // is a Toggle; MaxTokens is a field-only magnitude over the -1..448 range
+    // (the VM's OnMaxTokensChanged NaN-guard is the same guard the composer
+    // applies, so a cleared field never persists), whose -1 sentinel, "leave
+    // whisper.cpp's default", the field shows as Auto. Defaults read the
+    // ContextSettings POCO initializer.
     public IReadOnlyList<SettingDescriptor> ContextSettingsManifest =>
     [
         Setting.Toggle("WhisperUseContextCard",
@@ -370,7 +395,7 @@ public partial class WhisperViewModel
         Setting.Magnitude("WhisperMaxTokensCard",
             () => MaxTokens,
             value => MaxTokens = value,
-            new MagnitudeArgs(-1, 448, Slider: false, Integer: true),
+            new MagnitudeArgs(-1, 448, Slider: false, Integer: true, Auto: -1),
             defaultValue: () => new ContextSettings().MaxTokens),
     ];
 }

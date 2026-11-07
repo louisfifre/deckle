@@ -22,14 +22,17 @@ public abstract record SettingArgs;
 // double through the selectors. Preview, when given, receives every value the
 // controls show, each detent of a drag included, while the model is still
 // written once at the release: a preview beside the card follows the thumb.
-// It shows and never writes, so it must not touch the model.
+// It shows and never writes, so it must not touch the model. Auto names the one
+// value that means "let the engine decide" (a -1 sentinel): the field and the
+// reset tooltip show the word Auto in its place, never the number.
 public sealed record MagnitudeArgs(
     double Minimum,
     double Maximum,
     string? Unit = null,
     bool Slider = true,
     bool Integer = false,
-    Action<double>? Preview = null) : SettingArgs;
+    Action<double>? Preview = null,
+    double? Auto = null) : SettingArgs;
 
 // ── TextArgs ──────────────────────────────────────────────────────────────────
 //

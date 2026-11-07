@@ -40,7 +40,7 @@ public sealed partial class RecordingPage : Page
 
     // ── Composed voice-level card ─────────────────────────────────────────────
     //
-    // Composed into its own host, the first card of the Recording section.
+    // Composed into its own host, the top row of the Voice section's one card.
     private SettingsComposer? _voiceLevelComposer;
 
     private void ComposeVoiceLevelSection()
@@ -48,6 +48,29 @@ public sealed partial class RecordingPage : Page
         _voiceLevelComposer = new SettingsComposer(VoiceLevelHost, ViewModel);
         _voiceLevelComposer.Compose(ViewModel.VoiceLevelSettings);
         _voiceLevelComposer.DirtyChanged += OnComposedDirtyChanged;
+        FrameVoiceLevelCard();
+    }
+
+    // The composed card becomes the top row of the frame that holds the meter
+    // too: no background or border of its own, the frame draws them. Not
+    // clickable, a SettingsCard takes no pointer-over state, so the transparent
+    // row never lights up alone. The meter takes the card's own padding, read
+    // from the card once its style applies (the Toolkit's value, not a copy),
+    // so the track starts at the edge of the card's text and the frame's
+    // bottom margin matches its top.
+    private void FrameVoiceLevelCard()
+    {
+        foreach (UIElement child in VoiceLevelHost.Children)
+        {
+            if (child is not CommunityToolkit.WinUI.Controls.SettingsCard card) continue;
+            card.Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Transparent);
+            card.BorderThickness = new Thickness(0);
+            card.Loaded += (_, _) =>
+            {
+                Thickness padding = card.Padding;
+                VoiceMeter.Margin = new Thickness(padding.Left, 0, padding.Right, padding.Bottom);
+            };
+        }
     }
 
     // ── Composed maximum-recording-length card ────────────────────────────────
@@ -78,22 +101,44 @@ public sealed partial class RecordingPage : Page
         // one going dirty must re-gate it. The composer raises DirtyChanged at the
         // end of every RefreshAll, so the handler reads the settled dirtiness.
         _preprocessingComposer.DirtyChanged += OnComposedDirtyChanged;
+        MoveChecksIntoPreprocessingFold();
+    }
+
+    // The two checks move from their XAML holder into the composed fold's
+    // items, after the composer's own (it has none), the GeneralPage backup
+    // fold's pattern in reverse. The x:Bind bindings travel with the elements:
+    // they were set on the elements, not on the holder. The holder is left
+    // empty and collapsed (in XAML), so it takes no room.
+    private void MoveChecksIntoPreprocessingFold()
+    {
+        CommunityToolkit.WinUI.Controls.SettingsExpander? fold = null;
+        foreach (UIElement child in PreprocessingHost.Children)
+            if (child is CommunityToolkit.WinUI.Controls.SettingsExpander expander) fold = expander;
+        if (fold is null) return;
+
+        while (PreprocessingChecks.Children.Count > 0)
+        {
+            UIElement card = PreprocessingChecks.Children[0];
+            PreprocessingChecks.Children.RemoveAt(0);
+            fold.Items.Add(card);
+        }
     }
 
     private void OnComposedDirtyChanged(object? sender, EventArgs e) => GateResetLink();
 
     // The device id is deliberately not folded in: it is hardware enumeration, not
-    // a defaulted setting, so a non-default device leaves the link greyed. The
-    // header's "Reset all" shares this gate, since the Recording section is the
-    // page's single resettable section; the Checks section keeps no value.
+    // a defaulted setting, so a non-default device leaves the links greyed. Each
+    // section's reset follows its own composers, the header's "Reset all" any
+    // of them; the meter and the checks in the pre-processing fold keep no value.
     private void GateResetLink()
     {
-        bool dirty =
-            (_voiceLevelComposer?.IsDirty() ?? false) ||
+        bool voiceDirty = _voiceLevelComposer?.IsDirty() ?? false;
+        bool recordingDirty =
             (_recordingLimitComposer?.IsDirty() ?? false) ||
             (_preprocessingComposer?.IsDirty() ?? false);
-        RecordingSection.IsResetEnabled = dirty;
-        Header.IsResetAllEnabled = dirty;
+        VoiceSection.IsResetEnabled = voiceDirty;
+        RecordingSection.IsResetEnabled = recordingDirty;
+        Header.IsResetAllEnabled = voiceDirty || recordingDirty;
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -162,12 +207,19 @@ public sealed partial class RecordingPage : Page
         ViewModel.AudioInputDeviceId = deviceId;
     }
 
-    // The Recording section's reset: its three composed settings only. The
-    // microphone card stands above every section, so the section wheel leaves
+    // Each section's reset covers its own composed settings only. The
+    // microphone card stands above every section, so the section wheels leave
     // it alone; only the header's "Reset all" returns it to the system default.
-    private void ResetRecording_Click(object sender, RoutedEventArgs e)
+    private void ResetVoice_Click(object sender, RoutedEventArgs e)
     {
         _voiceLevelComposer?.ResetAll();
+
+        DeckleSettingsUxSource.Log.SectionReset();
+        DeckleSettingsUxSource.Log.SectionResetDetail("Voice");
+    }
+
+    private void ResetRecording_Click(object sender, RoutedEventArgs e)
+    {
         _recordingLimitComposer?.ResetAll();
         _preprocessingComposer?.ResetAll();
 

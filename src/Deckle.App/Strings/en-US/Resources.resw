@@ -147,6 +147,11 @@
   <data name="SettingsComposer_ValueOff" xml:space="preserve">
     <value>Off</value>
   </data>
+  <!-- The word a number field shows in place of its "let the engine decide"
+       sentinel (MagnitudeArgs.Auto), in the field and in its reset tooltip. -->
+  <data name="SettingsComposer_ValueAuto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
   <!-- The page header block (SettingsPageHeader, Catalog): the Reset all
        command every page carries, its tooltip and its generic confirmation.
        Composer-owned and module-agnostic, resolved from this root map. -->
