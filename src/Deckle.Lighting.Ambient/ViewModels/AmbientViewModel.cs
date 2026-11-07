@@ -342,7 +342,7 @@ public partial class AmbientViewModel : ObservableObject
     //
     // Snaps the tuning surface back to the shipping defaults: the default
     // preset (which writes the eight tuning values and the selection), the
-    // floor, the zone-sampling band, the pipeline shape and the capture rate.
+    // floor, the zone-sampling band and the pipeline shape.
     // Connection state (bridge pairing, last group, monitor), the per-light
     // rows (LightZones, LightBrightness), the pipeline on/off flag and the kept
     // Custom values are deliberately preserved : a reset shouldn't unpair the

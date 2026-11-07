@@ -2332,6 +2332,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeveloperSettingsTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── PerformanceSettingsTests.cs
 │   │   ├── SettingsBackupBugNotes.md
 │   │   ├── SettingsBackupRoundTripTests.cs
 │   │   ├── SettingsBootstrapLegacyTargetTests.cs
