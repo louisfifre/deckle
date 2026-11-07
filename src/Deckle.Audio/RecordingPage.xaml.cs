@@ -119,7 +119,7 @@ public sealed partial class RecordingPage : Page
         MoveChecksIntoPreprocessingFold();
     }
 
-    // The two checks move from their XAML holder into the composed fold's
+    // The listening test moves from its XAML holder into the composed fold's
     // items, after the composer's own (it has none), the GeneralPage backup
     // fold's pattern in reverse. The x:Bind bindings travel with the elements:
     // they were set on the elements, not on the holder. The holder is left
@@ -144,7 +144,7 @@ public sealed partial class RecordingPage : Page
     // The device id is deliberately not folded in: it is hardware enumeration, not
     // a defaulted setting, so a non-default device leaves the links greyed. Each
     // section's reset follows its own composers, the header's "Reset all" any
-    // of them; the meter and the checks in the pre-processing fold keep no value.
+    // of them; the meter, the level check and the listening test keep no value.
     private void GateResetLink()
     {
         bool voiceDirty = _voiceLevelComposer?.IsDirty() ?? false;
