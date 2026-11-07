@@ -814,7 +814,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Icons.xaml
 │   │   │   └── SettingsPageHeaderBrushes.xaml
 │   │   ├── ConfirmationService.cs
-│   │   ├── ConsentService.cs
 │   │   ├── Deckle.Catalog.csproj
 │   │   ├── DiagnosticsRegistry.cs
 │   │   ├── Glyphs.cs
@@ -1704,7 +1703,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptionEngine.MonolithicPipeline.cs
 │   │   │   ├── TranscriptionEngine.Pipeline.cs
 │   │   │   ├── TranscriptionEngine.Recovery.cs
-│   │   │   ├── TranscriptionEngine.Shutdown.cs
 │   │   │   ├── TranscriptionEngine.StateMachine.cs
 │   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
 │   │   │   ├── TranscriptionEngine.Take.cs
@@ -2065,7 +2063,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── CurveEndpointLimitsTests.cs
 │   │   ├── Deckle.Catalog.Tests.csproj
 │   │   ├── DefaultValueTextTests.cs
-│   │   ├── DialogDefaultButtonTests.cs
 │   │   ├── GestureHoldTests.cs
 │   │   ├── HotkeyChordTests.cs
 │   │   ├── HotkeyChordTextTests.cs
@@ -2413,8 +2410,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SetupPathRedactionTests.cs
 │   │   ├── SetupStringMirrorTests.cs
 │   │   ├── UpdateHandoffBugNotes.md
-│   │   ├── UpdatePredecessorTests.cs
-│   │   └── UpdateToastRoutingTests.cs
+│   │   └── UpdatePredecessorTests.cs
 │   ├── Deckle.Shell.Foreground.Tests/
 │   │   ├── Deckle.Shell.Foreground.Tests.csproj
 │   │   ├── FullscreenGeometryTests.cs
@@ -2478,6 +2474,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs
 │   │   ├── FileTranscriptionResultTests.cs
+│   │   ├── LengthStepBatchRewriteTests.cs
 │   │   ├── LiveTranscriptionPipelineTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
@@ -2485,7 +2482,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PhantomUtteranceBugNotes.md
 │   │   ├── PhantomUtteranceFilterTests.cs
 │   │   ├── PreparedFileChannelTests.cs
-│   │   ├── QuitDuringWorkTests.cs
 │   │   ├── RecoverTakeFromAudioTests.cs
 │   │   ├── RewriteAvailabilityTests.cs
 │   │   ├── RewriteProfileSelectionTests.cs

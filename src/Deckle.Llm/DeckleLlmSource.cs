@@ -119,5 +119,7 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     public const int EvtProviderKeyReadFailedDetail  = 80;
     public const int EvtTranscriptRewriteStarted     = 81;
     public const int EvtTranscriptRewriteCompleted   = 82;
+    public const int EvtBatchRewriteDiscarded        = 83;
+    public const int EvtBatchRewriteDiscardedDetail  = 84;
 
 }
