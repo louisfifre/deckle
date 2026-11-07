@@ -8,7 +8,7 @@
     xmlns:ui="using:CommunityToolkit.WinUI">
 
     <!-- The window scrolls the page and holds the total below it. -->
-    <StackPanel Spacing="16">
+    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
         <controls:SettingsCard x:Uid="SetupChoicesInstallLocation"
                                HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Folder}}">

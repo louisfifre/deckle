@@ -26,14 +26,24 @@ public sealed partial class DeckleWhispSource
     }
 
     // Opens the microphone incident, once until a capture succeeds. phase
-    // (closed vocabulary): probe | capture. mmsys_err is the raw MMSYSERR code.
+    // (closed vocabulary): probe | capture. error_code is the code the open
+    // refused with, as MicrophoneCapture.FormatErrorCode writes it: an HRESULT
+    // in hex, a PortAudio error in decimal. The step that refused is on the
+    // Deckle-Audio MicrophoneOpenFailed line just before this one.
+    //
+    // A string, not a number, because only the formatter knows which of the
+    // two kinds a code is. Version 3. Version 2 passed a uint, which no typed
+    // WriteEvent overload takes: the call bound to (string, long) and the
+    // listener decoded those bytes as text. Version 1 carried the waveIn
+    // MMSYSERR code as mmsys_err.
     [Event(EvtMicrophoneUnavailable,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Capture,
-           Message = "The microphone is unavailable, so dictation cannot record until it comes back\nphase={0} | mmsys_err={1}")]
-    public void MicrophoneUnavailable(string phase, int mmsys_err)
+           Version = 3,
+           Message = "The microphone is unavailable, so dictation cannot record until it comes back\nphase={0} | error_code={1}")]
+    public void MicrophoneUnavailable(string phase, string error_code)
     {
-        if (IsEnabled()) WriteEvent(EvtMicrophoneUnavailable, phase, mmsys_err);
+        if (IsEnabled()) WriteEvent(EvtMicrophoneUnavailable, phase, error_code);
     }
 
     [Event(EvtMicrophoneRecovered,

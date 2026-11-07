@@ -25,15 +25,23 @@ public sealed partial class DeckleAmbientSource
 
     // What the run chose: output = the output class that was built, shape =
     // group | multi, lights = the controlled lights (0 in group mode),
-    // push_hz = the push cadence, hdr = on | off.
+    // push_hz = the push cadence, hdr = on | off. startup_ms = from the start
+    // request to Running, the bridge handshake included; first_frame_ms =
+    // from the start request to the first frame the sampler processed, -1
+    // when none had come by Running. A slow start reads from these two:
+    // a long startup_ms is the bridge, a missing first frame the capture.
     [Event(EvtPipelineStarted,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
+           Version = 1,
            Message = "Ambient lighting started")]
-    public void PipelineStarted(string work_id, string output, string shape, int lights, int push_hz, string hdr)
+    public void PipelineStarted(
+        string work_id, string output, string shape, int lights, int push_hz, string hdr,
+        long startup_ms, long first_frame_ms)
     {
-        if (IsEnabled()) WriteEvent(EvtPipelineStarted, work_id, output, shape, lights, push_hz, hdr);
+        if (IsEnabled())
+            WriteEvent(EvtPipelineStarted, work_id, output, shape, lights, push_hz, hdr, startup_ms, first_frame_ms);
     }
 
     [Event(EvtPipelineStartDetail,

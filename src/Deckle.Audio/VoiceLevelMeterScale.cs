@@ -4,7 +4,7 @@ namespace Deckle.Audio;
 //
 // The arithmetic of the voice meter on the Recording page, kept out of the
 // control so it is testable without XAML: where a dBFS value falls on the
-// track, the smoothing the bar shares with the HUD outline, and how long the
+// track, how the bar rises and falls between two packets, and how long the
 // peak tick holds. Pure functions; the control owns every piece of state.
 internal static class VoiceLevelMeterScale
 {
@@ -16,6 +16,13 @@ internal static class VoiceLevelMeterScale
     // outside the span pins the bar at its end.
     public const double MinDbfs = -80.0;
     public const double MaxDbfs = -10.0;
+
+    // The slider under the track spans the same scale, so its thumb is the
+    // voice level's mark. It steps by a whole dB, the precision the field and
+    // the readouts show, rather than by the magnitude grain of its span (2 dB):
+    // every stored level then falls on a detent, so the thumb can never be
+    // snapped beside the mark of a level such as -45 or -47.
+    public const double SliderStepDb = 1.0;
 
     // What a frame of exact zeros reads as: the floor the DSP uses for the same
     // case, far under the track, so a muted microphone leaves the bar empty.
@@ -41,15 +48,25 @@ internal static class VoiceLevelMeterScale
         return Math.Clamp((dbfs - MinDbfs) / (MaxDbfs - MinDbfs), 0.0, 1.0);
     }
 
-    // The HUD's exponential smoothing factor (AudioLevelMapper.EmaAlpha), one
-    // step per 50 ms frame: the same factor, on a different quantity. The HUD
-    // smooths its perceptual 0..1 level, the meter smooths the dB value. The
-    // first frame of a run has no previous value and is taken as is.
-    public static double Smooth(double? previousDbfs, double sampleDbfs)
+    // The bar's ballistics, in time rather than per call: it follows each
+    // packet's level (CaptureLevel, about 10 ms of audio) with a fast rise and a
+    // slow fall, the way a hardware level meter does. The rise is near instant,
+    // so a syllable shows as it is spoken; the fall is slow enough that the eye
+    // can read the level between two words instead of a flicker. Both are time
+    // constants of an exponential, applied to the dB value over the audio the
+    // packet covers, so a 3 ms and a 10 ms device move the bar at the same speed.
+    public const double AttackMs = 5.0;
+    public const double ReleaseMs = 300.0;
+
+    // The bar's next value after `elapsedMs` of audio at `sampleDbfs`. The first
+    // packet of a run has no previous value and is taken as is.
+    public static double Ballistic(double? previousDbfs, double sampleDbfs, double elapsedMs)
     {
         if (previousDbfs is not { } previous) return sampleDbfs;
-        double alpha = AudioLevelMapper.EmaAlpha;
-        return previous * alpha + sampleDbfs * (1.0 - alpha);
+        if (elapsedMs <= 0) return previous;
+        double tau = sampleDbfs > previous ? AttackMs : ReleaseMs;
+        double keep = Math.Exp(-elapsedMs / tau);
+        return previous * keep + sampleDbfs * (1.0 - keep);
     }
 
     // The peak tick's next position. A value at or above the held peak takes

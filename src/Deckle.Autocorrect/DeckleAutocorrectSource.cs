@@ -18,6 +18,11 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         => OperationalLogAdmission.IsDetailEnabled(
             OperationalLogActivity.Autocorrect, Log, level, keywords);
 
+    // The activity rollup is Autocorrect's summary, admitted from Summary up.
+    internal static bool IsActivitySummaryEnabled(EventLevel level, EventKeywords keywords)
+        => OperationalLogAdmission.IsSummaryEnabled(
+            OperationalLogActivity.Autocorrect, Log, level, keywords);
+
     // Ids 6 and 20 are retired: never reuse them, old logs carry them. So are 13-16,
     // 18, 27, 31-41, 44-46 and 51, the contextual sentence stage's events (the judge,
     // its lane, its slots and the caret sentence recovery): they were removed with
@@ -388,7 +393,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
            Message = "commits={0} | corrections={1} | re_edited={2} | learning_signals={3} | gated_surfaces={4}")]
     public void ActivityRollup(int commits, int corrections, int re_edited, int learning_signals, int gated_surfaces)
     {
-        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
+        if (!IsActivitySummaryEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtActivityRollup, commits, corrections, re_edited, learning_signals, gated_surfaces);
     }
 

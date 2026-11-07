@@ -7,6 +7,49 @@ namespace Deckle.Vision;
 
 public sealed partial class FrameSampler
 {
+    // The legacy path's textures: the full-size intermediate with its mip
+    // chain, and the grid-sized staging texture. Built at construction on
+    // the legacy path, or on the first frame if the shader path gives up.
+    private void CreateLegacyResources()
+    {
+        if (_intermediateTex != 0) return;
+
+        _intermediateTex = CreateIntermediateTexture();
+        bool resourceDetailOpen = OperationalLogAdmission.IsScopedDetailEnabled(
+            OperationalLogActivity.Ambient,
+            DeckleResourceSource.Log,
+            EventLevel.Verbose,
+            (EventKeywords)Keywords.Resource);
+        _intermediateTexAcquiredTicks = resourceDetailOpen ? Stopwatch.GetTimestamp() : 0;
+        // size_bytes counts mip 0 only; the full mip chain is about 4/3 of
+        // that.
+        if (resourceDetailOpen)
+        {
+            int bytesPerPixel = _isHdr ? 8 : 4;
+            DeckleResourceSource.Log.ResourceAcquired(
+                "d3d11-texture", (long)_intermediateTex,
+                _sourceWidth * _sourceHeight * bytesPerPixel, "frame-sampler");
+        }
+
+        _intermediateSrv = CreateIntermediateSrv();
+        // An SRV is a view with no memory of its own: size_bytes 0.
+        if (resourceDetailOpen)
+        {
+            DeckleResourceSource.Log.ResourceAcquired(
+                "dxgi-resource", (long)_intermediateSrv, 0, "frame-sampler");
+        }
+
+        _stagingTex = CreateStagingTexture();
+        _stagingTexAcquiredTicks = resourceDetailOpen ? Stopwatch.GetTimestamp() : 0;
+        if (resourceDetailOpen)
+        {
+            int bytesPerPixel = _isHdr ? 8 : 4;
+            DeckleResourceSource.Log.ResourceAcquired(
+                "d3d11-texture", (long)_stagingTex,
+                _gridCols * _gridRows * bytesPerPixel, "frame-sampler");
+        }
+    }
+
     private nint CreateIntermediateTexture()
     {
         var desc = new ScreenCaptureInterop.D3D11_TEXTURE2D_DESC
@@ -135,6 +178,7 @@ public sealed partial class FrameSampler
                     DeckleResourceSource.Log.ResourceReleased(
                         "d3d11-texture", h, ageMs, "frame-sampler");
             }
+            ReleaseReductionResources();
             if (_d3dContext != 0)      { Marshal.Release(_d3dContext);      _d3dContext = 0; }
             if (_d3dDevice != 0)       { Marshal.Release(_d3dDevice);       _d3dDevice = 0; }
         }

@@ -7,8 +7,8 @@ namespace Deckle.Audio;
 
 // Speaker render primitive — the symmetric counterpart of MicrophoneCapture.
 // Plays a finished mono float [-1, 1] clip to the default render device via the
-// Win32 winmm waveOut API (the same MME family the capture path uses for
-// waveIn).
+// Win32 winmm waveOut API. The capture moved to WASAPI for its raw mode; a
+// listening-test clip needs no such mode, so the render stays on waveOut.
 //
 // Single-clip, blocking: Play opens the device, writes one buffer, and blocks
 // until the driver signals WHDR_DONE — or the cancellation token fires, in

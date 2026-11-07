@@ -17,28 +17,50 @@ namespace Deckle.Diagnostics.Logging;
 // models. The page sorts that section, folds first, then flat cards.
 public partial class DiagnosticsViewModel
 {
+    // One verbosity control per activity, a ComboBox of its levels: three
+    // ordered values are one choice, not two toggles. Windowing has no summary
+    // record, so it offers Off and Details alone rather than a Summary that
+    // would silently mean Off.
+    private static readonly IReadOnlyList<(OperationalLogVerbosity Value, string LabelKey)> VerbosityLevels =
+    [
+        (OperationalLogVerbosity.Off, "LoggingVerbosityOff"),
+        (OperationalLogVerbosity.Summary, "LoggingVerbositySummary"),
+        (OperationalLogVerbosity.Details, "LoggingVerbosityDetails"),
+    ];
+
+    private static readonly IReadOnlyList<(OperationalLogVerbosity Value, string LabelKey)> VerbosityLevelsWithoutSummary =
+    [
+        (OperationalLogVerbosity.Off, "LoggingVerbosityOff"),
+        (OperationalLogVerbosity.Details, "LoggingVerbosityDetails"),
+    ];
+
     public IReadOnlyList<SettingDescriptor> LoggingSettings =>
     [
-        Setting.Toggle("LoggingAmbientCard",
-            () => LogAmbientCaptureActivity,
-            value => LogAmbientCaptureActivity = value,
-            defaultValue: () => new LoggingSettings().LogAmbientCaptureActivity),
-        Setting.Toggle("LoggingTranscriptionCard",
-            () => LogTranscriptionActivity,
-            value => LogTranscriptionActivity = value,
-            defaultValue: () => new LoggingSettings().LogTranscriptionActivity),
-        Setting.Toggle("LoggingAutocorrectCard",
-            () => LogAutocorrectActivity,
-            value => LogAutocorrectActivity = value,
-            defaultValue: () => new LoggingSettings().LogAutocorrectActivity),
-        Setting.Toggle("LoggingInputCard",
-            () => LogInputActivity,
-            value => LogInputActivity = value,
-            defaultValue: () => new LoggingSettings().LogInputActivity),
-        Setting.Toggle("LoggingWindowingCard",
-            () => LogWindowingActivity,
-            value => LogWindowingActivity = value,
-            defaultValue: () => new LoggingSettings().LogWindowingActivity),
+        Setting.Choice("LoggingAmbientCard",
+            () => AmbientVerbosity,
+            value => AmbientVerbosity = value,
+            VerbosityLevels,
+            defaultValue: () => new LoggingSettings().AmbientVerbosity),
+        Setting.Choice("LoggingTranscriptionCard",
+            () => TranscriptionVerbosity,
+            value => TranscriptionVerbosity = value,
+            VerbosityLevels,
+            defaultValue: () => new LoggingSettings().TranscriptionVerbosity),
+        Setting.Choice("LoggingAutocorrectCard",
+            () => AutocorrectVerbosity,
+            value => AutocorrectVerbosity = value,
+            VerbosityLevels,
+            defaultValue: () => new LoggingSettings().AutocorrectVerbosity),
+        Setting.Choice("LoggingInputCard",
+            () => InputVerbosity,
+            value => InputVerbosity = value,
+            VerbosityLevels,
+            defaultValue: () => new LoggingSettings().InputVerbosity),
+        Setting.Choice("LoggingWindowingCard",
+            () => WindowingVerbosity,
+            value => WindowingVerbosity = value,
+            VerbosityLevelsWithoutSummary,
+            defaultValue: () => new LoggingSettings().WindowingVerbosity),
     ];
 
     // The confirmOnEnable gate holds the OFF→ON write behind the consent

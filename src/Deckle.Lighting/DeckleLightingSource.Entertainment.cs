@@ -197,6 +197,48 @@ public sealed partial class DeckleLightingSource
 
     // A missed action=stop leaves the area in streaming mode on the bridge
     // until its own timeout, so the Hue app shows it busy meanwhile.
+    // lights = states read for the area's lights; expected = the area's
+    // distinct lights. A gap means the bridge listed a light without state.
+    [Event(EvtEntertainmentLightStatesCapturedDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "ent_id={0} | lights={1} | expected={2}")]
+    public void EntertainmentLightStatesCapturedDetail(string ent_id, int lights, int expected)
+    {
+        if (!IsHueDetailEnabled(Keywords.Pipeline)) return;
+        WriteEvent(EvtEntertainmentLightStatesCapturedDetail, ent_id, lights, expected);
+    }
+
+    [Event(EvtEntertainmentLightStatesCaptureFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "The Hue lights' state could not be read before streaming, so it will not be restored when Ambient stops\nex_type={0} | ex_message={1}")]
+    public void EntertainmentLightStatesCaptureFailed(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtEntertainmentLightStatesCaptureFailed, ex_type, ex_message);
+    }
+
+    // lights = lights written back; corrections = rewrites after the bridge's
+    // own post-stream write moved a light again; failures = lights that
+    // could not be written, each reported by EntertainmentLightRestoreFailed.
+    [Event(EvtEntertainmentLightStatesRestored,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "The Hue lights returned to their state from before streaming")]
+    public void EntertainmentLightStatesRestored(int lights, int corrections, int failures, long duration_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtEntertainmentLightStatesRestored, lights, corrections, failures, duration_ms);
+    }
+
+    [Event(EvtEntertainmentLightRestoreFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "A Hue light could not return to its state from before streaming, so it keeps what the bridge left\nlight_id={0} | ex_type={1} | ex_message={2}")]
+    public void EntertainmentLightRestoreFailed(string light_id, string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtEntertainmentLightRestoreFailed, light_id, ex_type, ex_message);
+    }
+
     [Event(EvtEntertainmentStreamingStopFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)(Keywords.Pipeline | Keywords.Resource),

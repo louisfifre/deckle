@@ -26,8 +26,7 @@ public sealed class DeckleAudioSourceTests : IDisposable
     {
         using var listener = new TestEventListener("Deckle-Audio");
 
-        DeckleAudioSource.Log.RecordingTailSummary("headline");
-        DeckleAudioSource.Log.RecordingTailSummaryDetail(600, -42);
+        DeckleAudioSource.Log.RecordingTailSummaryDetail(600, -42, "active");
         DeckleAudioSource.Log.MicrophoneTelemetryEmpty();
 
         Assert.Empty(listener.Events);
@@ -40,14 +39,16 @@ public sealed class DeckleAudioSourceTests : IDisposable
             static activity => activity == OperationalLogActivity.Transcription);
         using var listener = new TestEventListener("Deckle-Audio");
 
-        DeckleAudioSource.Log.RecordingTailSummary("headline");
-        DeckleAudioSource.Log.RecordingTailSummaryDetail(600, -42);
+        DeckleAudioSource.Log.RecordingTailSummaryDetail(600, -42, "active");
         DeckleAudioSource.Log.MicrophoneTelemetryEmpty();
 
         Assert.Collection(
             listener.Events,
-            e => Assert.Equal(DeckleAudioSource.EvtRecordingTailSummary, e.EventId),
-            e => Assert.Equal(DeckleAudioSource.EvtRecordingTailSummaryDetail, e.EventId),
+            e =>
+            {
+                Assert.Equal(DeckleAudioSource.EvtRecordingTailSummaryDetail, e.EventId);
+                Assert.Equal("active", PayloadOf(e, "tail_state"));
+            },
             e => Assert.Equal(DeckleAudioSource.EvtMicrophoneTelemetryEmpty, e.EventId));
     }
 
@@ -56,7 +57,7 @@ public sealed class DeckleAudioSourceTests : IDisposable
     {
         using var listener = new TestEventListener("Deckle-Audio");
 
-        DeckleAudioSource.Log.RecordingStarted("dictation", "Mic", 0, true, 16000, 1, 16, "w1");
+        DeckleAudioSource.Log.RecordingStarted("dictation", "Mic", "{0.0.1.00000000}.{mic}", true, "raw", false, 48000, 2, "w1");
         DeckleAudioSource.Log.RecordingCompleted("dictation", "stop_requested", 2.5, "w1");
 
         Assert.Collection(
@@ -72,15 +73,14 @@ public sealed class DeckleAudioSourceTests : IDisposable
 
         DeckleAudioSource.Log.RecordingAnomaliesSummary(
             no_data_stalls: 0, no_data_longest_gap_ms: 0, no_data_recovered: false,
-            empty_buffer_occurrences: 0, empty_buffer_recovered: false,
-            lag_occurrences: 3, lag_recovered: false, lag_max_buffers_ready: 4,
+            lag_occurrences: 3, lag_recovered: false, lag_max_behind_ms: 140,
             recording_ms: 1800, work_id: "w7");
 
         EventWrittenEventArgs line = Assert.Single(listener.Events);
         AssertMilestoneLine(line, DeckleAudioSource.EvtRecordingAnomaliesSummary, "w7");
         Assert.Equal(3, PayloadOf(line, "lag_occurrences"));
         Assert.Equal(false, PayloadOf(line, "lag_recovered"));
-        Assert.Equal(4, PayloadOf(line, "lag_max_buffers_ready"));
+        Assert.Equal(140, PayloadOf(line, "lag_max_behind_ms"));
     }
 
     [Fact]
@@ -88,11 +88,10 @@ public sealed class DeckleAudioSourceTests : IDisposable
     {
         using var listener = new TestEventListener("Deckle-Audio");
 
-        DeckleAudioSource.Log.CaptureLagDetected(buffers_ready: 3, behind_ms: 150);
+        DeckleAudioSource.Log.CaptureLagDetected(behind_ms: 150);
 
         EventWrittenEventArgs line = Assert.Single(listener.Events);
         Assert.Equal(EventLevel.Warning, line.Level);
-        Assert.Equal(3, PayloadOf(line, "buffers_ready"));
         Assert.Equal(150, PayloadOf(line, "behind_ms"));
     }
 
@@ -119,6 +118,26 @@ public sealed class DeckleAudioSourceTests : IDisposable
                 Assert.True(ObservationTags.IsMilestone(ended.Tags));
                 Assert.Equal("cancelled", PayloadOf(ended, "outcome"));
             });
+    }
+
+    // A missing portaudio.dll and a refusing device end as the same PortAudio
+    // code; only the stage tells them apart, so a refused probe must log it.
+    [Fact]
+    public void ARefusedProbeLogsTheStageThatRefused()
+    {
+        var provider = new FakeEndpointProvider((id, _) => Internal.CaptureOpenResult.Failed(
+            "load", Internal.PortAudioInterop.NotInitialized, Internal.CaptureDeviceIdentity.Unresolved(id), []));
+        using var capture = new MicrophoneCapture(provider, _ => { });
+        using var listener = new TestEventListener("Deckle-Audio");
+
+        capture.Probe("");
+
+        EventWrittenEventArgs e = Assert.Single(listener.Events);
+        Assert.Equal(DeckleAudioSource.EvtMicrophoneOpenFailed, e.EventId);
+        Assert.Equal("probe", PayloadOf(e, "purpose"));
+        Assert.Equal("load", PayloadOf(e, "stage"));
+        Assert.Equal("-10000", PayloadOf(e, "error_code"));
+        Assert.Equal("paNotInitialized", PayloadOf(e, "error_name"));
     }
 
     private static void AssertMilestoneLine(EventWrittenEventArgs e, int eventId, string workId)

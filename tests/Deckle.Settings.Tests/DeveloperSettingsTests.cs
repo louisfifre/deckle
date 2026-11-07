@@ -38,4 +38,32 @@ public sealed class DeveloperSettingsTests
 
         Assert.True(loaded.Developer.ShowPlayground);
     }
+
+    [Fact]
+    public void DeveloperModeIsOffByDefault()
+    {
+        Assert.False(new AppSettings().Developer.DeveloperMode);
+    }
+
+    [Fact]
+    public void AFileWrittenBeforeDeveloperModeExistedLoadsWithItOff()
+    {
+        var loaded = JsonSerializer.Deserialize<AppSettings>(
+            """{"developer":{"showPlayground":true}}""", Options)!;
+
+        Assert.False(loaded.Developer.DeveloperMode);
+        Assert.True(loaded.Developer.ShowPlayground);
+    }
+
+    [Fact]
+    public void DeveloperModeSurvivesASaveAndALoad()
+    {
+        var settings = new AppSettings();
+        settings.Developer.DeveloperMode = true;
+
+        var loaded = JsonSerializer.Deserialize<AppSettings>(
+            JsonSerializer.Serialize(settings, Options), Options)!;
+
+        Assert.True(loaded.Developer.DeveloperMode);
+    }
 }

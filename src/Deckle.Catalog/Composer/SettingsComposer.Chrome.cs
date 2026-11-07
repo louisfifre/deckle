@@ -1,6 +1,7 @@
 using System;
 using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 
 namespace Deckle.Catalog;
@@ -50,7 +51,7 @@ public sealed partial class SettingsComposer
         void UpdateState()
         {
             reset.IsEnabled = Dirty();
-            ToolTipService.SetToolTip(reset, tooltip);
+            LabelResetButton(reset, tooltip);
         }
 
         return (content, UpdateState);
@@ -71,6 +72,14 @@ public sealed partial class SettingsComposer
         Opacity = 0,
         Content = new FontIcon { Glyph = Glyphs.Reset, FontSize = 14 },
     };
+
+    // The reset wheel is an icon alone, so its tooltip is also its accessible
+    // name: Narrator reads "Reset to 0.50", not an unnamed button.
+    private static void LabelResetButton(Button reset, string tooltip)
+    {
+        ToolTipService.SetToolTip(reset, tooltip);
+        AutomationProperties.SetName(reset, tooltip);
+    }
 
     // Either the host's hover or the button's keyboard focus keeps it shown. A flat
     // Opacity flip: the button keeps its layout slot at rest, so the reveal never

@@ -40,15 +40,18 @@ public sealed partial class TuningCard : UserControl
 
     // ── Reset DPs ────────────────────────────────────────────────────────────
 
+    // Null by default: the button's own words come from the module .resw
+    // (TuningCardResetButton, TuningCardResetLabel), and a consumer that sets
+    // these replaces them.
     public static readonly DependencyProperty ResetLabelProperty =
         DependencyProperty.Register(nameof(ResetLabel), typeof(string), typeof(TuningCard),
-            new PropertyMetadata("Reset section", OnResetLabelChanged));
-    public string ResetLabel { get => (string)GetValue(ResetLabelProperty); set => SetValue(ResetLabelProperty, value); }
+            new PropertyMetadata(null, OnResetLabelChanged));
+    public string? ResetLabel { get => (string?)GetValue(ResetLabelProperty); set => SetValue(ResetLabelProperty, value); }
 
     public static readonly DependencyProperty ResetTooltipProperty =
         DependencyProperty.Register(nameof(ResetTooltip), typeof(string), typeof(TuningCard),
-            new PropertyMetadata("Reset this section to its defaults", OnResetTooltipChanged));
-    public string ResetTooltip { get => (string)GetValue(ResetTooltipProperty); set => SetValue(ResetTooltipProperty, value); }
+            new PropertyMetadata(null, OnResetTooltipChanged));
+    public string? ResetTooltip { get => (string?)GetValue(ResetTooltipProperty); set => SetValue(ResetTooltipProperty, value); }
 
     public event RoutedEventHandler? ResetClick;
 
@@ -69,12 +72,13 @@ public sealed partial class TuningCard : UserControl
 
     private static void OnResetLabelChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is TuningCard self) self.ResetLabelText.Text = (string)e.NewValue;
+        if (d is TuningCard self && e.NewValue is string label) self.ResetLabelText.Text = label;
     }
 
     private static void OnResetTooltipChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
-        if (d is TuningCard self) ToolTipService.SetToolTip(self.ResetButton, (string)e.NewValue);
+        if (d is TuningCard self && e.NewValue is string tooltip)
+            ToolTipService.SetToolTip(self.ResetButton, tooltip);
     }
 
     // ── Reveal ───────────────────────────────────────────────────────────────

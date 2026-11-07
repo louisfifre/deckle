@@ -95,24 +95,29 @@ public partial class AmbientViewModel
             // the Transcription one, which Louis refused (2026-10-14).
             new CurveArgs(
                 Frame: () => new CurveFrame(0, 0, 100, 100, 100, 100, Axes: true, XUnit: "%", YUnit: "%"),
-                Floor: () => MinBrightnessEnabled ? MinBrightness / 254.0 * 100.0 : null),
+                Floor: () => MinBrightnessEnabled ? MinBrightness / HueMaxBrightness * 100.0 : null),
             defaultValue: () =>
             {
                 var d = new AmbientSettings();
                 return new CurvePoints(d.BrightnessCurveX1, d.BrightnessCurveY1, d.BrightnessCurveX2, d.BrightnessCurveY2);
             }),
-        Setting.Toggle(
+        // The floor is a switch with one level behind it, so it is a fold
+        // governed by its switch, the shape the zones group has above. The level
+        // reads in percent like the curve it is drawn on; the Hue scale (0-254)
+        // stays the stored value and the engine's.
+        Setting.Group(
             "AmbientMinBrightnessGroup",
             () => MinBrightnessEnabled,
             value => MinBrightnessEnabled = value,
+            [
+                Setting.Magnitude(
+                    "AmbientMinBrightnessCard",
+                    () => MinBrightnessToPercent(MinBrightness),
+                    value => MinBrightness = PercentToMinBrightness(value),
+                    new MagnitudeArgs(0, 100, Unit: "%", Integer: true),
+                    defaultValue: () => MinBrightnessToPercent(new AmbientSettings().MinBrightness)),
+            ],
             defaultValue: () => new AmbientSettings().MinBrightnessEnabled),
-        Setting.Magnitude(
-            "AmbientMinBrightnessCard",
-            () => MinBrightness,
-            value => MinBrightness = (int)Math.Round(value),
-            new MagnitudeArgs(0, 254),
-            visibleWhen: () => MinBrightnessEnabled,
-            defaultValue: () => new AmbientSettings().MinBrightness),
         Setting.Magnitude(
             "AmbientSmoothingCard",
             () => SmoothingAlpha,
@@ -133,27 +138,11 @@ public partial class AmbientViewModel
             defaultValue: () => new AmbientSettings().SaturationBoost),
     ];
 
-    // Configuration: the capture rate (60 / 30 / 15 fps), after the bespoke
-    // display picker. Dropped by the triage of 2026-10-14 and put back the
-    // same evening: Louis looked for the 60 fps choice and found nothing
-    // ("j'ai plus d'options"). A dropdown, not radio buttons: three figures
-    // nobody compares at a glance, and the flat group read loud for what it
-    // decides (Louis, 2026-10-15). The preview block still reads the rate the
-    // capture really holds, which may sit under the one chosen here. The getter
-    // snaps like the engine does (AmbientStartSettings): a hand-edited 45 in
-    // the file runs at 60, and the dropdown must show that choice rather than
-    // none.
-    public IReadOnlyList<SettingDescriptor> CaptureSettings =>
-    [
-        Setting.Choice<int>(
-            "AmbientCaptureRateCard",
-            () => AmbientCaptureRate.Snap(CaptureFrameRateHz),
-            value => CaptureFrameRateHz = value,
-            [
-                (60, "AmbientCaptureRate60"),
-                (30, "AmbientCaptureRate30"),
-                (15, "AmbientCaptureRate15"),
-            ],
-            defaultValue: () => new AmbientSettings().CaptureFrameRateHz),
-    ];
+    private const double HueMaxBrightness = 254.0;
+
+    private static int MinBrightnessToPercent(int hue) =>
+        (int)Math.Round(hue / HueMaxBrightness * 100.0);
+
+    private static int PercentToMinBrightness(double percent) =>
+        (int)Math.Round(percent / 100.0 * HueMaxBrightness);
 }

@@ -217,17 +217,16 @@ public sealed partial class TranscriptionEngine : IDisposable
     private string? _selfStopReason;
 
     // Dependency incidents outlive one take. They close only when the real
-    // dependency succeeds again: waveInStart for the microphone, and a
+    // dependency succeeds again: the capture's stream start for the microphone, and a
     // successful backend load for the model.
     private int _microphoneIncidentOpen;
     private int _modelIncidentOpen;
     private string _modelIncidentWorkId = "";
 
-    private void OpenMicrophoneIncident(string phase, uint mmsysErr)
+    private void OpenMicrophoneIncident(string phase, uint errorCode)
     {
         if (Interlocked.Exchange(ref _microphoneIncidentOpen, 1) != 0) return;
-        // MMSYSERR codes are small, so the cast keeps the value.
-        DeckleWhispSource.Log.MicrophoneUnavailable(phase, unchecked((int)mmsysErr));
+        DeckleWhispSource.Log.MicrophoneUnavailable(phase, MicrophoneCapture.FormatErrorCode(errorCode));
         // The HUD told the person at the take; the tray keeps it shown after the
         // HUD fades. It closes only on the engine's next capture: plugging a
         // microphone in, or a successful test in Settings, does not close it
@@ -271,7 +270,7 @@ public sealed partial class TranscriptionEngine : IDisposable
 
     // Latency stage timers feeding LatencyPayload, reset at each run's start.
     //
-    //   _hotkeySw             — start request → just after waveInStart: the mic
+    //   _hotkeySw             — start request → just after the stream starts: the mic
     //                           probe and worker spin-up only. A cold model load
     //                           runs concurrently and is reported in
     //                           _modelLoadMs and the PrimeOverlap measure.
@@ -401,10 +400,11 @@ public sealed partial class TranscriptionEngine : IDisposable
     {
         private readonly ITranscriptionEngineHost _h;
         public RecordingHostAdapter(ITranscriptionEngineHost h) { _h = h; }
-        public int  AudioInputDeviceId         => _h.Audio.AudioInputDeviceId;
+        public string AudioInputEndpointId     => _h.Audio.AudioInputEndpointId;
         public int  MaxRecordingDurationSeconds => _h.Audio.MaxRecordingDurationSeconds;
         public bool MicrophoneTelemetryEnabled  => _h.Telemetry.MicrophoneTelemetry;
         public double VoiceLevelDbfs            => _h.Audio.VoiceLevelDbfs;
+        public bool ExclusiveMode               => _h.Audio.ExclusiveMode;
     }
 
 

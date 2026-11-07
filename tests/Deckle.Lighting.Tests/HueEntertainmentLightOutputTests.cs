@@ -321,6 +321,13 @@ public sealed class HueEntertainmentLightOutputTests
             return Task.CompletedTask;
         }
 
+        public Task<IReadOnlyDictionary<string, HueLightState>> GetLightStatesAsync(CancellationToken ct = default)
+            => Task.FromResult<IReadOnlyDictionary<string, HueLightState>>(
+                new Dictionary<string, HueLightState>());
+
+        public Task SetLightStateAsync(string lightId, HueLightState state, CancellationToken ct = default)
+            => Task.CompletedTask;
+
         public Task IdentifyLightAsync(string lightId, CancellationToken ct = default)
             => Task.CompletedTask;
 

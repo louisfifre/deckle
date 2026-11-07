@@ -146,11 +146,15 @@ crashdumps/
 # temporary by doctrine, never committed.
 /logs/
 
-# The benchmark workspace was removed from the repository, but a checkout
-# that ran it still holds its local runs, which may contain dictations.
-# Ignored so they can never be committed; drop this rule once no checkout
-# keeps the folder.
-/benchmark/
+# Only benchmark/rewrite stays in the repository. A checkout that ran the
+# removed benches still holds their local runs, which may contain
+# dictations: everything else under benchmark/ is ignored so it can never be
+# committed. Drop the first rule once no checkout keeps those folders.
+/benchmark/*
+!/benchmark/rewrite/
+!/benchmark/Directory.Build.props
+!/benchmark/Directory.Packages.props
+!/benchmark/README.md
 
 # ─────────────────────────────────────────────────────────────────────────
 #  Python tooling — caches and virtualenvs (ad hoc scripts)

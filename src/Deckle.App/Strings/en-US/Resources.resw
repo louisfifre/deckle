@@ -147,6 +147,18 @@
   <data name="SettingsComposer_ValueOff" xml:space="preserve">
     <value>Off</value>
   </data>
+  <!-- The word a number field shows in place of its "let the engine decide"
+       sentinel (MagnitudeArgs.Auto), in the field and in its reset tooltip. -->
+  <data name="SettingsComposer_ValueAuto" xml:space="preserve">
+    <value>Auto</value>
+  </data>
+  <!-- The accessible name of the curve editor's two draggable control points
+       (CurveEditor, Catalog), which Narrator reads as each handle takes focus.
+       Composer-owned like the reset tooltips above. -->
+  <data name="CurveEditor_ControlPoint_Format" xml:space="preserve">
+    <value>Control point {0}</value>
+    <comment>{0} is 1 or 2, the handle's position along the curve.</comment>
+  </data>
   <!-- The page header block (SettingsPageHeader, Catalog): the Reset all
        command every page carries, its tooltip and its generic confirmation.
        Composer-owned and module-agnostic, resolved from this root map. -->
@@ -213,7 +225,7 @@
     <value>Replace</value>
   </data>
   <data name="Common_Browse" xml:space="preserve">
-    <value>Browse...</value>
+    <value>Browse…</value>
   </data>
 
   <!-- ─── Consent dialogs ────────────────────────────────────────────
@@ -365,7 +377,7 @@
     <value>Swap it in Settings › {0}.</value>
   </data>
   <data name="Engine_PipelineCrashed_Title" xml:space="preserve">
-    <value>Pipeline crashed</value>
+    <value>Something went wrong</value>
   </data>
   <data name="Engine_PipelineCrashed_Body" xml:space="preserve">
     <value>Try again. Check logs if it persists.</value>
@@ -383,7 +395,7 @@
     <value>No voice detected</value>
   </data>
   <data name="Engine_LowAudio_Body" xml:space="preserve">
-    <value>Nothing above your voice level yet.</value>
+    <value>Speak closer to the mic.</value>
   </data>
   <data name="Engine_TranscriptionFailed_Title" xml:space="preserve">
     <value>Transcription failed</value>
@@ -413,19 +425,19 @@
     <value>Clipboard may be incomplete</value>
   </data>
   <data name="Engine_ClipboardIncomplete_Unverified_Body" xml:space="preserve">
-    <value>Text is copied but unverified.</value>
+    <value>Copied. Check it before pasting.</value>
   </data>
   <data name="Engine_ClipboardIncomplete_LengthMismatch_Title" xml:space="preserve">
     <value>Clipboard may be incomplete</value>
   </data>
   <data name="Engine_ClipboardIncomplete_LengthMismatch_Body" xml:space="preserve">
-    <value>Length mismatch on read-back.</value>
+    <value>May be cut short. Check it.</value>
   </data>
 
   <!-- ─── Microphone errors ──────────────────────────────────────────
        UserFeedback pairs raised by TranscriptionEngine.LocalizeMicError when
        MicrophoneCapture.Probe / Record returns a MicErrorKind. The
-       Unavailable body interpolates the raw MMSYSERR code as {0}
+       Unavailable body interpolates the raw error code as {0} (a Windows HRESULT in hex, or a PortAudio error in decimal)
        for diagnostic clarity. -->
   <data name="MicError_NotDetected_Title" xml:space="preserve">
     <value>No microphone detected</value>
@@ -443,7 +455,7 @@
     <value>Microphone unavailable</value>
   </data>
   <data name="MicError_Unavailable_Body_Format" xml:space="preserve">
-    <value>Mic open failed (MMSYSERR {0}).</value>
+    <value>Mic won't open (error {0}).</value>
   </data>
 
   <!-- ─── HUD feedback from the host ─────────────────────────────────
@@ -461,7 +473,7 @@
     <value>Shortcuts unavailable</value>
   </data>
   <data name="Feedback_HotkeysUnavailable_Body" xml:space="preserve">
-    <value>Record from the tray panel.</value>
+    <value>Record from the tray menu.</value>
   </data>
   <data name="Feedback_HotkeyUnavailable_Title_Format" xml:space="preserve">
     <value>{0} shortcut</value>
@@ -637,10 +649,10 @@
        Step header text is set programmatically by ChoicesPage via
        SetStepHeader. Cards in XAML use x:Uid for header/description. -->
   <data name="Setup_StepTitle_Choices" xml:space="preserve">
-    <value>Transcription</value>
+    <value>Set up transcription</value>
   </data>
   <data name="Setup_StepSubtitle_Choices" xml:space="preserve">
-    <value>Choose the speech model transcription runs on, and check its speech engine.</value>
+    <value>Check the speech engine, then choose the speech model transcription runs on.</value>
   </data>
   <data name="Setup_NextLabel_Install" xml:space="preserve">
     <value>Install</value>
@@ -649,13 +661,13 @@
     <value>Installed</value>
   </data>
   <data name="Setup_Native_Replace" xml:space="preserve">
-    <value>Replace...</value>
+    <value>Replace…</value>
   </data>
   <data name="Setup_Native_BrowseLocal" xml:space="preserve">
-    <value>Use local copy...</value>
+    <value>Use local copy…</value>
   </data>
   <data name="Setup_Native_Missing_Format" xml:space="preserve">
-    <value>Missing {0} file(s)</value>
+    <value>Missing files: {0}</value>
   </data>
   <data name="Setup_Native_WillDownload_Format" xml:space="preserve">
     <value>Will be downloaded (~{0})</value>
@@ -691,13 +703,13 @@
        Inline Cancel install button in XAML uses x:Uid. All progress
        and status strings are emitted from C# during the run. -->
   <data name="Setup_StepTitle_Installing" xml:space="preserve">
-    <value>Installing</value>
+    <value>Downloading</value>
   </data>
   <data name="Setup_StepSubtitle_Installing" xml:space="preserve">
     <value>Downloading the models and tools your modules need. This can take a while on a slow link.</value>
   </data>
   <data name="Setup_Install_Connecting" xml:space="preserve">
-    <value>Connecting...</value>
+    <value>Connecting…</value>
   </data>
   <data name="Setup_Install_Done_Format" xml:space="preserve">
     <value>Done. {0}</value>
@@ -743,17 +755,11 @@
   <data name="Setup_NextLabel_Retry" xml:space="preserve">
     <value>Retry</value>
   </data>
-  <data name="Setup_Result_CompleteTitle" xml:space="preserve">
-    <value>Installation complete</value>
-  </data>
-  <data name="Setup_Result_IncompleteTitle" xml:space="preserve">
-    <value>Installation incomplete</value>
-  </data>
   <data name="Setup_Result_StoredUnder_Format" xml:space="preserve">
     <value>Stored under {0}.</value>
   </data>
   <data name="Setup_Result_FailedCount_Format" xml:space="preserve">
-    <value>{0} of {1} item(s) failed.</value>
+    <value>Failed: {0} of {1}.</value>
   </data>
   <data name="Setup_OpenDiagnosticsFolder" xml:space="preserve">
     <value>Open diagnostics folder</value>
@@ -799,7 +805,7 @@
     <value>Version {0} is available</value>
   </data>
   <data name="Settings_MoveDataDialog_Title" xml:space="preserve">
-    <value>Move app data?</value>
+    <value>Move the data folder?</value>
   </data>
   <data name="Settings_MoveDataDialog_Content_Format" xml:space="preserve">
     <value>Deckle copies {0} of data to {1}, then restarts. The old folder is removed afterwards.</value>
@@ -808,7 +814,7 @@
     <value>Move and restart</value>
   </data>
   <data name="Settings_MoveDataSameTarget" xml:space="preserve">
-    <value>The app data is already in this folder.</value>
+    <value>The data folder is already there.</value>
   </data>
   <data name="Settings_MoveDataInvalidTarget" xml:space="preserve">
     <value>Pick an empty folder outside the current data folder.</value>
@@ -854,7 +860,7 @@
     <value>Restore settings?</value>
   </data>
   <data name="Settings_RestoreDialog_Content_Format" xml:space="preserve">
-    <value>This will overwrite your current settings with the snapshot from {0}. Your current settings will not be saved unless you back them up first.</value>
+    <value>This will overwrite your current settings with the backup from {0}. Your current settings will not be saved unless you back them up first.</value>
   </data>
   <data name="Settings_RestoreDialog_PrimaryButton" xml:space="preserve">
     <value>Restore</value>
@@ -866,6 +872,9 @@
   </data>
   <data name="Settings_AudioInput_Device_Format" xml:space="preserve">
     <value>Device {0}</value>
+  </data>
+  <data name="Settings_AudioInput_Missing" xml:space="preserve">
+    <value>Saved microphone (not connected)</value>
   </data>
 
   <!-- RecordingPage mic-check detail line and VoiceLevelMeter code-behind
@@ -888,6 +897,16 @@
   </data>
   <data name="RecordingVoiceMeter_Silence" xml:space="preserve">
     <value>Silence</value>
+  </data>
+
+  <!-- The Signal readout: what Windows granted the capture. Raw is the
+       microphone with no Windows effects, gain control or noise suppression;
+       Processed is the fallback, Windows's default processing for the device. -->
+  <data name="RecordingVoiceMeter_Signal_Raw" xml:space="preserve">
+    <value>Raw</value>
+  </data>
+  <data name="RecordingVoiceMeter_Signal_Default" xml:space="preserve">
+    <value>Processed</value>
   </data>
   <data name="RecordingVoiceMeter_Failure_NotDetected" xml:space="preserve">
     <value>No microphone found. Check the device above, then turn Listen on again.</value>
@@ -918,7 +937,7 @@
     <value>Reset all settings?</value>
   </data>
   <data name="Settings_ResetDiagnosticsDialog_Content" xml:space="preserve">
-    <value>Every logging and telemetry opt-in on this page will be turned off and the storage-folder override cleared. Nothing is recorded again until you opt back in.</value>
+    <value>Each log verbosity goes back to its default. The trace and every telemetry dataset are turned off, and the telemetry folder returns to its default location.</value>
   </data>
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
@@ -926,7 +945,7 @@
     <value>Reset all rewriting settings?</value>
   </data>
   <data name="Settings_ResetLlmDialog_Content" xml:space="preserve">
-    <value>This wipes the providers, profiles, rules, and shortcut bindings, then puts the default providers and profiles back. API keys stay saved. Your custom prompts and parameters will be lost.</value>
+    <value>Every rewriting setting goes back to its default: the switch, the rewrite profile, the length steps and rewriting while you speak. The providers and profiles, shortcuts included, are replaced by the defaults. API keys stay saved. Your custom prompts and parameters will be lost.</value>
   </data>
   <data name="Settings_OllamaStatusMessage_Format" xml:space="preserve">
     <value>Start Ollama or check the provider's address ({0}).</value>
@@ -973,7 +992,7 @@
     <value>Remove this profile?</value>
   </data>
   <data name="Settings_RemoveProfileDialog_Content_Format" xml:space="preserve">
-    <value>"{0}" will be removed. Any rule or shortcut that pointed to it will need a new profile picked. They're not deleted, they go blank until you reassign them.</value>
+    <value>"{0}" and its shortcut will be removed. If it is the rewrite profile, dictations go back to plain transcription. Any length step that used it is removed too.</value>
   </data>
   <data name="Settings_ResetProfilesDialog_Title" xml:space="preserve">
     <value>Reset profiles to defaults?</value>
@@ -1006,6 +1025,12 @@
     <value>Search logs</value>
   </data>
   <data name="LogWindowSearchIconButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Search logs</value>
+  </data>
+  <data name="LogWindowSearchBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Search logs</value>
+  </data>
+  <data name="LogWindowSearchIconButton.AutomationProperties.Name" xml:space="preserve">
     <value>Search logs</value>
   </data>
   <data name="LogWindowCopyAllText.Text" xml:space="preserve">
@@ -1180,6 +1205,21 @@
   <data name="AmbientHue_PairStatus_Failed_Format" xml:space="preserve">
     <value>Couldn't pair: {0}. Check the bridge IP and try again.</value>
   </data>
+  <data name="AmbientHue_ListGroups_Searching_Format" xml:space="preserve">
+    <value>The bridge at {0} didn't answer. Looking for it on your network…</value>
+    <comment>{0} is the bridge's IP address. Shown while Deckle searches the local network for the paired bridge.</comment>
+  </data>
+  <data name="AmbientHue_ListGroups_Relocated_Format" xml:space="preserve">
+    <value>Found the bridge at {0}. Rooms loaded.</value>
+    <comment>{0} is the IP address where the paired bridge answered.</comment>
+  </data>
+  <data name="AmbientHue_ListGroups_NotFound_Format" xml:space="preserve">
+    <value>The bridge at {0} didn't answer, and it wasn't found on your network. Make sure it's on and connected, then select Find bridge to search again and pair it.</value>
+    <comment>{0} is the bridge's IP address. "Find bridge" is the HueDiscoverButton label.</comment>
+  </data>
+  <data name="AmbientHue_ListGroups_Failed" xml:space="preserve">
+    <value>Couldn't load rooms. Try again.</value>
+  </data>
   <data name="AmbientHue_ForgetDialog_Title" xml:space="preserve">
     <value>Forget Hue bridge?</value>
   </data>
@@ -1193,7 +1233,7 @@
     <value>Replace the paired bridge?</value>
   </data>
   <data name="AmbientHue_RepairDialog_Content" xml:space="preserve">
-    <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones.</value>
+    <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones. Then press the link button on the bridge.</value>
   </data>
 
   <!-- AmbientPage Reset all dialog — duplicated from
@@ -1206,7 +1246,7 @@
     <value>Reset all settings?</value>
   </data>
   <data name="Settings_ResetAmbientDialog_Content" xml:space="preserve">
-    <value>This will restore the mode, the fine tuning, the colour per zone with its edge band, and the capture rate to their default values. Your Hue bridge pairing, light group, display, per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
+    <value>This will restore the colour and motion tuning, the brightness floor, the edge band each zone reads, and whether the lights follow their zones or share one colour to their default values. Your Hue bridge pairing, the selected light group, the display, per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
   </data>
 
   <!-- AmbientPreviewCard and LightZonesCard code-behind (Loc.Get) —
@@ -1235,6 +1275,14 @@
   </data>
   <data name="AmbientPreview_Output_Rest" xml:space="preserve">
     <value>REST</value>
+  </data>
+  <!-- The Capture readout before any capture: the display's size, read from Windows. -->
+  <data name="AmbientPreview_Display_Format" xml:space="preserve">
+    <value>{0} × {1}</value>
+  </data>
+  <!-- The Output readout while Ambient Light is off: the preview captures, no light receives anything. -->
+  <data name="AmbientPreview_Output_Off" xml:space="preserve">
+    <value>Off</value>
   </data>
   <data name="AmbientLights_Zone_None" xml:space="preserve">
     <value>No zone</value>
@@ -1437,10 +1485,10 @@
     <value>Later</value>
   </data>
   <data name="Setup_StepTitle_Relocate" xml:space="preserve">
-    <value>Moving app data</value>
+    <value>Moving the data folder</value>
   </data>
   <data name="Setup_StepSubtitle_Relocate" xml:space="preserve">
-    <value>Copying the data to its new folder. Deckle restarts when it is done.</value>
+    <value>Copying the data to its new location. Deckle restarts when it is done.</value>
   </data>
   <data name="Setup_Relocate_Checking" xml:space="preserve">
     <value>Checking free space…</value>
@@ -1511,5 +1559,17 @@
   </data>
   <data name="Setup_Module_NoDownload" xml:space="preserve">
     <value>No download</value>
+  </data>
+  <!-- ProfileViewModel (Loc.Get / Loc.Format) — mirrored from
+       src/Deckle.Llm.Rewrite/Strings/en-US/Resources.resw, which stays the
+       source of truth for wording; Loc.Get reads this file only. -->
+  <data name="LlmProfile_NoModel" xml:space="preserve">
+    <value>(no model)</value>
+  </data>
+  <data name="LlmProfile_NoProvider" xml:space="preserve">
+    <value>(no provider)</value>
+  </data>
+  <data name="LlmProfile_Hints_Format" xml:space="preserve">
+    <value>context {0}K  ·  temperature {1}</value>
   </data>
 </root>

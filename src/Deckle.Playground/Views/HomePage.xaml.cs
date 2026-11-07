@@ -24,11 +24,6 @@ public sealed partial class HomePage : Page
         PlaygroundShell.NavigateTo?.Invoke("ambient");
     }
 
-    private void OnCorrectionCardClick(object sender, RoutedEventArgs e)
-    {
-        PlaygroundShell.NavigateTo?.Invoke("correction");
-    }
-
     // The answer completes on the OS activation callback thread, but this
     // async-void UI handler resumes on the captured UI synchronization
     // context; the dispatcher's internal ConfigureAwait(false) does not reach

@@ -24,13 +24,19 @@ public partial class App
 
     private static readonly TimeSpan UpdateCheckInterval = TimeSpan.FromHours(24);
 
-    private void WireUpdater()
+    // What the About card of Settings reads. Hooks only: nothing runs, so the
+    // self-check wires them too.
+    private void WireUpdaterHooks()
     {
         Settings.SettingsHost.GetAppVersion = CurrentDisplayVersion;
         Settings.SettingsHost.GetAppStage = CurrentStage;
         Settings.SettingsHost.GetAvailableUpdateVersion = () => UpdateService.Available?.Version;
         Settings.SettingsHost.StartUpdate = StartUpdateFlow;
+    }
 
+    // The part that reaches the network: the resident app only.
+    private void StartUpdateChecks()
+    {
         // Dev builds never see updates: the check is gated on running the
         // registered install's own exe, so a worktree launch stops here.
         if (!UpdateService.IsInstalledLaunch()) return;

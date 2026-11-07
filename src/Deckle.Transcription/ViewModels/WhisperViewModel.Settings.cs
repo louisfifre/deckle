@@ -109,11 +109,21 @@ public partial class WhisperViewModel
             defaultValue: () => new TranscriptionSettings().ModelsDirectory),
     ];
 
-    // Voice activity detection — the Silero pre-trim fold. The master is the
-    // VadEnabled toggle; the three detection parameters are its children, hidden by
-    // the composer while the master is off (it composes the master into each
-    // child's VisibleWhen — native masking, no per-child gate here). The bounds
-    // are the former hand-authored sliders'.
+    // The guards against text from silence and noise — one fold with no master
+    // on the Streaming page, collapsed (2026-11-07 review, change 6). Two of the
+    // five guards the pipeline runs are settings: the Silero trim before the
+    // model, and Whisper's no-speech cut-off after it; for a person both answer
+    // "there was no voice there", so they share one fold named for that. The
+    // other three stay where they are or stay hidden: the minimum speech is
+    // also the segmenter's floor and lives with the cut, the phantom filter and
+    // the known-hallucination catalog are not settings. A Section, not a Group
+    // inside a fold: folds never nest, so the Silero switch is a plain child and
+    // its three parameters hide while it is off through their own VisibleWhen.
+    // The no-speech cut-off left the Decoding page's Confidence section; it
+    // still works with Minimum confidence, which stays there, and its
+    // description says so.
+    //
+    // The Silero trim. The bounds are the former hand-authored sliders'.
     //
     // Back on the page after the 2026-10-14 triage removed them: the Silero trim
     // is the second detector of the streaming chain, not a detail of the
@@ -129,21 +139,25 @@ public partial class WhisperViewModel
     // The fold shows whatever the strategy: the Silero trim runs on every
     // recording, the streaming dictation's utterances, the monolithic take as
     // one utterance, and the utterances of a file or a recovered take.
-    public IReadOnlyList<SettingDescriptor> VadSettings =>
+    public IReadOnlyList<SettingDescriptor> SilenceGuardSettings =>
     [
-        Setting.Group("WhisperVadEnabledCard",
-            () => VadEnabled,
-            value => VadEnabled = value,
+        Setting.Section("WhisperSilenceGuardsFold",
             [
+                Setting.Toggle("WhisperVadEnabledCard",
+                    () => VadEnabled,
+                    value => VadEnabled = value,
+                    defaultValue: () => new SpeechTrimSettings().Enabled),
                 Setting.Magnitude("WhisperVadThresholdCard",
                     () => VadThreshold,
                     value => VadThreshold = value,
                     new MagnitudeArgs(0.1, 0.9),
+                    visibleWhen: () => VadEnabled,
                     defaultValue: () => new SpeechTrimSettings().Threshold),
                 Setting.Magnitude("WhisperVadMinSilenceCard",
                     () => Seconds(VadMinSilenceDurationMs),
                     value => VadMinSilenceDurationMs = Milliseconds(value),
                     new MagnitudeArgs(0, 1, Unit: "s"),
+                    visibleWhen: () => VadEnabled,
                     defaultValue: () => Seconds(new SpeechTrimSettings().MinSilenceDurationMs)),
                 // 0..0.4 s, not 0..0.2: the grain follows the span, and 0.01 s
                 // is the one that writes the 0.03 s default exactly.
@@ -151,9 +165,15 @@ public partial class WhisperViewModel
                     () => Seconds(VadSpeechPadMs),
                     value => VadSpeechPadMs = Milliseconds(value),
                     new MagnitudeArgs(0, 0.4, Unit: "s"),
+                    visibleWhen: () => VadEnabled,
                     defaultValue: () => Seconds(new SpeechTrimSettings().SpeechPadMs)),
-            ],
-            defaultValue: () => new SpeechTrimSettings().Enabled),
+                // Bounds verbatim from the Confidence section it left: 0.05..0.80.
+                Setting.Magnitude("WhisperNoSpeechCard",
+                    () => NoSpeechThreshold,
+                    value => NoSpeechThreshold = value,
+                    new MagnitudeArgs(0.05, 0.80, Slider: false),
+                    defaultValue: () => new ConfidenceSettings().NoSpeechThreshold),
+            ]),
     ];
 
     // Streaming pipeline — the energy segmenter. The switch is StreamingEnabled
@@ -174,35 +194,31 @@ public partial class WhisperViewModel
             defaultValue: () => new StreamingSettings().Strategy == PipelineStrategyKind.Streaming),
     ];
 
-    // The segmentation cards of the Streaming page, under the switch and the
-    // speech-filtering fold: the cut margin and the minimum speech, as cards.
+    // The segmentation section of the Streaming page, under the switch and
+    // above the silence guards' fold: the cut curve, with the cut margin and
+    // the minimum speech in its pause strip.
     // The minimum speech is the one floor the segmenter and Silero share
-    // (Streaming.MinSpeechMs); it sits here and not in the speech-filtering
-    // fold because it is the only guard left when Silero is off or its model is
-    // missing. The level that makes a frame voiced is not here: it is the voice
+    // (Streaming.MinSpeechMs); it sits here and not in the guards' fold
+    // because it is the cut's own floor, and the guard left when Silero is off
+    // or its model is missing. The level that makes a frame voiced is not here: it is the voice
     // level of the Recording page (CaptureSettings.VoiceLevelDbfs), since the HUD
-    // and the low-audio warning read it too. Then the cut curve, the
-    // segmentation's instrument, last and at full width, with no fold around it
-    // (2026-10-14). Every descriptor shows whatever the strategy: files and
-    // recovered takes are always cut.
-    // The four hangover anchors (max, min, ramp start, ramp end) are the curve's
-    // frame and live in its legend, beside the plot, as fields: the doctrine's
-    // curve exception puts a curve's values in fields beside the drawing. They
-    // keep the bounds the former cards had, in the view model's milliseconds;
-    // the plot reads seconds.
+    // and the low-audio warning read it too. The curve is the segmentation's
+    // instrument, at full width, with no fold around it (2026-10-14). Every
+    // value shows whatever the strategy: files and recovered takes are always
+    // cut. The four hangover anchors (max, min, ramp start, ramp end) are the
+    // curve's frame and keep the bounds the former cards had, in the view
+    // model's milliseconds; the plot reads seconds.
+    //
+    // Since 2026-11-07 the curve card is the whole section, edited by direct
+    // manipulation: each anchor's Role binds it to the frame coordinate it is,
+    // so the curve's two corners drag the ramp and the waits; the cut margin
+    // and the minimum speech, once two cards beside the curve, are the pause
+    // strip under it (CurveArgs.Pause), a pause at the scale of a word, since on
+    // the curve's 140 s axis they would be under a pixel. Every value keeps its
+    // field, its bounds, its default and its description, under the card's one
+    // reset.
     public IReadOnlyList<SettingDescriptor> SegmentationSettings =>
     [
-        // 0..1 s: the grain is 0.05 s, which writes both defaults (0.15, 0.25) exactly.
-        Setting.Magnitude("WhisperSegMarginCard",
-            () => Seconds(SegMarginMs),
-            value => SegMarginMs = Milliseconds(value),
-            new MagnitudeArgs(0, 1, Unit: "s"),
-            defaultValue: () => Seconds(new EnergySegmenterSettings().MarginMs)),
-        Setting.Magnitude("WhisperMinSpeechCard",
-            () => Seconds(MinSpeechMs),
-            value => MinSpeechMs = Milliseconds(value),
-            new MagnitudeArgs(0, 1, Unit: "s"),
-            defaultValue: () => Seconds(new StreamingSettings().MinSpeechMs)),
         Setting.Curve("WhisperCutCurveCard",
             () => new CurvePoints(SegCurveX1, SegCurveY1, SegCurveX2, SegCurveY2),
             p => { SegCurveX1 = p.X1; SegCurveY1 = p.Y1; SegCurveX2 = p.X2; SegCurveY2 = p.Y2; },
@@ -214,20 +230,38 @@ public partial class WhisperViewModel
                     new CurveAnchor("WhisperSegHangoverMaxCard",
                         () => Seconds(SegHangoverMaxMs), value => SegHangoverMaxMs = Milliseconds(value),
                         0.5, 15,
-                        Default: () => Seconds(new EnergySegmenterSettings().HangoverMaxMs)),
+                        Default: () => Seconds(new EnergySegmenterSettings().HangoverMaxMs),
+                        Role: CurveAnchorRole.OriginY),
                     new CurveAnchor("WhisperSegHangoverMinCard",
                         () => Seconds(SegHangoverMinMs), value => SegHangoverMinMs = Milliseconds(value),
                         0.1, 2,
-                        Default: () => Seconds(new EnergySegmenterSettings().HangoverMinMs)),
+                        Default: () => Seconds(new EnergySegmenterSettings().HangoverMinMs),
+                        Role: CurveAnchorRole.EndY),
                     new CurveAnchor("WhisperSegHangoverRampStartCard",
                         () => Seconds(SegHangoverRampStartMs), value => SegHangoverRampStartMs = Milliseconds(value),
                         0, 200, Integer: true, // a 200 s span gives the 5 s grain
-                        Default: () => Seconds(new EnergySegmenterSettings().HangoverRampStartMs)),
+                        Default: () => Seconds(new EnergySegmenterSettings().HangoverRampStartMs),
+                        Role: CurveAnchorRole.OriginX),
                     new CurveAnchor("WhisperSegHangoverRampEndCard",
                         () => Seconds(SegHangoverRampEndMs), value => SegHangoverRampEndMs = Milliseconds(value),
                         30, 230, Integer: true, // same 200 s span, same 5 s grain
-                        Default: () => Seconds(new EnergySegmenterSettings().HangoverRampEndMs)),
-                ]),
+                        Default: () => Seconds(new EnergySegmenterSettings().HangoverRampEndMs),
+                        Role: CurveAnchorRole.EndX),
+                ],
+                Pause: new PauseStripArgs("WhisperCutPauseStrip",
+                    // 0..1 s: the grain is 0.05 s, which writes both defaults
+                    // (0.25, 0.15) exactly.
+                    MinimumSpeech: new CurveAnchor("WhisperMinSpeechCard",
+                        () => Seconds(MinSpeechMs), value => MinSpeechMs = Milliseconds(value),
+                        0, 1,
+                        Default: () => Seconds(new StreamingSettings().MinSpeechMs)),
+                    Margin: new CurveAnchor("WhisperSegMarginCard",
+                        () => Seconds(SegMarginMs), value => SegMarginMs = Milliseconds(value),
+                        0, 1,
+                        Default: () => Seconds(new EnergySegmenterSettings().MarginMs)),
+                    // The shortest pause that cuts: the minimum wait, where a
+                    // long utterance ends.
+                    CutAfter: () => Seconds(SegHangoverMinMs))),
             defaultValue: () =>
             {
                 var d = new EnergySegmenterSettings();
@@ -245,9 +279,12 @@ public partial class WhisperViewModel
 
     // The frame of the cut curve: X is the open-utterance length in seconds, from
     // 0 to a little past the ramp end; Y is the decision delay in seconds, from 0
-    // to the maximum hangover. The unit square runs from (ramp start, max) down
-    // to (ramp end, min), the decay the segmenter eases between. The view model
-    // keeps the anchors in milliseconds, the plot reads seconds.
+    // to a quarter above the maximum hangover. The unit square runs from (ramp
+    // start, max) down to (ramp end, min), the decay the segmenter eases
+    // between. The view model keeps the anchors in milliseconds, the plot reads
+    // seconds. The room above the maximum and past the ramp end is where the
+    // curve's corners can be dragged: the plot's scale holds still during a
+    // drag and follows the new values at the release (2026-11-07).
     private CurveFrame CutCurveFrame()
     {
         double max = Math.Max(SegHangoverMaxMs / 1000.0, 1e-3);
@@ -255,17 +292,22 @@ public partial class WhisperViewModel
         double start = Math.Max(0, SegHangoverRampStartMs / 1000.0);
         double end = Math.Max(start, SegHangoverRampEndMs / 1000.0);
         double xMax = end + Math.Max((end - start) * 0.15, 5.0);
-        return new CurveFrame(start, max, end, min, xMax, max, Axes: true, XUnit: "s", YUnit: "s");
+        double yMax = max * 1.25;
+        return new CurveFrame(start, max, end, min, xMax, yMax, Axes: true, XUnit: "s", YUnit: "s");
     }
 
     // The plain-language reading of the envelope the curve eases, the Playground
-    // Segmentation page's sentence.
-    private string CutCurveSentence()
+    // Segmentation page's sentence. Its words live in the module's .resw like
+    // every other string of the page; a missing entry falls back to the card's
+    // static description.
+    private string? CutCurveSentence()
     {
+        string? format = Loc.GetFromOptional("Deckle.Transcription", "WhisperCutCurveSentence_Format");
+        if (format is null) return null;
         double start = SegHangoverRampStartMs / 1000.0;
         double end = Math.Max(start, SegHangoverRampEndMs / 1000.0);
-        return $"Waits {SegHangoverMaxMs / 1000.0:F1} s of silence for utterances up to {start:F0} s, " +
-               $"then tightens to {SegHangoverMinMs / 1000.0:F1} s by {end:F0} s.";
+        return string.Format(System.Globalization.CultureInfo.CurrentCulture, format,
+            SegHangoverMaxMs / 1000.0, start, SegHangoverMinMs / 1000.0, end);
     }
 
     // Decoding — four flat cards under the page's "Decoding" section: beam
@@ -306,12 +348,14 @@ public partial class WhisperViewModel
                 : null),
     ];
 
-    // Confidence — three flat cards under the page's "Confidence" section. The
-    // Min/Max live in MagnitudeArgs, where a code-built control sets them without
-    // the WinUI XAML parser ever seeing a Minimum above a default. Bounds
-    // verbatim: Entropy 1.5..3.5; Logprob -1.5..-0.4; NoSpeech 0.05..0.80.
-    // Defaults read the ConfidenceSettings POCO initializer. Fields alone, as
-    // in the Decoding manifest above.
+    // Confidence — two flat cards under the page's "Confidence" section, the
+    // two triggers of a retry. The no-speech cut-off moved to the Streaming
+    // page's silence guards (SilenceGuardSettings, 2026-11-07). The Min/Max
+    // live in MagnitudeArgs, where a code-built control sets them without the
+    // WinUI XAML parser ever seeing a Minimum above a default. Bounds verbatim:
+    // Entropy 1.5..3.5; Logprob -1.5..-0.4. Defaults read the
+    // ConfidenceSettings POCO initializer. Fields alone, as in the Decoding
+    // manifest above.
     public IReadOnlyList<SettingDescriptor> ConfidenceSettingsManifest =>
     [
         Setting.Magnitude("WhisperEntropyCard",
@@ -324,17 +368,14 @@ public partial class WhisperViewModel
             value => LogprobThreshold = value,
             new MagnitudeArgs(-1.5, -0.4, Slider: false),
             defaultValue: () => new ConfidenceSettings().LogprobThreshold),
-        Setting.Magnitude("WhisperNoSpeechCard",
-            () => NoSpeechThreshold,
-            value => NoSpeechThreshold = value,
-            new MagnitudeArgs(0.05, 0.80, Slider: false),
-            defaultValue: () => new ConfidenceSettings().NoSpeechThreshold),
     ];
 
     // Output filters — three flat cards under the page's "Output filters"
-    // section, after Decoding and Confidence: what the model's text loses before
-    // it is pasted. Not decoding, so not under that title; still the module's
-    // own, so still on the page (2026-10-14). SuppressRegex is a one-line
+    // section, after Decoding and Confidence. Despite the title they remove
+    // nothing after the fact: whisper.cpp applies all three to the decoder's
+    // tokens, forbidding some before they are written (upstream documentation,
+    // not checked in the shipped v1.9.1 source; their descriptions say so since
+    // the 2026-11-07 review). SuppressRegex is a one-line
     // free-text field; its placeholder reuses the WhisperSuppressRegexBox
     // .PlaceholderText entry. Defaults read the OutputFilterSettings POCO
     // initializer.
@@ -356,11 +397,13 @@ public partial class WhisperViewModel
     ];
 
     // Context — two flat cards under the page's "Context" section, last:
-    // whether each segment primes the next and how much text a segment may
-    // produce. UseContext is a Toggle; MaxTokens is a field-only magnitude over
-    // the -1..448 range (the VM's OnMaxTokensChanged NaN-guard is the same guard
-    // the composer applies, so a cleared field never persists). Defaults read
-    // the ContextSettings POCO initializer.
+    // whether each segment primes the next and how many tokens of the previous
+    // text prime it (whisper.cpp's n_max_text_ctx, WhisperParamsMapper). UseContext
+    // is a Toggle; MaxTokens is a field-only magnitude over the -1..448 range
+    // (the VM's OnMaxTokensChanged NaN-guard is the same guard the composer
+    // applies, so a cleared field never persists), whose -1 sentinel, "leave
+    // whisper.cpp's default", the field shows as Auto. Defaults read the
+    // ContextSettings POCO initializer.
     public IReadOnlyList<SettingDescriptor> ContextSettingsManifest =>
     [
         Setting.Toggle("WhisperUseContextCard",
@@ -370,7 +413,7 @@ public partial class WhisperViewModel
         Setting.Magnitude("WhisperMaxTokensCard",
             () => MaxTokens,
             value => MaxTokens = value,
-            new MagnitudeArgs(-1, 448, Slider: false, Integer: true),
+            new MagnitudeArgs(-1, 448, Slider: false, Integer: true, Auto: -1),
             defaultValue: () => new ContextSettings().MaxTokens),
     ];
 }

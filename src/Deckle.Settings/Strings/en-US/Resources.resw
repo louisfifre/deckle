@@ -261,7 +261,7 @@
   <!-- ─── Microphone errors ──────────────────────────────────────────
        UserFeedback pairs raised by TranscriptionEngine.LocalizeMicError when
        MicrophoneCapture.Probe / Record returns a MicErrorKind. The
-       Unavailable body interpolates the raw MMSYSERR code as {0}
+       Unavailable body interpolates the raw error code as {0} (a Windows HRESULT in hex, or a PortAudio error in decimal)
        for diagnostic clarity. -->
 
   <!-- ─── HUD ────────────────────────────────────────────────────────
@@ -385,23 +385,44 @@
   <data name="GeneralHotkeyRecordCard.Header" xml:space="preserve">
     <value>Start or stop dictation</value>
   </data>
+  <data name="GeneralHotkeyRecordCard.Description" xml:space="preserve">
+    <value>Press once to start recording, again to stop and transcribe.</value>
+  </data>
   <data name="GeneralHotkeyPrecisionScrollCard.Header" xml:space="preserve">
     <value>Turn Precision scrolling on or off</value>
+  </data>
+  <data name="GeneralHotkeyPrecisionScrollCard.Description" xml:space="preserve">
+    <value>Smooth, touchpad-like scrolling from the mouse wheel. Same switch as in the tray menu.</value>
   </data>
   <data name="GeneralHotkeyTrackpadCard.Header" xml:space="preserve">
     <value>Turn Trackpad on or off</value>
   </data>
+  <data name="GeneralHotkeyTrackpadCard.Description" xml:space="preserve">
+    <value>Three-finger drag on the precision touchpad. Same switch as in the tray menu.</value>
+  </data>
   <data name="GeneralHotkeyTaskbarCoverCard.Header" xml:space="preserve">
     <value>Turn Taskbar cover on or off</value>
+  </data>
+  <data name="GeneralHotkeyTaskbarCoverCard.Description" xml:space="preserve">
+    <value>Hides the taskbar behind a black band until the mouse comes near. Same switch as in the tray menu.</value>
   </data>
   <data name="GeneralHotkeyAutocorrectCard.Header" xml:space="preserve">
     <value>Turn Autocorrect on or off</value>
   </data>
+  <data name="GeneralHotkeyAutocorrectCard.Description" xml:space="preserve">
+    <value>Corrects what you type, as you type. Same switch as in the tray menu.</value>
+  </data>
   <data name="GeneralHotkeyRewriteCard.Header" xml:space="preserve">
-    <value>Turn Rewrite on or off</value>
+    <value>Turn Rewriting on or off</value>
+  </data>
+  <data name="GeneralHotkeyRewriteCard.Description" xml:space="preserve">
+    <value>Turns the rewriting of your dictations on or off. Same switch as in the tray menu.</value>
   </data>
   <data name="GeneralHotkeyAmbientLightCard.Header" xml:space="preserve">
     <value>Turn Ambient Light on or off</value>
+  </data>
+  <data name="GeneralHotkeyAmbientLightCard.Description" xml:space="preserve">
+    <value>Your Hue lights follow what&apos;s on screen. Same switch as in the tray menu.</value>
   </data>
   <!-- Advisory under a hotkey card whose chord another action already holds.
        {0} is that action's card header. -->
@@ -454,6 +475,12 @@
   <data name="GeneralPageUpdatesSection.Title" xml:space="preserve">
     <value>Updates</value>
   </data>
+  <data name="GeneralPerformanceModeCard.Header" xml:space="preserve">
+    <value>Performance mode</value>
+  </data>
+  <data name="GeneralPerformanceModeCard.Description" xml:space="preserve">
+    <value>For low-power PCs. Deckle does its background work at a lower rate, such as capturing the screen for Ambient lighting less often, so the lights follow the screen a little less closely.</value>
+  </data>
   <data name="GeneralUpdateAutoCheckCard.Header" xml:space="preserve">
     <value>Check for updates automatically</value>
   </data>
@@ -473,7 +500,7 @@
        Loc.Get, so mirrored in Deckle.App's root map). The move starts from
        the data folder fold's "Choose a folder". -->
   <data name="Settings_MoveDataDialog_Title" xml:space="preserve">
-    <value>Move app data?</value>
+    <value>Move the data folder?</value>
   </data>
   <data name="Settings_MoveDataDialog_Content_Format" xml:space="preserve">
     <value>Deckle copies {0} of data to {1}, then restarts. The old folder is removed afterwards.</value>
@@ -482,7 +509,7 @@
     <value>Move and restart</value>
   </data>
   <data name="Settings_MoveDataSameTarget" xml:space="preserve">
-    <value>The app data is already in this folder.</value>
+    <value>The data folder is already there.</value>
   </data>
   <data name="Settings_MoveDataInvalidTarget" xml:space="preserve">
     <value>Pick an empty folder outside the current data folder.</value>
@@ -533,7 +560,7 @@
     <value>Setup wizard</value>
   </data>
   <data name="GeneralRerunSetupCard.Description" xml:space="preserve">
-    <value>Swap the speech model or replace the native runtime.</value>
+    <value>Change the installed modules, swap the speech model or replace the speech engine.</value>
   </data>
   <data name="GeneralRerunSetupButton.Content" xml:space="preserve">
     <value>Run setup…</value>
@@ -563,7 +590,7 @@
     <value>General</value>
   </data>
   <data name="GeneralPageHeader.Description" xml:space="preserve">
-    <value>Theme, startup, updates, backups and application data.</value>
+    <value>Theme, startup, performance, updates, backups, application data and developer tools.</value>
   </data>
   <!-- ─── RecordingPage ───────────────────────────────────────────────
        Page extracted from GeneralPage in slice S3. Owns microphone
@@ -584,6 +611,35 @@
   <data name="GeneralShowPlaygroundCard.Description" xml:space="preserve">
     <value>Adds the Playground, a test bench for Deckle's own features, to the tray menu and to the window title bars.</value>
   </data>
+  <data name="GeneralDeveloperModeCard.Header" xml:space="preserve">
+    <value>Developer mode</value>
+  </data>
+  <data name="GeneralDeveloperModeCard.Description" xml:space="preserve">
+    <value>Shows tools for testing and reviewing Deckle, such as saving an image of every window.</value>
+  </data>
+  <data name="GeneralCaptureInterfaceCard.Header" xml:space="preserve">
+    <value>Capture the interface</value>
+  </data>
+  <data name="GeneralCaptureInterfaceCard.Description" xml:space="preserve">
+    <value>Saves an image of each open Deckle window and of every settings page, with an index of what each image shows. This window goes through each page while it works.</value>
+  </data>
+  <data name="GeneralCaptureInterfaceButton.Content" xml:space="preserve">
+    <value>Capture</value>
+  </data>
+  <data name="GeneralCaptureInterfaceOpenFolderButton.Content" xml:space="preserve">
+    <value>Open folder</value>
+  </data>
+  <data name="GeneralCaptureInterface_Done_Format" xml:space="preserve">
+    <value>Saved {0} images.</value>
+    <comment>{0} = number of PNG files written.</comment>
+  </data>
+  <data name="GeneralCaptureInterface_Partial_Format" xml:space="preserve">
+    <value>Saved {0} images. Couldn't capture {1} windows or pages, which the log names with the reason.</value>
+    <comment>{0} = images written; {1} = windows or pages that failed.</comment>
+  </data>
+  <data name="GeneralCaptureInterface_Failed" xml:space="preserve">
+    <value>Couldn't capture the interface. The log says why.</value>
+  </data>
 
   <!-- ─── Settings — code-behind dialogs ─────────────────────────────
        ContentDialogs raised programmatically by Settings pages and
@@ -595,7 +651,7 @@
     <value>Restore settings?</value>
   </data>
   <data name="Settings_RestoreDialog_Content_Format" xml:space="preserve">
-    <value>This will overwrite your current settings with the snapshot from {0}. Your current settings will not be saved unless you back them up first.</value>
+    <value>This will overwrite your current settings with the backup from {0}. Your current settings will not be saved unless you back them up first.</value>
   </data>
   <data name="Settings_RestoreDialog_PrimaryButton" xml:space="preserve">
     <value>Restore</value>
@@ -614,6 +670,22 @@
   <!-- ─── LogWindow ──────────────────────────────────────────────────
        Title bar, search, level selector, command bar, and the floating
        copy badge that flips between Copy / Copy selection / Copied. -->
+
+  <!-- ─── Tuning controls (Controls/TuningCard, Controls/TunableRow) ──
+       x:Uid in the controls' own XAML. TunableRow's reset is an icon
+       alone, so its name repeats its tooltip for Narrator. -->
+  <data name="TuningCardResetButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Reset this section to its defaults</value>
+  </data>
+  <data name="TuningCardResetLabel.Text" xml:space="preserve">
+    <value>Reset section</value>
+  </data>
+  <data name="TunableRowResetButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Reset to default</value>
+  </data>
+  <data name="TunableRowResetButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Reset to default</value>
+  </data>
 
   <!-- ─── Window titles (set via AppWindow.Title in code) ────────────
        The XAML Title="..." attribute is overridden in code-behind

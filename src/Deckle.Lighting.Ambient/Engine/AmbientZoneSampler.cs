@@ -18,6 +18,22 @@ internal static class AmbientZoneSampler
         return Math.Clamp(raw, 1, axisDim);
     }
 
+    // The bands SampleZone averages, as shares of the frame, for a drawing of
+    // them: TopBottom is the share of the height the top and bottom bands
+    // cover, LeftRight the share of the width the left and right bands cover.
+    // Each is a whole number of cells, counted by ResolveBandCells on its own
+    // axis the way the push loop counts them, so the preview draws the band
+    // the lights are fed from rather than the raw setting. (0, 0) without a
+    // grid.
+    public static (double TopBottom, double LeftRight) ResolveBandShares(
+        BorderThicknessMode mode, double depthShare, int cellsPerEdge, int cols, int rows)
+    {
+        if (cols <= 0 || rows <= 0) return (0, 0);
+        int bandRows = ResolveBandCells(mode, depthShare, cellsPerEdge, rows);
+        int bandCols = ResolveBandCells(mode, depthShare, cellsPerEdge, cols);
+        return ((double)bandRows / rows, (double)bandCols / cols);
+    }
+
     // Mean of the zone's band cells in linear light, unrounded. Exactly
     // (0, 0, 0) only when every cell of the band is black.
     public static (float R, float G, float B) SampleZone(SampledFrame sample, LightZone zone, int bandCells)

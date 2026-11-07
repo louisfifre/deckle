@@ -4,22 +4,34 @@ using Deckle.Catalog;
 using Deckle.Shell;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Audio;
 
 // ── VoiceLevelMeter ───────────────────────────────────────────────────────────
 //
-// The instrument beside the Voice level field on the Recording page: a live
+// The instrument inside the Voice level card on the Recording page: a live
 // meter of the microphone on a fixed dB track, with the voice level (the voice
 // detector's exit) marked, and the entry level above it when the detector's
 // entry margin is positive (with the default 0 they coincide), so the user sets the
-// level by eye against their own voice and room. It shows and never writes:
-// nothing is recorded, nothing persists, and Listen is page state, not a
-// setting.
+// level by eye against their own voice and room. The meter shows and never
+// writes: nothing is recorded, and Listen is page state, not a setting.
 //
-// The fill takes the accent while the meter's own VoiceDetector says voiced,
-// fed the same RMS sequence the segmenter would be fed, so the colour is the
-// exact decision a dictation would take. The marks follow the field as it is
+// Under the track, a slider on the meter's own scale writes the voice level,
+// the same value as the field in the card's header row (2026-11-07 review,
+// change 4): the thumb is the mark, so dragging it shows what passes over the
+// level. While the thumb is dragged the marks and the meter's detector follow
+// it; the value is written once, at the release (GestureHold, the composer's
+// gesture rule), and a keyboard step writes at once.
+//
+// The bar follows each device packet (CaptureLevel, about 10 ms), with a fast
+// rise and a slow fall (VoiceLevelMeterScale.Ballistic), so it moves with the
+// voice as it is spoken. The fill takes the accent while the meter's own
+// VoiceDetector says voiced, fed the same 50 ms RMS sequence the segmenter
+// would be fed, so the colour is the exact decision a dictation would take;
+// the peak tick and the Loudest readout read those same 50 ms values, the
+// quantity the voice level is compared with. The Signal readout says what
+// Windows granted: the raw signal, or its default processing. The marks follow the field as it is
 // edited (the ViewModel's VoiceLevelDbfs); the capture is not restarted for it.
 // A change of microphone while listening does restart it, on the new device.
 //
@@ -27,17 +39,21 @@ namespace Deckle.Audio;
 // ListenTimeout, when the window is hidden or minimized, when the page is left,
 // and when the page's microphone check or listening test needs the device.
 //
-// Threading. The capture thread (MicrophoneLevelFeed) delivers each frame's RMS
-// to OnLevel, which feeds the detector and the smoothing under _levelLock; the
-// UI thread replaces the detector under the same lock when the level changes.
-// A DispatcherTimer at the capture's own 50 ms cadence reads the latest values
-// under the lock and paints; it runs only while listening. A failure arrives on
-// the capture thread and is marshalled to the UI thread, where a run number
-// drops one that belongs to a run already stopped.
+// Threading. The capture thread (MicrophoneLevelFeed) delivers each packet's
+// level to OnPulse (the bar) and each 50 ms frame's RMS to OnLevel (the
+// detector and the peak), both under _levelLock; the UI thread replaces the
+// detector under the same lock when the level changes. The paint runs on
+// CompositionTarget.Rendering, once per frame the compositor draws, only while
+// listening: it reads the latest values under the lock, so the bar is at most
+// one display frame behind the packet. The readouts' text changes at
+// ReadoutInterval, slow enough to be read. A failure, and the source once the
+// device is open, arrive on the capture thread and are marshalled to the UI
+// thread, where a run number drops what belongs to a run already stopped.
 public sealed partial class VoiceLevelMeter : UserControl
 {
-    // The capture's own cadence: one paint per frame.
-    private static readonly TimeSpan RefreshInterval = TimeSpan.FromMilliseconds(50);
+    // How often the readouts' figures change: a number rewritten at the display
+    // rate cannot be read.
+    private const double ReadoutInterval = 0.1;
 
     // A meter is looked at, not left on: past this, Listen turns itself off and
     // says so, so a microphone opened to set a level does not stay open for
@@ -48,7 +64,8 @@ public sealed partial class VoiceLevelMeter : UserControl
     // Space between a mark and its caption.
     private const double CaptionGap = 4;
 
-    private readonly DispatcherTimer _timer = new() { Interval = RefreshInterval };
+    private bool _painting;
+    private double _readoutsAt = double.NegativeInfinity;
     private readonly DispatcherTimer _listenTimer = new() { Interval = ListenTimeout };
     private readonly MicrophoneLevelFeed _feed;
 
@@ -65,7 +82,7 @@ public sealed partial class VoiceLevelMeter : UserControl
     // Shared with the capture thread, guarded by _levelLock.
     private readonly object _levelLock = new();
     private VoiceDetector _detector = new(new CaptureSettings().VoiceLevelDbfs);
-    private double? _smoothedDbfs;
+    private double? _barDbfs;
     private bool _voiced;
     private double _framePeakDbfs = double.NegativeInfinity;
 
@@ -79,6 +96,11 @@ public sealed partial class VoiceLevelMeter : UserControl
     private double _peakHeldSince;
     private double _canvasWidth;
 
+    // The slider's gesture and the guard that keeps a programmatic Value set
+    // (the model moving it, or the coercion of a bound change) from writing.
+    private readonly GestureHold _sliderHold = new();
+    private bool _syncingSlider;
+
     public VoiceLevelMeter()
     {
         InitializeComponent();
@@ -87,8 +109,9 @@ public sealed partial class VoiceLevelMeter : UserControl
             createCapture: () => new MicrophoneCapture(),
             host: () => _nextHost!,
             onLevel: OnLevel,
-            onFailed: OnFeedFailed);
-        _timer.Tick += (_, _) => Refresh();
+            onFailed: OnFeedFailed,
+            onPulse: OnPulse,
+            onSource: OnFeedSource);
         _listenTimer.Tick += (_, _) => OnListenTimedOut();
         Loaded += (_, _) => WatchHostVisibility();
         Unloaded += (_, _) =>
@@ -99,7 +122,86 @@ public sealed partial class VoiceLevelMeter : UserControl
 
         ScaleMinText.Text = FormatDbfs(VoiceLevelMeterScale.MinDbfs);
         ScaleMaxText.Text = FormatDbfs(VoiceLevelMeterScale.MaxDbfs);
+        ConfigureSlider();
+        ApplyThumbInset();
         RebuildDetector();
+    }
+
+    // ── Slider ────────────────────────────────────────────────────────────────
+
+    private void ConfigureSlider()
+    {
+        _syncingSlider = true;
+        try
+        {
+            LevelSlider.Minimum = VoiceLevelMeterScale.MinDbfs;
+            LevelSlider.Maximum = VoiceLevelMeterScale.MaxDbfs;
+            LevelSlider.StepFrequency = VoiceLevelMeterScale.SliderStepDb;
+            LevelSlider.SmallChange = VoiceLevelMeterScale.SliderStepDb;
+            LevelSlider.LargeChange = VoiceLevelMeterScale.SliderStepDb * 5;
+        }
+        finally { _syncingSlider = false; }
+
+        // The Thumb takes the press and captures the pointer, so the slider sees
+        // these only with handledEventsToo. Release, capture loss and cancel all
+        // end the gesture, so the hold cannot stay armed once the pointer is gone.
+        LevelSlider.AddHandler(PointerPressedEvent,
+            new Microsoft.UI.Xaml.Input.PointerEventHandler((_, _) => _sliderHold.Begin()), handledEventsToo: true);
+        var endGesture = new Microsoft.UI.Xaml.Input.PointerEventHandler((_, _) =>
+        {
+            if (_sliderHold.End() is double held) WriteVoiceLevel(held);
+        });
+        LevelSlider.AddHandler(PointerReleasedEvent, endGesture, handledEventsToo: true);
+        LevelSlider.AddHandler(PointerCaptureLostEvent, endGesture, handledEventsToo: true);
+        LevelSlider.AddHandler(PointerCanceledEvent, endGesture, handledEventsToo: true);
+    }
+
+    // The thumb's centre travels from half a thumb inside the slider's left edge
+    // to half a thumb inside its right edge; the scale row, the track and the
+    // captions take the same inset, so a value sits at one x on all of them.
+    // The width is the theme's own (SliderHorizontalThumbWidth), read rather
+    // than copied; 18, its WinUI value, only if the resource is missing.
+    private void ApplyThumbInset()
+    {
+        double thumb = 18.0;
+        try
+        {
+            // The indexer searches the merged XamlControlsResources, where the
+            // theme's slider metrics live; a missing key throws.
+            if (Application.Current.Resources["SliderHorizontalThumbWidth"] is double width) thumb = width;
+        }
+        catch (Exception) { }
+        var inset = new Thickness(thumb / 2, 0, thumb / 2, 0);
+        ScaleRow.Margin = inset;
+        MeterCanvas.Margin = inset;
+        CaptionCanvas.Margin = inset;
+    }
+
+    private void LevelSlider_ValueChanged(object sender, Microsoft.UI.Xaml.Controls.Primitives.RangeBaseValueChangedEventArgs e)
+    {
+        if (_syncingSlider) return;
+        // The marks and the meter's own detector follow the thumb at once; the
+        // model waits for the gesture's end.
+        ShowLevel(e.NewValue);
+        if (_sliderHold.Offer(e.NewValue)) WriteVoiceLevel(e.NewValue);
+    }
+
+    private void WriteVoiceLevel(double dbfs)
+    {
+        if (_viewModel is null || _viewModel.VoiceLevelDbfs == dbfs) return;
+        _viewModel.VoiceLevelDbfs = dbfs;
+    }
+
+    // The thumb follows the model, clamped to the scale by the slider itself;
+    // the guard keeps the coerced value from writing back.
+    private void SyncSlider(double dbfs)
+    {
+        _syncingSlider = true;
+        try
+        {
+            if (LevelSlider.Value != dbfs) LevelSlider.Value = dbfs;
+        }
+        finally { _syncingSlider = false; }
     }
 
     // The page's ViewModel: the voice level the marks follow and the microphone
@@ -127,7 +229,7 @@ public sealed partial class VoiceLevelMeter : UserControl
     {
         _feed.Stop();
         Interlocked.Increment(ref _run);
-        _timer.Stop();
+        StopPainting();
         _listenTimer.Stop();
         ListenToggle.IsChecked = false;
         Block.IsLive = false;
@@ -146,14 +248,47 @@ public sealed partial class VoiceLevelMeter : UserControl
         ClearLive();
 
         var capture = CaptureSettingsService.Instance.Current;
-        int device = _viewModel?.AudioInputDeviceId ?? capture.AudioInputDeviceId;
+        string device = _viewModel?.AudioInputEndpointId ?? capture.AudioInputEndpointId;
         _nextHost = new VoiceLevelMeterHost(device, capture.VoiceLevelDbfs);
         _feed.Start();
 
         ListenToggle.IsChecked = true;
         Block.IsLive = true;
-        _timer.Start();
+        StartPainting();
         _listenTimer.Start();
+    }
+
+    private void StartPainting()
+    {
+        if (_painting) return;
+        _painting = true;
+        CompositionTarget.Rendering += OnRendering;
+    }
+
+    private void StopPainting()
+    {
+        if (!_painting) return;
+        _painting = false;
+        CompositionTarget.Rendering -= OnRendering;
+    }
+
+    private void OnRendering(object? sender, object e) => Refresh();
+
+    // Capture thread, under the feed's lock, once the device is open.
+    private void OnFeedSource(CaptureSource source)
+    {
+        int run = Volatile.Read(ref _run);
+        _dispatcher.TryEnqueueObserved(
+            operation: "ui-update", caller: "voice-level-meter",
+            callback: () =>
+            {
+                if (run != _run) return;
+                SignalReadout.Value = Loc.Get(source.Mode == CaptureMode.Raw
+                    ? "RecordingVoiceMeter_Signal_Raw"
+                    : "RecordingVoiceMeter_Signal_Default");
+                SignalReadout.Status = source.Mode == CaptureMode.Raw ? ReadoutStatus.Neutral : ReadoutStatus.Caution;
+            },
+            rejectSource: "SETTINGS", rejectWhat: "voice meter source");
     }
 
     // Capture thread, under the feed's lock: the run number read here is the
@@ -227,7 +362,7 @@ public sealed partial class VoiceLevelMeter : UserControl
             case nameof(RecordingViewModel.VoiceLevelDbfs):
                 RebuildDetector();
                 break;
-            case nameof(RecordingViewModel.AudioInputDeviceId) when ListenToggle.IsChecked == true:
+            case nameof(RecordingViewModel.AudioInputEndpointId) when ListenToggle.IsChecked == true:
                 Stop();
                 StartListening();
                 break;
@@ -236,27 +371,46 @@ public sealed partial class VoiceLevelMeter : UserControl
 
     // ── Capture thread ────────────────────────────────────────────────────────
 
+    // Each 50 ms frame: the decision and the peak, on the segmenter's quantity.
     private void OnLevel(float rms)
     {
         double dbfs = VoiceLevelMeterScale.RmsToDbfs(rms);
         lock (_levelLock)
         {
             _voiced = _detector.Push(rms);
-            _smoothedDbfs = VoiceLevelMeterScale.Smooth(_smoothedDbfs, dbfs);
             if (dbfs > _framePeakDbfs) _framePeakDbfs = dbfs;
+        }
+    }
+
+    // Each device packet: the bar.
+    private void OnPulse(CaptureLevel level)
+    {
+        double dbfs = VoiceLevelMeterScale.RmsToDbfs(level.Rms);
+        lock (_levelLock)
+        {
+            _barDbfs = VoiceLevelMeterScale.Ballistic(_barDbfs, dbfs, level.DurationMs);
         }
     }
 
     // ── Detector and marks ────────────────────────────────────────────────────
 
-    // A detector on the current voice level, its two levels for the marks. The
-    // new detector starts silent, like a dictation's; the next frame decides.
-    // A cleared field (NaN) keeps the marks where they were.
+    // A detector on the current voice level, its two levels for the marks, and
+    // the thumb on the same value. The new detector starts silent, like a
+    // dictation's; the next frame decides. A cleared field (NaN) keeps the
+    // marks where they were.
     private void RebuildDetector()
     {
         double level = _viewModel?.VoiceLevelDbfs ?? CaptureSettingsService.Instance.Current.VoiceLevelDbfs;
         if (double.IsNaN(level)) return;
 
+        SyncSlider(level);
+        ShowLevel(level);
+    }
+
+    // The marks and the meter's detector on a level, the model's or the one
+    // under a thumb being dragged.
+    private void ShowLevel(double level)
+    {
         var detector = new VoiceDetector(level);
         lock (_levelLock)
         {
@@ -328,19 +482,19 @@ public sealed partial class VoiceLevelMeter : UserControl
 
     private void Refresh()
     {
-        double? smoothed;
+        double? bar;
         bool voiced;
         double framePeak;
         lock (_levelLock)
         {
-            smoothed = _smoothedDbfs;
+            bar = _barDbfs;
             voiced = _voiced;
             framePeak = _framePeakDbfs;
             _framePeakDbfs = double.NegativeInfinity;
         }
 
         // Nothing yet from the microphone: the meter stays empty.
-        if (smoothed is not { } level) return;
+        if (bar is not { } level) return;
 
         double now = Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
         if (!double.IsNegativeInfinity(framePeak))
@@ -353,6 +507,8 @@ public sealed partial class VoiceLevelMeter : UserControl
 
         PaintBar(level, voiced);
 
+        if (now - _readoutsAt < ReadoutInterval) return;
+        _readoutsAt = now;
         LevelReadout.Value = FormatDbfs(level);
         VoiceReadout.Value = Loc.Get(voiced ? "RecordingVoiceMeter_Voice" : "RecordingVoiceMeter_Silence");
         VoiceReadout.Status = voiced ? ReadoutStatus.Success : ReadoutStatus.Neutral;
@@ -386,7 +542,7 @@ public sealed partial class VoiceLevelMeter : UserControl
     {
         lock (_levelLock)
         {
-            _smoothedDbfs = null;
+            _barDbfs = null;
             _voiced = false;
             _framePeakDbfs = double.NegativeInfinity;
             _detector.Reset();
@@ -394,6 +550,7 @@ public sealed partial class VoiceLevelMeter : UserControl
         _peakDbfs = double.NegativeInfinity;
         _peakHeldSince = 0;
         _recent.Clear();
+        _readoutsAt = double.NegativeInfinity;
 
         VoicedFillRect.Width = 0;
         SilentFillRect.Width = 0;
@@ -405,6 +562,8 @@ public sealed partial class VoiceLevelMeter : UserControl
         VoiceReadout.Value = null;
         VoiceReadout.Status = ReadoutStatus.None;
         LoudestReadout.Value = null;
+        SignalReadout.Value = null;
+        SignalReadout.Status = ReadoutStatus.None;
     }
 
     // Rounded to the dB, as integers so a level just under zero never reads -0.

@@ -16,7 +16,16 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
     private readonly HueEntertainmentArea _area;
     private readonly IHueEntertainmentTransport _transport;
     private readonly Dictionary<string, List<HueEntertainmentChannel>> _channelsByLightId;
+    private readonly HueLightStateRestorer _restorer;
 
+    // Each area light's state as read before the pre-prime touched it,
+    // written back once streaming ends. Null when nothing was read.
+    private IReadOnlyDictionary<string, HueLightState>? _statesBeforeStreaming;
+
+    // The same snapshot, kept after the restore: when this start fails and the
+    // factory falls back to REST, the REST output inherits it instead of
+    // reading lights this output has already touched.
+    internal IReadOnlyDictionary<string, HueLightState>? StatesBeforeStreaming { get; private set; }
     private bool _connected;
     private byte _sequence = 1;
     private long _sessionStartedAt;
@@ -40,12 +49,18 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
     internal HueEntertainmentLightOutput(
         IHueEntertainmentBridgeClient client,
         HueEntertainmentArea area,
-        IHueEntertainmentTransport transport)
+        IHueEntertainmentTransport transport,
+        TimeSpan? restoreWatchWindow = null,
+        TimeSpan? restorePollInterval = null)
     {
         _client = client;
         _area = area;
         _transport = transport;
         _channelsByLightId = BuildChannelMap(area);
+        _restorer = new HueLightStateRestorer(
+            client,
+            restoreWatchWindow ?? HueLightStateRestorer.DefaultWatchWindow,
+            restorePollInterval ?? HueLightStateRestorer.DefaultPollInterval);
     }
 
     public bool IsConnected => _connected;
@@ -61,10 +76,23 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
         ct.ThrowIfCancellationRequested();
 
         long connectStartedAt = Stopwatch.GetTimestamp();
-        string stage = "pre_prime";
+        string stage = "capture_states";
         bool streamingStarted = false;
         try
         {
+            // Why an explicit restore, when the bridge has its own. With the
+            // Hue app's default "Last on-state", the bridge returns each light
+            // to the state it had when streaming started. Here that state is
+            // the pre-prime's near-black, written just before action=start, so
+            // the bridge's own return left the room dark (2026-11-07). With
+            // "Pause on the last colour" it returns nothing at all. Reading each
+            // light before the pre-prime and writing it back after the stop
+            // covers both settings. Dropping the pre-prime instead would bring
+            // back Hue's power-on scene during action=start.
+            _statesBeforeStreaming = await _restorer.CaptureAsync(_area.Id, BuildDistinctLightIds(), ct).ConfigureAwait(false);
+            StatesBeforeStreaming = _statesBeforeStreaming;
+
+            stage = "pre_prime";
             await PrePrimeLightsAsync(ct).ConfigureAwait(false);
 
             DeckleLightingSource.Log.EntertainmentStreamingStarting();
@@ -102,8 +130,18 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
             _transport.Dispose();
             if (streamingStarted)
                 await StopStreamingBestEffortAsync().ConfigureAwait(false);
+            // The pre-prime may already have dimmed the lights to almost
+            // nothing; a start that fails or is cancelled hands them back too.
+            await RestoreStatesBestEffortAsync().ConfigureAwait(false);
             throw;
         }
+    }
+
+    private async Task RestoreStatesBestEffortAsync()
+    {
+        var saved = _statesBeforeStreaming;
+        _statesBeforeStreaming = null;
+        await _restorer.RestoreBestEffortAsync(saved).ConfigureAwait(false);
     }
 
     private async Task PrePrimeLightsAsync(CancellationToken ct)
@@ -202,6 +240,12 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
             ElapsedMs(_sessionStartedAt),
             _framesSent,
             _sendFailures);
+
+        // After the stop: while the area streams, the bridge ignores REST
+        // writes to its lights. The engine awaits this disposal before a new
+        // start, so a quick off-on waits out the watch window instead of
+        // racing it.
+        await RestoreStatesBestEffortAsync().ConfigureAwait(false);
     }
 
     private void Send(IReadOnlyList<HueEntertainmentChannelColor> colors)
@@ -287,7 +331,7 @@ internal sealed class HueEntertainmentLightOutput : IMultiLightOutput
     }
 }
 
-internal interface IHueEntertainmentBridgeClient
+internal interface IHueEntertainmentBridgeClient : IHueLightStateClient
 {
     bool IsPaired { get; }
     Task SetEntertainmentStreamingAsync(string entertainmentConfigurationId, bool active, CancellationToken ct = default);

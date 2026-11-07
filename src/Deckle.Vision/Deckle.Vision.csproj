@@ -11,6 +11,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Precompiled by fxc from FrameReduce.hlsl and embedded: no shader
+         compiler is needed at build or run time. -->
+    <EmbeddedResource Include="Shaders\FrameReduce.cso" LogicalName="Deckle.Vision.FrameReduce.cso" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\Deckle.Composition\Deckle.Composition.csproj" />

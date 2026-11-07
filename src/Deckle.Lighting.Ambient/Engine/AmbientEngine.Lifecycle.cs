@@ -36,6 +36,12 @@ public sealed partial class AmbientEngine
         DeckleAmbientSource.Log.PipelineStarting(runId);
         long startRequestedAt = Stopwatch.GetTimestamp();
 
+        // The preview scan holds the display while the engine is off; it
+        // ends here, its duplication released, before the run builds its
+        // own capture. A scan asked for from now on finds the engine
+        // Starting and is skipped (AmbientEngine.PreviewScan.cs).
+        await EndPreviewScanAsync(AmbientPreviewScanEndReasons.EngineStarting).ConfigureAwait(false);
+
         // Wait for the deferred cleanup spun by the previous Stop()
         // before we touch the owned deps. The cleanup task awaits the
         // push loop's exit and disposes capture / sampler / output —
@@ -124,19 +130,14 @@ public sealed partial class AmbientEngine
                 .ConfigureAwait(false);
             _managedGroupId = ambient.HueLastGroupId;
 
-            _capture = new ScreenCaptureService(
-                AmbientCaptureRate.Snap(ambient.CaptureFrameRateHz));
-            _capture.Start(ambient.SelectedMonitorDeviceName);
+            _capture = new ScreenCaptureService(ChooseCaptureRateHz(runId, ambient));
 
-            _sampler = new FrameSampler(
-                _capture.Device!,
-                _capture.ContentSize,
-                _capture.ActiveFormat,
-                _capture.PeakLuminance);
-
-            // Subscribe sampler to the capture pump. FrameArrived fires
-            // on the capture service's worker thread (the DXGI
-            // AcquireNextFrame loop) ; FrameSampler.Process is
+            // Subscribe before Start: the loop starts inside Start, and its
+            // first frame, the whole desktop, is the only one a still screen
+            // delivers. OnFrameArrived builds the sampler if that frame comes
+            // before the EnsureSampler below (AmbientEngine.FirstFrame.cs).
+            // FrameArrived fires on the capture service's worker thread (the
+            // DXGI AcquireNextFrame loop) ; FrameSampler.Process is
             // thread-safe internally (lock + Volatile.Write on
             // _latestSample).
             _capture.FrameArrived += OnFrameArrived;
@@ -156,6 +157,10 @@ public sealed partial class AmbientEngine
             // the sampler in place so the pipeline keeps producing instead of
             // tone-mapping a stale format into dead output.
             _capture.FormatChanged += OnCaptureFormatChanged;
+
+            StartFrameClock(startRequestedAt);
+            _capture.Start(ambient.SelectedMonitorDeviceName);
+            EnsureSampler(_capture);
             ThrowIfStartAbortRequested();
 
             _output = await HueLightOutputFactory
@@ -272,7 +277,7 @@ public sealed partial class AmbientEngine
 
             // Open the capture-active window. From here on, each producer
             // admits Verbose AMBIENT / SCREEN / HUE detail from this activity
-            // scope plus the LogAmbientCaptureActivity toggle ; the start and
+            // scope plus the AmbientVerbosity level; the start and
             // stop milestones do not consult it. Stop()'s cleanup closes it.
             AmbientCaptureGate.SetActive(true);
 
@@ -303,7 +308,9 @@ public sealed partial class AmbientEngine
                 _multiLightActive ? "multi" : "group",
                 _multiLights?.Count ?? 0,
                 _pushRateHz,
-                _sampler.IsHdr ? "on" : "off");
+                _sampler.IsHdr ? "on" : "off",
+                ElapsedMs(startRequestedAt, Stopwatch.GetTimestamp()),
+                FirstFrameMs());
         }
         catch (Exception ex)
         {

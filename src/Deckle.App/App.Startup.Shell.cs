@@ -118,7 +118,8 @@ public partial class App
         // A present module without an engine means speech is not provisioned. A
         // module absent by choice is not a missing setup: the tooltip stays quiet.
         string initialStatus = _engine is not null || !context.TranscriptionPresent
-            ? "Ready" : "Dictation not set up";
+            ? Deckle.Catalog.Loc.Get("Status_Ready")
+            : Deckle.Catalog.Loc.Get("Feedback_SpeechNotSetUp_Title");
         _tray.UpdateStatus(initialStatus, isRecording: false);
 
         // Ambient starts OFF at every boot: the app never starts screen capture
@@ -134,6 +135,11 @@ public partial class App
             }
 
             AmbientSettingsService.Instance.Changed += OnAmbientSettingsChanged;
+
+            // The performance mode lives in the shell's settings and lowers
+            // the capture rate's ceiling; a change there restarts a running
+            // engine, which the start settings' comparison decides.
+            Settings.SettingsService.Instance.Changed += OnAmbientSettingsChanged;
         }
 
         // Tray menus — two native MenuFlyouts, each on an invisible anchor

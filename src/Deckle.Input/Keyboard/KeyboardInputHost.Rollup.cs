@@ -9,7 +9,7 @@ namespace Deckle.Input;
 public sealed partial class KeyboardInputHost
 {
     private static bool IsKeyboardRollupEnabled()
-        => DeckleInputSource.IsAutocorrectDetailEnabled(
+        => DeckleInputSource.IsAutocorrectSummaryEnabled(
             EventLevel.Verbose,
             (EventKeywords)Keywords.Heartbeat);
 

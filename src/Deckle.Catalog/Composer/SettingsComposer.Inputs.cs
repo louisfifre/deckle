@@ -110,12 +110,16 @@ public sealed partial class SettingsComposer
     // a vertical row puts it at the trailing edge instead, in a [content* | reset]
     // grid. extraDirty and extraReset let a kind fold other values into the one
     // wheel (the curve's anchors); a descriptor without a Default still gets the
-    // wheel when it has extras to reset.
+    // wheel when it has extras to reset. resetHost, when given, takes the reset
+    // in place of the grid's trailing column and the content is returned as is:
+    // the axes curve ends its legend's row with it, beside the values it
+    // restores, so the plot keeps the card's full width and even margins.
     private (FrameworkElement Content, Action? UpdateState) WrapWithTrailingReset(
         SettingsCard card, FrameworkElement content, SettingDescriptor s,
         Func<string?>? describeDefault = null,
         Func<bool>? extraDirty = null,
-        Action? extraReset = null)
+        Action? extraReset = null,
+        Panel? resetHost = null)
     {
         if (s.Default is null && extraReset is null) return (content, null);
 
@@ -138,6 +142,19 @@ public sealed partial class SettingsComposer
         // or the element's own binding), so no manual update is needed here.
         reset.Click += (_, _) => Reset();
 
+        string tooltip = ResolveResetTooltip(describeDefault);
+        void Update()
+        {
+            reset.IsEnabled = Dirty();
+            LabelResetButton(reset, tooltip);
+        }
+
+        if (resetHost is not null)
+        {
+            resetHost.Children.Add(reset);
+            return (content, Update);
+        }
+
         // A two-column grid rather than a StackPanel so the content keeps the full
         // width it had as the card's sole content (star column) and the reset hugs
         // the trailing edge — a horizontal StackPanel would instead shrink the
@@ -150,12 +167,7 @@ public sealed partial class SettingsComposer
         grid.Children.Add(content);
         grid.Children.Add(reset);
 
-        string tooltip = ResolveResetTooltip(describeDefault);
-        return (grid, () =>
-        {
-            reset.IsEnabled = Dirty();
-            ToolTipService.SetToolTip(reset, tooltip);
-        });
+        return (grid, Update);
     }
 
     // A module-owned editor for a value with a shape (a curve, an envelope); the

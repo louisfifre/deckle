@@ -64,7 +64,17 @@ public sealed partial class TranscriptionEngine
         // The tick is counted whether or not the detail is admitted (see below).
         Stopwatch? recordSw = null;
         int hbFrames = 0;
-        float lastRmsLinear = 0f;
+
+        // The level fields summarise the 20 frames of the tick rather than
+        // sample the last one, which could fall between two words: the energy
+        // mean (squares summed, then re-rooted, the way RMS values combine)
+        // and the loudest frame. The frame-by-frame curve belongs to the
+        // microphone telemetry dataset, never to the log.
+        double hbSumSquares = 0;
+        float hbMaxRms = 0f;
+        int hbLevelFrames = 0;
+
+        static double ToDbfs(double rms) => rms > 1e-6 ? 20.0 * Math.Log10(rms) : -120.0;
 
         void OnFrame(CaptureFrame f)
         {
@@ -81,7 +91,7 @@ public sealed partial class TranscriptionEngine
                 HotLoops.WhispStreamingHeartbeat.Tick();
             }
 
-            if (!OperationalLogAdmission.IsDetailEnabled(
+            if (!OperationalLogAdmission.IsSummaryEnabled(
                     OperationalLogActivity.Transcription,
                     DeckleWhispSource.Log,
                     EventLevel.Verbose,
@@ -91,16 +101,21 @@ public sealed partial class TranscriptionEngine
             }
 
             recordSw ??= Stopwatch.StartNew();
-            lastRmsLinear = f.Rms;
+            hbSumSquares += (double)f.Rms * f.Rms;
+            if (f.Rms > hbMaxRms) hbMaxRms = f.Rms;
+            hbLevelFrames++;
             if (heartbeat)
             {
                 var snap = session.Snapshot();
-                double rmsDbfs = lastRmsLinear > 1e-6f
-                    ? 20.0 * Math.Log10(lastRmsLinear)
-                    : -120.0;
+                double rmsDbfs = ToDbfs(Math.Sqrt(hbSumSquares / hbLevelFrames));
+                double maxDbfs = ToDbfs(hbMaxRms);
+                hbSumSquares = 0;
+                hbMaxRms = 0f;
+                hbLevelFrames = 0;
                 DeckleWhispSource.Log.StreamingHeartbeat(
                     snap.State,
                     rmsDbfs,
+                    maxDbfs,
                     snap.CurrentUtteranceFrames * 50,
                     snap.RequiredHangoverFrames * 50,
                     session.Backlog,
@@ -187,8 +202,8 @@ public sealed partial class TranscriptionEngine
 
         if (capture.Outcome == CaptureOutcome.MicError)
         {
-            var (title, body) = LocalizeMicError(MicErrorKind.Unavailable, capture.MmsysErr);
-            OpenMicrophoneIncident("capture", capture.MmsysErr);
+            var (title, body) = LocalizeMicError(MicErrorKind.Unavailable, capture.ErrorCode);
+            OpenMicrophoneIncident("capture", capture.ErrorCode);
             EmitUserFeedback(FB_ERROR, title, body, FB_REPLACEMENT);
             FinishTake(TranscriptionOutcome.None, TakeEndReasons.MicrophoneError);
             return null;

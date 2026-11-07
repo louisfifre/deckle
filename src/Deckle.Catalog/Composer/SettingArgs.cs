@@ -19,13 +19,20 @@ public abstract record SettingArgs;
 // so every field ends at the same edge. Slider false keeps the field alone, for a figure
 // that is typed rather than swept. Integer marks a count: the grain never drops
 // below one, so the field shows no decimals. An integer model still travels as a
-// double through the selectors.
+// double through the selectors. Preview, when given, receives every value the
+// controls show, each detent of a drag included, while the model is still
+// written once at the release: a preview beside the card follows the thumb.
+// It shows and never writes, so it must not touch the model. Auto names the one
+// value that means "let the engine decide" (a -1 sentinel): the field and the
+// reset tooltip show the word Auto in its place, never the number.
 public sealed record MagnitudeArgs(
     double Minimum,
     double Maximum,
     string? Unit = null,
     bool Slider = true,
-    bool Integer = false) : SettingArgs;
+    bool Integer = false,
+    Action<double>? Preview = null,
+    double? Auto = null) : SettingArgs;
 
 // ── TextArgs ──────────────────────────────────────────────────────────────────
 //
@@ -130,6 +137,11 @@ public sealed record ModeArgs(
 // tooltip, from the module's .resw like a card. The bounds clamp the field; the
 // value is written at the field's commit, the gesture rule. Default, when given,
 // joins the card's reset: the one wheel restores the curve and its frame.
+//
+// Role, when set, says the anchor IS that coordinate of the frame, in the same
+// unit: the editor's endpoint handle then moves it in the drawing, within the
+// anchor's bounds and on its field's grain, and the composer writes it at the
+// handle's release. None keeps the anchor a field only.
 public sealed record CurveAnchor(
     string LabelKey,
     Func<double> Get,
@@ -137,7 +149,30 @@ public sealed record CurveAnchor(
     double Minimum,
     double Maximum,
     bool Integer = false,
-    Func<double>? Default = null);
+    Func<double>? Default = null,
+    CurveAnchorRole Role = CurveAnchorRole.None);
+
+// The frame coordinate a CurveAnchor stands for (CurveFrame's origin is the
+// unit square's (0,0), its end the (1,1)).
+public enum CurveAnchorRole { None, OriginX, OriginY, EndX, EndY }
+
+// ── PauseStripArgs ────────────────────────────────────────────────────────────
+//
+// The pause strip under a curve: one pause at the scale of a word, for the two
+// durations too short for the curve's axis. MinimumSpeech and Margin are values
+// of their own, edited by the strip's handles and as fields in the legend after
+// the control points, each with its bounds, grain and Default (joining the
+// card's reset) as an anchor carries them. CutAfter is the shortest pause that
+// cuts, read to place the cut; it is moved elsewhere (the curve's end handle).
+// LabelKey resolves the strip's words from the module's strings:
+// "<LabelKey>/Header" (its caption), then "/MinimumSpeech", "/Kept",
+// "/Dropped" and "/Cut" (the words drawn on it); the handles are named by the
+// two anchors' own headers, the captions of their fields.
+public sealed record PauseStripArgs(
+    string LabelKey,
+    CurveAnchor MinimumSpeech,
+    CurveAnchor Margin,
+    Func<double> CutAfter);
 
 // ── CurveArgs ─────────────────────────────────────────────────────────────────
 //
@@ -149,10 +184,12 @@ public sealed record CurveAnchor(
 // sentence the card shows as its description, re-read on every refresh; null
 // keeps the .resw description. Floor is an optional horizontal guide in data y
 // (the Ambient brightness floor). AllowOutside lets a handle's Y leave [0,1] by
-// a quarter, for a curve that overshoots.
+// a quarter, for a curve that overshoots. Pause, on an axes frame, draws the
+// pause strip under the plot (PauseStripArgs); null draws none.
 public sealed record CurveArgs(
     Func<CurveFrame>? Frame = null,
     Func<CurvePoints, string?>? Describe = null,
     Func<double?>? Floor = null,
     bool AllowOutside = false,
-    IReadOnlyList<CurveAnchor>? Anchors = null) : SettingArgs;
+    IReadOnlyList<CurveAnchor>? Anchors = null,
+    PauseStripArgs? Pause = null) : SettingArgs;

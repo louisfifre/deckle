@@ -17,13 +17,14 @@ public sealed partial class TranscriptionEngine
     // ── Microphone error localization ──────────────────────────────────────────
     //
     // Capture stays free of any Loc.Get dependency; the engine localizes. The
-    // raw MMSYSERR code goes verbatim into the Unavailable body so users can
-    // quote it when reporting.
+    // raw error code (an HRESULT) goes into the Unavailable body in hex, the
+    // form Microsoft documents it in, so users can quote and look it up.
     private static (string Title, string Body) LocalizeMicError(MicErrorKind kind, uint err) => kind switch
     {
         MicErrorKind.NotDetected => (Loc.Get("MicError_NotDetected_Title"), Loc.Get("MicError_NotDetected_Body")),
         MicErrorKind.InUse       => (Loc.Get("MicError_InUse_Title"),       Loc.Get("MicError_InUse_Body")),
-        _                        => (Loc.Get("MicError_Unavailable_Title"), Loc.Format("MicError_Unavailable_Body_Format", err)),
+        _                        => (Loc.Get("MicError_Unavailable_Title"),
+                                     Loc.Format("MicError_Unavailable_Body_Format", MicrophoneCapture.FormatErrorCode(err))),
     };
 
 
@@ -180,12 +181,13 @@ public sealed partial class TranscriptionEngine
     {
         ClipboardWriteResult r = _clipboard.TryWriteText(text);
 
-        DeckleWhispSource.Log.ClipboardGlobalAlloc(r.ByteCount, r.Handle);
-
+        // One line per outcome: the copy's figures ride on the line that says
+        // how it ended, so a copy no longer takes three lines (alloc, open,
+        // complete) to tell what one says.
         if (r.Status == ClipboardWriteStatus.AllocFailed)
         {
             DeckleWhispSource.Log.ClipboardAllocFailed();
-            DeckleWhispSource.Log.ClipboardAllocFailedDetail(r.ByteCount);
+            DeckleWhispSource.Log.ClipboardAllocFailedDetail(r.ByteCount, r.Handle);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_ClipboardCopyFailed_Memory_Title"),
                 Loc.Get("Engine_ClipboardCopyFailed_Memory_Body"),
@@ -195,8 +197,7 @@ public sealed partial class TranscriptionEngine
 
         if (r.Status == ClipboardWriteStatus.OpenFailed)
         {
-            DeckleWhispSource.Log.ClipboardOpen(false);
-            DeckleWhispSource.Log.ClipboardOpenFailed();
+            DeckleWhispSource.Log.ClipboardOpenFailed(r.ByteCount);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_ClipboardUnavailable_Title"),
                 Loc.Get("Engine_ClipboardUnavailable_Body"),
@@ -204,11 +205,9 @@ public sealed partial class TranscriptionEngine
             return false;
         }
 
-        DeckleWhispSource.Log.ClipboardOpen(true);
-
         if (r.Status == ClipboardWriteStatus.SetDataFailed)
         {
-            DeckleWhispSource.Log.ClipboardSetDataFailed();
+            DeckleWhispSource.Log.ClipboardSetDataFailed(r.ByteCount);
             EmitUserFeedback(FB_ERROR,
                 Loc.Get("Engine_ClipboardCopyFailed_Refused_Title"),
                 Loc.Get("Engine_ClipboardCopyFailed_Refused_Body"),
@@ -237,7 +236,7 @@ public sealed partial class TranscriptionEngine
         }
 
         DeckleWhispSource.Log.ClipboardCopied();
-        DeckleWhispSource.Log.ClipboardCopyComplete(r.ExpectedChars, r.ByteCount);
+        DeckleWhispSource.Log.ClipboardCopyComplete(r.ExpectedChars, r.ByteCount, r.Handle);
         return true;
     }
 

@@ -34,153 +34,215 @@
                      capture pipeline, not a module that can be turned off. -->
 
                 <!-- The microphone stands first, under no title: it is the base
-                     setting of the page, and a block of one card earns no heading,
-                     the same form as the General page's top block (maintainer,
-                     2026-10-15). Bespoke: runtime waveIn enumeration, not a
-                     composed value, so it has no card reset of its own; the
-                     header's "Reset all" returns it to the system default. -->
-                <controls:SettingsCard x:Name="AudioInputCard"
-                                       x:Uid="GeneralMicrophoneCard"
-                                       Tag="GeneralMicrophoneCard">
-                    <ComboBox x:Name="AudioInputCombo"
-                              MinWidth="240"
-                              SelectionChanged="AudioInputCombo_SelectionChanged" />
-                </controls:SettingsCard>
+                     setting of the page, and a block about the device earns no
+                     heading, the same form as the General page's top block
+                     (maintainer, 2026-10-15). Bespoke: runtime enumeration of
+                     the capture endpoints, not a composed value, so it has no
+                     card reset of its own; the header's "Reset all" returns it
+                     to the system default. -->
+                <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                    <controls:SettingsCard x:Name="AudioInputCard"
+                                           x:Uid="GeneralMicrophoneCard"
+                                           Tag="GeneralMicrophoneCard">
+                        <ComboBox x:Name="AudioInputCombo"
+                                  MinWidth="240"
+                                  SelectionChanged="AudioInputCombo_SelectionChanged" />
+                    </controls:SettingsCard>
+
+                    <!-- A command, not a setting: opens the selected
+                         microphone's page in Windows Settings, where its input
+                         volume is set. Windows applies that volume before any
+                         processing, the raw signal included, so it is where the
+                         gain is set just under clipping. Clickable card with the
+                         external-launch glyph, as Windows Settings links out. -->
+                    <controls:SettingsCard x:Name="MicrophonePropertiesCard"
+                                           x:Uid="RecordingMicrophonePropertiesCard"
+                                           Tag="RecordingMicrophonePropertiesCard"
+                                           IsClickEnabled="True"
+                                           ActionIcon="{ui:FontIcon Glyph={StaticResource Icon.OpenExternal}}"
+                                           Click="MicrophoneProperties_Click" />
+
+                    <!-- Exclusive access, composed: how the device is opened,
+                         so it stands with the device. -->
+                    <StackPanel x:Name="ExclusiveModeHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </StackPanel>
+
+                <!-- ── Voice ───────────────────────────────────────────────── -->
+                <!-- What Deckle hears: the voice level and its meter, one card
+                     (2026-11-07 review, change 4). Its reset is the voice
+                     level's; the meter keeps no value. -->
+                <catalog:SettingsSection x:Name="VoiceSection"
+                                         x:Uid="RecordingPageVoiceSection"
+                                         HasReset="True"
+                                         ResetRequested="ResetVoice_Click">
+                    <!-- One card: the composed voice-level row on top (header,
+                         sentence, field and reset), the compact meter under it
+                         with the slider that writes the same value. A
+                         SettingsCard has no slot under its row, so the frame is
+                         a Border in the card's own theme materials and the
+                         composed card inside it is made frameless by the
+                         code-behind, which also gives the meter the card's
+                         padding (FrameVoiceLevelCard). The alternative, a fold
+                         kept open, would let the instrument be folded away. -->
+                    <Border x:Name="VoiceLevelFrame"
+                            Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                            BorderThickness="1"
+                            CornerRadius="{ThemeResource ControlCornerRadius}">
+                        <StackPanel>
+                            <!-- Voice level, composed: the level the segmenter,
+                                 the low-audio warning and the HUD outline read. -->
+                            <StackPanel x:Name="VoiceLevelHost" />
+
+                            <!-- Its instrument: the live meter with the voice
+                                 level marked, and the slider on its scale. -->
+                            <local:VoiceLevelMeter x:Name="VoiceMeter" />
+                        </StackPanel>
+                    </Border>
+                </catalog:SettingsSection>
 
                 <!-- ── Recording ───────────────────────────────────────────── -->
                 <!-- Title provisional: the maintainer names the sections at the
-                     end. "Recording", not "Microphone": the section holds the
-                     maximum length and the pre-processing too, and a second
-                     "Microphone" right under the Microphone card reads twice.
-                     What the page sets about a recording: the voice level with
-                     its meter, the maximum length, the pre-processing. The
-                     section reset spans its three composed settings; the meter
-                     keeps no value. -->
+                     end. What the page sets about a take: the maximum length
+                     and the pre-processing with its two checks. The section
+                     reset spans its two composed settings. -->
                 <catalog:SettingsSection x:Name="RecordingSection"
                                          x:Uid="RecordingPageRecordingSection"
                                          HasReset="True"
                                          ResetRequested="ResetRecording_Click">
                     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-                        <!-- Voice level, composed: the level the segmenter, the
-                             low-audio warning and the HUD outline read. -->
-                        <StackPanel x:Name="VoiceLevelHost"
-                                    Spacing="{StaticResource SettingsCardSpacing}" />
-
-                        <!-- Its instrument, directly under it: the live meter
-                             with the voice level marked. A floating preview
-                             block, not a card; it shows and never writes. -->
-                        <local:VoiceLevelMeter x:Name="VoiceMeter" />
-
                         <!-- Maximum recording length, composed. -->
                         <StackPanel x:Name="RecordingLimitHost"
                                     Spacing="{StaticResource SettingsCardSpacing}" />
 
-                        <!-- Transcription pre-processing, a single composed opt-in
-                             toggle. It has its own host so composed and hand-authored
+                        <!-- Transcription pre-processing, composed as the master
+                             of a fold (RecordingViewModel.PreprocessingSettings).
+                             It has its own host so composed and hand-authored
                              cards can interleave in the same StackPanel. -->
                         <StackPanel x:Name="PreprocessingHost"
                                     Spacing="{StaticResource SettingsCardSpacing}" />
-                    </StackPanel>
-                </catalog:SettingsSection>
 
-                <!-- ── Checks ──────────────────────────────────────────────── -->
-                <!-- Title provisional: the maintainer names the sections at the
-                     end. Two commands with their readouts: nothing here keeps a
-                     value, so no reset. -->
-                <catalog:SettingsSection x:Name="ChecksSection"
-                                         x:Uid="RecordingPageChecksSection">
-                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                        <!-- The two checks that serve the pre-processing, the
+                             former Checks section (2026-11-07 review, change 3).
+                             Declared here for their x:Bind, then moved by the
+                             code-behind into the composed fold's items, which
+                             accept SettingsCards only: each InfoBar sits in a
+                             frameless card shown only while it has something to
+                             say, so a closed note leaves no empty row. The
+                             composer gates only its own children on the master,
+                             so these stay visible with the toggle off, when they
+                             matter most. Commands and readouts, no value: no
+                             reset of their own. Collapsed: emptied at
+                             construction, it would still pay the panel's
+                             spacing if it stayed visible. -->
+                        <StackPanel x:Name="PreprocessingChecks"
+                                    Visibility="Collapsed">
 
-                        <!-- Microphone level check: it advises whether the
-                             pre-processing toggle is worth turning on; the user decides,
-                             nothing is switched on for them. -->
-                        <controls:SettingsCard x:Name="MicCheckCard"
-                                               x:Uid="RecordingPageMicCheckCard"
-                                               Tag="RecordingPageMicCheckCard">
-                            <Button x:Uid="RecordingPageMicCheckButton"
-                                    MinWidth="120"
-                                    Command="{x:Bind ViewModel.MeasureMicCommand}" />
-                        </controls:SettingsCard>
+                            <!-- Microphone level check: it advises whether the
+                                 pre-processing toggle is worth turning on; the user
+                                 decides, nothing is switched on for them. -->
+                            <controls:SettingsCard x:Name="MicCheckCard"
+                                                   x:Uid="RecordingPageMicCheckCard"
+                                                   Tag="RecordingPageMicCheckCard">
+                                <Button x:Uid="RecordingPageMicCheckButton"
+                                        MinWidth="120"
+                                        Command="{x:Bind ViewModel.MeasureMicCommand}" />
+                            </controls:SettingsCard>
 
-                        <InfoBar x:Uid="RecordingPageMicCheckListening"
-                                 IsClosable="False"
-                                 Severity="Informational"
-                                 IsOpen="{x:Bind ViewModel.IsMeasuringMic, Mode=OneWay}"
-                                 catalog:InfoBarLayout.CollapseWhenClosed="True">
-                            <InfoBar.Content>
-                                <ProgressRing IsActive="True" Width="20" Height="20"
-                                              HorizontalAlignment="Left" Margin="0,0,0,12" />
-                            </InfoBar.Content>
-                        </InfoBar>
+                            <controls:SettingsCard Background="{x:Null}"
+                                                   BorderThickness="0"
+                                                   Visibility="{x:Bind ViewModel.HasMicCheckNote, Mode=OneWay}">
+                                <StackPanel>
+                                    <InfoBar x:Uid="RecordingPageMicCheckListening"
+                                             IsClosable="False"
+                                             Severity="Informational"
+                                             IsOpen="{x:Bind ViewModel.IsMeasuringMic, Mode=OneWay}"
+                                             catalog:InfoBarLayout.CollapseWhenClosed="True">
+                                        <InfoBar.Content>
+                                            <ProgressRing IsActive="True" Width="20" Height="20"
+                                                          HorizontalAlignment="Left" Margin="0,0,0,12" />
+                                        </InfoBar.Content>
+                                    </InfoBar>
+                                    <InfoBar x:Uid="RecordingPageMicAdviceRecommended"
+                                             IsClosable="False" Severity="Success"
+                                             IsOpen="{x:Bind ViewModel.AdviceRecommended, Mode=OneWay}"
+                                             Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
+                                             catalog:InfoBarLayout.CollapseWhenClosed="True" />
+                                    <InfoBar x:Uid="RecordingPageMicAdviceMarginal"
+                                             IsClosable="False" Severity="Warning"
+                                             IsOpen="{x:Bind ViewModel.AdviceMarginal, Mode=OneWay}"
+                                             Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
+                                             catalog:InfoBarLayout.CollapseWhenClosed="True" />
+                                    <InfoBar x:Uid="RecordingPageMicAdviceNotNeeded"
+                                             IsClosable="False" Severity="Informational"
+                                             IsOpen="{x:Bind ViewModel.AdviceNotNeeded, Mode=OneWay}"
+                                             Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
+                                             catalog:InfoBarLayout.CollapseWhenClosed="True" />
+                                    <InfoBar x:Uid="RecordingPageMicAdviceError"
+                                             IsClosable="False" Severity="Error"
+                                             IsOpen="{x:Bind ViewModel.AdviceError, Mode=OneWay}"
+                                             catalog:InfoBarLayout.CollapseWhenClosed="True" />
+                                </StackPanel>
+                            </controls:SettingsCard>
 
-                        <InfoBar x:Uid="RecordingPageMicAdviceRecommended"
-                                 IsClosable="False" Severity="Success"
-                                 IsOpen="{x:Bind ViewModel.AdviceRecommended, Mode=OneWay}"
-                                 Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
-                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
-                        <InfoBar x:Uid="RecordingPageMicAdviceMarginal"
-                                 IsClosable="False" Severity="Warning"
-                                 IsOpen="{x:Bind ViewModel.AdviceMarginal, Mode=OneWay}"
-                                 Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
-                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
-                        <InfoBar x:Uid="RecordingPageMicAdviceNotNeeded"
-                                 IsClosable="False" Severity="Informational"
-                                 IsOpen="{x:Bind ViewModel.AdviceNotNeeded, Mode=OneWay}"
-                                 Message="{x:Bind ViewModel.MicResultDetail, Mode=OneWay}"
-                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
-                        <InfoBar x:Uid="RecordingPageMicAdviceError"
-                                 IsClosable="False" Severity="Error"
-                                 IsOpen="{x:Bind ViewModel.AdviceError, Mode=OneWay}"
-                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
+                            <!-- Listening test: one take played back on the default
+                                 output device in four pre-processing strengths.
+                                 Nothing saved, nothing transcribed. -->
+                            <controls:SettingsCard x:Name="ListeningTestCard"
+                                                   x:Uid="RecordingPageListeningTestCard"
+                                                   Tag="RecordingPageListeningTestCard">
+                                <Button x:Uid="RecordingPageListeningRecordButton"
+                                        MinWidth="120"
+                                        Command="{x:Bind ViewModel.RecordListeningTakeCommand}" />
+                            </controls:SettingsCard>
 
-                        <!-- Listening test: one take played back on the default output
-                             device in four pre-processing strengths. Nothing saved,
-                             nothing transcribed. -->
-                        <controls:SettingsCard x:Name="ListeningTestCard"
-                                               x:Uid="RecordingPageListeningTestCard"
-                                               Tag="RecordingPageListeningTestCard">
-                            <Button x:Uid="RecordingPageListeningRecordButton"
-                                    MinWidth="120"
-                                    Command="{x:Bind ViewModel.RecordListeningTakeCommand}" />
-                        </controls:SettingsCard>
+                            <controls:SettingsCard Background="{x:Null}"
+                                                   BorderThickness="0"
+                                                   Visibility="{x:Bind ViewModel.IsRecordingListeningTake, Mode=OneWay}">
+                                <InfoBar x:Uid="RecordingPageListeningRecording"
+                                         IsClosable="False"
+                                         Severity="Informational"
+                                         IsOpen="{x:Bind ViewModel.IsRecordingListeningTake, Mode=OneWay}"
+                                         catalog:InfoBarLayout.CollapseWhenClosed="True">
+                                    <InfoBar.Content>
+                                        <ProgressRing IsActive="True" Width="20" Height="20"
+                                                      HorizontalAlignment="Left" Margin="0,0,0,12" />
+                                    </InfoBar.Content>
+                                </InfoBar>
+                            </controls:SettingsCard>
 
-                        <InfoBar x:Uid="RecordingPageListeningRecording"
-                                 IsClosable="False"
-                                 Severity="Informational"
-                                 IsOpen="{x:Bind ViewModel.IsRecordingListeningTake, Mode=OneWay}"
-                                 catalog:InfoBarLayout.CollapseWhenClosed="True">
-                            <InfoBar.Content>
-                                <ProgressRing IsActive="True" Width="20" Height="20"
-                                              HorizontalAlignment="Left" Margin="0,0,0,12" />
-                            </InfoBar.Content>
-                        </InfoBar>
+                            <controls:SettingsCard x:Name="ListeningPlaybackCard"
+                                                   x:Uid="RecordingPageListeningPlaybackCard"
+                                                   Tag="RecordingPageListeningPlaybackCard"
+                                                   Visibility="{x:Bind ViewModel.HasListeningTake, Mode=OneWay}">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <Button x:Uid="RecordingPageListeningPlayOff"
+                                            Command="{x:Bind ViewModel.PlayListeningVariantCommand}"
+                                            CommandParameter="{StaticResource ListeningStrengthOff}" />
+                                    <Button x:Uid="RecordingPageListeningPlay25"
+                                            Command="{x:Bind ViewModel.PlayListeningVariantCommand}"
+                                            CommandParameter="{StaticResource ListeningStrengthQuarter}" />
+                                    <Button x:Uid="RecordingPageListeningPlay75"
+                                            Command="{x:Bind ViewModel.PlayListeningVariantCommand}"
+                                            CommandParameter="{StaticResource ListeningStrengthThreeQuarters}" />
+                                    <Button x:Uid="RecordingPageListeningPlayOn"
+                                            Command="{x:Bind ViewModel.PlayListeningVariantCommand}"
+                                            CommandParameter="{StaticResource ListeningStrengthFull}" />
+                                </StackPanel>
+                            </controls:SettingsCard>
 
-                        <controls:SettingsCard x:Name="ListeningPlaybackCard"
-                                               x:Uid="RecordingPageListeningPlaybackCard"
-                                               Tag="RecordingPageListeningPlaybackCard"
-                                               Visibility="{x:Bind ViewModel.HasListeningTake, Mode=OneWay}">
-                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                <Button x:Uid="RecordingPageListeningPlayOff"
-                                        Command="{x:Bind ViewModel.PlayListeningVariantCommand}"
-                                        CommandParameter="{StaticResource ListeningStrengthOff}" />
-                                <Button x:Uid="RecordingPageListeningPlay25"
-                                        Command="{x:Bind ViewModel.PlayListeningVariantCommand}"
-                                        CommandParameter="{StaticResource ListeningStrengthQuarter}" />
-                                <Button x:Uid="RecordingPageListeningPlay75"
-                                        Command="{x:Bind ViewModel.PlayListeningVariantCommand}"
-                                        CommandParameter="{StaticResource ListeningStrengthThreeQuarters}" />
-                                <Button x:Uid="RecordingPageListeningPlayOn"
-                                        Command="{x:Bind ViewModel.PlayListeningVariantCommand}"
-                                        CommandParameter="{StaticResource ListeningStrengthFull}" />
-                            </StackPanel>
-                        </controls:SettingsCard>
-
-                        <InfoBar x:Uid="RecordingPageListeningError"
-                                 IsClosable="False"
-                                 Severity="Error"
-                                 IsOpen="{x:Bind ViewModel.ListeningTestFailed, Mode=OneWay}"
-                                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
+                            <controls:SettingsCard Background="{x:Null}"
+                                                   BorderThickness="0"
+                                                   Visibility="{x:Bind ViewModel.ListeningTestFailed, Mode=OneWay}">
+                                <InfoBar x:Uid="RecordingPageListeningError"
+                                         IsClosable="False"
+                                         Severity="Error"
+                                         IsOpen="{x:Bind ViewModel.ListeningTestFailed, Mode=OneWay}"
+                                         catalog:InfoBarLayout.CollapseWhenClosed="True" />
+                            </controls:SettingsCard>
+                        </StackPanel>
                     </StackPanel>
                 </catalog:SettingsSection>
 

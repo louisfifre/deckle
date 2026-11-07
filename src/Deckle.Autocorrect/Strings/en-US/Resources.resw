@@ -116,6 +116,15 @@
   <data name="AutocorrectPage_Exclusions_Empty.Text" xml:space="preserve">
     <value>You haven't excluded any words.</value>
   </data>
+  <data name="AutocorrectPage_MasterCard.Description" xml:space="preserve">
+    <value>Off corrects nothing, in any app.</value>
+  </data>
+  <data name="AutocorrectPage_IncludeButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Put this word back</value>
+  </data>
+  <data name="AppsEnrolledPage_ForgetButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Forget this app</value>
+  </data>
   <data name="AutocorrectPage_IncludeButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Put this word back</value>
   </data>
@@ -177,14 +186,14 @@
        what fabrication turned away to keep base corrections working. The counts
        come from each shipped manifest, so the line is formatted at runtime. -->
   <data name="LexicalDomainsPage_Indications_Format" xml:space="preserve">
-    <value>{0:N0} {1} terms shipped. {2:N0} candidates withheld to protect everyday words.</value>
+    <value>{0:N0} {1} terms included. {2:N0} more left out, to protect everyday words.</value>
   </data>
 
   <!-- Shown instead of the whole section while the master switch is off: no
        domain reaches the corrector then, so the rows are hidden rather than
        greyed, and this line says where to change that. -->
   <data name="LexicalDomainsPage_Disabled.Text" xml:space="preserve">
-    <value>Autocorrect is off, so no vocabulary reaches the corrector. Turn it on in Autocorrect to pick your domains.</value>
+    <value>Autocorrect is off, so no vocabulary is used. Turn it on in Autocorrect to pick your domains.</value>
   </data>
 
   <!-- The module's dataset consents, composed on Settings > Diagnostics

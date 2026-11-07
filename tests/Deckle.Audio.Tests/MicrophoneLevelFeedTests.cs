@@ -19,7 +19,7 @@ public sealed class MicrophoneLevelFeedTests
     public void ItOpensTheCallersHostWithoutTheFrameStream()
     {
         using var h = new Harness();
-        var host = new VoiceLevelMeterHost(7, VoiceLevel);
+        var host = new VoiceLevelMeterHost("{0.0.1.00000000}.{mic-7}", VoiceLevel);
         h.Host = host;
 
         Assert.True(h.Feed.Start());
@@ -92,10 +92,10 @@ public sealed class MicrophoneLevelFeedTests
     }
 
     [Theory]
-    [InlineData(2u, MicrophoneProblem.NotDetected)]
-    [InlineData(6u, MicrophoneProblem.NotDetected)]
-    [InlineData(4u, MicrophoneProblem.InUse)]
-    [InlineData(7u, MicrophoneProblem.Unavailable)]
+    [InlineData(0x80070490u, MicrophoneProblem.NotDetected)]
+    [InlineData(0x88890004u, MicrophoneProblem.NotDetected)]
+    [InlineData(0x8889000Au, MicrophoneProblem.InUse)]
+    [InlineData(0x80004005u, MicrophoneProblem.Unavailable)]
     public void AFailedOpenIsReportedWithItsKindAndCode(uint code, MicrophoneProblem expected)
     {
         using var h = new Harness();
@@ -105,7 +105,7 @@ public sealed class MicrophoneLevelFeedTests
         var failure = h.WaitForFailure();
 
         Assert.Equal(expected, failure.Problem);
-        Assert.Equal(code, failure.MmsysErr);
+        Assert.Equal(code, failure.ErrorCode);
         Assert.False(h.Feed.IsRunning);
         // The run closed before its failure was reported.
         Assert.Equal(new[] { "opened", "closed", "failed" }, h.Events.ToArray());
@@ -133,7 +133,7 @@ public sealed class MicrophoneLevelFeedTests
 
         Assert.Equal(MicrophoneProblem.Faulted, failure.Problem);
         Assert.Equal(nameof(InvalidOperationException), failure.ExceptionType);
-        Assert.Equal(0u, failure.MmsysErr);
+        Assert.Equal(0u, failure.ErrorCode);
         Assert.DoesNotContain("private", failure.ToString());
     }
 
@@ -204,9 +204,9 @@ public sealed class MicrophoneLevelFeedTests
     [Fact]
     public void TheVoiceMeterHostKeepsNothingAndNamesItsPurpose()
     {
-        IAudioRecordingHost host = new VoiceLevelMeterHost(7, VoiceLevel);
+        IAudioRecordingHost host = new VoiceLevelMeterHost("{0.0.1.00000000}.{mic-7}", VoiceLevel);
 
-        Assert.Equal(7, host.AudioInputDeviceId);
+        Assert.Equal("{0.0.1.00000000}.{mic-7}", host.AudioInputEndpointId);
         Assert.Equal(VoiceLevel, host.VoiceLevelDbfs);
         Assert.False(host.RetainsAudio);
         Assert.Equal(0, host.MaxRecordingDurationSeconds);
@@ -242,7 +242,7 @@ public sealed class MicrophoneLevelFeedTests
         public void Raise(float rms) => AudioLevel?.Invoke(rms);
         public void ReleaseDevice() => _deviceHeld.Set();
 
-        public ProbeResult Probe(int deviceId) => new(true, MicErrorKind.None, 0);
+        public ProbeResult Probe(string endpointId) => new(true, MicErrorKind.None, 0);
 
         public CaptureResult Record(IAudioRecordingHost host, CancellationToken cancellationToken)
         {
@@ -277,7 +277,7 @@ public sealed class MicrophoneLevelFeedTests
         public ConcurrentQueue<float> Levels { get; } = new();
         public ConcurrentQueue<string> Events { get; } = new();
         public ConcurrentQueue<MicrophoneLevelFeedFailure> Failures { get; } = new();
-        public IAudioRecordingHost Host { get; set; } = new VoiceLevelMeterHost(0, VoiceLevel);
+        public IAudioRecordingHost Host { get; set; } = new VoiceLevelMeterHost("", VoiceLevel);
         public MicrophoneLevelFeed Feed { get; }
 
         public Harness() => Feed = new MicrophoneLevelFeed(

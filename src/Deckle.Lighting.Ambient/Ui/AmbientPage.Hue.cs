@@ -220,46 +220,98 @@ public sealed partial class AmbientPage
         if (!HuePairingService.Instance.IsPaired) return;
 
         HueListGroupsButton.IsEnabled = false;
+        SetHuePairStatus(string.Empty);
         try
         {
-            _hueGroups = await HuePairingService.Instance
-                .ListGroupsAsync()
-                .ConfigureAwait(true);
-
-            _hueGroupComboSuppress = true;
-            HueGroupComboBox.Items.Clear();
-            foreach (var g in _hueGroups)
-            {
-                HueGroupComboBox.Items.Add(new ComboBoxItem
-                {
-                    Content = g.DisplayLabel,
-                    Tag     = g,
-                });
-            }
-            _hueGroupComboSuppress = false;
-
-            HueGroupComboBox.IsEnabled = _hueGroups.Count > 0;
-            if (_hueGroups.Count > 0)
-            {
-                string? lastId = AmbientSettingsService.Instance.Current.HueLastGroupId;
-                int preselect = 0;
-                if (!string.IsNullOrEmpty(lastId))
-                {
-                    for (int i = 0; i < _hueGroups.Count; i++)
-                    {
-                        if (_hueGroups[i].Id == lastId) { preselect = i; break; }
-                    }
-                }
-                HueGroupComboBox.SelectedIndex = preselect;
-            }
+            await LoadHueGroupsAsync().ConfigureAwait(true);
+        }
+        catch (HueBridgeUnreachableException ex)
+        {
+            DeckleAmbientSource.Log.AmbientPageListGroupsFailed(ex.GetType().Name, ex.Message);
+            await RelocateHueBridgeAsync(ex).ConfigureAwait(true);
         }
         catch (Exception ex)
         {
             DeckleAmbientSource.Log.AmbientPageListGroupsFailed(ex.GetType().Name, ex.Message);
+            SetHuePairStatus(Loc.Get("AmbientHue_ListGroups_Failed"));
         }
         finally
         {
             HueListGroupsButton.IsEnabled = true;
+        }
+    }
+
+    // The listing went unanswered, most often because the bridge took a new
+    // address after a move or a router change. The search starts at once
+    // rather than waiting for a click: it stays on the local network, takes
+    // a few seconds, and needs no link-button press, since the stored
+    // credentials are tried against what discovery finds. Only when that
+    // search finds nothing does the page hand the person the manual path,
+    // Find bridge then pairing again.
+    private async Task RelocateHueBridgeAsync(HueBridgeUnreachableException cause)
+    {
+        string silentAddress = HuePairingService.Instance.PairedBridge?.InternalIpAddress ?? "";
+        SetHuePairStatus(Loc.Format("AmbientHue_ListGroups_Searching_Format", silentAddress));
+
+        HueBridgeClient relocated;
+        try
+        {
+            relocated = await HuePairingService.Instance
+                .RelocateBridgeAsync(cause)
+                .ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            // The service has already logged why the search failed.
+            DeckleAmbientSource.Log.AmbientPageListGroupsFailed(ex.GetType().Name, ex.Message);
+            SetHuePairStatus(Loc.Format("AmbientHue_ListGroups_NotFound_Format", silentAddress));
+            return;
+        }
+
+        try
+        {
+            await LoadHueGroupsAsync().ConfigureAwait(true);
+            SetHuePairStatus(Loc.Format(
+                "AmbientHue_ListGroups_Relocated_Format", relocated.Bridge.InternalIpAddress));
+        }
+        catch (Exception ex)
+        {
+            DeckleAmbientSource.Log.AmbientPageListGroupsFailed(ex.GetType().Name, ex.Message);
+            SetHuePairStatus(Loc.Get("AmbientHue_ListGroups_Failed"));
+        }
+    }
+
+    private async Task LoadHueGroupsAsync()
+    {
+        _hueGroups = await HuePairingService.Instance
+            .ListGroupsAsync()
+            .ConfigureAwait(true);
+
+        _hueGroupComboSuppress = true;
+        HueGroupComboBox.Items.Clear();
+        foreach (var g in _hueGroups)
+        {
+            HueGroupComboBox.Items.Add(new ComboBoxItem
+            {
+                Content = g.DisplayLabel,
+                Tag     = g,
+            });
+        }
+        _hueGroupComboSuppress = false;
+
+        HueGroupComboBox.IsEnabled = _hueGroups.Count > 0;
+        if (_hueGroups.Count > 0)
+        {
+            string? lastId = AmbientSettingsService.Instance.Current.HueLastGroupId;
+            int preselect = 0;
+            if (!string.IsNullOrEmpty(lastId))
+            {
+                for (int i = 0; i < _hueGroups.Count; i++)
+                {
+                    if (_hueGroups[i].Id == lastId) { preselect = i; break; }
+                }
+            }
+            HueGroupComboBox.SelectedIndex = preselect;
         }
     }
 

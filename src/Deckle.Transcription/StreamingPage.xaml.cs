@@ -8,8 +8,8 @@ using Deckle.Catalog;
 namespace Deckle.Transcription;
 
 // The Streaming page of the Transcription module: a host-only page over the
-// WhisperViewModel manifests of the streaming pipeline. The two sections under
-// the switch show whatever the strategy: the switch picks only the dictation
+// WhisperViewModel manifests of the streaming pipeline. Everything under the
+// switch shows whatever the strategy: the switch picks only the dictation
 // pipeline, and files and recovered takes are always cut and trimmed with
 // these settings, so hiding them would hide settings still in use. Its own
 // view model instance reloads from the persisted settings on every navigation, like
@@ -29,8 +29,8 @@ public sealed partial class StreamingPage : Page
         // subscription catches Load()'s refresh; held so they live as long as
         // the cached page.
         Compose(SwitchHost, ViewModel.StreamingSwitch);
-        Compose(VadHost, ViewModel.VadSettings);
         Compose(SegmentationHost, ViewModel.SegmentationSettings);
+        Compose(SilenceGuardsHost, ViewModel.SilenceGuardSettings);
     }
 
     private void Compose(Panel host, IReadOnlyList<SettingDescriptor> settings)
@@ -46,12 +46,11 @@ public sealed partial class StreamingPage : Page
         base.OnNavigatedTo(e);
         ViewModel.Load();
 
-        // The speech-filtering fold is the page's first subject, so it opens with
-        // the page rather than hiding its three values behind a click. Set on each
-        // visit: the page is cached, and a fold left closed would stay closed.
-        foreach (UIElement child in VadHost.Children)
-            if (child is CommunityToolkit.WinUI.Controls.SettingsExpander expander)
-                expander.IsExpanded = true;
+        // The guards' fold stays as the person left it: collapsed at first, the
+        // Toolkit's default, since its five values are the ones almost nobody
+        // moves and the cut curve is the page's first subject (2026-11-07
+        // review, changes 6 and 7). It used to be forced open on every visit,
+        // when Silero was the page's first subject.
         // Load() may raise no PropertyChanged on a clean profile, so no composer
         // DirtyChanged would fire — settle the gate off the freshly-loaded values.
         GateResetAll();

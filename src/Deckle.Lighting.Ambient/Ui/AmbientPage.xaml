@@ -62,32 +62,17 @@
                                                 ResetAllRequested="ResetAll_Click" />
 
                     <!-- The module switch: the on/off card comes first on the page,
-                         outside any section, the preview tile right after it.
+                         outside any section, the not-paired banner and the preview tile after it.
                          Composed: Enabled (AmbientViewModel.StateSettings). -->
                     <StackPanel x:Name="StateHost"
                                 Spacing="{StaticResource SettingsCardSpacing}" />
 
-                    <!-- The way to the live preview: a tile that opens the pane
-                         at the right of the page, right under the module switch
-                         so the pane sits beside everything the page tunes, the
-                         configuration included (Louis, 2026-10-15; it opened the
-                         Fine tuning section before). A clickable card with the
-                         stock chevron: it leads somewhere, the way a drill-in
-                         card does. The Behaviour and Fine tuning titles repeat
-                         the way in as a text link. -->
-                    <controls:SettingsCard x:Name="PreviewTile"
-                                           x:Uid="AmbientPreviewTile"
-                                           Tag="AmbientPreviewTile"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Preview}}"
-                                           IsClickEnabled="True"
-                                           Click="OpenPreview_Click" />
-
                     <!-- bespoke: a state banner, not a setting. It opens while the
                          persisted Hue bridge state is incomplete (no IP / username /
                          group) and its action opens the Hue bridge expander below.
-                         Under the switch, with no section title: a title over a
-                         banner that hides while the module is off left an empty
-                         heading (2026-10-14). -->
+                         Right under the switch it warns about, with no section
+                         title: a title over a banner that hides while the module
+                         is off left an empty heading (2026-10-14). -->
                     <InfoBar x:Name="NotPairedInfoBar"
                              x:Uid="AmbientNotPairedInfoBar"
                              IsClosable="False"
@@ -100,6 +85,21 @@
                                     Click="ConfigureBridgeButton_Click" />
                         </InfoBar.ActionButton>
                     </InfoBar>
+
+                    <!-- The way to the live preview: a tile that opens the pane
+                         at the right of the page, under the module switch and
+                         its banner so the pane sits beside everything the page
+                         tunes, the configuration included (Louis, 2026-10-15; it
+                         opened the Fine tuning section before). A clickable card
+                         with the stock chevron: it leads somewhere, the way a
+                         drill-in card does. The Behaviour and Fine tuning titles
+                         repeat the way in as a text link. -->
+                    <controls:SettingsCard x:Name="PreviewTile"
+                                           x:Uid="AmbientPreviewTile"
+                                           Tag="AmbientPreviewTile"
+                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Preview}}"
+                                           IsClickEnabled="True"
+                                           Click="OpenPreview_Click" />
 
                     <!-- ── Configuration ──────────────────────────────────────── -->
                     <!-- First section, before the behaviour and the tuning: the
@@ -224,10 +224,6 @@
                                           MinWidth="280"
                                           SelectionChanged="MonitorCombo_SelectionChanged" />
                             </controls:SettingsCard>
-
-                            <!-- Composed: the capture rate (AmbientViewModel.CaptureSettings). -->
-                            <StackPanel x:Name="CaptureHost"
-                                        Spacing="{StaticResource SettingsCardSpacing}" />
                         </StackPanel>
                     </catalog:SettingsSection>
 

@@ -10,6 +10,12 @@ Deckle depends on the following third-party components and data sources. This fi
 - License : MIT. Read from the bundle notes that `scripts/release/publish-native-runtime.ps1` writes, which point to the upstream `LICENSE`.
 - Used as : pre-built native DLLs (`whisper.dll`, `ggml.dll`, `ggml-base.dll`, the `ggml-cpu-*.dll` variants, `ggml-vulkan.dll`) loaded at runtime. The catalog lives in `src/Deckle.Transcription.Whisper/Setup/NativeRuntime.cs`.
 
+### PortAudio
+
+- Repository : https://github.com/PortAudio/portaudio
+- License : MIT-style, Copyright (c) 1999-2006 Ross Bencina and Phil Burk. Read from the upstream `LICENSE.txt`, which the build script copies beside the DLL as `portaudio.LICENSE.txt` and which ships with it.
+- Used as : `portaudio.dll`, the microphone capture's native backend, called through `src/Deckle.Audio/Internal/PortAudioInterop.cs`. Built from a pinned upstream commit, with the WASAPI host API only and the C runtime linked statically, by `scripts/setup/build-portaudio.ps1`, and committed in `src/Deckle.Audio/Native/win-x64` with its provenance (the `README.md` there gives the commit, the CMake options and the SHA256). The ASIO host API is not compiled in: the ASIO SDK's license is a pending product decision.
+
 ### Microsoft Visual C++ Redistributable
 
 - Project : https://learn.microsoft.com/cpp/windows/latest-supported-vc-redist

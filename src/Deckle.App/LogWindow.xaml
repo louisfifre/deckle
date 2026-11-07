@@ -246,7 +246,8 @@
                 <ToggleButton x:Name="AutoScrollToggle"
                               x:Uid="LogWindowAutoScrollToggle"
                               FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                              IsChecked="True" />
+                              IsChecked="True"
+                              Click="OnAutoScrollToggleClick" />
             </AppBarElementContainer>
         </CommandBar>
 

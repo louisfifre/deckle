@@ -24,7 +24,7 @@ namespace Deckle.Lighting;
 // username in the URL path). The Entertainment catalog and streaming
 // switch, the EventStream and the v1 ↔ v2 id maps use CLIP v2 (the
 // `hue-application-key` header).
-public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBridgeClient
+public sealed partial class HueBridgeClient : IDisposable, IHueRestBridgeClient
 {
     // Hue caps the `devicetype` string at 40 chars total. "deckle#" is
     // 7 chars, so we have 33 left for the machine name suffix.
@@ -95,9 +95,22 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
 
         DeckleLightingSource.Log.ListingGroups();
 
-        var dict = await _http.GetFromJsonAsync<Dictionary<string, HueGroupDto>>(
-            $"api/{_credentials!.Username}/groups", _jsonOptions, ct)
-            .ConfigureAwait(false);
+        Dictionary<string, HueGroupDto>? dict;
+        try
+        {
+            dict = await _http.GetFromJsonAsync<Dictionary<string, HueGroupDto>>(
+                $"api/{_credentials!.Username}/groups", _jsonOptions, ct)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex) when (IsNoAnswer(ex, ct))
+        {
+            // The listing is the first call the Settings page makes on a
+            // restored pairing, so it is where a stale address shows. Naming
+            // the failure lets the page say which address went silent and
+            // search for the bridge, instead of quoting HttpClient's timeout.
+            throw new HueBridgeUnreachableException(
+                $"Hue bridge at {_bridge.InternalIpAddress} did not answer.", ex);
+        }
 
         if (dict is null)
         {
@@ -298,6 +311,20 @@ public sealed partial class HueBridgeClient : IDisposable, IHueEntertainmentBrid
 
     // ── Helpers ─────────────────────────────────────────────────────
 
+    // True when the bridge never answered: HttpClient's own timeout (a
+    // TaskCanceledException while the caller's token is still live) or a
+    // transport failure (refused connection, no route, TLS) that carries no
+    // HTTP status. A response with a status, even an error one, means the
+    // bridge is there, and a cancellation the caller asked for is not a
+    // silence: both stay as they are.
+    internal static bool IsNoAnswer(Exception ex, CancellationToken ct)
+        => ex switch
+        {
+            TaskCanceledException => !ct.IsCancellationRequested,
+            HttpRequestException { StatusCode: null } => true,
+            _ => false,
+        };
+
     // RFC1918 + APIPA validation for a Hue bridge address, the single home
     // for this rule. The bridge is a LAN-only device ; accepting an
     // arbitrary IP would let any untrusted source (manual entry, cloud
@@ -378,8 +405,9 @@ public sealed class HuePairingException : Exception
     public HuePairingException(string message, Exception inner) : base(message, inner) { }
 }
 
-// Transport-level failure : the bridge IP doesn't answer on TCP, the
-// TLS handshake fails, or the DNS lookup fails. Distinct from
+// Transport-level failure : the bridge IP doesn't answer on TCP or within
+// the client timeout, the TLS handshake fails, or the DNS lookup fails.
+// Raised by pairing and by the group listing. Distinct from
 // HuePairingException so the UI can surface "check that the bridge is
 // powered on and reachable" instead of "the bridge refused".
 public sealed class HueBridgeUnreachableException : Exception

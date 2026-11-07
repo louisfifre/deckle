@@ -39,11 +39,6 @@
                                            HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Lightbulb}}"
                                            IsClickEnabled="True"
                                            Click="OnAmbientCardClick" />
-                    <controls:SettingsCard x:Name="HomeCorrectionCard"
-                                           x:Uid="PlaygroundHomeCorrectionCard"
-                                           HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Autocorrect}}"
-                                           IsClickEnabled="True"
-                                           Click="OnCorrectionCardClick" />
                 </StackPanel>
 
                 <!-- Manual probe for the toast channel. -->

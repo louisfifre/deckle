@@ -16,6 +16,18 @@ public sealed class AppSettings
     public UpdatesSettings     Updates     { get; set; } = new();
     public HotkeysSettings     Hotkeys     { get; set; } = new();
     public DeveloperSettings   Developer   { get; set; } = new();
+    public PerformanceSettings Performance { get; set; } = new();
+}
+
+// The one shared signal for a machine that cannot spare much. Any module
+// that has a cost it can lower reads PerformanceMode and picks its cheaper
+// values from tiers it owns in code (Ambient's capture cap is the first
+// reader). Off by default: a typical PC runs the normal tiers. It is a
+// shell setting, not a module's, because no module acts on "the machine is
+// weak"; each acts on its own cost.
+public sealed class PerformanceSettings
+{
+    public bool PerformanceMode { get; set; } = false;
 }
 
 // Developer surfaces an ordinary user has no use for. Off by default: the
@@ -24,6 +36,11 @@ public sealed class AppSettings
 public sealed class DeveloperSettings
 {
     public bool ShowPlayground { get; set; } = false;
+
+    // Shows the developer tools on the General page, the interface capture
+    // first: every open Deckle window and every settings page to PNG files,
+    // for a reviewer who judges the interface from images.
+    public bool DeveloperMode { get; set; } = false;
 }
 
 // null = unbound. The initializers are the single source of defaults: the

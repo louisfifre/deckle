@@ -140,7 +140,7 @@
     <value>Reset all settings?</value>
   </data>
   <data name="Settings_ResetAmbientDialog_Content" xml:space="preserve">
-    <value>This will restore the fine tuning and the colour per zone with its edge band to their default values. Your Hue bridge pairing, light group, display, per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
+    <value>This will restore the colour and motion tuning, the brightness floor, the edge band each zone reads, and whether the lights follow their zones or share one colour to their default values. Your Hue bridge pairing, the selected light group, the display, per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
   </data>
 
   <!-- ── Switch, banner and preview ────────────────────────── -->
@@ -154,7 +154,7 @@
     <value>Hue bridge not configured</value>
   </data>
   <data name="AmbientNotPairedInfoBar.Message" xml:space="preserve">
-    <value>Pair a Philips Hue bridge and pick a light group before turning Ambient Light on.</value>
+    <value>Pair a Philips Hue bridge and pick a room or zone before turning Ambient Light on.</value>
   </data>
   <data name="AmbientNotPairedActionButton.Content" xml:space="preserve">
     <value>Configure bridge</value>
@@ -241,6 +241,9 @@
   </data>
   <data name="AmbientMinBrightnessCard.Header" xml:space="preserve">
     <value>Floor level</value>
+  </data>
+  <data name="AmbientMinBrightnessCard.Description" xml:space="preserve">
+    <value>The dimmest the lights get, as a share of their full brightness.</value>
   </data>
   <data name="AmbientSmoothingCard.Header" xml:space="preserve">
     <value>Reaction speed</value>
@@ -374,6 +377,21 @@
   <data name="AmbientHue_PairStatus_Failed_Format" xml:space="preserve">
     <value>Couldn't pair: {0}. Check the bridge IP and try again.</value>
   </data>
+  <data name="AmbientHue_ListGroups_Searching_Format" xml:space="preserve">
+    <value>The bridge at {0} didn't answer. Looking for it on your network…</value>
+    <comment>{0} is the bridge's IP address. Shown while Deckle searches the local network for the paired bridge.</comment>
+  </data>
+  <data name="AmbientHue_ListGroups_Relocated_Format" xml:space="preserve">
+    <value>Found the bridge at {0}. Rooms loaded.</value>
+    <comment>{0} is the IP address where the paired bridge answered.</comment>
+  </data>
+  <data name="AmbientHue_ListGroups_NotFound_Format" xml:space="preserve">
+    <value>The bridge at {0} didn't answer, and it wasn't found on your network. Make sure it's on and connected, then select Find bridge to search again and pair it.</value>
+    <comment>{0} is the bridge's IP address. "Find bridge" is the HueDiscoverButton label.</comment>
+  </data>
+  <data name="AmbientHue_ListGroups_Failed" xml:space="preserve">
+    <value>Couldn't load rooms. Try again.</value>
+  </data>
 
   <!-- Forget bridge confirmation dialog. Microsoft destructive
        pattern : confirm-then-act, button labelled with the action. -->
@@ -394,7 +412,7 @@
     <value>Replace the paired bridge?</value>
   </data>
   <data name="AmbientHue_RepairDialog_Content" xml:space="preserve">
-    <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones.</value>
+    <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones. Then press the link button on the bridge.</value>
   </data>
 
   <!-- The Live preview tile under the module switch (AmbientPage, x:Uid):
@@ -406,13 +424,13 @@
     <value>Watch what the capture samples and the colour each light receives, beside the page, while you tune.</value>
   </data>
 
-  <!-- AmbientPreviewCard (x:Uid). The block's empty text shows while the
-       engine is off. -->
+  <!-- AmbientPreviewCard (x:Uid). The block's empty text shows only
+       when no display can be read; otherwise the stage shows the display's frame. -->
   <data name="AmbientPreviewBlock.EmptyHeader" xml:space="preserve">
     <value>Live preview</value>
   </data>
   <data name="AmbientPreviewBlock.EmptyDescription" xml:space="preserve">
-    <value>Turn Ambient Light on to see what the capture samples and the colour each light receives.</value>
+    <value>Deckle can't find a display to preview.</value>
   </data>
   <data name="AmbientPreviewZonesToggle.Content" xml:space="preserve">
     <value>Zones</value>
@@ -463,6 +481,14 @@
   <data name="AmbientPreview_Output_Rest" xml:space="preserve">
     <value>REST</value>
   </data>
+  <!-- The Capture readout before any capture: the display's size, read from Windows. -->
+  <data name="AmbientPreview_Display_Format" xml:space="preserve">
+    <value>{0} × {1}</value>
+  </data>
+  <!-- The Output readout while Ambient Light is off: the preview captures, no light receives anything. -->
+  <data name="AmbientPreview_Output_Off" xml:space="preserve">
+    <value>Off</value>
+  </data>
 
   <!-- LightZonesCard (x:Uid). -->
   <data name="AmbientLightsExpander.Header" xml:space="preserve">
@@ -508,20 +534,5 @@
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Ambient Light</value>
-  </data>
-  <data name="AmbientCaptureRate15.Content" xml:space="preserve">
-    <value>15 fps</value>
-  </data>
-  <data name="AmbientCaptureRate60.Content" xml:space="preserve">
-    <value>60 fps</value>
-  </data>
-  <data name="AmbientCaptureRateCard.Description" xml:space="preserve">
-    <value>Higher is smoother and quicker, lower eases the load on a slower PC.</value>
-  </data>
-  <data name="AmbientCaptureRateCard.Header" xml:space="preserve">
-    <value>Capture rate</value>
-  </data>
-  <data name="AmbientCaptureRate30.Content" xml:space="preserve">
-    <value>30 fps</value>
   </data>
 </root>

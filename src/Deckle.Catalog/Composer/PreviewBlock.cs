@@ -102,32 +102,41 @@ public sealed partial class PreviewBlock : UserControl
         // The stage's layer: the same materials as a card's content area, so the
         // scene reads as a surface in the page rather than a card. It fills the
         // row the block gives it; the floor keeps an empty block visible.
-        var stageLayer = new Border
+        // IsCompact strips it (ApplyCompact).
+        _stageLayer = new Border
         {
             Background = Application.Current.Resources["LayerFillColorDefaultBrush"] as Brush,
             BorderBrush = Application.Current.Resources["CardStrokeColorDefaultBrush"] as Brush,
             BorderThickness = new Thickness(1),
             CornerRadius = (CornerRadius)Application.Current.Resources["ControlCornerRadius"],
-            Padding = new Thickness(12),
-            MinHeight = 160,
+            Padding = new Thickness(StagePadding),
+            MinHeight = StageMinHeight,
             Child = layerContent,
         };
 
         _readoutsSlot = new Border { Visibility = Visibility.Collapsed };
 
-        var root = new Grid { RowSpacing = 12 };
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-        root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
-        root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        _root = new Grid { RowSpacing = RowGap };
+        _root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        _root.RowDefinitions.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+        _root.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         Grid.SetRow(_commandsRow, 0);
-        Grid.SetRow(stageLayer, 1);
+        Grid.SetRow(_stageLayer, 1);
         Grid.SetRow(_readoutsSlot, 2);
-        root.Children.Add(_commandsRow);
-        root.Children.Add(stageLayer);
-        root.Children.Add(_readoutsSlot);
+        _root.Children.Add(_commandsRow);
+        _root.Children.Add(_stageLayer);
+        _root.Children.Add(_readoutsSlot);
 
-        Content = root;
+        Content = _root;
     }
+
+    private const double RowGap = 12;
+    private const double CompactRowGap = 8;
+    private const double StagePadding = 12;
+    private const double StageMinHeight = 160;
+
+    private readonly Border _stageLayer;
+    private readonly Grid _root;
 
     // ── Properties (dependency properties so x:Uid can set them from .resw) ──
 
@@ -189,6 +198,22 @@ public sealed partial class PreviewBlock : UserControl
         set => SetValue(IsLiveProperty, value);
     }
 
+    public static readonly DependencyProperty IsCompactProperty = DependencyProperty.Register(
+        nameof(IsCompact), typeof(bool), typeof(PreviewBlock),
+        new PropertyMetadata(false, (d, _) => ((PreviewBlock)d).ApplyCompact()));
+
+    // The compact variant, for an instrument that lives inside a settings card
+    // rather than beside the page (the voice meter in the Voice level card,
+    // 2026-11-07 review): no layer of its own, since the card is already the
+    // surface, no floor, tighter rows, and the stage drawn while not live, a
+    // bar or a track being its own empty state. The commands and the readouts
+    // keep their places and their rules; the empty text is not shown.
+    public bool IsCompact
+    {
+        get => (bool)GetValue(IsCompactProperty);
+        set => SetValue(IsCompactProperty, value);
+    }
+
     public static readonly DependencyProperty EmptyHeaderProperty = DependencyProperty.Register(
         nameof(EmptyHeader), typeof(string), typeof(PreviewBlock),
         new PropertyMetadata(string.Empty, (d, e) => ApplyText(((PreviewBlock)d)._emptyHeader, (string?)e.NewValue)));
@@ -226,11 +251,23 @@ public sealed partial class PreviewBlock : UserControl
         ApplyLive();
     }
 
+    private void ApplyCompact()
+    {
+        bool compact = IsCompact;
+        _stageLayer.Background = compact ? null : Application.Current.Resources["LayerFillColorDefaultBrush"] as Brush;
+        _stageLayer.BorderThickness = new Thickness(compact ? 0 : 1);
+        _stageLayer.Padding = new Thickness(compact ? 0 : StagePadding);
+        _stageLayer.MinHeight = compact ? 0 : StageMinHeight;
+        _root.RowSpacing = compact ? CompactRowGap : RowGap;
+        ApplyLive();
+    }
+
     private void ApplyLive()
     {
         bool live = IsLive;
-        _stageSlot.Visibility = live ? Visibility.Visible : Visibility.Collapsed;
-        _empty.Visibility = live ? Visibility.Collapsed : Visibility.Visible;
+        bool compact = IsCompact;
+        _stageSlot.Visibility = live || compact ? Visibility.Visible : Visibility.Collapsed;
+        _empty.Visibility = live || compact ? Visibility.Collapsed : Visibility.Visible;
         _readoutsSlot.Visibility = live && _readoutsSlot.Child is not null
             ? Visibility.Visible
             : Visibility.Collapsed;

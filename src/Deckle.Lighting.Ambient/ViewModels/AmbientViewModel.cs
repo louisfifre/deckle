@@ -98,12 +98,6 @@ public partial class AmbientViewModel : ObservableObject
     [ObservableProperty]
     public partial bool Enabled { get; set; }
 
-    // Screen-capture rate in Hz, one of AmbientCaptureRate.Allowed. A
-    // structural value like UseMultiLight: it never touches the preset
-    // selection, and the app restarts a running engine when it changes.
-    [ObservableProperty]
-    public partial int CaptureFrameRateHz { get; set; }
-
     // ── Command-enable flag ──────────────────────────────────────────────────
     //
     // Enabled only when the tuning surface (preset selection, the eight tuning
@@ -256,24 +250,6 @@ public partial class AmbientViewModel : ObservableObject
         AmbientSettingsService.Instance.Save();
     }
 
-    partial void OnCaptureFrameRateHzChanged(int value)
-    {
-        if (_isSyncing) return;
-        // Snap an off-list value onto the closed set before it is stored, and
-        // mirror the snapped value back into the VM under _isSyncing so this
-        // handler does not run again for it.
-        int snapped = AmbientCaptureRate.Snap(value);
-        if (snapped != value)
-        {
-            _isSyncing = true;
-            try   { CaptureFrameRateHz = snapped; }
-            finally { _isSyncing = false; }
-        }
-        DeckleAmbientSource.Log.TuningChanged("CaptureFrameRateHz", snapped.ToString());
-        AmbientSettingsService.Instance.Current.CaptureFrameRateHz = snapped;
-        AmbientSettingsService.Instance.Save();
-    }
-
     partial void OnPresetChanged(string value)
     {
         if (_isSyncing) return;
@@ -327,7 +303,6 @@ public partial class AmbientViewModel : ObservableObject
         Preset                 = AmbientPresets.Default;
         UseMultiLight          = d.UseMultiLight;
         Enabled                = d.Enabled;
-        CaptureFrameRateHz     = d.CaptureFrameRateHz;
 
         // _isSyncing stays true — Load() flips it to false.
     }
@@ -355,7 +330,6 @@ public partial class AmbientViewModel : ObservableObject
             Preset                = service.Presets.Selection;
             UseMultiLight         = s.UseMultiLight;
             Enabled               = s.Enabled;
-            CaptureFrameRateHz    = AmbientCaptureRate.Snap(s.CaptureFrameRateHz);
         }
         finally
         {
@@ -368,7 +342,7 @@ public partial class AmbientViewModel : ObservableObject
     //
     // Snaps the tuning surface back to the shipping defaults: the default
     // preset (which writes the eight tuning values and the selection), the
-    // floor, the zone-sampling band, the pipeline shape and the capture rate.
+    // floor, the zone-sampling band and the pipeline shape.
     // Connection state (bridge pairing, last group, monitor), the per-light
     // rows (LightZones, LightBrightness), the pipeline on/off flag and the kept
     // Custom values are deliberately preserved : a reset shouldn't unpair the
@@ -387,7 +361,6 @@ public partial class AmbientViewModel : ObservableObject
         cur.MinBrightness        = d.MinBrightness;
         ApplyZoneSamplingDefaults(cur, d);
         cur.UseMultiLight      = d.UseMultiLight;
-        cur.CaptureFrameRateHz = d.CaptureFrameRateHz;
 
         service.Save();
     }
@@ -442,7 +415,6 @@ public partial class AmbientViewModel : ObservableObject
             s.BorderMode            != d.BorderMode ||
             s.BorderDepth           != d.BorderDepth ||
             s.BorderCells           != d.BorderCells ||
-            s.UseMultiLight         != d.UseMultiLight ||
-            AmbientCaptureRate.Snap(s.CaptureFrameRateHz) != d.CaptureFrameRateHz;
+            s.UseMultiLight         != d.UseMultiLight;
     }
 }

@@ -18,7 +18,7 @@ public sealed class AudioRecordingHostDefaultsTests
 
     private sealed class OriginalMembersHost : IAudioRecordingHost
     {
-        public int AudioInputDeviceId => -1;
+        public string AudioInputEndpointId => "";
         public int MaxRecordingDurationSeconds => 0;
         public bool MicrophoneTelemetryEnabled => false;
         public double VoiceLevelDbfs => new CaptureSettings().VoiceLevelDbfs;

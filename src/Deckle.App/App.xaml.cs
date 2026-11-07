@@ -115,6 +115,11 @@ public partial class App : Microsoft.UI.Xaml.Application
         // engines, windows, tray or hotkeys are composed after this gate.
         if (TryEnterInstallMode()) return;
 
+        // The self-check is a separate mode too, and it must come before the
+        // ownership below: it runs beside the resident app, on a data root of
+        // its own, with a short list of composed pieces (App.SelfCheck.cs).
+        if (TryEnterSelfCheckMode()) return;
+
         // Deckle is a resident utility. A second resident would install a second
         // global keyboard hook and could inject the same correction twice. The
         // transactional install/update/relocation modes above remain deliberately

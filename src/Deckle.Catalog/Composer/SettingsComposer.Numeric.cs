@@ -36,23 +36,31 @@ public sealed partial class SettingsComposer
             SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
             MinWidth = 96,
             VerticalAlignment = VerticalAlignment.Center,
-            // No grouping, so a four-digit figure reads "1200", not "1,200".
-            // FractionDigits is only a minimum, so the rounder is what caps the
-            // readout at the grain: a value stored with binary dust
-            // (0.15000000000000002) still shows "0.15".
-            NumberFormatter = new Windows.Globalization.NumberFormatting.DecimalFormatter
-            {
-                IntegerDigits = 1,
-                FractionDigits = decimals,
-                IsGrouped = false,
-                NumberRounder = new Windows.Globalization.NumberFormatting.IncrementNumberRounder
-                {
-                    Increment = Math.Pow(10, -decimals),
-                    RoundingAlgorithm = Windows.Globalization.NumberFormatting.RoundingAlgorithm.RoundHalfUp,
-                },
-            },
-            Value = AsDouble(s.GetValue()),
         };
+
+        // No grouping, so a four-digit figure reads "1200", not "1,200".
+        // FractionDigits is only a minimum, so the rounder is what caps the
+        // readout at the grain: a value stored with binary dust
+        // (0.15000000000000002) still shows "0.15".
+        var decimalFormatter = new Windows.Globalization.NumberFormatting.DecimalFormatter
+        {
+            IntegerDigits = 1,
+            FractionDigits = decimals,
+            IsGrouped = false,
+            NumberRounder = new Windows.Globalization.NumberFormatting.IncrementNumberRounder
+            {
+                Increment = Math.Pow(10, -decimals),
+                RoundingAlgorithm = Windows.Globalization.NumberFormatting.RoundingAlgorithm.RoundHalfUp,
+            },
+        };
+        // A sentinel reads as the word Auto, in the field as in the reset tooltip.
+        string autoWord = Loc.Get("SettingsComposer_ValueAuto");
+        box.NumberFormatter = args.Auto is double auto
+            ? new SentinelNumberFormatter(decimalFormatter, auto, autoWord)
+            : decimalFormatter;
+        // After the formatter, so the first text the field shows is already
+        // formatted by it.
+        box.Value = AsDouble(s.GetValue());
 
         Slider? slider = args.Slider
             ? new Slider
@@ -102,6 +110,9 @@ public sealed partial class SettingsComposer
                 coordinating = true;
                 try { if (box.Value != snapped) box.Value = snapped; }
                 finally { coordinating = false; }
+                // Every detent reaches the preview, held or not: it is the
+                // gesture's live readout, the write still waits for the release.
+                args.Preview?.Invoke(snapped);
                 if (_syncingFromModel) return;
                 if (hold.Offer(snapped)) s.SetValue(snapped);
             };
@@ -125,6 +136,7 @@ public sealed partial class SettingsComposer
                 if (slider is not null && slider.Value != snapped) slider.Value = snapped;
             }
             finally { coordinating = false; }
+            args.Preview?.Invoke(snapped);
             if (_syncingFromModel) return;
             s.SetValue(snapped);
         };
@@ -149,7 +161,9 @@ public sealed partial class SettingsComposer
         // The tooltip writes the default as the field writes the value: same grain,
         // same unit.
         (FrameworkElement cardContent, Action? updateReset) = WrapWithReset(card, content, s,
-            () => DefaultValueText.Magnitude(AsDouble(s.Default!()), decimals, args.Unit));
+            () => AsDouble(s.Default!()) is var d && d == args.Auto
+                ? autoWord
+                : DefaultValueText.Magnitude(d, decimals, args.Unit));
         card.Content = cardContent;
 
         _refreshers.Add(() =>

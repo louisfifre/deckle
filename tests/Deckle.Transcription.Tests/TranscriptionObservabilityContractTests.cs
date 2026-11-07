@@ -50,7 +50,9 @@ public sealed class TranscriptionObservabilityContractTests : IDisposable
         using var listener = new TestEventListener("Deckle-Whisp");
         const string id = "0123456789abcdef0123456789abcdef";
 
-        DeckleWhispSource.Log.TranscriptionCorrelation(id);
+        // The take's start milestone carries the id the latency dataset
+        // repeats, at every verbosity.
+        DeckleWhispSource.Log.TakeStarted("w1", "dictation", id);
         DeckleWhispSource.Log.LatencyRecorded(
             transcription_id: id,
             audio_sec: 1,

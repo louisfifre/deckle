@@ -76,7 +76,7 @@ public sealed partial class HudPage
         var chrono = ChronoPreview;
         return new MicrophonePreviewFeed(
             createCapture: () => new MicrophoneCapture(),
-            deviceId: () => CaptureSettingsService.Instance.Current.AudioInputDeviceId,
+            endpointId: () => CaptureSettingsService.Instance.Current.AudioInputEndpointId,
             segmenterSettings: () => TranscriptionSettingsService.Instance.Current.Streaming.Segmenter,
             voiceLevelDbfs: () => CaptureSettingsService.Instance.Current.VoiceLevelDbfs,
             minSpeechMs: () => TranscriptionSettingsService.Instance.Current.Streaming.MinSpeechMs,
@@ -95,7 +95,7 @@ public sealed partial class HudPage
         if (generation != Volatile.Read(ref _microphoneGeneration) || !WantsMicrophone()) return;
 
         DecklePlaygroundSource.Log.MicrophonePreviewFellBack(
-            failure.Cause, failure.MmsysErr, failure.ExceptionType);
+            failure.Cause, failure.ErrorCode, failure.ExceptionType);
         _previewSource = PreviewSource.Simulation;
         _microphoneNote = failure.Reason + " Showing the simulation.";
 

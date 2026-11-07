@@ -18,6 +18,22 @@ public sealed partial class FrameSampler
             {
                 if (_disposed) return false;
 
+                if (_path == FrameSamplerPath.GpuReduction)
+                {
+                    switch (ProcessReduced(frame, capturedTex))
+                    {
+                        case ReduceOutcome.Sampled: return true;
+                        case ReduceOutcome.Failed: return false;
+                    }
+
+                    // The desktop texture cannot be read by a shader on this
+                    // device: this frame and every later one take the
+                    // legacy path.
+                    _path = FrameSamplerPath.Legacy;
+                    ReleaseReductionResources();
+                    CreateLegacyResources();
+                }
+
                 unsafe
                 {
                     var ctxVtbl = *(nint**)_d3dContext;
@@ -48,13 +64,7 @@ public sealed partial class FrameSampler
 
                     try
                     {
-                        double elapsedSeconds = _lastProcessedTicks == 0
-                            ? 0
-                            : (frame.TimestampTicks - _lastProcessedTicks) / (double)Stopwatch.Frequency;
-                        _lastProcessedTicks = frame.TimestampTicks;
-
-                        var sample = ReadSampleFromMapped(in mapped, elapsedSeconds);
-                        Volatile.Write(ref _latestSample, sample);
+                        PublishMapped(frame.TimestampTicks, in mapped);
                     }
                     finally
                     {

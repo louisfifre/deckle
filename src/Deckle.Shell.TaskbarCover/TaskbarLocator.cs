@@ -53,7 +53,10 @@ internal static class TaskbarLocator
         if (monitor == IntPtr.Zero || !GetMonitorInfo(monitor, ref info)) return false;
 
         placement = new TaskbarPlacement(
-            taskbar, rect, CoverGeometry.EdgeOf(rect, info.rcMonitor), monitor, DpiScaleOf(monitor));
+            taskbar, rect, CoverGeometry.EdgeOf(rect, info.rcMonitor), monitor, DpiScaleOf(monitor))
+        {
+            MonitorRect = info.rcMonitor,
+        };
         return true;
     }
 

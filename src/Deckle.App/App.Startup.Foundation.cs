@@ -135,34 +135,14 @@ public partial class App
         // file in its constructor, and one that ran first would find its module
         // file missing, write defaults and defeat the migration.
         Settings.SettingsBootstrap.MigrateLegacyToPerModule();
-        OperationalLogAdmission.Configure(activity => activity switch
-        {
-            OperationalLogActivity.Ambient =>
-                LoggingSettingsService.Instance.Current.LogAmbientCaptureActivity,
-            OperationalLogActivity.Transcription =>
-                LoggingSettingsService.Instance.Current.LogTranscriptionActivity,
-            OperationalLogActivity.Autocorrect =>
-                LoggingSettingsService.Instance.Current.LogAutocorrectActivity,
-            OperationalLogActivity.Input =>
-                LoggingSettingsService.Instance.Current.LogInputActivity,
-            OperationalLogActivity.Windowing =>
-                LoggingSettingsService.Instance.Current.LogWindowingActivity,
-            _ => false,
-        });
+        OperationalLogAdmission.Configure(
+            activity => LoggingSettingsService.Instance.Current.Verbosity(activity));
         EmitLoggingPolicy();
         context.Milestone("settings-bootstrap");
 
         // Before any module is composed or registered: every gate below reads
         // these flags.
-        AppModules.RegisterAll();
-        context.TranscriptionPresent = ModulePresence.IsPresent(ModuleIds.Transcription);
-        context.RewritePresent = ModulePresence.IsPresent(ModuleIds.Rewrite);
-        context.AutocorrectPresent = ModulePresence.IsPresent(ModuleIds.Autocorrect);
-        context.AmbientPresent = ModulePresence.IsPresent(ModuleIds.Ambient);
-        context.TrackpadPresent = ModulePresence.IsPresent(ModuleIds.Trackpad);
-        context.PrecisionScrollPresent = ModulePresence.IsPresent(ModuleIds.PrecisionScroll);
-        context.OrchestrationPresent = ModulePresence.IsPresent(ModuleIds.Orchestration);
-        context.AnytypePresent = ModulePresence.IsPresent(ModuleIds.Anytype);
+        RegisterModulesAndReadPresence(context);
         context.Milestone("modules");
 
         // Injected so Deckle.Core reads the storage directory without depending
@@ -218,6 +198,21 @@ public partial class App
         if (context.AutocorrectPresent)
             dispatcher.Catalog.Register(AutocorrectNotifications.All);
         context.Milestone("notifications");
+    }
+
+    // Shared with the self-check: the registry first, then the presence flags
+    // that every gate of the composition reads.
+    private static void RegisterModulesAndReadPresence(StartupContext context)
+    {
+        AppModules.RegisterAll();
+        context.TranscriptionPresent = ModulePresence.IsPresent(ModuleIds.Transcription);
+        context.RewritePresent = ModulePresence.IsPresent(ModuleIds.Rewrite);
+        context.AutocorrectPresent = ModulePresence.IsPresent(ModuleIds.Autocorrect);
+        context.AmbientPresent = ModulePresence.IsPresent(ModuleIds.Ambient);
+        context.TrackpadPresent = ModulePresence.IsPresent(ModuleIds.Trackpad);
+        context.PrecisionScrollPresent = ModulePresence.IsPresent(ModuleIds.PrecisionScroll);
+        context.OrchestrationPresent = ModulePresence.IsPresent(ModuleIds.Orchestration);
+        context.AnytypePresent = ModulePresence.IsPresent(ModuleIds.Anytype);
     }
 
     private const string BuildConfiguration =
@@ -321,11 +316,11 @@ public partial class App
     {
         var logging = LoggingSettingsService.Instance.Current;
         DeckleAppSource.Log.LoggingPolicy(
-            ambient:         logging.LogAmbientCaptureActivity,
-            transcription:   logging.LogTranscriptionActivity,
-            autocorrect:     logging.LogAutocorrectActivity,
-            input:           logging.LogInputActivity,
-            windowing:       logging.LogWindowingActivity,
+            ambient:         logging.AmbientVerbosity.ToString(),
+            transcription:   logging.TranscriptionVerbosity.ToString(),
+            autocorrect:     logging.AutocorrectVerbosity.ToString(),
+            input:           logging.InputVerbosity.ToString(),
+            windowing:       logging.WindowingVerbosity.ToString(),
             app_log_to_disk: logging.ApplicationLogToDisk);
     }
 }

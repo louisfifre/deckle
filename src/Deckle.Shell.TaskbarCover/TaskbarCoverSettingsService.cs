@@ -9,7 +9,9 @@ public sealed class TaskbarCoverSettingsService
         new(() => new TaskbarCoverSettingsService());
     public static TaskbarCoverSettingsService Instance => _instance.Value;
 
-    private static readonly JsonSerializerOptions _jsonOptions = new()
+    // Internal so the tests read a settings file through the same options
+    // the store does.
+    internal static readonly JsonSerializerOptions JsonOptions = new()
     {
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -36,7 +38,7 @@ public sealed class TaskbarCoverSettingsService
         _store = new JsonSettingsStore<TaskbarCoverSettings>(
             path:        path,
             mutexName:   $"{AppPaths.AppFolderName}-Settings-TaskbarCover-Save",
-            jsonOptions: _jsonOptions,
+            jsonOptions: JsonOptions,
             logWarning:  DeckleShellTaskbarCoverSource.Log.SettingsLoadWarning,
             logError:    DeckleShellTaskbarCoverSource.Log.SettingsLoadError);
     }

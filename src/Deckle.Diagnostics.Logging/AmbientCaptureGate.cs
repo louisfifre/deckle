@@ -3,8 +3,8 @@ using Deckle.Diagnostics;
 namespace Deckle.Diagnostics.Logging;
 
 // Whether an ambient capture loop is active. Ambient producers combine this
-// activity scope with `LoggingSettings.LogAmbientCaptureActivity` before
-// emitting Verbose detail: while capture is active and the toggle is off,
+// activity scope with `LoggingSettings.AmbientVerbosity` before emitting
+// Verbose detail: while capture is active and the level is below Details,
 // routine detail is skipped; outside capture, the supporting providers keep
 // their own diagnostics.
 //

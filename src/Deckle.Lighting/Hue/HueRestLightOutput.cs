@@ -12,32 +12,98 @@ namespace Deckle.Lighting;
 // link-button flow is interactive and does not belong behind this
 // abstraction. ListLightsAsync caches the bridge response until the next
 // ConnectAsync.
+//
+// Hand-back. The output Ambient drives (built by HueLightOutputFactory) reads
+// the state of the group's lights on connect and writes it back on dispose,
+// the same way the Entertainment output does, so the fallback path does not
+// leave the room on the last colour Ambient pushed. An output built with the
+// public constructor (the Playground, light placement) does neither: it
+// would write a stale state over whatever the person did meanwhile.
 public sealed class HueRestLightOutput : IMultiLightOutput
 {
-    private readonly HueBridgeClient _client;
+    private readonly IHueRestBridgeClient _client;
     private readonly string _groupId;
+    private readonly HueLightStateRestorer? _restorer;
+    private IReadOnlyDictionary<string, HueLightState>? _inheritedStates;
+    private IReadOnlyDictionary<string, HueLightState>? _statesBeforeAmbient;
     private bool _connected;
     private IReadOnlyList<LightDescriptor>? _cachedLights;
 
     public HueRestLightOutput(HueBridgeClient client, string groupId)
+        : this(client, groupId, restoreStates: false)
+    {
+    }
+
+    internal HueRestLightOutput(
+        IHueRestBridgeClient client,
+        string groupId,
+        bool restoreStates,
+        TimeSpan? restoreWatchWindow = null)
     {
         _client = client;
         _groupId = groupId;
+        if (restoreStates)
+        {
+            // No watch window by default: the bridge's own post-stream write
+            // belongs to Entertainment; REST has nothing to undo the restore.
+            _restorer = new HueLightStateRestorer(
+                client,
+                restoreWatchWindow ?? TimeSpan.Zero,
+                HueLightStateRestorer.DefaultPollInterval);
+        }
     }
+
+    // States an Entertainment start captured before it touched any light and
+    // then failed on. Used in place of a fresh read for those lights, which
+    // that start may already have dimmed.
+    internal void InheritStatesBeforeStreaming(IReadOnlyDictionary<string, HueLightState>? states)
+        => _inheritedStates = states;
 
     public bool IsConnected => _connected && _client.IsPaired;
     public bool UsesStateEventAttribution => true;
 
-    public Task ConnectAsync(CancellationToken ct = default)
+    public async Task ConnectAsync(CancellationToken ct = default)
     {
         if (!_client.IsPaired)
         {
             throw new InvalidOperationException(
                 "HueBridgeClient is not paired ; pair it before constructing a HueRestLightOutput.");
         }
+
+        if (_restorer is not null && _statesBeforeAmbient is null)
+            _statesBeforeAmbient = await CaptureStatesAsync(ct).ConfigureAwait(false);
+
         _connected = true;
         _cachedLights = null;
-        return Task.CompletedTask;
+    }
+
+    private async Task<IReadOnlyDictionary<string, HueLightState>?> CaptureStatesAsync(CancellationToken ct)
+    {
+        var lightIds = new List<string>();
+        try
+        {
+            var groupLights = await _client.ListLightsInGroupAsync(_groupId, ct).ConfigureAwait(false);
+            foreach (var light in groupLights) lightIds.Add(light.Id);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            DeckleLightingSource.Log.EntertainmentLightStatesCaptureFailed(ex.GetType().Name, ex.Message);
+        }
+
+        var captured = await _restorer!.CaptureAsync(_groupId, lightIds, ct).ConfigureAwait(false);
+        if (_inheritedStates is null) return captured;
+
+        // A light the failed Entertainment start already read keeps that
+        // reading: it is the state from before any light was touched.
+        var merged = captured is null
+            ? new Dictionary<string, HueLightState>(StringComparer.Ordinal)
+            : new Dictionary<string, HueLightState>(captured, StringComparer.Ordinal);
+        foreach (var (id, state) in _inheritedStates) merged[id] = state;
+        return merged;
     }
 
     public Task SetColorAsync(LightColor color, CancellationToken ct = default)
@@ -103,10 +169,20 @@ public sealed class HueRestLightOutput : IMultiLightOutput
         return _client.StopIdentifyAsync(lightId, ct);
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         _connected = false;
         _cachedLights = null;
-        return ValueTask.CompletedTask;
+
+        var saved = _statesBeforeAmbient;
+        _statesBeforeAmbient = null;
+        if (_restorer is not null)
+            await _restorer.RestoreBestEffortAsync(saved).ConfigureAwait(false);
     }
+}
+
+internal interface IHueRestBridgeClient : IHueEntertainmentBridgeClient
+{
+    Task SetGroupColorAsync(string groupId, LightColor color, CancellationToken ct = default);
+    Task<IReadOnlyList<HueLight>> ListLightsInGroupAsync(string groupId, CancellationToken ct = default);
 }

@@ -2,8 +2,8 @@ using Xunit;
 
 namespace Deckle.Audio.Tests;
 
-// The voice meter's arithmetic: where a level falls on the track, the smoothing
-// it shares with the HUD outline, and the peak tick's hold. Positions are read
+// The voice meter's arithmetic: where a level falls on the track, the bar's
+// rise and fall between packets, and the peak tick's hold. Positions are read
 // from the scale's own bounds, so a re-tune of the span does not break them.
 [Trait("Category", "unit")]
 public sealed class VoiceLevelMeterScaleTests
@@ -18,6 +18,22 @@ public sealed class VoiceLevelMeterScaleTests
         double f = VoiceLevelMeterScale.Fraction(new CaptureSettings().VoiceLevelDbfs);
 
         Assert.InRange(f, 1.0 / 3, 2.0 / 3);
+    }
+
+    // The slider under the track writes the voice level, and its thumb is the
+    // level's mark: every whole-dB level the field can hold, the shipped one
+    // included, must fall on one of its detents, or the thumb would sit beside
+    // the mark.
+    [Fact]
+    public void EveryWholeDecibelOnTheScaleIsADetentOfTheSlider()
+    {
+        double step = VoiceLevelMeterScale.SliderStepDb;
+        double span = (Max - Min) / step;
+
+        Assert.Equal(Math.Round(span), span, 9);
+        Assert.Equal(0.0, (1.0 / step) % 1.0, 9);
+        double fromMin = (new CaptureSettings().VoiceLevelDbfs - Min) / step;
+        Assert.Equal(Math.Round(fromMin), fromMin, 9);
     }
 
     [Fact]
@@ -45,13 +61,39 @@ public sealed class VoiceLevelMeterScaleTests
     }
 
     [Fact]
-    public void TheFirstFrameIsTakenAsIsAndTheNextAreSmoothedWithTheHudsFactor()
-    {
-        Assert.Equal(-50.0, VoiceLevelMeterScale.Smooth(null, -50.0));
+    public void TheFirstPacketIsTakenAsIs()
+        => Assert.Equal(-50.0, VoiceLevelMeterScale.Ballistic(null, -50.0, 10));
 
-        double alpha = AudioLevelMapper.EmaAlpha;
-        Assert.Equal(-60.0 * alpha + -30.0 * (1 - alpha), VoiceLevelMeterScale.Smooth(-60.0, -30.0), 9);
+    [Fact]
+    public void TheBarRisesWithinOnePacketAndFallsOverSeveralHundredMilliseconds()
+    {
+        // One 10 ms packet 30 dB louder: the bar covers almost all of the rise.
+        double risen = VoiceLevelMeterScale.Ballistic(-60.0, -30.0, 10);
+        Assert.True(risen > -35.0, $"rose to {risen}");
+
+        // One 10 ms packet 30 dB quieter: the bar barely moves down.
+        double fallen = VoiceLevelMeterScale.Ballistic(-30.0, -60.0, 10);
+        Assert.True(fallen > -32.0, $"fell to {fallen}");
+
+        // After the release time constant, it has covered 1 - 1/e of the fall.
+        double afterRelease = VoiceLevelMeterScale.Ballistic(-30.0, -60.0, VoiceLevelMeterScale.ReleaseMs);
+        Assert.Equal(-30.0 - 30.0 * (1 - Math.Exp(-1)), afterRelease, 9);
     }
+
+    [Fact]
+    public void TheBarMovesByAudioTimeNotByPacketCount()
+    {
+        // Three 10 ms packets land where one 30 ms packet does: a device with a
+        // shorter period does not make the bar faster.
+        double stepped = -30.0;
+        for (int i = 0; i < 3; i++) stepped = VoiceLevelMeterScale.Ballistic(stepped, -60.0, 10);
+
+        Assert.Equal(VoiceLevelMeterScale.Ballistic(-30.0, -60.0, 30), stepped, 9);
+    }
+
+    [Fact]
+    public void APacketWithNoDurationLeavesTheBarWhereItWas()
+        => Assert.Equal(-40.0, VoiceLevelMeterScale.Ballistic(-40.0, -10.0, 0));
 
     [Fact]
     public void ALouderValueTakesThePeakAndRestartsTheHold()

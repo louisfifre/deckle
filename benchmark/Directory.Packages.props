@@ -1,0 +1,12 @@
+<Project>
+
+  <!-- Benchmark studies keep inline PackageReference versions because they have
+       experimental package constraints. This nearest Directory.Packages.props
+       prevents the repository root CPM file from re-enabling Central Package
+       Management for benchmark C# projects. -->
+
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+
+</Project>

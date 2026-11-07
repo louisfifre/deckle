@@ -24,11 +24,26 @@ public static class SettingsSearch
 {
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
     [
-        // Microphone device picker (bespoke — runtime waveIn enumeration).
+        // Microphone device picker (bespoke — runtime enumeration of the
+        // capture endpoints).
         new SettingSearchEntry
         {
             LabelKey = "GeneralMicrophoneCard",
             Keywords = ["mic", "source"],
+        },
+
+        // Link to the microphone's Windows Settings page (bespoke command).
+        new SettingSearchEntry
+        {
+            LabelKey = "RecordingMicrophonePropertiesCard",
+            Keywords = ["gain", "volume", "level", "windows", "clipping", "saturation", "input"],
+        },
+
+        // Exclusive access to the microphone (composed toggle).
+        new SettingSearchEntry
+        {
+            LabelKey = "RecordingExclusiveModeCard",
+            Keywords = ["exclusive", "wasapi", "raw", "direct", "latency", "lock"],
         },
 
         // Voice level (composed number field), with the voice meter under it:

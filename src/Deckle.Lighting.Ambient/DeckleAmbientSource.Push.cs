@@ -85,10 +85,17 @@ public sealed partial class DeckleAmbientSource
     }
 
     // push_* stats cover the pushes of the period; they are 0 when no push ran.
+    //
+    // The loop's summary, one line per period at every verbosity from Summary
+    // up: the Details verbosity adds the sparse per-change push lines beside
+    // it, never a line per frame. avg, p95 and max keep the shape of the
+    // push-time distribution for a reader; a curve over time would need one
+    // value per tick, which is a telemetry dataset's job, not the log's.
+    // A table row (AmbientTableTemplateTests).
     [Event(EvtHeartbeat,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "mode={0} | period_s={1:F1} | target_hz={2} | effective_hz={3:F1} | ticks={4} | pushed={5} | dropped={6} | skipped_slots={7} | unmapped_lights={8} | push_failures={9} | push_avg_ms={10:F1} | push_p95_ms={11:F1} | push_max_ms={12:F1}")]
+           Message = "mode={0,-5} | period_s={1,5:F1} | target_hz={2,3} | effective_hz={3,5:F1} | ticks={4,5} | pushed={5,5} | dropped={6,5} | skipped_slots={7,5} | unmapped_lights={8,3} | push_failures={9,5} | push_avg_ms={10,6:F1} | push_p95_ms={11,6:F1} | push_max_ms={12,6:F1}")]
     public void Heartbeat(
         string mode,
         double period_s,
@@ -104,7 +111,7 @@ public sealed partial class DeckleAmbientSource
         double push_p95_ms,
         double push_max_ms)
     {
-        if (!OperationalLogAdmission.IsDetailEnabled(
+        if (!OperationalLogAdmission.IsSummaryEnabled(
                 OperationalLogActivity.Ambient, this,
                 EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(

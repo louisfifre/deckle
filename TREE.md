@@ -65,6 +65,57 @@ _Generated from `git ls-files` — do not edit by hand._
 ├── .vscode/
 │   ├── launch.json
 │   └── tasks.json
+├── benchmark/
+│   ├── rewrite/
+│   │   ├── model-compare/
+│   │   │   ├── campaigns/
+│   │   │   │   ├── lissage-lean.json
+│   │   │   │   └── profiles-v2.json
+│   │   │   ├── optimize/
+│   │   │   │   ├── affinage-sonnet-v2.json
+│   │   │   │   ├── affinage-sonnet.json
+│   │   │   │   ├── arrangement-sonnet-v2.json
+│   │   │   │   ├── arrangement-sonnet-v3.json
+│   │   │   │   ├── arrangement-sonnet.json
+│   │   │   │   ├── lissage-opus-v2.json
+│   │   │   │   └── lissage-opus.json
+│   │   │   ├── prompts/
+│   │   │   │   ├── affinage-court.md
+│   │   │   │   ├── affinage-opt1.md
+│   │   │   │   ├── affinage-opt2.md
+│   │   │   │   ├── arrangement-court.md
+│   │   │   │   ├── arrangement-opt1.md
+│   │   │   │   ├── arrangement-opt2.md
+│   │   │   │   ├── arrangement-opt3.md
+│   │   │   │   ├── lissage-bref.md
+│   │   │   │   ├── lissage-court.md
+│   │   │   │   ├── lissage-current.md
+│   │   │   │   ├── lissage-libre.md
+│   │   │   │   ├── lissage-literal.md
+│   │   │   │   ├── lissage-opt1.md
+│   │   │   │   └── lissage-opt2.md
+│   │   │   ├── .gitignore
+│   │   │   ├── BatchJudge.cs
+│   │   │   ├── Campaign.cs
+│   │   │   ├── CampaignRun.cs
+│   │   │   ├── Corpus.cs
+│   │   │   ├── Export.cs
+│   │   │   ├── Judge.cs
+│   │   │   ├── ModelCompare.csproj
+│   │   │   ├── Optimize.cs
+│   │   │   ├── Program.cs
+│   │   │   ├── README.md
+│   │   │   ├── Shared.cs
+│   │   │   └── Summary.cs
+│   │   └── paragraph-gate/
+│   │       ├── .gitignore
+│   │       ├── ParagraphGate.csproj
+│   │       ├── Program.cs
+│   │       ├── README.md
+│   │       └── samples.jsonl
+│   ├── Directory.Build.props
+│   ├── Directory.Packages.props
+│   └── README.md  — readme-benchmark Index for Deckle's remaining benchmark workspace: the rewrite evaluations, kept…
 ├── docs/
 │   ├── adr/
 │   │   ├── 0000-template.md  — Fill-in template for a Deckle ADR — copy it to start one, record no decision he…
@@ -113,6 +164,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── wheel_analysis.py
 │   │   ├── benchmark-conclusions.md
 │   │   ├── research--cerveau-llm--2026-10-13.md  — Cadrage vérifié (2026-10-13) — un cerveau LLM dans Deckle.Llm : les crédits API…
+│   │   ├── research--courbe-manipulation-directe--2026-11-07.md  — Note de conception du changement 7 de la revue de cohérence des pages audio (20…
+│   │   ├── research--cout-de-capture--2026-11-07.md  — Mesure (2026-11-07) : ce que coûte la capture Ambient à 60 Hz et au-delà sur l'…
+│   │   ├── research--prompts-de-reecriture--2026-11-07.md  — Ce que la boucle d'optimisation des prompts de réécriture et la campagne « prom…
 │   │   ├── research--settings-ux--2026-10-13.md  — Recherche vérifiée (2026-10-13), la direction Settings de Louis passée au cribl…
 │   │   ├── research--seuils-voix--2026-11-06.md  — Cadrage vérifié (2026-11-06) — les seuils de niveau et de détection de voix dup…
 │   │   ├── research--taskbar-sans-windhawk--2026-10-08.md  — Recherche vérifiée (2026-10-08) — remplacer Windhawk par un module Deckle pour…
@@ -213,6 +267,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── update.ps1  — Update Deckle Scripts Installs or updates the launcher, its library and the chosen packs from a sourc…
 │   ├── setup/
 │   │   ├── bootstrap-dev-env.ps1  — Bootstrap the dev environment Brings a fresh Windows 11 machine up to speed for building and running Deckle.…
+│   │   ├── build-portaudio.ps1  — Build PortAudio Rebuilds the portaudio.dll that Deckle.Audio ships, from the pinned PortAudio c…
 │   │   ├── install-hooks.ps1  — Install git hooks Installs the repository's git hooks from their versioned sources and registers…
 │   │   ├── README.md  — Setup Standard files and hooks of a repository.
 │   │   ├── scaffold.ps1  — Scaffold repository files Creates the standard folders and files a repository starts with, and never over…
@@ -251,6 +306,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── menu.ps1
 │   ├── README.md  — readme-scripts Dev workflows entry point for Deckle: the menu.ps1 launcher installed from Deck…
 │   ├── resource-validation.allowlist.json
+│   ├── self-check.ps1  — Run the built Deckle once in its self-check mode and judge its report. Takes the already-built Deckle.exe of this checkout (it never builds), runs it…
 │   ├── stats.ps1  — Repository statistics Walk every project under src\ and build one file inventory per Deckle module, w…
 │   └── update-readme-stats.ps1  — Update the README pulse Regenerate the small "Development pulse" section in README.md from the local Gi…
 ├── src/
@@ -416,6 +472,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Engine/
 │   │   │   ├── AppAmbientEngineHost.cs
 │   │   │   └── AppTranscriptionEngineHost.cs
+│   │   ├── SelfCheck/
+│   │   │   ├── SelfCheckDataRootGate.cs
+│   │   │   └── SelfCheckReport.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -429,6 +488,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Hotkeys.cs
 │   │   ├── App.Input.cs
 │   │   ├── App.Install.cs
+│   │   ├── App.InterfaceCapture.cs
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
 │   │   ├── App.MouseWheel.cs
@@ -437,6 +497,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.PlaygroundAccess.cs
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
+│   │   ├── App.SelfCheck.cs
 │   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs
 │   │   ├── App.Startup.CrashDumps.cs
@@ -474,13 +535,31 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Internal/
 │   │   │   ├── CaptureAnomalyEpisode.cs
 │   │   │   ├── CaptureDataWatchdog.cs
+│   │   │   ├── CaptureErrors.cs
+│   │   │   ├── CaptureFormat.cs
+│   │   │   ├── CaptureLoop.cs
+│   │   │   ├── CapturePipeline.cs
+│   │   │   ├── FloatTakeBuffer.cs
+│   │   │   ├── ICaptureEndpoint.cs
+│   │   │   ├── LegacyWaveInDeviceMap.cs
+│   │   │   ├── LowAudioTracker.cs
 │   │   │   ├── MediaFoundationInterop.cs
-│   │   │   ├── Pcm16Buffer.cs
+│   │   │   ├── MicrophoneEndpointCatalog.cs
+│   │   │   ├── MonoConverter.cs
 │   │   │   ├── PcmBuffer.cs
 │   │   │   ├── PcmConversion.cs
-│   │   │   ├── WaveDeviceInterop.cs
-│   │   │   ├── WaveInBufferRing.cs
-│   │   │   └── WaveInLoop.cs
+│   │   │   ├── PortAudioCaptureEndpoint.cs
+│   │   │   ├── PortAudioEndpointProvider.cs
+│   │   │   ├── PortAudioHost.cs
+│   │   │   ├── PortAudioInterop.cs
+│   │   │   ├── StreamingResampler.cs
+│   │   │   ├── SubWindowAssembler.cs
+│   │   │   └── WaveDeviceInterop.cs
+│   │   ├── Native/
+│   │   │   └── win-x64/
+│   │   │       ├── portaudio.dll
+│   │   │       ├── portaudio.LICENSE.txt
+│   │   │       └── README.md
 │   │   ├── Preprocessing/
 │   │   │   ├── Compressor.cs
 │   │   │   ├── HighPassFilter.cs
@@ -500,9 +579,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AudioFileDecodeResult.cs
 │   │   ├── AudioLevelMapper.cs
 │   │   ├── CaptureFrame.cs
+│   │   ├── CaptureLevel.cs
 │   │   ├── CaptureResult.cs
 │   │   ├── CaptureSettings.cs
 │   │   ├── CaptureSettingsService.cs
+│   │   ├── CaptureSource.cs
 │   │   ├── Deckle.Audio.csproj
 │   │   ├── DeckleAudioSource.cs
 │   │   ├── GLOSSARY.md  — glossary-deckle-audio Audio vocabulary. It separates display level from transcription pre-processing,…
@@ -661,8 +742,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── RestorationReport.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
+│   │   │   ├── AxisTicks.cs
 │   │   │   ├── CubicBezier.cs
 │   │   │   ├── CurveEditor.cs
+│   │   │   ├── CurveEditor.Endpoints.cs
+│   │   │   ├── CurveEndpointLimits.cs
 │   │   │   ├── DefaultValueText.cs
 │   │   │   ├── GestureHold.cs
 │   │   │   ├── HotkeyChordText.cs
@@ -670,8 +754,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── InfoBarLayout.cs
 │   │   │   ├── IPathControl.cs
 │   │   │   ├── MagnitudeGrain.cs
+│   │   │   ├── PauseScale.cs
+│   │   │   ├── PauseStrip.cs
 │   │   │   ├── PreviewBlock.cs
 │   │   │   ├── Readout.cs
+│   │   │   ├── SentinelNumberFormatter.cs
 │   │   │   ├── Setting.cs
 │   │   │   ├── SettingArgs.cs
 │   │   │   ├── SettingDescriptor.cs
@@ -813,6 +900,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DiagnosticsSettingsModule.cs
 │   │   ├── DiagnosticsViewModel.cs
 │   │   ├── DiagnosticsViewModel.Settings.cs
+│   │   ├── LogAutoScroll.cs
 │   │   ├── LogFilterDimension.cs
 │   │   ├── LogFilterSelection.cs
 │   │   ├── LogFilterToken.cs
@@ -1030,6 +1118,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueBridgeClient.Dtos.cs
 │   │   │   ├── HueBridgeClient.EventStream.cs
 │   │   │   ├── HueBridgeClient.Identity.cs
+│   │   │   ├── HueBridgeClient.LightState.cs
 │   │   │   ├── HueBridgeClient.Pairing.cs
 │   │   │   ├── HueBridgeClient.V2.cs
 │   │   │   ├── HueClientKeyStore.cs
@@ -1045,6 +1134,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HueGroup.cs
 │   │   │   ├── HueLight.cs
 │   │   │   ├── HueLightOutputFactory.cs
+│   │   │   ├── HueLightState.cs
+│   │   │   ├── HueLightStateRestorer.cs
 │   │   │   ├── HueLocalDiscovery.cs
 │   │   │   ├── HueLocalDiscovery.Interop.cs
 │   │   │   ├── HueProjectedState.cs
@@ -1066,12 +1157,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientColorPipeline.cs
 │   │   │   ├── AmbientColorSmoother.cs
 │   │   │   ├── AmbientEngine.CaptureEvents.cs
+│   │   │   ├── AmbientEngine.CaptureRate.cs
 │   │   │   ├── AmbientEngine.cs
+│   │   │   ├── AmbientEngine.FirstFrame.cs
 │   │   │   ├── AmbientEngine.GroupPush.cs
 │   │   │   ├── AmbientEngine.Heartbeat.cs
 │   │   │   ├── AmbientEngine.HueEvents.cs
 │   │   │   ├── AmbientEngine.Lifecycle.cs
 │   │   │   ├── AmbientEngine.MultiLightPush.cs
+│   │   │   ├── AmbientEngine.PreviewScan.cs
 │   │   │   ├── AmbientEngine.PushHealth.cs
 │   │   │   ├── AmbientEngine.PushLoop.cs
 │   │   │   ├── AmbientEngineState.cs
@@ -1101,7 +1195,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ViewModels/
 │   │   │   ├── AmbientViewModel.cs
 │   │   │   └── AmbientViewModel.Settings.cs
-│   │   ├── AmbientCaptureRate.cs
+│   │   ├── AmbientCaptureCap.cs
+│   │   ├── AmbientCaptureTarget.cs
 │   │   ├── AmbientPresets.cs
 │   │   ├── AmbientPresetStore.cs
 │   │   ├── AmbientSettings.cs
@@ -1111,10 +1206,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientTuning.cs
 │   │   ├── Deckle.Lighting.Ambient.csproj
 │   │   ├── DeckleAmbientSource.CaptureAndSampling.cs
+│   │   ├── DeckleAmbientSource.CaptureRate.cs
 │   │   ├── DeckleAmbientSource.cs
 │   │   ├── DeckleAmbientSource.Lifecycle.cs
 │   │   ├── DeckleAmbientSource.LightPlacement.cs
 │   │   ├── DeckleAmbientSource.Pairing.cs
+│   │   ├── DeckleAmbientSource.PreviewScan.cs
 │   │   ├── DeckleAmbientSource.Push.cs
 │   │   ├── DeckleAmbientSource.UiAndSettings.cs
 │   │   ├── IAmbientEngineHost.cs
@@ -1305,9 +1402,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Playground/
 │   │   ├── Models/
-│   │   │   ├── CorrectionApplicationEvidence.cs
-│   │   │   ├── CorrectionApplicationFixture.cs
-│   │   │   ├── CorrectionApplicationTrial.cs
 │   │   │   ├── MicrophonePreviewFailure.cs
 │   │   │   ├── MicrophonePreviewFeed.cs
 │   │   │   ├── TuningModel.cs
@@ -1326,10 +1420,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── AmbientPage.ScreenCapture.cs
 │   │   │   │   ├── AmbientPage.xaml
 │   │   │   │   └── AmbientPage.xaml.cs
-│   │   │   ├── Autocorrect/
-│   │   │   │   ├── CorrectionApplicationPage.xaml
-│   │   │   │   ├── CorrectionApplicationPage.xaml.cs
-│   │   │   │   └── RichEditCorrectionSurface.cs
 │   │   │   ├── Hud/
 │   │   │   │   ├── HudPage.Expanders.cs
 │   │   │   │   ├── HudPage.Gauge.cs
@@ -1376,6 +1466,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Modules/
 │   │   │   └── SettingsModuleRegistry.cs
 │   │   ├── Pages/
+│   │   │   ├── GeneralPage.InterfaceCapture.cs
 │   │   │   ├── GeneralPage.ToastsElevated.cs
 │   │   │   ├── GeneralPage.xaml
 │   │   │   ├── GeneralPage.xaml.cs
@@ -1410,6 +1501,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SettingsSearchIndex.cs
 │   │   ├── SettingSuggestion.cs
 │   │   ├── SettingsWindow.FocusDismiss.cs
+│   │   ├── SettingsWindow.InterfaceCapture.cs
 │   │   ├── SettingsWindow.Search.cs
 │   │   ├── SettingsWindow.TitleBarProbe.cs
 │   │   ├── SettingsWindow.xaml
@@ -1491,6 +1583,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── Ui/
+│   │   │   ├── Controls/
+│   │   │   │   ├── ApproachPreview.xaml
+│   │   │   │   └── ApproachPreview.xaml.cs
 │   │   │   ├── TaskbarCoverPage.xaml
 │   │   │   └── TaskbarCoverPage.xaml.cs
 │   │   ├── ViewModels/
@@ -1669,6 +1764,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SpeechTrimResult.cs
 │   │   └── VadService.cs
 │   └── Deckle.Vision/
+│       ├── Shaders/
+│       │   ├── FrameReduce.cso
+│       │   └── FrameReduce.hlsl
 │       ├── CapturedFrame.cs
 │       ├── CaptureIncidents.cs
 │       ├── CaptureMonitor.cs
@@ -1676,13 +1774,18 @@ _Generated from `git ls-files` — do not edit by hand._
 │       ├── CaptureStopReasons.cs
 │       ├── Deckle.Vision.csproj
 │       ├── DeckleVisionSource.cs
+│       ├── DeckleVisionSource.InterfaceCapture.cs
 │       ├── FrameAnalysisHint.cs
 │       ├── FrameFailure.cs
 │       ├── FrameSampler.cs
 │       ├── FrameSampler.Process.cs
 │       ├── FrameSampler.Readback.cs
+│       ├── FrameSampler.Reduction.cs
 │       ├── FrameSampler.Resources.cs
 │       ├── IFrameAnalyzer.cs
+│       ├── InterfaceCaptureIndex.cs
+│       ├── InterfaceCaptureNames.cs
+│       ├── InterfaceCaptureRun.cs
 │       ├── SampledFrame.cs
 │       ├── ScreenCaptureInterop.cs
 │       ├── ScreenCaptureInterop.D3D11.cs
@@ -1693,7 +1796,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │       ├── ScreenCaptureService.Dispose.cs
 │       ├── ScreenCaptureService.Lifecycle.cs
 │       ├── ScreenCaptureService.Loop.cs
-│       └── ScreenCaptureService.Recovery.cs
+│       ├── ScreenCaptureService.Recovery.cs
+│       ├── WindowSnapshot.cs
+│       └── WindowSnapshotInterop.cs
 ├── tests/
 │   ├── Deckle.Anytype.Mcp.Tests/
 │   │   ├── AnytypeUtilityToolCatalogTests.cs
@@ -1794,6 +1899,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HudFeedbackSinkTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── ReswMirrorTests.cs
+│   │   ├── SelfCheckTests.cs
 │   │   ├── TrayIncidentLinesTests.cs
 │   │   └── TrayRightClickMenuTests.cs
 │   ├── Deckle.Audio.Tests/
@@ -1801,26 +1908,38 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AudioRecordingHostDefaultsTests.cs
 │   │   ├── CaptureAnomalyEpisodeTests.cs
 │   │   ├── CaptureDataWatchdogTests.cs
+│   │   ├── CaptureErrorsTests.cs
+│   │   ├── CaptureLoopTests.cs
+│   │   ├── CapturePipelineTests.cs
 │   │   ├── CaptureSettingsMigrationTests.cs
+│   │   ├── CaptureTableTemplateTests.cs
 │   │   ├── Deckle.Audio.Tests.csproj
 │   │   ├── DeckleAudioSourceTests.cs
+│   │   ├── FloatTakeBufferTests.cs
 │   │   ├── ListeningTakeTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MicLevelCheckBugNotes.md
 │   │   ├── MicLevelCheckTests.cs
+│   │   ├── MicrophoneCaptureTests.cs
 │   │   ├── MicrophoneErrorClassificationTests.cs
 │   │   ├── MicrophoneLevelFeedTests.cs
 │   │   ├── MicrophoneTelemetryCalculatorTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── MonoConverterTests.cs
 │   │   ├── OperationalObservabilityCollection.cs
-│   │   ├── Pcm16BufferTests.cs
 │   │   ├── PcmBufferTests.cs
 │   │   ├── PcmConversionTests.cs
+│   │   ├── PortAudioCaptureSystemTests.cs
+│   │   ├── PortAudioDeploymentBugNotes.md
+│   │   ├── PortAudioDeploymentTests.cs
+│   │   ├── PortAudioInteropTests.cs
+│   │   ├── StreamingResamplerTests.cs
+│   │   ├── SubWindowAssemblerTests.cs
+│   │   ├── TestCaptureDoubles.cs
 │   │   ├── TranscriptionPreprocessorTests.cs
 │   │   ├── VoiceDetectorTests.cs
 │   │   ├── VoiceLevelMeterScaleTests.cs
 │   │   ├── WaveInBufferRingBugNotes.md
-│   │   ├── WaveInBufferRingTests.cs
 │   │   └── WaveInReleaseBugNotes.md
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
@@ -1879,6 +1998,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── CubicBezierTests.cs
+│   │   ├── CurveEndpointLimitsTests.cs
 │   │   ├── Deckle.Catalog.Tests.csproj
 │   │   ├── DefaultValueTextTests.cs
 │   │   ├── GestureHoldTests.cs
@@ -1887,6 +2007,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MagnitudeGrainBugNotes.md
 │   │   ├── MagnitudeGrainIntegerTests.cs
 │   │   ├── MagnitudeGrainTests.cs
+│   │   ├── PauseScaleTests.cs
+│   │   ├── ResetWheelBugNotes.md
+│   │   ├── SentinelNumberFormatterTests.cs
 │   │   ├── SettingFactoryTests.cs
 │   │   └── SettingsExpanderItemsBugNotes.md
 │   ├── Deckle.Chrono.Tests/
@@ -1907,6 +2030,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── WindowDescriptionBugNotes.md
 │   ├── Deckle.Diagnostics.Logging.Tests/
 │   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
+│   │   ├── LogAutoScrollTests.cs
 │   │   ├── LogFilterSelectionTests.cs
 │   │   ├── LoggingSettingsTests.cs
 │   │   ├── LogTransferTests.cs
@@ -1960,6 +2084,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SinkCallbackFaultTests.cs
 │   │   ├── SurvivedExceptionBugNotes.md
 │   │   ├── SurvivedExceptionLedgerTests.cs
+│   │   ├── TableTemplateTests.cs
 │   │   ├── TemplateDoctrineTests.cs
 │   │   ├── ThreadingHotLoopCountTests.cs
 │   │   ├── UserIncidentListenerFaultTests.cs
@@ -2058,7 +2183,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Lighting.Ambient.Tests/
 │   │   ├── AmbientBrightnessBugNotes.md
 │   │   ├── AmbientBrightnessCurveTests.cs
-│   │   ├── AmbientCaptureRateTests.cs
+│   │   ├── AmbientCaptureCapTests.cs
+│   │   ├── AmbientCaptureCostInteractiveTests.cs
+│   │   ├── AmbientCaptureStartBugNotes.md
 │   │   ├── AmbientColorSmootherTests.cs
 │   │   ├── AmbientHeartbeatWindowTests.cs
 │   │   ├── AmbientHueChangeAttributorTests.cs
@@ -2066,11 +2193,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientObservabilityCollection.cs
 │   │   ├── AmbientPresetSelectionLogTests.cs
 │   │   ├── AmbientPresetsTests.cs
+│   │   ├── AmbientPreviewGeometryTests.cs
+│   │   ├── AmbientPreviewScanLogTests.cs
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
 │   │   ├── AmbientRunBugNotes.md
 │   │   ├── AmbientRunLogTests.cs
+│   │   ├── AmbientSettingsMigrationTests.cs
 │   │   ├── AmbientStartSettingsTests.cs
+│   │   ├── AmbientTableTemplateTests.cs
 │   │   ├── AmbientUserIncidentTests.cs
 │   │   ├── AssemblyInfo.cs
 │   │   ├── CredentialPayloadTests.cs
@@ -2089,16 +2220,20 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Lighting.Tests.csproj
 │   │   ├── DeckleLightingSourceTests.cs
 │   │   ├── HueBridgeClientIdentityTests.cs
+│   │   ├── HueBridgeClientNoAnswerRegressionTests.cs
 │   │   ├── HueCredentialPayloadBugNotes.md
 │   │   ├── HueCredentialVaultTests.cs
+│   │   ├── HueEntertainmentBugNotes.md
 │   │   ├── HueEntertainmentFrameBuilderTests.cs
 │   │   ├── HueEntertainmentLightOutputTests.cs
+│   │   ├── HueEntertainmentRestoreRegressionTests.cs
 │   │   ├── HueEventStreamBugNotes.md
 │   │   ├── HueEventStreamEpisodeTests.cs
 │   │   ├── HueEventStreamUserIncidentTests.cs
 │   │   ├── HueLightOutputFactoryTests.cs
 │   │   ├── HueLocalDiscoveryRegressionTests.cs
 │   │   ├── HueLocalDiscoveryTests.cs
+│   │   ├── HueRestRestoreRegressionTests.cs
 │   │   ├── LightingCancellationLogTests.cs
 │   │   ├── LightingObservabilityCollection.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
@@ -2166,8 +2301,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SteamLibraryScanEdgeCaseTests.cs
 │   │   └── SteamLibraryTests.cs
 │   ├── Deckle.Playground.Tests/
-│   │   ├── CorrectionApplicationEvidenceTests.cs
-│   │   ├── CorrectionApplicationTrialTests.cs
 │   │   ├── Deckle.Playground.Tests.csproj
 │   │   ├── HudTargetControlsTests.cs
 │   │   ├── HudTuningBugNotes.md
@@ -2195,6 +2328,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeveloperSettingsTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── PerformanceSettingsTests.cs
 │   │   ├── SettingsBackupBugNotes.md
 │   │   ├── SettingsBackupRoundTripTests.cs
 │   │   ├── SettingsBootstrapLegacyTargetTests.cs
@@ -2228,6 +2362,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── TaskbarCoverBugNotes.md
+│   │   ├── TaskbarCoverSettingsTests.cs
 │   │   └── TaskbarPlacementTests.cs
 │   ├── Deckle.Shell.Tests/
 │   │   ├── Deckle.Shell.Tests.csproj
@@ -2260,6 +2395,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LoopbackHttpListenerLease.cs
 │   │   ├── ProviderManifest.cs
 │   │   ├── SharedFileReader.cs
+│   │   ├── TableTemplate.cs
 │   │   ├── TemplateDoctrine.cs
 │   │   ├── TestEventListener.cs
 │   │   ├── WindowsAppSdkBootstrap.cs
@@ -2271,6 +2407,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DictationEndCaptureBugNotes.md
 │   │   ├── DictationRecoveryBugNotes.md
 │   │   ├── DictationRecoveryStoreTests.cs
+│   │   ├── DictationTableTemplateTests.cs
 │   │   ├── EnergySegmenterTests.cs
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs
@@ -2342,8 +2479,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ContentPeakReleaseTests.cs
 │   │   ├── Deckle.Vision.Tests.csproj
 │   │   ├── DeckleVisionSourceTests.cs
+│   │   ├── FrameReductionTests.cs
+│   │   ├── InterfaceCaptureNamesTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
-│   │   └── MilestoneClosersTests.cs
+│   │   ├── MilestoneClosersTests.cs
+│   │   ├── SamplingGridTests.cs
+│   │   └── WarpRig.cs
 │   ├── Directory.Build.props
 │   └── GLOSSARY.md  — glossary-deckle-tests Test taxonomy. It names the four categories inside the automatic scope (unit, i…
 ├── .editorconfig

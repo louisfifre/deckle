@@ -152,6 +152,17 @@ public partial class GeneralViewModel
             defaultValue: () => ElevatedStartupService.DefaultEnabled),
     ];
 
+    // The shared performance signal (PerformanceSettings). Modules read the
+    // persisted value where they need it, so the toggle needs no side effect
+    // beyond PushToSettings.
+    public IReadOnlyList<SettingDescriptor> PerformanceSettings =>
+    [
+        Setting.Toggle("GeneralPerformanceModeCard",
+            () => PerformanceMode,
+            value => PerformanceMode = value,
+            defaultValue: () => new PerformanceSettings().PerformanceMode),
+    ];
+
     // The App-side update loop reads the persisted value on each tick, so the
     // toggle needs no side effect beyond PushToSettings.
     public IReadOnlyList<SettingDescriptor> UpdatesSettings =>
@@ -164,12 +175,19 @@ public partial class GeneralViewModel
 
     // The App reads the persisted value to show or hide every Playground entry
     // point, so the toggle needs no side effect beyond PushToSettings.
+    //
+    // Developer mode comes last: the page's "Capture the interface" card, an
+    // action and so not composed, follows it and shows only while it is on.
     public IReadOnlyList<SettingDescriptor> DeveloperSettings =>
     [
         Setting.Toggle("GeneralShowPlaygroundCard",
             () => ShowPlayground,
             value => ShowPlayground = value,
             defaultValue: () => new DeveloperSettings().ShowPlayground),
+        Setting.Toggle("GeneralDeveloperModeCard",
+            () => DeveloperMode,
+            value => DeveloperMode = value,
+            defaultValue: () => new DeveloperSettings().DeveloperMode),
     ];
 
     // The backup folder, composed as the child of the page's hand-authored

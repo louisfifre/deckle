@@ -67,7 +67,7 @@
     <value>Apps and games</value>
   </data>
   <data name="OrchestrationPageHeader.Description" xml:space="preserve">
-    <value>Add the apps and games Deckle should recognize when they run.</value>
+    <value>Add the apps and games Deckle should recognize when they run, and choose what happens to HDR while they do.</value>
   </data>
   <data name="OrchestrationPageAppsSection.Title" xml:space="preserve">
     <value>Your apps and games</value>
@@ -77,6 +77,9 @@
   </data>
   <data name="OrchestrationPageScanSection.Caption" xml:space="preserve">
     <value>Adds the apps and games found in your Steam libraries and in the folders below.</value>
+  </data>
+  <data name="OrchestrationPage_AddCard.Header" xml:space="preserve">
+    <value>Add an app or a game</value>
   </data>
   <data name="OrchestrationPage_AddAppButton.Content" xml:space="preserve">
     <value>Add app…</value>
@@ -88,7 +91,7 @@
     <value>This app is already in your list.</value>
   </data>
   <data name="OrchestrationPage_ElevationAdvisory.Message" xml:space="preserve">
-    <value>Deckle only notices apps starting when it runs elevated. Turn on Start elevated from the Trackpad page.</value>
+    <value>Deckle only notices apps starting when it runs elevated. Turn on Start elevated in the General settings.</value>
   </data>
   <data name="OrchestrationPage_Empty.Text" xml:space="preserve">
     <value>No apps yet. Add an app or a game to see it here.</value>

@@ -176,6 +176,18 @@ public partial class GeneralViewModel : ObservableObject
         PushToSettings();
     }
 
+    // ── Performance ──────────────────────────────────────────────────────────
+
+    [ObservableProperty]
+    public partial bool PerformanceMode { get; set; }
+
+    partial void OnPerformanceModeChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsUxSource.Log.SettingChanged("Performance.PerformanceMode", value.ToString());
+        PushToSettings();
+    }
+
     // ── Developer ────────────────────────────────────────────────────────────
 
     [ObservableProperty]
@@ -185,6 +197,17 @@ public partial class GeneralViewModel : ObservableObject
     {
         if (_isSyncing) return;
         DeckleSettingsUxSource.Log.SettingChanged("Developer.ShowPlayground", value.ToString());
+        PushToSettings();
+    }
+
+    // Read by the page alone: it shows the developer tools while this is on.
+    [ObservableProperty]
+    public partial bool DeveloperMode { get; set; }
+
+    partial void OnDeveloperModeChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsUxSource.Log.SettingChanged("Developer.DeveloperMode", value.ToString());
         PushToSettings();
     }
 
@@ -253,7 +276,9 @@ public partial class GeneralViewModel : ObservableObject
         ElevatedStartupEnabled = ElevatedStartupService.DefaultEnabled;
         BackupDirectory = paths.BackupDirectory;
         UpdateAutoCheckEnabled = updates.AutoCheckEnabled;
+        PerformanceMode = new PerformanceSettings().PerformanceMode;
         ShowPlayground = new DeveloperSettings().ShowPlayground;
+        DeveloperMode = new DeveloperSettings().DeveloperMode;
         LoadHotkeys(new HotkeysSettings());
 
         // _isSyncing stays true — Load() will set it to false.
@@ -275,7 +300,9 @@ public partial class GeneralViewModel : ObservableObject
             AutostartEnabled = elevated || AutostartService.IsEnabled();
             BackupDirectory = shell.Paths.BackupDirectory;
             UpdateAutoCheckEnabled = shell.Updates.AutoCheckEnabled;
+            PerformanceMode = shell.Performance.PerformanceMode;
             ShowPlayground = shell.Developer.ShowPlayground;
+            DeveloperMode = shell.Developer.DeveloperMode;
             LoadHotkeys(shell.Hotkeys);
         }
         finally
@@ -308,7 +335,9 @@ public partial class GeneralViewModel : ObservableObject
         shell.Appearance.Theme = Theme;
         shell.Paths.BackupDirectory = BackupDirectory ?? "";
         shell.Updates.AutoCheckEnabled = UpdateAutoCheckEnabled;
+        shell.Performance.PerformanceMode = PerformanceMode;
         shell.Developer.ShowPlayground = ShowPlayground;
+        shell.Developer.DeveloperMode = DeveloperMode;
         SettingsService.Instance.Save();
     }
 

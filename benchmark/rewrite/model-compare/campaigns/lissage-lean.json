@@ -1,0 +1,31 @@
+{
+  "name": "lissage-lean",
+  "models": ["claude-opus-5-5"],
+  "iterations": 10,
+  "take_per_bucket": 2,
+  "cells": [
+    {
+      "profile": "Lissage",
+      "buckets": ["medium", "long"],
+      "judge_note": "This profile keeps the speaker's order and words: it removes what speech leaves behind and punctuates. Content moved out of its place counts as a finding only when the move changes the meaning. An idea repeated in the same words may appear once with what its repeats added; an idea restated in other words is kept both times."
+    },
+    {
+      "profile": "Lissage",
+      "name": "lissage-bref",
+      "prompt_file": "prompts/lissage-bref.md",
+      "buckets": ["medium", "long"],
+      "judge_note": "This profile keeps the speaker's order and words: it removes what speech leaves behind and punctuates. Content moved out of its place counts as a finding only when the move changes the meaning. An idea repeated in the same words may appear once with what its repeats added; an idea restated in other words is kept both times."
+    },
+    {
+      "profile": "Lissage",
+      "name": "lissage-libre",
+      "prompt_file": "prompts/lissage-libre.md",
+      "buckets": ["medium", "long"],
+      "judge_note": "This profile is free in form on purpose: it may rephrase, split, merge or rewrite a sentence entirely, in the speaker's register and order. A sentence said in other words is normal cleaning, never a finding. Judge only whether the content, the proper nouns and technical terms, the direction of each statement and the hedges survived the rewriting."
+    }
+  ],
+  "dictations": {
+    "medium": ["978d315756c14b909bab10817c2486b6", "46438cb9088840108bc9e6b95d3a43a5"]
+  },
+  "judge": { "model": "claude-opus-5-5", "batch": 5 }
+}
