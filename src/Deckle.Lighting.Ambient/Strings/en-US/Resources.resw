@@ -154,7 +154,7 @@
     <value>Hue bridge not configured</value>
   </data>
   <data name="AmbientNotPairedInfoBar.Message" xml:space="preserve">
-    <value>Pair a Philips Hue bridge and pick a light group before turning Ambient Light on.</value>
+    <value>Pair a Philips Hue bridge and pick a room or zone before turning Ambient Light on.</value>
   </data>
   <data name="AmbientNotPairedActionButton.Content" xml:space="preserve">
     <value>Configure bridge</value>
@@ -241,6 +241,9 @@
   </data>
   <data name="AmbientMinBrightnessCard.Header" xml:space="preserve">
     <value>Floor level</value>
+  </data>
+  <data name="AmbientMinBrightnessCard.Description" xml:space="preserve">
+    <value>The dimmest the lights get, as a share of their full brightness.</value>
   </data>
   <data name="AmbientSmoothingCard.Header" xml:space="preserve">
     <value>Reaction speed</value>
