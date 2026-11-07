@@ -35,7 +35,8 @@ public sealed partial class DeckleAmbientSource
     }
 
     // reason = AmbientPreviewScanEndReasons. outcome = completed | failed (a
-    // release threw; ex_* carry the first failure). frames = frames the
+    // release threw; ex_* carry the first failure) | timed_out (the release
+    // did not finish and was abandoned, AmbientScanRelease). frames = frames the
     // capture delivered; first_frame_ms = from the start to the first frame
     // the sampler processed, -1 when none came.
     [Event(EvtPreviewScanStopped,

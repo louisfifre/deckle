@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 using Deckle.Catalog;
 using Deckle.Lighting;
@@ -97,6 +98,11 @@ public sealed partial class AmbientPreviewCard : UserControl
     private long _rateFrames;
     private long _rateTimestamp;
 
+    // The frame count last seen and when it last moved: a capture whose
+    // count stays put is a grey stage with nothing to say (AmbientPreviewHealth).
+    private long _seenFrames;
+    private long _seenFramesAt;
+
     // Raised by the Close command: the page that holds the control closes the
     // pane.
     public event RoutedEventHandler? CloseRequested;
@@ -192,6 +198,23 @@ public sealed partial class AmbientPreviewCard : UserControl
 
     private void CloseButton_Click(object sender, RoutedEventArgs e) => CloseRequested?.Invoke(this, e);
 
+    // Try again: a held scan is asked for again; a scan that runs without
+    // delivering is stopped and started anew.
+    private void RetryButton_Click(object sender, RoutedEventArgs e)
+    {
+        var engine = _engine;
+        if (engine is null) return;
+
+        if (engine.IsPreviewScanning)
+        {
+            _ = RestartScanAsync(engine);
+            return;
+        }
+
+        _scanHeld = false;
+        UpdateState();
+    }
+
     // ── State ────────────────────────────────────────────────────────────
 
     // The run's capture feeds the cells from Starting on, as soon as its
@@ -237,6 +260,46 @@ public sealed partial class AmbientPreviewCard : UserControl
             // capture falls back to the display's frame.
             if (!capturing) ShowDisplayFrame();
         }
+
+        UpdateProblem(engine, shown, capturing);
+    }
+
+    // The problem bar: said once the preview is on screen, gone with the
+    // pane. A scan the preview asked for and does not have, or a capture that
+    // delivers no frame, never stays a silent grey stage.
+    private void UpdateProblem(AmbientEngine? engine, bool shown, bool capturing)
+    {
+        long now = Stopwatch.GetTimestamp();
+        long frames = engine?.CapturedFrames ?? 0;
+        if (!capturing || frames != _seenFrames || _seenFramesAt == 0)
+        {
+            _seenFrames = frames;
+            _seenFramesAt = now;
+        }
+
+        bool paused = PauseToggle.IsChecked == true;
+        bool scanFailed = _scanHeld && engine is { State: AmbientEngineState.Off, IsPreviewScanning: false };
+        var problem = shown && !paused
+            ? AmbientPreviewHealth.Classify(
+                scanFailed, capturing,
+                TimeSpan.FromSeconds((now - _seenFramesAt) / (double)Stopwatch.Frequency))
+            : AmbientPreviewProblem.None;
+
+        switch (problem)
+        {
+            case AmbientPreviewProblem.ScanFailed:
+                ProblemBar.Title = Loc.Get("AmbientPreview_ScanFailed_Title");
+                ProblemBar.Message = Loc.Get("AmbientPreview_ScanFailed_Message");
+                break;
+            case AmbientPreviewProblem.NoFrames:
+                ProblemBar.Title = Loc.Get("AmbientPreview_NoFrames_Title");
+                ProblemBar.Message = Loc.Get("AmbientPreview_NoFrames_Message");
+                break;
+        }
+
+        // A run cannot be restarted from here; its own state says the rest.
+        RetryButton.Visibility = engine is { IsRunning: true } ? Visibility.Collapsed : Visibility.Visible;
+        ProblemBar.IsOpen = problem != AmbientPreviewProblem.None;
     }
 
     // Fire and forget from the UI thread: the scan's capture starts off it,
@@ -285,6 +348,8 @@ public sealed partial class AmbientPreviewCard : UserControl
             UpdateState();
             return;
         }
+
+        UpdateProblem(engine, shown: true, capturing: true);
 
         // Between the start of a capture and its first sampled frame, the
         // stage keeps what it drew: the display's frame, or the scan's last
@@ -530,11 +595,19 @@ public sealed partial class AmbientPreviewCard : UserControl
         ZonesToggle.IsEnabled = zoned;
         bool show = zoned && ZonesToggle.IsChecked == true;
 
+        // Only the bands some light follows: the settings page lets a light
+        // take no zone at all, and a setup rarely uses all four edges
+        // (Louis, 2026-11-07: the preview drew bands he has no light for).
+        IReadOnlyCollection<string>? runLightIds = null;
+        if (running && engine!.MultiLights is { } runLights)
+            runLightIds = runLights.Select(l => l.Id).ToArray();
+        var used = AmbientPreviewZones.Used(settings.LightZones, runLightIds);
+
         LayoutZoneRects(settings);
-        ApplyZone(LightZone.Top,    ZoneTopRect,    show, running, settings, emitted);
-        ApplyZone(LightZone.Bottom, ZoneBottomRect, show, running, settings, emitted);
-        ApplyZone(LightZone.Left,   ZoneLeftRect,   show, running, settings, emitted);
-        ApplyZone(LightZone.Right,  ZoneRightRect,  show, running, settings, emitted);
+        ApplyZone(LightZone.Top,    ZoneTopRect,    show && used.Contains(LightZone.Top),    running, settings, emitted);
+        ApplyZone(LightZone.Bottom, ZoneBottomRect, show && used.Contains(LightZone.Bottom), running, settings, emitted);
+        ApplyZone(LightZone.Left,   ZoneLeftRect,   show && used.Contains(LightZone.Left),   running, settings, emitted);
+        ApplyZone(LightZone.Right,  ZoneRightRect,  show && used.Contains(LightZone.Right),  running, settings, emitted);
     }
 
     private void ApplyZone(

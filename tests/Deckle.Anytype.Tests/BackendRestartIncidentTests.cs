@@ -27,7 +27,7 @@ public sealed class BackendRestartIncidentTests
 
     [Fact]
     [Trait("Category", "regression")]
-    public async Task ABackendThatRejectsTenRestartsLeavesOneIncidentInTheLog()
+    public async Task ABackendThatRejectsSixRestartsLeavesOneIncidentInTheLog()
     {
         using var listener = new TestEventListener("Deckle-Anytype");
         string executable = Path.GetFullPath("anytype.exe");
@@ -37,7 +37,7 @@ public sealed class BackendRestartIncidentTests
         {
             new(BackendStartOutcome.Started, first, "start", "spawned"),
         };
-        for (int i = 0; i < 10; i++) results.Add(Rejected($"rejected-{i}"));
+        for (int i = 0; i < 6; i++) results.Add(Rejected($"rejected-{i}"));
         results.Add(new(BackendStartOutcome.Started, second, "back", "spawned"));
         var reconciler = new SequenceBackendReconciler(results.ToArray());
         await using var supervisor = new BackendSupervisor(
@@ -60,9 +60,9 @@ public sealed class BackendRestartIncidentTests
         Assert.NotEmpty(incident);
         Assert.Equal(incident, Field(failing, "work_id"));
         Assert.Equal(incident, Field(recovered, "work_id"));
-        Assert.Equal("11", Field(recovered, "attempts"));
+        Assert.Equal("7", Field(recovered, "attempts"));
 
-        // Nothing else of the ladder travels: ten rungs are not ten log lines.
+        // Nothing else of the ladder travels: six rungs are not six log lines.
         Assert.Equal(3, logged.Length);
     }
 

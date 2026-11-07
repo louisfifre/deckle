@@ -53,9 +53,10 @@ public sealed class AmbientSettings
     //
     // The presets fix the eight tuning values below (AmbientTuning); the
     // family on AmbientSettingsService.Presets selects, applies and keeps
-    // the Custom values. Ambient is the default — the smooth,
-    // low-saturation restitution of the scene's light, the one that
-    // reads as room lighting rather than as an effect.
+    // the Custom values. Realistic Slow is the default — the faithful,
+    // smooth restitution of the scene's light. The ids of the former set
+    // (game, vivid, movie, ambient) are migrated on load
+    // (AmbientPresets.MigrateRetiredSelection).
     //
     // While no selection is stored, it is derived once from the values (the
     // preset they equal, else Custom with those values kept).
@@ -133,7 +134,7 @@ public sealed class AmbientSettings
     // SDR and HDR alike: HDR is tone-mapped to 8 bits before this stage.
     //
     // The initializers of the eight preset-covered values (everything
-    // but the floor) ARE the Ambient preset, which AmbientPresets reads
+    // but the floor) ARE the Realistic Slow preset, which AmbientPresets reads
     // from a fresh instance: one source for a fresh install, the per-card
     // reset and the page reset.
     //
@@ -157,15 +158,13 @@ public sealed class AmbientSettings
 
     /// <summary>Exposure compensation in EV (stops of light) applied
     /// in linear-light before the tone-map. 0 = no change, +1 doubles
-    /// brightness, -1 halves it. The Ambient preset's -0.5 keeps the
-    /// room a little under the screen.</summary>
-    public double ExposureEv { get; set; } = -0.5;
+    /// brightness, -1 halves it. The presets hold 0.</summary>
+    public double ExposureEv { get; set; } = 0.0;
 
     /// <summary>Chroma multiplier applied to each sampled colour
     /// before push. 1.0 = no change, 2.0 = double saturation, 0.0 =
-    /// greyscale. The Ambient preset's 0.7 stays muted so the lights
-    /// never compete with the content.</summary>
-    public double SaturationBoost { get; set; } = 0.7;
+    /// greyscale. The Realistic presets hold 1.0, the Vivid ones 1.10.</summary>
+    public double SaturationBoost { get; set; } = 1.0;
 
     /// <summary>Whether <see cref="MinBrightness"/> is applied to the
     /// derived Hue <c>bri</c>. False lets black / near-black scenes go
@@ -186,17 +185,17 @@ public sealed class AmbientSettings
     /// <summary>First cubic-Bézier control point X coordinate in [0, 1].
     /// The anchors are fixed at (0,0) and (1,1), so the four stored
     /// values are directly equivalent to CSS <c>cubic-bezier()</c>.
-    /// The default curve is the Ambient preset's: it lifts dark scenes
-    /// so a dim room still reads as lit.</summary>
-    public double BrightnessCurveX1 { get; set; } = 0.18;
+    /// The default curve is the one all four presets share, near-linear
+    /// (provisional).</summary>
+    public double BrightnessCurveX1 { get; set; } = 0.33;
 
     /// <summary>First cubic-Bézier control point Y coordinate in [0, 1].
     /// Lower values squash dim scenes ; higher values lift them.</summary>
-    public double BrightnessCurveY1 { get; set; } = 0.55;
+    public double BrightnessCurveY1 { get; set; } = 0.33;
 
-    public double BrightnessCurveX2 { get; set; } = 0.40;
+    public double BrightnessCurveX2 { get; set; } = 0.67;
 
-    public double BrightnessCurveY2 { get; set; } = 0.90;
+    public double BrightnessCurveY2 { get; set; } = 0.67;
 
     /// <summary>Sum-of-absolute-channel-deltas threshold that gates
     /// pushes — if the new tuned-and-smoothed colour differs from the
@@ -206,7 +205,7 @@ public sealed class AmbientSettings
     /// colour again. A change to exact black always goes out
     /// (AmbientPushGate). 0 disables the gate. On a slow fade a
     /// threshold shows as small steps.</summary>
-    public int ChangeThreshold { get; set; } = 10;
+    public int ChangeThreshold { get; set; } = 8;
 
     /// <summary>Exponential moving average factor applied to the colour
     /// pushed to each light, in [0, 1]. 1.0 disables the filter.
@@ -215,7 +214,7 @@ public sealed class AmbientSettings
     /// measured time between push ticks (AmbientPushCadence.AdaptSmoothingAlpha);
     /// it does not depend on the capture rate. Applied per-light in multi
     /// mode, on the single group colour in group mode.</summary>
-    public double SmoothingAlpha { get; set; } = 0.08;
+    public double SmoothingAlpha { get; set; } = 0.15;
 }
 
 /// <summary>How the zone-sampling band thickness is expressed in

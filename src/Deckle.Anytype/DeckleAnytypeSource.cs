@@ -110,6 +110,9 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public const int EvtDeletionApprovalRelayFailed   = 85;
     public const int EvtDeletionApprovalRelayListening = 86;
     public const int EvtDeletionApprovalRelayStopped  = 87;
+    public const int EvtBackendRestartsExhausted      = 88;
+    public const int EvtGatewayKeyChanged             = 89;
+    public const int EvtGatewayKeyCheckSkipped        = 90;
 
     // ── HTTP transport ──────────────────────────────────────────────────
 
@@ -444,8 +447,8 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     // but a human following the flow should see the interruption. exit_known
     // false means the code could not be read (adopted handle without query
     // rights) and exit_code is then meaningless; uptime answers the
-    // crash-loop-or-one-off question, and is -1 when the start time was
-    // unreadable. work_id pairs the stop with what it ends: the start that
+    // crash-loop-or-one-off question, and uptime_known false means the start
+    // time was unreadable (uptime_s is then 0, not a measure). work_id pairs the stop with what it ends: the start that
     // wrote BackendStarting, or the restart incident this stop opens.
     // Inside a restart incident the attempts that die write
     // BackendRestartAttemptStopped instead, at Verbose.
@@ -453,10 +456,10 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Level = EventLevel.Warning,
            Keywords = Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "The Anytype backend stopped unexpectedly, so Anytype is unavailable while Deckle restarts it\nexit_code={1} | exit_known={2} | pid={0} | uptime_s={3:F0} | work_id={4}")]
-    public void BackendStopped(int pid, int exit_code, bool exit_known, double uptime_s, string work_id)
+           Message = "The Anytype backend stopped unexpectedly, so Anytype is unavailable while Deckle restarts it\nexit_code={1} | exit_known={2} | pid={0} | uptime_s={3:F0} | uptime_known={5} | work_id={4}")]
+    public void BackendStopped(int pid, int exit_code, bool exit_known, double uptime_s, string work_id, bool uptime_known)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendStopped, pid, exit_code, exit_known, uptime_s, work_id);
+        if (IsEnabled()) WriteEvent(EvtBackendStopped, pid, exit_code, exit_known, uptime_s, work_id, uptime_known);
     }
 
     // A Process accessor failed. Mostly the expected race of a serve exiting
@@ -630,10 +633,10 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     [Event(EvtBackendRestartAttemptStopped,
            Level = EventLevel.Verbose,
            Keywords = Lifecycle,
-           Message = "exit_code={1} | exit_known={2} | pid={0} | uptime_s={3:F0} | work_id={4}")]
-    public void BackendRestartAttemptStopped(int pid, int exit_code, bool exit_known, double uptime_s, string work_id)
+           Message = "exit_code={1} | exit_known={2} | pid={0} | uptime_s={3:F0} | uptime_known={5} | work_id={4}")]
+    public void BackendRestartAttemptStopped(int pid, int exit_code, bool exit_known, double uptime_s, string work_id, bool uptime_known)
     {
-        if (IsEnabled()) WriteEvent(EvtBackendRestartAttemptStopped, pid, exit_code, exit_known, uptime_s, work_id);
+        if (IsEnabled()) WriteEvent(EvtBackendRestartAttemptStopped, pid, exit_code, exit_known, uptime_s, work_id, uptime_known);
     }
 
     // An attempt waited its window and the backend never answered. Verbose
@@ -685,6 +688,23 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public void BackendRestartsFailing(int attempts, string last_outcome, string ex_type, string ex_message, string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtBackendRestartsFailing, attempts, last_outcome, ex_type, PathRedaction.Redact(ex_message), work_id);
+    }
+
+    // Error: the bound on the ladder was reached, so nothing restarts the
+    // backend until a person asks again. attempts counts the consecutive
+    // failures since the last stable run (a failed restart, or a serve that died
+    // before StableUptime). The cause is what the last attempt knew: last_outcome
+    // is the reconciliation decision (start-rejected, timed-out, a listener that
+    // could not be read) or "exception"; exit_known false means no exit code
+    // could be read, and exit_code is then meaningless.
+    [Event(EvtBackendRestartsExhausted,
+           Level = EventLevel.Error,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Deckle stopped restarting the Anytype backend after repeated failures, so Anytype stays unavailable until it is started again\nlast_outcome={1} | exit_code={2} | exit_known={3} | ex_type={4} | ex_message={5} | attempts={0} | work_id={6}")]
+    public void BackendRestartsExhausted(int attempts, string last_outcome, int exit_code, bool exit_known, string ex_type, string ex_message, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtBackendRestartsExhausted, attempts, last_outcome, exit_code, exit_known, ex_type, PathRedaction.Redact(ex_message), work_id);
     }
 
     // Milestone: it closes a BackendStopped the log already holds, so a
@@ -873,6 +893,32 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
     public void GatewayReplacing(int old_pid, string fingerprint, string work_id)
     {
         if (IsEnabled()) WriteEvent(EvtGatewayReplacing, old_pid, fingerprint, work_id);
+    }
+
+    // The gateway holds an API key other than the one in the vault, so it drains
+    // like a gateway of another build and a fresh one reads the new key. Neither
+    // key nor fingerprint is written.
+    [Event(EvtGatewayKeyChanged,
+           Level = EventLevel.Informational,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The Anytype gateway holds an outdated API key, so Deckle is replacing it")]
+    public void GatewayKeyChanged(int old_pid, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayKeyChanged, old_pid, work_id);
+    }
+
+    // The comparison did not happen and the gateway is kept as it is. reason:
+    // key_unreadable (the vault or the credentials gave no key) or
+    // gateway_unreachable (/health gave no fingerprint, in time or at all).
+    [Event(EvtGatewayKeyCheckSkipped,
+           Level = EventLevel.Warning,
+           Keywords = Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Deckle could not check the API key of the running Anytype gateway, so it keeps it\nreason={0} | pid={1} | work_id={2}")]
+    public void GatewayKeyCheckSkipped(string reason, int pid, string work_id)
+    {
+        if (IsEnabled()) WriteEvent(EvtGatewayKeyCheckSkipped, reason, pid, work_id);
     }
 
     // reason: stop_timeout (asked, did not exit in time) or no_stop_event (the

@@ -1265,6 +1265,21 @@
   <data name="AmbientPreview_Output_Off" xml:space="preserve">
     <value>Off</value>
   </data>
+  <data name="AmbientPreview_ScanFailed_Title" xml:space="preserve">
+    <value>The preview can't read your display</value>
+  </data>
+  <data name="AmbientPreview_ScanFailed_Message" xml:space="preserve">
+    <value>Deckle couldn't start the screen capture. Try again, or pick another display in Capture display.</value>
+  </data>
+  <data name="AmbientPreview_NoFrames_Title" xml:space="preserve">
+    <value>The capture sends no image</value>
+  </data>
+  <data name="AmbientPreview_NoFrames_Message" xml:space="preserve">
+    <value>Your display isn't giving the preview any frame. Try again to restart the capture.</value>
+  </data>
+  <data name="AmbientHue_ListGroups_StoredGone" xml:space="preserve">
+    <value>The room you chose isn't on this bridge any more. Pick another one.</value>
+  </data>
   <data name="AmbientLights_Zone_None" xml:space="preserve">
     <value>No zone</value>
   </data>
