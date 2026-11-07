@@ -15,6 +15,17 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtShutdownRequested, work_id);
     }
 
+    // A second close or restart request while the first still waits for the
+    // work in flight (App.Lifetime.cs): only the first one is served.
+    [Event(EvtShutdownRequestIgnored,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A close request was ignored, because Deckle is already closing")]
+    public void ShutdownRequestIgnored()
+    {
+        if (IsEnabled()) WriteEvent(EvtShutdownRequestIgnored);
+    }
+
     // One line per failing step, cause included: the log says which
     // teardown broke, not only that one did.
     [Event(EvtShutdownStepFailed,
@@ -140,43 +151,6 @@ public sealed partial class DeckleAppSource
     public void PreviousRunEndedUncleanly(string previous_session, int previous_pid, string previous_started)
     {
         if (IsEnabled()) WriteEvent(EvtPreviousRunEndedUncleanly, previous_session, previous_pid, previous_started);
-    }
-
-    // AppPaths moves the legacy settings layout in its static constructor,
-    // before any sink exists, and keeps the failure for this report. The app
-    // went on against the new layout, so settings left in the old place read as
-    // defaults: a degradation, not a stop.
-    [Event(EvtLegacySettingsMigrationFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The legacy settings layout could not be moved, so the settings left there read as defaults\nex_type={0} | ex_message={1}")]
-    public void LegacySettingsMigrationFailed(string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtLegacySettingsMigrationFailed, ex_type, ex_message);
-    }
-
-    // The log and the trace took their current names at this start, on an
-    // install that still had the pre-v0.68.1 ones (journal.jsonl, app.jsonl).
-    // Said once, so a reader of an older log knows where its history went.
-    [Event(EvtLegacyLogFilesRenamed,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Milestone,
-           Message = "Log files from an earlier version took their current names")]
-    public void LegacyLogFilesRenamed(int files)
-    {
-        if (IsEnabled()) WriteEvent(EvtLegacyLogFilesRenamed, files);
-    }
-
-    // A legacy log file could not take its current name. The new file starts
-    // empty beside it and the older history stays under the old name.
-    [Event(EvtLegacyLogFileRenameFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "A log file from an earlier version kept its old name, so its history stays apart\nfile={0} | renamed={1} | ex_type={2} | ex_message={3}")]
-    public void LegacyLogFileRenameFailed(string file, int renamed, string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtLegacyLogFileRenameFailed, file, renamed, ex_type, ex_message);
     }
 
     // A second instance is turned away before it may touch the log, so it

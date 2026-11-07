@@ -5,7 +5,7 @@ namespace Deckle.Autocorrect;
 
 // The default events carry counts, lengths and reasons only — no typed text on
 // the always-on path. A few opt-in, consent-gated events deliberately carry words
-// (the per-word decision and reranker records, the typed-sentence corpus, the
+// (the per-word decision record, the typed-sentence corpus, the
 // typing stream), routed to dedicated datasets and off by default.
 [EventSource(Name = "Deckle-Autocorrect")]
 public sealed class DeckleAutocorrectSource : DeckleEventSource
@@ -23,7 +23,10 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         => OperationalLogAdmission.IsSummaryEnabled(
             OperationalLogActivity.Autocorrect, Log, level, keywords);
 
-    // Ids 6 and 20 are retired: never reuse them, old logs carry them.
+    // Ids 6 and 20 are retired: never reuse them, old logs carry them. So are 13-16,
+    // 18, 27, 31-41, 44-46 and 51, the contextual sentence stage's events (the judge,
+    // its lane, its slots and the caret sentence recovery): they were removed with
+    // that stage, and old logs still carry them.
     public const int EvtEngineStarted      = 1;
     public const int EvtEngineStopped      = 2;
     public const int EvtSurfaceChanged     = 3;
@@ -35,12 +38,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtEnrollmentSuggested = 10;
     public const int EvtLexiconLoadComplete = 11;
     public const int EvtEngineReady         = 12;
-    public const int EvtRerankerStatus      = 13;
-    public const int EvtRerankSlotPending   = 14;
-    public const int EvtRerankSubmitted     = 15;
-    public const int EvtRerankVerdict       = 16;
     public const int EvtAutocorrectDecision = 17;
-    public const int EvtAutocorrectRerank   = 18;
     public const int EvtAutocorrectText     = 19;
     public const int EvtAutocorrectStream   = 21;
     // 22 retired.
@@ -48,44 +46,19 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     public const int EvtInjectionRecovered  = 24;
     public const int EvtInjectionEpisodeDetail = 25;
     // 26 retired.
-    public const int EvtSentenceStageAbandoned = 27;
     public const int EvtPersonalDictionarySanitized = 28;
     public const int EvtExternalMutationBurst = 29;
     public const int EvtDomainPackMerged      = 30;
-    public const int EvtCaretSentenceRecovery = 31;
-    public const int EvtRerankStalled         = 32;
-    public const int EvtRerankStallRecovered  = 33;
-    public const int EvtRerankFailing         = 34;
-    public const int EvtRerankRecovered       = 35;
-    public const int EvtRerankFailureDetail   = 36;
-    public const int EvtRerankLaneStarted     = 37;
-    public const int EvtRerankLaneStopped     = 38;
-    public const int EvtRerankWorkerFaulted   = 39;
-    public const int EvtCaretRecoveryFailing  = 40;
-    public const int EvtCaretRecoveryRecovered = 41;
     public const int EvtEngineStartFailed     = 42;
     public const int EvtInjectionFailing      = 43;
-    public const int EvtRerankerLoadFailure   = 44;
-    public const int EvtSentenceJudgeLoaded   = 45;
-    public const int EvtRerankerLoadRetried   = 46;
     public const int EvtSystemLanguagesFallback = 47;
     public const int EvtLearningStoreUnreadable = 48;
     public const int EvtLearningStoreLoaded   = 49;
-    public const int EvtPersonalDictionaryReset = 50;
-    public const int EvtSentenceJudgeFeatureUnavailable = 51;
+    // 50 retired: the personal dictionary reset on an older schema; the schema
+    // version is gone, so nothing resets it any more.
     public const int EvtDomainPackManifestUnreadable = 52;
     public const int EvtSettingsLoadWarning = 53;
     public const int EvtSettingsLoadError = 54;
-
-    [Event(EvtCaretSentenceRecovery,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "outcome={0} | boundary={1} | text_len={2}")]
-    public void CaretSentenceRecovery(string outcome, string boundary, int text_len)
-    {
-        if (IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
-            WriteEvent(EvtCaretSentenceRecovery, outcome, boundary, text_len);
-    }
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -127,14 +100,13 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         public const string HostStartFailed = "host_start_failed";
     }
 
-    // load_ms is the wall-clock of the off-UI-thread lexical build, the
-    // contextual model load excluded; entries is the effective lexicon's form
-    // count. Verbose so the number never reaches the Info milestone stream.
+    // load_ms is the wall-clock of the off-UI-thread lexical build;
+    // entries is the effective lexicon's form count. Verbose so the number never reaches the Info milestone stream.
     [Event(EvtLexiconLoadComplete,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "load_ms={0} | entries={1}")]
-    public void LexiconLoadComplete(long load_ms, int entries)
+    public void LexiconLoadComplete(long load_ms, long entries)
     {
         if (IsEnabled()) WriteEvent(EvtLexiconLoadComplete, load_ms, entries);
     }
@@ -164,82 +136,6 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtEngineReady);
     }
 
-    // Which contextual (sentence-stage) engine came up: engine names the winner
-    // of the composition-root preference order (RerankerEngines vocabulary),
-    // load_ms its wall-clock model load.
-    [Event(EvtRerankerStatus,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Milestone,
-           Message = "Autocorrect contextual stage")]
-    public void RerankerStatus(string engine, long load_ms)
-    {
-        if (IsEnabled()) WriteEvent(EvtRerankerStatus, engine, load_ms);
-    }
-
-    // A present contextual model that could not initialize is a durable incident,
-    // not activity detail. provider is the execution provider the load asked for
-    // ("dml", "cpu"), because a DirectML failure and a broken export call for
-    // different repairs.
-    [Event(EvtRerankerLoadFailure,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Milestone,
-           Message = "The contextual correction model failed to load, so contextual correction is off\nengine={0} | provider={1} | ex_type={2} | ex_message={3}")]
-    public void RerankerLoadFailure(string engine, string provider, string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtRerankerLoadFailure, engine, provider, ex_type, ex_message);
-    }
-
-    // The sentence judge's identity once its native model is up. model is the
-    // model folder's leaf name only: the full path carries the Windows user name.
-    // retried says the bounded DirectML enumeration retry absorbed a first failure.
-    [Event(EvtSentenceJudgeLoaded,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "model={0} | provider={1} | margin={2} | vocab_size={3} | retried={4}")]
-    public void SentenceJudgeLoaded(string model, string provider, double margin, int vocab_size, bool retried)
-    {
-        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtSentenceJudgeLoaded, model, provider, margin, vocab_size, retried);
-    }
-
-    // The judge runs, but without a prompt feature its margin was calibrated
-    // with (SentenceJudgeFeatures), so its verdicts may drift. Once per load.
-    [Event(EvtSentenceJudgeFeatureUnavailable,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The sentence judge runs without a calibrated prompt feature\nfeature={0} | ex_type={1} | ex_message={2}")]
-    public void SentenceJudgeFeatureUnavailable(string feature, string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtSentenceJudgeFeatureUnavailable, feature, ex_type, ex_message);
-    }
-
-    public static class SentenceJudgeFeatures
-    {
-        public const string ChatTemplate = "chat_template";
-        public const string BosToken     = "bos_token";
-    }
-
-    // The first native model construction failed and the bounded retry is about
-    // to run. A run that then succeeds still leaves this trace of the flake.
-    [Event(EvtRerankerLoadRetried,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "provider={0} | ex_type={1} | ex_message={2}")]
-    public void RerankerLoadRetried(string provider, string ex_type, string ex_message)
-    {
-        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtRerankerLoadRetried, provider, ex_type, ex_message);
-    }
-
-    // Closed vocabulary for RerankerStatus.engine.
-    public static class RerankerEngines
-    {
-        public const string SentenceJudge = "sentence_judge"; // ONNX GenAI Qwen judge (DirectML)
-        public const string None          = "none";           // deterministic rules only
-    }
-
     // Count-only confirmation that the lexical admission policy removed learned
     // entries which can no longer be trusted. The words themselves stay solely
     // in the inspectable personal-dictionary file and never enter this log.
@@ -251,18 +147,6 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
         WriteEvent(EvtPersonalDictionarySanitized, removed);
-    }
-
-    // An older personal-dictionary schema is discarded wholesale: the user loses
-    // learned words and explicit suppressions, so it is a Warning, with counts
-    // only. The words stay out of the log.
-    [Event(EvtPersonalDictionaryReset,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The personal dictionary was reset for a new format, so learned words and suppressions are lost\nfrom_version={0} | to_version={1} | words={2} | suppressions={3}")]
-    public void PersonalDictionaryReset(int from_version, int to_version, int words, int suppressions)
-    {
-        if (IsEnabled()) WriteEvent(EvtPersonalDictionaryReset, from_version, to_version, words, suppressions);
     }
 
     // The Windows language list could not be read, so the lexicon defaults come
@@ -390,204 +274,6 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         WriteEvent(EvtInjectionEpisodeDetail, outcome, failures, backspaces, text_len);
     }
 
-    // ── Contextual reranker decisions ─────────────────────────────────────
-    //
-    // The slot's life across the deferred second stage, so a "why didn't it
-    // correct?" reads off the trace: a SlotPending with no Submitted means the
-    // sentence never closed into a request; a Submitted with no Verdict means the
-    // inference is still running or died; an abstain/stale Verdict says the model
-    // declined or the sentence was reset under it. Counts and a closed outcome
-    // vocabulary only — no typed text on these pipeline events.
-
-    // A word with two or more candidates is now an open slot, waiting for the
-    // sentence stage to decide it. candidates is the larger of its slot and
-    // whole-sentence candidate sets.
-    [Event(EvtRerankSlotPending,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "candidates={0} | word_len={1}")]
-    public void RerankSlotPending(int candidates, int word_len)
-    {
-        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtRerankSlotPending, candidates, word_len);
-    }
-
-    // A terminal sentence ender handed a closed decision to the background
-    // reranker. slot is -1 for the production whole-sentence transaction; a
-    // non-negative value is a compatibility slot-mode request, which production
-    // never sends.
-    [Event(EvtRerankSubmitted,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "slot={0} | context_words={1}")]
-    public void RerankSubmitted(int slot, int context_words)
-    {
-        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtRerankSubmitted, slot, context_words);
-    }
-
-    // The reranker verdict landed. outcome is a closed vocabulary: applied (slot
-    // rewritten), equal (model chose the typed form), abstain (model not
-    // confident — left as typed), stale (the sentence was reset under the
-    // in-flight request), resolved (slot already decided), expired (the exact
-    // visible tail outgrew the bounded rewrite budget), blocked (the in-place
-    // rewrite was refused by the target surface). reason carries the closed
-    // abstention/error reason when one exists; it is empty for ordinary outcomes.
-    [Event(EvtRerankVerdict,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "outcome={0} | reason={1}")]
-    public void RerankVerdict(string outcome, string reason)
-    {
-        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtRerankVerdict, outcome, reason);
-    }
-
-    // A reset made the current sentence-stage work unsafe before it completed.
-    // reason is the ResetReason closed vocabulary; pending_slots includes work
-    // still waiting for context and the request already in flight. This is emitted
-    // at abandonment time, not when a late result eventually returns as stale.
-    [Event(EvtSentenceStageAbandoned,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "reason={0} | pending_slots={1} | in_flight={2}")]
-    public void SentenceStageAbandoned(string reason, int pending_slots, bool in_flight)
-    {
-        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtSentenceStageAbandoned, reason, pending_slots, in_flight);
-    }
-
-    // ── Contextual stage health ──────────────────────────────────────────
-    //
-    // Two incidents, each opened once and closed once. A stall: one inference
-    // has not returned, and single-flight means every later sentence waits
-    // behind it. A failure run: inference returns, but by throwing (DirectML
-    // device loss, out of memory), so every verdict is an abstention.
-
-    // age_ms is how long the in-flight request has been running when a later
-    // sentence found the stage still busy; reason is RerankStallReasons.
-    [Event(EvtRerankStalled,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Contextual correction stalled, later sentences wait\nage_ms={0} | reason={1}")]
-    public void RerankStalled(long age_ms, string reason)
-    {
-        if (IsEnabled()) WriteEvent(EvtRerankStalled, age_ms, reason);
-    }
-
-    public static class RerankStallReasons
-    {
-        public const string InferenceStalled = "inference_stalled";
-    }
-
-    [Event(EvtRerankStallRecovered,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Milestone,
-           Message = "Contextual correction resumed after a stall")]
-    public void RerankStallRecovered(long elapsed_ms)
-    {
-        if (IsEnabled()) WriteEvent(EvtRerankStallRecovered, elapsed_ms);
-    }
-
-    // source names where the exception surfaced (RerankFailureSources); hr is
-    // Exception.HResult, the field that tells a DXGI device removal apart.
-    [Event(EvtRerankFailing,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Contextual correction keeps failing, so sentences are not corrected in context\nsource={0} | ex_type={1} | ex_message={2} | hr={3} | consecutive={4}")]
-    public void RerankFailing(string source, string ex_type, string ex_message, int hr, int consecutive)
-    {
-        if (IsEnabled()) WriteEvent(EvtRerankFailing, source, ex_type, ex_message, hr, consecutive);
-    }
-
-    [Event(EvtRerankRecovered,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Milestone,
-           Message = "Contextual correction recovered")]
-    public void RerankRecovered(int failures)
-    {
-        if (IsEnabled()) WriteEvent(EvtRerankRecovered, failures);
-    }
-
-    // Every failed attempt, the first one included, so a run of failures under an
-    // open incident keeps its causes.
-    [Event(EvtRerankFailureDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "source={0} | ex_type={1} | ex_message={2} | hr={3} | consecutive={4}")]
-    public void RerankFailureDetail(string source, string ex_type, string ex_message, int hr, int consecutive)
-    {
-        if (!IsActivityDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtRerankFailureDetail, source, ex_type, ex_message, hr, consecutive);
-    }
-
-    public static class RerankFailureSources
-    {
-        public const string Inference = "inference";     // the reranker or its scorer threw
-        public const string Delivery  = "delivery";      // posting the verdict to the input thread threw
-    }
-
-    // The worker thread that owns the native model is up. whole_sentence says
-    // the reranker can judge one closed-sentence transaction; caret_verification
-    // that a verdict is re-checked against the live caret before it applies.
-    [Event(EvtRerankLaneStarted,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "whole_sentence={0} | caret_verification={1}")]
-    public void RerankLaneStarted(bool whole_sentence, bool caret_verification)
-    {
-        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtRerankLaneStarted, whole_sentence, caret_verification);
-    }
-
-    // outcome is completed, cancelled (the normal Dispose path) or failed;
-    // duration_ms is how long Dispose waited for an in-flight native inference,
-    // the untimed wait that can stretch a shutdown; dropped_requests counts
-    // requests the drop-oldest queue replaced before the worker took them.
-    [Event(EvtRerankLaneStopped,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "outcome={0} | duration_ms={1} | dropped_requests={2}")]
-    public void RerankLaneStopped(string outcome, long duration_ms, int dropped_requests)
-    {
-        if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
-            WriteEvent(EvtRerankLaneStopped, outcome, duration_ms, dropped_requests);
-    }
-
-    // The worker loop itself died outside any request: the contextual stage is
-    // gone for the rest of the session.
-    [Event(EvtRerankWorkerFaulted,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The contextual correction worker stopped on an error, so contextual correction is off until Deckle restarts\nex_type={0} | ex_message={1} | hr={2}")]
-    public void RerankWorkerFaulted(string ex_type, string ex_message, int hr)
-    {
-        if (IsEnabled()) WriteEvent(EvtRerankWorkerFaulted, ex_type, ex_message, hr);
-    }
-
-    // The background caret read behind sentence recovery threw (UI Automation
-    // provider failure). Opened once, closed by the next read that returns.
-    [Event(EvtCaretRecoveryFailing,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "Reading the text at the caret keeps failing, so autocorrect cannot recover the current sentence\nex_type={0} | ex_message={1}")]
-    public void CaretRecoveryFailing(string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtCaretRecoveryFailing, ex_type, ex_message);
-    }
-
-    [Event(EvtCaretRecoveryRecovered,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Tags = ObservationTags.Milestone,
-           Message = "Caret sentence recovery recovered")]
-    public void CaretRecoveryRecovered(int failures)
-    {
-        if (IsEnabled()) WriteEvent(EvtCaretRecoveryRecovered, failures);
-    }
-
     [Event(EvtExternalMutationBurst,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
@@ -612,9 +298,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     // These two DELIBERATELY carry text: the typed word, its left context, and the
     // candidate forms with their scores. They are routed solely to the opt-in
     // autocorrect.decisions.jsonl sink (gated by AutocorrectDecisions, off by
-    // default) and excluded from trace.jsonl. The synchronous decision and its
-    // deferred reranker verdict share `id`, so the two lines join. CorrectionTrace
-    // renders the flat fields.
+    // default) and excluded from trace.jsonl. CorrectionTrace renders the flat fields.
 
     [Event(EvtAutocorrectDecision,
            Level = EventLevel.Verbose,
@@ -635,23 +319,6 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtAutocorrectDecision,
             id, word, context, outcome, stage, reason, candidates, gauges, trail);
-    }
-
-    [Event(EvtAutocorrectRerank,
-           Level = EventLevel.Verbose,
-           Tags = ObservationTags.Dataset,
-           Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "word={1} | chosen={3} | outcome={2} | margin={5}")]
-    public void AutocorrectRerankRecorded(
-        long   id,
-        string word,
-        string outcome,
-        string chosen,
-        string scores,
-        string margin)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
-        WriteEvent(EvtAutocorrectRerank, id, word, outcome, chosen, scores, margin);
     }
 
     // ── Typed-sentence corpus ─────────────────────────────────────────────

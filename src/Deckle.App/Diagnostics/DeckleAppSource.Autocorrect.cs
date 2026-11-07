@@ -4,7 +4,7 @@ using Deckle.Diagnostics;
 namespace Deckle.App;
 
 // The App-side composition of the autocorrect runtime. The engine's own
-// lifecycle (arming, reranker status) stays on Deckle-Autocorrect.
+// lifecycle (arming, readiness) stays on Deckle-Autocorrect.
 public sealed partial class DeckleAppSource
 {
     // The switch is on but the runtime was never built. reason:
@@ -19,7 +19,7 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtAutocorrectUnavailable, reason);
     }
 
-    // phase: build (loading lexicons and models) or activate (publishing
+    // phase: build (loading lexicons) or activate (publishing
     // and arming the built runtime). Autocorrect stays off until the next
     // settings change retries.
     [Event(EvtAutocorrectFailed,
@@ -32,8 +32,7 @@ public sealed partial class DeckleAppSource
     }
 
     // An optional asset was left out and autocorrect runs without what it
-    // brings. asset: pair_bigrams, verb_morphology, sentence_judge or
-    // pack:<id>. reason: file_missing or load_returned_null.
+    // brings. asset: pair_bigrams or pack:<id>. reason: file_missing.
     [Event(EvtAutocorrectAssetSkipped,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,

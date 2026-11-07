@@ -5,8 +5,8 @@
 
   <ItemGroup>
     <!-- The DirectML build although sessions here run on the CPU: ONNX Runtime
-         is one native DLL per process, and the GenAI sentence judge needs that
-         build. Never the .Gpu package. -->
+         is one native DLL per process, and Deckle pins this one build. Never the
+         .Gpu package. -->
     <PackageReference Include="Microsoft.ML.OnnxRuntime.DirectML" />
   </ItemGroup>
 </Project>

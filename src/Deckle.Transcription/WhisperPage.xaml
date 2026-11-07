@@ -56,9 +56,8 @@
                             Spacing="{StaticResource SettingsCardSpacing}">
 
                 <!-- The shared header block: breadcrumb, one line of description,
-                     Reset all on the trailing edge (active-when-dirty). This page
-                     asks with its own dialog, so the header's generic one is off
-                     (ConfirmsReset, set in the constructor). -->
+                     Reset all on the trailing edge (active-when-dirty). The header
+                     asks; the page adds its ResetDetail in the constructor. -->
                 <catalog:SettingsPageHeader x:Name="Header"
                                             x:Uid="WhisperPageHeader"
                                             ResetAllRequested="ResetAll_Click" />

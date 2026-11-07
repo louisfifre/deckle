@@ -42,34 +42,17 @@ public sealed class PersonalDictionary : IPersonalLexicon, IDisposable
             jsonOptions: JsonOptions,
             logWarning: DeckleAutocorrectSource.Log.SettingsLoadWarning,
             logError: DeckleAutocorrectSource.Log.SettingsLoadError,
-            postLoadMigration: MigrateAndRevalidate);
+            postLoadMigration: Revalidate);
     }
 
-    // An older schema cannot express the clean-day contract. Do not infer:
-    // restart the learning surface cleanly.
-    private bool MigrateAndRevalidate(PersonalDictionaryData data)
+    private bool Revalidate(PersonalDictionaryData data)
     {
         bool mutated = false;
-        if (data.SchemaVersion < PersonalDictionaryData.CurrentSchemaVersion)
-        {
-            // Learned words vanish here by design; without the event the user's
-            // "it forgot my words" has no trace. Counts only, never the words.
-            if (data.Words.Count > 0 || data.Suppressions.Count > 0)
-                DeckleAutocorrectSource.Log.PersonalDictionaryReset(
-                    data.SchemaVersion,
-                    PersonalDictionaryData.CurrentSchemaVersion,
-                    data.Words.Count,
-                    data.Suppressions.Count);
-            data.Words.Clear();
-            data.Suppressions.Clear();
-            data.SchemaVersion = PersonalDictionaryData.CurrentSchemaVersion;
-            mutated = true;
-        }
 
-        // The admission policy is lexical rather than structural, so it does not
-        // require a schema bump. Revalidate current files on every load and remove
-        // only entries that could never be admitted now; suppressions are explicit
-        // user decisions and remain untouched.
+        // The admission policy is lexical and may change between launches.
+        // Revalidate on every load and remove only entries that could never be
+        // admitted now; suppressions are explicit user decisions and remain
+        // untouched.
         RemovedOnLoad = data.Words.RemoveAll(e => !_wordAdmission(e.Word));
         if (RemovedOnLoad > 0)
             mutated = true;

@@ -16,6 +16,7 @@ public sealed partial class PrecisionScrollPage : Page
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
+        Header.ResetDetail = Loc.Get("SettingsPageHeader_ResetKeepsSwitch");
         _switchComposer = new SettingsComposer(SwitchHost, ViewModel);
         _switchComposer.Compose(ViewModel.SwitchManifest);
         _scrollingComposer = new SettingsComposer(ScrollingHost, ViewModel);
@@ -48,16 +49,16 @@ public sealed partial class PrecisionScrollPage : Page
     private void SyncSectionVisibility() =>
         ScrollingSection.Visibility = ViewModel.Enabled ? Visibility.Visible : Visibility.Collapsed;
 
+    // The module switch (_switchComposer) is the person's choice, not a value:
+    // neither the gate nor the reset reads it (2026-11-07). The header asks
+    // before firing.
     private void GateResetAll()
     {
-        Header.IsResetAllEnabled = _switchComposer.IsDirty() || _scrollingComposer.IsDirty();
+        Header.IsResetAllEnabled = _scrollingComposer.IsDirty();
     }
 
-    // The header asks before firing (generic wording: nothing user-authored is
-    // lost here).
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
-        _switchComposer.ResetAll();
         _scrollingComposer.ResetAll();
     }
 }

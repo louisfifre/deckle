@@ -30,6 +30,7 @@ public sealed partial class TrackpadPage : Page
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
+        Header.ResetDetail = Loc.Get("SettingsPageHeader_ResetKeepsSwitch");
         ComposeSettings();
         RefreshGesturesLabel();
     }
@@ -74,17 +75,16 @@ public sealed partial class TrackpadPage : Page
     // ── Whole-page "Reset all" ───────────────────────────────────────────────
     //
     // The Windows-integration acts are commands, not settings, so Reset all
-    // leaves them alone.
+    // leaves them alone. So does the module switch (_enabledComposer): on or off
+    // is the person's choice, not a value to tune, so neither the reset nor its
+    // gate reads it (2026-11-07).
     private void GateResetAll()
     {
-        Header.IsResetAllEnabled =
-            (_enabledComposer?.IsDirty() ?? false) ||
-            (_dragComposer?.IsDirty() ?? false);
+        Header.IsResetAllEnabled = _dragComposer?.IsDirty() ?? false;
     }
 
     private void ResetAll_Click(object sender, RoutedEventArgs e)
     {
-        _enabledComposer?.ResetAll();
         _dragComposer?.ResetAll();
     }
 

@@ -31,7 +31,7 @@ public static class SurfaceProfileReport
         md.AppendLine(
             "How typing behaves per surface, measured from the corpus (GLOSSARY.md § Surface profile): "
             + "how sentences end (a sentence boundary, an Enter, an interruption), at what rhythm, with "
-            + "what pauses. Enter-heavy surfaces are where the sentence stage arrives too late and the "
+            + "what pauses. Enter-heavy surfaces are where a sentence-level pass would arrive too late and the "
             + "pause pass will matter; gap percentiles are inter-word-commit milliseconds, the raw "
             + "material of its threshold. Timed = records carrying a timing string (the gap population).");
         md.AppendLine();

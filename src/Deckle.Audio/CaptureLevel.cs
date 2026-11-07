@@ -4,8 +4,8 @@ namespace Deckle.Audio;
 // the fast side of the capture, for an instrument that has to follow the voice
 // as it happens. A packet is the device period long (10 ms on most
 // microphones, as little as 3 ms where the driver allows it), so a level
-// arrives within one period of the sound instead of after the 50 ms frame the
-// waveIn capture needed to fill.
+// arrives within one period of the sound instead of after the 50 ms frame that
+// the sub-window assembler needs to fill.
 //
 // Rms and Peak are linear [0, 1], of the packet's own samples. DurationMs is
 // the audio the packet covers, so a consumer can smooth in time rather than

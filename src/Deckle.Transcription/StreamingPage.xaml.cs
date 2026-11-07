@@ -18,17 +18,23 @@ public sealed partial class StreamingPage : Page
 {
     public WhisperViewModel ViewModel { get; } = new();
 
+    // The values the page's reset covers. The streaming switch is composed
+    // apart (_switchComposer) and is not in this list: on or off is the
+    // person's choice, not a value, so neither the reset nor its gate reads it.
     private readonly List<SettingsComposer> _composers = new();
+    private SettingsComposer? _switchComposer;
 
     public StreamingPage()
     {
         InitializeComponent();
         NavigationCacheMode = NavigationCacheMode.Required;
+        Header.ResetDetail = Loc.Get("SettingsPageHeader_ResetKeepsSwitch");
 
         // Composed before the first Load() (OnNavigatedTo), so each composer's
         // subscription catches Load()'s refresh; held so they live as long as
         // the cached page.
-        Compose(SwitchHost, ViewModel.StreamingSwitch);
+        _switchComposer = new SettingsComposer(SwitchHost, ViewModel);
+        _switchComposer.Compose(ViewModel.StreamingSwitch);
         Compose(SegmentationHost, ViewModel.SegmentationSettings);
         Compose(SilenceGuardsHost, ViewModel.SilenceGuardSettings);
     }
@@ -56,7 +62,8 @@ public sealed partial class StreamingPage : Page
         GateResetAll();
     }
 
-    // Active-when-dirty over every composer; the header asks before firing.
+    // Active-when-dirty over the value composers (not the switch); the header
+    // asks before firing.
     private void GateResetAll() =>
         Header.IsResetAllEnabled = _composers.Any(c => c.IsDirty());
 

@@ -8,7 +8,7 @@ namespace Deckle.Autocorrect.Tests;
 // The build-data gesture, expressed as a test — Deckle keeps its offline data
 // tooling in lib modules exercised by the suite, never a standalone CLI. This
 // regenerates the versioned derived lexicons under src/Deckle.Autocorrect/Data/
-// (French, legacy English, verbs, and the restricted globish seed) from the raw
+// (French, legacy English, and the restricted globish seed) from the raw
 // sources fetched by scripts/fetch-autocorrect-data.ps1. Each source's
 // licence and attribution live in the root NOTICE.md.
 //

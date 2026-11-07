@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Deckle.Catalog;
@@ -297,21 +298,38 @@ public sealed partial class AmbientPage
                 Tag     = g,
             });
         }
-        _hueGroupComboSuppress = false;
 
+        // The suppression holds through the preselection: it shows the stored
+        // choice, it is not a new one to save.
         HueGroupComboBox.IsEnabled = _hueGroups.Count > 0;
         if (_hueGroups.Count > 0)
         {
-            string? lastId = AmbientSettingsService.Instance.Current.HueLastGroupId;
-            int preselect = 0;
-            if (!string.IsNullOrEmpty(lastId))
-            {
-                for (int i = 0; i < _hueGroups.Count; i++)
-                {
-                    if (_hueGroups[i].Id == lastId) { preselect = i; break; }
-                }
-            }
+            int preselect = HueGroupSelection.IndexOf(
+                _hueGroups.Select(g => g.Id).ToArray(),
+                AmbientSettingsService.Instance.Current.HueLastGroupId);
             HueGroupComboBox.SelectedIndex = preselect;
+            if (preselect < 0 && !string.IsNullOrEmpty(AmbientSettingsService.Instance.Current.HueLastGroupId))
+                SetHuePairStatus(Loc.Get("AmbientHue_ListGroups_StoredGone"));
+        }
+        _hueGroupComboSuppress = false;
+    }
+
+    // The page opens with the room it keeps: the list is read once, quietly,
+    // so the picker is not empty until Load rooms is pressed. A failure is
+    // said in the status line like a pressed Load rooms would.
+    private async Task LoadStoredHueGroupAsync()
+    {
+        if (HueGroupComboBox.Items.Count > 0 || !HuePairingService.Instance.IsPaired) return;
+        if (string.IsNullOrEmpty(AmbientSettingsService.Instance.Current.HueLastGroupId)) return;
+
+        try
+        {
+            await LoadHueGroupsAsync().ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            DeckleAmbientSource.Log.AmbientPageListGroupsFailed(ex.GetType().Name, ex.Message);
+            SetHuePairStatus(Loc.Get("AmbientHue_ListGroups_Failed"));
         }
     }
 

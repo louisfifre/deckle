@@ -68,6 +68,54 @@ public sealed class DeckleShellSource : DeckleEventSource
     public const int EvtTrayIconHostDestroyed              = 55;
     public const int EvtWindowSubclassFailed               = 56;
     public const int EvtTrayIconFallback                   = 57;
+    public const int EvtSessionEndAsked                    = 58;
+    public const int EvtSessionEnding                      = 59;
+    public const int EvtSessionEndCancelled                = 60;
+    public const int EvtSessionEndFlushFailed              = 61;
+
+    // ── Windows session end ─────────────────────────────────────────────
+
+    // Windows asks whether the session may end; Deckle always agrees.
+    // reason (closed vocabulary): logoff | shutdown | close_app.
+    [Event(EvtSessionEndAsked,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "reason={0} | critical={1}")]
+    public void SessionEndAsked(string reason, bool critical)
+    {
+        if (IsEnabled()) WriteEvent(EvtSessionEndAsked, reason, critical);
+    }
+
+    // The last line of a run that Windows ended: a log that stops here says
+    // why. The sinks are drained right after it.
+    [Event(EvtSessionEnding,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Windows is ending the session, so Deckle stops")]
+    public void SessionEnding(string reason, bool critical)
+    {
+        if (IsEnabled()) WriteEvent(EvtSessionEnding, reason, critical);
+    }
+
+    [Event(EvtSessionEndCancelled,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "reason={0}")]
+    public void SessionEndCancelled(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtSessionEndCancelled, reason);
+    }
+
+    // The drain threw; the session ends anyway.
+    [Event(EvtSessionEndFlushFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The log could not be drained before Windows ended the session\nex_type={0} | ex_message={1}")]
+    public void SessionEndFlushFailed(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtSessionEndFlushFailed, ex_type, ex_message);
+    }
 
     // ── Tray icon ───────────────────────────────────────────────────────
 

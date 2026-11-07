@@ -10,8 +10,8 @@ dictation was often missing. Not reproduced on a microphone.
 - **Symptom.** The final word or two were missing from the transcript. Reported
   by the maintainer; the link to this cause is inferred from the code.
 - **Cause.** `RequestToggle` cancelled the capture token in the same call as the
-  Recording to Stopping transition. The waveIn loop then stopped within one
-  50 ms buffer of the press, so nothing spoken at or after the press was
+  Recording to Stopping transition. The capture loop then stopped within one
+  50 ms window of the press, so nothing spoken at or after the press was
   recorded, and the word still being pronounced as the key went down was clipped.
 - **Violated invariant.** The audio of a take runs until a moment after the
   user's stop gesture, not up to it. A gesture marks the end of the intention,

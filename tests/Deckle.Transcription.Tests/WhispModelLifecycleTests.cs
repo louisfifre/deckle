@@ -113,6 +113,9 @@ public sealed class WhispModelLifecycleTests
         Assert.Equal(EventLevel.Error, unavailable.Level);
         Assert.Equal(Field(loading, WorkId.FieldName), Field(unavailable, WorkId.FieldName));
         Assert.Equal("file_not_found", Field(unavailable, "reason"));
+        // Which file is missing and what the load asked for, so the line stands alone.
+        Assert.EndsWith("ggml-small.bin", Field(unavailable, "model_path"));
+        Assert.Equal("True", Field(unavailable, "use_gpu"));
 
         // The later attempts are told in the detail, never in the log.
         Assert.Equal(
@@ -241,7 +244,8 @@ public sealed class WhispModelLifecycleTests
         public Task<ModelLoadResult> LoadModelAsync(CancellationToken ct)
         {
             if (LoadFails)
-                return Task.FromResult(new ModelLoadResult(false, 0, null, "file_not_found"));
+                return Task.FromResult(new ModelLoadResult(
+                    false, 0, null, "file_not_found", @"C:\data\models\ggml-small.bin", GpuRequested: true));
             _loaded = true;
             return Task.FromResult(new ModelLoadResult(true, 35, "scripted", null));
         }

@@ -2,23 +2,22 @@
 
 > Support de consultation pour l'arbitrage — 30 juillet 2026.
 
-**Portée.** Toutes les valeurs déclarées dans le code des 39 modules balayés : réglages persistés, constantes de tuning, paramètres Playground, valeurs figées par construction. Chaque module a été relu à la source, ligne par ligne, par un agent dédié : les faux positifs du balayage automatique ont été retirés, les entrées manquées ont été ajoutées à la main, les entrées douteuses ont été conservées et signalées.
+**Portée.** Toutes les valeurs déclarées dans le code des 38 modules balayés : réglages persistés, constantes de tuning, paramètres Playground, valeurs figées par construction. Chaque module a été relu à la source, ligne par ligne, par un agent dédié : les faux positifs du balayage automatique ont été retirés, les entrées manquées ont été ajoutées à la main, les entrées douteuses ont été conservées et signalées.
 
 **Ce document ne tranche rien.** Il expose et il signale. Exposer, geler, déplacer ou supprimer reste une décision de Louis. La colonne « Juin » indique si l'entrée figurait déjà dans `docs/inventaire-settings.md` (juin 2026). La colonne « Doute » porte la réserve de l'agent qui a vérifié l'entrée — c'est là que se lisent les arbitrages à rendre.
 
 **Hors périmètre.** Les littéraux XAML (bornes `Minimum`/`Maximum`/`StepFrequency` des sliders), les tables lexicales préfixées `_`, et tout ce qui vit sous `tests/`.
 
-Total : **646 entrées** réparties sur **39 modules**.
+Total : **625 entrées** réparties sur **38 modules**.
 
 | Module | Entrées |
 |---|---|
 | Deckle.Anytype | 12 |
 | Deckle.Anytype.Mcp | 3 |
 | Deckle.App | 4 |
-| Deckle.Audio | 46 |
-| Deckle.Autocorrect | 53 |
-| Deckle.Autocorrect.Lab | 20 |
-| Deckle.Autocorrect.Onnx | 1 |
+| Deckle.Audio | 45 |
+| Deckle.Autocorrect | 37 |
+| Deckle.Autocorrect.Lab | 17 |
 | Deckle.Catalog | 2 |
 | Deckle.Composition | 62 |
 | Deckle.Core | 9 |
@@ -82,7 +81,6 @@ Total : **646 entrées** réparties sur **39 modules**.
 
 | Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
 |---|---|---|---|---|---|
-| SentenceJudgeMargin | tuning-constant | `1.0` | src/Deckle.App/App.Autocorrect.cs:37 | non | Strongest keeper of the batch. Comment documents a maintainer-decided precision/coverage tradeoff (92.2%/20.8% at 1.0 vs 90.8%/41.0% at 0.5) and says it is to be relaxed as the corpus grows. Per-export: must be recalibrated if the DML int4 export changes — so exposing it needs a per-export guard. |
 | EntryDrainBatchSize | tuning-constant | `256` | src/Deckle.App/LogWindow.Model.cs:15 | non | UI drain batching for the log window. Perceivable only as responsiveness under load; likely frozen-in-code rather than a setting. |
 | MaxEntries | tuning-constant | `5000` | src/Deckle.App/LogWindow.Model.cs:96 | non | Sweep reports declaration 'field'; it is actually a method-local const inside the enqueue loop, so exposing it means hoisting it first. Value verified. User-perceivable: it caps log window scrollback. |
 | SearchCollapseThreshold | tuning-constant | `520.0` | src/Deckle.App/LogWindow.xaml.cs:72 | non | Responsive breakpoint (DIPs) at which the log window SearchBox collapses to an icon. Comment pins it to the Windows 11 Task Manager pattern — a design constant, probably not exposable. |
@@ -99,15 +97,14 @@ Total : **646 entrées** réparties sur **39 modules**.
 | AudioLevelMapper.MaxDbfs | tuning-constant | `VoiceLevelDbfs + 20` | src/Deckle.Audio/AudioLevelMapper.cs:62 | oui | HUD level window ceiling, derived: WindowSpanDb (20 dB) above the voice level. |
 | VoiceLevelMeterScale.MinDbfs | tuning-constant | `-80.0` | src/Deckle.Audio/VoiceLevelMeterScale.cs:17 | non | Left end of the voice meter's fixed dB track (Recording page). Fixed so the marks move when the voice level changes; puts the default -45 in the middle third. |
 | VoiceLevelMeterScale.MaxDbfs | tuning-constant | `-10.0` | src/Deckle.Audio/VoiceLevelMeterScale.cs:18 | non | Right end of the same track. |
-| CaptureSettings.AudioInputDeviceId | persisted-setting | `-1` | src/Deckle.Audio/CaptureSettings.cs:15 | oui | June marks it bespoke (runtime waveIn enumeration). -1 = WAVE_MAPPER. |
+| CaptureSettings.AudioInputEndpointId | persisted-setting | `""` | src/Deckle.Audio/CaptureSettings.cs:13 | non | The microphone as its MMDevice endpoint id; empty = the system default capture device, resolved when each take starts. Bespoke: values come from a runtime device enumeration. Replaces the former waveIn device index (AudioInputDeviceId, retired in v0.87.0). |
 | CaptureSettings.VoiceLevelDbfs | persisted-setting | `-45.0` | src/Deckle.Audio/CaptureSettings.cs:34 | oui | Formerly the segmenter's speech level (streaming.segmenter.thresholdDbfs, Streaming page); moved to the Audio module and the Recording page (RecordingVoiceLevelCard) on 2026-11-06. Read by the segmenter, the low-audio warning and the HUD outline. |
 | CaptureSettings.MaxRecordingDurationSeconds | persisted-setting | `20 * 60 (1200 s)` | src/Deckle.Audio/CaptureSettings.cs:23 | non | Persisted, no UI found in the sweep scope. Sweep value string was the unevaluated expression; real default 1200. 0 = no cap. |
 | CaptureSettings.Preprocessing | persisted-setting | `new PreprocessingSettings()` | src/Deckle.Audio/CaptureSettings.cs:34 | oui | Container property; the opt-in toggle is Preprocessing.Enabled, fine params live in the Playground. |
 | VoiceDetector.DefaultEntryMarginDb | tuning-constant | `0.0` | src/Deckle.Audio/VoiceDetector.cs:33 | non | Margin above the voice level that a silent frame must reach to open an utterance (the entry level); it gates the opening only, the resume after a pause stays at the voice level. 0 keeps the behaviour from before the detector; a positive value is to be sized against the audio corpus. Replaces the low-audio warning's own −45 dBFS constant, which now reads the voice level. |
-| WaveInLoop.NormalVoiceSustainedMs | tuning-constant | `200` | src/Deckle.Audio/Internal/WaveInLoop.cs:99 | non | Method-local const gating the same warning. |
-| WaveInLoop.WarnAfterSilenceMs | tuning-constant | `5000` | src/Deckle.Audio/Internal/WaveInLoop.cs:100 | non | Method-local const: delay before the low-audio warning fires. |
-| WaveInLoop.SubWindowMs | tuning-constant | `50` | src/Deckle.Audio/Internal/WaveInLoop.cs:436 | non | Method-local const. Structural cadence: telemetry and MicrophoneTelemetryCalculator.SubWindowSamples=800 assume it. Not independently tunable. |
-| MicrophoneCapture.N_BUFFERS | tuning-constant | `4` | src/Deckle.Audio/MicrophoneCapture.cs:40 | non | waveIn buffer count - implementation detail, but it sets capture latency/robustness. Kept under doubt. |
+| LowAudioTracker.NormalVoiceSustainedMs | tuning-constant | `200` | src/Deckle.Audio/Internal/LowAudioTracker.cs:23 | non | Public const gating the low-audio warning: a voiced stretch this long locks the warning off. |
+| LowAudioTracker.WarnAfterSilenceMs | tuning-constant | `5000` | src/Deckle.Audio/Internal/LowAudioTracker.cs:24 | non | Public const: delay before the low-audio warning fires. |
+| SubWindowAssembler.WindowMs | tuning-constant | `50` | src/Deckle.Audio/Internal/SubWindowAssembler.cs:14 | non | Structural cadence: the capture cuts its stream into windows of this length; telemetry (MicrophoneTelemetryCalculator.SubWindowSamples=800) and EnergySegmenter.FrameMs assume it. Not independently tunable. |
 | MicLevelTester.DefaultMeasureSeconds | tuning-constant | `5` | src/Deckle.Audio/MicLevelTester.cs:23 | non | Duration of the Settings mic check - directly user-perceivable. |
 | MicLevelCheck.RecommendDeltaDb | tuning-constant | `6.0` | src/Deckle.Audio/Preprocessing/MicLevelCheck.cs:26 | non | Self-declared provisional engineer guess; decides the 'enable the lift' recommendation shown to the user. |
 | MicLevelCheck.MarginalDeltaDb | tuning-constant | `2.0` | src/Deckle.Audio/Preprocessing/MicLevelCheck.cs:30 | non | Same provisional advice thresholds. |
@@ -131,7 +128,7 @@ Total : **646 entrées** réparties sur **39 modules**.
 | PreprocessingSettings.LimiterCeilingDbfs | persisted-setting | `-1f` | src/Deckle.Audio/Preprocessing/PreprocessingSettings.cs:71 | oui |  |
 | PreprocessingSettings.LimiterReleaseMs | persisted-setting | `50f` | src/Deckle.Audio/Preprocessing/PreprocessingSettings.cs:72 | oui |  |
 | TranscriptionPreprocessor.SampleRate | tuning-constant | `16000.0` | src/Deckle.Audio/Preprocessing/TranscriptionPreprocessor.cs:42 | non | Frozen module-wide capture format the DSP time constants depend on. Not a knob. |
-| MicrophoneTelemetryCalculator.SubWindowSamples | tuning-constant | `800` | src/Deckle.Audio/Telemetry/MicrophoneTelemetryCalculator.cs:135 | non | 800 samples = 50 ms @16 kHz; must stay in lock-step with WaveInLoop.SubWindowMs. Structural, not tunable. |
+| MicrophoneTelemetryCalculator.SubWindowSamples | tuning-constant | `800` | src/Deckle.Audio/Telemetry/MicrophoneTelemetryCalculator.cs:99 | non | 800 samples = 50 ms @16 kHz; must equal SubWindowAssembler.WindowMs (50 ms), the cut the capture emits. Structural, not tunable. |
 
 ## Deckle.Autocorrect
 
@@ -146,7 +143,6 @@ Total : **646 entrées** réparties sur **39 modules**.
 | RestorerOptions.DominanceRatio | tuning-constant | `20.0` | src/Deckle.Autocorrect/Engine/RestorerOptions.cs:19 | non | Not persisted. |
 | RestorerOptions.MinDominantFrequencyPerMillion | tuning-constant | `1.0` | src/Deckle.Autocorrect/Engine/RestorerOptions.cs:23 | non | Not persisted. |
 | RestorerOptions.MinCandidateFrequencyPerMillion | tuning-constant | `0.0` | src/Deckle.Autocorrect/Engine/RestorerOptions.cs:27 | non | Not persisted. |
-| RestorerOptions.MinCandidateFrequencyRatio | tuning-constant | `0.01` | src/Deckle.Autocorrect/Engine/RestorerOptions.cs:41 | non | Not persisted. Sentence-stage rarity gate, empirically grounded (100x floor over the maintainer's corpus). |
 | RestorerOptions.CorrectValidFormsWithContext | tuning-constant | `false` | src/Deckle.Autocorrect/Engine/RestorerOptions.cs:46 | non | Eval-only flag by doctrine; Lab/Playground territory, not Settings. |
 | RestorerOptions.GuardCapitalizedMidSentence | tuning-constant | `false` | src/Deckle.Autocorrect/Engine/RestorerOptions.cs:54 | non | Proper-noun guard, off by default. Plausibly a real user-perceivable knob. |
 | TypoOptions.MinWordLength | tuning-constant | `3` | src/Deckle.Autocorrect/Engine/TypoOptions.cs:19 | non | Kind corrected: NOT persisted. Defaults-only in ConservativeTypoCorrector.cs:62. |
@@ -160,20 +156,7 @@ Total : **646 entrées** réparties sur **39 modules**.
 | DisambiguatorOptions.LiteralBias | tuning-constant | `2.0` | src/Deckle.Autocorrect/Engine/BigramPairDisambiguator.cs:266 | non | Not persisted. |
 | DisambiguatorOptions.MinEvidence | tuning-constant | `5` | src/Deckle.Autocorrect/Engine/BigramPairDisambiguator.cs:269 | non | Not persisted. |
 | DisambiguatorOptions.MaxContextOrder | tuning-constant | `3` | src/Deckle.Autocorrect/Engine/BigramPairDisambiguator.cs:274 | non | Not persisted. |
-| ConservativeTypoCorrector.SentenceCandidateCap | tuning-constant | `4` | src/Deckle.Autocorrect/Engine/ConservativeTypoCorrector.cs:27 | non | Perf/ambiguity bound; borderline exposable. |
-| ConservativeTypoCorrector.ContextualFarMaxWordLength | tuning-constant | `5` | src/Deckle.Autocorrect/Engine/ConservativeTypoCorrector.cs:28 | non |  |
 | ConservativeTypoCorrector.Edits2MaxWordLength | tuning-constant | `14` | src/Deckle.Autocorrect/Engine/ConservativeTypoCorrector.cs:209 | non | Cost bound on the far tier; kept because it changes what gets corrected. |
-| SentenceProposalGate.MaxTextLength | tuning-constant | `512` | src/Deckle.Autocorrect/Engine/SentenceProposalGate.cs:10 | non | Safety budget for whole-sentence proposals; arguably frozen-by-doctrine rather than a knob. |
-| SentenceProposalGate.MaxBackspaces | tuning-constant | `160` | src/Deckle.Autocorrect/Engine/SentenceProposalGate.cs:11 | non | Safety budget. |
-| SentenceProposalGate.MaxInsertedChars | tuning-constant | `192` | src/Deckle.Autocorrect/Engine/SentenceProposalGate.cs:12 | non | Safety budget. |
-| SentenceProposalGate.AbsoluteEditCap | tuning-constant | `24` | src/Deckle.Autocorrect/Engine/SentenceProposalGate.cs:13 | non | Safety budget. |
-| SentenceProposalGate.RelativeEditCap | tuning-constant | `0.15` | src/Deckle.Autocorrect/Engine/SentenceProposalGate.cs:14 | non | Safety budget. |
-| SentenceRerankCoordinator.BufferCap | tuning-constant | `40` | src/Deckle.Autocorrect/Engine/SentenceRerankCoordinator.cs:65 | non |  |
-| SentenceRerankCoordinator.ContextWindow | tuning-constant | `12` | src/Deckle.Autocorrect/Engine/SentenceRerankCoordinator.cs:69 | non | Words each side handed to the masked-LM; latency/quality trade. |
-| SentenceRerankCoordinator.SeparatorRunCap | tuning-constant | `8` | src/Deckle.Autocorrect/Engine/SentenceRerankCoordinator.cs:73 | non | Deliberate duplicate of TypedWordTracker.SeparatorRunCap (comment says 'mirrors'). Two declaration sites, one knob. |
-| SentenceRerankCoordinator.MaxRewriteTailChars | tuning-constant | `256` | src/Deckle.Autocorrect/Engine/SentenceRerankCoordinator.cs:78 | non | Intrusiveness bound; user-perceivable. |
-| SentenceRerankCoordinator.MaxSentenceEditCandidates | tuning-constant | `12` | src/Deckle.Autocorrect/Engine/SentenceRerankCoordinator.cs:83 | non |  |
-| SentenceRerankCoordinator.SentenceEnders | tuning-constant | `{ '.', '!', '?', '…' }` | src/Deckle.Autocorrect/Engine/SentenceRerankCoordinator.cs:87 | non | Linguistic table; kept in doubt, arguably frozen. |
 | AutocorrectEngine.RollupPeriodMs | tuning-constant | `30_000` | src/Deckle.Autocorrect/Engine/AutocorrectEngine.cs:25 | non | Telemetry roll-up period. Diagnostic, not user-facing. |
 | PersonalDictionary.RequiredCleanOccurrences | tuning-constant | `3` | src/Deckle.Autocorrect/Learning/PersonalDictionary.cs:14 | non | How fast a typed literal is adopted into the personal lexicon; strongly user-perceivable. |
 | PersonalDictionary.RequiredDistinctDays | tuning-constant | `2` | src/Deckle.Autocorrect/Learning/PersonalDictionary.cs:15 | non | Same adoption gate. |
@@ -181,15 +164,13 @@ Total : **646 entrées** réparties sur **39 modules**.
 | PersonalWordAdmission.FrenchCollisionFloorPerMillion | tuning-constant | `1.0` | src/Deckle.Autocorrect/Learning/PersonalWordAdmission.cs:15 | non | Mirrors RestorerOptions.MinDominantFrequencyPerMillion by intent; coupled constants that would have to move together. |
 | GlobalEnglishLexicon.OverlayFrequency | tuning-constant | `1.0` | src/Deckle.Autocorrect/Lexicon/GlobalEnglishLexicon.cs:11 | non | Weight of the restricted English literal overlay, i.e. the 'lexique anglais restreint' of the arbitrated correcteur contract. |
 | CaretParagraphContext.MaxParagraphLength | tuning-constant | `4096` | src/Deckle.Autocorrect/Recovery/CaretParagraphContext.cs:8 | non |  |
-| CaretSentenceContext.MaxSentenceLength | tuning-constant | `512` | src/Deckle.Autocorrect/Recovery/CaretSentenceContext.cs:10 | non |  |
 | UIAutomationCaretTextReader.MaxCharacters | tuning-constant | `1024` | src/Deckle.Autocorrect/Recovery/CaretTextReader.cs:15 | non |  |
 | UIAutomationCaretTextReader.InitialSettle | tuning-constant | `TimeSpan.FromMilliseconds(35)` | src/Deckle.Autocorrect/Recovery/CaretTextReader.cs:16 | non | Latency knob for UIA sampling; perceivable as responsiveness. |
 | UIAutomationCaretTextReader.VerificationGap | tuning-constant | `TimeSpan.FromMilliseconds(75)` | src/Deckle.Autocorrect/Recovery/CaretTextReader.cs:17 | non | Latency knob. |
 | TypedWordTracker.BufferCap | tuning-constant | `64` | src/Deckle.Autocorrect/Tracking/TypedWordTracker.cs:25 | non |  |
-| TypedWordTracker.SeparatorRunCap | tuning-constant | `8` | src/Deckle.Autocorrect/Tracking/TypedWordTracker.cs:55 | non | Canonical site; SentenceRerankCoordinator.SeparatorRunCap duplicates it. |
+| TypedWordTracker.SeparatorRunCap | tuning-constant | `8` | src/Deckle.Autocorrect/Tracking/TypedWordTracker.cs:55 | non | Canonical site. |
 | TypingStream.RunCap | tuning-constant | `512` | src/Deckle.Autocorrect/Tracking/TypingStream.cs:47 | non |  |
 | WordBoundaries.RightSingleQuote | tuning-constant | `'’'` | src/Deckle.Autocorrect/Tracking/WordBoundaries.cs:19 | non | Typographic apostrophe; frozen linguistic fact, kept only for doubt. |
-| QwertyAdjacency.Rows | tuning-constant | `["qwertyuiop", "asdfghjkl", "zxcvbnm"]` | src/Deckle.Autocorrect/Engine/QwertyAdjacency.cs:10 | non | DOUBT: a hardcoded QWERTY layout drives the physical-slip model. An AZERTY typist gets a mismatched adjacency map. Either a real exposable (keyboard layout) or a defect. |
 
 ## Deckle.Autocorrect.Lab
 
@@ -198,7 +179,6 @@ Total : **646 entrées** réparties sur **39 modules**.
 | DataSet.FrenchFile | tuning-constant | `"lexicon-fr.tsv.gz"` | src/Deckle.Autocorrect.Lab/DataSet.cs:13 | non | Dataset artifact filename, not a tuning knob; kept because it names which lexicon the Lab reads. |
 | DataSet.EnglishFile | tuning-constant | `"lexicon-en.tsv.gz"` | src/Deckle.Autocorrect.Lab/DataSet.cs:14 | non | Dataset artifact filename, not a tuning knob; kept because it names which lexicon the Lab reads. |
 | DataSet.PairFile | tuning-constant | `"pair-bigrams-fr.tsv.gz"` | src/Deckle.Autocorrect.Lab/DataSet.cs:15 | non | Dataset artifact filename, not a tuning knob; kept because it names which pair model the Lab reads. |
-| DataSet.VerbsFile | tuning-constant | `"verbs-fr.tsv.gz"` | src/Deckle.Autocorrect.Lab/DataSet.cs:16 | non | Dataset artifact filename, not a tuning knob; kept because it names which verb table the Lab reads. |
 | DomainPackBuilder.FloorFrequencyPerMillion | tuning-constant | `0.2` | src/Deckle.Autocorrect.Lab/DomainPackBuilder.cs:32 | non |  |
 | DomainPackBuilder.MaskingExclusionPerMillion | tuning-constant | `20.0` | src/Deckle.Autocorrect.Lab/DomainPackBuilder.cs:38 | non |  |
 | DomainPackBuilder.MaskingGrayZonePerMillion | tuning-constant | `1.0` | src/Deckle.Autocorrect.Lab/DomainPackBuilder.cs:39 | non |  |
@@ -211,16 +191,8 @@ Total : **646 entrées** réparties sur **39 modules**.
 | TrainerOptions.MaxPrevPerSlot | default-value | `64` | src/Deckle.Autocorrect.Lab/PairModelTrainer.cs:239 | non |  |
 | TrainerOptions.MaxOrder | default-value | `3` | src/Deckle.Autocorrect.Lab/PairModelTrainer.cs:243 | non |  |
 | SurfaceProfiler.minTimedSentences | tuning-constant | `30` | src/Deckle.Autocorrect.Lab/Profiling/SurfaceProfiler.cs:45 | non | Method-local const, not a field as the sweep claimed; declaration corrected to local. |
-| ReplayRunner.DefaultThresholds | tuning-constant | `{ 0.0, 0.25, 0.5, 1.0, 1.5, 2.0, 3.0, 5.0 }` | src/Deckle.Autocorrect.Lab/Replay/ReplayRunner.cs:27 | non |  |
-| TruthOverlay.FileName | tuning-constant | `"autocorrect.truth-review.md"` | src/Deckle.Autocorrect.Lab/Replay/TruthOverlay.cs:33 | non | Output artifact filename of the truth-review overlay; borderline, no tuning effect. |
 | RestorationEvaluator.SentenceBreaks | tuning-constant | `{ '.', '!', '?', ';', ':', '…' }` | src/Deckle.Autocorrect.Lab/RestorationEvaluator.cs:24 | non |  |
 | EvaluatorOptions.MaxTokens | default-value | `0` | src/Deckle.Autocorrect.Lab/RestorationEvaluator.cs:414 | non |  |
-
-## Deckle.Autocorrect.Onnx
-
-| Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
-|---|---|---|---|---|---|
-| OnnxSlotReranker.MinSentenceWordTokens | tuning-constant | `4` | src/Deckle.Autocorrect.Onnx/OnnxSlotReranker.cs:26 | non |  |
 
 ## Deckle.Catalog
 
@@ -325,12 +297,12 @@ Total : **646 entrées** réparties sur **39 modules**.
 | Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
 |---|---|---|---|---|---|
 | ApplicationLogToDisk | persisted-setting | `false` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:14 | oui | June inventory locates it on TelemetrySettings.cs:30; it now lives on LoggingSettings. Same user-facing setting, moved module POCO — verify no duplicate persisted key survives in telemetry.json. |
-| LogAmbientCaptureActivity | persisted-setting | `false` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:19 | oui |  |
-| LogTranscriptionActivity | persisted-setting | `false` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:26 | oui | June inventory names it LogStreamingTranscriptionActivity; that identifier no longer exists in source. Treated as a rename, not a new exposable. |
-| LogAutocorrectActivity | persisted-setting | `false` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:38 | oui |  |
-| LogInputActivity | persisted-setting | `false` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:44 | non | Absent from the June inventory — added since. Gates the Raw Input contact-frame rollup and per-gesture Trackpad detail. |
-| LogWindowingActivity | persisted-setting | `false` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:54 | oui |  |
-| LogWindowVisibilityMode | removed-setting | `LogWindowVisibilityMode.All (June); no longer present in source` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs (June: :54) | oui | June-only. Grep over src/ returns zero hits for the identifier; line 54 is now LogWindowingActivity. Kept as an added-from-June row so the deletion is visible, not silently lost. Not an exposable today. |
+| AmbientVerbosity | persisted-setting | `OperationalLogVerbosity.Summary` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:26 | non | Replaces LogAmbientCaptureActivity. Summary: push-loop heartbeat; Details: per-change push lines. |
+| TranscriptionVerbosity | persisted-setting | `OperationalLogVerbosity.Summary` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:32 | non | Replaces LogTranscriptionActivity. Summary: streaming heartbeat and per-take figures; Details: per utterance and per segment. |
+| AutocorrectVerbosity | persisted-setting | `OperationalLogVerbosity.Summary` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:40 | non | Replaces LogAutocorrectActivity. Summary: activity and keyboard rollups; Details: SurfaceChanged probe and learning signals. |
+| InputVerbosity | persisted-setting | `OperationalLogVerbosity.Summary` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:46 | non | Replaces LogInputActivity. Summary: Raw Input contact-frame rollup; Details: per-gesture Trackpad detail. |
+| WindowingVerbosity | persisted-setting | `OperationalLogVerbosity.Off` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs:52 | non | Replaces LogWindowingActivity. Ships Off: windowing probes have no summary record, so only Off and Details apply. |
+| LogWindowVisibilityMode | removed-setting | `LogWindowVisibilityMode.All (June); no longer present in source` | src/Deckle.Diagnostics.Logging/LoggingSettings.cs (June: :54) | oui | June-only. Grep over src/ returns zero hits for the identifier; the windowing control is now WindowingVerbosity. Kept as an added-from-June row so the deletion is visible, not silently lost. Not an exposable today. |
 
 ## Deckle.Diagnostics.Telemetry
 
@@ -470,7 +442,7 @@ Total : **646 entrées** réparties sur **39 modules**.
 | AmbientSettings.HueBridgeId | persisted-setting | `null` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:39 | oui |  |
 | AmbientSettings.HueUsername | persisted-setting | `null` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:45 | oui | Credential-ish (CLIP API key). Written in clear JSON by design; the DTLS clientkey lives in the DPAPI vault instead. |
 | AmbientSettings.HueLastGroupId | persisted-setting | `null` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:50 | oui |  |
-| AmbientSettings.SelectedMonitorDeviceName | persisted-setting | `null` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:63 | non | Absent from the June inventory. Bespoke like CaptureSettings.AudioInputDeviceId: values come from a runtime monitor enumeration; null = follow primary. |
+| AmbientSettings.SelectedMonitorDeviceName | persisted-setting | `null` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:63 | non | Absent from the June inventory. Bespoke like CaptureSettings.AudioInputEndpointId: values come from a runtime monitor enumeration; null = follow primary. |
 | AmbientSettings.Preset | persisted-setting | `null` (derived once: "ambient") | src/Deckle.Lighting.Ambient/AmbientSettings.cs | oui | Since 2026-10-12: the stored preset id (game / vivid / movie / ambient / custom) of the Deckle.Presets family on AmbientSettingsService.Presets. Replaces the integer `Mode` enum, which older files still hold and which is ignored. Picking a preset writes the eight AmbientTuning values; a hand edit of one of them turns the selection to Custom. Composed as Setting.Choice<string>. |
 | AmbientSettings.CustomTuning | persisted-setting | `null` | src/Deckle.Lighting.Ambient/AmbientSettings.cs | non | The user's own eight tuning values, kept while a preset is selected so picking Custom brings them back. Written by the family, never shown as such. |
 | AmbientSettings.UseMultiLight | persisted-setting | `false` | src/Deckle.Lighting.Ambient/AmbientSettings.cs:103 | oui |  |
@@ -503,10 +475,10 @@ Total : **646 entrées** réparties sur **39 modules**.
 | BrightnessCurveCanvas.SampleCount | tuning-constant | `80` | src/Deckle.Lighting.Ambient/Ui/Controls/BrightnessCurveCanvas.xaml.cs:16 | non | Curve-editor rendering resolution. Almost certainly a false positive (pure UI implementation); kept per the in-doubt rule. |
 | BrightnessCurveCanvas.PlotPadding | tuning-constant | `6.0` | src/Deckle.Lighting.Ambient/Ui/Controls/BrightnessCurveCanvas.xaml.cs:17 | non | Pure layout constant of the curve editor; drop candidate. |
 | BrightnessCurveCanvas.HandleSize | tuning-constant | `24.0` | src/Deckle.Lighting.Ambient/Ui/Controls/BrightnessCurveCanvas.xaml.cs:18 | non | Hit-target size of the bezier handles; accessibility-relevant but not a setting. Drop candidate. Sibling HandleRadius (line 19, = HandleSize/2) was skipped by the sweep as a computed value. |
-| AmbientPresets.Game | default-value | `ExposureEv 0.0, SaturationBoost 1.0, Curve 0.33/0.33/0.67/0.67, SmoothingAlpha 0.40, ChangeThreshold 6` | src/Deckle.Lighting.Ambient/AmbientPresets.cs | non | Since 2026-10-12 a Deckle.Presets preset (one declarative line); the floor is no longer part of any preset. Saturation and exposure are Louis's figures; threshold and speed await his. |
-| AmbientPresets.Vivid | default-value | `ExposureEv 0.0, SaturationBoost 1.10, Curve 0.33/0.33/0.67/0.67, SmoothingAlpha 0.40, ChangeThreshold 6` | src/Deckle.Lighting.Ambient/AmbientPresets.cs | non | New on 2026-10-12: Game with a touch more saturation, made for Hades. |
-| AmbientPresets.Movie | default-value | `ExposureEv 0.0, SaturationBoost 0.9, Curve 0.42/0.08/0.58/0.92, SmoothingAlpha 0.15, ChangeThreshold 8` | src/Deckle.Lighting.Ambient/AmbientPresets.cs | non | To be settled by Louis before Ambient. |
-| AmbientPresets.Ambient | default-value | `AmbientTuning.From(new AmbientSettings())` | src/Deckle.Lighting.Ambient/AmbientPresets.cs | non | The default preset; its values are the AmbientSettings initializers (-0.5 EV, 0.7, 0.18/0.55/0.40/0.90, 0.08, 10). |
+| AmbientPresets.VividFast | default-value | `ExposureEv 0.0, SaturationBoost 1.10, Curve 0.33/0.33/0.67/0.67, SmoothingAlpha 0.40, ChangeThreshold 6` | src/Deckle.Lighting.Ambient/AmbientPresets.cs | non | Since 2026-11-07 (two axes, rendering × speed). PROVISIONAL until Louis tunes it at the scene. Replaces `vivid`. |
+| AmbientPresets.VividSlow | default-value | `ExposureEv 0.0, SaturationBoost 1.10, Curve 0.33/0.33/0.67/0.67, SmoothingAlpha 0.15, ChangeThreshold 8` | src/Deckle.Lighting.Ambient/AmbientPresets.cs | non | PROVISIONAL. Slow speed pair = the former Movie pair. |
+| AmbientPresets.RealisticFast | default-value | `ExposureEv 0.0, SaturationBoost 1.0, Curve 0.33/0.33/0.67/0.67, SmoothingAlpha 0.40, ChangeThreshold 6` | src/Deckle.Lighting.Ambient/AmbientPresets.cs | non | PROVISIONAL. Fast speed pair = the former Game pair. Replaces `game`. |
+| AmbientPresets.RealisticSlow | default-value | `AmbientTuning.From(new AmbientSettings())` | src/Deckle.Lighting.Ambient/AmbientPresets.cs | non | The default preset; its values are the AmbientSettings initializers (0 EV, 1.0, 0.33/0.33/0.67/0.67, 0.15, 8). PROVISIONAL. Replaces `movie` and `ambient`. |
 
 ## Deckle.Llm
 
@@ -745,7 +717,7 @@ Total : **646 entrées** réparties sur **39 modules**.
 | WavCorpusWriter.AudioSubfolder | tuning-constant | `"audio"` | src/Deckle.Transcription/Corpus/WavCorpusWriter.cs:35 | non | Corpus folder name; path convention, not a tuning knob. |
 | TranscriptionEngine.PrimingTailWords | tuning-constant | `30` | src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs:513 | non | Comment says explicitly 'not exposed and not yet tuned' — a genuine untuned exposable. |
 | RecordingHostAdapter.DISPOSE_WORKER_JOIN_TIMEOUT_MS | tuning-constant | `30_000` | src/Deckle.Transcription/Engine/TranscriptionEngine.cs:428 | non | Shutdown robustness timeout; borderline implementation constant. |
-| EnergySegmenter.FrameMs | tuning-constant | `50.0` | src/Deckle.Transcription/Streaming/EnergySegmenter.cs:57 | non | Hard-coupled to WaveInLoop's 800-sample sub-window — cannot be changed alone. |
+| EnergySegmenter.FrameMs | tuning-constant | `50.0` | src/Deckle.Transcription/Streaming/EnergySegmenter.cs:52 | non | Hard-coupled to SubWindowAssembler's 800-sample sub-window (WindowMs = 50) — cannot be changed alone. |
 | EnergySegmenterSettings.HangoverMaxMs | persisted-setting | `5_000` | src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:49 | oui |  |
 | EnergySegmenterSettings.HangoverMinMs | persisted-setting | `500` | src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:50 | oui |  |
 | EnergySegmenterSettings.HangoverRampStartMs | persisted-setting | `15_000` | src/Deckle.Transcription/Streaming/EnergySegmenterSettings.cs:51 | oui |  |

@@ -5,9 +5,7 @@ namespace Deckle.Llm.Rewrite;
 
 // ── LlmSettingsService ────────────────────────────────────────────────────
 //
-// Module-local persistence for LlmSettings. The legacy combined settings.json
-// is migrated into this module's file by
-// SettingsBootstrap.MigrateLegacyToPerModule().
+// Module-local persistence for LlmSettings, in this module's own file.
 public sealed class LlmSettingsService
 {
     private static readonly Lazy<LlmSettingsService> _instance = new(() => new LlmSettingsService());
@@ -45,7 +43,7 @@ public sealed class LlmSettingsService
             logVerbose:  msg => DeckleLlmSource.Log.SettingsLoadComplete(msg),
             logWarning:  msg => DeckleLlmSource.Log.SettingsLoadWarning(msg),
             logError:    msg => DeckleLlmSource.Log.SettingsLoadError(msg),
-            postLoadMigration: LlmSettingsMigrations.Apply);
+            postLoadMigration: LlmSettingsNormalizer.Apply);
     }
 
     public void Save()                  => _store.Save();

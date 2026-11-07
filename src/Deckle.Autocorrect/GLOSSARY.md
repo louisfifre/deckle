@@ -1,11 +1,11 @@
 ---
 name: glossary-deckle-autocorrect
-description: "Autocorrect vocabulary. It covers where correction may act (surfaces, enrollment), the two correction stages, protection tiers, lexicon composition, datasets, and the learning surfaces. Read before touching correction logic, consent, or learning."
+description: "Autocorrect vocabulary. It covers where correction may act (surfaces, enrollment), the correction stage, protection tiers, lexicon composition, datasets, and the learning surfaces. Read before touching correction logic, consent, or learning."
 ---
 
 # Deckle.Autocorrect, Glossary
 
-Vocabulary of the system-autocorrect workstream, which brings bounded correction to the whole machine, first when a word is committed and then by choosing among closed candidates in context. The Correction / Rewrite boundary, which decides what this module may do silently, lives in `src/Deckle.Llm.Rewrite/GLOSSARY.md` beside the rewrite. The correction itself is defined here.
+Vocabulary of the system-autocorrect workstream, which brings bounded correction to the whole machine, when a word is committed. The Correction / Rewrite boundary, which decides what this module may do silently, lives in `src/Deckle.Llm.Rewrite/GLOSSARY.md` beside the rewrite. The correction itself is defined here.
 
 ## The correction
 
@@ -63,10 +63,10 @@ A short notification that slides in and leaves on its own. The correction inlay 
 **Notification** :
 A message the system shows to announce something. The enrollment prompt is a passive notification, while the correction inlay never announces itself.
 
-## The two stages
+## The correction stage
 
 **Commit stage** :
-The correction stage that acts at once on the last committed word, from the literal and its left context. It makes only bounded decisions and leaves ambiguity untouched. Evidence from the full sentence belongs to the sentence stage.
+The correction stage that acts at once on the last committed word, from the literal and its left context. It makes only bounded decisions and leaves ambiguity untouched. It corrects diacritics and keyboard typos, nothing else.
 _Avoid_ : first pass (scope is the point, not order).
 
 **Protected literal** :
@@ -76,22 +76,6 @@ _Avoid_ : whitelist (protection gates correction, not observation), English lexi
 **Candidate ownership** :
 The link of provenance between a set of candidates and the correction policy that earned the right to propose it. Ownership keeps alternatives inside the policy that justified them, rather than treating every bounded form as interchangeable. The typed literal remains the explicit choice to keep.
 _Avoid_ : global candidate pool (candidate provenance determines correction rights, not only ranking).
-
-**Sentence stage** :
-The correction stage that waits for a complete sentence to settle bounded alternatives that the commit stage could not settle. It judges one whole-sentence candidate transaction and may keep the literal, select at most one supplied edit, or abstain. Free regeneration belongs to Rewrite, not to this stage.
-_Avoid_ : reranker (one possible engine of this stage, not the stage), second pass (scope is the point, not order).
-
-**Whole-sentence candidate transaction** :
-The indivisible unit of decision of the sentence stage. It holds the literal sentence and a closed set of sentences that each differ from it by one owned, bounded edit. The alternatives are compared together. No generated text and no cascade of word-by-word decisions enters it.
-_Avoid_ : sentence rewrite (no text is generated, see Rewrite in `src/Deckle.Llm.Rewrite/GLOSSARY.md`), candidate cascade (one edit never changes what is judged next).
-
-**Terminal-e agreement variant** :
-A pair of candidates backed by the lexicon whose forms differ only by a final `e`, used as evidence inside a whole-sentence candidate transaction. The pair alone does not prove gender and earns no correction right of its own.
-_Avoid_ : gender rule (the surface pair does not prove grammatical category), inflection corrector (it proposes no edit on its own).
-
-**Verified caret sentence** :
-A sentence read back from the focused surface after the observed typing stream lost continuity. It is accepted only when repeated reads and a local left boundary give the same exact text. It may supply evidence for correction, but never observation history, authorship or learning provenance.
-_Avoid_ : observed sentence (its provenance is weaker), document context (the surrounding text may cross editor and interface boundaries).
 
 **First pass** :
 In ordinary use, the first of several passes over the same material. The commit stage is defined by its scope, the last committed word, not by coming first.
@@ -104,27 +88,6 @@ A framing of the English lexicon layer as the authority that decides how words m
 
 **Global candidate pool** :
 One shared pool in which every candidate competes, whatever policy proposed it. In Deckle the provenance of a candidate decides its right to correct, so there is no such pool.
-
-**Reranker** :
-A model that reorders a list of candidates by score. It is one possible engine of the sentence stage, not the stage itself.
-
-**Second pass** :
-In ordinary use, a second pass over the same material. The sentence stage is defined by the scope it judges, a whole sentence, not by coming second.
-
-**Candidate cascade** :
-A chain of decisions in which each accepted edit changes what is judged next. A whole-sentence candidate transaction judges all its alternatives at once.
-
-**Gender rule** :
-A grammar rule that sets the gender agreement of a word. A terminal-e pair is only evidence and proves no grammatical category.
-
-**Inflection corrector** :
-A component that fixes word endings by itself. A terminal-e agreement variant proposes no edit on its own.
-
-**Observed sentence** :
-A sentence built from the typing stream Deckle observed as it was typed. A sentence read back from the surface has weaker provenance and is a verified caret sentence.
-
-**Document context** :
-The text around the caret in the whole document. It may cross editor and interface boundaries, so it is not a verified caret sentence.
 
 ## Lexicon composition
 
@@ -166,7 +129,7 @@ The consented dataset that keeps the verbatim typing flow on enrolled correctabl
 _Avoid_ : keylogger (it records word-shaped runs on consented surfaces, not keys), raw stream (says how it is stored, not what it is).
 
 **Mistouch family** :
-A recurring class of mechanical keyboard error, mined from the typing corpus and expressed as a deterministic generator of bounded repair candidates. It describes how input went wrong, not a spelling fault. A contextual judge may only rank the candidates it supplies and never invents a repair.
+A recurring class of mechanical keyboard error, mined from the typing corpus and expressed as a deterministic generator of bounded repair candidates. It describes how input went wrong, not a spelling fault.
 _Avoid_ : typo (the broader spelling-fault class), fat-finger (informal).
 
 **Surface profile** :

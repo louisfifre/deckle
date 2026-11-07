@@ -87,12 +87,16 @@ public sealed record TranscriptionContext(
 // ── ModelLoadResult ──────────────────────────────────────────────────────────
 //
 // Failure carries a stable reason string the orchestrator maps to a localized
-// user message, so the backend stays free of UI vocabulary.
+// user message, so the backend stays free of UI vocabulary. On a failure,
+// ModelPath is the model file the load aimed at and GpuRequested whether it
+// asked for the GPU; the engine puts both on the ModelUnavailable incident.
 public sealed record ModelLoadResult(
     bool Success,
     long LoadDurationMs,
     string? Accelerator,
-    string? ErrorReason);
+    string? ErrorReason,
+    string? ModelPath = null,
+    bool GpuRequested = false);
 
 // ── TranscriptionResult ──────────────────────────────────────────────────────
 //

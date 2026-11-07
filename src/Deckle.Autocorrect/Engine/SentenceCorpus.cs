@@ -6,7 +6,7 @@ namespace Deckle.Autocorrect;
 
 // The text-corpus accumulator: rebuilds each typed sentence as an ordered list of
 // slots, every slot carrying its own history — the first-typed form, then each
-// transition tagged by the stage that produced it (commit / sentence / user) — so
+// transition tagged by the stage that produced it (commit / user) — so
 // the pair (what was typed, what ended final) AND the path between them feed
 // error-pattern mining. Pure and synchronous, like CorrectionTrace: words and edits
 // go in, completed sentences come out through Completed; no OS calls, no
@@ -38,20 +38,16 @@ namespace Deckle.Autocorrect;
 //
 // History. `typed` and `final` are the flat pair for direct mining; `history`
 // spells the ordered path of every slot that changed — first-typed then each
-// stage's transition — so a commit-stage repair, a sentence-stage rewrite from
-// behind, and a manual re-edit are told apart after the fact. The sentence stage
-// can rewrite a word while the sentence is still open (a la/là resolved by right
-// context); that transition is recorded on its slot. A rewrite that lands after
-// the sentence already flushed is a post-close edit — invisible by design (the
-// accumulator has no caret), accepted.
+// stage's transition — so a commit-stage repair and a manual re-edit are told
+// apart after the fact.
 public sealed class SentenceCorpus
 {
     private readonly List<Slot> _slots = new();
 
     // The stage that produced a transition — the technical function, never its
-    // interpretation. `Commit` the instantaneous gate, `Sentence` the deferred
-    // contextual stage rewriting from behind, `User` a manual backspace-and-retype.
-    public enum Stage { Commit, Sentence, User }
+    // interpretation. `Commit` the instantaneous gate, `User` a manual
+    // backspace-and-retype.
+    public enum Stage { Commit, User }
 
     public readonly record struct Transition(Stage By, string Form);
 
@@ -146,8 +142,7 @@ public sealed class SentenceCorpus
     // carry, recorded on the slot's final rendering so the final string stays
     // glued to the screen. The typed side keeps the faulty run: that pair is
     // exactly what mining feeds on. Scans from the end, newest slot first;
-    // after a flush there is nothing to fix and the edit is dropped, like a
-    // post-close SentenceEdit.
+    // after a flush there is nothing to fix and the edit is dropped.
     public void SeparatorEdit(string finalForm, string oldSeparator, string newSeparator)
     {
         for (int i = _slots.Count - 1; i >= 0; i--)
@@ -156,22 +151,6 @@ public sealed class SentenceCorpus
                 && string.Equals(_slots[i].FinalSeparator, oldSeparator, StringComparison.Ordinal))
             {
                 _slots[i].FinalSeparator = newSeparator;
-                return;
-            }
-        }
-    }
-
-    // The sentence stage rewrote a committed word from behind (original → new) while
-    // the sentence was still open. Record it as a Sentence transition on the matching
-    // still-open slot; a rewrite after flush finds none and is dropped (post-close,
-    // invisible by design). Scans from the end so the most recent match wins.
-    public void SentenceEdit(string original, string replacement)
-    {
-        for (int i = _slots.Count - 1; i >= 0; i--)
-        {
-            if (string.Equals(_slots[i].Final, original, StringComparison.Ordinal))
-            {
-                _slots[i].Transitions.Add(new Transition(Stage.Sentence, replacement));
                 return;
             }
         }
@@ -274,7 +253,6 @@ public sealed class SentenceCorpus
     private static string Tag(Stage by) => by switch
     {
         Stage.Commit => "commit",
-        Stage.Sentence => "sentence",
         Stage.User => "user",
         _ => "?",
     };

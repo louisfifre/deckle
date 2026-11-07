@@ -1,7 +1,7 @@
 namespace Deckle.Audio;
 
 // PCM16 mono ↔ float helpers for this module's capture, render and telemetry.
-// All functions are pure; they never touch waveIn state.
+// All functions are pure; they hold no state and touch no device.
 internal static class PcmConversion
 {
     // PCM16 little-endian → float [-1, 1].

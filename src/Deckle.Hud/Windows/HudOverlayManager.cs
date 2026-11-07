@@ -46,7 +46,7 @@ public sealed class HudOverlayManager : IDisposable
         _cursorSignal   = cursorSignal;
         _mainHudVisible = mainHud.IsMainHudShown;
         mainHud.MainHudVisibilityChanged += OnMainHudVisibilityChanged;
-        SystemAnimationPreference.Instance.Changed += OnSystemAnimationsChanged;
+        AnimationPreference.Instance.Changed += OnAnimationPreferenceChanged;
     }
 
     // Severity convention 0=Info, 1=Warning, 2+=Error, aligned with the
@@ -93,7 +93,7 @@ public sealed class HudOverlayManager : IDisposable
             _dispatcher,
             xPx,
             yPx,
-            SystemAnimationPreference.Instance.AnimationsEnabled);
+            AnimationPreference.Instance.AnimationsEnabled);
 
         var lifeTimer = _dispatcher.CreateTimer();
         lifeTimer.Interval = HudWindow.FeedbackDuration(severity);
@@ -134,7 +134,7 @@ public sealed class HudOverlayManager : IDisposable
         Recompact();
     }
 
-    private void OnSystemAnimationsChanged(bool enabled)
+    private void OnAnimationPreferenceChanged(bool enabled)
     {
         if (_disposed) return;
 
@@ -142,7 +142,7 @@ public sealed class HudOverlayManager : IDisposable
         {
             _dispatcher.TryEnqueueObserved(
                 "ui-update", "overlay-manager",
-                () => OnSystemAnimationsChanged(enabled),
+                () => OnAnimationPreferenceChanged(enabled),
                 "HUD", "animation preference change");
             return;
         }
@@ -234,7 +234,7 @@ public sealed class HudOverlayManager : IDisposable
         if (_disposed) return;
         _disposed = true;
         _mainHud.MainHudVisibilityChanged -= OnMainHudVisibilityChanged;
-        SystemAnimationPreference.Instance.Changed -= OnSystemAnimationsChanged;
+        AnimationPreference.Instance.Changed -= OnAnimationPreferenceChanged;
 
         int remaining = _entries.Count;
         foreach (var entry in _entries)

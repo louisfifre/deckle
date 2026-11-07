@@ -14,8 +14,7 @@ using Deckle.Vad;
 namespace Deckle.Setup;
 
 // Maps the wizard's module selection to the install items those modules need.
-// Autocorrect brings nothing to download here for now: its sentence judge is
-// staged by hand (models\sentence-judge) and has no pinned source yet.
+// Autocorrect brings nothing to download here: its lexicons ship with the app.
 // Anytype brings the pinned anytype-cli binary; the bot account and API key are
 // a later, interactive provisioning step. Each module owns its provisioning
 // gesture; this plan only composes them.

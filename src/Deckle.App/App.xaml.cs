@@ -21,6 +21,7 @@ namespace Deckle.App;
 public partial class App : Microsoft.UI.Xaml.Application
 {
     private MessageOnlyHost? _messageHost;
+    private SessionEndWatcher? _sessionEndWatcher;
     private CursorMovementSignal? _cursorSignal;
     private ForegroundWatcher? _foregroundWatcher;
     private HotkeyManager? _hotkeyManager;

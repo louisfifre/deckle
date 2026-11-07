@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using Deckle.Core;
 
 namespace Deckle.Shell.TaskbarCover;
@@ -25,36 +24,15 @@ public static class ApproachDistance
     public const int MinimumDip = 10;
     public const int MaximumDip = 320;
 
-    // The former Standard level, a step of the design-system scale.
+    // The unit the page shows beside the figure. Never "px": a person reads
+    // that as physical pixels, the very misreading that made the setting a DIP
+    // figure, and the page's reach readout is where physical pixels appear
+    // (2026-11-07, bug note "Approach distance read as physical pixels").
+    public const string UnitLabel = "DIP";
+
+    // A step of the design-system scale.
     public const int DefaultDip = Spacing.Large;
 
     // A hand-edited figure outside the range lands on its nearest bound.
     public static int Clamp(int dip) => Math.Clamp(dip, MinimumDip, MaximumDip);
-
-    // The DIP figure each former level stood for. Since 2026-10-15
-    // (73afc001) Near, Standard and Far were spans of 32, 64 and 128 DIP,
-    // already scaled by the band monitor's DPI, so the migration keeps the
-    // figure as is: no stored value was ever a raw pixel count, and reading
-    // one as pixels and dividing by a scale would shrink the reach of
-    // everyone on a scaled display. An ordinal outside the enum, which the
-    // old converter accepted from a hand-edited file, falls back to the
-    // default as the old geometry did.
-    public static int FromLevel(ApproachLevel level) => level switch
-    {
-        ApproachLevel.Near => Spacing.Medium,
-        ApproachLevel.Far  => Spacing.XLarge,
-        _                  => DefaultDip,
-    };
-}
-
-// The named levels the setting was stored as until 2026-11-07, kept only so
-// TaskbarCoverSettings can read an older settings file once and turn the
-// level into its DIP figure. Never written. Read as a name, or as an ordinal
-// from a hand-edited file, exactly as the old converter did.
-[JsonConverter(typeof(JsonStringEnumConverter<ApproachLevel>))]
-public enum ApproachLevel
-{
-    Near,
-    Standard,
-    Far,
 }

@@ -28,6 +28,11 @@ public sealed partial class AmbientEngine
     // One owner at a time, the Settings preview: a second StartPreviewScan
     // finds the scan running and returns true without starting another.
     private readonly SemaphoreSlim _scanGate = new(1, 1);
+
+    // How long a scan may take to let go of the display before the engine
+    // gives up waiting (AmbientScanRelease). The capture loop's own wait is
+    // 2 s; this leaves room for it and the sampler's release.
+    private static readonly TimeSpan ReleaseTimeLimit = TimeSpan.FromSeconds(6);
     private bool _scanning;
     private string _scanId = "";
     private long _scanStartTimestamp;
@@ -114,11 +119,21 @@ public sealed partial class AmbientEngine
 
             long frames = _capture?.FrameCount ?? 0;
             long firstFrameMs = FirstFrameMs();
-            Exception? failure = await ReleaseScanDepsAsync().ConfigureAwait(false);
+            var (completed, failure) = await AmbientScanRelease
+                .RunBoundedAsync(ReleaseScanDepsAsync, ReleaseTimeLimit).ConfigureAwait(false);
+            if (!completed)
+            {
+                // The release is stuck (a capture frame holds the sampler):
+                // let go of the slots so a run can build its own, and close
+                // the gate. The leftover objects die with the process.
+                _capture = null;
+                Interlocked.Exchange(ref _sampler, null);
+                failure = new TimeoutException("The scan's release did not finish in time.");
+            }
 
             double durationS = (Stopwatch.GetTimestamp() - _scanStartTimestamp) / (double)Stopwatch.Frequency;
             DeckleAmbientSource.Log.PreviewScanStopped(
-                _scanId, reason, failure is null ? "completed" : "failed",
+                _scanId, reason, !completed ? "timed_out" : failure is null ? "completed" : "failed",
                 durationS, frames, firstFrameMs,
                 failure?.GetType().Name ?? "none", failure?.Message ?? "none");
         }

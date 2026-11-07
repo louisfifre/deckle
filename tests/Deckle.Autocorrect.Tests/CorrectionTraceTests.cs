@@ -84,7 +84,6 @@ public class CorrectionTraceTests
         var french = French();
         var policy = new CompositeCorrectionPolicy(
             new DiacriticsRestorer(french, english: null, AccentIndex.Build(french)),
-            new ElisionCorrector(french),
             new ConservativeTypoCorrector(french));
 
         var trace = new CorrectionTrace();
@@ -92,7 +91,6 @@ public class CorrectionTraceTests
 
         string trail = trace.RenderTrail();
         Assert.Contains(CorrectionTrace.StageNames.Diacritics, trail);
-        Assert.Contains(CorrectionTrace.StageNames.Elision, trail);
         Assert.Contains(CorrectionTrace.StageNames.Typo, trail);
         Assert.Equal(CorrectionTrace.Outcomes.Literal, trace.Outcome);
     }
@@ -103,7 +101,6 @@ public class CorrectionTraceTests
         var french = French();
         var policy = new CompositeCorrectionPolicy(
             new DiacriticsRestorer(french, english: null, AccentIndex.Build(french)),
-            new ElisionCorrector(french),
             new ConservativeTypoCorrector(french));
 
         var trace = new CorrectionTrace();

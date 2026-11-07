@@ -10,15 +10,13 @@ namespace Deckle.Llm.Rewrite;
 public sealed class RewriteProfile
 {
     // Stable across renames: references and corpus telemetry join on it, never
-    // on Name. LlmSettingsMigrations.RepairProfileReferences fills it when
-    // missing.
+    // on Name. LlmSettingsNormalizer.RepairProfileReferences fills it when
+    // missing (the built-in defaults carry none).
     public string Id { get; set; } = "";
 
     public string Name { get; set; } = "";
 
-    // The LlmProvider this profile sends to, by Id. Empty on a settings file
-    // written before providers existed; LlmSettingsMigrations.RepairProviders
-    // points it at the Ollama provider, the only engine that era had.
+    // The LlmProvider this profile sends to, by Id.
     public string ProviderId { get; set; } = "";
 
     public string Model { get; set; } = "";
@@ -31,26 +29,15 @@ public sealed class RewriteProfile
     public double? TopP { get; set; }
     public double? RepeatPenalty { get; set; }
 
-    // Legacy per-profile length threshold (v0.77 to v0.79), retained so such a
-    // file deserializes; LlmSettingsMigrations.MoveProfileThresholdsToLadder
-    // turns it into a LengthSwitch step once and clears AutoSelect. A
-    // threshold only means something against the others, so it now lives in
-    // one page-level ladder. Never read at runtime.
-    public bool AutoSelect { get; set; }
-    public int AutoSelectFromMinutes { get; set; } = 5;
-
     // Starts a dictation rewritten with this profile, whatever its length.
     // Registered by the App next to the other hotkeys only while
     // HotkeyEnabled is on and the chord is complete; switching it off keeps
     // the chord, so switching back on finds it.
-    // null only in a file written before the switch existed:
-    // LlmSettingsMigrations.MoveProfileThresholdsToLadder sets it on when
-    // that file already held a chord, so an existing shortcut keeps working.
-    public bool? HotkeyEnabled { get; set; }
+    public bool HotkeyEnabled { get; set; }
     public HotkeyChord? Hotkey { get; set; }
 
     [System.Text.Json.Serialization.JsonIgnore]
-    public bool HasActiveHotkey => HotkeyEnabled == true && Hotkey is { IsComplete: true };
+    public bool HasActiveHotkey => HotkeyEnabled && Hotkey is { IsComplete: true };
 }
 
 // One step of the length ladder: a dictation whose raw transcript holds at
@@ -122,25 +109,6 @@ public sealed class LengthSwitchSettings
     public static int Below(int chars) => chars - GrainAt(chars - 1);
 }
 
-// Legacy duration-rule shape, retained so existing settings deserialize without
-// loss. Never evaluated: rewriting applies the active profile only.
-public sealed class AutoRewriteRule
-{
-    public int MinDurationSeconds { get; set; } = 0;
-
-    public string ProfileId { get; set; } = "";
-    public string ProfileName { get; set; } = "";
-}
-
-// Legacy word-rule shape, retained so existing settings deserialize without
-// loss. Never evaluated: rewriting applies the active profile only.
-public sealed class AutoRewriteRuleByWords
-{
-    public int MinWordCount { get; set; } = 0;
-    public string ProfileId { get; set; } = "";
-    public string ProfileName { get; set; } = "";
-}
-
 // Rewriting while the dictation runs, batch by batch, instead of once at Stop.
 // Off by default: it costs one request per batch and the seams between
 // batches are a quality risk the whole-take rewrite does not have. The
@@ -159,7 +127,7 @@ public sealed class BatchRewriteSettings
     public int ThresholdChars { get; set; } = 600;
 }
 
-public sealed class LlmSettings : System.Text.Json.Serialization.IJsonOnDeserializing
+public sealed class LlmSettings
 {
     public bool Enabled { get; set; } = true;
 
@@ -169,21 +137,6 @@ public sealed class LlmSettings : System.Text.Json.Serialization.IJsonOnDeserial
 
     // Another profile than the active one past a given length.
     public LengthSwitchSettings LengthSwitch { get; set; } = new();
-
-    // Legacy: the one endpoint of the Ollama-only era. Read from an older
-    // settings.json only; RepairProviders copies it into the Ollama provider
-    // and clears it, and null is not written, so a migrated file no longer
-    // carries it. Never read at runtime.
-    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-    public string? OllamaEndpoint { get; set; }
-
-    // A file read from disk starts with no providers, not with the three
-    // defaults below: System.Text.Json keeps a property's initializer when the
-    // key is absent, so a file from the Ollama-only era (no `providers` key)
-    // would otherwise look already migrated, and RepairProviders would never
-    // carry its custom OllamaEndpoint into the Ollama provider. Empty means
-    // "the file had none"; RepairProviders then seeds them.
-    void System.Text.Json.Serialization.IJsonOnDeserializing.OnDeserializing() => Providers = new();
 
     // Where a model is served from. A profile names one by Id. These defaults
     // are the three shapes the market has (a local Ollama, a chat-completions
@@ -199,16 +152,9 @@ public sealed class LlmSettings : System.Text.Json.Serialization.IJsonOnDeserial
     // The one persisted choice applied to every dictation when Enabled.
     // null = plain transcription (opt-in by default). Lookup prefers the Id
     // (stable across renames) and falls back to the Name;
-    // LlmSettingsMigrations.RepairProfileReferences keeps the pair in sync.
+    // LlmSettingsNormalizer.RepairProfileReferences keeps the pair in sync.
     public string? ActiveProfileId { get; set; }
     public string? ActiveProfileName { get; set; }
-
-    // Legacy primary slot, migrated into ActiveProfile* on load and cleared;
-    // null is not written. Never read at runtime.
-    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-    public string? PrimaryRewriteProfileId { get; set; }
-    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-    public string? PrimaryRewriteProfileName { get; set; }
 
     // Two depths of intervention, decided with Louis on 2026-10-15. The quick
     // correction (a misheard word, an accent) is the ASR's job, so no profile
@@ -264,19 +210,4 @@ public sealed class LlmSettings : System.Text.Json.Serialization.IJsonOnDeserial
                 """
         }
     };
-
-    // Legacy auto-rules, retained so an older settings file round-trips
-    // without loss (RepairProfileReferences keeps their profile pairs in
-    // step). Never evaluated. null in a new file, and null is not written, so
-    // only a file that already held them carries them.
-    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-    public List<AutoRewriteRule>? AutoRewriteRules { get; set; }
-
-    // Legacy auto-rule metric; same rule as the auto-rules above.
-    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-    public string? RuleMetric { get; set; }
-
-    // Legacy word-based auto-rules; same rule as the auto-rules above.
-    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
-    public List<AutoRewriteRuleByWords>? AutoRewriteRulesByWords { get; set; }
 }

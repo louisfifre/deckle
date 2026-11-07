@@ -106,7 +106,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
 
     // reason is exception (Play threw: ex_type and ex_message say why) or
     // device_unavailable (Play returned false: SpeakerOutput logged the
-    // mmsys_err under the audio provider, and ex_type stays empty).
+    // failure under the audio provider, and ex_type stays empty).
     [Event(EvtSpeechPlaybackFailed,
            Level = EventLevel.Error,
            Keywords = (EventKeywords)Keywords.Push,
@@ -136,7 +136,7 @@ public sealed class DeckleSpeechSource : DeckleEventSource
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Push,
            Message = "samples={0} | duration_ms={1} | sample_rate={2}")]
-    public void ReadAloudCompleteDetail(int samples, long duration_ms, int sample_rate)
+    public void ReadAloudCompleteDetail(long samples, long duration_ms, long sample_rate)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Push)) return;
         WriteEvent(EvtReadAloudCompleteDetail, samples, duration_ms, sample_rate);

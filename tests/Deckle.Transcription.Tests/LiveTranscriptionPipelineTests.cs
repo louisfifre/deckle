@@ -711,7 +711,7 @@ public sealed class LiveTranscriptionPipelineTests
 
     // Rewriting on, with the first default profile active and the batch
     // threshold at its minimum.
-    private static StreamingHost RewritingHost(bool batchRewriting)
+    internal static StreamingHost RewritingHost(bool batchRewriting)
     {
         var host = new StreamingHost();
         LlmSettings llm = host.Llm;

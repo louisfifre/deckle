@@ -39,7 +39,6 @@ public static partial class LexiconBuilder
         string frenchOut = DataSet.FrenchPath(outDir);
         string englishOut = DataSet.EnglishPath(outDir);
         string globishOut = Path.Combine(outDir, AutocorrectLexiconArtifacts.GlobalEnglishSeedFileName);
-        string verbsOut = DataSet.VerbsPath(outDir);
 
         Console.WriteLine($"Raw  : {rawDir}");
         Console.WriteLine($"Out  : {outDir}");
@@ -52,13 +51,13 @@ public static partial class LexiconBuilder
             Console.WriteLine("Note: withMorphalou set but Morphalou3.1_CSV.csv is absent — "
                             + "run fetch-autocorrect-data.ps1 first. Building Lexique-only.");
 
-        BuildFrench(Path.Combine(rawDir, "Lexique383.tsv"), morphalouSource, frenchOut, verbsOut);
+        BuildFrench(Path.Combine(rawDir, "Lexique383.tsv"), morphalouSource, frenchOut);
         BuildEnglish(Path.Combine(rawDir, "count_1w.txt"), englishOut);
 
         var french = FrequencyLexicon.LoadTsvGz(frenchOut);
         BuildGlobalEnglishSeed(Path.Combine(rawDir, "FranceTerme.xml"), globishOut, french);
 
-        SelfCheck(frenchOut, englishOut, verbsOut, globishOut);
+        SelfCheck(frenchOut, englishOut, globishOut);
 
         return 0;
     }

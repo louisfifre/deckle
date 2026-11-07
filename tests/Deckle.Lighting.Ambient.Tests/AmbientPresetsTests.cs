@@ -86,9 +86,9 @@ public sealed class AmbientPresetsTests
         settings.SmoothingAlpha = 0.5;
         family.NotifyEdited();
         var handMade = AmbientTuning.From(settings);
-        var game = AmbientPresets.All.Single(p => p.Id == AmbientPresets.Game);
+        var game = AmbientPresets.All.Single(p => p.Id == AmbientPresets.RealisticFast);
 
-        family.Select(AmbientPresets.Game);
+        family.Select(AmbientPresets.RealisticFast);
         Assert.Equal(game.Values, AmbientTuning.From(settings));
 
         family.Select(PresetFamily.Custom);
@@ -113,6 +113,83 @@ public sealed class AmbientPresetsTests
 
         Assert.Equal(PresetFamily.Custom, back.Preset);
         Assert.Equal(settings.CustomTuning, back.CustomTuning);
+    }
+
+    // ── The two axes: rendering × speed (values PROVISIONAL, 2026-11-07) ──
+
+    [Fact]
+    public void TheSelectorListsVividThenRealisticEachFastThenSlowThenCustom()
+    {
+        var order = FamilyOver(new AmbientSettings()).SelectorOptions("AmbientPresetCustom").Select(o => o.Value);
+
+        Assert.Equal(
+            ["vivid-fast", "vivid-slow", "realistic-fast", "realistic-slow", PresetFamily.Custom],
+            order);
+    }
+
+    [Theory]
+    [InlineData(AmbientPresets.VividFast,     0.40, 6, 1.10)]
+    [InlineData(AmbientPresets.VividSlow,     0.15, 8, 1.10)]
+    [InlineData(AmbientPresets.RealisticFast, 0.40, 6, 1.00)]
+    [InlineData(AmbientPresets.RealisticSlow, 0.15, 8, 1.00)]
+    public void EachPresetCombinesItsSpeedAndItsRendering(string id, double alpha, int threshold, double saturation)
+    {
+        var values = AmbientPresets.All.Single(p => p.Id == id).Values;
+
+        Assert.Equal(alpha, values.SmoothingAlpha);
+        Assert.Equal(threshold, values.ChangeThreshold);
+        Assert.Equal(saturation, values.SaturationBoost);
+        Assert.Equal(0.0, values.ExposureEv);
+    }
+
+    [Fact]
+    public void TheDefaultIsRealisticSlow()
+    {
+        Assert.Equal("realistic-slow", AmbientPresets.Default);
+    }
+
+    [Theory]
+    [InlineData("game",    AmbientPresets.RealisticFast)]
+    [InlineData("movie",   AmbientPresets.RealisticSlow)]
+    [InlineData("vivid",   AmbientPresets.VividFast)]
+    [InlineData("ambient", AmbientPresets.RealisticSlow)]
+    public void ARetiredPresetIdFollowsItsReplacementValuesIncluded(string retired, string replacement)
+    {
+        var settings = new AmbientSettings { Preset = retired, SmoothingAlpha = 0.99 };
+
+        string? replaced = AmbientPresets.MigrateRetiredSelection(settings);
+
+        Assert.Equal(retired, replaced);
+        Assert.Equal(replacement, settings.Preset);
+        Assert.Equal(AmbientPresets.All.Single(p => p.Id == replacement).Values, AmbientTuning.From(settings));
+        Assert.Equal(replacement, FamilyOver(settings).Selection);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("custom")]
+    [InlineData("realistic-fast")]
+    [InlineData("no-such-preset")]
+    public void OtherSelectionsAreNotMigrated(string? stored)
+    {
+        var settings = new AmbientSettings { Preset = stored, SmoothingAlpha = 0.99 };
+
+        Assert.Null(AmbientPresets.MigrateRetiredSelection(settings));
+        Assert.Equal(stored, settings.Preset);
+        Assert.Equal(0.99, settings.SmoothingAlpha);
+    }
+
+    [Fact]
+    public void AnUnknownSelectionBecomesCustomWithTheValuesKept()
+    {
+        var settings = new AmbientSettings { Preset = "no-such-preset", SmoothingAlpha = 0.99 };
+        var kept = AmbientTuning.From(settings);
+
+        var family = FamilyOver(settings);
+
+        Assert.Equal(PresetFamily.Custom, family.Selection);
+        Assert.Equal(kept, settings.CustomTuning);
+        Assert.Equal(0.99, settings.SmoothingAlpha);
     }
 
     [Fact]

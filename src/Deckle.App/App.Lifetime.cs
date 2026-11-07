@@ -1,6 +1,7 @@
 using Deckle.App;
 using Deckle.Core;
 using Deckle.Diagnostics;
+using Deckle.Transcription;
 
 namespace Deckle.App;
 
@@ -66,11 +67,105 @@ public partial class App
         finally { mutex.Dispose(); }
     }
 
+    // How long a quit waits for the work in flight before it gives up on it.
+    //
+    // The wait covers what a dictation does after the stop: the 0.4 s capture
+    // tail, the transcription of the utterances still queued, then the optional
+    // LLM rewrite, which on a cold start also loads the model. That is a few
+    // seconds on a short take and tens of seconds on a long one with a rewrite.
+    // 60 s leaves room for the long case. Beyond it, the person is more likely
+    // to think Deckle froze than to wait on, and the recovery stores already
+    // hold the text and the audio (see TranscriptionEngine.Shutdown.cs), so
+    // giving up costs a "Recovered dictation" at the next launch, not the take.
+    // The figure is an estimate from the pipeline's stages, not a measure.
+    private static readonly TimeSpan QuitWorkBound = TimeSpan.FromSeconds(60);
+
+    // Time the HUD keeps its "pasted" or "copied" confirmation on screen before
+    // the process exits; without it the person never sees the take arrived.
+    private static readonly TimeSpan QuitConfirmationHold = TimeSpan.FromMilliseconds(800);
+
+    private int _quitStarted;
+
+    // Read by the engine's status handler (App.Startup.Shell.cs) so the tray
+    // tooltip keeps saying that Deckle closes when the work ends.
+    private volatile bool _quitPending;
+
+    private string QuitPendingStatus(string status) =>
+        Deckle.Catalog.Loc.Format("Status_QuitPending_Format", status);
+
+    // Every path that ends the app arrives here: tray Quit, the three restarts,
+    // the update and the data move. Work in flight is finished first (the
+    // decision of 2026-11-07): a dictation is stopped as a hotkey release would
+    // and delivers its text, then Deckle exits. The wait runs off the UI thread,
+    // which stays free to paint the HUD; the teardown comes back to it, because
+    // the resident mutex and the foreground hook belong to it.
+    //
+    // Judged not to need a wait, with the reason:
+    //   - paragraph rewrite: only an offer the person has not accepted; nothing
+    //     is written to their text before they accept it.
+    //   - autocorrect: replaces a word at the keystroke, in milliseconds; the
+    //     personal dictionary is persisted by its own dispose.
+    //   - settings: written by the synchronous Flush below.
+    //   - Anytype / MCP: a call cut short returns an error to the agent that
+    //     made it, and Anytype's own backend commits or drops a write whole.
+    //   - model downloads: written to a .partial file and renamed at the end
+    //     (Downloader), run from a setup window the person watches.
+    // A Windows session end does not reach this method (no WM_ENDSESSION
+    // handler exists), and Windows grants seconds there, not a minute.
     private void QuitApp(Action? restart = null)
     {
+        if (Interlocked.Exchange(ref _quitStarted, 1) != 0)
+        {
+            DeckleAppSource.Log.ShutdownRequestIgnored();
+            return;
+        }
+
         string workId = WorkId.Next();
         DeckleAppSource.Log.ShutdownRequested(workId);
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        TranscriptionEngine? engine = _engine;
+        if (engine is null || !engine.IsBusy)
+        {
+            ExitApp(workId, stopwatch, restart);
+            return;
+        }
+
+        bool wasRecording = engine.IsRecording;
+        _quitPending = true;
+        try
+        {
+            _tray?.UpdateStatus(
+                QuitPendingStatus(Deckle.Catalog.Loc.Get(
+                    wasRecording ? "Status_Recording" : "Status_Transcribing")),
+                isRecording: false);
+            // The same acknowledgement as the hotkey release: the next engine
+            // status only comes after the queued tail is decoded.
+            if (wasRecording) _hudWindow?.SwitchToTranscribing();
+        }
+        catch (Exception ex)
+        {
+            DeckleAppSource.Log.ShutdownStepFailed("quit_pending_status", ex.GetType().Name, ex.Message);
+        }
+
+        var ui = Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread();
+        _ = Task.Run(() =>
+        {
+            DrainResult drained = DrainResult.TimedOut;
+            try { drained = engine.FinishInFlightWork(workId, QuitWorkBound); }
+            catch (Exception ex)
+            {
+                DeckleAppSource.Log.ShutdownStepFailed("work_drain", ex.GetType().Name, ex.Message);
+            }
+            if (drained == DrainResult.Finished) Thread.Sleep(QuitConfirmationHold);
+
+            if (ui is null || !ui.TryEnqueue(() => ExitApp(workId, stopwatch, restart)))
+                ExitApp(workId, stopwatch, restart);
+        });
+    }
+
+    private void ExitApp(string workId, System.Diagnostics.Stopwatch stopwatch, Action? restart)
+    {
         int steps = 0;
         int failed = 0;
         // One step failing never stops the next: each is logged where it

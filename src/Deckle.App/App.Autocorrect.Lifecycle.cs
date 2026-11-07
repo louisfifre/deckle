@@ -5,8 +5,7 @@ using Deckle.Autocorrect;
 namespace Deckle.App;
 
 // Autocorrect activation owns the expensive runtime as one resource. Disabled
-// means no lexicons, inference session, background rerank lane or input-host
-// reference remains alive. Settings callbacks can arrive on the debounce
+// means no lexicons or input-host reference remains alive. Settings callbacks can arrive on the debounce
 // thread, so every transition is serialized with an in-flight build.
 public partial class App
 {
@@ -23,21 +22,15 @@ public partial class App
         public AutocorrectRuntime(
             AutocorrectEngine engine,
             PersonalDictionary dictionary,
-            string rerankerEngine,
-            long rerankerLoadMs,
             string lexiconKey)
         {
             Engine = engine;
             Dictionary = dictionary;
-            RerankerEngine = rerankerEngine;
-            RerankerLoadMs = rerankerLoadMs;
             LexiconKey = lexiconKey;
         }
 
         public AutocorrectEngine Engine { get; }
         public PersonalDictionary Dictionary { get; }
-        public string RerankerEngine { get; }
-        public long RerankerLoadMs { get; }
 
         // Identifies the effective lexicon this engine was built over — the
         // active domain packs. The merge happens once at load, so a change here
@@ -88,7 +81,7 @@ public partial class App
             // the accent index and every policy built over them are bound at
             // construction. Enrolling an app leaves the key equal, and the engine
             // reads the decision map live. Writes arrive debounced, so a burst of
-            // edits costs one rebuild, which reloads the sentence model too.
+            // edits costs one rebuild.
             AutocorrectRuntime? stale = _autocorrectRuntime;
             if (stale is not null
                 && stale.LexiconKey != DomainActivation.EffectiveLexiconKey(
@@ -121,7 +114,7 @@ public partial class App
             {
                 _autocorrectInitializing = false;
 
-                // The switch may have turned off while the model was loading.
+                // The switch may have turned off while the lexicons were loading.
                 // In that case the just-built runtime is discarded immediately;
                 // it never takes a shared input-host reference.
                 if (!_autocorrectShuttingDown
@@ -129,8 +122,6 @@ public partial class App
                     && runtime is not null
                     && runtime.Engine.Start())
                 {
-                    DeckleAutocorrectSource.Log.RerankerStatus(
-                        runtime.RerankerEngine, runtime.RerankerLoadMs);
                     DeckleAutocorrectSource.Log.EngineReady();
                     runtime.Engine.CorrectionApplied += OnParagraphCorrectionApplied;
                     _autocorrectRuntime = runtime;
@@ -139,8 +130,7 @@ public partial class App
                 else
                 {
                     // Released under the lock, as ReconcileAutocorrect releases
-                    // a stale runtime: a build started by the next reconcile
-                    // never loads its judge while this one's is being freed.
+                    // a stale runtime.
                     runtime?.Dispose();
                 }
             }

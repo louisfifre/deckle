@@ -121,8 +121,8 @@ public sealed class DecklePlaygroundSource : DeckleEventSource
     // obtained, so a reader of the log does not take it for a dictation
     // that failed. cause: in-use, not-detected, unavailable or exception.
     // hresult is 0 and ex_type empty when the cause does not carry them
-    // (version 2: the WASAPI error code; version 1 carried the waveIn
-    // MMSYSERR code as mmsys_err).
+    // (version 2: the WASAPI error code; version 1 carried a Windows
+    // multimedia error code as mmsys_err).
     [Event(EvtMicrophonePreviewFellBack,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Capture,

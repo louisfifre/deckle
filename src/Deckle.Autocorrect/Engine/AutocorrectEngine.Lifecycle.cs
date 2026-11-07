@@ -52,14 +52,12 @@ public sealed partial class AutocorrectEngine
         Unsubscribe();
         _corpus?.Discard();
         _stream?.Discard();
-        _coordinator?.Invalidate(ResetReason.FocusChanged); // drop the sentence model
         _dictionary?.Flush();
         OperationalLogAdmission.SetActive(OperationalLogActivity.Autocorrect, false);
         DeckleAutocorrectSource.Log.EngineStopped();
     }
 
-    // Permanent teardown: stop, then tear down the rerank lane (joins its worker
-    // and releases the model). Stop alone is reused across enable/disable cycles.
+    // Permanent teardown. Stop alone is reused across enable/disable cycles.
     public void Dispose()
     {
         lock (_lifecycleLock)
@@ -68,9 +66,6 @@ public sealed partial class AutocorrectEngine
             _disposed = true;
             StopCore();
         }
-
-        _coordinator?.Dispose();
-        _lane?.Dispose();
     }
 
     private void Unsubscribe()

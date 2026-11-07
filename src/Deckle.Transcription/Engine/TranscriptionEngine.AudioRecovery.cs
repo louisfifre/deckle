@@ -78,7 +78,7 @@ public sealed partial class TranscriptionEngine
     private ToggleResult TryStartAudioRecoveryLocked(
         float[] audio, TaskCompletionSource<RecoveredTake> done)
     {
-        if (_disposed) return ToggleResult.IgnoredDisposed;
+        if (_disposed || _finishing) return ToggleResult.IgnoredDisposed;
 
         if (Interlocked.CompareExchange(
                 ref _state,
