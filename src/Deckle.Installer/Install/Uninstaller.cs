@@ -43,7 +43,7 @@ internal static class Uninstaller
             // Models are the expensive thing to lose — re-downloading is gigabytes —
             // so keeping them is the default (No), stated plainly.
             if (Directory.Exists(dataDir))
-                removeData = MessageDialog.Confirm(nint.Zero,
+                removeData = MessageDialog.ConfirmDestructive(nint.Zero,
                     $"Also delete Deckle's data folder?\n\n{dataDir}\n\n" +
                     "This holds your settings and the downloaded speech models (several gigabytes). " +
                     "Choose No to keep them.",

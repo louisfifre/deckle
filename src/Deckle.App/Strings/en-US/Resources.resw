@@ -377,7 +377,7 @@
     <value>Swap it in Settings › {0}.</value>
   </data>
   <data name="Engine_PipelineCrashed_Title" xml:space="preserve">
-    <value>Pipeline crashed</value>
+    <value>Something went wrong</value>
   </data>
   <data name="Engine_PipelineCrashed_Body" xml:space="preserve">
     <value>Try again. Check logs if it persists.</value>
@@ -395,7 +395,7 @@
     <value>No voice detected</value>
   </data>
   <data name="Engine_LowAudio_Body" xml:space="preserve">
-    <value>Nothing above your voice level yet.</value>
+    <value>Speak closer to the mic.</value>
   </data>
   <data name="Engine_TranscriptionFailed_Title" xml:space="preserve">
     <value>Transcription failed</value>
@@ -425,13 +425,13 @@
     <value>Clipboard may be incomplete</value>
   </data>
   <data name="Engine_ClipboardIncomplete_Unverified_Body" xml:space="preserve">
-    <value>Text is copied but unverified.</value>
+    <value>Copied. Check it before pasting.</value>
   </data>
   <data name="Engine_ClipboardIncomplete_LengthMismatch_Title" xml:space="preserve">
     <value>Clipboard may be incomplete</value>
   </data>
   <data name="Engine_ClipboardIncomplete_LengthMismatch_Body" xml:space="preserve">
-    <value>Length mismatch on read-back.</value>
+    <value>May be cut short. Check it.</value>
   </data>
 
   <!-- ─── Microphone errors ──────────────────────────────────────────
@@ -455,7 +455,7 @@
     <value>Microphone unavailable</value>
   </data>
   <data name="MicError_Unavailable_Body_Format" xml:space="preserve">
-    <value>Mic open failed (error {0}).</value>
+    <value>Mic won't open (error {0}).</value>
   </data>
 
   <!-- ─── HUD feedback from the host ─────────────────────────────────
@@ -473,7 +473,7 @@
     <value>Shortcuts unavailable</value>
   </data>
   <data name="Feedback_HotkeysUnavailable_Body" xml:space="preserve">
-    <value>Record from the tray panel.</value>
+    <value>Record from the tray menu.</value>
   </data>
   <data name="Feedback_HotkeyUnavailable_Title_Format" xml:space="preserve">
     <value>{0} shortcut</value>
@@ -951,7 +951,7 @@
     <value>Reset all rewriting settings?</value>
   </data>
   <data name="Settings_ResetLlmDialog_Content" xml:space="preserve">
-    <value>This wipes the providers, profiles, rules, and shortcut bindings, then puts the default providers and profiles back. API keys stay saved. Your custom prompts and parameters will be lost.</value>
+    <value>Every rewriting setting goes back to its default: the switch, the rewrite profile, the length steps and rewriting while you speak. The providers and profiles, shortcuts included, are replaced by the defaults. API keys stay saved. Your custom prompts and parameters will be lost.</value>
   </data>
   <data name="Settings_OllamaStatusMessage_Format" xml:space="preserve">
     <value>Start Ollama or check the provider's address ({0}).</value>
@@ -998,7 +998,7 @@
     <value>Remove this profile?</value>
   </data>
   <data name="Settings_RemoveProfileDialog_Content_Format" xml:space="preserve">
-    <value>"{0}" will be removed. Any rule or shortcut that pointed to it will need a new profile picked. They're not deleted, they go blank until you reassign them.</value>
+    <value>"{0}" and its shortcut will be removed. If it is the rewrite profile, dictations go back to plain transcription. Any length step that used it is removed too.</value>
   </data>
   <data name="Settings_ResetProfilesDialog_Title" xml:space="preserve">
     <value>Reset profiles to defaults?</value>
@@ -1031,6 +1031,12 @@
     <value>Search logs</value>
   </data>
   <data name="LogWindowSearchIconButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Search logs</value>
+  </data>
+  <data name="LogWindowSearchBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Search logs</value>
+  </data>
+  <data name="LogWindowSearchIconButton.AutomationProperties.Name" xml:space="preserve">
     <value>Search logs</value>
   </data>
   <data name="LogWindowCopyAllText.Text" xml:space="preserve">
@@ -1233,7 +1239,7 @@
     <value>Replace the paired bridge?</value>
   </data>
   <data name="AmbientHue_RepairDialog_Content" xml:space="preserve">
-    <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones.</value>
+    <value>Deckle is already paired with a bridge. Pairing again replaces the current address and credentials with the new ones. Then press the link button on the bridge.</value>
   </data>
 
   <!-- AmbientPage Reset all dialog — duplicated from
