@@ -138,14 +138,49 @@
                 </catalog:SettingsSection>
 
                 <!-- ── Developer ───────────────────────────────────────────── -->
-                <!-- Last on the page: a switch only the people building Deckle
-                     reach for. It shows the Playground's entry points. -->
+                <!-- Last on the page: switches only the people building Deckle
+                     reach for. The Playground's entry points, then Developer
+                     mode, which shows the developer tools below it while on. -->
                 <catalog:SettingsSection x:Name="DeveloperSection"
                                          x:Uid="GeneralPageDeveloperSection"
                                          HasReset="True"
                                          ResetRequested="ResetDeveloper_Click">
-                    <StackPanel x:Name="DeveloperHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
+                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                        <StackPanel x:Name="DeveloperHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+
+                        <!-- Bespoke: an action, which the composer does not
+                             drive. Shown while Developer mode is on and the App
+                             wired the capture (GeneralPage.InterfaceCapture.cs). -->
+                        <controls:SettingsCard x:Name="CaptureInterfaceCard"
+                                               x:Uid="GeneralCaptureInterfaceCard"
+                                               Tag="GeneralCaptureInterfaceCard"
+                                               Visibility="Collapsed">
+                            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                <ProgressRing x:Name="CaptureInterfaceRing"
+                                              Width="20"
+                                              Height="20"
+                                              IsActive="False"
+                                              Visibility="Collapsed" />
+                                <Button x:Name="CaptureInterfaceButton"
+                                        x:Uid="GeneralCaptureInterfaceButton"
+                                        Click="CaptureInterfaceButton_Click" />
+                            </StackPanel>
+                        </controls:SettingsCard>
+
+                        <!-- The outcome of the last capture, with the way to
+                             its folder. -->
+                        <InfoBar x:Name="CaptureInterfaceInfoBar"
+                                 IsOpen="False"
+                                 IsClosable="True"
+                                 catalog:InfoBarLayout.CollapseWhenClosed="True">
+                            <InfoBar.ActionButton>
+                                <Button x:Name="OpenCaptureFolderButton"
+                                        x:Uid="GeneralCaptureInterfaceOpenFolderButton"
+                                        Click="OpenCaptureFolderButton_Click" />
+                            </InfoBar.ActionButton>
+                        </InfoBar>
+                    </StackPanel>
                 </catalog:SettingsSection>
 
             </StackPanel>

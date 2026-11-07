@@ -584,6 +584,35 @@
   <data name="GeneralShowPlaygroundCard.Description" xml:space="preserve">
     <value>Adds the Playground, a test bench for Deckle's own features, to the tray menu and to the window title bars.</value>
   </data>
+  <data name="GeneralDeveloperModeCard.Header" xml:space="preserve">
+    <value>Developer mode</value>
+  </data>
+  <data name="GeneralDeveloperModeCard.Description" xml:space="preserve">
+    <value>Shows tools for testing and reviewing Deckle, such as saving an image of every window.</value>
+  </data>
+  <data name="GeneralCaptureInterfaceCard.Header" xml:space="preserve">
+    <value>Capture the interface</value>
+  </data>
+  <data name="GeneralCaptureInterfaceCard.Description" xml:space="preserve">
+    <value>Saves an image of each open Deckle window and of every settings page, with an index of what each image shows. This window goes through each page while it works.</value>
+  </data>
+  <data name="GeneralCaptureInterfaceButton.Content" xml:space="preserve">
+    <value>Capture</value>
+  </data>
+  <data name="GeneralCaptureInterfaceOpenFolderButton.Content" xml:space="preserve">
+    <value>Open folder</value>
+  </data>
+  <data name="GeneralCaptureInterface_Done_Format" xml:space="preserve">
+    <value>Saved {0} images.</value>
+    <comment>{0} = number of PNG files written.</comment>
+  </data>
+  <data name="GeneralCaptureInterface_Partial_Format" xml:space="preserve">
+    <value>Saved {0} images. Couldn't capture {1} windows or pages, which the log names with the reason.</value>
+    <comment>{0} = images written; {1} = windows or pages that failed.</comment>
+  </data>
+  <data name="GeneralCaptureInterface_Failed" xml:space="preserve">
+    <value>Couldn't capture the interface. The log says why.</value>
+  </data>
 
   <!-- ─── Settings — code-behind dialogs ─────────────────────────────
        ContentDialogs raised programmatically by Settings pages and

@@ -1505,6 +1505,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Modules/
 │   │   │   └── SettingsModuleRegistry.cs
 │   │   ├── Pages/
+│   │   │   ├── GeneralPage.InterfaceCapture.cs
 │   │   │   ├── GeneralPage.ToastsElevated.cs
 │   │   │   ├── GeneralPage.xaml
 │   │   │   ├── GeneralPage.xaml.cs
@@ -1539,6 +1540,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SettingsSearchIndex.cs
 │   │   ├── SettingSuggestion.cs
 │   │   ├── SettingsWindow.FocusDismiss.cs
+│   │   ├── SettingsWindow.InterfaceCapture.cs
 │   │   ├── SettingsWindow.Search.cs
 │   │   ├── SettingsWindow.TitleBarProbe.cs
 │   │   ├── SettingsWindow.xaml
