@@ -103,11 +103,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── lissage-opus-v2.json
 │   │   │   │   └── lissage-opus.json
 │   │   │   ├── prompts/
+│   │   │   │   ├── affinage-court.md
 │   │   │   │   ├── affinage-opt1.md
 │   │   │   │   ├── affinage-opt2.md
+│   │   │   │   ├── arrangement-court.md
 │   │   │   │   ├── arrangement-opt1.md
 │   │   │   │   ├── arrangement-opt2.md
 │   │   │   │   ├── arrangement-opt3.md
+│   │   │   │   ├── lissage-court.md
 │   │   │   │   ├── lissage-current.md
 │   │   │   │   ├── lissage-literal.md
 │   │   │   │   └── lissage-opt1.md
