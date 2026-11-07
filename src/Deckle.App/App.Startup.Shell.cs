@@ -46,6 +46,11 @@ public partial class App
         _tray = new TrayIconManager();
         context.Milestone("tray");
 
+        // Lives as long as the process, so it is never disposed: the process
+        // end destroys its window. A Windows session end can kill the process
+        // right after the message returns, so the log is drained here.
+        _sessionEndWatcher = new SessionEndWatcher(() => AppDiagnosticsBootstrap.Flush(ExitFlushDeadline));
+
         // Engine events arrive on background threads: LogWindow and HudWindow
         // marshal through their DispatcherQueue, and UpdateStatus only calls
         // Shell_NotifyIcon, which is thread-safe. No engine when speech is not

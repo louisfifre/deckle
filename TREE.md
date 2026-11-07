@@ -1600,6 +1600,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageOnlyHost.cs
 │   │   ├── ResizeCoalescer.cs
 │   │   ├── ResizeGesture.cs
+│   │   ├── SessionEndSignal.cs
+│   │   ├── SessionEndWatcher.cs
 │   │   ├── StartupService.cs
 │   │   ├── TrayIconManager.cs
 │   │   └── TrayIconRegistration.cs
@@ -2435,6 +2437,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── ResizeGestureTests.cs
+│   │   ├── SessionEndSignalTests.cs
 │   │   ├── ShellObservabilityCollection.cs
 │   │   ├── TrayIconBugNotes.md
 │   │   ├── TrayIconFallbackObservabilityTests.cs
