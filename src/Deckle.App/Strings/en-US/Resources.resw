@@ -799,7 +799,7 @@
     <value>Version {0} is available</value>
   </data>
   <data name="Settings_MoveDataDialog_Title" xml:space="preserve">
-    <value>Move app data?</value>
+    <value>Move the data folder?</value>
   </data>
   <data name="Settings_MoveDataDialog_Content_Format" xml:space="preserve">
     <value>Deckle copies {0} of data to {1}, then restarts. The old folder is removed afterwards.</value>
@@ -808,7 +808,7 @@
     <value>Move and restart</value>
   </data>
   <data name="Settings_MoveDataSameTarget" xml:space="preserve">
-    <value>The app data is already in this folder.</value>
+    <value>The data folder is already there.</value>
   </data>
   <data name="Settings_MoveDataInvalidTarget" xml:space="preserve">
     <value>Pick an empty folder outside the current data folder.</value>
@@ -854,7 +854,7 @@
     <value>Restore settings?</value>
   </data>
   <data name="Settings_RestoreDialog_Content_Format" xml:space="preserve">
-    <value>This will overwrite your current settings with the snapshot from {0}. Your current settings will not be saved unless you back them up first.</value>
+    <value>This will overwrite your current settings with the backup from {0}. Your current settings will not be saved unless you back them up first.</value>
   </data>
   <data name="Settings_RestoreDialog_PrimaryButton" xml:space="preserve">
     <value>Restore</value>
