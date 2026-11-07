@@ -78,6 +78,27 @@ public sealed partial class RecordingPage : Page
         // one going dirty must re-gate it. The composer raises DirtyChanged at the
         // end of every RefreshAll, so the handler reads the settled dirtiness.
         _preprocessingComposer.DirtyChanged += OnComposedDirtyChanged;
+        MoveChecksIntoPreprocessingFold();
+    }
+
+    // The two checks move from their XAML holder into the composed fold's
+    // items, after the composer's own (it has none), the GeneralPage backup
+    // fold's pattern in reverse. The x:Bind bindings travel with the elements:
+    // they were set on the elements, not on the holder. The holder is left
+    // empty and collapsed (in XAML), so it takes no room.
+    private void MoveChecksIntoPreprocessingFold()
+    {
+        CommunityToolkit.WinUI.Controls.SettingsExpander? fold = null;
+        foreach (UIElement child in PreprocessingHost.Children)
+            if (child is CommunityToolkit.WinUI.Controls.SettingsExpander expander) fold = expander;
+        if (fold is null) return;
+
+        while (PreprocessingChecks.Children.Count > 0)
+        {
+            UIElement card = PreprocessingChecks.Children[0];
+            PreprocessingChecks.Children.RemoveAt(0);
+            fold.Items.Add(card);
+        }
     }
 
     private void OnComposedDirtyChanged(object? sender, EventArgs e) => GateResetLink();
@@ -85,7 +106,8 @@ public sealed partial class RecordingPage : Page
     // The device id is deliberately not folded in: it is hardware enumeration, not
     // a defaulted setting, so a non-default device leaves the link greyed. The
     // header's "Reset all" shares this gate, since the Recording section is the
-    // page's single resettable section; the Checks section keeps no value.
+    // page's single resettable section; the checks in the pre-processing fold
+    // keep no value.
     private void GateResetLink()
     {
         bool dirty =
