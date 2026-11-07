@@ -2176,6 +2176,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
 │   │   ├── RecordingLevelStepTests.cs
+│   │   ├── RecordingOutlineBugNotes.md
 │   │   ├── TranscriptPanelBugNotes.md
 │   │   ├── TranscriptPanelLayoutTests.cs
 │   │   ├── UtteranceCountdownBugNotes.md
