@@ -79,6 +79,15 @@ public sealed class TrayIconManager : IDisposable
     /// </summary>
     public event Action? RightClickRequested;
 
+    /// <summary>
+    /// Raised each time Explorer rebuilds the taskbar (TaskbarCreated), once
+    /// the icon's re-add has been tried, on the message pump thread of the
+    /// owner window. The re-add itself may still be retrying on its timer.
+    /// A subscriber must not let an exception out: it would unwind into the
+    /// WndProc.
+    /// </summary>
+    public event Action? TaskbarCreated;
+
     // ── Initialization ───────────────────────────────────────────────────────
 
     // Creates the owner window and adds the icon with the current status.
@@ -197,6 +206,7 @@ public sealed class TrayIconManager : IDisposable
         {
             DeckleShellSource.Log.TaskbarRecreated();
             TryReadd();
+            TaskbarCreated?.Invoke();
             return IntPtr.Zero;
         }
 
