@@ -8,13 +8,13 @@
   </PropertyGroup>
 
   <!-- One ONNX Runtime in every Deckle process: the pinned NuGet build (1.23.0,
-       see Directory.Packages.props), which matches ONNX Runtime GenAI 0.13.
+       see Directory.Packages.props).
        Since Windows App SDK 2.0, Windows ML ships as the NuGet package
        Microsoft.Windows.AI.MachineLearning (pulled in by Microsoft.WindowsAppSDK.ML),
        and in self-contained mode (Deckle.App) its natives are plain NuGet
        copy-local files: a second onnxruntime.dll (1.24), DirectML.dll and the
        Windows ML DLL. The SDK then keeps the higher onnxruntime.dll file version
-       for the root output and the deps.json, so the GenAI judge would run on a
+       for the root output and the deps.json, so the VAD would run on a
        runtime it was not built for. Deckle does not use Windows ML, so drop the
        package's native assets before the copy-local step; its managed projection
        stays.

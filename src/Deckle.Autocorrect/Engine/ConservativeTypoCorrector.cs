@@ -18,10 +18,8 @@ namespace Deckle.Autocorrect;
 // against accented forms behind the repaired fold. This composes one physical
 // slip with missing diacritics ("preaprer" → "préparer") without relaxing either
 // tier's frequency or dominance bars.
-public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy, IAmbiguityProbe
+public sealed partial class ConservativeTypoCorrector : ICorrectionPolicy
 {
-    private const int SentenceCandidateCap = 4;
-    private const int ContextualFarMaxWordLength = 5;
     private readonly IFrequencyLexicon _french;
     private readonly IFrequencyLexicon? _english;
     private readonly IPersonalLexicon? _personal;

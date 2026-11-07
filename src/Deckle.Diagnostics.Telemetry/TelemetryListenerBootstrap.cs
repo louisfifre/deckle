@@ -69,15 +69,13 @@ public static class TelemetryListenerBootstrap
                          && e.EventName == "PreprocessedTelemetryRecorded"
                          && ReadGate(s => s.MicrophoneTelemetry)));
 
-        // The synchronous decision and its deferred reranker verdict land in
-        // the same file, joined by id. Carries typed words by design, so it is
+        // The per-word decision ledger. Carries typed words by design, so it is
         // gated on its own consent toggle.
         Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "autocorrect.decisions.jsonl"),
             kindLabel: "autocorrect_decision",
             predicate: e => e.Kind == ObservationKind.Dataset
-                         && (e.EventName == "AutocorrectDecisionRecorded"
-                          || e.EventName == "AutocorrectRerankRecorded")
+                         && e.EventName == "AutocorrectDecisionRecorded"
                          && ReadGate(s => s.AutocorrectDecisions)));
 
         // Verbatim typed input, the heaviest text capture, so it carries its

@@ -13,16 +13,8 @@ namespace Deckle.Autocorrect;
 // first, then the literal-protection gates (a valid French or English form is
 // never second-guessed), then the candidate machinery. Each guard carries the
 // one reason it exists.
-public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
+public sealed class DiacriticsRestorer : ICorrectionPolicy
 {
-    // Valid French literals may only reach the silent sentence judge when the
-    // ambiguity is a calibrated grammatical homophone. Open-ended accent folds
-    // turned ordinary content words into false slots (ratures/raturés, date/daté).
-    private static readonly HashSet<string> ContextualHomophones = new(StringComparer.Ordinal)
-    {
-        "a", "la", "ou", "du", "sur",
-    };
-
     private readonly IFrequencyLexicon _french;
     private readonly IFrequencyLexicon? _english;
     private readonly AccentIndex _index;
@@ -118,7 +110,7 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         //     own variants (personal wins ties), filter by frequency floor and
         //     drop any pair the user has suppressed. A valid literal competes
         //     as a candidate of its own.
-        var candidates = BuildCandidates(lower, literalValid, applyRarityGate: false, out var fromPersonal);
+        var candidates = BuildCandidates(lower, literalValid, out var fromPersonal);
         st?.WithCandidates(candidates, v =>
             fromPersonal.Contains(v.Form) ? CorrectionTrace.Sources.Personal
             : v.Form == lower             ? CorrectionTrace.Sources.Literal
@@ -199,76 +191,18 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
         return null;
     }
 
-    // Shares Evaluate's candidate machinery without its guard chain or decision.
-    // The blacklist guards (digits, internal upper, elision, already-accented)
-    // still apply: an already-accented or non-word token is never an ambiguous slot.
-    public IReadOnlyList<AccentVariant> AmbiguousCandidates(string word)
-    {
-        string lower = word.ToLowerInvariant();
-        if (_french.Contains(lower) && !ContextualHomophones.Contains(lower))
-            return Array.Empty<AccentVariant>();
-        return SentenceCandidates(word, includeTypedLiteral: false);
-    }
-
-    public IReadOnlyList<AccentVariant> SentenceCandidates(string word, bool includeTypedLiteral)
-    {
-        if (word.Length == 0)
-            return Array.Empty<AccentVariant>();
-        foreach (char c in word)
-            if (char.IsDigit(c) || (!char.IsLetter(c) && c is not '\'' and not '\u2019' and not '-'))
-                return Array.Empty<AccentVariant>();
-        if (WordShape.HasInternalUpper(word) || word[^1] is '\'' or '\u2019' || AccentFolding.HasDiacritics(word))
-            return Array.Empty<AccentVariant>();
-
-        string lower = word.ToLowerInvariant();
-
-        // The gate blacklists sub-MinWordLength tokens outright. The reranker may
-        // still resolve a one-char ambiguity (a/a-accent) when the bare form is a
-        // real candidate, but it must never force an accent onto a stray letter.
-        bool literalValid = _french.Contains(lower);
-        if (word.Length < _options.MinWordLength && !literalValid && !includeTypedLiteral)
-            return Array.Empty<AccentVariant>();
-
-        var merged = BuildCandidates(lower, literalValid, applyRarityGate: true, out _);
-        if (includeTypedLiteral && !merged.Exists(v => string.Equals(v.Form, lower, StringComparison.Ordinal)))
-        {
-            double frequency = literalValid ? _french.FrequencyOf(lower) : 0.0;
-            merged.Add(new AccentVariant(lower, frequency));
-            merged.Sort(static (a, b) => b.FrequencyPerMillion.CompareTo(a.FrequencyPerMillion));
-        }
-
-        return merged.Count >= 2 ? merged : Array.Empty<AccentVariant>();
-    }
-
     // Builds the filtered candidate list and records which surface forms came
     // from the personal dictionary. Dedup is by exact Form — distinct accented
     // variants that fold to the same key (élève vs élevé) must both survive.
     // A merged personal variant re-sorts the list to keep frequency-desc order.
     private List<AccentVariant> BuildCandidates(
-        string lower, bool literalValid, bool applyRarityGate, out HashSet<string> fromPersonal)
+        string lower, bool literalValid, out HashSet<string> fromPersonal)
     {
         fromPersonal = new HashSet<string>(StringComparer.Ordinal);
 
         var merged = new List<AccentVariant>(_index.VariantsOf(lower));
         if (literalValid)
             merged.Add(new AccentVariant(lower, _french.FrequencyOf(lower)));
-
-        // Reference frequency for the rarity gate: the typed literal's own when it
-        // is a valid form; otherwise the slot's most frequent lexicon variant. A
-        // misspelled literal has no frequency of its own ("ca"), yet its slot can
-        // still pair a dominant form with an ultra-rare cousin (ça vs çà) —
-        // without the fallback the gate is disarmed exactly where the judge's
-        // wrong changes cluster. Computed before personal variants join: their
-        // sentinel frequency would inflate the reference past every real form.
-        double rarityReference = 0.0;
-        if (applyRarityGate)
-        {
-            if (literalValid)
-                rarityReference = _french.FrequencyOf(lower);
-            else
-                foreach (var v in merged)
-                    rarityReference = Math.Max(rarityReference, v.FrequencyPerMillion);
-        }
 
         if (_personalVariants is not null)
         {
@@ -283,24 +217,12 @@ public sealed class DiacriticsRestorer : ICorrectionPolicy, IAmbiguityProbe
             }
         }
 
-        // Sentence-stage rarity gate: measured against the reference above, a
-        // folded variant far rarer than it is almost always a wrong change
-        // (mais→maïs, le→lé, ca→çà). Drop anything under reference × ratio —
-        // never the typed literal itself. Off unless the caller is the sentence
-        // stage (applyRarityGate); zero when off, so the per-candidate test
-        // below is a no-op.
-        double rarityFloor = rarityReference * _options.MinCandidateFrequencyRatio;
-
-        // Filter: frequency floor, the rarity gate, then drop user-suppressed pairs
+        // Filter: frequency floor, then drop user-suppressed pairs
         // (suppression is case-insensitive on both the original and the candidate form).
         var kept = new List<AccentVariant>(merged.Count);
         foreach (var v in merged)
         {
             if (v.FrequencyPerMillion < _options.MinCandidateFrequencyPerMillion)
-                continue;
-            if (rarityFloor > 0.0
-                && v.FrequencyPerMillion < rarityFloor
-                && !string.Equals(v.Form, lower, StringComparison.Ordinal))
                 continue;
             if (_personal?.IsSuppressed(lower, v.Form.ToLowerInvariant()) == true)
             {

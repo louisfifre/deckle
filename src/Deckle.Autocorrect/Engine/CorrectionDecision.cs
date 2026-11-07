@@ -15,8 +15,6 @@ public enum CorrectionReason
     TypoCorrection,
     /// <summary>A dropped elision apostrophe restored in a glued proclitic (cest → c'est).</summary>
     Elision,
-    /// <summary>Ambiguity resolved by the post-sentence bidirectional reranker.</summary>
-    SentenceReranker,
     /// <summary>The first word of a sentence raised to a capital.</summary>
     Capitalization,
     /// <summary>A verb re-conjugated to agree with its adjacent subject pronoun.</summary>

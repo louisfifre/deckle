@@ -128,43 +128,6 @@ public class ConservativeTypoCorrectorTests
 
     [Fact]
     [Trait("Category", "unit")]
-    public void AmbiguousOneKeyNeighboursBecomeAClosedSentenceCandidateSet()
-    {
-        var corrector = Corrector("peu\t1586.96\npu\t366.22\npur\t44.59\n");
-        Assert.Null(corrector.Evaluate("pru", [])); // 4.33× stays below the 5× commit bar.
-
-        IReadOnlyList<AccentVariant> candidates = corrector.AmbiguousCandidates("pru");
-
-        Assert.Equal(new[] { "peu", "pu", "pur", "pru" },
-            candidates.Select(candidate => candidate.Form).ToArray());
-    }
-
-    [Fact]
-    [Trait("Category", "unit")]
-    public void CoherentHorizontalHandOffsetIsAContextualCandidateOnly()
-    {
-        var corrector = Corrector("qui\t9000\n");
-
-        Assert.Null(corrector.Evaluate("qio", []));
-        Assert.Contains(
-            corrector.AmbiguousCandidates("qio"),
-            candidate => candidate.Form == "qui");
-    }
-
-    [Fact]
-    [Trait("Category", "unit")]
-    public void ShortTwoSlipFaultIsAContextualCandidateOnly()
-    {
-        var corrector = Corrector("mieux\t900\n");
-
-        Assert.Null(corrector.Evaluate("miru", []));
-        Assert.Contains(
-            corrector.AmbiguousCandidates("miru"),
-            candidate => candidate.Form == "mieux");
-    }
-
-    [Fact]
-    [Trait("Category", "unit")]
     public void RareNeighbourBelowFloorIsLeftAlone()
     {
         // "obscru" → obscur, but obscur (1.5) sits under the 2/million floor:
@@ -259,29 +222,6 @@ public class ConservativeTypoCorrectorTests
             decision is not null,
             $"{trace.RenderTrail()} | {trace.RenderCandidates()} | {trace.RenderGauges()}");
         Assert.Equal("proposes", decision!.Replacement);
-    }
-
-    [Theory]
-    [Trait("Category", "integration")]
-    [InlineData("pru", "peu")]
-    [InlineData("qio", "qui")]
-    [InlineData("miru", "mieux")]
-    public void PackagedSentenceCandidatesKeepObservedKeyboardRepairs(
-        string typed,
-        string expected)
-    {
-        string dataDir = Path.Combine(AppContext.BaseDirectory, "Data");
-        FrequencyLexicon french = FrequencyLexicon.LoadTsvGz(Path.Combine(
-            dataDir, AutocorrectLexiconArtifacts.FrenchFileName));
-        var corrector = new ConservativeTypoCorrector(
-            french, accentIndex: AccentIndex.Build(french));
-
-        IReadOnlyList<AccentVariant> candidates = corrector.AmbiguousCandidates(typed);
-
-        Assert.True(
-            candidates.Any(candidate => candidate.Form == expected),
-            string.Join(", ", candidates.Select(candidate =>
-                $"{candidate.Form}@{candidate.FrequencyPerMillion}")));
     }
 
     [Fact]
