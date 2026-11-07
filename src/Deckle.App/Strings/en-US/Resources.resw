@@ -510,10 +510,10 @@
     <value>Dictation not fully recovered</value>
   </data>
   <data name="Hud_DictationRecoveryFailed_Body" xml:space="preserve">
-    <value>The audio of an interrupted dictation could not be transcribed. Details are in the log.</value>
+    <value>Its audio was not transcribed.</value>
   </data>
   <data name="Hud_DictationRecoveryFailed_TextOnly_Body" xml:space="preserve">
-    <value>Only the text saved before the interruption was copied to the clipboard. Details are in the log.</value>
+    <value>Only the saved text was copied.</value>
   </data>
   <!-- File transcription completion. The saved .txt file is the primary
        outcome; the hint reminds the user it's also on the clipboard. -->
