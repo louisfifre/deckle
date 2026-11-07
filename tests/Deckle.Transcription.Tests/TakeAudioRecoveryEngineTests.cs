@@ -43,7 +43,8 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 3),
             new RecordingClipboardWriter(),
-            takeAudio: store);
+            takeAudio: store,
+            captureTail: TestCaptureTail);
 
         Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
         await backend.AllCallsCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
@@ -75,7 +76,8 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 2),
             new RecordingClipboardWriter(),
-            takeAudio: store);
+            takeAudio: store,
+            captureTail: TestCaptureTail);
 
         await RunOneTakeAsync(engine, backend, testCancellation);
 
@@ -92,7 +94,8 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             new SequencedBackend([TestInference]),
             new ScriptedMicrophoneCapture(utteranceCount: 0),
             new RecordingClipboardWriter(),
-            takeAudio: store);
+            takeAudio: store,
+            captureTail: TestCaptureTail);
 
         TranscriptionOutcome outcome = await RunTakeAsync(engine, calls: null, testCancellation);
 
@@ -113,7 +116,8 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 2, CaptureOutcome.MicError),
             clipboard,
-            takeAudio: store);
+            takeAudio: store,
+            captureTail: TestCaptureTail);
 
         TranscriptionOutcome outcome = await RunTakeAsync(engine, backend.AllCallsCompleted.Task, testCancellation);
 
@@ -140,7 +144,8 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             new SequencedBackend([], modelLoaded: false, loadFails: true),
             new ScriptedMicrophoneCapture(utteranceCount: 2),
             new RecordingClipboardWriter(),
-            takeAudio: store);
+            takeAudio: store,
+            captureTail: TestCaptureTail);
         try
         {
             TranscriptionOutcome outcome = await RunTakeAsync(engine, calls: null, testCancellation);
@@ -171,7 +176,8 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             new SequencedBackend([]),
             new ScriptedMicrophoneCapture(utteranceCount: 2),
             clipboard,
-            takeAudio: store);
+            takeAudio: store,
+            captureTail: TestCaptureTail);
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         engine.TranscriptionFinished += result => finished.TrySetResult(result);
@@ -204,7 +210,8 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             new SequencedBackend([TestInference]),
             new ScriptedMicrophoneCapture(utteranceCount: 2),
             clipboard,
-            takeAudio: store);
+            takeAudio: store,
+            captureTail: TestCaptureTail);
 
         TranscriptionOutcome outcome = await RunTakeAsync(engine, calls: null, testCancellation);
 
@@ -225,7 +232,8 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 2),
             new RecordingClipboardWriter(),
-            takeAudio: store);
+            takeAudio: store,
+            captureTail: TestCaptureTail);
 
         Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
         await backend.AllCallsCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
@@ -249,7 +257,8 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             backend,
             new ScriptedMicrophoneCapture(utteranceCount: 0),
             new RecordingClipboardWriter(),
-            takeAudio: store);
+            takeAudio: store,
+            captureTail: TestCaptureTail);
         var finished = new TaskCompletionSource<TranscriptionOutcome>(
             TaskCreationOptions.RunContinuationsAsynchronously);
         engine.TranscriptionFinished += result => finished.TrySetResult(result);

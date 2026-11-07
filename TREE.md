@@ -157,6 +157,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── research--settings-ux--2026-10-13.md  — Recherche vérifiée (2026-10-13), la direction Settings de Louis passée au cribl…
 │   │   ├── research--seuils-voix--2026-11-06.md  — Cadrage vérifié (2026-11-06) — les seuils de niveau et de détection de voix dup…
 │   │   ├── research--taskbar-sans-windhawk--2026-10-08.md  — Recherche vérifiée (2026-10-08) — remplacer Windhawk par un module Deckle pour…
+│   │   ├── research--temps-de-build--2026-11-07.md  — Où passe le temps de build et de test de Deckle (mesuré le 2026-11-06/07 sur le…
 │   │   └── research--youtube-maison--2026-10-22.md  — Cadrage (2026-10-22) — un client YouTube maison comme module de Deckle : la nou…
 │   ├── inventaire-exposables.csv
 │   ├── inventaire-exposables.md
@@ -260,11 +261,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── update-tree.ps1
 │   ├── tests/
 │   │   ├── BugExamples/
+│   │   │   ├── build-locked-positional-dotnet-args.json
 │   │   │   ├── build-only-stops-resident.json
 │   │   │   ├── dotnet-max-node-response-precedence.json
 │   │   │   ├── repository-portability.json
 │   │   │   └── roslyn-server-escapes-low-priority.json
 │   │   ├── commands/
+│   │   │   ├── build-locked.tests.ps1
 │   │   │   ├── build-server-watchdog.tests.ps1
 │   │   │   ├── publish-native-runtime.tests.ps1
 │   │   │   └── update-readme-stats.tests.ps1
