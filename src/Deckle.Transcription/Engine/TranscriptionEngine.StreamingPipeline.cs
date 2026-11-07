@@ -219,7 +219,7 @@ public sealed partial class TranscriptionEngine
             return null;
         }
 
-        RaiseStatus(Loc.Get("Status_Transcribing"));
+        RaiseStatus(StatusPhase.Transcribing, Loc.Get("Status_Transcribing"));
 
         DeckleWhispSource.Log.StreamingDrained();
         if (OperationalLogAdmission.IsDetailEnabled(
@@ -239,7 +239,7 @@ public sealed partial class TranscriptionEngine
 
         if (string.IsNullOrWhiteSpace(consumed.Text))
         {
-            RaiseStatus(Loc.Get("Status_Ready"));
+            RaiseStatus(StatusPhase.Ready, Loc.Get("Status_Ready"));
             // Incomplete with no text is a lost take, not a silent one: speech was
             // recorded and nothing came out of it. Either the prime failed (the
             // consumer then counted no utterance) or every utterance sent to the

@@ -201,7 +201,7 @@ public sealed partial class TranscriptionEngine
         }
 
         // Shown while the model loads: the person sees the app is working.
-        RaiseStatus(Loc.Get("Status_Transcribing"));
+        RaiseStatus(StatusPhase.Transcribing, Loc.Get("Status_Transcribing"));
 
         if (audio.Length == 0)
         {

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Deckle.Catalog;
 using Deckle.Llm;
@@ -79,15 +80,46 @@ public sealed class LengthSwitchSettings
     // threshold.
     public const int CharsPerMinute = 700;
 
-    // About 45 seconds to about 45 minutes: tight while a little more text
-    // changes the nature of a dictation, coarser beyond.
-    public static readonly IReadOnlyList<int> StopsChars =
-        [500, 750, 1000, 1500, 2000, 3000, 4000, 5000, 7500, 10000, 15000, 20000, 30000];
+    // From about nine seconds to about forty-five minutes of speech.
+    public const int MinChars = 100;
+    public const int MaxChars = 30000;
 
     public bool Enabled { get; set; }
 
-    // Sorted by FromChars, strictly increasing; each one of StopsChars.
+    // Sorted by FromChars, strictly increasing; each one on the grain of its
+    // length (GrainAt), between MinChars and MaxChars.
     public List<LengthStep> Steps { get; set; } = new();
+
+    // The precision a threshold is held at: about a twentieth of it, on the
+    // 1-2-5 ladder, never under MinChars. A length is meant in relative
+    // terms: 500 against 600 characters is another dictation, 20,000 against
+    // 20,100 is not. That gives 100 up to 4,000, then 200, 500 from 10,000
+    // and 1,000 from 20,000. Each band starts on a multiple of its own grain,
+    // so snapping a snapped value changes nothing.
+    public static int GrainAt(int chars)
+    {
+        int target = Math.Max(chars / 20, MinChars);
+        int grain = MinChars;
+        for (int decade = MinChars; ; decade *= 10)
+            foreach (int factor in (ReadOnlySpan<int>)[1, 2, 5])
+            {
+                if (decade * factor > target) return grain;
+                grain = decade * factor;
+            }
+    }
+
+    // The nearest threshold on the grain of its length, within the range.
+    public static int Snap(double chars)
+    {
+        int clamped = (int)Math.Clamp(Math.Round(chars), MinChars, MaxChars);
+        int grain = GrainAt(clamped);
+        int rounded = (int)Math.Round(clamped / (double)grain, MidpointRounding.AwayFromZero) * grain;
+        return Math.Clamp(rounded, MinChars, MaxChars);
+    }
+
+    // The thresholds next to a snapped one, on either side.
+    public static int Above(int chars) => chars + GrainAt(chars);
+    public static int Below(int chars) => chars - GrainAt(chars - 1);
 }
 
 // Legacy duration-rule shape, retained so existing settings deserialize without
@@ -127,7 +159,7 @@ public sealed class BatchRewriteSettings
     public int ThresholdChars { get; set; } = 600;
 }
 
-public sealed class LlmSettings
+public sealed class LlmSettings : System.Text.Json.Serialization.IJsonOnDeserializing
 {
     public bool Enabled { get; set; } = true;
 
@@ -138,10 +170,20 @@ public sealed class LlmSettings
     // Another profile than the active one past a given length.
     public LengthSwitchSettings LengthSwitch { get; set; } = new();
 
-    // Legacy: the one endpoint of the Ollama-only era. Kept so an older
-    // settings.json deserializes without loss; RepairProviders copies it into
-    // the Ollama provider once. Never read at runtime.
-    public string OllamaEndpoint { get; set; } = "http://localhost:11434/api/generate";
+    // Legacy: the one endpoint of the Ollama-only era. Read from an older
+    // settings.json only; RepairProviders copies it into the Ollama provider
+    // and clears it, and null is not written, so a migrated file no longer
+    // carries it. Never read at runtime.
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? OllamaEndpoint { get; set; }
+
+    // A file read from disk starts with no providers, not with the three
+    // defaults below: System.Text.Json keeps a property's initializer when the
+    // key is absent, so a file from the Ollama-only era (no `providers` key)
+    // would otherwise look already migrated, and RepairProviders would never
+    // carry its custom OllamaEndpoint into the Ollama provider. Empty means
+    // "the file had none"; RepairProviders then seeds them.
+    void System.Text.Json.Serialization.IJsonOnDeserializing.OnDeserializing() => Providers = new();
 
     // Where a model is served from. A profile names one by Id. These defaults
     // are the three shapes the market has (a local Ollama, a chat-completions
@@ -161,9 +203,11 @@ public sealed class LlmSettings
     public string? ActiveProfileId { get; set; }
     public string? ActiveProfileName { get; set; }
 
-    // Legacy primary slot, migrated into ActiveProfile* on load, kept so an
-    // older settings.json deserializes without loss. Never read at runtime.
+    // Legacy primary slot, migrated into ActiveProfile* on load and cleared;
+    // null is not written. Never read at runtime.
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public string? PrimaryRewriteProfileId { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
     public string? PrimaryRewriteProfileName { get; set; }
 
     // Two depths of intervention, decided with Louis on 2026-10-15. The quick
@@ -221,13 +265,18 @@ public sealed class LlmSettings
         }
     };
 
-    // Legacy auto-rules, retained so an older settings file deserializes
-    // without loss. Never evaluated, and a new file starts with none.
-    public List<AutoRewriteRule> AutoRewriteRules { get; set; } = new();
+    // Legacy auto-rules, retained so an older settings file round-trips
+    // without loss (RepairProfileReferences keeps their profile pairs in
+    // step). Never evaluated. null in a new file, and null is not written, so
+    // only a file that already held them carries them.
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public List<AutoRewriteRule>? AutoRewriteRules { get; set; }
 
-    // Legacy auto-rule metric, retained for settings-file compatibility.
-    public string RuleMetric { get; set; } = "Duration";
+    // Legacy auto-rule metric; same rule as the auto-rules above.
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public string? RuleMetric { get; set; }
 
-    // Legacy word-based auto-rules, retained for settings-file compatibility.
-    public List<AutoRewriteRuleByWords> AutoRewriteRulesByWords { get; set; } = new();
+    // Legacy word-based auto-rules; same rule as the auto-rules above.
+    [System.Text.Json.Serialization.JsonIgnore(Condition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull)]
+    public List<AutoRewriteRuleByWords>? AutoRewriteRulesByWords { get; set; }
 }

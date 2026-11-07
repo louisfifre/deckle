@@ -23,8 +23,6 @@ public sealed class SettingsService
     };
 
     private readonly JsonSettingsStore<AppSettings> _store;
-    private readonly object _animationSync = new();
-    private bool _overlayAnimationsEnabled;
 
     public AppSettings Current => _store.Current;
 
@@ -39,13 +37,6 @@ public sealed class SettingsService
         add    => _store.Changed += value;
         remove => _store.Changed -= value;
     }
-
-    /// <summary>
-    /// Raised on the in-memory edge of Overlay.Animations. Unlike Changed,
-    /// this does not wait for the debounced disk write: live HUD animations
-    /// must react to the toggle immediately.
-    /// </summary>
-    public event Action<bool>? OverlayAnimationsChanged;
 
     private SettingsService()
     {
@@ -62,34 +53,16 @@ public sealed class SettingsService
             logVerbose:  msg => DeckleSettingsSource.Log.SettingsLoadComplete(msg),
             logWarning:  msg => DeckleSettingsSource.Log.SettingsLoadWarning(msg),
             logError:    msg => DeckleSettingsSource.Log.SettingsLoadError(msg));
-
-        _overlayAnimationsEnabled = Current.Overlay.Animations;
-        _store.Changed += NotifyOverlayAnimationsChanged;
     }
 
     /// <summary>Schedule a debounced disk write (300 ms).</summary>
     public void Save()
-    {
-        NotifyOverlayAnimationsChanged();
-        _store.Save();
-    }
+        => _store.Save();
 
     /// <summary>Synchronous flush. Use before process exit / restart.</summary>
     public void Flush() => _store.Flush();
 
     public void Reload() => _store.Reload();
-
-    private void NotifyOverlayAnimationsChanged()
-    {
-        bool current = Current.Overlay.Animations;
-        lock (_animationSync)
-        {
-            if (_overlayAnimationsEnabled == current) return;
-            _overlayAnimationsEnabled = current;
-        }
-
-        OverlayAnimationsChanged?.Invoke(current);
-    }
 
     // The returned path may not exist yet; CreateBackup creates it.
     public string ResolveBackupDirectory()

@@ -10,9 +10,8 @@ namespace Deckle.Hud;
 // restarts from the current interpolated value so transitions collapse instead
 // of queueing.
 //
-// WindowSlideAnimator is functional HUD motion and follows
-// Settings.Overlay.Animations. LayeredAlphaAnimator is a simple fade and
-// follows UISettings.AnimationsEnabled through SystemAnimationPreference.
+// Both follow the Windows animation preference (UISettings.AnimationsEnabled)
+// through SystemAnimationPreference, the process's single source.
 
 // Slides an HWND from its tracked position to a target via SetWindowPos.
 // The animator owns the canonical position — callers should never bypass it

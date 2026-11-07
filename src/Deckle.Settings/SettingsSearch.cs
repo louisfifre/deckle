@@ -86,6 +86,13 @@ public static class SettingsSearch
             LabelKey = "GeneralRerunSetupCard",
             Keywords = ["onboarding", "reconfigure", "reinstall"],
         },
+
+        // ── Developer (composed: GeneralViewModel.DeveloperSettings) ──
+        new SettingSearchEntry
+        {
+            LabelKey = "GeneralShowPlaygroundCard",
+            Keywords = ["developer", "playground", "test bench", "advanced", "debug"],
+        },
     ];
 
     // In the page's order: Dictation, Input, Display and lights.

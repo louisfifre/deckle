@@ -1,3 +1,4 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Deckle.Transcription;
 using Xunit;
@@ -145,6 +146,28 @@ public class TranscriptionSettingsMigrationTests
         Assert.False(((JsonObject)streaming["speechTrim"]!).ContainsKey("minSpeechDurationMs"));
     }
 
+    // The cut preset selection and its custom values (cutPreset, cutCustomValues)
+    // were removed from the segmenter settings. A file written by an older build
+    // still carries them; System.Text.Json skips unknown properties by default,
+    // so the file must load and keep the values it still knows.
+    [Fact]
+    public void AFileCarryingTheRemovedCutPresetFieldsStillLoads()
+    {
+        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        const string legacy = """
+            { "streaming": { "segmenter": {
+                "marginMs": 200,
+                "cutPreset": "custom",
+                "cutCustomValues": { "hangoverMaxMs": 8000, "hangoverMinMs": 1000,
+                    "hangoverRampStartMs": 30000, "hangoverRampEndMs": 180000,
+                    "curveX1": 0.85, "curveY1": 0.10, "curveX2": 0.90, "curveY2": 0.25 } } } }
+            """;
+
+        var restored = JsonSerializer.Deserialize<TranscriptionSettings>(legacy, options);
+
+        Assert.NotNull(restored);
+        Assert.Equal(200, restored.Streaming.Segmenter.MarginMs);
+    }
     private static JsonObject Streaming(string json)
         => (JsonObject)JsonNode.Parse(json)!["streaming"]!;
 }

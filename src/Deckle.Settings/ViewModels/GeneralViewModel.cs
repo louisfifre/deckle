@@ -176,6 +176,18 @@ public partial class GeneralViewModel : ObservableObject
         PushToSettings();
     }
 
+    // ── Developer ────────────────────────────────────────────────────────────
+
+    [ObservableProperty]
+    public partial bool ShowPlayground { get; set; }
+
+    partial void OnShowPlaygroundChanged(bool value)
+    {
+        if (_isSyncing) return;
+        DeckleSettingsUxSource.Log.SettingChanged("Developer.ShowPlayground", value.ToString());
+        PushToSettings();
+    }
+
     // ── Backup ───────────────────────────────────────────────────────────────
     //
     // BackupDirectory is the user override for where snapshots live (empty =
@@ -241,6 +253,7 @@ public partial class GeneralViewModel : ObservableObject
         ElevatedStartupEnabled = ElevatedStartupService.DefaultEnabled;
         BackupDirectory = paths.BackupDirectory;
         UpdateAutoCheckEnabled = updates.AutoCheckEnabled;
+        ShowPlayground = new DeveloperSettings().ShowPlayground;
         LoadHotkeys(new HotkeysSettings());
 
         // _isSyncing stays true — Load() will set it to false.
@@ -262,6 +275,7 @@ public partial class GeneralViewModel : ObservableObject
             AutostartEnabled = elevated || AutostartService.IsEnabled();
             BackupDirectory = shell.Paths.BackupDirectory;
             UpdateAutoCheckEnabled = shell.Updates.AutoCheckEnabled;
+            ShowPlayground = shell.Developer.ShowPlayground;
             LoadHotkeys(shell.Hotkeys);
         }
         finally
@@ -294,6 +308,7 @@ public partial class GeneralViewModel : ObservableObject
         shell.Appearance.Theme = Theme;
         shell.Paths.BackupDirectory = BackupDirectory ?? "";
         shell.Updates.AutoCheckEnabled = UpdateAutoCheckEnabled;
+        shell.Developer.ShowPlayground = ShowPlayground;
         SettingsService.Instance.Save();
     }
 
