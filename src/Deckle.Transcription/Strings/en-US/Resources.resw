@@ -702,8 +702,9 @@
   <data name="WhisperCutPauseStrip.Cut" xml:space="preserve">
     <value>cut</value>
   </data>
-  <!-- The cut curve: the card's description is replaced at runtime by the
-       sentence that reads the current values (WhisperViewModel.CutCurveSentence);
+  <!-- The cut curve: the card shows no header or description of its own; the
+       sentence that reads the current values (WhisperViewModel.CutCurveSentence)
+       sits under the plot, and Header is the editor's accessible name;
        the four anchor entries are the legend fields under the plot, their
        Header the field's caption (and, joined two by two, the accessible name
        of the curve's corner handles) and their Description its tooltip. -->
@@ -716,7 +717,7 @@
   <!-- {0} the maximum wait, {1} the ramp start, {2} the minimum wait, {3} the
        ramp end, all in seconds (WhisperViewModel.CutCurveSentence). -->
   <data name="WhisperCutCurveSentence_Format" xml:space="preserve">
-    <value>Waits {0:F1} s of silence for utterances up to {1:F0} s, then tightens to {2:F1} s by {3:F0} s.</value>
+    <value>Deckle cuts after {0:F1} s of silence, for speech up to {1:F0} s long. The longer you speak, the shorter the wait: it falls to {2:F1} s at {3:F0} s.</value>
   </data>
   <data name="WhisperSegHangoverMaxCard.Header" xml:space="preserve">
     <value>Max wait, s</value>
