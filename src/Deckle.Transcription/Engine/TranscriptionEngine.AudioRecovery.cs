@@ -148,7 +148,6 @@ public sealed partial class TranscriptionEngine
             primeTask = BeginPrime(drainCts.Token);
 
             _transcriptionId = Guid.NewGuid().ToString("N");
-            DeckleWhispSource.Log.TranscriptionCorrelation(_transcriptionId);
             BeginTake(TakeKinds.AudioRecovery);
 
             result = TranscribeRecoveredAudioAsync(audio, primeTask, drainCts.Token)

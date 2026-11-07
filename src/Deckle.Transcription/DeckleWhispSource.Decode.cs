@@ -28,20 +28,6 @@ public sealed partial class DeckleWhispSource
             WriteEvent(EvtTranscribeStartDetail, audio_sec, samples, strategy);
     }
 
-    [Event(EvtTranscriptionCorrelation,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "transcription_id={0}")]
-    public void TranscriptionCorrelation(string transcription_id)
-    {
-        if (!OperationalLogAdmission.IsDetailEnabled(
-                OperationalLogActivity.Transcription,
-                this,
-                EventLevel.Verbose,
-                (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtTranscriptionCorrelation, transcription_id);
-    }
-
     [Event(EvtTranscribeParams,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,

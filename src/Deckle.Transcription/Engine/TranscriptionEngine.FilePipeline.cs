@@ -192,7 +192,6 @@ public sealed partial class TranscriptionEngine
             }
 
             _transcriptionId = Guid.NewGuid().ToString("N");
-            DeckleWhispSource.Log.TranscriptionCorrelation(_transcriptionId);
             BeginTake(TakeKinds.File);
             DeckleWhispSource.Log.FileTranscriptionStarted();
             if (OperationalLogAdmission.IsDetailEnabled(
