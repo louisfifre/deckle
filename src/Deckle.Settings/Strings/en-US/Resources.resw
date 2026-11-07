@@ -398,7 +398,7 @@
     <value>Turn Autocorrect on or off</value>
   </data>
   <data name="GeneralHotkeyRewriteCard.Header" xml:space="preserve">
-    <value>Turn Rewrite on or off</value>
+    <value>Turn Rewriting on or off</value>
   </data>
   <data name="GeneralHotkeyAmbientLightCard.Header" xml:space="preserve">
     <value>Turn Ambient Light on or off</value>
@@ -479,7 +479,7 @@
        Loc.Get, so mirrored in Deckle.App's root map). The move starts from
        the data folder fold's "Choose a folder". -->
   <data name="Settings_MoveDataDialog_Title" xml:space="preserve">
-    <value>Move app data?</value>
+    <value>Move the data folder?</value>
   </data>
   <data name="Settings_MoveDataDialog_Content_Format" xml:space="preserve">
     <value>Deckle copies {0} of data to {1}, then restarts. The old folder is removed afterwards.</value>
@@ -488,7 +488,7 @@
     <value>Move and restart</value>
   </data>
   <data name="Settings_MoveDataSameTarget" xml:space="preserve">
-    <value>The app data is already in this folder.</value>
+    <value>The data folder is already there.</value>
   </data>
   <data name="Settings_MoveDataInvalidTarget" xml:space="preserve">
     <value>Pick an empty folder outside the current data folder.</value>
@@ -539,7 +539,7 @@
     <value>Setup wizard</value>
   </data>
   <data name="GeneralRerunSetupCard.Description" xml:space="preserve">
-    <value>Swap the speech model or replace the native runtime.</value>
+    <value>Change the installed modules, swap the speech model or replace the speech engine.</value>
   </data>
   <data name="GeneralRerunSetupButton.Content" xml:space="preserve">
     <value>Run setup…</value>
@@ -630,7 +630,7 @@
     <value>Restore settings?</value>
   </data>
   <data name="Settings_RestoreDialog_Content_Format" xml:space="preserve">
-    <value>This will overwrite your current settings with the snapshot from {0}. Your current settings will not be saved unless you back them up first.</value>
+    <value>This will overwrite your current settings with the backup from {0}. Your current settings will not be saved unless you back them up first.</value>
   </data>
   <data name="Settings_RestoreDialog_PrimaryButton" xml:space="preserve">
     <value>Restore</value>
