@@ -363,6 +363,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── DialogueGestures.cs
 │   │   ├── Gateway/
 │   │   │   ├── GatewayContract.cs
+│   │   │   ├── GatewayKeyFingerprint.cs
 │   │   │   ├── GatewayPayload.cs
 │   │   │   ├── GatewayProcesses.cs
 │   │   │   ├── GatewayReconciliation.cs
@@ -622,44 +623,26 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── pack-en-it.tsv.gz
 │   │   │   ├── pack-fr-it.manifest.json
 │   │   │   ├── pack-fr-it.tsv.gz
-│   │   │   ├── pair-bigrams-fr.tsv.gz
-│   │   │   └── verbs-fr.tsv.gz
+│   │   │   └── pair-bigrams-fr.tsv.gz
 │   │   ├── Engine/
-│   │   │   ├── AutocorrectEngine.CaretRecovery.cs
 │   │   │   ├── AutocorrectEngine.Commit.cs
 │   │   │   ├── AutocorrectEngine.cs
 │   │   │   ├── AutocorrectEngine.Input.cs
 │   │   │   ├── AutocorrectEngine.Lifecycle.cs
 │   │   │   ├── AutocorrectEngine.Telemetry.cs
 │   │   │   ├── AutocorrectPolicySet.cs
-│   │   │   ├── BackgroundRerankLane.cs
 │   │   │   ├── BigramPairDisambiguator.cs
-│   │   │   ├── CandidateSearchObservation.cs
 │   │   │   ├── CasePattern.cs
-│   │   │   ├── ClosedSentenceJudgment.cs
-│   │   │   ├── CompositeAmbiguityProbe.cs
 │   │   │   ├── CompositeCorrectionPolicy.cs
 │   │   │   ├── ConservativeTypoCorrector.cs
-│   │   │   ├── ConservativeTypoCorrector.Morphology.cs
-│   │   │   ├── ConservativeTypoCorrector.Sentence.cs
 │   │   │   ├── CorrectionDecision.cs
 │   │   │   ├── CorrectionTrace.cs
 │   │   │   ├── DiacriticsRestorer.cs
-│   │   │   ├── ElisionCorrector.cs
-│   │   │   ├── FrenchSentenceReranker.cs
-│   │   │   ├── GenderVariantProbe.cs
-│   │   │   ├── GrammarCorrector.cs
-│   │   │   ├── IAmbiguityProbe.cs
 │   │   │   ├── IPairDisambiguator.cs
-│   │   │   ├── ISentenceReranker.cs
-│   │   │   ├── ISentenceScorer.cs
 │   │   │   ├── MistouchFamilyCorrector.cs
 │   │   │   ├── QwertyAdjacency.cs
 │   │   │   ├── RestorerOptions.cs
 │   │   │   ├── SentenceCorpus.cs
-│   │   │   ├── SentenceProposalGate.cs
-│   │   │   ├── SentenceProposalVerifier.cs
-│   │   │   ├── SentenceRerankCoordinator.cs
 │   │   │   ├── TrainerReport.cs
 │   │   │   ├── TypoOptions.cs
 │   │   │   └── WordShape.cs
@@ -689,11 +672,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── GlobalEnglishLexicon.cs
 │   │   │   ├── IFrequencyLexicon.cs
 │   │   │   ├── LexicalDomain.cs
-│   │   │   ├── SystemLanguages.cs
-│   │   │   └── VerbMorphology.cs
+│   │   │   └── SystemLanguages.cs
 │   │   ├── Recovery/
 │   │   │   ├── CaretParagraphContext.cs
-│   │   │   ├── CaretSentenceContext.cs
 │   │   │   └── CaretTextReader.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
@@ -747,12 +728,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SurfaceProfiler.cs
 │   │   │   └── SurfaceProfileReport.cs
 │   │   ├── Replay/
-│   │   │   ├── CorpusReader.cs
-│   │   │   ├── MarginCalibration.cs
-│   │   │   ├── ReplayRunner.cs
-│   │   │   ├── SentenceAlignment.cs
-│   │   │   ├── SentenceReplay.cs
-│   │   │   └── TruthOverlay.cs
+│   │   │   └── CorpusReader.cs
 │   │   ├── DataSet.cs
 │   │   ├── Deckle.Autocorrect.Lab.csproj
 │   │   ├── DomainPackBuilder.cs
@@ -768,16 +744,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PairModelTrainer.cs
 │   │   ├── RestorationEvaluator.cs
 │   │   └── RestorationReport.cs
-│   ├── Deckle.Autocorrect.Onnx/
-│   │   ├── CandidateCompletionPlan.cs
-│   │   ├── Deckle.Autocorrect.Onnx.csproj
-│   │   ├── OnnxSentenceScorer.BatchExperiment.cs
-│   │   ├── OnnxSentenceScorer.cs
-│   │   ├── OnnxSentenceScorer.Model.cs
-│   │   ├── OnnxSentenceScorer.Prompt.cs
-│   │   ├── OnnxSentenceScorer.Scoring.cs
-│   │   ├── OnnxSentenceScoringProfile.cs
-│   │   └── OnnxSlotReranker.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
 │   │   │   ├── AxisTicks.cs
@@ -905,6 +871,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DiagnosticsFiles.cs
 │   │   ├── DispatchEventListener.cs
 │   │   ├── EventEntry.cs
+│   │   ├── ExceptionTypeName.cs
 │   │   ├── GLOSSARY.md  — glossary-deckle-diagnostics Observability vocabulary for the Diagnostics family, .Logging and .Telemetry in…
 │   │   ├── IFlushableLogSink.cs
 │   │   ├── ILogSink.cs
@@ -1008,6 +975,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Transcript/
 │   │   │   ├── TranscriptPanelLayout.cs
 │   │   │   ├── TranscriptPanelWindow.Proximity.cs
+│   │   │   ├── TranscriptPanelWindow.Theme.cs
 │   │   │   ├── TranscriptPanelWindow.xaml
 │   │   │   └── TranscriptPanelWindow.xaml.cs
 │   │   ├── Windows/
@@ -1211,10 +1179,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AmbientEngineState.cs
 │   │   │   ├── AmbientHeartbeatWindow.cs
 │   │   │   ├── AmbientHueChangeAttributor.cs
+│   │   │   ├── AmbientPreviewHealth.cs
 │   │   │   ├── AmbientPushCadence.cs
 │   │   │   ├── AmbientPushGate.cs
 │   │   │   ├── AmbientZoneSampler.cs
 │   │   │   ├── HueEndpointResolver.cs
+│   │   │   ├── HueGroupSelection.cs
 │   │   │   ├── HuePairingService.cs
 │   │   │   ├── LightPlacementResolver.cs
 │   │   │   ├── LightZone.cs
@@ -1606,6 +1576,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageOnlyHost.cs
 │   │   ├── ResizeCoalescer.cs
 │   │   ├── ResizeGesture.cs
+│   │   ├── SessionEndSignal.cs
+│   │   ├── SessionEndWatcher.cs
 │   │   ├── StartupService.cs
 │   │   ├── TrayIconManager.cs
 │   │   └── TrayIconRegistration.cs
@@ -1710,6 +1682,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscriptionEngine.MonolithicPipeline.cs
 │   │   │   ├── TranscriptionEngine.Pipeline.cs
 │   │   │   ├── TranscriptionEngine.Recovery.cs
+│   │   │   ├── TranscriptionEngine.Shutdown.cs
 │   │   │   ├── TranscriptionEngine.StateMachine.cs
 │   │   │   ├── TranscriptionEngine.StreamingPipeline.cs
 │   │   │   ├── TranscriptionEngine.Take.cs
@@ -1852,6 +1825,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensBugNotes.md
 │   │   ├── McpClientTokensTests.cs
+│   │   ├── McpHealthEndpointTests.cs
 │   │   ├── McpHostBugNotes.md
 │   │   ├── McpHttpHostTests.cs
 │   │   ├── McpObservabilityTests.cs
@@ -1906,6 +1880,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DialogueGesturesTests.cs
 │   │   ├── DocumentGesturesTests.cs
 │   │   ├── FakeV2Handler.cs
+│   │   ├── GatewayKeyFingerprintTests.cs
 │   │   ├── GatewayPayloadTests.cs
 │   │   ├── GatewayReconciliationTests.cs
 │   │   ├── GatewaySupervisorTests.cs
@@ -1987,7 +1962,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AccentIndexTests.cs
 │   │   ├── AutocorrectDecisionMapTests.cs
 │   │   ├── AutocorrectEngineBackspaceTests.cs
-│   │   ├── AutocorrectEngineCaretRecoveryTests.cs
 │   │   ├── AutocorrectEngineCorpusTests.cs
 │   │   ├── AutocorrectEngineCorrectionTests.cs
 │   │   ├── AutocorrectEngineGateTests.cs
@@ -1999,18 +1973,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AutocorrectHotLoopCountTests.cs
 │   │   ├── AutocorrectLexiconArtifactsTests.cs
 │   │   ├── AutocorrectObservabilityCollection.cs
-│   │   ├── AutocorrectSentenceTypingScenarioTests.cs
 │   │   ├── AutocorrectSettingsTests.cs
 │   │   ├── AutocorrectTypingScenarioTests.cs
 │   │   ├── AutocorrectTypingStreamReplayMaintenanceTests.cs
-│   │   ├── BackgroundRerankLaneTests.cs
 │   │   ├── BigramPairDisambiguatorTests.cs
 │   │   ├── BuildDataMaintenanceTests.cs
-│   │   ├── CandidateCompletionPlanTests.cs
 │   │   ├── CaretParagraphContextTests.cs
-│   │   ├── CaretSentenceContextTests.cs
 │   │   ├── CasePatternTests.cs
-│   │   ├── CompositeAmbiguityProbeTests.cs
 │   │   ├── ConservativeTypoCorrectorTests.cs
 │   │   ├── CorpusReaderTests.cs
 │   │   ├── CorrectionTraceTests.cs
@@ -2019,16 +1988,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DomainActivationTests.cs
 │   │   ├── DomainPackManifestTests.cs
 │   │   ├── EffectiveLexiconTests.cs
-│   │   ├── ElisionCorrectorTests.cs
-│   │   ├── FrenchSentenceRerankerTests.cs
 │   │   ├── FrequencyLexiconTests.cs
-│   │   ├── GenderVariantProbeTests.cs
-│   │   ├── GrammarCorrectorTests.cs
 │   │   ├── HarvestDataTests.cs
 │   │   ├── HarvestFilterTests.cs
 │   │   ├── InjectionPlanTests.cs
 │   │   ├── KeyDecoderTests.cs
-│   │   ├── MarginCalibrationTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── MistouchFamilyCorrectorTests.cs
@@ -2036,33 +2000,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MistouchMinerTests.cs
 │   │   ├── MistouchMiningMaintenanceTests.cs
 │   │   ├── MorphalouReaderTests.cs
-│   │   ├── MorphologyCorrectionTests.cs
-│   │   ├── OnnxJudgeSerialCollection.cs
-│   │   ├── OnnxSentenceScorerTests.cs
-│   │   ├── OnnxSlotRerankerTests.cs
 │   │   ├── PairModelTrainerTests.cs
 │   │   ├── PersonalDictionaryTests.cs
 │   │   ├── PersonalWordAdmissionTests.cs
-│   │   ├── ReplayRunnerTests.cs
 │   │   ├── RestorationEvaluatorTests.cs
-│   │   ├── SentenceAlignmentTests.cs
 │   │   ├── SentenceCorpusTests.cs
-│   │   ├── SentenceJudgeBugNotes.md
-│   │   ├── SentenceProposalGateTests.cs
-│   │   ├── SentenceProposalReplayMaintenanceTests.cs
-│   │   ├── SentenceProposalVerifierTests.cs
-│   │   ├── SentenceReplayMaintenanceTests.cs
-│   │   ├── SentenceReplayTests.cs
-│   │   ├── SentenceRerankCoordinatorTests.cs
 │   │   ├── SimulatedTextSurface.cs
 │   │   ├── SurfaceProfileMaintenanceTests.cs
 │   │   ├── SurfaceProfilerTests.cs
 │   │   ├── SurfaceProfileStoreTests.cs
-│   │   ├── TruthOverlayTests.cs
 │   │   ├── TypedWordTrackerTests.cs
 │   │   ├── TypingStreamTests.cs
-│   │   ├── VerbMorphologyTests.cs
-│   │   ├── VerifiedCaretSentenceTests.cs
 │   │   └── WordBoundariesTests.cs
 │   ├── Deckle.Catalog.Tests/
 │   │   ├── CubicBezierTests.cs
@@ -2131,6 +2079,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DispatchEventListenerIncidentTests.cs
 │   │   ├── DispatchEventListenerRegressionTests.cs
 │   │   ├── DispatchEventListenerTests.cs
+│   │   ├── ExceptionTypeNameTests.cs
 │   │   ├── JsonlLineSerializerRegressionTests.cs
 │   │   ├── JsonlLineSerializerTests.cs
 │   │   ├── JsonlSinkBugNotes.md
@@ -2263,7 +2212,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AmbientObservabilityCollection.cs
 │   │   ├── AmbientPresetSelectionLogTests.cs
 │   │   ├── AmbientPresetsTests.cs
+│   │   ├── AmbientPreviewBugNotes.md
 │   │   ├── AmbientPreviewGeometryTests.cs
+│   │   ├── AmbientPreviewRobustnessTests.cs
 │   │   ├── AmbientPreviewScanLogTests.cs
 │   │   ├── AmbientPushCadenceTests.cs
 │   │   ├── AmbientPushGateTests.cs
@@ -2441,6 +2392,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── ResizeGestureTests.cs
+│   │   ├── SessionEndSignalTests.cs
 │   │   ├── ShellObservabilityCollection.cs
 │   │   ├── TrayIconBugNotes.md
 │   │   ├── TrayIconFallbackObservabilityTests.cs
@@ -2471,8 +2423,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── WindowsAppSdkBootstrap.cs
 │   │   └── WindowsAppSdkModuleInitializer.cs
 │   ├── Deckle.Transcription.Tests/
+│   │   ├── CorpusRecordSkippedTests.cs
 │   │   ├── Deckle.Transcription.Tests.csproj
 │   │   ├── DeckleLlmSourceTests.cs
+│   │   ├── DeckleWhispSourceEventIdTests.cs
 │   │   ├── DeckleWhispSourceTests.cs
 │   │   ├── DictationEndCaptureBugNotes.md
 │   │   ├── DictationRecoveryBugNotes.md
@@ -2482,6 +2436,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs
 │   │   ├── FileTranscriptionResultTests.cs
+│   │   ├── LengthStepBatchRewriteTests.cs
 │   │   ├── LiveTranscriptionPipelineTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
@@ -2489,11 +2444,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PhantomUtteranceBugNotes.md
 │   │   ├── PhantomUtteranceFilterTests.cs
 │   │   ├── PreparedFileChannelTests.cs
+│   │   ├── QuitDuringWorkTests.cs
 │   │   ├── RecoverTakeFromAudioTests.cs
 │   │   ├── RewriteAvailabilityTests.cs
 │   │   ├── RewriteProfileSelectionTests.cs
 │   │   ├── SegmentedTranscriptionSessionTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
+│   │   ├── TakeAudioRecoveryBugNotes.md
 │   │   ├── TakeAudioRecoveryEngineTests.cs
 │   │   ├── TakeAudioRecoveryStoreTests.cs
 │   │   ├── TakeAudioRecoveryTests.cs
@@ -2509,6 +2466,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── UtteranceProgressMeterTests.cs
 │   │   ├── UtteranceProgressTests.cs
 │   │   ├── VadServiceIncidentTests.cs
+│   │   ├── WhispEventIdBugNotes.md
 │   │   ├── WhispModelLifecycleBugNotes.md
 │   │   └── WhispModelLifecycleTests.cs
 │   ├── Deckle.Transcription.Whisper.Tests/

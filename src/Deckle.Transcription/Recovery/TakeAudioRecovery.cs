@@ -5,7 +5,12 @@ namespace Deckle.Transcription;
 
 /// <param name="Recovered">True when the text of the interrupted take is on the clipboard.</param>
 /// <param name="Chars">Length of that text; 0 unless <paramref name="Recovered"/>.</param>
-public readonly record struct TakeAudioRecoveryResult(bool Recovered, int Chars = 0);
+/// <param name="Failed">True when audio was waiting and could not be recovered (not run, not readable,
+/// run failed). False when nothing was waiting, the audio held no speech, or it was recovered.</param>
+public readonly record struct TakeAudioRecoveryResult(bool Recovered, int Chars = 0, bool Failed = false)
+{
+    internal static TakeAudioRecoveryResult Failure { get; } = new(false, 0, true);
+}
 
 // ── TakeAudioRecovery ──────────────────────────────────────────────────────
 //
@@ -18,7 +23,9 @@ public readonly record struct TakeAudioRecoveryResult(bool Recovered, int Chars 
 //   take-audio.attempted present   a previous run set the audio aside and never
 //                                  finished, so the app probably died on it.
 //                                  Not retried, not deleted: the maintainer can
-//                                  look at it. Logged as a warning.
+//                                  look at it. Logged as a warning. After 24 h
+//                                  the marker expires: it is deleted (warning)
+//                                  so a newer take's audio is not blocked for good.
 //   take-audio.dat present         set aside as .attempted, read, transcribed.
 //     delivered                    the .attempted file and the text recovery
 //                                  file go: the audio transcription is the more
@@ -39,6 +46,9 @@ public sealed class TakeAudioRecovery(
     DictationRecoveryStore text,
     Func<float[], Task<RecoveredTake>> transcribe)
 {
+    /// <summary>How long an ".attempted" marker blocks the recovery before it expires.</summary>
+    internal static readonly TimeSpan AttemptedMarkerLifetime = TimeSpan.FromHours(24);
+
     /// <summary>True when a file from an earlier run waits at launch.</summary>
     public bool HasWork => audio.Exists || audio.AttemptedExists;
 
@@ -46,8 +56,20 @@ public sealed class TakeAudioRecovery(
     {
         if (audio.AttemptedExists)
         {
-            DeckleWhispSource.Log.TakeAudioRecoverySkipped("previous_attempt_crashed", kept: true);
-            return default;
+            // A marker a day old no longer protects anything worth a block: the
+            // take it guarded is stale, and a newer take may wait behind it.
+            // Without this, one crash would silence the net for good.
+            if (audio.AttemptedAge is { } age && age >= AttemptedMarkerLifetime)
+            {
+                bool dropped = audio.DeleteAttempted();
+                DeckleWhispSource.Log.TakeAudioAttemptExpired(age.TotalHours, dropped);
+            }
+
+            if (audio.AttemptedExists)
+            {
+                DeckleWhispSource.Log.TakeAudioRecoverySkipped("previous_attempt_crashed", kept: true);
+                return TakeAudioRecoveryResult.Failure;
+            }
         }
 
         if (!audio.Exists) return default;
@@ -57,7 +79,7 @@ public sealed class TakeAudioRecovery(
             // Without the marker a crash could not be told from a failure, and
             // the run would repeat at every launch: it does not start.
             DeckleWhispSource.Log.TakeAudioRecoverySkipped("attempt_marker_failed", kept: audio.Exists);
-            return default;
+            return TakeAudioRecoveryResult.Failure;
         }
 
         TakeAudioRead read = audio.TryReadAttempted();
@@ -69,7 +91,7 @@ public sealed class TakeAudioRecovery(
             // take replaces it.
             bool kept = audio.RestoreAttempted();
             DeckleWhispSource.Log.TakeAudioRecoverySkipped("unreadable", kept);
-            return default;
+            return TakeAudioRecoveryResult.Failure;
         }
 
         if (read.Samples.Length == 0)
@@ -94,7 +116,7 @@ public sealed class TakeAudioRecovery(
             bool kept = audio.RestoreAttempted();
             DeckleWhispSource.Log.TakeAudioRecoveryFailed(
                 workId, "exception", ex.GetType().Name, kept, stopwatch.ElapsedMilliseconds);
-            return default;
+            return TakeAudioRecoveryResult.Failure;
         }
 
         switch (result.Status)
@@ -120,7 +142,7 @@ public sealed class TakeAudioRecovery(
                     "",
                     restored,
                     stopwatch.ElapsedMilliseconds);
-                return default;
+                return TakeAudioRecoveryResult.Failure;
         }
     }
 }
