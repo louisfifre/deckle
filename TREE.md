@@ -2175,6 +2175,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── OverlayCardCloseObservabilityTests.cs
 │   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
+│   │   ├── RecordingLevelStepTests.cs
 │   │   ├── TranscriptPanelBugNotes.md
 │   │   ├── TranscriptPanelLayoutTests.cs
 │   │   ├── UtteranceCountdownBugNotes.md

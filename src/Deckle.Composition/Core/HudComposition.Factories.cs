@@ -96,7 +96,9 @@ public static partial class HudComposition
             compositor, hostSize, cfg, isDark,
             freezeHueRotation: true,
             freezeArcRotation: true,
-            initialOpacity:    animationsEnabled ? 0f : 1f,
+            // Dark until the first level sample, with or without animations:
+            // the outline answers the microphone either way (UpdateLevel).
+            initialOpacity:    0f,
             initialVariant:    ProcessingVariant.Recording,
             animationsEnabled: animationsEnabled);
     }
