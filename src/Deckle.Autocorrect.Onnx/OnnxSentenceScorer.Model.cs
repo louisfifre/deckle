@@ -190,6 +190,7 @@ public sealed partial class OnnxSentenceScorer
         return false;
     }
 
+    // Releases this judge only: no OgaHandle to release, see the field comment.
     public void Dispose()
     {
         _tokenizer.Dispose();
