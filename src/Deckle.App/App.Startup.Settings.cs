@@ -19,6 +19,16 @@ public partial class App
 {
     private void WireStartupSettings(StartupContext context)
     {
+        WireSettingsSurface(context);
+        StartUpdateChecks();
+    }
+
+    // Everything the Settings window needs to build its pages: the host hooks
+    // and the module registrations. Nothing here acts on the machine, so the
+    // self-check mode (App.SelfCheck.cs) composes it as the resident app does,
+    // and the pages it walks are the pages a person gets.
+    private void WireSettingsSurface(StartupContext context)
+    {
         // Deckle.Hud does not read settings, so the App hands it the recording cap
         // as a provider. The HUD calls it at every vsync, so a live edit applies.
         Deckle.Hud.HudChrono.MaxRecordingDurationSecondsProvider =
@@ -63,7 +73,7 @@ public partial class App
         Settings.SettingsHost.IsSpeechProvisioned =
             () => NativeRuntime.IsUsable() && SpeechModels.IsAnyModelInstalled();
 
-        WireUpdater();
+        WireUpdaterHooks();
 
         // The live app cannot copy its own data root, so it restarts into
         // --relocate-data.

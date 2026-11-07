@@ -471,6 +471,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Engine/
 │   │   │   ├── AppAmbientEngineHost.cs
 │   │   │   └── AppTranscriptionEngineHost.cs
+│   │   ├── SelfCheck/
+│   │   │   ├── SelfCheckDataRootGate.cs
+│   │   │   └── SelfCheckReport.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -493,6 +496,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.PlaygroundAccess.cs
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
+│   │   ├── App.SelfCheck.cs
 │   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs
 │   │   ├── App.Startup.CrashDumps.cs
