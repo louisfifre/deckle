@@ -3,7 +3,8 @@
     x:Class="Deckle.Shell.TaskbarCover.TaskbarCoverPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:catalog="using:Deckle.Catalog">
+    xmlns:catalog="using:Deckle.Catalog"
+    xmlns:local="using:Deckle.Shell.TaskbarCover">
 
     <ScrollViewer Padding="32,24,32,24"
                   VerticalScrollBarVisibility="Auto"
@@ -30,8 +31,22 @@
                      grey); the code-behind follows ViewModel.Enabled. -->
                 <catalog:SettingsSection x:Name="RevealSection"
                                          x:Uid="TaskbarCoverPageRevealSection">
-                    <StackPanel x:Name="RevealHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
+                    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                        <StackPanel x:Name="RevealHost"
+                                    Spacing="{StaticResource SettingsCardSpacing}" />
+
+                        <!-- The approach distance on the screen, right under its
+                             card so the slider and the drawing it moves are in
+                             one glance. In the flow rather than in the side pane
+                             the Ambient page opens: that pane exists because the
+                             Ambient tuning scrolls the preview out of view, and
+                             this page is two cards long. A fixed height gives
+                             the block's stage a room to fit the screen's ratio
+                             in; the width follows the page. -->
+                        <local:ApproachPreview x:Name="Preview"
+                                               Height="300"
+                                               Margin="0,8,0,0" />
+                    </StackPanel>
                 </catalog:SettingsSection>
             </StackPanel>
         </Grid>

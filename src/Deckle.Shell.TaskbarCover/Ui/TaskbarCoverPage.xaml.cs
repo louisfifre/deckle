@@ -27,7 +27,14 @@ public sealed partial class TaskbarCoverPage : Page
         ViewModel.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName == nameof(TaskbarCoverViewModel.Enabled)) SyncSectionVisibility();
+            // The saved distance: the release of a drag, a typed figure, a
+            // reset, or a reload on the next visit.
+            else if (args.PropertyName == nameof(TaskbarCoverViewModel.ApproachDistanceDip))
+                Preview.ApproachDistanceDip = ViewModel.ApproachDistanceDip;
         };
+        // Each detent of a drag, before the release saves it.
+        ViewModel.ApproachDistancePreviewed += dip => Preview.ApproachDistanceDip = dip;
+        Preview.ApproachDistanceDip = ViewModel.ApproachDistanceDip;
         SyncSectionVisibility();
         GateResetAll();
     }
@@ -46,9 +53,19 @@ public sealed partial class TaskbarCoverPage : Page
     }
 
     // Settings-UX doctrine: what does not apply while the cover is off is
-    // hidden, title included, not greyed.
-    private void SyncSectionVisibility() =>
-        RevealSection.Visibility = ViewModel.Enabled ? Visibility.Visible : Visibility.Collapsed;
+    // hidden, title included, not greyed. The preview re-reads the taskbar
+    // each time the section shows, on a visit or as the cover turns on, so it
+    // draws the screen as it is then, not as it was at the page's creation.
+    private void SyncSectionVisibility()
+    {
+        bool shown = ViewModel.Enabled;
+        RevealSection.Visibility = shown ? Visibility.Visible : Visibility.Collapsed;
+        if (shown)
+        {
+            Preview.ApproachDistanceDip = ViewModel.ApproachDistanceDip;
+            Preview.Refresh();
+        }
+    }
 
     private void GateResetAll()
     {
