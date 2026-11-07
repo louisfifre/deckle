@@ -2264,8 +2264,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HueBridgeClientNoAnswerRegressionTests.cs
 │   │   ├── HueCredentialPayloadBugNotes.md
 │   │   ├── HueCredentialVaultTests.cs
+│   │   ├── HueEntertainmentBugNotes.md
 │   │   ├── HueEntertainmentFrameBuilderTests.cs
 │   │   ├── HueEntertainmentLightOutputTests.cs
+│   │   ├── HueEntertainmentRestoreRegressionTests.cs
 │   │   ├── HueEventStreamBugNotes.md
 │   │   ├── HueEventStreamEpisodeTests.cs
 │   │   ├── HueEventStreamUserIncidentTests.cs

@@ -1,0 +1,13 @@
+# Hue Entertainment bug notes
+
+## Stopping Ambient left the room almost dark
+
+- **Trigger:** Ambient ran on the Entertainment output (DTLS stream to an entertainment area), then the person stopped it. Reported on 2026-11-07 in a dark room with Windows in dark mode, so the screen, and the last streamed frames, were dark too.
+- **Observed symptom:** after the stop the area's lights stayed at or near black and the person could not see the room. The log shows a normal end: `Hue Entertainment session closed` with outcome `completed`, so no step failed.
+- **Cause:** just before `action=start`, `ConnectAsync` pre-primes every area light over REST to (1, 1, 1), a near-black that keeps the bulbs on so Hue's own power-on scene does not flash. When streaming stops, the bridge's own return, under the Hue app's default "When syncing stops: Last on-state", goes back to the state it saw when streaming started, which is that pre-prime. Under the other option, "Pause on the last colour", the bridge returns nothing and the lights keep the last dark frame. Established from the code and the log; the bridge's two behaviours come from other developers' measurements (Glowcast issues #142 and #181, LumaSync PR #486), since Hue's own Entertainment documentation sits behind a sign-in. Not reproduced on the bridge tonight.
+- **Violated invariant:** after Ambient lets go of a light, the light shows what it showed before Ambient took it over. Whatever Deckle writes to a light to prepare a stream has to be undone by Deckle, because the bridge's own return restores Deckle's preparation, not the person's state. The trap is commented at `CaptureLightStatesAsync` in `src/Deckle.Lighting/Hue/HueEntertainmentLightOutput.cs`.
+- **Recurrence cue:** a new write to the lights before `action=start` (a prime, a fade-in, a test colour), or a new output that streams, without a matching capture and restore. Also a restore written once, right after the stop: the bridge's own post-stream write can land after it (0.3 to 2 s in the reports above) and has to be outlasted.
+
+Regression: `HueEntertainmentRestoreRegressionTests` (four cases: plain stop, the bridge's late return to the pre-prime, a failed start, a light that was off).
+
+Not covered: the REST output (`HueRestLightOutput`), used without a client key or when Entertainment fails, writes the screen's colours directly and restores nothing on stop either, so it can end on a black frame too. Left for its own change, since the same REST output also serves the Settings light list, where a restore on dispose would write to lights nobody asked to change.
