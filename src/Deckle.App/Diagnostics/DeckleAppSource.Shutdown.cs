@@ -18,7 +18,7 @@ public sealed partial class DeckleAppSource
     // A second close or restart request while the first still waits for the
     // work in flight (App.Lifetime.cs): only the first one is served.
     [Event(EvtShutdownRequestIgnored,
-           Level = EventLevel.Verbose,
+           Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Message = "A close request was ignored, because Deckle is already closing")]
     public void ShutdownRequestIgnored()
