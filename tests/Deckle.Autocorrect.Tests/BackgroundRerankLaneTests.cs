@@ -110,7 +110,7 @@ public sealed class BackgroundRerankLaneTests
             DeckleAutocorrectSource.RerankFailureSources.Inference,
             PayloadValue(failing, "source"));
         Assert.Equal(
-            typeof(InvalidOperationException).FullName,
+            nameof(InvalidOperationException),
             PayloadValue(failing, "ex_type"));
         Assert.Contains(listener.Events, e =>
             e.EventId == DeckleAutocorrectSource.EvtRerankRecovered

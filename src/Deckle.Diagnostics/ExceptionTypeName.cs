@@ -6,8 +6,8 @@ namespace Deckle.Diagnostics;
 // log on `ex_type`, and `IOException` matches the same line whichever assembly
 // raised it. The namespace adds length without telling a reader anything the
 // event's own provider does not already say. Before this helper, most providers
-// wrote `GetType().Name` and a dozen wrote `GetType().FullName`, so one
-// exception type read two ways in one file.
+// wrote the short type name and a dozen wrote the namespace-qualified one, so
+// one exception type read two ways in one file.
 //
 // The only call every provider makes is `ExceptionTypeName.Of(ex)`; a provider
 // that computes the name by hand brings the spelling back
