@@ -12,8 +12,8 @@ public sealed record McpClientProfile(
     string TokenSecretName,
     string TokenEnvVar);
 
-// Schema administration is its own surface so the claude and codex contracts
-// stay unchanged. Custom clients are declared by their own MCP adapter and
+// Schema administration is its own surface so the claude contract
+// stays unchanged. Custom clients are declared by their own MCP adapter and
 // composed by Deckle.App. Environment-variable names are wire contracts because
 // external clients read them directly.
 public static class McpClients
@@ -22,10 +22,6 @@ public static class McpClients
         "project-management",
         api => McpToolset.Build(api, ToolProfile.ProjectManagement, management: true));
 
-    private static readonly McpSurface AllSurface = new(
-        "all",
-        api => McpToolset.Build(api, ToolProfile.All, management: false));
-
     private static readonly McpSurface SchemaAdminSurface = new(
         "schema-admin",
         api => McpToolset.Build(api, ToolProfile.SchemaAdmin, management: false));
@@ -33,13 +29,10 @@ public static class McpClients
     public static readonly McpClientProfile Claude = new(
         "claude", ProjectManagementSurface, "mcp-token-claude", "DECKLE_MCP_TOKEN_CLAUDE");
 
-    public static readonly McpClientProfile Codex = new(
-        "codex", AllSurface, "mcp-token-codex", "DECKLE_MCP_TOKEN_CODEX");
-
     public static readonly McpClientProfile SchemaAdmin = new(
         "schema-admin", SchemaAdminSurface,
         "mcp-token-schema-admin", "DECKLE_MCP_TOKEN_SCHEMA_ADMIN");
 
     public static readonly IReadOnlyList<McpClientProfile> All =
-        new[] { Claude, Codex, SchemaAdmin };
+        new[] { Claude, SchemaAdmin };
 }

@@ -11,7 +11,7 @@ public sealed class GlobalEnglishLexicon : IFrequencyLexicon
 
     private static readonly HashSet<string> TechnicalLiterals = new(StringComparer.Ordinal)
     {
-        "anytype", "api", "cli", "codex", "cpu", "def", "docs", "git", "github",
+        "anytype", "api", "cli", "cpu", "def", "docs", "git", "github",
         "gpu", "json", "jsonl", "llm", "logs", "mcp", "model", "onnx", "push",
         "repo", "size", "stp", "telemetry", "ui", "ux", "winui", "xaml",
     };
