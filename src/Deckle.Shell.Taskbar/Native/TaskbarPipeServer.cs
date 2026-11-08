@@ -134,7 +134,9 @@ internal sealed class TaskbarPipeServer : IAsyncDisposable
         return NamedPipeServerStreamAcl.Create(
             _pipeName, PipeDirection.InOut, maxNumberOfServerInstances: 1,
             PipeTransmissionMode.Byte, PipeOptions.Asynchronous,
-            inBufferSize: 0, outBufferSize: 0, security);
+            // Real buffers: with zero-size ones a write waits for the reader to read it,
+            // and a slow DLL would hold the writer.
+            inBufferSize: 64 * 1024, outBufferSize: 64 * 1024, security);
     }
 
     public ValueTask DisposeAsync()
@@ -143,5 +145,6 @@ internal sealed class TaskbarPipeServer : IAsyncDisposable
         return ValueTask.CompletedTask;
     }
 }
+
 
 

@@ -2454,6 +2454,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   └── MilestoneClosersTests.cs
 │   ├── Deckle.Shell.Taskbar.Tests/
+│   │   ├── Native/
+│   │   │   ├── JsonLineFramingTests.cs
+│   │   │   ├── NativeCommandTests.cs
+│   │   │   ├── NativeLogRelayTests.cs
+│   │   │   ├── NativeMessageTests.cs
+│   │   │   ├── TaskbarPipeServerTests.cs
+│   │   │   └── VersionedNativeCopyTests.cs
 │   │   ├── Deckle.Shell.Taskbar.Tests.csproj
 │   │   ├── IsolatedDataRoot.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
