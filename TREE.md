@@ -474,6 +474,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Engine/
 │   │   │   ├── AppAmbientEngineHost.cs
 │   │   │   └── AppTranscriptionEngineHost.cs
+│   │   ├── LocalCopy/
+│   │   │   └── apply-update.ps1
 │   │   ├── SelfCheck/
 │   │   │   ├── ElementImage.cs
 │   │   │   ├── OffscreenWindow.cs
@@ -526,6 +528,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── CrashSupervisor.cs
 │   │   ├── Deckle.App.csproj
 │   │   ├── global.json
+│   │   ├── LocalCopyUpdate.cs
 │   │   ├── LogWindow.Chrome.cs
 │   │   ├── LogWindow.Interaction.cs
 │   │   ├── LogWindow.Model.cs
@@ -1948,6 +1951,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.App.Tests.csproj
 │   │   ├── DictationRecoveryBugNotes.md
 │   │   ├── HudFeedbackSinkTests.cs
+│   │   ├── LocalCopyApplyUpdateTests.cs
+│   │   ├── LocalCopyUpdateTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── ReswMirrorTests.cs
