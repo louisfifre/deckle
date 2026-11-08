@@ -45,6 +45,8 @@ What the menu offers today, level by level. A row reads as its action followed b
 | root | Launch | Release, Debug | [`launch-app.ps1`](launch-app.ps1) | |
 |  | Build & run | Release, Debug | [`build-run.ps1`](build-run.ps1) | |
 |  | Build (no run) | Release, Debug | [`build-run.ps1`](build-run.ps1) `-NoRun` | |
+|  | Update local copy | | [`deploy-local.ps1`](deploy-local.ps1) | |
+|  | Roll back local copy | | [`deploy-local.ps1`](deploy-local.ps1) `-Rollback` | |
 |  | README pulse | update | [`update-readme-stats.ps1`](update-readme-stats.ps1) `-Commit` | |
 |  | Statistics | repository | [`stats.ps1`](stats.ps1) | |
 |  |  | context | [`inspect-context.ps1`](inspect-context.ps1) | |
@@ -98,6 +100,7 @@ Each script is callable directly from a terminal; the menu is purely additive. C
 |---|---|---|
 | [`launch-app.ps1`](launch-app.ps1) | Kill running `Deckle.exe` and launch the freshest already-built app executable. Does not build. | `-Configuration Debug\|Release`, `-Target <worktree>`, `-Wait` |
 | [`build-run.ps1`](build-run.ps1) | Kill running `Deckle.exe`, build via `dotnet build` on four low-priority MSBuild nodes that exit with the build, and launch the freshly built exe through ShellExecute. With `-NoRun`, build only: the running instance is never stopped, and the build is refused before compiling when that instance runs from the build's own output directory (see *Running instance and build outputs*). | `-Configuration Debug\|Release`, `-NoRun`, `-Wait`, `-Target <worktree>`, `-NoAutoRestart` |
+| [`deploy-local.ps1`](deploy-local.ps1) | Build `main` (or `-Ref`) in Release in the reserved `local-copy-build` worktree, self-check it, and stage it in the local copy without stopping the running Deckle; see *Local copy*. Agents may run it. | `-Ref <ref>`, `-Root <path>`, `-Rollback`, `-Force`, `-SkipSelfCheck` |
 | [`update-readme-stats.ps1`](update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. `-Commit` creates a local README-only commit and refuses unrelated tracked changes; it never pushes. Also used without `-Commit` by the monthly GitHub Action. | `-Target <worktree>`, `-ReadmePath <path>`, `-Commit` |
 | [`maintenance/clean-native.ps1`](maintenance/clean-native.ps1) | Bring `<UserDataRoot>\native\` back to the catalog of `NativeRuntime.cs`: delete the DLLs it does not name (an older bundle's `libwhisper.dll` and MinGW runtime) and `.partial` leftovers, then report the catalog DLLs that are missing. Does not stop Deckle; a DLL in use is reported and kept. | `-DataRoot <path>`, `-WhatIf` |
 | [`stats.ps1`](stats.ps1) | Walk every `.csproj` under `src/`, build a per-file inventory, highlight C# files over 400 / 600 effective LOC and other text files over 500 / 1000 raw lines, summarize modules by source LOC, list tracked repository file types dynamically, and print the per-file module table. Git defines the repository boundary, so ignored workspace data is excluded and tracked links are counted without traversal. Generated module files are also excluded. | `-Target <worktree>`, `-Json <path>`; `-PassThru` for structured output |
@@ -230,6 +233,10 @@ The app's first launch opens the in-app setup wizard when native DLLs or models 
 Native release publication is separate from runtime setup. Its ordinary path reuses the exact bundle already pinned by the app at `artifacts/deckle-native-<version>/deckle-native-<version>.zip`; the script does not ask for a whisper.cpp path when that file exists. The source-tree path is only the exceptional path for fabricating a new runtime version. Publication re-downloads the GitHub asset and verifies its full SHA-256 and internal DLL checksums before making the release public.
 
 The Whisper models are pulled from HuggingFace; the Silero VAD model is pulled from GitHub (snakers4/silero-vad, pinned to the v6.2 tag). Both happen regardless of native runtime sourcing mode.
+
+## Local copy
+
+The Deckle the maintainer runs every day is the local copy, a Release build of `main` under `%LOCALAPPDATA%\Programs\Deckle Local`, apart from every checkout, so building `main` or a worktree never touches it. [`deploy-local.ps1`](deploy-local.ps1) builds the commit in a worktree reserved to it (`<worktrees>\deckle\local-copy-build`), runs the self-check on it, and writes it to `next\`; the running Deckle is not stopped. At its next start, `current\Deckle.exe` finds `next\` and hands off to `apply-update.ps1` at the root, the helper each build carries ([`src/Deckle.App/LocalCopy/apply-update.ps1`](../src/Deckle.App/LocalCopy/apply-update.ps1)), which waits for every Deckle of `current\` to exit, renames `current\` to `previous\` and `next\` to `current\`, and starts the new build. Updating is therefore one restart, from the tray or from Windows. `-Rollback` stages `previous\` again. The path of `current\` never changes, so the autostart entry, the elevated startup task and shortcuts stay valid; `src/Deckle.App/LocalCopyUpdate.cs` carries the why. After a merge into `main`, the merging session runs `deploy-local.ps1`.
 
 ## Running instance and build outputs
 
