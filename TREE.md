@@ -2178,6 +2178,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── OverlayCardBugNotes.md
 │   │   ├── OverlayCardCloseObservabilityTests.cs
+│   │   ├── ProcessingMaterialVisibilityTests.cs
 │   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
 │   │   ├── RecordingLevelStepTests.cs

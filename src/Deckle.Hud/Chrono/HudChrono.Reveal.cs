@@ -6,8 +6,9 @@ namespace Deckle.Hud;
 // HudChrono — static digit reveal for Transcribing and Rewriting.
 //
 // Each of the six glyphs is fully open onto one shared clone of the
-// processing material for the whole state. The material may rotate when functional HUD animation is on; its
-// opacity never interpolates.
+// processing material for the whole state. The reveal exists only while
+// Deckle animates (ProcessingStroke.ShowsMaterial), and its material turns;
+// its opacity never interpolates.
 public sealed partial class HudChrono
 {
     private const int DigitCount = 6;

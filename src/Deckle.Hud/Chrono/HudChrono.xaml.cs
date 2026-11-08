@@ -124,6 +124,17 @@ public sealed partial class HudChrono : UserControl
         _animationsEnabled = enabled;
         RebuildCountdownVisual();
 
+        // Transcribing and Rewriting show their material only while Deckle
+        // animates (ProcessingStroke.ShowsMaterial): re-entering the state
+        // adds or removes the outline and the digit reveal at once. The
+        // reveal lives in these two states only, so no other state has one
+        // to refresh.
+        if (_state is HudState.Transcribing or HudState.Rewriting)
+        {
+            ApplyState(_state);
+            return;
+        }
+
         lock (_strokeSync)
         {
             if (_processingStroke is not null && _currentVariant is { } variant)
@@ -133,13 +144,6 @@ public sealed partial class HudChrono : UserControl
                     variant,
                     ChronoRoot.ActualTheme == ElementTheme.Dark);
             }
-        }
-
-        if (_revealsActive)
-        {
-            TearDownReveals();
-            EnsureReveals();
-            UpdateReveals();
         }
     }
 
@@ -193,26 +197,35 @@ public sealed partial class HudChrono : UserControl
         ApplyRestTone(ToneRecording);
     }
 
-    private void ApplyTranscribing()
+    private void ApplyTranscribing() => ApplyProcessing(ProcessingVariant.Transcribing);
+
+    private void ApplyRewriting() => ApplyProcessing(ProcessingVariant.Rewriting);
+
+    // The host freezes the clock with StopClock; the processing material
+    // shows on the outline and in all six digits over the Stopped tone.
+    private void ApplyProcessing(ProcessingVariant variant)
     {
-        // The host freezes the clock with StopClock; the processing material
-        // stays visible in all six digits over the Stopped tone.
         ApplyRestTone(ToneStopped);
 
-        AttachProcessingVisual(ProcessingVariant.Transcribing);
+        if (!HudComposition.ProcessingStroke.ShowsMaterial(variant, _animationsEnabled))
+        {
+            // Animations reduced: no outline, no reveal, only the frozen
+            // clock. StopClock writes the final value itself, so the vsync
+            // hook left over from Recording has nothing more to drive.
+            // ClearDigitHeat drops the accent the last Recording ticks left
+            // on their digits, which the reveal covers otherwise.
+            UnhookRendering();
+            StopReveal();
+            ClearDigitHeat();
+            DetachProcessingVisual();
+            return;
+        }
+
+        AttachProcessingVisual(variant);
         HookRendering();
         StartReveal();
         // Rendering retries reveal construction until XAML has produced the
         // glyph masks; the clock is stopped, so UpdateClock is a no-op.
-    }
-
-    private void ApplyRewriting()
-    {
-        ApplyRestTone(ToneStopped);
-
-        AttachProcessingVisual(ProcessingVariant.Rewriting);
-        HookRendering();
-        StartReveal();
     }
 
     private void ApplyHidden()
