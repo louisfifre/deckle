@@ -183,9 +183,22 @@ _Generated from `git ls-files` — do not edit by hand._
 ├── native/
 │   ├── Deckle.Shell.Taskbar.Native/
 │   │   ├── xamldiag/
+│   │   │   ├── behaviors/
+│   │   │   │   ├── clock.cpp
+│   │   │   │   └── clock.h
 │   │   │   ├── rules/
+│   │   │   │   ├── element_matcher.cpp
+│   │   │   │   ├── element_matcher.h
+│   │   │   │   ├── property_override.cpp
+│   │   │   │   ├── property_override.h
+│   │   │   │   ├── rule_document.cpp
+│   │   │   │   ├── rule_document.h
+│   │   │   │   ├── rule_engine.cpp
+│   │   │   │   ├── rule_engine.h
 │   │   │   │   ├── selector.cpp
-│   │   │   │   └── selector.h
+│   │   │   │   ├── selector.h
+│   │   │   │   ├── style_resolver.cpp
+│   │   │   │   └── style_resolver.h
 │   │   │   ├── element_properties.cpp
 │   │   │   ├── element_properties.h
 │   │   │   ├── tap_connection.cpp
@@ -2460,8 +2473,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Native/
 │   │   │   ├── JsonLineFramingTests.cs
 │   │   │   ├── NativeCommandTests.cs
+│   │   │   ├── NativeEngineMessageTests.cs
 │   │   │   ├── NativeLogRelayTests.cs
 │   │   │   ├── NativeMessageTests.cs
+│   │   │   ├── NativeSelectorLibrary.cs
 │   │   │   ├── NativeSelectorTests.cs
 │   │   │   ├── TaskbarPipeServerTests.cs
 │   │   │   └── VersionedNativeCopyTests.cs

@@ -7,6 +7,9 @@ namespace Deckle.Shell.Taskbar;
 //
 //   {"t":"hello","protocol":"1","pid":"1234","module":"C:\\...\\Deckle.Shell.Taskbar.Native.dll"}
 //   {"t":"log","level":"info","event":"connected","msg":"...","fields":{"k":"v"}}
+//   {"t":"status","generation":"2","settled":"true","rules":[{"id":"...","state":"applied",...}],"behaviors":[...],"problems":["..."]}
+//   {"t":"tree","tid":"1234","text":"Type#Name  [props]\n  ..."}    one root of the live visual tree, answering a dump command
+//   {"t":"tree_end","roots":"3"}                                     the last record of a dump
 //
 // Every value is a string, numbers and handles included: an InstanceHandle is
 // a 64-bit pointer, which a JSON number (a double in most readers) would round.
@@ -35,6 +38,14 @@ internal abstract record NativeMessage
                     Event: Text(root, "event"),
                     Message: Text(root, "msg"),
                     Fields: Fields(root)),
+                "status" => new NativeStatus(
+                    Generation: Number(root, "generation"),
+                    Settled: Text(root, "settled") == "true",
+                    Rules: States(root, "rules"),
+                    Behaviors: States(root, "behaviors"),
+                    Problems: Strings(root, "problems")),
+                "tree" => new NativeTreeDump(Tid: Number(root, "tid"), Text: Text(root, "text")),
+                "tree_end" => new NativeTreeEnd(Roots: Number(root, "roots")),
                 _ => new NativeUnreadableMessage(line),
             };
         }
@@ -52,6 +63,40 @@ internal abstract record NativeMessage
     private static int Number(JsonElement parent, string name) =>
         int.TryParse(Text(parent, name), out int number) ? number : 0;
 
+    private static IReadOnlyList<NativeRuleState> States(JsonElement parent, string name)
+    {
+        var states = new List<NativeRuleState>();
+        if (parent.TryGetProperty(name, out JsonElement array) && array.ValueKind == JsonValueKind.Array)
+        {
+            foreach (JsonElement entry in array.EnumerateArray())
+            {
+                if (entry.ValueKind != JsonValueKind.Object) continue;
+                states.Add(new NativeRuleState(
+                    Id: Text(entry, "id"),
+                    State: Text(entry, "state"),
+                    Matched: Number(entry, "matched"),
+                    Active: Number(entry, "active"),
+                    Reasserted: Number(entry, "reasserted"),
+                    Contested: Number(entry, "contested"),
+                    Error: Text(entry, "error")));
+            }
+        }
+        return states;
+    }
+
+    private static IReadOnlyList<string> Strings(JsonElement parent, string name)
+    {
+        var strings = new List<string>();
+        if (parent.TryGetProperty(name, out JsonElement array) && array.ValueKind == JsonValueKind.Array)
+        {
+            foreach (JsonElement entry in array.EnumerateArray())
+            {
+                if (entry.ValueKind == JsonValueKind.String) strings.Add(entry.GetString() ?? "");
+            }
+        }
+        return strings;
+    }
+
     private static IReadOnlyDictionary<string, string> Fields(JsonElement parent)
     {
         var fields = new Dictionary<string, string>(StringComparer.Ordinal);
@@ -68,6 +113,29 @@ internal abstract record NativeMessage
 
 // The DLL's first line after it connects.
 internal sealed record NativeHello(int Protocol, int ProcessId, string ModulePath) : NativeMessage;
+
+// How one rule, or one behavior, stands in explorer. State is one of:
+//   applied        at least one element is held at the rule's value
+//   pending        nothing matched yet, within the first 10 seconds
+//   never_matched  nothing matched 10 seconds after the document (the element may show up later)
+//   contested      Explorer's code keeps undoing the value faster than the engine answers
+//   idle           the rule matched, but its elements are gone or its visual state is off
+//   error          the rule cannot apply; Error says why
+internal sealed record NativeRuleState(
+    string Id, string State, int Matched, int Active, int Reasserted, int Contested, string Error);
+
+// The engine's report after a document, and again whenever a number changes.
+internal sealed record NativeStatus(
+    int Generation,
+    bool Settled,
+    IReadOnlyList<NativeRuleState> Rules,
+    IReadOnlyList<NativeRuleState> Behaviors,
+    IReadOnlyList<string> Problems) : NativeMessage;
+
+// One root of the live visual tree, indented text, one element per line.
+internal sealed record NativeTreeDump(int Tid, string Text) : NativeMessage;
+
+internal sealed record NativeTreeEnd(int Roots) : NativeMessage;
 
 // A line the DLL could not make sense of for the host, kept whole for the log.
 internal sealed record NativeUnreadableMessage(string Line) : NativeMessage;

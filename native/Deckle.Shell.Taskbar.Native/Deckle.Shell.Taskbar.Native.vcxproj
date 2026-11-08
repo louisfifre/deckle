@@ -88,6 +88,12 @@
     <ClInclude Include="xamldiag\element_properties.h" />
     <ClInclude Include="xamldiag\tap_connection.h" />
     <ClInclude Include="xamldiag\rules\selector.h" />
+    <ClInclude Include="xamldiag\rules\rule_document.h" />
+    <ClInclude Include="xamldiag\rules\element_matcher.h" />
+    <ClInclude Include="xamldiag\rules\style_resolver.h" />
+    <ClInclude Include="xamldiag\rules\property_override.h" />
+    <ClInclude Include="xamldiag\rules\rule_engine.h" />
+    <ClInclude Include="xamldiag\behaviors\clock.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -104,6 +110,12 @@
     <ClCompile Include="xamldiag\element_properties.cpp" />
     <ClCompile Include="xamldiag\tap_connection.cpp" />
     <ClCompile Include="xamldiag\rules\selector.cpp" />
+    <ClCompile Include="xamldiag\rules\rule_document.cpp" />
+    <ClCompile Include="xamldiag\rules\element_matcher.cpp" />
+    <ClCompile Include="xamldiag\rules\style_resolver.cpp" />
+    <ClCompile Include="xamldiag\rules\property_override.cpp" />
+    <ClCompile Include="xamldiag\rules\rule_engine.cpp" />
+    <ClCompile Include="xamldiag\behaviors\clock.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Deckle.Shell.Taskbar.Native.def" />

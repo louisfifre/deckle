@@ -8,11 +8,13 @@ namespace Deckle.Shell.Taskbar;
 //
 //   {"t":"stop"}              restore everything, unadvise, unload the DLL
 //   {"t":"ping"}              the DLL answers with a "pong" log record
-//   {"t":"apply","doc":{..}}  the settings document (nothing consumes it yet)
+//   {"t":"apply","doc":{..}}  the settings document: rules and behaviors (see TaskbarDocumentBuilder)
+//   {"t":"dump"}              the DLL answers with "tree" records, then "tree_end"
 internal static class NativeCommand
 {
     public const string Stop = """{"t":"stop"}""";
     public const string Ping = """{"t":"ping"}""";
+    public const string Dump = """{"t":"dump"}""";
 
     // Wraps a settings document. The document is re-written compactly, so
     // whatever whitespace the caller's text holds cannot break the one line.

@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-using System.Text;
 using Xunit;
 
 namespace Deckle.Shell.Taskbar.Tests;
@@ -13,35 +11,13 @@ namespace Deckle.Shell.Taskbar.Tests;
 [Trait("Category", "unit")]
 public sealed class NativeSelectorTests : IDisposable
 {
-    private delegate int DescribeSelectorFn(
-        [MarshalAs(UnmanagedType.LPWStr)] string text, [MarshalAs(UnmanagedType.LPWStr)] StringBuilder output, int capacity);
+    private readonly NativeSelectorLibrary _library = new();
 
-    private readonly IntPtr _library;
-    private readonly DescribeSelectorFn? _describe;
+    public void Dispose() => _library.Dispose();
 
-    public NativeSelectorTests()
-    {
-        string path = Path.Combine(AppContext.BaseDirectory, VersionedNativeCopy.DllName);
-        if (!File.Exists(path)) return;
+    private string? Describe(string selector) => _library.Describe(selector);
 
-        _library = NativeLibrary.Load(path);
-        _describe = Marshal.GetDelegateForFunctionPointer<DescribeSelectorFn>(
-            NativeLibrary.GetExport(_library, "DeckleTaskbarDescribeSelector"));
-    }
-
-    public void Dispose()
-    {
-        if (_library != IntPtr.Zero) NativeLibrary.Free(_library);
-    }
-
-    // The canonical text on success, "error: ..." on failure.
-    private string? Describe(string selector)
-    {
-        if (_describe is null) return null;
-        var output = new StringBuilder(1024);
-        int length = _describe(selector, output, output.Capacity);
-        return length >= 0 ? output.ToString() : "error: " + output;
-    }
+    private bool NoDll => !_library.IsAvailable;
 
     [Theory]
     [InlineData("Rectangle#BackgroundStroke", "Windows.UI.Xaml.Shapes.Rectangle#BackgroundStroke")]
@@ -54,7 +30,7 @@ public sealed class NativeSelectorTests : IDisposable
     [InlineData("systemtray:NotifyIconView#NotifyItemIcon", "SystemTray.NotifyIconView#NotifyItemIcon")]
     public void AShortTypeNameStandsForTheXamlClassOfThatName(string selector, string expected)
     {
-        Assert.Equal(_describe is null ? null : expected, Describe(selector));
+        Assert.Equal(NoDll ? null : expected, Describe(selector));
     }
 
     [Fact]
@@ -63,7 +39,7 @@ public sealed class NativeSelectorTests : IDisposable
         string? text = Describe("Taskbar.TaskbarFrame>Grid#RootGrid  >   Taskbar.TaskbarBackground > Grid > Rectangle#BackgroundFill");
 
         Assert.Equal(
-            _describe is null ? null
+            NoDll ? null
             : "Taskbar.TaskbarFrame > Windows.UI.Xaml.Controls.Grid#RootGrid > Taskbar.TaskbarBackground"
               + " > Windows.UI.Xaml.Controls.Grid > Windows.UI.Xaml.Shapes.Rectangle#BackgroundFill",
             text);
@@ -73,7 +49,7 @@ public sealed class NativeSelectorTests : IDisposable
     public void AStarStandsForAnyChainOfAncestors()
     {
         Assert.Equal(
-            _describe is null ? null : "SystemTray.SystemTrayFrame > * > SystemTray.NotifyIconView#NotifyItemIcon",
+            NoDll ? null : "SystemTray.SystemTrayFrame > * > SystemTray.NotifyIconView#NotifyItemIcon",
             Describe("SystemTray.SystemTrayFrame > * > SystemTray.NotifyIconView#NotifyItemIcon"));
     }
 
@@ -81,7 +57,7 @@ public sealed class NativeSelectorTests : IDisposable
     public void AnIndexAStateGroupAndFiltersAreKept()
     {
         Assert.Equal(
-            _describe is null ? null
+            NoDll ? null
             : "Taskbar.TaskListButton[2] > Windows.UI.Xaml.Controls.Grid#IconPanel@CommonStates"
               + " > Taskbar.ExperienceToggleButton[AutomationProperties.AutomationId=StartButton]",
             Describe("Taskbar.TaskListButton[2] > Grid#IconPanel@CommonStates > Taskbar.ExperienceToggleButton[AutomationProperties.AutomationId=StartButton]"));
@@ -104,13 +80,13 @@ public sealed class NativeSelectorTests : IDisposable
     {
         string? text = Describe(selector);
 
-        if (_describe is null) return;
+        if (NoDll) return;
         Assert.StartsWith("error: " + reason, text);
     }
 
     [Fact]
     public void ANameWithoutATypeMatchesAnyTypeOfThatName()
     {
-        Assert.Equal(_describe is null ? null : "#BackgroundStroke", Describe("#BackgroundStroke"));
+        Assert.Equal(NoDll ? null : "#BackgroundStroke", Describe("#BackgroundStroke"));
     }
 }

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "visual_tree_watcher.h"
 #include "element_properties.h"
+#include "rules/rule_engine.h"
 #include "../log.h"
 #include "../engine.h"
 #include "../util.h"
@@ -171,6 +172,19 @@ namespace deckle::xamldiag
                     else
                     {
                         props = DescribeElement(instance);
+
+                        // The rule engine holds the element from here on, and
+                        // applies the rules that target it. This is the
+                        // element's own UI thread, the only one that may touch it.
+                        if (auto framework = instance.try_as<winrt::Windows::UI::Xaml::FrameworkElement>())
+                        {
+                            try { rules::Engine::Instance().OnElementAdded(framework); }
+                            catch (winrt::hresult_error const& error)
+                            {
+                                Log(LogLevel::Warning, L"engine_add_failed", L"The rule engine could not take an element",
+                                    { { L"hr", util::HandleText(static_cast<uint32_t>(error.code().value)) }, { L"type", type.Text() } });
+                            }
+                        }
                     }
                 }
                 catch (winrt::hresult_error const& error)

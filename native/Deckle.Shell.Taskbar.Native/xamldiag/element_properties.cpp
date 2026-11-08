@@ -62,6 +62,12 @@ namespace
             default: break;
             }
         }
+        // Enumerations are boxed as IReference<enum>, which has no PropertyType of its own.
+        if (auto alignment = value.try_as<wf::IReference<wux::TextAlignment>>()) return L"TextAlignment." + std::to_wstring(static_cast<int>(alignment.Value()));
+        if (auto horizontal = value.try_as<wf::IReference<wux::HorizontalAlignment>>()) return L"HorizontalAlignment." + std::to_wstring(static_cast<int>(horizontal.Value()));
+        if (auto vertical = value.try_as<wf::IReference<wux::VerticalAlignment>>()) return L"VerticalAlignment." + std::to_wstring(static_cast<int>(vertical.Value()));
+        if (auto visibility = value.try_as<wf::IReference<wux::Visibility>>()) return L"Visibility." + std::to_wstring(static_cast<int>(visibility.Value()));
+        if (auto weight = value.try_as<wf::IReference<winrt::Windows::UI::Text::FontWeight>>()) return L"FontWeight." + std::to_wstring(weight.Value().Weight);
         if (auto thickness = value.try_as<wf::IReference<wux::Thickness>>()) return ThicknessText(thickness.Value());
         if (auto corner = value.try_as<wf::IReference<wux::CornerRadius>>())
         {
@@ -154,6 +160,7 @@ namespace deckle::xamldiag
         out.Local(element, wux::FrameworkElement::MarginProperty(), L"Margin");
 
         out.Effective(L"~actual", [&] { return Number(element.ActualWidth()) + L"x" + Number(element.ActualHeight()); });
+        out.Effective(L"~halign", [&] { return std::to_wstring(static_cast<int>(element.HorizontalAlignment())); });   // 0 Left, 1 Center, 2 Right, 3 Stretch
         if (element.Visibility() != wux::Visibility::Visible) out.Add(L"~visibility", L"Collapsed");
         if (element.Opacity() != 1.0) out.Add(L"~opacity", Number(element.Opacity()));
 
@@ -174,6 +181,9 @@ namespace deckle::xamldiag
             });
             out.Effective(L"~FontSize", [&] { return Number(text.FontSize()); });
             out.Local(text, wuxc::TextBlock::ForegroundProperty(), L"Foreground");
+            out.Local(text, wuxc::TextBlock::TextAlignmentProperty(), L"TextAlignment");
+            out.Effective(L"~TextAlign", [&] { return std::to_wstring(static_cast<int>(text.TextAlignment())); });   // 0 Center, 1 Left, 2 Start, 3 Right, 4 End, 5 Justify
+            out.Local(text, wuxc::TextBlock::FontWeightProperty(), L"FontWeight");
         }
 
         if (auto control = instance.try_as<wuxc::Control>())

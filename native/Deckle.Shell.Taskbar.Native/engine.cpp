@@ -5,6 +5,8 @@
 #include "util.h"
 #include "xamldiag/tap_connection.h"
 #include "xamldiag/visual_tree_watcher.h"
+#include "xamldiag/rules/rule_document.h"
+#include "xamldiag/rules/rule_engine.h"
 
 namespace
 {
@@ -20,12 +22,12 @@ namespace
     std::wstring g_stopReason;
     std::mutex g_stopReasonLock;
 
-    // Restores everything the engine changed in explorer. Nothing is changed
-    // yet: this step only observes. The parts that will change something
-    // (tier 2 rules, tier 3 hooks) register here, each with its own restore.
+    // Restores everything the engine changed in explorer: the rule engine gives
+    // back every property it holds. The parts that will change something else
+    // (tier 3 hooks) register here, each with its own restore.
     size_t RestoreAll()
     {
-        return 0;
+        return deckle::rules::Engine::Instance().Shutdown();
     }
 
     std::wstring ReadString(json::JsonObject const& object, std::wstring_view key)
@@ -54,9 +56,21 @@ namespace
         }
         if (kind == L"apply")
         {
-            // The settings document. Nothing consumes it yet.
+            // The settings document: rules and behaviors. A new one replaces the
+            // last, which is restored first.
             deckle::Log(deckle::LogLevel::Info, L"document_received", L"Received a settings document",
                         { { L"bytes", std::to_wstring(line.size()) } });
+            if (!command.HasKey(L"doc") || command.GetNamedValue(L"doc").ValueType() != json::JsonValueType::Object)
+            {
+                deckle::Log(deckle::LogLevel::Warning, L"document_unreadable", L"The apply command carries no document");
+                return true;
+            }
+            deckle::rules::Engine::Instance().Apply(deckle::rules::ParseSettingsDocument(command.GetNamedObject(L"doc")));
+            return true;
+        }
+        if (kind == L"dump")
+        {
+            deckle::rules::Engine::Instance().DumpTrees();
             return true;
         }
         if (kind == L"ping")
