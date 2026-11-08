@@ -29,7 +29,7 @@ _Avoid_ : backend (the data runtime, a different layer), Anytype server (could m
 The Deckle process that is always on and starts at login, holding the global hotkeys and the orchestration. It hosts the MCP host and the library. It differs from the visible windows that come and go, such as the HUD or Settings.
 
 **MCP surface** :
-A capability graph that the host opens for one authenticated request, such as PM, Dialogue or Home. The unit of separation is the *capability*, never a transport session.
+A capability graph that the host opens for one authenticated request, such as PM, Schema Admin or Home. The unit of separation is the *capability*, never a transport session.
 _Avoid_ : profile (the earlier name), server (there is only one).
 
 **Operation recovery policy** :
@@ -179,5 +179,5 @@ A key tied to an account and its identity. A client token is tied to access, not
 
 > - Le « MCP Anytype », c'est l'exe qu'on lançait ?
 > - Plus maintenant. L'**hôte MCP** est un seul serveur HTTP dans le **noyau résident**. Les clients s'y connectent par URL. L'exe spawné, c'était le monde stdio.
-> - Et quand Codex crée une tâche, c'est qui l'auteur ?
-> - Le **bot** unique du **backend**. Le **jeton** de Codex ne dit que ce qu'il a le droit de toucher, pas qui signe.
+> - Et quand Claude crée une tâche, c'est qui l'auteur ?
+> - Le **bot** unique du **backend**. Le **jeton** de Claude ne dit que ce qu'il a le droit de toucher, pas qui signe.

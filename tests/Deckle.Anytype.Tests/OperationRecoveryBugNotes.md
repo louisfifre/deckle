@@ -18,6 +18,6 @@ Regression coverage: `ManagementGesturesTests.ConfirmedCallRejectsANameInsteadOf
 - **Violated invariant:** A replayable mutation or non-idempotent append must address its target by a stable Anytype object id.
 - **Recurrence cue:** A mutating gesture classified for stable-target recovery calls `NameResolver` on a display name.
 
-Regression coverage: `QueryGesturesTests.UpdateRequiresAStableObjectIdBeforeReadingOrWriting`,
-`SessionGesturesTests.LogRequiresTheReportIdBeforeReadingOrWriting`, and
-`DialogueGesturesTests.PostRequiresTheChatIdBeforeAppendingAMessage`.
+Regression coverage: `QueryGesturesTests.UpdateRequiresAStableObjectIdBeforeReadingOrWriting`
+and `SessionGesturesTests.LogRequiresTheReportIdBeforeReadingOrWriting`. The dialogue
+tools, and `dialogue_post` with them, were removed with the Codex client.

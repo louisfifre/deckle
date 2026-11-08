@@ -359,8 +359,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── BackendReconciliationLease.cs
 │   │   │   ├── BackendSupervisor.cs
 │   │   │   └── BackendTime.cs
-│   │   ├── Dialogues/
-│   │   │   └── DialogueGestures.cs
 │   │   ├── Gateway/
 │   │   │   ├── GatewayContract.cs
 │   │   │   ├── GatewayKeyFingerprint.cs
@@ -1908,7 +1906,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeletionApprovalRelayTests.cs
 │   │   ├── DevSpaceBugNotes.md
 │   │   ├── DevSpaceTests.cs
-│   │   ├── DialogueGesturesTests.cs
 │   │   ├── DocumentGesturesTests.cs
 │   │   ├── FakeV2Handler.cs
 │   │   ├── GatewayKeyFingerprintTests.cs
