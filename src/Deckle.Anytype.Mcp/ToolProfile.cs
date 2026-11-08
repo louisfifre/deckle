@@ -5,7 +5,5 @@ namespace Deckle.Anytype.Mcp;
 public enum ToolProfile
 {
     ProjectManagement,
-    Dialogues,
     SchemaAdmin,
-    All,
 }

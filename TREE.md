@@ -359,8 +359,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── BackendReconciliationLease.cs
 │   │   │   ├── BackendSupervisor.cs
 │   │   │   └── BackendTime.cs
-│   │   ├── Dialogues/
-│   │   │   └── DialogueGestures.cs
 │   │   ├── Gateway/
 │   │   │   ├── GatewayContract.cs
 │   │   │   ├── GatewayKeyFingerprint.cs
@@ -419,7 +417,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── McpSurfaceProtocolAdapter.cs
 │   │   ├── Tools/
 │   │   │   ├── AnytypeUtilityToolCatalog.cs
-│   │   │   ├── DialogueToolCatalog.cs
 │   │   │   ├── ManagementToolCatalog.cs
 │   │   │   ├── SchemaAdminToolCatalog.cs
 │   │   │   ├── ToolCatalog.cs
@@ -1853,7 +1850,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AnytypeUtilityToolCatalogTests.cs
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
-│   │   ├── DialogueToolCatalogTests.cs
 │   │   ├── FakeSecretVault.cs
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensBugNotes.md
@@ -1910,7 +1906,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeletionApprovalRelayTests.cs
 │   │   ├── DevSpaceBugNotes.md
 │   │   ├── DevSpaceTests.cs
-│   │   ├── DialogueGesturesTests.cs
 │   │   ├── DocumentGesturesTests.cs
 │   │   ├── FakeV2Handler.cs
 │   │   ├── GatewayKeyFingerprintTests.cs
