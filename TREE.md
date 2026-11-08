@@ -183,6 +183,9 @@ _Generated from `git ls-files` — do not edit by hand._
 ├── native/
 │   ├── Deckle.Shell.Taskbar.Native/
 │   │   ├── xamldiag/
+│   │   │   ├── rules/
+│   │   │   │   ├── selector.cpp
+│   │   │   │   └── selector.h
 │   │   │   ├── element_properties.cpp
 │   │   │   ├── element_properties.h
 │   │   │   ├── tap_connection.cpp
@@ -2459,6 +2462,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── NativeCommandTests.cs
 │   │   │   ├── NativeLogRelayTests.cs
 │   │   │   ├── NativeMessageTests.cs
+│   │   │   ├── NativeSelectorTests.cs
 │   │   │   ├── TaskbarPipeServerTests.cs
 │   │   │   └── VersionedNativeCopyTests.cs
 │   │   ├── Deckle.Shell.Taskbar.Tests.csproj

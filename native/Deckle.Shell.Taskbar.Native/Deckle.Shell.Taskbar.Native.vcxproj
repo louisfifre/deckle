@@ -87,6 +87,7 @@
     <ClInclude Include="xamldiag\visual_tree_watcher.h" />
     <ClInclude Include="xamldiag\element_properties.h" />
     <ClInclude Include="xamldiag\tap_connection.h" />
+    <ClInclude Include="xamldiag\rules\selector.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -102,6 +103,7 @@
     <ClCompile Include="xamldiag\visual_tree_watcher.cpp" />
     <ClCompile Include="xamldiag\element_properties.cpp" />
     <ClCompile Include="xamldiag\tap_connection.cpp" />
+    <ClCompile Include="xamldiag\rules\selector.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Deckle.Shell.Taskbar.Native.def" />

@@ -133,6 +133,11 @@ namespace
 
 namespace deckle::xamldiag
 {
+    std::wstring DescribeValue(wf::IInspectable const& value)
+    {
+        return LocalValueText(value);
+    }
+
     std::wstring DescribeElement(wf::IInspectable const& instance)
     {
         Writer out;

@@ -3,6 +3,6 @@ EXPORTS
     DeckleTaskbarHookProc
     DeckleTaskbarGetMessageProc
     DeckleTaskbarNativeVersion
+    DeckleTaskbarDescribeSelector
     DllGetClassObject PRIVATE
     DllCanUnloadNow PRIVATE
-
