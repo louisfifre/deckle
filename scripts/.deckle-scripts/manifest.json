@@ -1,12 +1,12 @@
 {
   "source": "https://github.com/louisfifre/deckle-scripts",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "packs": [
     "git",
     "maintenance",
     "setup"
   ],
-  "installedAt": "2026-11-06T15:07:03Z",
+  "installedAt": "2026-11-08T23:20:28Z",
   "files": {
     "scripts/git/README.md": "e18dc6df0cf026ca64e64834e30efbf163db98bbcebf9ad01b319b6bd38c7ff8",
     "scripts/git/changelog.ps1": "17be8f8e815765ee22cc8a2f8bb6e70d95fa96263b96bcf1e5d1275f38e9749a",
@@ -14,10 +14,9 @@
     "scripts/git/mark-release.ps1": "22735a687c6478421ad1f6d1bfa416dccef5f8b8d9508f050b2a3fbaf09ebc15",
     "scripts/git/record-version.ps1": "d1ca2ef75aafdb6b24ede503057d63fdb45b464c2c851a0b323e9e97a281b65a",
     "scripts/lib/action-summary.ps1": "2b56b5725e990479e984684a39e37550aa162aec127ea385ffd7cc04e14c1a5b",
-    "scripts/lib/agent-state-maintenance.psm1": "318ab4471d3ec5ff10f78e2f954e1eb6a764b0d35c2bea932a24ce6fa06b9033",
-    "scripts/lib/agent-state-maintenance.strings.psd1": "38a18aa6097b8822608321bd60766b23ad409ab698cb1ec65af75c13035536f4",
-    "scripts/lib/agent-state-maintenance/sanitization.ps1": "548d0f07bc69e5372f16e88d85f388500eb3c4e5cbed303547c70edfdab20a29",
-    "scripts/lib/agent-state-maintenance/sqlite-cleanup.ps1": "560b841559413eaf996ef0888df65fcad22c2a475995f28ef3ca0cf25ad8f371",
+    "scripts/lib/agent-state-maintenance.psm1": "09b890469991871b8970a0890888b6a7e1cb81ef6d425838da86396066de3069",
+    "scripts/lib/agent-state-maintenance.strings.psd1": "274a39a3642d49f6cdd98d6b7b7ae0b6dfa03055d82302a62d18303b49b330c8",
+    "scripts/lib/agent-state-maintenance/sanitization.ps1": "580f19c22827b8168465d877a4221036480347d3ea2d6f1d503e00b81048d718",
     "scripts/lib/build-outputs.ps1": "835fe6d24a39fb2e8aacfcb11055962b531cf3713d7d9739c421f258cbe6bdea",
     "scripts/lib/build-server-cleanup.ps1": "b7881bb75deebfea5aca69cb5667c60b93389212bf81a6890d0b1dbfcd6ff8da",
     "scripts/lib/hooks/commit-msg": "5e036873066dafef712e1dc60d9b065644338092116636599bb0e2af9151e1ab",
@@ -60,7 +59,7 @@
     "scripts/lib/version.ps1": "2caea2e842eefed29f8064f8ab2bd0ccee31ddb044f10afe65ce1fc096a335bf",
     "scripts/maintenance/README.md": "7dd8c779d613dd82495d03bc9ebd1fd3aab761a2820f29fcc8f5ab5aa9cba027",
     "scripts/maintenance/clean.ps1": "6fea218f5ceca5a91f25f1dfd2d114772553379d62e1bb4e2b57b3a4af49bea1",
-    "scripts/maintenance/reset-agent-state.ps1": "0db818041a49f6fdf9baa05d9b81bcf47f03dd36b0cbc163611c15d1800916a1",
+    "scripts/maintenance/reset-agent-state.ps1": "5f15f00f27daf82389f5eaf12f51c9110c52d6a0807d24d38a06257bd443df00",
     "scripts/maintenance/stop-build-servers.ps1": "518a783f36f53ed3d35559f6198a40a80dde1e81da766ca10c2216885bbac7ee",
     "scripts/menu.ps1": "9bce84f848b8ab1e506a07c92d5fceed078550d65bee18552d47d46b839f33bf",
     "scripts/settings/README.md": "922a9d321e58e859f7f5ee2d76e160cde3b4518b0588f94269f69bdc01a959af",
