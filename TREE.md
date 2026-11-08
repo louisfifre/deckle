@@ -1621,7 +1621,18 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── FullscreenGeometry.cs
 │   ├── Deckle.Shell.Taskbar/
 │   │   ├── Interop/
-│   │   │   └── TaskbarNativeMethods.cs
+│   │   │   ├── TaskbarNativeMethods.cs
+│   │   │   └── TaskbarNativeMethods.Injection.cs
+│   │   ├── Native/
+│   │   │   ├── JsonLineFraming.cs
+│   │   │   ├── NativeCommand.cs
+│   │   │   ├── NativeLogRelay.cs
+│   │   │   ├── NativeMessage.cs
+│   │   │   ├── TaskbarCreatedListener.cs
+│   │   │   ├── TaskbarEngineHost.cs
+│   │   │   ├── TaskbarHookInjector.cs
+│   │   │   ├── TaskbarPipeServer.cs
+│   │   │   └── VersionedNativeCopy.cs
 │   │   ├── Registry/
 │   │   │   ├── ElevatedProcessRunner.cs
 │   │   │   ├── IElevatedProcessRunner.cs
@@ -1651,6 +1662,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TaskbarSettings.cs
 │   │   ├── TaskbarSettingsModule.cs
 │   │   └── TaskbarSettingsService.cs
+│   ├── Deckle.Shell.Taskbar.Harness/
+│   │   ├── Deckle.Shell.Taskbar.Harness.csproj
+│   │   ├── HarnessCommand.cs
+│   │   ├── HarnessOptions.cs
+│   │   ├── Program.cs
+│   │   └── VisualTreeRecorder.cs
 │   ├── Deckle.Shell.TaskbarCover/
 │   │   ├── Interop/
 │   │   │   └── TaskbarCoverNativeMethods.cs

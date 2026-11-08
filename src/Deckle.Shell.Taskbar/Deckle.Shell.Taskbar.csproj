@@ -27,6 +27,8 @@
   <!-- The tests wait on the tray watcher's own debounce rather than a copy. -->
   <ItemGroup>
     <InternalsVisibleTo Include="Deckle.Shell.Taskbar.Tests" />
+    <!-- The development console drives the native engine host. -->
+    <InternalsVisibleTo Include="Deckle.Shell.Taskbar.Harness" />
   </ItemGroup>
 
   <PropertyGroup>
@@ -87,5 +89,6 @@
                Condition="'$(Configuration)' == 'Debug'" />
     </ItemGroup>
   </Target></Project>
+
 
 

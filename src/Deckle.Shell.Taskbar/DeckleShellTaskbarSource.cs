@@ -34,6 +34,14 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public const int EvtSettingsLoadWarning          = 15;
     public const int EvtSettingsLoadError            = 16;
     public const int EvtExplorerRestartReapplyFailed = 17;
+    public const int EvtNativeEngineInjected         = 18;
+    public const int EvtNativeEngineConnected        = 19;
+    public const int EvtNativeEngineDisconnected     = 20;
+    public const int EvtNativeEngineUnavailable      = 21;
+    public const int EvtNativeEngineNote             = 22;
+    public const int EvtNativeEngineDetail           = 23;
+    public const int EvtNativeEngineWarning          = 24;
+    public const int EvtNativeEngineError            = 25;
 
     // ── Tray icon promotion ───────────────────────────────────────────────────
     //
@@ -235,5 +243,92 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
+    }
+
+    // ── Native engine (the DLL inside explorer) ───────────────────────────────
+    //
+    // The DLL cannot write to Deckle's log: it sends its records over the pipe
+    // and NativeLogRelay re-emits them here, at the level the DLL gave them.
+    // Injected and Disconnected bracket one DLL's stay in explorer, Connected
+    // sits between them; the explorer process id pairs a stay in the file alone.
+
+    // trigger: startup, explorer_restart or retry.
+    [Event(EvtNativeEngineInjected,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Sent the taskbar engine into explorer")]
+    public void NativeEngineInjected(string trigger)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineInjected, trigger);
+    }
+
+    [Event(EvtNativeEngineConnected,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The taskbar engine connected from explorer")]
+    public void NativeEngineConnected(int explorer_pid, int protocol)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineConnected, explorer_pid, protocol);
+    }
+
+    // outcome: unloaded (the DLL reported that it unloaded itself) or lost (the
+    // pipe closed with no word, as when explorer exits).
+    [Event(EvtNativeEngineDisconnected,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The taskbar engine disconnected")]
+    public void NativeEngineDisconnected(string outcome)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineDisconnected, outcome);
+    }
+
+    // step: the injection step that failed. error: its Win32 error code.
+    [Event(EvtNativeEngineUnavailable,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar engine could not be started\nstep={0} | error={1}")]
+    public void NativeEngineUnavailable(string step, int error)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineUnavailable, step, error);
+    }
+
+    [Event(EvtNativeEngineNote,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar engine reported progress")]
+    public void NativeEngineNote(string name, string fields)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineNote, name, fields);
+    }
+
+    [Event(EvtNativeEngineDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "name={0} | fields={1}")]
+    public void NativeEngineDetail(string name, string fields)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtNativeEngineDetail, name, fields);
+    }
+
+    [Event(EvtNativeEngineWarning,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar engine worked around a problem\nname={0} | text={1} | fields={2}")]
+    public void NativeEngineWarning(string name, string text, string fields)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineWarning, name, text, fields);
+    }
+
+    [Event(EvtNativeEngineError,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar engine failed\nname={0} | text={1} | fields={2}")]
+    public void NativeEngineError(string name, string text, string fields)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineError, name, text, fields);
     }
 }
