@@ -21,6 +21,7 @@ public partial class App
     {
         WireSettingsSurface(context);
         StartUpdateChecks();
+        OfferOwnAnimations();
     }
 
     // Everything the Settings window needs to build its pages: the host hooks

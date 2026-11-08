@@ -482,8 +482,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
+│   │   ├── AnimationNotifications.cs
 │   │   ├── AnytypeNotifications.cs
 │   │   ├── App.Ambient.cs
+│   │   ├── App.Animations.cs
 │   │   ├── App.Anytype.cs
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Autocorrect.Lifecycle.cs
@@ -2164,6 +2166,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── MessageTemplateDoctrineTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── AnimationGateTests.cs
+│   │   ├── AnimationOfferTests.cs
 │   │   ├── AnimationPreferenceBugNotes.md
 │   │   ├── AnimationPreferenceTests.cs
 │   │   ├── ConfigOverridesBugNotes.md
