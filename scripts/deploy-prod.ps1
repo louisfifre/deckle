@@ -33,9 +33,11 @@
 param(
     # What to deploy: a branch, a tag or a commit of the repository.
     [string]$Ref = 'main',
-    # The prod copy root. By default <projects>\deckle-prod, beside the primary
-    # checkout: the prod copy is part of the development setup, not an
-    # installed application, so it lives with the working folders.
+    # The prod copy root. By default prod\ in the primary checkout, ignored by
+    # git: the prod copy is part of the project's development setup, not an
+    # installed application. No build writes there, and clean.ps1 spares it:
+    # it deletes only folders named as build outputs (bin, obj, artifacts...).
+    # git clean -x would delete it, as it deletes every ignored folder.
     [string]$Root,
     # Stage previous\ as next\ instead of building: the next start rolls back.
     [switch]$Rollback,
@@ -56,7 +58,7 @@ $Workflow = 'Update prod'
 $commonDir = (git -C $ScriptDir rev-parse --path-format=absolute --git-common-dir).Trim()
 if ($LASTEXITCODE -ne 0) { throw "Not a git repository: $ScriptDir" }
 $primary = Split-Path -Parent $commonDir
-if (-not $Root) { $Root = Join-Path (Split-Path -Parent $primary) ((Split-Path -Leaf $primary) + '-prod') }
+if (-not $Root) { $Root = Join-Path $primary 'prod' }
 
 $current  = Join-Path $Root 'current'
 $next     = Join-Path $Root 'next'
