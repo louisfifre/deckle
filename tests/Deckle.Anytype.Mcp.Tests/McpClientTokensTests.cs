@@ -86,14 +86,10 @@ public class McpClientTokensTests
 
         // The token is the identity: a bearer must never authenticate as another client.
         vault.TryGet(McpClients.Claude.TokenSecretName, out string? claudeToken);
-        vault.TryGet(McpClients.Codex.TokenSecretName, out string? codexToken);
         vault.TryGet(McpClients.SchemaAdmin.TokenSecretName, out string? schemaToken);
 
         Assert.Same(McpClients.Claude, tokens.Authenticate(claudeToken));
-        Assert.Same(McpClients.Codex, tokens.Authenticate(codexToken));
         Assert.Same(McpClients.SchemaAdmin, tokens.Authenticate(schemaToken));
-        Assert.NotSame(McpClients.Codex, tokens.Authenticate(claudeToken));
-        Assert.NotSame(McpClients.Claude, tokens.Authenticate(codexToken));
         Assert.NotSame(McpClients.SchemaAdmin, tokens.Authenticate(claudeToken));
         Assert.NotSame(McpClients.Claude, tokens.Authenticate(schemaToken));
     }
@@ -103,7 +99,7 @@ public class McpClientTokensTests
     {
         var custom = new McpClientProfile(
             "custom",
-            McpClients.Codex.Surface,
+            McpClients.Claude.Surface,
             "mcp-token-custom",
             "DECKLE_MCP_TOKEN_CUSTOM");
         var vault = new FakeSecretVault();
@@ -122,7 +118,7 @@ public class McpClientTokensTests
     {
         var vault = new FakeSecretVault();
         vault.Set(McpClients.Claude.TokenSecretName, "");
-        vault.Set(McpClients.Codex.TokenSecretName, "   ");
+        vault.Set(McpClients.SchemaAdmin.TokenSecretName, "   ");
         var tokens = new McpClientTokens(vault);
 
         tokens.EnsureMinted();

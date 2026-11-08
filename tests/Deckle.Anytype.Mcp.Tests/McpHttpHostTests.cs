@@ -25,8 +25,8 @@ public class McpHttpHostTests
     private static readonly McpClientProfile CustomClient = new(
         "custom",
         new McpSurface(
-            "custom-dialogues",
-            api => McpToolset.Build(api, ToolProfile.Dialogues, management: false)),
+            "custom-project-management",
+            api => McpToolset.Build(api, ToolProfile.ProjectManagement, management: false)),
         "mcp-token-custom",
         "DECKLE_MCP_TOKEN_CUSTOM");
 
@@ -376,24 +376,19 @@ public class McpHttpHostTests
         await using var harness = Harness.Start(CustomClient);
         await using McpClient claude = await ConnectAsync(
             harness, McpClients.Claude.Id, ModernProtocol);
-        await using McpClient codex = await ConnectAsync(
-            harness, McpClients.Codex.Id, ModernProtocol);
         await using McpClient custom = await ConnectAsync(
             harness, CustomClient.Id, ModernProtocol);
 
         string[] claudeTools = (await claude.ListToolsAsync(cancellationToken: Ct))
             .Select(tool => tool.Name).ToArray();
-        string[] codexTools = (await codex.ListToolsAsync(cancellationToken: Ct))
-            .Select(tool => tool.Name).ToArray();
         string[] customTools = (await custom.ListToolsAsync(cancellationToken: Ct))
             .Select(tool => tool.Name).ToArray();
 
+        // Both mount project management; only Claude's profile adds management.
+        Assert.Contains("create_task", claudeTools);
         Assert.Contains("delete", claudeTools);
-        Assert.DoesNotContain("dialogue_create", claudeTools);
-        Assert.Contains("dialogue_create", codexTools);
-        Assert.DoesNotContain("delete", codexTools);
-        Assert.Contains("dialogue_create", customTools);
-        Assert.DoesNotContain("create_task", customTools);
+        Assert.Contains("create_task", customTools);
+        Assert.DoesNotContain("delete", customTools);
     }
 
     [Fact]
@@ -560,7 +555,7 @@ public class McpHttpHostTests
         Assert.Equal(HttpStatusCode.TooManyRequests, rejected.StatusCode);
 
         using HttpResponseMessage independent = await harness.Http.SendAsync(
-            Post(harness.BaseUrl, harness.Bearers[McpClients.Codex.Id], "{}"), Ct);
+            Post(harness.BaseUrl, harness.Bearers[McpClients.SchemaAdmin.Id], "{}"), Ct);
         Assert.NotEqual(HttpStatusCode.TooManyRequests, independent.StatusCode);
     }
 

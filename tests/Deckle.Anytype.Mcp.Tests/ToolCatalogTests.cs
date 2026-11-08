@@ -113,7 +113,6 @@ public class ToolCatalogTests
 
         Assert.Contains(rule, McpSurfaceDescriptor.ProjectManagement.Instructions);
         Assert.DoesNotContain(rule, McpSurfaceDescriptor.SchemaAdmin.Instructions);
-        Assert.DoesNotContain(rule, McpSurfaceDescriptor.Dialogues.Instructions);
     }
 
     // The ritual lives in the instructions, not in a tool: an agent that skips

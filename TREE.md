@@ -419,7 +419,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── McpSurfaceProtocolAdapter.cs
 │   │   ├── Tools/
 │   │   │   ├── AnytypeUtilityToolCatalog.cs
-│   │   │   ├── DialogueToolCatalog.cs
 │   │   │   ├── ManagementToolCatalog.cs
 │   │   │   ├── SchemaAdminToolCatalog.cs
 │   │   │   ├── ToolCatalog.cs
@@ -1853,7 +1852,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AnytypeUtilityToolCatalogTests.cs
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
-│   │   ├── DialogueToolCatalogTests.cs
 │   │   ├── FakeSecretVault.cs
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensBugNotes.md
