@@ -1,9 +1,9 @@
-# apply-update.ps1 - Swap a staged build into the local copy, then start it.
+# apply-update.ps1 - Swap a staged build into the prod copy, then start it.
 #
-# Ships in every build beside Deckle.exe (LocalCopy\apply-update.ps1), so the
-# helper always matches the app that starts it. scripts/deploy-local.ps1 copies
-# the staged build's own copy to the local copy root, and Deckle starts it from
-# there (src/Deckle.App/LocalCopyUpdate.cs) when current\Deckle.exe starts while
+# Ships in every build beside Deckle.exe (Prod\apply-update.ps1), so the
+# helper always matches the app that starts it. scripts/deploy-prod.ps1 copies
+# the staged build's own copy to the prod copy root, and Deckle starts it from
+# there (src/Deckle.App/ProdUpdate.cs) when current\Deckle.exe starts while
 # next\ holds a staged build. It never runs from inside current\: it renames
 # that folder.
 #
@@ -107,8 +107,8 @@ if ($swapped) {
 } else {
     # next\ is still there, so the start below would hand off again, and again:
     # this start runs the build in place, and the next one retries the swap.
-    # LocalCopyUpdate reads and removes the marker, so no successor inherits it.
-    $env:DECKLE_LOCAL_COPY_NO_UPDATE = '1'
+    # ProdUpdate reads and removes the marker, so no successor inherits it.
+    $env:DECKLE_PROD_NO_UPDATE = '1'
 }
 
 $start = @{ FilePath = $exe; WorkingDirectory = $current }
