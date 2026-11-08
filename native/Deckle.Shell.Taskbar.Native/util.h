@@ -13,6 +13,14 @@ namespace deckle::util
     // Full path of the DLL file this code runs from.
     std::wstring ModulePath(HMODULE module);
 
+    // Base names of the modules loaded in this process whose name mentions XAML, joined
+    // with commas. Tells which XAML stack (Windows.UI.Xaml or Microsoft.UI.Xaml) the host runs.
+    std::wstring XamlModules();
+
+    // Full path of the running executable.
+    std::wstring ProcessImagePath();
+
     // 0x%016llX, the spelling of an InstanceHandle in a log record.
     std::wstring HandleText(uint64_t value);
 }
+

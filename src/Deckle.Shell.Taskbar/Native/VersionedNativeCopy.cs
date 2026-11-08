@@ -76,6 +76,20 @@ internal sealed class VersionedNativeCopy
         return target;
     }
 
+    // Lets packaged processes (AppContainer) read and run the DLL: grants read and
+    // execute to ALL APPLICATION PACKAGES on the versioned copy only, never on a
+    // folder above it. Needed to load the DLL into StartMenuExperienceHost.
+    public static void GrantPackagedAccess(string dllPath)
+    {
+        var info = new FileInfo(dllPath);
+        System.Security.AccessControl.FileSecurity security = info.GetAccessControl();
+        security.AddAccessRule(new System.Security.AccessControl.FileSystemAccessRule(
+            new System.Security.Principal.SecurityIdentifier("S-1-15-2-1"),
+            System.Security.AccessControl.FileSystemRights.ReadAndExecute,
+            System.Security.AccessControl.AccessControlType.Allow));
+        info.SetAccessControl(security);
+    }
+
     // Deletes the version folders other than the one holding `keepPath`.
     // A folder whose DLL explorer still holds cannot be deleted: it stays, and
     // the next sweep tries again. Returns the folders it removed.
@@ -104,3 +118,4 @@ internal sealed class VersionedNativeCopy
         return removed;
     }
 }
+

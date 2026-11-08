@@ -31,12 +31,16 @@ namespace deckle::xamldiag
         HRESULT STDMETHODCALLTYPE OnVisualTreeChange(ParentChildRelation relation, VisualElement element, VisualMutationType mutationType) override;
         HRESULT STDMETHODCALLTYPE OnElementStateChanged(InstanceHandle element, VisualElementState elementState, LPCWSTR context) noexcept override;
 
-        void ReleaseInstance(InstanceHandle handle);
+        void QueueRelease(InstanceHandle handle);
+        void FlushReleasesIfQuiet();
 
         winrt::com_ptr<IXamlDiagnostics> m_diagnostics;
         winrt::com_ptr<IUnknown> m_testHooks;  // IXamlDiagnosticsTestHooks, when the host has it
+        std::mutex m_releaseLock;
+        std::vector<InstanceHandle> m_pendingRelease;
+        std::chrono::steady_clock::time_point m_lastCallback{};
         std::thread m_adviseThread;
-        std::atomic<bool> m_advised{false};
+        std::atomic<bool> m_adviseCalled{false};
         std::atomic<bool> m_stopped{false};
     };
 
@@ -46,3 +50,5 @@ namespace deckle::xamldiag
     void AttachWatcher(winrt::com_ptr<IUnknown> site);
     void DetachWatcher();
 }
+
+

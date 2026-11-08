@@ -89,12 +89,14 @@ namespace
         auto& channel = deckle::Channel::Instance();
 
         Log(LogLevel::Info, L"stopping", L"Stopping the taskbar engine", { { L"reason", std::wstring(reason) } });
+        channel.Flush(std::chrono::seconds(1));
 
         size_t restored = RestoreAll();
         Log(LogLevel::Info, L"restored", L"Gave back everything the engine changed",
             { { L"parts", std::to_wstring(restored) } });
 
         deckle::xamldiag::DetachWatcher();
+        channel.Flush(std::chrono::seconds(1));
 
         // Objects this DLL created for explorer (the TAP site, the watcher)
         // carry its code. The DLL may only go once none is alive.
@@ -132,6 +134,8 @@ namespace
 
         Log(LogLevel::Info, L"loaded", L"Taskbar engine loaded in explorer",
             { { L"pid", std::to_wstring(GetCurrentProcessId()) },
+              { L"process", deckle::util::ProcessImagePath() },
+              { L"xaml_modules", deckle::util::XamlModules() },
               { L"module", deckle::util::ModulePath(g_module) } });
 
         if (!channel.Connect(std::chrono::seconds(10), g_stopEvent))
@@ -221,3 +225,5 @@ namespace deckle::engine
         CloseHandle(thread);
     }
 }
+
+

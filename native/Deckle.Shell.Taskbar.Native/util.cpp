@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "util.h"
+#include <tlhelp32.h>
 
 namespace deckle::util
 {
@@ -44,6 +45,33 @@ namespace deckle::util
         }
     }
 
+    std::wstring XamlModules()
+    {
+        std::wstring names;
+        HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, GetCurrentProcessId());
+        if (snapshot == INVALID_HANDLE_VALUE) return names;
+
+        MODULEENTRY32W entry{ sizeof(entry) };
+        for (BOOL more = Module32FirstW(snapshot, &entry); more; more = Module32NextW(snapshot, &entry))
+        {
+            std::wstring name = entry.szModule;
+            std::wstring lower = name;
+            for (wchar_t& c : lower) c = static_cast<wchar_t>(towlower(c));
+            if (lower.find(L"xaml") != std::wstring::npos)
+            {
+                if (!names.empty()) names += L",";
+                names += name;
+            }
+        }
+        CloseHandle(snapshot);
+        return names;
+    }
+
+    std::wstring ProcessImagePath()
+    {
+        return ModulePath(nullptr);
+    }
+
     std::wstring HandleText(uint64_t value)
     {
         wchar_t buffer[24];
@@ -51,3 +79,4 @@ namespace deckle::util
         return buffer;
     }
 }
+

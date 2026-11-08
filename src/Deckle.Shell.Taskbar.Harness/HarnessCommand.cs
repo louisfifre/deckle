@@ -20,7 +20,23 @@ internal static class HarnessCommand
         var stop = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; stop.TrySetResult(); };
 
-        await using var host = new TaskbarEngineHost(source, copy, new TaskbarPipeServer(TaskbarPipeServer.DefaultName()));
+        TaskbarEngineHost? hostRef = null;
+        Func<string, InjectionResult>? injector = null;
+        if (options.TargetProcess is { } processName)
+        {
+            injector = path =>
+            {
+                if (options.Packaged) VersionedNativeCopy.GrantPackagedAccess(path);
+                Process[] found = Process.GetProcessesByName(processName);
+                if (found.Length == 0) return InjectionResult.Failed("find_process", 0);
+                Print($"target  {processName} pid {found[0].Id}, {found[0].Threads.Count} threads");
+                return TaskbarHookInjector.InjectIntoThreads(path, found[0].Id, () => hostRef!.IsConnected, TimeSpan.FromMilliseconds(400));
+            };
+        }
+
+        await using var host = new TaskbarEngineHost(
+            source, copy, new TaskbarPipeServer(TaskbarPipeServer.DefaultName(), options.Packaged), injector);
+        hostRef = host;
         long connectedAt = 0;
         host.MessageReceived += message =>
         {
@@ -28,6 +44,7 @@ internal static class HarnessCommand
             {
                 case NativeHello hello:
                     connectedAt = Environment.TickCount64;
+                    recorder.Reset();   // a new DLL, a new explorer: the old trees are gone
                     Print($"hello   explorer pid {hello.ProcessId}, protocol {hello.Protocol}, {hello.ModulePath}");
                     break;
                 case NativeLogRecord record:
@@ -204,3 +221,5 @@ internal static class HarnessCommand
     private static void Print(string line) =>
         Console.WriteLine($"{DateTime.Now:HH:mm:ss.fff} {line}");
 }
+
+

@@ -12,6 +12,7 @@ namespace
 {
     std::wstring Number(double value)
     {
+        if (value != value) return L"auto";   // NaN is how XAML spells an unset Width or Height
         wchar_t buffer[48];
         swprintf_s(buffer, L"%g", value);
         return buffer;
@@ -223,3 +224,4 @@ namespace deckle::xamldiag
         return out.Take();
     }
 }
+

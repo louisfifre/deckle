@@ -13,6 +13,7 @@ internal sealed class TaskbarEngineHost : IAsyncDisposable
     private readonly string _sourceDllPath;
     private readonly VersionedNativeCopy _copy;
     private readonly TaskbarPipeServer _server;
+    private readonly Func<string, InjectionResult>? _injector;
     private readonly CancellationTokenSource _cancellation = new();
     private readonly object _gate = new();
     private TaskbarCreatedListener? _listener;
@@ -25,8 +26,15 @@ internal sealed class TaskbarEngineHost : IAsyncDisposable
     /// <param name="sourceDllPath">The DLL next to the app; the host loads its versioned copy.</param>
     /// <param name="copy">Where the versioned copies live.</param>
     /// <param name="server">The pipe server to serve; the host owns it.</param>
-    public TaskbarEngineHost(string sourceDllPath, VersionedNativeCopy copy, TaskbarPipeServer server)
+    /// <param name="injector">
+    /// Puts the DLL (given its path) into another process than the taskbar's
+    /// explorer; null means explorer, with a TaskbarCreated listener. A custom
+    /// injector is called once, and nothing re-injects it.
+    /// </param>
+    public TaskbarEngineHost(string sourceDllPath, VersionedNativeCopy copy, TaskbarPipeServer server,
+        Func<string, InjectionResult>? injector = null)
     {
+        _injector = injector;
         _sourceDllPath = sourceDllPath;
         _copy = copy;
         _server = server;
@@ -59,7 +67,7 @@ internal sealed class TaskbarEngineHost : IAsyncDisposable
         _copy.Sweep(_loadedPath);
 
         _serverTask = Task.Run(() => _server.RunAsync(_cancellation.Token));
-        _listener = new TaskbarCreatedListener(() => Inject("explorer_restart"));
+        if (_injector is null) _listener = new TaskbarCreatedListener(() => Inject("explorer_restart"));
         return Inject("startup");
     }
 
@@ -68,7 +76,7 @@ internal sealed class TaskbarEngineHost : IAsyncDisposable
     {
         lock (_gate)
         {
-            InjectionResult result = TaskbarHookInjector.Inject(_loadedPath);
+            InjectionResult result = _injector is null ? TaskbarHookInjector.Inject(_loadedPath) : _injector(_loadedPath);
             if (result.Succeeded)
                 DeckleShellTaskbarSource.Log.NativeEngineInjected(trigger);
             else
@@ -89,7 +97,8 @@ internal sealed class TaskbarEngineHost : IAsyncDisposable
         if (!_server.IsConnected) return false;
 
         Task closed = _disconnected.Task;
-        if (!await _server.SendAsync(NativeCommand.Stop).ConfigureAwait(false)) return false;
+        // A failed send still waits: the DLL may have left on its own a moment ago.
+        await _server.SendAsync(NativeCommand.Stop).ConfigureAwait(false);
         await Task.WhenAny(closed, Task.Delay(_unloadTimeout)).ConfigureAwait(false);
         return _unloadReported;
     }
@@ -133,3 +142,5 @@ internal sealed class TaskbarEngineHost : IAsyncDisposable
         _cancellation.Dispose();
     }
 }
+
+

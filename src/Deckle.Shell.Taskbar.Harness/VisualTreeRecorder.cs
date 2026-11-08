@@ -30,6 +30,11 @@ internal sealed class VisualTreeRecorder
 
     public long MillisecondsSinceLastChange => Environment.TickCount64 - Interlocked.Read(ref _lastChangeTicks);
 
+    public void Reset()
+    {
+        lock (_gate) _nodes.Clear();
+    }
+
     public void Record(NativeLogRecord record)
     {
         if (record.Event is not ("visual_add" or "visual_remove")) return;
@@ -87,4 +92,5 @@ internal sealed class VisualTreeRecorder
             Write(text, child, depth + 1);
     }
 }
+
 

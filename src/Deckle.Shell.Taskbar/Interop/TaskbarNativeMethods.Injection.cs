@@ -9,6 +9,12 @@ namespace Deckle.Shell.Taskbar;
 internal static partial class TaskbarNativeMethods
 {
     internal const int WH_CALLWNDPROC = 4;
+    internal const int WH_GETMESSAGE = 3;
+
+    [LibraryImport("user32.dll", EntryPoint = "PostThreadMessageW", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool PostThreadMessage(uint threadId, uint message, nint wParam, nint lParam);
+
     internal const uint SMTO_ABORTIFHUNG = 0x0002;
     internal const uint SMTO_BLOCK = 0x0001;
 
@@ -102,4 +108,5 @@ internal static partial class TaskbarNativeMethods
     internal const uint WM_CLOSE = 0x0010;
     internal const uint WM_DESTROY = 0x0002;
 }
+
 

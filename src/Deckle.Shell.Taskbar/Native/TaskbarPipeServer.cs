@@ -103,8 +103,9 @@ internal sealed class TaskbarPipeServer : IAsyncDisposable
         {
             Stream? client = _client;
             if (client is null) return false;
+            // No flush: a pipe write is delivered when it returns, and Flush on a
+            // pipe whose client already left throws "pipe is broken".
             await client.WriteAsync(bytes, cancellation).ConfigureAwait(false);
-            await client.FlushAsync(cancellation).ConfigureAwait(false);
             return true;
         }
         catch (IOException)
@@ -142,4 +143,5 @@ internal sealed class TaskbarPipeServer : IAsyncDisposable
         return ValueTask.CompletedTask;
     }
 }
+
 

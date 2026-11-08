@@ -74,6 +74,7 @@ namespace deckle::xamldiag
             // RegOpenKeyExW and RegQueryValueExW. TranslucentTB runs without it.
             // CreateWindowExW / CreateWindowInBand hooks, to catch XAML windows
             // created after this point, belong to the same step.
+            self->m_adviseCalled = true;
             HRESULT hr = self->m_diagnostics.as<IVisualTreeService3>()->AdviseVisualTreeChange(self.get());
             if (FAILED(hr))
             {
@@ -81,7 +82,6 @@ namespace deckle::xamldiag
                     { { L"hr", util::HandleText(static_cast<uint32_t>(hr)) } });
                 return;
             }
-            self->m_advised = true;
             Log(LogLevel::Info, L"advised", L"Listening to the XAML visual tree");
         });
     }
@@ -91,7 +91,10 @@ namespace deckle::xamldiag
         m_stopped = true;
         if (m_adviseThread.joinable()) m_adviseThread.join();
 
-        if (!m_advised.exchange(false)) return;
+        // Unadvised even when Advise reported a failure: on this build it can
+        // return E_UNEXPECTED after the callbacks were already registered and
+        // delivered, and a callback left registered keeps this DLL pinned.
+        if (!m_adviseCalled.exchange(false)) return;
 
         HRESULT hr = m_diagnostics.as<IVisualTreeService3>()->UnadviseVisualTreeChange(this);
         if (FAILED(hr))
@@ -105,11 +108,38 @@ namespace deckle::xamldiag
         }
     }
 
-    void VisualTreeWatcher::ReleaseInstance(InstanceHandle handle)
+    // Release is deferred: the diagnostics cannot resolve the handle of a child
+    // whose parent was already released (GetIInspectableFromHandle answers
+    // ERROR_NOT_FOUND), and a parent is reported before its children. So the
+    // handles are queued, and the queue is released at the first callback after
+    // the tree has been quiet for a moment, on the UI thread of that callback,
+    // as the styler does.
+    void VisualTreeWatcher::QueueRelease(InstanceHandle handle)
     {
         if (!m_testHooks) return;
+        std::lock_guard guard(m_releaseLock);
+        m_pendingRelease.push_back(handle);
+    }
+
+    void VisualTreeWatcher::FlushReleasesIfQuiet()
+    {
+        const auto now = std::chrono::steady_clock::now();
+        std::vector<InstanceHandle> pending;
+        {
+            std::lock_guard guard(m_releaseLock);
+            bool quiet = now - m_lastCallback > std::chrono::milliseconds(750);
+            m_lastCallback = now;
+            if (!quiet || m_pendingRelease.empty()) return;
+            pending.swap(m_pendingRelease);
+        }
+
         auto hooks = static_cast<IXamlDiagnosticsTestHooks*>(m_testHooks.get());
-        hooks->UnregisterInstance(handle);
+        for (InstanceHandle handle : pending)
+        {
+            hooks->UnregisterInstance(handle);
+        }
+        Log(LogLevel::Verbose, L"references_released", L"Released the diagnostics references of reported elements",
+            { { L"count", std::to_wstring(pending.size()) } });
     }
 
     HRESULT VisualTreeWatcher::OnVisualTreeChange(ParentChildRelation relation, VisualElement element, VisualMutationType mutationType)
@@ -124,6 +154,7 @@ namespace deckle::xamldiag
         try
         {
             if (m_stopped) return S_OK;
+            FlushReleasesIfQuiet();
 
             if (mutationType == Add)
             {
@@ -131,16 +162,24 @@ namespace deckle::xamldiag
                 try
                 {
                     wf::IInspectable instance{ nullptr };
-                    if (SUCCEEDED(m_diagnostics->GetIInspectableFromHandle(
-                            element.Handle, reinterpret_cast<::IInspectable**>(winrt::put_abi(instance)))) && instance)
+                    HRESULT hr = m_diagnostics->GetIInspectableFromHandle(
+                        element.Handle, reinterpret_cast<::IInspectable**>(winrt::put_abi(instance)));
+                    if (FAILED(hr) || !instance)
+                    {
+                        props = L"!inspectable:" + util::HandleText(static_cast<uint32_t>(hr));
+                    }
+                    else
                     {
                         props = DescribeElement(instance);
                     }
                 }
-                catch (...) { props = L"?"; }
+                catch (winrt::hresult_error const& error)
+                {
+                    props = L"!throw:" + util::HandleText(static_cast<uint32_t>(error.code().value));
+                }
+                catch (...) { props = L"!throw"; }
 
-                // The reference taken above is gone: let the diagnostics drop theirs.
-                ReleaseInstance(element.Handle);
+                QueueRelease(element.Handle);
 
                 Log(LogLevel::Verbose, L"visual_add", L"Element added to the visual tree",
                     {
@@ -150,11 +189,13 @@ namespace deckle::xamldiag
                         { L"type", type.Text() },
                         { L"name", name.Text() },
                         { L"props", props },
+                        { L"tid", std::to_wstring(GetCurrentThreadId()) },
                     });
             }
             else
             {
                 // Only element.Handle is valid on a removal.
+                QueueRelease(element.Handle);
                 Log(LogLevel::Verbose, L"visual_remove", L"Element removed from the visual tree",
                     { { L"h", util::HandleText(element.Handle) } });
             }
@@ -193,4 +234,6 @@ namespace deckle::xamldiag
         if (previous) previous->Unadvise();
     }
 }
+
+
 
