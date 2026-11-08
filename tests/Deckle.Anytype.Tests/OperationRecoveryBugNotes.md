@@ -20,4 +20,4 @@ Regression coverage: `ManagementGesturesTests.ConfirmedCallRejectsANameInsteadOf
 
 Regression coverage: `QueryGesturesTests.UpdateRequiresAStableObjectIdBeforeReadingOrWriting`
 and `SessionGesturesTests.LogRequiresTheReportIdBeforeReadingOrWriting`. The dialogue
-tools, and `dialogue_post` with them, were removed with the Codex client.
+tools, and `dialogue_post` with them, have since been removed.
