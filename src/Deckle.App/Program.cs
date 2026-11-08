@@ -14,6 +14,9 @@ public static class Program
     [STAThread]
     static void Main(string[] args)
     {
+        // Before the supervisor: a staged local copy update replaces this very
+        // folder, so no Deckle may keep running from it (see LocalCopyUpdate).
+        if (LocalCopyUpdate.TryHandOff(args)) return;
         if (CrashSupervisor.TryRun(args)) return;
 
         global::WinRT.ComWrappersSupport.InitializeComWrappers();

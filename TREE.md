@@ -301,6 +301,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── build-locked.ps1
 │   ├── build-run.ps1  — Build the app Build Deckle for the chosen configuration (x64) and, unless told not to, launch…
 │   ├── build-server-watchdog.ps1
+│   ├── deploy-local.ps1  — Update the local copy Build main in Release in a build worktree of its own, check it with the self-ch…
 │   ├── fetch-autocorrect-data.ps1
 │   ├── inspect-context.ps1  — Context inventory Inventory the repository's tracked Markdown context, grouped by loading mode, w…
 │   ├── launch-app.ps1  — Launch the freshest built app Replace the running Deckle instance with the freshest already-built executable…
@@ -359,6 +360,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── BackendReconciliationLease.cs
 │   │   │   ├── BackendSupervisor.cs
 │   │   │   └── BackendTime.cs
+│   │   ├── Dialogues/
+│   │   │   └── DialogueGestures.cs
 │   │   ├── Gateway/
 │   │   │   ├── GatewayContract.cs
 │   │   │   ├── GatewayKeyFingerprint.cs
@@ -417,6 +420,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── McpSurfaceProtocolAdapter.cs
 │   │   ├── Tools/
 │   │   │   ├── AnytypeUtilityToolCatalog.cs
+│   │   │   ├── DialogueToolCatalog.cs
 │   │   │   ├── ManagementToolCatalog.cs
 │   │   │   ├── SchemaAdminToolCatalog.cs
 │   │   │   ├── ToolCatalog.cs
@@ -471,6 +475,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Engine/
 │   │   │   ├── AppAmbientEngineHost.cs
 │   │   │   └── AppTranscriptionEngineHost.cs
+│   │   ├── LocalCopy/
+│   │   │   └── apply-update.ps1
 │   │   ├── SelfCheck/
 │   │   │   ├── ElementImage.cs
 │   │   │   ├── OffscreenWindow.cs
@@ -523,6 +529,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── CrashSupervisor.cs
 │   │   ├── Deckle.App.csproj
 │   │   ├── global.json
+│   │   ├── LocalCopyUpdate.cs
 │   │   ├── LogWindow.Chrome.cs
 │   │   ├── LogWindow.Interaction.cs
 │   │   ├── LogWindow.Model.cs
@@ -1850,6 +1857,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AnytypeUtilityToolCatalogTests.cs
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
+│   │   ├── DialogueToolCatalogTests.cs
 │   │   ├── FakeSecretVault.cs
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensBugNotes.md
@@ -1906,6 +1914,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeletionApprovalRelayTests.cs
 │   │   ├── DevSpaceBugNotes.md
 │   │   ├── DevSpaceTests.cs
+│   │   ├── DialogueGesturesTests.cs
 │   │   ├── DocumentGesturesTests.cs
 │   │   ├── FakeV2Handler.cs
 │   │   ├── GatewayKeyFingerprintTests.cs
@@ -1943,6 +1952,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.App.Tests.csproj
 │   │   ├── DictationRecoveryBugNotes.md
 │   │   ├── HudFeedbackSinkTests.cs
+│   │   ├── LocalCopyApplyUpdateTests.cs
+│   │   ├── LocalCopyUpdateTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── ReswMirrorTests.cs
