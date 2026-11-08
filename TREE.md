@@ -180,6 +180,34 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── primary.png
 │   ├── primary.svg
 │   └── secondary.png
+├── native/
+│   ├── Deckle.Shell.Taskbar.Native/
+│   │   ├── xamldiag/
+│   │   │   ├── element_properties.cpp
+│   │   │   ├── element_properties.h
+│   │   │   ├── tap_connection.cpp
+│   │   │   ├── tap_connection.h
+│   │   │   ├── tap_site.cpp
+│   │   │   ├── tap_site.h
+│   │   │   ├── visual_tree_watcher.cpp
+│   │   │   └── visual_tree_watcher.h
+│   │   ├── channel.cpp
+│   │   ├── channel.h
+│   │   ├── Deckle.Shell.Taskbar.Native.def
+│   │   ├── Deckle.Shell.Taskbar.Native.vcxproj
+│   │   ├── dllmain.cpp
+│   │   ├── engine.cpp
+│   │   ├── engine.h
+│   │   ├── hook_entry.cpp
+│   │   ├── log.cpp
+│   │   ├── log.h
+│   │   ├── pch.cpp
+│   │   ├── pch.h
+│   │   ├── util.cpp
+│   │   ├── util.h
+│   │   └── version.rc
+│   ├── Directory.Build.props
+│   └── Directory.Build.targets
 ├── scripts/
 │   ├── .deckle-scripts/
 │   │   └── manifest.json

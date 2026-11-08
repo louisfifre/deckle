@@ -1,0 +1,6 @@
+LIBRARY
+EXPORTS
+    DeckleTaskbarHookProc
+    DeckleTaskbarNativeVersion
+    DllGetClassObject PRIVATE
+    DllCanUnloadNow PRIVATE

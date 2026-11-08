@@ -1,0 +1,11 @@
+<Project>
+
+  <!-- The native projects opt out of the root Directory.Build.props on purpose.
+       That file sets the C# target framework, Nullable, ImplicitUsings and the
+       dotnet artifacts layout, none of which belongs in a vcxproj. Nothing is
+       imported here: a native project states its own settings. It is built by
+       MSBuild.exe, called from the C# module that ships it, never by
+       `dotnet build` (MSB4278: the dotnet CLI has no C++ targets).
+       Same shape as benchmark/Directory.Build.props. -->
+
+</Project>

@@ -35,4 +35,57 @@
          match the ETW manifest. -->
     <NoWarn>$(NoWarn);IDE1006</NoWarn>
   </PropertyGroup>
-</Project>
+
+  <!-- The injected half of this module: a C++ DLL that explorer.exe loads
+       through a window hook (native/Deckle.Shell.Taskbar.Native). `dotnet
+       build` cannot build a vcxproj (MSB4278), so this target calls
+       MSBuild.exe, found through vswhere, and the produced DLL joins this
+       project's output as Content, which flows to every project that
+       references it (the app's output folder holds it next to Deckle.exe).
+
+       A machine without the C++ build tools (or without Windows SDK 26100
+       headers) still builds the C#: the target warns and skips, and no DLL is
+       copied. The runtime then finds no DLL and reports the engine as
+       unavailable. -->
+  <PropertyGroup>
+    <TaskbarNativeDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..', 'native', 'Deckle.Shell.Taskbar.Native'))</TaskbarNativeDir>
+    <TaskbarNativeOutDir>$([MSBuild]::NormalizeDirectory('$(MSBuildThisFileDirectory)', '..', '..', 'artifacts', 'native', 'Deckle.Shell.Taskbar.Native', '$(Configuration)'))</TaskbarNativeOutDir>
+    <VsWherePath>$([MSBuild]::GetProgramFiles32())\Microsoft Visual Studio\Installer\vswhere.exe</VsWherePath>
+  </PropertyGroup>
+
+  <Target Name="BuildTaskbarNative"
+          BeforeTargets="AssignTargetPaths"
+          Condition="'$(BuildingInsideVisualStudio)' != 'true' or '$(TaskbarNativeInVs)' == 'true'">
+    <Exec Condition="Exists('$(VsWherePath)')"
+          Command="&quot;$(VsWherePath)&quot; -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -find MSBuild\**\Bin\amd64\MSBuild.exe"
+          ConsoleToMSBuild="true"
+          StandardOutputImportance="low"
+          IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="TaskbarNativeMSBuild" />
+    </Exec>
+
+    <PropertyGroup>
+      <!-- vswhere prints one path per line; the first is enough. -->
+      <TaskbarNativeMSBuild Condition="$(TaskbarNativeMSBuild.Contains(';'))">$(TaskbarNativeMSBuild.Split(';')[0])</TaskbarNativeMSBuild>
+    </PropertyGroup>
+
+    <Warning Condition="'$(TaskbarNativeMSBuild)' == '' or !Exists('$(TaskbarNativeMSBuild)')"
+             Code="DECKLE001"
+             Text="MSBuild.exe with the C++ build tools was not found (vswhere). Deckle.Shell.Taskbar.Native.dll is not built; the taskbar engine will be unavailable." />
+
+    <Exec Condition="'$(TaskbarNativeMSBuild)' != '' and Exists('$(TaskbarNativeMSBuild)')"
+          Command="&quot;$(TaskbarNativeMSBuild)&quot; &quot;$(TaskbarNativeDir)Deckle.Shell.Taskbar.Native.vcxproj&quot; -p:Configuration=$(Configuration) -p:Platform=x64 -m:4 -v:m -nologo -nodeReuse:false -lowPriority:true"
+          StandardOutputImportance="low" />
+
+    <ItemGroup Condition="'$(TaskbarNativeMSBuild)' != '' and Exists('$(TaskbarNativeOutDir)Deckle.Shell.Taskbar.Native.dll')">
+      <Content Include="$(TaskbarNativeOutDir)Deckle.Shell.Taskbar.Native.dll"
+               Link="Deckle.Shell.Taskbar.Native.dll"
+               CopyToOutputDirectory="PreserveNewest" />
+      <Content Include="$(TaskbarNativeOutDir)Deckle.Shell.Taskbar.Native.pdb"
+               Link="Deckle.Shell.Taskbar.Native.pdb"
+               CopyToOutputDirectory="PreserveNewest"
+               Condition="'$(Configuration)' == 'Debug'" />
+    </ItemGroup>
+  </Target></Project>
+
+

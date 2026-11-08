@@ -42,13 +42,14 @@ Deckle depends on the following third-party components and data sources. This fi
 - License : MIT — Copyright (c) Clément Grennerat.
 - Used as : studied reference for the three-finger drag mechanics (relative SendInput injection, fractional delta accumulation). Deckle's recognizer is an independent design; no source file is vendored.
 
-## Reserved: GPLv3 code planned for the taskbar module
+## GPLv3 code in the taskbar module
 
-Not yet included. The taskbar module is planned to port GPLv3 code from the projects below. No file from them is in the repository today; when one lands, its entry here gains the copyright line and the path of the ported files.
+The taskbar module's native half (`native/Deckle.Shell.Taskbar.Native`) is adapted from the projects below, both GPL-3.0 like Deckle. The adapted files carry their attribution in a comment.
 
-- TranslucentTB, the ExplorerTAP component — https://github.com/TranslucentTB/TranslucentTB — GPL-3.0, as recorded (version 2026.2) in `docs/research/taskbar-briefs-2026-10-18/taskbar-research-2026-10-17.md`.
-- Windhawk, the engine and the taskbar mods — https://github.com/ramensoftware/windhawk and https://github.com/ramensoftware/windhawk-mods — by Michael Maltsev (m417z) and the mod authors — GPL-3.0, as recorded in `docs/research/taskbar-briefs-2026-10-18/taskbar-research-2026-10-17.md`.
+- TranslucentTB, the ExplorerTAP component, https://github.com/TranslucentTB/TranslucentTB, GPL-3.0 (see `docs/research/taskbar-briefs-2026-10-18/taskbar-research-2026-10-17.md`). Adapted: the XAML Diagnostics connection loop and the one-attempt-per-thread rule (`xamldiag/tap_connection.cpp`), the TAP site and class factory (`xamldiag/tap_site.cpp`), the visual tree watcher (`xamldiag/visual_tree_watcher.cpp`), and the window-hook injection route (`hook_entry.cpp`).
+- Windhawk and its Windows 11 Taskbar Styler mod, by Michael Maltsev (m417z) and the mod authors, https://github.com/ramensoftware/windhawk-mods/blob/main/mods/windows-11-taskbar-styler.wh.cpp, GPL-3.0 (see the same research note). Adapted: the unloadable TAP (releasing the extra reference at `SetSite`), the advise-from-another-thread rule, and the release of element references through `IXamlDiagnosticsTestHooks` (`xamldiag/visual_tree_watcher.cpp`, `xamldiag/tap_site.cpp`).
 
+Both projects are cited for the technique; Deckle's code is its own rewrite around a named-pipe channel, without their third-party libraries.
 ## .NET / NuGet packages
 
 The following third-party packages are referenced across the projects under `src/`. Versions are pinned centrally in `Directory.Packages.props`. Each package ships under its own license. Every license below was read from the package's `.nuspec` (its `license` element, or its `licenseUrl` when no element is present) and, where the nuspec names a license file, from that file, in the local NuGet cache at the pinned version. The package's own files carry the authoritative text.
