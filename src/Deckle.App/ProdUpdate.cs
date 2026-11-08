@@ -4,15 +4,15 @@ using Deckle.Diagnostics;
 
 namespace Deckle.App;
 
-// The local copy is the build of main the maintainer runs every day, deployed
-// by scripts/deploy-local.ps1 into a folder of its own, so that agents build in
+// The prod copy is the build of main the maintainer runs every day, deployed
+// by scripts/deploy-prod.ps1 into a folder of its own, so that agents build in
 // their worktrees while it runs and nobody has to build main by hand. Its root
 // holds four entries:
 //
 //   current\           the build that runs; autostart and shortcuts point here
 //   next\              a complete build waiting to take current\'s place
 //   previous\          the build current\ replaced, kept for a rollback
-//   apply-update.ps1   the helper that swaps them, LocalCopy\apply-update.ps1
+//   apply-update.ps1   the helper that swaps them, Prod\apply-update.ps1
 //                      of the staged build
 //
 // A running Deckle holds every file of its folder open, so next\ can take
@@ -30,7 +30,7 @@ namespace Deckle.App;
 // The path never changes, which is why this layout rather than one folder per
 // version: the autostart entry, the elevated startup task and the shell's own
 // shortcuts all compare against Environment.ProcessPath.
-internal static class LocalCopyUpdate
+internal static class ProdUpdate
 {
     internal const string CurrentFolderName = "current";
     internal const string NextFolderName = "next";
@@ -39,9 +39,9 @@ internal static class LocalCopyUpdate
     // Set by the helper on the start that follows a failed swap, so that start
     // runs the build in place instead of handing off again in a loop. Removed
     // here at once, so the next restart retries the swap.
-    internal const string NoUpdateVariable = "DECKLE_LOCAL_COPY_NO_UPDATE";
+    internal const string NoUpdateVariable = "DECKLE_PROD_NO_UPDATE";
 
-    private const string NoteFileName = "local-copy.txt";
+    private const string NoteFileName = "prod.txt";
 
     // True when the helper took over and Main must return; false when this
     // process is the Deckle that runs.
@@ -63,7 +63,7 @@ internal static class LocalCopyUpdate
             var psi = new ProcessStartInfo
             {
                 // Windows PowerShell ships with every Windows 11; PowerShell 7
-                // is a developer install the local copy does not require.
+                // is a developer install the prod copy does not require.
                 FileName = Path.Combine(Environment.SystemDirectory, "WindowsPowerShell", "v1.0", "powershell.exe"),
                 UseShellExecute = false,
                 CreateNoWindow = true,
@@ -91,7 +91,7 @@ internal static class LocalCopyUpdate
         }
     }
 
-    // The local copy root when baseDirectory is its current\ folder and a
+    // The prod copy root when baseDirectory is its current\ folder and a
     // staged build waits in next\ with the helper beside it; null otherwise,
     // which is every checkout, worktree and installed build.
     internal static string? FindPendingRoot(string baseDirectory)
@@ -110,7 +110,7 @@ internal static class LocalCopyUpdate
 
     // The diagnostics stack does not exist yet, so like the crash supervisor
     // this leaves a capped line in the diagnostics folder; the helper's own
-    // steps go to apply-update.log at the local copy root.
+    // steps go to apply-update.log at the prod copy root.
     private static void Note(string line)
         => NoteFile.Append(
             Path.Combine(AppPaths.DiagnosticsDirectory, NoteFileName),

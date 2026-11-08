@@ -3,16 +3,16 @@ using Xunit;
 
 namespace Deckle.App.Tests;
 
-// The update helper of the local copy, run the way LocalCopyUpdate runs it:
-// under Windows PowerShell 5.1, on a temporary local copy. Its last step starts
+// The update helper of the prod copy, run the way ProdUpdate runs it:
+// under Windows PowerShell 5.1, on a temporary prod copy. Its last step starts
 // current\Deckle.exe, so a copy of rundll32.exe, which exits at once and opens
 // no window when given no arguments, stands in for the app.
 [Trait("Category", "integration")]
-public sealed class LocalCopyApplyUpdateTests : IDisposable
+public sealed class ProdApplyUpdateTests : IDisposable
 {
-    private readonly string _root = Path.Combine(Path.GetTempPath(), "Deckle-LocalCopy-" + Guid.NewGuid().ToString("N")[..8]);
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "Deckle-Prod-" + Guid.NewGuid().ToString("N")[..8]);
 
-    public LocalCopyApplyUpdateTests()
+    public ProdApplyUpdateTests()
     {
         foreach (string folder in new[] { "current", "next" })
         {
@@ -20,7 +20,7 @@ public sealed class LocalCopyApplyUpdateTests : IDisposable
             File.Copy(Path.Combine(Environment.SystemDirectory, "rundll32.exe"), Path.Combine(_root, folder, "Deckle.exe"));
             File.WriteAllText(Path.Combine(_root, folder, "build.txt"), folder);
         }
-        File.Copy(HelperSource(), Path.Combine(_root, LocalCopyUpdate.ApplyScriptName));
+        File.Copy(HelperSource(), Path.Combine(_root, ProdUpdate.ApplyScriptName));
     }
 
     public void Dispose()
@@ -73,7 +73,7 @@ public sealed class LocalCopyApplyUpdateTests : IDisposable
         foreach (string arg in new[]
         {
             "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass",
-            "-File", Path.Combine(_root, LocalCopyUpdate.ApplyScriptName), "-Root", _root,
+            "-File", Path.Combine(_root, ProdUpdate.ApplyScriptName), "-Root", _root,
         })
             psi.ArgumentList.Add(arg);
 
@@ -95,6 +95,6 @@ public sealed class LocalCopyApplyUpdateTests : IDisposable
         while (dir is not null && !File.Exists(Path.Combine(dir.FullName, "Directory.Packages.props")))
             dir = dir.Parent;
         if (dir is null) throw new InvalidOperationException("repository root not found");
-        return Path.Combine(dir.FullName, "src", "Deckle.App", "LocalCopy", LocalCopyUpdate.ApplyScriptName);
+        return Path.Combine(dir.FullName, "src", "Deckle.App", "Prod", ProdUpdate.ApplyScriptName);
     }
 }
