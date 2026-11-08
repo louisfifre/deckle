@@ -12,6 +12,10 @@ internal sealed class HarnessOptions
     public bool Visual { get; private init; }
     public string? TargetProcess { get; private init; }
     public bool Packaged { get; private init; }
+    public string? DocumentOut { get; private init; }
+    public TaskbarCustomization Customization { get; private init; } = new();
+    public string? DumpFile { get; private init; }
+    public double DumpAfter { get; private init; } = 6;
 
     public static HarnessOptions Parse(string[] args)
     {
@@ -19,7 +23,9 @@ internal sealed class HarnessOptions
         double treeAfter = 6;
         double? stopAfter = null;
         bool visual = false, packaged = false;
-        string? target = null;
+        string? target = null, documentOut = null, dump = null;
+        double dumpAfter = 6;
+        var customization = new TaskbarCustomization();
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -36,6 +42,17 @@ internal sealed class HarnessOptions
                 case "--visual": visual = true; break;
                 case "--process": target = Next(); break;
                 case "--packaged": packaged = true; break;
+                case "--doc-out": documentOut = Next(); break;
+                case "--bg":
+                    customization = customization with { Background = Enum.Parse<TaskbarBackground>(Next(), ignoreCase: true) };
+                    break;
+                case "--tray-pitch":
+                    customization = customization with { TrayIconPitch = int.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture) };
+                    break;
+                case "--tighten-quick-settings": customization = customization with { TightenQuickSettings = true }; break;
+                case "--clock-date-above-time": customization = customization with { Clock = ClockCustomization.DateAboveTime }; break;
+                case "--dump": dump = Next(); break;
+                case "--dump-after": dumpAfter = double.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture); break;
                 default: throw new ArgumentException($"unknown option {args[i]}");
             }
         }
@@ -44,6 +61,7 @@ internal sealed class HarnessOptions
         {
             DllPath = dll, Root = root, SendFile = send, TreeFile = tree, TreeAfter = treeAfter,
             StopAfter = stopAfter, ControlFile = control, Visual = visual, TargetProcess = target, Packaged = packaged,
+            DocumentOut = documentOut, Customization = customization, DumpFile = dump, DumpAfter = dumpAfter,
         };
     }
 }

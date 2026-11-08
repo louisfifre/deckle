@@ -1645,6 +1645,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── NativeLogRelay.cs
 │   │   │   ├── NativeMessage.cs
 │   │   │   ├── TaskbarCreatedListener.cs
+│   │   │   ├── TaskbarCustomization.cs
+│   │   │   ├── TaskbarDocumentBuilder.cs
 │   │   │   ├── TaskbarEngineHost.cs
 │   │   │   ├── TaskbarHookInjector.cs
 │   │   │   ├── TaskbarPipeServer.cs
@@ -1683,6 +1685,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HarnessCommand.cs
 │   │   ├── HarnessOptions.cs
 │   │   ├── Program.cs
+│   │   ├── TreeDumpCollector.cs
 │   │   └── VisualTreeRecorder.cs
 │   ├── Deckle.Shell.TaskbarCover/
 │   │   ├── Interop/
@@ -2478,6 +2481,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── NativeMessageTests.cs
 │   │   │   ├── NativeSelectorLibrary.cs
 │   │   │   ├── NativeSelectorTests.cs
+│   │   │   ├── TaskbarDocumentBuilderTests.cs
 │   │   │   ├── TaskbarPipeServerTests.cs
 │   │   │   └── VersionedNativeCopyTests.cs
 │   │   ├── Deckle.Shell.Taskbar.Tests.csproj

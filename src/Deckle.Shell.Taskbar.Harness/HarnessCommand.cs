@@ -8,6 +8,14 @@ internal static class HarnessCommand
     public static async Task<int> RunAsync(string[] args)
     {
         var options = HarnessOptions.Parse(args);
+        if (options.DocumentOut is { } documentOut)
+        {
+            await File.WriteAllTextAsync(documentOut, TaskbarDocumentBuilder.Build(options.Customization));
+            Print($"doc     {TaskbarDocumentBuilder.Rules(options.Customization).Count} rules written to {documentOut}");
+            return 0;
+        }
+
+        var dumps = new TreeDumpCollector();
         string source = options.DllPath ?? Path.Combine(AppContext.BaseDirectory, VersionedNativeCopy.DllName);
         if (!File.Exists(source))
         {
@@ -53,6 +61,12 @@ internal static class HarnessCommand
                     if (!isTree || options.Visual)
                         Print($"{record.Level.ToString().ToLowerInvariant(),-7} {record.Event}  {record.Message}  {record.FieldsText()}");
                     break;
+                case NativeStatus status:
+                    PrintStatus(status);
+                    break;
+                case NativeTreeDump or NativeTreeEnd:
+                    dumps.Handle(message, Print);
+                    break;
                 case NativeUnreadableMessage unreadable:
                     Print("unreadable  " + unreadable.Line);
                     break;
@@ -66,7 +80,7 @@ internal static class HarnessCommand
             ? "inject  hook sent to explorer; waiting for the DLL (Ctrl+C stops it)"
             : $"inject  FAILED at {injected.Step} (win32 {injected.Win32Error})");
 
-        _ = Task.Run(() => WatchAsync(options, host, recorder, stop, () => connectedAt));
+        _ = Task.Run(() => WatchAsync(options, host, recorder, dumps, stop, () => connectedAt));
 
         await stop.Task;
         return await StopAsync(host, recorder, options);
@@ -74,12 +88,13 @@ internal static class HarnessCommand
 
     // Timers and the control file, on a background task.
     private static async Task WatchAsync(
-        HarnessOptions options, TaskbarEngineHost host, VisualTreeRecorder recorder,
+        HarnessOptions options, TaskbarEngineHost host, VisualTreeRecorder recorder, TreeDumpCollector dumps,
         TaskCompletionSource stop, Func<long> connectedAt)
     {
         var started = Stopwatch.StartNew();
         bool sent = false;
         bool treeWritten = false;
+        bool dumpRequested = false;
         while (!stop.Task.IsCompleted)
         {
             await Task.Delay(200);
@@ -105,6 +120,13 @@ internal static class HarnessCommand
                 WriteTree(recorder, tree);
             }
 
+            if (host.IsConnected && !dumpRequested && options.DumpFile is { } dumpFile && at != 0
+                && Environment.TickCount64 - at > options.DumpAfter * 1000 && recorder.MillisecondsSinceLastChange > 1500)
+            {
+                dumpRequested = true;
+                await dumps.RequestAsync(host, dumpFile);
+            }
+
             if (options.ControlFile is { } control && File.Exists(control))
             {
                 string[] lines;
@@ -117,6 +139,7 @@ internal static class HarnessCommand
                     if (line == "ping") await host.SendAsync(NativeCommand.Ping);
                     else if (line.StartsWith("send ")) await SendFileAsync(host, line[5..].Trim());
                     else if (line.StartsWith("tree ")) WriteTree(recorder, line[5..].Trim());
+                    else if (line.StartsWith("dump ")) await dumps.RequestAsync(host, line[5..].Trim());
                     else Print("control  unknown command: " + line);
                 }
             }
@@ -135,6 +158,17 @@ internal static class HarnessCommand
         {
             Print($"send    {file} failed: {exception.Message}");
         }
+    }
+
+    private static void PrintStatus(NativeStatus status)
+    {
+        Print($"status  generation {status.Generation}{(status.Settled ? ", settled" : "")}");
+        foreach (NativeRuleState rule in status.Rules.Concat(status.Behaviors))
+        {
+            Print($"        {rule.State,-13} {rule.Id,-26} matched={rule.Matched} active={rule.Active} reasserted={rule.Reasserted} contested={rule.Contested}"
+                  + (rule.Error.Length > 0 ? $"  error: {rule.Error}" : ""));
+        }
+        foreach (string problem in status.Problems) Print("        problem: " + problem);
     }
 
     private static void WriteTree(VisualTreeRecorder recorder, string path)
@@ -218,7 +252,7 @@ internal static class HarnessCommand
         return condition();
     }
 
-    private static void Print(string line) =>
+    internal static void Print(string line) =>
         Console.WriteLine($"{DateTime.Now:HH:mm:ss.fff} {line}");
 }
 
