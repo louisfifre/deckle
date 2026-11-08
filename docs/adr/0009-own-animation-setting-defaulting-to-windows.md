@@ -4,7 +4,7 @@ description: Deckle's own animations follow a Deckle setting, Same as Windows by
 
 # ADR-0009 — Give Deckle its own animation setting, defaulting to Windows
 
-**Status** — accepted 2026-11-07
+**Status** — accepted 2026-11-07, amended 2026-11-08 (Reduced shows no processing outline; a one-time notification offers the setting)
 
 ## Context
 
@@ -22,7 +22,7 @@ Deckle MUST read one setting, `Appearance.Animations`, for every animation it dr
 - **On**: Deckle animates whatever Windows says.
 - **Reduced**: Deckle does not animate, whatever Windows says.
 
-The setting sits on the General page, beside the theme, because it acts on all of Deckle and not on one module. Under Reduced, every state stays visible without motion: the outline shows, still, and live measurements such as the microphone level and the pause countdown keep being written, only without the glide between samples.
+The setting sits on the General page, beside the theme, because it acts on all of Deckle and not on one module. A person whose Windows animations are off, and who never chose for Deckle, is offered Deckle's own animations once, by a notification at launch: the setup wizard cannot carry the choice, since its first process cannot write the settings yet and its second shows no page when nothing is left to download. Under Reduced, nothing that turns is shown still: Transcribing and Rewriting show no outline and no material in the digits, only the stopped clock, because a turning material frozen mid-turn reads as broken. Live measurements keep being written, only without the glide between samples: the Recording outline still answers the microphone, and the pause countdown still runs.
 
 Animations that WinUI draws itself (page transitions, control states) keep following Windows: Deckle does not drive them.
 

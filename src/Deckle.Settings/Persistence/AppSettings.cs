@@ -79,10 +79,15 @@ public sealed class PasteSettings
 // itself (Deckle.Hud.AnimationPreference, ADR-0009). "System" follows the
 // Windows "Animation effects" preference; the two others override it, because
 // that one switch also serves people who only dislike Windows's own motion.
+//
+// AnimationsChoiceOffered records that the one-time notification offering
+// Deckle's own animations, to a person whose Windows animations are off, has
+// been shown (App.Animations.cs). Once shown, it never comes back.
 public sealed class AppearanceSettings
 {
     public string Theme { get; set; } = "System";
     public string Animations { get; set; } = "System";
+    public bool AnimationsChoiceOffered { get; set; }
 }
 
 // HUD overlay displayed during recording/transcription.

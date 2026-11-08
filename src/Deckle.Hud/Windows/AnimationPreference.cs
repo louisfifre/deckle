@@ -57,8 +57,28 @@ public sealed class AnimationPreference
         }
     }
 
+    // The Windows "Animation effects" preference alone, for the one-time offer
+    // of Deckle's own animations (ShouldOfferOwnAnimations).
+    public bool WindowsAnimationsEnabled
+    {
+        get
+        {
+            lock (_sync) return _windowsEnabled;
+        }
+    }
+
     // Raised with the new effective value, only when it changes.
     public event Action<bool>? Changed;
+
+    // Whether to offer, once, Deckle's own animations: only to a person whose
+    // Windows animations are off and who never chose for Deckle, since that
+    // person gets a HUD with no processing outline without having asked for
+    // it (ADR-0009). An unknown mode counts as "System", as in Resolve.
+    public static bool ShouldOfferOwnAnimations(
+        string? mode, bool windowsAnimationsEnabled, bool alreadyOffered)
+        => !alreadyOffered
+           && !windowsAnimationsEnabled
+           && mode is not (ModeOn or ModeReduced);
 
     // The one rule, kept pure so a test holds it. An unknown mode (a value
     // typed by hand in settings.json) falls back to the Windows preference,

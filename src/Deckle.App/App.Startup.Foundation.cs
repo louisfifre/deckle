@@ -185,6 +185,8 @@ public partial class App
         dispatcher.Catalog.Register(PlaygroundNotifications.All);
         // The updater is shell, not a presence-gated module, so it always registers.
         dispatcher.Catalog.Register(Deckle.Setup.SetupNotifications.All);
+        // Appearance is shell too: the offer of Deckle's own animations.
+        dispatcher.Catalog.Register(AnimationNotifications.All);
         // The MCP delete asks its second validation here. Registered whatever
         // the Anytype runtime does, since the approval only shows it on demand.
         dispatcher.Catalog.Register(AnytypeNotifications.All);

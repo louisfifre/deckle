@@ -1393,6 +1393,22 @@
   <data name="AutocorrectNotifications_Enroll_Decline" xml:space="preserve">
     <value>No thanks</value>
   </data>
+  <!-- One-time offer of Deckle's own animations, shown when Windows animation
+       effects are off and Deckle follows them. The descriptor lives in
+       AnimationNotifications.cs (in the App, so Deckle.Hud stays free of the
+       Notifications dependency). -->
+  <data name="AnimationNotifications_Offer_Title" xml:space="preserve">
+    <value>Turn on Deckle's animations?</value>
+  </data>
+  <data name="AnimationNotifications_Offer_Body" xml:space="preserve">
+    <value>Windows animation effects are off, so Deckle shows no outline while it transcribes. You can turn Deckle's animations on and leave Windows as it is.</value>
+  </data>
+  <data name="AnimationNotifications_Offer_TurnOn" xml:space="preserve">
+    <value>Turn on</value>
+  </data>
+  <data name="AnimationNotifications_Offer_LeaveOff" xml:space="preserve">
+    <value>Leave off</value>
+  </data>
   <data name="Setup_StepTitle_Modules" xml:space="preserve">
     <value>Choose your modules</value>
   </data>
