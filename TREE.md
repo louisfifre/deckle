@@ -1006,6 +1006,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeCode.cs
 │   │   ├── HomeCollectionWriter.cs
 │   │   ├── HomeDeleteRefusalReasons.cs
+│   │   ├── HomeErrands.cs
 │   │   ├── HomeGestures.cs
 │   │   ├── HomeMcp.cs
 │   │   ├── HomeNameGuard.cs
@@ -2243,6 +2244,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeBodyTests.cs
 │   │   ├── HomeCodeTests.cs
 │   │   ├── HomeDeleteApprovalTests.cs
+│   │   ├── HomeErrandsTests.cs
 │   │   ├── HomeGesturesBugNotes.md
 │   │   ├── HomeGesturesTests.cs
 │   │   ├── HomeMcpTests.cs

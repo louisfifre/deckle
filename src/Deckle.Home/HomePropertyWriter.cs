@@ -121,7 +121,9 @@ internal sealed class HomePropertyWriter(
     private static IEnumerable<JsonNode?> Enumerate(JsonNode value) =>
         value is JsonArray array ? array : new JsonNode?[] { value };
 
-    private async Task<IReadOnlyList<SchemaTagInfo>> ReadTagsAsync(
+    // The live options of a select, read whole: an open vocabulary grows in
+    // the space, so its options are never taken from the compiled schema.
+    public async Task<IReadOnlyList<SchemaTagInfo>> ReadTagsAsync(
         SchemaPropertyInfo property, CancellationToken ct)
     {
         var result = new Dictionary<string, SchemaTagInfo>(StringComparer.Ordinal);

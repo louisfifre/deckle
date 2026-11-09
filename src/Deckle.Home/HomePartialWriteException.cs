@@ -25,7 +25,8 @@ public sealed class HomePartialWriteException : Exception
         NotApplied = notApplied;
     }
 
-    // "create" or "update".
+    // "create", "update", or the name of a gesture that writes item by item
+    // (product_need, product_taken).
     public string Gesture { get; }
 
     // Items whose writes all went through, as the gesture's digest names them.
@@ -100,6 +101,34 @@ public sealed class HomePartialWriteException : Exception
         lines.Add("Cause : " + cause.Message);
         return new HomePartialWriteException(
             string.Join("\n", lines), "update", applied, interrupted, notAttempted, cause);
+    }
+
+    // A gesture whose items each create or patch one object, such as the
+    // errands: the lines are the gesture's own digest lines.
+    internal static HomePartialWriteException ForSteps(
+        string gesture,
+        IReadOnlyList<string> applied,
+        string? interrupted,
+        IReadOnlyList<string> notAttempted,
+        Exception cause)
+    {
+        var lines = new List<string> { $"{gesture} interrompu : le lot n’est appliqué qu’en partie." };
+        if (applied.Count > 0)
+        {
+            lines.Add("Appliqués :");
+            lines.AddRange(applied.Select(item => "- " + item));
+        }
+        if (interrupted is not null)
+            lines.Add($"Échec sur : {interrupted} — non confirmé ; vérifie avec get ou search avant de le refaire.");
+        if (notAttempted.Count > 0)
+        {
+            lines.Add("Jamais tentés :");
+            lines.AddRange(notAttempted.Select(item => "- " + item));
+        }
+        lines.Add("Ne renvoie pas le lot entier : relance seulement ce qui manque.");
+        lines.Add("Cause : " + cause.Message);
+        return new HomePartialWriteException(
+            string.Join("\n", lines), gesture, applied, interrupted, notAttempted, cause);
     }
 }
 

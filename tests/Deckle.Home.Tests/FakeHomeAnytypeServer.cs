@@ -155,6 +155,27 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         id, HomeSchema.Types.Product, name,
         CheckboxProperty("done", "Done", done));
 
+    // A product as the errands see it: needed or not, a category by its
+    // option key, a quantity, and the archive box.
+    public static JsonObject ShoppingProduct(
+        string id, string name, bool needed, string? categoryKey = null, double? quantity = null, bool archived = false)
+    {
+        var properties = new List<JsonObject>
+        {
+            CheckboxProperty(HomeSchema.Properties.Needed, "Prendre", needed),
+            CheckboxProperty(HomeSchema.Properties.Archived, "Archivé", archived),
+        };
+        if (categoryKey is not null)
+            properties.Add(SelectProperty(
+                HomeSchema.Properties.ProductCategory, "Catégorie de produit", categoryKey, categoryKey));
+        if (quantity is double amount)
+            properties.Add(new JsonObject
+            {
+                ["key"] = HomeSchema.Properties.Quantity, ["name"] = "Quantité", ["format"] = "number", ["number"] = amount,
+            });
+        return Object(id, HomeSchema.Types.Product, name, [.. properties]);
+    }
+
     public static JsonObject Zone(string id, string name) => Object(
         id, HomeSchema.Types.Zone, name);
 

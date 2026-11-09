@@ -114,6 +114,7 @@ public static class HomeSchema
         public const string LastRepotting = "last_repotting";
         public const string Horizon = "horizon";
         public const string Archived = "archived";
+        public const string Needed = "needed";
         public const string ProductCategory = "product_category";
         public const string About = "about";
         public const string State = "state";

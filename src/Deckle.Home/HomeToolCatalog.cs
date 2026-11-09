@@ -107,8 +107,125 @@ public static class HomeToolCatalog
                 ToolExecutionContract.OverwritingIdempotent),
 
             HomeTypedToolCatalog.PointDictateTool(gestures),
+
+            new ToolDescriptor(
+                "product_need",
+                "Put products on the errand list (Prendre). Each name is matched to an existing product: the same name, case and accents aside, is that product, set needed (and its category or quantity when given; an archived one comes back). A name only near an existing one (plural, punctuation) refuses the batch with the candidates: retry with the exact name or id, or force: true for a different product. An unknown name creates the product, needed. The whole batch is matched before the first write.",
+                ObjectSchema(required:
+                [
+                    ("items", BoundedArray(
+                        "Products needed.",
+                        ObjectSchema(
+                            required: [("name", StringSchema("Product name, or its id."))],
+                            optional:
+                            [
+                                ("product_category", StringSchema(ProductCategoryDescription())),
+                                ("quantity", new JsonObject { ["type"] = "number", ["minimum"] = 0, ["description"] = "Quantity to buy." }),
+                                ("force", BooleanSchema("Create a new product even though one has a near name.")),
+                            ]))),
+                ]),
+                (args, ct) => gestures().ProductNeedAsync(ProductNeeds(args), ct),
+                ToolExecutionContract.OverwritingIdempotent),
+
+            new ToolDescriptor(
+                "product_taken",
+                "Take products off the errand list once bought. Each name is matched like product_need: the same name sets needed to false, a near name refuses the batch with the candidates (retry with the exact name or id), an unknown name creates the product already taken, so buying teaches the space a product.",
+                ObjectSchema(required:
+                [
+                    ("items", BoundedArray("Names (or ids) of the products taken.", new JsonObject { ["type"] = "string" })),
+                ]),
+                (args, ct) => gestures().ProductTakenAsync(ProductNames(args), ct),
+                ToolExecutionContract.OverwritingIdempotent),
+
+            new ToolDescriptor(
+                "product_list",
+                "The errand list: products needed and not archived, grouped by category in the order of the category options, products without a category last. Optionally one category only.",
+                ObjectSchema(optional: [("product_category", StringSchema(ProductCategoryDescription()))]),
+                async (args, ct) =>
+                {
+                    RequireOnly(args ?? new JsonObject(), ["product_category"], "product_list");
+                    HomeProductList list = await gestures().ProductListAsync(
+                        OptionalString(args, "product_category"), ct).ConfigureAwait(false);
+                    return new ToolOutput(list.Text, list.Data);
+                },
+                ToolExecutionContract.ReadOnly) { OutputSchema = ProductListOutputSchema() },
         ];
     }
+
+    private static string ProductCategoryDescription() =>
+        "Product category key or label. Options: "
+        + string.Join(", ", HomeSchema.TargetSeededVocabularies[HomeSchema.Properties.ProductCategory]
+            .Select(key => HomeSchema.OptionLabel(HomeSchema.Properties.ProductCategory, key)))
+        + "; options the space grew also resolve.";
+
+    private static JsonObject BoundedArray(string description, JsonObject items) => new()
+    {
+        ["type"] = "array",
+        ["minItems"] = 1,
+        ["maxItems"] = 100,
+        ["description"] = description,
+        ["items"] = items,
+    };
+
+    private static IReadOnlyList<HomeProductNeed> ProductNeeds(JsonObject? args)
+    {
+        RequireOnly(args ?? new JsonObject(), ["items"], "product_need");
+        JsonArray array = RequiredArray(args, "items");
+        var result = new List<HomeProductNeed>(array.Count);
+        for (int position = 0; position < array.Count; position++)
+        {
+            JsonObject item = RequiredObject(array[position], $"items[{position}]");
+            RequireOnly(item, ["name", "product_category", "quantity", "force"], $"items[{position}]");
+            result.Add(new HomeProductNeed(
+                RequiredString(item, "name"),
+                OptionalString(item, "product_category"),
+                OptionalNumber(item, "quantity"),
+                OptionalBoolean(item, "force") ?? false));
+        }
+        return result;
+    }
+
+    private static IReadOnlyList<string> ProductNames(JsonObject? args)
+    {
+        RequireOnly(args ?? new JsonObject(), ["items"], "product_taken");
+        return RequiredArray(args, "items").Select((node, position) =>
+                node is JsonValue value && value.TryGetValue<string>(out string? name) && name is not null
+                    ? name
+                    : throw new ArgumentException($"items[{position}] must be a product name.", "items"))
+            .ToArray();
+    }
+
+    private static double? OptionalNumber(JsonObject? args, string name)
+    {
+        if (args is null || !args.TryGetPropertyValue(name, out JsonNode? node) || node is null) return null;
+        if (node is JsonValue value && value.TryGetValue<double>(out double number)) return number;
+        throw new ArgumentException($"Argument '{name}' must be a number.", name);
+    }
+
+    private static JsonObject ProductListOutputSchema() => ObjectSchema(required:
+    [
+        ("groups", new JsonObject
+        {
+            ["type"] = "array",
+            ["items"] = ObjectSchema(required:
+            [
+                ("category", new JsonObject
+                {
+                    ["type"] = new JsonArray("string", "null"),
+                    ["description"] = "Option key, a grown option's name, or null for products without a category.",
+                }),
+                ("label", StringSchema("Category label as shown.")),
+                ("items", new JsonObject
+                {
+                    ["type"] = "array",
+                    ["items"] = ObjectSchema(
+                        required: [("id", StringSchema("Product id.")), ("name", StringSchema("Product name."))],
+                        optional: [("quantity", new JsonObject { ["type"] = "number" })]),
+                }),
+            ]),
+        }),
+        ("total", new JsonObject { ["type"] = "integer" }),
+    ]);
 
     private static IEnumerable<string> InputTypeKeys() => HomeSchema.CreatableTypes;
 

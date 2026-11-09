@@ -17,6 +17,7 @@ public class HomeToolCatalogTests
     private static readonly string[] ExpectedNames =
     [
         "get", "search", "delete", "complete", "worksite_overview", "archive", "point_dictate",
+        "product_need", "product_taken", "product_list",
         .. TypeKeys.SelectMany(type => new[] { type + "_create", type + "_update" }),
     ];
 

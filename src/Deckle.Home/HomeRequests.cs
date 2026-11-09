@@ -49,3 +49,13 @@ public sealed record HomeSearchFilter(
     bool? Archived = null);
 
 public sealed record HomeSearchPage(string Text, JsonObject Data);
+
+// One errand of product_need. Force creates a new product even though one
+// with a near name exists.
+public sealed record HomeProductNeed(
+    string Name,
+    string? ProductCategory = null,
+    double? Quantity = null,
+    bool Force = false);
+
+public sealed record HomeProductList(string Text, JsonObject Data);
