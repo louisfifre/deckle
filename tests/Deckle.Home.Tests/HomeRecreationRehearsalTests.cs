@@ -78,6 +78,9 @@ public sealed class HomeRecreationRehearsalTests
 
         Write($"Feuille écrite : {sheetPath}");
         Write($"Objets exportés : {report.Exported}.");
+        if (HomeReplaySheet.Load(sheetPath).Structure is { } structure)
+            Write("Structure exportée : "
+                + string.Join(", ", structure.Report.Select(pair => $"{pair.Key} {pair.Value}")) + ".");
         Assert.True(File.Exists(sheetPath));
     }
 

@@ -75,6 +75,11 @@ internal sealed class HomeRecreationRehearsal(AnytypeApiClient api, AnytypeSpace
     {
         HomeReplaySheet sheet = await new HomeSpaceExporter(api)
             .ExportAsync(sourceId, sourceAlias.Trim(), DateTimeOffset.Now, ct).ConfigureAwait(false);
+
+        // The structure (type settings and views, section-collection views,
+        // templates, widgets), read after the objects and saved with them.
+        sheet.Structure = await new HomeStructureExporter(api).ExportAsync(sourceId, ct).ConfigureAwait(false);
+        sheet.Version = HomeReplaySheet.StructureVersion;
         sheet.Save(sheetPath);
         return sheet;
     }
@@ -111,11 +116,42 @@ internal sealed class HomeRecreationRehearsal(AnytypeApiClient api, AnytypeSpace
         HomeComparison comparison = await new HomeRecreationComparer(api)
             .CompareAsync(sheet, targetId, HomeReplaySheet.Beside(sheetPath, "compare"), ct).ConfigureAwait(false);
 
-        // (e) The counts beside the sheet.
+        // (e) The structure, after the objects it names exist: write on the
+        // target, read back, compare. A sheet exported before the structure was
+        // carried has none.
+        HomeStructureResult? structure = sheet.Structure is null
+            ? null
+            : await RecreateStructureAsync(sheet.Structure, replay, targetId, sheetPath, ct).ConfigureAwait(false);
+
+        // (f) The counts beside the sheet.
         var result = new HomeRehearsalResult(
-            sheetPath, sheet.Report, preview.Actions.Count, addedOptions, replay, comparison);
+            sheetPath, sheet.Report, preview.Actions.Count, addedOptions, replay, comparison, structure);
         HomeReplaySheet.WriteJson(HomeReplaySheet.Beside(sheetPath, "rehearsal"), result.Counts());
         return result;
+    }
+
+    // A refusal of the API is counted inside the writer. What is not a refusal
+    // (an answer nobody planned for) is kept as the step's failure, so the
+    // counts of the objects, already measured, are still written.
+    internal async Task<HomeStructureResult> RecreateStructureAsync(
+        HomeStructure structure, HomeReplayReport replay, string targetId, string sheetPath, CancellationToken ct)
+    {
+        try
+        {
+            HomeStructureOutcome outcome = await new HomeStructureWriter(api, targetId)
+                .WriteAsync(structure, replay.CreatedIds, HomeReplaySheet.Beside(sheetPath, "structure"), ct)
+                .ConfigureAwait(false);
+            HomeStructureComparison comparison = await new HomeStructureComparer(api)
+                .CompareAsync(outcome.Plan, targetId, HomeReplaySheet.Beside(sheetPath, "structure-compare"), ct)
+                .ConfigureAwait(false);
+            return new HomeStructureResult(structure.Report, outcome.Report, comparison, null);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            HomeReplaySheet.WriteJson(
+                HomeReplaySheet.Beside(sheetPath, "structure-error"), new { type = ex.GetType().Name, message = ex.Message });
+            return new HomeStructureResult(structure.Report, null, null, ex.GetType().Name);
+        }
     }
 
     internal static void RefuseUnsafeTarget(string sourceId, string targetAlias, string targetId)
@@ -192,7 +228,8 @@ internal sealed record HomeRehearsalResult(
     int SchemaActions,
     int AddedOptions,
     HomeReplayReport Replay,
-    HomeComparison Comparison)
+    HomeComparison Comparison,
+    HomeStructureResult? Structure = null)
 {
     public string Summary()
     {
@@ -218,6 +255,31 @@ internal sealed record HomeRehearsalResult(
         text.Append($"  Valeurs : {Comparison.ValuesCompared} comparée(s), {Comparison.ValuesDifferent} différente(s) "
             + $"({Counts(Comparison.DifferentByField)})"
             + (Comparison.CollectionsUnread ? " ; appartenances non relues." : "."));
+        text.AppendLine();
+        text.Append(StructureSummary());
+        return text.ToString();
+    }
+
+    private string StructureSummary()
+    {
+        static string Counts(IReadOnlyDictionary<string, int> counts) =>
+            counts.Count == 0 ? "aucun" : string.Join(", ", counts.Select(pair => $"{pair.Key} {pair.Value}"));
+
+        if (Structure is null)
+            return "Structure : absente de la feuille (exportée avant son report), rien à recréer.";
+        var text = new StringBuilder();
+        text.AppendLine($"Structure, export : {Counts(Structure.Exported)}.");
+        if (Structure.Failure is not null)
+            return text.Append($"Structure, écriture interrompue : {Structure.Failure} (détail dans le fichier structure-error).")
+                .ToString();
+
+        HomeStructureWriteReport write = Structure.Write!;
+        HomeStructureComparison read = Structure.Comparison!;
+        text.AppendLine($"Structure, écriture : {Counts(write.Written)}.");
+        text.AppendLine($"  Refus : {Counts(write.Refused)} ; introuvables sur la cible : {Counts(write.Missing)}.");
+        text.AppendLine($"  Non repris (propriété ou id sans place sur le nouveau modèle) : {Counts(write.Dropped)}.");
+        text.Append($"Structure, relecture : {read.Compared} fait(s) comparé(s), {read.Different} différent(s) "
+            + $"({Counts(read.DifferentByField)}) ; illisibles : {Counts(read.Unread)}.");
         return text.ToString();
     }
 
@@ -266,6 +328,45 @@ internal sealed record HomeRehearsalResult(
                 ["different_by_field"] = Map(Comparison.DifferentByField),
                 ["collections_unread"] = Comparison.CollectionsUnread,
             },
+            ["structure"] = StructureCounts(),
         };
     }
+
+    private JsonNode StructureCounts()
+    {
+        static JsonObject Map(IReadOnlyDictionary<string, int> counts)
+        {
+            var result = new JsonObject();
+            foreach ((string key, int value) in counts) result[key] = value;
+            return result;
+        }
+
+        if (Structure is null) return new JsonObject { ["carried"] = false };
+        var counts = new JsonObject { ["carried"] = true, ["export"] = Map(Structure.Exported) };
+        if (Structure.Failure is not null)
+        {
+            counts["failure"] = Structure.Failure;
+            return counts;
+        }
+        counts["written"] = Map(Structure.Write!.Written);
+        counts["refused"] = Map(Structure.Write.Refused);
+        counts["missing"] = Map(Structure.Write.Missing);
+        counts["dropped"] = Map(Structure.Write.Dropped);
+        counts["comparison"] = new JsonObject
+        {
+            ["compared"] = Structure.Comparison!.Compared,
+            ["different"] = Structure.Comparison.Different,
+            ["different_by_field"] = Map(Structure.Comparison.DifferentByField),
+            ["unread"] = Map(Structure.Comparison.Unread),
+        };
+        return counts;
+    }
 }
+
+// What the structure step measured, counts only. Failure is the type name of
+// an answer nobody planned for; the write and the comparison are then absent.
+internal sealed record HomeStructureResult(
+    IReadOnlyDictionary<string, int> Exported,
+    HomeStructureWriteReport? Write,
+    HomeStructureComparison? Comparison,
+    string? Failure);
