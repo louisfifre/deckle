@@ -80,7 +80,7 @@ public sealed class SentenceRewriteTests
     [Theory]
     [InlineData(null)]
     [InlineData(ReasoningLevel.Off)]
-    [InlineData(ReasoningLevel.High)]
+    [InlineData(ReasoningLevel.Medium)]
     public void TranscriptRewriteCarriesTheProfileReasoningLevel(ReasoningLevel? level)
     {
         var engine = new CapturingEngine();

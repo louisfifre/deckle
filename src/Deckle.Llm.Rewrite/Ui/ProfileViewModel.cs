@@ -41,7 +41,7 @@ public partial class ProfileViewModel : ObservableObject
     public partial bool ShowsGenerationHints { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Summary))]
+    [NotifyPropertyChangedFor(nameof(Summary), nameof(OffersReasoningOff), nameof(ShownReasoning))]
     public partial string Model { get; set; }
 
     [ObservableProperty]
@@ -61,15 +61,24 @@ public partial class ProfileViewModel : ObservableObject
     [ObservableProperty]
     public partial double RepeatPenalty { get; set; }
 
-    // The profile's reasoning level, with Automatic standing for "none set"
-    // (null in the POCO): a choice list holds no null option.
+    // The profile's reasoning level. A profile saved before the setting
+    // existed (null) reads as Low, the request the engine sends without one.
     [ObservableProperty]
-    public partial ReasoningChoice Reasoning { get; set; }
+    [NotifyPropertyChangedFor(nameof(ShownReasoning))]
+    public partial ReasoningLevel Reasoning { get; set; }
 
-    // Hidden for Ollama's raw mode, which drops the level, and while the
-    // provider is unknown.
+    // Shown for a Claude provider only: the local engines drop the level.
     [ObservableProperty]
     public partial bool ShowsReasoning { get; set; }
+
+    // Whether the profile's model can stop thinking, so the list offers Off.
+    public bool OffersReasoningOff => ClaudeEngine.AcceptsOff(Model);
+
+    // The level as the list shows it: a stored Off on a model that cannot
+    // stop thinking is sent as Low (ClaudeEngine.ReasoningFor), so it shows
+    // as Low. The stored value is kept, should the model change back.
+    public ReasoningLevel ShownReasoning =>
+        Reasoning == ReasoningLevel.Off && !OffersReasoningOff ? ReasoningLevel.Low : Reasoning;
 
     // The shortcut that starts a dictation rewritten with this profile: a
     // switch, then the chord it reveals. Off keeps the chord.
@@ -132,7 +141,7 @@ public partial class ProfileViewModel : ObservableObject
     partial void OnCtxIndexChanged(double value) { if (!_isSyncing) PushToSettings(); }
     partial void OnTopPChanged(double value) { if (!_isSyncing) PushToSettings(); }
     partial void OnRepeatPenaltyChanged(double value) { if (!_isSyncing) PushToSettings(); }
-    partial void OnReasoningChanged(ReasoningChoice value) { if (!_isSyncing) PushToSettings(); }
+    partial void OnReasoningChanged(ReasoningLevel value) { if (!_isSyncing) PushToSettings(); }
     partial void OnHotkeyEnabledChanged(bool value) { if (!_isSyncing) PushToSettings(); }
     partial void OnHotkeyChanged(HotkeyChord? value) { if (!_isSyncing) PushToSettings(); }
 
@@ -151,7 +160,7 @@ public partial class ProfileViewModel : ObservableObject
         CtxIndex = Array.IndexOf(CtxKSteps, DefaultNumCtxK);
         TopP = double.NaN;
         RepeatPenalty = double.NaN;
-        Reasoning = ReasoningChoice.Automatic;
+        Reasoning = ReasoningLevel.Low;
         ShowsReasoning = false;
         HotkeyEnabled = false;
         Hotkey = null;
@@ -177,7 +186,7 @@ public partial class ProfileViewModel : ObservableObject
 
         TopP = profile.TopP ?? double.NaN;
         RepeatPenalty = profile.RepeatPenalty ?? double.NaN;
-        Reasoning = ReasoningChoices.From(profile.Reasoning);
+        Reasoning = profile.Reasoning ?? ReasoningLevel.Low;
 
         HotkeyEnabled = profile.HotkeyEnabled;
         Hotkey = profile.Hotkey;
@@ -203,47 +212,11 @@ public partial class ProfileViewModel : ObservableObject
         p.NumCtxK = CtxKSteps[Math.Clamp((int)CtxIndex, 0, CtxKSteps.Length - 1)];
         p.TopP = double.IsNaN(TopP) ? null : (double?)TopP;
         p.RepeatPenalty = double.IsNaN(RepeatPenalty) ? null : (double?)RepeatPenalty;
-        p.Reasoning = ReasoningChoices.ToLevel(Reasoning);
+        p.Reasoning = Reasoning;
         p.HotkeyEnabled = HotkeyEnabled;
         p.Hotkey = Hotkey;
         LlmSettingsService.Instance.Save();
     }
-}
-
-// ── Reasoning choice ────────────────────────────────────────────────────────
-//
-// What the profile's reasoning list offers: the four levels of ReasoningLevel
-// plus Automatic, which stores null and so leaves the engine's own default.
-
-public enum ReasoningChoice
-{
-    Automatic,
-    Off,
-    Low,
-    Medium,
-    High,
-}
-
-public static class ReasoningChoices
-{
-    public static ReasoningChoice From(ReasoningLevel? level) => level switch
-    {
-        null                  => ReasoningChoice.Automatic,
-        ReasoningLevel.Off    => ReasoningChoice.Off,
-        ReasoningLevel.Low    => ReasoningChoice.Low,
-        ReasoningLevel.Medium => ReasoningChoice.Medium,
-        ReasoningLevel.High   => ReasoningChoice.High,
-        _ => ReasoningChoice.Automatic,
-    };
-
-    public static ReasoningLevel? ToLevel(ReasoningChoice choice) => choice switch
-    {
-        ReasoningChoice.Off    => ReasoningLevel.Off,
-        ReasoningChoice.Low    => ReasoningLevel.Low,
-        ReasoningChoice.Medium => ReasoningLevel.Medium,
-        ReasoningChoice.High   => ReasoningLevel.High,
-        _ => null,
-    };
 }
 
 // ── Converters for slider tooltips ──────────────────────────────────────────

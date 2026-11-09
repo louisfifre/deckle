@@ -20,8 +20,7 @@ namespace Deckle.Llm;
 // A reasoning level is dropped on purpose. Ollama's `think` switches a
 // model's reasoning through the chat template, and raw mode is precisely the
 // path that bypasses the template; its docs (2026-11) say nothing of `think`
-// with raw=true. A reasoning model reached through Ollama takes the level by
-// the /v1 path, where OpenAiCompatibleEngine sends `reasoning_effort`.
+// with raw=true. The /v1 path drops it as well (ReasoningLevel's header).
 //
 // Transport only: the provider lookup, the hard cap, and the human-facing
 // failure outcomes live above the seam in the consumer. This engine throws

@@ -84,7 +84,7 @@ public sealed partial class LlmProfilesSection : UserControl
             .Find(p => p.Id == vm.ProviderId);
         vm.ProviderName = provider?.Name ?? "";
         vm.ShowsGenerationHints = provider is null || provider.Kind != LlmProviderKind.Claude;
-        vm.ShowsReasoning = provider is not null && provider.Kind != LlmProviderKind.Ollama;
+        vm.ShowsReasoning = provider?.Kind == LlmProviderKind.Claude;
     }
 
     // Only a Name change raises ProfilesChanged: the name is the only profile
@@ -298,22 +298,36 @@ public sealed partial class LlmProfilesSection : UserControl
     // switch and the chord it reveals: off is "no shortcut", so the chord
     // editor needs no unbound state of its own, and switching off keeps the
     // chord for the next time.
-    private static readonly IReadOnlyList<(ReasoningChoice Value, string LabelKey)> ReasoningOptions =
+    //
+    // A list offers only what the profile's model honours, and a composed
+    // list's options are fixed when it is built, so the level has two cards
+    // on the same value, one with Off for a model that can stop thinking and
+    // one without, and the model shows one of them.
+    private static readonly IReadOnlyList<(ReasoningLevel Value, string LabelKey)> ReasoningOptionsWithOff =
     [
-        (ReasoningChoice.Automatic, "LlmProfileReasoningAutomatic"),
-        (ReasoningChoice.Off, "LlmProfileReasoningOff"),
-        (ReasoningChoice.Low, "LlmProfileReasoningLow"),
-        (ReasoningChoice.Medium, "LlmProfileReasoningMedium"),
-        (ReasoningChoice.High, "LlmProfileReasoningHigh"),
+        (ReasoningLevel.Off, "LlmProfileReasoningOff"),
+        (ReasoningLevel.Low, "LlmProfileReasoningLow"),
+        (ReasoningLevel.Medium, "LlmProfileReasoningMedium"),
+    ];
+
+    private static readonly IReadOnlyList<(ReasoningLevel Value, string LabelKey)> ReasoningOptions =
+    [
+        (ReasoningLevel.Low, "LlmProfileReasoningLow"),
+        (ReasoningLevel.Medium, "LlmProfileReasoningMedium"),
     ];
 
     private IReadOnlyList<SettingDescriptor> ProfileCards(ProfileViewModel vm) =>
     [
         Setting.Choice("LlmProfileReasoningCard",
-            () => vm.Reasoning, v => vm.Reasoning = v,
+            () => vm.ShownReasoning, v => vm.Reasoning = v,
+            ReasoningOptionsWithOff,
+            visibleWhen: () => vm.ShowsReasoning && vm.OffersReasoningOff,
+            defaultValue: () => ReasoningLevel.Low),
+        Setting.Choice("LlmProfileReasoningNoOffCard",
+            () => vm.ShownReasoning, v => vm.Reasoning = v,
             ReasoningOptions,
-            visibleWhen: () => vm.ShowsReasoning,
-            defaultValue: () => ReasoningChoice.Automatic),
+            visibleWhen: () => vm.ShowsReasoning && !vm.OffersReasoningOff,
+            defaultValue: () => ReasoningLevel.Low),
         Setting.Toggle("LlmProfileHotkeyEnabledCard",
             () => vm.HotkeyEnabled, v => vm.HotkeyEnabled = v,
             defaultValue: () => false),

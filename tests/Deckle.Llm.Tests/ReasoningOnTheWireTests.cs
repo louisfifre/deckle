@@ -18,33 +18,26 @@ public sealed class ReasoningOnTheWireTests
     static GenerationRequest Request(ReasoningLevel? level) =>
         new(Model: "m", SystemPrompt: "s", UserText: "t", Label: "test", Reasoning: level);
 
+    // The local engines drop the level on purpose: each local model honours a
+    // different subset of the field, so the model's own default runs.
     [Theory]
-    [InlineData(ReasoningLevel.Off, "none")]
-    [InlineData(ReasoningLevel.Low, "low")]
-    [InlineData(ReasoningLevel.Medium, "medium")]
-    [InlineData(ReasoningLevel.High, "high")]
-    public void ChatCompletionsSendsTheLevelAsReasoningEffort(ReasoningLevel level, string expected)
+    [InlineData(null)]
+    [InlineData(ReasoningLevel.Off)]
+    [InlineData(ReasoningLevel.Medium)]
+    public void ChatCompletionsDropsTheLevel(ReasoningLevel? level)
     {
         using var body = Capture(ChatAnswer, prefix =>
             new OpenAiCompatibleEngine(prefix, () => null).Generate(Request(level), CancellationToken.None));
 
-        Assert.Equal(expected, body.RootElement.GetProperty("reasoning_effort").GetString());
-    }
-
-    [Fact]
-    public void ChatCompletionsSendsNoReasoningEffortWithoutALevel()
-    {
-        using var body = Capture(ChatAnswer, prefix =>
-            new OpenAiCompatibleEngine(prefix, () => null).Generate(Request(null), CancellationToken.None));
-
         Assert.False(body.RootElement.TryGetProperty("reasoning_effort", out _));
+        Assert.False(body.RootElement.TryGetProperty("reasoning", out _));
     }
 
     [Fact]
     public void OllamaRawModeDropsTheLevel()
     {
         using var body = Capture(GenerateAnswer, prefix =>
-            new OllamaEngine(prefix + "api/generate").Generate(Request(ReasoningLevel.High), CancellationToken.None));
+            new OllamaEngine(prefix + "api/generate").Generate(Request(ReasoningLevel.Medium), CancellationToken.None));
 
         Assert.False(body.RootElement.TryGetProperty("think", out _));
         Assert.False(body.RootElement.TryGetProperty("reasoning_effort", out _));
