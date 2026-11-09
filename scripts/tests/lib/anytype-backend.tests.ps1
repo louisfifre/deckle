@@ -59,6 +59,10 @@ public static BackendBundle CurrentBundle { get; } = new(
         $provider = New-Provider (Join-Path $root "status-$($case.Name)") $case.Versions $case.Active
         $status = Get-AnytypeBackendPinStatus -PinnedVersion '0.5.2' -ProviderDirectory $provider
         if ($status.State -cne $case.Name) { throw "Expected state $($case.Name), got $($status.State): $($status.Line)" }
+        # The line names the switch script; that script must exist where it says.
+        foreach ($named in [regex]::Matches($status.Line, 'scripts/[\w/-]+\.ps1')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $Repo $named.Value))) { throw "The status line names a missing script: $($named.Value)" }
+        }
     }
 
     # A preview writes nothing, even with every blocker running.

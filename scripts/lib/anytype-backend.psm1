@@ -99,7 +99,7 @@ function Get-AnytypeBackendPinStatus {
     $activation = Get-AnytypeBackendActivation -ProviderDirectory $ProviderDirectory
     $pinnedExe = Join-Path $ProviderDirectory "versions\$PinnedVersion\$script:ExecutableName"
     $pinnedOnDisk = Test-Path -LiteralPath $pinnedExe
-    $switch = 'scripts/release/switch-anytype-backend.ps1, Deckle and Anytype closed'
+    $switch = 'scripts/maintenance/switch-anytype-backend.ps1 -Apply, Deckle, the bot and Anytype Desktop closed'
 
     if ($null -eq $activation) {
         $state = 'absent'
