@@ -150,9 +150,11 @@ object, or lists several.
 - There is no permanent preview-card/elicitation workflow. Search candidates
   provide one structured building block for future mobile interaction.
 - The recreation of a space is rehearsed headless on a test space (see
-  Recreation rehearsal). Views, templates, placement and widgets are not
-  yet carried by Deckle; the v2 API writes them (see the boundary below),
-  and the person checks the result in the app.
+  Recreation rehearsal). Type settings, type views, section-collection
+  views, templates and widgets are carried by the rehearsal through the v2
+  API (see the boundary below). What the API does not show (how any of it
+  renders, what an inline query lists), and the personal sidebar, the
+  person checks in the app.
 
 ## Recreation rehearsal
 
@@ -174,14 +176,15 @@ unless their variables are set. Running it is the maintainer's act.
    (`anytype space join <link>`), and its id goes into `spaces.json`.
 2. Rehearse. With `DECKLE_HOME_REHEARSAL_SOURCE` (an alias, `home`) and
    `DECKLE_HOME_REHEARSAL_TARGET` (the test space's alias) set,
-   `RecreateOnTestSpace` runs `HomeRecreationRehearsal`: export, schema,
-   replay, compare, counts.
+   `RecreateOnTestSpace` runs `HomeRecreationRehearsal`: export (objects and
+   structure), schema, replay, compare, structure write and read-back,
+   counts.
 3. Or split the run, when the bot that reads the source cannot reach the
    target (a cut-over from one Anytype network to another). `ExportSheet`
    with `DECKLE_HOME_EXPORT_SOURCE` (an alias) writes the sheet and prints its
    path; nothing else is written. Later, `ReplaySheetOnTestSpace` with
    `DECKLE_HOME_REPLAY_SHEET` (that path) and `DECKLE_HOME_REHEARSAL_TARGET`
-   runs schema, replay, compare and counts from the file. The usual
+   runs schema, replay, compare, the structure and counts from the file. The usual
    refusals hold, plus one: the target alias is never the alias the sheet
    was exported from.
 
@@ -218,6 +221,19 @@ Steps, in the order they run:
   stay raw under `unmapped` and are counted. Anytype's built-in types are
   skipped and counted. Options travel by name, relations by code (coded
   types) or name, with the source ids kept beside them.
+- Export, structure. `HomeStructureExporter` then reads, with v2 GETs only,
+  what the source holds beyond its objects, as the source speaks it (old
+  keys, old ids): for each Home type its settings (default view, default
+  template, the featured or hidden section of each property) and its own
+  views; for each section collection (a collection that is not a Home
+  object) its views; each template whole, as its AnyBlock document; the
+  widgets of the space sidebar in order. It goes into the sheet under
+  `structure`, and the sheet is then version 2: a sheet without it loads as
+  version 1 and carries no structure, and the replay says so. Anytype's
+  built-in types are not carried (their views are the defaults every space
+  has and nothing of Home hangs on them), nor are templates of a type Home
+  does not own, nor widgets of the personal sidebar; each is counted as
+  skipped. A refused read costs that item and is counted `unread_*`.
 - Schema. The manifest goes on the target through `SchemaAdminGestures`
   (preview, then apply). It is the compiled manifest plus the option names
   the sheet uses in open and seeded vocabularies; closed ones stay compiled.
@@ -233,6 +249,47 @@ Steps, in the order they run:
   body (whitespace set aside), done box, memberships and every mapped
   property: options by the manifest option their name stands for,
   relations by the code or name they point at.
+- Structure, remap and write (after the objects, on the target only). The
+  remap is pure (`HomeStructureRemap`, unit-tested). A type key goes through
+  the exporter's bridge (errand to product, floor to zone), a property key
+  through the same bridge as the objects. A property the new manifest does
+  not hold, or does not attach to the type, is dropped and never guessed:
+  from the columns, sorts, group and filters of a view, from a template's
+  values and property blocks, from a type's sections; Anytype's built-in keys
+  pass. Ids come from one old-to-new map: the replay's created ids, the
+  target type of each source type, the new template of each old one, the
+  target collection of the same name; an id that looks like an object id
+  and is in no map is dropped with the member that carried it. `_filter_template_1_`
+  (« this object ») and other literals pass untouched. A select option in a
+  filter or in a template is read through the manifest (its key, French
+  label or name gives the manifest option; a name unknown to a closed
+  vocabulary is dropped). Output-only members of the schema (block `fields`
+  and `source`, view `groups`, filter and sort `id`…) are stripped, and the
+  block ids with them. Then `HomeStructureWriter` writes, in this order:
+  templates (one POST each, `create_missing_options` on, so an open
+  vocabulary grows by the names a template uses); per type its default view
+  and mapped default template, then its sections (the target type's whole
+  property list is read and sent back with only the sections changed,
+  because the patch replaces the list), then its views (the first source
+  view updates the target's default view, the others are inserted, each as
+  its own request so a refused view costs that view; a view always sends its
+  sorts and filters, empty when the source had none, because `set` merges
+  and the target's default view has sorts of its own; the columns the patch
+  does not name are then read back and hidden, so the visible set matches);
+  the section collections' views; the widgets in source order, each target
+  mapped (a type to the target type, a collection to its namesake, another
+  object through the id map) and each view mapped to the view written for it
+  (a view that was not carried is dropped from the widget, the widget
+  stays). Every refusal is caught, counted by stage and written to a file;
+  one failure never stops the rest.
+- Structure, read back. `HomeStructureComparer` reads the target and holds
+  it against what the write settled on: per type default view, default
+  template and sections; per view (type or collection) the count, then name,
+  type, group, filters, sorts and visible columns (as a set: a column patch
+  cannot reorder); per template the count per type, its type, its property
+  values and the histogram of its block kinds; per widget the count, the
+  order, the target, the layout and the view. A widget the target already
+  had on another target is not held against the plan.
 
 Files. The sheet and its reports hold the person's data and live outside
 the repository, under `%LOCALAPPDATA%\Deckle\modules\home\rehearsal\`, or at
@@ -242,7 +299,15 @@ the path in `DECKLE_HOME_REPLAY_SHEET`:
 - `<stem>.replay.json`: each refusal with its reason and the gesture's
   message, dropped relations and memberships.
 - `<stem>.compare.json`: each difference, field, expected and actual.
-- `<stem>.rehearsal.json`: the counts of every step, as printed.
+- `<stem>.structure.json`: each refusal of the structure write (stage,
+  what, message) and each drop of the remap (kind, where, what).
+- `<stem>.structure-compare.json`: each difference of the structure
+  read-back, field, expected and actual.
+- `<stem>.structure-error.json`: only when the structure step met an answer
+  nobody planned for; the objects' counts are still written.
+- `<stem>.rehearsal.json`: the counts of every step, as printed, the
+  structure's included (exported, written, refused, missing, dropped,
+  compared, different by field).
 
 Nothing that names an object is logged or printed: the test output holds
 counts and the sheet path only.
@@ -254,7 +319,10 @@ and the refusals are counted by cause. What it does not prove: anything
 under `unmapped`, which the new model drops on purpose; files (manuals,
 receipts, photos), which the verbs do not write; creation and modification
 dates and authors, which a recreation resets; and everything REST cannot
-write.
+write. The structure's comparison proves that what the v2 API serves back
+equals what was meant; it does not prove how the app renders it. Text inside
+a template that links to an object by id (`anytype://object?objectId=…`) is
+not rewritten.
 
 The boundary as proved on 2026-11-09, evening, on a throwaway bot-created
 space of the self-hosted network, fictional data only, every write read back
@@ -283,7 +351,11 @@ Not shown by the API: what an inline query lists inside an object (no
 endpoint answered), and how any of this renders, which only the app shows.
 A widget in personal scope belongs to the member who writes it, so the
 bot cannot set the person's own sidebar (inference from the scope field).
-Deckle carries none of it yet: the rehearsal recreates objects only.
+Deckle now carries, through that API and on the new keys, the type
+settings, type views, section-collection views, templates and widgets (see
+Recreation rehearsal, structure steps); sets are not carried, the source
+holds none. The reads and writes go through one public pass-through on the
+v2 client, `SendJsonAsync`, that adds no behaviour of its own.
 
 The earlier boundary, recorded on 2026-11-09 before that proof, read the
 2025-11-08 v1 OpenAPI: REST could not write templates, views, placement or
