@@ -335,6 +335,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── commands/
 │   │   │   ├── build-locked.tests.ps1
 │   │   │   ├── build-server-watchdog.tests.ps1
+│   │   │   ├── BuildServerWatchdogBugNotes.md
 │   │   │   ├── inspect-context.tests.ps1
 │   │   │   ├── InspectContextBugNotes.md
 │   │   │   ├── publish-native-runtime.tests.ps1
@@ -2513,6 +2514,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── IsolatedDataRoot.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── TaskbarBugNotes.md
 │   │   ├── TaskbarCustomizationTests.cs
 │   │   ├── TaskbarObservabilityCollection.cs
 │   │   ├── TaskbarProfileCollection.cs
