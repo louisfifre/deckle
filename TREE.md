@@ -283,6 +283,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── commands/
 │   │   │   ├── build-locked.tests.ps1
 │   │   │   ├── build-server-watchdog.tests.ps1
+│   │   │   ├── inspect-context.tests.ps1
+│   │   │   ├── InspectContextBugNotes.md
 │   │   │   ├── publish-native-runtime.tests.ps1
 │   │   │   └── update-readme-stats.tests.ps1
 │   │   └── lib/
