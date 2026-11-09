@@ -80,6 +80,12 @@ static class CampaignRun
         var pending = items.Where(i => !done.Contains(GenKey(i))).ToList();
         Console.WriteLine($"generate: {items.Count} calls planned, {items.Count - pending.Count} already done, {pending.Count} to run");
 
+        // Inside a lane the iterations of one cell run back to back with the
+        // same request, so the first writes the cache and the others read it
+        // well within its five minutes. A single iteration would only pay the
+        // write, so it runs uncached.
+        bool cachePrompt = resolved.Campaign.Iterations > 1;
+
         var engine = new ClaudeEngine(() => apiKey);
         var writer = new StreamWriter(path, append: true);
         var writeLock = new object();
@@ -90,7 +96,7 @@ static class CampaignRun
         {
             foreach (var item in pending.Where(i => i.Model == model))
             {
-                var row = GenerateOne(engine, item);
+                var row = GenerateOne(engine, item, cachePrompt);
                 lock (writeLock)
                 {
                     writer.WriteLine(JsonSerializer.Serialize(row, Json.Output));
@@ -98,7 +104,7 @@ static class CampaignRun
                     total += row.CostUsd ?? 0;
                     finished++;
                     Console.WriteLine(row.Error is null
-                        ? $"[{finished}/{pending.Count}] {Judge.Short(row.Id)} {row.Model,-18} {row.Prompt,-20} #{row.Iteration,-2} tok={row.PromptTokens}/{row.EvalTokens} {row.TotalMs}ms ${row.CostUsd:F4} words={row.WordsIn}->{row.WordsOut}"
+                        ? $"[{finished}/{pending.Count}] {Judge.Short(row.Id)} {row.Model,-18} {row.Prompt,-20} #{row.Iteration,-2} tok={row.PromptTokens}/{row.EvalTokens} cache={row.CacheReadTokens}r/{row.CacheWriteTokens}w {row.TotalMs}ms ${row.CostUsd:F4} words={row.WordsIn}->{row.WordsOut}"
                         : $"[{finished}/{pending.Count}] {Judge.Short(row.Id)} {row.Model,-18} {row.Prompt,-20} #{row.Iteration,-2} ERROR {row.Error}");
                 }
             }
@@ -111,13 +117,14 @@ static class CampaignRun
         Console.WriteLine();
     }
 
-    static GenerationRow GenerateOne(ClaudeEngine engine, WorkItem item)
+    static GenerationRow GenerateOne(ClaudeEngine engine, WorkItem item, bool cachePrompt)
     {
         var request = new GenerationRequest(
             Model:        item.Model,
             SystemPrompt: item.Prompt.SystemPrompt,
             UserText:     item.Dictation.Text,
-            Label:        "benchmark");
+            Label:        "benchmark",
+            CachePrompt:  cachePrompt);
 
         GenerationResult? result = null;
         string? error = null;
@@ -144,8 +151,8 @@ static class CampaignRun
                 Id: d.Id, Bucket: d.Bucket, WordsIn: d.WordsIn, WordsOut: Words.Count(r.Text),
                 Model: item.Model, Prompt: item.Prompt.Name, Source: "benchmark", Text: r.Text,
                 PromptTokens: r.PromptTokens, EvalTokens: r.EvalTokens, TotalMs: r.TotalMs,
-                CostUsd: Pricing.Cost(item.Model, r.PromptTokens, r.EvalTokens), Error: null,
-                Iteration: item.Iteration)
+                CostUsd: Pricing.Cost(item.Model, r.PromptTokens, r.EvalTokens, r.CacheWriteTokens, r.CacheReadTokens), Error: null,
+                Iteration: item.Iteration, CacheWriteTokens: r.CacheWriteTokens, CacheReadTokens: r.CacheReadTokens)
             : new GenerationRow(
                 Id: d.Id, Bucket: d.Bucket, WordsIn: d.WordsIn, WordsOut: 0,
                 Model: item.Model, Prompt: item.Prompt.Name, Source: "benchmark", Text: null,

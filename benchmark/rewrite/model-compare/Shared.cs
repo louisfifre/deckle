@@ -27,7 +27,14 @@ sealed record GenerationRow(
     string? Error,
     // The repeat index of a campaign run (1..n); null on the original one-shot
     // matrix, so the files the first study wrote still read.
-    int? Iteration = null);
+    int? Iteration = null,
+    // A campaign caches each repeated request: the first iteration writes it,
+    // the next ones read it. PromptTokens is then only the uncached rest. A
+    // row that read the cache skipped the prompt's processing, so its latency
+    // is shorter than the app's, where every dictation is new: the cold rows
+    // (no read) are the ones to compare with production. Null on older files.
+    int? CacheWriteTokens = null,
+    int? CacheReadTokens = null);
 
 // One judge verdict on one generation. Judgement is the judge's JSON as
 // parsed; JudgeRaw keeps the answer when it did not parse, so a run never
@@ -73,27 +80,43 @@ sealed record Judgement(
 
 static class Pricing
 {
-    // USD per million tokens (input, output). A 2026-10 snapshot of the public
-    // price list: check it against the Anthropic console before trusting a
-    // cost column. Output tokens include thinking tokens, which are billed as
-    // output.
-    static readonly Dictionary<string, (double In, double Out)> PerMTok = new(StringComparer.OrdinalIgnoreCase)
+    // USD per million tokens (input, output, cache read). A 2026-10 snapshot
+    // of the public price list: check it against the Anthropic console before
+    // trusting a cost column. Output tokens include thinking tokens, which are
+    // billed as output. Cache reads: Fable 5.1 and Opus 5.5 have their own
+    // published price; Sonnet and Haiku take the usual tenth of the input
+    // price (Haiku 5.5's is an assumption until checked in the console).
+    static readonly Dictionary<string, (double In, double Out, double CacheRead)> PerMTok = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["claude-fable-5-1"]  = (10.00, 50.00),
-        ["claude-opus-5-5"]   = (4.00, 20.00),
-        ["claude-sonnet-5-5"] = (2.00, 10.00),
-        ["claude-haiku-5-5"]  = (0.10, 0.50),
+        ["claude-fable-5-1"]  = (10.00, 50.00, 0.25),
+        ["claude-opus-5-5"]   = (4.00, 20.00, 0.20),
+        ["claude-sonnet-5-5"] = (2.00, 10.00, 0.20),
+        ["claude-haiku-5-5"]  = (0.10, 0.50, 0.01),
     };
 
+    // A five-minute cache write costs a quarter more than plain input.
+    const double CacheWriteFactor = 1.25;
+
     // Null for an unknown model: an absent price must not read as a free call.
-    public static double? Cost(string model, int inputTokens, int outputTokens) =>
+    // inputTokens is the uncached input only, as the API reports it; the cache
+    // writes and reads come on top, each at its own price.
+    public static double? Cost(string model, int inputTokens, int outputTokens, int cacheWriteTokens = 0, int cacheReadTokens = 0) =>
         PerMTok.TryGetValue(model, out var p)
-            ? (inputTokens * p.In + outputTokens * p.Out) / 1_000_000.0
+            ? (inputTokens * p.In
+               + cacheWriteTokens * p.In * CacheWriteFactor
+               + cacheReadTokens * p.CacheRead
+               + outputTokens * p.Out) / 1_000_000.0
             : null;
 
     // The snapshot as data, so an export carries the prices its costs used.
     public static Dictionary<string, object> Snapshot() =>
-        PerMTok.ToDictionary(kv => kv.Key, kv => (object)new { input_per_mtok = kv.Value.In, output_per_mtok = kv.Value.Out });
+        PerMTok.ToDictionary(kv => kv.Key, kv => (object)new
+        {
+            input_per_mtok = kv.Value.In,
+            output_per_mtok = kv.Value.Out,
+            cache_write_per_mtok = kv.Value.In * CacheWriteFactor,
+            cache_read_per_mtok = kv.Value.CacheRead,
+        });
 }
 
 static class Transient
