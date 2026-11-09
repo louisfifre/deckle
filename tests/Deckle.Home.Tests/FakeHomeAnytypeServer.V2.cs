@@ -126,6 +126,8 @@ internal sealed partial class FakeHomeAnytypeServer
         _v2Widgets.Add(widget);
     }
 
+    public void RemoveWidgets() => _v2Widgets.Clear();
+
     public IReadOnlyList<JsonObject> Widgets() => _v2Widgets.Select(value => (JsonObject)value.DeepClone()).ToArray();
 
     private void AddStructureOnlyTypes(JsonArray data)

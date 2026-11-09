@@ -1032,6 +1032,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeSpaceExporter.cs
 │   │   ├── HomeSpaceReplayer.cs
 │   │   ├── HomeStructure.cs
+│   │   ├── HomeStructureComparer.cs
 │   │   ├── HomeStructureExporter.cs
 │   │   ├── HomeStructureRemap.cs
 │   │   ├── HomeStructureWriter.cs
@@ -2290,6 +2291,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeSearchTests.cs
 │   │   ├── HomeSpaceExporterTests.cs
 │   │   ├── HomeSpaceReplayerTests.cs
+│   │   ├── HomeStructureComparerTests.cs
 │   │   ├── HomeStructureExporterTests.cs
 │   │   ├── HomeStructureFixtures.cs
 │   │   ├── HomeStructureRemapTests.cs
