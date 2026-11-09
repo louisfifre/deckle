@@ -489,6 +489,23 @@ public class QueryGesturesTests
         Assert.Equal(ProjectId, filter["value"]![0]!.GetValue<string>());
     }
 
+    // update writes the same Archivé box: it must not be the way around the
+    // refusal of archive.
+    [Fact]
+    public async Task UpdateRefusesToArchiveAProjectWithOpenTasks()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        var v2 = new FakeV2Handler().Reply(HttpStatusCode.OK, TaskRows(("Écrire le test", false, false)));
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server, v2).UpdateAsync(
+                ProjectId, null, new JsonObject { [DevSpace.Props.Archive] = true }, Ct));
+
+        Assert.Contains("[ ] Écrire le test", ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
     [Fact]
     public async Task ArchiveAcceptsAProjectWhoseTasksAreAllDoneOrArchived()
     {
@@ -664,6 +681,21 @@ public class QueryGesturesTests
 
         InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => NewGestures(server).UnlinkAsync(TaskId, [ProjectId], Ct));
+
+        Assert.Contains("projet", ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    // update writes the same project link: emptying it is refused there too.
+    [Fact]
+    public async Task UpdateRefusesToEmptyTheProjectOfATaskAndSendsNoPatch()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskLinkedTo(ProjectId));
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).UpdateAsync(
+                TaskId, null, new JsonObject { [DevSpace.Props.RelationProjet] = new JsonArray() }, Ct));
 
         Assert.Contains("projet", ex.Message);
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");

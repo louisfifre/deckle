@@ -303,7 +303,20 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
                         $"Propriété inconnue « {nameOrKey} » pour le type {objType}. " +
                         $"Connues : {string.Join(", ", DevSpace.PropertiesFor(objType).Select(p => p.Label))}.");
 
-                entries.Add(await BuildEntryAsync(key, format, value, ct));
+                JsonObject entry = await BuildEntryAsync(key, format, value, ct);
+
+                // update writes the same checkbox and the same links as archive
+                // and unlink, so it keeps their refusals: without them the guard
+                // of one tool is bypassed through the other.
+                if (entry["objects"] is JsonArray { Count: 0 } && MustKeepOne(objType, key) is { } why)
+                    throw new InvalidOperationException(
+                        $"Refusé : {QueryProp.Name(obj)} n'aurait plus aucun lien ({why}). "
+                        + "Lie d'abord la bonne cible avec link, puis retire celle-ci. Rien n'a bougé.");
+                if (key == DevSpace.Props.Archive && objType == DevSpace.Types.Project
+                    && entry["checkbox"]?.GetValue<bool>() == true)
+                    await RefuseIfOpenTasksAsync(id, obj, ct);
+
+                entries.Add(entry);
                 applied.Add(DevSpace.PropertyLabel(key) ?? key);
             }
 
@@ -345,14 +358,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
         // with it: the model refuses, and names each task to tick or archive
         // first. Restoring a project needs no such check.
         if (value && objType == DevSpace.Types.Project)
-        {
-            IReadOnlyList<string> open = await OpenTaskNamesAsync(id, ct);
-            if (open.Count > 0)
-                throw new InvalidOperationException(
-                    $"Refusé : {QueryProp.Name(obj)} a encore {open.Count} tâche(s) ouverte(s), ni cochée(s) ni archivée(s). "
-                    + "Coche chacune (complete) si elle est faite, archive-la si elle est abandonnée, puis archive le projet. Rien n'a bougé.\n"
-                    + string.Join('\n', open.Select(n => $"[ ] {n}")));
-        }
+            await RefuseIfOpenTasksAsync(id, obj, ct);
 
         var payload = new JsonObject
         {
@@ -543,6 +549,18 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
     // server filters on the link; both checkboxes are served only when ticked,
     // so they are read here rather than filtered on (how a filter treats an
     // absent checkbox is not measured).
+    // Shared by archive and update. The tasks come from the search, which lags
+    // a fresh creation by about 20 s: a task created seconds before is not seen.
+    async Task RefuseIfOpenTasksAsync(string projectId, JsonObject project, CancellationToken ct)
+    {
+        IReadOnlyList<string> open = await OpenTaskNamesAsync(projectId, ct);
+        if (open.Count > 0)
+            throw new InvalidOperationException(
+                $"Refusé : {QueryProp.Name(project)} a encore {open.Count} tâche(s) ouverte(s), ni cochée(s) ni archivée(s). "
+                + "Coche chacune (complete) si elle est faite, archive-la si elle est abandonnée, puis archive le projet. Rien n'a bougé.\n"
+                + string.Join('\n', open.Select(n => $"[ ] {n}")));
+    }
+
     async Task<IReadOnlyList<string>> OpenTaskNamesAsync(string projectId, CancellationToken ct)
     {
         IReadOnlyList<AnytypeV2SearchRow> tasks = await _searcher.SearchAllAsync(
