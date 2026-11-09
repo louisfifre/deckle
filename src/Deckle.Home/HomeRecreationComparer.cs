@@ -118,9 +118,13 @@ internal sealed partial class HomeRecreationComparer(AnytypeApiClient api)
         return result;
     }
 
-    // The first target object of the same type, not matched yet, with the
-    // same code, else the same name. Twins in the source meet twins in the
-    // target one by one.
+    // A target object of the same type, not matched yet, with the same code,
+    // else the same name. Twins in the source meet twins in the target one by
+    // one, and the order the target lists them in is the network's, not the
+    // sheet's: among twins, the one whose plain values agree most with the
+    // sheet object wins, so two twins are never compared crosswise. Options
+    // and multi-selects stay out of that score (their names need a read);
+    // a tie keeps the target's order.
     private static JsonObject? Match(HomeReplayObject expected, HomeObjectIndex index, IReadOnlySet<string> matched)
     {
         IEnumerable<JsonObject> pool = index.Objects.Where(value =>
@@ -129,8 +133,25 @@ internal sealed partial class HomeRecreationComparer(AnytypeApiClient api)
             return pool.FirstOrDefault(value =>
                 string.Equals(HomeObjectJson.Code(value), expected.Code, StringComparison.OrdinalIgnoreCase));
         string name = expected.Selector.Trim();
-        return pool.FirstOrDefault(value =>
-            string.Equals(HomeNameGuard.ComparedName(value).Trim(), name, StringComparison.Ordinal));
+        JsonObject[] twins = pool.Where(value =>
+            string.Equals(HomeNameGuard.ComparedName(value).Trim(), name, StringComparison.Ordinal)).ToArray();
+        return twins.Length <= 1
+            ? twins.FirstOrDefault()
+            : twins.OrderByDescending(value => Agreement(expected, value, index)).First();
+    }
+
+    private static int Agreement(HomeReplayObject expected, JsonObject actual, HomeObjectIndex index)
+    {
+        int agreeing = 0;
+        foreach ((string key, JsonNode? value) in expected.Properties)
+        {
+            string format = HomeSchema.RequiredProperties.TryGetValue(key, out string? known) ? known : "text";
+            if (format is "select" or "multi_select") continue;
+            if (string.Equals(Expected(key, format, value),
+                    Actual(format, HomeObjectJson.Property(actual, key), index), StringComparison.Ordinal))
+                agreeing++;
+        }
+        return agreeing;
     }
 
     // What a sheet value means, in the same form Actual gives the target's.

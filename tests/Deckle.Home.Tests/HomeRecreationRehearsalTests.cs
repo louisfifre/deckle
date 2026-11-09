@@ -126,6 +126,32 @@ public sealed class HomeRecreationRehearsalTests
         Write(result.Summary());
     }
 
+    // The comparison alone, on a target already replayed: it reads and
+    // writes nothing but the compare file beside the sheet.
+    [Fact(Explicit = true)]
+    public async Task CompareSheetOnExplicitEndpoint()
+    {
+        string? sheetPath = Variable(ReplaySheetVariable);
+        string? url = Variable(ReplayApiUrlVariable);
+        string? key = Variable(ReplayApiKeyVariable);
+        string? spaceId = Variable(ReplaySpaceIdVariable);
+        Assert.SkipWhen(sheetPath is null || url is null || key is null || spaceId is null,
+            $"Comparaison non lancée : définis {ReplaySheetVariable}, {ReplayApiUrlVariable}, "
+            + $"{ReplayApiKeyVariable} et {ReplaySpaceIdVariable}.");
+
+        var credentials = new AnytypeCredentials(url!, Variable(ReplayApiVersionVariable) ?? "2025-11-08", key!, spaceId!);
+        using var api = new AnytypeApiClient(credentials);
+
+        HomeComparison comparison = await new HomeRecreationComparer(api).CompareAsync(
+            HomeReplaySheet.Load(sheetPath!), spaceId!, HomeReplaySheet.Beside(sheetPath!, "compare"), Ct);
+
+        Write($"Valeurs : {comparison.ValuesCompared} comparée(s), {comparison.ValuesDifferent} différente(s) ; "
+            + $"objets égaux {comparison.Equal}, différents {comparison.Different}, manquants {comparison.Missing}, "
+            + $"en trop {comparison.Extra}.");
+        foreach ((string field, int count) in comparison.DifferentByField)
+            Write($"  {field} : {count}");
+    }
+
     [Fact(Explicit = true)]
     public async Task CreateTestSpace()
     {

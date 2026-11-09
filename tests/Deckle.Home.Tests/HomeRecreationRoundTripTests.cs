@@ -143,6 +143,35 @@ public sealed class HomeRecreationRoundTripTests : IDisposable
             && request.Body.Contains("\"template_id\":\"template-device\"", StringComparison.Ordinal));
     }
 
+    // Two components share a name; the target lists them in the reverse of
+    // the sheet's order. Each must be compared with its own twin.
+    [Fact]
+    public async Task TwinsAreComparedWithTheTwinWhoseValuesAgree()
+    {
+        using var target = new FakeHomeAnytypeServer(HomeRehearsalFixtures.TargetSpace);
+        target.SetObjects(
+            HomeRehearsalFixtures.Item("new-b", "component", "Carte jumelle",
+                HomeRehearsalFixtures.Number("purchase_price", 20)),
+            HomeRehearsalFixtures.Item("new-a", "component", "Carte jumelle",
+                HomeRehearsalFixtures.Number("purchase_price", 10)));
+        var sheet = new HomeReplaySheet
+        {
+            Objects =
+            [
+                new HomeReplayObject { OldId = "old-a", Type = "component", Name = "Carte jumelle",
+                    Properties = new JsonObject { ["purchase_price"] = 10 } },
+                new HomeReplayObject { OldId = "old-b", Type = "component", Name = "Carte jumelle",
+                    Properties = new JsonObject { ["purchase_price"] = 20 } },
+            ],
+        };
+
+        HomeComparison comparison = await new HomeRecreationComparer(new AnytypeApiClient(target.Credentials))
+            .CompareAsync(sheet, target.SpaceId, null, Ct);
+
+        Assert.Equal(0, comparison.ValuesDifferent);
+        Assert.Equal(2, comparison.Equal);
+    }
+
     [Fact]
     public async Task TheDetailsStayBesideTheSheet()
     {
