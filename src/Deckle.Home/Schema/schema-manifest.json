@@ -5,9 +5,9 @@
       "name": "Zone",
       "plural_name": "Zones",
       "description": "Grouping of rooms",
-      "layout": "collection",
+      "layout": "basic",
       "icon": {"format": "icon", "name": "expand", "color": "grey"},
-      "properties": ["notes"]
+      "properties": []
     },
     {
       "key": "room",
@@ -16,7 +16,7 @@
       "description": "Physical space of the house",
       "layout": "basic",
       "icon": {"format": "icon", "name": "cube", "color": "grey"},
-      "properties": ["code", "zone", "notes", "manual"]
+      "properties": ["code", "zone", "manual"]
     },
     {
       "key": "point",
@@ -41,8 +41,7 @@
         "manufacturer",
         "model_ref",
         "manual",
-        "location",
-        "notes"
+        "location"
       ]
     },
     {
@@ -65,8 +64,7 @@
         "cable",
         "poe",
         "duct_diameter",
-        "pipe",
-        "notes"
+        "pipe"
       ]
     },
     {
@@ -86,7 +84,6 @@
         "free_slots",
         "conduits",
         "sub_meter",
-        "notes",
         "manual"
       ]
     },
@@ -107,7 +104,6 @@
         "purchase_price",
         "receipt",
         "os",
-        "notes",
         "manual"
       ]
     },
@@ -132,6 +128,7 @@
         "stored_in",
         "installed_in",
         "connected_to",
+        "powered_by",
         "controls",
         "controlled_by",
         "control_link",
@@ -139,6 +136,7 @@
         "measured_quantity",
         "quantity",
         "rated_input_power",
+        "rated_output_power",
         "bulb_base",
         "lighting_capabilities",
         "color_temperature_min",
@@ -154,7 +152,7 @@
         "weight",
         "needed",
         "manual",
-        "notes"
+        "archived"
       ]
     },
     {
@@ -193,7 +191,7 @@
         "storage_medium",
         "needed",
         "manual",
-        "notes"
+        "archived"
       ]
     },
     {
@@ -216,7 +214,7 @@
         "quantity",
         "needed",
         "manual",
-        "notes"
+        "archived"
       ]
     },
     {
@@ -237,7 +235,7 @@
         "last_repotting",
         "plant_photo",
         "installed_in",
-        "notes"
+        "archived"
       ]
     },
     {
@@ -247,7 +245,7 @@
       "description": "Wish or project captured on the fly",
       "layout": "note",
       "icon": {"format": "icon", "name": "bulb", "color": "pink"},
-      "properties": ["horizon"]
+      "properties": ["horizon", "archived"]
     },
     {
       "key": "product",
@@ -256,7 +254,7 @@
       "description": "Everyday product, ticked when needed",
       "layout": "action",
       "icon": {"format": "icon", "name": "cart", "color": "grey"},
-      "properties": ["product_category", "needed", "quantity", "about", "notes"]
+      "properties": ["product_category", "needed", "quantity", "about", "archived"]
     },
     {
       "key": "worksite",
@@ -275,7 +273,6 @@
         "actual_budget",
         "estimated_effort",
         "actual_effort",
-        "notes",
         "manual"
       ]
     },
@@ -294,8 +291,7 @@
         "depends_on",
         "definition_of_done",
         "target_date",
-        "estimated_effort",
-        "notes"
+        "estimated_effort"
       ]
     }
   ],
@@ -308,7 +304,6 @@
   ],
   "properties": [
     {"key": "code", "name": "Code", "format": "text"},
-    {"key": "notes", "name": "Notes", "format": "text"},
     {"key": "manual", "name": "Manual", "format": "files"},
     {"key": "location", "name": "Location", "format": "text"},
     {"key": "installed_in", "name": "Installed in", "format": "objects"},
@@ -332,25 +327,8 @@
         {"key": "lr", "name": "LR — LED ribbon"},
         {"key": "cp", "name": "CP — control panel"},
         {"key": "cs", "name": "CS — switch"},
-        {"key": "sr", "name": "SR — room sensor"},
-        {"key": "sp", "name": "SP — probe"},
-        {"key": "sc", "name": "SC — opening contact"},
-        {"key": "sv", "name": "SV — camera"},
-        {"key": "sd", "name": "SD — detector"},
-        {"key": "sl", "name": "SL — leak detector"},
-        {"key": "af", "name": "AF — fan"},
         {"key": "ar", "name": "AR — relay"},
         {"key": "ad", "name": "AD — driver"},
-        {"key": "ah", "name": "AH — heater"},
-        {"key": "av", "name": "AV — valve"},
-        {"key": "ap", "name": "AP — pump"},
-        {"key": "as", "name": "AS — sounder"},
-        {"key": "ac", "name": "AC — cooler"},
-        {"key": "al", "name": "AL — lock actuator"},
-        {"key": "or", "name": "OR — roller shutter"},
-        {"key": "os", "name": "OS — screen"},
-        {"key": "og", "name": "OG — gate"},
-        {"key": "ow", "name": "OW — motorized window"},
         {"key": "ve", "name": "VE — extraction vent"},
         {"key": "vs", "name": "VS — supply vent"},
         {"key": "vt", "name": "VT — transfer grille"},
@@ -575,7 +553,9 @@
         {"key": "tools", "name": "Tools"},
         {"key": "kitchen", "name": "Kitchen"},
         {"key": "appliances", "name": "Appliances"},
-        {"key": "garden", "name": "Garden"}
+        {"key": "garden", "name": "Garden"},
+        {"key": "lighting", "name": "Lighting"},
+        {"key": "home_automation", "name": "Home automation"}
       ]
     },
     {
@@ -593,7 +573,14 @@
         {"key": "cooling", "name": "Cooling"},
         {"key": "smartphone", "name": "Smartphone"},
         {"key": "storage", "name": "Storage"},
-        {"key": "bulb", "name": "Bulb"}
+        {"key": "bulb", "name": "Bulb"},
+        {"key": "sensor", "name": "Sensor"},
+        {"key": "camera", "name": "Camera"},
+        {"key": "heating", "name": "Heating"},
+        {"key": "shutter", "name": "Shutter"},
+        {"key": "power_supply", "name": "Power supply"},
+        {"key": "controller", "name": "Controller"},
+        {"key": "led_strip", "name": "LED strip"}
       ]
     },
     {"key": "manufacturer", "name": "Manufacturer", "format": "select", "tags": []},
@@ -641,6 +628,7 @@
       ]
     },
     {"key": "needed", "name": "Needed", "format": "checkbox"},
+    {"key": "archived", "name": "Archived", "format": "checkbox"},
     {
       "key": "product_category",
       "name": "Product category",

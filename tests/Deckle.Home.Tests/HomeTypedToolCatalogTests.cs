@@ -122,9 +122,9 @@ public sealed class HomeTypedToolCatalogTests
         }, Ct);
 
         JsonObject body = (JsonObject)JsonNode.Parse(server.Requests.Single(request => request.Method == "POST").Body)!;
-        Assert.Equal(HomeSchema.WireTypeKey("point"), body["type_key"]!.GetValue<string>());
+        Assert.Equal(HomeSchema.Types.Point, body["type_key"]!.GetValue<string>());
         JsonArray properties = Assert.IsType<JsonArray>(body["properties"]);
-        Assert.Equal(2, Entry(properties, HomeSchema.WirePropertyKey("outlet_count"))["number"]!.GetValue<double>());
+        Assert.Equal(2, Entry(properties, HomeSchema.Properties.OutletCount)["number"]!.GetValue<double>());
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public sealed class HomeTypedToolCatalogTests
 
         JsonObject body = (JsonObject)JsonNode.Parse(server.Requests.Single(request => request.Method == "POST").Body)!;
         Assert.Equal("Label details", body["body"]!.GetValue<string>());
-        Assert.Equal("MODEL-1", Entry(Assert.IsType<JsonArray>(body["properties"]), HomeSchema.WirePropertyKey("model_ref"))["text"]!.GetValue<string>());
+        Assert.Equal("MODEL-1", Entry(Assert.IsType<JsonArray>(body["properties"]), HomeSchema.Properties.ModelRef)["text"]!.GetValue<string>());
     }
 
     [Fact]
@@ -177,7 +177,7 @@ public sealed class HomeTypedToolCatalogTests
 
         JsonObject body = (JsonObject)JsonNode.Parse(server.Requests.Single(request => request.Method == "POST").Body)!;
         JsonArray references = Assert.IsType<JsonArray>(
-            Entry(Assert.IsType<JsonArray>(body["properties"]), HomeSchema.WirePropertyKey("worksite"))["objects"]);
+            Entry(Assert.IsType<JsonArray>(body["properties"]), HomeSchema.Properties.Worksite)["objects"]);
         Assert.Single(references);
         Assert.Equal("site-1", references[0]!.GetValue<string>());
     }
@@ -200,7 +200,7 @@ public sealed class HomeTypedToolCatalogTests
             tool.Handler(new JsonObject
             {
                 ["object"] = "Fictional device",
-                ["notes"] = "Wrong target",
+                ["definition_of_done"] = "Wrong target",
             }, Ct));
 
         Assert.Contains("todo", error.Message, StringComparison.OrdinalIgnoreCase);

@@ -8,7 +8,7 @@ public class HomeCodeTests
 {
     [Theory]
     [InlineData("ZZ-PS01", "ZZ", "PS", 1)]
-    [InlineData("YY-SD12", "YY", "SD", 12)]
+    [InlineData("YY-VE12", "YY", "VE", 12)]
     public void ElementCodeSeparatesRoomCategoryAndSequence(
         string value, string room, string category, int sequence)
     {
@@ -24,6 +24,7 @@ public class HomeCodeTests
     [InlineData("ZZ-PS00")]
     [InlineData("ZZ-Q01")]
     [InlineData("ZZP01")]
+    [InlineData("ZZ-SD01")]
     public void ElementCodeRejectsValuesOutsideThePublicGrammar(string value)
     {
         Assert.Throws<ArgumentException>(() => HomeElementCode.Parse(value));

@@ -147,9 +147,12 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         ["properties"] = new JsonArray(),
     };
 
-    public static JsonObject Errand(string id, string name, bool done) => Object(
-        id, HomeSchema.Types.Errand, name,
+    public static JsonObject Product(string id, string name, bool done) => Object(
+        id, HomeSchema.Types.Product, name,
         CheckboxProperty("done", "Done", done));
+
+    public static JsonObject Zone(string id, string name) => Object(
+        id, HomeSchema.Types.Zone, name);
 
     public static JsonObject Worksite(string id, string name, params string[] backlinkIds) => Object(
         id, HomeSchema.Types.Worksite, name,

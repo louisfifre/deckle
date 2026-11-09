@@ -82,22 +82,22 @@ public static class HomeTypedToolCatalog
             string? system = OptionalText(value, "system");
             if (system is null)
                 throw new ArgumentException("A component requires 'system'.", "system");
-            if (properties.ContainsKey(HomeSchema.WirePropertyKey("part_of")))
+            if (properties.ContainsKey(HomeSchema.Properties.PartOf))
                 throw new ArgumentException("Use 'system' or compatibility properties.part_of, not both.", "system");
-            properties[HomeSchema.WirePropertyKey("part_of")] = system;
+            properties[HomeSchema.Properties.PartOf] = system;
         }
 
         if (type.CanonicalKey == HomeSchema.Types.Plant && value.ContainsKey("room"))
         {
             string room = OptionalText(value, "room")
                 ?? throw new ArgumentException("Argument 'room' must be a string.", "room");
-            if (properties.ContainsKey(HomeSchema.WirePropertyKey("installed_in")))
+            if (properties.ContainsKey(HomeSchema.Properties.InstalledIn))
                 throw new ArgumentException("Use 'room' or compatibility properties.installed_in, not both.", "room");
-            properties[HomeSchema.WirePropertyKey("installed_in")] = room;
+            properties[HomeSchema.Properties.InstalledIn] = room;
         }
 
         return await gestures().CreateAsync(
-            HomeSchema.WireTypeKey(type.CanonicalKey),
+            type.CanonicalKey,
             [new HomeCreateItem(code, name, properties.Count == 0 ? null : properties,
                 OptionalStringArray(value, "collections"), text, OptionalText(value, "template"))],
             ct).ConfigureAwait(false);
@@ -131,7 +131,7 @@ public static class HomeTypedToolCatalog
             ? null
             : new HomeSectionEdit(RequiredText(section, "heading"), RequiredText(section, "text"));
         return await gestures().UpdateTypedAsync(
-            HomeSchema.WireTypeKey(type.CanonicalKey),
+            type.CanonicalKey,
             [new HomeUpdateItem(
                 objectSelector,
                 name,
@@ -193,21 +193,19 @@ public static class HomeTypedToolCatalog
                         candidate.CanonicalKey == property.CanonicalKey))
                     throw new ArgumentException($"Property '{key}' is not writable for {type.CanonicalKey}.", key);
                 ValidatePropertyValue(property, node, key, creating);
-                string wire = HomeSchema.WirePropertyKey(property.CanonicalKey);
-                if (result.ContainsKey(wire))
+                if (result.ContainsKey(property.CanonicalKey))
                     throw new ArgumentException($"Property '{key}' was supplied twice.", key);
-                result[wire] = node?.DeepClone();
+                result[property.CanonicalKey] = node?.DeepClone();
             }
         }
 
         foreach (ManifestProperty property in WritableProperties(type, manifest, creating))
         {
             if (!args.TryGetPropertyValue(property.CanonicalKey, out JsonNode? node)) continue;
-            string wire = HomeSchema.WirePropertyKey(property.CanonicalKey);
-            if (result.ContainsKey(wire))
+            if (result.ContainsKey(property.CanonicalKey))
                 throw new ArgumentException($"Property '{property.CanonicalKey}' was supplied twice.", property.CanonicalKey);
             ValidatePropertyValue(property, node, property.CanonicalKey, creating);
-            result[wire] = node?.DeepClone();
+            result[property.CanonicalKey] = node?.DeepClone();
         }
         return result;
     }
@@ -301,9 +299,8 @@ public static class HomeTypedToolCatalog
             AddPropertyAliases(fields, property, PropertySchema(property));
         if (type.CanonicalKey == HomeSchema.Types.Component)
         {
-            string wire = HomeSchema.WirePropertyKey("part_of");
-            string french = HomeTerms.Current.PropertyName(wire);
-            foreach (string alias in new[] { "part_of", wire, "Part of", french }.Distinct(StringComparer.OrdinalIgnoreCase))
+            string french = HomeTerms.Current.PropertyName(HomeSchema.Properties.PartOf);
+            foreach (string alias in new[] { HomeSchema.Properties.PartOf, "Part of", french }.Distinct(StringComparer.OrdinalIgnoreCase))
                 fields[alias] = StringOrStringArraySchema("Compatibility alias for system.");
         }
         return ObjectSchema(fields);
@@ -457,15 +454,14 @@ public static class HomeTypedToolCatalog
                     var options = item["tags"] is JsonArray tags
                         ? tags.OfType<JsonObject>().Select(tag => tag["name"]?.GetValue<string>() ?? tag["key"]?.GetValue<string>() ?? "").Where(x => x.Length > 0).ToArray()
                         : [];
-                    string wire = HomeSchema.WirePropertyKey(key);
                     string name = item["name"]?.GetValue<string>() ?? key;
-                    string french = HomeTerms.Current.PropertyName(wire);
-                    var aliases = new[] { key, wire, name, french }
+                    string french = HomeTerms.Current.PropertyName(key);
+                    var aliases = new[] { key, name, french }
                         .Distinct(StringComparer.Ordinal).ToArray();
-                    IReadOnlyList<string> closedValues = HomeSchema.ClosedVocabularies.TryGetValue(wire, out IReadOnlyList<string>? closed)
+                    IReadOnlyList<string> closedValues = HomeSchema.ClosedVocabularies.TryGetValue(key, out IReadOnlyList<string>? closed)
                         ? closed : [];
                     var closedLabels = options
-                        .Concat(closedValues.Select(option => HomeSchema.OptionLabel(wire, option)))
+                        .Concat(closedValues.Select(option => HomeSchema.OptionLabel(key, option)))
                         .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
                     properties[key] = new ManifestProperty(
                         key, name, item["format"]?.GetValue<string>() ?? "text", options,
@@ -496,15 +492,8 @@ public static class HomeTypedToolCatalog
             if (byName is not null) return byName;
             ManifestProperty? byFrenchName = _properties.Values.FirstOrDefault(property =>
                 type.Properties.Contains(property.CanonicalKey, StringComparer.Ordinal)
-                && string.Equals(HomeTerms.Current.PropertyName(HomeSchema.WirePropertyKey(property.CanonicalKey)), key, StringComparison.OrdinalIgnoreCase));
+                && string.Equals(HomeTerms.Current.PropertyName(property.CanonicalKey), key, StringComparison.OrdinalIgnoreCase));
             if (byFrenchName is not null) return byFrenchName;
-            ManifestProperty? byWire = _properties.Values.FirstOrDefault(property =>
-                type.Properties.Contains(property.CanonicalKey, StringComparer.Ordinal)
-                && string.Equals(HomeSchema.WirePropertyKey(property.CanonicalKey), key, StringComparison.Ordinal));
-            if (byWire is not null) return byWire;
-            string canonical = HomeSchema.WirePropertyKey(key);
-            if (_properties.TryGetValue(canonical, out ManifestProperty? result)
-                && type.Properties.Contains(result.CanonicalKey, StringComparer.Ordinal)) return result;
             throw new InvalidOperationException($"Target manifest property '{key}' is not known.");
         }
     }

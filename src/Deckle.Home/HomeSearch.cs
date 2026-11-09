@@ -55,7 +55,7 @@ public sealed partial class HomeGestures
         (string? Requested, string Property)[] selects =
         [
             (filter.Category is null ? null : HomeCategories.OptionKey(filter.Category), HomeSchema.Properties.Category),
-            (filter.Condition, HomeSchema.Properties.Condition),
+            (filter.Condition, "condition"),
             (filter.State, HomeSchema.Properties.State),
             (filter.Domain, "domain"),
             (filter.EquipmentCategory, "equipment_category"),
@@ -90,7 +90,7 @@ public sealed partial class HomeGestures
         if (select is null) return false;
         var aliases = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { requested.Trim() };
         JsonObject? definition = HomeSchemaTargetData.Manifest["properties"]!.AsArray().OfType<JsonObject>()
-            .FirstOrDefault(property => HomeSchema.WirePropertyKey(HomeObjectJson.String(property, "key")) == propertyKey);
+            .FirstOrDefault(property => HomeObjectJson.String(property, "key") == propertyKey);
         if (definition?["tags"] is JsonArray seeds)
             foreach (JsonObject seed in seeds.OfType<JsonObject>())
             {

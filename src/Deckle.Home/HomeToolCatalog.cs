@@ -113,9 +113,7 @@ public static class HomeToolCatalog
         ];
     }
 
-    private static IEnumerable<string> InputTypeKeys() => HomeSchema.TargetManifest["types"]!
-        .AsArray().OfType<JsonObject>().Select(type => type["key"]!.GetValue<string>())
-        .Concat(HomeSchema.CreatableTypes).Append(HomeSchema.Types.Floor).Distinct(StringComparer.Ordinal);
+    private static IEnumerable<string> InputTypeKeys() => HomeSchema.CreatableTypes;
 
     private static JsonObject CreateSchema() => ObjectSchema(
         required:

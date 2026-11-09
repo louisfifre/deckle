@@ -349,43 +349,36 @@ public class HomeGesturesTests
     }
 
     [Fact]
-    public async Task FloorRelationGuidesTowardTheAppWhileTheFloorTypeIsAbsent()
+    public async Task ZoneRelationOnARoomResolvesAnOrdinaryZoneByExactName()
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
             FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Collection("floor-1", "Rez fictif"));
-
-        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Gestures(server).UpdateAsync(
-                [new HomeUpdateItem("ZZ", null, new JsonObject { ["Zone"] = "Rez fictif" })], Ct));
-
-        Assert.Contains("layout Collection", error.Message);
-        Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
-    }
-
-    [Fact]
-    public async Task FloorRelationResolvesTheFloorTypedCollectionOnceDiscovered()
-    {
-        using var server = new FakeHomeAnytypeServer();
-        server.AddSchemaType(HomeSchema.Types.Floor, "Zone", "Zones", "collection");
-        server.SetObjects(
-            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
-            FakeHomeAnytypeServer.Collection("floor-1", "Rez fictif", HomeSchema.Types.Floor),
-            FakeHomeAnytypeServer.Collection("section-1", "Section fictive"));
-
-        InvalidOperationException wrongCollection = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Gestures(server).UpdateAsync(
-                [new HomeUpdateItem("ZZ", null, new JsonObject { ["Zone"] = "Section fictive" })], Ct));
-        Assert.Contains("n'est pas une Zone", wrongCollection.Message);
+            FakeHomeAnytypeServer.Zone("zone-1", "Rez fictif"));
 
         await Gestures(server).UpdateAsync(
             [new HomeUpdateItem("ZZ", null, new JsonObject { ["Zone"] = "Rez fictif" })], Ct);
 
         JsonObject patch = (JsonObject)JsonNode.Parse(server.Requests.Single(r => r.Method == "PATCH").Body)!;
-        JsonNode floor = Assert.Single(Assert.IsType<JsonArray>(
-            Entry(Assert.IsType<JsonArray>(patch["properties"]), HomeSchema.Properties.Floor)["objects"]))!;
-        Assert.Equal("floor-1", floor.GetValue<string>());
+        JsonNode zone = Assert.Single(Assert.IsType<JsonArray>(
+            Entry(Assert.IsType<JsonArray>(patch["properties"]), HomeSchema.Properties.Zone)["objects"]))!;
+        Assert.Equal("zone-1", zone.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task ZoneRelationRefusesAnObjectThatIsNotAZone()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(
+            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.EquipmentSystem("system-1", "Étage fictif"));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Gestures(server).UpdateAsync(
+                [new HomeUpdateItem("ZZ", null, new JsonObject { ["Zone"] = "Étage fictif" })], Ct));
+
+        Assert.Contains("« zone »", error.Message);
+        Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
     }
 
     [Fact]
@@ -449,7 +442,7 @@ public class HomeGesturesTests
 
         InvalidOperationException codeError = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).CreateAsync(
-                HomeSchema.Types.Errand,
+                HomeSchema.Types.Product,
                 [new HomeCreateItem("ZZ-PS01", "Vis fictives", null)], Ct));
         Assert.Contains("ne porte pas de code", codeError.Message);
 
@@ -468,7 +461,7 @@ public class HomeGesturesTests
         using var server = new FakeHomeAnytypeServer();
 
         await Gestures(server).CreateAsync(
-            HomeSchema.Types.Errand,
+            HomeSchema.Types.Product,
             [new HomeCreateItem(null, "Vis fictives 4×40 (boîte de 100)", new JsonObject
             {
                 ["needed"] = true,
@@ -518,12 +511,12 @@ public class HomeGesturesTests
     }
 
     [Fact]
-    public async Task IdeaRenameIsRefusedAndErrandRenameReplacesTheWholeTitle()
+    public async Task IdeaRenameIsRefusedAndProductRenameReplacesTheWholeTitle()
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
             FakeHomeAnytypeServer.Idea("idea-1", "Tester une idée fictive"),
-            FakeHomeAnytypeServer.Errand("errand-1", "Vis fictives", done: false));
+            FakeHomeAnytypeServer.Product("product-1", "Vis fictives", done: false));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             Gestures(server).UpdateAsync(
@@ -539,15 +532,15 @@ public class HomeGesturesTests
     }
 
     [Fact]
-    public async Task SearchDoneFilterSplitsCheckedFromUncheckedErrands()
+    public async Task SearchDoneFilterSplitsCheckedFromUncheckedProducts()
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
-            FakeHomeAnytypeServer.Errand("errand-1", "Vis fictives", done: false),
-            FakeHomeAnytypeServer.Errand("errand-2", "Sacs fictifs", done: true));
+            FakeHomeAnytypeServer.Product("product-1", "Vis fictives", done: false),
+            FakeHomeAnytypeServer.Product("product-2", "Sacs fictifs", done: true));
 
         string remaining = await Gestures(server).SearchAsync(
-            new HomeSearchFilter(null, HomeSchema.Types.Errand, null, null, null, null, Done: false), Ct);
+            new HomeSearchFilter(null, HomeSchema.Types.Product, null, null, null, null, Done: false), Ct);
 
         Assert.Contains("Vis fictives", remaining);
         Assert.DoesNotContain("Sacs fictifs", remaining);
@@ -577,7 +570,7 @@ public class HomeGesturesTests
             types.OfType<JsonObject>().Single(value => value["key"]!.GetValue<string>() == key);
 
         Assert.Equal("note", TypeSpec(HomeSchema.Types.Idea)["layout"]!.GetValue<string>());
-        Assert.Equal("action", TypeSpec(HomeSchema.Types.Errand)["layout"]!.GetValue<string>());
+        Assert.Equal("action", TypeSpec(HomeSchema.Types.Product)["layout"]!.GetValue<string>());
         Assert.Equal("action", TypeSpec(HomeSchema.Types.Todo)["layout"]!.GetValue<string>());
         Assert.Equal("action", TypeSpec(HomeSchema.Types.Worksite)["layout"]!.GetValue<string>());
         Assert.Equal("basic", TypeSpec(HomeSchema.Types.Device)["layout"]!.GetValue<string>());
@@ -587,9 +580,8 @@ public class HomeGesturesTests
             "Ustensiles de cuisine",
             TypeSpec(HomeSchema.Types.Utensil)["plural_name"]!.GetValue<string>());
         Assert.Equal("Chantiers", TypeSpec(HomeSchema.Types.Worksite)["plural_name"]!.GetValue<string>());
-        Assert.DoesNotContain(
-            types.OfType<JsonObject>(),
-            value => value["key"]!.GetValue<string>() == HomeSchema.Types.Floor);
+        Assert.Equal("basic", TypeSpec(HomeSchema.Types.Zone)["layout"]!.GetValue<string>());
+        Assert.Equal("Zones", TypeSpec(HomeSchema.Types.Zone)["plural_name"]!.GetValue<string>());
     }
 
     [Fact]

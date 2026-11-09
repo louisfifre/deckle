@@ -106,15 +106,6 @@ internal sealed class HomePropertyWriter(
         var result = new JsonArray();
         if (value is null) return result;
 
-        // The floor targets are the app-created collection objects of the
-        // runtime floor type — a compiled type list cannot name them.
-        if (string.Equals(property.Key, HomeSchema.Properties.Floor, StringComparison.Ordinal))
-        {
-            foreach (JsonNode? item in Enumerate(value))
-                result.Add(HomeObjectJson.Id(ResolveFloor(Text(item, property.Name))));
-            return result;
-        }
-
         HomeSchema.ObjectPropertyTargets.TryGetValue(property.Key, out IReadOnlyList<string>? allowedTypes);
         foreach (JsonNode? item in Enumerate(value))
         {
@@ -122,21 +113,6 @@ internal sealed class HomePropertyWriter(
             result.Add(HomeObjectJson.Id(objects.Resolve(selector, NameMatch.Exact, allowedTypes)));
         }
         return result;
-    }
-
-    private JsonObject ResolveFloor(string selector)
-    {
-        if (schema.FloorTypeKey is null)
-            throw new InvalidOperationException(
-                "Le type Zone n'existe pas encore dans l'espace Anytype : crée-le dans "
-                + "l'app (layout Collection) avant de poser une relation Zone.");
-
-        JsonObject target = objects.ResolveCollection(selector, NameMatch.Exact);
-        if (!string.Equals(HomeObjectJson.TypeKey(target), schema.FloorTypeKey, StringComparison.Ordinal))
-            throw new InvalidOperationException(
-                $"« {HomeObjectIndex.Display(target)} » n'est pas une Zone : "
-                + "la relation Zone vise les collections du type Zone, pas une autre collection.");
-        return target;
     }
 
     // A scalar must be wrapped in a plain array, never a JsonArray: building a

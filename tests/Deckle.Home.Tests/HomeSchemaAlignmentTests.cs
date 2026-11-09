@@ -21,22 +21,9 @@ public sealed class HomeSchemaAlignmentTests
                 "code", "category", "installed_in", "controls", "controlled_by",
                 "circuit", "outlet_count", "earthed", "conduit_diameter", "dcl",
                 "switch_nature", "duct_diameter", "manufacturer", "model_ref",
-                "manual", "location", "notes",
+                "manual", "location",
             },
             point["properties"]!.AsArray().Select(value => value!.GetValue<string>()));
-    }
-
-    [Fact]
-    public void WireProjectionPreservesLegacyCoordinatesWithoutPowerConversion()
-    {
-        Assert.Equal("errand", HomeSchema.WireTypeKey("product"));
-        Assert.Equal("floor", HomeSchema.WirePropertyKey("zone"));
-        Assert.Equal("documents", HomeSchema.WirePropertyKey("manual"));
-        Assert.Equal("errand_category", HomeSchema.WirePropertyKey("product_category"));
-        Assert.Equal("memory_size_gb", HomeSchema.WirePropertyKey("memory_size"));
-        Assert.Equal("memory_frequency_mhz", HomeSchema.WirePropertyKey("memory_frequency"));
-        Assert.Equal("switch_kind", HomeSchema.WirePropertyKey("switch_nature"));
-        Assert.Equal("power", HomeSchema.WirePropertyKey("power"));
     }
 
     [Fact]
@@ -61,8 +48,9 @@ public sealed class HomeSchemaAlignmentTests
     [Fact]
     public void ObsoleteSurplusPointPropertiesAreNotAllowedByTheTargetContract()
     {
-        Assert.False(HomeSchema.IsAllowedProperty(HomeSchema.Types.Point, HomeSchema.Properties.LightNature));
-        Assert.False(HomeSchema.IsAllowedProperty(HomeSchema.Types.Point, HomeSchema.Properties.PowerWatts));
+        Assert.False(HomeSchema.IsAllowedProperty(HomeSchema.Types.Point, "light_nature"));
+        Assert.False(HomeSchema.IsAllowedProperty(HomeSchema.Types.Point, "power_watts"));
+        Assert.False(HomeSchema.IsAllowedProperty(HomeSchema.Types.Point, "notes"));
         Assert.True(HomeSchema.IsAllowedProperty(HomeSchema.Types.Point, HomeSchema.Properties.Dcl));
         Assert.True(HomeSchema.IsAllowedProperty(HomeSchema.Types.Device, HomeSchema.Properties.ConnectedTo));
     }

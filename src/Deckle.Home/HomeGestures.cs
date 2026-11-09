@@ -734,8 +734,8 @@ public sealed partial class HomeGestures
     {
         if (string.IsNullOrWhiteSpace(value))
             throw new ArgumentException("Le type Home ne peut pas être vide.", nameof(value));
-        value = HomeSchema.WireTypeKey(value.Trim().ToLowerInvariant());
-        if (value != HomeSchema.Types.Floor && !HomeSchema.CreatableTypes.Contains(value))
+        value = value.Trim().ToLowerInvariant();
+        if (!HomeSchema.CreatableTypes.Contains(value))
             throw new ArgumentException(
                 $"Type Home inconnu « {value} ». Types admis : {string.Join(", ", HomeSchema.CreatableTypes)}.",
                 nameof(value));

@@ -55,19 +55,19 @@ public sealed class HomeRelationTests
     }
 
     [Fact]
-    public async Task ZoneObjectsUseTheDiscoveredTypeAndAllowNotes()
+    public async Task ZoneIsAnOrdinaryTypeThatCarriesNoProperty()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.AddSchemaType("zone-fixture-type", "Zone", "Zones", "collection", "notes");
         using var api = new AnytypeApiClient(server.Credentials);
         var gestures = new HomeGestures(api, FakeHomeAnytypeServer.HomeSpace);
-        await gestures.CreateAsync("zone", [new HomeCreateItem(null, "Fictional zone", new JsonObject { ["notes"] = "First" })],
+        await gestures.CreateAsync("zone", [new HomeCreateItem(null, "Fictional zone", null)],
             TestContext.Current.CancellationToken);
         JsonNode create = JsonNode.Parse(server.Requests.Single(r => r.Method == "POST").Body)!;
-        Assert.Equal("zone-fixture-type", create["type_key"]!.GetValue<string>());
-        await gestures.UpdateTypedAsync("zone", [new HomeUpdateItem("created-1", null, new JsonObject { ["notes"] = "Updated" })],
-            TestContext.Current.CancellationToken);
-        Assert.Single(server.Requests, r => r.Method == "PATCH");
+        Assert.Equal(HomeSchema.Types.Zone, create["type_key"]!.GetValue<string>());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => gestures.UpdateTypedAsync("zone",
+            [new HomeUpdateItem("created-1", null, new JsonObject { ["notes"] = "Fictional note" })],
+            TestContext.Current.CancellationToken));
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
 
     [Fact]

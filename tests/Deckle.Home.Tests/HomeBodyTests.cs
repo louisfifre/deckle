@@ -65,7 +65,7 @@ public sealed class HomeBodyTests
     public async Task ProductCannotBeCompletedAsATask()
     {
         using var server = new FakeHomeAnytypeServer();
-        server.SetObjects(FakeHomeAnytypeServer.Errand("product-1", "Fictional product", false));
+        server.SetObjects(FakeHomeAnytypeServer.Product("product-1", "Fictional product", false));
         using var api = new AnytypeApiClient(server.Credentials);
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             new HomeGestures(api, FakeHomeAnytypeServer.HomeSpace).CompleteAsync("product-1", TestContext.Current.CancellationToken));

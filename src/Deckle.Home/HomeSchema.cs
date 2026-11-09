@@ -3,19 +3,19 @@ using Deckle.Anytype;
 
 namespace Deckle.Home;
 
-// The canonical Home contract is embedded from Schema/schema-manifest.json;
-// this class projects its stable English keys onto the historical wire keys
-// used by the live space. Required membership, formats, relations, and seed
-// tags come from that snapshot. French labels live in Terms/terms.fr.json
-// (HomeTerms), never in code.
+// The canonical Home contract is embedded from Schema/schema-manifest.json,
+// and the space speaks its stable English keys as they are: the key a type or
+// property carries in the manifest is the key the live space carries. Required
+// membership, formats, layouts, relations and seed tags come from that
+// snapshot. French labels live in Terms/terms.fr.json (HomeTerms), never in
+// code.
 public static class HomeSchema
 {
     public static class Types
     {
-        // App-managed: the collection layout cannot be created through the
-        // Anytype API, so the type is born in the app and its real key is
-        // discovered from the live snapshot (see FloorTypeKey).
-        public const string Floor = "floor";
+        // An ordinary basic object since 2026-11-09: a Room points at its
+        // Zone, the Zone carries no property of its own.
+        public const string Zone = "zone";
         public const string Room = "room";
         public const string Point = "point";
         public const string Circuit = "circuit";
@@ -26,7 +26,7 @@ public static class HomeSchema
         public const string Utensil = "utensil";
         public const string Plant = "plant";
         public const string Idea = "idea";
-        public const string Errand = "errand";
+        public const string Product = "product";
         public const string Worksite = "worksite";
         public const string Todo = "todo";
     }
@@ -34,32 +34,27 @@ public static class HomeSchema
     public static class Properties
     {
         public const string Code = "code";
-        public const string Notes = "notes";
-        public const string Documents = "documents";
+        public const string Manual = "manual";
         public const string Location = "location";
         public const string InstalledIn = "installed_in";
         public const string ConnectedTo = "connected_to";
         public const string StoredIn = "stored_in";
-        public const string Floor = "floor";
+        public const string Zone = "zone";
         public const string Category = "category";
-        public const string Condition = "condition";
         public const string Circuit = "circuit";
         public const string Panel = "panel";
         public const string UpstreamPanel = "upstream_panel";
         public const string OutletCount = "outlet_count";
         public const string Earthed = "earthed";
         public const string Dcl = "dcl";
-        public const string LightNature = "light_nature";
-        public const string SwitchKind = "switch_kind";
+        public const string SwitchNature = "switch_nature";
         public const string Controls = "controls";
         public const string ControlledBy = "controlled_by";
         public const string ControlLink = "control_link";
-        public const string PowerWatts = "power_watts";
         public const string MeasuredQuantity = "measured_quantity";
         public const string PowerSupply = "power_supply";
         public const string Carries = "carries";
         public const string Assignment = "assignment";
-        public const string Nature = "nature";
         public const string PoweredBy = "powered_by";
         public const string Rating = "rating";
         public const string Cable = "cable";
@@ -102,8 +97,8 @@ public static class HomeSchema
         public const string Socket = "socket";
         public const string Chipset = "chipset";
         public const string MemoryType = "memory_type";
-        public const string MemoryFrequency = "memory_frequency_mhz";
-        public const string MemorySize = "memory_size_gb";
+        public const string MemoryFrequency = "memory_frequency";
+        public const string MemorySize = "memory_size";
         public const string CoreCount = "core_count";
         public const string ThreadCount = "thread_count";
         public const string TechnicalInterface = "technical_interface";
@@ -118,9 +113,8 @@ public static class HomeSchema
         public const string AcquisitionDate = "acquisition_date";
         public const string LastRepotting = "last_repotting";
         public const string Horizon = "horizon";
-        public const string Aisle = "aisle";
+        public const string Archived = "archived";
         public const string ProductCategory = "product_category";
-        public const string ErrandCategory = "errand_category";
         public const string About = "about";
         public const string State = "state";
         public const string TargetDate = "target_date";
@@ -159,13 +153,16 @@ public static class HomeSchema
     [Types.System, Types.Device, Types.Component, Types.Utensil];
 
     public static readonly IReadOnlyList<string> LifeTypes =
-    [Types.Plant, Types.Idea, Types.Errand];
+    [Types.Plant, Types.Idea, Types.Product];
 
     public static readonly IReadOnlyList<string> WorkTypes =
     [Types.Worksite, Types.Todo];
 
+    // Zone leads, as in the manifest: it is free-titled, so it stays out of
+    // CodedTypes while Room, its neighbour in the Structure section, keeps
+    // its code.
     public static readonly IReadOnlyList<string> CreatableTypes =
-    [.. CodedTypes, .. EquipmentTypes, .. LifeTypes, .. WorkTypes];
+    [Types.Zone, .. CodedTypes, .. EquipmentTypes, .. LifeTypes, .. WorkTypes];
 
     internal static readonly IReadOnlyDictionary<string, string> TargetRequiredProperties =
         HomeSchemaTargetData.RequiredProperties;
@@ -185,34 +182,14 @@ public static class HomeSchema
 
     public static JsonObject TargetManifest => HomeSchemaTargetData.CloneManifest();
 
-    public static string WireTypeKey(string canonicalType) => canonicalType switch
-    {
-        "product" => Types.Errand,
-        "zone" => Types.Floor,
-        _ => canonicalType,
-    };
-
-    public static string WirePropertyKey(string canonicalProperty) => canonicalProperty switch
-    {
-        "zone" => Properties.Floor,
-        "manual" => Properties.Documents,
-        "product_category" => Properties.ErrandCategory,
-        "memory_size" => Properties.MemorySize,
-        "memory_frequency" => Properties.MemoryFrequency,
-        "switch_nature" => Properties.SwitchKind,
-        _ => canonicalProperty,
-    };
-
     internal static bool IsAllowedProperty(string typeKey, string propertyKey) =>
-        string.Equals(WireTypeKey(typeKey), Types.Floor, StringComparison.Ordinal)
-            ? HomeSchemaTargetData.ZoneProperties.Contains(WirePropertyKey(propertyKey), StringComparer.Ordinal)
-            : TargetRequiredByType.TryGetValue(WireTypeKey(typeKey), out IReadOnlyList<string>? allowed)
-                && allowed.Contains(WirePropertyKey(propertyKey), StringComparer.Ordinal);
+        TargetRequiredByType.TryGetValue(typeKey, out IReadOnlyList<string>? allowed)
+        && allowed.Contains(propertyKey, StringComparer.Ordinal);
 
     internal static IReadOnlyList<string> OptionAliases(string propertyKey, string optionKey)
     {
         JsonObject? definition = HomeSchemaTargetData.Manifest["properties"]!.AsArray().OfType<JsonObject>()
-            .FirstOrDefault(property => WirePropertyKey(property["key"]!.GetValue<string>()) == propertyKey);
+            .FirstOrDefault(property => property["key"]!.GetValue<string>() == propertyKey);
         JsonObject? option = (definition?["tags"] as JsonArray)?.OfType<JsonObject>()
             .FirstOrDefault(tag => tag["key"]!.GetValue<string>() == optionKey);
         return new[] { optionKey, OptionLabel(propertyKey, optionKey), option?["name"]?.GetValue<string>() ?? optionKey }
@@ -338,44 +315,14 @@ public static class HomeSchema
             };
         }
 
-        return new HomeSchemaRuntime(snapshot, FloorTypeKey(snapshot));
-    }
-
-    // An absent Zone type returns null: floor features then refuse with
-    // guidance instead of failing the whole schema closed.
-    internal static string? FloorTypeKey(SchemaSnapshot snapshot)
-    {
-        if (snapshot.Types.TryGetValue(Types.Floor, out SchemaTypeInfo? nominal))
-        {
-            if (nominal.Layout != "collection")
-                throw new HomeSchemaException(
-                    "Le type Zone attendu doit avoir un layout collection.", "zone_layout_invalid");
-            return Types.Floor;
-        }
-        SchemaTypeInfo[] matches = snapshot.Types.Values.Where(type =>
-                string.Equals(type.Layout, "collection", StringComparison.Ordinal)
-                && type.Name is "Zone" or "Zones").ToArray();
-        return matches.Length switch
-        {
-            0 => null,
-            1 => matches[0].Key,
-            _ => throw new HomeSchemaException(
-                "Plusieurs types Zone correspondent : précise le schéma avant d'écrire.", "zone_type_ambiguous"),
-        };
+        return new HomeSchemaRuntime(snapshot);
     }
 
     private static bool LinkMatches(SchemaPropertyLinkInfo link, SchemaPropertyInfo property) =>
         (link.Key.Length > 0 && string.Equals(link.Key, property.Key, StringComparison.Ordinal))
         || (link.Id.Length > 0 && string.Equals(link.Id, property.Id, StringComparison.Ordinal));
 
-    private static string TypeLayout(string key) => key switch
-    {
-        Types.Idea => "note",
-        Types.Errand => "action",
-        Types.Worksite => "action",
-        Types.Todo => "action",
-        _ => "basic",
-    };
+    private static string TypeLayout(string key) => HomeSchemaTargetData.Layouts[key];
 }
 
 // Reason is one snake_case word for the trace; the message is the French

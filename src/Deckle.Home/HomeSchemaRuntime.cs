@@ -2,48 +2,33 @@ using Deckle.Anytype;
 
 namespace Deckle.Home;
 
-internal sealed class HomeSchemaRuntime
+internal sealed class HomeSchemaRuntime(SchemaSnapshot snapshot)
 {
-    private readonly SchemaSnapshot _snapshot;
-
-    public HomeSchemaRuntime(SchemaSnapshot snapshot, string? floorTypeKey = null)
-    {
-        _snapshot = snapshot;
-        FloorTypeKey = floorTypeKey;
-    }
-
-    // Key of the app-created collection-layout Zone type, discovered from
-    // the live snapshot; null until the type is created in the app.
-    public string? FloorTypeKey { get; }
+    private readonly SchemaSnapshot _snapshot = snapshot;
 
     public SchemaPropertyInfo Property(string key) =>
-        _snapshot.Properties.TryGetValue(HomeSchema.WirePropertyKey(key), out SchemaPropertyInfo? property)
+        _snapshot.Properties.TryGetValue(key, out SchemaPropertyInfo? property)
             ? property
-            : throw new HomeSchemaException(
-                $"Propriété Home absente : {HomeSchema.WirePropertyKey(key)}.", "property_missing");
+            : throw new HomeSchemaException($"Propriété Home absente : {key}.", "property_missing");
 
-    public string TypeKey(string canonicalType)
-    {
-        canonicalType = HomeSchema.WireTypeKey(canonicalType);
-        if (string.Equals(canonicalType, HomeSchema.Types.Floor, StringComparison.Ordinal))
-            return FloorTypeKey
-                ?? throw new HomeSchemaException(
-                    "Le type Zone n’existe pas encore dans l’espace Home.", "zone_type_missing");
-        return HomeSchema.WireTypeKey(canonicalType);
-    }
+    // The space carries the manifest keys, so a known type addresses itself.
+    // An unknown key is a caller error, not a coordinate to look up.
+    public string TypeKey(string typeKey) =>
+        HomeSchema.RequiredByType.ContainsKey(typeKey)
+            ? typeKey
+            : throw new HomeSchemaException($"Type Home absent : {typeKey}.", "type_missing");
 
     // Live Anytype id of a type, needed to address its templates. A runtime
     // coordinate read from the space, never a compiled constant.
     public string TypeId(string typeKey) =>
         _snapshot.Types.TryGetValue(TypeKey(typeKey), out SchemaTypeInfo? type)
             ? type.Id
-            : throw new HomeSchemaException($"Type Home absent : {TypeKey(typeKey)}.", "type_missing");
+            : throw new HomeSchemaException($"Type Home absent : {typeKey}.", "type_missing");
 
     public IReadOnlyList<SchemaPropertyInfo> PropertiesFor(string typeKey)
     {
-        string wireType = TypeKey(typeKey);
-        if (!_snapshot.Types.TryGetValue(wireType, out SchemaTypeInfo? type))
-            throw new HomeSchemaException($"Type Home absent : {wireType}.", "type_missing");
+        if (!_snapshot.Types.TryGetValue(TypeKey(typeKey), out SchemaTypeInfo? type))
+            throw new HomeSchemaException($"Type Home absent : {typeKey}.", "type_missing");
 
         var result = new List<SchemaPropertyInfo>();
         foreach (SchemaPropertyLinkInfo link in type.PropertyLinks)
@@ -61,9 +46,8 @@ internal sealed class HomeSchemaRuntime
     public SchemaPropertyInfo ResolveProperty(string typeKey, string nameOrKey)
     {
         IReadOnlyList<SchemaPropertyInfo> properties = PropertiesFor(typeKey);
-        string requestedKey = HomeSchema.WirePropertyKey(nameOrKey);
         SchemaPropertyInfo[] matches = properties.Where(property =>
-                string.Equals(property.Key, requestedKey, StringComparison.OrdinalIgnoreCase)
+                string.Equals(property.Key, nameOrKey, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(property.Name, nameOrKey, StringComparison.OrdinalIgnoreCase))
             .ToArray();
 
@@ -75,10 +59,7 @@ internal sealed class HomeSchemaRuntime
                 + string.Join(", ", properties.Select(p => p.Name))),
             _ => throw new InvalidOperationException($"Propriété ambiguë « {nameOrKey} » pour {typeKey}."),
         };
-        string policyType = string.Equals(TypeKey(typeKey), FloorTypeKey, StringComparison.Ordinal)
-            ? HomeSchema.Types.Floor
-            : typeKey;
-        if (!HomeSchema.IsAllowedProperty(policyType, result.Key))
+        if (!HomeSchema.IsAllowedProperty(typeKey, result.Key))
             throw new InvalidOperationException(
                 $"La propriété « {nameOrKey} » n'est pas autorisée pour {typeKey} par le manifeste Home cible.");
         return result;

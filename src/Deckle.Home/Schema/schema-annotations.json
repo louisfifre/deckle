@@ -1,6 +1,7 @@
 {
   "description": "Home model annotations and preserved migration coordinates. This file is documentation for domain alignment; schema-admin does not read or enforce it.",
   "schema": "schema-manifest.json",
+  "decisions": "JOURNAL.md",
   "vocabulary_policy": {
     "closed": "Only the listed options; domain commands do not extend or delete them.",
     "seeded": "Initial options may be extended after explicit validation; domain commands do not delete options.",
@@ -8,7 +9,7 @@
   },
   "types": {
     "zone": {
-      "note": "The collection-layout type requires an app/experience setup path; creating its objects is a separate operation."
+      "note": "Ordinary object since 2026-11-09: a Room carries the Zone relation, and the Zone template shows its rooms through an inline query filtered on the current object, set up in the app. Fallback if that template does not hold: a collection-layout type created once in the app, its objects created through the typed verb."
     },
     "point": {
       "note": "Accepted 17-property order for the reviewed connection/control cases. Manufacturer, model and manual describe the fitting itself. Templates select the relevant subset. Two independently wired RJ45 terminations are two Points even on one faceplate; outlet_count remains available."
@@ -28,19 +29,22 @@
       "note": "Includes plugged-in and permanently wired equipment. One physical bulb is one Device, linked directly to its Point; shared model data must not duplicate a serial. System grouping is optional; quantity remains available for other equipment."
     },
     "component": {
-      "note": "System membership remains required. Removing that requirement for a dismantled part has not been accepted."
+      "note": "A Component is born in a System: creation refuses without part_of. Since 2026-11-09 an update may clear part_of once the part is dismantled; the object stays a Component."
     },
     "idea": {
       "note": "The body is the idea; the first line supplies its display name. Pinned alone, outside the five sections."
     },
     "todo": {
-      "note": "Native done marks completion. Task/worksite multi-attachment behavior and the proposed create/update asymmetry remain to be settled."
+      "note": "Native done marks completion. Since 2026-11-09 a Task may attach to several Worksites, at creation or later, with no guard."
+    },
+    "lifecycle": {
+      "note": "Since 2026-11-09 the free text of every type lives in the object body; no Notes property. The archived checkbox (device, component, utensil, plant, product, idea) is the lifecycle exit for what had a life; the bin stays for entry mistakes and removed Points."
     }
   },
   "properties": {
     "category": {
       "vocabulary": "closed",
-      "note": "Legacy v4 vocabulary retained pending a complete replacement decision. Hardwired equipment is now a Device; old equipment-named Point categories are not instructions for new classification. PC covers heater/shutter cable outlets; LC/LW/LS, CS and the simple AR relay remain. LR, CP and assemblies are deferred."
+      "note": "22 options since 2026-11-09, families P, L, C, AR, AD, V, W. The S family, the A family apart from AR and AD, and the O family left the Point: hardwired equipment is a Device (September Point/Device boundary). PC covers heater/shutter cable outlets. LR, AD and CP stay available for the day a 24 V run or a control panel deserves them; their modelling is Louis's open point."
     },
     "conduit_diameter": {"vocabulary": "seeded"},
     "switch_nature": {"vocabulary": "seeded"},
@@ -115,14 +119,24 @@
     },
     "part_of": {
       "target_types": ["system"],
-      "note": "Required for Component, optional for Device. The removed-component proposal remains unresolved."
+      "note": "Required at a Component's birth, optional for Device and Utensil. Cleared by update once a Component is dismantled (2026-11-09)."
+    },
+    "powered_by": {
+      "target_types": ["point", "device"],
+      "note": "On a Circuit, the driver Point that originates it. On a Device, the supply Device it draws from (2026-10-05 LED chain)."
+    },
+    "worksite": {
+      "target_types": ["worksite"],
+      "note": "Several values allowed on a Task (2026-11-09)."
+    },
+    "archived": {
+      "note": "Lifecycle exit written by the archive verb; reads leave archived objects out unless asked for them."
     },
     "rated_input_power": {
       "note": "Documented nominal absorbed power only; not an instantaneous measurement, peak, or audio output rating."
     },
     "rated_output_power": {
-      "attachment_status": "pending_assembly_review",
-      "note": "Documented nominal electrical output power. Defined but not attached to a type until the supply/assembly classification is settled."
+      "note": "Documented nominal electrical output power. Attached to Device since 2026-11-09 (a 24 V supply is a Device, 2026-10-05)."
     },
     "color_temperature_min": {"note": "Documented lower bound; equals the upper bound for documented fixed-white equipment."},
     "color_temperature_max": {"note": "Documented upper bound; equals the lower bound for documented fixed-white equipment."},
@@ -133,7 +147,7 @@
     "luminous_flux_reference_temperature": {"paired_with": "luminous_flux"}
   },
   "migration": {
-    "status": "Historical coordinates, preserved unchanged. Not executable conversion rules; the final clean-key and experience strategy is unresolved.",
+    "status": "Coordinates of the old live space, kept as the bridge the replay sheet uses when the old objects are exported and recreated on the manifest keys (2026-11-09: the seven live keys die with the old space). Old Notes text moves into the body; old category options outside the 22 and the old power value are reported, never guessed.",
     "_live_space_type_keys_until_rebirth": {"product": "errand"},
     "_live_space_keys_until_rebirth": {
       "product_category": "errand_category",
