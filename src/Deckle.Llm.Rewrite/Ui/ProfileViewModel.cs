@@ -73,8 +73,8 @@ public partial class ProfileViewModel : ObservableObject
 
     // ── State ────────────────────────────────────────────────────────────────
 
-    // Drives IsExpanded so a freshly added profile opens. Never reset: once
-    // the expander is open, it no longer matters.
+    // A profile just added: its page opens with the name box focused. Never
+    // reset: the next Reload loads every profile as not new.
     [ObservableProperty]
     public partial bool IsNew { get; set; }
 

@@ -41,6 +41,7 @@ public partial class App
         Settings.SettingsHost.RestartApp       = RestartApp;
         Settings.SettingsHost.GetSettingsWindow = () => _settingsWindow;
         Catalog.SettingsNavigation.GoToPage = tag => _settingsWindow?.SelectPage(tag);
+        Catalog.SettingsNavigation.OpenSubpage = (page, parameter) => _settingsWindow?.OpenSubpage(page, parameter);
         // The Location line of a folder setting lives in Deckle.Settings (it
         // needs the Settings window and its ETW source), so the Catalog composer
         // builds it through this factory. DefaultPath is invoked here, at

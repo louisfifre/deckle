@@ -1363,6 +1363,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── LlmOllamaContext.cs
 │   │   │   ├── LlmPage.xaml
 │   │   │   ├── LlmPage.xaml.cs
+│   │   │   ├── LlmProfilePage.xaml
+│   │   │   ├── LlmProfilePage.xaml.cs
 │   │   │   ├── LlmProfilesSection.xaml
 │   │   │   ├── LlmProfilesSection.xaml.cs
 │   │   │   ├── LlmProvidersSection.xaml
@@ -1584,6 +1586,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SettingsWindow.FocusDismiss.cs
 │   │   ├── SettingsWindow.InterfaceCapture.cs
 │   │   ├── SettingsWindow.Search.cs
+│   │   ├── SettingsWindow.Subpages.cs
 │   │   ├── SettingsWindow.TitleBarProbe.cs
 │   │   ├── SettingsWindow.xaml
 │   │   ├── SettingsWindow.xaml.cs

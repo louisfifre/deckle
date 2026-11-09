@@ -3,6 +3,7 @@ using System.Linq;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Deckle.Catalog;
 
 namespace Deckle.Settings;
 
@@ -54,11 +55,26 @@ public sealed partial class SettingsWindow
         {
             foreach (NavigationViewItem item in PageItems())
             {
-                starting?.Invoke((string)item.Tag, item.Content as string ?? "");
+                string label = item.Content as string ?? "";
+                starting?.Invoke((string)item.Tag, label);
                 var clock = System.Diagnostics.Stopwatch.StartNew();
                 bool loaded = await ShowPageAsync(item);
-                await visit(new SettingsPageVisit(
-                    (string)item.Tag, item.Content as string ?? "", loaded, clock.ElapsedMilliseconds));
+                await visit(new SettingsPageVisit((string)item.Tag, label, loaded, clock.ElapsedMilliseconds));
+
+                // One subpage of the page, when it names one (ISettingsSubpageSample),
+                // visited the same way, then left for the rail page again.
+                if (loaded && PageFrame.Content is ISettingsSubpageSample host && host.SampleSubpage() is { } sample)
+                {
+                    string subTag = $"{sample.Page.FullName}, {sample.Page.Assembly.GetName().Name}";
+                    string subLabel = $"{label} › {sample.Label}";
+                    starting?.Invoke(subTag, subLabel);
+                    clock.Restart();
+                    OpenSubpage(sample.Page, sample.Parameter);
+                    bool subLoaded = await WaitForPageAsync(sample.Page);
+                    await visit(new SettingsPageVisit(subTag, subLabel, subLoaded, clock.ElapsedMilliseconds));
+                    ReturnToRailPage();
+                    await WaitForPageAsync(Type.GetType((string)item.Tag));
+                }
             }
         }
         finally
@@ -93,8 +109,13 @@ public sealed partial class SettingsWindow
     {
         if (item.Tag is not string tag) return false;
         SelectPage(tag);
+        return await WaitForPageAsync(Type.GetType(tag));
+    }
 
-        Type? pageType = Type.GetType(tag);
+    // True when the frame holds a loaded page of that type before the timeout;
+    // the page then gets its frames and its settle delay.
+    private async Task<bool> WaitForPageAsync(Type? pageType)
+    {
         var waited = System.Diagnostics.Stopwatch.StartNew();
         bool loaded = false;
         while (waited.Elapsed < PageLoadTimeout)

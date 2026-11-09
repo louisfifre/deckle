@@ -7,12 +7,6 @@
     xmlns:catalog="using:Deckle.Catalog"
     x:Name="Root">
 
-    <UserControl.Resources>
-        <vm:CtxTooltipConverter x:Key="CtxTooltipConverter" />
-        <vm:TempTooltipConverter x:Key="TempTooltipConverter" />
-        <vm:BoolToVisibilityConverter x:Key="BoolToVisibility" />
-    </UserControl.Resources>
-
     <!-- Tag is the search index's scroll-to handle (LabelKey "LlmProfilesSection").
          The reset is a command with its own confirmation, not a dirty-tracked
          value, so the wheel stays enabled. -->
@@ -23,138 +17,22 @@
                              ResetRequested="ResetSection_Click">
     <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
 
-        <ItemsRepeater ItemsSource="{x:Bind Profiles}"
-                       ElementPrepared="ProfilesRepeater_ElementPrepared">
+        <ItemsRepeater ItemsSource="{x:Bind Profiles}">
             <ItemsRepeater.Layout>
                 <StackLayout Spacing="4" />
             </ItemsRepeater.Layout>
             <ItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="vm:ProfileViewModel">
-                    <!-- The repeater's ElementPrepared composes the length
-                         threshold and the shortcut as cards after the editor
-                         card (ComposeProfileCards). Tag carries the profile:
-                         the repeater leaves DataContext unset under x:Bind. -->
-                    <controls:SettingsExpander
+                    <!-- One card per profile, its chevron leading to the
+                         profile's own page (LlmProfilePage), as Windows 11
+                         Settings lists devices. Tag carries the profile: the
+                         repeater leaves DataContext unset under x:Bind. -->
+                    <controls:SettingsCard
                         Header="{x:Bind Name, Mode=OneWay}"
                         Description="{x:Bind Summary, Mode=OneWay}"
-                        IsExpanded="{x:Bind IsNew, Mode=OneWay}"
+                        IsClickEnabled="True"
                         Tag="{x:Bind}"
-                        Loaded="ProfileExpander_Loaded">
-
-                        <Button Tag="{x:Bind}"
-                                Click="DeleteProfile_Click">
-                            <StackPanel Orientation="Horizontal" Spacing="6">
-                                <FontIcon Glyph="{StaticResource Icon.Delete}" FontSize="14" />
-                                <TextBlock x:Uid="LlmProfile_RemoveLabel" />
-                            </StackPanel>
-                        </Button>
-
-                        <controls:SettingsExpander.Items>
-                            <controls:SettingsCard ContentAlignment="Vertical"
-                                                   HorizontalContentAlignment="Stretch">
-                                <StackPanel Spacing="12"
-                                            HorizontalAlignment="Stretch">
-                                    <TextBox x:Uid="LlmProfile_NameBox"
-                                             Text="{x:Bind Name, Mode=TwoWay}"
-                                             Tag="{x:Bind}"
-                                             TextChanged="NameBox_TextChanged"
-                                             HorizontalAlignment="Stretch" />
-
-                                    <!-- Items come from the Providers section, set on
-                                         Loaded so the template needs no outer binding;
-                                         the choice decides which model names the box
-                                         below suggests and whether the hints show. -->
-                                    <ComboBox x:Uid="LlmProfile_ProviderBox"
-                                              Tag="{x:Bind}"
-                                              DisplayMemberPath="Name"
-                                              SelectedValuePath="Id"
-                                              MinWidth="280"
-                                              Loaded="ProviderCombo_Loaded"
-                                              SelectionChanged="ProviderCombo_SelectionChanged" />
-
-                                    <AutoSuggestBox x:Uid="LlmProfile_ModelBox"
-                                                    Tag="{x:Bind}"
-                                                    Text="{x:Bind Model, Mode=OneWay}"
-                                                    GotFocus="ModelSuggest_GotFocus"
-                                                    TextChanged="ModelSuggest_TextChanged"
-                                                    SuggestionChosen="ModelSuggest_SuggestionChosen"
-                                                    QuerySubmitted="ModelSuggest_QuerySubmitted"
-                                                    HorizontalAlignment="Stretch" />
-
-                                    <TextBox x:Uid="LlmProfile_SystemPromptBox"
-                                             Text="{x:Bind SystemPrompt, Mode=TwoWay}"
-                                             Tag="{x:Bind}"
-                                             TextChanged="SystemPromptBox_TextChanged"
-                                             AcceptsReturn="True"
-                                             TextWrapping="Wrap"
-                                             MinHeight="100"
-                                             MaxHeight="300"
-                                             HorizontalAlignment="Stretch" />
-
-                                    <TextBlock x:Uid="LlmProfile_SystemPromptBody"
-                                               Style="{StaticResource CaptionTextBlockStyle}"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               TextWrapping="Wrap"
-                                               Margin="0,-4,0,0" />
-
-                                    <!-- Hidden, not greyed, for a hosted provider that
-                                         takes no sampling hints. -->
-                                    <StackPanel Spacing="12"
-                                                Visibility="{x:Bind ShowsGenerationHints, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-                                    <StackPanel Orientation="Horizontal"
-                                                Spacing="12"
-                                                VerticalAlignment="Bottom">
-                                        <Slider x:Uid="LlmProfile_TemperatureSlider"
-                                                Minimum="0" Maximum="2"
-                                                StepFrequency="0.05"
-                                                SmallChange="0.05"
-                                                LargeChange="0.1"
-                                                MinWidth="280"
-                                                Value="{x:Bind Temperature, Mode=TwoWay}"
-                                                ThumbToolTipValueConverter="{StaticResource TempTooltipConverter}" />
-                                        <TextBlock Text="{x:Bind TempDisplay, Mode=OneWay}"
-                                                   VerticalAlignment="Center"
-                                                   MinWidth="40"
-                                                   Style="{StaticResource BodyTextBlockStyle}" />
-                                    </StackPanel>
-
-                                    <TextBlock x:Uid="LlmProfile_TemperatureBody"
-                                               Style="{StaticResource CaptionTextBlockStyle}"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               TextWrapping="Wrap"
-                                               Margin="0,-4,0,0" />
-
-                                    <StackPanel Orientation="Horizontal"
-                                                Spacing="12"
-                                                VerticalAlignment="Bottom">
-                                        <Slider x:Uid="LlmProfile_ContextSlider"
-                                                Minimum="0" Maximum="8"
-                                                StepFrequency="1"
-                                                SnapsTo="StepValues"
-                                                MinWidth="280"
-                                                Value="{x:Bind CtxIndex, Mode=TwoWay}"
-                                                ThumbToolTipValueConverter="{StaticResource CtxTooltipConverter}" />
-                                        <TextBlock Text="{x:Bind CtxDisplay, Mode=OneWay}"
-                                                   VerticalAlignment="Center"
-                                                   MinWidth="40"
-                                                   Style="{StaticResource BodyTextBlockStyle}" />
-                                    </StackPanel>
-
-                                    <TextBlock x:Uid="LlmProfile_ContextBody"
-                                               Style="{StaticResource CaptionTextBlockStyle}"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               TextWrapping="Wrap"
-                                               Margin="0,-4,0,0" />
-                                    </StackPanel>
-
-                                    <!-- Top P and the repeat penalty (the former
-                                         "Advanced parameters" expander) are no longer
-                                         exposed (triage of 2026-10-14): a profile keeps
-                                         the model's defaults for them. -->
-                                </StackPanel>
-                            </controls:SettingsCard>
-                        </controls:SettingsExpander.Items>
-                    </controls:SettingsExpander>
+                        Click="ProfileCard_Click" />
                 </DataTemplate>
             </ItemsRepeater.ItemTemplate>
         </ItemsRepeater>
