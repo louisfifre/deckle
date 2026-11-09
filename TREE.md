@@ -1299,7 +1299,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── GenerationRequest.cs
 │   │   │   ├── GenerationResult.cs
 │   │   │   ├── IGenerationEngine.cs
-│   │   │   └── PromptTemplates.cs
+│   │   │   ├── PromptTemplates.cs
+│   │   │   └── ReasoningLevel.cs
 │   │   ├── Providers/
 │   │   │   ├── IGenerationEngineResolver.cs
 │   │   │   ├── LlmProvider.cs
@@ -2397,6 +2398,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteServiceFeedbackTests.cs
 │   │   ├── SentenceBoundaryTests.cs
 │   │   └── SentenceRewriteTests.cs
+│   ├── Deckle.Llm.Tests/
+│   │   ├── ClaudeReasoningTests.cs
+│   │   ├── Deckle.Llm.Tests.csproj
+│   │   └── ReasoningOnTheWireTests.cs
 │   ├── Deckle.Modules.Tests/
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Modules.Tests.csproj

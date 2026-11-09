@@ -12,6 +12,7 @@
          can depend on this module without dragging the rewrite UI in. -->
     <!-- Official Anthropic C# SDK: the Claude engine's transport. -->
     <PackageReference Include="Anthropic" />
+    <InternalsVisibleTo Include="Deckle.Llm.Tests" />
   </ItemGroup>
 
   <ItemGroup>

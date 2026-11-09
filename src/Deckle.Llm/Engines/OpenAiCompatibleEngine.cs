@@ -63,6 +63,7 @@ public sealed class OpenAiCompatibleEngine : IGenerationEngine
             stream      = false,
             temperature = request.Temperature,
             top_p       = request.TopP,
+            reasoning_effort = ReasoningEffortFor(request.Reasoning),
         };
 
         string json = JsonSerializer.Serialize(body, _jsonOpts);
@@ -153,11 +154,28 @@ public sealed class OpenAiCompatibleEngine : IGenerationEngine
         return trimmed + "/" + path;
     }
 
+    // `reasoning_effort` is OpenAI's field, accepted on /v1/chat/completions
+    // by Ollama (its docs, 2026-11) and by LM Studio since 0.4.8 (changelog).
+    // Its values beyond low, medium and high are model-defined: "none" is
+    // OpenAI's word for no reasoning, and whether a given local model honours
+    // it, or honours the field at all, is the server's and the model's
+    // business, unverified here. Null sends nothing, as before the knob.
+    internal static string? ReasoningEffortFor(ReasoningLevel? level) => level switch
+    {
+        null                  => null,
+        ReasoningLevel.Off    => "none",
+        ReasoningLevel.Low    => "low",
+        ReasoningLevel.Medium => "medium",
+        ReasoningLevel.High   => "high",
+        _ => throw new ArgumentOutOfRangeException(nameof(level), level, null),
+    };
+
     static string FormatOptions(GenerationRequest request)
     {
-        var parts = new List<string>(2);
+        var parts = new List<string>(3);
         if (request.Temperature.HasValue) parts.Add($"temp={request.Temperature.Value}");
         if (request.TopP.HasValue)        parts.Add($"top_p={request.TopP.Value}");
+        if (ReasoningEffortFor(request.Reasoning) is { } effort) parts.Add($"reasoning={effort}");
         return parts.Count == 0 ? "defaults" : string.Join(" ", parts);
     }
 
