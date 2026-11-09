@@ -150,8 +150,9 @@ object, or lists several.
 - There is no permanent preview-card/elicitation workflow. Search candidates
   provide one structured building block for future mobile interaction.
 - The recreation of a space is rehearsed headless on a test space (see
-  Recreation rehearsal); views, templates, placement and widgets stay the
-  person's pass in the app.
+  Recreation rehearsal). Views, templates, placement and widgets are not
+  yet carried by Deckle; the v2 API writes them (see the boundary below),
+  and the person checks the result in the app.
 
 ## Recreation rehearsal
 
@@ -255,10 +256,38 @@ receipts, photos), which the verbs do not write; creation and modification
 dates and authors, which a recreation resets; and everything REST cannot
 write.
 
-The boundary recorded on 2026-11-09. REST cannot write templates, views
-(beyond four v2 view operations Deckle has not modeled), featured or hidden
-property placement, widgets and pinning, and it serves no template content
-and no active view. The official export (doc.anytype.io) offers Markdown,
+The boundary as proved on 2026-11-09, evening, on a throwaway bot-created
+space of the self-hosted network, fictional data only, every write read back
+through the API. The v2 API (the PC bot's anytype-cli serves the same
+schemas, `GET /v2/schemas`) writes:
+
+- on a type (`PATCH /v2/spaces/{space}/types/{key}`): `default_view`,
+  `default_template` (an object created without a template then starts from
+  it), the featured or hidden section of each property, and the type's own
+  views through an `ops` envelope (`insert_view`, `update_view`);
+- a set: `POST /v2/spaces/{space}/queries` with its views whole (table,
+  kanban grouped by a property, gallery; filters, sorts, columns with an
+  aggregation);
+- a collection: `POST /v2/spaces/{space}/collections` with its items, then
+  its views through `PATCH /v2/spaces/{space}/objects/{id}` ops;
+- a template: `POST /v2/spaces/{space}/templates` with property values and a
+  body, including an inline dataview block with its views and filters; an
+  object created from it gets the values and the body. A filter on « this
+  object » is spelled `_filter_template_1_`, the same token the app stores in
+  the live space's templates and in the objects made from them, resolved
+  when the app renders;
+- widgets: `POST /v2/spaces/{space}/widgets` on a query view or a
+  collection, space scope.
+
+Not shown by the API: what an inline query lists inside an object (no
+endpoint answered), and how any of this renders, which only the app shows.
+A widget in personal scope belongs to the member who writes it, so the
+bot cannot set the person's own sidebar (inference from the scope field).
+Deckle carries none of it yet: the rehearsal recreates objects only.
+
+The earlier boundary, recorded on 2026-11-09 before that proof, read the
+2025-11-08 v1 OpenAPI: REST could not write templates, views, placement or
+widgets. The official export (doc.anytype.io) offers Markdown,
 Any-Block (Protobuf or JSON, zip), PDF and HTML, for one object, a
 selection, a view or the whole space, with linked objects, files and
 archived objects as options; import is desktop-only, from Space Settings;
@@ -269,10 +298,9 @@ exported as Any-Block JSON, includes only the types, properties, widgets,
 templates and objects chosen: the one official statement that templates and
 widgets travel, views not named. A reading of anytype-heart (2026-09, home
 repository NOTES.md) found that the Any-Block export carries types, views
-and templates. Both are leads, not proof. So the experience stays the
-person's pass in the app: export the live space as Any-Block JSON, import
-it into a test space, then compare views (`schema_inspect_space` on both
-aliases) and templates (by eye) with the live space.
+and templates. Both are leads, not proof, and the person ruled the export
+and import out on 2026-11-09: it would carry the old keys. The reborn space
+recreates its views and templates on the new keys instead.
 
 ## Local validation
 
