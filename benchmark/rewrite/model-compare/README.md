@@ -7,7 +7,8 @@ stronger reasoning call list the meaning changes in each rewrite, and
 aggregates both.
 
 Generations go through `src/Deckle.Llm`'s `ClaudeEngine`, the production path
-(effort low, thinking at the SDK default). The judge calls the Anthropic SDK
+(effort low, thinking at the SDK default, unless the campaign sets a reasoning
+level). The judge calls the Anthropic SDK
 directly at effort high, because finding a flipped negation in a long
 dictation is reasoning work. The one-shot commands (`generate`, `judge`,
 `summary`) run sequentially; a campaign (`run`) runs one lane per model.
@@ -63,6 +64,26 @@ judges and exports. It is resumable: rerun the same `--out` and every call
 already paid is skipped (a row with an error is redone); `--only` runs one
 step. One lane per model runs in parallel, sequential inside a lane, so a
 model's latency column is never inflated by its own queue.
+
+### Reasoning levels
+
+`"reasoning": ["auto", "off", "medium"]` runs every model at each listed
+level (`auto`, `off`, `low`, `medium`, `high`). Each (model, level) pair is an
+arm with its own lane, and its rows record it as their model,
+`claude-haiku-5-5@off`, so the judge batches, the summary and the export keep
+the levels apart with no other change; the export adds a `reasoning` field
+beside `model`. `auto` keeps the bare model name and sends what the app sends
+today (effort low, adaptive thinking), so its rows compare with those of a
+campaign that named no level. On Claude, `low` sends the same request as
+`auto`. `off` turns thinking off where the model allows it (`disabled` on
+Haiku 5.5, `between_tools` on Sonnet 5.5) and falls back to effort low on
+Opus 5.5, which always thinks. Without a `reasoning` key a campaign runs as
+before.
+
+Thinking is billed as output whether or not its text comes back, so
+`eval_tokens` counts it: set it beside `words_out` to see how much of a
+rewrite's output was reasoning. `campaigns/reasoning-lissage.json` compares
+three levels on Haiku and Sonnet before the app's default moves.
 
 ### Prompt caching
 

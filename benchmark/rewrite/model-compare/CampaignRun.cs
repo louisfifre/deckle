@@ -11,13 +11,14 @@ namespace Deckle.Benchmark.ModelCompare;
 // already there (a row with an error is redone). A crash, a rate limit or a
 // closed terminal costs nothing already paid.
 //
-// Parallelism is one lane per model, sequential inside a lane: the latency
-// column of one model is never inflated by that model's own queue, and three
-// lanes keep the wall clock near a third of the sequential run. The judge runs
-// the same way, one lane per model.
+// Parallelism is one lane per arm (a model, or a model at one reasoning
+// level), sequential inside a lane: the latency column of one arm is never
+// inflated by that arm's own queue, and three lanes keep the wall clock near
+// a third of the sequential run. The judge runs the same way, one lane per
+// arm.
 //
 // Nothing here changes how a rewrite is produced: the generate step calls the
-// production ClaudeEngine exactly as the first study did.
+// production ClaudeEngine, with the arm's reasoning level when it has one.
 
 static class CampaignRun
 {
@@ -29,7 +30,7 @@ static class CampaignRun
         var raw = Corpus.LoadRaw();
         var resolved = CampaignFile.Resolve(campaign, outDir, raw);
 
-        Console.WriteLine($"campaign={campaign.Name} models={string.Join(",", campaign.Models)} iterations={campaign.Iterations} judge={campaign.Judge.Model} batch={campaign.Judge.Batch}");
+        Console.WriteLine($"campaign={campaign.Name} arms={string.Join(",", campaign.Arms)} iterations={campaign.Iterations} judge={campaign.Judge.Model} batch={campaign.Judge.Batch}");
         foreach (var (bucket, ids) in resolved.Dictations)
             Console.WriteLine($"  {bucket,-10} {string.Join(", ", ids.Select(id => $"{Judge.Short(id)} ({raw[id].WordsIn} w)"))}");
         foreach (var cell in campaign.Cells)
@@ -73,7 +74,7 @@ static class CampaignRun
         foreach (var cell in resolved.Campaign.Cells)
         foreach (string bucket in cell.Buckets)
         foreach (string id in resolved.Dictations[bucket])
-        foreach (string model in resolved.Campaign.Models)
+        foreach (string model in resolved.Campaign.Arms)
         for (int iteration = 1; iteration <= resolved.Campaign.Iterations; iteration++)
             items.Add(new WorkItem(raw[id], resolved.Prompts[cell.Key], model, iteration));
 
@@ -92,7 +93,7 @@ static class CampaignRun
         double total = 0;
         int finished = 0;
 
-        var lanes = resolved.Campaign.Models.Select(model => Task.Run(() =>
+        var lanes = resolved.Campaign.Arms.Select(model => Task.Run(() =>
         {
             foreach (var item in pending.Where(i => i.Model == model))
             {
@@ -119,12 +120,15 @@ static class CampaignRun
 
     static GenerationRow GenerateOne(ClaudeEngine engine, WorkItem item, bool cachePrompt)
     {
+        // item.Model is the arm's label: the API model and its reasoning level.
+        var (model, reasoning) = ModelVariant.Parse(item.Model);
         var request = new GenerationRequest(
-            Model:        item.Model,
+            Model:        model,
             SystemPrompt: item.Prompt.SystemPrompt,
             UserText:     item.Dictation.Text,
             Label:        "benchmark",
-            CachePrompt:  cachePrompt);
+            CachePrompt:  cachePrompt,
+            Reasoning:    reasoning);
 
         GenerationResult? result = null;
         string? error = null;
@@ -216,7 +220,7 @@ static class CampaignRun
         // other: they share the raw dictation, and the cache is readable only
         // once the call that writes it has answered, so batches sent together
         // would each pay to write it and none would read it.
-        var lanes = resolved.Campaign.Models.Select(model => Task.Run(() =>
+        var lanes = resolved.Campaign.Arms.Select(model => Task.Run(() =>
         {
             var cells = pending.Where(b => b.Rows[0].Model == model)
                 .GroupBy(b => (b.Rows[0].Id, b.Rows[0].Prompt))

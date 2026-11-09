@@ -70,7 +70,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── model-compare/
 │   │   │   ├── campaigns/
 │   │   │   │   ├── lissage-lean.json
-│   │   │   │   └── profiles-v2.json
+│   │   │   │   ├── profiles-v2.json
+│   │   │   │   └── reasoning-lissage.json
 │   │   │   ├── optimize/
 │   │   │   │   ├── affinage-sonnet-v2.json
 │   │   │   │   ├── affinage-sonnet.json
