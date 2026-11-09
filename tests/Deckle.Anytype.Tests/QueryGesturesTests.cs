@@ -301,7 +301,7 @@ public class QueryGesturesTests
         var entries = Assert.IsType<JsonArray>(patched["properties"]);
         JsonObject entry = Assert.IsType<JsonObject>(Assert.Single(entries));
         Assert.Equal(DevSpace.Props.Priority, entry["key"]!.GetValue<string>());
-        Assert.Equal("p4", entry["select"]!.GetValue<string>());
+        Assert.Equal("p_4", entry["select"]!.GetValue<string>());
 
         Assert.DoesNotContain(server.Requests, r => r.Path.Contains("/properties"));
     }
@@ -351,7 +351,7 @@ public class QueryGesturesTests
         Assert.Equal("Nouveau titre", patched["name"]!.GetValue<string>());
         JsonObject entry = Assert.IsType<JsonObject>(Assert.Single((JsonArray)patched["properties"]!));
         Assert.Equal(DevSpace.Props.Priority, entry["key"]!.GetValue<string>());
-        Assert.Equal("p2", entry["select"]!.GetValue<string>());
+        Assert.Equal("p_2", entry["select"]!.GetValue<string>());
     }
 
     // État is kept on projects only: an epic and a task carry a hidden one the

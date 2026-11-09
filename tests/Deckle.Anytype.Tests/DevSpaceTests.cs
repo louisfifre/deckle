@@ -28,11 +28,11 @@ public class DevSpaceTests
     }
 
     [Fact]
-    public void PriorityKeysArePAndTheLevel()
+    public void PriorityKeysAreTheNativeOnesPUnderscoreLevel()
     {
-        Assert.Equal("p0", DevSpace.Priority.KeyFor(0));
-        Assert.Equal("p5", DevSpace.Priority.KeyFor(5));
-        Assert.Equal(3, DevSpace.Priority.LevelFor("p3"));
+        Assert.Equal("p_0", DevSpace.Priority.KeyFor(0));
+        Assert.Equal("p_5", DevSpace.Priority.KeyFor(5));
+        Assert.Equal(3, DevSpace.Priority.LevelFor("p_3"));
     }
 
     [Fact]
@@ -77,8 +77,8 @@ public class DevSpaceTests
     {
         // For Priority the user can pass the bare level digit; "2" maps to the
         // level-2 wire key.
-        Assert.Equal("p2", DevSpace.Priority.Resolve("2"));
-        Assert.Equal("p2", DevSpace.Priority.Resolve("p2"));
+        Assert.Equal("p_2", DevSpace.Priority.Resolve("2"));
+        Assert.Equal("p_2", DevSpace.Priority.Resolve("p_2"));
     }
 
     // ── ResolveTag on closed vs open vocabularies ─────────────────────────────

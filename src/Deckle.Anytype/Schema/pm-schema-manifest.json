@@ -90,8 +90,8 @@
       {"key": "ready", "name": "Prêt"}, {"key": "doing", "name": "En cours"},
       {"key": "paused", "name": "En pause"}, {"key": "dormant", "name": "Dormant"}]},
     {"key": "priority", "name": "Priorité", "format": "select", "tags": [
-      {"key": "p0", "name": "0"}, {"key": "p1", "name": "1"}, {"key": "p2", "name": "2"},
-      {"key": "p3", "name": "3"}, {"key": "p4", "name": "4"}, {"key": "p5", "name": "5"}]},
+      {"key": "p_0", "name": "0"}, {"key": "p_1", "name": "1"}, {"key": "p_2", "name": "2"},
+      {"key": "p_3", "name": "3"}, {"key": "p_4", "name": "4"}, {"key": "p_5", "name": "5"}]},
     {"key": "done_definition", "name": "Définition de fini", "format": "text"},
     {"key": "budget_estimated", "name": "Budget estimé", "format": "number"},
     {"key": "budget_actual", "name": "Budget réel", "format": "number"},

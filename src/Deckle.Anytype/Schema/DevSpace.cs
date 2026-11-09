@@ -148,12 +148,12 @@ public static class DevSpace
     {
         public static readonly TagOption[] All =
         [
-            new("p0", "0"),
-            new("p1", "1"),
-            new("p2", "2"),
-            new("p3", "3"),
-            new("p4", "4"),
-            new("p5", "5"),
+            new("p_0", "0"),
+            new("p_1", "1"),
+            new("p_2", "2"),
+            new("p_3", "3"),
+            new("p_4", "4"),
+            new("p_5", "5"),
         ];
 
         // Out-of-range throws: a caller asking for a priority the space does not
