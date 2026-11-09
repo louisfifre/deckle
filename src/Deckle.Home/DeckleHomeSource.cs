@@ -107,7 +107,7 @@ public sealed class DeckleHomeSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtObjectBinned, type_key);
     }
 
-    // A typed create refused because a name folds like an object of the same
+    // A typed create refused because a name is near an object of the same
     // type. Detail, not a milestone: the refusal goes back to the caller, who
     // decides. The type key and how many objects it resembled, never which.
     [Event(EvtNameGuardRefused,

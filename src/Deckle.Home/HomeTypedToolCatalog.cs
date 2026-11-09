@@ -222,7 +222,7 @@ public static class HomeTypedToolCatalog
             properties["worksite"] = StringOrStringArraySchema("Worksite selector, or several: a task may serve several worksites.");
         if (HomeNameGuard.Applies(type.CanonicalKey))
             properties["force"] = BooleanSchema(
-                "Pass the near-name guard for a true twin: create even though an object of this type already has a name that folds the same.");
+                "Pass the near-name guard for a true twin: create even though an object of this type already has a near name.");
         return ObjectSchema(properties, CreateRequired(type));
     }
 
@@ -388,7 +388,7 @@ public static class HomeTypedToolCatalog
             ? " Read the existing related tasks and worksites first to avoid a duplicate."
             : "";
         string identity = HomeNameGuard.Applies(type)
-            ? " A name that folds like an existing object of this type (case, accents, punctuation, plural) is refused with the candidates: update the one that exists, or pass force: true on the item for a true twin."
+            ? " A name near an existing object of this type (case, accents, punctuation, plural, word order, a small typo; numbers must match) is refused with the candidates: update the one that exists, or pass force: true on the item for a true twin."
             : " The code is the identity; a code already taken is refused with the next free one.";
         string pointGuide = type == HomeSchema.Types.Point
             ? " The person describes a room freely; extract each point from that description and give it room and category so the guichet mints its code"

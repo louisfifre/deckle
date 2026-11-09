@@ -30,11 +30,17 @@ minted, 01 to 99, gaps reused, counting the batch. An Idea requires `text` and
 has no separate name. A Component requires `system`: it is born in a System.
 A Zone is an ordinary object; a Room points at its Zone.
 
-Free-titled types pass the near-name guard. A name that folds like an existing
-object of the same type, or like an earlier item of the batch, is refused with
-the candidates by id. Folding sets aside case, accents, ligatures,
-punctuation, spacing and a plural `s` or `x` at the end of a word; an Idea is
-compared by its first line. Update the object that exists, or pass
+Free-titled types pass the near-name guard. A name that is near an existing
+object of the same type, or an earlier item of the batch, is refused with the
+candidates by id. Two names are near when their folded forms are equal (case,
+accents, ligatures, punctuation, spacing and a plural `s` or `x` at the end of
+a word are set aside), or they hold the same significant words in any order
+(French stop words such as `de`, `la`, `et` dropped), or their sorted keys are
+a typo apart (one for a key of 5 to 10 characters, two above 10, none at 4 or
+fewer). Names whose numbers differ ("Radiateur 1", "Radiateur 2") are never
+near. The guard accepts a distance because an LLM drives the surface: a false
+refusal costs one retry, a missed duplicate splits the links between two
+objects. An Idea is compared by its first line. Update the object that exists, or pass
 `force: true` on the item for a true twin. Coded types keep their code as
 identity and skip the guard.
 

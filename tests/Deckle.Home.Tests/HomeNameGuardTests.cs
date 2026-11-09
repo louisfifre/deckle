@@ -29,6 +29,97 @@ public sealed class HomeNameFoldTests
         Assert.NotEqual(HomeNameGuard.Fold(first), HomeNameGuard.Fold(second));
 }
 
+// Near names: equal fold, same significant words in any order, or a small typo
+// that scales with the length of the key. Numbers tell twins apart.
+[Trait("Category", "unit")]
+public sealed class HomeNearNameTests
+{
+    [Theory]
+    [InlineData("Visseuse fictive", "visseuses  FICTIVES !")]
+    [InlineData("Lampe de bureau", "bureau lampe")]
+    [InlineData("Lampe de bureau", "La lampe du bureau")]
+    [InlineData("Pot pour les fleurs", "fleurs pot")]
+    [InlineData("L'ampoule fictive", "ampoule fictive")]
+    public void SameSignificantWordsInAnyOrderAreNear(string first, string second) =>
+        Assert.True(HomeNearName.AreNear(first, second));
+
+    [Theory]
+    [InlineData("Perceuse", "Percuese")]
+    [InlineData("Cuisine", "Cuisne")]
+    [InlineData("Tournevis", "Tournevsi")]
+    [InlineData("Aspirateur balai", "Aspirateur ballai")]
+    [InlineData("Aspirateur balai fictif", "Aspiratuer balai fictef")]
+    public void ASmallTypoIsNear(string first, string second) =>
+        Assert.True(HomeNearName.AreNear(first, second));
+
+    [Theory]
+    [InlineData("Vis", "Vit")]
+    [InlineData("Clou", "Clef")]
+    [InlineData("Perceuse", "Perceuses visseuses")]
+    [InlineData("Perceuse", "Pelouse")]
+    [InlineData("Aspirateur balai", "Aspirateur ballaix fictif")]
+    public void TheToleranceStaysSmall(string first, string second) =>
+        Assert.False(HomeNearName.AreNear(first, second));
+
+    [Fact]
+    public void ANameOfFourLettersOrFewerTakesNoTypo()
+    {
+        Assert.False(HomeNearName.AreNear("Vase", "Vasq"));
+        Assert.False(HomeNearName.AreNear("Lit", "Lot"));
+        Assert.True(HomeNearName.AreNear("Vases", "Vase"));
+    }
+
+    [Fact]
+    public void AnElevenCharacterKeyTakesTwoTyposButAShorterOneOnlyOne()
+    {
+        // Key "radiateur chambre" (17) tolerates two, "radiateur" (9) one.
+        Assert.True(HomeNearName.AreNear("Radiateur chambre", "Radiateur chmabre"));
+        Assert.True(HomeNearName.AreNear("Radiateur chambre", "Radiatuer chmbre"));
+        Assert.False(HomeNearName.AreNear("Radiateur", "Radiatuer chmbre"));
+        Assert.True(HomeNearName.AreNear("Radiateur", "Radiatuur"));
+        Assert.False(HomeNearName.AreNear("Radiateur", "Radiatoor"));
+    }
+
+    [Theory]
+    [InlineData("Radiateur 1", "Radiateur 2")]
+    [InlineData("Radiateur 12", "Radiateur 21")]
+    [InlineData("Ampoule E14", "Ampoule E27")]
+    [InlineData("Radiateur 1", "Radiateur")]
+    [InlineData("Lampe 2 bureau", "Lampe 3 bureau")]
+    public void DifferentNumbersAreNeverNear(string first, string second) =>
+        Assert.False(HomeNearName.AreNear(first, second));
+
+    [Fact]
+    public void TheSameNumbersInAnotherOrderStayNear()
+    {
+        Assert.True(HomeNearName.AreNear("Lampe bureau 2", "bureau 2 lampe"));
+        Assert.True(HomeNearName.AreNear("Radiateur 1", "radiateurs 1"));
+    }
+
+    [Fact]
+    public void ANameMadeOfStopWordsOnlyKeepsItsFoldedForm()
+    {
+        Assert.True(HomeNearName.AreNear("Le un", "le  UN"));
+        Assert.False(HomeNearName.AreNear("Le un", "la une"));
+        Assert.False(HomeNearName.AreNear("Le un", "Lampe"));
+    }
+
+    [Fact]
+    public void AnEmptyNameIsNearNothing()
+    {
+        Assert.False(HomeNearName.AreNear("", ""));
+        Assert.False(HomeNearName.AreNear("  !!  ", "Lampe"));
+        Assert.False(HomeNearName.AreNear((string?)null, (string?)null));
+    }
+
+    [Fact]
+    public void ADistanceCountsASwapOfNeighboursOnce()
+    {
+        Assert.Equal(1, HomeNearName.Distance("perceuse", "percuese"));
+        Assert.Equal(1, HomeNearName.Distance("lampe", "lamp"));
+        Assert.Equal(3, HomeNearName.Distance("abc", "xyz"));
+    }
+}
 [Trait("Category", "integration")]
 public sealed class HomeNameGuardTests
 {
@@ -114,6 +205,68 @@ public sealed class HomeNameGuardTests
         Assert.Single(server.Requests, request => request.Method == "POST");
     }
 
+    [Fact]
+    public async Task TheSameWordsInAnotherOrderAreRefusedWithTheCandidate()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(FakeHomeAnytypeServer.Device("device-1", "Lampe de bureau"));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Gestures(server).CreateAsync(
+                HomeSchema.Types.Device, [new HomeCreateItem(null, "bureau lampe", null)], Ct));
+
+        Assert.Contains("- device-1 · Lampe de bureau (device)", error.Message);
+        Assert.Contains("device_update", error.Message);
+        Assert.Contains("force: true", error.Message);
+        Assert.DoesNotContain(server.Requests, request => request.Method == "POST");
+    }
+
+    [Fact]
+    public async Task ATypoIsRefusedAndForcePassesIt()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(FakeHomeAnytypeServer.Device("device-1", "Perceuse"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Gestures(server).CreateAsync(
+                HomeSchema.Types.Device, [new HomeCreateItem(null, "Percuese", null)], Ct));
+        Assert.DoesNotContain(server.Requests, request => request.Method == "POST");
+
+        await Gestures(server).CreateAsync(
+            HomeSchema.Types.Device, [new HomeCreateItem(null, "Percuese", null, Force: true)], Ct);
+        Assert.Single(server.Requests, request => request.Method == "POST");
+    }
+
+    [Fact]
+    public async Task NumberedTwinsAreNotFalseDuplicates()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(FakeHomeAnytypeServer.Device("device-1", "Radiateur 1"));
+
+        await Gestures(server).CreateAsync(
+            HomeSchema.Types.Device, [new HomeCreateItem(null, "Radiateur 2", null)], Ct);
+
+        Assert.Single(server.Requests, request => request.Method == "POST");
+    }
+
+    [Fact]
+    public async Task TwoNumberedTwinsOfOneBatchPassButAnOrderedRepeatIsRefused()
+    {
+        using var server = new FakeHomeAnytypeServer();
+
+        await Gestures(server).CreateAsync(
+            HomeSchema.Types.Device,
+            [new HomeCreateItem(null, "Radiateur 1", null), new HomeCreateItem(null, "Radiateur 2", null)],
+            Ct);
+        Assert.Equal(2, server.Requests.Count(request => request.Method == "POST"));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Gestures(server).CreateAsync(
+                HomeSchema.Types.Product,
+                [new HomeCreateItem(null, "Lampe de bureau", null), new HomeCreateItem(null, "Bureau lampe", null)],
+                Ct));
+        Assert.Contains("(dans ce lot) · Lampe de bureau (product)", error.Message);
+    }
     [Fact]
     public async Task ANameOfAnotherTypeDoesNotCount()
     {

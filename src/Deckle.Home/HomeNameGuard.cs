@@ -11,14 +11,18 @@ namespace Deckle.Home;
 // force for a true twin. Coded types keep their code as identity: two sockets
 // named alike in two rooms are normal, so they never come here.
 //
-// Two names are near when their folded forms are equal: case, diacritics,
-// ligatures, punctuation and spacing do not count, nor a plural s or x at the
-// end of a word. Equality of folded forms, never a distance, so the guard
-// refuses only what a person would read as the same name.
+// Two names are near by the rules of HomeNearName: equal folded forms (case,
+// diacritics, ligatures, punctuation, spacing, a plural s or x), the same
+// words in another order, or a small typo. The guard once refused only equal
+// folded forms, never a distance, so that it refused only what a person would
+// read as the same name. The surface is now driven by an LLM, not by the
+// person: a false "too close" costs one retry (the LLM reads the candidates,
+// then passes force or asks the person), while a missed duplicate costs two
+// objects with their links split between them. So the guard catches more.
 internal sealed class HomeNameGuard
 {
     private readonly string _type;
-    private readonly List<(string Folded, string Candidate)> _known = [];
+    private readonly List<(HomeNearName.Profile Name, string Candidate)> _known = [];
     private readonly List<(string Display, string[] Candidates)> _refusals = [];
 
     public HomeNameGuard(string type, HomeObjectIndex index)
@@ -26,28 +30,28 @@ internal sealed class HomeNameGuard
         _type = type;
         foreach (JsonObject value in index.Objects.Where(value => HomeObjectJson.TypeKey(value) == type))
         {
-            string folded = Fold(ComparedName(value));
-            if (folded.Length > 0)
-                _known.Add((folded, $"{HomeObjectJson.Id(value)} · {HomeObjectIndex.Display(value)} ({type})"));
+            HomeNearName.Profile name = HomeNearName.Describe(ComparedName(value));
+            if (name.Folded.Length > 0)
+                _known.Add((name, $"{HomeObjectJson.Id(value)} · {HomeObjectIndex.Display(value)} ({type})"));
         }
     }
 
     public static bool Applies(string type) => !HomeSchema.CodedTypes.Contains(type, StringComparer.Ordinal);
 
-    // Records one item of the batch: refused when its name folds like an
+    // Records one item of the batch: refused when its name is near an
     // existing object or an earlier item, unless forced. Every item joins the
     // known names, so a later item of the same batch meets it too.
     public void Check(string name, string display, bool force)
     {
-        string folded = Fold(name);
-        if (folded.Length == 0) return;
+        HomeNearName.Profile profile = HomeNearName.Describe(name);
+        if (profile.Folded.Length == 0) return;
         if (!force)
         {
-            string[] candidates = _known.Where(known => known.Folded == folded)
+            string[] candidates = _known.Where(known => HomeNearName.AreNear(known.Name, profile))
                 .Select(known => known.Candidate).ToArray();
             if (candidates.Length > 0) _refusals.Add((display, candidates));
         }
-        _known.Add((folded, $"(dans ce lot) · {display} ({_type})"));
+        _known.Add((profile, $"(dans ce lot) · {display} ({_type})"));
     }
 
     public void ThrowIfRefused()

@@ -1011,6 +1011,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeGestures.cs
 │   │   ├── HomeMcp.cs
 │   │   ├── HomeNameGuard.cs
+│   │   ├── HomeNearName.cs
 │   │   ├── HomeObjects.cs
 │   │   ├── HomePartialWriteException.cs
 │   │   ├── HomePropertyWriter.cs

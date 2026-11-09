@@ -20,7 +20,7 @@ public static class HomeMcp
         "Guarded shared-house space in the dedicated Home Anytype profile. "
         + "Records are written only by the typed <type>_create and <type>_update verbs; their schemas list every field and option, so there is no vocabulary to read first. "
         + "A create takes a batch of items, validated whole before the first write. "
-        + "A free-titled name that folds like an existing object of its type is refused with the candidates: update that one, or pass force: true on the item for a true twin. "
+        + "A free-titled name that is near an existing object of its type (same name up to case, accents, plural, word order or a small typo) is refused with the candidates: update that one, or pass force: true on the item for a true twin. "
         + "Start from known objects and read before editing. Before creating a task or worksite, search the relevant tasks and worksites with a few focused queries, active work first. "
         + "A failed read is not evidence that an object is absent. Ask a focused question when the target or action is ambiguous; leave unknown facts empty. "
         + "Point means a connection or fixed control with its fitting; hardwired equipment is a Device. One physical bulb is one Device, connected_to its Point. "
