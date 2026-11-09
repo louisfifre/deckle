@@ -21,17 +21,145 @@ public class ThreeFingerDragRecognizerTests
     private sealed class Recorder
     {
         public int Started;
+        public int Hovered;
         public int Tapped;
         public readonly List<(double dx, double dy)> Moves = new();
         public readonly List<string> Ended = new();
+        public readonly List<string> Abandoned = new();
+        // Every effect in emission order, for the contracts that hinge on it.
+        public readonly List<string> Sequence = new();
 
         public Recorder(ThreeFingerDragRecognizer r)
         {
-            r.DragStarted += () => Started++;
+            r.HoverStarted += () => { Hovered++; Sequence.Add("hover"); };
+            r.DragStarted += () => { Started++; Sequence.Add("press"); };
             r.TapIgnored += () => Tapped++;
-            r.DragMoved += (dx, dy) => Moves.Add((dx, dy));
-            r.DragEnded += reason => Ended.Add(reason);
+            r.DragMoved += (dx, dy) => { Moves.Add((dx, dy)); Sequence.Add("move"); };
+            r.DragEnded += reason => { Ended.Add(reason); Sequence.Add("release"); };
+            r.HoverAbandoned += (reason, _) => { Abandoned.Add(reason); Sequence.Add("abandon"); };
         }
+    }
+
+    private static (int, int, int, bool)[] Three(int x) =>
+        [(1, x, 0, true), (2, x, 0, true), (3, x, 0, true)];
+
+    private static (int, int, int, bool)[] Four(int x) =>
+        [(1, x, 0, true), (2, x, 0, true), (3, x, 0, true), (4, 999, 999, true)];
+
+    // Four-finger gestures often land as three fingers first. Pressing at
+    // once turned the fourth finger's arrival into a stray click; the
+    // press now waits, and a fourth finger inside the wait presses nothing.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void FourthFingerBeforeThePressDeadlinePressesNothing()
+    {
+        var r = new ThreeFingerDragRecognizer { StartThresholdUnits = 50, PressDelayMs = 50 };
+        var rec = new Recorder(r);
+        double beforeDeadline = r.PressDelayMs / 2;
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(beforeDeadline / 2, Three(60)));
+        Assert.Equal(DragPhase.Hovering, r.Phase);
+
+        r.ProcessFrame(Frame(beforeDeadline, Four(70)));
+
+        Assert.Equal(DragPhase.Idle, r.Phase);
+        Assert.Equal(0, rec.Started);
+        Assert.Empty(rec.Ended);
+        Assert.Equal(new[] { "fourth-finger" }, rec.Abandoned.ToArray());
+    }
+
+    [Fact]
+    public void CursorFollowsAtOnceWhileThePressWaits()
+    {
+        var r = new ThreeFingerDragRecognizer { StartThresholdUnits = 50, PressDelayMs = 50 };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(10, Three(60)));
+        r.ProcessFrame(Frame(20, Three(80)));
+
+        Assert.Equal(DragPhase.Hovering, r.Phase);
+        Assert.Equal(1, rec.Hovered);
+        Assert.Equal(0, rec.Started);
+        Assert.Equal(new[] { 60.0, 20.0 }, rec.Moves.Select(m => m.dx).ToArray());
+        Assert.Equal(r.PressDelayMs, r.PressDeadlineMs!.Value, precision: 6);
+    }
+
+    [Fact]
+    public void FrameAtThePressDeadlineMovesThenPresses()
+    {
+        var r = new ThreeFingerDragRecognizer { StartThresholdUnits = 50, PressDelayMs = 50 };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(10, Three(60)));
+        r.ProcessFrame(Frame(r.PressDelayMs, Three(90)));
+
+        Assert.Equal(DragPhase.Dragging, r.Phase);
+        Assert.Equal(new[] { "hover", "move", "move", "press" }, rec.Sequence.ToArray());
+    }
+
+    [Fact]
+    public void TickAtThePressDeadlinePressesWithoutAFrame()
+    {
+        var r = new ThreeFingerDragRecognizer { StartThresholdUnits = 50, PressDelayMs = 50 };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(10, Three(60)));
+        Assert.Equal(r.PressDeadlineMs, r.NextDeadlineMs);
+
+        r.Tick(r.PressDeadlineMs!.Value - 1);
+        Assert.Equal(0, rec.Started);
+
+        r.Tick(r.PressDeadlineMs!.Value);
+        Assert.Equal(1, rec.Started);
+        Assert.Equal(DragPhase.Dragging, r.Phase);
+        Assert.Null(r.NextDeadlineMs);
+    }
+
+    [Fact]
+    public void LiftingBeforeThePressDeadlinePressesNothing()
+    {
+        var r = new ThreeFingerDragRecognizer { StartThresholdUnits = 50, PressDelayMs = 50 };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(10, Three(60)));
+        r.ProcessFrame(Frame(20));
+
+        Assert.Equal(DragPhase.Idle, r.Phase);
+        Assert.Equal(0, rec.Started);
+        Assert.Equal(new[] { "lifted" }, rec.Abandoned.ToArray());
+    }
+
+    [Fact]
+    public void ThresholdCrossedAfterThePressDeadlinePressesWithoutHovering()
+    {
+        var r = new ThreeFingerDragRecognizer { StartThresholdUnits = 50, PressDelayMs = 50 };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(r.PressDelayMs + 10, Three(60)));
+
+        Assert.Equal(DragPhase.Dragging, r.Phase);
+        Assert.Equal(new[] { "press", "move" }, rec.Sequence.ToArray());
+    }
+
+    [Fact]
+    public void CancelWhileHoveringPressesNothing()
+    {
+        var r = new ThreeFingerDragRecognizer { StartThresholdUnits = 50, PressDelayMs = 50 };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(10, Three(60)));
+        r.Cancel("engine-stopped");
+
+        Assert.Equal(DragPhase.Idle, r.Phase);
+        Assert.Empty(rec.Ended);
+        Assert.Equal(new[] { "engine-stopped" }, rec.Abandoned.ToArray());
     }
 
     [Fact]

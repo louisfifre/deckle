@@ -4,6 +4,7 @@ internal enum DragPhase
 {
     Idle,     // fewer than three fingers, nothing pending
     Engaged,  // three fingers down, travel below the drag threshold (tap-vs-drag undecided)
+    Hovering, // drag decided, cursor following, button press deferred to the press deadline
     Dragging, // primary button held, deltas flowing
     Grace,    // fingers lifted mid-drag, release deferred until the grace deadline
 }
@@ -29,6 +30,14 @@ internal enum DragPhase
 //   • a fourth finger ends an active drag immediately: four-finger
 //     gestures belong to Windows, and returning directly to three stays
 //     disqualified by the same rising-edge rule;
+//   • the button press waits PressDelayMs after the three fingers land,
+//     while the cursor follows from the first frame. Fingers set down for
+//     a four-finger gesture often reach three first: the fourth arrives
+//     within ~45 ms in nine cases out of ten in recorded sessions, and a
+//     press already made then turns into a stray click on release. A
+//     fourth finger or a lift before the deadline abandons the hover with
+//     nothing pressed; at the deadline the press lands at the point where
+//     the cursor started (HoverStarted lets the host record it);
 //   • lifting below three fingers during a drag opens a grace window;
 //     three tips returning before the deadline resume the SAME drag, no
 //     release-and-repress;
@@ -43,12 +52,21 @@ internal sealed class ThreeFingerDragRecognizer
     /// <summary>Travel (logical units) before three fingers commit to a drag.</summary>
     public double StartThresholdUnits { get; set; } = 50;
 
+    /// <summary>Delay after the three fingers land before the button is pressed, in milliseconds. 0 presses as soon as the drag starts.</summary>
+    public double PressDelayMs { get; set; }
+
     /// <summary>Per-frame centroid delta above which the motion is discarded as a glitch.</summary>
     public double MaxFrameDeltaUnits { get; set; } = double.MaxValue;
 
+    /// <summary>The drag is decided and the cursor starts moving; the press follows at the press deadline.</summary>
+    public event Action? HoverStarted;
+    /// <summary>Press the primary button now. After a hover, it belongs at the point where the cursor started.</summary>
     public event Action? DragStarted;
+    /// <summary>Move the cursor, with or without the button held.</summary>
     public event Action<double, double>? DragMoved;
     public event Action<string>? DragEnded;
+    /// <summary>The hover ended before the press: nothing was pressed. Carries the reason and the time since the fingers landed.</summary>
+    public event Action<string, double>? HoverAbandoned;
     public event Action? TapIgnored;
 
     public DragPhase Phase { get; private set; } = DragPhase.Idle;
@@ -56,8 +74,15 @@ internal sealed class ThreeFingerDragRecognizer
     /// <summary>Host-clock instant the pending grace release fires at; null outside Grace.</summary>
     public double? GraceDeadlineMs { get; private set; }
 
+    /// <summary>Host-clock instant the deferred press fires at; null outside Hovering.</summary>
+    public double? PressDeadlineMs => Phase == DragPhase.Hovering ? _engagedAtMs + PressDelayMs : null;
+
+    /// <summary>The next instant Tick must run at when no frame arrives, or null.</summary>
+    public double? NextDeadlineMs => PressDeadlineMs ?? GraceDeadlineMs;
+
     private readonly Dictionary<int, (int X, int Y)> _lastTips = new();
     private int _lastTipCount;
+    private double _engagedAtMs;
     private double _engagedTravelX;
     private double _engagedTravelY;
 
@@ -71,6 +96,7 @@ internal sealed class ThreeFingerDragRecognizer
                 if (tips == 3 && _lastTipCount < 3)
                 {
                     Phase = DragPhase.Engaged;
+                    _engagedAtMs = frame.TimestampMs;
                     _engagedTravelX = 0;
                     _engagedTravelY = 0;
                     CaptureTips(frame);
@@ -95,12 +121,38 @@ internal sealed class ThreeFingerDragRecognizer
                         _engagedTravelX * _engagedTravelX + _engagedTravelY * _engagedTravelY);
                     if (travel >= StartThresholdUnits)
                     {
-                        Phase = DragPhase.Dragging;
-                        DragStarted?.Invoke();
+                        if (frame.TimestampMs >= _engagedAtMs + PressDelayMs)
+                        {
+                            Phase = DragPhase.Dragging;
+                            DragStarted?.Invoke();
+                        }
+                        else
+                        {
+                            Phase = DragPhase.Hovering;
+                            HoverStarted?.Invoke();
+                        }
                         DragMoved?.Invoke(_engagedTravelX, _engagedTravelY);
                     }
                 }
                 CaptureTips(frame);
+                break;
+
+            case DragPhase.Hovering:
+                if (tips != 3)
+                {
+                    AbandonHover(tips > 3 ? "fourth-finger" : "lifted", frame.TimestampMs);
+                    break;
+                }
+
+                if (TryMatchedDelta(frame, out dx, out dy))
+                    DragMoved?.Invoke(dx, dy);
+                CaptureTips(frame);
+
+                // Moved first, pressed second: the press carries the cursor
+                // back to where it started, so it must see this frame's
+                // motion already applied.
+                if (frame.TimestampMs >= _engagedAtMs + PressDelayMs)
+                    CommitPress();
                 break;
 
             case DragPhase.Dragging:
@@ -150,10 +202,12 @@ internal sealed class ThreeFingerDragRecognizer
         _lastTipCount = tips;
     }
 
-    /// <summary>Drives the grace deadline when no frames arrive (fingers fully lifted).</summary>
+    /// <summary>Drives the press and grace deadlines between frames.</summary>
     public void Tick(double nowMs)
     {
-        if (Phase == DragPhase.Grace && GraceDeadlineMs is not null && nowMs >= GraceDeadlineMs)
+        if (Phase == DragPhase.Hovering && nowMs >= _engagedAtMs + PressDelayMs)
+            CommitPress();
+        else if (Phase == DragPhase.Grace && GraceDeadlineMs is not null && nowMs >= GraceDeadlineMs)
             EndDrag("grace-expired");
     }
 
@@ -162,9 +216,24 @@ internal sealed class ThreeFingerDragRecognizer
     {
         if (Phase is DragPhase.Dragging or DragPhase.Grace)
             EndDrag(reason);
+        else if (Phase == DragPhase.Hovering)
+            AbandonHover(reason, _engagedAtMs);
         else
             ToIdle();
         _lastTipCount = 0;
+    }
+
+    private void CommitPress()
+    {
+        Phase = DragPhase.Dragging;
+        DragStarted?.Invoke();
+    }
+
+    private void AbandonHover(string reason, double nowMs)
+    {
+        double elapsed = Math.Max(0, nowMs - _engagedAtMs);
+        ToIdle();
+        HoverAbandoned?.Invoke(reason, elapsed);
     }
 
     private void EndDrag(string reason)

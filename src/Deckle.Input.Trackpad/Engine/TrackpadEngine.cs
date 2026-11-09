@@ -3,13 +3,13 @@ using Deckle.Input;
 namespace Deckle.Input.Trackpad;
 
 // Binds the chain together for the lifetime of the master switch:
-// RawInputHost frames → recognizer → MouseInjector. Owns the grace
-// timer (the recognizer is pure; somebody must fire the release when
-// the fingers are gone and no frames arrive anymore) and the safety
+// RawInputHost frames → recognizer → MouseInjector. Owns the deadline
+// timer (the recognizer is pure; somebody must fire the deferred press
+// or the grace release when no frame arrives at that instant) and the safety
 // releases (engine stop, touchpad disconnect — an injected button must
 // never stay held).
 //
-// Threading: frames arrive on the input thread, the grace timer on a
+// Threading: frames arrive on the input thread, the deadline timer on a
 // pool thread — every entry point funnels through one gate lock; the
 // work inside is microseconds (state machine + SendInput).
 public sealed class TrackpadEngine : IDisposable
@@ -27,6 +27,14 @@ public sealed class TrackpadEngine : IDisposable
     // fingers lift.
     private const double GraceDelayMs = 0;
 
+    // The button waits this long after three fingers land; the cursor does
+    // not. Measured on two months of recorded Magic Trackpad sessions: when
+    // a four-finger gesture passes through three fingers, 50 ms holds back
+    // about 70% of the stray presses the immediate press caused. Longer
+    // catches more, but the grabbed object starts to lag behind the
+    // cursor visibly.
+    private const double PressDelayMs = 50;
+
     // Start threshold as a fraction of the X range — the calibrated
     // minimum, perceptually instant. Not zero on purpose: at exactly 0 the
     // drag would commit on the first frame even without movement, turning
@@ -37,7 +45,7 @@ public sealed class TrackpadEngine : IDisposable
     private readonly RawInputHost _host;
     private readonly MouseInjector _injector = new();
     private readonly ThreeFingerDragRecognizer _recognizer = new();
-    private readonly System.Threading.Timer _graceTimer;
+    private readonly System.Threading.Timer _deadlineTimer;
     private readonly object _gate = new();
 
     private bool _running;
@@ -52,13 +60,15 @@ public sealed class TrackpadEngine : IDisposable
     public TrackpadEngine(RawInputHost host)
     {
         _host = host;
-        _graceTimer = new System.Threading.Timer(
-            OnGraceTimer, null, Timeout.Infinite, Timeout.Infinite);
+        _deadlineTimer = new System.Threading.Timer(
+            OnDeadlineTimer, null, Timeout.Infinite, Timeout.Infinite);
 
-        _recognizer.DragStarted += OnDragStarted;
-        _recognizer.DragMoved   += OnDragMoved;
-        _recognizer.DragEnded   += OnDragEnded;
-        _recognizer.TapIgnored  += OnTapIgnored;
+        _recognizer.HoverStarted   += OnHoverStarted;
+        _recognizer.DragStarted    += OnDragStarted;
+        _recognizer.DragMoved      += OnDragMoved;
+        _recognizer.DragEnded      += OnDragEnded;
+        _recognizer.HoverAbandoned += OnHoverAbandoned;
+        _recognizer.TapIgnored     += OnTapIgnored;
     }
 
     public void Start()
@@ -93,7 +103,7 @@ public sealed class TrackpadEngine : IDisposable
             _host.TouchpadConnected   -= OnTouchpadConnected;
             _host.TouchpadDisconnected -= OnTouchpadDisconnected;
 
-            _graceTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            _deadlineTimer.Change(Timeout.Infinite, Timeout.Infinite);
             _recognizer.Cancel("engine-stopped");
             // The incident cannot close by a successful injection anymore, so
             // it is ended here; otherwise the log would hold a Warning
@@ -108,7 +118,7 @@ public sealed class TrackpadEngine : IDisposable
     public void Dispose()
     {
         Stop();
-        _graceTimer.Dispose();
+        _deadlineTimer.Dispose();
     }
 
     // ── Frame path (input thread) ────────────────────────────────────────
@@ -119,36 +129,53 @@ public sealed class TrackpadEngine : IDisposable
         {
             if (!_running) return;
             _recognizer.ProcessFrame(frame);
-            ArmGraceTimer();
+            ArmDeadlineTimer();
         }
     }
 
-    private void OnGraceTimer(object? state)
+    private void OnDeadlineTimer(object? state)
     {
         lock (_gate)
         {
             if (!_running) return;
             _recognizer.Tick(RawInputHost.NowMs);
-            ArmGraceTimer();
+            ArmDeadlineTimer();
         }
     }
 
-    // One-shot timer at the grace deadline; re-armed after every frame so
-    // a deadline pushed back by a resumed-then-lifted drag stays accurate.
-    private void ArmGraceTimer()
+    // One-shot timer at the recognizer's next deadline (deferred press or
+    // grace release); re-armed after every frame so a deadline that moved
+    // stays accurate. The press deadline needs it too: a hand held still
+    // on the pad may send no frame at the instant the press is due.
+    private void ArmDeadlineTimer()
     {
-        if (_recognizer.GraceDeadlineMs is double deadline)
+        if (_recognizer.NextDeadlineMs is double deadline)
         {
             double due = Math.Max(1, deadline - RawInputHost.NowMs);
-            _graceTimer.Change((int)Math.Ceiling(due), Timeout.Infinite);
+            _deadlineTimer.Change((int)Math.Ceiling(due), Timeout.Infinite);
         }
         else
         {
-            _graceTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            _deadlineTimer.Change(Timeout.Infinite, Timeout.Infinite);
         }
     }
 
     // ── Recognizer effects (called under _gate) ──────────────────────────
+
+    // The cursor is about to move ahead of the button: the injector notes
+    // where it stands so the deferred press lands there.
+    private void OnHoverStarted() => _injector.MarkPressOrigin();
+
+    private void OnHoverAbandoned(string reason, double elapsedMs)
+    {
+        _injector.ClearPressOrigin();
+        if (DeckleTrackpadSource.IsInputActivityDetailEnabled(
+                System.Diagnostics.Tracing.EventLevel.Verbose,
+                (System.Diagnostics.Tracing.EventKeywords)Deckle.Diagnostics.Keywords.Capture))
+        {
+            DeckleTrackpadSource.Log.PressWithheld(reason, Math.Round(elapsedMs, 0));
+        }
+    }
 
     private void OnDragStarted()
     {
@@ -250,7 +277,7 @@ public sealed class TrackpadEngine : IDisposable
         lock (_gate)
         {
             if (!_running) return;
-            _graceTimer.Change(Timeout.Infinite, Timeout.Infinite);
+            _deadlineTimer.Change(Timeout.Infinite, Timeout.Infinite);
             _recognizer.Cancel("touchpad-disconnected");
         }
     }
@@ -265,6 +292,7 @@ public sealed class TrackpadEngine : IDisposable
         int xRange = caps?.XRange > 0 ? caps.XRange : 4096;
 
         _recognizer.GraceDelayMs        = GraceDelayMs;
+        _recognizer.PressDelayMs        = PressDelayMs;
         _recognizer.StartThresholdUnits = StartThresholdRatio * xRange;
         _recognizer.MaxFrameDeltaUnits  = MaxFrameDeltaRatio * xRange;
     }
