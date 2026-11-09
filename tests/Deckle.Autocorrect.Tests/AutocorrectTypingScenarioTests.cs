@@ -158,8 +158,8 @@ public sealed class AutocorrectTypingScenarioTests
             dictionary: dictionary,
             french: french,
             english: english);
-        harness.Settings.Apps["codex"] = true;
-        harness.Prober.Surface = AutocorrectEngineHarness.Editable("codex");
+        harness.Settings.Apps["anytype"] = true;
+        harness.Prober.Surface = AutocorrectEngineHarness.Editable("anytype");
         Assert.True(harness.Start());
         return harness;
     }

@@ -60,15 +60,6 @@ public sealed record McpSurfaceDescriptor(string Name, string Title, string Inst
         + "returns candidate ids so you can retry with one. open_report and log "
         + "take an id only.");
 
-    public static readonly McpSurfaceDescriptor Dialogues = new(
-        "deckle-anytype-dialogues",
-        "Deckle Anytype Dialogues",
-        "Anytype dialogue chats for mediated LLM discussions. Create a dialogue "
-        + "chat for start, challenge, or dialogue work; post turns as system, "
-        + "claude, codex, or louis; read the chat before each new turn and use "
-        + "after_order_id to continue from the last seen message. These tools are "
-        + "not project-management reports and do not journal work sessions.");
-
     public static readonly McpSurfaceDescriptor SchemaAdmin = new(
         "deckle-anytype-schema-admin",
         "Deckle Anytype Schema Admin",
@@ -85,9 +76,4 @@ public sealed record McpSurfaceDescriptor(string Name, string Title, string Inst
         + "is detached from the type, never deleted, and the preview names every "
         + "detachment and reorder before confirm. Header and hidden properties "
         + "are untouched: the app owns them.");
-
-    public static readonly McpSurfaceDescriptor All = new(
-        "deckle-anytype-all",
-        "Deckle Anytype All",
-        ProjectManagement.Instructions + "\n\n" + Dialogues.Instructions);
 }

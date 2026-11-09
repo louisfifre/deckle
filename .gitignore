@@ -21,6 +21,8 @@ publish/
 # Release staging from scripts/release/publish-app.ps1 (publish folder +
 # versioned ZIP + .sha256). Lives under the repository; never committed.
 artifacts/
+# The prod copy the maintainer runs every day, staged by scripts/deploy-prod.ps1.
+/prod/
 
 # Output of scripts/maintenance/sweep-exposables.ps1, written at the repo root.
 exposables-raw.jsonl

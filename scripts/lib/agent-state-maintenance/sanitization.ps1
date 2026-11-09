@@ -30,54 +30,6 @@ function Clear-JsonProperty {
     return $true
 }
 
-function ConvertTo-CleanCodexGlobalState {
-    param([Parameter(Mandatory)][string]$Json)
-
-    $state = $Json | ConvertFrom-Json -Depth 100
-    Assert-JsonObject $state 'Codex global state'
-    foreach ($name in @(
-        'electron-saved-workspace-roots', 'project-order', 'active-workspace-roots',
-        'projectless-thread-ids', 'pinned-thread-ids', 'pinned-project-ids'
-    )) {
-        $null = Clear-JsonProperty -Object $state -Name $name -Kind Array
-    }
-    foreach ($name in @(
-        'queued-follow-ups', 'thread-workspace-root-hints',
-        'thread-projectless-output-directories', 'thread-writable-roots',
-        'local-projects', 'thread-project-assignments'
-    )) {
-        $null = Clear-JsonProperty -Object $state -Name $name -Kind Object
-    }
-    if ($state.PSObject.Properties['selected-project']) {
-        $state.PSObject.Properties.Remove('selected-project')
-    }
-
-    $atomProperty = $state.PSObject.Properties['electron-persisted-atom-state']
-    if ($atomProperty) {
-        Assert-JsonObject $atomProperty.Value 'electron-persisted-atom-state'
-        $exact = @(
-            'prompt-history', 'heartbeat-thread-permissions-by-id',
-            'composer-prompt-drafts-v1', 'unread-thread-ids-by-host-v1',
-            'thread-descriptions-v1', 'flat-project-sidebar-preferences-v1',
-            'sidebar-collapsed-groups', 'sidebar-collapsed-sections-v1'
-        )
-        $prefixes = @(
-            'thread-client-id-v1:', 'thread-reference-capability:',
-            'thread-browser-tabs-v1:', 'thread-tab-routes-v1:',
-            'codex-writing-block-deleted-thread-v1:',
-            'sidebar-project-expanded-v1-', 'remote-thread-summaries:',
-            'remote-thread-summaries-v2:'
-        )
-        foreach ($property in @($atomProperty.Value.PSObject.Properties)) {
-            $matchesPrefix = @($prefixes | Where-Object { $property.Name.StartsWith($_, [StringComparison]::Ordinal) }).Count -gt 0
-            if ($exact -contains $property.Name -or $matchesPrefix) {
-                $atomProperty.Value.PSObject.Properties.Remove($property.Name)
-            }
-        }
-    }
-    return ($state | ConvertTo-Json -Depth 100)
-}
-
 function ConvertTo-CleanClaudeProfile {
     param([Parameter(Mandatory)][string]$Json)
     $profile = $Json | ConvertFrom-Json -Depth 100
@@ -142,31 +94,6 @@ function ConvertTo-CleanClaudeDesktopConfig {
     return ($config | ConvertTo-Json -Depth 100)
 }
 
-function ConvertTo-CleanCodexConfig {
-    param([Parameter(Mandatory)][string]$Toml)
-
-    if ($Toml.Contains('"""') -or $Toml.Contains("'''")) {
-        throw 'Codex config contains a multiline TOML string; refusing an unsafe project-table rewrite.'
-    }
-    $lines = $Toml -split '\r?\n'
-    $result = [System.Collections.Generic.List[string]]::new()
-    $skipping = $false
-    foreach ($line in $lines) {
-        if ($line -match '^\s*\[') {
-            if ($line -match '^\s*\[projects\.(?:''[^'']*''|"[^"]*")\]\s*(?:#.*)?$') {
-                $skipping = $true
-                continue
-            }
-            if ($line -match '^\s*\[projects\.') {
-                throw "Unrecognized Codex project table header: $line"
-            }
-            $skipping = $false
-        }
-        if (-not $skipping) { $result.Add($line) }
-    }
-    return ($result -join [Environment]::NewLine).TrimEnd() + [Environment]::NewLine
-}
-
 function Write-AgentStateFileAtomically {
     param(
         [Parameter(Mandatory)][string]$Path,
@@ -190,8 +117,6 @@ function Get-CleanAgentStateFileContent {
     $null = Assert-AgentStatePath -Path $StateFile.Path -Root $StateFile.Root
     $before = Get-Content -Raw -LiteralPath $StateFile.Path
     $after = switch ($StateFile.Kind) {
-        'CodexGlobalState' { ConvertTo-CleanCodexGlobalState -Json $before }
-        'CodexConfig' { ConvertTo-CleanCodexConfig -Toml $before }
         'ClaudeProfile' { ConvertTo-CleanClaudeProfile -Json $before }
         'ClaudeDesktopConfig' { ConvertTo-CleanClaudeDesktopConfig -Json $before }
         default { throw "Unknown mixed state file kind: $($StateFile.Kind)" }

@@ -20,33 +20,26 @@ public static class McpToolset
         var query = new QueryGestures(api, resolver, api.V2);
         var reads = new ReadGestures(resolver, api.V2);
         var documents = new DocumentGestures(api);
-        var dialogues = new DialogueGestures(api, resolver);
         var managementGestures = new ManagementGestures(api, resolver);
 
         IReadOnlyList<ToolDescriptor> tools = profile switch
         {
             ToolProfile.ProjectManagement => ToolCatalog.Build(session, tasks, projects, query, reads, documents),
-            ToolProfile.Dialogues => DialogueToolCatalog.Build(dialogues),
             ToolProfile.SchemaAdmin => BuildSchemaAdmin(api, resolver, aliases),
-            ToolProfile.All => ToolCatalog.Build(session, tasks, projects, query, reads, documents)
-                .Concat(DialogueToolCatalog.Build(dialogues))
-                .ToArray(),
             _ => throw new InvalidOperationException($"Profil MCP inconnu : {profile}."),
         };
 
         var descriptor = profile switch
         {
             ToolProfile.ProjectManagement => McpSurfaceDescriptor.ProjectManagement,
-            ToolProfile.Dialogues => McpSurfaceDescriptor.Dialogues,
             ToolProfile.SchemaAdmin => McpSurfaceDescriptor.SchemaAdmin,
-            ToolProfile.All => McpSurfaceDescriptor.All,
             _ => McpSurfaceDescriptor.ProjectManagement,
         };
 
         // Mount the supervised management catalog on demand, additive to the
-        // object-management surfaces only. Dialogue and schema-admin surfaces
-        // have no object lifecycle to delete, so the flag is a no-op there.
-        if (management && profile is ToolProfile.ProjectManagement or ToolProfile.All)
+        // object-management surface only. The schema-admin surface has no object
+        // lifecycle to delete, so the flag is a no-op there.
+        if (management && profile is ToolProfile.ProjectManagement)
         {
             tools = tools.Concat(ManagementToolCatalog.Build(managementGestures)).ToArray();
             descriptor = descriptor with

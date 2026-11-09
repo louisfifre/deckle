@@ -2,20 +2,20 @@
 .SYNOPSIS
     Inspect or reset local AI sessions
 .DESCRIPTION
-    Builds a cleanup plan for the local Codex and Claude Code session data of
+    Builds a cleanup plan for the local Claude Code session data of
     the current account, which belongs to the user and not to a repository.
     Without the apply switch it only validates the plan and changes nothing.
     The reset needs the exact confirmation phrase.
 .NOTES
     order: 300
     action: Preview / AI sessions |
-    action: Clean / AI sessions | -Apply -Confirmation 'RESET LOCAL AI SESSIONS' | danger | Deletes local Codex and Claude Code session data for the current account.
+    action: Clean / AI sessions | -Apply -Confirmation 'RESET LOCAL AI SESSIONS' | danger | Deletes local Claude Code session data for the current account.
 #>
 
 [CmdletBinding()]
 param(
-    [ValidateSet('Codex', 'Claude')]
-    [string[]]$Scope = @('Codex', 'Claude'),
+    [ValidateSet('Claude')]
+    [string[]]$Scope = @('Claude'),
     [switch]$Apply,
     [string]$Confirmation
 )
@@ -48,7 +48,6 @@ try {
         'Session files' = [string]$plan.Files
         'Session data' = Format-AgentStateByteCount -Bytes $plan.Bytes
         'Mixed state files' = [string]$result.ChangedStateFiles
-        'Mixed databases' = [string]$plan.Databases.Count
         'Removed targets' = [string]$result.RemovedTargets
     }
     $summary = @{

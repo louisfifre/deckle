@@ -167,6 +167,11 @@
     <Content Include="Assets\Sounds\**\*.wav">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- The prod copy's update helper travels with the build that starts it;
+         scripts/deploy-prod.ps1 takes it from there (ProdUpdate.cs). -->
+    <Content Include="Prod\apply-update.ps1">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <!-- AppNotificationManager.Register() LoadLibrary's

@@ -207,6 +207,16 @@ public static partial class HudComposition
             => new(Math.Clamp(level, 0f, 1f),
                    animationsEnabled ? TimeSpan.FromMilliseconds(50) : TimeSpan.Zero);
 
+        // Whether a state shows the processing material at all, on the
+        // outline and in the clock digits. Recording's outline is a still
+        // pose that answers the microphone, a live measurement: it shows
+        // whatever the animation preference says. Transcribing and
+        // Rewriting show a turning material; with animations reduced it
+        // stood frozen mid-turn, a coloured still that read as broken, so
+        // they show none and the stopped clock alone remains (ADR-0009).
+        public static bool ShowsMaterial(ProcessingVariant variant, bool animationsEnabled)
+            => variant == ProcessingVariant.Recording || animationsEnabled;
+
         // Applies the functional HUD animation preference live. Disabling
         // cancels finite blends, parks continuous rotations at their canonical
         // phase. Recording keeps following the microphone, sample by sample
