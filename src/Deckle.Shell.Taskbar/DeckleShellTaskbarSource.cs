@@ -39,6 +39,12 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public const int EvtNativeEngineDetail           = 23;
     public const int EvtNativeEngineWarning          = 24;
     public const int EvtNativeEngineError            = 25;
+    public const int EvtTaskbarPartsChanged          = 26;
+    public const int EvtTaskbarPartSkipped           = 27;
+    public const int EvtTaskbarPartNotInEffect       = 28;
+    public const int EvtTaskbarPartProblemEnded      = 29;
+    public const int EvtTaskbarEngineUnloadUnconfirmed = 30;
+    public const int EvtTaskbarCustomizerFailed      = 31;
 
     // ── Tray icon promotion ───────────────────────────────────────────────────
     //
@@ -277,5 +283,79 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public void NativeEngineError(string name, string text, string fields)
     {
         if (IsEnabled()) WriteEvent(EvtNativeEngineError, name, text, fields);
+    }
+
+    // ── Customization (what the settings ask of the engine) ───────────────────
+    //
+    // The stay of the engine in a process is bracketed by Injected and
+    // Disconnected above. These say what the person asked for while it stays.
+    // Parts are spelled background, compact_tray, compact_clock and start_menu.
+
+    // parts: the parts now asked for, comma separated, or none. One line per
+    // change of the set, so a log read later shows what was on and since when.
+    [Event(EvtTaskbarPartsChanged,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The taskbar customization changed")]
+    public void TaskbarPartsChanged(string parts)
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarPartsChanged, parts);
+    }
+
+    // A part that is on but asks nothing of the engine. reason: taskbar_horizontal
+    // (the compact tray is written for a vertical bar).
+    [Event(EvtTaskbarPartSkipped,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "A taskbar customization is on but was left out")]
+    public void TaskbarPartSkipped(string part, string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarPartSkipped, part, reason);
+    }
+
+    // One Warning per incident: a part the engine cannot hold opens it, the
+    // first status without the problem closes it (TaskbarPartProblemEnded).
+    // problem: not_applied, contested or error.
+    [Event(EvtTaskbarPartNotInEffect,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A taskbar customization is not in effect, so the taskbar may not look as asked\npart={0} | problem={1}")]
+    public void TaskbarPartNotInEffect(string part, string problem)
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarPartNotInEffect, part, problem);
+    }
+
+    [Event(EvtTaskbarPartProblemEnded,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "A taskbar customization problem ended")]
+    public void TaskbarPartProblemEnded(string part)
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarPartProblemEnded, part);
+    }
+
+    // target: explorer or start_menu. The DLL left with the pipe, not with its
+    // own word, so explorer may still hold it until it exits.
+    [Event(EvtTaskbarEngineUnloadUnconfirmed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar engine did not confirm that it unloaded\ntarget={0}")]
+    public void TaskbarEngineUnloadUnconfirmed(string target)
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarEngineUnloadUnconfirmed, target);
+    }
+
+    // A pass over the settings threw. trigger: startup, setting or
+    // engine_connected.
+    [Event(EvtTaskbarCustomizerFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar customization could not be applied\ntrigger={0} | ex_type={1}")]
+    public void TaskbarCustomizerFailed(string trigger, string ex_type)
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarCustomizerFailed, trigger, ex_type);
     }
 }

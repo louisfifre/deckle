@@ -1642,6 +1642,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskbarNativeMethods.cs
 │   │   │   └── TaskbarNativeMethods.Injection.cs
 │   │   ├── Native/
+│   │   │   ├── ITaskbarEngine.cs
 │   │   │   ├── JsonLineFraming.cs
 │   │   │   ├── NativeCommand.cs
 │   │   │   ├── NativeLogRelay.cs
@@ -1649,11 +1650,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskbarBackground.cs
 │   │   │   ├── TaskbarCreatedListener.cs
 │   │   │   ├── TaskbarCustomization.cs
+│   │   │   ├── TaskbarCustomizer.cs
 │   │   │   ├── TaskbarDocumentBuilder.cs
 │   │   │   ├── TaskbarEngineHost.cs
 │   │   │   ├── TaskbarHookInjector.cs
+│   │   │   ├── TaskbarOrientation.cs
 │   │   │   ├── TaskbarPart.cs
+│   │   │   ├── TaskbarPartNames.cs
 │   │   │   ├── TaskbarPipeServer.cs
+│   │   │   ├── TaskbarProblem.cs
+│   │   │   ├── TaskbarProblemReader.cs
 │   │   │   ├── TaskbarTarget.cs
 │   │   │   └── VersionedNativeCopy.cs
 │   │   ├── Registry/
@@ -2480,8 +2486,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── NativeSelectorLibrary.cs
 │   │   │   ├── NativeSelectorTests.cs
 │   │   │   ├── StartMenuDocumentTests.cs
+│   │   │   ├── TaskbarCustomizerTests.cs
 │   │   │   ├── TaskbarDocumentBuilderTests.cs
 │   │   │   ├── TaskbarPipeServerTests.cs
+│   │   │   ├── TaskbarProblemReaderTests.cs
 │   │   │   └── VersionedNativeCopyTests.cs
 │   │   ├── Deckle.Shell.Taskbar.Tests.csproj
 │   │   ├── IsolatedDataRoot.cs

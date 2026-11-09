@@ -17,9 +17,9 @@ namespace Deckle.Shell.Taskbar;
 //     process is gone it looks for the new one every few seconds until it
 //     appears. The look is one process-list read; the cadence is the slow part.
 //
-// Nothing in the app creates one yet. The development console
-// (Deckle.Shell.Taskbar.Harness) is its first user.
-internal sealed class TaskbarEngineHost : IAsyncDisposable
+// TaskbarCustomizer creates one per target in the app; the development console
+// (Deckle.Shell.Taskbar.Harness) creates them directly.
+internal sealed class TaskbarEngineHost : ITaskbarEngine
 {
     private static readonly TimeSpan _unloadTimeout = TimeSpan.FromSeconds(10);
 
@@ -46,7 +46,6 @@ internal sealed class TaskbarEngineHost : IAsyncDisposable
 
     /// <param name="sourceDllPath">The DLL next to the app; the host loads its versioned copy.</param>
     /// <param name="copy">Where the versioned copies live.</param>
-    /// <param name="server">The pipe server to serve; the host owns it.</param>
     /// <param name="target">The process to customize; its pipe and injection route follow from it.</param>
     /// <param name="server">The pipe server to serve; null creates the target's own. The host owns it.</param>
     public TaskbarEngineHost(string sourceDllPath, VersionedNativeCopy copy, TaskbarTarget target,
@@ -63,6 +62,9 @@ internal sealed class TaskbarEngineHost : IAsyncDisposable
 
     /// <summary>Every message from the DLL, after the host has logged it.</summary>
     public event Action<NativeMessage>? MessageReceived;
+
+    /// <summary>Raised when the DLL's pipe closes, after the host has logged it.</summary>
+    public event Action? Disconnected;
 
     /// <summary>The path explorer was asked to load.</summary>
     public string LoadedPath => _loadedPath;
@@ -223,6 +225,7 @@ internal sealed class TaskbarEngineHost : IAsyncDisposable
     {
         DeckleShellTaskbarSource.Log.NativeEngineDisconnected(_unloadReported ? "unloaded" : "lost");
         _disconnected.TrySetResult();
+        Disconnected?.Invoke();
     }
 
     private static TaskCompletionSource NewSignal() =>

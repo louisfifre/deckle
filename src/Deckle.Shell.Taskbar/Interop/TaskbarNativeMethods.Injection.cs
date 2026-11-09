@@ -105,6 +105,19 @@ internal static partial class TaskbarNativeMethods
     [LibraryImport("user32.dll")]
     internal static partial void PostQuitMessage(int exitCode);
 
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct WindowRect
+    {
+        public int left;
+        public int top;
+        public int right;
+        public int bottom;
+    }
+
+    [LibraryImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static partial bool GetWindowRect(nint hwnd, out WindowRect rect);
+
     internal const uint WM_CLOSE = 0x0010;
     internal const uint WM_DESTROY = 0x0002;
 }
