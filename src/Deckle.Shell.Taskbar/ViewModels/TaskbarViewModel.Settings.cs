@@ -3,10 +3,43 @@ using Deckle.Catalog;
 namespace Deckle.Shell.Taskbar;
 
 // The page's cards. Headers and descriptions resolve from this module's .resw as
-// "<LabelKey>.Header" / ".Description". Every default reads from a fresh
-// TaskbarSettings, the single source the reset writes back.
+// "<LabelKey>.Header" / ".Description"; a choice's options as "<OptionKey>.Content".
+// Every default reads from a fresh TaskbarSettings, the single source the reset
+// writes back.
+//
+// Three groups, each its own section: the bar itself, its tray, the Start menu.
+// There is no module switch: every card is its own switch, and all of them are
+// off (or Explorer's own) by default.
 public partial class TaskbarViewModel
 {
+    private const string ProblemNotAppliedKey = "TaskbarPage_ProblemNotApplied";
+    private const string ProblemContestedKey = "TaskbarPage_ProblemContested";
+    private const string ProblemErrorKey = "TaskbarPage_ProblemError";
+    private const string HorizontalBarKey = "TaskbarPage_CompactTrayHorizontal";
+
+    public IReadOnlyList<SettingDescriptor> BarManifest =>
+    [
+        // A dropdown: three short names, and seeing them all at once adds nothing
+        // to the choice (the app theme card is built the same way).
+        Setting.Choice<TaskbarBackground>(
+            "TaskbarPage_BackgroundCard",
+            () => Background,
+            value => Background = value,
+            [
+                (TaskbarBackground.Native, "TaskbarPage_BackgroundDefault"),
+                (TaskbarBackground.Transparent, "TaskbarPage_BackgroundTransparent"),
+                (TaskbarBackground.Black, "TaskbarPage_BackgroundBlack"),
+            ],
+            defaultValue: () => new TaskbarSettings().Background,
+            advisory: () => ProblemAdvisory(TaskbarPart.Background)),
+        Setting.Toggle(
+            "TaskbarPage_CompactClockCard",
+            () => CompactClock,
+            value => CompactClock = value,
+            defaultValue: () => new TaskbarSettings().CompactClock,
+            advisory: () => ProblemAdvisory(TaskbarPart.CompactClock)),
+    ];
+
     public IReadOnlyList<SettingDescriptor> TrayManifest =>
     [
         Setting.Toggle(
@@ -15,6 +48,22 @@ public partial class TaskbarViewModel
             value => ShowAllTrayIcons = value,
             defaultValue: () => new TaskbarSettings().ShowAllTrayIcons,
             advisory: TrayAdvisory),
+        Setting.Toggle(
+            "TaskbarPage_CompactTrayCard",
+            () => CompactTray,
+            value => CompactTray = value,
+            defaultValue: () => new TaskbarSettings().CompactTray,
+            advisory: CompactTrayAdvisory),
+    ];
+
+    public IReadOnlyList<SettingDescriptor> StartManifest =>
+    [
+        Setting.Toggle(
+            "TaskbarPage_StartMenuFullHeightCard",
+            () => StartMenuFullHeight,
+            value => StartMenuFullHeight = value,
+            defaultValue: () => new TaskbarSettings().StartMenuFullHeight,
+            advisory: () => ProblemAdvisory(TaskbarPart.StartMenu)),
     ];
 
     // The promoter's last pass, said only when it did not go through. While
@@ -31,5 +80,43 @@ public partial class TaskbarViewModel
             if (_tray.LastOutcome is null or TrayOutcome.Applied) return null;
             return ShowAllTrayIcons ? "TaskbarPage_TrayFailedOn" : "TaskbarPage_TrayFailedOff";
         }
+    }
+
+    // The compact tray says why it does nothing on a horizontal bar, else what
+    // the engine said about it. Nothing is said while the switch is off.
+    private string? CompactTrayAdvisory() =>
+        CompactTrayMessageKey is { } key ? Loc.GetFromOptional(TaskbarSettingsModule.ResourceLibrary, key) : null;
+
+    internal string? CompactTrayMessageKey
+    {
+        get
+        {
+            if (!CompactTray) return null;
+            return _isBarVertical() ? ProblemKey(TaskbarPart.CompactTray) : HorizontalBarKey;
+        }
+    }
+
+    private string? ProblemAdvisory(TaskbarPart part) =>
+        ProblemKey(part) is { } key ? Loc.GetFromOptional(TaskbarSettingsModule.ResourceLibrary, key) : null;
+
+    // The line for a part the engine could not put in effect; null when it is
+    // fine, or when the person has it off (a status can lag a toggle).
+    internal string? ProblemKey(TaskbarPart part)
+    {
+        bool on = part switch
+        {
+            TaskbarPart.Background => Background != TaskbarBackground.Native,
+            TaskbarPart.CompactTray => CompactTray,
+            TaskbarPart.CompactClock => CompactClock,
+            _ => StartMenuFullHeight,
+        };
+        if (!on || !_customizer.Problems.TryGetValue(part, out TaskbarProblem problem)) return null;
+
+        return problem switch
+        {
+            TaskbarProblem.NotApplied => ProblemNotAppliedKey,
+            TaskbarProblem.Contested => ProblemContestedKey,
+            _ => ProblemErrorKey,
+        };
     }
 }

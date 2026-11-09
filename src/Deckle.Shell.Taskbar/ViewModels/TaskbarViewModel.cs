@@ -3,10 +3,11 @@ using Microsoft.UI.Dispatching;
 
 namespace Deckle.Shell.Taskbar;
 
-// The page's state. ShowAllTrayIcons is a setting: every change writes it and
-// saves; applying it belongs to the App, which observes the store and drives the
-// promoter, exactly as it does for the cover. The page only reads back how the
-// promoter's last pass ended.
+// The page's state. Every value is a setting: a change writes it and saves, and
+// applying it belongs to the App, which observes the store. The tray promoter
+// carries "show all tray icons" and TaskbarCustomizer carries the rest. The page
+// only reads back how each ended: the promoter's last pass, and the parts the
+// engine could not put in effect.
 public partial class TaskbarViewModel : ObservableObject
 {
     // Raised so the composer re-reads every advisory and every switch; no
@@ -14,29 +15,50 @@ public partial class TaskbarViewModel : ObservableObject
     public const string StatusPropertyName = "Status";
 
     private readonly TrayIconPromoter _tray;
+    private readonly TaskbarCustomizer _customizer;
+    private readonly Func<bool> _isBarVertical;
     private bool _isSyncing;
     private DispatcherQueue? _dispatcher;
 
     [ObservableProperty]
     public partial bool ShowAllTrayIcons { get; set; }
 
+    [ObservableProperty]
+    public partial TaskbarBackground Background { get; set; }
+
+    [ObservableProperty]
+    public partial bool CompactTray { get; set; }
+
+    [ObservableProperty]
+    public partial bool CompactClock { get; set; }
+
+    [ObservableProperty]
+    public partial bool StartMenuFullHeight { get; set; }
+
     public TaskbarViewModel()
-        : this(TrayIconPromoter.Instance)
+        : this(TrayIconPromoter.Instance, TaskbarCustomizer.Instance, TaskbarOrientation.IsVertical)
     {
     }
 
-    public TaskbarViewModel(TrayIconPromoter tray)
+    internal TaskbarViewModel(TrayIconPromoter tray, TaskbarCustomizer customizer, Func<bool> isBarVertical)
     {
         _tray = tray;
+        _customizer = customizer;
+        _isBarVertical = isBarVertical;
         Load();
     }
 
     public void Load()
     {
+        TaskbarSettings settings = TaskbarSettingsService.Instance.Current;
         _isSyncing = true;
         try
         {
-            ShowAllTrayIcons = TaskbarSettingsService.Instance.Current.ShowAllTrayIcons;
+            ShowAllTrayIcons = settings.ShowAllTrayIcons;
+            Background = settings.Background;
+            CompactTray = settings.CompactTray;
+            CompactClock = settings.CompactClock;
+            StartMenuFullHeight = settings.StartMenuFullHeight;
         }
         finally
         {
@@ -44,17 +66,23 @@ public partial class TaskbarViewModel : ObservableObject
         }
     }
 
-    partial void OnShowAllTrayIconsChanged(bool value)
+    partial void OnShowAllTrayIconsChanged(bool value) => Write(settings => settings.ShowAllTrayIcons = value);
+    partial void OnBackgroundChanged(TaskbarBackground value) => Write(settings => settings.Background = value);
+    partial void OnCompactTrayChanged(bool value) => Write(settings => settings.CompactTray = value);
+    partial void OnCompactClockChanged(bool value) => Write(settings => settings.CompactClock = value);
+    partial void OnStartMenuFullHeightChanged(bool value) => Write(settings => settings.StartMenuFullHeight = value);
+
+    private void Write(Action<TaskbarSettings> change)
     {
         if (_isSyncing) return;
-        TaskbarSettingsService.Instance.Current.ShowAllTrayIcons = value;
+        change(TaskbarSettingsService.Instance.Current);
         TaskbarSettingsService.Instance.Save();
     }
 
     /// <summary>
-    /// Starts following the tray promoter's outcome. The promoter is
-    /// process-wide and outlives the page, so the page attaches on Loaded and
-    /// detaches on Unloaded, and a closed Settings window leaves no
+    /// Starts following the outcome of the tray promoter and of the engines.
+    /// Both are process-wide and outlive the page, so the page attaches on
+    /// Loaded and detaches on Unloaded, and a closed Settings window leaves no
     /// subscriber behind. The outcome changes on any thread and is raised on
     /// <paramref name="dispatcher"/>.
     /// </summary>
@@ -62,18 +90,20 @@ public partial class TaskbarViewModel : ObservableObject
     {
         if (_dispatcher is not null) return;
         _dispatcher = dispatcher;
-        _tray.OutcomeChanged += OnTrayOutcomeChanged;
+        _tray.OutcomeChanged += OnOutcomeChanged;
+        _customizer.ProblemsChanged += OnOutcomeChanged;
         OnPropertyChanged(StatusPropertyName);
     }
 
     public void DetachStatus()
     {
         if (_dispatcher is null) return;
-        _tray.OutcomeChanged -= OnTrayOutcomeChanged;
+        _tray.OutcomeChanged -= OnOutcomeChanged;
+        _customizer.ProblemsChanged -= OnOutcomeChanged;
         _dispatcher = null;
     }
 
-    private void OnTrayOutcomeChanged()
+    private void OnOutcomeChanged()
     {
         DispatcherQueue? dispatcher = _dispatcher;
         if (dispatcher is null) return;

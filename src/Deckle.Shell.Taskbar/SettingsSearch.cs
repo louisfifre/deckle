@@ -8,8 +8,28 @@ public static class SettingsSearch
     [
         new SettingSearchEntry
         {
+            LabelKey = "TaskbarPage_BackgroundCard",
+            Keywords = ["taskbar", "background", "transparent", "black", "translucent", "acrylic", "fill"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "TaskbarPage_CompactClockCard",
+            Keywords = ["taskbar", "clock", "time", "date", "stacked", "lines", "compact"],
+        },
+        new SettingSearchEntry
+        {
             LabelKey = "TaskbarPage_ShowAllTrayIconsCard",
             Keywords = ["taskbar", "tray", "notification area", "overflow", "icons", "show all"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "TaskbarPage_CompactTrayCard",
+            Keywords = ["taskbar", "tray", "notification area", "icons", "spacing", "compact", "vertical", "quick settings"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "TaskbarPage_StartMenuFullHeightCard",
+            Keywords = ["start", "start menu", "height", "tall", "full height", "size"],
         },
     ];
 }

@@ -64,7 +64,58 @@
     <value>Taskbar</value>
   </data>
   <data name="TaskbarPageHeader.Description" xml:space="preserve">
-    <value>Show every tray icon on the taskbar.</value>
+    <value>Restyle the taskbar, tighten its tray and clock, and size the Start menu.</value>
+  </data>
+  <data name="TaskbarPageBarSection.Title" xml:space="preserve">
+    <value>Taskbar</value>
+  </data>
+  <data name="TaskbarPage_BackgroundCard.Header" xml:space="preserve">
+    <value>Taskbar background</value>
+  </data>
+  <data name="TaskbarPage_BackgroundCard.Description" xml:space="preserve">
+    <value>Transparent lets the wallpaper show through the taskbar. Black fills it solid.</value>
+  </data>
+  <data name="TaskbarPage_BackgroundDefault.Content" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="TaskbarPage_BackgroundTransparent.Content" xml:space="preserve">
+    <value>Transparent</value>
+  </data>
+  <data name="TaskbarPage_BackgroundBlack.Content" xml:space="preserve">
+    <value>Black</value>
+  </data>
+  <data name="TaskbarPage_CompactClockCard.Header" xml:space="preserve">
+    <value>Compact clock</value>
+  </data>
+  <data name="TaskbarPage_CompactClockCard.Description" xml:space="preserve">
+    <value>Stacks the month, day, weekday, hours and minutes on separate lines. Always in English.</value>
+  </data>
+  <data name="TaskbarPage_CompactTrayCard.Header" xml:space="preserve">
+    <value>Compact tray</value>
+  </data>
+  <data name="TaskbarPage_CompactTrayCard.Description" xml:space="preserve">
+    <value>Brings the tray icons and the quick settings icons closer together. Applies to a vertical taskbar only.</value>
+  </data>
+  <data name="TaskbarPage_CompactTrayHorizontal" xml:space="preserve">
+    <value>Your taskbar is horizontal, so this has no effect.</value>
+  </data>
+  <data name="TaskbarPage_StartMenuFullHeightCard.Header" xml:space="preserve">
+    <value>Full-height Start menu</value>
+  </data>
+  <data name="TaskbarPage_StartMenuFullHeightCard.Description" xml:space="preserve">
+    <value>Makes the Start menu as tall as the screen, with the same space above and below it.</value>
+  </data>
+  <data name="TaskbarPageStartSection.Title" xml:space="preserve">
+    <value>Start menu</value>
+  </data>
+  <data name="TaskbarPage_ProblemNotApplied" xml:space="preserve">
+    <value>Deckle could not find this part of the taskbar on this version of Windows, so it is not applied.</value>
+  </data>
+  <data name="TaskbarPage_ProblemContested" xml:space="preserve">
+    <value>Windows keeps changing this back, so it may not hold.</value>
+  </data>
+  <data name="TaskbarPage_ProblemError" xml:space="preserve">
+    <value>Deckle could not apply this.</value>
   </data>
   <data name="TaskbarPageTraySection.Title" xml:space="preserve">
     <value>System tray</value>

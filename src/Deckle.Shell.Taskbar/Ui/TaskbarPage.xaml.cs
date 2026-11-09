@@ -21,13 +21,15 @@ public sealed partial class TaskbarPage : Page
 
         _composers =
         [
+            Compose(BarHost,   ViewModel.BarManifest),
             Compose(TrayHost,  ViewModel.TrayManifest),
+            Compose(StartHost, ViewModel.StartManifest),
         ];
 
         GateResetAll();
 
-        // The promoter outlives this page; follow it only while the page is in
-        // a live tree, so a closed Settings window leaves no subscriber.
+        // The promoter and the customizer outlive this page; follow them only while
+        // the page is in a live tree, so a closed Settings window leaves no subscriber.
         Loaded   += (_, _) => ViewModel.AttachStatus(DispatcherQueue);
         Unloaded += (_, _) => ViewModel.DetachStatus();
     }
