@@ -187,8 +187,8 @@ internal sealed class HomeObjectIndex
     public bool ContainsCode(string code) =>
         _objects.Any(value => string.Equals(HomeObjectJson.Code(value), code, StringComparison.OrdinalIgnoreCase));
 
-    // A read (Tolerant) takes the one object a selector partly matches. A write
-    // (Exact) never does: it resolves an id, a code or a name given in full, and
+    // A read (Tolerant) takes the one object a selector partly matches, or, when
+    // none does, the one near name. A write (Exact) never does: it resolves an id, a code or a name given in full, and
     // lists the nearest objects by id when only a part matched, so the caller
     // retries with the id instead of changing an object that was guessed.
     public JsonObject Resolve(string selector, NameMatch match, IReadOnlyCollection<string>? allowedTypes = null)
@@ -214,7 +214,20 @@ internal sealed class HomeObjectIndex
                 Display(value).Contains(selector, StringComparison.OrdinalIgnoreCase))
             .ToArray();
         if (partial.Length == 0)
-            throw new InvalidOperationException(NotFoundMessage(selector, allowedTypes));
+        {
+            // Nothing contains the selector: a typo or another word order may
+            // still name an object (HomeNearName). A write lists the near
+            // objects by id and never picks one; a read takes the only one.
+            HomeNearName.Profile wanted = HomeNearName.Describe(selector);
+            JsonObject[] near = pool.Where(value =>
+                    HomeNearName.AreNear(wanted, HomeNearName.Describe(HomeObjectJson.Name(value))))
+                .ToArray();
+            if (near.Length == 0)
+                throw new InvalidOperationException(NotFoundMessage(selector, allowedTypes));
+            if (match == NameMatch.Exact)
+                throw Inexact(selector, near);
+            return near.Length == 1 ? near[0] : throw Ambiguous(selector, near);
+        }
         if (match == NameMatch.Exact)
             throw Inexact(selector, partial);
         return partial.Length == 1 ? partial[0] : throw Ambiguous(selector, partial);

@@ -130,6 +130,80 @@ public sealed class HomeNameMatchTests
     }
 
     [Fact]
+    public async Task ATypoInARoomSelectorIsRefusedWithTheRoomIdAmongTheCandidates()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Cuisine"));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Gestures(server).CreateAsync(
+                HomeSchema.Types.Point,
+                [new HomeCreateItem(null, "Prise fictive", null, Category: "PS", Room: "Cuisne")],
+                Ct));
+
+        Assert.Contains("- room-zz · ZZ · Cuisine (room)", error.Message);
+        Assert.DoesNotContain(server.Requests, request => request.Method == "POST");
+    }
+
+    [Fact]
+    public async Task TheRoomIdFromTheRefusalCreatesThePoint()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Cuisine"));
+
+        await Gestures(server).CreateAsync(
+            HomeSchema.Types.Point,
+            [new HomeCreateItem(null, "Prise fictive", null, Category: "PS", Room: "room-zz")],
+            Ct);
+
+        Assert.Single(server.Requests, request => request.Method == "POST");
+    }
+
+    [Fact]
+    public async Task ANameFarFromEveryObjectIsStillNotFound()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Cuisine"));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Gestures(server).CreateAsync(
+                HomeSchema.Types.Point,
+                [new HomeCreateItem(null, "Prise fictive", null, Category: "PS", Room: "Garage")],
+                Ct));
+
+        Assert.Contains("Aucun objet Home trouvé", error.Message);
+        Assert.DoesNotContain("room-zz", error.Message);
+    }
+
+    [Fact]
+    public async Task AReadWithATypoTakesTheOneNearObject()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(
+            FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Pièce fictive"),
+            FakeHomeAnytypeServer.Point("point-1", "ZZ-PS01", "Prise fictive", "room-zz"));
+
+        string search = await Gestures(server).SearchAsync(
+            new HomeSearchFilter(null, null, "Pièce fictve", null, null), Ct);
+
+        Assert.Contains("Prise fictive", search);
+    }
+
+    [Fact]
+    public async Task AReadWithATypoThatSeveralObjectsShareListsThem()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(
+            FakeHomeAnytypeServer.Room("room-a", "ZA", "Cuisine"),
+            FakeHomeAnytypeServer.Room("room-b", "ZB", "Cuisine"));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Gestures(server).SearchAsync(new HomeSearchFilter(null, null, "Cuisne", null, null), Ct));
+
+        Assert.Contains("room-a", error.Message);
+        Assert.Contains("room-b", error.Message);
+    }
+    [Fact]
     [Trait("Category", "regression")]
     public async Task AnExactNameIsFoundAmongManyObjectsThatContainIt()
     {

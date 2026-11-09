@@ -135,6 +135,11 @@ or a name given in full, and a partial name is refused with the nearest
 candidates by id, so the call is repeated with the id. A write never lands on
 an object that was only guessed.
 
+When nothing contains the selector, near names are looked for with the same
+comparison as the near-name guard (a typo, another word order). A write lists
+the near objects by id and never picks one; a read takes the single near
+object, or lists several.
+
 ## Remaining boundaries
 
 - Typed multi-hop paths are not implemented.
