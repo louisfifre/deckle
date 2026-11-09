@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- The injected half of Deckle.Shell.Taskbar: a DLL that explorer.exe loads
+       through a window hook, then talks to Deckle over a named pipe. Built by
+       MSBuild.exe from the C# module's build (see Deckle.Shell.Taskbar.csproj),
+       never by `dotnet build`.
+
+       No NuGet package: the Windows SDK (10.0.26100) ships the C++/WinRT
+       headers and xamlom.h, so nothing needs a restore. Static CRT (/MT) so
+       the DLL depends on nothing explorer might not have loaded. -->
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>18.0</VCProjectVersion>
+    <ProjectGuid>{5C0F1E3A-7B52-4C0E-9D61-3A1F0B7E2D84}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>Deckle.Shell.Taskbar.Native</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
+    <PlatformToolset>v145</PlatformToolset>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
+    <TargetName>Deckle.Shell.Taskbar.Native</TargetName>
+  </PropertyGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration">
+    <UseDebugLibraries>true</UseDebugLibraries>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='Release'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+
+  <PropertyGroup>
+    <!-- One output folder per configuration under the repo's artifacts/ tree
+         (git-ignored), next to the dotnet outputs. -->
+    <OutDir>$(MSBuildThisFileDirectory)..\..\artifacts\native\$(MSBuildProjectName)\$(Configuration)\</OutDir>
+    <IntDir>$(MSBuildThisFileDirectory)..\..\artifacts\native\$(MSBuildProjectName)\obj\$(Configuration)\</IntDir>
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalOptions>/permissive- /Zc:__cplusplus /utf-8 /bigobj %(AdditionalOptions)</AdditionalOptions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;WINRT_LEAN_AND_MEAN;_WINDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <RuntimeLibrary Condition="'$(Configuration)'=='Debug'">MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary Condition="'$(Configuration)'=='Release'">MultiThreaded</RuntimeLibrary>
+      <Optimization Condition="'$(Configuration)'=='Release'">MaxSpeed</Optimization>
+      <Optimization Condition="'$(Configuration)'=='Debug'">Disabled</Optimization>
+      <PreprocessorDefinitions Condition="'$(Configuration)'=='Debug'">_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)'=='Release'">NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ModuleDefinitionFile>Deckle.Shell.Taskbar.Native.def</ModuleDefinitionFile>
+      <AdditionalDependencies>user32.lib;advapi32.lib;ole32.lib;oleaut32.lib;runtimeobject.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+    <ClInclude Include="pch.h" />
+    <ClInclude Include="util.h" />
+    <ClInclude Include="log.h" />
+    <ClInclude Include="channel.h" />
+    <ClInclude Include="engine.h" />
+    <ClInclude Include="xamldiag\tap_site.h" />
+    <ClInclude Include="xamldiag\visual_tree_watcher.h" />
+    <ClInclude Include="xamldiag\element_properties.h" />
+    <ClInclude Include="xamldiag\tap_connection.h" />
+    <ClInclude Include="xamldiag\rules\selector.h" />
+    <ClInclude Include="xamldiag\rules\rule_document.h" />
+    <ClInclude Include="xamldiag\rules\element_matcher.h" />
+    <ClInclude Include="xamldiag\rules\style_resolver.h" />
+    <ClInclude Include="xamldiag\rules\property_override.h" />
+    <ClInclude Include="xamldiag\rules\rule_engine.h" />
+    <ClInclude Include="xamldiag\behaviors\clock.h" />
+    <ClInclude Include="xamldiag\behaviors\start_menu_height.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="pch.cpp">
+      <PrecompiledHeader>Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="util.cpp" />
+    <ClCompile Include="log.cpp" />
+    <ClCompile Include="channel.cpp" />
+    <ClCompile Include="engine.cpp" />
+    <ClCompile Include="hook_entry.cpp" />
+    <ClCompile Include="xamldiag\tap_site.cpp" />
+    <ClCompile Include="xamldiag\visual_tree_watcher.cpp" />
+    <ClCompile Include="xamldiag\element_properties.cpp" />
+    <ClCompile Include="xamldiag\tap_connection.cpp" />
+    <ClCompile Include="xamldiag\rules\selector.cpp" />
+    <ClCompile Include="xamldiag\rules\rule_document.cpp" />
+    <ClCompile Include="xamldiag\rules\element_matcher.cpp" />
+    <ClCompile Include="xamldiag\rules\style_resolver.cpp" />
+    <ClCompile Include="xamldiag\rules\property_override.cpp" />
+    <ClCompile Include="xamldiag\rules\rule_engine.cpp" />
+    <ClCompile Include="xamldiag\behaviors\clock.cpp" />
+    <ClCompile Include="xamldiag\behaviors\start_menu_height.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Deckle.Shell.Taskbar.Native.def" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="version.rc" />
+  </ItemGroup>
+
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>
+

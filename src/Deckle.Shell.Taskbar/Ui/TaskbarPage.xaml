@@ -19,8 +19,14 @@
                                             x:Uid="TaskbarPageHeader"
                                             ResetAllRequested="ResetAll_Click" />
 
-                <!-- No module switch: each card below is its own switch and
-                     both always show. -->
+                <!-- No module switch: each card below is its own setting and
+                     all of them always show. -->
+
+                <!-- ── Taskbar ──────────────────────────────────────────────── -->
+                <catalog:SettingsSection x:Uid="TaskbarPageBarSection">
+                    <StackPanel x:Name="BarHost"
+                                Spacing="{StaticResource SettingsCardSpacing}" />
+                </catalog:SettingsSection>
 
                 <!-- ── System tray ───────────────────────────────────────────── -->
                 <catalog:SettingsSection x:Uid="TaskbarPageTraySection">

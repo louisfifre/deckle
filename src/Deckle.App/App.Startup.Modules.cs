@@ -115,10 +115,10 @@ public partial class App
 
         context.Compose(TaskbarCoverModule, InitializeTaskbarCover);
 
-        // Registry-only: it reads and writes the user's own keys and reaches
-        // into no other process. The tray icons are promoted here when the
-        // setting is on; the Recommended policy is only ever touched by the
-        // page.
+        // Writes the user's own notify icon keys (tray icons promoted when the
+        // setting is on) and, when a customization is on, injects the native
+        // engine into explorer and the Start menu host. Every setting is off by
+        // default, so a fresh install reaches into neither.
         context.Compose(TaskbarModule, InitializeTaskbar);
 
         // Created before its consumers, which reference-count it.

@@ -7,8 +7,7 @@ namespace Deckle.Shell.Taskbar;
 
 // The taskbar module's own page, shown as General under the Taskbar node. Same
 // code-behind shape as TaskbarCoverPage: one composer per host, Reset all gated
-// on any composer being dirty. Only the tray card has a default to reset; the
-// Recommended card edits Windows' state.
+// on any composer being dirty.
 public sealed partial class TaskbarPage : Page
 {
     public TaskbarViewModel ViewModel { get; } = new();
@@ -22,14 +21,15 @@ public sealed partial class TaskbarPage : Page
 
         _composers =
         [
+            Compose(BarHost,   ViewModel.BarManifest),
             Compose(TrayHost,  ViewModel.TrayManifest),
             Compose(StartHost, ViewModel.StartManifest),
         ];
 
         GateResetAll();
 
-        // The promoter outlives this page; follow it only while the page is in
-        // a live tree, so a closed Settings window leaves no subscriber.
+        // The promoter and the customizer outlive this page; follow them only while
+        // the page is in a live tree, so a closed Settings window leaves no subscriber.
         Loaded   += (_, _) => ViewModel.AttachStatus(DispatcherQueue);
         Unloaded += (_, _) => ViewModel.DetachStatus();
     }
@@ -44,8 +44,7 @@ public sealed partial class TaskbarPage : Page
     }
 
     // The page is cached; the settings file may change meanwhile (a restore,
-    // another writer) and Windows may have changed the Recommended policy, so
-    // each visit re-reads both.
+    // another writer), so each visit re-reads it.
     protected override void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);

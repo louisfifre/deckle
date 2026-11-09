@@ -4,7 +4,7 @@ using Deckle.Diagnostics;
 namespace Deckle.Shell.Taskbar;
 
 // Taskbar module provider. Two pieces write here: the tray icon promoter (and
-// its registry watcher) and the Recommended section policy. Counts and codes
+// its registry watcher) and the native engine host. Counts and codes
 // only: an icon's name, path or publisher never reaches a line, since they
 // tell what the person runs.
 [EventSource(Name = "Deckle-Taskbar")]
@@ -27,13 +27,24 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public const int EvtTrayWatcherStateChanged      = 8;
     public const int EvtTrayWatcherFailed            = 9;
     public const int EvtTraySnapshotUnreadable       = 10;
-    public const int EvtRecommendedSectionHidden     = 11;
-    public const int EvtRecommendedSectionShown      = 12;
-    public const int EvtRecommendedPolicyFailed      = 13;
-    public const int EvtRecommendedPolicyDetail      = 14;
+    // 11 to 14 belonged to the Recommended section policy, removed; not reused.
     public const int EvtSettingsLoadWarning          = 15;
     public const int EvtSettingsLoadError            = 16;
     public const int EvtExplorerRestartReapplyFailed = 17;
+    public const int EvtNativeEngineInjected         = 18;
+    public const int EvtNativeEngineConnected        = 19;
+    public const int EvtNativeEngineDisconnected     = 20;
+    public const int EvtNativeEngineUnavailable      = 21;
+    public const int EvtNativeEngineNote             = 22;
+    public const int EvtNativeEngineDetail           = 23;
+    public const int EvtNativeEngineWarning          = 24;
+    public const int EvtNativeEngineError            = 25;
+    public const int EvtTaskbarPartsChanged          = 26;
+    public const int EvtTaskbarPartSkipped           = 27;
+    public const int EvtTaskbarPartNotInEffect       = 28;
+    public const int EvtTaskbarPartProblemEnded      = 29;
+    public const int EvtTaskbarEngineUnloadUnconfirmed = 30;
+    public const int EvtTaskbarCustomizerFailed      = 31;
 
     // ── Tray icon promotion ───────────────────────────────────────────────────
     //
@@ -166,56 +177,6 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtExplorerRestartReapplyFailed, ex_type, ex_message);
     }
 
-    // ── Recommended section policy ────────────────────────────────────────────
-    //
-    // A change is a gesture of the person (the card's switch), so each one
-    // that wrote gets its milestone. A declined prompt or a failed write is one
-    // Warning with its cause.
-
-    [Event(EvtRecommendedSectionHidden,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Milestone,
-           Message = "Start's Recommended section is set to hide")]
-    public void RecommendedSectionHidden()
-    {
-        if (IsEnabled()) WriteEvent(EvtRecommendedSectionHidden);
-    }
-
-    [Event(EvtRecommendedSectionShown,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Milestone,
-           Message = "Gave Start's Recommended section back")]
-    public void RecommendedSectionShown()
-    {
-        if (IsEnabled()) WriteEvent(EvtRecommendedSectionShown);
-    }
-
-    // action: hide or show. route: direct (Deckle runs elevated), elevated
-    // (reg.exe behind a UAC prompt), machine or in_place (nothing to write)
-    // or none. error: none, uac_declined, exit_N, other_hive or an exception
-    // type.
-    [Event(EvtRecommendedPolicyFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Start's Recommended section was not changed\naction={0} | route={1} | outcome={2} | error={3}")]
-    public void RecommendedPolicyFailed(string action, string route, string outcome, string error)
-    {
-        if (IsEnabled()) WriteEvent(EvtRecommendedPolicyFailed, action, route, outcome, error);
-    }
-
-    // Every attempt, whatever it ended in, with the same fields as the failure.
-    [Event(EvtRecommendedPolicyDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "action={0} | route={1} | outcome={2} | error={3}")]
-    public void RecommendedPolicyDetail(string action, string route, string outcome, string error)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtRecommendedPolicyDetail, action, route, outcome, error);
-    }
-
     // ── Settings store ────────────────────────────────────────────────────────
 
     // The settings store reports in free text; the text carries its own cause.
@@ -235,5 +196,166 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public void SettingsLoadError(string message)
     {
         if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
+    }
+
+    // ── Native engine (the DLL inside explorer) ───────────────────────────────
+    //
+    // The DLL cannot write to Deckle's log: it sends its records over the pipe
+    // and NativeLogRelay re-emits them here, at the level the DLL gave them.
+    // Injected and Disconnected bracket one DLL's stay in explorer, Connected
+    // sits between them; the explorer process id pairs a stay in the file alone.
+
+    // trigger: startup, explorer_restart or retry.
+    [Event(EvtNativeEngineInjected,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Sent the taskbar engine into explorer")]
+    public void NativeEngineInjected(string trigger)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineInjected, trigger);
+    }
+
+    [Event(EvtNativeEngineConnected,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The taskbar engine connected from explorer")]
+    public void NativeEngineConnected(int explorer_pid, int protocol)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineConnected, explorer_pid, protocol);
+    }
+
+    // outcome: unloaded (the DLL reported that it unloaded itself) or lost (the
+    // pipe closed with no word, as when explorer exits).
+    [Event(EvtNativeEngineDisconnected,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The taskbar engine disconnected")]
+    public void NativeEngineDisconnected(string outcome)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineDisconnected, outcome);
+    }
+
+    // step: the injection step that failed. error: its Win32 error code.
+    [Event(EvtNativeEngineUnavailable,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar engine could not be started\nstep={0} | error={1}")]
+    public void NativeEngineUnavailable(string step, int error)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineUnavailable, step, error);
+    }
+
+    [Event(EvtNativeEngineNote,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar engine reported progress")]
+    public void NativeEngineNote(string name, string fields)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineNote, name, fields);
+    }
+
+    [Event(EvtNativeEngineDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "name={0} | fields={1}")]
+    public void NativeEngineDetail(string name, string fields)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtNativeEngineDetail, name, fields);
+    }
+
+    [Event(EvtNativeEngineWarning,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar engine worked around a problem\nname={0} | text={1} | fields={2}")]
+    public void NativeEngineWarning(string name, string text, string fields)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineWarning, name, text, fields);
+    }
+
+    [Event(EvtNativeEngineError,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar engine failed\nname={0} | text={1} | fields={2}")]
+    public void NativeEngineError(string name, string text, string fields)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineError, name, text, fields);
+    }
+
+    // ── Customization (what the settings ask of the engine) ───────────────────
+    //
+    // The stay of the engine in a process is bracketed by Injected and
+    // Disconnected above. These say what the person asked for while it stays.
+    // Parts are spelled background, compact_tray, compact_clock and start_menu.
+
+    // parts: the parts now asked for, comma separated, or none. One line per
+    // change of the set, so a log read later shows what was on and since when.
+    [Event(EvtTaskbarPartsChanged,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The taskbar customization changed")]
+    public void TaskbarPartsChanged(string parts)
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarPartsChanged, parts);
+    }
+
+    // A part that is on but asks nothing of the engine. reason: taskbar_horizontal
+    // (the compact tray is written for a vertical bar).
+    [Event(EvtTaskbarPartSkipped,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "A taskbar customization is on but was left out")]
+    public void TaskbarPartSkipped(string part, string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarPartSkipped, part, reason);
+    }
+
+    // One Warning per incident: a part the engine cannot hold opens it, the
+    // first status without the problem closes it (TaskbarPartProblemEnded).
+    // problem: not_applied, contested or error.
+    [Event(EvtTaskbarPartNotInEffect,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "A taskbar customization is not in effect, so the taskbar may not look as asked\npart={0} | problem={1}")]
+    public void TaskbarPartNotInEffect(string part, string problem)
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarPartNotInEffect, part, problem);
+    }
+
+    [Event(EvtTaskbarPartProblemEnded,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "A taskbar customization problem ended")]
+    public void TaskbarPartProblemEnded(string part)
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarPartProblemEnded, part);
+    }
+
+    // target: explorer or start_menu. The DLL left with the pipe, not with its
+    // own word, so explorer may still hold it until it exits.
+    [Event(EvtTaskbarEngineUnloadUnconfirmed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar engine did not confirm that it unloaded\ntarget={0}")]
+    public void TaskbarEngineUnloadUnconfirmed(string target)
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarEngineUnloadUnconfirmed, target);
+    }
+
+    // A pass over the settings threw. trigger: startup, setting or
+    // engine_connected.
+    [Event(EvtTaskbarCustomizerFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar customization could not be applied\ntrigger={0} | ex_type={1}")]
+    public void TaskbarCustomizerFailed(string trigger, string ex_type)
+    {
+        if (IsEnabled()) WriteEvent(EvtTaskbarCustomizerFailed, trigger, ex_type);
     }
 }
