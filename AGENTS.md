@@ -47,7 +47,7 @@ Everything specialized is discoverable, not pre-chewed here — orient, never re
 - "How we do things" doctrines → `deckle-*` skills in `.agents/skills/`; their descriptions say when to invoke them, go look.
 - A module's own why, traps and constraints → the comments in its code, at the line they concern.
 - Repo structure (tree, headers, skills) → `TREE.md`, auto-generated.
-- The scripts, what is installed and what is Deckle's own → `scripts/README.md`.
+- Which script to run (build, test, self-check, prod, processes, logs) → [`scripts/INVENTORY.md`](scripts/INVENTORY.md), generated from the scripts' Headers; when none fits, use your own command. What is installed and what is Deckle's own → `scripts/README.md`.
 - Frozen decisions → `docs/adr/`.
 - The app as a person sees it → `scripts/self-check.ps1`, whose page captures a review pass reads.
 - WinUI/XAML and Windows APIs → the `microsoft-docs` skill before local code.

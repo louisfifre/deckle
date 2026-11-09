@@ -1,7 +1,8 @@
 <#
 .SYNOPSIS
-    Run the built Deckle once in its self-check mode and judge its report.
+    Self-check the built app
 .DESCRIPTION
+    Runs the built Deckle once in its self-check mode and judges its report.
     Takes the already-built Deckle.exe of this checkout (it never builds), runs it
     with --self-check on a fresh data root of its own, waits for it, and reads
     the report.json it writes. The app opens its Settings window, walks every
@@ -37,7 +38,9 @@
 .PARAMETER KeepData
     Keep the fresh data root after the run (it holds the run's log.jsonl).
 .NOTES
-    No Header for the menu on purpose: an agent runs this, after its build.
+    section: Run
+    order: 125
+    action: Self-check |
 #>
 
 [CmdletBinding()]

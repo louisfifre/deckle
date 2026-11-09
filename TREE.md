@@ -318,6 +318,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── README.md  — Setup Standard files and hooks of a repository.
 │   │   ├── scaffold.ps1  — Scaffold repository files Creates the standard folders and files a repository starts with, and never over…
 │   │   ├── setup-assets.ps1  — Set up runtime assets Populates the native and models folders under the user data root with the whisp…
+│   │   ├── update-inventory.ps1
 │   │   └── update-tree.ps1
 │   ├── tests/
 │   │   ├── BugExamples/
@@ -329,7 +330,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── commands/
 │   │   │   ├── build-locked.tests.ps1
 │   │   │   ├── build-server-watchdog.tests.ps1
+│   │   │   ├── inspect-context.tests.ps1
+│   │   │   ├── InspectContextBugNotes.md
 │   │   │   ├── publish-native-runtime.tests.ps1
+│   │   │   ├── read-log.tests.ps1
 │   │   │   └── update-readme-stats.tests.ps1
 │   │   └── lib/
 │   │       ├── agent-skills-layout.tests.ps1
@@ -341,6 +345,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │       ├── release-validation.tests.ps1
 │   │       ├── repository-inventory.tests.ps1
 │   │       ├── resource-inventory.tests.ps1
+│   │       ├── script-inventory.tests.ps1
 │   │       ├── script-layout.tests.ps1
 │   │       └── source-metrics.tests.ps1
 │   ├── build-locked.ps1
@@ -349,11 +354,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── deploy-prod.ps1  — Update the prod copy Build main in Release in a build worktree of its own, check it with the self-ch…
 │   ├── fetch-autocorrect-data.ps1
 │   ├── inspect-context.ps1  — Context inventory Inventory the repository's tracked Markdown context, grouped by loading mode, w…
+│   ├── inspect-processes.ps1  — Show running builds and Deckle instances Lists, read-only, the Deckle instances running on this machine with the folder…
+│   ├── INVENTORY.md
 │   ├── launch-app.ps1  — Launch the freshest built app Replace the running Deckle instance with the freshest already-built executable…
 │   ├── menu.ps1
+│   ├── read-log.ps1  — Read Deckle's log Prints the latest entries of Deckle's diagnostics log, one line each: time, lev…
 │   ├── README.md  — readme-scripts Dev workflows entry point for Deckle: the menu.ps1 launcher installed from Deck…
 │   ├── resource-validation.allowlist.json
-│   ├── self-check.ps1  — Run the built Deckle once in its self-check mode and judge its report. Takes the already-built Deckle.exe of this checkout (it never builds), runs it…
+│   ├── self-check.ps1  — Self-check the built app Runs the built Deckle once in its self-check mode and judges its report. Takes…
 │   ├── stats.ps1  — Repository statistics Walk every project under src\ and build one file inventory per Deckle module, w…
 │   └── update-readme-stats.ps1  — Update the README pulse Regenerate the small "Development pulse" section in README.md from the local Gi…
 ├── src/

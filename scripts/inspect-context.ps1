@@ -160,9 +160,12 @@ Write-Host ''
 Write-Host ("Context inventory total: {0:N0} document(s)  /  new: {1:N0} in 1d, {2:N0} in 7d, {3:N0} in 30d  /  {4:N0} section(s)  /  {5:N0} lines  /  {6:N1} KB  /  ~{7:N0} tokens" -f `
     $documents.Count, $total1Day, $total7Days, $total30Days, $totalSections, $totalLines, ($totalBytes / 1KB), $totalTokens) -ForegroundColor Cyan
 
-foreach ($loadingMode in @('Automatic instructions', 'On-demand references')) {
-    Write-Section $loadingMode
-    $modeDocuments = @($documents | Where-Object LoadingMode -eq $loadingMode)
+# PowerShell variable names ignore case: a loop variable named $loadingMode
+# would be the [string[]] parameter $LoadingMode, keep its array type, and
+# fail to bind to Write-Section's [string] Title.
+foreach ($mode in @('Automatic instructions', 'On-demand references')) {
+    Write-Section $mode
+    $modeDocuments = @($documents | Where-Object LoadingMode -eq $mode)
     foreach ($typeGroup in ($modeDocuments | Group-Object DocumentType | Sort-Object Name)) {
         Write-Host ''
         $heading = "--- $($typeGroup.Name) "
