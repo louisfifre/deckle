@@ -136,8 +136,120 @@ an object that was only guessed.
   separate guichet, not to this surface.
 - There is no permanent preview-card/elicitation workflow. Search candidates
   provide one structured building block for future mobile interaction.
-- Experience export/import, reference remapping, schema reconstruction and the
-  live manual app pass remain separate work.
+- The recreation of a space is rehearsed headless on a test space (see
+  Recreation rehearsal); views, templates, placement and widgets stay the
+  person's pass in the app.
+
+## Recreation rehearsal
+
+The rehearsal proves, on a TEST space and never on the live one, that a
+space can be recreated on the manifest with every object's information
+preserved, through the typed gestures only. It is a maintainer operation:
+two explicit maintenance tests in `Deckle.Home.Tests` host it, and they skip
+unless their variables are set. Running it is the maintainer's act.
+
+1. Create the test space once. With `DECKLE_HOME_CREATE_TEST_SPACE` set to
+   the exact name (for example `Home test`), `CreateTestSpace` creates it
+   through `POST /v1/spaces`, refuses a name already taken, and prints the
+   line to add to the `aliases` object of `spaces.json` in the anytype
+   module folder (`"home-test": "<id>"`). The public API has no invite: the
+   space is the bot's alone until the person joins it from the app.
+2. Rehearse. With `DECKLE_HOME_REHEARSAL_SOURCE` (an alias, `home`) and
+   `DECKLE_HOME_REHEARSAL_TARGET` (the test space's alias) set,
+   `RecreateOnTestSpace` runs `HomeRecreationRehearsal`: export, schema,
+   replay, compare, counts.
+
+```powershell
+$env:DECKLE_HOME_CREATE_TEST_SPACE = 'Home test'
+pwsh -File scripts/build-locked.ps1 -Test -Project tests/Deckle.Home.Tests/Deckle.Home.Tests.csproj --filter "FullyQualifiedName~HomeRecreationRehearsalTests.CreateTestSpace" /p:VSTestCLIRunSettings=xUnit.Explicit=only --logger "console;verbosity=detailed"
+
+$env:DECKLE_HOME_REHEARSAL_SOURCE = 'home'
+$env:DECKLE_HOME_REHEARSAL_TARGET = 'home-test'
+pwsh -File scripts/build-locked.ps1 -Test -Project tests/Deckle.Home.Tests/Deckle.Home.Tests.csproj --filter "FullyQualifiedName~HomeRecreationRehearsalTests.RecreateOnTestSpace" /p:VSTestCLIRunSettings=xUnit.Explicit=only --logger "console;verbosity=detailed"
+```
+
+`/p:VSTestCLIRunSettings=xUnit.Explicit=only` is how an explicit test runs
+through `build-locked.ps1`: the script cannot forward `--` and inline run
+settings, and the MSBuild property carries them. The detailed console
+logger shows the test output, where the counts are printed.
+
+The rehearsal refuses before any write when the target alias is `home` or
+`dev`, when source and target resolve to the same space, or when the
+target already holds Home objects (a second run would double them; start
+again on a new test space).
+
+Steps, in the order they run:
+
+- Export. `HomeSpaceExporter` reads the source through the raw client
+  (listing, then each object's body) into a replay sheet on the manifest
+  keys. The old-key bridge applies there: errand becomes product, floor
+  becomes zone and a room held by a floor collection gets its `zone`
+  relation, `documents`, `errand_category`, `memory_size_gb`,
+  `memory_frequency_mhz`, `switch_kind` and `floor` move to their new keys,
+  old `notes` join the body after a blank line. Dead keys (`power_watts`,
+  `condition`, `light_nature`, `existence`, `aisle`, `survey_date`), a point
+  category outside the 22, files, and links to objects that do not travel
+  stay raw under `unmapped` and are counted. Anytype's built-in types are
+  skipped and counted. Options travel by name, relations by code (coded
+  types) or name, with the source ids kept beside them.
+- Schema. The manifest goes on the target through `SchemaAdminGestures`
+  (preview, then apply). It is the compiled manifest plus the option names
+  the sheet uses in open and seeded vocabularies; closed ones stay compiled.
+- Replay. `HomeSpaceReplayer` creates the objects through `HomeGestures`
+  only: per type in the design-note order, batches of at most 100, every
+  item forced past the near-name guard, a type's single template when it
+  has exactly one, memberships of collections the target holds. Relations
+  to objects not yet created wait for one update pass; done tasks go
+  through `complete`. A refused batch is retried item by item, and each
+  refused item is counted under a reason.
+- Compare. `HomeRecreationComparer` reads the target back, matches each
+  sheet object within its type by code, else by name, and compares name,
+  body (whitespace set aside), done box, memberships and every mapped
+  property: options by the manifest option their name stands for,
+  relations by the code or name they point at.
+
+Files. The sheet and its reports hold the person's data and live outside
+the repository, under `%LOCALAPPDATA%\Deckle\modules\home\rehearsal\`, or at
+the path in `DECKLE_HOME_REPLAY_SHEET`:
+
+- `<yyyyMMdd-HHmm>-<alias>.json`: the replay sheet, with export counts.
+- `<stem>.replay.json`: each refusal with its reason and the gesture's
+  message, dropped relations and memberships.
+- `<stem>.compare.json`: each difference, field, expected and actual.
+- `<stem>.rehearsal.json`: the counts of every step, as printed.
+
+Nothing that names an object is logged or printed: the test output holds
+counts and the sheet path only.
+
+What the comparison proves: the objects the typed verbs can hold, with
+their mapped values, relations, bodies, task completion and collection
+memberships, survive an export and a recreation through the guichet alone,
+and the refusals are counted by cause. What it does not prove: anything
+under `unmapped`, which the new model drops on purpose; files (manuals,
+receipts, photos), which the verbs do not write; creation and modification
+dates and authors, which a recreation resets; and everything REST cannot
+write.
+
+The boundary recorded on 2026-11-09. REST cannot write templates, views
+(beyond four v2 view operations Deckle has not modeled), featured or hidden
+property placement, widgets and pinning, and it serves no template content
+and no active view. The official export (doc.anytype.io) offers Markdown,
+Any-Block (Protobuf or JSON, zip), PDF and HTML, for one object, a
+selection, a view or the whole space, with linked objects, files and
+archived objects as options; import is desktop-only, from Space Settings;
+members and chats are not exported. The documentation does not say whether
+types, properties, options, templates and views travel, nor whether ids and
+keys survive. The Experience Gallery page says an experience, a space
+exported as Any-Block JSON, includes only the types, properties, widgets,
+templates and objects chosen: the one official statement that templates and
+widgets travel, views not named. A reading of anytype-heart (2026-09, home
+repository NOTES.md) found that the Any-Block export carries types, views
+and templates. Both are leads, not proof. So the experience stays the
+person's pass in the app: export the live space as Any-Block JSON, import
+it into a test space, then compare views (`schema_inspect_space` on both
+aliases) and templates (by eye) with the live space.
+
+## Local validation
 
 Local validation follows the repository's compile-only rule. Build the owning
 test project in Debug x64 with `/m:4`; do not infer a live probe or an executed
