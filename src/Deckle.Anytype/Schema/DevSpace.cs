@@ -25,7 +25,10 @@ public sealed record PropertyDef(string Key, string Label, string Format, TagOpt
 //   • Props.TachesLiees   = "tache(s)_liee(s)"        — MALFORMED key (no accents).
 //   • Props.BudgetReel    = "budget_reel_("           — TRUNCATED key.
 //   • Props.ChargeReelle  = "charge_estimee_(jours)"  — MISLEADING key (named
-//     like an estimate, but it is the *real* charge field).
+//     like an estimate, but it is the *real* charge field). Its unit is the
+//     hour, despite « jours »: a number property carries its unit in its name,
+//     and Louis confirmed on 2026-11-09 that the field holds hours and was
+//     never filled. The recreation of the space renames it.
 //
 // Priorité is a select whose tag options are a mix of opaque ids and bare
 // integer strings — both forms are below. Its own key is served as "priorite"
