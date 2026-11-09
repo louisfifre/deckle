@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carte de l'espace</title>
+<style>
+  :root {
+    --bg: #f6f6f3; --surface: #ffffff; --ink: #1d1d1b; --muted: #6b6b65; --line: #deded8;
+    --accent: #2f6fde; --edge: #a8a8a0; --font: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    --k-script: #2f6fde; --k-skill: #8a4fd6; --k-context: #1f8f6a; --k-config: #b5651d;
+    --k-mcp: #c23b6b; --k-service: #c23b6b; --k-task: #5a7a12; --k-link: #8a8a82;
+    --v-A: #1f8f6a; --v-B: #c98a00; --v-C: #d0453a; --v-D: #8a4fd6; --v-E: #2f6fde;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #151514; --surface: #1f1f1d; --ink: #ecece7; --muted: #9b9b94; --line: #393935;
+      --accent: #6c9bf0; --edge: #6a6a63;
+      --k-script: #6c9bf0; --k-skill: #b38bec; --k-context: #4cc29a; --k-config: #e09a52;
+      --k-mcp: #ec6f9c; --k-service: #ec6f9c; --k-task: #9cc34a; --k-link: #8a8a82;
+      --v-A: #4cc29a; --v-B: #e6b23c; --v-C: #ef7066; --v-D: #b38bec; --v-E: #6c9bf0;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #151514; --surface: #1f1f1d; --ink: #ecece7; --muted: #9b9b94; --line: #393935;
+    --accent: #6c9bf0; --edge: #6a6a63;
+    --k-script: #6c9bf0; --k-skill: #b38bec; --k-context: #4cc29a; --k-config: #e09a52;
+    --k-mcp: #ec6f9c; --k-service: #ec6f9c; --k-task: #9cc34a; --k-link: #8a8a82;
+    --v-A: #4cc29a; --v-B: #e6b23c; --v-C: #ef7066; --v-D: #b38bec; --v-E: #6c9bf0;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 14px/1.45 var(--font); display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
+
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  header h1 { font-size: 15px; font-weight: 600; margin: 0; }
+  .tabs { display: flex; gap: 4px; }
+  .tab { border: 1px solid transparent; background: none; color: var(--muted); font: inherit; padding: 5px 12px; border-radius: 6px; cursor: pointer; }
+  .tab:hover { color: var(--ink); background: var(--bg); }
+  .tab[aria-selected="true"] { color: var(--ink); background: var(--bg); border-color: var(--line); font-weight: 600; }
+  .tab .count { color: var(--muted); font-weight: 400; margin-left: 4px; font-variant-numeric: tabular-nums; }
+  .tools { display: flex; gap: 6px; margin-left: auto; align-items: center; }
+  input[type="search"] { font: inherit; padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); width: 220px; }
+  button.btn { font: inherit; padding: 5px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink); cursor: pointer; }
+  button.btn:hover { background: var(--bg); }
+  .hits { color: var(--muted); font-size: 12px; min-width: 5ch; font-variant-numeric: tabular-nums; }
+
+  main { display: grid; grid-template-columns: 1fr 340px; min-height: 0; }
+  .stage { position: relative; min-height: 0; }
+  .graph { position: absolute; inset: 0; }
+  .graph[hidden] { display: none; }
+  .intro { position: absolute; left: 16px; top: 12px; z-index: 2; max-width: 520px; color: var(--muted); font-size: 13px; pointer-events: none; }
+
+  aside { border-left: 1px solid var(--line); background: var(--surface); overflow: auto; padding: 16px; display: flex; flex-direction: column; gap: 18px; }
+  aside h2 { font-size: 16px; margin: 2px 0 6px; word-break: break-word; }
+  aside h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 6px; font-weight: 600; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+  .dot { width: 10px; height: 10px; border-radius: 3px; border: 2px solid currentColor; flex: none; }
+  .path { display: flex; gap: 6px; align-items: flex-start; font: 12px/1.4 ui-monospace, "Cascadia Mono", Consolas, monospace; color: var(--muted); word-break: break-all; }
+  .path button { flex: none; }
+  .desc { margin: 6px 0 0; }
+  .empty { color: var(--muted); }
+  ul.links { list-style: none; padding: 0; margin: 0; display: grid; gap: 2px; }
+  ul.links button { all: unset; cursor: pointer; display: block; padding: 3px 6px; border-radius: 4px; width: 100%; box-sizing: border-box; }
+  ul.links button:hover, ul.links button:focus-visible { background: var(--bg); outline: none; }
+  ul.links .rel { color: var(--muted); font-size: 12px; }
+  .elsewhere { display: flex; gap: 6px; flex-wrap: wrap; }
+  .legend { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+  .legend .row { display: flex; align-items: center; gap: 8px; }
+  .legend .line { width: 22px; height: 0; border-top: 2px solid; flex: none; }
+  .meta { font-size: 12px; color: var(--muted); margin-top: auto; }
+  code { font: 12px ui-monospace, "Cascadia Mono", Consolas, monospace; }
+
+  @media (max-width: 760px) {
+    main { grid-template-columns: 1fr; grid-template-rows: 1fr 40vh; }
+    aside { border-left: 0; border-top: 1px solid var(--line); }
+    input[type="search"] { width: 100%; }
+    .tools { width: 100%; margin-left: 0; }
+    .intro { display: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Carte de l'espace</h1>
+  <nav class="tabs" role="tablist" id="tabs"></nav>
+  <div class="tools">
+    <input type="search" id="search" placeholder="Chercher (touche /)" aria-label="Chercher un élément">
+    <span class="hits" id="hits"></span>
+    <button class="btn" id="fit" title="Tout voir">Ajuster</button>
+    <button class="btn" id="relayout" title="Recalculer la disposition">Réorganiser</button>
+  </div>
+</header>
+<main>
+  <div class="stage" id="stage"></div>
+  <aside id="panel"></aside>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/layout-base@2.0.1/layout-base.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cose-base@2.2.0/cose-base.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-fcose@2.2.0/cytoscape-fcose.js"></script>
+<script src="data.js"></script>
+<script>
+"use strict";
+
+const PRISMS = {
+  harness: { title: "Harnais", intro: "Ce que Claude Code charge, et d'où ça vient. Suis les flèches : un lien symbolique, un import, un hook qui lance un script.", edgeLabels: true },
+  scripts: { title: "Scripts", intro: "Chaque script, rangé par dépôt puis par dossier. Une flèche : ce script en appelle un autre.", edgeLabels: false },
+  copies:  { title: "Copies", intro: "Les fichiers qui existent à plusieurs endroits. Même lettre, même contenu ; un cadre orange, des copies qui ont divergé.", edgeLabels: false, edges: false },
+};
+const KIND = { script: "Script", skill: "Skill", context: "Instructions", config: "Réglages", mcp: "Serveur MCP",
+  service: "Cible d'un serveur MCP", task: "Tâche planifiée", link: "Lien symbolique", folder: "Dossier", file: "Fichier", group: "Groupe" };
+const EDGE = { link: "lien symbolique", imports: "importe", runs: "lance", calls: "appelle", declares: "déclare", points: "pointe vers" };
+
+const data = window.WORKSPACE;
+const stage = document.getElementById("stage");
+const panel = document.getElementById("panel");
+const search = document.getElementById("search");
+const hits = document.getElementById("hits");
+const views = {};          // prism -> cytoscape instance, built on first visit
+let current = null;
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+if (!data) {
+  panel.innerHTML = `<p class="empty">Pas de données. Lance <code>pwsh -File inventory.ps1</code> dans ce dossier, puis recharge la page.</p>`;
+  throw new Error("data.js missing");
+}
+const byId = new Map(data.nodes.map(n => [n.id, n]));
+const inPrism = (n, p) => n.parents && Object.prototype.hasOwnProperty.call(n.parents, p);
+const labelIn = (n, p) => (n.labels && n.labels[p]) || n.label;
+
+let hasFcose = typeof cytoscapeFcose !== "undefined";
+if (hasFcose) { try { cytoscape.use(cytoscapeFcose); } catch { /* already registered by its UMD build */ } }
+
+// ------------------------------------------------------------ tabs
+
+const tabs = document.getElementById("tabs");
+for (const [key, p] of Object.entries(PRISMS)) {
+  const count = data.nodes.filter(n => inPrism(n, key) && n.kind !== "group").length;
+  const b = document.createElement("button");
+  b.className = "tab"; b.role = "tab"; b.dataset.prism = key;
+  b.innerHTML = `${p.title}<span class="count">${count}</span>`;
+  b.addEventListener("click", () => show(key));
+  tabs.append(b);
+}
+
+// ------------------------------------------------------------ graph
+
+function elementsFor(prism) {
+  const ids = new Set(data.nodes.filter(n => inPrism(n, prism)).map(n => n.id));
+  const els = [];
+  for (const n of data.nodes) {
+    if (!ids.has(n.id)) continue;
+    const parent = n.parents[prism];
+    const label = labelIn(n, prism);
+    els.push({ group: "nodes", classes: n.kind === "group" ? "group" : "",
+      data: { id: n.id, label, kind: n.kind, parent: parent && ids.has(parent) ? parent : undefined,
+              w: Math.min(230, 18 + label.length * 6.4), variant: n.variant || "" } });
+  }
+  for (const e of data.edges) {
+    if (PRISMS[prism].edges !== false && ids.has(e.source) && ids.has(e.target))
+      els.push({ group: "edges", data: { id: `${e.source}>${e.target}:${e.kind}`, source: e.source, target: e.target, kind: e.kind, label: e.label } });
+  }
+  return els;
+}
+
+function styleFor(prism) {
+  const ink = css("--ink"), muted = css("--muted"), line = css("--line"), surface = css("--surface"), bg = css("--bg");
+  const edge = css("--edge"), accent = css("--accent"), font = css("--font");
+  const s = [
+    { selector: "node", style: { shape: "round-rectangle", width: "data(w)", height: 24, label: "data(label)",
+      "font-family": font, "font-size": 11, color: ink, "text-valign": "center", "text-halign": "center",
+      "background-color": surface, "border-width": 1.5, "border-color": css("--k-link"),
+      "text-wrap": "ellipsis", "text-max-width": e => `${e.data("w") - 12}px` } },
+    { selector: "node.group", style: { "background-color": ink, "background-opacity": 0.03, "border-width": 1,
+      "border-color": line, "text-valign": "top", "text-halign": "center", "text-margin-y": -3,
+      "font-size": 12, "font-weight": 600, color: muted, padding: 14 } },
+    { selector: "edge", style: { width: 1.2, "line-color": edge, "target-arrow-color": edge, "target-arrow-shape": "triangle",
+      "arrow-scale": 0.8, "curve-style": "bezier", opacity: 0.75 } },
+    { selector: 'edge[kind="link"]', style: { "line-style": "dashed" } },
+    { selector: 'edge[kind="runs"]', style: { "line-color": css("--k-config"), "target-arrow-color": css("--k-config"), width: 2 } },
+    { selector: 'edge[kind="imports"]', style: { "line-color": css("--k-context"), "target-arrow-color": css("--k-context") } },
+    { selector: 'edge[kind="declares"], edge[kind="points"]', style: { "line-color": css("--k-mcp"), "target-arrow-color": css("--k-mcp") } },
+    { selector: "node:selected", style: { "border-width": 3, "border-color": accent } },
+    { selector: ".faded", style: { opacity: 0.14 } },
+    { selector: "node.match", style: { "border-width": 3, "border-color": accent } },
+    { selector: "edge.hl", style: { opacity: 1, width: 2.2, label: "data(label)" } },
+  ];
+  for (const k of ["script", "skill", "context", "config", "mcp", "service", "task", "link"])
+    s.splice(2, 0, { selector: `node[kind="${k}"]`, style: { "border-color": css(`--k-${k}`) } });
+  if (PRISMS[prism].edgeLabels)
+    s.push({ selector: "edge", style: { label: "data(label)" } });
+  s.push({ selector: "edge", style: { "font-size": 9, color: muted, "font-family": font, "text-rotation": "autorotate",
+    "text-background-color": bg, "text-background-opacity": 1, "text-background-padding": 2 } });
+  if (prism === "copies") {
+    for (const v of ["A", "B", "C", "D", "E"])
+      s.push({ selector: `node[variant="${v}"]`, style: { "background-color": css(`--v-${v}`), "background-opacity": 0.22, "border-color": css(`--v-${v}`) } });
+    s.push({ selector: 'node.group[variant="diverged"]', style: { "border-color": css("--v-B"), "border-width": 2 } });
+    s.push({ selector: 'node.group[variant="same"]', style: { "border-color": css("--v-A"), "border-width": 2 } });
+  }
+  return s;
+}
+
+function layout(cy) {
+  const opts = hasFcose
+    ? { name: "fcose", quality: "proof", randomize: true, animate: false, fit: true, padding: 40,
+        nodeDimensionsIncludeLabels: true, packComponents: true, tile: true,
+        tilingPaddingVertical: 10, tilingPaddingHorizontal: 10,
+        idealEdgeLength: 80, nodeRepulsion: 5000, nestingFactor: 0.1, gravity: 0.25,
+        gravityRangeCompound: 1.5, gravityCompound: 1.0, numIter: 2500 }
+    : { name: "cose", animate: false, fit: true, padding: 40, nodeDimensionsIncludeLabels: true };
+  const l = cy.layout(opts);
+  l.one("layoutstop", () => requestAnimationFrame(() => { cy.resize(); cy.fit(undefined, 40); }));
+  l.run();
+}
+
+function build(prism) {
+  const div = document.createElement("div");
+  div.className = "graph";
+  stage.append(div);
+  const cy = cytoscape({ container: div, elements: elementsFor(prism), style: styleFor(prism),
+    wheelSensitivity: 0.25, minZoom: 0.05, maxZoom: 4, boxSelectionEnabled: false });
+  cy.prism = prism;
+  layout(cy);
+  cy.on("tap", "node", e => select(e.target));
+  cy.on("tap", e => { if (e.target === cy) clearSelection(); });
+  return cy;
+}
+
+// ------------------------------------------------------------ navigation
+
+function show(prism, focusId) {
+  if (!PRISMS[prism]) prism = "harness";
+  current = prism;
+  store.set("workspace-graph.tab", prism);
+  for (const b of tabs.children) b.setAttribute("aria-selected", String(b.dataset.prism === prism));
+  for (const cy of Object.values(views)) cy.container().hidden = true;
+  if (!views[prism]) views[prism] = build(prism);
+  const cy = views[prism];
+  cy.container().hidden = false;
+  cy.resize();
+  applySearch();
+  if (focusId) {
+    const el = cy.getElementById(focusId);
+    if (el.nonempty()) { select(el); cy.animate({ center: { eles: el }, zoom: Math.max(cy.zoom(), 1.1) }, { duration: 300 }); return; }
+  }
+  const sel = cy.$("node:selected");
+  if (sel.nonempty()) select(sel[0]); else renderOverview();
+}
+
+function select(node) {
+  const cy = views[current];
+  cy.elements().removeClass("faded hl");
+  cy.$(":selected").unselect();
+  node.select();
+  const keep = node.isParent() ? node.union(node.descendants()).union(node.descendants().connectedEdges())
+                               : node.closedNeighborhood();
+  cy.elements().not(keep).not(keep.ancestors()).addClass("faded");
+  keep.edges().addClass("hl");
+  renderDetails(byId.get(node.id()), node);
+}
+
+function clearSelection() {
+  const cy = views[current];
+  cy.$(":selected").unselect();
+  cy.elements().removeClass("faded hl");
+  applySearch();
+  renderOverview();
+}
+
+function focusIn(prism, id) {
+  if (prism === current) {
+    const cy = views[current], el = cy.getElementById(id);
+    select(el);
+    cy.animate({ center: { eles: el } }, { duration: 300 });
+  } else show(prism, id);
+}
+
+// ------------------------------------------------------------ side panel
+
+function kindChip(kind) {
+  const color = kind === "group" ? css("--muted") : css(`--k-${kind}`) || css("--k-link");
+  return `<span class="chip"><span class="dot" style="color:${color}"></span>${esc(KIND[kind] || kind)}</span>`;
+}
+
+function renderDetails(n, el) {
+  const prism = current;
+  let html = `<section>${kindChip(n.kind)}<h2>${esc(labelIn(n, prism))}</h2>`;
+  if (n.path) html += `<div class="path"><span>${esc(n.path)}</span><button class="btn" id="copy" title="Copier le chemin">Copier</button></div>`;
+  if (n.desc) html += `<p class="desc">${esc(n.desc)}</p>`;
+  if (prism === "copies" && n.variant && n.kind !== "group")
+    html += `<p class="desc">Version <strong>${esc(n.variant)}</strong> : les copies qui portent la même lettre ont le même contenu (fins de ligne ignorées).</p>`;
+  html += `</section>`;
+
+  if (n.kind === "group") {
+    const kids = el.children().filter(c => !c.isParent());
+    const sub = el.children().filter(c => c.isParent());
+    html += `<section><h3>Contenu</h3><p>${kids.length} élément${kids.length > 1 ? "s" : ""}${sub.length ? `, ${sub.length} sous-groupe${sub.length > 1 ? "s" : ""}` : ""}.</p></section>`;
+  }
+
+  const visible = id => PRISMS[prism].edges !== false && views[prism].getElementById(id).nonempty();
+  const out = data.edges.filter(e => e.source === n.id && visible(e.target));
+  const inc = data.edges.filter(e => e.target === n.id && visible(e.source));
+  const item = (id, rel) => `<li><button data-go="${esc(id)}">${esc(labelIn(byId.get(id), prism))} <span class="rel">${esc(rel)}</span></button></li>`;
+  if (out.length) html += `<section><h3>Vers</h3><ul class="links">${out.map(e => item(e.target, e.label || EDGE[e.kind])).join("")}</ul></section>`;
+  if (inc.length) html += `<section><h3>Depuis</h3><ul class="links">${inc.map(e => item(e.source, e.label || EDGE[e.kind])).join("")}</ul></section>`;
+  if (n.kind !== "group" && !out.length && !inc.length) html += `<section><h3>Liens</h3><p class="empty">Aucun lien trouvé dans ce prisme.</p></section>`;
+
+  const others = Object.keys(PRISMS).filter(p => p !== prism && inPrism(n, p));
+  if (others.length)
+    html += `<section><h3>Aussi dans</h3><div class="elsewhere">${others.map(p => `<button class="btn" data-prism="${p}" data-go="${esc(n.id)}">${PRISMS[p].title}</button>`).join("")}</div></section>`;
+
+  panel.innerHTML = html + legend() + meta();
+  panel.querySelector("#copy")?.addEventListener("click", e => {
+    navigator.clipboard?.writeText(n.path.replace(/^~/, "%USERPROFILE%")).then(() => { e.target.textContent = "Copié"; }, () => {});
+  });
+  for (const b of panel.querySelectorAll("[data-go]"))
+    b.addEventListener("click", () => focusIn(b.dataset.prism || prism, b.dataset.go));
+}
+
+function renderOverview() {
+  const p = PRISMS[current];
+  const cy = views[current];
+  const leaves = cy.nodes().filter(n => !n.isParent()).length;
+  let html = `<section><h2>${p.title}</h2><p>${esc(p.intro)}</p>
+    <p class="empty">${leaves} éléments, ${cy.edges().length} liens. Clique un élément pour voir ses liens ; molette pour zoomer, glisser pour te déplacer.</p></section>`;
+  if (current === "copies") {
+    const groups = cy.nodes(".group");
+    const diverged = groups.filter('[variant="diverged"]').length;
+    html += `<section><h3>En bref</h3><p>${groups.length} fichiers ou skills existent en plusieurs exemplaires ; ${diverged} ont des contenus différents d'un endroit à l'autre.</p></section>`;
+  }
+  panel.innerHTML = html + legend() + meta();
+}
+
+function legend() {
+  const kinds = ["script", "skill", "context", "config", "mcp", "task", "link"];
+  let html = `<section><h3>Légende</h3><div class="legend">`;
+  for (const k of kinds) html += `<div class="row"><span class="dot" style="color:${css(`--k-${k}`)}"></span>${KIND[k]}</div>`;
+  const lines = [["runs", "--k-config", "solid", "lance (hook, aperçu)"], ["imports", "--k-context", "solid", "importe (@fichier)"],
+                 ["link", "--edge", "dashed", "lien symbolique"], ["calls", "--edge", "solid", "appelle"], ["declares", "--k-mcp", "solid", "déclare un serveur MCP"]];
+  for (const [, v, st, label] of lines) html += `<div class="row"><span class="line" style="border-top-color:${css(v)};border-top-style:${st}"></span>${label}</div>`;
+  if (current === "copies") for (const v of ["A", "B", "C"]) html += `<div class="row"><span class="dot" style="color:${css(`--v-${v}`)}"></span>Version ${v}</div>`;
+  return html + `</div></section>`;
+}
+
+const meta = () => `<p class="meta">Données du ${esc(data.generated)} · ${data.nodes.length} nœuds · relance <code>inventory.ps1</code> pour rafraîchir.</p>`;
+
+// ------------------------------------------------------------ search
+
+function applySearch() {
+  const cy = views[current];
+  if (!cy) return;
+  const q = search.value.trim().toLowerCase();
+  cy.nodes().removeClass("match");
+  if (!q) { hits.textContent = ""; if (cy.$(":selected").empty()) cy.elements().removeClass("faded"); return; }
+  const found = cy.nodes().filter(el => {
+    const n = byId.get(el.id());
+    return !el.isParent() && [labelIn(n, current), n.path, n.desc].some(t => t && t.toLowerCase().includes(q));
+  });
+  cy.elements().addClass("faded");
+  found.removeClass("faded").addClass("match");
+  found.ancestors().removeClass("faded");
+  hits.textContent = `${found.length}`;
+  return found;
+}
+search.addEventListener("input", applySearch);
+search.addEventListener("keydown", e => {
+  if (e.key === "Enter") { const f = applySearch(); if (f && f.nonempty()) views[current].animate({ fit: { eles: f, padding: 80 } }, { duration: 300 }); }
+  if (e.key === "Escape") { search.value = ""; applySearch(); search.blur(); }
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "/" && document.activeElement !== search) { e.preventDefault(); search.focus(); }
+  if (e.key === "Escape" && document.activeElement !== search) clearSelection();
+});
+document.getElementById("fit").addEventListener("click", () => views[current].animate({ fit: { padding: 40 } }, { duration: 300 }));
+document.getElementById("relayout").addEventListener("click", () => layout(views[current]));
+
+// Colours live in CSS tokens; rebuild graph styles when the system theme changes.
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  for (const [p, cy] of Object.entries(views)) cy.style(styleFor(p));
+});
+
+show(store.get("workspace-graph.tab") || "harness");
+</script>
+</body>
+</html>

@@ -163,6 +163,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── README.md
 │   │   │   ├── wheel-session.ps1
 │   │   │   └── wheel_analysis.py
+│   │   ├── workspace-map/
+│   │   │   ├── .gitignore
+│   │   │   ├── index.html
+│   │   │   ├── inventory.ps1
+│   │   │   └── README.md
 │   │   ├── benchmark-conclusions.md
 │   │   ├── research--cerveau-llm--2026-10-13.md  — Cadrage vérifié (2026-10-13) — un cerveau LLM dans Deckle.Llm : les crédits API…
 │   │   ├── research--courbe-manipulation-directe--2026-11-07.md  — Note de conception du changement 7 de la revue de cohérence des pages audio (20…
