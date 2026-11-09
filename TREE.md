@@ -467,7 +467,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── TaskGestures.cs
 │   │   ├── Schema/
 │   │   │   ├── AnytypeSpaceAliases.cs
-│   │   │   └── DevSpace.cs
+│   │   │   ├── DevSpace.cs
+│   │   │   └── pm-schema-manifest.json
 │   │   ├── Deckle.Anytype.csproj
 │   │   ├── DeckleAnytypeSource.cs
 │   │   └── GLOSSARY.md  — glossary-deckle-anytype Anytype integration vocabulary, Deckle.Anytype.Mcp included. It separates the b…
