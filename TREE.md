@@ -2029,6 +2029,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── NameResolverTests.cs
 │   │   ├── OperationRecoveryBugNotes.md
 │   │   ├── PagedReadLogTests.cs
+│   │   ├── PmSchemaManifestTests.cs
 │   │   ├── ProjectGesturesBugNotes.md
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── ProviderKeywordsBugNotes.md
