@@ -2030,6 +2030,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── OperationRecoveryBugNotes.md
 │   │   ├── PagedReadLogTests.cs
 │   │   ├── PmSchemaManifestTests.cs
+│   │   ├── PmSchemaTrialTests.cs
 │   │   ├── ProjectGesturesBugNotes.md
 │   │   ├── ProjectGesturesTests.cs
 │   │   ├── ProviderKeywordsBugNotes.md
