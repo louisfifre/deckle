@@ -160,6 +160,18 @@ public class TaskGesturesTests
     }
 
     [Fact]
+    public async Task CreateTakesABlankDueDateAsAnUnplacedTask()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReply();
+
+        await NewGestures(server, v2).CreateAsync(ProjectId, "Ma tâche", type: "production", dueDate: "  ", ct: Ct);
+
+        JsonObject props = ((JsonObject)JsonNode.Parse(Assert.Single(v2.Requests).Body!)!)["properties"]!.AsObject();
+        Assert.False(props.ContainsKey(DevSpace.Props.DueDate));
+    }
+
+    [Fact]
     public async Task CreateLeavesTheDateEmptyWhenTheTaskIsNotPlaced()
     {
         using var server = new FakeAnytypeServer();

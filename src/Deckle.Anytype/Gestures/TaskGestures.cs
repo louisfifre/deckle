@@ -49,9 +49,12 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
                 $"Type de tâche inconnu « {type} ».", nameof(type));
 
         // Shape refusals come before any request. The date is a day, the form
-        // a v2 date property takes (measured on the report's journal date).
+        // a v2 date property takes (measured on the report's journal date). A
+        // blank date is an absent one, as for the slot and the done definition:
+        // a model says « not placed » with an empty string as often as by
+        // omitting the field.
         string? day = null;
-        if (dueDate is not null)
+        if (!string.IsNullOrWhiteSpace(dueDate))
         {
             if (!DateOnly.TryParseExact(dueDate.Trim(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
                     System.Globalization.DateTimeStyles.None, out DateOnly parsed))
