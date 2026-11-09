@@ -13,6 +13,13 @@ public static class SendInputInterop
     public const uint MOUSEEVENTF_MOVE     = 0x0001;
     public const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
     public const uint MOUSEEVENTF_LEFTUP   = 0x0004;
+    public const uint MOUSEEVENTF_VIRTUALDESK = 0x4000;
+    public const uint MOUSEEVENTF_ABSOLUTE    = 0x8000;
+
+    public const int SM_XVIRTUALSCREEN  = 76;
+    public const int SM_YVIRTUALSCREEN  = 77;
+    public const int SM_CXVIRTUALSCREEN = 78;
+    public const int SM_CYVIRTUALSCREEN = 79;
 
     // Stamped into dwExtraInfo on every injected event so a downstream
     // observer can tell Deckle's own synthesis from foreign injected input.
@@ -35,4 +42,7 @@ public static class SendInputInterop
 
     [DllImport("user32.dll", SetLastError = true)]
     public static extern uint SendInput(uint nInputs, MOUSE_INPUT[] pInputs, int cbSize);
+
+    [DllImport("user32.dll")]
+    public static extern int GetSystemMetrics(int nIndex);
 }
