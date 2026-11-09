@@ -113,6 +113,117 @@ public class SessionGesturesTests
             .Reply(HttpStatusCode.Created,
                 createAnswer ?? "{\"id\":\"" + NewReport + "\",\"type\":\"rapport\",\"etag\":\"1ea04e49\"}");
 
+    // ── close_report ─────────────────────────────────────────────────────────
+
+    const string OldReport = "bafyreiOldeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+
+    static string Json(JsonObject o) => o.ToJsonString();
+
+    static string SearchOf(params (string Id, string[] Tasks)[] reports)
+    {
+        var data = new JsonArray();
+        foreach (var (id, tasks) in reports)
+            data.Add(new JsonObject
+            {
+                ["id"] = id, ["name"] = "", ["type"] = "rapport",
+                ["properties"] = new JsonObject { [DevSpace.Props.TachesLiees] = Refs(tasks) },
+            });
+        return Json(new JsonObject { ["data"] = data, ["has_more"] = false });
+    }
+
+    static string Markdown(string md) => Json(new JsonObject { ["markdown"] = md });
+
+    // The clock stops at 14:05: 09:00 to 10:00 counts, 10:00 waits on the
+    // person, 13:00 to 14:05 counts: 2 h 05, written 2,08 h.
+    const string Journal =
+        "# Journal 2026-06-12\n\n2026-06-12 09:00\n\nDébut\n\n --- \n\n"
+        + "2026-06-12 10:00\n\nLivré, en attente de retour\n\n --- \n\n2026-06-12 13:00\n\nReprise";
+
+    [Fact]
+    public async Task CloseReportWritesTheClosingEntryTicksTheTasksAndSumsTheirRealTime()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnPatchObject(TaskId, TaskObject(TaskId, "Tâche d'ancrage"));
+        server.OnPatchObject(OtherTaskId, TaskObject(OtherTaskId, "Autre"));
+        FakeV2Handler v2 = new FakeV2Handler()
+            .Reply(HttpStatusCode.OK, V2Named(NewReport, "rapport", "",
+                ",\"" + DevSpace.Props.TachesLiees + "\":[\"" + TaskId + "\",\"" + OtherTaskId + "\"]"))
+            .Reply(HttpStatusCode.OK, Markdown(Journal))
+            .Reply(HttpStatusCode.OK, V2Report(true, "paragraph"))
+            .Reply(HttpStatusCode.OK, "{}")
+            // The anchor task: this report, shared with the other task, and an
+            // older one closed alone at 1,5 h.
+            .Reply(HttpStatusCode.OK, SearchOf((NewReport, [TaskId, OtherTaskId]), (OldReport, [TaskId])))
+            .Reply(HttpStatusCode.OK, Markdown("# Journal 2026-06-10\n\n2026-06-10 18:00\n\n"
+                + ReportTime.ClosingLine(1.5, "fin", corrected: false)))
+            .Reply(HttpStatusCode.OK, V2Named(TaskId, "task", "Tâche d'ancrage"))
+            .Reply(HttpStatusCode.OK, SearchOf((NewReport, [TaskId, OtherTaskId])))
+            .Reply(HttpStatusCode.OK, V2Named(OtherTaskId, "task", "Autre"));
+
+        string answer = await NewGestures(server, v2, new StoppedClock())
+            .CloseReportAsync(NewReport, "Fini pour aujourd'hui.", done: [TaskId], ct: Ct);
+
+        string logged = LoggedOps(v2)[0]!["markdown"]!.GetValue<string>();
+        Assert.Contains("Clôture · temps réel 2,08 h. Fini pour aujourd'hui.", logged);
+
+        // The tick, then each task's real time, summed: 2,08 / 2 + 1,5.
+        var patches = server.Requests.Where(r => r.Method == "PATCH").ToList();
+        Assert.Contains(patches, p => p.Path.EndsWith(TaskId) && p.Body.Contains("\"done\"") && p.Body.Contains("true"));
+        Assert.DoesNotContain(patches, p => p.Path.EndsWith(OtherTaskId) && p.Body.Contains("\"done\""));
+        Assert.Equal(2.54, RealHours(patches, TaskId));
+        Assert.Equal(1.04, RealHours(patches, OtherTaskId));
+
+        Assert.StartsWith("Rapport clos : temps réel 2,08 h", answer, StringComparison.Ordinal);
+        Assert.Contains("[x] Tâche d'ancrage · temps réel 2,54 h", answer);
+        Assert.Contains("[ ] Autre · temps réel 1,04 h", answer);
+    }
+
+    static double RealHours(IEnumerable<FakeAnytypeServer.Received> patches, string taskId)
+    {
+        FakeAnytypeServer.Received patch = Assert.Single(patches, p => p.Path.EndsWith(taskId)
+            && p.Body.Contains(DevSpace.Props.ChargeReelle));
+        JsonObject entry = (JsonObject)JsonNode.Parse(patch.Body)!["properties"]![0]!;
+        return entry["number"]!.GetValue<double>();
+    }
+
+    [Fact]
+    public async Task CloseReportTakesACorrectedFigureInsteadOfTheComputedOne()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnPatchObject(TaskId, TaskObject(TaskId, "Tâche d'ancrage"));
+        FakeV2Handler v2 = new FakeV2Handler()
+            .Reply(HttpStatusCode.OK, V2Named(NewReport, "rapport", "",
+                ",\"" + DevSpace.Props.TachesLiees + "\":[\"" + TaskId + "\"]"))
+            .Reply(HttpStatusCode.OK, Markdown(Journal))
+            .Reply(HttpStatusCode.OK, V2Report(true, "paragraph"))
+            .Reply(HttpStatusCode.OK, "{}")
+            .Reply(HttpStatusCode.OK, SearchOf((NewReport, [TaskId])))
+            .Reply(HttpStatusCode.OK, V2Named(TaskId, "task", "Tâche d'ancrage"));
+
+        await NewGestures(server, v2, new StoppedClock())
+            .CloseReportAsync(NewReport, "Fini.", correctedHours: 1, ct: Ct);
+
+        Assert.Contains("temps réel 1 h (corrigé). Fini.", LoggedOps(v2)[0]!["markdown"]!.GetValue<string>());
+        Assert.Equal(1, RealHours(server.Requests.Where(r => r.Method == "PATCH"), TaskId));
+    }
+
+    [Fact]
+    public async Task CloseReportRefusesToTickATaskTheReportDoesNotCarryBeforeWriting()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = new FakeV2Handler()
+            .Reply(HttpStatusCode.OK, V2Named(NewReport, "rapport", "",
+                ",\"" + DevSpace.Props.TachesLiees + "\":[\"" + TaskId + "\"]"));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server, v2, new StoppedClock())
+                .CloseReportAsync(NewReport, "Fini.", done: [OtherTaskId], ct: Ct));
+
+        Assert.Contains("n'est pas une tâche de ce rapport", error.Message);
+        Assert.DoesNotContain(v2.Requests, r => r.Method == "PATCH");
+        Assert.Empty(server.Requests);
+    }
+
     [Fact]
     public async Task OpenReportCreatesAReportCarryingTodayAndTheAnchorTask()
     {

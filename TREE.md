@@ -449,6 +449,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ProjectGestures.cs
 │   │   │   ├── QueryGestures.cs
 │   │   │   ├── ReadGestures.cs
+│   │   │   ├── ReportTime.cs
 │   │   │   ├── Resolution.cs
 │   │   │   ├── SchemaAdminGestures.cs
 │   │   │   ├── SchemaAdminGestures.Inspect.cs
@@ -2027,6 +2028,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── QueryGesturesTests.cs
 │   │   ├── ReadGesturesBugNotes.md
 │   │   ├── ReadGesturesTests.cs
+│   │   ├── ReportTimeTests.cs
 │   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesBugNotes.md
 │   │   ├── SessionGesturesTests.cs

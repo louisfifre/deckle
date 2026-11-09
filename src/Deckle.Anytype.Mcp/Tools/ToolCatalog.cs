@@ -44,6 +44,26 @@ public static class ToolCatalog
                     await session.LogAsync(Str(args, "line"), Str(args, "report"), ct),
                 ToolExecutionContract.AdditiveRequiresDeduplicationWithStableTarget),
 
+            new(
+                "close_report",
+                "Close a session report at the end of the work: write the closing entry (what is done, what is left, where to resume), compute the report's real time, tick the tasks the person says are done, and set the real time of every task the report carries. Real time is the sum of the gaps between journal entries, except a gap that starts at an entry ending with « en attente de retour »: end an entry with that mark whenever it waits on the person. Closing again replaces the figure; a report never counts twice. A report carrying several tasks gives each an equal share.",
+                Schema(
+                    required:
+                    [
+                        Prop("report", "string", "report_id returned by open_report; report names are refused."),
+                        Prop("summary", "string", "Closing entry: what is done, what is left, where to resume."),
+                    ],
+                    optional:
+                    [
+                        ArrayProp("done", "Tasks of this report the person says are finished, name or id; they are ticked."),
+                        Prop("corrected_hours", "number", "Real time in hours, when the person corrects the computed one."),
+                    ]),
+                async (args, ct) =>
+                    await session.CloseReportAsync(
+                        Str(args, "report"), Str(args, "summary"), StrArrayOpt(args, "done"),
+                        NumOpt(args, "corrected_hours"), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplicationWithStableTarget),
+
             // ── typed reads: one per need, named by what they return ──────────
 
             new(

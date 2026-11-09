@@ -10,7 +10,7 @@ public class ToolCatalogTests
 {
     static readonly string[] ExpectedToolNames =
     {
-        "open_report", "log",
+        "open_report", "log", "close_report",
         "task_properties", "task_checklist", "task_notes", "project_overview", "today_overview",
         "epic_properties", "report_journal", "idea_text", "document_outline", "document_section",
         "create_task", "complete", "archive", "link", "unlink", "list_projects", "search", "subtask",
@@ -182,6 +182,7 @@ public class ToolCatalogTests
         {
             ["open_report"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["log"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["close_report"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["task_properties"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["task_checklist"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["task_notes"] = AmbiguousOutcomePolicy.SafeToRetry,
@@ -218,6 +219,7 @@ public class ToolCatalogTests
         {
             ["open_report"] = ToolChangeKind.Additive,
             ["log"] = ToolChangeKind.Additive,
+            ["close_report"] = ToolChangeKind.Additive,
             ["task_properties"] = ToolChangeKind.None,
             ["task_checklist"] = ToolChangeKind.None,
             ["task_notes"] = ToolChangeKind.None,

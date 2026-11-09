@@ -20,6 +20,7 @@ public sealed class SessionGestures(
     readonly NameResolver _resolver = resolver;
     readonly AnytypeV2ObjectReader _reader = new(v2);
     readonly AnytypeV2Writer _writer = new(v2);
+    readonly AnytypeV2Searcher _searcher = new(v2);
     readonly TimeProvider _time = time ?? TimeProvider.System;
 
     // ── open_report ──────────────────────────────────────────────────────────
@@ -166,6 +167,139 @@ public sealed class SessionGestures(
         // The caller just wrote the line: echoing it back cost 570 000 chars
         // over 45 days of transcripts and told it nothing.
         return "Noté.";
+    }
+
+    // ── close_report ─────────────────────────────────────────────────────────
+
+    // Closes a session report: computes its real time by the rule of
+    // ReportTime, writes the closing entry carrying that figure, ticks the
+    // tasks the person says are done, and sets the real time of every task the
+    // report carries, summed again from all their closed reports.
+    //
+    // Everything that can refuse is checked before the first write: the report
+    // id, a correction below zero, a task to tick that the report does not
+    // carry. The writes then go in the order that leaves the least to repair:
+    // the closing entry first (it holds the figure the sums read), then the
+    // ticks, then the sums, which a second close redoes from scratch.
+    //
+    // A report carrying several tasks gives each an equal share of its time:
+    // the model left the split open (« la clôture dit la part de chacune »),
+    // and an equal share is the rule a person can check by hand. Proposed, to
+    // revisit with use.
+    public async Task<string> CloseReportAsync(
+        string reportSelector, string summary, IReadOnlyList<string>? done = null,
+        double? correctedHours = null, CancellationToken ct = default)
+    {
+        long t0 = Stopwatch.GetTimestamp();
+
+        string reportId = AnytypeObjectId.Require(reportSelector, "report");
+        if (string.IsNullOrWhiteSpace(summary))
+            throw new ArgumentException(
+                "L'entrée de clôture ne peut pas être vide : dis ce qui est fait, ce qui reste et par quoi reprendre.",
+                nameof(summary));
+        if (correctedHours is double c && (c < 0 || double.IsNaN(c) || double.IsInfinity(c)))
+            throw new ArgumentException($"Temps corrigé « {correctedHours} » refusé : un nombre d'heures positif.", nameof(correctedHours));
+
+        AnytypeV2ObjectDocument report = await _reader.ReadAsync(
+            reportId, new AnytypeV2ObjectReadOptions { Parts = AnytypeV2ObjectParts.Properties }, ct);
+        string actual = report.Body["type"]?.GetValue<string>() ?? "";
+        if (actual.Length > 0 && actual != DevSpace.Types.Rapport)
+            throw new InvalidOperationException($"{reportId} est un objet {actual}, pas un rapport : seul un rapport se clôt.");
+        IReadOnlyList<string> taskIds = AnytypeV2PropertyMap.Of(report).ObjectIds(DevSpace.Props.TachesLiees);
+
+        var toTick = new List<string>();
+        foreach (string selector in done ?? [])
+        {
+            string id = await _resolver.ResolveAsync(selector, [DevSpace.Types.Task], NameMatch.Exact, ct);
+            if (!taskIds.Contains(id))
+                throw new InvalidOperationException(
+                    $"« {selector} » n'est pas une tâche de ce rapport : lie-la d'abord (link), puis clos. Rien n'a été écrit.");
+            if (!toTick.Contains(id)) toTick.Add(id);
+        }
+
+        AnytypeV2ObjectDocument md = await _reader.ReadAsync(
+            reportId, new AnytypeV2ObjectReadOptions { Markdown = true }, ct);
+        var entries = ReportTime.Entries(md.Body["markdown"]?.GetValue<string>() ?? "").ToList();
+        // The closing entry is stamped now, so the gap up to it counts unless
+        // the last entry was waiting on the person. To the minute, as the
+        // stamp log is about to write.
+        DateTime now = _time.GetLocalNow().DateTime;
+        entries.Add(new ReportTime.Entry(now.AddTicks(-(now.Ticks % TimeSpan.TicksPerMinute)), summary));
+        double hours = correctedHours ?? ReportTime.Hours(ReportTime.Duration(entries));
+
+        await LogAsync(ReportTime.ClosingLine(hours, summary, correctedHours is not null), reportId, ct);
+
+        foreach (string id in toTick)
+            await _api.UpdateObjectAsync(id, new JsonObject
+            {
+                ["properties"] = new JsonArray(new JsonObject { ["key"] = DevSpace.Props.Done, ["checkbox"] = true }),
+            }, ct);
+
+        var lines = new List<string>
+        {
+            $"Rapport clos : temps réel {ReportTime.Format(hours)} h"
+                + (correctedHours is not null ? " (corrigé)" : $" sur {entries.Count} entrée(s)") + ".",
+        };
+        foreach (string taskId in taskIds)
+        {
+            double taskHours = await TaskRealHoursAsync(taskId, reportId, hours, taskIds.Count, ct);
+            await _api.UpdateObjectAsync(taskId, new JsonObject
+            {
+                ["properties"] = new JsonArray(new JsonObject { ["key"] = DevSpace.Props.ChargeReelle, ["number"] = taskHours }),
+            }, ct);
+            string name = await TaskNameAsync(taskId, ct);
+            lines.Add($"{(toTick.Contains(taskId) ? "[x]" : "[ ]")} {name} · temps réel {ReportTime.Format(taskHours)} h");
+        }
+
+        DeckleAnytypeSource.Log.GestureCompleted("close_report", Elapsed(t0));
+        return string.Join('\n', lines);
+    }
+
+    // The real time of a task: for each of its reports closed by the rule, the
+    // figure of its last closing entry divided by the tasks it carries. The
+    // report being closed counts with the figure just computed, not with a
+    // read that might not see the entry yet.
+    async Task<double> TaskRealHoursAsync(
+        string taskId, string closingId, double closingHours, int closingShare, CancellationToken ct)
+    {
+        IReadOnlyList<AnytypeV2SearchRow> reports = await _searcher.SearchAllAsync(
+            new AnytypeV2SearchRequest
+            {
+                Type = DevSpace.Types.Rapport,
+                Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.TachesLiees, [taskId])],
+                Fields = [DevSpace.Props.TachesLiees],
+            }, ct);
+
+        double total = 0;
+        bool sawClosing = false;
+        foreach (AnytypeV2SearchRow r in reports)
+        {
+            int share = Math.Max(1, r.Properties.ObjectIds(DevSpace.Props.TachesLiees).Count);
+            double? recorded;
+            if (r.Id == closingId)
+            {
+                recorded = closingHours;
+                sawClosing = true;
+            }
+            else
+            {
+                AnytypeV2ObjectDocument md = await _reader.ReadAsync(
+                    r.Id, new AnytypeV2ObjectReadOptions { Markdown = true }, ct);
+                recorded = ReportTime.RecordedHours(ReportTime.Entries(md.Body["markdown"]?.GetValue<string>() ?? ""));
+            }
+            if (recorded is double h) total += h / share;
+        }
+        // A search that does not list the report yet still counts it once.
+        if (!sawClosing) total += closingHours / closingShare;
+        return Math.Round(total, 2);
+    }
+
+    async Task<string> TaskNameAsync(string taskId, CancellationToken ct)
+    {
+        AnytypeV2ObjectDocument doc = await _reader.ReadAsync(
+            taskId, new AnytypeV2ObjectReadOptions { Parts = AnytypeV2ObjectParts.Properties }, ct);
+        string name = AnytypeV2PropertyMap.Of(doc).Name;
+        return name.Length > 0 ? name : taskId;
     }
 
     // ── session_touch ────────────────────────────────────────────────────────
