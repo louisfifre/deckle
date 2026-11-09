@@ -23,6 +23,11 @@ public sealed class HomeRecreationRehearsalTests
     public const string CreateSpaceVariable = "DECKLE_HOME_CREATE_TEST_SPACE";
     public const string ExportSourceVariable = "DECKLE_HOME_EXPORT_SOURCE";
     public const string ReplaySheetVariable = "DECKLE_HOME_REPLAY_SHEET";
+    public const string ReplayApiUrlVariable = "DECKLE_HOME_REPLAY_API_URL";
+    public const string ReplayApiKeyVariable = "DECKLE_HOME_REPLAY_API_KEY";
+    public const string ReplayApiVersionVariable = "DECKLE_HOME_REPLAY_API_VERSION";
+    public const string ReplaySpaceIdVariable = "DECKLE_HOME_REPLAY_SPACE_ID";
+    const string ExplicitTargetAlias = "home-replay-target";
 
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -91,6 +96,32 @@ public sealed class HomeRecreationRehearsalTests
 
         HomeRehearsalResult result = await new HomeRecreationRehearsal(api, aliases)
             .ReplayFromSheetAsync(sheetPath!, target!, Ct);
+
+        Write(result.Summary());
+    }
+
+    // The replay on a bot the machine's credentials do not name: another
+    // Anytype network, reached through a local tunnel, with a disposable test
+    // account. The endpoint, its key and the target space id come from
+    // variables; nothing is saved, and the machine's own credentials are not
+    // read. The target is a throwaway alias over that id.
+    [Fact(Explicit = true)]
+    public async Task ReplaySheetOnExplicitEndpoint()
+    {
+        string? sheetPath = Variable(ReplaySheetVariable);
+        string? url = Variable(ReplayApiUrlVariable);
+        string? key = Variable(ReplayApiKeyVariable);
+        string? spaceId = Variable(ReplaySpaceIdVariable);
+        Assert.SkipWhen(sheetPath is null || url is null || key is null || spaceId is null,
+            $"Rejeu non lancé : définis {ReplaySheetVariable}, {ReplayApiUrlVariable} (par exemple http://127.0.0.1:41012), "
+            + $"{ReplayApiKeyVariable} (clé du bot de test) et {ReplaySpaceIdVariable} (id d'un espace de TEST vide).");
+
+        var credentials = new AnytypeCredentials(url!, Variable(ReplayApiVersionVariable) ?? "2025-11-08", key!, spaceId!);
+        var aliases = new AnytypeSpaceAliases(new Dictionary<string, string> { [ExplicitTargetAlias] = spaceId! });
+        using var api = new AnytypeApiClient(credentials);
+
+        HomeRehearsalResult result = await new HomeRecreationRehearsal(api, aliases)
+            .ReplayFromSheetAsync(sheetPath!, ExplicitTargetAlias, Ct);
 
         Write(result.Summary());
     }

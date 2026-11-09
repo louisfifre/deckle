@@ -70,7 +70,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── model-compare/
 │   │   │   ├── campaigns/
 │   │   │   │   ├── lissage-lean.json
-│   │   │   │   └── profiles-v2.json
+│   │   │   │   ├── profiles-v2.json
+│   │   │   │   └── reasoning-lissage.json
 │   │   │   ├── optimize/
 │   │   │   │   ├── affinage-sonnet-v2.json
 │   │   │   │   ├── affinage-sonnet.json
@@ -437,11 +438,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Gestures/
 │   │   │   ├── BlockSections.cs
 │   │   │   ├── CollectionMembershipGestures.cs
+│   │   │   ├── ContactGestures.cs
 │   │   │   ├── DeleteRefusalReasons.cs
 │   │   │   ├── DeletionApproval.cs
 │   │   │   ├── DeletionApprovalRelay.cs
 │   │   │   ├── DocumentGestures.cs
 │   │   │   ├── LinkedNames.cs
+│   │   │   ├── LiveSelect.cs
 │   │   │   ├── LiveTagResolver.cs
 │   │   │   ├── ManagementGestures.cs
 │   │   │   ├── MarkdownBody.cs
@@ -450,6 +453,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ProjectGestures.cs
 │   │   │   ├── QueryGestures.cs
 │   │   │   ├── ReadGestures.cs
+│   │   │   ├── ReportTime.cs
 │   │   │   ├── Resolution.cs
 │   │   │   ├── SchemaAdminGestures.cs
 │   │   │   ├── SchemaAdminGestures.Inspect.cs
@@ -1315,7 +1319,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── GenerationRequest.cs
 │   │   │   ├── GenerationResult.cs
 │   │   │   ├── IGenerationEngine.cs
-│   │   │   └── PromptTemplates.cs
+│   │   │   ├── PromptTemplates.cs
+│   │   │   └── ReasoningLevel.cs
 │   │   ├── Providers/
 │   │   │   ├── IGenerationEngineResolver.cs
 │   │   │   ├── LlmProvider.cs
@@ -1373,6 +1378,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── LlmOllamaContext.cs
 │   │   │   ├── LlmPage.xaml
 │   │   │   ├── LlmPage.xaml.cs
+│   │   │   ├── LlmProfilePage.xaml
+│   │   │   ├── LlmProfilePage.xaml.cs
 │   │   │   ├── LlmProfilesSection.xaml
 │   │   │   ├── LlmProfilesSection.xaml.cs
 │   │   │   ├── LlmProvidersSection.xaml
@@ -1594,6 +1601,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SettingsWindow.FocusDismiss.cs
 │   │   ├── SettingsWindow.InterfaceCapture.cs
 │   │   ├── SettingsWindow.Search.cs
+│   │   ├── SettingsWindow.Subpages.cs
 │   │   ├── SettingsWindow.TitleBarProbe.cs
 │   │   ├── SettingsWindow.xaml
 │   │   ├── SettingsWindow.xaml.cs
@@ -2006,6 +2014,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── BackendTestFakes.cs
 │   │   ├── BackendUserIncidentTests.cs
 │   │   ├── BinLogTests.cs
+│   │   ├── ContactGesturesTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DeletionApprovalRelayTests.cs
 │   │   ├── DevSpaceBugNotes.md
@@ -2036,6 +2045,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── QueryGesturesTests.cs
 │   │   ├── ReadGesturesBugNotes.md
 │   │   ├── ReadGesturesTests.cs
+│   │   ├── ReportTimeTests.cs
 │   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesBugNotes.md
 │   │   ├── SessionGesturesTests.cs
@@ -2420,6 +2430,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── ParagraphDraftTests.cs
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
+│   │   ├── ProfileReasoningTests.cs
 │   │   ├── ProfilesSectionBugNotes.md
 │   │   ├── RewriteDiffGateTests.cs
 │   │   ├── RewriteFailureMessageTests.cs
@@ -2428,6 +2439,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteServiceFeedbackTests.cs
 │   │   ├── SentenceBoundaryTests.cs
 │   │   └── SentenceRewriteTests.cs
+│   ├── Deckle.Llm.Tests/
+│   │   ├── ClaudeReasoningTests.cs
+│   │   ├── Deckle.Llm.Tests.csproj
+│   │   └── ReasoningOnTheWireTests.cs
 │   ├── Deckle.Modules.Tests/
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Modules.Tests.csproj
