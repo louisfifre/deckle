@@ -1008,6 +1008,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeDeleteRefusalReasons.cs
 │   │   ├── HomeGestures.cs
 │   │   ├── HomeMcp.cs
+│   │   ├── HomeNameGuard.cs
 │   │   ├── HomeObjects.cs
 │   │   ├── HomePartialWriteException.cs
 │   │   ├── HomePropertyWriter.cs
@@ -2244,6 +2245,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeGesturesBugNotes.md
 │   │   ├── HomeGesturesTests.cs
 │   │   ├── HomeMcpTests.cs
+│   │   ├── HomeNameGuardTests.cs
 │   │   ├── HomeNameMatchTests.cs
 │   │   ├── HomePagingTests.cs
 │   │   ├── HomePartialWriteTests.cs

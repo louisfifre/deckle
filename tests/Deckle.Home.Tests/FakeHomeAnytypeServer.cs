@@ -137,6 +137,10 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
     public static JsonObject Plant(string id, string name) => Object(
         id, HomeSchema.Types.Plant, name);
 
+    public static JsonObject Device(string id, string name, bool archived = false) => Object(
+        id, HomeSchema.Types.Device, name,
+        CheckboxProperty(HomeSchema.Properties.Archived, "Archivé", archived));
+
     public static JsonObject Idea(string id, string text) => new()
     {
         ["id"] = id,

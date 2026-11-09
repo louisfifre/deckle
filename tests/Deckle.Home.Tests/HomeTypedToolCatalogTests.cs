@@ -25,10 +25,40 @@ public sealed class HomeTypedToolCatalogTests
     }
 
     [Fact]
+    public void EveryCreateTakesABoundedBatchOfStrictItems()
+    {
+        IReadOnlyList<ToolDescriptor> creates = HomeTypedToolCatalog.Build(() => throw new InvalidOperationException())
+            .Where(tool => tool.Name.EndsWith("_create", StringComparison.Ordinal)).ToArray();
+
+        Assert.Equal(14, creates.Count);
+        Assert.All(creates, tool =>
+        {
+            JsonObject items = tool.InputSchema["properties"]!["items"]!.AsObject();
+            Assert.Equal(1, items["minItems"]!.GetValue<int>());
+            Assert.Equal(100, items["maxItems"]!.GetValue<int>());
+            Assert.False(items["items"]!["additionalProperties"]!.GetValue<bool>());
+            Assert.Equal(new[] { "items" }, tool.InputSchema["required"]!.AsArray().Select(value => value!.GetValue<string>()));
+        });
+    }
+
+    [Theory]
+    [InlineData("device_create", true)]
+    [InlineData("idea_create", true)]
+    [InlineData("zone_create", true)]
+    [InlineData("room_create", false)]
+    [InlineData("circuit_create", false)]
+    public void OnlyFreeTitledItemsOfferForce(string tool, bool offersForce)
+    {
+        JsonObject item = CreateItemSchema(HomeTypedToolCatalog.Build(() => throw new InvalidOperationException()), tool);
+
+        Assert.Equal(offersForce, item["properties"]!.AsObject().ContainsKey("force"));
+    }
+
+    [Fact]
     public void PointSchemasKeepIdentityAndDerivedFieldsOutOfFlatProperties()
     {
         IReadOnlyList<ToolDescriptor> tools = HomeTypedToolCatalog.Build(() => throw new InvalidOperationException());
-        JsonObject create = ItemSchema(tools, "point_create");
+        JsonObject create = CreateItemSchema(tools, "point_create");
         JsonObject update = tools.Single(tool => tool.Name == "point_update").InputSchema;
 
         JsonObject createProperties = Assert.IsType<JsonObject>(create["properties"]);
@@ -43,19 +73,19 @@ public sealed class HomeTypedToolCatalogTests
     }
 
     [Fact]
-    public void ComponentPlantAndTodoRetainTheirDedicatedCompatibilityAliases()
+    public void ComponentPlantAndTodoKeepTheirShorthandsWithoutAPropertiesMap()
     {
         IReadOnlyList<ToolDescriptor> tools = HomeTypedToolCatalog.Build(() => throw new InvalidOperationException());
-        JsonObject component = ItemSchema(tools, "component_create");
-        JsonObject plant = ItemSchema(tools, "plant_create");
-        JsonObject todo = ItemSchema(tools, "todo_create");
+        JsonObject component = CreateItemSchema(tools, "component_create");
+        JsonObject plant = CreateItemSchema(tools, "plant_create");
+        JsonObject todo = CreateItemSchema(tools, "todo_create");
 
         Assert.Contains("system", Assert.IsType<JsonObject>(component["properties"]).Select(pair => pair.Key));
-        Assert.Contains("properties", Assert.IsType<JsonObject>(component["properties"]).Select(pair => pair.Key));
         Assert.DoesNotContain("part_of", Assert.IsType<JsonObject>(component["properties"]).Select(pair => pair.Key));
         Assert.Contains("room", Assert.IsType<JsonObject>(plant["properties"]).Select(pair => pair.Key));
-        Assert.Contains("properties", Assert.IsType<JsonObject>(plant["properties"]).Select(pair => pair.Key));
         Assert.Contains("worksite", Assert.IsType<JsonObject>(todo["properties"]).Select(pair => pair.Key));
+        Assert.All(tools.Where(tool => tool.Name.EndsWith("_create", StringComparison.Ordinal)), tool =>
+            Assert.DoesNotContain("properties", CreateItemSchema(tools, tool.Name)["properties"]!.AsObject().Select(pair => pair.Key)));
 
         JsonObject worksiteSchema = Assert.IsType<JsonObject>(
             Assert.IsType<JsonObject>(todo["properties"])["worksite"]);
@@ -114,12 +144,12 @@ public sealed class HomeTypedToolCatalogTests
         ToolDescriptor tool = HomeTypedToolCatalog.Build(() => Gestures(server))
             .Single(value => value.Name == "point_create");
 
-        await tool.Handler(new JsonObject
+        await tool.Handler(Batch(new JsonObject
         {
             ["code"] = "ZZ-PS01",
             ["name"] = "Fictional socket",
             ["outlet_count"] = 2,
-        }, Ct);
+        }), Ct);
 
         JsonObject body = (JsonObject)JsonNode.Parse(server.Requests.Single(request => request.Method == "POST").Body)!;
         Assert.Equal(HomeSchema.Types.Point, body["type_key"]!.GetValue<string>());
@@ -134,12 +164,12 @@ public sealed class HomeTypedToolCatalogTests
         ToolDescriptor tool = HomeTypedToolCatalog.Build(() => Gestures(server))
             .Single(value => value.Name == "device_create");
 
-        await tool.Handler(new JsonObject
+        await tool.Handler(Batch(new JsonObject
         {
             ["name"] = "Fictional device",
             ["text"] = "Label details",
             ["model_ref"] = "MODEL-1",
-        }, Ct);
+        }), Ct);
 
         JsonObject body = (JsonObject)JsonNode.Parse(server.Requests.Single(request => request.Method == "POST").Body)!;
         Assert.Equal("Label details", body["body"]!.GetValue<string>());
@@ -169,17 +199,98 @@ public sealed class HomeTypedToolCatalogTests
         ToolDescriptor tool = HomeTypedToolCatalog.Build(() => Gestures(server))
             .Single(value => value.Name == "todo_create");
 
-        await tool.Handler(new JsonObject
+        await tool.Handler(Batch(new JsonObject
         {
             ["name"] = "Fictional task",
             ["worksite"] = "Fictional worksite",
-        }, Ct);
+        }), Ct);
 
         JsonObject body = (JsonObject)JsonNode.Parse(server.Requests.Single(request => request.Method == "POST").Body)!;
         JsonArray references = Assert.IsType<JsonArray>(
             Entry(Assert.IsType<JsonArray>(body["properties"]), HomeSchema.Properties.Worksite)["objects"]);
         Assert.Single(references);
         Assert.Equal("site-1", references[0]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task TypedTodoCreateAttachesATaskToTwoWorksites()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(
+            FakeHomeAnytypeServer.Worksite("site-1", "Fictional worksite one"),
+            FakeHomeAnytypeServer.Worksite("site-2", "Fictional worksite two"));
+        ToolDescriptor tool = HomeTypedToolCatalog.Build(() => Gestures(server))
+            .Single(value => value.Name == "todo_create");
+
+        await tool.Handler(Batch(new JsonObject
+        {
+            ["name"] = "Fictional shared task",
+            ["worksite"] = new JsonArray("Fictional worksite one", "site-2"),
+        }), Ct);
+
+        JsonObject body = (JsonObject)JsonNode.Parse(server.Requests.Single(request => request.Method == "POST").Body)!;
+        Assert.Equal(
+            new[] { "site-1", "site-2" },
+            Entry(Assert.IsType<JsonArray>(body["properties"]), HomeSchema.Properties.Worksite)["objects"]!
+                .AsArray().Select(value => value!.GetValue<string>()));
+    }
+
+    [Fact]
+    public async Task AMalformedSecondItemStopsTheBatchBeforeHomeIsRead()
+    {
+        ToolDescriptor tool = HomeTypedToolCatalog.Build(
+            () => throw new InvalidOperationException("must not resolve Home"))
+            .Single(value => value.Name == "device_create");
+
+        ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(() => tool.Handler(Batch(
+            new JsonObject { ["name"] = "Fictional device one" },
+            new JsonObject { ["name"] = "Fictional device two", ["notes"] = "gone" }), Ct));
+
+        Assert.Contains("items[1]", error.Message);
+        Assert.Contains("Unknown field 'notes'", error.Message);
+    }
+
+    [Fact]
+    public async Task ASecondItemTheSpaceRefusesStopsTheBatchBeforeAnyWrite()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(FakeHomeAnytypeServer.Room("room-zz", "ZZ", "Fictional room"));
+        ToolDescriptor tool = HomeTypedToolCatalog.Build(() => Gestures(server))
+            .Single(value => value.Name == "device_create");
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => tool.Handler(Batch(
+            new JsonObject { ["name"] = "Fictional device one", ["installed_in"] = "ZZ" },
+            new JsonObject { ["name"] = "Fictional device two", ["installed_in"] = "Fictional nowhere" }), Ct));
+
+        Assert.DoesNotContain(server.Requests, request => request.Method == "POST");
+    }
+
+    [Fact]
+    public async Task ABatchCreatesEveryItemAndListsEachWithItsId()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        ToolDescriptor tool = HomeTypedToolCatalog.Build(() => Gestures(server))
+            .Single(value => value.Name == "utensil_create");
+
+        ToolOutput output = await tool.Handler(Batch(
+            new JsonObject { ["name"] = "Fictional whisk" },
+            new JsonObject { ["name"] = "Fictional ladle" }), Ct);
+
+        Assert.Equal(2, server.Requests.Count(request => request.Method == "POST"));
+        Assert.Contains("utensil · Fictional whisk (id created-1)", output.Text);
+        Assert.Contains("utensil · Fictional ladle (id created-2)", output.Text);
+    }
+
+    [Fact]
+    public async Task TheItemsArrayIsBounded()
+    {
+        ToolDescriptor tool = HomeTypedToolCatalog.Build(
+            () => throw new InvalidOperationException("must not resolve Home"))
+            .Single(value => value.Name == "device_create");
+
+        await Assert.ThrowsAsync<ArgumentException>(() => tool.Handler(Batch(), Ct));
+        await Assert.ThrowsAsync<ArgumentException>(() => tool.Handler(Batch(
+            Enumerable.Range(1, 101).Select(n => new JsonObject { ["name"] = $"Fictional device {n}" }).ToArray()), Ct));
     }
 
     [Fact]
@@ -212,6 +323,13 @@ public sealed class HomeTypedToolCatalogTests
 
     private static JsonObject ItemSchema(IReadOnlyList<ToolDescriptor> tools, string name) =>
         tools.Single(tool => tool.Name == name).InputSchema;
+
+    // A create takes a batch: its item schema sits under items.items.
+    private static JsonObject CreateItemSchema(IReadOnlyList<ToolDescriptor> tools, string name) =>
+        tools.Single(tool => tool.Name == name).InputSchema["properties"]!["items"]!["items"]!.AsObject();
+
+    private static JsonObject Batch(params JsonObject[] items) =>
+        new() { ["items"] = new JsonArray(items.Select(item => (JsonNode?)item).ToArray()) };
 
     private static JsonObject Entry(JsonArray properties, string key) =>
         properties.OfType<JsonObject>().Single(value => value["key"]!.GetValue<string>() == key);

@@ -23,6 +23,7 @@ public sealed class DeckleHomeSource : DeckleEventSource
     public const int EvtGesturePartiallyApplied = 7;
     public const int EvtDeleteRefused = 8;
     public const int EvtObjectBinned = 9;
+    public const int EvtNameGuardRefused = 10;
 
     [Event(EvtGestureCompleted,
            Level = EventLevel.Verbose,
@@ -104,6 +105,18 @@ public sealed class DeckleHomeSource : DeckleEventSource
     public void ObjectBinned(string type_key)
     {
         if (IsEnabled()) WriteEvent(EvtObjectBinned, type_key);
+    }
+
+    // A typed create refused because a name folds like an object of the same
+    // type. Detail, not a milestone: the refusal goes back to the caller, who
+    // decides. The type key and how many objects it resembled, never which.
+    [Event(EvtNameGuardRefused,
+           Level = EventLevel.Verbose,
+           Keywords = Gesture,
+           Message = "type_key={0} | candidates_count={1}")]
+    public void NameGuardRefused(string type_key, int candidates_count)
+    {
+        if (IsEnabled()) WriteEvent(EvtNameGuardRefused, type_key, candidates_count);
     }
 
     // Once per runtime: the schema was read and validated. after_failures > 0

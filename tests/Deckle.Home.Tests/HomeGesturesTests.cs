@@ -300,22 +300,23 @@ public class HomeGesturesTests
     }
 
     [Fact]
-    public async Task ComponentCannotBeOrphanedByUpdate()
+    public async Task ComponentUpdateMayClearItsSystemOnceDismantled()
     {
         using var server = new FakeHomeAnytypeServer();
         server.SetObjects(
             FakeHomeAnytypeServer.EquipmentSystem("system-1", "PC fictif"),
             FakeHomeAnytypeServer.Component("component-1", "GPU fictif", "system-1"));
 
-        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            Gestures(server).UpdateAsync(
-                [new HomeUpdateItem("GPU fictif", null, new JsonObject
-                {
-                    ["Fait partie de"] = new JsonArray(),
-                })], Ct));
+        await Gestures(server).UpdateTypedAsync(
+            HomeSchema.Types.Component,
+            [new HomeUpdateItem("GPU fictif", null, new JsonObject
+            {
+                [HomeSchema.Properties.PartOf] = new JsonObject { ["remove"] = new JsonArray("PC fictif") },
+            })], Ct);
 
-        Assert.Contains("orpheline", error.Message);
-        Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
+        JsonObject patch = (JsonObject)JsonNode.Parse(server.Requests.Single(r => r.Method == "PATCH").Body)!;
+        Assert.Empty(Assert.IsType<JsonArray>(
+            Entry(Assert.IsType<JsonArray>(patch["properties"]), HomeSchema.Properties.PartOf)["objects"]));
     }
 
     [Fact]

@@ -2,13 +2,15 @@ using System.Text.Json.Nodes;
 
 namespace Deckle.Home;
 
+// Force passes the near-name guard for a true twin.
 public sealed record HomeCreateItem(
     string? Code,
     string? Name,
     JsonObject? Properties,
     IReadOnlyList<string>? Collections = null,
     string? Text = null,
-    string? Template = null);
+    string? Template = null,
+    bool Force = false);
 
 public sealed record HomeUpdateItem(
     string Object,

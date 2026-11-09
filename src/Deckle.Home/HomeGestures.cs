@@ -41,6 +41,24 @@ public sealed partial class HomeGestures
     {
         DateTime started = DateTime.UtcNow;
         type = NormalizeType(type);
+        CreateOutcome outcome = await CreateCoreAsync(type, items, ct).ConfigureAwait(false);
+        DeckleHomeSource.Log.GestureCompleted("create", Elapsed(started));
+        return "Créé :\n" + string.Join("\n", outcome.Created.Select(line => $"- {type} · {line}"));
+    }
+
+    // What a create wrote, one line per item as "display (id …)", and the
+    // index it was prepared against, for a caller that names a target of the
+    // batch (the room of a dictation) without reading the space again.
+    private sealed record CreateOutcome(IReadOnlyList<string> Created, HomeObjectIndex Index);
+
+    // The whole batch is prepared before the first POST: shape, codes,
+    // options, relations, templates and the near-name guard. A refusal at any
+    // of them leaves the space untouched.
+    private async Task<CreateOutcome> CreateCoreAsync(
+        string type,
+        IReadOnlyList<HomeCreateItem> items,
+        CancellationToken ct)
+    {
         ValidateBatch(items, "create");
         HomeSchemaRuntime schema = await _runtime.GetAsync(ct).ConfigureAwait(false);
 
@@ -62,12 +80,13 @@ public sealed partial class HomeGestures
 
         var prepared = new List<(string Display, JsonObject Payload, IReadOnlyList<string> Collections)>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        HomeNameGuard? guard = HomeNameGuard.Applies(type) ? new HomeNameGuard(type, index) : null;
         foreach (HomeCreateItem item in items)
         {
             RefuseCodeProperty(item.Properties);
             string? templateId = await ResolveTemplateAsync(item.Template).ConfigureAwait(false);
 
-            if (!IsCoded(type))
+            if (guard is not null)
             {
                 JsonArray freeProperties = await propertyWriter.BuildAsync(
                     type, item.Properties, [], ct).ConfigureAwait(false);
@@ -75,6 +94,10 @@ public sealed partial class HomeGestures
                 var freeItem = PrepareFreeTitledItem(
                     type, item, freeProperties, collectionWriter, templateId);
                 freeItem.Payload["type_key"] = schema.TypeKey(type);
+                guard.Check(
+                    type == HomeSchema.Types.Idea ? HomeNameGuard.FirstLine(item.Text) : item.Name ?? "",
+                    freeItem.Display,
+                    item.Force);
                 prepared.Add(freeItem);
                 continue;
             }
@@ -152,6 +175,7 @@ public sealed partial class HomeGestures
                 codedPayload,
                 collections));
         }
+        guard?.ThrowIfRefused();
 
         // Creation is one request per item, then one per collection: Anytype
         // offers no transaction, so a failure part way leaves the space with
@@ -217,8 +241,7 @@ public sealed partial class HomeGestures
                 type, created, null, [], HomeMembershipState.Unconfirmed, prepared.Count, ex));
         }
 
-        DeckleHomeSource.Log.GestureCompleted("create", Elapsed(started));
-        return "Créé :\n" + string.Join("\n", prepared.Select(item => $"- {type} · {item.Display}"));
+        return new CreateOutcome(created, index);
     }
 
     public Task<string> UpdateAsync(
@@ -276,9 +299,10 @@ public sealed partial class HomeGestures
                 propertyValues = await HomeRelationEdits.ApplyAsync(
                     type, propertyValues!, current, schema, writer, ct).ConfigureAwait(false);
             }
+            // A component may lose its system on update: born in one, it can
+            // outlive it once dismantled. Only the creation insists.
             JsonArray properties = await writer.BuildAsync(type, propertyValues, reserved, ct)
                 .ConfigureAwait(false);
-            RefuseComponentOrphaning(type, properties);
             IReadOnlyList<string> addToCollections = collectionWriter.Resolve(item.AddToCollections);
             IReadOnlyList<string> removeFromCollections = collectionWriter.Resolve(item.RemoveFromCollections);
             string? conflictingCollection = addToCollections.Intersect(
@@ -853,18 +877,6 @@ public sealed partial class HomeGestures
                 "Un composant n'existe que dans son système : fournis « Fait partie de » "
                 + "(un Système existant). Si le système n'a pas de nom, ce n'est pas un "
                 + "composant — crée un appareil. Le retypage reste disponible dans l'app.");
-    }
-
-    private static void RefuseComponentOrphaning(string type, JsonArray properties)
-    {
-        if (type != HomeSchema.Types.Component) return;
-        bool clearsSystem = properties.OfType<JsonObject>().Any(value =>
-            HomeObjectJson.String(value, "key") == HomeSchema.Properties.PartOf
-            && value["objects"] is JsonArray { Count: 0 });
-        if (clearsSystem)
-            throw new InvalidOperationException(
-                "Un composant ne s'orpheline pas : sans système, ce n'est plus un composant. "
-                + "Retype-le en appareil dans l'app, ou vise un autre Système.");
     }
 
     private static void RefuseCodeProperty(JsonObject? properties, bool updating = false)
