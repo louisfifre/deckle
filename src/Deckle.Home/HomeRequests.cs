@@ -2,7 +2,9 @@ using System.Text.Json.Nodes;
 
 namespace Deckle.Home;
 
-// Force passes the near-name guard for a true twin.
+// Force passes the near-name guard for a true twin. Category and Room serve a
+// point alone: given instead of Code, the gesture mints the lowest free code
+// of that room and category.
 public sealed record HomeCreateItem(
     string? Code,
     string? Name,
@@ -10,7 +12,9 @@ public sealed record HomeCreateItem(
     IReadOnlyList<string>? Collections = null,
     string? Text = null,
     string? Template = null,
-    bool Force = false);
+    bool Force = false,
+    string? Category = null,
+    string? Room = null);
 
 public sealed record HomeUpdateItem(
     string Object,

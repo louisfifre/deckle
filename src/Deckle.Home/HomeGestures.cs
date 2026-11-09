@@ -46,6 +46,38 @@ public sealed partial class HomeGestures
         return "Créé :\n" + string.Join("\n", outcome.Created.Select(line => $"- {type} · {line}"));
     }
 
+    // A room described aloud: the person says what is there, the gesture
+    // mints each point's code (lowest free per category, counting the batch)
+    // and writes at once. No proposal round: a mistake is deleted in two steps.
+    public async Task<string> DictatePointsAsync(
+        string room,
+        IReadOnlyList<HomeCreateItem> points,
+        CancellationToken ct = default)
+    {
+        DateTime started = DateTime.UtcNow;
+        if (string.IsNullOrWhiteSpace(room))
+            throw new ArgumentException("Une dictée vise une pièce : fournis room (code, nom exact ou id).", nameof(room));
+        ValidateBatch(points, "point_dictate");
+        foreach (HomeCreateItem point in points)
+        {
+            if (point.Code is not null)
+                throw new InvalidOperationException(
+                    "Une dictée attribue elle-même les codes : retire code, ou crée ce point avec point_create.");
+            if (point.Category is null)
+                throw new ArgumentException("Chaque point dicté porte sa catégorie (category).", nameof(points));
+            if (point.Room is not null)
+                throw new InvalidOperationException("La pièce d'une dictée se donne une fois, dans room.");
+        }
+
+        CreateOutcome outcome = await CreateCoreAsync(
+            HomeSchema.Types.Point, points.Select(point => point with { Room = room }).ToArray(), ct)
+            .ConfigureAwait(false);
+        string roomDisplay = HomeObjectIndex.Display(
+            outcome.Index.Resolve(room, NameMatch.Exact, [HomeSchema.Types.Room]));
+        DeckleHomeSource.Log.GestureCompleted("point_dictate", Elapsed(started));
+        return $"Dicté dans {roomDisplay} :\n" + string.Join("\n", outcome.Created.Select(line => "- " + line));
+    }
+
     // What a create wrote, one line per item as "display (id …)", and the
     // index it was prepared against, for a caller that names a target of the
     // batch (the room of a dictation) without reading the space again.
@@ -81,6 +113,17 @@ public sealed partial class HomeGestures
         var prepared = new List<(string Display, JsonObject Payload, IReadOnlyList<string> Collections)>();
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         HomeNameGuard? guard = HomeNameGuard.Applies(type) ? new HomeNameGuard(type, index) : null;
+
+        // The codes the batch gives explicitly are taken before any is
+        // minted, so a minted point never lands on a code a later item names.
+        var givenCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (type == HomeSchema.Types.Point)
+            foreach (HomeCreateItem item in items.Where(item => item.Code is not null))
+            {
+                try { givenCodes.Add(HomeElementCode.Parse(item.Code!).Value); }
+                catch (ArgumentException) { }
+            }
+
         foreach (HomeCreateItem item in items)
         {
             RefuseCodeProperty(item.Properties);
@@ -88,6 +131,9 @@ public sealed partial class HomeGestures
 
             if (guard is not null)
             {
+                if (item.Category is not null || item.Room is not null)
+                    throw new InvalidOperationException(
+                        $"category et room servent à numéroter un point ; un objet {type} n'en prend pas.");
                 JsonArray freeProperties = await propertyWriter.BuildAsync(
                     type, item.Properties, [], ct).ConfigureAwait(false);
                 RequireComponentSystem(type, freeProperties);
@@ -102,7 +148,10 @@ public sealed partial class HomeGestures
                 continue;
             }
 
-            string code = ValidateCode(type, RequireCode(type, item.Code));
+            string code = item.Category is null && item.Room is null
+                ? ValidateCode(type, RequireCode(type, item.Code))
+                : MintItemCode(type, item, index,
+                    index.Objects.Select(HomeObjectJson.Code).Concat(givenCodes).Concat(seen));
             if (!seen.Add(code) || index.ContainsCode(code))
             {
                 string suggestion = NextCodeSuggestion(type, code, index.Objects, seen);
@@ -946,19 +995,50 @@ public sealed partial class HomeGestures
     {
         if (type != HomeSchema.Types.Point) return "un autre code unique";
         HomeElementCode parsed = HomeElementCode.Parse(code);
+        return MintPointCode(parsed.Room, parsed.Category, existing.Select(HomeObjectJson.Code).Concat(batch))
+            ?? "aucun (séquence 01–99 épuisée)";
+    }
+
+    // The lowest free sequence of a room and a category, gaps reused: a code
+    // a delete freed is free again, there is no rule against reallocating it.
+    // The one place a point code is minted, for a dictation, a point_create
+    // given a category and a room, and the suggestion after a taken code.
+    internal static string? MintPointCode(string room, string category, IEnumerable<string> taken)
+    {
         var used = new HashSet<int>();
-        foreach (string candidate in existing.Select(HomeObjectJson.Code).Concat(batch))
+        foreach (string candidate in taken)
         {
             try
             {
                 HomeElementCode other = HomeElementCode.Parse(candidate);
-                if (other.Room == parsed.Room && other.Category == parsed.Category) used.Add(other.Sequence);
+                if (other.Room == room && other.Category == category) used.Add(other.Sequence);
             }
             catch (ArgumentException) { }
         }
         for (int sequence = 1; sequence <= 99; sequence++)
-            if (!used.Contains(sequence)) return $"{parsed.Room}-{parsed.Category}{sequence:00}";
-        return "aucun (séquence 01–99 épuisée)";
+            if (!used.Contains(sequence)) return $"{room}-{category}{sequence:00}";
+        return null;
+    }
+
+    private static string MintItemCode(
+        string type, HomeCreateItem item, HomeObjectIndex index, IEnumerable<string> taken)
+    {
+        if (type != HomeSchema.Types.Point)
+            throw new InvalidOperationException(
+                $"Un objet {type} ne se numérote pas : fournis son code.");
+        if (item.Code is not null)
+            throw new InvalidOperationException(
+                "Un point prend soit code, soit category et room pour que le code soit attribué, pas les deux.");
+        if (item.Category is null || item.Room is null)
+            throw new ArgumentException(
+                "Pour attribuer un code de point, fournis category et room ensemble.", nameof(item));
+
+        string category = HomeCategories.Resolve(item.Category);
+        JsonObject room = index.Resolve(item.Room, NameMatch.Exact, [HomeSchema.Types.Room]);
+        string roomCode = HomeElementCode.ValidateRoomCode(HomeObjectJson.Code(room));
+        return MintPointCode(roomCode, category, taken)
+            ?? throw new InvalidOperationException(
+                $"Plus de code libre pour {roomCode}-{category} : la séquence 01–99 est épuisée.");
     }
 
     private static string SearchText(JsonObject value, HomeObjectIndex index)

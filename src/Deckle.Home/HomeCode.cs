@@ -68,4 +68,21 @@ public static class HomeCategories
     }
 
     public static string OptionKey(string category) => Validate(category).ToLowerInvariant();
+
+    // A category as a person or a model names it: the code in either case or
+    // its label ("PS — prise standard"). Returns the code in capitals.
+    public static string Resolve(string keyOrLabel)
+    {
+        string requested = keyOrLabel.Trim();
+        foreach (string code in Codes)
+            if (HomeSchema.OptionAliases(HomeSchema.Properties.Category, code.ToLowerInvariant())
+                    .Contains(requested, StringComparer.OrdinalIgnoreCase))
+                return code;
+        return Validate(requested);
+    }
+
+    // The code and the label of every category, as a schema lists the choices.
+    public static IReadOnlyList<string> Choices() =>
+        Codes.Concat(Codes.Select(code => HomeSchema.OptionLabel(HomeSchema.Properties.Category, code.ToLowerInvariant())))
+            .Distinct(StringComparer.Ordinal).ToArray();
 }

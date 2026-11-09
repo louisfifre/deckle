@@ -105,6 +105,8 @@ public static class HomeToolCatalog
                 (args, ct) => gestures().ArchiveAsync(
                     RequiredString(args, "object"), OptionalBoolean(args, "archived") ?? true, ct),
                 ToolExecutionContract.OverwritingIdempotent),
+
+            HomeTypedToolCatalog.PointDictateTool(gestures),
         ];
     }
 

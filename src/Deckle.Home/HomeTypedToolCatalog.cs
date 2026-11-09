@@ -94,7 +94,14 @@ public static class HomeTypedToolCatalog
         string? code = OptionalText(value, "code");
         string? name = OptionalText(value, "name");
         string? text = OptionalText(value, "text");
-        if (IsCoded(type.CanonicalKey) && code is null)
+        bool isPoint = type.CanonicalKey == HomeSchema.Types.Point;
+        string? category = isPoint ? OptionalText(value, "category") : null;
+        string? room = isPoint ? OptionalText(value, "room") : null;
+        if (isPoint && code is not null && (category is not null || room is not null))
+            throw new ArgumentException("Give a point either 'code', or 'category' and 'room' to mint one, not both.", "code");
+        if (isPoint && code is null && (category is null || room is null))
+            throw new ArgumentException("A point needs 'code', or 'category' and 'room' to mint the lowest free code.", "code");
+        if (IsCoded(type.CanonicalKey) && !isPoint && code is null)
             throw new ArgumentException("Missing required argument 'code'.", "code");
         if (!IsCoded(type.CanonicalKey) && code is not null)
             throw new ArgumentException("This type does not accept 'code'.", "code");
@@ -116,17 +123,106 @@ public static class HomeTypedToolCatalog
 
         if (type.CanonicalKey == HomeSchema.Types.Plant && value.ContainsKey("room"))
         {
-            string room = OptionalText(value, "room")
+            string plantRoom = OptionalText(value, "room")
                 ?? throw new ArgumentException("Argument 'room' must be a string.", "room");
             if (properties.ContainsKey(HomeSchema.Properties.InstalledIn))
                 throw new ArgumentException("Use 'room' or 'installed_in', not both.", "room");
-            properties[HomeSchema.Properties.InstalledIn] = room;
+            properties[HomeSchema.Properties.InstalledIn] = plantRoom;
         }
 
         return new HomeCreateItem(
             code, name, properties.Count == 0 ? null : properties,
             OptionalStringArray(value, "collections"), text, OptionalText(value, "template"),
-            OptionalBoolean(value, "force") ?? false);
+            OptionalBoolean(value, "force") ?? false, category, room);
+    }
+
+    // point_dictate: one room, then the points as they are described, each
+    // with its category and its point fields. The codes are minted, so an
+    // item carries neither code, nor room, nor category beyond its own.
+    internal static ToolDescriptor PointDictateTool(Func<HomeGestures> gestures)
+    {
+        ArgumentNullException.ThrowIfNull(gestures);
+        ManifestIndex manifest = ManifestIndex.Read(HomeSchema.TargetManifest);
+        ManifestType point = manifest.Types.Single(type => type.CanonicalKey == HomeSchema.Types.Point);
+        JsonObject item = DictatedPointSchema(point, manifest);
+        IReadOnlySet<string> allowed = new HashSet<string>(
+            item["properties"]!.AsObject().Select(pair => pair.Key), StringComparer.Ordinal);
+
+        return new ToolDescriptor(
+            "point_dictate",
+            "Write down a room as the person describes it: give the room once, then each point with its category and its fields. "
+            + "The codes are minted at once (lowest free number per category in that room, gaps reused, counting the batch) and the points are written immediately; "
+            + "the answer lists each code with its name and id. No proposal round: a mistake is deleted in two steps with delete. "
+            + "The whole batch is validated before the first write.",
+            ObjectSchema(
+                new JsonObject
+                {
+                    ["room"] = StringSchema("The room: its code, exact name, or id."),
+                    ["points"] = new JsonObject
+                    {
+                        ["type"] = "array",
+                        ["minItems"] = 1,
+                        ["maxItems"] = MaxBatchSize,
+                        ["description"] = "The points of the room, in the order they were described.",
+                        ["items"] = item,
+                    },
+                },
+                ["room", "points"]),
+            async (args, ct) =>
+            {
+                JsonObject value = RequireObject(args, "arguments");
+                RequireOnly(value, new HashSet<string>(["room", "points"], StringComparer.Ordinal), "point_dictate");
+                string room = RequiredText(value, "room");
+                JsonArray array = BoundedItems(value, "points");
+                var points = new List<HomeCreateItem>(array.Count);
+                for (int position = 0; position < array.Count; position++)
+                {
+                    JsonObject entry = array[position] as JsonObject
+                        ?? throw new ArgumentException($"points[{position}] must be an object.", "points");
+                    try
+                    {
+                        RequireOnly(entry, allowed, "point_dictate.points[]");
+                        JsonObject properties = BuildProperties(point, manifest, entry, creating: true);
+                        points.Add(new HomeCreateItem(
+                            null, RequiredText(entry, "name"), properties.Count == 0 ? null : properties,
+                            OptionalStringArray(entry, "collections"), OptionalText(entry, "text"),
+                            OptionalText(entry, "template"), Category: RequiredText(entry, "category")));
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        throw new ArgumentException($"points[{position}]: {ex.Message}", ex);
+                    }
+                }
+                return await gestures().DictatePointsAsync(room, points, ct).ConfigureAwait(false);
+            },
+            ToolExecutionContract.AdditiveRequiresDeduplication);
+    }
+
+    private static JsonObject DictatedPointSchema(ManifestType point, ManifestIndex manifest)
+    {
+        var properties = new JsonObject
+        {
+            ["category"] = CategorySchema(),
+            ["name"] = StringSchema("Human title."),
+            ["text"] = StringSchema("Optional initial body."),
+            ["template"] = StringSchema("Live template name."),
+            ["collections"] = StringArraySchema("Collections to add."),
+        };
+        foreach (ManifestProperty property in WritableProperties(point, manifest, creating: true))
+            properties[property.CanonicalKey] = PropertySchema(property);
+        return ObjectSchema(properties, ["category", "name"]);
+    }
+
+    private static JsonObject CategorySchema()
+    {
+        var values = new JsonArray();
+        foreach (string choice in HomeCategories.Choices()) values.Add(choice);
+        return new JsonObject
+        {
+            ["type"] = "string",
+            ["description"] = "Point category: its code or its label.",
+            ["enum"] = values,
+        };
     }
 
     private static async Task<string> HandleUpdateAsync(
@@ -189,6 +285,12 @@ public static class HomeTypedToolCatalog
         var properties = CommonCreateProperties(type);
         foreach (ManifestProperty property in WritableProperties(type, manifest, creating: true))
             properties[property.CanonicalKey] = PropertySchema(property);
+        if (type.CanonicalKey == HomeSchema.Types.Point)
+        {
+            properties["code"] = StringSchema("Immutable normative code, ROOM-CATNN. Omit it and give category and room to mint the lowest free one.");
+            properties["category"] = CategorySchema();
+            properties["room"] = StringSchema("Room code, exact name, or id; with category, instead of code, to mint the code.");
+        }
         if (type.CanonicalKey == HomeSchema.Types.Component)
             properties["system"] = StringSchema("Existing System containing this component.");
         if (type.CanonicalKey == HomeSchema.Types.Plant)
@@ -305,7 +407,8 @@ public static class HomeTypedToolCatalog
     private static IReadOnlyList<string> CreateRequired(ManifestType type)
     {
         var result = new List<string>();
-        if (IsCoded(type.CanonicalKey)) result.Add("code");
+        // A point may give category and room instead of its code.
+        if (IsCoded(type.CanonicalKey) && type.CanonicalKey != HomeSchema.Types.Point) result.Add("code");
         if (type.CanonicalKey is not HomeSchema.Types.Idea and not HomeSchema.Types.Circuit) result.Add("name");
         if (type.CanonicalKey == HomeSchema.Types.Idea) result.Add("text");
         if (type.CanonicalKey == HomeSchema.Types.Component) result.Add("system");

@@ -2250,6 +2250,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeNameMatchTests.cs
 │   │   ├── HomePagingTests.cs
 │   │   ├── HomePartialWriteTests.cs
+│   │   ├── HomePointDictationTests.cs
 │   │   ├── HomeRelationTests.cs
 │   │   ├── HomeSchemaAlignmentTests.cs
 │   │   ├── HomeSchemaBugNotes.md

@@ -66,7 +66,9 @@ public sealed class HomeTypedToolCatalogTests
         Assert.Contains("code", createProperties.Select(pair => pair.Key));
         Assert.Contains("name", createProperties.Select(pair => pair.Key));
         Assert.DoesNotContain("installed_in", createProperties.Select(pair => pair.Key));
-        Assert.DoesNotContain("category", createProperties.Select(pair => pair.Key));
+        // category and room only mint a code; they are not free properties.
+        Assert.Contains("PS", createProperties["category"]!["enum"]!.AsArray().Select(value => value!.GetValue<string>()));
+        Assert.DoesNotContain("code", create["required"]?.AsArray().Select(value => value!.GetValue<string>()) ?? []);
         Assert.DoesNotContain("code", updateProperties.Select(pair => pair.Key));
         Assert.DoesNotContain("installed_in", updateProperties.Select(pair => pair.Key));
         Assert.DoesNotContain("category", updateProperties.Select(pair => pair.Key));
