@@ -68,6 +68,9 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 - `maintenance/sweep-exposables.ps1` — **Sweep exposable source values.** Text sweep of the exposables carried by the source tree.
   - Actions: Check / exposable values
   - Parameters: -RepoRoot <string>, -OutputPath <string>, -Quiet
+- `maintenance/switch-anytype-backend.ps1` — **Switch the Anytype backend.** Points the Anytype backend at the version the app pins, once that version is staged under versions in the provider folder.
+  - Actions: Preview / Anytype backend · Switch / Anytype backend `-Apply` (danger)
+  - Parameters: -Version <string>, -Apply, -ProviderDirectory <string>
 - `maintenance/validate-resources.ps1` — **Validate WinUI resources.** Read-only audit of the WinUI resource inventories.
   - Actions: Check / WinUI resources
   - Parameters: -Target <string>, -Allowlist <string>, -Json <string>, -MaxItems <int>, -FailOnFindings
