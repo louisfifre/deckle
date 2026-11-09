@@ -185,7 +185,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── xamldiag/
 │   │   │   ├── behaviors/
 │   │   │   │   ├── clock.cpp
-│   │   │   │   └── clock.h
+│   │   │   │   ├── clock.h
+│   │   │   │   ├── start_menu_height.cpp
+│   │   │   │   └── start_menu_height.h
 │   │   │   ├── rules/
 │   │   │   │   ├── element_matcher.cpp
 │   │   │   │   ├── element_matcher.h

@@ -45,10 +45,21 @@ namespace deckle::rules
         std::vector<ClockLine> lower;     // the lines of the second TextBlock (DateInnerTextBlock)
     };
 
+    // The Start menu height behavior (behaviors/start_menu_height.cpp): the
+    // menu's FrameRoot is as high as the Start window, whatever the scale.
+    //   "startMenuHeight": { "enabled": true }
+    // It only means something in StartMenuExperienceHost; in explorer no
+    // element matches and the behavior reports never_matched.
+    struct StartMenuHeightConfiguration
+    {
+        bool enabled = false;
+    };
+
     struct SettingsDocument
     {
         std::vector<RuleDefinition> rules;
         ClockConfiguration clock;
+        StartMenuHeightConfiguration startMenuHeight;
         std::vector<std::wstring> problems;   // what could not be read; the rest still applies
     };
 

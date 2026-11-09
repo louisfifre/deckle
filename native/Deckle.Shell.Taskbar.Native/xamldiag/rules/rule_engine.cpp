@@ -5,6 +5,7 @@
 #include "selector.h"
 #include "style_resolver.h"
 #include "../behaviors/clock.h"
+#include "../behaviors/start_menu_height.h"
 #include "../element_properties.h"
 #include "../../channel.h"
 #include "../../log.h"
@@ -47,6 +48,8 @@ namespace
         std::vector<std::shared_ptr<RuleRuntime>> rules;
         std::shared_ptr<const ClockConfiguration> clock;
         std::shared_ptr<OverrideCounters> clockCounters = std::make_shared<OverrideCounters>();
+        bool startMenuHeight = false;
+        std::shared_ptr<OverrideCounters> startMenuCounters = std::make_shared<OverrideCounters>();
         std::vector<std::wstring> problems;
     };
 
@@ -82,6 +85,7 @@ namespace
         wuc::CoreDispatcher dispatcher{ nullptr };
         std::vector<Tracked> tracked;
         std::vector<Held> held;
+        std::vector<std::shared_ptr<deckle::behaviors::StartMenuHeightHold>> startHolds;
         std::map<std::pair<uint64_t, size_t>, Resolved> resolved;
     };
 
@@ -396,6 +400,33 @@ namespace deckle::rules
             context.held.push_back(std::move(held));
         }
 
+        static void ApplyStartMenuHeight(ThreadContext& context, wux::FrameworkElement const& element, const RuleSet& set)
+        {
+            if (!set.startMenuHeight) return;
+            if (!behaviors::StartMenuHeightHold::IsFrameRoot(element)) return;
+
+            void* target = Identity(element);
+            for (auto const& hold : context.startHolds)
+            {
+                if (hold->TargetIdentity() == target) return;
+            }
+
+            try
+            {
+                if (auto hold = behaviors::StartMenuHeightHold::TryCreate(element, set.startMenuCounters))
+                {
+                    Log(LogLevel::Info, L"start_menu_hold", L"The Start menu height is now held by Deckle",
+                        { { L"tid", std::to_wstring(GetCurrentThreadId()) } });
+                    context.startHolds.push_back(std::move(hold));
+                }
+            }
+            catch (winrt::hresult_error const& error)
+            {
+                ++set.startMenuCounters->failed;
+                set.startMenuCounters->SetError(Hex(error));
+            }
+        }
+
         static void ApplyRules(ThreadContext& context, wux::FrameworkElement const& element, const RuleSet& set)
         {
             for (size_t i = 0; i < set.rules.size(); ++i)
@@ -406,6 +437,7 @@ namespace deckle::rules
                 ApplyRule(context, element, set, i);
             }
             ApplyClock(context, element, set);
+            ApplyStartMenuHeight(context, element, set);
         }
 
         static size_t ClearAll(ThreadContext& context)
@@ -417,6 +449,12 @@ namespace deckle::rules
                 Teardown(held);
             }
             context.held.clear();
+            for (auto& hold : context.startHolds)
+            {
+                ++active;
+                hold->Release();
+            }
+            context.startHolds.clear();
             context.resolved.clear();
             return active;
         }
@@ -425,6 +463,7 @@ namespace deckle::rules
         {
             std::erase_if(context.tracked, [](Tracked const& entry) { return !entry.element.get(); });
             std::erase_if(context.held, [](Held const& held) { return held.override_->IsTargetGone(); });
+            std::erase_if(context.startHolds, [](auto const& hold) { return hold->IsTargetGone(); });
         }
 
         static void Reapply(ThreadContext& context, const std::shared_ptr<const RuleSet>& set)
@@ -495,6 +534,10 @@ namespace deckle::rules
             if (set->clock && set->clock->enabled)
             {
                 behaviors.Append(RuleStatus(L"clock", L"", *set->clockCounters, settled));
+            }
+            if (set->startMenuHeight)
+            {
+                behaviors.Append(RuleStatus(L"startMenuHeight", L"", *set->startMenuCounters, settled));
             }
             status.SetNamedValue(L"behaviors", behaviors);
 
@@ -584,6 +627,7 @@ namespace deckle::rules
         set->appliedAt = Clock::now();
         set->problems = std::move(document.problems);
         set->clock = std::make_shared<const ClockConfiguration>(std::move(document.clock));
+        set->startMenuHeight = document.startMenuHeight.enabled;
 
         for (RuleDefinition& definition : document.rules)
         {
@@ -630,7 +674,7 @@ namespace deckle::rules
 
         Log(LogLevel::Info, L"document_applied", L"Applied a settings document",
             { { L"generation", std::to_wstring(set->generation) }, { L"rules", std::to_wstring(set->rules.size()) },
-              { L"clock", set->clock->enabled ? L"on" : L"off" }, { L"unreachable_threads", std::to_wstring(unreachable) } });
+              { L"clock", set->clock->enabled ? L"on" : L"off" }, { L"start_menu_height", set->startMenuHeight ? L"on" : L"off" }, { L"unreachable_threads", std::to_wstring(unreachable) } });
         m_impl->SendStatus(true);
     }
 

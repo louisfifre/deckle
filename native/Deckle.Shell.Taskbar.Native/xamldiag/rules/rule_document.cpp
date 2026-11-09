@@ -83,6 +83,12 @@ namespace deckle::rules
                 ReadLines(clock, L"upper", result.clock.upper, result.problems);
                 ReadLines(clock, L"lower", result.clock.lower, result.problems);
             }
+            if (behaviors.HasKey(L"startMenuHeight") && behaviors.GetNamedValue(L"startMenuHeight").ValueType() == json::JsonValueType::Object)
+            {
+                auto height = behaviors.GetNamedObject(L"startMenuHeight");
+                result.startMenuHeight.enabled = height.HasKey(L"enabled") && height.GetNamedValue(L"enabled").ValueType() == json::JsonValueType::Boolean
+                                                 && height.GetNamedBoolean(L"enabled");
+            }
         }
 
         return result;
