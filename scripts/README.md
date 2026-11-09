@@ -45,6 +45,9 @@ What the menu offers today, level by level. A row reads as its action followed b
 | root | Launch | Release, Debug | [`launch-app.ps1`](launch-app.ps1) | |
 |  | Build & run | Release, Debug | [`build-run.ps1`](build-run.ps1) | |
 |  | Build (no run) | Release, Debug | [`build-run.ps1`](build-run.ps1) `-NoRun` | |
+|  | Self-check | Debug, Release | [`self-check.ps1`](self-check.ps1) | |
+|  | Inspect | processes | [`inspect-processes.ps1`](inspect-processes.ps1) | |
+|  |  | log, trace | [`read-log.ps1`](read-log.ps1) | |
 |  | Update prod | | [`deploy-prod.ps1`](deploy-prod.ps1) | |
 |  | Roll back prod | | [`deploy-prod.ps1`](deploy-prod.ps1) `-Rollback` | |
 |  | README pulse | update | [`update-readme-stats.ps1`](update-readme-stats.ps1) `-Commit` | |
@@ -94,12 +97,16 @@ The update never overwrites a file it does not own, so Deckle's own scripts, lib
 
 ## Deckle's own scripts
 
+[`INVENTORY.md`](INVENTORY.md), regenerated at each commit by the pre-commit hook, lists every script with its first sentence, its actions and its parameters; it is the short list an agent reads to pick a script. The tables below add the detail a Header leaves out.
+
 Each script is callable directly from a terminal; the menu is purely additive. Concrete scripts end with the same human-readable action summary: a short sentence, a `Workflow`, a `Result` (`Success`, `Failed`, `Partial`, or `Skipped`), then the fields that matter for that workflow. The detailed step logs stay above it for diagnosis.
 
 | File | Purpose | Common switches |
 |---|---|---|
 | [`launch-app.ps1`](launch-app.ps1) | Kill running `Deckle.exe` and launch the freshest already-built app executable. Does not build. | `-Configuration Debug\|Release`, `-Target <worktree>`, `-Wait` |
 | [`build-run.ps1`](build-run.ps1) | Kill running `Deckle.exe`, build via `dotnet build` on four low-priority MSBuild nodes that exit with the build, and launch the freshly built exe through ShellExecute. With `-NoRun`, build only: the running instance is never stopped, and the build is refused before compiling when that instance runs from the build's own output directory (see *Running instance and build outputs*). | `-Configuration Debug\|Release`, `-NoRun`, `-Wait`, `-Target <worktree>`, `-NoAutoRestart` |
+| [`inspect-processes.ps1`](inspect-processes.ps1) | Read-only: the running Deckle instances with the folder each runs from (prod copy, worktree, self-check), the dotnet builds and tests in progress with project and age, the `build-locked.ps1` runs waiting for a slot, test hosts, and the .NET build servers left behind. | none |
+| [`read-log.ps1`](read-log.ps1) | Read-only: the latest entries of `<UserDataRoot>\diagnostics\log.jsonl` (or `trace.jsonl` with `-Trace`), one line each, filtered by level, age and text. Shares the file with the running app. | `-Trace`, `-Last <n>`, `-Level Warning`, `-SinceMinutes <n>`, `-Match <regex>`, `-Payload`, `-DataRoot <path>` |
 | [`deploy-prod.ps1`](deploy-prod.ps1) | Build `main` (or `-Ref`) in Release in the reserved `prod-build` worktree, self-check it, and stage it in the prod copy without stopping the running Deckle; see *Prod copy*. Agents may run it. | `-Ref <ref>`, `-Root <path>`, `-Rollback`, `-Force`, `-SkipSelfCheck` |
 | [`update-readme-stats.ps1`](update-readme-stats.ps1) | Regenerate the README `Development pulse` section from local Git history. `-Commit` creates a local README-only commit and refuses unrelated tracked changes; it never pushes. Also used without `-Commit` by the monthly GitHub Action. | `-Target <worktree>`, `-ReadmePath <path>`, `-Commit` |
 | [`maintenance/clean-native.ps1`](maintenance/clean-native.ps1) | Bring `<UserDataRoot>\native\` back to the catalog of `NativeRuntime.cs`: delete the DLLs it does not name (an older bundle's `libwhisper.dll` and MinGW runtime) and `.partial` leftovers, then report the catalog DLLs that are missing. Does not stop Deckle; a DLL in use is reported and kept. | `-DataRoot <path>`, `-WhatIf` |
@@ -113,7 +120,7 @@ Each script is callable directly from a terminal; the menu is purely additive. C
 | [`release/publish-native-runtime.ps1`](release/publish-native-runtime.ps1) | **Maintainer-only.** Validate and optionally publish the bundle pinned by `NativeRuntime.CurrentBundle`, auto-discovered under `artifacts/` or supplied with `-ArtifactPath`. When no current bundle exists, package a new one from an already-built local whisper.cpp tree (MSVC, dynamic ggml backends) and the Visual C++ Redist of the same Visual Studio. Every bundle, staged or downloaded, is refused when a DLL imports a name that is neither in the bundle nor part of Windows (`vulkan-1.dll` is the one declared external). Local and downloaded release assets are verified by size, archive contract, and SHA-256. No CMake or Deckle build is invoked. | `-ArtifactPath <zip>` or `-WhisperRepo <path>` with `-WhisperBuildDir <name>`; `-Target <Deckle repo>`, `-OutDir <path>`, `-Publish`, `-Version X.Y.Z`, `-Notes <path>` |
 | [`release/build-anytype-backend.ps1`](release/build-anytype-backend.ps1) | **Fallback only since the pin went back to the official asset (0.5.2).** Rebuild one `anytype-cli` release tag from source for Windows, UCRT-linked, with the tantivy-go cross-allocator free patched in a private module copy, then package it in the official asset layout with a sha256 sidecar and a build report under `artifacts/anytype-backend-vX.Y.Z/`. The patch applies nothing once no site matches and refuses a partial match. See the script's own comments for the why (anyproto/tantivy-go#25, anyproto/anytype-cli#63). | `-Version X.Y.Z`, `-OutDir <path>`, `-Force` |
 
-Four scripts carry no Header and stay out of the menu on purpose:
+Three scripts carry no Header and stay out of the menu on purpose; the self-check, an agent's check after its build, is also offered in the menu:
 
 | File | Purpose | Common switches |
 |---|---|---|
