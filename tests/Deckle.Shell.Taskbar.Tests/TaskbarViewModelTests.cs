@@ -1,16 +1,13 @@
-using System.ComponentModel;
 using Deckle.Catalog;
 using Microsoft.Win32;
 using Xunit;
 
 namespace Deckle.Shell.Taskbar.Tests;
 
-// The page's two cards against a real registry tree and a fake elevation, never
-// the keys Windows reads: the Recommended policy works on a temporary tree under
-// HKCU\Software\Deckle.Tests\<guid>, the tray promoter on another under it, and
-// the ViewModel loads from the isolated data root. The composer calls
-// confirmOnEnable with the card's XamlRoot, which the gate does not read, so the
-// tests pass null. The wording is not under test, the .resw key is.
+// The page's cards against a real registry tree, never the keys Windows reads:
+// the tray promoter works on a temporary tree under HKCU\Software\Deckle.Tests\<guid>,
+// and the ViewModel loads from the isolated data root. The customizer is one
+// that never starts an engine. The wording is not under test, the .resw key is.
 [Trait("Category", "integration")]
 [Collection(TaskbarProfileCollection.Name)]
 public sealed class TaskbarViewModelTests : IDisposable
@@ -18,50 +15,39 @@ public sealed class TaskbarViewModelTests : IDisposable
     private readonly string _testRoot = @"Software\Deckle.Tests\" + Guid.NewGuid().ToString("N");
     private readonly string _folder = Path.Combine(
         Path.GetTempPath(), "Deckle.Shell.Taskbar.Tests", "vm-" + Guid.NewGuid().ToString("N"));
-    private readonly PolicyKey _userKey;
-    private readonly PolicyKey _machineKey;
     private readonly List<TrayIconPromoter> _promoters = [];
-    private readonly Runner _runner;
+    private bool _vertical = true;
 
-    public TaskbarViewModelTests()
-    {
-        _userKey = new PolicyKey(RegistryHive.CurrentUser, _testRoot + @"\User\Explorer");
-        _machineKey = new PolicyKey(RegistryHive.CurrentUser, _testRoot + @"\Machine\Explorer");
-        _runner = new Runner(_userKey);
-        TaskbarSettingsService.Instance.Current.ShowAllTrayIcons = false;
-    }
+    public TaskbarViewModelTests() => Reset();
 
     public void Dispose()
     {
         foreach (TrayIconPromoter promoter in _promoters) promoter.Dispose();
-        TaskbarSettingsService.Instance.Current.ShowAllTrayIcons = false;
+        Reset();
         Registry.CurrentUser.DeleteSubKeyTree(_testRoot, throwOnMissingSubKey: false);
         try { Directory.Delete(_folder, recursive: true); }
         catch (DirectoryNotFoundException) { }
     }
 
-    private sealed class Runner(PolicyKey userKey) : IElevatedProcessRunner
+    private static void Reset()
     {
-        public int Calls { get; private set; }
-        public bool Declines { get; set; }
-
-        public int Run(string fileName, string arguments)
-        {
-            Calls++;
-            if (Declines) throw new Win32Exception(PolicyElevation.UacDeclined);
-            if (arguments.StartsWith("add ", StringComparison.Ordinal))
-                userKey.WriteDword(RecommendedSectionPolicy.ValueName, RecommendedSectionPolicy.Hidden);
-            else
-                userKey.DeleteValue(RecommendedSectionPolicy.ValueName);
-            return 0;
-        }
+        TaskbarSettings settings = TaskbarSettingsService.Instance.Current;
+        settings.ShowAllTrayIcons = false;
+        settings.Background = TaskbarBackground.Native;
+        settings.CompactTray = false;
+        settings.CompactClock = false;
+        settings.StartMenuFullHeight = false;
     }
 
-    private TaskbarViewModel ViewModel(TrayIconPromoter? tray = null)
+    // An engine is never created: the settings stay off, and a status is raised by hand.
+    private TaskbarCustomizer Customizer(TaskbarSettings? settings = null, Func<TaskbarTarget, ITaskbarEngine>? engines = null) =>
+        new(() => settings ?? new TaskbarSettings(), () => _vertical,
+            engines ?? (_ => throw new FileNotFoundException("no engine in this test")));
+
+    private TaskbarViewModel ViewModel(TrayIconPromoter? tray = null, TaskbarCustomizer? customizer = null)
     {
         tray ??= Promoter(_testRoot + @"\NotifyIconSettings");
-        var policy = new RecommendedSectionPolicy(_userKey, _machineKey, _runner, isPrivileged: false);
-        return new TaskbarViewModel(tray, policy);
+        return new TaskbarViewModel(tray, customizer ?? Customizer(), () => _vertical);
     }
 
     private TrayIconPromoter Promoter(string rootPath)
@@ -72,143 +58,60 @@ public sealed class TaskbarViewModelTests : IDisposable
         return promoter;
     }
 
-    private static SettingDescriptor Card(IReadOnlyList<SettingDescriptor> manifest, string labelKey) =>
-        manifest.Single(card => card.LabelKey == labelKey);
+    private static IEnumerable<SettingDescriptor> Cards(TaskbarViewModel viewModel) =>
+        viewModel.BarManifest.Concat(viewModel.TrayManifest).Concat(viewModel.StartManifest);
 
-    // ── Recommended section ──────────────────────────────────────────────────
+    private static SettingDescriptor Card(TaskbarViewModel viewModel, string labelKey) =>
+        Cards(viewModel).Single(card => card.LabelKey == labelKey);
 
-    [Fact]
-    public void TheSwitchStartsFromWhatWindowsHolds()
-    {
-        Assert.False(ViewModel().HideRecommended);
-
-        _userKey.WriteDword(RecommendedSectionPolicy.ValueName, RecommendedSectionPolicy.Hidden);
-
-        Assert.True(ViewModel().HideRecommended);
-    }
-
-    // The policy is not a setting: it has no reset, so the page's Reset all
-    // never touches it, and no value of it is saved.
-    [Fact]
-    public void TheCardAsksBeforeItTurnsOnAndHasNoDefault()
-    {
-        SettingDescriptor card = Card(ViewModel().StartManifest, "TaskbarPage_HideRecommendedCard");
-
-        Assert.NotNull(card.ConfirmOnEnable);
-        Assert.Null(card.Default);
-    }
+    // ── Writing the settings ─────────────────────────────────────────────────
 
     [Fact]
-    public async Task AGrantedPromptLetsTheSwitchTurnOn()
-    {
-        TaskbarViewModel viewModel = ViewModel();
-        SettingDescriptor card = Card(viewModel.StartManifest, "TaskbarPage_HideRecommendedCard");
-
-        bool confirmed = await card.ConfirmOnEnable!(null!);
-
-        Assert.True(confirmed);
-        Assert.Equal(RecommendedSectionPolicy.Hidden, _userKey.ReadDword(RecommendedSectionPolicy.ValueName));
-        Assert.Null(viewModel.RecommendedMessageKey);
-    }
-
-    [Fact]
-    public async Task ADeclinedPromptKeepsTheSwitchOffAndSaysSo()
-    {
-        TaskbarViewModel viewModel = ViewModel();
-        _runner.Declines = true;
-
-        bool confirmed = await Card(viewModel.StartManifest, "TaskbarPage_HideRecommendedCard").ConfirmOnEnable!(null!);
-
-        Assert.False(confirmed);
-        Assert.False(viewModel.HideRecommended);
-        Assert.Null(_userKey.ReadDword(RecommendedSectionPolicy.ValueName));
-        Assert.Equal("TaskbarPage_RecommendedDeclined", viewModel.RecommendedMessageKey);
-    }
-
-    [Fact]
-    public async Task TurningTheSwitchOffGivesTheSectionBack()
-    {
-        _userKey.WriteDword(RecommendedSectionPolicy.ValueName, RecommendedSectionPolicy.Hidden);
-        TaskbarViewModel viewModel = ViewModel();
-
-        await viewModel.ShowRecommendedAsync();
-
-        Assert.False(viewModel.HideRecommended);
-        Assert.Null(_userKey.ReadDword(RecommendedSectionPolicy.ValueName));
-        Assert.Null(viewModel.RecommendedMessageKey);
-    }
-
-    // The switch is already off when the prompt opens (the composer writes an
-    // off at once); a No brings it back to what Windows still holds.
-    [Fact]
-    public async Task ADeclinedShowReturnsTheSwitchToWhatWindowsHolds()
-    {
-        _userKey.WriteDword(RecommendedSectionPolicy.ValueName, RecommendedSectionPolicy.Hidden);
-        TaskbarViewModel viewModel = ViewModel();
-        viewModel.HideRecommended = false;
-        _runner.Declines = true;
-
-        await viewModel.ShowRecommendedAsync();
-
-        Assert.True(viewModel.HideRecommended);
-        Assert.Equal("TaskbarPage_RecommendedDeclined", viewModel.RecommendedMessageKey);
-    }
-
-    // Someone else's policy: the switch shows on, an off is refused without a
-    // prompt, and the card says why before and after the attempt.
-    [Fact]
-    public async Task AMachinePolicyKeepsTheSwitchOnWithoutAPrompt()
-    {
-        _machineKey.WriteDword(RecommendedSectionPolicy.ValueName, RecommendedSectionPolicy.Hidden);
-        TaskbarViewModel viewModel = ViewModel();
-        Assert.True(viewModel.HideRecommended);
-        Assert.Equal("TaskbarPage_RecommendedHeldByMachine", viewModel.RecommendedMessageKey);
-
-        viewModel.HideRecommended = false;
-        await viewModel.ShowRecommendedAsync();
-
-        Assert.True(viewModel.HideRecommended);
-        Assert.Equal("TaskbarPage_RecommendedHeldByMachine", viewModel.RecommendedMessageKey);
-        Assert.Equal(0, _runner.Calls);
-    }
-
-    [Fact]
-    public async Task ARevisitForgetsTheLastRefusal()
-    {
-        TaskbarViewModel viewModel = ViewModel();
-        _runner.Declines = true;
-        await Card(viewModel.StartManifest, "TaskbarPage_HideRecommendedCard").ConfirmOnEnable!(null!);
-
-        viewModel.Load();
-
-        Assert.Null(viewModel.RecommendedMessageKey);
-    }
-
-    // ── Tray ─────────────────────────────────────────────────────────────────
-
-    [Fact]
-    public void TheTrayCardWritesTheSetting()
+    public void EveryCardWritesItsSettingAndDefaultsToOff()
     {
         TaskbarViewModel viewModel = ViewModel();
 
         viewModel.ShowAllTrayIcons = true;
+        viewModel.Background = TaskbarBackground.Transparent;
+        viewModel.CompactTray = true;
+        viewModel.CompactClock = true;
+        viewModel.StartMenuFullHeight = true;
 
-        Assert.True(TaskbarSettingsService.Instance.Current.ShowAllTrayIcons);
-        Assert.Equal(false, Card(viewModel.TrayManifest, "TaskbarPage_ShowAllTrayIconsCard").Default!());
+        TaskbarSettings saved = TaskbarSettingsService.Instance.Current;
+        Assert.True(saved.ShowAllTrayIcons);
+        Assert.Equal(TaskbarBackground.Transparent, saved.Background);
+        Assert.True(saved.CompactTray);
+        Assert.True(saved.CompactClock);
+        Assert.True(saved.StartMenuFullHeight);
+
+        Assert.Equal(false, Card(viewModel, "TaskbarPage_ShowAllTrayIconsCard").Default!());
+        Assert.Equal(TaskbarBackground.Native, Card(viewModel, "TaskbarPage_BackgroundCard").Default!());
+        Assert.Equal(false, Card(viewModel, "TaskbarPage_CompactTrayCard").Default!());
+        Assert.Equal(false, Card(viewModel, "TaskbarPage_CompactClockCard").Default!());
+        Assert.Equal(false, Card(viewModel, "TaskbarPage_StartMenuFullHeightCard").Default!());
     }
 
     [Fact]
-    public void ALoadReadsTheSettingWithoutWritingItBack()
+    public void ALoadReadsTheSettingsWithoutWritingThemBack()
     {
-        TaskbarSettingsService.Instance.Current.ShowAllTrayIcons = true;
+        TaskbarSettings settings = TaskbarSettingsService.Instance.Current;
+        settings.ShowAllTrayIcons = true;
+        settings.Background = TaskbarBackground.Black;
+        settings.CompactClock = true;
         TaskbarViewModel viewModel = ViewModel();
         Assert.True(viewModel.ShowAllTrayIcons);
+        Assert.Equal(TaskbarBackground.Black, viewModel.Background);
+        Assert.True(viewModel.CompactClock);
 
-        TaskbarSettingsService.Instance.Current.ShowAllTrayIcons = false;
+        Reset();
         viewModel.Load();
 
         Assert.False(viewModel.ShowAllTrayIcons);
+        Assert.Equal(TaskbarBackground.Native, viewModel.Background);
+        Assert.False(viewModel.CompactClock);
     }
+
+    // ── What the page says ───────────────────────────────────────────────────
 
     // The page says nothing while the tray works, and which line it says when a
     // pass failed follows the switch: keeping the icons on, or giving them back.
@@ -229,6 +132,51 @@ public sealed class TaskbarViewModelTests : IDisposable
         Assert.Equal("TaskbarPage_TrayFailedOff", viewModel.TrayMessageKey);
     }
 
+    [Fact]
+    public void TheCompactTraySaysItDoesNothingOnAHorizontalBarOnlyWhileItIsOn()
+    {
+        _vertical = false;
+        TaskbarViewModel viewModel = ViewModel();
+        Assert.Null(viewModel.CompactTrayMessageKey);
+
+        viewModel.CompactTray = true;
+        Assert.Equal("TaskbarPage_CompactTrayHorizontal", viewModel.CompactTrayMessageKey);
+
+        _vertical = true;
+        Assert.Null(viewModel.CompactTrayMessageKey);
+    }
+
+    // The customizer says a part is in error (here: no engine could be started);
+    // the page says so under that card and under no other, and only while it is on.
+    [Fact]
+    public async Task APartTheEngineCouldNotApplyIsToldOnItsCardAlone()
+    {
+        var settings = new TaskbarSettings { CompactClock = true };
+        TaskbarCustomizer customizer = Customizer(settings);
+        await customizer.ReconcileAsync("startup");
+        TaskbarViewModel viewModel = ViewModel(customizer: customizer);
+        viewModel.CompactClock = true;
+
+        Assert.Equal("TaskbarPage_ProblemError", viewModel.ProblemKey(TaskbarPart.CompactClock));
+        Assert.Null(viewModel.ProblemKey(TaskbarPart.StartMenu));
+
+        viewModel.CompactClock = false;
+
+        Assert.Null(viewModel.ProblemKey(TaskbarPart.CompactClock));
+    }
+
+    [Fact]
+    public void NothingIsSaidWhenAllIsFine()
+    {
+        TaskbarViewModel viewModel = ViewModel();
+        viewModel.Background = TaskbarBackground.Black;
+        viewModel.CompactTray = true;
+        viewModel.CompactClock = true;
+        viewModel.StartMenuFullHeight = true;
+
+        Assert.All(Cards(viewModel).Where(card => card.Advisory is not null), card => Assert.Null(card.Advisory!()));
+    }
+
     // ── Search ───────────────────────────────────────────────────────────────
 
     // A hit scrolls to the card whose LabelKey it names: a search entry without
@@ -236,9 +184,7 @@ public sealed class TaskbarViewModelTests : IDisposable
     [Fact]
     public void EverySearchEntryNamesACardOfThePage()
     {
-        TaskbarViewModel viewModel = ViewModel();
-        string[] cards = viewModel.TrayManifest.Concat(viewModel.StartManifest)
-            .Select(card => card.LabelKey).ToArray();
+        string[] cards = Cards(ViewModel()).Select(card => card.LabelKey).ToArray();
 
         Assert.All(SettingsSearch.Entries, entry => Assert.Contains(entry.LabelKey, cards));
         Assert.Equal(cards.Order(), SettingsSearch.Entries.Select(entry => entry.LabelKey).Order());

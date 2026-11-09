@@ -1,0 +1,7 @@
+<Project>
+
+  <!-- Keeps the root Directory.Build.targets (dotnet build-server watchdog,
+       ONNX Runtime copy-local rules) out of the native projects: MSBuild
+       imports the nearest Directory.Build.targets only. -->
+
+</Project>

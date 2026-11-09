@@ -1,0 +1,94 @@
+#include "pch.h"
+#include "util.h"
+#include <tlhelp32.h>
+
+namespace deckle::util
+{
+    std::string ToUtf8(std::wstring_view text)
+    {
+        if (text.empty()) return {};
+        int size = WideCharToMultiByte(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), nullptr, 0, nullptr, nullptr);
+        std::string result(static_cast<size_t>(size), '\0');
+        WideCharToMultiByte(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), result.data(), size, nullptr, nullptr);
+        return result;
+    }
+
+    std::wstring FromUtf8(std::string_view text)
+    {
+        if (text.empty()) return {};
+        int size = MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), nullptr, 0);
+        std::wstring result(static_cast<size_t>(size), L'\0');
+        MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), result.data(), size);
+        return result;
+    }
+
+    std::wstring PipeName()
+    {
+        DWORD session = 0;
+        ProcessIdToSessionId(GetCurrentProcessId(), &session);
+        std::wstring name = L"\\\\.\\pipe\\Deckle.Taskbar." + std::to_wstring(session);
+
+        // One pipe per target process: explorer keeps the bare name, any other
+        // host (the Start menu's StartMenuExperienceHost) gets its executable's
+        // name appended, so two engines in two processes never share a pipe.
+        // Deckle's side spells the same (TaskbarPipeServer.NameFor).
+        std::wstring image = ProcessImagePath();
+        size_t slash = image.find_last_of(L"\\/");
+        std::wstring file = slash == std::wstring::npos ? image : image.substr(slash + 1);
+        size_t dot = file.find_last_of(L'.');
+        if (dot != std::wstring::npos) file.resize(dot);
+        if (!file.empty() && _wcsicmp(file.c_str(), L"explorer") != 0) name += L"." + file;
+        return name;
+    }
+
+    std::wstring ModulePath(HMODULE module)
+    {
+        std::wstring path(MAX_PATH, L'\0');
+        for (;;)
+        {
+            DWORD length = GetModuleFileNameW(module, path.data(), static_cast<DWORD>(path.size()));
+            if (length == 0) return {};
+            if (length < path.size())
+            {
+                path.resize(length);
+                return path;
+            }
+            path.resize(path.size() * 2);
+        }
+    }
+
+    std::wstring XamlModules()
+    {
+        std::wstring names;
+        HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, GetCurrentProcessId());
+        if (snapshot == INVALID_HANDLE_VALUE) return names;
+
+        MODULEENTRY32W entry{ sizeof(entry) };
+        for (BOOL more = Module32FirstW(snapshot, &entry); more; more = Module32NextW(snapshot, &entry))
+        {
+            std::wstring name = entry.szModule;
+            std::wstring lower = name;
+            for (wchar_t& c : lower) c = static_cast<wchar_t>(towlower(c));
+            if (lower.find(L"xaml") != std::wstring::npos)
+            {
+                if (!names.empty()) names += L",";
+                names += name;
+            }
+        }
+        CloseHandle(snapshot);
+        return names;
+    }
+
+    std::wstring ProcessImagePath()
+    {
+        return ModulePath(nullptr);
+    }
+
+    std::wstring HandleText(uint64_t value)
+    {
+        wchar_t buffer[24];
+        swprintf_s(buffer, L"0x%016llX", static_cast<unsigned long long>(value));
+        return buffer;
+    }
+}
+

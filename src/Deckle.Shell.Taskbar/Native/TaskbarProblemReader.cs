@@ -1,0 +1,75 @@
+namespace Deckle.Shell.Taskbar;
+
+// Turns the engine's status into the few things the page says. The engine
+// reports each rule and behavior by id (see TaskbarDocumentBuilder) with a
+// state (see NativeRuleState); the ids map to the part of the page that asked
+// for them, the worst state of a part wins, and a state that is only a
+// passing one (pending) or a quiet one (applied, idle) says nothing.
+internal static class TaskbarProblemReader
+{
+    /// <summary>The part an engine id belongs to, or null for an id Deckle does not know.</summary>
+    public static TaskbarPart? PartOf(string id) => id switch
+    {
+        _ when id.StartsWith("background.", StringComparison.Ordinal) => TaskbarPart.Background,
+        _ when id.StartsWith("tray.", StringComparison.Ordinal) => TaskbarPart.CompactTray,
+        _ when id.StartsWith("quickSettings.", StringComparison.Ordinal) => TaskbarPart.CompactTray,
+        _ when id.StartsWith("clock.", StringComparison.Ordinal) || id == "clock" => TaskbarPart.CompactClock,
+        "startMenuHeight" => TaskbarPart.StartMenu,
+        _ => null,
+    };
+
+    /// <summary>The problem a rule state stands for; null when it is not one.</summary>
+    public static TaskbarProblem? ProblemOf(string state) => state switch
+    {
+        "never_matched" => TaskbarProblem.NotApplied,
+        "contested" => TaskbarProblem.Contested,
+        "error" => TaskbarProblem.Error,
+        _ => null,
+    };
+
+    /// <summary>The parts the customization asks for.</summary>
+    public static IReadOnlyList<TaskbarPart> WantedParts(TaskbarCustomization wanted)
+    {
+        var parts = new List<TaskbarPart>();
+        if (wanted.Background != TaskbarBackground.Native) parts.Add(TaskbarPart.Background);
+        if (wanted.TrayIconPitch is not null || wanted.TightenQuickSettings) parts.Add(TaskbarPart.CompactTray);
+        if (wanted.Clock is not null) parts.Add(TaskbarPart.CompactClock);
+        if (wanted.CustomizesStartMenu) parts.Add(TaskbarPart.StartMenu);
+        return parts;
+    }
+
+    /// <summary>
+    /// What is wrong with the parts asked for. An unavailable process (no
+    /// engine to ask) puts its parts in error; otherwise the status decides,
+    /// and no status yet says nothing.
+    /// </summary>
+    public static IReadOnlyDictionary<TaskbarPart, TaskbarProblem> Read(
+        TaskbarCustomization wanted,
+        NativeStatus? explorer, bool explorerUnavailable,
+        NativeStatus? startMenu, bool startMenuUnavailable)
+    {
+        var problems = new Dictionary<TaskbarPart, TaskbarProblem>();
+        foreach (TaskbarPart part in WantedParts(wanted))
+        {
+            bool unavailable = part == TaskbarPart.StartMenu ? startMenuUnavailable : explorerUnavailable;
+            if (unavailable) problems[part] = TaskbarProblem.Error;
+        }
+
+        AddFrom(problems, wanted, explorer);
+        AddFrom(problems, wanted, startMenu);
+        return problems;
+    }
+
+    private static void AddFrom(Dictionary<TaskbarPart, TaskbarProblem> problems, TaskbarCustomization wanted, NativeStatus? status)
+    {
+        if (status is null) return;
+
+        IReadOnlyList<TaskbarPart> asked = WantedParts(wanted);
+        foreach (NativeRuleState state in status.Rules.Concat(status.Behaviors))
+        {
+            if (PartOf(state.Id) is not { } part || !asked.Contains(part)) continue;
+            if (ProblemOf(state.State) is not { } problem) continue;
+            if (!problems.TryGetValue(part, out TaskbarProblem known) || problem > known) problems[part] = problem;
+        }
+    }
+}
