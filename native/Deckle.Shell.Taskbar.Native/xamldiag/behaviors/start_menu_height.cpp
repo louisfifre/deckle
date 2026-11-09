@@ -11,19 +11,31 @@
 // visible, on the next LayoutUpdated), GPL-3.0, by m417z and the mod authors:
 // https://github.com/ramensoftware/windhawk-mods/blob/main/mods/start-menu-size.wh.cpp
 // Different on purpose: the mod's height is a number of pixels from its settings;
-// here it is the window's own height in effective pixels, read live, so it holds
-// at any scale, and the panel keeps equal gaps above and below (see Update);
-// FrameRoot's margin stays native instead of being zeroed; and the values are held by PropertyOverride, which answers a
-// rewrite and gives the original back. See NOTICE.md.
+// here every figure is measured on the live tree (see the header), so the panel
+// fills the window with equal gaps at any screen size and scale; and the values
+// are held by PropertyOverride, which answers a rewrite and gives the original
+// back. See NOTICE.md.
+//
+// History (2026-11-09): the first version computed the height from margins read
+// on one screen (window - 2 * top margin, the native bottom margin left in
+// place). The tree then reported FrameRoot 1080 high, but its layout slot was
+// 1044 (the window minus the 36 DIP bottom margin), and XAML clips an element
+// whose Height exceeds its slot: the account and power row was cut off on
+// screen. Hence the measure, correct, verify loop and the slot check.
 
 namespace
 {
     namespace wf = winrt::Windows::Foundation;
     namespace wux = winrt::Windows::UI::Xaml;
+    namespace wuxc = winrt::Windows::UI::Xaml::Controls;
     namespace wuxm = winrt::Windows::UI::Xaml::Media;
 
     // Larger than any menu content could need; below it the Start menu is a sliver.
     constexpr double kMinimumHeight = 200;
+    // Half a DIP: below it a difference is rounding, not a misplacement.
+    constexpr double kTolerance = 0.5;
+    // Corrections after the first placement before the hold settles and logs what remains.
+    constexpr int kMaxCorrections = 2;
 
     wux::DependencyObject ParentOf(wux::DependencyObject const& element)
     {
@@ -31,7 +43,38 @@ namespace
         catch (...) { return nullptr; }
     }
 
-    std::wstring Number(double value);
+    // FrameRoot's child Grid#AnimationRoot: the panel the person sees.
+    wux::FrameworkElement FindPanel(wux::FrameworkElement const& frameRoot)
+    {
+        try
+        {
+            const int count = wuxm::VisualTreeHelper::GetChildrenCount(frameRoot);
+            for (int i = 0; i < count; ++i)
+            {
+                auto child = wuxm::VisualTreeHelper::GetChild(frameRoot, i).try_as<wux::FrameworkElement>();
+                if (child && child.Name() == L"AnimationRoot") return child;
+            }
+        }
+        catch (...) {}
+        return nullptr;
+    }
+
+    wf::Point Origin(wux::UIElement const& element, wux::UIElement const& relativeTo)
+    {
+        return element.TransformToVisual(relativeTo).TransformPoint(wf::Point{ 0, 0 });
+    }
+
+    std::wstring Number(double value)
+    {
+        wchar_t text[32];
+        swprintf_s(text, L"%.2f", value);
+        return text;
+    }
+
+    bool SameThickness(wux::Thickness const& a, wux::Thickness const& b)
+    {
+        return a.Left == b.Left && a.Top == b.Top && a.Right == b.Right && a.Bottom == b.Bottom;
+    }
 
     // What limits FrameRoot's height on this build, as the log says it: the values
     // before the behavior touches anything (effective and local), and, for the
@@ -63,7 +106,8 @@ namespace
                         if (!setter) continue;
                         std::wstring path;
                         try { path = setter.Target().Path().Path(); } catch (...) { continue; }
-                        if (path.find(L"Height") == std::wstring::npos && path.find(L"Margin") == std::wstring::npos) continue;
+                        if (path.find(L"Height") == std::wstring::npos && path.find(L"Margin") == std::wstring::npos
+                            && path.find(L"Alignment") == std::wstring::npos) continue;
                         std::wstring owner = L"?";
                         try
                         {
@@ -81,17 +125,12 @@ namespace
         deckle::Log(deckle::LogLevel::Info, L"start_menu_limits", L"What caps the Start menu height before Deckle holds it",
             { { L"effective_height", Number(frameRoot.Height()) }, { L"effective_min", Number(frameRoot.MinHeight()) },
               { L"effective_max", Number(frameRoot.MaxHeight()) }, { L"actual", Number(frameRoot.ActualHeight()) },
+              { L"valign", std::to_wstring(static_cast<int>(frameRoot.VerticalAlignment())) },
               { L"local_height", local(wux::FrameworkElement::HeightProperty()) },
               { L"local_min", local(wux::FrameworkElement::MinHeightProperty()) },
               { L"local_max", local(wux::FrameworkElement::MaxHeightProperty()) },
+              { L"local_margin", local(wux::FrameworkElement::MarginProperty()) },
               { L"start_sizes_state", state }, { L"state_setters", setters } });
-    }
-
-    std::wstring Number(double value)
-    {
-        wchar_t text[32];
-        swprintf_s(text, L"%.2f", value);
-        return text;
     }
 }
 
@@ -128,14 +167,15 @@ namespace deckle::behaviors
     {
         LogLimits(frameRoot);
         m_originalMax = frameRoot.MaxHeight();
+        m_originalMargin = frameRoot.Margin();
         m_frameRoot = winrt::make_weak(frameRoot);
         m_host = winrt::make_weak(ParentOf(frameRoot).as<wux::FrameworkElement>());
+        if (auto panel = FindPanel(frameRoot)) m_panel = winrt::make_weak(panel);
         ++m_counters->matched;
 
-        // Height, MinHeight and MaxHeight at the same value: the same trio the
-        // mod sets. The value is read from m_height each time an override sets.
+        // Every value is read from the hold's fields each time an override sets.
         std::weak_ptr<StartMenuHeightHold> weak = weak_from_this();
-        auto source = [weak]() -> wf::IInspectable
+        auto height = [weak]() -> wf::IInspectable
         {
             auto self = weak.lock();
             return wf::PropertyValue::CreateDouble(self ? self->m_height : 0.0);
@@ -144,8 +184,19 @@ namespace deckle::behaviors
                                       wux::FrameworkElement::MinHeightProperty(),
                                       wux::FrameworkElement::MaxHeightProperty() })
         {
-            m_overrides.push_back(std::make_shared<rules::PropertyOverride>(frameRoot, property, source, m_counters));
+            m_overrides.push_back(std::make_shared<rules::PropertyOverride>(frameRoot, property, height, m_counters));
         }
+        const wux::Thickness native = m_originalMargin;
+        m_overrides.push_back(std::make_shared<rules::PropertyOverride>(frameRoot, wux::FrameworkElement::MarginProperty(),
+            [weak, native]() -> wf::IInspectable
+            {
+                auto self = weak.lock();
+                return winrt::box_value(wux::Thickness{ native.Left, self ? self->m_marginTop : native.Top, native.Right, 0 });
+            },
+            m_counters));
+        m_overrides.push_back(std::make_shared<rules::PropertyOverride>(frameRoot, wux::FrameworkElement::VerticalAlignmentProperty(),
+            []() -> wf::IInspectable { return winrt::box_value(wux::VerticalAlignment::Top); },
+            m_counters));
 
         try
         {
@@ -162,7 +213,7 @@ namespace deckle::behaviors
                 m_windowSizeToken = window.SizeChanged(
                     [weak](wf::IInspectable const&, winrt::Windows::UI::Core::WindowSizeChangedEventArgs const&)
                     {
-                        if (auto self = weak.lock()) self->Update(L"window_size");
+                        if (auto self = weak.lock()) { self->m_corrections = 0; self->Update(L"window_size"); }
                     });
                 if (auto content = window.Content().try_as<wux::FrameworkElement>()) m_content = winrt::make_weak(content);
             }
@@ -178,69 +229,120 @@ namespace deckle::behaviors
             m_hostSizeToken = host.SizeChanged(
                 [weak](wf::IInspectable const&, wux::SizeChangedEventArgs const&)
                 {
-                    if (auto self = weak.lock()) self->Update(L"frame_size");
+                    if (auto self = weak.lock()) { self->m_corrections = 0; self->Update(L"frame_size"); }
                 });
         }
 
         Update(L"attach");
     }
 
+    // The live layout, in DIP relative to the window's content (the host when
+    // the window is not reachable). Empty while the menu has not been laid out.
+    std::optional<StartMenuHeightHold::Measure> StartMenuHeightHold::Take() const
+    {
+        auto frameRoot = m_frameRoot.get();
+        auto panel = m_panel.get();
+        auto host = m_host.get();
+        if (!frameRoot || !panel || !host) return std::nullopt;
+
+        try
+        {
+            wux::UIElement origin = host;
+            if (auto content = m_content.get()) origin = content;
+
+            Measure m;
+            if (auto window = m_window.get())
+            {
+                m.window = window.Bounds().Height;
+                m.windowWidth = window.Bounds().Width;
+            }
+            if (m.window <= 0)
+            {
+                m.window = host.ActualHeight();
+                m.windowWidth = host.ActualWidth();
+            }
+            m.hostTop = Origin(host, origin).Y;
+            m.frameTop = Origin(frameRoot, origin).Y;
+            m.frameHeight = frameRoot.ActualHeight();
+            const auto panelOrigin = Origin(panel, origin);
+            m.panelTop = panelOrigin.Y;
+            m.panelLeft = panelOrigin.X;
+            m.panelHeight = panel.ActualHeight();
+            m.panelWidth = panel.ActualWidth();
+            if (m.window <= 0 || m.frameHeight <= 0 || m.panelHeight <= 0) return std::nullopt;
+            return m;
+        }
+        catch (...)
+        {
+            return std::nullopt;
+        }
+    }
+
     void StartMenuHeightHold::OnVisible()
     {
         // The menu has not been laid out yet at this moment: measure on the next LayoutUpdated.
+        m_corrections = 0;
+        AfterNextLayout(&StartMenuHeightHold::OnLaidOutVisible);
+    }
+
+    void StartMenuHeightHold::OnLaidOutVisible()
+    {
+        Update(L"visible");
+    }
+
+    void StartMenuHeightHold::AfterNextLayout(void (StartMenuHeightHold::*step)())
+    {
         if (m_layoutPending || m_released) return;
         auto content = m_content.get();
         if (!content)
         {
-            Update(L"visible");
+            (this->*step)();
             return;
         }
 
         m_layoutPending = true;
         std::weak_ptr<StartMenuHeightHold> weak = weak_from_this();
         m_layoutToken = content.LayoutUpdated(
-            [weak](wf::IInspectable const&, wf::IInspectable const&)
+            [weak, step](wf::IInspectable const&, wf::IInspectable const&)
             {
                 auto self = weak.lock();
                 if (!self || !self->m_layoutPending) return;
                 self->m_layoutPending = false;
                 if (auto content = self->m_content.get()) content.LayoutUpdated(self->m_layoutToken);
                 self->m_layoutToken = {};
-                self->Update(L"visible");
+                ((*self).*step)();
             });
     }
 
     void StartMenuHeightHold::Update(const wchar_t* reason)
     {
         if (m_released) return;
-        auto frameRoot = m_frameRoot.get();
-        if (!frameRoot) return;
+        auto measured = Take();
+        if (!measured) return;   // not laid out yet; a size or visibility event follows
+        const Measure& m = *measured;
 
-        // The window's size in effective pixels (DIPs): already divided by the
-        // scale, so the same code gives 1080 at 100 %, 864 at 125 % on a 1080 screen.
-        double window = 0, host = 0;
-        try { if (auto w = m_window.get()) window = w.Bounds().Height; } catch (...) {}
-        try { if (auto h = m_host.get()) host = h.ActualHeight(); } catch (...) {}
-        const double available = window > 0 ? window : host;
-        if (available <= 0) return;   // not laid out yet; a size event follows
+        // The gap is Windows' own, read before the hold changes anything. A gap
+        // that is no gap at all (the panel off the window) falls back to the
+        // panel's shadow inset, the room Windows keeps around it.
+        if (m_gap < 0)
+        {
+            m_gap = m.gapAnchored();
+            if (m_gap < 0 || m_gap > m.window / 4)
+            {
+                Log(LogLevel::Warning, L"start_menu_gap_unusual", L"The Start menu's native gap is out of range; its shadow inset is used",
+                    { { L"gap", Number(m_gap) }, { L"inset", Number(m.insetTop()) } });
+                m_gap = (std::max)(m.insetTop(), 0.0);
+            }
+        }
 
-        // Only for the log: the window's pixels per effective pixel (1.0, 1.25, 1.5 ...).
-        double scale = 0;
-        try { scale = winrt::Windows::Graphics::Display::DisplayInformation::GetForCurrentView().RawPixelsPerViewPixel(); } catch (...) {}
+        // FrameRoot is top-aligned in its parent with no bottom margin, so its
+        // top is hostTop + marginTop and the panel's is that plus insetTop.
+        const double marginTop = m_gap - m.insetTop() - m.hostTop;
+        const double height = (std::max)(m.window - 2 * m_gap + m.insetTop() + m.insetBottom(), kMinimumHeight);
 
-        wux::Thickness margin = frameRoot.Margin();
-        // Equal gaps above and below the visible panel. The panel (AnimationRoot) sits 12 DIP
-        // inside FrameRoot on every side, FrameRoot starts at the window's top plus its top
-        // margin, and its native bottom margin (36) lies below it. Measured on 26100.9711 at
-        // 200 %: window 1080, FrameRoot 1044 high, panel 12 DIP from the top and 48 from the
-        // bottom. The gap above is inset + margin.Top; the gap below is
-        // inset + window - margin.Top - height. Equal when height = window - 2 * margin.Top,
-        // so the bottom margin is not subtracted: it overhangs the window, which clips nothing
-        // the person sees. Read live, so it holds at any scale.
-        const double height = (std::max)(available - 2 * margin.Top, kMinimumHeight);
-
-        const bool changed = !m_applied || height != m_height;
+        const bool changed = !m_applied || height != m_height || marginTop != m_marginTop;
         m_height = height;
+        m_marginTop = marginTop;
 
         if (!m_applied)
         {
@@ -254,11 +356,45 @@ namespace deckle::behaviors
 
         if (changed || reason == std::wstring_view(L"visible"))
         {
+            double scale = 0;   // only for the log: pixels per DIP (1.0, 1.25, 1.5 ...)
+            try { scale = winrt::Windows::Graphics::Display::DisplayInformation::GetForCurrentView().RawPixelsPerViewPixel(); } catch (...) {}
             Log(LogLevel::Info, L"start_menu_height", L"The Start menu height follows the window",
-                { { L"reason", reason }, { L"window", Number(window) }, { L"scale", Number(scale) }, { L"frame_slot", Number(host) },
-                  { L"margin_top", Number(margin.Top) }, { L"margin_bottom", Number(margin.Bottom) },
-                  { L"height", Number(height) }, { L"frame_actual", Number(frameRoot.ActualHeight()) } });
+                { { L"reason", reason }, { L"window", Number(m.window) }, { L"scale", Number(scale) }, { L"gap", Number(m_gap) },
+                  { L"inset_top", Number(m.insetTop()) }, { L"inset_bottom", Number(m.insetBottom()) }, { L"host_top", Number(m.hostTop) },
+                  { L"margin_top", Number(marginTop) }, { L"height", Number(height) } });
         }
+
+        if (changed) AfterNextLayout(&StartMenuHeightHold::Verify);
+    }
+
+    // Reads the placement back once layout has run: the gaps above and below the
+    // panel, and whether FrameRoot's layout slot is smaller than FrameRoot (which
+    // XAML clips). A mismatch gets one more Update, with the insets measured again.
+    void StartMenuHeightHold::Verify()
+    {
+        if (m_released) return;
+        auto measured = Take();
+        auto frameRoot = m_frameRoot.get();
+        if (!measured || !frameRoot) return;
+        const Measure& m = *measured;
+
+        double slot = 0;
+        try { slot = wuxc::Primitives::LayoutInformation::GetLayoutSlot(frameRoot).Height; } catch (...) {}
+        const bool clipped = slot > 0 && slot + kTolerance < m_marginTop + m_height;
+        const bool off = std::abs(m.gapTop() - m_gap) > kTolerance || std::abs(m.gapBottom() - m_gap) > kTolerance;
+
+        if ((off || clipped) && m_corrections < kMaxCorrections)
+        {
+            ++m_corrections;
+            Update(L"correction");
+            return;
+        }
+
+        Log(off || clipped ? LogLevel::Warning : LogLevel::Info, L"start_menu_fit",
+            off || clipped ? L"The Start menu does not fit the window as intended" : L"The Start menu fills the window with equal gaps",
+            { { L"gap", Number(m_gap) }, { L"gap_top", Number(m.gapTop()) }, { L"gap_bottom", Number(m.gapBottom()) },
+              { L"slot", Number(slot) }, { L"wanted", Number(m_marginTop + m_height) }, { L"clipped", clipped ? L"yes" : L"no" },
+              { L"corrections", std::to_wstring(m_corrections) } });
     }
 
     void StartMenuHeightHold::Release()
@@ -296,14 +432,15 @@ namespace deckle::behaviors
         ReassertState();
     }
 
-    // Gives MaxHeight back to the visual state that owns it. FrameRoot's MaxHeight
-    // is set twice: locally (750) and by a StartSizes setter (890), and the setter
-    // wins while its state is in force. Writing a local value over it displaces the
+    // Gives back to the visual state what it owns. FrameRoot's MaxHeight is set
+    // twice: locally (750) and by a StartSizes setter (890), and the setter wins
+    // while its state is in force. Writing a local value over it displaces the
     // setter, and giving the local value back does not bring the setter back (the
-    // menu then stays capped at 750 instead of 890). A state that is already
-    // current is not entered again, so the group is moved to another state and
-    // straight back, instantly and with no layout pass between: the setters of the
-    // current state apply again over the restored local values.
+    // menu then stays capped at 750 instead of 890). The same holds for any other
+    // property a setter owns. A state that is already current is not entered
+    // again, so the group is moved to another state and straight back, instantly
+    // and with no layout pass between: the setters of the current state apply
+    // again over the restored local values.
     void StartMenuHeightHold::ReassertState()
     {
         auto frameRoot = m_frameRoot.get();
@@ -311,10 +448,10 @@ namespace deckle::behaviors
 
         try
         {
-            if (frameRoot.MaxHeight() == m_originalMax) return;   // nothing displaced
+            if (frameRoot.MaxHeight() == m_originalMax && SameThickness(frameRoot.Margin(), m_originalMargin)) return;   // nothing displaced
 
             auto group = deckle::rules::FindVisualStateGroup(frameRoot, L"StartSizes");
-            auto control = m_host.get().try_as<winrt::Windows::UI::Xaml::Controls::Control>();
+            auto control = m_host.get().try_as<wuxc::Control>();
             auto current = group ? group.CurrentState() : nullptr;
             if (!group || !control || !current)
             {
