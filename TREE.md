@@ -2245,6 +2245,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeCodeTests.cs
 │   │   ├── HomeDeleteApprovalTests.cs
 │   │   ├── HomeErrandsTests.cs
+│   │   ├── HomeGestureEventTests.cs
 │   │   ├── HomeGesturesBugNotes.md
 │   │   ├── HomeGesturesTests.cs
 │   │   ├── HomeMcpTests.cs
