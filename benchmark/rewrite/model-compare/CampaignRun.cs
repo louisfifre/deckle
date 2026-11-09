@@ -210,28 +210,36 @@ static class CampaignRun
         double total = 0;
         int finished = 0;
 
-        // The judge's latency measures nothing, so its batches run four at a
+        // The judge's latency measures nothing, so four cells are judged at a
         // time inside a lane: a long cell's judging no longer takes longer
-        // than its generation.
+        // than its generation. The batches of one cell run one after the
+        // other: they share the raw dictation, and the cache is readable only
+        // once the call that writes it has answered, so batches sent together
+        // would each pay to write it and none would read it.
         var lanes = resolved.Campaign.Models.Select(model => Task.Run(() =>
         {
-            Parallel.ForEach(pending.Where(b => b.Rows[0].Model == model), new ParallelOptions { MaxDegreeOfParallelism = 4 }, item =>
+            var cells = pending.Where(b => b.Rows[0].Model == model)
+                .GroupBy(b => (b.Rows[0].Id, b.Rows[0].Prompt))
+                .ToList();
+            Parallel.ForEach(cells, new ParallelOptions { MaxDegreeOfParallelism = 4 }, cell =>
             {
-                var (key, rows) = item;
-                using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(20));
-                profileNotes.TryGetValue(rows[0].Prompt, out string? note);
-                var batch = BatchJudge.JudgeBatch(client, resolved.Campaign.Judge.Model, note, key, raw[rows[0].Id].Text, rows, cts.Token);
-                lock (writeLock)
+                foreach (var (key, rows) in cell)
                 {
-                    batchWriter.WriteLine(JsonSerializer.Serialize(batch, Json.Output));
-                    batchWriter.Flush();
-                    foreach (var flat in Flatten(batch, rows))
-                        flatWriter.WriteLine(JsonSerializer.Serialize(flat, Json.Output));
-                    flatWriter.Flush();
-                    total += batch.JudgeCostUsd ?? 0;
-                    finished++;
-                    string outcome = batch.Error ?? string.Join("/", batch.Judgements!.Select(j => j?.Verdict?[..Math.Min(3, j.Verdict.Length)] ?? "?"));
-                    Console.WriteLine($"[{finished}/{pending.Count}] {Judge.Short(rows[0].Id)} {model,-18} {rows[0].Prompt,-20} #{rows[0].Iteration}-{rows[^1].Iteration} {outcome,-22} tok={batch.JudgePromptTokens}/{batch.JudgeEvalTokens} {batch.JudgeMs}ms ${batch.JudgeCostUsd:F4}");
+                    using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(20));
+                    profileNotes.TryGetValue(rows[0].Prompt, out string? note);
+                    var batch = BatchJudge.JudgeBatch(client, resolved.Campaign.Judge.Model, note, key, raw[rows[0].Id].Text, rows, cts.Token);
+                    lock (writeLock)
+                    {
+                        batchWriter.WriteLine(JsonSerializer.Serialize(batch, Json.Output));
+                        batchWriter.Flush();
+                        foreach (var flat in Flatten(batch, rows))
+                            flatWriter.WriteLine(JsonSerializer.Serialize(flat, Json.Output));
+                        flatWriter.Flush();
+                        total += batch.JudgeCostUsd ?? 0;
+                        finished++;
+                        string outcome = batch.Error ?? string.Join("/", batch.Judgements!.Select(j => j?.Verdict?[..Math.Min(3, j.Verdict.Length)] ?? "?"));
+                        Console.WriteLine($"[{finished}/{pending.Count}] {Judge.Short(rows[0].Id)} {model,-18} {rows[0].Prompt,-20} #{rows[0].Iteration}-{rows[^1].Iteration} {outcome,-22} tok={batch.JudgePromptTokens}/{batch.JudgeEvalTokens} cache={batch.JudgeCacheReadTokens}r/{batch.JudgeCacheWriteTokens}w {batch.JudgeMs}ms ${batch.JudgeCostUsd:F4}");
+                    }
                 }
             });
         })).ToArray();
@@ -258,7 +266,8 @@ static class CampaignRun
             yield return new JudgementRow(
                 g.Id, g.Model, g.Prompt, g.Source, batch.JudgeModel, judgement, i == 0 ? batch.JudgeRaw : null,
                 batch.JudgePromptTokens / n, batch.JudgeEvalTokens / n, batch.JudgeMs / n, batch.JudgeCostUsd / n,
-                error, g.Iteration, batch.Key);
+                error, g.Iteration, batch.Key,
+                batch.JudgeCacheWriteTokens / n, batch.JudgeCacheReadTokens / n);
         }
     }
 }

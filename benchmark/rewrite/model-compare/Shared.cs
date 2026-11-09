@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Anthropic.Exceptions;
+using Anthropic.Models.Messages;
 
 namespace Deckle.Benchmark.ModelCompare;
 
@@ -55,7 +56,11 @@ sealed record JudgementRow(
     int? Iteration = null,
     // The batch this verdict came from when the judge read several rewrites
     // in one call: its tokens, time and cost are split evenly over the rows.
-    string? Batch = null);
+    string? Batch = null,
+    // The judge's prompt tokens written to and read from the cache, apart
+    // from JudgePromptTokens, which counts only the uncached rest.
+    int? JudgeCacheWriteTokens = null,
+    int? JudgeCacheReadTokens = null);
 
 sealed record Finding(string? Raw, string? Rewrite, string? Note);
 
@@ -108,6 +113,11 @@ static class Pricing
                + outputTokens * p.Out) / 1_000_000.0
             : null;
 
+    // The cost of a call the SDK answered, cache tokens included.
+    public static double? Cost(string model, Usage usage) => Cost(
+        model, (int)usage.InputTokens, (int)usage.OutputTokens,
+        (int)(usage.CacheCreationInputTokens ?? 0), (int)(usage.CacheReadInputTokens ?? 0));
+
     // The snapshot as data, so an export carries the prices its costs used.
     public static Dictionary<string, object> Snapshot() =>
         PerMTok.ToDictionary(kv => kv.Key, kv => (object)new
@@ -117,6 +127,27 @@ static class Pricing
             cache_write_per_mtok = kv.Value.In * CacheWriteFactor,
             cache_read_per_mtok = kv.Value.CacheRead,
         });
+}
+
+// ─── Prompt caching for the calls this tool makes to the SDK directly ─────────
+//
+// Caching is a prefix match: a marker stores everything before it, and a later
+// call whose request starts with the same bytes reads that part back at a
+// fraction of the input price. So the stable part goes first and carries the
+// marker, the part that changes comes after it. The judge's system prompt is
+// shared by every call of a profile; the raw dictation by every batch of it.
+static class PromptCache
+{
+    public static List<TextBlockParam> System(string text) =>
+        [new() { Text = text, CacheControl = new CacheControlEphemeral() }];
+
+    // A user turn whose head (the raw dictation) is cached and whose tail (the
+    // rewrites under judgement) is not.
+    public static List<ContentBlockParam> User(string head, string tail) =>
+        [
+            new TextBlockParam { Text = head, CacheControl = new CacheControlEphemeral() },
+            new TextBlockParam { Text = tail },
+        ];
 }
 
 static class Transient
