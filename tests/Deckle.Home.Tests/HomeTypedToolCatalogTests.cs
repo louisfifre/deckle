@@ -25,6 +25,38 @@ public sealed class HomeTypedToolCatalogTests
     }
 
     [Fact]
+    public void AnOpenVocabularyDescriptionSaysTheGuichetNeverCreatesAnOption()
+    {
+        IReadOnlyList<ToolDescriptor> tools = HomeTypedToolCatalog.Build(() => throw new InvalidOperationException());
+
+        var descriptions = new List<string>();
+        void Walk(JsonNode? node)
+        {
+            switch (node)
+            {
+                case JsonObject obj:
+                    if (obj["description"] is JsonValue text && text.TryGetValue<string>(out string? value)
+                        && value.Contains("Seed options:", StringComparison.Ordinal))
+                        descriptions.Add(value);
+                    foreach ((string _, JsonNode? child) in obj) Walk(child);
+                    break;
+                case JsonArray array:
+                    foreach (JsonNode? child in array) Walk(child);
+                    break;
+            }
+        }
+        foreach (ToolDescriptor tool in tools) Walk(tool.InputSchema);
+
+        Assert.NotEmpty(descriptions);
+        Assert.All(descriptions, description =>
+        {
+            Assert.Contains("may hold more, added by the person in Anytype", description);
+            Assert.Contains("refused with the options present listed", description);
+            Assert.Contains("never creates an option", description);
+            Assert.DoesNotContain("Existing option", description);
+        });
+    }
+    [Fact]
     public void EveryCreateTakesABoundedBatchOfStrictItems()
     {
         IReadOnlyList<ToolDescriptor> creates = HomeTypedToolCatalog.Build(() => throw new InvalidOperationException())

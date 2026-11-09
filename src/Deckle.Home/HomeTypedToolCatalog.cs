@@ -342,7 +342,12 @@ public static class HomeTypedToolCatalog
     {
         string options = property.ClosedValues.Count > 0
             ? " Closed vocabulary; use a listed key or label."
-            : property.Options.Count > 0 ? " Existing option key or label. Initial options: " + string.Join(", ", property.Options) + "." : "";
+            : property.Options.Count > 0
+                ? " Option key or label. Seed options: " + string.Join(", ", property.Options)
+                  + ". The space may hold more, added by the person in Anytype."
+                  + " An unknown value is refused with the options present listed: pick one from that list or ask the person."
+                  + " The guichet never creates an option."
+                : "";
         string description = property.Name + "." + options;
         if (updateRelationEdits && property.Format == "objects")
             return RelationUpdateSchema(description);
