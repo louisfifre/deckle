@@ -58,6 +58,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │           ├── LICENSE.txt
 │           └── SKILL.md  — winui-app Develop, review, troubleshoot, or bootstrap WinUI 3 and Windows App SDK C# apps…
 ├── .claude/
+│   ├── settings.json
 │   └── skills
 ├── .github/
 │   └── workflows/

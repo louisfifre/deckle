@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(pwsh -NoProfile -File .\\scripts\\deploy-prod.ps1*)",
+      "PowerShell(pwsh -NoProfile -File scripts/deploy-prod.ps1*)",
+      "PowerShell(pwsh -File .\\scripts\\deploy-prod.ps1*)",
+      "PowerShell(pwsh -File scripts/deploy-prod.ps1*)",
+      "PowerShell(.\\scripts\\deploy-prod.ps1*)",
+      "PowerShell(./scripts/deploy-prod.ps1*)"
+    ]
+  },
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "Running scripts/deploy-prod.ps1 from this repository. It builds main in Release in its own build worktree, self-checks it and stages it in the maintainer's local prod copy on this machine. AGENTS.md asks the session that merges into main to run it, and a failed run leaves the prod copy as it was."
+    ]
+  }
+}
