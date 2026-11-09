@@ -237,8 +237,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── record-version.ps1  — Record a version Records the next version as an annotated tag vX.Y.Z on HEAD, bumping the latest…
 │   ├── lib/
 │   │   ├── agent-state-maintenance/
-│   │   │   ├── sanitization.ps1
-│   │   │   └── sqlite-cleanup.ps1
+│   │   │   └── sanitization.ps1
 │   │   ├── hooks/
 │   │   │   ├── commit-msg
 │   │   │   ├── pre-commit
@@ -299,7 +298,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── clean-native.ps1  — Clean the native folder Brings the whisper.cpp native folder under the user data root back to the curre…
 │   │   ├── clean.ps1  — Clean build outputs Removes the build output folders of every language present in the repository, e…
 │   │   ├── README.md  — Maintenance Previews and cleanups of the build outputs, the machine's .NET build servers an…
-│   │   ├── reset-agent-state.ps1  — Inspect or reset local AI sessions Builds a cleanup plan for the local Codex and Claude Code session data of the c…
+│   │   ├── reset-agent-state.ps1  — Inspect or reset local AI sessions Builds a cleanup plan for the local Claude Code session data of the current acc…
 │   │   ├── stop-build-servers.ps1  — Stop .NET build servers Stops the MSBuild and Roslyn build servers left behind by dotnet builds, which…
 │   │   ├── sweep-exposables.ps1  — Sweep exposable source values Text sweep of the exposables carried by the source tree. An exposable is a code…
 │   │   └── validate-resources.ps1  — Validate WinUI resources Read-only audit of the WinUI resource inventories. Reports missing resource key…
@@ -347,6 +346,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── build-locked.ps1
 │   ├── build-run.ps1  — Build the app Build Deckle for the chosen configuration (x64) and, unless told not to, launch…
 │   ├── build-server-watchdog.ps1
+│   ├── deploy-prod.ps1  — Update the prod copy Build main in Release in a build worktree of its own, check it with the self-ch…
 │   ├── fetch-autocorrect-data.ps1
 │   ├── inspect-context.ps1  — Context inventory Inventory the repository's tracked Markdown context, grouped by loading mode, w…
 │   ├── launch-app.ps1  — Launch the freshest built app Replace the running Deckle instance with the freshest already-built executable…
@@ -405,8 +405,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── BackendReconciliationLease.cs
 │   │   │   ├── BackendSupervisor.cs
 │   │   │   └── BackendTime.cs
-│   │   ├── Dialogues/
-│   │   │   └── DialogueGestures.cs
 │   │   ├── Gateway/
 │   │   │   ├── GatewayContract.cs
 │   │   │   ├── GatewayKeyFingerprint.cs
@@ -465,7 +463,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── McpSurfaceProtocolAdapter.cs
 │   │   ├── Tools/
 │   │   │   ├── AnytypeUtilityToolCatalog.cs
-│   │   │   ├── DialogueToolCatalog.cs
 │   │   │   ├── ManagementToolCatalog.cs
 │   │   │   ├── SchemaAdminToolCatalog.cs
 │   │   │   ├── ToolCatalog.cs
@@ -520,6 +517,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Engine/
 │   │   │   ├── AppAmbientEngineHost.cs
 │   │   │   └── AppTranscriptionEngineHost.cs
+│   │   ├── Prod/
+│   │   │   └── apply-update.ps1
 │   │   ├── SelfCheck/
 │   │   │   ├── ElementImage.cs
 │   │   │   ├── OffscreenWindow.cs
@@ -528,8 +527,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
+│   │   ├── AnimationNotifications.cs
 │   │   ├── AnytypeNotifications.cs
 │   │   ├── App.Ambient.cs
+│   │   ├── App.Animations.cs
 │   │   ├── App.Anytype.cs
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Autocorrect.Lifecycle.cs
@@ -578,6 +579,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LogWindow.Notices.cs
 │   │   ├── LogWindow.xaml
 │   │   ├── LogWindow.xaml.cs
+│   │   ├── ProdUpdate.cs
 │   │   ├── Program.cs
 │   │   ├── SecondaryWindowPlacement.cs
 │   │   ├── TrayIncidentLines.cs
@@ -1922,7 +1924,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AnytypeUtilityToolCatalogTests.cs
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Anytype.Mcp.Tests.csproj
-│   │   ├── DialogueToolCatalogTests.cs
 │   │   ├── FakeSecretVault.cs
 │   │   ├── ManagementToolCatalogTests.cs
 │   │   ├── McpClientTokensBugNotes.md
@@ -1979,7 +1980,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeletionApprovalRelayTests.cs
 │   │   ├── DevSpaceBugNotes.md
 │   │   ├── DevSpaceTests.cs
-│   │   ├── DialogueGesturesTests.cs
 │   │   ├── DocumentGesturesTests.cs
 │   │   ├── FakeV2Handler.cs
 │   │   ├── GatewayKeyFingerprintTests.cs
@@ -2019,6 +2019,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HudFeedbackSinkTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── ProdApplyUpdateTests.cs
+│   │   ├── ProdUpdateTests.cs
 │   │   ├── ReswMirrorTests.cs
 │   │   ├── SelfCheckTests.cs
 │   │   ├── TrayIncidentLinesTests.cs
@@ -2233,6 +2235,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── MessageTemplateDoctrineTests.cs
 │   ├── Deckle.Hud.Tests/
 │   │   ├── AnimationGateTests.cs
+│   │   ├── AnimationOfferTests.cs
 │   │   ├── AnimationPreferenceBugNotes.md
 │   │   ├── AnimationPreferenceTests.cs
 │   │   ├── ConfigOverridesBugNotes.md
@@ -2247,6 +2250,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── OverlayCardBugNotes.md
 │   │   ├── OverlayCardCloseObservabilityTests.cs
+│   │   ├── ProcessingMaterialVisibilityTests.cs
 │   │   ├── ProximityFadeTests.cs
 │   │   ├── ProximityRollupAggregatorTests.cs
 │   │   ├── RecordingLevelStepTests.cs

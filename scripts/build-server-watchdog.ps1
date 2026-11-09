@@ -186,7 +186,12 @@ if ($Arm) {
 
     # Start-Process without handle inheritance, so MSBuild's Exec is not kept
     # waiting on an output pipe the watchdog would hold for minutes.
-    Start-Process -FilePath 'pwsh' -WindowStyle Hidden -ArgumentList @(
+    # The working directory is the state directory: MSBuild's Exec runs in the
+    # project folder, and a process holds its working directory open for as
+    # long as it lives. The watchdog outlives the build by minutes, longer
+    # while any checkout keeps building, so inheriting it would keep a merged
+    # worktree undeletable.
+    Start-Process -FilePath 'pwsh' -WindowStyle Hidden -WorkingDirectory $StateDir -ArgumentList @(
         '-NoProfile', '-NonInteractive', '-File', "`"$PSCommandPath`"",
         '-Run', '-StateDir', "`"$StateDir`"",
         '-IdleMinutes', $IdleMinutes, '-TickSeconds', $TickSeconds
