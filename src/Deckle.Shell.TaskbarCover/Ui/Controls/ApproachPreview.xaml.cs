@@ -78,7 +78,7 @@ public sealed partial class ApproachPreview : UserControl
     {
         if (_placement is not { } p) { ReachReadout.Value = null; return; }
         ReachReadout.Value = Format("TaskbarCoverApproachPreview_Reach_Format",
-            CoverGeometry.ApproachSpan(_approachDip, p.DpiScale));
+            CoverGeometry.ApproachSpan(_approachDip, p.DpiScale, p.MonitorRect, p.Edge));
     }
 
     // One factor maps the display's physical pixels onto the stage, the
@@ -105,7 +105,7 @@ public sealed partial class ApproachPreview : UserControl
         // An auto-hidden taskbar may sit partly off its display, and a long
         // distance on a narrow display may run past it: both are drawn
         // within the frame.
-        var zone    = OnStage(ClipTo(CoverGeometry.ApproachZone(p.Rect, p.Edge, _approachDip, p.DpiScale), monitor), monitor, scale);
+        var zone    = OnStage(ClipTo(CoverGeometry.ApproachZone(p.Rect, p.Edge, _approachDip, p.DpiScale, monitor), monitor), monitor, scale);
         var taskbar = OnStage(ClipTo(p.Rect, monitor), monitor, scale);
 
         Place(ZoneShape, zone.Left, zone.Top, zone.Right - zone.Left, zone.Bottom - zone.Top);

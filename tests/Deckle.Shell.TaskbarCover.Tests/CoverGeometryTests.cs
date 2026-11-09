@@ -19,6 +19,10 @@ public class CoverGeometryTests
     private static NativeMethods.RECT Rect(int left, int top, int right, int bottom) =>
         new() { left = left, top = top, right = right, bottom = bottom };
 
+    // A monitor large enough that the half-screen cap never bites in the
+    // tests of the span and the fade; the cap has its own section.
+    private static readonly NativeMethods.RECT Monitor = Rect(-10000, -10000, 10000, 10000);
+
     private static POINT Point(int x, int y) => new() { X = x, Y = y };
 
     private static NativeMethods.RECT Band(TaskbarEdge edge) => edge switch
@@ -56,10 +60,10 @@ public class CoverGeometryTests
         => CoverGeometry.Thickness(Band(edge), edge) + Span;
 
     private static NativeMethods.RECT Zone(TaskbarEdge edge)
-        => CoverGeometry.ApproachZone(Band(edge), edge, Standard, Dpi100);
+        => CoverGeometry.ApproachZone(Band(edge), edge, Standard, Dpi100, Monitor);
 
     private static double Opacity(TaskbarEdge edge, POINT p)
-        => CoverGeometry.Opacity(Band(edge), edge, p, Standard, Dpi100);
+        => CoverGeometry.Opacity(Band(edge), edge, p, Standard, Dpi100, Monitor);
 
     public static TheoryData<TaskbarEdge> Edges =>
         new(TaskbarEdge.Left, TaskbarEdge.Top, TaskbarEdge.Right, TaskbarEdge.Bottom);
@@ -83,7 +87,7 @@ public class CoverGeometryTests
     [InlineData(128, 2.0,  256)]
     // 17.5 pixels round half up, the Dpi rule.
     [InlineData(10,  1.75, 18)]
-    [InlineData(ApproachDistance.MaximumDip, 2.5, 800)]
+    [InlineData(320, 2.5, 800)]
     public void SpanIsTheDistanceInTheMonitorsPixels(int approachDip, double dpiScale, int pixels)
     {
         Assert.Equal(pixels, CoverGeometry.ApproachSpan(approachDip, dpiScale));
@@ -98,8 +102,8 @@ public class CoverGeometryTests
         var band100 = Rect(0, 1040, 1920, 1080);
         var band200 = Rect(1920, 2080, 5760, 2160);
 
-        var zone100 = CoverGeometry.ApproachZone(band100, TaskbarEdge.Bottom, Standard, Dpi100);
-        var zone200 = CoverGeometry.ApproachZone(band200, TaskbarEdge.Bottom, Standard, 2.0);
+        var zone100 = CoverGeometry.ApproachZone(band100, TaskbarEdge.Bottom, Standard, Dpi100, Monitor);
+        var zone200 = CoverGeometry.ApproachZone(band200, TaskbarEdge.Bottom, Standard, 2.0, Monitor);
 
         Assert.Equal(Standard,     band100.top - zone100.top);
         Assert.Equal(Standard * 2, band200.top - zone200.top);
@@ -136,7 +140,7 @@ public class CoverGeometryTests
     public void ApproachZoneOfEachDistanceEndsItsSpanPastTheBand(int approachDip)
     {
         var band = Band(TaskbarEdge.Left);
-        var zone = CoverGeometry.ApproachZone(band, TaskbarEdge.Left, approachDip, Dpi100);
+        var zone = CoverGeometry.ApproachZone(band, TaskbarEdge.Left, approachDip, Dpi100, Monitor);
         int depth = CoverGeometry.Thickness(band, TaskbarEdge.Left) + CoverGeometry.ApproachSpan(approachDip, Dpi100);
 
         Assert.True(CoverGeometry.Contains(zone, Point(depth - 1, 700)));
@@ -151,8 +155,8 @@ public class CoverGeometryTests
         var thin  = Rect(0, 1400, 2560, 1440);
         var thick = Rect(0, 1380, 2560, 1440);
 
-        var thinZone  = CoverGeometry.ApproachZone(thin,  TaskbarEdge.Bottom, Standard, Dpi100);
-        var thickZone = CoverGeometry.ApproachZone(thick, TaskbarEdge.Bottom, Standard, Dpi100);
+        var thinZone  = CoverGeometry.ApproachZone(thin,  TaskbarEdge.Bottom, Standard, Dpi100, Monitor);
+        var thickZone = CoverGeometry.ApproachZone(thick, TaskbarEdge.Bottom, Standard, Dpi100, Monitor);
 
         Assert.Equal(thin.top  - Span, thinZone.top);
         Assert.Equal(thick.top - Span, thickZone.top);
@@ -162,7 +166,7 @@ public class CoverGeometryTests
     public void ApproachZoneScalesWithTheMonitorDpi()
     {
         // Left 44 px band at 150 %: 44 + 96 = 140.
-        var zone = CoverGeometry.ApproachZone(Band(TaskbarEdge.Left), TaskbarEdge.Left, Standard, Dpi150);
+        var zone = CoverGeometry.ApproachZone(Band(TaskbarEdge.Left), TaskbarEdge.Left, Standard, Dpi150, Monitor);
 
         Assert.True(CoverGeometry.Contains(zone, Point(139, 700)));
         Assert.False(CoverGeometry.Contains(zone, Point(140, 700)));
@@ -228,9 +232,9 @@ public class CoverGeometryTests
         var band = Band(TaskbarEdge.Bottom);
         int span = CoverGeometry.ApproachSpan(approachDip, Dpi100);
 
-        Assert.Equal(0.0, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 0), approachDip, Dpi100));
-        Assert.Equal(0.5, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, span / 2), approachDip, Dpi100), precision: 9);
-        Assert.Equal(1.0, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, span), approachDip, Dpi100));
+        Assert.Equal(0.0, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 0), approachDip, Dpi100, Monitor));
+        Assert.Equal(0.5, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, span / 2), approachDip, Dpi100, Monitor), precision: 9);
+        Assert.Equal(1.0, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, span), approachDip, Dpi100, Monitor));
     }
 
     [Fact]
@@ -241,9 +245,9 @@ public class CoverGeometryTests
         // opaque.
         var band = Band(TaskbarEdge.Bottom);
 
-        Assert.Equal(0.5, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 48), Standard, Dpi150), precision: 9);
-        Assert.True(CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 64), Standard, Dpi150) < 1.0);
-        Assert.Equal(1.0, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 96), Standard, Dpi150));
+        Assert.Equal(0.5, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 48), Standard, Dpi150, Monitor), precision: 9);
+        Assert.True(CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 64), Standard, Dpi150, Monitor) < 1.0);
+        Assert.Equal(1.0, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 96), Standard, Dpi150, Monitor));
     }
 
     [Fact]
@@ -251,5 +255,79 @@ public class CoverGeometryTests
     {
         Assert.Equal(1.0, Opacity(TaskbarEdge.Left, Point(10, 1440)));
         Assert.Equal(1.0, Opacity(TaskbarEdge.Left, Point(10, -1)));
+    }
+
+    // ── The half-screen cap (2026-11-09) ─────────────────────────────────────
+
+    // The maintainer's display: 3840x2160 at 200 %, taskbar on the left.
+    private static readonly NativeMethods.RECT Uhd = Rect(0, 0, 3840, 2160);
+
+    [Theory]
+    [InlineData(TaskbarEdge.Left,   1920)]
+    [InlineData(TaskbarEdge.Right,  1920)]
+    [InlineData(TaskbarEdge.Top,    1080)]
+    [InlineData(TaskbarEdge.Bottom, 1080)]
+    public void MaxSpanIsHalfTheMonitorExtentPerpendicularToTheTaskbar(TaskbarEdge edge, int pixels)
+    {
+        Assert.Equal(pixels, CoverGeometry.MaxApproachSpan(Uhd, edge));
+    }
+
+    [Fact]
+    public void MaxDipOnTheMaintainersDisplayIs960()
+    {
+        Assert.Equal(960, CoverGeometry.MaxApproachDip(Uhd, TaskbarEdge.Left, 2.0));
+    }
+
+    [Fact]
+    public void ASpanBelowTheCapIsLeftAlone()
+    {
+        Assert.Equal(800, CoverGeometry.ApproachSpan(400, 2.0, Uhd, TaskbarEdge.Left));
+    }
+
+    [Fact]
+    public void ASpanAboveTheCapStopsAtHalfTheMonitor()
+    {
+        // 3000 DIP at 200 % would be 6000 px on a 3840 px wide screen.
+        Assert.Equal(1920, CoverGeometry.ApproachSpan(3000, 2.0, Uhd, TaskbarEdge.Left));
+    }
+
+    [Fact]
+    public void TheCapFollowsTheMonitorOfEachBand()
+    {
+        // The same 600 DIP on a 1080p bottom taskbar (540 px cap at 100 %)
+        // and on the 4K one (1080 px cap at 200 %, 1200 px wanted).
+        var hd = Rect(0, 0, 1920, 1080);
+        Assert.Equal(540,  CoverGeometry.ApproachSpan(600, Dpi100, hd,  TaskbarEdge.Bottom));
+        Assert.Equal(1080, CoverGeometry.ApproachSpan(600, 2.0,    Uhd, TaskbarEdge.Bottom));
+    }
+
+    [Fact]
+    public void TheZoneStopsAtHalfTheMonitorPlusTheBand()
+    {
+        // Left 44 px band, 3000 DIP at 100 % on a 2560 px wide monitor: the
+        // span is capped at 1280, so the zone is 44 + 1280 = 1324 deep.
+        var monitor = Rect(0, 0, 2560, 1440);
+        var zone = CoverGeometry.ApproachZone(Band(TaskbarEdge.Left), TaskbarEdge.Left, 3000, Dpi100, monitor);
+
+        Assert.True(CoverGeometry.Contains(zone, Point(1323, 700)));
+        Assert.False(CoverGeometry.Contains(zone, Point(1324, 700)));
+    }
+
+    [Fact]
+    public void TheFadeRunsOverTheCappedSpan()
+    {
+        // Bottom band on a 1440 px high monitor: the cap is 720 px, so the
+        // fade is opaque 720 px past the band whatever the setting asks.
+        var monitor = Rect(0, 0, 2560, 1440);
+        var band = Band(TaskbarEdge.Bottom);
+
+        Assert.Equal(0.5, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 360), 3000, Dpi100, monitor), precision: 9);
+        Assert.Equal(1.0, CoverGeometry.Opacity(band, TaskbarEdge.Bottom, FromBand(TaskbarEdge.Bottom, 720), 3000, Dpi100, monitor));
+    }
+
+    [Fact]
+    public void ASmallSettingIsNotAffectedByTheCap()
+    {
+        Assert.Equal(Span, CoverGeometry.ApproachSpan(Standard, Dpi100, Uhd, TaskbarEdge.Left));
     }
 }
