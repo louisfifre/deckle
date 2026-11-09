@@ -56,6 +56,83 @@ public sealed class HomeSchemaAlignmentTests
     }
 
     [Fact]
+    public void PointCategoryIsTheClosedListOfTwentyTwo()
+    {
+        Assert.Equal(
+            new[]
+            {
+                "ps", "pp", "pn", "pf", "pc", "pr",
+                "lc", "lw", "ls", "lr",
+                "cp", "cs",
+                "ar", "ad",
+                "ve", "vs", "vt", "vf", "vp",
+                "ws", "wt", "wd",
+            },
+            HomeSchema.ClosedVocabularies[HomeSchema.Properties.Category]);
+    }
+
+    [Fact]
+    public void RatedOutputPowerIsARequiredNumberOnDevice()
+    {
+        Assert.Equal("number", HomeSchema.RequiredProperties[HomeSchema.Properties.RatedOutputPower]);
+        Assert.Contains(HomeSchema.Properties.RatedOutputPower, HomeSchema.RequiredByType[HomeSchema.Types.Device]);
+    }
+
+    [Fact]
+    public void ArchivedIsARequiredCheckboxOnTheSixTypesThatHaveALife()
+    {
+        string[] archivable =
+        [
+            HomeSchema.Types.Device, HomeSchema.Types.Component, HomeSchema.Types.Utensil,
+            HomeSchema.Types.Plant, HomeSchema.Types.Idea, HomeSchema.Types.Product,
+        ];
+
+        Assert.Equal("checkbox", HomeSchema.RequiredProperties[HomeSchema.Properties.Archived]);
+        Assert.Equal(
+            archivable.OrderBy(type => type, StringComparer.Ordinal),
+            HomeSchema.RequiredByType
+                .Where(type => type.Value.Contains(HomeSchema.Properties.Archived))
+                .Select(type => type.Key)
+                .OrderBy(type => type, StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void ZoneIsACreatableBasicTypeWithoutProperties()
+    {
+        Assert.Contains(HomeSchema.Types.Zone, HomeSchema.CreatableTypes);
+        Assert.DoesNotContain(HomeSchema.Types.Zone, HomeSchema.CodedTypes);
+        Assert.Empty(HomeSchema.RequiredByType[HomeSchema.Types.Zone]);
+        JsonObject zone = HomeSchema.CreateRequiredSchemaManifest()["types"]!.AsArray().OfType<JsonObject>()
+            .Single(type => type["key"]!.GetValue<string>() == HomeSchema.Types.Zone);
+        Assert.Equal("basic", zone["layout"]!.GetValue<string>());
+        Assert.Empty(zone["properties"]!.AsArray());
+        Assert.Equal(new[] { HomeSchema.Types.Zone }, HomeSchema.ObjectPropertyTargets[HomeSchema.Properties.Zone]);
+    }
+
+    [Fact]
+    public void AnnotatedTargetsReplaceTheHardCodedPoweredByAndWorksiteGuards()
+    {
+        Assert.Equal(
+            new[] { HomeSchema.Types.Point, HomeSchema.Types.Device },
+            HomeSchema.ObjectPropertyTargets[HomeSchema.Properties.PoweredBy]);
+        Assert.Equal(
+            new[] { HomeSchema.Types.Worksite },
+            HomeSchema.ObjectPropertyTargets[HomeSchema.Properties.Worksite]);
+    }
+
+    [Fact]
+    public void RequiredSchemaManifestListsTheFourteenManifestTypesWithTheirLayouts()
+    {
+        (string Key, string Layout)[] Types(JsonObject manifest) => manifest["types"]!.AsArray().OfType<JsonObject>()
+            .Select(type => (type["key"]!.GetValue<string>(), type["layout"]!.GetValue<string>()))
+            .ToArray();
+
+        (string Key, string Layout)[] expected = Types(HomeSchema.TargetManifest);
+        Assert.Equal(14, expected.Length);
+        Assert.Equal(expected, Types(HomeSchema.CreateRequiredSchemaManifest()));
+    }
+
+    [Fact]
     public void NonConformingSchemaErrorListsSixFailuresAndCountsTheRest()
     {
         // An empty space fails every compiled check, which is the worst case
