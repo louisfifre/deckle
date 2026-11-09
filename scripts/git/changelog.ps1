@@ -199,12 +199,17 @@ function Get-GroupedEntries([hashtable[]]$Commits) {
 function Format-Section([string]$Version, [string]$PreviousTag, [string]$ThisTag, [string]$Date, [hashtable[]]$Commits) {
     $byGroup = Get-GroupedEntries $Commits
 
+    # The links name the version tags vX.Y.Z, the ones a GitHub Release is
+    # created on; release/vX.Y.Z only marks a version published and cuts the
+    # sections.
+    $linkThis = $ThisTag -replace '^release/', ''
+    $linkPrevious = if ($PreviousTag) { $PreviousTag -replace '^release/', '' } else { $null }
     $heading = if (-not $Version) {
         '## [Unreleased]'
-    } elseif ($script:GitHubUrl -and $PreviousTag) {
-        "## [$Version]($script:GitHubUrl/compare/$PreviousTag...$ThisTag) $EmDash $Date"
+    } elseif ($script:GitHubUrl -and $linkPrevious) {
+        "## [$Version]($script:GitHubUrl/compare/$linkPrevious...$linkThis) $EmDash $Date"
     } elseif ($script:GitHubUrl) {
-        "## [$Version]($script:GitHubUrl/releases/tag/$ThisTag) $EmDash $Date"
+        "## [$Version]($script:GitHubUrl/releases/tag/$linkThis) $EmDash $Date"
     } else {
         "## [$Version] $EmDash $Date"
     }
@@ -310,10 +315,19 @@ if ($NotesFor) {
         Write-WorkflowMessage -Output $Output -Message "$($item.Version): $($commits.Count) commit(s) in range"
     }
 
+    # Named after the main checkout, read from the common git directory: a
+    # linked worktree's folder name would rename the project at every run
+    # from a worktree.
+    $commonDir = & git -C $RepoRoot rev-parse --path-format=absolute --git-common-dir 2>$null
+    $projectName = if ($LASTEXITCODE -eq 0 -and $commonDir) {
+        Split-Path -Leaf (Split-Path -Parent ([string]$commonDir).Trim())
+    } else {
+        Split-Path -Leaf $RepoRoot
+    }
     $header = @(
         '# Changelog'
         ''
-        "All notable changes to $(Split-Path -Leaf $RepoRoot) are recorded here."
+        "All notable changes to $projectName are recorded here."
         ''
         'The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and'
         'the project adheres to [Semantic Versioning](https://semver.org/).'

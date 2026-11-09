@@ -1,6 +1,15 @@
 #!/bin/sh
-# Regenerate TREE.md and stage it into the current commit.
-# Installed from scripts/lib/hooks/pre-commit by scripts/setup/install-hooks.ps1.
+# Regenerate TREE.md and scripts/INVENTORY.md and stage them into the current
+# commit. Installed from scripts/lib/hooks/pre-commit by
+# scripts/setup/install-hooks.ps1.
+# -Target is explicit: inside a hook git exports GIT_DIR, so a `git -C <dir>
+# rev-parse --show-toplevel` from a script's folder would name that folder.
 root=$(git rev-parse --show-toplevel)
-pwsh -NoLogo -NoProfile -NonInteractive -File "$root/scripts/setup/update-tree.ps1" -Apply || exit 1
+pwsh -NoLogo -NoProfile -NonInteractive -File "$root/scripts/setup/update-tree.ps1" -Apply -Target "$root" || exit 1
 git add "$root/TREE.md"
+# The inventory generator came with a later setup pack: a checkout still on an
+# older copy has none and keeps committing.
+if [ -f "$root/scripts/setup/update-inventory.ps1" ]; then
+  pwsh -NoLogo -NoProfile -NonInteractive -File "$root/scripts/setup/update-inventory.ps1" -Apply -Target "$root" || exit 1
+  git add "$root/scripts/INVENTORY.md"
+fi

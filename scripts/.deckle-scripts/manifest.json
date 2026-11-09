@@ -1,15 +1,15 @@
 {
   "source": "https://github.com/louisfifre/deckle-scripts",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "packs": [
     "git",
     "maintenance",
     "setup"
   ],
-  "installedAt": "2026-11-08T23:20:28Z",
+  "installedAt": "2026-11-09T00:44:23Z",
   "files": {
     "scripts/git/README.md": "e18dc6df0cf026ca64e64834e30efbf163db98bbcebf9ad01b319b6bd38c7ff8",
-    "scripts/git/changelog.ps1": "17be8f8e815765ee22cc8a2f8bb6e70d95fa96263b96bcf1e5d1275f38e9749a",
+    "scripts/git/changelog.ps1": "f68c6e9d743e81145211d4ee93c1fd9bcb3ce11208baa215318a888b35a33bd7",
     "scripts/git/git-common.ps1": "d79efe57ffd8d2735d48d3eeeafe5868e2a9f07b38ff653d0e33fedc181f451d",
     "scripts/git/mark-release.ps1": "22735a687c6478421ad1f6d1bfa416dccef5f8b8d9508f050b2a3fbaf09ebc15",
     "scripts/git/record-version.ps1": "d1ca2ef75aafdb6b24ede503057d63fdb45b464c2c851a0b323e9e97a281b65a",
@@ -20,7 +20,7 @@
     "scripts/lib/build-outputs.ps1": "835fe6d24a39fb2e8aacfcb11055962b531cf3713d7d9739c421f258cbe6bdea",
     "scripts/lib/build-server-cleanup.ps1": "b7881bb75deebfea5aca69cb5667c60b93389212bf81a6890d0b1dbfcd6ff8da",
     "scripts/lib/hooks/commit-msg": "5e036873066dafef712e1dc60d9b065644338092116636599bb0e2af9151e1ab",
-    "scripts/lib/hooks/pre-commit": "131796f2954f6b3456b7a6b656a120e1ad23cd9f352e5a2aa6a479acd6c5ccd8",
+    "scripts/lib/hooks/pre-commit": "f8c1dd8e4e3cef8959d6ef5d7c2173f89ec5a66377285a4b35f32e009ebf18e5",
     "scripts/lib/hooks/validate-commit-attribution.ps1": "e82e01174d110dc55e57426ab04678b378657d863e109dbdda70b60c3c40c0ab",
     "scripts/lib/launcher/action-log.ps1": "9cce65c92afa7ce8e963a691406c6e7368d474424cc58d732c6de793ae1bf1b3",
     "scripts/lib/launcher/discovered-catalog.ps1": "aedb0385f32b3010341646b591bac09a19c1182d8f2030361294866b96d53281",
@@ -65,9 +65,10 @@
     "scripts/settings/README.md": "922a9d321e58e859f7f5ee2d76e160cde3b4518b0588f94269f69bdc01a959af",
     "scripts/settings/check-scripts.ps1": "5125396ff694c96e13b46653be162e11d4c8898cac69eb8b3a85876d27ff87f5",
     "scripts/settings/update.ps1": "4d4514076114270dc62d173f80f3ca73676bd86cccde2a7a0d4352d320c8363c",
-    "scripts/setup/README.md": "dc701dc63f00a91dd8d8e563c7f90d825de7023739fa871c780e8a67a49dc148",
+    "scripts/setup/README.md": "3ce5724426dd8f04393aaf3c01112842ffe371c446ef9ed69b696ac4aa602d16",
     "scripts/setup/install-hooks.ps1": "7cb0c11b51d7bb126156baa9a7789eeba646c92d5245c385cb5dd1c4256da5f9",
     "scripts/setup/scaffold.ps1": "c489d6a5307d0bb04f6a1cf7844665b0d70bd92db0c744dedefe980576a13868",
+    "scripts/setup/update-inventory.ps1": "114357b5b132990b124e36273713214dada10bc8177800051c4267dc981435fd",
     "scripts/setup/update-tree.ps1": "97f49fa52beca95fcff1f3869e93638f430913bb09d5e6023f1fbf9b0d9e5f7f"
   }
 }
