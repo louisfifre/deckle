@@ -68,7 +68,7 @@ public partial class App
         new("foreground watcher, taskbar cover",
             "A WinEvent hook on every foreground change, and a window drawn over the taskbar."),
         new("taskbar tray icons",
-            "They write the user's notify icon settings and keep a registry watcher on that key. The Taskbar page still opens; it only reads the Recommended section policy, and its switch is never touched."),
+            "They write the user's notify icon settings and keep a registry watcher on that key. The Taskbar page still opens, and its switches are never touched."),
         new("orchestration",
             "A WMI subscription on process starts."),
         new("Anytype backend and MCP",

@@ -31,7 +31,7 @@ public sealed class TaskbarSettingsTests
     [Fact]
     public void KeysOfAnOlderFileAreIgnored()
     {
-        TaskbarSettings settings = Read("""{ "enabled": true, "showAllTrayIcons": true, "hideRecommended": true, "clock": "Deckle" }""");
+        TaskbarSettings settings = Read("""{ "enabled": true, "showAllTrayIcons": true, "clock": "Deckle" }""");
 
         Assert.True(settings.ShowAllTrayIcons);
     }

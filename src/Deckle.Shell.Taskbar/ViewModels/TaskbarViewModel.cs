@@ -3,15 +3,10 @@ using Microsoft.UI.Dispatching;
 
 namespace Deckle.Shell.Taskbar;
 
-// The page's state. Two cards, two different truths:
-//
-//  - ShowAllTrayIcons is a setting. Every change writes it and saves; applying
-//    it belongs to the App, which observes the store and drives the promoter,
-//    exactly as it does for the cover. The page only reads back how the
-//    promoter's last pass ended.
-//  - HideRecommended is not a setting. It is read from Windows (the policy's
-//    real state) on each visit and after each change, and a change goes to the
-//    policy engine directly, behind a Windows prompt. See .Recommended.cs.
+// The page's state. ShowAllTrayIcons is a setting: every change writes it and
+// saves; applying it belongs to the App, which observes the store and drives the
+// promoter, exactly as it does for the cover. The page only reads back how the
+// promoter's last pass ended.
 public partial class TaskbarViewModel : ObservableObject
 {
     // Raised so the composer re-reads every advisory and every switch; no
@@ -26,14 +21,13 @@ public partial class TaskbarViewModel : ObservableObject
     public partial bool ShowAllTrayIcons { get; set; }
 
     public TaskbarViewModel()
-        : this(TrayIconPromoter.Instance, RecommendedSectionPolicy.Instance)
+        : this(TrayIconPromoter.Instance)
     {
     }
 
-    public TaskbarViewModel(TrayIconPromoter tray, RecommendedSectionPolicy recommendedSection)
+    public TaskbarViewModel(TrayIconPromoter tray)
     {
         _tray = tray;
-        _recommendedSection = recommendedSection;
         Load();
     }
 
@@ -48,7 +42,6 @@ public partial class TaskbarViewModel : ObservableObject
         {
             _isSyncing = false;
         }
-        LoadRecommended();
     }
 
     partial void OnShowAllTrayIconsChanged(bool value)

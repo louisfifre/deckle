@@ -117,8 +117,7 @@ public partial class App
 
         // Registry-only: it reads and writes the user's own keys and reaches
         // into no other process. The tray icons are promoted here when the
-        // setting is on; the Recommended policy is only ever touched by the
-        // page.
+        // setting is on.
         context.Compose(TaskbarModule, InitializeTaskbar);
 
         // Created before its consumers, which reference-count it.

@@ -2,11 +2,8 @@ using Deckle.Catalog;
 
 namespace Deckle.Shell.Taskbar;
 
-// The page's two cards, each its own switch with no module switch above them:
-// the tray card (a setting) and the Recommended card (Windows' state, see
-// TaskbarViewModel.Recommended.cs). Headers and descriptions resolve from this
-// module's .resw as "<LabelKey>.Header" / ".Description"; the wording is
-// provisional until the taskbar copy pass. Every default reads from a fresh
+// The page's cards. Headers and descriptions resolve from this module's .resw as
+// "<LabelKey>.Header" / ".Description". Every default reads from a fresh
 // TaskbarSettings, the single source the reset writes back.
 public partial class TaskbarViewModel
 {
@@ -18,18 +15,6 @@ public partial class TaskbarViewModel
             value => ShowAllTrayIcons = value,
             defaultValue: () => new TaskbarSettings().ShowAllTrayIcons,
             advisory: TrayAdvisory),
-    ];
-
-    // No default: the card edits Windows' state, not a setting, so it has no
-    // reset and the page's Reset all leaves it alone.
-    public IReadOnlyList<SettingDescriptor> StartManifest =>
-    [
-        Setting.Toggle(
-            "TaskbarPage_HideRecommendedCard",
-            () => HideRecommended,
-            RecommendedSwitched,
-            confirmOnEnable: _ => ConfirmHideRecommendedAsync(),
-            advisory: RecommendedAdvisory),
     ];
 
     // The promoter's last pass, said only when it did not go through. While

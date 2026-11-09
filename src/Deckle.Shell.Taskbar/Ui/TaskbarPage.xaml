@@ -28,11 +28,6 @@
                                 Spacing="{StaticResource SettingsCardSpacing}" />
                 </catalog:SettingsSection>
 
-                <!-- ── Start menu ────────────────────────────────────────────── -->
-                <catalog:SettingsSection x:Uid="TaskbarPageStartSection">
-                    <StackPanel x:Name="StartHost"
-                                Spacing="{StaticResource SettingsCardSpacing}" />
-                </catalog:SettingsSection>
             </StackPanel>
         </Grid>
     </ScrollViewer>

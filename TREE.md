@@ -1655,14 +1655,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskbarTarget.cs
 │   │   │   └── VersionedNativeCopy.cs
 │   │   ├── Registry/
-│   │   │   ├── ElevatedProcessRunner.cs
-│   │   │   ├── IElevatedProcessRunner.cs
 │   │   │   ├── NotifyIconSettingsKey.cs
 │   │   │   ├── NotifyIconSettingsWatcher.cs
-│   │   │   ├── PolicyElevation.cs
-│   │   │   ├── PolicyKey.cs
-│   │   │   ├── PolicyOutcome.cs
-│   │   │   ├── RecommendedSectionPolicy.cs
 │   │   │   ├── TrayIconPromoter.cs
 │   │   │   ├── TrayIconPromotion.cs
 │   │   │   ├── TrayOutcome.cs
@@ -1675,7 +1669,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── TaskbarPage.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   ├── TaskbarViewModel.cs
-│   │   │   ├── TaskbarViewModel.Recommended.cs
 │   │   │   └── TaskbarViewModel.Settings.cs
 │   │   ├── Deckle.Shell.Taskbar.csproj
 │   │   ├── DeckleShellTaskbarSource.cs
@@ -2492,8 +2485,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── IsolatedDataRoot.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
-│   │   ├── PolicyElevationTests.cs
-│   │   ├── RecommendedSectionPolicyTests.cs
 │   │   ├── TaskbarObservabilityCollection.cs
 │   │   ├── TaskbarProfileCollection.cs
 │   │   ├── TaskbarSettingsModuleTests.cs

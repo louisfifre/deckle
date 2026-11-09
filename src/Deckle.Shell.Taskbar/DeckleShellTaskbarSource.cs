@@ -4,7 +4,7 @@ using Deckle.Diagnostics;
 namespace Deckle.Shell.Taskbar;
 
 // Taskbar module provider. Two pieces write here: the tray icon promoter (and
-// its registry watcher) and the Recommended section policy. Counts and codes
+// its registry watcher) and the native engine host. Counts and codes
 // only: an icon's name, path or publisher never reaches a line, since they
 // tell what the person runs.
 [EventSource(Name = "Deckle-Taskbar")]
@@ -27,10 +27,7 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public const int EvtTrayWatcherStateChanged      = 8;
     public const int EvtTrayWatcherFailed            = 9;
     public const int EvtTraySnapshotUnreadable       = 10;
-    public const int EvtRecommendedSectionHidden     = 11;
-    public const int EvtRecommendedSectionShown      = 12;
-    public const int EvtRecommendedPolicyFailed      = 13;
-    public const int EvtRecommendedPolicyDetail      = 14;
+    // 11 to 14 belonged to the Recommended section policy, removed; not reused.
     public const int EvtSettingsLoadWarning          = 15;
     public const int EvtSettingsLoadError            = 16;
     public const int EvtExplorerRestartReapplyFailed = 17;
@@ -172,56 +169,6 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public void ExplorerRestartReapplyFailed(string ex_type, string ex_message)
     {
         if (IsEnabled()) WriteEvent(EvtExplorerRestartReapplyFailed, ex_type, ex_message);
-    }
-
-    // ── Recommended section policy ────────────────────────────────────────────
-    //
-    // A change is a gesture of the person (the card's switch), so each one
-    // that wrote gets its milestone. A declined prompt or a failed write is one
-    // Warning with its cause.
-
-    [Event(EvtRecommendedSectionHidden,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Milestone,
-           Message = "Start's Recommended section is set to hide")]
-    public void RecommendedSectionHidden()
-    {
-        if (IsEnabled()) WriteEvent(EvtRecommendedSectionHidden);
-    }
-
-    [Event(EvtRecommendedSectionShown,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Tags = ObservationTags.Milestone,
-           Message = "Gave Start's Recommended section back")]
-    public void RecommendedSectionShown()
-    {
-        if (IsEnabled()) WriteEvent(EvtRecommendedSectionShown);
-    }
-
-    // action: hide or show. route: direct (Deckle runs elevated), elevated
-    // (reg.exe behind a UAC prompt), machine or in_place (nothing to write)
-    // or none. error: none, uac_declined, exit_N, other_hive or an exception
-    // type.
-    [Event(EvtRecommendedPolicyFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Start's Recommended section was not changed\naction={0} | route={1} | outcome={2} | error={3}")]
-    public void RecommendedPolicyFailed(string action, string route, string outcome, string error)
-    {
-        if (IsEnabled()) WriteEvent(EvtRecommendedPolicyFailed, action, route, outcome, error);
-    }
-
-    // Every attempt, whatever it ended in, with the same fields as the failure.
-    [Event(EvtRecommendedPolicyDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "action={0} | route={1} | outcome={2} | error={3}")]
-    public void RecommendedPolicyDetail(string action, string route, string outcome, string error)
-    {
-        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
-        WriteEvent(EvtRecommendedPolicyDetail, action, route, outcome, error);
     }
 
     // ── Settings store ────────────────────────────────────────────────────────

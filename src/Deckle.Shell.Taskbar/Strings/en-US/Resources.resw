@@ -64,7 +64,7 @@
     <value>Taskbar</value>
   </data>
   <data name="TaskbarPageHeader.Description" xml:space="preserve">
-    <value>Show every tray icon, and hide the Recommended section of the Start menu.</value>
+    <value>Show every tray icon on the taskbar.</value>
   </data>
   <data name="TaskbarPageTraySection.Title" xml:space="preserve">
     <value>System tray</value>
@@ -80,24 +80,6 @@
   </data>
   <data name="TaskbarPage_TrayFailedOff" xml:space="preserve">
     <value>Deckle could not give every tray icon back to Windows.</value>
-  </data>
-  <data name="TaskbarPageStartSection.Title" xml:space="preserve">
-    <value>Start menu</value>
-  </data>
-  <data name="TaskbarPage_HideRecommendedCard.Header" xml:space="preserve">
-    <value>Hide the Recommended section</value>
-  </data>
-  <data name="TaskbarPage_HideRecommendedCard.Description" xml:space="preserve">
-    <value>Hides the Recommended list in the Start menu with a Windows policy. Each change asks Windows for administrator approval.</value>
-  </data>
-  <data name="TaskbarPage_RecommendedDeclined" xml:space="preserve">
-    <value>Windows asked for administrator approval and it was not given, so the Recommended section is unchanged.</value>
-  </data>
-  <data name="TaskbarPage_RecommendedFailed" xml:space="preserve">
-    <value>Windows could not change the Recommended section, so it is unchanged.</value>
-  </data>
-  <data name="TaskbarPage_RecommendedHeldByMachine" xml:space="preserve">
-    <value>A policy set for this whole PC hides the Recommended section. Deckle does not change it, so it stays hidden.</value>
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Taskbar</value>
