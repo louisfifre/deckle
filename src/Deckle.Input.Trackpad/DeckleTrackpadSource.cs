@@ -4,7 +4,8 @@ using Deckle.Diagnostics;
 namespace Deckle.Input.Trackpad;
 
 // Trackpad module provider. Covers the three-finger drag engine
-// lifecycle, per-gesture outcomes (drag spans, ignored taps), injection
+// lifecycle, per-gesture outcomes (drag spans, ignored taps, withheld
+// presses), injection
 // failures, and the one-click acts (Windows gesture neutralization,
 // connection repair).
 //
@@ -53,6 +54,7 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
     public const int EvtPrimaryReleaseFailed     = 29;
     public const int EvtSettingsLoadWarning = 30;
     public const int EvtSettingsLoadError = 31;
+    public const int EvtPressWithheld            = 32;
 
     // ── Engine lifecycle ─────────────────────────────────────────────────
 
@@ -111,6 +113,19 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
         if (IsInputActivityDetailEnabled(
                 EventLevel.Verbose, (EventKeywords)Keywords.Capture))
             WriteEvent(EvtTapIgnored);
+    }
+
+    // A drag began moving the cursor but ended before its deferred press:
+    // reason=fourth-finger is a four-finger gesture spared a stray click.
+    [Event(EvtPressWithheld,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Capture,
+           Message = "reason={0} | elapsed_ms={1}")]
+    public void PressWithheld(string reason, double elapsed_ms)
+    {
+        if (IsInputActivityDetailEnabled(
+                EventLevel.Verbose, (EventKeywords)Keywords.Capture))
+            WriteEvent(EvtPressWithheld, reason, elapsed_ms);
     }
 
     // Opens the injection incident; later failures stay quiet until
