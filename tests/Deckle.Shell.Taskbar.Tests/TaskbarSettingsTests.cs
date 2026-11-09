@@ -3,9 +3,10 @@ using Xunit;
 
 namespace Deckle.Shell.Taskbar.Tests;
 
-// The module keeps one value. A file written by the older, heavier taskbar
-// module carries more keys; they are ignored, and the one that still means
-// something is honoured. Read and written through the store's own JSON options.
+// The module keeps a handful of values, all off by default. A file written by
+// the older, heavier taskbar module carries more keys; they are ignored, and the
+// one that still means something is honoured. Read and written through the
+// store's own JSON options.
 [Trait("Category", "unit")]
 public sealed class TaskbarSettingsTests
 {
@@ -13,19 +14,47 @@ public sealed class TaskbarSettingsTests
         => JsonSerializer.Deserialize<TaskbarSettings>(json, TaskbarSettingsService.JsonOptions)!;
 
     [Fact]
-    public void TheTrayIconsAreNotPromotedByDefault()
+    public void NothingIsChangedByDefault()
     {
-        Assert.False(new TaskbarSettings().ShowAllTrayIcons);
-        Assert.False(Read("{}").ShowAllTrayIcons);
+        foreach (TaskbarSettings settings in new[] { new TaskbarSettings(), Read("{}") })
+        {
+            Assert.False(settings.ShowAllTrayIcons);
+            Assert.Equal(TaskbarBackground.Native, settings.Background);
+            Assert.False(settings.CompactTray);
+            Assert.False(settings.CompactClock);
+            Assert.False(settings.StartMenuFullHeight);
+        }
     }
 
     [Fact]
-    public void TheSettingRoundTrips()
+    public void TheSettingsRoundTrip()
     {
-        string json = JsonSerializer.Serialize(new TaskbarSettings { ShowAllTrayIcons = true }, TaskbarSettingsService.JsonOptions);
+        string json = JsonSerializer.Serialize(new TaskbarSettings
+        {
+            ShowAllTrayIcons = true,
+            Background = TaskbarBackground.Transparent,
+            CompactTray = true,
+            CompactClock = true,
+            StartMenuFullHeight = true,
+        }, TaskbarSettingsService.JsonOptions);
 
-        Assert.Contains("\"showAllTrayIcons\": true", json);
-        Assert.True(Read(json).ShowAllTrayIcons);
+        TaskbarSettings read = Read(json);
+
+        Assert.True(read.ShowAllTrayIcons);
+        Assert.Equal(TaskbarBackground.Transparent, read.Background);
+        Assert.True(read.CompactTray);
+        Assert.True(read.CompactClock);
+        Assert.True(read.StartMenuFullHeight);
+    }
+
+    // A person editing the file by hand reads the background by its name.
+    [Fact]
+    public void TheBackgroundIsWrittenAsItsName()
+    {
+        string json = JsonSerializer.Serialize(new TaskbarSettings { Background = TaskbarBackground.Black }, TaskbarSettingsService.JsonOptions);
+
+        Assert.Contains("\"background\": \"black\"", json);
+        Assert.Equal(TaskbarBackground.Black, Read("""{ "background": "black" }""").Background);
     }
 
     [Fact]

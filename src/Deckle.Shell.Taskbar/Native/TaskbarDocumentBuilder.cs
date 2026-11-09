@@ -37,8 +37,6 @@ internal static class TaskbarDocumentBuilder
     private const string ClockStack =
         "SystemTray.DateTimeIconContent > Grid#ContainerGrid > StackPanel";
 
-    private const int DefaultTrayPitch = 24;
-
     public static IReadOnlyList<TaskbarRule> Rules(TaskbarCustomization customization)
     {
         var rules = new List<TaskbarRule>();
@@ -64,7 +62,7 @@ internal static class TaskbarDocumentBuilder
         {
             // The group's icons sit in a StackPanel with 4 px between them;
             // each icon is given the pitch as its height.
-            int iconPitch = customization.TrayIconPitch ?? DefaultTrayPitch;
+            int iconPitch = customization.TrayIconPitch ?? TaskbarCustomization.CompactTrayPitch;
             rules.Add(new("quickSettings.spacing", QuickSettingsStack, "Spacing", "0"));
             rules.Add(new("quickSettings.icon.height", QuickSettingsStack + " > ContentPresenter > SystemTray.IconView#SystemTrayIcon", "Height", Number(iconPitch)));
         }

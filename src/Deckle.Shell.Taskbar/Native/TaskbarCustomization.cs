@@ -2,8 +2,7 @@ namespace Deckle.Shell.Taskbar;
 
 // What Deckle wants the taskbar to look like, in the terms of a person and not
 // of XAML: the input of TaskbarDocumentBuilder, which turns it into the rules
-// and behaviors the injected engine applies. Nothing reads it from settings
-// yet; a later step maps the settings page onto it.
+// and behaviors the injected engine applies. From maps the settings page onto it.
 internal sealed record TaskbarCustomization
 {
     /// <summary>The bar's background. Native leaves Explorer's acrylic alone.</summary>
@@ -30,6 +29,31 @@ internal sealed record TaskbarCustomization
     /// than the rest, so it has its own document (TaskbarDocumentBuilder.BuildStartMenu).
     /// </summary>
     public StartMenuCustomization? StartMenu { get; init; }
+
+    /// <summary>Whether anything here lives in explorer, which is where the taskbar host is needed.</summary>
+    public bool CustomizesExplorer =>
+        Background != TaskbarBackground.Native || TrayIconPitch is not null || TightenQuickSettings || Clock is not null;
+
+    /// <summary>Whether anything here lives in the Start menu process.</summary>
+    public bool CustomizesStartMenu => StartMenu is { FullHeight: true };
+
+    /// <summary>
+    /// What the settings ask for on this taskbar. The compact tray is only
+    /// carried to a vertical bar: its rules (a 24 px row, a tightened
+    /// quick-settings stack) are written for the column layout, and on a
+    /// horizontal bar the tray is laid out the other way.
+    /// </summary>
+    public static TaskbarCustomization From(TaskbarSettings settings, bool verticalBar) => new()
+    {
+        Background = settings.Background,
+        TrayIconPitch = settings.CompactTray && verticalBar ? CompactTrayPitch : null,
+        TightenQuickSettings = settings.CompactTray && verticalBar,
+        Clock = settings.CompactClock ? ClockCustomization.DateAboveTime : null,
+        StartMenu = settings.StartMenuFullHeight ? new StartMenuCustomization() : null,
+    };
+
+    /// <summary>The distance between two notification icons when the tray is compact.</summary>
+    public const int CompactTrayPitch = 24;
 }
 
 /// <summary>
@@ -40,13 +64,6 @@ internal sealed record TaskbarCustomization
 /// around it), at any scale. Windows caps the menu at 750 effective pixels.
 /// </param>
 internal sealed record StartMenuCustomization(bool FullHeight = true);
-
-internal enum TaskbarBackground
-{
-    Native,
-    Transparent,
-    Black,
-}
 
 internal enum ClockLineKind
 {

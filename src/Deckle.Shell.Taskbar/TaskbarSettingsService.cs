@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Deckle.Core;
 
 namespace Deckle.Shell.Taskbar;
@@ -15,6 +16,8 @@ public sealed class TaskbarSettingsService
     {
         WriteIndented = true,
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        // The background reads as its name ("transparent"), not as a number.
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) },
     };
 
     private readonly JsonSettingsStore<TaskbarSettings> _store;

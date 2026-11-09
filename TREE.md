@@ -1646,11 +1646,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── NativeCommand.cs
 │   │   │   ├── NativeLogRelay.cs
 │   │   │   ├── NativeMessage.cs
+│   │   │   ├── TaskbarBackground.cs
 │   │   │   ├── TaskbarCreatedListener.cs
 │   │   │   ├── TaskbarCustomization.cs
 │   │   │   ├── TaskbarDocumentBuilder.cs
 │   │   │   ├── TaskbarEngineHost.cs
 │   │   │   ├── TaskbarHookInjector.cs
+│   │   │   ├── TaskbarPart.cs
 │   │   │   ├── TaskbarPipeServer.cs
 │   │   │   ├── TaskbarTarget.cs
 │   │   │   └── VersionedNativeCopy.cs
@@ -2485,6 +2487,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── IsolatedDataRoot.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── TaskbarCustomizationTests.cs
 │   │   ├── TaskbarObservabilityCollection.cs
 │   │   ├── TaskbarProfileCollection.cs
 │   │   ├── TaskbarSettingsModuleTests.cs
