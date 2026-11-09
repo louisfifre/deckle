@@ -5,9 +5,8 @@ namespace Deckle.Anytype.Tests;
 
 // Pure unit tests on the frozen DevSpace schema map. No I/O: these assert the
 // vocabulary lookups the gestures rely on to translate user-facing names and the
-// space's (sometimes malformed) wire keys. The three trap keys — misspelled,
-// truncated, misleading — are deliberately exercised so a future "cleanup" that
-// silently fixes them is caught here, since fixing them would break the live space.
+// space's wire keys. That DevSpace says what the manifest says is held by
+// PmSchemaManifestTests.
 [Trait("Category", "unit")]
 public class DevSpaceTests
 {
@@ -29,12 +28,11 @@ public class DevSpaceTests
     }
 
     [Fact]
-    public void PriorityKeyForZeroAndFourAreTheOpaqueIds()
+    public void PriorityKeysArePAndTheLevel()
     {
-        // The space stores levels 0 and 4 as opaque option ids, not "0"/"4".
-        // Pin them so a transcription drift surfaces immediately.
-        Assert.Equal("67cc1782341c16068836b71e", DevSpace.Priority.KeyFor(0));
-        Assert.Equal("67c6d722341c1628147d7b1e", DevSpace.Priority.KeyFor(4));
+        Assert.Equal("p0", DevSpace.Priority.KeyFor(0));
+        Assert.Equal("p5", DevSpace.Priority.KeyFor(5));
+        Assert.Equal(3, DevSpace.Priority.LevelFor("p3"));
     }
 
     [Fact]
@@ -46,24 +44,41 @@ public class DevSpaceTests
     // ── Vocabulary Resolve ────────────────────────────────────────────────────
 
     [Fact]
-    public void EtatResolveAcceptsExactKey()
+    public void StatusResolveAcceptsExactKeyAndDisplayName()
     {
-        Assert.Equal("ouvert", DevSpace.Etat.Resolve("ouvert"));
+        Assert.Equal("doing", DevSpace.Status.Resolve("doing"));
+        Assert.Equal("paused", DevSpace.Status.Resolve("en pause"));
+        Assert.Equal("ready", DevSpace.Status.Resolve("Prêt"));
+    }
+
+    [Theory]
+    [InlineData("termine")]
+    [InlineData("abandonne")]
+    [InlineData("ouvert")]
+    [InlineData("en_attente")]
+    public void StatusRefusesTheStatesOfTheV5Space(string old)
+    {
+        // A finished or abandoned project is archived, not a state; the other
+        // old keys were renamed.
+        Assert.Null(DevSpace.Status.Resolve(old));
     }
 
     [Fact]
-    public void TypeDeTacheResolveAcceptsCaseInsensitiveDisplayName()
+    public void TaskTypeResolveAcceptsCaseInsensitiveDisplayName()
     {
-        Assert.Equal("production", DevSpace.TypeDeTache.Resolve("Produire"));
-        Assert.Equal("production", DevSpace.TypeDeTache.Resolve("produire"));
+        Assert.Equal("production", DevSpace.TaskType.Resolve("Produire"));
+        Assert.Equal("production", DevSpace.TaskType.Resolve("produire"));
+        Assert.Equal("research", DevSpace.TaskType.Resolve("Chercher"));
+        Assert.Null(DevSpace.TaskType.Resolve("recherche"));
     }
 
     [Fact]
     public void PriorityResolveAcceptsTheIntegerString()
     {
         // For Priority the user can pass the bare level digit; "2" maps to the
-        // level-2 wire key (which happens to also be the string "2").
-        Assert.Equal("2", DevSpace.Priority.Resolve("2"));
+        // level-2 wire key.
+        Assert.Equal("p2", DevSpace.Priority.Resolve("2"));
+        Assert.Equal("p2", DevSpace.Priority.Resolve("p2"));
     }
 
     // ── ResolveTag on closed vs open vocabularies ─────────────────────────────
@@ -73,10 +88,10 @@ public class DevSpaceTests
     {
         // The listed options are the model-facing affordance.
         var ex = Assert.Throws<ArgumentException>(
-            () => DevSpace.ResolveTag(DevSpace.Props.Etat, "inexistant"));
+            () => DevSpace.ResolveTag(DevSpace.Props.Status, "inexistant"));
 
-        Assert.Contains("Terminé", ex.Message);
-        Assert.Contains("ouvert", ex.Message);
+        Assert.Contains("En pause", ex.Message);
+        Assert.Contains("paused", ex.Message);
     }
 
     [Fact]
@@ -92,18 +107,18 @@ public class DevSpaceTests
     [Fact]
     public void HasFrozenVocabularyDistinguishesClosedFromFreeProperties()
     {
-        Assert.True(DevSpace.HasFrozenVocabulary(DevSpace.Props.Etat));
-        Assert.True(DevSpace.HasFrozenVocabulary(DevSpace.Props.TypeDeTache));
+        Assert.True(DevSpace.HasFrozenVocabulary(DevSpace.Props.Status));
+        Assert.True(DevSpace.HasFrozenVocabulary(DevSpace.Props.TaskType));
         Assert.False(DevSpace.HasFrozenVocabulary(DevSpace.Props.Tag));
     }
 
     [Fact]
     public void ResolveTagOnClosedVocabularyResolvesADisplayName()
     {
-        Assert.Equal("production", DevSpace.ResolveTag(DevSpace.Props.TypeDeTache, "Produire"));
+        Assert.Equal("production", DevSpace.ResolveTag(DevSpace.Props.TaskType, "Produire"));
     }
 
-    // ── TryResolveProperty: label, raw key, and the trap keys ─────────────────
+    // ── TryResolveProperty: label and raw key ─────────────────────────────────
 
     [Fact]
     public void TryResolvePropertyResolvesByDisplayLabel()
@@ -112,7 +127,7 @@ public class DevSpaceTests
             DevSpace.Types.Task, "État", out string key, out string format);
 
         Assert.True(ok);
-        Assert.Equal(DevSpace.Props.Etat, key);
+        Assert.Equal(DevSpace.Props.Status, key);
         Assert.Equal("select", format);
     }
 
@@ -120,51 +135,42 @@ public class DevSpaceTests
     public void TryResolvePropertyResolvesByRawKey()
     {
         bool ok = DevSpace.TryResolveProperty(
-            DevSpace.Types.Task, "etat", out string key, out string format);
+            DevSpace.Types.Task, "status", out string key, out string format);
 
         Assert.True(ok);
-        Assert.Equal("etat", key);
+        Assert.Equal("status", key);
         Assert.Equal("select", format);
     }
 
     [Fact]
-    public void TryResolvePropertyResolvesTheMisleadingChargeReelleLabel()
+    public void ChargeAndTimeAreOnePropertyPerType()
     {
-        // Trap: « Charge réelle » carries the misleading wire key
-        // "charge_estimee_(jours)" (it reads like an estimate but is the real
-        // charge). The label must map to that exact ugly key.
-        bool ok = DevSpace.TryResolveProperty(
-            DevSpace.Types.Project, "Charge réelle", out string key, out _);
+        // A project measures effort; a task measures time. Same label family,
+        // two keys, each on the types that use it.
+        Assert.True(DevSpace.TryResolveProperty(DevSpace.Types.Project, "Charge réelle", out string effort, out _));
+        Assert.Equal("effort_actual", effort);
 
-        Assert.True(ok);
-        Assert.Equal("charge_estimee_(jours)", key);
+        Assert.True(DevSpace.TryResolveProperty(DevSpace.Types.Task, "Temps réel", out string time, out _));
+        Assert.Equal("time_actual", time);
+        Assert.False(DevSpace.TryResolveProperty(DevSpace.Types.Task, "effort_actual", out _, out _));
     }
 
     [Fact]
-    public void TryResolvePropertyResolvesTheMalformedTachesLieesLabel()
+    public void AProjectHasNoDoneBox()
     {
-        // Trap: « Tâche(s) liée(s) » carries the malformed wire key
-        // "tache(s)_liee(s)" (no accents). Reports anchor to tasks through this
-        // exact key, so the malformed form must survive.
-        bool ok = DevSpace.TryResolveProperty(
-            DevSpace.Types.Rapport, "Tâche(s) liée(s)", out string key, out _);
-
-        Assert.True(ok);
-        Assert.Equal("tache(s)_liee(s)", key);
+        Assert.False(DevSpace.TryResolveProperty(DevSpace.Types.Project, "done", out _, out _));
+        Assert.True(DevSpace.TryResolveProperty(DevSpace.Types.Task, "done", out string key, out _));
+        Assert.Equal("done", key);
     }
 
     [Fact]
-    public void TryResolvePropertyResolvesTrapKeysVerbatim()
+    public void TryResolvePropertyResolvesTheReportTasksLabel()
     {
-        // The trap keys resolve to themselves when passed as raw keys — the code
-        // speaks the wire, it does not normalize.
-        Assert.True(DevSpace.TryResolveProperty(
-            DevSpace.Types.Project, "charge_estimee_(jours)", out string charge, out _));
-        Assert.Equal("charge_estimee_(jours)", charge);
+        bool ok = DevSpace.TryResolveProperty(
+            DevSpace.Types.Report, "Tâches", out string key, out _);
 
-        Assert.True(DevSpace.TryResolveProperty(
-            DevSpace.Types.Rapport, "tache(s)_liee(s)", out string taches, out _));
-        Assert.Equal("tache(s)_liee(s)", taches);
+        Assert.True(ok);
+        Assert.Equal("tasks", key);
     }
 
     [Fact]

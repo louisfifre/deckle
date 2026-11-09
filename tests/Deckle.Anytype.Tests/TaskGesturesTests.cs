@@ -67,7 +67,7 @@ public class TaskGesturesTests
     const string ProjectId = "bafyreiprojectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const string ObjectsPath = "/v2/spaces/space-1/objects";
 
-    static string TypeName(string type) => DevSpace.TypeDeTache.NameFor(DevSpace.TypeDeTache.Resolve(type)!)!;
+    static string TypeName(string type) => DevSpace.TaskType.NameFor(DevSpace.TaskType.Resolve(type)!)!;
 
     // The reply of a create: the new object's id (the schema's CreateResult).
     static FakeV2Handler CreateReply(FakeV2Handler? handler = null)
@@ -104,7 +104,7 @@ public class TaskGesturesTests
     ];
 
     [Fact]
-    public async Task CreatePostsTheTaskFromItsTemplateWithTheV2Properties()
+    public async Task CreatePostsTheTaskWithoutNamingATemplateWithTheV2Properties()
     {
         using var server = new FakeAnytypeServer();
         FakeV2Handler v2 = CreateReply();
@@ -121,16 +121,18 @@ public class TaskGesturesTests
         JsonObject body = (JsonObject)JsonNode.Parse(post.Body!)!;
         Assert.Equal(DevSpace.Types.Task, body["type"]!.GetValue<string>());
         Assert.Equal("Ma tâche", body["name"]!.GetValue<string>());
-        Assert.Equal(DevSpace.Templates.Task, body["template"]!.GetValue<string>());
+        // No template is named: the type's default one applies, so a space
+        // recreated with other template ids needs no code change.
+        Assert.False(body.ContainsKey("template"));
         // No body on the POST: the template shapes the document, and a markdown
         // here would land under its last section.
         Assert.False(body.ContainsKey("markdown"));
         Assert.False(body.ContainsKey("template_id"));
 
         JsonObject props = body["properties"]!.AsObject();
-        Assert.Equal(ProjectId, props[DevSpace.Props.RelationProjet]!.AsArray().Single()!.GetValue<string>());
-        Assert.Equal(TypeName("production"), props[DevSpace.Props.TypeDeTache]!.AsArray().Single()!.GetValue<string>());
-        Assert.Equal("3", props[DevSpace.Props.Priorite]!.AsArray().Single()!.GetValue<string>());
+        Assert.Equal(ProjectId, props[DevSpace.Props.Projects]!.AsArray().Single()!.GetValue<string>());
+        Assert.Equal(TypeName("production"), props[DevSpace.Props.TaskType]!.AsArray().Single()!.GetValue<string>());
+        Assert.Equal("3", props[DevSpace.Props.Priority]!.AsArray().Single()!.GetValue<string>());
 
         Assert.Contains("Tâche créée : Ma tâche", digest);
         Assert.Contains($"id : {TaskId}", digest);
@@ -153,8 +155,8 @@ public class TaskGesturesTests
 
         JsonObject props = ((JsonObject)JsonNode.Parse(Assert.Single(v2.Requests).Body!)!)["properties"]!.AsObject();
         Assert.Equal("2026-11-10", props[DevSpace.Props.DueDate]!.GetValue<string>());
-        Assert.Equal(1.5, props[DevSpace.Props.ChargeEstimee]!.GetValue<double>());
-        Assert.Equal("Le test passe.", props[DevSpace.Props.DefinitionDeFini]!.GetValue<string>());
+        Assert.Equal(1.5, props[DevSpace.Props.TimeEstimated]!.GetValue<double>());
+        Assert.Equal("Le test passe.", props[DevSpace.Props.DoneDefinition]!.GetValue<string>());
         Assert.Contains("Date cible : 2026-11-10", digest);
         Assert.Contains("Temps estimé : 1,5 h", digest);
     }

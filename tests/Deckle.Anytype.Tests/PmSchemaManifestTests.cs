@@ -6,79 +6,44 @@ using Xunit;
 namespace Deckle.Anytype.Tests;
 
 // The v6 manifest of the project-management space must load through the real
-// schema-admin parser, and must stay answerable to DevSpace, the keys the
-// gestures speak today. The two differ on purpose (the recreation renames the
-// space's French keys to English ones); the table below is that rename, so a key
-// DevSpace gains without a decision here fails the test.
+// schema-admin parser, and DevSpace, the keys the gestures send, must say exactly
+// what the manifest says: the same types, the same properties in the same order,
+// the same formats, labels and select options. The space is built from the
+// manifest and used through DevSpace, so any drift between the two is a tool that
+// breaks on the day the space is recreated.
 [Trait("Category", "unit")]
 public sealed class PmSchemaManifestTests
 {
     const string ResourceName = "Deckle.Anytype.Schema.pm-schema-manifest.json";
 
-    // DevSpace type key -> manifest type key.
-    static readonly Dictionary<string, string> TypeRename = new()
+    // The v5 keys of the space of 2026-11-04 and the v6 key each one became. It
+    // documents the rename; the test below holds the new side to the manifest.
+    static readonly Dictionary<string, string> KeyRename = new()
     {
-        [DevSpace.Types.Epic] = "epic",
-        [DevSpace.Types.Project] = "project",
-        [DevSpace.Types.Task] = "task",
-        [DevSpace.Types.Rapport] = "report",
-        [DevSpace.Types.Idee] = "idea",
-        [DevSpace.Types.Document] = "document",
-        [DevSpace.Types.Contact] = "person",
-        [DevSpace.Types.Entreprise] = "company",
+        ["etat"] = "status",
+        ["priorite"] = "priority",
+        ["definition_de_fini"] = "done_definition",
+        ["budget_estime"] = "budget_estimated",
+        ["budget_reel_("] = "budget_actual",
+        ["charge_estimee"] = "effort_estimated",
+        ["charge_estimee_(jours)"] = "effort_actual",
+        ["relation_projet"] = "projects",
+        ["contact_lie"] = "contacts",
+        ["fichier(s)_lie(s)"] = "files",
+        ["type_de_tache"] = "task_type",
+        ["tache(s)_liee(s)"] = "tasks",
+        ["depend_de"] = "depends_on",
+        ["type_de_document"] = "document_type",
+        ["document_systeme"] = "document_global",
+        ["entreprise_liee"] = "company",
+        ["courriel"] = "email",
+        ["numero_de_telephone"] = "phone",
+        ["adresse"] = "address",
+        ["rapport"] = "report",
+        ["idee"] = "idea",
+        ["contact"] = "person",
+        ["entreprise"] = "company",
     };
-
-    // DevSpace property key -> manifest property key; null when model v6 drops it.
-    static readonly Dictionary<string, string?> PropertyRename = new()
-    {
-        [DevSpace.Props.Etat] = "status",
-        [DevSpace.Props.Priorite] = "priority",
-        [DevSpace.Props.DefinitionDeFini] = "done_definition",
-        [DevSpace.Props.BudgetEstime] = "budget_estimated",
-        [DevSpace.Props.BudgetReel] = "budget_actual",
-        [DevSpace.Props.ChargeEstimee] = "effort_estimated",
-        [DevSpace.Props.ChargeReelle] = "effort_actual",
-        [DevSpace.Props.Archive] = "archive",
-        [DevSpace.Props.Version] = "version",
-        [DevSpace.Props.DueDate] = "due_date",
-        [DevSpace.Props.Done] = "done",
-        [DevSpace.Props.DependDe] = "depends_on",
-        [DevSpace.Props.RelationProjet] = "projects",
-        [DevSpace.Props.ContactLie] = "contacts",
-        [DevSpace.Props.FichiersLies] = "files",
-        [DevSpace.Props.TypeDeTache] = "task_type",
-        [DevSpace.Props.TachesLiees] = "tasks",
-        [DevSpace.Props.TypeDeDocument] = "document_type",
-        [DevSpace.Props.DocumentSysteme] = "document_global",
-        [DevSpace.Props.EntrepriseLiee] = "company",
-        [DevSpace.Props.Courriel] = "email",
-        [DevSpace.Props.Telephone] = "phone",
-        [DevSpace.Props.Adresse] = "address",
-        // Dropped by model v6.
-        [DevSpace.Props.Description] = null,
-        [DevSpace.Props.PhaseProjet] = null,
-        [DevSpace.Props.Livrables] = null,
-        [DevSpace.Props.DateDuJournal] = null,
-    };
-
-    // A key that survives elsewhere but model v6 takes off one type: the case
-    // « done » and « version » on a project (the archive closes it; version
-    // stays on Document).
-    // On a task the model measures time, not effort: the two charge keys of
-    // DevSpace become time_estimated and time_actual there.
-    static readonly Dictionary<(string DevType, string DevKey), string> TypeSpecificRename = new()
-    {
-        [(DevSpace.Types.Task, DevSpace.Props.ChargeEstimee)] = "time_estimated",
-        [(DevSpace.Types.Task, DevSpace.Props.ChargeReelle)] = "time_actual",
-    };
-
-    static readonly HashSet<(string DevType, string DevKey)> DroppedFromType =
-    [
-        (DevSpace.Types.Project, DevSpace.Props.Done),
-        (DevSpace.Types.Project, DevSpace.Props.Version),
-        // The model's Report section lists tasks, contacts and Archivé only.
-        (DevSpace.Types.Rapport, DevSpace.Props.FichiersLies),
-    ];
 
     static JsonObject LoadRaw()
     {
@@ -91,6 +56,11 @@ public sealed class PmSchemaManifestTests
 
     static IReadOnlyList<string> PropertiesOf(SchemaManifest manifest, string typeKey) =>
         manifest.Types.Single(t => t.Key == typeKey).Properties;
+
+    static IEnumerable<string> ConstantValues(Type holder) =>
+        holder.GetFields(BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)
+            .Where(f => f.IsLiteral && f.FieldType == typeof(string))
+            .Select(f => (string)f.GetRawConstantValue()!);
 
     [Fact]
     public void ManifestParsesWithTheSchemaAdminLoader()
@@ -114,24 +84,70 @@ public sealed class PmSchemaManifestTests
     }
 
     [Fact]
-    public void EveryKeyDevSpaceCarriesIsRenamedOrDroppedOnPurpose()
+    public void DevSpaceCarriesTheManifestTypesInTheSameOrder()
+    {
+        Assert.Equal(Load().Types.Select(t => t.Key), DevSpace.TypeKeys);
+        Assert.Equal(DevSpace.TypeKeys.Order(StringComparer.Ordinal), ConstantValues(typeof(DevSpace.Types)).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void EveryTypeListsTheSamePropertiesInTheSameOrderAsTheManifest()
     {
         SchemaManifest manifest = Load();
 
-        foreach ((string devType, string manifestType) in TypeRename)
-        {
-            IReadOnlyList<string> listed = PropertiesOf(manifest, manifestType);
-            foreach (PropertyDef def in DevSpace.PropertiesFor(devType))
+        foreach (TypeSpec type in manifest.Types)
+            Assert.Equal(
+                type.Properties,
+                DevSpace.PropertiesFor(type.Key).Select(p => p.Key));
+    }
+
+    [Fact]
+    public void EveryDevSpacePropertySaysWhatTheManifestSays()
+    {
+        SchemaManifest manifest = Load();
+
+        foreach (TypeSpec type in manifest.Types)
+            foreach (PropertyDef def in DevSpace.PropertiesFor(type.Key))
             {
-                Assert.True(PropertyRename.TryGetValue(def.Key, out string? renamed),
-                    $"DevSpace key « {def.Key} » ({devType}) has no entry in the rename table.");
-                if (TypeSpecificRename.TryGetValue((devType, def.Key), out string? specific))
-                    renamed = specific;
-                if (renamed is not null && !DroppedFromType.Contains((devType, def.Key)))
-                    Assert.True(listed.Contains(renamed),
-                        $"{manifestType} lacks « {renamed} » (DevSpace « {def.Key} » on {devType}).");
+                PropertySpec spec = manifest.Properties.Single(p => p.Key == def.Key);
+
+                Assert.True(spec.Name == def.Label, $"{type.Key}.{def.Key}: label « {def.Label} », manifest « {spec.Name} ».");
+                Assert.True(spec.Format == def.Format, $"{type.Key}.{def.Key}: format {def.Format}, manifest {spec.Format}.");
+
+                // A select carries its options in DevSpace and in the manifest,
+                // key, name and order alike.
+                IReadOnlyList<(string Key, string Name)> declared =
+                    spec.Tags.Select(t => (t.Key ?? t.MatchKey, t.Name)).ToList();
+                IReadOnlyList<(string Key, string Name)> frozen =
+                    (def.Options ?? []).Select(o => (o.Key, o.Name)).ToList();
+                Assert.True(declared.SequenceEqual(frozen), $"{type.Key}.{def.Key}: options differ from the manifest.");
+                if (spec.Tags.Count > 0)
+                    Assert.All(spec.Tags, t => Assert.True(t.Key is not null, $"{def.Key}: option « {t.Name} » has no declared key."));
             }
-        }
+    }
+
+    [Fact]
+    public void EveryPropertyKeyDevSpaceNamesIsInTheManifestAndTheOtherWayRound()
+    {
+        SchemaManifest manifest = Load();
+        HashSet<string> declared = manifest.Properties.Select(p => p.Key).ToHashSet();
+
+        // « tag » is Anytype's own transversal property, outside the manifest.
+        HashSet<string> named = ConstantValues(typeof(DevSpace.Props)).Where(k => k != DevSpace.Props.Tag).ToHashSet();
+
+        Assert.Equal(declared.Order(StringComparer.Ordinal), named.Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void EveryKeyTheV5SpaceHadIsRenamedToAKeyBothSidesKnow()
+    {
+        SchemaManifest manifest = Load();
+        HashSet<string> keys = manifest.Properties.Select(p => p.Key)
+            .Concat(manifest.Types.Select(t => t.Key))
+            .ToHashSet();
+
+        foreach ((string was, string became) in KeyRename)
+            Assert.True(keys.Contains(became), $"« {was} » became « {became} », which the manifest does not declare.");
     }
 
     [Fact]
@@ -150,18 +166,23 @@ public sealed class PmSchemaManifestTests
     }
 
     [Fact]
-    public void SharedVocabulariesKeepDevSpaceNamesWhereTheModelKeepsThem()
+    public void AProjectHasNoDoneBoxAndOnlyTheProjectStatesAreSelectable()
     {
         SchemaManifest manifest = Load();
-        IReadOnlyList<string> Names(string key) =>
-            manifest.Properties.Single(p => p.Key == key).Tags.Select(t => t.Name).ToList();
 
-        Assert.Equal(DevSpace.Priority.All.Select(o => o.Name), Names("priority"));
+        Assert.DoesNotContain("done", PropertiesOf(manifest, "project"));
         Assert.Equal(
-            DevSpace.TypeDeTache.All.Select(o => o.Name).Order(StringComparer.Ordinal),
-            Names("task_type").Order(StringComparer.Ordinal));
-        Assert.Equal(DevSpace.Slot.Default, Names("slot")[0]);
-        Assert.Equal(DevSpace.Slot.Name, manifest.Properties.Single(p => p.Key == "slot").Name);
-        Assert.Equal(DevSpace.Role.Name, manifest.Properties.Single(p => p.Key == "role").Name);
+            ["Prêt", "En cours", "En pause", "Dormant"],
+            manifest.Properties.Single(p => p.Key == "status").Tags.Select(t => t.Name));
+    }
+
+    [Fact]
+    public void SlotAndRoleKeysPointAtDeclaredSelects()
+    {
+        SchemaManifest manifest = Load();
+
+        Assert.Equal(DevSpace.Slot.Default, manifest.Properties.Single(p => p.Key == "slot").Tags[0].Name);
+        Assert.Equal(DevSpace.Slot.Name, manifest.Properties.Single(p => p.Key == DevSpace.Slot.Keys[0]).Name);
+        Assert.Equal(DevSpace.Role.Name, manifest.Properties.Single(p => p.Key == DevSpace.Role.Keys[0]).Name);
     }
 }

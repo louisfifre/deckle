@@ -16,19 +16,19 @@ public class AnytypeV2PropertyMapTests
     [Fact]
     public void ASelectIsReadAsItsFirstOptionNameAndAMultiSelectAsAllOfThem()
     {
-        AnytypeV2PropertyMap map = MapOf("""{"etat":["Ouvert"],"livrable(s)":["Texte","Règle de cadrage"]}""");
+        AnytypeV2PropertyMap map = MapOf("""{"status":["Ouvert"],"tags_demo":["Texte","Règle de cadrage"]}""");
 
-        Assert.Equal("Ouvert", map.Select("etat"));
-        Assert.Equal(new[] { "Texte", "Règle de cadrage" }, map.Names("livrable(s)"));
+        Assert.Equal("Ouvert", map.Select("status"));
+        Assert.Equal(new[] { "Texte", "Règle de cadrage" }, map.Names("tags_demo"));
     }
 
     [Fact]
     public void ObjectsAreBareIdsInServedOrder()
     {
-        AnytypeV2PropertyMap map = MapOf("""{"relation_projet":["bafyA","bafyB"]}""");
+        AnytypeV2PropertyMap map = MapOf("""{"projects":["bafyA","bafyB"]}""");
 
-        Assert.Equal(new[] { "bafyA", "bafyB" }, map.ObjectIds("relation_projet"));
-        Assert.Equal(2, map.Count("relation_projet"));
+        Assert.Equal(new[] { "bafyA", "bafyB" }, map.ObjectIds("projects"));
+        Assert.Equal(2, map.Count("projects"));
     }
 
     [Fact]
@@ -52,12 +52,12 @@ public class AnytypeV2PropertyMapTests
     [Fact]
     public void TextAndNumberAreReadAndAnEmptyTextIsNull()
     {
-        AnytypeV2PropertyMap map = MapOf("""{"name":"Une tâche","description":"","charge_estimee":1.5}""");
+        AnytypeV2PropertyMap map = MapOf("""{"name":"Une tâche","description":"","time_estimated":1.5}""");
 
         Assert.Equal("Une tâche", map.Name);
         Assert.Null(map.Text("description"));
-        Assert.Equal("1.5", map.Number("charge_estimee"));
-        Assert.Null(map.Number("budget_estime"));
+        Assert.Equal("1.5", map.Number("time_estimated"));
+        Assert.Null(map.Number("budget_estimated"));
     }
 
     [Fact]
@@ -66,8 +66,8 @@ public class AnytypeV2PropertyMapTests
         var map = new AnytypeV2PropertyMap(null);
 
         Assert.Equal("", map.Name);
-        Assert.Null(map.Select("etat"));
-        Assert.Empty(map.ObjectIds("relation_projet"));
+        Assert.Null(map.Select("status"));
+        Assert.Empty(map.ObjectIds("projects"));
         Assert.False(map.InBin);
     }
 

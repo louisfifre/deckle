@@ -47,25 +47,25 @@ public class DocumentGesturesTests
 
         JsonArray props = Assert.IsType<JsonArray>(created["properties"]);
         JsonObject type = Assert.IsType<JsonObject>(Assert.Single(props));
-        Assert.Equal(DevSpace.Props.TypeDeDocument, type["key"]!.GetValue<string>());
+        Assert.Equal(DevSpace.Props.DocumentType, type["key"]!.GetValue<string>());
         Assert.Equal("architecture", type["select"]!.GetValue<string>());
     }
 
     [Fact]
-    public async Task CreateWithVersionAndSystemSendsOptionalProperties()
+    public async Task CreateWithVersionAndGlobalSendsOptionalProperties()
     {
         using var server = new FakeAnytypeServer();
         server.OnPostObject(DocumentObject("Instruction MCP"));
 
         await NewGestures(server).CreateAsync(
-            "Instruction MCP", "instructions", version: "1.0", system: true, ct: Ct);
+            "Instruction MCP", "instructions", version: "1.0", isGlobal: true, ct: Ct);
 
         JsonObject created = server.LastBodyFor("POST");
         JsonArray props = Assert.IsType<JsonArray>(created["properties"]);
 
         Assert.Contains(props, p =>
             p is JsonObject o
-            && o["key"]?.GetValue<string>() == DevSpace.Props.TypeDeDocument
+            && o["key"]?.GetValue<string>() == DevSpace.Props.DocumentType
             && o["select"]?.GetValue<string>() == "instructions");
 
         Assert.Contains(props, p =>
@@ -75,7 +75,7 @@ public class DocumentGesturesTests
 
         Assert.Contains(props, p =>
             p is JsonObject o
-            && o["key"]?.GetValue<string>() == DevSpace.Props.DocumentSysteme
+            && o["key"]?.GetValue<string>() == DevSpace.Props.DocumentGlobal
             && o["checkbox"]?.GetValue<bool>() == true);
     }
 

@@ -42,17 +42,16 @@ public class SessionGesturesTests
 
     const string LogPath = "/v2/spaces/space-1/objects/" + NewReport;
 
-    // What a v2 object read answers for the log's read: the journal date as a
-    // property and, unless the body is empty, an outline holding the « # Journal »
-    // heading block a fresh v2 report opens on, then one block per type given.
+    // What a v2 object read answers for the log's read: an outline holding, unless
+    // the body is empty, the « # Journal » heading block a fresh v2 report opens
+    // on, then one block per type given.
     static string V2Report(bool withBlock, params string[] moreBlockTypes)
     {
         var blocks = new JsonArray();
         if (withBlock) blocks.Add(new JsonObject { ["id"] = "h1", ["type"] = "heading_1" });
         for (int i = 0; i < moreBlockTypes.Length; i++)
             blocks.Add(new JsonObject { ["id"] = $"b{i}", ["type"] = moreBlockTypes[i] });
-        return "{\"properties\":{\"" + DevSpace.Props.DateDuJournal
-            + "\":\"2026-06-11T00:00:00Z\"},\"outline\":" + blocks.ToJsonString() + "}";
+        return "{\"properties\":{},\"outline\":" + blocks.ToJsonString() + "}";
     }
 
     // The single PATCH the log sends, as its parsed ops array.
@@ -72,7 +71,7 @@ public class SessionGesturesTests
             ["markdown"] = "",
             ["properties"] = new JsonArray(new JsonObject
             {
-                ["key"] = DevSpace.Props.RelationProjet,
+                ["key"] = DevSpace.Props.Projects,
                 ["objects"] = new JsonArray(ProjectId),
             }),
         },
@@ -85,8 +84,7 @@ public class SessionGesturesTests
             ["id"] = id,
             ["markdown"] = markdown,
             ["properties"] = new JsonArray(
-                new JsonObject { ["key"] = DevSpace.Props.DateDuJournal, ["date"] = "2026-06-11" },
-                new JsonObject { ["key"] = DevSpace.Props.TachesLiees, ["objects"] = Refs(taskIds) }),
+                new JsonObject { ["key"] = DevSpace.Props.Tasks, ["objects"] = Refs(taskIds) }),
         },
     };
 
@@ -107,7 +105,7 @@ public class SessionGesturesTests
     static FakeV2Handler WireOpenReads(string? createAnswer = null, string taskType = "task") =>
         new FakeV2Handler()
             .Reply(HttpStatusCode.OK, V2Named(TaskId, taskType, "Tâche d'ancrage",
-                ",\"" + DevSpace.Props.RelationProjet + "\":[\"" + ProjectId + "\"]"))
+                ",\"" + DevSpace.Props.Projects + "\":[\"" + ProjectId + "\"]"))
             .Reply(HttpStatusCode.OK, V2Named(ProjectId, "project", "Mon projet"))
             // The shape of a real create's answer (measured): id and etag at the root.
             .Reply(HttpStatusCode.Created,
@@ -125,8 +123,8 @@ public class SessionGesturesTests
         foreach (var (id, tasks) in reports)
             data.Add(new JsonObject
             {
-                ["id"] = id, ["name"] = "", ["type"] = "rapport",
-                ["properties"] = new JsonObject { [DevSpace.Props.TachesLiees] = Refs(tasks) },
+                ["id"] = id, ["name"] = "", ["type"] = "report",
+                ["properties"] = new JsonObject { [DevSpace.Props.Tasks] = Refs(tasks) },
             });
         return Json(new JsonObject { ["data"] = data, ["has_more"] = false });
     }
@@ -146,8 +144,8 @@ public class SessionGesturesTests
         server.OnPatchObject(TaskId, TaskObject(TaskId, "Tâche d'ancrage"));
         server.OnPatchObject(OtherTaskId, TaskObject(OtherTaskId, "Autre"));
         FakeV2Handler v2 = new FakeV2Handler()
-            .Reply(HttpStatusCode.OK, V2Named(NewReport, "rapport", "",
-                ",\"" + DevSpace.Props.TachesLiees + "\":[\"" + TaskId + "\",\"" + OtherTaskId + "\"]"))
+            .Reply(HttpStatusCode.OK, V2Named(NewReport, "report", "",
+                ",\"" + DevSpace.Props.Tasks + "\":[\"" + TaskId + "\",\"" + OtherTaskId + "\"]"))
             .Reply(HttpStatusCode.OK, Markdown(Journal))
             .Reply(HttpStatusCode.OK, V2Report(true, "paragraph"))
             .Reply(HttpStatusCode.OK, "{}")
@@ -181,7 +179,7 @@ public class SessionGesturesTests
     static double RealHours(IEnumerable<FakeAnytypeServer.Received> patches, string taskId)
     {
         FakeAnytypeServer.Received patch = Assert.Single(patches, p => p.Path.EndsWith(taskId)
-            && p.Body.Contains(DevSpace.Props.ChargeReelle));
+            && p.Body.Contains(DevSpace.Props.TimeActual));
         JsonObject entry = (JsonObject)JsonNode.Parse(patch.Body)!["properties"]![0]!;
         return entry["number"]!.GetValue<double>();
     }
@@ -192,8 +190,8 @@ public class SessionGesturesTests
         using var server = new FakeAnytypeServer();
         server.OnPatchObject(TaskId, TaskObject(TaskId, "Tâche d'ancrage"));
         FakeV2Handler v2 = new FakeV2Handler()
-            .Reply(HttpStatusCode.OK, V2Named(NewReport, "rapport", "",
-                ",\"" + DevSpace.Props.TachesLiees + "\":[\"" + TaskId + "\"]"))
+            .Reply(HttpStatusCode.OK, V2Named(NewReport, "report", "",
+                ",\"" + DevSpace.Props.Tasks + "\":[\"" + TaskId + "\"]"))
             .Reply(HttpStatusCode.OK, Markdown(Journal))
             .Reply(HttpStatusCode.OK, V2Report(true, "paragraph"))
             .Reply(HttpStatusCode.OK, "{}")
@@ -212,8 +210,8 @@ public class SessionGesturesTests
     {
         using var server = new FakeAnytypeServer();
         FakeV2Handler v2 = new FakeV2Handler()
-            .Reply(HttpStatusCode.OK, V2Named(NewReport, "rapport", "",
-                ",\"" + DevSpace.Props.TachesLiees + "\":[\"" + TaskId + "\"]"));
+            .Reply(HttpStatusCode.OK, V2Named(NewReport, "report", "",
+                ",\"" + DevSpace.Props.Tasks + "\":[\"" + TaskId + "\"]"));
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
             () => NewGestures(server, v2, new StoppedClock())
@@ -225,7 +223,7 @@ public class SessionGesturesTests
     }
 
     [Fact]
-    public async Task OpenReportCreatesAReportCarryingTodayAndTheAnchorTask()
+    public async Task OpenReportCreatesAReportHeadedByTodayAndLinkedToTheAnchorTask()
     {
         using var server = new FakeAnytypeServer();
         FakeV2Handler v2 = WireOpenReads();
@@ -235,22 +233,22 @@ public class SessionGesturesTests
         Assert.StartsWith($"report_id : {NewReport}\n", answer, StringComparison.Ordinal);
 
         JsonObject create = CreateBody(v2);
-        Assert.Equal(DevSpace.Types.Rapport, create["type"]!.GetValue<string>());
+        Assert.Equal(DevSpace.Types.Report, create["type"]!.GetValue<string>());
         // The heading opens the body; a report is a note and is sent no name,
         // which would land as a paragraph ahead of it.
         Assert.Equal("# Journal 2026-06-12", create["markdown"]!.GetValue<string>());
         Assert.False(create.ContainsKey("name"));
 
         var props = (JsonObject)create["properties"]!;
-        // The wire date is the stopped clock's day in ISO yyyy-MM-dd, whatever
-        // the zone or the hour of the machine running the test.
-        Assert.Equal("2026-06-12", props[DevSpace.Props.DateDuJournal]!.GetValue<string>());
+        // The model v6 has no journal-date property: the date is the heading's
+        // (the stopped clock's day) and the object's native creation date.
+        Assert.Equal([DevSpace.Props.Tasks], props.Select(p => p.Key));
 
-        Assert.Equal(TaskId, ((JsonArray)props[DevSpace.Props.TachesLiees]!).Single()!.GetValue<string>());
+        Assert.Equal(TaskId, ((JsonArray)props[DevSpace.Props.Tasks]!).Single()!.GetValue<string>());
 
         // The report has NO project property: its project is derived through the
         // linked task(s).
-        Assert.False(props.ContainsKey(DevSpace.Props.RelationProjet));
+        Assert.False(props.ContainsKey(DevSpace.Props.Projects));
 
         // The create carries an Idempotency-Key; that the server dedupes a
         // resend on it is the writer's contract, not asserted here.
@@ -312,7 +310,7 @@ public class SessionGesturesTests
         using var server = new FakeAnytypeServer();
         FakeV2Handler v2 = new FakeV2Handler()
             .Reply(HttpStatusCode.OK, V2Named(TaskId, "task", "Tâche d'ancrage",
-                ",\"" + DevSpace.Props.RelationProjet + "\":[\"" + ProjectId + "\"]"))
+                ",\"" + DevSpace.Props.Projects + "\":[\"" + ProjectId + "\"]"))
             .Reply(HttpStatusCode.NotFound, "{\"message\":\"object not found\"}")
             .Reply(HttpStatusCode.Created, "{\"id\":\"" + NewReport + "\"}");
 
@@ -368,7 +366,7 @@ public class SessionGesturesTests
 
         JsonObject patch = server.LastBodyFor("PATCH");
         var props = (JsonArray)patch["properties"]!;
-        JsonObject tasksProp = FindProp(props, DevSpace.Props.TachesLiees);
+        JsonObject tasksProp = FindProp(props, DevSpace.Props.Tasks);
         var ids = ((JsonArray)tasksProp["objects"]!).Select(n => n!.GetValue<string>()).ToArray();
 
         Assert.Equal(new[] { TaskId, OtherTaskId }, ids);
@@ -452,24 +450,23 @@ public class SessionGesturesTests
         // mean « no block ».
         string read = outlineKeyPresent
             ? V2Report(withBlock: false)
-            : "{\"properties\":{\"" + DevSpace.Props.DateDuJournal + "\":\"2026-06-11\"}}";
+            : "{\"properties\":{}}";
         var v2 = new FakeV2Handler()
             .Reply(HttpStatusCode.OK, read)
             .Reply(HttpStatusCode.OK, "{}");
 
         await NewGestures(server, v2, new StoppedClock()).LogAsync("writes the tests", NewReport, Ct);
 
-        // The heading comes from the report's own journal date (2026-06-11),
-        // not from today, in the same insert as the first entry.
+        // The heading is today's, in the same insert as the first entry.
         Assert.Equal(
-            "# Journal 2026-06-11\n\n2026-06-12 14:05\n\nwrites the tests\n\n ",
+            "# Journal 2026-06-12\n\n2026-06-12 14:05\n\nwrites the tests\n\n ",
             LoggedOps(v2).Single()!["markdown"]!.GetValue<string>());
     }
 
-    // A report that lost its journal date still gets a dated heading: today's,
-    // from the gesture's own clock, without a second read.
+    // A report written alone, with no heading block, gets a dated heading:
+    // today's, from the gesture's own clock, without a second read.
     [Fact]
-    public async Task LogDatesTheHeadingTodayWhenTheReportHasNoJournalDate()
+    public async Task LogDatesTheHeadingTodayWhenTheReportHasNoHeadingBlock()
     {
         using var server = new FakeAnytypeServer();
         var v2 = new FakeV2Handler()

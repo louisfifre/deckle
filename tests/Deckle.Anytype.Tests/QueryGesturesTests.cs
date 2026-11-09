@@ -41,15 +41,27 @@ public class QueryGesturesTests
         },
     };
 
-    // A rapport GET response — the type that does NOT carry the « Archivé »
-    // checkbox, so archive must refuse it.
+    // A report GET response: a note without a name of its own.
     static JsonObject RapportObject() => new()
     {
         ["object"] = new JsonObject
         {
             ["id"] = TaskId,
             ["name"] = "Un rapport",
-            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Rapport },
+            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Report },
+            ["properties"] = new JsonArray(),
+        },
+    };
+
+    // An object of a type the model does not know, so one without the « Archivé »
+    // checkbox: archive must refuse it.
+    static JsonObject PageObject() => new()
+    {
+        ["object"] = new JsonObject
+        {
+            ["id"] = TaskId,
+            ["name"] = "Une page",
+            ["type"] = new JsonObject { ["key"] = "page" },
             ["properties"] = new JsonArray(),
         },
     };
@@ -84,22 +96,23 @@ public class QueryGesturesTests
         Assert.Contains("Tâche terminée", digest);
     }
 
-    [Fact]
-    public async Task CompleteReopensAProjectThroughTheSameCanonicalSignal()
+    // A project is a durable subject: it has no done box and is closed by
+    // archiving, so complete refuses it, ticking or reopening, and says where the
+    // closing gesture is.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task CompleteRefusesAProjectAndPointsToArchive(bool value)
     {
         using var server = new FakeAnytypeServer();
         server.OnGetObject(ProjectId, ProjectObject());
-        server.OnPatchObject(ProjectId, ProjectObject());
 
-        string digest = await NewGestures(server)
-            .CompleteAsync(ProjectId, value: false, ct: Ct);
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).CompleteAsync(ProjectId, value, Ct));
 
-        JsonObject patched = server.LastBodyFor("PATCH");
-        JsonObject done = Assert.IsType<JsonObject>(
-            Assert.Single((JsonArray)patched["properties"]!));
-        Assert.Equal(DevSpace.Props.Done, done["key"]!.GetValue<string>());
-        Assert.False(done["checkbox"]!.GetValue<bool>());
-        Assert.Contains("Chantier rouvert", digest);
+        Assert.Contains("n'a pas de case Fini", ex.Message);
+        Assert.Contains("archive", ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
 
     static JsonObject EpicObject() => new()
@@ -128,15 +141,13 @@ public class QueryGesturesTests
                     "Deckle",
                     DevSpace.Types.Project,
                     "Details\nEnjeu\nConstruire l’utilitaire Windows local.",
-                    TextProperty(DevSpace.Props.Description, "Utilitaire Windows local."),
-                    TextProperty(DevSpace.Props.DefinitionDeFini, "Le parcours principal est livré.")),
+                    TextProperty(DevSpace.Props.DoneDefinition, "Le parcours principal est livré.")),
                 SearchHit(
                     TaskId,
                     "Reconnexion",
                     DevSpace.Types.Task,
                     "Details\nObjet\nReprendre après une veille.",
-                    TextProperty(DevSpace.Props.Description, "Reprendre après la veille."),
-                    TextProperty(DevSpace.Props.DefinitionDeFini, "Aucune action manuelle requise.")),
+                    TextProperty(DevSpace.Props.DoneDefinition, "Aucune action manuelle requise.")),
             },
         });
 
@@ -144,14 +155,12 @@ public class QueryGesturesTests
 
         Assert.Equal(
             "project · Deckle\n" +
-            "Description : Utilitaire Windows local.\n" +
             "Définition de fini : Le parcours principal est livré.\n" +
             "Aperçu :\n" +
             "Details\n" +
             "Enjeu\n" +
             "Construire l’utilitaire Windows local.\n" +
             "task · Reconnexion\n" +
-            "Description : Reprendre après la veille.\n" +
             "Définition de fini : Aucune action manuelle requise.\n" +
             "Aperçu :\n" +
             "Details\n" +
@@ -173,8 +182,7 @@ public class QueryGesturesTests
                     "Deckle",
                     DevSpace.Types.Project,
                     "Corps du projet",
-                    TextProperty(DevSpace.Props.Description, "   "),
-                    TextProperty(DevSpace.Props.DefinitionDeFini, "")),
+                    TextProperty(DevSpace.Props.DoneDefinition, "")),
                 SearchHit(
                     EpicId,
                     "Applications",
@@ -210,12 +218,11 @@ public class QueryGesturesTests
                     "Reconnexion",
                     DevSpace.Types.Task,
                     "Details\nObjet\nReprendre après une veille.",
-                    TextProperty(DevSpace.Props.Description, "Reprendre après la veille."),
-                    TextProperty(DevSpace.Props.DefinitionDeFini, "Aucune action manuelle requise.")),
+                    TextProperty(DevSpace.Props.DoneDefinition, "Aucune action manuelle requise.")),
                 SearchHit(
                     EpicId,
                     "",
-                    DevSpace.Types.Rapport,
+                    DevSpace.Types.Report,
                     snippet: "2026-07-21 — Session Anytype\nDécision importante"),
             },
         });
@@ -224,7 +231,7 @@ public class QueryGesturesTests
 
         Assert.Equal(
             "task · Reconnexion\n" +
-            "rapport · 2026-07-21 — Session Anytype",
+            "report · 2026-07-21 — Session Anytype",
             digest);
     }
 
@@ -287,14 +294,14 @@ public class QueryGesturesTests
         // Deliberately register NO /properties or /tags route: a frozen vocabulary
         // must resolve without touching the live options endpoint.
 
-        var props = new JsonObject { ["etat"] = "En cours" };
+        var props = new JsonObject { ["priority"] = "4" };
         await NewGestures(server).UpdateAsync(TaskId, null, props, Ct);
 
         JsonObject patched = server.LastBodyFor("PATCH");
         var entries = Assert.IsType<JsonArray>(patched["properties"]);
         JsonObject entry = Assert.IsType<JsonObject>(Assert.Single(entries));
-        Assert.Equal(DevSpace.Props.Etat, entry["key"]!.GetValue<string>());
-        Assert.Equal("en_cours", entry["select"]!.GetValue<string>());
+        Assert.Equal(DevSpace.Props.Priority, entry["key"]!.GetValue<string>());
+        Assert.Equal("p4", entry["select"]!.GetValue<string>());
 
         Assert.DoesNotContain(server.Requests, r => r.Path.Contains("/properties"));
     }
@@ -305,7 +312,7 @@ public class QueryGesturesTests
         using var server = new FakeAnytypeServer();
         server.OnGetObject(TaskId, TaskObject());
 
-        var props = new JsonObject { ["etat"] = "pas-un-etat" };
+        var props = new JsonObject { ["priority"] = "pas-une-priorite" };
 
         await Assert.ThrowsAsync<ArgumentException>(
             () => NewGestures(server).UpdateAsync(TaskId, null, props, Ct));
@@ -336,15 +343,90 @@ public class QueryGesturesTests
         server.OnGetObject(TaskId, TaskObject());
         server.OnPatchObject(TaskId, TaskObject());
 
-        var props = new JsonObject { ["etat"] = "En cours" };
+        var props = new JsonObject { ["priority"] = "2" };
         await NewGestures(server).UpdateAsync(TaskId, "Nouveau titre", props, Ct);
 
         Assert.Equal(1, server.Requests.Count(r => r.Method == "PATCH"));
         JsonObject patched = server.LastBodyFor("PATCH");
         Assert.Equal("Nouveau titre", patched["name"]!.GetValue<string>());
         JsonObject entry = Assert.IsType<JsonObject>(Assert.Single((JsonArray)patched["properties"]!));
-        Assert.Equal(DevSpace.Props.Etat, entry["key"]!.GetValue<string>());
-        Assert.Equal("en_cours", entry["select"]!.GetValue<string>());
+        Assert.Equal(DevSpace.Props.Priority, entry["key"]!.GetValue<string>());
+        Assert.Equal("p2", entry["select"]!.GetValue<string>());
+    }
+
+    // État is kept on projects only: an epic and a task carry a hidden one the
+    // MCP never writes.
+    [Theory]
+    [InlineData("task")]
+    [InlineData("epic")]
+    public async Task UpdateRefusesTheStateOfAnEpicOrATask(string kind)
+    {
+        using var server = new FakeAnytypeServer();
+        JsonObject obj = kind == "task" ? TaskObject() : EpicObject();
+        string id = kind == "task" ? TaskId : EpicId;
+        server.OnGetObject(id, obj);
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).UpdateAsync(id, null, new JsonObject { ["status"] = "En cours" }, Ct));
+
+        Assert.Contains("ne se tient que sur un projet", ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    [Fact]
+    public async Task UpdateSetsTheStateOfAProjectToOneOfTheFourStatuses()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        server.OnPatchObject(ProjectId, ProjectObject());
+
+        await NewGestures(server).UpdateAsync(ProjectId, null, new JsonObject { ["État"] = "En pause" }, Ct);
+
+        JsonObject entry = Assert.IsType<JsonObject>(Assert.Single((JsonArray)server.LastBodyFor("PATCH")["properties"]!));
+        Assert.Equal(DevSpace.Props.Status, entry["key"]!.GetValue<string>());
+        Assert.Equal("paused", entry["select"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task UpdateRefusesTheStatesOfTheV5SpaceOnAProject()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server).UpdateAsync(ProjectId, null, new JsonObject { ["status"] = "Terminé" }, Ct));
+
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    // The epic of a project is written by link, as the property and the
+    // collection together; update would write only one of them.
+    [Fact]
+    public async Task UpdateRefusesToWriteTheEpicLinkOfAProject()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).UpdateAsync(
+                ProjectId, null, new JsonObject { [DevSpace.Props.Epic] = new JsonArray(EpicId) }, Ct));
+
+        Assert.Contains("link", ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    // A project has no done box: it cannot be written through update either.
+    [Fact]
+    public async Task UpdateKnowsNoDoneBoxOnAProject()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).UpdateAsync(ProjectId, null, new JsonObject { ["done"] = true }, Ct));
+
+        Assert.Contains("Propriété inconnue", ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
 
     [Fact]
@@ -429,10 +511,10 @@ public class QueryGesturesTests
     }
 
     [Fact]
-    public async Task ArchiveOnARapportIsRefusedAndSendsNoPatch()
+    public async Task ArchiveOnATypeWithoutTheBoxIsRefusedAndSendsNoPatch()
     {
         using var server = new FakeAnytypeServer();
-        server.OnGetObject(TaskId, RapportObject());
+        server.OnGetObject(TaskId, PageObject());
 
         InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => NewGestures(server).ArchiveAsync(TaskId, ct: Ct));
@@ -485,7 +567,7 @@ public class QueryGesturesTests
         // The tasks are asked by their project link, on the server.
         JsonObject search = (JsonObject)JsonNode.Parse(Assert.Single(v2.Requests).Body!)!;
         JsonObject filter = (JsonObject)search["filters"]![0]!;
-        Assert.Equal(DevSpace.Props.RelationProjet, filter["property"]!.GetValue<string>());
+        Assert.Equal(DevSpace.Props.Projects, filter["property"]!.GetValue<string>());
         Assert.Equal(ProjectId, filter["value"]![0]!.GetValue<string>());
     }
 
@@ -611,17 +693,21 @@ public class QueryGesturesTests
     // ── LinkAsync ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public async Task LinkProjectToEpicAddsTheProjectToTheEpicCollectionWithoutPatchingTheProject()
+    public async Task LinkProjectToEpicWritesTheEpicPropertyAndTheEpicCollectionTogether()
     {
         using var server = new FakeAnytypeServer();
         server.OnGetObject(ProjectId, ProjectObject());
         server.OnGetObject(EpicId, EpicObject());
+        server.OnPatchObject(ProjectId, ProjectObject());
         server.OnPostListObjects(EpicId, "\"Objects added successfully\"");
 
         string digest = await NewGestures(server).LinkAsync(ProjectId, [EpicId], Ct);
 
         Assert.Contains("rattachement", digest);
-        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+        JsonObject patched = server.LastBodyFor("PATCH");
+        JsonObject property = Assert.IsType<JsonObject>(Assert.Single((JsonArray)patched["properties"]!));
+        Assert.Equal(DevSpace.Props.Epic, property["key"]!.GetValue<string>());
+        Assert.Equal([EpicId], ((JsonArray)property["objects"]!).Select(n => n!.GetValue<string>()));
 
         JsonObject posted = server.LastBodyFor("POST");
         JsonArray objects = Assert.IsType<JsonArray>(posted["objects"]);
@@ -632,6 +718,70 @@ public class QueryGesturesTests
     // ── UnlinkAsync ───────────────────────────────────────────────────────────
 
     const string OtherProjectId = "bafyreiotherprojectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string OtherEpicId = "bafyreiotherepicaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    static JsonObject ProjectInEpic(string epicId)
+    {
+        JsonObject project = ProjectObject();
+        ((JsonArray)project["object"]!["properties"]!).Add(new JsonObject
+        {
+            ["key"] = DevSpace.Props.Epic,
+            ["format"] = "objects",
+            ["objects"] = new JsonArray(epicId),
+        });
+        return project;
+    }
+
+    // A project has zero or one epic: the new one replaces the old, which loses
+    // the project from its collection too.
+    [Fact]
+    public async Task LinkProjectToAnotherEpicReplacesTheEpicAndLeavesTheOldCollection()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectInEpic(OtherEpicId));
+        server.OnGetObject(EpicId, EpicObject());
+        server.OnPatchObject(ProjectId, ProjectObject());
+        server.OnPostListObjects(EpicId, "\"Objects added successfully\"");
+        server.OnDeleteListObject(OtherEpicId, ProjectId);
+
+        await NewGestures(server).LinkAsync(ProjectId, [EpicId], Ct);
+
+        JsonObject property = Assert.IsType<JsonObject>(Assert.Single((JsonArray)server.LastBodyFor("PATCH")["properties"]!));
+        Assert.Equal([EpicId], ((JsonArray)property["objects"]!).Select(n => n!.GetValue<string>()));
+        Assert.Contains(server.Requests, r => r.Method == "DELETE"
+            && r.Path == $"/v1/spaces/{FakeAnytypeServer.Space}/lists/{OtherEpicId}/objects/{ProjectId}");
+    }
+
+    [Fact]
+    public async Task LinkProjectToTwoEpicsIsRefusedBeforeAnyWrite()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        server.OnGetObject(EpicId, EpicObject());
+        server.OnGetObject(OtherEpicId, EpicObject());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).LinkAsync(ProjectId, [EpicId, OtherEpicId], Ct));
+
+        Assert.DoesNotContain(server.Requests, r => r.Method is "PATCH" or "POST");
+    }
+
+    [Fact]
+    public async Task UnlinkProjectFromItsEpicEmptiesThePropertyAndLeavesTheCollection()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectInEpic(EpicId));
+        server.OnGetObject(EpicId, EpicObject());
+        server.OnPatchObject(ProjectId, ProjectObject());
+        server.OnDeleteListObject(EpicId, ProjectId);
+
+        await NewGestures(server).UnlinkAsync(ProjectId, [EpicId], Ct);
+
+        JsonObject property = Assert.IsType<JsonObject>(Assert.Single((JsonArray)server.LastBodyFor("PATCH")["properties"]!));
+        Assert.Equal(DevSpace.Props.Epic, property["key"]!.GetValue<string>());
+        Assert.Empty((JsonArray)property["objects"]!);
+        Assert.Contains(server.Requests, r => r.Method == "DELETE");
+    }
 
     static JsonObject TaskLinkedTo(params string[] projectIds)
     {
@@ -640,7 +790,7 @@ public class QueryGesturesTests
         foreach (string id in projectIds) refs.Add(id);
         ((JsonArray)task["object"]!["properties"]!).Add(new JsonObject
         {
-            ["key"] = DevSpace.Props.RelationProjet,
+            ["key"] = DevSpace.Props.Projects,
             ["format"] = "objects",
             ["objects"] = refs,
         });
@@ -667,7 +817,7 @@ public class QueryGesturesTests
 
         JsonObject patched = server.LastBodyFor("PATCH");
         JsonObject entry = Assert.IsType<JsonObject>(((JsonArray)patched["properties"]!).Single());
-        Assert.Equal(DevSpace.Props.RelationProjet, entry["key"]!.GetValue<string>());
+        Assert.Equal(DevSpace.Props.Projects, entry["key"]!.GetValue<string>());
         Assert.Equal([OtherProjectId], ((JsonArray)entry["objects"]!).Select(n => n!.GetValue<string>()));
         Assert.Contains("1 retrait(s)", digest);
     }
@@ -695,7 +845,7 @@ public class QueryGesturesTests
 
         InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
             () => NewGestures(server).UpdateAsync(
-                TaskId, null, new JsonObject { [DevSpace.Props.RelationProjet] = new JsonArray() }, Ct));
+                TaskId, null, new JsonObject { [DevSpace.Props.Projects] = new JsonArray() }, Ct));
 
         Assert.Contains("projet", ex.Message);
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
@@ -738,7 +888,7 @@ public class QueryGesturesTests
         {
             ["id"] = ContactId,
             ["name"] = "Camille",
-            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Contact },
+            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Person },
             ["properties"] = new JsonArray(),
         },
     };
@@ -754,19 +904,74 @@ public class QueryGesturesTests
         await NewGestures(server).LinkAsync(TaskId, [ContactId], Ct);
 
         JsonObject entry = (JsonObject)((JsonArray)server.LastBodyFor("PATCH")["properties"]!).Single()!;
-        Assert.Equal(DevSpace.Props.ContactLie, entry["key"]!.GetValue<string>());
+        Assert.Equal(DevSpace.Props.Contacts, entry["key"]!.GetValue<string>());
         Assert.Equal(ContactId, entry["objects"]![0]!.GetValue<string>());
     }
 
+    // The model v6 gives a project a contacts link, like a task and a report.
     [Fact]
-    public async Task LinkAProjectToAPersonIsRefusedUntilTheProjectCarriesAContactLink()
+    public async Task LinkAProjectToAPersonWritesTheContactLink()
     {
         using var server = new FakeAnytypeServer();
         server.OnGetObject(ProjectId, ProjectObject());
         server.OnGetObject(ContactId, ContactObject());
+        server.OnPatchObject(ProjectId, ProjectObject());
+
+        await NewGestures(server).LinkAsync(ProjectId, [ContactId], Ct);
+
+        JsonObject entry = (JsonObject)((JsonArray)server.LastBodyFor("PATCH")["properties"]!).Single()!;
+        Assert.Equal(DevSpace.Props.Contacts, entry["key"]!.GetValue<string>());
+        Assert.Equal(ContactId, entry["objects"]![0]!.GetValue<string>());
+    }
+
+    const string DocumentId = "bafyreidocumentaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    static JsonObject DocumentObject() => new()
+    {
+        ["object"] = new JsonObject
+        {
+            ["id"] = DocumentId,
+            ["name"] = "Spécification",
+            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Document },
+            ["properties"] = new JsonArray(),
+        },
+    };
+
+    // Documents are linked from the work they serve: the link lives on the
+    // project, the task, the epic or the idea, never on the document.
+    [Theory]
+    [InlineData("project")]
+    [InlineData("task")]
+    [InlineData("epic")]
+    public async Task LinkAWorkObjectToADocumentWritesTheDocumentsLink(string kind)
+    {
+        using var server = new FakeAnytypeServer();
+        (string id, JsonObject obj) = kind switch
+        {
+            "project" => (ProjectId, ProjectObject()),
+            "task" => (TaskId, TaskObject()),
+            _ => (EpicId, EpicObject()),
+        };
+        server.OnGetObject(id, obj);
+        server.OnGetObject(DocumentId, DocumentObject());
+        server.OnPatchObject(id, obj);
+
+        await NewGestures(server).LinkAsync(id, [DocumentId], Ct);
+
+        JsonObject entry = (JsonObject)((JsonArray)server.LastBodyFor("PATCH")["properties"]!).Single()!;
+        Assert.Equal(DevSpace.Props.Documents, entry["key"]!.GetValue<string>());
+        Assert.Equal(DocumentId, entry["objects"]![0]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task LinkADocumentToAnythingIsRefused()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(DocumentId, DocumentObject());
+        server.OnGetObject(TaskId, TaskObject());
 
         await Assert.ThrowsAsync<InvalidOperationException>(
-            () => NewGestures(server).LinkAsync(ProjectId, [ContactId], Ct));
+            () => NewGestures(server).LinkAsync(DocumentId, [TaskId], Ct));
 
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
@@ -941,7 +1146,7 @@ public class QueryGesturesTests
 
         FakeV2Handler.Seen post = Assert.Single(v2.Requests);
         JsonObject body = (JsonObject)JsonNode.Parse(post.Body!)!;
-        Assert.Equal(DevSpace.Types.Idee, body["type"]!.GetValue<string>());
+        Assert.Equal(DevSpace.Types.Idea, body["type"]!.GetValue<string>());
         Assert.False(body.ContainsKey("name"));
         Assert.Equal(text.Replace("slot_", "slot\\_"), body["markdown"]!.GetValue<string>());
         Assert.StartsWith("Idée notée : Une idée assez longue", digest);

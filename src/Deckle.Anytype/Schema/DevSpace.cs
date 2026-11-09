@@ -10,35 +10,25 @@ public readonly record struct TagOption(string Key, string Name);
 
 // One mapped property of a type. Format is one of:
 //   "text" | "number" | "date" | "checkbox" | "select" | "multi_select" | "objects" | "files"
+//   | "email" | "phone" | "url"
 // Options is non-null only for select / multi_select.
 public sealed record PropertyDef(string Key, string Label, string Format, TagOption[]? Options = null);
 
-// Freezes the live structure of the project-management space (« Dev »),
-// discovered against the running Anytype REST API. This file is the single
-// source of truth for every type key, property key and tag-option key the
-// gestures send over the wire.
+// Freezes the structure of the project-management space as the model v6 defines
+// it: every type key, property key and select-option key the gestures send over
+// the wire. It mirrors Schema/pm-schema-manifest.json, the file the schema-admin
+// surface applies to build the space; PmSchemaManifestTests fails when the two
+// drift (a key, a label, a format, an option or a property order).
 //
-// The keys are transcribed VERBATIM, including the malformed ones the space
-// actually carries. Three traps are real, not typos to fix here — fixing them
-// in the space would break existing objects, so the code must speak the wire:
-//
-//   • Props.TachesLiees   = "tache(s)_liee(s)"        — MALFORMED key (no accents).
-//   • Props.BudgetReel    = "budget_reel_("           — TRUNCATED key.
-//   • Props.ChargeReelle  = "charge_estimee_(jours)"  — MISLEADING key (named
-//     like an estimate, but it is the *real* charge field). Its unit is the
-//     hour, despite « jours »: a number property carries its unit in its name,
-//     and Louis confirmed on 2026-11-09 that the field holds hours and was
-//     never filled. The recreation of the space renames it.
-//
-// Priorité is a select whose tag options are a mix of opaque ids and bare
-// integer strings — both forms are below. Its own key is served as "priorite"
-// by v1 and v2 alike (measured 2026-10-22); the space's opaque relation id
-// 67c6d714… is still accepted on writes but never served on reads.
+// Keys are English, lowercase, words joined by `_`. Display names stay French.
+// A property that belongs to one type carries the type as a prefix of its key
+// (task_type, document_type); a property several types use keeps one key
+// (documents, contacts, email).
 //
 // Properties are space-global in Anytype, so the keys live FLAT under Props.
-// PropertiesFor() maps each type to the properties it carries, in digest order;
-// the derived lookups (PropertyLabel, TagName, TryResolveProperty) read those
-// tables — no parallel lists.
+// PropertiesFor() maps each type to the properties it carries, in the order the
+// model declares them; the derived lookups (PropertyLabel, TagName,
+// TryResolveProperty) read those tables, with no parallel list.
 //
 // No dependency outside the BCL by design: this is pure data the rest of the
 // module reads.
@@ -49,42 +39,22 @@ public static class DevSpace
     public const string DevSpaceId =
         "bafyreiaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.aaaaaaaaaaa";
 
-    // ── Default templates ─────────────────────────────────────────────────────
-    //
-    // On the v1 REST API an Epic created without `template_id` came out bare
-    // (no properties, no views; see ProjectGesturesBugNotes). Whether v1 ever
-    // applies a type's default template on its own is not established: the
-    // openapi only documents `template_id` as an optional "template to use", and
-    // Deckle always sends it. On v2 it is measured: POST /objects applies the
-    // type default when no `template_id` is sent (receipt `source: type_default`).
-    // Epic, project and task carry a template (idee and rapport have none), so
-    // their creations pass its id explicitly, which holds on both versions.
-    public static class Templates
-    {
-        public const string Epic    = "bafyreiebxtbakbgodx2demmj4ukohifxxguowaiiofrn7uvibxy24tx76m";
-        public const string Project = "bafyreib5ganxcahinie6cnbdfvchxfosclfvq6pggi57r7fwfylazemr5a";
-        public const string Task    = "bafyreibhy53jvgxp6euzxrn3bmchbtty5eq555m5ybf2mw43wsrwcawzre";
-    }
-
     // ── Type keys ────────────────────────────────────────────────────────────
     //
     // A trailing `layout:` note names the Anytype object layout backing the type.
-    // The « session » type exists in the space but is dormant and unused — it
-    // is deliberately absent here so nothing references it.
+    // Every creation names no template: the type's default one applies (measured
+    // on v2, receipt `source: type_default`), so the template is chosen in
+    // Anytype, per type, and never by an id frozen here.
     public static class Types
     {
         public const string Epic     = "epic";     // layout: collection
-        public const string Project  = "project";
+        public const string Project  = "project";  // layout: basic
         public const string Task     = "task";     // layout: action
-        public const string Rapport  = "rapport";  // layout: note
-        public const string Idee     = "idee";
-        public const string Document = "document";
-        public const string Chat     = "chat_derived"; // layout: chat
-        // The actors. The model v6 names them person and company; the space of
-        // 2026-11-04 carries them under their v5 keys (inventory in the model
-        // document), and the recreation renames them.
-        public const string Contact    = "contact";    // layout: profile
-        public const string Entreprise = "entreprise"; // layout: profile
+        public const string Report   = "report";   // layout: note
+        public const string Idea     = "idea";     // layout: note
+        public const string Document = "document"; // layout: basic
+        public const string Person   = "person";   // layout: profile
+        public const string Company  = "company";  // layout: profile
     }
 
     // ── Property keys (flat — properties are space-global) ────────────────────
@@ -92,83 +62,98 @@ public static class DevSpace
     // Gestures build payloads off these keys, never off display names.
     public static class Props
     {
-        public const string Etat              = "etat";                     // select
-        public const string Priorite          = "priorite";                 // select
         // « tag » is Anytype's auto-transversal multi_select: it re-attaches itself
         // to every object and resists deletion. It is deliberately NOT mapped onto
         // any type table below, so it stays out of every digest.
-        public const string Tag               = "tag";                      // multi_select — auto-transversal, unmapped
-        public const string Archive           = "archive";                  // checkbox
-        public const string Description       = "description";              // text
-        public const string DefinitionDeFini  = "definition_de_fini";       // text
-        public const string Version           = "version";                  // text
-        public const string DueDate           = "due_date";                 // date
+        public const string Tag               = "tag";               // multi_select — auto-transversal, unmapped
 
-        // Built-in action-layout completion checkbox; task and project both use
-        // the action layout.
-        public const string Done              = "done";                     // checkbox
+        // State is kept on projects only; Epic and Task carry a hidden copy the
+        // MCP never writes.
+        public const string Status            = "status";            // select
+        public const string Priority          = "priority";          // select
+        public const string DoneDefinition    = "done_definition";   // text
+        public const string DueDate           = "due_date";          // date
+        public const string Archive           = "archive";           // checkbox
 
-        public const string BudgetEstime      = "budget_estime";          // number
-        public const string BudgetReel        = "budget_reel_(";          // number — TRUNCATED key, real
-        public const string ChargeEstimee     = "charge_estimee";         // number
-        public const string ChargeReelle      = "charge_estimee_(jours)"; // number — MISLEADING key, real
+        // Built-in action-layout completion checkbox. Tasks use it; a project has
+        // none, it is closed by archiving.
+        public const string Done              = "done";              // checkbox
 
-        public const string PhaseProjet       = "phase_projet"; // select
-        public const string DependDe          = "depend_de";    // objects
+        public const string BudgetEstimated   = "budget_estimated";  // number, euros
+        public const string BudgetActual      = "budget_actual";     // number, euros
+        public const string EffortEstimated   = "effort_estimated";  // number, hours (epic, project)
+        public const string EffortActual      = "effort_actual";     // number, hours (epic, project)
+        public const string TimeEstimated     = "time_estimated";    // number, hours (task)
+        public const string TimeActual        = "time_actual";       // number, hours (task), computed from its reports
 
-        public const string RelationProjet    = "relation_projet";   // objects (Projet(s) lié(s))
-        public const string ContactLie        = "contact_lie";       // objects
-        public const string FichiersLies      = "fichier(s)_lie(s)"; // files
-        public const string TypeDeTache       = "type_de_tache";     // select
-        public const string Livrables         = "livrable(s)";       // multi_select
+        public const string TaskType          = "task_type";         // select
+        public const string Slot              = "slot";              // select
+        public const string Files             = "files";             // files
 
-        public const string DateDuJournal     = "date_du_journal";    // date
-        public const string TachesLiees       = "tache(s)_liee(s)";   // objects — Tâche(s) liée(s), MALFORMED key
+        public const string DocumentType      = "document_type";     // select
+        public const string DocumentGlobal    = "document_global";   // checkbox
+        public const string Version           = "version";           // text
 
-        public const string TypeDeDocument    = "type_de_document"; // select
-        public const string DocumentSysteme   = "document_systeme"; // checkbox
+        public const string Role              = "role";              // select
+        public const string Email             = "email";             // email
+        public const string Phone             = "phone";             // phone
+        public const string Website           = "website";           // url
+        public const string Address           = "address";           // text
 
-        // Keys from the inventory of 2026-11-04; formats NOT measured (an email
-        // and a phone format are likely), so they are written as plain text.
-        public const string EntrepriseLiee    = "entreprise_liee";     // objects
-        public const string Courriel          = "courriel";            // email
-        public const string Telephone         = "numero_de_telephone"; // phone
-        public const string Adresse           = "adresse";             // text
+        public const string Epic              = "epic";              // objects — the project's epic, zero or one
+        public const string DependsOn         = "depends_on";        // objects — projects
+        public const string Projects          = "projects";          // objects — a task's projects, one or more
+        public const string Tasks             = "tasks";             // objects — a report's tasks, one or more
+        public const string Documents         = "documents";         // objects
+        public const string Contacts          = "contacts";          // objects — people or companies
+        public const string Company           = "company";           // objects — a person's company, zero or one
     }
 
-    // ── État (select on Props.Etat) ──────────────────────────────────────────
-    public static class Etat
+    // Keys Anytype itself serves on every object. They are not in the manifest:
+    // the app owns them.
+    public static class Native
     {
-        public const string EnAttente = "en_attente";
-        public const string EnCours = "en_cours";
+        // When the object was made. A report has no journal-date property in
+        // the model v6: its date is this one.
+        public const string CreatedDate = "created_date";
+    }
+
+    // ── État (select on Props.Status) ────────────────────────────────────────
+    //
+    // Kept on projects only. A project that is finished or abandoned is not a
+    // state: it is archived (Props.Archive).
+    public static class Status
+    {
+        public const string Ready = "ready";
+        public const string Doing = "doing";
+        public const string Paused = "paused";
+        public const string Dormant = "dormant";
 
         public static readonly TagOption[] All =
         [
-            new("termine", "Terminé"),
-            new("ouvert", "Ouvert"),
-            new("en_cours", "En cours"),
-            new("dormant", "Dormant"),
-            new("en_attente", "En attente"),
-            new("abandonne", "Abandonné"),
+            new(Ready, "Prêt"),
+            new(Doing, "En cours"),
+            new(Paused, "En pause"),
+            new(Dormant, "Dormant"),
         ];
 
         public static string? Resolve(string nameOrKey) => ResolveOption(All, nameOrKey);
         public static string? NameFor(string? key) => NameOfOption(All, key);
     }
 
-    // ── Priorité (select on Props.Priorite) ──────────────────────────────────
+    // ── Priorité (select on Props.Priority) ──────────────────────────────────
     //
     // Array position IS the priority level (0..5).
     public static class Priority
     {
         public static readonly TagOption[] All =
         [
-            new("67cc1782341c16068836b71e", "0"),
-            new("1", "1"),
-            new("2", "2"),
-            new("3", "3"),
-            new("67c6d722341c1628147d7b1e", "4"),
-            new("5", "5"),
+            new("p0", "0"),
+            new("p1", "1"),
+            new("p2", "2"),
+            new("p3", "3"),
+            new("p4", "4"),
+            new("p5", "5"),
         ];
 
         // Out-of-range throws: a caller asking for a priority the space does not
@@ -205,7 +190,7 @@ public static class DevSpace
         public static string? NameFor(string? key) => NameOfOption(All, key);
 
         // v2 serves a select as its option NAME (measured 2026-10-22:
-        // `"priorite":["4"]`), where v1 served the wire key. The name is the
+        // `"priority":["4"]`), where v1 served the wire key. The name is the
         // level, so the position of the matching option is the answer.
         public static int? LevelForName(string? name)
         {
@@ -217,174 +202,176 @@ public static class DevSpace
         }
     }
 
-    // ── Type de tâche (select on Props.TypeDeTache) ───────────────────────────
-    public static class TypeDeTache
+    // ── Type de tâche (select on Props.TaskType) ──────────────────────────────
+    public static class TaskType
     {
         public static readonly TagOption[] All =
         [
+            new("research", "Chercher"),
             new("production", "Produire"),
-            new("recherche", "Chercher"),
-            new("organiser", "Organiser"),
-            new("echanger", "Échanger"),
-            new("gestion", "Gérer"),
-            new("surveillance", "Surveiller"),
+            new("organizing", "Organiser"),
+            new("exchange", "Échanger"),
+            new("management", "Gérer"),
+            new("monitoring", "Surveiller"),
         ];
 
         public static string? Resolve(string nameOrKey) => ResolveOption(All, nameOrKey);
         public static string? NameFor(string? key) => NameOfOption(All, key);
     }
 
-    // ── Livrable(s) (multi_select on Props.Livrables) ─────────────────────────
-    public static class Livrable
+    // ── Créneau (select on Props.Slot) ────────────────────────────────────────
+    //
+    // The part of the day a task belongs to; not an hour. A task takes Cap unless
+    // told otherwise (model v6, section Task).
+    public static class Slot
     {
+        public static readonly string[] Keys = [Props.Slot];
+        public const string Name = "Créneau";
+        public const string Default = "Cap";
+
         public static readonly TagOption[] All =
         [
-            new("document_de_cadrage", "Texte"),
-            new("regle_de_cadrage", "Règle de cadrage"),
+            new("cap", "Cap"),
+            new("passion", "Passion"),
+            new("training", "Entraînement"),
         ];
 
         public static string? Resolve(string nameOrKey) => ResolveOption(All, nameOrKey);
         public static string? NameFor(string? key) => NameOfOption(All, key);
     }
 
-    // ── Type de document (select on Props.TypeDeDocument) ─────────────────────
-    public static class TypeDeDocument
+    // ── Type de document (select on Props.DocumentType) ───────────────────────
+    public static class DocumentType
     {
         public static readonly TagOption[] All =
         [
-            new("astuce", "Astuce"),
+            new("tip", "Astuce"),
             new("nomenclature", "Nomenclature"),
             new("reference", "Référence"),
             new("specification", "Spécification"),
             new("instructions", "Instructions"),
-            new("rapport", "Recherche"),
+            new("research", "Recherche"),
             new("architecture", "Architecture"),
+            new("resume", "Reprise"),
         ];
 
         public static string? Resolve(string nameOrKey) => ResolveOption(All, nameOrKey);
         public static string? NameFor(string? key) => NameOfOption(All, key);
     }
 
-    // ── Phase projet (select on Props.PhaseProjet) ────────────────────────────
-    public static class PhaseProjet
-    {
-        public static readonly TagOption[] All =
-        [
-            new("cadrage", "Cadrage"),
-        ];
-
-        public static string? Resolve(string nameOrKey) => ResolveOption(All, nameOrKey);
-        public static string? NameFor(string? key) => NameOfOption(All, key);
-    }
-
-    // ── Selects of the model v6 the space does not carry yet ─────────────────
+    // ── Rôle (select on Props.Role) ───────────────────────────────────────────
     //
-    // Read live through LiveSelect, by key or by display name: the space of
-    // 2026-11-04 had neither (inventory in the model document), and their key
-    // depends on who creates them. The English key is the recreation's.
-    public static class Slot
-    {
-        public static readonly string[] Keys = ["slot", "creneau"];
-        public const string Name = "Créneau";
-        // A task takes Cap unless told otherwise (model v6, section Task).
-        public const string Default = "Cap";
-    }
-
-    // A person's role towards us, not their trade (model v6). The space of
-    // 2026-11-04 has only a link to a « Rôle » type, so the select is looked
-    // for live and a person is created without it until it exists.
+    // A person's role towards us, not their trade (model v6, validated by Louis
+    // on 2026-11-09).
     public static class Role
     {
-        public static readonly string[] Keys = ["role"];
+        public static readonly string[] Keys = [Props.Role];
         public const string Name = "Rôle";
+
+        public static readonly TagOption[] All =
+        [
+            new("administrative", "Administratif"),
+            new("decision", "Décision"),
+            new("finance", "Finances"),
+            new("product", "Produit"),
+            new("technical", "Technique"),
+        ];
+
+        public static string? Resolve(string nameOrKey) => ResolveOption(All, nameOrKey);
+        public static string? NameFor(string? key) => NameOfOption(All, key);
     }
 
     // ── Per-type property tables ──────────────────────────────────────────────
     //
-    // Row order is digest order.
+    // Row order is the order the model declares them, which is the digest order
+    // and the order the views offer them.
     static readonly PropertyDef[] EpicProps =
     [
-        new(Props.Etat, "État", "select", Etat.All),
-        new(Props.Priorite, "Priorité", "select", Priority.All),
-        new(Props.DefinitionDeFini, "Définition de fini", "text"),
-        new(Props.BudgetEstime, "Budget estimé", "number"),
-        new(Props.BudgetReel, "Budget réel", "number"),
-        new(Props.ChargeEstimee, "Charge estimée", "number"),
-        new(Props.ChargeReelle, "Charge réelle", "number"),
+        new(Props.Status, "État", "select", Status.All),
+        new(Props.Priority, "Priorité", "select", Priority.All),
+        new(Props.DoneDefinition, "Définition de fini", "text"),
+        new(Props.BudgetEstimated, "Budget estimé", "number"),
+        new(Props.BudgetActual, "Budget réel", "number"),
+        new(Props.EffortEstimated, "Charge estimée", "number"),
+        new(Props.EffortActual, "Charge réelle", "number"),
+        new(Props.Documents, "Documents", "objects"),
         new(Props.Archive, "Archivé", "checkbox"),
     ];
 
     static readonly PropertyDef[] ProjectProps =
     [
-        new(Props.Description, "Description", "text"),
-        new(Props.Etat, "État", "select", Etat.All),
-        new(Props.PhaseProjet, "Phase projet", "select", PhaseProjet.All),
-        new(Props.Priorite, "Priorité", "select", Priority.All),
-        new(Props.Done, "Terminé", "checkbox"),
-        new(Props.Version, "Version", "text"),
-        new(Props.DefinitionDeFini, "Définition de fini", "text"),
+        new(Props.Status, "État", "select", Status.All),
+        new(Props.Priority, "Priorité", "select", Priority.All),
+        new(Props.DoneDefinition, "Définition de fini", "text"),
         new(Props.DueDate, "Date cible", "date"),
-        new(Props.BudgetEstime, "Budget estimé", "number"),
-        new(Props.BudgetReel, "Budget réel", "number"),
-        new(Props.ChargeEstimee, "Charge estimée", "number"),
-        new(Props.ChargeReelle, "Charge réelle", "number"),
-        new(Props.DependDe, "Dépend de", "objects"),
+        new(Props.BudgetEstimated, "Budget estimé", "number"),
+        new(Props.BudgetActual, "Budget réel", "number"),
+        new(Props.EffortEstimated, "Charge estimée", "number"),
+        new(Props.EffortActual, "Charge réelle", "number"),
+        new(Props.Epic, "Epic", "objects"),
+        new(Props.DependsOn, "Dépend de", "objects"),
+        new(Props.Documents, "Documents", "objects"),
+        new(Props.Contacts, "Contacts", "objects"),
         new(Props.Archive, "Archivé", "checkbox"),
     ];
 
     static readonly PropertyDef[] TaskProps =
     [
-        new(Props.Description, "Description", "text"),
-        new(Props.Etat, "État", "select", Etat.All),
-        new(Props.Priorite, "Priorité", "select", Priority.All),
-        new(Props.TypeDeTache, "Type de tâche", "select", TypeDeTache.All),
-        new(Props.Done, "Terminé", "checkbox"),
+        new(Props.Done, "Fini", "checkbox"),
+        new(Props.TaskType, "Type de tâche", "select", TaskType.All),
+        new(Props.Priority, "Priorité", "select", Priority.All),
         new(Props.DueDate, "Date cible", "date"),
-        new(Props.RelationProjet, "Projet(s) lié(s)", "objects"),
-        new(Props.ContactLie, "Contact(s) lié(s)", "objects"),
-        new(Props.FichiersLies, "Fichier(s) lié(s)", "files"),
-        new(Props.Livrables, "Livrable(s)", "multi_select", Livrable.All),
-        new(Props.DefinitionDeFini, "Définition de fini", "text"),
-        new(Props.ChargeEstimee, "Charge estimée", "number"),
-        new(Props.ChargeReelle, "Charge réelle", "number"),
+        new(Props.Slot, "Créneau", "select", Slot.All),
+        new(Props.DoneDefinition, "Définition de fini", "text"),
+        new(Props.Projects, "Projets", "objects"),
+        new(Props.Documents, "Documents", "objects"),
+        new(Props.Contacts, "Contacts", "objects"),
+        new(Props.TimeEstimated, "Temps estimé", "number"),
+        new(Props.TimeActual, "Temps réel", "number"),
+        new(Props.Files, "Fichiers liés", "files"),
+        new(Props.Status, "État", "select", Status.All),
         new(Props.Archive, "Archivé", "checkbox"),
     ];
 
-    static readonly PropertyDef[] RapportProps =
+    static readonly PropertyDef[] ReportProps =
     [
-        new(Props.DateDuJournal, "Date du journal", "date"),
-        new(Props.TachesLiees, "Tâche(s) liée(s)", "objects"),
-        new(Props.ContactLie, "Contact(s) lié(s)", "objects"),
-        new(Props.FichiersLies, "Fichier(s) lié(s)", "files"),
+        new(Props.Tasks, "Tâches", "objects"),
+        new(Props.Contacts, "Contacts", "objects"),
+        new(Props.Archive, "Archivé", "checkbox"),
     ];
 
-    static readonly PropertyDef[] IdeeProps =
+    static readonly PropertyDef[] IdeaProps =
     [
+        new(Props.Documents, "Documents", "objects"),
         new(Props.Archive, "Archivé", "checkbox"),
     ];
 
     static readonly PropertyDef[] DocumentProps =
     [
-        new(Props.TypeDeDocument, "Type de document", "select", TypeDeDocument.All),
-        new(Props.DocumentSysteme, "Document système", "checkbox"),
+        new(Props.DocumentType, "Type de document", "select", DocumentType.All),
+        new(Props.DocumentGlobal, "Document global", "checkbox"),
         new(Props.Version, "Version", "text"),
+        new(Props.Archive, "Archivé", "checkbox"),
     ];
 
-    static readonly PropertyDef[] ChatProps =
+    static readonly PropertyDef[] PersonProps =
     [
-        new(Props.TachesLiees, "Tâche(s) liée(s)", "objects"),
+        new(Props.Company, "Entreprise", "objects"),
+        new(Props.Role, "Rôle", "select", Role.All),
+        new(Props.Email, "Courriel", "email"),
+        new(Props.Phone, "Téléphone", "phone"),
+        new(Props.Website, "Site web", "url"),
+        new(Props.Address, "Adresse", "text"),
+        new(Props.Archive, "Archivé", "checkbox"),
     ];
 
-    static readonly PropertyDef[] ContactProps =
+    static readonly PropertyDef[] CompanyProps =
     [
-        new(Props.EntrepriseLiee, "Entreprise", "objects"),
-        new(Props.Courriel, "Courriel", "text"),
-        new(Props.Telephone, "Téléphone", "text"),
-    ];
-
-    static readonly PropertyDef[] EntrepriseProps =
-    [
-        new(Props.Adresse, "Adresse", "text"),
+        new(Props.Email, "Courriel", "email"),
+        new(Props.Phone, "Téléphone", "phone"),
+        new(Props.Website, "Site web", "url"),
+        new(Props.Address, "Adresse", "text"),
+        new(Props.Archive, "Archivé", "checkbox"),
     ];
 
     static readonly PropertyDef[] NoProps = [];
@@ -394,14 +381,20 @@ public static class DevSpace
         Types.Epic     => EpicProps,
         Types.Project  => ProjectProps,
         Types.Task     => TaskProps,
-        Types.Rapport  => RapportProps,
-        Types.Idee     => IdeeProps,
+        Types.Report   => ReportProps,
+        Types.Idea     => IdeaProps,
         Types.Document => DocumentProps,
-        Types.Chat     => ChatProps,
-        Types.Contact    => ContactProps,
-        Types.Entreprise => EntrepriseProps,
+        Types.Person   => PersonProps,
+        Types.Company  => CompanyProps,
         _              => NoProps,
     };
+
+    // Every type key the tables know, in the model's order.
+    public static IReadOnlyList<string> TypeKeys { get; } =
+    [
+        Types.Epic, Types.Project, Types.Task, Types.Report,
+        Types.Idea, Types.Document, Types.Person, Types.Company,
+    ];
 
     public static bool TryResolveProperty(string typeKey, string nameOrKey, out string key, out string format)
     {
@@ -474,8 +467,8 @@ public static class DevSpace
         // first-seen-wins walk yields each key's label/options once.
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (PropertyDef[] table in
-            new[] { EpicProps, ProjectProps, TaskProps, RapportProps, IdeeProps, DocumentProps, ChatProps,
-                    ContactProps, EntrepriseProps })
+            new[] { EpicProps, ProjectProps, TaskProps, ReportProps, IdeaProps, DocumentProps,
+                    PersonProps, CompanyProps })
             foreach (PropertyDef def in table)
                 if (seen.Add(def.Key))
                     yield return def;

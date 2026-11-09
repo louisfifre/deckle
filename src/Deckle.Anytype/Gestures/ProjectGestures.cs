@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using Deckle.Anytype;
 using Deckle.Diagnostics;
 
@@ -8,13 +9,18 @@ namespace Deckle.Anytype;
 // Project-level gestures: a project's overview digest, the project list grouped
 // by état, and creation of projects and their epic containers.
 //
+// A project is a durable subject, not a chantier: it has no done box and is
+// closed by archiving, so no digest here shows or writes one. Its état is the
+// only état the space maintains (Prêt, En cours, En pause, Dormant).
+//
 // Every digest is a terse French plain-string — the LLM-facing product. One line
 // per fact, no banner, no markdown decoration beyond what carries meaning.
 //
 // Reads go through the v2 client: the lists are filtered by the server (tasks
 // by their project, reports by their tasks, projects by état) instead of paging
-// the whole space and filtering here. Creation stays on v1.
-public sealed class ProjectGestures(
+// the whole space and filtering here. Creation is on v2 too: the type's default
+// template applies, so no template id is frozen in the code.
+public sealed partial class ProjectGestures(
     AnytypeApiClient api, NameResolver resolver, AnytypeV2Client v2, TimeProvider? time = null)
 {
     readonly TimeProvider _time = time ?? TimeProvider.System;
@@ -26,6 +32,7 @@ public sealed class ProjectGestures(
 
     readonly AnytypeV2ObjectReader _reader = new(v2);
     readonly AnytypeV2Searcher _searcher = new(v2);
+    readonly AnytypeV2Writer _writer = new(v2);
 
     public async Task<string> OverviewAsync(string project, CancellationToken ct = default)
     {
@@ -39,7 +46,6 @@ public sealed class ProjectGestures(
 
         var sb = new StringBuilder();
         sb.Append("id : ").Append(projectId).Append('\n');
-        sb.Append(props.Checkbox(DevSpace.Props.Done) ? "[x] " : "[ ] ");
         sb.Append(props.Name);
 
         AppendHeaderFacts(sb, props);
@@ -56,10 +62,10 @@ public sealed class ProjectGestures(
     {
         var started = DateTime.UtcNow;
 
-        string? wantedEtat = state is null
+        string? wantedStatus = state is null
             ? null
-            : DevSpace.Etat.Resolve(state)
-                ?? throw new ArgumentException($"État inconnu « {state} ».", nameof(state));
+            : DevSpace.Status.Resolve(state)
+                ?? throw new ArgumentException(UnknownStatus(state), nameof(state));
 
         // A given état is filtered by the server, by its option name (a select
         // is addressed by name on v2). Archived projects are dropped here: the
@@ -69,45 +75,41 @@ public sealed class ProjectGestures(
             new AnytypeV2SearchRequest
             {
                 Type = DevSpace.Types.Project,
-                Filters = wantedEtat is null
+                Filters = wantedStatus is null
                     ? null
-                    : [AnytypeV2SearchFilter.In(DevSpace.Props.Etat, [DevSpace.Etat.NameFor(wantedEtat)!])],
-                Fields =
-                [
-                    DevSpace.Props.Done, DevSpace.Props.Archive, DevSpace.Props.Etat,
-                    DevSpace.Props.PhaseProjet, DevSpace.Props.Priorite,
-                ],
+                    : [AnytypeV2SearchFilter.In(DevSpace.Props.Status, [DevSpace.Status.NameFor(wantedStatus)!])],
+                Fields = [DevSpace.Props.Archive, DevSpace.Props.Status, DevSpace.Props.Priority],
             }, ct);
 
-        var byEtat = new Dictionary<string, List<AnytypeV2SearchRow>>(StringComparer.Ordinal);
+        var byStatus = new Dictionary<string, List<AnytypeV2SearchRow>>(StringComparer.Ordinal);
         foreach (AnytypeV2SearchRow p in hits)
         {
             if (p.Properties.Checkbox(DevSpace.Props.Archive)) continue;
 
             // v2 serves the option name; the order and the grouping run on keys.
-            string? etatName = p.Properties.Select(DevSpace.Props.Etat);
-            string etat = etatName is null ? "" : DevSpace.Etat.Resolve(etatName) ?? etatName;
-            if (wantedEtat is not null && etat != wantedEtat) continue;
+            string? statusName = p.Properties.Select(DevSpace.Props.Status);
+            string status = statusName is null ? "" : DevSpace.Status.Resolve(statusName) ?? statusName;
+            if (wantedStatus is not null && status != wantedStatus) continue;
 
-            (byEtat.TryGetValue(etat, out var list) ? list : byEtat[etat] = []).Add(p);
+            (byStatus.TryGetValue(status, out var list) ? list : byStatus[status] = []).Add(p);
         }
 
         var sb = new StringBuilder();
-        IEnumerable<string> order = wantedEtat is not null
-            ? [wantedEtat]
-            : DevSpace.Etat.All.Select(o => o.Key).Where(byEtat.ContainsKey);
+        IEnumerable<string> order = wantedStatus is not null
+            ? [wantedStatus]
+            : DevSpace.Status.All.Select(o => o.Key).Where(byStatus.ContainsKey);
 
-        foreach (string etatKey in order)
+        foreach (string statusKey in order)
         {
-            if (!byEtat.TryGetValue(etatKey, out var projects) || projects.Count == 0) continue;
+            if (!byStatus.TryGetValue(statusKey, out var projects) || projects.Count == 0) continue;
 
-            if (wantedEtat is null) sb.Append('\n').Append(DevSpace.Etat.NameFor(etatKey) ?? etatKey).Append('\n');
+            if (wantedStatus is null) sb.Append('\n').Append(DevSpace.Status.NameFor(statusKey) ?? statusKey).Append('\n');
             foreach (AnytypeV2SearchRow p in projects) AppendProjectLine(sb, p);
         }
 
-        if (wantedEtat is null)
-            foreach (var (etat, projects) in byEtat)
-                if (DevSpace.Etat.NameFor(etat) is null)
+        if (wantedStatus is null)
+            foreach (var (status, projects) in byStatus)
+                if (DevSpace.Status.NameFor(status) is null)
                 {
                     sb.Append('\n').Append("Sans état").Append('\n');
                     foreach (AnytypeV2SearchRow p in projects) AppendProjectLine(sb, p);
@@ -143,8 +145,8 @@ public sealed class ProjectGestures(
                 Type = DevSpace.Types.Project,
                 Fields =
                 [
-                    DevSpace.Props.Done, DevSpace.Props.Archive, DevSpace.Props.Etat,
-                    DevSpace.Props.Priorite, DevSpace.Props.DueDate,
+                    DevSpace.Props.Archive, DevSpace.Props.Status,
+                    DevSpace.Props.Priority, DevSpace.Props.DueDate,
                 ],
             }, ct);
         var projectNames = projects.ToDictionary(p => p.Id, p => p.Name, StringComparer.Ordinal);
@@ -156,8 +158,8 @@ public sealed class ProjectGestures(
                 Fields =
                 [
                     DevSpace.Props.Done, DevSpace.Props.Archive, DevSpace.Props.DueDate,
-                    DevSpace.Props.RelationProjet, DevSpace.Props.TypeDeTache, DevSpace.Props.Priorite,
-                    DevSpace.Props.DefinitionDeFini, DevSpace.Props.ChargeEstimee,
+                    DevSpace.Props.Projects, DevSpace.Props.TaskType, DevSpace.Props.Priority,
+                    DevSpace.Props.DoneDefinition, DevSpace.Props.TimeEstimated,
                 ],
             }, ct);
 
@@ -175,9 +177,9 @@ public sealed class ProjectGestures(
             AppendDueTask(sb, t, day!, today, projectNames);
 
         var running = projects
-            .Where(p => !p.Properties.Checkbox(DevSpace.Props.Archive) && !p.Properties.Checkbox(DevSpace.Props.Done))
-            .Where(p => p.Properties.Select(DevSpace.Props.Etat) is { } etat
-                && DevSpace.Etat.Resolve(etat) == DevSpace.Etat.EnCours)
+            .Where(p => !p.Properties.Checkbox(DevSpace.Props.Archive))
+            .Where(p => p.Properties.Select(DevSpace.Props.Status) is { } status
+                && DevSpace.Status.Resolve(status) == DevSpace.Status.Doing)
             .ToList();
 
         sb.Append("\n\nProjets en cours :");
@@ -185,7 +187,7 @@ public sealed class ProjectGestures(
         foreach (AnytypeV2SearchRow p in running)
         {
             sb.Append('\n').Append(p.Name);
-            int? level = DevSpace.Priority.LevelForName(p.Properties.Select(DevSpace.Props.Priorite));
+            int? level = DevSpace.Priority.LevelForName(p.Properties.Select(DevSpace.Props.Priority));
             if (level is not null) sb.Append(" · P").Append(level);
             if (p.Properties.Day(DevSpace.Props.DueDate) is { } target) sb.Append(" · cible ").Append(target);
         }
@@ -200,81 +202,99 @@ public sealed class ProjectGestures(
         sb.Append("\n\n[ ] ").Append(t.Name);
         if (string.CompareOrdinal(day, today) < 0) sb.Append(" · en retard, prévue le ").Append(day);
 
-        string names = string.Join(", ", t.Properties.ObjectIds(DevSpace.Props.RelationProjet)
+        string names = string.Join(", ", t.Properties.ObjectIds(DevSpace.Props.Projects)
             .Select(id => projectNames.TryGetValue(id, out string? n) && n.Length > 0 ? n : "(projet non lu)"));
         if (names.Length > 0) sb.Append("\nProjet : ").Append(names);
 
         var facts = new List<string>();
-        if (t.Properties.Select(DevSpace.Props.TypeDeTache) is { } type) facts.Add(type);
-        int? level = DevSpace.Priority.LevelForName(t.Properties.Select(DevSpace.Props.Priorite));
+        if (t.Properties.Select(DevSpace.Props.TaskType) is { } type) facts.Add(type);
+        int? level = DevSpace.Priority.LevelForName(t.Properties.Select(DevSpace.Props.Priority));
         if (level is not null) facts.Add($"P{level}");
-        if (t.Properties.Number(DevSpace.Props.ChargeEstimee) is { } estimate
+        if (t.Properties.Number(DevSpace.Props.TimeEstimated) is { } estimate
             && double.TryParse(estimate, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double hours))
             facts.Add($"{hours.ToString("0.##", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"))} h estimée(s)");
         if (facts.Count > 0) sb.Append('\n').Append(string.Join(" · ", facts));
 
-        AppendFact(sb, "Définition de fini", t.Properties.Text(DevSpace.Props.DefinitionDeFini));
+        AppendFact(sb, "Définition de fini", t.Properties.Text(DevSpace.Props.DoneDefinition));
     }
 
-    public async Task<string> CreateEpicAsync(
-        string name, string? state = null, CancellationToken ct = default)
+    // An epic groups projects and is not maintained: its état, its priority and
+    // the rest are kept for whoever wants to manage it that way, and this tool
+    // writes none of them.
+    public async Task<string> CreateEpicAsync(string name, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
 
-        string etatKey = state is null
-            ? DevSpace.Etat.EnAttente
-            : DevSpace.Etat.Resolve(state)
-                ?? throw new ArgumentException($"État inconnu « {state} ».", nameof(state));
-
         var payload = new JsonObject
         {
-            ["type_key"] = DevSpace.Types.Epic,
+            ["type"] = DevSpace.Types.Epic,
             ["name"] = name,
-            ["template_id"] = DevSpace.Templates.Epic,
-            ["properties"] = new JsonArray
-            {
-                new JsonObject { ["key"] = DevSpace.Props.Etat, ["select"] = etatKey },
-            },
         };
-
-        JsonObject created = await api.CreateObjectAsync(payload, ct);
+        await _writer.CreateObjectAsync(payload, ct: ct);
 
         DeckleAnytypeSource.Log.GestureCompleted("epic_create", Elapsed(started));
-        return $"Epic créé : {StringOf(created, "name")} ({DevSpace.Etat.NameFor(etatKey) ?? etatKey})";
+        return $"Epic créé : {name}";
     }
 
-    // Epic↔project is collection membership, not a property link.
-    public async Task<string> CreateAsync(string name, string? epic = null, string? state = null, CancellationToken ct = default)
+    // A project enters its epic twice, by the epic's collection and by its own
+    // `epic` property: the property is what filters and what mobile shows, the
+    // collection is what the epic's views list. Both are written in one gesture.
+    //
+    // The model asks, at creation, for the name, the état, the priority and the
+    // done definition. The état starts at Prêt when none is given.
+    public async Task<string> CreateAsync(
+        string name, string? epic = null, string? state = null,
+        int? priority = null, string? doneDefinition = null, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
 
-        string etatKey = state is null
-            ? DevSpace.Etat.EnAttente
-            : DevSpace.Etat.Resolve(state)
-                ?? throw new ArgumentException($"État inconnu « {state} ».", nameof(state));
+        string statusKey = state is null
+            ? DevSpace.Status.Ready
+            : DevSpace.Status.Resolve(state)
+                ?? throw new ArgumentException(UnknownStatus(state), nameof(state));
+        if (priority is int level)
+            DevSpace.Priority.KeyFor(level); // refuses a level outside 0-5
+        string definition = (doneDefinition ?? "").Trim();
+
+        // The epic is resolved before the create, so an unknown one is refused
+        // with nothing made.
+        string? epicId = epic is null
+            ? null
+            : await resolver.ResolveAsync(epic, [DevSpace.Types.Epic], NameMatch.Exact, ct);
+
+        // A select is addressed by its option name on v2, a relation by a list
+        // of ids.
+        var props = new JsonObject
+        {
+            [DevSpace.Props.Status] = new JsonArray(DevSpace.Status.NameFor(statusKey)!),
+        };
+        if (priority is int p)
+            props[DevSpace.Props.Priority] = new JsonArray(p.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        if (definition.Length > 0) props[DevSpace.Props.DoneDefinition] = definition;
+        if (epicId is not null) props[DevSpace.Props.Epic] = new JsonArray(epicId);
 
         var payload = new JsonObject
         {
-            ["type_key"] = DevSpace.Types.Project,
+            ["type"] = DevSpace.Types.Project,
             ["name"] = name,
-            ["template_id"] = DevSpace.Templates.Project,
-            ["properties"] = new JsonArray
-            {
-                new JsonObject { ["key"] = DevSpace.Props.Etat, ["select"] = etatKey },
-            },
+            ["properties"] = props,
         };
-
-        JsonObject created = await api.CreateObjectAsync(payload, ct);
-        string projectId = StringOf(created, "id");
+        AnytypeV2WriteReceipt receipt = await _writer.CreateObjectAsync(payload, ct: ct);
+        string projectId = receipt.Body?["id"] is JsonValue idValue && idValue.TryGetValue(out string? created)
+            ? created ?? ""
+            : "";
 
         var sb = new StringBuilder();
         sb.Append("Projet créé : ").Append(name);
-        sb.Append(" (").Append(DevSpace.Etat.NameFor(etatKey) ?? etatKey).Append(')');
+        sb.Append(" (").Append(DevSpace.Status.NameFor(statusKey)).Append(')');
+        if (projectId.Length > 0) sb.Append("\nid : ").Append(projectId);
 
-        if (epic is not null)
+        if (epicId is not null)
         {
-            string epicId = await resolver.ResolveAsync(
-                epic, [DevSpace.Types.Epic], NameMatch.Exact, ct);
+            if (projectId.Length == 0)
+                throw new InvalidOperationException(
+                    $"Projet créé ({name}) mais son identifiant n'a pas été renvoyé : il n'est pas ajouté à l'epic. "
+                    + "Ne le recrée pas : rattache-le avec link.");
             await api.AddToCollectionAsync(epicId, [projectId], ct);
             sb.Append("\nAjouté à l'epic ").Append(StringOf(await api.GetObjectAsync(epicId, ct), "name"));
         }
@@ -287,19 +307,20 @@ public sealed class ProjectGestures(
 
     static string StringOf(JsonObject obj, string key) => obj[key]?.GetValue<string>() ?? "";
 
+    static string UnknownStatus(string state) =>
+        $"État inconnu « {state} ». États : {string.Join(", ", DevSpace.Status.All.Select(o => $"{o.Name} ({o.Key})"))}.";
+
     static void AppendHeaderFacts(StringBuilder sb, AnytypeV2PropertyMap project)
     {
-        AppendFact(sb, "Description", project.Text(DevSpace.Props.Description));
         // v2 serves a select as its option name, ready to show.
-        AppendFact(sb, "État", project.Select(DevSpace.Props.Etat));
-        AppendFact(sb, "Phase", project.Select(DevSpace.Props.PhaseProjet));
+        AppendFact(sb, "État", project.Select(DevSpace.Props.Status));
 
-        int? level = DevSpace.Priority.LevelForName(project.Select(DevSpace.Props.Priorite));
+        int? level = DevSpace.Priority.LevelForName(project.Select(DevSpace.Props.Priority));
         if (level is not null) AppendFact(sb, "Priorité", level.ToString());
 
-        AppendFact(sb, "Version", project.Text(DevSpace.Props.Version));
-        AppendFact(sb, "Définition de fini", project.Text(DevSpace.Props.DefinitionDeFini));
+        AppendFact(sb, "Définition de fini", project.Text(DevSpace.Props.DoneDefinition));
         AppendFact(sb, "Date cible", project.Day(DevSpace.Props.DueDate));
+        if (project.Checkbox(DevSpace.Props.Archive)) AppendFact(sb, "Archivé", "oui");
     }
 
     // Returns every related task id for the report join, archived tasks
@@ -310,11 +331,11 @@ public sealed class ProjectGestures(
             new AnytypeV2SearchRequest
             {
                 Type = DevSpace.Types.Task,
-                Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.RelationProjet, [projectId])],
+                Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.Projects, [projectId])],
                 Fields =
                 [
                     DevSpace.Props.Done, DevSpace.Props.Archive,
-                    DevSpace.Props.TypeDeTache, DevSpace.Props.Priorite,
+                    DevSpace.Props.TaskType, DevSpace.Props.Priority,
                 ],
             }, ct);
 
@@ -333,10 +354,10 @@ public sealed class ProjectGestures(
     }
 
     // Reports are joined through the tasks: the link lives on the report side
-    // (« Tâche(s) liée(s) »), the project itself has no report link. The server
-    // filters on the link and sorts by journal date, most recent first. A search
-    // row carries no body, so each shown report costs one markdown read for its
-    // first line.
+    // (« Tâches »), the project itself has no report link. The server filters
+    // on the link and sorts by the report's native creation date, most recent
+    // first: the model v6 has no journal-date property. The date shown is the
+    // one the report's own heading carries, read with the entry below it.
     async Task AppendRecentReportsAsync(StringBuilder sb, IReadOnlyList<string> taskIds, CancellationToken ct)
     {
         if (taskIds.Count == 0) return;
@@ -346,10 +367,9 @@ public sealed class ProjectGestures(
         AnytypeV2SearchPage page = await _searcher.SearchPageAsync(
             new AnytypeV2SearchRequest
             {
-                Type = DevSpace.Types.Rapport,
-                Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.TachesLiees, taskIds)],
-                Sorts = [new AnytypeV2SearchSort(DevSpace.Props.DateDuJournal, Descending: true)],
-                Fields = [DevSpace.Props.DateDuJournal],
+                Type = DevSpace.Types.Report,
+                Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.Tasks, taskIds)],
+                Sorts = [new AnytypeV2SearchSort(DevSpace.Native.CreatedDate, Descending: true)],
             }, offset: 0, limit: RecentReports, ct);
         IReadOnlyList<AnytypeV2SearchRow> reports = page.Rows;
 
@@ -359,12 +379,14 @@ public sealed class ProjectGestures(
         sb.Append("Derniers rapports :\n");
         foreach (AnytypeV2SearchRow r in reports.Take(RecentReports))
         {
-            string date = r.Properties.Day(DevSpace.Props.DateDuJournal) ?? "?";
             AnytypeV2ObjectDocument md = await _reader.ReadAsync(
                 r.Id, new AnytypeV2ObjectReadOptions { Markdown = true }, ct);
-            // The latest entry says where the work stopped; the « # Journal » heading
-            // would only repeat the date. Clipped, report_journal reads it whole.
-            string? last = MarkdownBody.JournalEntries(md.Body["markdown"]?.GetValue<string>() ?? "")
+            string markdown = md.Body["markdown"]?.GetValue<string>() ?? "";
+            string date = JournalDay().Match(markdown) is { Success: true } m ? m.Groups[1].Value : "?";
+            // The latest entry says where the work stopped; the « # Journal »
+            // heading would only repeat the date. Clipped, report_journal reads
+            // it whole.
+            string? last = MarkdownBody.JournalEntries(markdown)
                 .LastOrDefault()?.Split('\n')[0];
             sb.Append(date).Append(" · ").Append(r.Id);
             if (last is not null)
@@ -373,15 +395,14 @@ public sealed class ProjectGestures(
         }
     }
 
+    [GeneratedRegex(@"Journal (\d{4}-\d{2}-\d{2})")]
+    private static partial Regex JournalDay();
+
     static void AppendProjectLine(StringBuilder sb, AnytypeV2SearchRow p)
     {
-        sb.Append(p.Properties.Checkbox(DevSpace.Props.Done) ? "[x] " : "[ ] ");
         sb.Append(p.Name);
 
-        string? phase = p.Properties.Select(DevSpace.Props.PhaseProjet);
-        if (phase is not null) sb.Append(" · ").Append(phase);
-
-        int? level = DevSpace.Priority.LevelForName(p.Properties.Select(DevSpace.Props.Priorite));
+        int? level = DevSpace.Priority.LevelForName(p.Properties.Select(DevSpace.Props.Priority));
         if (level is not null) sb.Append(" · P").Append(level);
 
         sb.Append('\n');
@@ -392,10 +413,10 @@ public sealed class ProjectGestures(
         sb.Append(t.Properties.Checkbox(DevSpace.Props.Done) ? "[x] " : "[ ] ");
         sb.Append(t.Name);
 
-        string? type = t.Properties.Select(DevSpace.Props.TypeDeTache);
+        string? type = t.Properties.Select(DevSpace.Props.TaskType);
         if (type is not null) sb.Append(" · ").Append(type);
 
-        int? level = DevSpace.Priority.LevelForName(t.Properties.Select(DevSpace.Props.Priorite));
+        int? level = DevSpace.Priority.LevelForName(t.Properties.Select(DevSpace.Props.Priority));
         if (level is not null) sb.Append(" · P").Append(level);
 
         sb.Append('\n');

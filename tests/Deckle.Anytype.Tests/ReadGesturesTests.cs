@@ -73,25 +73,24 @@ public class ReadGesturesTests
     // is the type's (DevSpace.PropertiesFor), not the object's. Done is folded
     // into the title box, the empty contact link and the unmapped « tag » never
     // show, the project link is read by name, the date is cut to its day. v2
-    // serves a select as its option name, so the labels show as served.
+    // serves a select as its option name, so the labels show as served. The
+    // task's hidden état is served here and never shown: it is not kept.
     [Fact]
     public async Task TaskPropertiesRendersTheTitleBoxThenEachPropertyInTheTypesOrder()
     {
         FakeV2Handler v2 = Reads(
             PropsReply(TaskId, "task", "Ma tâche",
-                Str(DevSpace.Props.DefinitionDeFini, "Aucune action manuelle requise."),
-                Ids(DevSpace.Props.ContactLie),
-                Sel(DevSpace.Props.Priorite, "4"),
-                Str(DevSpace.Props.Description, "Reprendre après la veille."),
-                Sel(DevSpace.Props.Etat, "En cours"),
+                Str(DevSpace.Props.DoneDefinition, "Aucune action manuelle requise."),
+                Ids(DevSpace.Props.Contacts),
+                Sel(DevSpace.Props.Priority, "4"),
+                Sel(DevSpace.Props.Status, "En cours"),
                 Str(DevSpace.Props.DueDate, "2026-07-21T00:00:00Z"),
-                Ids(DevSpace.Props.RelationProjet, ProjectId),
+                Ids(DevSpace.Props.Projects, ProjectId),
                 Flag(DevSpace.Props.Done),
-                Ids(DevSpace.Props.FichiersLies, "file0", "file1"),
-                Sel(DevSpace.Props.Livrables, "Texte"),
-                Sel(DevSpace.Props.TypeDeTache, "Produire"),
-                Num(DevSpace.Props.ChargeEstimee, 3),
-                Num(DevSpace.Props.ChargeReelle, 1.5),
+                Ids(DevSpace.Props.Files, "file0", "file1"),
+                Sel(DevSpace.Props.TaskType, "Produire"),
+                Num(DevSpace.Props.TimeEstimated, 3),
+                Num(DevSpace.Props.TimeActual, 1.5),
                 Sel(DevSpace.Props.Tag, "urgent"),
                 Flag(DevSpace.Props.Archive)),
             PropsReply(ProjectId, "project", "Deckle"));
@@ -102,17 +101,14 @@ public class ReadGesturesTests
             Lines(
                 $"id : {TaskId}",
                 "[x] Ma tâche",
-                "Description : Reprendre après la veille.",
-                "État : En cours",
-                "Priorité : 4",
                 "Type de tâche : Produire",
+                "Priorité : 4",
                 "Date cible : 2026-07-21",
-                "Projet(s) lié(s) : Deckle",
-                "Fichier(s) lié(s) : 2 fichier(s)",
-                "Livrable(s) : Texte",
                 "Définition de fini : Aucune action manuelle requise.",
-                "Charge estimée : 3",
-                "Charge réelle : 1.5",
+                "Projets : Deckle",
+                "Temps estimé : 3",
+                "Temps réel : 1.5",
+                "Fichiers liés : 2 fichier(s)",
                 "Archivé : oui"),
             digest);
 
@@ -121,12 +117,12 @@ public class ReadGesturesTests
         Assert.All(v2.Requests, r => Assert.DoesNotContain("format=md", r.PathAndQuery));
     }
 
-    // The priority is served under "priorite" as its option name, the level.
+    // The priority is served under "priority" as its option name, the level.
     [Fact]
     [Trait("Category", "regression")]
     public async Task TaskPropertiesReadsThePriorityUnderTheKeyTheServerServes()
     {
-        FakeV2Handler v2 = Reads(PropsReply(TaskId, "task", "Ma tâche", Sel("priorite", "4")));
+        FakeV2Handler v2 = Reads(PropsReply(TaskId, "task", "Ma tâche", Sel("priority", "4")));
 
         string digest = await NewGestures(v2).TaskPropertiesAsync(TaskId, Ct);
 
@@ -150,14 +146,14 @@ public class ReadGesturesTests
     public async Task TaskPropertiesJoinsSeveralLinkedObjectsByName()
     {
         FakeV2Handler v2 = Reads(
-            PropsReply(TaskId, "task", "Ma tâche", Ids(DevSpace.Props.RelationProjet, ProjectId, OtherTaskId)),
+            PropsReply(TaskId, "task", "Ma tâche", Ids(DevSpace.Props.Projects, ProjectId, OtherTaskId)),
             PropsReply(ProjectId, "project", "Deckle"),
             PropsReply(OtherTaskId, "project", "Autre chantier"));
 
         string digest = await NewGestures(v2).TaskPropertiesAsync(TaskId, Ct);
 
         Assert.Equal(
-            Lines($"id : {TaskId}", "[ ] Ma tâche", "Projet(s) lié(s) : Deckle, Autre chantier"),
+            Lines($"id : {TaskId}", "[ ] Ma tâche", "Projets : Deckle, Autre chantier"),
             digest);
         Assert.Equal(3, v2.Requests.Count);
     }
@@ -189,16 +185,17 @@ public class ReadGesturesTests
     // ── EpicPropertiesAsync ───────────────────────────────────────────────────
 
     // An epic has no done box: its title stands alone, then its properties in
-    // the type's order. It is the read an agent takes an epic's id from.
+    // the type's order. It is the read an agent takes an epic's id from. Its
+    // état is hidden and never shown: it is not kept on an epic.
     [Fact]
     public async Task EpicPropertiesRendersTheTitleThenEachPropertyInTheTypesOrder()
     {
         const string EpicId = "bafyreiEpicaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
         FakeV2Handler v2 = Reads(
             PropsReply(EpicId, "epic", "Deckle",
-                Str(DevSpace.Props.DefinitionDeFini, "Un utilitaire local tenu."),
-                Sel(DevSpace.Props.Priorite, "5"),
-                Sel(DevSpace.Props.Etat, "En cours")));
+                Str(DevSpace.Props.DoneDefinition, "Un utilitaire local tenu."),
+                Sel(DevSpace.Props.Priority, "5"),
+                Sel(DevSpace.Props.Status, "En cours")));
 
         string digest = await NewGestures(v2).EpicPropertiesAsync(EpicId, Ct);
 
@@ -206,7 +203,6 @@ public class ReadGesturesTests
             Lines(
                 $"id : {EpicId}",
                 "Deckle",
-                "État : En cours",
                 "Priorité : 5",
                 "Définition de fini : Un utilitaire local tenu."),
             digest);
@@ -415,11 +411,10 @@ public class ReadGesturesTests
     // A report has no name on v2 (`name` is empty, measured 2026-10-22); its
     // markdown opens on its first heading block, « # Journal <date> ».
     static string ReportProps(params string[] linkedTaskIds) => PropsReply(
-        ReportId, "rapport", "",
-        Str(DevSpace.Props.DateDuJournal, "2026-07-21T00:00:00Z"),
-        linkedTaskIds.Length == 0 ? Str("tag", "") : Ids(DevSpace.Props.TachesLiees, linkedTaskIds));
+        ReportId, "report", "",
+        linkedTaskIds.Length == 0 ? Str("tag", "") : Ids(DevSpace.Props.Tasks, linkedTaskIds));
 
-    static string ReportMd(string markdown) => MdReply(ReportId, "rapport", markdown);
+    static string ReportMd(string markdown) => MdReply(ReportId, "report", markdown);
 
     static string[] Entries(int count) =>
         Enumerable.Range(1, count).Select(i => $"- entrée {i}").ToArray();
@@ -440,7 +435,7 @@ public class ReadGesturesTests
                 new[]
                 {
                     $"id : {ReportId}",
-                    "Date du journal : 2026-07-21",
+                    "Journal 2026-07-21",
                     "Tâches liées : Tâche A, Tâche B",
                     "… 5 entrée(s) avant",
                 }
@@ -462,7 +457,7 @@ public class ReadGesturesTests
         Assert.Equal(
             Lines(
                 $"id : {ReportId}",
-                "Date du journal : 2026-07-21",
+                "Journal 2026-07-21",
                 "… 2 entrée(s) avant",
                 "- entrée 3",
                 "- entrée 4"),
@@ -486,7 +481,7 @@ public class ReadGesturesTests
         Assert.Equal(
             Lines(
                 $"id : {ReportId}",
-                "Date du journal : 2026-07-21",
+                "Journal 2026-07-21",
                 "… 1 entrée(s) avant",
                 "2026-07-21 10:00 · première",
                 "2026-07-21 11:30 · seconde",
@@ -506,7 +501,7 @@ public class ReadGesturesTests
         string digest = await NewGestures(v2).ReportJournalAsync(ReportId, last: 2, ct: Ct);
 
         Assert.Equal(
-            Lines($"id : {ReportId}", "Date du journal : 2026-07-21", "- module_X ok", "- fin"),
+            Lines($"id : {ReportId}", "Journal 2026-07-21", "- module_X ok", "- fin"),
             digest);
     }
 
@@ -520,9 +515,10 @@ public class ReadGesturesTests
 
         string digest = await NewGestures(v2).ReportJournalAsync(ReportId, ct: Ct);
 
-        Assert.Equal(
-            Lines($"id : {ReportId}", "Date du journal : 2026-07-21", "Journal vide."),
-            digest);
+        // The title stands in for the date: the heading when the body has one,
+        // « (sans titre) » when it has nothing at all.
+        Assert.StartsWith($"id : {ReportId}\n", digest);
+        Assert.EndsWith("\nJournal vide.", digest);
     }
 
     // v2 serves links as ids only, and a properties read does not carry a
@@ -577,8 +573,8 @@ public class ReadGesturesTests
     public async Task IdeaTextReturnsTheTitleThenTheCleanedTextAndTheArchivedFlag()
     {
         FakeV2Handler v2 = Reads(
-            PropsReply(IdeaId, "idee", "Une idée", Flag(DevSpace.Props.Archive)),
-            MdReply(IdeaId, "idee", "# Une idée   \nTexte de l'idée.\n\nSuite\\_x   \n---"));
+            PropsReply(IdeaId, "idea", "Une idée", Flag(DevSpace.Props.Archive)),
+            MdReply(IdeaId, "idea", "# Une idée   \nTexte de l'idée.\n\nSuite\\_x   \n---"));
 
         string digest = await NewGestures(v2).IdeaTextAsync(IdeaId, Ct);
 
@@ -591,8 +587,8 @@ public class ReadGesturesTests
     public async Task IdeaTextWithNoBodyAndNoArchiveIsJustItsIdentity()
     {
         FakeV2Handler v2 = Reads(
-            PropsReply(IdeaId, "idee", "Une idée"),
-            MdReply(IdeaId, "idee", "# Une idée   \n"));
+            PropsReply(IdeaId, "idea", "Une idée"),
+            MdReply(IdeaId, "idea", "# Une idée   \n"));
 
         string digest = await NewGestures(v2).IdeaTextAsync(IdeaId, Ct);
 
@@ -603,8 +599,8 @@ public class ReadGesturesTests
     public async Task IdeaTextWithoutANameIsTitledByItsFirstBodyLine()
     {
         FakeV2Handler v2 = Reads(
-            PropsReply(IdeaId, "idee", ""),
-            MdReply(IdeaId, "idee", "\n## Piste\\_une   \nSuite"));
+            PropsReply(IdeaId, "idea", ""),
+            MdReply(IdeaId, "idea", "\n## Piste\\_une   \nSuite"));
 
         string digest = await NewGestures(v2).IdeaTextAsync(IdeaId, Ct);
 
@@ -618,8 +614,8 @@ public class ReadGesturesTests
     public async Task IdeaTextReadsANamelessIdeaTitleAndTextOnce()
     {
         FakeV2Handler v2 = Reads(
-            PropsReply(IdeaId, "idee", ""),
-            MdReply(IdeaId, "idee",
+            PropsReply(IdeaId, "idea", ""),
+            MdReply(IdeaId, "idea",
                 "Socle\n\n## L'idée\n\nDeckle pourrait…   \nSocle   \n## L'idée   \nDeckle pourrait exposer un socle.   \n"));
 
         string digest = await NewGestures(v2).IdeaTextAsync(IdeaId, Ct);
@@ -631,8 +627,8 @@ public class ReadGesturesTests
     public async Task IdeaTextWithoutNameOrBodyStaysSansTitre()
     {
         FakeV2Handler v2 = Reads(
-            PropsReply(IdeaId, "idee", ""),
-            MdReply(IdeaId, "idee", "\n"));
+            PropsReply(IdeaId, "idea", ""),
+            MdReply(IdeaId, "idea", "\n"));
 
         string digest = await NewGestures(v2).IdeaTextAsync(IdeaId, Ct);
 
@@ -648,8 +644,8 @@ public class ReadGesturesTests
     {
         FakeV2Handler v2 = Reads(
             PropsReply(DocId, "document", "Doc",
-                Sel(DevSpace.Props.TypeDeDocument, "Référence"),
-                Flag(DevSpace.Props.DocumentSysteme),
+                Sel(DevSpace.Props.DocumentType, "Référence"),
+                Flag(DevSpace.Props.DocumentGlobal),
                 Str(DevSpace.Props.Version, "1.2")),
             MdReply(DocId, "document",
                 "# Doc   \nIntro courte.\n\n## Alpha\nabc\ndef\n### Sous\nxy\n## Beta\\_bis\n --- \n"));
@@ -661,7 +657,7 @@ public class ReadGesturesTests
                 $"id : {DocId}",
                 "Doc",
                 "Type de document : Référence",
-                "Document système : oui",
+                "Document global : oui",
                 "Version : 1.2",
                 "Préambule : 13 car.",
                 "## Alpha (19 car.)",

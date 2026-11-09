@@ -122,12 +122,13 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
     {
         var started = DateTime.UtcNow;
         if (last < 1) throw new ArgumentException("last doit valoir au moins 1.", nameof(last));
-        Loaded obj = await LoadAsync(report, DevSpace.Types.Rapport, withMarkdown: true, ct);
+        Loaded obj = await LoadAsync(report, DevSpace.Types.Report, withMarkdown: true, ct);
 
         var sb = new StringBuilder();
-        sb.Append("id : ").Append(obj.Id);
-        AppendFact(sb, "Date du journal", obj.Props.Day(DevSpace.Props.DateDuJournal));
-        AppendFact(sb, "Tâches liées", await NamesAsync(obj.Props.ObjectIds(DevSpace.Props.TachesLiees), ct));
+        // The title carries the report's date (« Journal 2026-11-09 »): the
+        // model v6 has no journal-date property.
+        AppendIdentity(sb, obj, done: null);
+        AppendFact(sb, "Tâches liées", await NamesAsync(obj.Props.ObjectIds(DevSpace.Props.Tasks), ct));
 
         IReadOnlyList<string> entries = MarkdownBody.JournalEntries(obj.Markdown);
         int skipped = Math.Max(0, entries.Count - last);
@@ -144,7 +145,7 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
     public async Task<string> IdeaTextAsync(string idea, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
-        Loaded obj = await LoadAsync(idea, DevSpace.Types.Idee, withMarkdown: true, ct);
+        Loaded obj = await LoadAsync(idea, DevSpace.Types.Idea, withMarkdown: true, ct);
 
         var sb = new StringBuilder();
         AppendIdentity(sb, obj, done: null);
@@ -255,7 +256,7 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
         // Ideas and reports are often created without a name: their first body
         // line stands in for it rather than a bare "(sans titre)", and leaves the
         // body as a name would, so the title is not read twice.
-        if (props.Name.Length == 0 && typeKey is DevSpace.Types.Idee or DevSpace.Types.Rapport)
+        if (props.Name.Length == 0 && typeKey is DevSpace.Types.Idea or DevSpace.Types.Report)
         {
             markdown = MarkdownBody.DropSnippetHeader(markdown);
             string first = MarkdownBody.FirstLine(markdown);
@@ -288,9 +289,12 @@ public sealed class ReadGestures(NameResolver resolver, AnytypeV2Client v2)
         foreach (PropertyDef def in DevSpace.PropertiesFor(typeKey))
         {
             if (def.Key == DevSpace.Props.Done) continue;
+            // État is kept on projects only: on any other type it is a hidden
+            // property the MCP never writes, so it would only mislead a reader.
+            if (def.Key == DevSpace.Props.Status && typeKey != DevSpace.Types.Project) continue;
             // v2 serves a select as its option name and a multi-select as the
             // names, ready to show (measured 2026-10-22 on the task's état and
-            // livrables); the number and files shapes were not measured.
+            // multi-select); the number and files shapes were not measured.
             string? value = def.Format switch
             {
                 "objects" => await NamesAsync(props.ObjectIds(def.Key), ct),
