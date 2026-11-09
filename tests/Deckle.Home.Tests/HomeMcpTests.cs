@@ -28,7 +28,7 @@ public class HomeMcpTests
         Assert.Equal(
             new[]
             {
-                "archive", "complete", "delete", "get", "point_dictate",
+                "archive", "complete", "delete", "get",
                 "product_list", "product_need", "product_taken", "search", "worksite_overview",
             }
                 .Concat(HomeTypedToolCatalog.Build(() => throw new InvalidOperationException()).Select(tool => tool.Name))

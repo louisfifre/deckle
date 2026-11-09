@@ -24,7 +24,7 @@ public static class HomeMcp
         + "Start from known objects and read before editing. Before creating a task or worksite, search the relevant tasks and worksites with a few focused queries, active work first. "
         + "A failed read is not evidence that an object is absent. Ask a focused question when the target or action is ambiguous; leave unknown facts empty. "
         + "Point means a connection or fixed control with its fitting; hardwired equipment is a Device. One physical bulb is one Device, connected_to its Point. "
-        + "point_dictate writes a room as the person describes it: it mints each point's code and writes at once; a mistake is deleted in two steps. Codes are immutable. "
+        + "The person gives you a free description of a room; you extract each point and call point_create with room and category (or an explicit code) so the guichet mints the codes. Points are written at once, with no proposal round; a mistake is deleted in two steps with delete. Codes are immutable. "
         + "Supplied relation arrays replace the stored list; a relation's add/remove edit keeps the other links. A component is born in a System. "
         + "Errands are product_need, product_taken and product_list. "
         + "complete finishes a task, or a worksite with its actual_budget and actual_effort, which you ask the person for. "

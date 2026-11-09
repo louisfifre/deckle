@@ -61,10 +61,12 @@ The local scope coordinates Deckle writers, not simultaneous app edits.
 
 ## Usages
 
-`point_dictate` writes a room as the person describes it: the room once, then
-each point with its category and its fields. The codes are minted as above
-and the points are written at once; the answer lists each code with its name
-and id. There is no proposal round: a mistake is deleted in two steps.
+A room described by the person is written through `point_create`: the LLM
+extracts each point and gives `room` and `category` (the code is minted as
+above) or an explicit `code`. The points are written at once and the answer
+lists each created point with its code, name and id. There is no proposal
+round: a mistake is deleted in two steps with `delete`, and codes are
+immutable.
 
 The errands are three verbs over the product type. `product_need` puts
 products on the list and `product_taken` takes them off. A name equal to an
@@ -114,8 +116,8 @@ the answer, under the write scope, so a link added while the notification
 waited still stops the delete. Each refusal and each completed move is told in
 the log with its reason and the object's type key, never its name or id.
 
-The surface counts 38 tools: the 28 typed commands, `get`, `search`, `delete`,
-`complete`, `worksite_overview`, `archive`, `point_dictate`, `product_need`,
+The surface counts 37 tools: the 28 typed commands, `get`, `search`, `delete`,
+`complete`, `worksite_overview`, `archive`, `product_need`,
 `product_taken` and `product_list`.
 
 ## Selecting objects

@@ -115,8 +115,6 @@ public static class HomeToolCatalog
                     RequiredString(args, "object"), OptionalBoolean(args, "archived") ?? true, ct),
                 ToolExecutionContract.OverwritingIdempotent),
 
-            HomeTypedToolCatalog.PointDictateTool(gestures),
-
             new ToolDescriptor(
                 "product_need",
                 "Put products on the errand list (Prendre). Each name is matched to an existing product: the same name, case and accents aside, is that product, set needed (and its category or quantity when given; an archived one comes back). A name only near an existing one (plural, punctuation) refuses the batch with the candidates: retry with the exact name or id, or force: true for a different product. An unknown name creates the product, needed. The whole batch is matched before the first write.",

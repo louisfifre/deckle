@@ -6,9 +6,9 @@ using Xunit;
 
 namespace Deckle.Home.Tests;
 
-// A room is dictated, not proposed: the codes are minted as the lowest free
-// number of each category in the room, gaps reused, counting the batch, and
-// the points are written at once.
+// A room described to the LLM is written through point_create, not proposed:
+// the codes are minted as the lowest free number of each category in the
+// room, gaps reused, counting the batch, and the points are written at once.
 [Trait("Category", "integration")]
 public sealed class HomePointDictationTests
 {
@@ -37,32 +37,33 @@ public sealed class HomePointDictationTests
         HomeToolCatalog.Build(() => Gestures(server)).Single(tool => tool.Name == name);
 
     [Fact]
-    public async Task DictationMintsTheLowestFreeCodesAndWritesAtOnce()
+    public async Task ABatchInOneRoomMintsTheLowestFreeCodesAndWritesAtOnce()
     {
         using FakeHomeAnytypeServer server = ServerWithARoomAndAGap();
 
-        string digest = await Gestures(server).DictatePointsAsync(
-            "ZZ",
+        string digest = await Gestures(server).CreateAsync(
+            "point",
             [
-                new HomeCreateItem(null, "Prise fictive a", null, Category: "PS"),
-                new HomeCreateItem(null, "Prise fictive b", null, Category: "ps"),
-                new HomeCreateItem(null, "Plafonnier fictif", null, Category: "LC — plafonnier"),
+                new HomeCreateItem(null, "Prise fictive a", null, Category: "PS", Room: "ZZ"),
+                new HomeCreateItem(null, "Prise fictive b", null, Category: "ps", Room: "ZZ"),
+                new HomeCreateItem(null, "Plafonnier fictif", null, Category: "LC — plafonnier", Room: "ZZ"),
             ],
             Ct);
 
         Assert.Equal(new[] { "ZZ-PS02", "ZZ-PS04", "ZZ-LC01" }, CreatedCodes(server));
-        Assert.StartsWith("Dicté dans ZZ · Pièce fictive :", digest);
-        Assert.Contains("- ZZ-PS02 · Prise fictive a (id created-1)", digest);
-        Assert.Contains("- ZZ-LC01 · Plafonnier fictif (id created-3)", digest);
+        Assert.StartsWith("Créé :", digest);
+        Assert.Contains("- point · ZZ-PS02 · Prise fictive a (id created-1)", digest);
+        Assert.Contains("- point · ZZ-PS04 · Prise fictive b (id created-2)", digest);
+        Assert.Contains("- point · ZZ-LC01 · Plafonnier fictif (id created-3)", digest);
     }
 
     [Fact]
-    public async Task ADictatedPointIsInstalledInItsRoomWithItsCategory()
+    public async Task AMintedPointIsInstalledInItsRoomWithItsCategory()
     {
         using FakeHomeAnytypeServer server = ServerWithARoomAndAGap();
 
-        await Gestures(server).DictatePointsAsync(
-            "Pièce fictive", [new HomeCreateItem(null, "Interrupteur fictif", null, Category: "CS")], Ct);
+        await Gestures(server).CreateAsync(
+            "point", [new HomeCreateItem(null, "Interrupteur fictif", null, Category: "CS", Room: "Pièce fictive")], Ct);
 
         JsonArray properties = JsonNode.Parse(server.Requests.Single(request => request.Method == "POST").Body)!
             ["properties"]!.AsArray();
@@ -73,30 +74,40 @@ public sealed class HomePointDictationTests
     }
 
     [Fact]
-    public async Task AnUnknownRoomStopsTheDictationBeforeAnyWrite()
+    public async Task AnUnknownRoomStopsTheBatchBeforeAnyWrite()
     {
         using FakeHomeAnytypeServer server = ServerWithARoomAndAGap();
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => Gestures(server).DictatePointsAsync(
-            "Pièce absente fictive", [new HomeCreateItem(null, "Prise fictive", null, Category: "PS")], Ct));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => Gestures(server).CreateAsync(
+            "point", [new HomeCreateItem(null, "Prise fictive", null, Category: "PS", Room: "Pièce absente fictive")], Ct));
 
         Assert.DoesNotContain(server.Requests, request => request.Method == "POST");
     }
 
     [Fact]
-    public async Task ThePointDictateToolRefusesACodeBeforeHomeIsRead()
+    public async Task APointWithNeitherACodeNorACategoryAndARoomIsRefusedBeforeHomeIsRead()
     {
         ToolDescriptor tool = HomeToolCatalog.Build(() => throw new InvalidOperationException("must not resolve Home"))
-            .Single(value => value.Name == "point_dictate");
+            .Single(value => value.Name == "point_create");
 
         ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(() => tool.Handler(new JsonObject
         {
-            ["room"] = "ZZ",
-            ["points"] = new JsonArray(new JsonObject { ["category"] = "PS", ["name"] = "Prise fictive", ["code"] = "ZZ-PS09" }),
+            ["items"] = new JsonArray(new JsonObject { ["category"] = "PS", ["name"] = "Prise fictive" }),
         }, Ct));
 
-        Assert.Contains("points[0]", error.Message);
-        Assert.Contains("Unknown field 'code'", error.Message);
+        Assert.Contains("items[0]", error.Message);
+    }
+
+    [Fact]
+    public void ThePointCreateDescriptionTellsTheLlmHowToWriteARoom()
+    {
+        ToolDescriptor tool = HomeToolCatalog.Build(() => throw new InvalidOperationException("must not resolve Home"))
+            .Single(value => value.Name == "point_create");
+
+        Assert.Contains("describes a room freely", tool.Description);
+        Assert.Contains("no proposal round", tool.Description);
+        Assert.Contains("deleted in two steps", tool.Description);
+        Assert.Contains("Codes are immutable", tool.Description);
     }
 
     [Fact]

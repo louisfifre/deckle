@@ -28,7 +28,7 @@ public sealed class HomeGestureEventTests
         var gestures = new HomeGestures(new AnytypeApiClient(server.Credentials), FakeHomeAnytypeServer.HomeSpace);
 
         await gestures.ArchiveAsync("Radio fictive", ct: Ct);
-        await gestures.DictatePointsAsync("ZZ", [new HomeCreateItem(null, "Prise fictive", null, Category: "PS")], Ct);
+        await gestures.CreateAsync("point", [new HomeCreateItem(null, "Prise fictive", null, Category: "PS", Room: "ZZ")], Ct);
         await gestures.ProductNeedAsync([new HomeProductNeed("Pain fictif")], Ct);
         await gestures.ProductTakenAsync(["Pain fictif"], Ct);
         await gestures.ProductListAsync(ct: Ct);
@@ -37,7 +37,7 @@ public sealed class HomeGestureEventTests
             .Where(e => e.EventId == DeckleHomeSource.EvtGestureCompleted)
             .Select(e => Field(e, "gesture"))
             .ToArray();
-        Assert.Equal(new[] { "archive", "point_dictate", "product_need", "product_taken", "product_list" }, completed);
+        Assert.Equal(new[] { "archive", "create", "product_need", "product_taken", "product_list" }, completed);
         Assert.DoesNotContain(listener.Events, e => e.Payload!.Any(p =>
             Convert.ToString(p) is { } text
             && (text.Contains("fictif", StringComparison.OrdinalIgnoreCase) || text.Contains("-zz")

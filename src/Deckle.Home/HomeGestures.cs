@@ -41,52 +41,15 @@ public sealed partial class HomeGestures
     {
         DateTime started = DateTime.UtcNow;
         type = NormalizeType(type);
-        CreateOutcome outcome = await CreateCoreAsync(type, items, ct).ConfigureAwait(false);
+        IReadOnlyList<string> created = await CreateCoreAsync(type, items, ct).ConfigureAwait(false);
         DeckleHomeSource.Log.GestureCompleted("create", Elapsed(started));
-        return "Créé :\n" + string.Join("\n", outcome.Created.Select(line => $"- {type} · {line}"));
+        return "Créé :\n" + string.Join("\n", created.Select(line => $"- {type} · {line}"));
     }
-
-    // A room described aloud: the person says what is there, the gesture
-    // mints each point's code (lowest free per category, counting the batch)
-    // and writes at once. No proposal round: a mistake is deleted in two steps.
-    public async Task<string> DictatePointsAsync(
-        string room,
-        IReadOnlyList<HomeCreateItem> points,
-        CancellationToken ct = default)
-    {
-        DateTime started = DateTime.UtcNow;
-        if (string.IsNullOrWhiteSpace(room))
-            throw new ArgumentException("Une dictée vise une pièce : fournis room (code, nom exact ou id).", nameof(room));
-        ValidateBatch(points, "point_dictate");
-        foreach (HomeCreateItem point in points)
-        {
-            if (point.Code is not null)
-                throw new InvalidOperationException(
-                    "Une dictée attribue elle-même les codes : retire code, ou crée ce point avec point_create.");
-            if (point.Category is null)
-                throw new ArgumentException("Chaque point dicté porte sa catégorie (category).", nameof(points));
-            if (point.Room is not null)
-                throw new InvalidOperationException("La pièce d'une dictée se donne une fois, dans room.");
-        }
-
-        CreateOutcome outcome = await CreateCoreAsync(
-            HomeSchema.Types.Point, points.Select(point => point with { Room = room }).ToArray(), ct)
-            .ConfigureAwait(false);
-        string roomDisplay = HomeObjectIndex.Display(
-            outcome.Index.Resolve(room, NameMatch.Exact, [HomeSchema.Types.Room]));
-        DeckleHomeSource.Log.GestureCompleted("point_dictate", Elapsed(started));
-        return $"Dicté dans {roomDisplay} :\n" + string.Join("\n", outcome.Created.Select(line => "- " + line));
-    }
-
-    // What a create wrote, one line per item as "display (id …)", and the
-    // index it was prepared against, for a caller that names a target of the
-    // batch (the room of a dictation) without reading the space again.
-    private sealed record CreateOutcome(IReadOnlyList<string> Created, HomeObjectIndex Index);
 
     // The whole batch is prepared before the first POST: shape, codes,
     // options, relations, templates and the near-name guard. A refusal at any
     // of them leaves the space untouched.
-    private async Task<CreateOutcome> CreateCoreAsync(
+    private async Task<IReadOnlyList<string>> CreateCoreAsync(
         string type,
         IReadOnlyList<HomeCreateItem> items,
         CancellationToken ct)
@@ -290,7 +253,7 @@ public sealed partial class HomeGestures
                 type, created, null, [], HomeMembershipState.Unconfirmed, prepared.Count, ex));
         }
 
-        return new CreateOutcome(created, index);
+        return created;
     }
 
     public Task<string> UpdateAsync(

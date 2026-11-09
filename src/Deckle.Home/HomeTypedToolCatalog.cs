@@ -136,83 +136,6 @@ public static class HomeTypedToolCatalog
             OptionalBoolean(value, "force") ?? false, category, room);
     }
 
-    // point_dictate: one room, then the points as they are described, each
-    // with its category and its point fields. The codes are minted, so an
-    // item carries neither code, nor room, nor category beyond its own.
-    internal static ToolDescriptor PointDictateTool(Func<HomeGestures> gestures)
-    {
-        ArgumentNullException.ThrowIfNull(gestures);
-        ManifestIndex manifest = ManifestIndex.Read(HomeSchema.TargetManifest);
-        ManifestType point = manifest.Types.Single(type => type.CanonicalKey == HomeSchema.Types.Point);
-        JsonObject item = DictatedPointSchema(point, manifest);
-        IReadOnlySet<string> allowed = new HashSet<string>(
-            item["properties"]!.AsObject().Select(pair => pair.Key), StringComparer.Ordinal);
-
-        return new ToolDescriptor(
-            "point_dictate",
-            "Write down a room as the person describes it: give the room once, then each point with its category and its fields. "
-            + "The codes are minted at once (lowest free number per category in that room, gaps reused, counting the batch) and the points are written immediately; "
-            + "the answer lists each code with its name and id. No proposal round: a mistake is deleted in two steps with delete. "
-            + "The whole batch is validated before the first write.",
-            ObjectSchema(
-                new JsonObject
-                {
-                    ["room"] = StringSchema("The room: its code, exact name, or id."),
-                    ["points"] = new JsonObject
-                    {
-                        ["type"] = "array",
-                        ["minItems"] = 1,
-                        ["maxItems"] = MaxBatchSize,
-                        ["description"] = "The points of the room, in the order they were described.",
-                        ["items"] = item,
-                    },
-                },
-                ["room", "points"]),
-            async (args, ct) =>
-            {
-                JsonObject value = RequireObject(args, "arguments");
-                RequireOnly(value, new HashSet<string>(["room", "points"], StringComparer.Ordinal), "point_dictate");
-                string room = RequiredText(value, "room");
-                JsonArray array = BoundedItems(value, "points");
-                var points = new List<HomeCreateItem>(array.Count);
-                for (int position = 0; position < array.Count; position++)
-                {
-                    JsonObject entry = array[position] as JsonObject
-                        ?? throw new ArgumentException($"points[{position}] must be an object.", "points");
-                    try
-                    {
-                        RequireOnly(entry, allowed, "point_dictate.points[]");
-                        JsonObject properties = BuildProperties(point, manifest, entry, creating: true);
-                        points.Add(new HomeCreateItem(
-                            null, RequiredText(entry, "name"), properties.Count == 0 ? null : properties,
-                            OptionalStringArray(entry, "collections"), OptionalText(entry, "text"),
-                            OptionalText(entry, "template"), Category: RequiredText(entry, "category")));
-                    }
-                    catch (ArgumentException ex)
-                    {
-                        throw new ArgumentException($"points[{position}]: {ex.Message}", ex);
-                    }
-                }
-                return await gestures().DictatePointsAsync(room, points, ct).ConfigureAwait(false);
-            },
-            ToolExecutionContract.AdditiveRequiresDeduplication);
-    }
-
-    private static JsonObject DictatedPointSchema(ManifestType point, ManifestIndex manifest)
-    {
-        var properties = new JsonObject
-        {
-            ["category"] = CategorySchema(),
-            ["name"] = StringSchema("Human title."),
-            ["text"] = StringSchema("Optional initial body."),
-            ["template"] = StringSchema("Live template name."),
-            ["collections"] = StringArraySchema("Collections to add."),
-        };
-        foreach (ManifestProperty property in WritableProperties(point, manifest, creating: true))
-            properties[property.CanonicalKey] = PropertySchema(property);
-        return ObjectSchema(properties, ["category", "name"]);
-    }
-
     private static JsonObject CategorySchema()
     {
         var values = new JsonArray();
@@ -467,9 +390,15 @@ public static class HomeTypedToolCatalog
         string identity = HomeNameGuard.Applies(type)
             ? " A name that folds like an existing object of this type (case, accents, punctuation, plural) is refused with the candidates: update the one that exists, or pass force: true on the item for a true twin."
             : " The code is the identity; a code already taken is refused with the next free one.";
+        string pointGuide = type == HomeSchema.Types.Point
+            ? " The person describes a room freely; extract each point from that description and give it room and category so the guichet mints its code"
+              + " (lowest free number per room and category, gaps reused, counting the batch), or give an explicit code instead. Never give both."
+              + " Points are written at once, with no proposal round; the answer lists each created point with its code, name and id."
+              + " A mistake is deleted in two steps with delete. Codes are immutable."
+            : "";
         return $"Create one or more {type} objects with explicit typed fields (items, 1 to {MaxBatchSize}). "
             + "The whole batch is validated before the first write; a transport failure part way is reported item by item: create only what is missing."
-            + identity + context;
+            + identity + context + pointGuide;
     }
 
     private static string UpdateDescription(string type) => type is HomeSchema.Types.Todo or HomeSchema.Types.Worksite
