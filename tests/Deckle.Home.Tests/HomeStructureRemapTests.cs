@@ -297,6 +297,66 @@ public sealed class HomeStructureRemapTests
         Assert.Equal(1, remap.Dropped["dataview_property"]);
     }
 
+    static (string Kind, int Indent)[] Shape(HomeTemplatePlan plan) =>
+        plan.Body["blocks"]!.AsArray().Select(block =>
+            (block!["type"]!.GetValue<string>(), block["indent"]?.GetValue<int>() ?? 0)).ToArray();
+
+    static HomeTemplatePlan Plan(HomeStructureRemap remap, string blocks) => remap.TemplatePlan(new HomeStructureTemplate
+    {
+        OldId = "t", Name = "Modèle", TemplateFor = "room",
+        Document = Obj($$"""{"properties":{"name":"Modèle"},"blocks":{{blocks}}}"""),
+    })!;
+
+    [Fact]
+    public void AColumnInsideAColumnIsRemovedAndItsDescendantsMoveUpOneLevel()
+    {
+        var remap = new HomeStructureRemap(Ids());
+
+        HomeTemplatePlan plan = Plan(remap, """
+            [{"type":"row"},{"type":"column","indent":1},{"type":"paragraph","indent":2},
+             {"type":"column","indent":2},{"type":"divider","indent":3},{"type":"paragraph","indent":4},
+             {"type":"heading_2"}]
+            """);
+
+        Assert.Equal(
+            [("row", 0), ("column", 1), ("paragraph", 2), ("divider", 2), ("paragraph", 3), ("heading_2", 0)],
+            Shape(plan));
+        Assert.Equal(1, remap.Dropped["column_unwrapped"]);
+        Assert.DoesNotContain("column", string.Join(",", remap.Dropped.Keys.Where(key => key != "column_unwrapped")));
+    }
+
+    [Fact]
+    public void ColumnsAreUnwrappedUntilNoneIsLeftWhetherNestedDeepOrWithoutARow()
+    {
+        var remap = new HomeStructureRemap(Ids());
+
+        HomeTemplatePlan plan = Plan(remap, """
+            [{"type":"column"},{"type":"paragraph","indent":1},
+             {"type":"row"},{"type":"column","indent":1},{"type":"column","indent":2},{"type":"column","indent":3},
+             {"type":"divider","indent":4},{"type":"column","indent":1},{"type":"paragraph","indent":2}]
+            """);
+
+        // The first column has no parent; the second and third sit in a column;
+        // the last one is a sibling under the row and stays.
+        Assert.Equal(
+            [("paragraph", 0), ("row", 0), ("column", 1), ("divider", 2), ("column", 1), ("paragraph", 2)],
+            Shape(plan));
+        Assert.Equal(3, remap.Dropped["column_unwrapped"]);
+    }
+
+    [Fact]
+    public void ARowWithItsColumnsIsLeftAlone()
+    {
+        var remap = new HomeStructureRemap(Ids());
+
+        HomeTemplatePlan plan = Plan(remap, """
+            [{"type":"row"},{"type":"column","indent":1},{"type":"paragraph","indent":2},{"type":"column","indent":1}]
+            """);
+
+        Assert.Equal([("row", 0), ("column", 1), ("paragraph", 2), ("column", 1)], Shape(plan));
+        Assert.DoesNotContain("column_unwrapped", remap.Dropped.Keys);
+    }
+
     [Fact]
     public void ATemplateOfATypeTheModelDoesNotHoldIsDropped()
     {

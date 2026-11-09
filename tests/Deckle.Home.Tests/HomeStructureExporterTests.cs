@@ -64,9 +64,9 @@ public sealed class HomeStructureExporterTests
         HomeStructureTemplate room = structure.Templates.Single(template => template.OldId == HomeStructureFixtures.OldTemplateRoom);
         Assert.Equal("room", room.TemplateFor);
         Assert.Equal("Modèle pièce fictif", room.Name);
-        Assert.Equal(8, ((JsonArray)room.Document["blocks"]!).Count);
+        Assert.Equal(9, ((JsonArray)room.Document["blocks"]!).Count);
         Assert.Equal(1, structure.Report["templates_skipped"]);
-        Assert.Equal(12, structure.Report["template_blocks"]);
+        Assert.Equal(13, structure.Report["template_blocks"]);
     }
 
     [Fact]

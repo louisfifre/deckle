@@ -373,6 +373,7 @@ internal sealed partial class HomeStructureRemap(IReadOnlyDictionary<string, str
         var blocks = new JsonArray();
         foreach (JsonObject block in (template.Document["blocks"] as JsonArray ?? []).OfType<JsonObject>())
             if (TemplateBlock(block, key, where) is { } cleaned) blocks.Add(cleaned);
+        UnwrapStrayColumns(blocks, where);
 
         var body = new JsonObject
         {
@@ -469,6 +470,50 @@ internal sealed partial class HomeStructureRemap(IReadOnlyDictionary<string, str
             default:
                 return result;
         }
+    }
+
+    // 2026-11-09: a template document says nesting with an `indent` number on
+    // each block (a block is the child of the closest earlier block with indent
+    // one lower), and the server refuses a document where a `column`s parent is
+    // not a `row` (« a column block must be nested directly under a row block »).
+    // A source template had a column inside a column. Such a column is removed
+    // and each of its descendants moves up one level, repeated until none is
+    // left, so its content stays where the layout put it, one level out.
+    // Counted as column_unwrapped (kind only).
+    internal void UnwrapStrayColumns(JsonArray blocks, string where)
+    {
+        while (true)
+        {
+            List<JsonObject> list = blocks.OfType<JsonObject>().ToList();
+            int stray = list.FindIndex(0, block =>
+                HomeObjectJson.String(block, "type") == "column" && ParentKind(list, list.IndexOf(block)) != "row");
+            if (stray < 0) return;
+
+            int level = IndentOf(list[stray]);
+            for (int next = stray + 1; next < list.Count && IndentOf(list[next]) > level; next++)
+                SetIndent(list[next], IndentOf(list[next]) - 1);
+            blocks.Remove(list[stray]);
+            Drop("column_unwrapped", where, "column");
+        }
+    }
+
+    // The kind of the closest earlier block whose indent is one lower, or "".
+    private static string ParentKind(List<JsonObject> list, int index)
+    {
+        int wanted = IndentOf(list[index]) - 1;
+        if (wanted < 0) return "";
+        for (int earlier = index - 1; earlier >= 0; earlier--)
+            if (IndentOf(list[earlier]) == wanted) return HomeObjectJson.String(list[earlier], "type");
+        return "";
+    }
+
+    private static int IndentOf(JsonObject block) =>
+        block["indent"] is JsonValue value && value.TryGetValue(out int indent) ? indent : 0;
+
+    private static void SetIndent(JsonObject block, int indent)
+    {
+        if (indent <= 0) block.Remove("indent");
+        else block["indent"] = indent;
     }
 
     private static void CleanTable(JsonObject table)

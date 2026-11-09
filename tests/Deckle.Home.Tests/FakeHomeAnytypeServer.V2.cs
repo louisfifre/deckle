@@ -392,6 +392,9 @@ internal sealed partial class FakeHomeAnytypeServer
                 return V2Error(400, "validation_failed", $"properties: unknown property {key}");
 
         JsonArray blocks = payload["blocks"] as JsonArray ?? [];
+        if (ColumnOutsideARow(blocks) is { } parent)
+            return V2Error(400, "validation_failed",
+                $"a column block must be nested directly under a row block, got parent type {parent}");
         foreach (JsonObject block in blocks.OfType<JsonObject>())
         {
             if (block["fields"] is not null || block["source"] is not null)
@@ -420,6 +423,24 @@ internal sealed partial class FakeHomeAnytypeServer
         };
         _v2Templates.Add(document);
         return (200, new JsonObject { ["id"] = id, ["type"] = "template", ["etag"] = "e" }.ToJsonString());
+    }
+
+    // The server nests blocks by `indent` (the parent is the closest earlier
+    // block with indent one lower) and refuses a column whose parent is not a
+    // row (seen 2026-11-09). Returns the parent type found, or null.
+    private static string? ColumnOutsideARow(JsonArray blocks)
+    {
+        JsonObject[] list = blocks.OfType<JsonObject>().ToArray();
+        static int Indent(JsonObject block) => block["indent"]?.GetValue<int>() ?? 0;
+        for (int index = 0; index < list.Length; index++)
+        {
+            if (list[index]["type"]?.GetValue<string>() != "column") continue;
+            JsonObject? parent = Enumerable.Range(0, index).Reverse()
+                .Select(earlier => list[earlier]).FirstOrDefault(block => Indent(block) == Indent(list[index]) - 1);
+            string kind = parent?["type"]?.GetValue<string>() ?? "none";
+            if (kind != "row") return kind;
+        }
+        return null;
     }
 
     private (int Status, string Json) CreateWidget(JsonObject payload)

@@ -73,6 +73,11 @@ public sealed class HomeStructureWriterTests : IDisposable
         Assert.Equal(CreatedId(target, "zone", "Étage fictif"), properties["zone"]![0]!.GetValue<string>());
         JsonArray blocks = (JsonArray)room["blocks"]!;
         Assert.DoesNotContain(blocks.OfType<JsonObject>(), block => block["property"]?.GetValue<string>() == "aisle");
+        // The column nested in a column was flattened, its property stays under
+        // the first column (the fake refuses a column outside a row, as the server does).
+        Assert.Equal(1, blocks.Count(block => block!["type"]!.GetValue<string>() == "column"));
+        Assert.Equal(2, blocks.OfType<JsonObject>().Single(block => block["property"]?.GetValue<string>() == "zone")["indent"]!.GetValue<int>());
+        Assert.Equal(1, run.Outcome.Report.Dropped["column_unwrapped"]);
         JsonObject dataview = blocks.OfType<JsonObject>().Single(block => block["type"]!.GetValue<string>() == "dataview");
         Assert.Equal("type-product", dataview["object_id"]!.GetValue<string>());
 
