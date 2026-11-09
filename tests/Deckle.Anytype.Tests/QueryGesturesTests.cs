@@ -535,6 +535,105 @@ public class QueryGesturesTests
         Assert.Equal(ProjectId, id);
     }
 
+    // ── UnlinkAsync ───────────────────────────────────────────────────────────
+
+    const string OtherProjectId = "bafyreiotherprojectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    static JsonObject TaskLinkedTo(params string[] projectIds)
+    {
+        JsonObject task = TaskObject();
+        var refs = new JsonArray();
+        foreach (string id in projectIds) refs.Add(id);
+        ((JsonArray)task["object"]!["properties"]!).Add(new JsonObject
+        {
+            ["key"] = DevSpace.Props.RelationProjet,
+            ["format"] = "objects",
+            ["objects"] = refs,
+        });
+        return task;
+    }
+
+    static JsonObject OtherProjectObject()
+    {
+        JsonObject project = ProjectObject();
+        project["object"]!["id"] = OtherProjectId;
+        project["object"]!["name"] = "Autre";
+        return project;
+    }
+
+    [Fact]
+    public async Task UnlinkRemovesOnlyTheNamedProjectFromATask()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskLinkedTo(ProjectId, OtherProjectId));
+        server.OnGetObject(ProjectId, ProjectObject());
+        server.OnPatchObject(TaskId, TaskObject());
+
+        string digest = await NewGestures(server).UnlinkAsync(TaskId, [ProjectId], Ct);
+
+        JsonObject patched = server.LastBodyFor("PATCH");
+        JsonObject entry = Assert.IsType<JsonObject>(((JsonArray)patched["properties"]!).Single());
+        Assert.Equal(DevSpace.Props.RelationProjet, entry["key"]!.GetValue<string>());
+        Assert.Equal([OtherProjectId], ((JsonArray)entry["objects"]!).Select(n => n!.GetValue<string>()));
+        Assert.Contains("1 retrait(s)", digest);
+    }
+
+    [Fact]
+    public async Task UnlinkRefusesToLeaveATaskWithoutAProjectAndSendsNoPatch()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskLinkedTo(ProjectId));
+        server.OnGetObject(ProjectId, ProjectObject());
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).UnlinkAsync(TaskId, [ProjectId], Ct));
+
+        Assert.Contains("projet", ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    [Fact]
+    public async Task UnlinkOfATargetThatIsNotLinkedChangesNothing()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskLinkedTo(ProjectId));
+        server.OnGetObject(OtherProjectId, OtherProjectObject());
+
+        string digest = await NewGestures(server).UnlinkAsync(TaskId, [OtherProjectId], Ct);
+
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+        Assert.Contains("0 retrait(s)", digest);
+    }
+
+    [Fact]
+    public async Task UnlinkProjectFromEpicRemovesTheCollectionMembershipWithoutPatchingTheProject()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        server.OnGetObject(EpicId, EpicObject());
+        server.OnDeleteListObject(EpicId, ProjectId);
+
+        string digest = await NewGestures(server).UnlinkAsync(ProjectId, [EpicId], Ct);
+
+        Assert.Contains(server.Requests, r => r.Method == "DELETE"
+            && r.Path == $"/v1/spaces/{FakeAnytypeServer.Space}/lists/{EpicId}/objects/{ProjectId}");
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+        Assert.Contains("retrait(s) de collection", digest);
+    }
+
+    [Fact]
+    public async Task UnlinkRefusesAPairThatLinkDoesNotSupport()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(EpicId, EpicObject());
+        server.OnGetObject(TaskId, TaskObject());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).UnlinkAsync(EpicId, [TaskId], Ct));
+
+        Assert.DoesNotContain(server.Requests, r => r.Method is "PATCH" or "DELETE");
+    }
+
     // ── ReplaceSectionAsync ─────────────────────────────────────────────────────
     //
     // replace_section works on the v2 block document through FakeV2Handler: one

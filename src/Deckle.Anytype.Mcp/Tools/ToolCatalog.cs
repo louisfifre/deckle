@@ -173,6 +173,19 @@ public static class ToolCatalog
                 ToolExecutionContract.AdditiveUncertain),
 
             new(
+                "unlink",
+                "Remove links that link set, over the same (source, target) pairs: task -> project, rapport -> task(s), project -> project (depend_de), project -> epic (collection membership). Only the named targets are removed; a target that is not linked changes nothing. Refused when it would leave a task without a project or a report without a task: link the right target first, then unlink the wrong one.",
+                Schema(
+                    required:
+                    [
+                        Prop("object", "string", "Source object, name or id."),
+                        ArrayProp("targets", "Targets to unlink, each a name or id."),
+                    ]),
+                async (args, ct) =>
+                    await query.UnlinkAsync(Str(args, "object"), StrArray(args, "targets"), ct),
+                ToolExecutionContract.OverwritingIdempotent),
+
+            new(
                 "list_projects",
                 "List projects, grouped by état; filter to one state if given.",
                 Schema(

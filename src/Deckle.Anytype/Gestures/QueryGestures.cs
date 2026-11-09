@@ -184,6 +184,84 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
         return $"Lié : {QueryProp.Name(sourceObj)} → {targets.Count} cible(s), {added} ajout(s){collectionSuffix}.";
     }
 
+    // The inverse of link, over the same (source, target) routes: a property
+    // link loses the target ids, a collection membership is removed on the
+    // target's side. Same read-modify-write as link, since the PATCH replaces
+    // the whole list. A target that is not linked is not an error: removing
+    // what is already gone changes nothing, so a replay is harmless.
+    //
+    // Refused before any write: leaving a task without a project or a report
+    // without a task. The model says a task always lives in a project and a
+    // report always belongs to a task, so the repair of a wrong link is
+    // « link the right one, then unlink the wrong one », in that order.
+    public async Task<string> UnlinkAsync(string source, IReadOnlyList<string> targets, CancellationToken ct = default)
+    {
+        var started = DateTime.UtcNow;
+
+        string sourceId = await resolver.ResolveAsync(source, typeKeys: null, NameMatch.Exact, ct);
+
+        using var _ = await api.AcquireWriteScopeAsync("unlink", sourceId, ct);
+        JsonObject sourceObj = await api.GetObjectAsync(sourceId, ct);
+        string sourceType = QueryProp.TypeKey(sourceObj) ?? "";
+
+        var byProp = new Dictionary<string, HashSet<string>>(StringComparer.Ordinal);
+        var collections = new List<string>();
+        foreach (string t in targets)
+        {
+            string targetId = await resolver.ResolveAsync(t, typeKeys: null, NameMatch.Exact, ct);
+            JsonObject targetObj = await api.GetObjectAsync(targetId, ct);
+            string targetType = QueryProp.TypeKey(targetObj) ?? "";
+
+            LinkRoute? route = LinkRouteFor(sourceType, targetType);
+            if (route is null)
+                throw new InvalidOperationException(SupportedPairsError(sourceType, targetType));
+
+            if (route.PropertyKey is { } propKey)
+                (byProp.TryGetValue(propKey, out var set) ? set : byProp[propKey] = new(StringComparer.Ordinal)).Add(targetId);
+            else if (!collections.Contains(targetId))
+                collections.Add(targetId);
+        }
+
+        var entries = new JsonArray();
+        int removed = 0;
+        foreach ((string propKey, HashSet<string> ids) in byProp)
+        {
+            IReadOnlyList<string> current = QueryProp.ObjectRefs(sourceObj, propKey);
+            var kept = current.Where(id => !ids.Contains(id)).ToList();
+            if (kept.Count == current.Count) continue;
+
+            if (kept.Count == 0 && MustKeepOne(sourceType, propKey) is { } why)
+                throw new InvalidOperationException(
+                    $"Refusé : {QueryProp.Name(sourceObj)} n'aurait plus aucun lien ({why}). "
+                    + "Lie d'abord la bonne cible avec link, puis retire celle-ci. Rien n'a bougé.");
+
+            removed += current.Count - kept.Count;
+            var refs = new JsonArray();
+            foreach (string id in kept) refs.Add(id);
+            entries.Add(new JsonObject { ["key"] = propKey, ["objects"] = refs });
+        }
+
+        if (entries.Count > 0)
+            await api.UpdateObjectAsync(sourceId, new JsonObject { ["properties"] = entries }, ct);
+
+        foreach (string collectionId in collections)
+            await api.RemoveFromCollectionAsync(collectionId, sourceId, ct);
+
+        DeckleAnytypeSource.Log.GestureCompleted("unlink", Elapsed(started));
+        string collectionSuffix = collections.Count > 0
+            ? $", {collections.Count} retrait(s) de collection demandé(s)"
+            : "";
+        return $"Délié : {QueryProp.Name(sourceObj)} → {targets.Count} cible(s), {removed} retrait(s){collectionSuffix}.";
+    }
+
+    // The links the model forbids to empty, with the reason the refusal gives.
+    static string? MustKeepOne(string sourceType, string propKey) => (sourceType, propKey) switch
+    {
+        (DevSpace.Types.Task, DevSpace.Props.RelationProjet) => "une tâche vit toujours dans un projet",
+        (DevSpace.Types.Rapport, DevSpace.Props.TachesLiees) => "un rapport appartient toujours à une tâche",
+        _ => null,
+    };
+
     public async Task<string> UpdateAsync(string selector, string? name, JsonObject? properties, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
@@ -453,7 +531,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
     }
 
     static string SupportedPairsError(string sourceType, string targetType) =>
-        $"Liaison non supportée : {sourceType} → {targetType}. " +
+        $"Lien non supporté : {sourceType} → {targetType}. " +
         "Paires supportées : tâche→projet, rapport→tâche(s), projet→projet, projet→epic.";
 
     // The body's headings, quoted, for the « introuvable » error — it tells the

@@ -13,7 +13,7 @@ public class ToolCatalogTests
         "open_report", "log",
         "task_properties", "task_checklist", "task_notes", "project_overview",
         "epic_properties", "report_journal", "idea_text", "document_outline", "document_section",
-        "create_task", "complete", "archive", "link", "list_projects", "search", "subtask",
+        "create_task", "complete", "archive", "link", "unlink", "list_projects", "search", "subtask",
         "create_epic", "create_project", "create_idea", "create_document", "update", "replace_section",
     };
 
@@ -195,6 +195,7 @@ public class ToolCatalogTests
             ["complete"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["archive"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["link"] = AmbiguousOutcomePolicy.Uncertain,
+            ["unlink"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["list_projects"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["search"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["subtask"] = AmbiguousOutcomePolicy.SafeToRetry,
@@ -229,6 +230,7 @@ public class ToolCatalogTests
             ["complete"] = ToolChangeKind.Overwriting,
             ["archive"] = ToolChangeKind.Overwriting,
             ["link"] = ToolChangeKind.Additive,
+            ["unlink"] = ToolChangeKind.Overwriting,
             ["list_projects"] = ToolChangeKind.None,
             ["search"] = ToolChangeKind.None,
             ["subtask"] = ToolChangeKind.Overwriting,

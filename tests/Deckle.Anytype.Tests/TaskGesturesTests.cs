@@ -811,6 +811,9 @@ internal sealed class FakeAnytypeServer : IDisposable
     public void OnPostListObjects(string listId, string rawJson) =>
         _routes.Add(new("POST", $"{SpacePath}/lists/{listId}/objects", 200, rawJson));
 
+    public void OnDeleteListObject(string listId, string objectId, string rawJson = "\"removed\"") =>
+        _routes.Add(new("DELETE", $"{SpacePath}/lists/{listId}/objects/{objectId}", 200, rawJson));
+
     // The serve loop routes on AbsolutePath, so the ?offset&limit query is
     // ignored.
     public void OnListProperties(JsonObject response) =>
