@@ -815,7 +815,7 @@ public class SchemaAdminGesturesTests
     }
 
     [Fact]
-    public async Task ApplyDoesNotRenameExistingTypeWhileAttachingProperties()
+    public async Task ApplyRenamesAnExistingTypeToTheManifestNameBeforeAttachingProperties()
     {
         using var server = new FakeAnytypeServer();
         server.OnListTypes(Page(new JsonArray { ExistingType(name: "Nom live") }));
@@ -842,14 +842,83 @@ public class SchemaAdminGesturesTests
 
         await gestures.ApplyAsync("home", previewId, Manifest(), confirm: true, Ct);
 
+        // The rename goes first, then the property attach carries the new name.
+        Assert.Equal(2, server.Requests.Count(r => r.Method == "PATCH"));
         JsonObject typePatch = server.LastBodyFor("PATCH");
-        Assert.Equal("Nom live", typePatch["name"]!.GetValue<string>());
+        Assert.Equal("Pièce", typePatch["name"]!.GetValue<string>());
         Assert.Equal("Pièces", typePatch["plural_name"]!.GetValue<string>());
         JsonArray links = Assert.IsType<JsonArray>(typePatch["properties"]);
         JsonObject link = Assert.IsType<JsonObject>(Assert.Single(links));
         Assert.Equal("etat_identification", link["key"]!.GetValue<string>());
         Assert.Equal("État d'identification", link["name"]!.GetValue<string>());
         Assert.Equal("select", link["format"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task PreviewPlansARenameForAnExistingTypeAndPropertyWhoseNameDiffers()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray
+        {
+            ExistingType(name: "Piece", pluralName: "Pieces", properties: new JsonArray { "prop-etat", "prop-notes" }),
+        }));
+        server.OnListProperties(Page(new JsonArray
+        {
+            new JsonObject
+            {
+                ["id"] = "prop-etat", ["key"] = "etat_identification", ["name"] = "Status", ["format"] = "select",
+            },
+            NotesProperty(),
+        }));
+        server.OnListPropertyTags("prop-etat", EmptyList());
+
+        string digest = await NewGestures(server).PreviewAsync("home", OrderedManifest(), Ct);
+
+        Assert.Contains("rename · property:etat_identification · État d'identification", digest);
+        Assert.Contains("rename · type:piece · Pièce", digest);
+        Assert.DoesNotContain("rename · property:notes", digest);
+        Assert.DoesNotContain(server.Requests, r => r.Method is "POST" or "PATCH");
+    }
+
+    [Fact]
+    public async Task ApplyRenamesAnExistingPropertyToTheManifestName()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray
+        {
+            ExistingType(properties: new JsonArray { "prop-etat", "prop-notes" }),
+        }));
+        server.OnListProperties(Page(new JsonArray
+        {
+            new JsonObject
+            {
+                ["id"] = "prop-etat", ["key"] = "etat_identification", ["name"] = "Status", ["format"] = "select",
+            },
+            NotesProperty(),
+        }));
+        server.OnListPropertyTags("prop-etat", EmptyList());
+        server.OnPatchProperty("prop-etat", ExistingProperty());
+
+        var gestures = NewGestures(server);
+        string previewId = PreviewId(await gestures.PreviewAsync("home", OrderedManifest(), Ct));
+        string outcome = await gestures.ApplyAsync("home", previewId, OrderedManifest(), confirm: true, Ct);
+
+        JsonObject patch = server.LastBodyFor("PATCH");
+        Assert.Equal("État d'identification", patch["name"]!.GetValue<string>());
+        Assert.Contains("propriété renommée etat_identification", outcome);
+    }
+
+    [Fact]
+    public async Task PreviewPlansNoRenameWhenTheNamesAlreadyMatch()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(Page(new JsonArray { ExistingType(properties: new JsonArray { "prop-etat", "prop-notes" }) }));
+        server.OnListProperties(Page(new JsonArray { ExistingProperty(), NotesProperty() }));
+        server.OnListPropertyTags("prop-etat", EmptyList());
+
+        string digest = await NewGestures(server).PreviewAsync("home", OrderedManifest(), Ct);
+
+        Assert.DoesNotContain("rename", digest);
     }
 
     [Fact]

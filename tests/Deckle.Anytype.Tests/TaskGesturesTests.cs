@@ -928,6 +928,9 @@ internal sealed class FakeAnytypeServer : IDisposable
     public void OnPatchType(string id, JsonObject response) =>
         _routes.Add(new("PATCH", $"{SpacePath}/types/{id}", 200, response.ToJsonString()));
 
+    public void OnPatchProperty(string id, JsonObject response) =>
+        _routes.Add(new("PATCH", $"{SpacePath}/properties/{id}", 200, response.ToJsonString()));
+
     public void OnPostProperty(JsonObject response) =>
         _routes.Add(new("POST", $"{SpacePath}/properties", 201, response.ToJsonString()));
 

@@ -84,6 +84,32 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
 
         var applied = new List<string>();
 
+        // Renames first: the type PATCH below rebuilds property links from the
+        // live names, so they must already be the manifest's. A type is renamed
+        // with its plural; a property with its name alone.
+        foreach (PropertySpec spec in preview.Manifest.Properties)
+        {
+            if (!preview.Actions.Any(a => a.Kind == "rename" && a.Key == $"property:{spec.Key}")) continue;
+            SchemaPropertyInfo live = propertiesByKey[spec.Key];
+            await api.UpdatePropertyAsync(
+                preview.SpaceId, live.Id, new JsonObject { ["name"] = spec.Name }, ct);
+            propertiesByKey[spec.Key] = live with { Name = spec.Name };
+            applied.Add($"propriété renommée {spec.Key} · {live.Name} → {spec.Name}");
+        }
+
+        foreach (TypeSpec spec in preview.Manifest.Types)
+        {
+            if (!preview.Actions.Any(a => a.Kind == "rename" && a.Key == $"type:{spec.Key}")) continue;
+            SchemaTypeInfo live = typesByKey[spec.Key];
+            await api.UpdateTypeAsync(
+                preview.SpaceId,
+                live.Id,
+                new JsonObject { ["name"] = spec.Name, ["plural_name"] = spec.PluralName },
+                ct);
+            typesByKey[spec.Key] = live with { Name = spec.Name, PluralName = spec.PluralName };
+            applied.Add($"type renommé {spec.Key} · {live.Name} → {spec.Name}");
+        }
+
         foreach (PropertySpec spec in preview.Manifest.Properties)
         {
             if (propertiesByKey.ContainsKey(spec.Key)) continue;

@@ -24,6 +24,10 @@ internal static class SchemaPlanner
                 if (!string.Equals(existing.Format, prop.Format, StringComparison.Ordinal))
                     conflicts.Add(
                         $"propriété {prop.Key} : format existant {existing.Format}, demandé {prop.Format}");
+                // A fresh space ships status, done and due_date under English
+                // names; the manifest names them, so the name is aligned.
+                else if (!string.Equals(existing.Name, prop.Name, StringComparison.Ordinal))
+                    actions.Add(new SchemaAction("rename", $"property:{prop.Key}", prop.Name));
             }
             else
             {
@@ -45,6 +49,9 @@ internal static class SchemaPlanner
             bool exists = snapshot.Types.TryGetValue(type.Key, out SchemaTypeInfo? existingType);
             if (!exists)
                 actions.Add(new SchemaAction("create_type", type.Key, type.Name));
+            else if (!string.Equals(existingType!.Name, type.Name, StringComparison.Ordinal)
+                || !string.Equals(existingType.PluralName, type.PluralName, StringComparison.Ordinal))
+                actions.Add(new SchemaAction("rename", $"type:{type.Key}", type.Name));
 
             if (type.Icon is not null)
             {
@@ -190,7 +197,7 @@ internal static class SchemaPlanner
         foreach (SchemaAction action in preview.Actions)
         {
             sb.Append("- ").Append(action.Kind).Append(" · ").Append(action.Key);
-            if (action.Kind is "set_icon" or "set_description" or "order_properties")
+            if (action.Kind is "set_icon" or "set_description" or "order_properties" or "rename")
                 sb.Append(" · ").Append(action.Name);
             sb.Append('\n');
         }

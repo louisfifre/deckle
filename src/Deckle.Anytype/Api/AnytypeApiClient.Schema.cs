@@ -87,6 +87,24 @@ public sealed partial class AnytypeApiClient
         return InnerOrRoot(root, "property");
     }
 
+    // PATCH /properties/{id}: a rename. Measured on a fresh space (2026-11-09):
+    // it renames a native property (status, done, due_date) and answers 200.
+    public async Task<JsonObject> UpdatePropertyAsync(
+        string spaceId,
+        string propertyId,
+        JsonObject payload,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(propertyId);
+        ArgumentNullException.ThrowIfNull(payload);
+
+        JsonObject root = await SendAsync(
+            HttpMethod.Patch, $"{SpacePath(spaceId)}/properties/{propertyId}", payload, ct,
+            replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
+        return InnerOrRoot(root, "property");
+    }
+
     public async Task<JsonObject> ListPropertyTagsForSpaceAsync(
         string spaceId,
         string propertyId,
