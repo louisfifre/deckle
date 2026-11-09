@@ -43,18 +43,25 @@ public sealed partial class HomeGestures
         var plan = new List<(string Line, string? TargetId, JsonObject Payload)>();
         var refusals = new List<string>();
         int candidates = 0;
-        var batch = new Dictionary<string, string>(StringComparer.Ordinal);
+        var batch = new List<(HomeNearName.Profile Profile, string Name)>();
         foreach (HomeProductNeed item in items)
         {
             string name = item.Name?.Trim() ?? "";
             if (name.Length == 0)
                 throw new ArgumentException("Chaque produit se nomme : fournis name.", nameof(items));
-            string near = HomeNameGuard.Fold(name);
-            if (!batch.TryAdd(near, name))
+            // Two items of one batch that fold alike are the same product;
+            // two that are only near may be twins, so force lets them pass.
+            HomeNearName.Profile profile = HomeNearName.Describe(name);
+            (HomeNearName.Profile Profile, string Name) twin = batch.FirstOrDefault(entry =>
+                entry.Profile.Folded == profile.Folded || (!item.Force && HomeNearName.AreNear(entry.Profile, profile)));
+            if (twin.Name is not null)
             {
-                refusals.Add($"« {name} » et « {batch[near]} » désignent le même produit dans ce lot : garde-n'en qu'un.");
+                refusals.Add(twin.Profile.Folded == profile.Folded
+                    ? $"« {name} » et « {twin.Name} » désignent le même produit dans ce lot : garde-n'en qu'un."
+                    : $"« {name} » ressemble à « {twin.Name} » dans ce lot : garde-n'en qu'un, ou passe force: true si ce sont deux produits.");
                 continue;
             }
+            batch.Add((profile, name));
 
             JsonObject[] exact = products.Where(value =>
                     string.Equals(HomeObjectJson.Id(value), name, StringComparison.Ordinal)
@@ -85,7 +92,8 @@ public sealed partial class HomeGestures
                 continue;
             }
 
-            JsonObject[] close = products.Where(value => HomeNameGuard.Fold(HomeObjectJson.Name(value)) == near).ToArray();
+            JsonObject[] close = products.Where(value =>
+                HomeNearName.AreNear(HomeNearName.Describe(HomeObjectJson.Name(value)), profile)).ToArray();
             if (close.Length > 0 && !item.Force)
             {
                 candidates += close.Length;

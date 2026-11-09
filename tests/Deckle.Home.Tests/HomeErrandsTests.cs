@@ -57,6 +57,36 @@ public sealed class HomeErrandsTests
     }
 
     [Fact]
+    public async Task NeedRefusesATypoOfAKnownProductAndWritesNothing()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(FakeHomeAnytypeServer.ShoppingProduct("product-1", "Tomates fictives", needed: false));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Gestures(server).ProductNeedAsync([new HomeProductNeed("Tomtes fictives")], Ct));
+
+        Assert.Contains("- product-1 · Tomates fictives (product)", error.Message);
+        Assert.DoesNotContain(server.Requests, IsWrite);
+    }
+
+    [Fact]
+    public async Task NeedRefusesTwoNearItemsOfOneBatchUnlessForced()
+    {
+        using var server = new FakeHomeAnytypeServer();
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Gestures(server).ProductNeedAsync(
+                [new HomeProductNeed("Pain de mie fictif"), new HomeProductNeed("mie pain fictif")], Ct));
+
+        Assert.Contains("ressemble à « Pain de mie fictif » dans ce lot", error.Message);
+        Assert.DoesNotContain(server.Requests, IsWrite);
+
+        string digest = await Gestures(server).ProductNeedAsync(
+            [new HomeProductNeed("Pain de mie fictif"), new HomeProductNeed("mie pain fictif", Force: true)], Ct);
+        Assert.Contains("mie pain fictif (créé)", digest);
+    }
+
+    [Fact]
     public async Task NeedWithForceCreatesADifferentProductDespiteANearName()
     {
         using var server = new FakeHomeAnytypeServer();
