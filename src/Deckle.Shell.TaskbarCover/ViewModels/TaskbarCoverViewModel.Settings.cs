@@ -27,6 +27,11 @@ public partial class TaskbarCoverViewModel
     // preview's readout gives the figure in this display's own pixels. The slider's
     // every detent reaches ApproachDistancePreviewed; the setting itself is
     // written at the release.
+    //
+    // The slider stops at half the extent of the primary taskbar's monitor,
+    // perpendicular to the taskbar (2026-11-09), read when the manifest is
+    // built: past that half the host caps the zone anyway. The page is
+    // composed on each visit, so a display change is picked up there.
     public IReadOnlyList<SettingDescriptor> RevealManifest =>
     [
         Setting.Magnitude(
@@ -35,11 +40,24 @@ public partial class TaskbarCoverViewModel
             value => ApproachDistanceDip = ApproachDistance.Clamp((int)Math.Round(value)),
             new MagnitudeArgs(
                 ApproachDistance.MinimumDip,
-                ApproachDistance.MaximumDip,
+                ReachMaximumDip(),
                 Unit: ApproachDistance.UnitLabel,
                 Integer: true,
                 Preview: value => ApproachDistancePreviewed?.Invoke(ApproachDistance.Clamp((int)Math.Round(value)))),
             visibleWhen: () => Enabled,
             defaultValue: () => new TaskbarCoverSettings().ApproachDistanceDip),
     ];
+
+    // The same locator the preview draws from, so the slider's end and the
+    // preview's frame are one monitor. No primary taskbar (Explorer
+    // restarting) leaves the fallback.
+    private static int ReachMaximumDip()
+    {
+        List<TaskbarPlacement> placements = TaskbarLocator.Locate();
+        if (placements.Count == 0) return ApproachDistance.FallbackSliderMaximumDip;
+
+        TaskbarPlacement p = placements[0];
+        return ApproachDistance.SliderMaximum(
+            CoverGeometry.MaxApproachDip(p.MonitorRect, p.Edge, p.DpiScale));
+    }
 }

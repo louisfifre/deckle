@@ -37,6 +37,7 @@ public class TaskbarCoverSettingsTests
     [InlineData(0,     ApproachDistance.MinimumDip)]
     [InlineData(-40,   ApproachDistance.MinimumDip)]
     [InlineData(5000,  ApproachDistance.MaximumDip)]
+    [InlineData(960,   960)]
     public void AHandEditedFigureOutOfRangeLandsOnItsNearestBound(int stored, int expected)
     {
         var settings = Read($$"""{ "approachDistanceDip": {{stored}} }""");
@@ -54,6 +55,15 @@ public class TaskbarCoverSettingsTests
     {
         Assert.False(string.Equals(pixelWord, ApproachDistance.UnitLabel, StringComparison.OrdinalIgnoreCase));
         Assert.Equal("DIP", ApproachDistance.UnitLabel);
+    }
+
+    [Theory]
+    [InlineData(960,  960)]
+    [InlineData(5,    ApproachDistance.MinimumDip * 2)]
+    [InlineData(9999, ApproachDistance.MaximumDip)]
+    public void TheSliderMaximumFollowsHalfTheScreenInsideTheRange(int halfScreenDip, int expected)
+    {
+        Assert.Equal(expected, ApproachDistance.SliderMaximum(halfScreenDip));
     }
 
     [Fact]
