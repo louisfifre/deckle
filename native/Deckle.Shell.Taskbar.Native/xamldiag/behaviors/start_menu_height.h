@@ -52,9 +52,6 @@ namespace deckle::behaviors
         struct Measure
         {
             double window = 0;      // the window's height
-            double windowWidth = 0;
-            double panelLeft = 0;   // AnimationRoot's left
-            double panelWidth = 0;
             double hostTop = 0;     // FrameRoot's parent's top
             double frameTop = 0;    // FrameRoot's top
             double frameHeight = 0;

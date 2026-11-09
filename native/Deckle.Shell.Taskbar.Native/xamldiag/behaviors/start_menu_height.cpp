@@ -251,24 +251,13 @@ namespace deckle::behaviors
             if (auto content = m_content.get()) origin = content;
 
             Measure m;
-            if (auto window = m_window.get())
-            {
-                m.window = window.Bounds().Height;
-                m.windowWidth = window.Bounds().Width;
-            }
-            if (m.window <= 0)
-            {
-                m.window = host.ActualHeight();
-                m.windowWidth = host.ActualWidth();
-            }
+            if (auto window = m_window.get()) m.window = window.Bounds().Height;
+            if (m.window <= 0) m.window = host.ActualHeight();
             m.hostTop = Origin(host, origin).Y;
             m.frameTop = Origin(frameRoot, origin).Y;
             m.frameHeight = frameRoot.ActualHeight();
-            const auto panelOrigin = Origin(panel, origin);
-            m.panelTop = panelOrigin.Y;
-            m.panelLeft = panelOrigin.X;
+            m.panelTop = Origin(panel, origin).Y;
             m.panelHeight = panel.ActualHeight();
-            m.panelWidth = panel.ActualWidth();
             if (m.window <= 0 || m.frameHeight <= 0 || m.panelHeight <= 0) return std::nullopt;
             return m;
         }
@@ -358,7 +347,9 @@ namespace deckle::behaviors
                   { L"margin_top", Number(marginTop) }, { L"height", Number(height) } });
         }
 
-        if (changed) AfterNextLayout(&StartMenuHeightHold::Verify);
+        // A correction is read back even when it changed nothing, so a mismatch it
+        // could not fix still ends in a start_menu_fit warning.
+        if (changed || reason == std::wstring_view(L"correction")) AfterNextLayout(&StartMenuHeightHold::Verify);
     }
 
     // Reads the placement back once layout has run: the gaps above and below the
