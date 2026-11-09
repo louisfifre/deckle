@@ -905,7 +905,7 @@ public sealed partial class HomeGestures
         if (referenced)
             throw new InvalidOperationException(
                 $"{HomeObjectIndex.Display(value)} est référencé par un autre objet (Commande, Commandé par, "
-                + "Alimenté par…) : retire d'abord ces références avec update, puis supprime. "
+                + "Alimenté par…) : retire d'abord ces références avec le *_update de l'objet qui le référence, puis supprime. "
                 + "Un point que rien ne référence se supprime directement.");
     }
 

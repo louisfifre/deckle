@@ -8,11 +8,16 @@ namespace Deckle.Home.Tests;
 [Trait("Category", "unit")]
 public class HomeToolCatalogTests
 {
+    private static readonly string[] TypeKeys =
+    [
+        "zone", "room", "point", "circuit", "panel", "system", "device", "component",
+        "utensil", "plant", "idea", "product", "worksite", "todo",
+    ];
+
     private static readonly string[] ExpectedNames =
     [
-        "create", "update", "get", "search", "delete",
-        "complete", "worksite_overview",
-        .. HomeTypedToolCatalog.Build(() => throw new InvalidOperationException()).Select(tool => tool.Name),
+        "get", "search", "delete", "complete", "worksite_overview",
+        .. TypeKeys.SelectMany(type => new[] { type + "_create", type + "_update" }),
     ];
 
     [Fact]
@@ -27,6 +32,7 @@ public class HomeToolCatalogTests
         });
 
         Assert.Equal(ExpectedNames.OrderBy(value => value), tools.Select(tool => tool.Name).OrderBy(value => value));
+        Assert.DoesNotContain(tools, tool => tool.Name is "create" or "update");
         Assert.Equal(0, resolutions);
     }
 
@@ -40,29 +46,28 @@ public class HomeToolCatalogTests
         {
             Assert.Equal("object", tool.InputSchema["type"]!.GetValue<string>());
             Assert.False(tool.InputSchema["additionalProperties"]!.GetValue<bool>());
-        }
-
-        foreach (string toolName in new[] { "create", "update" })
-        {
-            JsonObject schema = tools.Single(tool => tool.Name == toolName).InputSchema;
-            JsonObject properties = (JsonObject)schema["properties"]!;
-            JsonObject items = (JsonObject)((JsonObject)properties["items"]!)["items"]!;
-            Assert.False(items["additionalProperties"]!.GetValue<bool>());
+            foreach ((string _, JsonNode? field) in tool.InputSchema["properties"]!.AsObject())
+            {
+                // A batch is an array of objects: each is bounded and strict.
+                if (field?["type"]?.GetValue<string>() != "array" || field["items"] is not JsonObject items
+                    || items["type"]?.GetValue<string>() != "object") continue;
+                Assert.True(field["maxItems"] is not null, $"{tool.Name}: a batch is bounded");
+                Assert.False(items["additionalProperties"]!.GetValue<bool>(), tool.Name);
+            }
         }
     }
 
     [Fact]
-    public void CreateAndUpdateExposeCollectionMembershipOutsideProperties()
+    public void TypedCreateAndUpdateExposeCollectionMembershipOutsideProperties()
     {
         IReadOnlyList<ToolDescriptor> tools = HomeToolCatalog.Build(
             () => throw new InvalidOperationException("handlers are not invoked"));
 
-        JsonObject createItem = BatchItemSchema(tools, "create");
-        JsonObject createProperties = Assert.IsType<JsonObject>(createItem["properties"]);
-        Assert.Contains("collections", createProperties.Select(pair => pair.Key));
+        JsonObject createItem = BatchItemSchema(tools, "device_create");
+        Assert.Contains("collections", Assert.IsType<JsonObject>(createItem["properties"]).Select(pair => pair.Key));
 
-        JsonObject updateItem = BatchItemSchema(tools, "update");
-        JsonObject updateProperties = Assert.IsType<JsonObject>(updateItem["properties"]);
+        JsonObject update = tools.Single(tool => tool.Name == "device_update").InputSchema;
+        JsonObject updateProperties = Assert.IsType<JsonObject>(update["properties"]);
         Assert.Contains("add_to_collections", updateProperties.Select(pair => pair.Key));
         Assert.Contains("remove_from_collections", updateProperties.Select(pair => pair.Key));
     }
@@ -74,8 +79,6 @@ public class HomeToolCatalogTests
             () => throw new InvalidOperationException("handlers are not invoked"));
         var expected = new Dictionary<string, AmbiguousOutcomePolicy>(StringComparer.Ordinal)
         {
-            ["create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
-            ["update"] = AmbiguousOutcomePolicy.Uncertain,
             ["get"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["search"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["delete"] = AmbiguousOutcomePolicy.VerifyBeforeRetry,
@@ -83,6 +86,7 @@ public class HomeToolCatalogTests
             ["plant_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["worksite_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["todo_create"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["device_update"] = AmbiguousOutcomePolicy.Uncertain,
             ["complete"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["worksite_overview"] = AmbiguousOutcomePolicy.SafeToRetry,
         };
@@ -94,8 +98,6 @@ public class HomeToolCatalogTests
         Assert.Equal(ToolEffect.Destructive, tools.Single(tool => tool.Name == "delete").Execution.Effect);
         var expectedChanges = new Dictionary<string, ToolChangeKind>(StringComparer.Ordinal)
         {
-            ["create"] = ToolChangeKind.Additive,
-            ["update"] = ToolChangeKind.Overwriting,
             ["get"] = ToolChangeKind.None,
             ["search"] = ToolChangeKind.None,
             ["delete"] = ToolChangeKind.Destructive,
@@ -103,10 +105,11 @@ public class HomeToolCatalogTests
             ["plant_create"] = ToolChangeKind.Additive,
             ["worksite_create"] = ToolChangeKind.Additive,
             ["todo_create"] = ToolChangeKind.Additive,
+            ["device_update"] = ToolChangeKind.Overwriting,
             ["complete"] = ToolChangeKind.Overwriting,
             ["worksite_overview"] = ToolChangeKind.None,
         };
-        Assert.Equal(expectedChanges, tools.Where(tool => expected.ContainsKey(tool.Name)).ToDictionary(
+        Assert.Equal(expectedChanges, tools.Where(tool => expectedChanges.ContainsKey(tool.Name)).ToDictionary(
             tool => tool.Name,
             tool => tool.Execution.Change,
             StringComparer.Ordinal));

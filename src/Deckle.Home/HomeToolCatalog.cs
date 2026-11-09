@@ -12,21 +12,6 @@ public static class HomeToolCatalog
         return
         [
             new ToolDescriptor(
-                "create",
-                "Create a batch of one Home type. Prefer the typed *_create commands for individual records. Coded objects require a code; Point room/category derive from it. Search relevant existing tasks and worksites before creating one. The batch validates before sequential writes; a transport failure may leave a partial batch: search before retrying.",
-                CreateSchema(),
-                (args, ct) => gestures().CreateAsync(
-                    RequiredString(args, "type"), CreateItems(args), ct),
-                ToolExecutionContract.AdditiveRequiresDeduplication),
-
-            new ToolDescriptor(
-                "update",
-                "Update a Home batch. Prefer typed *_update for individual records. Read existing content first; omitted fields stay unchanged, supplied relation arrays replace their contents. Codes and Point room/category are immutable. Every selector a write takes (the object, a relation target, a collection) is an exact code, an exact name or an id: a partial name is refused with the nearest candidates, never guessed. append_text adds to the current body; section replaces one existing section. Relation fields may instead use {add:[selectors],remove:[selectors]} to retain other targets. Collections are separate from relations.",
-                UpdateSchema(),
-                (args, ct) => gestures().UpdateAsync(UpdateItems(args), ct),
-                ToolExecutionContract.OverwritingUncertain),
-
-            new ToolDescriptor(
                 "get",
                 "Read one Home object in full with relation targets resolved to readable names or codes.",
                 ObjectSchema(
@@ -83,7 +68,7 @@ public static class HomeToolCatalog
 
             new ToolDescriptor(
                 "delete",
-                "Move a Home object to Anytype's recoverable bin. First call without confirm to preview and obtain the pinned id, show it to the person, then repeat with that exact id and confirm:true: Deckle then asks the person by a Windows notification and refuses if they say no, do not answer in time, or the notification cannot be shown. A point referenced by another object refuses — clear the references (Commande, Commandé par, Alimenté par…) with update first; an unreferenced point deletes directly.",
+                "Move a Home object to Anytype's recoverable bin. First call without confirm to preview and obtain the pinned id, show it to the person, then repeat with that exact id and confirm:true: Deckle then asks the person by a Windows notification and refuses if they say no, do not answer in time, or the notification cannot be shown. A point referenced by another object refuses — clear the references (Commande, Commandé par, Alimenté par…) with the typed *_update first; an unreferenced point deletes directly.",
                 ObjectSchema(
                     required: [("object", StringSchema("Object code, name, or pinned id."))],
                     optional: [("confirm", BooleanSchema("Confirm the previewed deletion; default false."))]),
@@ -112,52 +97,6 @@ public static class HomeToolCatalog
     }
 
     private static IEnumerable<string> InputTypeKeys() => HomeSchema.CreatableTypes;
-
-    private static JsonObject CreateSchema() => ObjectSchema(
-        required:
-        [
-            ("type", EnumSchema("Home type key shared by every item in the batch.", InputTypeKeys())),
-            ("items", new JsonObject
-            {
-                ["type"] = "array",
-                ["minItems"] = 1,
-                ["maxItems"] = 100,
-                ["description"] = "Objects to create after validating the whole batch.",
-                ["items"] = ObjectSchema(
-                    optional:
-                    [
-                        ("code", StringSchema("Normative immutable code, stored in the Code property — required for room, point, circuit, and panel; forbidden for free-titled types.")),
-                        ("name", StringSchema("Human title — required everywhere except a titleless idea and a circuit (falls back to its code).")),
-                        ("text", StringSchema("Initial Markdown body; required for an idea, optional for other Home types.")),
-                        ("properties", PropertyMapSchema()),
-                        ("collections", StringArraySchema("Collections to add the created object to, by name, code, or id.")),
-                        ("template", StringSchema("Name of one of the type's templates as shown in the app; the object is born with that template's structure. Resolved against the live type at call time and composes with text and properties.")),
-                    ]),
-            }),
-        ]);
-
-    private static JsonObject UpdateSchema() => ObjectSchema(
-        required:
-        [
-            ("items", new JsonObject
-            {
-                ["type"] = "array",
-                ["minItems"] = 1,
-                ["maxItems"] = 100,
-                ["description"] = "Objects to update after validating the whole batch.",
-                ["items"] = ObjectSchema(
-                    required: [("object", StringSchema("Object code, name, or id."))],
-                    optional:
-                    [
-                        ("name", StringSchema("New human title. Codes stay unchanged; ideas have no separate title.")),
-                        ("properties", PropertyMapSchema()),
-                        ("add_to_collections", StringArraySchema("Collections to add the object to, by name, code, or id.")),
-                        ("remove_from_collections", StringArraySchema("Collections to remove the object from, by name, code, or id.")),
-                        ("append_text", StringSchema("Text to append to the current body. Do not resend after an uncertain write; read first.")),
-                        ("section", ObjectSchema(required: [("heading", StringSchema("Existing heading, matched uniquely.")), ("text", StringSchema("New section content; empty clears the section."))])) ,
-                    ]),
-            }),
-        ]);
 
     private static JsonObject ObjectSchema(
         IReadOnlyList<(string Name, JsonObject Schema)>? required = null,
@@ -191,20 +130,6 @@ public static class HomeToolCatalog
     private static JsonObject BooleanSchema(string description) =>
         new() { ["type"] = "boolean", ["description"] = description };
 
-    private static JsonObject StringArraySchema(string description) => new()
-    {
-        ["type"] = "array",
-        ["description"] = description,
-        ["items"] = new JsonObject { ["type"] = "string" },
-        ["uniqueItems"] = true,
-    };
-
-    private static JsonObject PropertyMapSchema() => new()
-    {
-        ["type"] = "object",
-        ["description"] = "Map of live Home-schema property key or display name to value.",
-    };
-
     private static JsonObject EnumSchema(string description, IEnumerable<string> values)
     {
         var choices = new JsonArray();
@@ -215,59 +140,6 @@ public static class HomeToolCatalog
             ["description"] = description,
             ["enum"] = choices,
         };
-    }
-
-    private static IReadOnlyList<HomeCreateItem> CreateItems(JsonObject? args)
-    {
-        JsonArray array = RequiredArray(args, "items");
-        var result = new List<HomeCreateItem>(array.Count);
-        foreach (JsonNode? node in array)
-        {
-            JsonObject item = RequiredObject(node, "items[]");
-            RequireOnly(
-                item,
-                ["code", "name", "text", "properties", "collections", "template"],
-                "items[]");
-            result.Add(new HomeCreateItem(
-                OptionalString(item, "code"),
-                OptionalString(item, "name"),
-                OptionalObject(item, "properties"),
-                OptionalStringArray(item, "collections"),
-                OptionalString(item, "text"),
-                OptionalString(item, "template")));
-        }
-        return result;
-    }
-
-    private static IReadOnlyList<HomeUpdateItem> UpdateItems(JsonObject? args)
-    {
-        JsonArray array = RequiredArray(args, "items");
-        var result = new List<HomeUpdateItem>(array.Count);
-        foreach (JsonNode? node in array)
-        {
-            JsonObject item = RequiredObject(node, "items[]");
-            RequireOnly(
-                item,
-                ["object", "name", "properties", "add_to_collections", "remove_from_collections", "append_text", "section"],
-                "items[]");
-            result.Add(new HomeUpdateItem(
-                RequiredString(item, "object"),
-                OptionalString(item, "name"),
-                OptionalObject(item, "properties"),
-                OptionalStringArray(item, "add_to_collections"),
-                OptionalStringArray(item, "remove_from_collections"),
-                OptionalString(item, "append_text"),
-                ReadSection(item)));
-        }
-        return result;
-    }
-
-    private static HomeSectionEdit? ReadSection(JsonObject item)
-    {
-        JsonObject? section = OptionalObject(item, "section");
-        if (section is null) return null;
-        RequireOnly(section, ["heading", "text"], "section");
-        return new HomeSectionEdit(RequiredString(section, "heading"), RequiredString(section, "text"));
     }
 
     private static int? OptionalInteger(JsonObject? args, string name)
@@ -303,30 +175,6 @@ public static class HomeToolCatalog
 
     private static JsonObject RequiredObject(JsonNode? node, string name) =>
         node as JsonObject ?? throw new ArgumentException($"Argument '{name}' must be an object.", name);
-
-    private static JsonObject? OptionalObject(JsonObject? args, string name)
-    {
-        if (args is null || !args.TryGetPropertyValue(name, out JsonNode? node) || node is null) return null;
-        return node as JsonObject
-            ?? throw new ArgumentException($"Argument '{name}' must be an object.", name);
-    }
-
-    private static IReadOnlyList<string>? OptionalStringArray(JsonObject? args, string name)
-    {
-        if (args is null || !args.TryGetPropertyValue(name, out JsonNode? node) || node is null) return null;
-        if (node is not JsonArray array)
-            throw new ArgumentException($"Argument '{name}' must be an array.", name);
-
-        var result = new List<string>(array.Count);
-        foreach (JsonNode? item in array)
-        {
-            if (item is JsonValue value && value.TryGetValue<string>(out string? text) && text is not null)
-                result.Add(text);
-            else
-                throw new ArgumentException($"Every value in '{name}' must be a string.", name);
-        }
-        return result;
-    }
 
     private static string RequiredString(JsonObject? args, string name) =>
         OptionalString(args, name)
