@@ -1,3 +1,4 @@
+using System.Net.Http;
 using System.Text;
 using System.Text.Json.Nodes;
 using Deckle.Diagnostics;
@@ -139,6 +140,36 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
         foreach (TypeSpec spec in preview.Manifest.Types)
         {
             if (typesByKey.ContainsKey(spec.Key)) continue;
+
+            // v1 refuses to create a collection-layout type (« invalid type
+            // layout »), and a layout cannot be changed afterwards (measured on
+            // anytype-cli 0.5.0, 2026-11-09). v2 creates it, bare; the loop below
+            // attaches the properties and the icon through v1 like any other type.
+            if (spec.Layout == "collection")
+            {
+                await api.V2.SendAsync(
+                    new AnytypeV2Request(
+                        HttpMethod.Post,
+                        "types",
+                        new JsonObject
+                        {
+                            ["api_key"] = spec.Key,
+                            ["name"] = spec.Name,
+                            ["plural_name"] = spec.PluralName,
+                            ["layout"] = spec.Layout,
+                        },
+                        IdempotencyKey: Guid.NewGuid().ToString("N"),
+                        SpaceId: spaceId),
+                    ct).ConfigureAwait(false);
+
+                SchemaSnapshot reread = await _snapshotReader.ReadAsync(spaceId, null, ct).ConfigureAwait(false);
+                typesByKey[spec.Key] = reread.Types.TryGetValue(spec.Key, out SchemaTypeInfo? made)
+                    ? made
+                    : throw new InvalidOperationException(
+                        $"Le type « {spec.Key} » créé en v2 est introuvable en v1.");
+                applied.Add($"type créé {spec.Key} (v2, layout {spec.Layout})");
+                continue;
+            }
 
             IReadOnlyList<SchemaPropertyLinkInfo> links = SchemaPlanner.RequestedPropertyLinks(spec, propertiesByKey);
 
