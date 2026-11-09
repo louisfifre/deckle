@@ -1001,7 +1001,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── terms.fr.json
 │   │   ├── Deckle.Home.csproj
 │   │   ├── DeckleHomeSource.cs
-│   │   ├── GLOSSARY.md  — glossary-deckle-home Home inventory vocabulary. It defines the inventory code and the Home surface,…
+│   │   ├── GLOSSARY.md  — glossary-deckle-home Home inventory vocabulary. It defines the inventory code, the Home surface, the…
 │   │   ├── HomeBodyEditor.cs
 │   │   ├── HomeCode.cs
 │   │   ├── HomeCollectionWriter.cs

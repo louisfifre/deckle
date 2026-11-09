@@ -58,7 +58,7 @@ public sealed class HomePartialWriteException : Exception
         {
             HomeMembershipState.Applied => "Appartenance aux collections : appliquée aux objets créés.",
             HomeMembershipState.Unconfirmed =>
-                "Appartenance aux collections : non confirmée ; pose-la avec update (add_to_collections) sur les objets créés, sans les recréer.",
+                $"Appartenance aux collections : non confirmée ; pose-la avec {type}_update (add_to_collections) sur les objets créés, sans les recréer.",
             _ => "Aucune appartenance à des collections n’était demandée.",
         });
         if (interrupted is not null)

@@ -1,6 +1,6 @@
 ---
 name: glossary-deckle-home
-description: "Home inventory vocabulary. It defines the inventory code and the Home surface, the two notions the Home module owns today, and keeps the user's own inventory out of Deckle's source."
+description: "Home inventory vocabulary. It defines the inventory code, the Home surface, the near-name guard and the archive, the notions the Home module owns today, and keeps the user's own inventory out of Deckle's source."
 ---
 
 # Deckle.Home, Glossary
@@ -16,6 +16,14 @@ _Avoid_ : object id (provider coordinate), label (human wording), object title (
 **Home surface** :
 The MCP surface that exposes the guarded Home operations through Deckle's single resident MCP host, on rooms, infrastructure, equipment, observations and their links. It writes to a dedicated Home Anytype space, which no client chooses per call. It adapts the Home module and does not own its rules.
 _Avoid_ : Home space (data store), Home module (domain implementation).
+
+**Near-name guard** :
+The check a typed create runs on a free-titled object before writing it. Two names are near when they fold to the same form once case, accents, ligatures, punctuation, spacing and a plural ending are set aside. A near name is refused with the objects of the same type it resembles, and `force` lets a true twin through. Coded objects skip it: their code is their identity.
+_Avoid_ : duplicate detection (suggests a similarity score; the guard only compares folded forms), fuzzy match (same).
+
+**Archive** :
+The gesture that hides an object that had a life, a device, a component, a utensil, a plant, a product or an idea, by ticking its archived checkbox. The object, its links and its history stay, and search leaves it out unless asked. The bin, reached by delete, is for what should never have existed.
+_Avoid_ : delete, bin (the bin removes the object from every read).
 
 **Object id** :
 The identifier Anytype gives an object at runtime, in one live space. It is a local coordinate, not a code that Deckle defines.
