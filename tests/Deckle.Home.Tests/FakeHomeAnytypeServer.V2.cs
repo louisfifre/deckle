@@ -8,7 +8,8 @@ namespace Deckle.Home.Tests;
 // It keeps the rules the real API showed in the probe that matter to the
 // tests: a patch of property_definitions replaces the whole list, `columns`
 // patches per property key and leaves the others alone, `set` merges but
-// sorts and filters replace, and a property key the space does not hold is
+// sorts and filters replace, delete_view removes a view, a hide patch on lastOpenedDate appends a duplicate
+// column instead of patching it, and a property key the space does not hold is
 // refused (a column, a sort, a filter, a group, a template value, a property
 // block), as is a template id or a widget target that does not exist.
 internal sealed partial class FakeHomeAnytypeServer
@@ -191,7 +192,7 @@ internal sealed partial class FakeHomeAnytypeServer
         {
             var created = new JsonObject();
             JsonArray views = CollectionViewsOf(patchedId);
-            string? problem = ApplyViewOps(views, payload?["ops"] as JsonArray, ["name", "type", "created_date"], created);
+            string? problem = ApplyViewOps(views, payload?["ops"] as JsonArray, ["name", "type", "created_date", "lastOpenedDate"], created);
             return problem is null
                 ? (200, new JsonObject { ["etag"] = "e", ["created_views"] = created }.ToJsonString())
                 : V2Error(400, "validation_failed", problem);
@@ -273,7 +274,7 @@ internal sealed partial class FakeHomeAnytypeServer
         {
             JsonObject dataview = (JsonObject)((JsonArray)type["blocks"]!)[0]!;
             string[] baseline = ((JsonArray)dataview["properties"]!).OfType<JsonObject>()
-                .Select(value => value["property"]!.GetValue<string>()).ToArray();
+                .Select(value => value["property"]!.GetValue<string>()).Append("lastOpenedDate").ToArray();
             string? problem = ApplyViewOps((JsonArray)dataview["views"]!, ops, baseline, created);
             if (problem is not null) return V2Error(400, "validation_failed", problem);
         }
@@ -337,6 +338,14 @@ internal sealed partial class FakeHomeAnytypeServer
                     if (patch is null)
                     {
                         if (column is not null) list.Remove(column);
+                        continue;
+                    }
+                    // The real server cannot hide lastOpenedDate: the patch answers
+                    // 200 and appends a second entry with the same key (probed
+                    // 2026-11-09). Any other column patches in place.
+                    if (property is "lastOpenedDate" or "last_opened_date")
+                    {
+                        list.Add(new JsonObject { ["property"] = "lastOpenedDate", ["hidden"] = true });
                         continue;
                     }
                     if (column is null) list.Add(column = new JsonObject { ["property"] = property });

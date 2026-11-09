@@ -12,7 +12,7 @@ namespace Deckle.Home;
 //                property;
 //   type views   the count, then per view its name, type, group_by, filters,
 //                sorts and visible columns (as a set: a column patch cannot
-//                reorder, so order is not compared);
+//                reorder, so order is not compared; lastOpenedDate is left out);
 //   templates    the count, then per template its type, its property values
 //                and the histogram of its block kinds;
 //   collections  the views, as type views;
@@ -113,16 +113,22 @@ internal sealed class HomeStructureComparer(AnytypeApiClient api)
             Check($"{area}_view.filters", label, FilterText(expected.Set["filters"]), FilterText(actual["filters"]));
             Check($"{area}_view.sorts", label, SortText(expected.Set["sorts"]), SortText(actual["sorts"]));
             Check($"{area}_view.columns", label,
-                string.Join(" | ", expected.Visible.Order(StringComparer.Ordinal)),
+                string.Join(" | ", expected.Visible.Where(property => !IsLastOpened(property)).Order(StringComparer.Ordinal)),
                 string.Join(" | ", VisibleColumns(actual)));
         }
     }
+
+    // 2026-11-09: lastOpenedDate is left out of the visible set, on both sides.
+    // The API cannot hide it (a hide patch appends a duplicate entry), so an
+    // inserted view always shows it and the writer counts that as
+    // unhideable_column; comparing it would flag every view for a known limit.
+    private static bool IsLastOpened(string property) => property is "lastOpenedDate" or "last_opened_date";
 
     private static IEnumerable<string> VisibleColumns(JsonObject view) =>
         (view["columns"] as JsonArray ?? []).OfType<JsonObject>()
             .Where(column => !(column["hidden"] is JsonValue flag && flag.TryGetValue(out bool hidden) && hidden))
             .Select(column => HomeObjectJson.String(column, "property"))
-            .Where(property => property.Length > 0)
+            .Where(property => property.Length > 0 && !IsLastOpened(property))
             .Order(StringComparer.Ordinal);
 
     // Property, condition and value of each leaf; groups by operator; the

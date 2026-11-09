@@ -26,6 +26,8 @@ namespace Deckle.Home;
 // to the detail file beside the sheet. One failure never stops the rest.
 internal sealed class HomeStructureWriter(AnytypeApiClient api, string spaceId)
 {
+    private static readonly string[] LastOpenedKeys = ["lastOpenedDate", "last_opened_date"];
+
     private readonly HomeV2 _v2 = new(api, spaceId);
     private readonly HomeStructureWriteReport _report = new();
     private readonly List<HomeStructureRefusal> _refusals = [];
@@ -277,7 +279,7 @@ internal sealed class HomeStructureWriter(AnytypeApiClient api, string spaceId)
                 ["op"] = "insert_view",
                 ["name"] = view.Name.Length > 0 ? view.Name : "Vue",
                 ["set"] = view.Set.DeepClone(),
-                ["columns"] = view.Columns.DeepClone(),
+                ["columns"] = WithoutLastOpened(view.Columns),
             };
 
             JsonNode? answer = null;
@@ -322,19 +324,39 @@ internal sealed class HomeStructureWriter(AnytypeApiClient api, string spaceId)
             JsonObject? found = now.OfType<JsonObject>().FirstOrDefault(value => HomeObjectJson.Id(value) == targetId);
             if (found is null) continue;
             var hide = new JsonObject();
+            bool lastOpenedShown = false;
             foreach (JsonObject column in (found["columns"] as JsonArray ?? []).OfType<JsonObject>())
             {
                 string property = HomeObjectJson.String(column, "property");
                 bool hidden = column["hidden"] is JsonValue flag && flag.TryGetValue(out bool value) && value;
+                // 2026-11-09: lastOpenedDate is never sent. Hiding it (as
+                // `lastOpenedDate` or `last_opened_date`) answers 200 but
+                // APPENDS a second column entry with the same key, and null does
+                // nothing, so the API cannot hide or remove it. It stays visible
+                // on an inserted view (the person hides it by hand); counted.
+                if (LastOpenedKeys.Contains(property))
+                {
+                    lastOpenedShown |= !hidden;
+                    continue;
+                }
                 if (property.Length > 0 && !hidden && !view.Columns.ContainsKey(property))
                     hide[property] = new JsonObject { ["hidden"] = true };
             }
+            if (lastOpenedShown) _report.Count(_report.Dropped, "unhideable_column");
             if (hide.Count == 0) continue;
             JsonObject op = new() { ["op"] = "update_view", ["view"] = targetId, ["columns"] = hide };
             await TryAsync("column_reconcile", $"{where}, view « {view.Name} »", async () =>
                 await patch(new JsonArray(op)).ConfigureAwait(false)).ConfigureAwait(false);
         }
     }
+    // The column patch minus lastOpenedDate: see the reconcile below.
+    private static JsonObject WithoutLastOpened(JsonObject columns)
+    {
+        var kept = (JsonObject)columns.DeepClone();
+        foreach (string key in LastOpenedKeys) kept.Remove(key);
+        return kept;
+    }
+
     private static string? CreatedViewId(JsonNode? answer) =>
         (answer as JsonObject)?["created_views"] is JsonObject created
         && created.Select(pair => pair.Value).FirstOrDefault() is JsonValue id

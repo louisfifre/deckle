@@ -36,7 +36,7 @@ internal static class HomeStructureFixtures
               "filters":[{"property":"aisle","condition":"not_empty","id":"f1"},{"property":"needed","condition":"equal","value":true,"id":"f2"}],
               "columns":[{"property":"name","width":200},{"property":"errand_category","width":120},{"property":"aisle","width":100},{"property":"needed","hidden":true}]},
              {"id":"vE2","type":"kanban","name":"Par catégorie","group_by":"errand_category","card_size":"small",
-              "columns":[{"property":"name"},{"property":"errand_category"},{"property":"quantity","aggregation":"sum"}]}]
+              "columns":[{"property":"name"},{"property":"errand_category"},{"property":"quantity","aggregation":"sum"},{"property":"lastOpenedDate","hidden":true}]}]
             """));
 
         source.SetTypeStructure("room", "list", OldTemplateRoom,

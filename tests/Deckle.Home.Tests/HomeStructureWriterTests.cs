@@ -45,7 +45,9 @@ public sealed class HomeStructureWriterTests : IDisposable
 
     static string[] Visible(JsonNode? view) =>
         ((JsonArray)view!["columns"]!).OfType<JsonObject>()
-            .Where(column => column["hidden"] is null)
+            // lastOpenedDate cannot be hidden through the API (see the writer): it is
+            // not part of what a view shows on purpose.
+            .Where(column => column["hidden"] is null && column["property"]!.GetValue<string>() != "lastOpenedDate")
             .Select(column => column["property"]!.GetValue<string>()).Order(StringComparer.Ordinal).ToArray();
 
     static JsonObject Settings(FakeHomeAnytypeServer target, string typeKey) =>
@@ -316,6 +318,47 @@ public sealed class HomeStructureWriterTests : IDisposable
         Assert.NotEmpty(ops);
         Assert.DoesNotContain(ops, op => op["op"]!.GetValue<string>() == "update_view" && op["set"] is not null);
         Assert.Contains(ops, op => op["op"]!.GetValue<string>() == "delete_view");
+    }
+
+    // 2026-11-09: hiding lastOpenedDate appends a duplicate column on the real
+    // server, so no request may name it; each view where it stays is counted.
+    [Fact]
+    public async Task LastOpenedDateIsNeverSentAndEachViewShowingItIsCounted()
+    {
+        using FakeHomeAnytypeServer source = Source();
+        using FakeHomeAnytypeServer target = Target();
+
+        Run run = await RunAsync(source, target);
+
+        Assert.DoesNotContain(target.Requests, request =>
+            request.Body.Contains("lastOpenedDate", StringComparison.Ordinal)
+            || request.Body.Contains("last_opened_date", StringComparison.Ordinal));
+        // 18 type views and 2 collection views were inserted, each showing it.
+        Assert.Equal(20, run.Outcome.Report.Dropped["unhideable_column"]);
+        Assert.All(Views(target, "product"), view =>
+            Assert.Single(((JsonArray)view!["columns"]!).OfType<JsonObject>(),
+                column => column["property"]!.GetValue<string>() == "lastOpenedDate"));
+    }
+
+    [Fact]
+    public async Task TheFakeAppendsADuplicateWhenLastOpenedDateIsHidden()
+    {
+        using FakeHomeAnytypeServer target = Target();
+        var api = new AnytypeApiClient(target.Credentials);
+        await api.V2.SendJsonAsync(System.Net.Http.HttpMethod.Patch, "types/room", new JsonObject
+        {
+            ["ops"] = new JsonArray(new JsonObject
+            {
+                ["op"] = "insert_view", ["name"] = "Test",
+                ["columns"] = new JsonObject { ["lastOpenedDate"] = new JsonObject { ["hidden"] = true } },
+            }),
+        }, null, target.SpaceId, Ct);
+
+        JsonObject view = (JsonObject)Views(target, "room")[1]!;
+        JsonObject[] entries = ((JsonArray)view["columns"]!).OfType<JsonObject>()
+            .Where(column => column["property"]!.GetValue<string>() == "lastOpenedDate").ToArray();
+        Assert.Equal(2, entries.Length);
+        Assert.Contains(entries, entry => entry["hidden"] is null);
     }
 
     [Fact]
