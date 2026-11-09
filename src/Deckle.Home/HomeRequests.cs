@@ -27,7 +27,6 @@ public sealed record HomeSearchFilter(
     string? Room,
     string? Circuit,
     string? Category,
-    string? Condition,
     bool? Done = null,
     string? Worksite = null,
     string? State = null,

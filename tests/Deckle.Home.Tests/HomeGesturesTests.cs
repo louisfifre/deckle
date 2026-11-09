@@ -427,7 +427,7 @@ public class HomeGesturesTests
             Ct);
 
         string search = await gestures.SearchAsync(
-            new HomeSearchFilter("Tester une idée fictive", HomeSchema.Types.Idea, null, null, null, null),
+            new HomeSearchFilter("Tester une idée fictive", HomeSchema.Types.Idea, null, null, null),
             Ct);
         string detail = await gestures.GetAsync("Tester une idée fictive", Ct);
 
@@ -540,7 +540,7 @@ public class HomeGesturesTests
             FakeHomeAnytypeServer.Product("product-2", "Sacs fictifs", done: true));
 
         string remaining = await Gestures(server).SearchAsync(
-            new HomeSearchFilter(null, HomeSchema.Types.Product, null, null, null, null, Done: false), Ct);
+            new HomeSearchFilter(null, HomeSchema.Types.Product, null, null, null, Done: false), Ct);
 
         Assert.Contains("Vis fictives", remaining);
         Assert.DoesNotContain("Sacs fictifs", remaining);
@@ -556,7 +556,7 @@ public class HomeGesturesTests
             FakeHomeAnytypeServer.Plant("plant-1", "Ficus fictif"));
 
         string members = await Gestures(server).SearchAsync(
-            new HomeSearchFilter(null, null, null, null, null, null, System: "PC fictif"), Ct);
+            new HomeSearchFilter(null, null, null, null, null, System: "PC fictif"), Ct);
 
         Assert.Contains("GPU fictif", members);
         Assert.DoesNotContain("Ficus fictif", members);
@@ -705,12 +705,12 @@ public class HomeGesturesTests
             FakeHomeAnytypeServer.Todo("todo-2", "Corvée orpheline fictive", null, done: false));
 
         string byWorksite = await Gestures(server).SearchAsync(
-            new HomeSearchFilter(null, null, null, null, null, null, Worksite: "Salle de bain fictive"), Ct);
+            new HomeSearchFilter(null, null, null, null, null, Worksite: "Salle de bain fictive"), Ct);
         Assert.Contains("Déposer le lavabo fictif", byWorksite);
         Assert.DoesNotContain("Corvée orpheline fictive", byWorksite);
 
         string byState = await Gestures(server).SearchAsync(
-            new HomeSearchFilter(null, HomeSchema.Types.Worksite, null, null, null, null, State: "En cours"), Ct);
+            new HomeSearchFilter(null, HomeSchema.Types.Worksite, null, null, null, State: "En cours"), Ct);
         Assert.Contains("Salle de bain fictive", byState);
     }
 

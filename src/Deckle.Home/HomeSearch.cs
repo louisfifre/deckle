@@ -55,7 +55,6 @@ public sealed partial class HomeGestures
         (string? Requested, string Property)[] selects =
         [
             (filter.Category is null ? null : HomeCategories.OptionKey(filter.Category), HomeSchema.Properties.Category),
-            (filter.Condition, "condition"),
             (filter.State, HomeSchema.Properties.State),
             (filter.Domain, "domain"),
             (filter.EquipmentCategory, "equipment_category"),

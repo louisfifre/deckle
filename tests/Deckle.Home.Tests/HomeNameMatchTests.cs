@@ -123,7 +123,7 @@ public sealed class HomeNameMatchTests
 
         string detail = await Gestures(server).GetAsync("Purger", Ct);
         string search = await Gestures(server).SearchAsync(
-            new HomeSearchFilter(null, null, "Pièce", null, null, null), Ct);
+            new HomeSearchFilter(null, null, "Pièce", null, null), Ct);
 
         Assert.Contains("Purger le radiateur fictif", detail);
         Assert.Contains("Prise fictive", search);
