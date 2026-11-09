@@ -125,6 +125,7 @@ public static class DevSpace
     public static class Etat
     {
         public const string EnAttente = "en_attente";
+        public const string EnCours = "en_cours";
 
         public static readonly TagOption[] All =
         [

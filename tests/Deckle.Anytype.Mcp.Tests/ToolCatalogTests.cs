@@ -11,7 +11,7 @@ public class ToolCatalogTests
     static readonly string[] ExpectedToolNames =
     {
         "open_report", "log",
-        "task_properties", "task_checklist", "task_notes", "project_overview",
+        "task_properties", "task_checklist", "task_notes", "project_overview", "today_overview",
         "epic_properties", "report_journal", "idea_text", "document_outline", "document_section",
         "create_task", "complete", "archive", "link", "unlink", "list_projects", "search", "subtask",
         "create_epic", "create_project", "create_idea", "create_document", "update", "replace_section",
@@ -21,7 +21,7 @@ public class ToolCatalogTests
     // would bring the measured context cost back.
     static readonly string[] TypedReadNames =
     {
-        "task_properties", "task_checklist", "task_notes", "project_overview",
+        "task_properties", "task_checklist", "task_notes", "project_overview", "today_overview",
         "epic_properties", "report_journal", "idea_text", "document_outline", "document_section",
     };
 
@@ -191,6 +191,7 @@ public class ToolCatalogTests
             ["document_outline"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["document_section"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["project_overview"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["today_overview"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["create_task"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["complete"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["archive"] = AmbiguousOutcomePolicy.SafeToRetry,
@@ -226,6 +227,7 @@ public class ToolCatalogTests
             ["document_outline"] = ToolChangeKind.None,
             ["document_section"] = ToolChangeKind.None,
             ["project_overview"] = ToolChangeKind.None,
+            ["today_overview"] = ToolChangeKind.None,
             ["create_task"] = ToolChangeKind.Additive,
             ["complete"] = ToolChangeKind.Overwriting,
             ["archive"] = ToolChangeKind.Overwriting,

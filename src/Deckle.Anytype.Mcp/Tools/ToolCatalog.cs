@@ -77,6 +77,13 @@ public static class ToolCatalog
                 ToolExecutionContract.ReadOnly),
 
             new(
+                "today_overview",
+                "What to do now, in one read: the tasks neither done nor archived whose due date is today or past (late ones first, with their date), each with its project, type, priority, estimate and Définition de fini; then the projects En cours, one line each. Read it when a session opens, or to see what runs elsewhere instead of searching.",
+                Schema(),
+                async (args, ct) => await projects.TodayAsync(ct),
+                ToolExecutionContract.ReadOnly),
+
+            new(
                 "epic_properties",
                 "An epic's id, title and properties: état, priority, Définition de fini, budget and charge. Its projects are listed by list_projects.",
                 Schema(required: [Prop("epic", "string", "Epic, name or id.")]),
