@@ -791,6 +791,15 @@ public class SchemaAdminGesturesTests
         Assert.Equal("etat_identification", property["key"]!.GetValue<string>());
         Assert.Equal("select", property["format"]!.GetValue<string>());
 
+        // A tag whose key the manifest declares is created under that key, so
+        // the key the code speaks is the one the space holds.
+        JsonObject tag = server.Requests
+            .Where(r => r.Method == "POST" && r.Path.EndsWith("/tags", StringComparison.Ordinal))
+            .Select(r => (JsonObject)JsonNode.Parse(r.Body)!)
+            .Single();
+        Assert.Equal("confirme", tag["key"]!.GetValue<string>());
+        Assert.Equal("Confirmé", tag["name"]!.GetValue<string>());
+
         JsonObject typeCreate = server.Requests
             .Where(r => r.Method == "POST" && r.Path.EndsWith("/types", StringComparison.Ordinal))
             .Select(r => (JsonObject)JsonNode.Parse(r.Body)!)

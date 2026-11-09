@@ -128,6 +128,9 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
                     ["name"] = tag.Name,
                     ["color"] = tag.Color ?? "grey",
                 };
+                // A declared key is sent so the option's wire key is the one
+                // DevSpace speaks; without it the server derives its own.
+                if (tag.Key is not null) payload["key"] = tag.Key;
                 await api.CreatePropertyTagAsync(preview.SpaceId, property.Id, payload, ct);
                 applied.Add($"tag créé {spec.Key}:{tag.Name}");
             }
