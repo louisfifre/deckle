@@ -154,7 +154,11 @@ object, or lists several.
   views, templates and widgets are carried by the rehearsal through the v2
   API (see the boundary below). What the API does not show (how any of it
   renders, what an inline query lists), and the personal sidebar, the
-  person checks in the app.
+  person checks in the app. At the rebirth that includes two things the
+  structure write leaves by design: the `lastOpenedDate` column, which shows
+  on every inserted view (one click per view to hide it; the write counts
+  them as `unhideable_column`), and the layout of a flattened template (a
+  column that sat inside a column was removed, counted `column_unwrapped`).
 
 ## Recreation rehearsal
 
@@ -270,13 +274,18 @@ Steps, in the order they run:
   vocabulary grows by the names a template uses); per type its default view
   and mapped default template, then its sections (the target type's whole
   property list is read and sent back with only the sections changed,
-  because the patch replaces the list), then its views (the first source
-  view updates the target's default view, the others are inserted, each as
-  its own request so a refused view costs that view; a view always sends its
-  sorts and filters, empty when the source had none, because `set` merges
-  and the target's default view has sorts of its own; the columns the patch
-  does not name are then read back and hidden, so the visible set matches);
-  the section collections' views; the widgets in source order, each target
+  because the patch replaces the list), then its views (every source view
+  is inserted, each as its own request so a refused view costs that view;
+  then the views the target held before are deleted, one op each; a view
+  always sends its sorts and filters, empty when the source had none; the
+  columns the insert does not name are then read back and hidden, so the
+  visible set matches, `lastOpenedDate` excepted); the section collections
+  (the target collection of the same name when exactly one non-Home
+  collection has it, else created by name; then their items, mapped through
+  every id map and added in source order but for those already held, an
+  unmapped item dropped and counted `collection_item`, the icon left out and
+  counted `collection_icon` because the create body takes a name and items
+  only), then their views; the widgets in source order, each target
   mapped (a type to the target type, a collection to its namesake, another
   object through the id map) and each view mapped to the view written for it
   (a view that was not carried is dropped from the widget, the widget
@@ -288,8 +297,13 @@ Steps, in the order they run:
   type, group, filters, sorts and visible columns (as a set: a column patch
   cannot reorder); per template the count per type, its type, its property
   values and the histogram of its block kinds; per widget the count, the
-  order, the target, the layout and the view. A widget the target already
-  had on another target is not held against the plan.
+  order, the target, the layout and the view; per section collection its
+  presence and the ordered list of the items the write mapped (other members
+  are not held against the plan). A widget the target already had on another
+  target is not held against the plan. A collection the target already held
+  keeps the order the replay gave its members: the write adds only what is
+  missing, so a different source order shows as a `collection.items`
+  difference.
 
 Files. The sheet and its reports hold the person's data and live outside
 the repository, under `%LOCALAPPDATA%\Deckle\modules\home\rehearsal\`, or at
@@ -346,6 +360,25 @@ schemas, `GET /v2/schemas`) writes:
   when the app renders;
 - widgets: `POST /v2/spaces/{space}/widgets` on a query view or a
   collection, space scope.
+
+What the structure write found on the real server on 2026-11-09 (first run
+on a throwaway space), and why the code is shaped by it. Replacing the sorts
+of an existing view (`update_view` with `set.sorts`) is unreliable: the
+answer and an immediate read are right, then a deferred step cuts the type's
+default view back to its first sort or appends the old sorts again, and a
+`PATCH types/{key}` with `property_definitions` cuts it too; a view made by
+`insert_view` keeps its sorts and later columns-only `update_view` ops leave
+them alone, and `delete_view` works (including the view `default`), so every
+source view is inserted and the old ones deleted. The `lastOpenedDate` column
+cannot be hidden or removed (a hide patch, under either spelling, answers 200
+and appends a second entry with the same key), and an inserted view starts
+with all its columns visible. A template document nests blocks by an `indent`
+number and the server refuses a column whose parent is not a row, so a
+column nested in a column is flattened. The section collections are not Home
+objects, so the replay skips them: their membership is read with `GET
+collections/{id}/objects` (without a `view` parameter, the whole membership
+in stored order) and written with `POST collections` (name and optional
+items) and the `add_items` op of `PATCH objects/{id}`.
 
 Not shown by the API: what an inline query lists inside an object (no
 endpoint answered), and how any of this renders, which only the app shows.
