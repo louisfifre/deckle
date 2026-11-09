@@ -11,12 +11,18 @@ namespace Deckle.Catalog;
 // reference.
 //
 // GoToPage takes the destination's PageTag, the same Type.GetType string the
-// nav item carries. Both hooks stay null when unwired (an isolated module test,
-// a page hosted outside the Settings window): the card then does nothing and
-// the header shows its own title.
+// nav item carries. OpenSubpage opens a page the rail does not list, one level
+// under the page on screen (one profile of the Rewriting page), as Windows 11
+// Settings drills into a device or a network: the rail keeps its selection, the
+// title bar shows its back button and the header names the way back. The
+// parameter is handed to the page's OnNavigatedTo. The hooks stay null when
+// unwired (an isolated module test, a page hosted outside the Settings window):
+// the card then does nothing and the header shows its own title.
 public static class SettingsNavigation
 {
     public static Action<string>? GoToPage { get; set; }
+
+    public static Action<Type, object?>? OpenSubpage { get; set; }
 
     public static Func<Type, IReadOnlyList<SettingsBreadcrumbSegment>?>? BreadcrumbFor { get; set; }
 }

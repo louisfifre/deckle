@@ -317,6 +317,9 @@ public sealed partial class SettingsWindow
         // selection does not change and the page is already built. A child item is only
         // selectable with its parent expanded, hence the ancestor pass first.
         ExpandAncestorsOf(navItem);
+        // A hit on the page a subpage opened from: the selection stays the
+        // same, so the subpage is left first and the card is found on the page.
+        if (ReferenceEquals(Nav.SelectedItem, navItem)) ReturnToRailPage();
         Nav.SelectedItem = navItem;
 
         if (PageFrame.Content is not FrameworkElement page) return;

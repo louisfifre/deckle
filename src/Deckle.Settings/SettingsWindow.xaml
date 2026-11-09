@@ -50,11 +50,9 @@
         <!-- The NavigationView's own pane toggle is off; the TitleBar carries it
              and relays through PaneToggleRequested — the WinUI 3 Gallery pattern,
              pure code-behind, no automatic link between the two controls.
-             No back button: every destination has a rail entry, even a child page
-             registered under a ParentId. Frame.Navigate pushes the back stack on
-             every nav change, siblings included, so a CanGoBack-bound button would
-             offer to retrace ordinary page switches. Wire it once a destination
-             exists that the rail does not list. -->
+             The back button shows only on a subpage, a destination the rail does
+             not list (SettingsWindow.Subpages.cs says why it ignores the frame's
+             back stack). -->
         <TitleBar Grid.Row="0"
                   x:Name="AppTitleBar"
                   x:Uid="SettingsTitleBar"
