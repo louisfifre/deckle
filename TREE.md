@@ -1023,6 +1023,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeSchemaTargetData.cs
 │   │   ├── HomeSearch.cs
 │   │   ├── HomeSpaceExporter.cs
+│   │   ├── HomeSpaceReplayer.cs
 │   │   ├── HomeTerms.cs
 │   │   ├── HomeToolCatalog.cs
 │   │   ├── HomeTypedToolCatalog.cs
@@ -2265,6 +2266,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeSchemaIncidentTests.cs
 │   │   ├── HomeSearchTests.cs
 │   │   ├── HomeSpaceExporterTests.cs
+│   │   ├── HomeSpaceReplayerTests.cs
 │   │   ├── HomeToolCatalogTests.cs
 │   │   ├── HomeTypedToolCatalogTests.cs
 │   │   └── MessageTemplateDoctrineTests.cs
