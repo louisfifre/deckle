@@ -122,9 +122,12 @@ static class Judge
         {
             Model = judgeModel,
             MaxTokens = MaxOutputTokens,
-            System = SystemPrompt,
+            // The system prompt is the same for every call and the raw for
+            // every rewrite of one dictation: both are cached ahead of the
+            // rewrite, which changes each time.
+            System = PromptCache.System(SystemPrompt),
             OutputConfig = new OutputConfig { Effort = Effort.High },
-            Messages = [new() { Role = Role.User, Content = $"<raw>\n{rawText}\n</raw>\n\n<rewrite>\n{gen.Text}\n</rewrite>" }],
+            Messages = [new() { Role = Role.User, Content = PromptCache.User($"<raw>\n{rawText}\n</raw>", $"\n\n<rewrite>\n{gen.Text}\n</rewrite>") }],
         };
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -150,8 +153,10 @@ static class Judge
         JudgementRow Row(Judgement? judgement, string? judgeRaw, string? err) => new(
             gen.Id, gen.Model, gen.Prompt, gen.Source, judgeModel, judgement, judgeRaw,
             (int?)response?.Usage.InputTokens, (int?)response?.Usage.OutputTokens, sw.ElapsedMilliseconds,
-            response is null ? null : Pricing.Cost(judgeModel, (int)response.Usage.InputTokens, (int)response.Usage.OutputTokens),
-            err);
+            response is null ? null : Pricing.Cost(judgeModel, response.Usage),
+            err,
+            JudgeCacheWriteTokens: (int?)response?.Usage.CacheCreationInputTokens,
+            JudgeCacheReadTokens: (int?)response?.Usage.CacheReadInputTokens);
 
         if (response is null) return Row(null, null, error ?? "no response");
         if (response.StopReason == "refusal") return Row(null, null, "refusal");

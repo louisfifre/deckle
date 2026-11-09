@@ -64,6 +64,32 @@ already paid is skipped (a row with an error is redone); `--only` runs one
 step. One lane per model runs in parallel, sequential inside a lane, so a
 model's latency column is never inflated by its own queue.
 
+### Prompt caching
+
+A campaign sends the same request many times, so it uses Anthropic's prompt
+cache: a call stores its prompt for five minutes, and a later call that starts
+with the same bytes reads it back at a fraction of the input price (a tenth on
+Sonnet and Haiku, a twentieth on Opus 5.5) instead of paying it whole.
+
+- **Rewrites**: when `iterations` is above 1, the whole request (system
+  prompt and dictation) is cached. Inside a lane a cell's iterations run back
+  to back, so the first writes the cache (a quarter above the input price)
+  and the next ones read it. A call that read the cache skipped the prompt's
+  processing, which the app never does since each dictation is new: its
+  latency is shorter than production's. Each generation therefore carries
+  `cache_read_tokens`, `cache_write_tokens` and `cache_hit`, and each cell
+  `cache_hits` and `latency_cold_ms`, measured on the calls that read nothing;
+  quote that one when comparing with the app. The app itself does not cache.
+- **Judge**: its system prompt (shared by every call of a profile) and the
+  raw dictation (shared by every batch of a dictation, across models) are
+  cached ahead of the rewrites. A cell's batches run one after the other: the
+  cache is readable only once the call writing it has answered, so batches
+  sent together would all write and none would read.
+- **Proposer** (`optimize`): not cached, since a whole round separates its calls.
+
+`prompt_tokens` counts only the uncached input, as the API reports it; the
+costs add the cache writes and reads at their own price.
+
 `results/<stamp>/dashboard-data.json` is the hand-off to whoever builds the
 dashboard: the frozen campaign and its prompts, the pricing snapshot, the
 dictations with their text, one entry per generation (text, tokens, latency,
@@ -71,8 +97,9 @@ cost, code metrics — word and character ratios, paragraphs, `---`
 separators, markdown marks, lexical retention of the speaker's 4+-letter
 words, negation and hedge deltas — and its judgement with verdict, counts,
 findings and judge cost), one aggregate per (profile, bucket, dictation,
-model) cell (verdict counts, mean findings per category, latency mean/p50/p90,
-cost totals) and the run totals. `judge-batches.jsonl` keeps each batch
+model) cell (verdict counts, mean findings per category, latency mean/p50/p90
+over all calls and over the cold ones, cache hits, cost totals) and the run
+totals. `judge-batches.jsonl` keeps each batch
 answer whole; `judgements.jsonl` flattens it one row per rewrite with the
 batch's tokens, time and cost split evenly, so `summary` still reads it.
 

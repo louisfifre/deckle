@@ -3,6 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Anthropic.Exceptions;
+using Anthropic.Models.Messages;
 
 namespace Deckle.Benchmark.ModelCompare;
 
@@ -27,7 +28,14 @@ sealed record GenerationRow(
     string? Error,
     // The repeat index of a campaign run (1..n); null on the original one-shot
     // matrix, so the files the first study wrote still read.
-    int? Iteration = null);
+    int? Iteration = null,
+    // A campaign caches each repeated request: the first iteration writes it,
+    // the next ones read it. PromptTokens is then only the uncached rest. A
+    // row that read the cache skipped the prompt's processing, so its latency
+    // is shorter than the app's, where every dictation is new: the cold rows
+    // (no read) are the ones to compare with production. Null on older files.
+    int? CacheWriteTokens = null,
+    int? CacheReadTokens = null);
 
 // One judge verdict on one generation. Judgement is the judge's JSON as
 // parsed; JudgeRaw keeps the answer when it did not parse, so a run never
@@ -48,7 +56,11 @@ sealed record JudgementRow(
     int? Iteration = null,
     // The batch this verdict came from when the judge read several rewrites
     // in one call: its tokens, time and cost are split evenly over the rows.
-    string? Batch = null);
+    string? Batch = null,
+    // The judge's prompt tokens written to and read from the cache, apart
+    // from JudgePromptTokens, which counts only the uncached rest.
+    int? JudgeCacheWriteTokens = null,
+    int? JudgeCacheReadTokens = null);
 
 sealed record Finding(string? Raw, string? Rewrite, string? Note);
 
@@ -73,27 +85,69 @@ sealed record Judgement(
 
 static class Pricing
 {
-    // USD per million tokens (input, output). A 2026-10 snapshot of the public
-    // price list: check it against the Anthropic console before trusting a
-    // cost column. Output tokens include thinking tokens, which are billed as
-    // output.
-    static readonly Dictionary<string, (double In, double Out)> PerMTok = new(StringComparer.OrdinalIgnoreCase)
+    // USD per million tokens (input, output, cache read). A 2026-10 snapshot
+    // of the public price list: check it against the Anthropic console before
+    // trusting a cost column. Output tokens include thinking tokens, which are
+    // billed as output. Cache reads: Fable 5.1 and Opus 5.5 have their own
+    // published price; Sonnet and Haiku take the usual tenth of the input
+    // price (Haiku 5.5's is an assumption until checked in the console).
+    static readonly Dictionary<string, (double In, double Out, double CacheRead)> PerMTok = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["claude-fable-5-1"]  = (10.00, 50.00),
-        ["claude-opus-5-5"]   = (4.00, 20.00),
-        ["claude-sonnet-5-5"] = (2.00, 10.00),
-        ["claude-haiku-5-5"]  = (0.10, 0.50),
+        ["claude-fable-5-1"]  = (10.00, 50.00, 0.25),
+        ["claude-opus-5-5"]   = (4.00, 20.00, 0.20),
+        ["claude-sonnet-5-5"] = (2.00, 10.00, 0.20),
+        ["claude-haiku-5-5"]  = (0.10, 0.50, 0.01),
     };
 
+    // A five-minute cache write costs a quarter more than plain input.
+    const double CacheWriteFactor = 1.25;
+
     // Null for an unknown model: an absent price must not read as a free call.
-    public static double? Cost(string model, int inputTokens, int outputTokens) =>
+    // inputTokens is the uncached input only, as the API reports it; the cache
+    // writes and reads come on top, each at its own price.
+    public static double? Cost(string model, int inputTokens, int outputTokens, int cacheWriteTokens = 0, int cacheReadTokens = 0) =>
         PerMTok.TryGetValue(model, out var p)
-            ? (inputTokens * p.In + outputTokens * p.Out) / 1_000_000.0
+            ? (inputTokens * p.In
+               + cacheWriteTokens * p.In * CacheWriteFactor
+               + cacheReadTokens * p.CacheRead
+               + outputTokens * p.Out) / 1_000_000.0
             : null;
+
+    // The cost of a call the SDK answered, cache tokens included.
+    public static double? Cost(string model, Usage usage) => Cost(
+        model, (int)usage.InputTokens, (int)usage.OutputTokens,
+        (int)(usage.CacheCreationInputTokens ?? 0), (int)(usage.CacheReadInputTokens ?? 0));
 
     // The snapshot as data, so an export carries the prices its costs used.
     public static Dictionary<string, object> Snapshot() =>
-        PerMTok.ToDictionary(kv => kv.Key, kv => (object)new { input_per_mtok = kv.Value.In, output_per_mtok = kv.Value.Out });
+        PerMTok.ToDictionary(kv => kv.Key, kv => (object)new
+        {
+            input_per_mtok = kv.Value.In,
+            output_per_mtok = kv.Value.Out,
+            cache_write_per_mtok = kv.Value.In * CacheWriteFactor,
+            cache_read_per_mtok = kv.Value.CacheRead,
+        });
+}
+
+// ─── Prompt caching for the calls this tool makes to the SDK directly ─────────
+//
+// Caching is a prefix match: a marker stores everything before it, and a later
+// call whose request starts with the same bytes reads that part back at a
+// fraction of the input price. So the stable part goes first and carries the
+// marker, the part that changes comes after it. The judge's system prompt is
+// shared by every call of a profile; the raw dictation by every batch of it.
+static class PromptCache
+{
+    public static List<TextBlockParam> System(string text) =>
+        [new() { Text = text, CacheControl = new CacheControlEphemeral() }];
+
+    // A user turn whose head (the raw dictation) is cached and whose tail (the
+    // rewrites under judgement) is not.
+    public static List<ContentBlockParam> User(string head, string tail) =>
+        [
+            new TextBlockParam { Text = head, CacheControl = new CacheControlEphemeral() },
+            new TextBlockParam { Text = tail },
+        ];
 }
 
 static class Transient

@@ -35,7 +35,9 @@ sealed record BatchJudgementRow(
     int? JudgeEvalTokens,
     long? JudgeMs,
     double? JudgeCostUsd,
-    string? Error);
+    string? Error,
+    int? JudgeCacheWriteTokens = null,
+    int? JudgeCacheReadTokens = null);
 
 static class BatchJudge
 {
@@ -88,19 +90,22 @@ static class BatchJudge
         AnthropicClient client, string judgeModel, string? profileNote,
         string key, string rawText, IReadOnlyList<GenerationRow> batch, CancellationToken cancellationToken)
     {
-        var user = new StringBuilder();
-        user.Append("<raw>\n").Append(rawText).Append("\n</raw>\n\n<rewrites>\n");
+        // The raw comes first and is cached: every batch of the cell, and the
+        // same dictation's batches for the other models, start with it.
+        string head = $"<raw>\n{rawText}\n</raw>";
+        var tail = new StringBuilder();
+        tail.Append("\n\n<rewrites>\n");
         for (int i = 0; i < batch.Count; i++)
-            user.Append($"<rewrite n=\"{i + 1}\">\n").Append(batch[i].Text).Append("\n</rewrite>\n");
-        user.Append("</rewrites>");
+            tail.Append($"<rewrite n=\"{i + 1}\">\n").Append(batch[i].Text).Append("\n</rewrite>\n");
+        tail.Append("</rewrites>");
 
         var parameters = new MessageCreateParams
         {
             Model = judgeModel,
             MaxTokens = MaxOutputTokens,
-            System = SystemPrompt(profileNote),
+            System = PromptCache.System(SystemPrompt(profileNote)),
             OutputConfig = new OutputConfig { Effort = Effort.High },
-            Messages = [new() { Role = Role.User, Content = user.ToString() }],
+            Messages = [new() { Role = Role.User, Content = PromptCache.User(head, tail.ToString()) }],
         };
 
         var sw = System.Diagnostics.Stopwatch.StartNew();
@@ -129,8 +134,9 @@ static class BatchJudge
         BatchJudgementRow Row(List<Judgement?>? judgements, string? judgeRaw, string? err) => new(
             key, id, model, prompt, iterations, judgeModel, judgements, judgeRaw,
             (int?)response?.Usage.InputTokens, (int?)response?.Usage.OutputTokens, sw.ElapsedMilliseconds,
-            response is null ? null : Pricing.Cost(judgeModel, (int)response.Usage.InputTokens, (int)response.Usage.OutputTokens),
-            err);
+            response is null ? null : Pricing.Cost(judgeModel, response.Usage),
+            err,
+            (int?)response?.Usage.CacheCreationInputTokens, (int?)response?.Usage.CacheReadInputTokens);
 
         if (response is null) return Row(null, null, error ?? "no response");
         if (response.StopReason == "refusal") return Row(null, null, "refusal");
