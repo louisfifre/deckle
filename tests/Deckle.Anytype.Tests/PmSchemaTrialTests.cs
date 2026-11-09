@@ -36,19 +36,13 @@ public sealed class PmSchemaTrialTests
     // shows one; each entry is a prefix of a mismatch line and carries its why.
     //
     // A fresh space is not bare: Anytype ships status, priority, done and
-    // due_date as properties and project and task as types, under their English
-    // names, and the planner keeps what exists by key without renaming it.
+    // due_date as properties and project and task as types. The planner renames
+    // them to the manifest's names; the manifest speaks the native priority keys
+    // p_0..p_5. What remains is what the API cannot change.
     static readonly (string Prefix, string Why)[] Classified =
     [
-        ("property status:", "native property kept under its English name"),
-        ("property done:", "native property kept under its English name"),
-        ("property due_date:", "native property kept under its English name"),
-        ("type project:", "native type kept under its English name"),
-        ("type task:", "native type kept under its English name"),
-        ("option-extra status", "native To Do / In Progress / Done options stay beside the declared ones"),
-        ("option-key priority", "native priority already holds options 0-5 under keys p_0..p_5; the planner matches them by name and creates nothing"),
-        ("option-extra priority", "same native options, seen from the other side"),
-        ("option-order", "the listing order is the server's, not the creation order: the API has no order field on an option"),
+        ("option-extra status", "native To Do / In Progress / Done options stay beside the declared ones; the planner never deletes an option"),
+        ("option-order","the listing order is the server's, not the creation order: the API has no order field on an option"),
     ];
 
     [Fact(Explicit = true)]
