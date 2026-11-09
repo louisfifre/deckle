@@ -14,23 +14,23 @@
       "plural": "Points"
     },
     "circuit": {
-      "name": "Circuits",
+      "name": "Circuit",
       "plural": "Circuits"
     },
     "panel": {
-      "name": "Tableaux",
+      "name": "Tableau",
       "plural": "Tableaux"
     },
     "system": {
-      "name": "Systèmes",
+      "name": "Système",
       "plural": "Systèmes"
     },
     "device": {
-      "name": "Appareils",
+      "name": "Appareil",
       "plural": "Appareils"
     },
     "component": {
-      "name": "Composants",
+      "name": "Composant",
       "plural": "Composants"
     },
     "utensil": {
@@ -38,7 +38,7 @@
       "plural": "Ustensiles de cuisine"
     },
     "plant": {
-      "name": "Plantes",
+      "name": "Plante",
       "plural": "Plantes"
     },
     "idea": {

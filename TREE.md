@@ -2274,6 +2274,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeSearchTests.cs
 │   │   ├── HomeSpaceExporterTests.cs
 │   │   ├── HomeSpaceReplayerTests.cs
+│   │   ├── HomeTermsTests.cs
 │   │   ├── HomeToolCatalogTests.cs
 │   │   ├── HomeTypedToolCatalogTests.cs
 │   │   └── MessageTemplateDoctrineTests.cs
