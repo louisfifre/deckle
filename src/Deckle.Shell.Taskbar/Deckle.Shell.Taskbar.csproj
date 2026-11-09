@@ -42,8 +42,11 @@
        through a window hook (native/Deckle.Shell.Taskbar.Native). `dotnet
        build` cannot build a vcxproj (MSB4278), so this target calls
        MSBuild.exe, found through vswhere, and the produced DLL joins this
-       project's output as Content, which flows to every project that
-       references it (the app's output folder holds it next to Deckle.exe).
+       project's output as a None item with CopyToOutputDirectory, which flows to
+       every project that references it and lands at the root of its output
+       (next to Deckle.exe). A Content item would be moved by the WinUI targets
+       into a Deckle.Shell.Taskbar\ subfolder of the app, where the runtime
+       does not look.
 
        A machine without the C++ build tools (or without Windows SDK 26100
        headers) still builds the C#: the target warns and skips, and no DLL is
@@ -80,10 +83,10 @@
           StandardOutputImportance="low" />
 
     <ItemGroup Condition="'$(TaskbarNativeMSBuild)' != '' and Exists('$(TaskbarNativeOutDir)Deckle.Shell.Taskbar.Native.dll')">
-      <Content Include="$(TaskbarNativeOutDir)Deckle.Shell.Taskbar.Native.dll"
+      <None Include="$(TaskbarNativeOutDir)Deckle.Shell.Taskbar.Native.dll"
                Link="Deckle.Shell.Taskbar.Native.dll"
                CopyToOutputDirectory="PreserveNewest" />
-      <Content Include="$(TaskbarNativeOutDir)Deckle.Shell.Taskbar.Native.pdb"
+      <None Include="$(TaskbarNativeOutDir)Deckle.Shell.Taskbar.Native.pdb"
                Link="Deckle.Shell.Taskbar.Native.pdb"
                CopyToOutputDirectory="PreserveNewest"
                Condition="'$(Configuration)' == 'Debug'" />

@@ -16,14 +16,30 @@ public partial class App
     private TrayIconPromoter? _trayPromoter;
     private bool? _trayWanted;
 
+    // Keeps the native engines in explorer and in the Start menu host in line
+    // with the settings. Null in a self-check run, which must never reach into
+    // the real explorer or Start menu.
+    private TaskbarCustomizer? _taskbarCustomizer;
+
     private void InitializeTaskbar()
     {
+        // The self-check composes none of the boot (see ComposedBySelfCheck), so
+        // it never gets here; the guard keeps that true if the composition ever
+        // changes. Its own data root would hold defaults (everything off) anyway.
+        if (IsSelfCheckMode(Environment.GetCommandLineArgs())) return;
+
         _trayPromoter = TrayIconPromoter.Instance;
+        _taskbarCustomizer = TaskbarCustomizer.Instance;
 
         TaskbarSettingsService.Instance.Changed += ReconcileTaskbarTraySetting;
+        TaskbarSettingsService.Instance.Changed += ReconcileTaskbarCustomization;
         ReconcileTaskbarTray(TrayTriggerStartup);
+        _taskbarCustomizer.Reconcile(TrayTriggerStartup);
     }
 
+    // The store raises Changed for any write; the customizer reads the settings
+    // as they are and sends nothing when nothing it cares about moved.
+    private void ReconcileTaskbarCustomization() => _taskbarCustomizer?.Reconcile(TrayTriggerSetting);
     private void ReconcileTaskbarTraySetting() => ReconcileTaskbarTray(TrayTriggerSetting);
 
     // The setting decides: on promotes every icon and watches for new ones, off
@@ -71,11 +87,19 @@ public partial class App
     // shutdown would otherwise run a pass behind Dispose. The flush then
     // persists a toggle still sitting in the debounce window. Dispose stops the
     // watcher and gives nothing back: the icons stay promoted until the setting
-    // is turned off, and the snapshot waits in its file.
+    // is turned off, and the snapshot waits in its file. The engines are the
+    // opposite: they restore the taskbar and the Start menu on the way out.
     private void ShutdownTaskbar()
     {
         TaskbarSettingsService.Instance.Changed -= ReconcileTaskbarTraySetting;
+        TaskbarSettingsService.Instance.Changed -= ReconcileTaskbarCustomization;
         TaskbarSettingsService.Instance.Flush();
         _trayPromoter?.Dispose();
+
+        // Quitting gives the taskbar and the Start menu back: the engines restore
+        // what they hold and unload from the two processes. Bounded, since an
+        // unload waits for the process to answer.
+        if (_taskbarCustomizer is { } customizer)
+            Task.Run(customizer.ShutdownAsync).Wait(TimeSpan.FromSeconds(15));
     }
 }
