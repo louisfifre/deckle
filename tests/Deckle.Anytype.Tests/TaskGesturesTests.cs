@@ -18,8 +18,37 @@ public class TaskGesturesTests
     const string TaskId = "bafyreiTaskaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    static TaskGestures NewGestures(FakeAnytypeServer server, FakeV2Handler? v2 = null)
+    // The v1 server answers the property list create reads for the slot: by
+    // default a space without « Créneau », as the space of 2026-11-04.
+    static TaskGestures NewGestures(FakeAnytypeServer server, FakeV2Handler? v2 = null, bool withSlot = false)
     {
+        if (withSlot)
+        {
+            server.OnListProperties(new JsonObject
+            {
+                ["data"] = new JsonArray(new JsonObject
+                {
+                    ["id"] = SlotPropertyId, ["key"] = "slot", ["name"] = "Créneau", ["format"] = "select",
+                }),
+                ["pagination"] = new JsonObject { ["has_more"] = false },
+            });
+            server.OnListPropertyTags(SlotPropertyId, new JsonObject
+            {
+                ["data"] = new JsonArray(
+                    new JsonObject { ["key"] = "cap", ["name"] = "Cap" },
+                    new JsonObject { ["key"] = "passion", ["name"] = "Passion" }),
+                ["pagination"] = new JsonObject { ["has_more"] = false },
+            });
+        }
+        else
+        {
+            server.OnListProperties(new JsonObject
+            {
+                ["data"] = new JsonArray(),
+                ["pagination"] = new JsonObject { ["has_more"] = false },
+            });
+        }
+
         var client = new AnytypeApiClient(server.Credentials);
         var v2Client = new AnytypeV2Client(
             new AnytypeCredentials("http://127.0.0.1:31012", "2025-11-08", "test-bearer", "space-1"),
@@ -106,6 +135,113 @@ public class TaskGesturesTests
         Assert.Contains("Tâche créée : Ma tâche", digest);
         Assert.Contains($"id : {TaskId}", digest);
         Assert.Contains("Priorité : 3", digest);
+        // The v1 server is only asked whether the space has a slot.
+        Assert.All(server.Requests, r => Assert.Equal($"/v1/spaces/{FakeAnytypeServer.Space}/properties", r.Path));
+    }
+
+    const string SlotPropertyId = "bafyreislotpropertyaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    [Fact]
+    public async Task CreateTakesTheDueDateTheEstimateAndTheDoneDefinition()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReply();
+
+        string digest = await NewGestures(server, v2).CreateAsync(
+            ProjectId, "Ma tâche", type: "production",
+            dueDate: "2026-11-10", timeEstimated: 1.5, doneDefinition: "  Le test passe.  ", ct: Ct);
+
+        JsonObject props = ((JsonObject)JsonNode.Parse(Assert.Single(v2.Requests).Body!)!)["properties"]!.AsObject();
+        Assert.Equal("2026-11-10", props[DevSpace.Props.DueDate]!.GetValue<string>());
+        Assert.Equal(1.5, props[DevSpace.Props.ChargeEstimee]!.GetValue<double>());
+        Assert.Equal("Le test passe.", props[DevSpace.Props.DefinitionDeFini]!.GetValue<string>());
+        Assert.Contains("Date cible : 2026-11-10", digest);
+        Assert.Contains("Temps estimé : 1,5 h", digest);
+    }
+
+    [Fact]
+    public async Task CreateLeavesTheDateEmptyWhenTheTaskIsNotPlaced()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReply();
+
+        string digest = await NewGestures(server, v2).CreateAsync(
+            ProjectId, "Ma tâche", type: "production", ct: Ct);
+
+        JsonObject props = ((JsonObject)JsonNode.Parse(Assert.Single(v2.Requests).Body!)!)["properties"]!.AsObject();
+        Assert.False(props.ContainsKey(DevSpace.Props.DueDate));
+        Assert.Contains("Date cible : aucune", digest);
+    }
+
+    [Fact]
+    public async Task CreateSetsCapWhenTheSpaceHasASlotAndNoneIsGiven()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReply();
+
+        string digest = await NewGestures(server, v2, withSlot: true).CreateAsync(
+            ProjectId, "Ma tâche", type: "production", ct: Ct);
+
+        JsonObject props = ((JsonObject)JsonNode.Parse(Assert.Single(v2.Requests).Body!)!)["properties"]!.AsObject();
+        Assert.Equal("Cap", props["slot"]!.AsArray().Single()!.GetValue<string>());
+        Assert.Contains("Créneau : Cap", digest);
+    }
+
+    [Fact]
+    public async Task CreateSetsTheSlotItIsGivenByKeyOrName()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReply();
+
+        await NewGestures(server, v2, withSlot: true).CreateAsync(
+            ProjectId, "Ma tâche", type: "production", slot: "passion", ct: Ct);
+
+        JsonObject props = ((JsonObject)JsonNode.Parse(Assert.Single(v2.Requests).Body!)!)["properties"]!.AsObject();
+        Assert.Equal("Passion", props["slot"]!.AsArray().Single()!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task CreateRefusesAnUnknownSlotBeforeCreatingAnything()
+    {
+        using var server = new FakeAnytypeServer();
+        var v2 = new FakeV2Handler();
+
+        ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server, v2, withSlot: true).CreateAsync(
+                ProjectId, "Ma tâche", type: "production", slot: "Sieste", ct: Ct));
+
+        Assert.Contains("Cap", error.Message);
+        Assert.Empty(v2.Requests);
+    }
+
+    [Fact]
+    public async Task CreateStillCreatesTheTaskWhenTheSpaceHasNoSlotAndSaysSo()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = CreateReply();
+
+        string digest = await NewGestures(server, v2).CreateAsync(
+            ProjectId, "Ma tâche", type: "production", slot: "Cap", ct: Ct);
+
+        JsonObject props = ((JsonObject)JsonNode.Parse(Assert.Single(v2.Requests).Body!)!)["properties"]!.AsObject();
+        Assert.DoesNotContain(props, p => p.Key is "slot" or "creneau");
+        Assert.Contains("Créneau : non posé", digest);
+    }
+
+    [Theory]
+    [InlineData("10/11/2026", null)]
+    [InlineData(null, 0.0)]
+    [InlineData(null, -1.0)]
+    public async Task CreateRefusesAnUnreadableDateOrAnEstimateBelowZeroBeforeAnyRequest(string? date, double? hours)
+    {
+        using var server = new FakeAnytypeServer();
+        var v2 = new FakeV2Handler();
+
+        await Assert.ThrowsAsync<ArgumentException>(
+            () => NewGestures(server, v2).CreateAsync(
+                ProjectId, "Ma tâche", type: "production", dueDate: date, timeEstimated: hours, ct: Ct));
+
+        Assert.Empty(v2.Requests);
         Assert.Empty(server.Requests);
     }
 

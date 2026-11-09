@@ -440,6 +440,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── DeletionApprovalRelay.cs
 │   │   │   ├── DocumentGestures.cs
 │   │   │   ├── LinkedNames.cs
+│   │   │   ├── LiveSelect.cs
 │   │   │   ├── LiveTagResolver.cs
 │   │   │   ├── ManagementGestures.cs
 │   │   │   ├── MarkdownBody.cs

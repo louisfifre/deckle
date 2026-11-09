@@ -119,7 +119,7 @@ public static class ToolCatalog
 
             new(
                 "create_task",
-                "Create a task under a project from the task template. Subtasks go in checklist, what to know in notes; both fill the template's sections. Answers with the new task's id.",
+                "Create a task under a project from the task template. A task is small, about an hour, so ask for its done_definition and time_estimated, and its due_date only when it is placed on a day; slot takes Cap when omitted. Subtasks go in checklist, what to know in notes; both fill the template's sections. Answers with the new task's id.",
                 Schema(
                     required:
                     [
@@ -132,11 +132,17 @@ public static class ToolCatalog
                         Prop("priority", "integer", "Priority 0-5, 5 = highest.", minimum: 0, maximum: 5),
                         ArrayProp("checklist", "Subtask labels, one checklist item each."),
                         Prop("notes", "string", "Markdown for the notes section: what to know before working on the task."),
+                        Prop("done_definition", "string", "What lets the task be ticked: a fine, checkable outcome."),
+                        Prop("time_estimated", "number", "Estimated time in hours, e.g. 1 or 0.5."),
+                        Prop("due_date", "string", "The day the task is placed on, YYYY-MM-DD. Omit while it is not placed in the week."),
+                        Prop("slot", "string", "Créneau, key or display name: Cap, Passion, Entraînement. Default Cap."),
                     ]),
                 async (args, ct) =>
                     await tasks.CreateAsync(
                         Str(args, "project"), Str(args, "name"), Str(args, "type"),
-                        IntOpt(args, "priority"), StrArrayOpt(args, "checklist"), StrOpt(args, "notes"), ct),
+                        IntOpt(args, "priority"), StrArrayOpt(args, "checklist"), StrOpt(args, "notes"),
+                        dueDate: StrOpt(args, "due_date"), timeEstimated: NumOpt(args, "time_estimated"),
+                        doneDefinition: StrOpt(args, "done_definition"), slot: StrOpt(args, "slot"), ct: ct),
                 ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new(
@@ -409,6 +415,15 @@ public static class ToolCatalog
         if (node is not JsonValue value || !value.TryGetValue<int>(out var i))
             throw new ArgumentException($"Argument '{name}' must be an integer.", name);
         return i;
+    }
+
+    static double? NumOpt(JsonObject? args, string name)
+    {
+        if (args is null || !args.TryGetPropertyValue(name, out var node) || node is null)
+            return null;
+        if (node is not JsonValue value || !value.TryGetValue<double>(out var d))
+            throw new ArgumentException($"Argument '{name}' must be a number.", name);
+        return d;
     }
 
     static bool? BoolOpt(JsonObject? args, string name)

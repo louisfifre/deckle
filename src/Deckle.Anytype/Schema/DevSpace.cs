@@ -261,6 +261,19 @@ public static class DevSpace
         public static string? NameFor(string? key) => NameOfOption(All, key);
     }
 
+    // ── Selects of the model v6 the space does not carry yet ─────────────────
+    //
+    // Read live through LiveSelect, by key or by display name: the space of
+    // 2026-11-04 had neither (inventory in the model document), and their key
+    // depends on who creates them. The English key is the recreation's.
+    public static class Slot
+    {
+        public static readonly string[] Keys = ["slot", "creneau"];
+        public const string Name = "Créneau";
+        // A task takes Cap unless told otherwise (model v6, section Task).
+        public const string Default = "Cap";
+    }
+
     // ── Per-type property tables ──────────────────────────────────────────────
     //
     // Row order is digest order.
