@@ -12,9 +12,9 @@ namespace deckle::behaviors
     //
     // Nothing is assumed about the layout: every figure is measured on the live
     // tree, in effective pixels (DIP), the unit XAML lays out in.
-    //   - The gap is the one Windows itself leaves between the panel and the
-    //     window edge the menu hugs (the smallest of the four; 12 DIP beside a
-    //     left taskbar on 26100), measured once before anything is changed.
+    //   - The gap is the panel's shadow inset inside FrameRoot, the room Windows
+    //     keeps around it and the gap it shows on the taskbar's side (12 DIP on
+    //     26100), measured once.
     //   - The panel's insets inside FrameRoot (its shadow room) and FrameRoot's
     //     position in its parent are measured at each update.
     //   - From those, FrameRoot gets VerticalAlignment Top, a top margin that puts
@@ -64,12 +64,6 @@ namespace deckle::behaviors
             double insetBottom() const { return frameTop + frameHeight - (panelTop + panelHeight); }
             double gapTop() const { return panelTop; }
             double gapBottom() const { return window - (panelTop + panelHeight); }
-            // The smallest gap between the panel and an edge of the window: the
-            // side the menu hugs (the taskbar's side), where Windows sets its own spacing.
-            double gapAnchored() const
-            {
-                return (std::min)({ panelLeft, windowWidth - (panelLeft + panelWidth), gapTop(), gapBottom() });
-            }
         };
 
         StartMenuHeightHold() = default;

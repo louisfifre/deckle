@@ -321,19 +321,13 @@ namespace deckle::behaviors
         if (!measured) return;   // not laid out yet; a size or visibility event follows
         const Measure& m = *measured;
 
-        // The gap is Windows' own, read before the hold changes anything. A gap
-        // that is no gap at all (the panel off the window) falls back to the
-        // panel's shadow inset, the room Windows keeps around it.
-        if (m_gap < 0)
-        {
-            m_gap = m.gapAnchored();
-            if (m_gap < 0 || m_gap > m.window / 4)
-            {
-                Log(LogLevel::Warning, L"start_menu_gap_unusual", L"The Start menu's native gap is out of range; its shadow inset is used",
-                    { { L"gap", Number(m_gap) }, { L"inset", Number(m.insetTop()) } });
-                m_gap = (std::max)(m.insetTop(), 0.0);
-            }
-        }
+        // The gap is the panel's shadow inset inside FrameRoot: the room Windows
+        // keeps around the panel, and the gap it shows on the taskbar's side,
+        // where FrameRoot's margin is 0 (12 DIP on 26100, measured on screen).
+        // An inset rather than the panel's distance to the window edge: while
+        // the menu is closed the panel is moved away for its opening animation,
+        // and that distance read -906.
+        if (m_gap < 0) m_gap = (std::max)(m.insetTop(), 0.0);
 
         // FrameRoot is top-aligned in its parent with no bottom margin, so its
         // top is hostTop + marginTop and the panel's is that plus insetTop.
