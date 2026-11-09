@@ -26,7 +26,7 @@ public class HomeMcpTests
         McpSurfaceBinding surface = HomeMcp.Client.Surface.Open(api);
 
         Assert.Equal(
-            new[] { "complete", "delete", "get", "search", "worksite_overview" }
+            new[] { "archive", "complete", "delete", "get", "search", "worksite_overview" }
                 .Concat(HomeTypedToolCatalog.Build(() => throw new InvalidOperationException()).Select(tool => tool.Name))
                 .OrderBy(name => name),
             surface.Tools.Select(tool => tool.Name).OrderBy(name => name));

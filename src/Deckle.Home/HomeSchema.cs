@@ -164,6 +164,15 @@ public static class HomeSchema
     public static readonly IReadOnlyList<string> CreatableTypes =
     [Types.Zone, .. CodedTypes, .. EquipmentTypes, .. LifeTypes, .. WorkTypes];
 
+    // The types that had a life and may stop showing without leaving the
+    // space: those the manifest gives the archived checkbox. A point is
+    // removed, work finishes, the structure stays; none of them archives.
+    public static readonly IReadOnlyList<string> ArchivableTypes =
+        HomeSchemaTargetData.Manifest["types"]!.AsArray().OfType<JsonObject>()
+            .Where(type => type["properties"]!.AsArray().Any(key => key?.GetValue<string>() == Properties.Archived))
+            .Select(type => type["key"]!.GetValue<string>())
+            .ToArray();
+
     internal static readonly IReadOnlyDictionary<string, string> TargetRequiredProperties =
         HomeSchemaTargetData.RequiredProperties;
     internal static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> TargetRequiredByType =

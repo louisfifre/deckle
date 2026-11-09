@@ -2239,6 +2239,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Home.Tests.csproj
 │   │   ├── FakeDeletionApproval.cs
 │   │   ├── FakeHomeAnytypeServer.cs
+│   │   ├── HomeArchiveTests.cs
 │   │   ├── HomeBodyTests.cs
 │   │   ├── HomeCodeTests.cs
 │   │   ├── HomeDeleteApprovalTests.cs

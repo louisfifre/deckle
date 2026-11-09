@@ -641,6 +641,35 @@ public sealed partial class HomeGestures
             + "complete s'applique aux tâches et aux chantiers. Pour un produit, modifie « Prendre ».");
     }
 
+    // Archive is for what had a life and should only stop showing: the
+    // checkbox hides it from search and the errand list, and the object, its
+    // links and its history stay. The bin is for mistakes (see DeleteAsync).
+    public async Task<string> ArchiveAsync(string selector, bool archived = true, CancellationToken ct = default)
+    {
+        DateTime started = DateTime.UtcNow;
+        HomeSchemaRuntime schema = await _runtime.GetAsync(ct).ConfigureAwait(false);
+
+        using var writeScope = await _api.AcquireWriteScopeAsync("home_archive", "object", ct).ConfigureAwait(false);
+        HomeObjectIndex index = await HomeObjectIndex.LoadAsync(_api, _spaceId, ct).ConfigureAwait(false);
+        JsonObject target = index.Resolve(selector, NameMatch.Exact);
+        string type = HomeObjectJson.TypeKey(target);
+        if (!HomeSchema.ArchivableTypes.Contains(type, StringComparer.Ordinal))
+            throw new InvalidOperationException(
+                $"« {HomeObjectIndex.Display(target)} » ({type}) ne s'archive pas : un point se supprime, "
+                + "une tâche se termine, un chantier se termine ou s'abandonne, une pièce, un circuit, "
+                + "un tableau restent. archive s'applique aux appareils, composants, ustensiles, plantes, "
+                + "produits et idées.");
+
+        var writer = new HomePropertyWriter(_api, _spaceId, schema, index);
+        JsonObject entry = await writer.BuildEntryAsync(
+            schema.Property(HomeSchema.Properties.Archived), JsonValue.Create(archived), ct).ConfigureAwait(false);
+        await _api.UpdateObjectAsync(
+            _spaceId, HomeObjectJson.Id(target), new JsonObject { ["properties"] = new JsonArray(entry) }, ct)
+            .ConfigureAwait(false);
+        DeckleHomeSource.Log.GestureCompleted("archive", Elapsed(started));
+        return (archived ? "Archivé : " : "Désarchivé : ") + $"{HomeObjectIndex.Display(target)} ({type}).";
+    }
+
     public async Task<string> WorksiteOverviewAsync(string selector, CancellationToken ct = default)
     {
         DateTime started = DateTime.UtcNow;

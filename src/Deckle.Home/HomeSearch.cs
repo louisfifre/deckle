@@ -71,6 +71,10 @@ public sealed partial class HomeGestures
             query = query.Where(value => CheckboxValue(value, "done") == done);
         if (filter.Needed is bool needed)
             query = query.Where(value => CheckboxValue(value, "needed") == needed);
+        // An archived object stopped showing on purpose: it comes back only
+        // when asked for.
+        bool archived = filter.Archived ?? false;
+        query = query.Where(value => CheckboxValue(value, HomeSchema.Properties.Archived) == archived);
         if (!string.IsNullOrWhiteSpace(filter.Text))
         {
             string text = filter.Text.Trim();

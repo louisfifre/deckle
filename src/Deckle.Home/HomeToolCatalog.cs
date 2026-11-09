@@ -21,7 +21,7 @@ public static class HomeToolCatalog
 
             new ToolDescriptor(
                 "search",
-                "Find Home objects within known context before writing. Filters combine; use domain and equipment_category for devices, worksite/about for tasks. Results are paged with IDs for selection. This searches the provider's object index, not a full-text body or archive service.",
+                "Find Home objects within known context before writing. Filters combine; use domain and equipment_category for devices, worksite/about for tasks. Archived objects are left out unless archived: true asks for them alone. Results are paged with IDs for selection. This searches the provider's object index, not the text of bodies.",
                 ObjectSchema(optional:
                 [
                     ("text", StringSchema("Text matched against names, codes, and property values.")),
@@ -39,6 +39,7 @@ public static class HomeToolCatalog
                     ("panel", StringSchema("Panel code, name or id attached to a circuit.")),
                     ("about", StringSchema("Home object concerned by the task or worksite.")),
                     ("needed", BooleanSchema("Prendre: true for products or equipment currently needed.")),
+                    ("archived", BooleanSchema("Archivé: true returns only archived objects; by default they are left out.")),
                     ("limit", new JsonObject { ["type"] = "integer", ["minimum"] = 1, ["maximum"] = 100, ["default"] = 50 }),
                     ("offset", new JsonObject { ["type"] = "integer", ["minimum"] = 0, ["default"] = 0 }),
                 ]),
@@ -61,7 +62,8 @@ public static class HomeToolCatalog
                     OptionalString(args, "about"),
                     OptionalBoolean(args, "needed"),
                     OptionalInteger(args, "limit") ?? 50,
-                    OptionalInteger(args, "offset") ?? 0), ct).ConfigureAwait(false);
+                    OptionalInteger(args, "offset") ?? 0,
+                    OptionalBoolean(args, "archived")), ct).ConfigureAwait(false);
                     return new ToolOutput(page.Text, page.Data);
                 },
                 ToolExecutionContract.ReadOnly) { OutputSchema = SearchOutputSchema() },
@@ -93,6 +95,16 @@ public static class HomeToolCatalog
                     required: [("worksite", StringSchema("Chantier name or id."))]),
                 (args, ct) => gestures().WorksiteOverviewAsync(RequiredString(args, "worksite"), ct),
                 ToolExecutionContract.ReadOnly),
+
+            new ToolDescriptor(
+                "archive",
+                "Archive what had a life and should stop showing: a device, component, utensil, plant, product or idea. The object, its links and its history stay; search leaves it out unless asked. archived: false brings it back. The bin (delete) is for mistakes and removed points, not for this.",
+                ObjectSchema(
+                    required: [("object", StringSchema("Object code, exact name, or id."))],
+                    optional: [("archived", BooleanSchema("true archives (default), false brings the object back."))]),
+                (args, ct) => gestures().ArchiveAsync(
+                    RequiredString(args, "object"), OptionalBoolean(args, "archived") ?? true, ct),
+                ToolExecutionContract.OverwritingIdempotent),
         ];
     }
 

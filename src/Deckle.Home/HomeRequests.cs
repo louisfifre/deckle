@@ -40,6 +40,8 @@ public sealed record HomeSearchFilter(
     string? About = null,
     bool? Needed = null,
     int Limit = 50,
-    int Offset = 0);
+    int Offset = 0,
+    // null leaves archived objects out, as false does; true keeps only them.
+    bool? Archived = null);
 
 public sealed record HomeSearchPage(string Text, JsonObject Data);

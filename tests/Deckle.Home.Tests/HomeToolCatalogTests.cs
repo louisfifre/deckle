@@ -16,7 +16,7 @@ public class HomeToolCatalogTests
 
     private static readonly string[] ExpectedNames =
     [
-        "get", "search", "delete", "complete", "worksite_overview",
+        "get", "search", "delete", "complete", "worksite_overview", "archive",
         .. TypeKeys.SelectMany(type => new[] { type + "_create", type + "_update" }),
     ];
 
@@ -89,6 +89,7 @@ public class HomeToolCatalogTests
             ["device_update"] = AmbiguousOutcomePolicy.Uncertain,
             ["complete"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["worksite_overview"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["archive"] = AmbiguousOutcomePolicy.SafeToRetry,
         };
 
         Assert.Equal(expected, tools.Where(tool => expected.ContainsKey(tool.Name)).ToDictionary(
@@ -108,6 +109,7 @@ public class HomeToolCatalogTests
             ["device_update"] = ToolChangeKind.Overwriting,
             ["complete"] = ToolChangeKind.Overwriting,
             ["worksite_overview"] = ToolChangeKind.None,
+            ["archive"] = ToolChangeKind.Overwriting,
         };
         Assert.Equal(expectedChanges, tools.Where(tool => expectedChanges.ContainsKey(tool.Name)).ToDictionary(
             tool => tool.Name,
