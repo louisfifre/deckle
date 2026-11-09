@@ -81,6 +81,38 @@ public sealed class HomeStructureComparerTests : IDisposable
     }
 
     [Fact]
+    public async Task AReorderedOrMissingMemberIsCountedUnderCollectionItems()
+    {
+        using FakeHomeAnytypeServer source = Source();
+        using FakeHomeAnytypeServer target = Target();
+        HomeStructureWriterTests.Run run = await _writer.RunAsync(source, target);
+        string[] members = target.CollectionMembers("target-section").Reverse().ToArray();
+        target.SetCollectionMembers("target-section", members);
+
+        HomeStructureComparison comparison = await CompareAsync(run, target);
+
+        Assert.Equal(1, comparison.DifferentByField["collection.items"]);
+        Assert.Equal(1, comparison.Different);
+
+        target.SetCollectionMembers("target-section", members[0]);
+        Assert.Equal(1, (await CompareAsync(run, target)).DifferentByField["collection.items"]);
+    }
+
+    [Fact]
+    public async Task ACollectionTheWriteCouldNotCreateIsReportedMissing()
+    {
+        using FakeHomeAnytypeServer source = Source();
+        using FakeHomeAnytypeServer target = Target();
+        target.SetObjects();
+        target.FailNext(request => request.Method == "POST" && request.Path.EndsWith("/collections", StringComparison.Ordinal));
+        HomeStructureWriterTests.Run run = await _writer.RunAsync(source, target);
+
+        HomeStructureComparison comparison = await CompareAsync(run, target);
+
+        Assert.Equal(1, comparison.DifferentByField["collection.missing"]);
+    }
+
+    [Fact]
     public async Task AViewTheWriteRefusedIsReportedMissing()
     {
         using FakeHomeAnytypeServer source = Source();

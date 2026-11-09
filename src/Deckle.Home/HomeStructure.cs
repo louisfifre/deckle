@@ -5,7 +5,7 @@ namespace Deckle.Home;
 
 // What the source space holds beyond its objects, read as the source speaks it
 // (old type keys, old property keys, old ids): the settings and views of each
-// Home type, the views of each section collection, each template whole, the
+// Home type, the views and items of each section collection, each template whole, the
 // widgets in order. It rides in the replay sheet under `structure`, so the
 // export, the replay and the structure write can each be run from the file.
 //
@@ -78,7 +78,8 @@ internal sealed class HomeStructureProperty
 }
 
 // A collection of the source that is not a Home object (the section
-// collections), found again on the target by its name.
+// collections). The replay does not create it, so the writer finds it again on
+// the target by its name, or creates it, and fills it with its items.
 internal sealed class HomeStructureCollection
 {
     [JsonPropertyName("old_id")]
@@ -86,6 +87,17 @@ internal sealed class HomeStructureCollection
 
     [JsonPropertyName("name")]
     public string Name { get; set; } = "";
+
+    // The source ids of the members, in the order the source stores them. A
+    // sheet exported before the items were carried has none.
+    [JsonPropertyName("items")]
+    public List<string> Items { get; set; } = [];
+
+    // The icon as the v2 object read serves it, kept as served; null when the
+    // read gave none.
+    [JsonPropertyName("icon")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public JsonNode? Icon { get; set; }
 
     [JsonPropertyName("views")]
     public JsonArray Views { get; set; } = [];

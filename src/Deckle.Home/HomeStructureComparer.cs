@@ -15,7 +15,9 @@ namespace Deckle.Home;
 //                reorder, so order is not compared; lastOpenedDate is left out);
 //   templates    the count, then per template its type, its property values
 //                and the histogram of its block kinds;
-//   collections  the views, as type views;
+//   collections  presence, the views as type views, and the ordered list of
+//                the items the write mapped (other members are not held
+//                against the plan);
 //   widgets      the count, the order, and per widget its target, layout and
 //                view.
 //
@@ -37,6 +39,8 @@ internal sealed class HomeStructureComparer(AnytypeApiClient api)
 
         foreach (HomeTypePlan type in plan.Types) await CompareTypeAsync(v2, plan, type, ct).ConfigureAwait(false);
         await CompareTemplatesAsync(v2, plan, ct).ConfigureAwait(false);
+        foreach (string name in plan.MissingCollections)
+            Check("collection.missing", $"collection « {name} »", "présente", "absente");
         foreach (HomeCollectionPlan collection in plan.Collections)
             await CompareCollectionAsync(v2, plan, collection, ct).ConfigureAwait(false);
         await CompareWidgetsAsync(v2, plan, ct).ConfigureAwait(false);
@@ -234,6 +238,19 @@ internal sealed class HomeStructureComparer(AnytypeApiClient api)
             return;
         }
         CompareViews("collection", what, collection.Source.OldId, collection.Views, new JsonArray(views.Select(view => (JsonNode?)view).ToArray()), plan);
+
+        // The members the plan mapped, in order. The target may hold others
+        // (a reused collection): only those the plan names are held against it.
+        IReadOnlyList<JsonObject> members;
+        try { members = await v2.ListAsync($"collections/{collection.TargetId}/objects", ct).ConfigureAwait(false); }
+        catch (HttpRequestException ex)
+        {
+            Unread("collection_items", what, ex);
+            return;
+        }
+        var expected = collection.Items.ToHashSet(StringComparer.Ordinal);
+        Check("collection.items", what, string.Join(" | ", collection.Items),
+            string.Join(" | ", members.Select(member => HomeObjectJson.Id(member)).Where(expected.Contains)));
     }
 
     // ── Widgets ─────────────────────────────────────────────────────────

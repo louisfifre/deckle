@@ -51,6 +51,47 @@ public sealed class HomeStructureExporterTests
         Assert.Equal(HomeRehearsalFixtures.Section, section.Name);
         Assert.Equal(2, section.Views.Count);
         Assert.Equal(2, structure.Report["collection_views"]);
+        Assert.Equal(["room-1", "device-1", "page-1"], section.Items);
+        Assert.Equal(3, structure.Report["collection_items"]);
+        Assert.Equal("X", section.Icon!["emoji"]!.GetValue<string>());
+        Assert.Equal(1, structure.Report["collection_icons"]);
+    }
+
+    [Fact]
+    public async Task ACollectionWithoutAnIconCarriesNoneAndARefusedMembershipReadIsCounted()
+    {
+        using FakeHomeAnytypeServer source = HomeStructureFixtures.Source();
+        source.FailNext(request => request.Method == "GET"
+            && request.Path.EndsWith("/v2/spaces/source-space/collections/section-1/objects", StringComparison.Ordinal));
+
+        HomeStructure structure = await ExportAsync(source);
+
+        HomeStructureCollection section = Assert.Single(structure.Collections);
+        Assert.Empty(section.Items);
+        Assert.Equal(1, structure.Report["unread_collection_items"]);
+        Assert.Equal(2, section.Views.Count);
+    }
+
+    [Fact]
+    public void ASheetWrittenBeforeTheItemsLoadsWithEmptyItemsAndNoIcon()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"home-sheet-{Guid.NewGuid():N}.json");
+        try
+        {
+            File.WriteAllText(path, """
+                {"version":2,"source_space":"s","objects":[],"report":{},
+                 "structure":{"collections":[{"old_id":"c","name":"n","views":[]}]}}
+                """);
+
+            HomeStructureCollection collection = Assert.Single(HomeReplaySheet.Load(path).Structure!.Collections);
+
+            Assert.Empty(collection.Items);
+            Assert.Null(collection.Icon);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Fact]

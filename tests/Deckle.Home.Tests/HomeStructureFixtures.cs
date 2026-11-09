@@ -119,6 +119,14 @@ internal static class HomeStructureFixtures
              "properties":{"name":"Modèle de page fictif"},"blocks":[]}
             """));
 
+        // The section collection holds a room, a device and a page (a page does
+        // not travel), and carries an icon. The room comes first because the
+        // replay adds the memberships of a collection the target already holds
+        // in its own creation order (rooms before devices), and the write adds
+        // nothing a collection already holds.
+        source.SetCollectionMembers("section-1", "room-1", "device-1", "page-1");
+        source.SetObjectIcon("section-1", Obj("""{"format":"emoji","emoji":"X"}"""));
+
         source.AddWidget("sw1", "space", "src-type-errand", "view", 6, "vE2");
         source.AddWidget("sw2", "space", "section-1", "list", 4, "cv2");
         source.AddWidget("sw3", "space", "room-1", "link");

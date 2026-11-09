@@ -4,7 +4,9 @@ using Deckle.Home;
 namespace Deckle.Home.Tests;
 
 // The v2 routes the structure export, write and read-back use, over the same
-// fake space: type settings and views, templates, collection views, widgets.
+// fake space: type settings and views, templates, collection views, widgets,
+// collection creation and membership (create with items, read the whole
+// membership, add_items).
 // It keeps the rules the real API showed in the probe that matter to the
 // tests: a patch of property_definitions replaces the whole list, `columns`
 // patches per property key and leaves the others alone, `set` merges but
@@ -174,7 +176,19 @@ internal sealed partial class FakeHomeAnytypeServer
         if (method == "GET" && segments is ["objects", var objectId])
             return _v2Templates.FirstOrDefault(value => value["id"]!.GetValue<string>() == objectId) is { } found
                 ? (200, found.ToJsonString())
-                : V2Error(404, "not_found", "object not found");
+                : _objects.FirstOrDefault(value => value["id"]?.GetValue<string>() == objectId) is { } plain
+                    ? (200, plain.ToJsonString())
+                    : V2Error(404, "not_found", "object not found");
+
+        // A collection is created by name with optional items; every item must
+        // resolve in the space (else 400). No icon: the body takes none.
+        if (method == "POST" && segments is ["collections"]) return CreateCollection(payload!);
+        // Without a `view` parameter the whole membership, in stored order.
+        if (method == "GET" && segments is ["collections", var memberOf, "objects"])
+        {
+            if (!IsCollection(memberOf)) return V2Error(404, "not_found", "collection not found");
+            return (200, Slice(MemberObjects(memberOf), query).ToJsonString());
+        }
 
         if (method == "GET" && segments is ["collections", var collectionId, "views"])
         {
@@ -192,7 +206,13 @@ internal sealed partial class FakeHomeAnytypeServer
         {
             var created = new JsonObject();
             JsonArray views = CollectionViewsOf(patchedId);
-            string? problem = ApplyViewOps(views, payload?["ops"] as JsonArray, ["name", "type", "created_date", "lastOpenedDate"], created);
+            JsonObject[] allOps = (payload?["ops"] as JsonArray ?? []).OfType<JsonObject>().ToArray();
+            foreach (JsonObject add in allOps.Where(op => op["op"]?.GetValue<string>() == "add_items"))
+                if (AddItems(patchedId, add["items"] as JsonArray) is { } refused) return V2Error(400, "validation_failed", refused);
+            string? problem = ApplyViewOps(
+                views,
+                new JsonArray(allOps.Where(op => op["op"]?.GetValue<string>() != "add_items").Select(op => (JsonNode?)op.DeepClone()).ToArray()),
+                ["name", "type", "created_date", "lastOpenedDate"], created);
             return problem is null
                 ? (200, new JsonObject { ["etag"] = "e", ["created_views"] = created }.ToJsonString())
                 : V2Error(400, "validation_failed", problem);
@@ -209,6 +229,42 @@ internal sealed partial class FakeHomeAnytypeServer
 
         return V2Error(404, "not_found", "no such v2 route in the fake");
     }
+
+    // Ids already present are ignored, as the server does; an id that does not
+    // resolve in the space refuses the whole op. Returns the refusal or null.
+    private string? AddItems(string collectionId, JsonArray? items)
+    {
+        string[] ids = (items ?? []).Select(item => item!.GetValue<string>()).ToArray();
+        foreach (string id in ids)
+            if (_objects.All(value => value["id"]?.GetValue<string>() != id)
+                && _v2Types.Values.All(value => value["id"]!.GetValue<string>() != id)
+                && _v2Templates.All(value => value["id"]!.GetValue<string>() != id))
+                return $"items: {id} not found";
+        if (!_members.TryGetValue(collectionId, out List<string>? members)) _members[collectionId] = members = [];
+        foreach (string id in ids)
+            if (!members.Contains(id)) members.Add(id);
+        return null;
+    }
+
+    private (int Status, string Json) CreateCollection(JsonObject payload)
+    {
+        string name = payload["name"]?.GetValue<string>() ?? "";
+        if (name.Length == 0) return V2Error(400, "validation_failed", "name: required");
+        string id = "created-collection-" + Interlocked.Increment(ref _v2Next);
+        JsonObject collection = Collection(id, name);
+        _objects.Add(collection);
+        if (payload["items"] is JsonArray items && AddItems(id, items) is { } refused)
+        {
+            _objects.Remove(collection);
+            _members.Remove(id);
+            return V2Error(400, "validation_failed", refused);
+        }
+        return (200, new JsonObject { ["id"] = id, ["name"] = name, ["etag"] = "e" }.ToJsonString());
+    }
+
+    // An icon on an object, as the v2 read serves it.
+    public void SetObjectIcon(string id, JsonObject icon) =>
+        _objects.Single(value => value["id"]?.GetValue<string>() == id)["icon"] = icon.DeepClone();
 
     private static (int Status, string Json) V2Error(int status, string code, string message) =>
         (status, new JsonObject { ["status"] = status, ["code"] = code, ["message"] = message }.ToJsonString());

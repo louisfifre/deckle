@@ -101,6 +101,10 @@ public sealed class HomeRecreationRehearsalStructureTests : IDisposable
         write.Written["templates"] = 3;
         write.Refused["widgets"] = 1;
         write.Dropped["column"] = 4;
+        write.Dropped["unhideable_column"] = 20;
+        write.Dropped["column_unwrapped"] = 1;
+        write.Dropped["collection_item"] = 2;
+        write.Dropped["collection_icon"] = 1;
         var read = new HomeStructureComparison { Compared = 40, Different = 2 };
         read.DifferentByField["type.default_view"] = 2;
         var result = new HomeRehearsalResult(
@@ -113,6 +117,11 @@ public sealed class HomeRecreationRehearsalStructureTests : IDisposable
         Assert.Contains("Structure, export : types 14", summary);
         Assert.Contains("templates 3", summary);
         Assert.Contains("column 4", summary);
+        Assert.Contains("unhideable_column 20", summary);
+        Assert.Contains("column_unwrapped 1", summary);
+        Assert.Contains("collection_item 2", summary);
+        Assert.Contains("collection_icon 1", summary);
+        Assert.Equal(20, result.Counts()["structure"]!["dropped"]!["unhideable_column"]!.GetValue<int>());
         Assert.Contains("40 fait(s) comparé(s), 2 différent(s) (type.default_view 2)", summary);
         Assert.True(counts["carried"]!.GetValue<bool>());
         Assert.Equal(3, counts["written"]!["templates"]!.GetValue<int>());

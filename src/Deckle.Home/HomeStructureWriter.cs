@@ -17,7 +17,9 @@ namespace Deckle.Home;
 //      refused view costs that view only), then the views the target held
 //      before are deleted; the columns are then reconciled so the visible set
 //      matches (a patch leaves unnamed columns as they are);
-//   d. the views of each section collection, found on the target by name;
+//   d. the section collections: found on the target by name, else created;
+//      their items, mapped through every id map and added in source order;
+//      then their views;
 //   e. widgets in the source order, each target mapped (a type to the target
 //      type, a collection to the target collection, another object through
 //      the replay's id map) and each view mapped to the view written for it.
@@ -26,6 +28,9 @@ namespace Deckle.Home;
 // to the detail file beside the sheet. One failure never stops the rest.
 internal sealed class HomeStructureWriter(AnytypeApiClient api, string spaceId)
 {
+    // add_items takes 1 to 1000 ids per op.
+    private const int MaxItemsPerOp = 1000;
+
     private static readonly string[] LastOpenedKeys = ["lastOpenedDate", "last_opened_date"];
 
     private readonly HomeV2 _v2 = new(api, spaceId);
@@ -47,8 +52,11 @@ internal sealed class HomeStructureWriter(AnytypeApiClient api, string spaceId)
         var plan = new HomeStructurePlan();
 
         await MapTypeIdsAsync(structure, ids, plan, ct).ConfigureAwait(false);
-        await MapCollectionIdsAsync(structure, ids, plan, ct).ConfigureAwait(false);
+        await MapCollectionIdsAsync(structure, remap, ids, plan, ct).ConfigureAwait(false);
         await WriteTemplatesAsync(structure, remap, ids, plan, ct).ConfigureAwait(false);
+        // The items name objects, templates, types and collections: every id
+        // map is complete only now.
+        await WriteCollectionItemsAsync(remap, ids, plan, ct).ConfigureAwait(false);
 
         foreach (HomeStructureType type in structure.Types)
         {
@@ -90,9 +98,13 @@ internal sealed class HomeStructureWriter(AnytypeApiClient api, string spaceId)
     }
 
     // A section collection of the source is the target collection of the same
-    // name, when exactly one has it.
+    // name when exactly one non-Home collection has it; otherwise it is created,
+    // by name only. The section collections are not Home objects, so the object
+    // replay never makes them. All of them exist before any item is mapped, a
+    // collection may hold another.
     private async Task MapCollectionIdsAsync(
-        HomeStructure structure, Dictionary<string, string> ids, HomeStructurePlan plan, CancellationToken ct)
+        HomeStructure structure, HomeStructureRemap remap, Dictionary<string, string> ids,
+        HomeStructurePlan plan, CancellationToken ct)
     {
         if (structure.Collections.Count == 0) return;
         HomeObjectIndex index = await HomeObjectIndex.LoadAsync(api, spaceId, ct).ConfigureAwait(false);
@@ -102,21 +114,88 @@ internal sealed class HomeStructureWriter(AnytypeApiClient api, string spaceId)
 
         foreach (HomeStructureCollection source in structure.Collections)
         {
+            string where = $"collection « {source.Name} »";
             JsonObject[] same = collections.Where(value =>
                 string.Equals(HomeObjectJson.Name(value), source.Name, StringComparison.OrdinalIgnoreCase)).ToArray();
-            if (same.Length != 1)
+            string id;
+            if (same.Length == 1)
             {
-                _report.Count(_report.Missing, "collections");
-                _refusals.Add(new("collection", source.Name,
-                    same.Length == 0 ? "no collection of that name on the target" : "several collections of that name on the target"));
-                continue;
+                id = HomeObjectJson.Id(same[0]);
+                _report.Count(_report.Written, "collections_reused");
             }
-            string id = HomeObjectJson.Id(same[0]);
+            else
+            {
+                // 2026-11-09: POST collections takes a name and optional items
+                // (every id must resolve in the space, else 400) and nothing
+                // else, so no icon: the items follow by add_items once every id
+                // can be mapped, and the icon is left out and counted.
+                try
+                {
+                    id = IdOf(await _v2.PostAsync("collections", new JsonObject { ["name"] = source.Name }, null, ct)
+                        .ConfigureAwait(false));
+                    if (id.Length == 0) throw new InvalidOperationException("the answer carried no collection id");
+                }
+                catch (Exception ex) when (IsRefusal(ex))
+                {
+                    Refuse("collections", where, ex);
+                    plan.MissingCollections.Add(source.Name);
+                    continue;
+                }
+                _report.Count(_report.Written, "collections");
+                if (source.Icon is not null) remap.Drop("collection_icon", where, "icon");
+            }
             ids[source.OldId] = id;
             plan.Collections.Add(new HomeCollectionPlan(source, id));
         }
     }
 
+    // The source items that map, in source order, added to the target
+    // collection but for those it already holds. An item no map knows is
+    // dropped and counted (collection_item).
+    private async Task WriteCollectionItemsAsync(
+        HomeStructureRemap remap, Dictionary<string, string> ids, HomeStructurePlan plan, CancellationToken ct)
+    {
+        foreach (HomeCollectionPlan collection in plan.Collections)
+        {
+            string where = $"collection « {collection.Source.Name} »";
+            var mapped = new List<string>();
+            foreach (string old in collection.Source.Items)
+            {
+                if (!ids.TryGetValue(old, out string? id)) remap.Drop("collection_item", where, old);
+                else if (!mapped.Contains(id, StringComparer.Ordinal)) mapped.Add(id);
+            }
+            collection.Items = mapped;
+            if (mapped.Count == 0) continue;
+
+            var held = new HashSet<string>(StringComparer.Ordinal);
+            try
+            {
+                foreach (JsonObject row in await _v2.ListAsync($"collections/{collection.TargetId}/objects", ct).ConfigureAwait(false))
+                    held.Add(HomeObjectJson.Id(row));
+            }
+            catch (HttpRequestException ex)
+            {
+                // The server ignores ids already present, so adding all is safe.
+                Refuse("collection_items_read", where, ex);
+            }
+
+            string[] missing = mapped.Where(id => !held.Contains(id)).ToArray();
+            for (int from = 0; from < missing.Length; from += MaxItemsPerOp)
+            {
+                string[] chunk = missing[from..Math.Min(from + MaxItemsPerOp, missing.Length)];
+                // The op the v2 client names add_items: {"op":"add_items","items":[ids]}.
+                var op = new JsonObject
+                {
+                    ["op"] = "add_items",
+                    ["items"] = new JsonArray(chunk.Select(id => (JsonNode?)JsonValue.Create(id)).ToArray()),
+                };
+                bool ok = await TryAsync("collection_items", where, async () =>
+                    await _v2.PatchAsync($"objects/{collection.TargetId}", new JsonObject { ["ops"] = new JsonArray(op) }, ct)
+                        .ConfigureAwait(false)).ConfigureAwait(false);
+                if (ok) _report.Count(_report.Written, "collection_items", chunk.Length);
+            }
+        }
+    }
     // ── Templates ───────────────────────────────────────────────────────
 
     private async Task WriteTemplatesAsync(
@@ -433,6 +512,9 @@ internal sealed class HomeStructurePlan
 {
     public List<HomeTypePlan> Types { get; } = [];
     public List<HomeCollectionPlan> Collections { get; } = [];
+
+    // Section collections the target neither had nor could be given.
+    public List<string> MissingCollections { get; } = [];
     public List<HomeTemplatePlan> Templates { get; } = [];
     public List<HomeWidgetPlan> Widgets { get; } = [];
 
@@ -455,6 +537,9 @@ internal sealed class HomeCollectionPlan(HomeStructureCollection source, string 
     public HomeStructureCollection Source { get; } = source;
     public string TargetId { get; } = targetId;
     public List<HomeViewPlan> Views { get; set; } = [];
+
+    // The target ids of the source items that mapped, in source order.
+    public List<string> Items { get; set; } = [];
 }
 
 internal sealed record HomeStructureOutcome(HomeStructurePlan Plan, HomeStructureWriteReport Report);
@@ -469,8 +554,8 @@ internal sealed class HomeStructureWriteReport
 
     public int RefusedTotal => Refused.Values.Sum();
 
-    internal void Count(SortedDictionary<string, int> counts, string key) =>
-        counts[key] = counts.TryGetValue(key, out int value) ? value + 1 : 1;
+    internal void Count(SortedDictionary<string, int> counts, string key, int by = 1) =>
+        counts[key] = counts.TryGetValue(key, out int value) ? value + by : by;
 }
 
 internal sealed class HomeStructureDetails

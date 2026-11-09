@@ -230,6 +230,86 @@ public sealed class HomeStructureWriterTests : IDisposable
     }
 
     [Fact]
+    public async Task ASectionCollectionTheTargetHoldsKeepsItsNameAndReceivesItsMappedItemsInOrder()
+    {
+        using FakeHomeAnytypeServer source = Source();
+        using FakeHomeAnytypeServer target = Target();
+
+        Run run = await RunAsync(source, target);
+
+        Assert.Equal(1, run.Outcome.Report.Written["collections_reused"]);
+        Assert.DoesNotContain("collections", run.Outcome.Report.Written.Keys);
+        Assert.Equal(
+            [CreatedId(target, "room", "Pièce fictive"), CreatedId(target, "device", "Appareil fictif")],
+            target.CollectionMembers("target-section"));
+        // The page does not travel: its membership is dropped and counted.
+        Assert.Equal(1, run.Outcome.Report.Dropped["collection_item"]);
+        Assert.Equal(2, run.Outcome.Plan.Collections.Single().Items.Count);
+        Assert.Empty(run.Outcome.Report.Refused);
+    }
+
+    [Fact]
+    public async Task ASectionCollectionTheTargetLacksIsCreatedByNameThenFilledAndGivenItsViewsAndWidgets()
+    {
+        using FakeHomeAnytypeServer source = Source();
+        using FakeHomeAnytypeServer target = Target();
+        target.SetObjects();
+        // Source order the replay would not produce on its own (it creates rooms first).
+        source.SetCollectionMembers("section-1", "device-1", "room-1", "page-1");
+
+        Run run = await RunAsync(source, target);
+
+        JsonObject created = target.Objects.Single(value =>
+            value["name"]!.GetValue<string>() == HomeRehearsalFixtures.Section && value["layout"]?.GetValue<string>() == "collection");
+        string id = created["id"]!.GetValue<string>();
+        Assert.Equal(1, run.Outcome.Report.Written["collections"]);
+        Assert.Equal(
+            [CreatedId(target, "device", "Appareil fictif"), CreatedId(target, "room", "Pièce fictive")],
+            target.CollectionMembers(id));
+        Assert.Equal(2, run.Outcome.Report.Written["collection_items"]);
+        // The create body takes a name and items only: the icon is left out and counted.
+        Assert.Equal(1, run.Outcome.Report.Dropped["collection_icon"]);
+        JsonObject post = JsonNode.Parse(target.Requests.Single(request =>
+            request.Method == "POST" && request.Path.EndsWith("/collections", StringComparison.Ordinal)).Body)!.AsObject();
+        Assert.Equal(["name"], post.Select(pair => pair.Key));
+        Assert.Equal(2, target.CollectionViews(id)!.Count);
+        Assert.Equal(2, target.Widgets().Count(widget => widget["target"]!.GetValue<string>() == id));
+        Assert.Empty(run.Outcome.Report.Refused);
+    }
+
+    [Fact]
+    public async Task SeveralNamesakesOnTheTargetCallForANewCollection()
+    {
+        using FakeHomeAnytypeServer source = Source();
+        using FakeHomeAnytypeServer target = Target();
+        target.SetObjects(
+            FakeHomeAnytypeServer.Collection("target-section", HomeRehearsalFixtures.Section),
+            FakeHomeAnytypeServer.Collection("target-section-2", HomeRehearsalFixtures.Section));
+
+        Run run = await RunAsync(source, target);
+
+        Assert.Equal(1, run.Outcome.Report.Written["collections"]);
+        Assert.DoesNotContain("collections_reused", run.Outcome.Report.Written.Keys);
+        Assert.Equal(3, target.Objects.Count(value => value["name"]!.GetValue<string>() == HomeRehearsalFixtures.Section));
+    }
+
+    [Fact]
+    public async Task ARefusedCollectionCreationIsCountedAndLeavesTheRestWritten()
+    {
+        using FakeHomeAnytypeServer source = Source();
+        using FakeHomeAnytypeServer target = Target();
+        target.SetObjects();
+        target.FailNext(request => request.Method == "POST" && request.Path.EndsWith("/collections", StringComparison.Ordinal));
+
+        Run run = await RunAsync(source, target);
+
+        Assert.Equal(1, run.Outcome.Report.Refused["collections"]);
+        Assert.Empty(run.Outcome.Plan.Collections);
+        Assert.Equal([HomeRehearsalFixtures.Section], run.Outcome.Plan.MissingCollections);
+        Assert.Equal(3, run.Outcome.Report.Written["templates"]);
+    }
+
+    [Fact]
     public async Task WidgetsKeepTheirOrderAndPointAtTheNewTargetsAndViews()
     {
         using FakeHomeAnytypeServer source = Source();

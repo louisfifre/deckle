@@ -5,7 +5,7 @@ using Deckle.Anytype;
 namespace Deckle.Home;
 
 // Reads the structure of a source space: the settings and views of each Home
-// type, the views of each section collection, each template whole and the
+// type, the views, items and icon of each section collection, each template whole and the
 // widgets in order. It reads only (GET), through the v2 API, and writes what
 // it found as the source speaks it: the remap onto the new keys and ids is a
 // later, pure step.
@@ -114,14 +114,43 @@ internal sealed class HomeStructureExporter(AnytypeApiClient api)
             {
                 IReadOnlyList<JsonObject> views = await v2.ListAsync($"collections/{id}/views", ct)
                     .ConfigureAwait(false);
-                structure.Collections.Add(new HomeStructureCollection
+                var collection = new HomeStructureCollection
                 {
                     OldId = id,
                     Name = HomeObjectJson.String(value, "name").Trim(),
                     Views = new JsonArray(views.Select(view => (JsonNode?)view).ToArray()),
-                });
+                };
                 structure.Count("collections");
                 structure.Count("collection_views", views.Count);
+
+                // The membership, whole and in stored order: without a `view`
+                // parameter the route serves every member (2026-11-09).
+                try
+                {
+                    collection.Items.AddRange((await v2.ListAsync($"collections/{id}/objects", ct).ConfigureAwait(false))
+                        .Select(item => HomeObjectJson.Id(item)).Where(item => item.Length > 0));
+                    structure.Count("collection_items", collection.Items.Count);
+                }
+                catch (HttpRequestException)
+                {
+                    structure.Count("unread_collection_items");
+                }
+
+                // The icon, when the v2 read of the object gives one.
+                try
+                {
+                    if (await v2.GetAsync($"objects/{id}", ct).ConfigureAwait(false) is JsonObject read
+                        && HomeObjectJson.Unwrap(read)["icon"] is { } icon)
+                    {
+                        collection.Icon = icon.DeepClone();
+                        structure.Count("collection_icons");
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                    structure.Count("unread_collection_icons");
+                }
+                structure.Collections.Add(collection);
             }
             catch (HttpRequestException)
             {
