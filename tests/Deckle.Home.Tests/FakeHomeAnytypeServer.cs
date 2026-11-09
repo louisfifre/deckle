@@ -23,11 +23,19 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
     private JsonObject _schemaManifest = HomeSchema.CreateRequiredSchemaManifest();
     private int _nextId;
     private readonly List<Func<Received, bool>> _failures = new();
+    // Collection id → member ids, served per view and grown by the adds the
+    // gestures send, so a rehearsal can read back what it wrote.
+    private readonly Dictionary<string, List<string>> _members = new(StringComparer.Ordinal);
 
     public readonly record struct Received(string Method, string Path, string Body);
 
-    public FakeHomeAnytypeServer()
+    // The space this server answers for. Two servers with two ids stand for
+    // a source and a target space in a recreation rehearsal.
+    public string SpaceId { get; }
+
+    public FakeHomeAnytypeServer(string spaceId = HomeSpace)
     {
+        SpaceId = spaceId;
         _listenerLease = LoopbackHttpListenerLease.Start();
         _prefix = _listenerLease.Prefix;
         _listener = _listenerLease.Listener;
@@ -57,6 +65,14 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         _objects.Clear();
         _objects.AddRange(values);
     }
+
+    public IReadOnlyList<JsonObject> Objects => _objects.Select(value => (JsonObject)value.DeepClone()).ToArray();
+
+    public void SetCollectionMembers(string collectionId, params string[] memberIds) =>
+        _members[collectionId] = [.. memberIds];
+
+    public IReadOnlyList<string> CollectionMembers(string collectionId) =>
+        _members.TryGetValue(collectionId, out List<string>? members) ? members.ToArray() : [];
 
     // Puts the schema back to the compiled manifest, as when the person repairs the space.
     public void RestoreSchema() => _schemaManifest = HomeSchema.CreateRequiredSchemaManifest();
@@ -278,7 +294,7 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
     private (int Status, string Json) Handle(
         string method, string path, string body, System.Collections.Specialized.NameValueCollection query)
     {
-        string root = $"/v1/spaces/{HomeSpace}";
+        string root = $"/v1/spaces/{SpaceId}";
         var received = new Received(method, path, body);
         lock (_failures)
         {
@@ -301,14 +317,30 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         if (method == "GET" && path.StartsWith(root + "/objects/", StringComparison.Ordinal))
             return Get(path.Split('/')[^1]);
         if (method == "POST" && path == root + "/objects") return Create(body);
+        if (method == "GET" && path.StartsWith(root + "/lists/", StringComparison.Ordinal)
+            && path.EndsWith("/views", StringComparison.Ordinal))
+            return (200, Slice(new JsonArray(new JsonObject { ["id"] = "view-all", ["name"] = "All" }), query).ToJsonString());
+        if (method == "GET" && path.StartsWith(root + "/lists/", StringComparison.Ordinal)
+            && path.EndsWith("/objects", StringComparison.Ordinal))
+            return (200, Slice(MemberObjects(path.Split('/')[^4]), query).ToJsonString());
         if (method == "POST" && path.StartsWith(root + "/lists/", StringComparison.Ordinal)
             && path.EndsWith("/objects", StringComparison.Ordinal))
+        {
+            string collectionId = path.Split('/')[^2];
+            if (!_members.TryGetValue(collectionId, out List<string>? members)) _members[collectionId] = members = [];
+            foreach (JsonNode? id in JsonNode.Parse(body)?["objects"] as JsonArray ?? [])
+                if (id?.GetValue<string>() is { } memberId && !members.Contains(memberId)) members.Add(memberId);
             return (200, "\"ok\"");
+        }
         if (method == "PATCH" && path.StartsWith(root + "/objects/", StringComparison.Ordinal))
             return Patch(path.Split('/')[^1], body);
         if (method == "DELETE" && path.StartsWith(root + "/lists/", StringComparison.Ordinal)
             && path.Contains("/objects/", StringComparison.Ordinal))
+        {
+            string[] segments = path.Split('/');
+            if (_members.TryGetValue(segments[^3], out List<string>? members)) members.Remove(segments[^1]);
             return (200, "\"ok\"");
+        }
         if (method == "DELETE" && path.StartsWith(root + "/objects/", StringComparison.Ordinal))
             return Delete(path.Split('/')[^1]);
         return (404, "{}");
@@ -388,6 +420,16 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
                 });
             }
         return Slice(data, query);
+    }
+
+    private JsonArray MemberObjects(string collectionId)
+    {
+        var data = new JsonArray();
+        if (_members.TryGetValue(collectionId, out List<string>? members))
+            foreach (string id in members)
+                if (_objects.SingleOrDefault(value => value["id"]?.GetValue<string>() == id) is { } member)
+                    data.Add(member.DeepClone());
+        return data;
     }
 
     private JsonObject ObjectPage(System.Collections.Specialized.NameValueCollection query)

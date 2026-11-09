@@ -407,6 +407,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AnytypeApiClient.Chats.cs
 │   │   │   ├── AnytypeApiClient.cs
 │   │   │   ├── AnytypeApiClient.Files.cs
+│   │   │   ├── AnytypeApiClient.Lists.cs
 │   │   │   ├── AnytypeApiClient.Schema.cs
 │   │   │   ├── AnytypeApiClient.Spaces.cs
 │   │   │   ├── AnytypeCredentials.cs
@@ -1021,6 +1022,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeSchemaRuntime.cs
 │   │   ├── HomeSchemaTargetData.cs
 │   │   ├── HomeSearch.cs
+│   │   ├── HomeSpaceExporter.cs
 │   │   ├── HomeTerms.cs
 │   │   ├── HomeToolCatalog.cs
 │   │   ├── HomeTypedToolCatalog.cs
@@ -2255,12 +2257,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomePagingTests.cs
 │   │   ├── HomePartialWriteTests.cs
 │   │   ├── HomePointDictationTests.cs
+│   │   ├── HomeRehearsalFixtures.cs
 │   │   ├── HomeRelationTests.cs
 │   │   ├── HomeReplaySheetTests.cs
 │   │   ├── HomeSchemaAlignmentTests.cs
 │   │   ├── HomeSchemaBugNotes.md
 │   │   ├── HomeSchemaIncidentTests.cs
 │   │   ├── HomeSearchTests.cs
+│   │   ├── HomeSpaceExporterTests.cs
 │   │   ├── HomeToolCatalogTests.cs
 │   │   ├── HomeTypedToolCatalogTests.cs
 │   │   └── MessageTemplateDoctrineTests.cs
