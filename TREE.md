@@ -70,7 +70,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── model-compare/
 │   │   │   ├── campaigns/
 │   │   │   │   ├── lissage-lean.json
-│   │   │   │   └── profiles-v2.json
+│   │   │   │   ├── profiles-v2.json
+│   │   │   │   └── reasoning-lissage.json
 │   │   │   ├── optimize/
 │   │   │   │   ├── affinage-sonnet-v2.json
 │   │   │   │   ├── affinage-sonnet.json
@@ -1305,7 +1306,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── GenerationRequest.cs
 │   │   │   ├── GenerationResult.cs
 │   │   │   ├── IGenerationEngine.cs
-│   │   │   └── PromptTemplates.cs
+│   │   │   ├── PromptTemplates.cs
+│   │   │   └── ReasoningLevel.cs
 │   │   ├── Providers/
 │   │   │   ├── IGenerationEngineResolver.cs
 │   │   │   ├── LlmProvider.cs
@@ -2398,6 +2400,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── ParagraphDraftTests.cs
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
+│   │   ├── ProfileReasoningTests.cs
 │   │   ├── ProfilesSectionBugNotes.md
 │   │   ├── RewriteDiffGateTests.cs
 │   │   ├── RewriteFailureMessageTests.cs
@@ -2406,6 +2409,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteServiceFeedbackTests.cs
 │   │   ├── SentenceBoundaryTests.cs
 │   │   └── SentenceRewriteTests.cs
+│   ├── Deckle.Llm.Tests/
+│   │   ├── ClaudeReasoningTests.cs
+│   │   ├── Deckle.Llm.Tests.csproj
+│   │   └── ReasoningOnTheWireTests.cs
 │   ├── Deckle.Modules.Tests/
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Modules.Tests.csproj

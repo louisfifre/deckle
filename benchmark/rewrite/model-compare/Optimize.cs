@@ -250,7 +250,7 @@ static class Optimize
     {
         var rows = LoadRows(runDir);
         int planned = resolved.Campaign.Cells.Sum(c => c.Buckets.Sum(b => resolved.Dictations[b].Length))
-            * resolved.Campaign.Models.Length * resolved.Campaign.Iterations;
+            * resolved.Campaign.Arms.Length * resolved.Campaign.Iterations;
 
         var points = new List<double>();
         int faithful = 0, minor = 0, unfaithful = 0, judged = 0, violations = 0;

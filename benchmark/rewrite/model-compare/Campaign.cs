@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Deckle.Llm;
 
 namespace Deckle.Benchmark.ModelCompare;
 
@@ -31,6 +32,13 @@ sealed record CampaignCell(string Profile, string[] Buckets, string? JudgeNote, 
 
 sealed record CampaignJudge(string Model, int Batch);
 
+// `Reasoning` lists the reasoning levels each model runs at ("auto", "off",
+// "low", "medium"); absent, every model runs once with no level, the
+// app's default. Each (model, level) pair is an arm of the campaign: it gets
+// its own lane and its rows record it as their model, "claude-haiku-5-5@off",
+// so the judge, the summary and the export separate the levels the way they
+// already separate the models. "auto" keeps the bare model name, so its rows
+// compare with those of a campaign that named no level.
 sealed record Campaign(
     string Name,
     string[] Models,
@@ -38,7 +46,45 @@ sealed record Campaign(
     int TakePerBucket,
     CampaignCell[] Cells,
     Dictionary<string, string[]>? Dictations,
-    CampaignJudge Judge);
+    CampaignJudge Judge,
+    string[]? Reasoning = null)
+{
+    public string[] Arms => (Reasoning is { Length: > 0 } levels ? levels : [ModelVariant.Auto])
+        .SelectMany(level => Models.Select(model => ModelVariant.Label(model, level)))
+        .ToArray();
+}
+
+// A row's model as a campaign records it: the API model, then "@" and the
+// reasoning level when one was set.
+static class ModelVariant
+{
+    public const string Auto = "auto";
+    const char Separator = '@';
+
+    public static string Label(string model, string level) =>
+        string.Equals(level, Auto, StringComparison.OrdinalIgnoreCase)
+            ? model
+            : $"{model}{Separator}{level.ToLowerInvariant()}";
+
+    public static (string Model, ReasoningLevel? Level) Parse(string label)
+    {
+        int at = label.IndexOf(Separator);
+        if (at < 0) return (label, null);
+        return (label[..at], ParseLevel(label[(at + 1)..]));
+    }
+
+    // The level a label carries, as the campaign file spells it: what the
+    // export writes beside the label so a reader can group by level alone.
+    public static string LevelName(string label) =>
+        Parse(label).Level?.ToString().ToLowerInvariant() ?? Auto;
+
+    public static ReasoningLevel? ParseLevel(string level) =>
+        string.Equals(level, Auto, StringComparison.OrdinalIgnoreCase)
+            ? null
+            : Enum.TryParse(level, ignoreCase: true, out ReasoningLevel parsed) && Enum.IsDefined(parsed)
+                ? parsed
+                : throw new ArgumentException($"Unknown reasoning level '{level}': use auto, off, low or medium.");
+}
 
 // The frozen prompt of one profile, as the run sent it. The hash is this
 // harness's own (SHA-256, first 16 hex) and only says "same bytes as before".
@@ -62,6 +108,9 @@ static class CampaignFile
         if (campaign.Judge is null || campaign.Judge.Batch < 1) throw new ArgumentException("A campaign names its judge model and a batch size of at least 1.");
         var duplicate = campaign.Cells.GroupBy(c => c.Key, StringComparer.OrdinalIgnoreCase).FirstOrDefault(g => g.Count() > 1);
         if (duplicate is not null) throw new ArgumentException($"Two cells share the prompt key '{duplicate.Key}': give one of them a name.");
+        foreach (string level in campaign.Reasoning ?? []) ModelVariant.ParseLevel(level);
+        if (campaign.Arms.Distinct(StringComparer.OrdinalIgnoreCase).Count() != campaign.Arms.Length)
+            throw new ArgumentException("A model or a reasoning level is listed twice.");
         return campaign;
     }
 

@@ -18,7 +18,10 @@ namespace Deckle.Llm;
 /// call: the benchmark repeats one request many times in a row and reads it
 /// back at a tenth of the input price or less. The app leaves it off, since
 /// its dictations rarely repeat a prompt within the cache's five minutes and
-/// each write costs a quarter more than an uncached call.</summary>
+/// each write costs a quarter more than an uncached call.
+/// <paramref name="Reasoning"/> says how much the model reasons before it
+/// answers; null keeps the engine's own default, and an engine whose provider
+/// has no such knob drops it, as with the hints above.</summary>
 public readonly record struct GenerationRequest(
     string Model,
     string SystemPrompt,
@@ -29,4 +32,5 @@ public readonly record struct GenerationRequest(
     double? TopP = null,
     double? RepeatPenalty = null,
     string KeepAlive = "5m",
-    bool CachePrompt = false);
+    bool CachePrompt = false,
+    ReasoningLevel? Reasoning = null);

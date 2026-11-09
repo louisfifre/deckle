@@ -340,6 +340,30 @@
   <data name="LlmProfilePage_RemoveButton.Content" xml:space="preserve">
     <value>Remove</value>
   </data>
+  <!-- Reasoning cards of a profile (composed in LlmProfilesSection.ProfileCards):
+       the same setting, with Off for a model that can stop thinking and without
+       it for one that cannot; the profile's model shows one of the two. -->
+  <data name="LlmProfileReasoningCard.Header" xml:space="preserve">
+    <value>Reasoning</value>
+  </data>
+  <data name="LlmProfileReasoningCard.Description" xml:space="preserve">
+    <value>How much the model may think before it rewrites. Thinking counts like written text, so more of it answers later and costs more. Off answers soonest but can stray from what you said.</value>
+  </data>
+  <data name="LlmProfileReasoningNoOffCard.Header" xml:space="preserve">
+    <value>Reasoning</value>
+  </data>
+  <data name="LlmProfileReasoningNoOffCard.Description" xml:space="preserve">
+    <value>How much the model may think before it rewrites. Thinking counts like written text, so more of it answers later and costs more.</value>
+  </data>
+  <data name="LlmProfileReasoningOff.Content" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="LlmProfileReasoningLow.Content" xml:space="preserve">
+    <value>Low</value>
+  </data>
+  <data name="LlmProfileReasoningMedium.Content" xml:space="preserve">
+    <value>Medium</value>
+  </data>
   <!-- Shortcut cards of a profile (composed in LlmProfilesSection.ProfileCards):
        a switch, then the chord it reveals. -->
   <data name="LlmProfileHotkeyEnabledCard.Header" xml:space="preserve">

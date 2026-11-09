@@ -104,9 +104,11 @@ static class Pricing
 
     // Null for an unknown model: an absent price must not read as a free call.
     // inputTokens is the uncached input only, as the API reports it; the cache
-    // writes and reads come on top, each at its own price.
+    // writes and reads come on top, each at its own price. A campaign arm's
+    // label ("claude-haiku-5-5@off") is priced as its model: the level changes
+    // how many output tokens there are, not what each costs.
     public static double? Cost(string model, int inputTokens, int outputTokens, int cacheWriteTokens = 0, int cacheReadTokens = 0) =>
-        PerMTok.TryGetValue(model, out var p)
+        PerMTok.TryGetValue(ModelVariant.Parse(model).Model, out var p)
             ? (inputTokens * p.In
                + cacheWriteTokens * p.In * CacheWriteFactor
                + cacheReadTokens * p.CacheRead
