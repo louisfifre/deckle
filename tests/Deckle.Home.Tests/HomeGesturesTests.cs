@@ -653,7 +653,7 @@ public class HomeGesturesTests
             FakeHomeAnytypeServer.Todo("todo-1", "Déposer le lavabo fictif", "site-1", done: false),
             FakeHomeAnytypeServer.Todo("todo-2", "Choisir le carrelage fictif", "site-1", done: true));
 
-        string digest = await Gestures(server).CompleteAsync("Salle de bain fictive", Ct);
+        string digest = await Gestures(server).CompleteAsync("Salle de bain fictive", 800, 3, Ct);
 
         Assert.Contains("Chantier terminé", digest);
         Assert.Contains("1 tâche", digest);
@@ -661,6 +661,65 @@ public class HomeGesturesTests
         Assert.Equal(
             "tag-state-done",
             Entry(Assert.IsType<JsonArray>(patch["properties"]), HomeSchema.Properties.State)["select"]!.GetValue<string>());
+    }
+
+    [Theory]
+    [InlineData(null, 2.0, "actual_budget")]
+    [InlineData(500.0, null, "actual_effort")]
+    public async Task CompleteRefusesAWorksiteWithoutItsActualsAndNamesTheMissingOne(
+        double? budget, double? effort, string missing)
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(FakeHomeAnytypeServer.Worksite("site-1", "Salle de bain fictive"));
+
+        ArgumentException error = await Assert.ThrowsAsync<ArgumentException>(() =>
+            Gestures(server).CompleteAsync("site-1", budget, effort, Ct));
+
+        Assert.Contains(missing, error.Message);
+        Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
+    }
+
+    [Fact]
+    public async Task CompleteWritesTheStateAndBothActualsInOnePatchAndGivesTheGap()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(FakeHomeAnytypeServer.EstimatedWorksite("site-1", "Terrasse fictive", budget: 1000, effort: 2));
+
+        string digest = await Gestures(server).CompleteAsync("Terrasse fictive", 1200, 1.5, Ct);
+
+        JsonArray properties = Assert.IsType<JsonArray>(
+            JsonNode.Parse(Assert.Single(server.Requests, r => r.Method == "PATCH").Body)!["properties"]);
+        Assert.Equal("tag-state-done", Entry(properties, HomeSchema.Properties.State)["select"]!.GetValue<string>());
+        Assert.Equal(1200, Entry(properties, HomeSchema.Properties.ActualBudget)["number"]!.GetValue<double>());
+        Assert.Equal(1.5, Entry(properties, HomeSchema.Properties.ActualEffort)["number"]!.GetValue<double>());
+        Assert.Contains("Budget : réel 1200 € / estimé 1000 € (écart +200 €)", digest);
+        Assert.Contains("Charge : réel 1,5 j / estimé 2 j (écart -0,5 j)", digest);
+        Assert.DoesNotContain("Attention", digest);
+    }
+
+    [Fact]
+    public async Task CompleteSaysWhenAWorksiteHadNoEstimate()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(FakeHomeAnytypeServer.Worksite("site-1", "Terrasse fictive"));
+
+        string digest = await Gestures(server).CompleteAsync("site-1", 300, 1, Ct);
+
+        Assert.Contains("Budget : réel 300 € / estimé absent", digest);
+        Assert.Contains("Charge : réel 1 j / estimé absent", digest);
+    }
+
+    [Fact]
+    public async Task CompleteRefusesActualsOnATask()
+    {
+        using var server = new FakeHomeAnytypeServer();
+        server.SetObjects(FakeHomeAnytypeServer.Todo("todo-1", "Purger le radiateur fictif", null, done: false));
+
+        InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            Gestures(server).CompleteAsync("todo-1", 50, null, Ct));
+
+        Assert.Contains("une tâche n'a pas de réels", error.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(server.Requests, request => request.Method == "PATCH");
     }
 
     [Fact]

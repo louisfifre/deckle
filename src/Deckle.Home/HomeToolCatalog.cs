@@ -82,10 +82,19 @@ public static class HomeToolCatalog
 
             new ToolDescriptor(
                 "complete",
-                "Complete a task, or a worksite while reporting its remaining open tasks. Products use needed (Prendre), not task completion.",
+                "Complete a task, or finish a worksite. A worksite requires its actuals, actual_budget (€) and actual_effort (days): ask the person for them first. The state and both actuals are written together, and the answer gives the gap against the estimates, then the tasks still open. A task takes no actuals. Products use product_taken, not completion.",
                 ObjectSchema(
-                    required: [("object", StringSchema("Task or worksite name or id."))]),
-                (args, ct) => gestures().CompleteAsync(RequiredString(args, "object"), ct),
+                    required: [("object", StringSchema("Task or worksite exact name or id."))],
+                    optional:
+                    [
+                        ("actual_budget", new JsonObject { ["type"] = "number", ["minimum"] = 0, ["description"] = "Worksite only: what it really cost, in euros." }),
+                        ("actual_effort", new JsonObject { ["type"] = "number", ["minimum"] = 0, ["description"] = "Worksite only: the effort it really took, in days." }),
+                    ]),
+                (args, ct) => gestures().CompleteAsync(
+                    RequiredString(args, "object"),
+                    OptionalNumber(args, "actual_budget"),
+                    OptionalNumber(args, "actual_effort"),
+                    ct),
                 ToolExecutionContract.OverwritingIdempotent),
 
             new ToolDescriptor(

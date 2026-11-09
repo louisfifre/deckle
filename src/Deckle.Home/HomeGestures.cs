@@ -647,9 +647,17 @@ public sealed partial class HomeGestures
     // is no separate intervention journal. done is Anytype's native
     // action-layout checkbox, outside the Home property contract, so its entry
     // is built directly rather than through the writer.
-    public async Task<string> CompleteAsync(string selector, CancellationToken ct = default)
+    public Task<string> CompleteAsync(string selector, CancellationToken ct = default) =>
+        CompleteAsync(selector, null, null, ct);
+
+    // A worksite ends with what it really cost: both actuals are required, so
+    // the estimate/actual delta stays readable afterwards. A task has none.
+    public async Task<string> CompleteAsync(
+        string selector, double? actualBudget, double? actualEffort, CancellationToken ct = default)
     {
         DateTime started = DateTime.UtcNow;
+        if (actualBudget < 0 || actualEffort < 0)
+            throw new ArgumentException("Un réel ne peut pas être négatif.", nameof(actualBudget));
         HomeSchemaRuntime schema = await _runtime.GetAsync(ct).ConfigureAwait(false);
 
         using var writeScope = await _api.AcquireWriteScopeAsync("home_complete", "object", ct).ConfigureAwait(false);
@@ -660,6 +668,10 @@ public sealed partial class HomeGestures
 
         if (type == HomeSchema.Types.Todo)
         {
+            if (actualBudget is not null || actualEffort is not null)
+                throw new InvalidOperationException(
+                    "Une tâche n'a pas de réels : relance complete sans actual_budget ni actual_effort. "
+                    + "Les réels se donnent en terminant son chantier.");
             var payload = new JsonObject
             {
                 ["properties"] = new JsonArray(
@@ -672,22 +684,48 @@ public sealed partial class HomeGestures
 
         if (type == HomeSchema.Types.Worksite)
         {
+            string[] missing = new[]
+                {
+                    actualBudget is null ? "actual_budget (budget réel, €)" : null,
+                    actualEffort is null ? "actual_effort (charge réelle, jours)" : null,
+                }
+                .OfType<string>().ToArray();
+            if (missing.Length > 0)
+                throw new ArgumentException(
+                    $"Terminer « {HomeObjectIndex.Display(target)} » demande ses réels : manque "
+                    + string.Join(" et ", missing) + ". Demande-les à la personne, puis relance complete avec les deux.",
+                    nameof(actualBudget));
+
+            // One patch: the state and both actuals land together, so a
+            // worksite is never done without what it cost.
             var writer = new HomePropertyWriter(_api, _spaceId, schema, index);
-            JsonObject entry = await writer.BuildEntryAsync(
-                schema.Property(HomeSchema.Properties.State),
-                JsonValue.Create(HomeSchema.State.Done),
-                ct).ConfigureAwait(false);
-            await _api.UpdateObjectAsync(
-                _spaceId, id, new JsonObject { ["properties"] = new JsonArray(entry) }, ct).ConfigureAwait(false);
+            var entries = new JsonArray(
+                await writer.BuildEntryAsync(
+                    schema.Property(HomeSchema.Properties.State), JsonValue.Create(HomeSchema.State.Done), ct)
+                    .ConfigureAwait(false),
+                await writer.BuildEntryAsync(
+                    schema.Property(HomeSchema.Properties.ActualBudget), JsonValue.Create(actualBudget!.Value), ct)
+                    .ConfigureAwait(false),
+                await writer.BuildEntryAsync(
+                    schema.Property(HomeSchema.Properties.ActualEffort), JsonValue.Create(actualEffort!.Value), ct)
+                    .ConfigureAwait(false));
+            await _api.UpdateObjectAsync(_spaceId, id, new JsonObject { ["properties"] = entries }, ct)
+                .ConfigureAwait(false);
+
             int open = TodosOf(index, id).Count(todo => !CheckboxValue(todo, "done"));
             DeckleHomeSource.Log.GestureCompleted("complete", Elapsed(started));
-            return $"Chantier terminé : {HomeObjectIndex.Display(target)}."
-                + (open > 0 ? $" Attention : {open} tâche(s) encore ouverte(s)." : "");
+            return $"Chantier terminé : {HomeObjectIndex.Display(target)}.\n"
+                + Delta("Budget", actualBudget.Value,
+                    PropertyNumber(target, HomeSchema.Properties.EstimatedBudget), "€") + "\n"
+                + Delta("Charge", actualEffort.Value,
+                    PropertyNumber(target, HomeSchema.Properties.EstimatedEffort), "j")
+                + (open > 0 ? $"\nAttention : {open} tâche(s) encore ouverte(s)." : "");
         }
 
         throw new InvalidOperationException(
             $"« {HomeObjectIndex.Display(target)} » ({type}) ne se termine pas : "
-            + "complete s'applique aux tâches et aux chantiers. Pour un produit, modifie « Prendre ».");
+            + "complete s'applique aux tâches et aux chantiers. Un produit acheté passe par product_taken ; "
+            + "ce qui a fini sa vie s'archive avec archive.");
     }
 
     // Archive is for what had a life and should only stop showing: the
@@ -749,6 +787,26 @@ public sealed partial class HomeGestures
         DeckleHomeSource.Log.GestureCompleted("chantier_overview", Elapsed(started));
         return builder.ToString();
     }
+
+    private static readonly CultureInfo French = CultureInfo.GetCultureInfo("fr-FR");
+
+    // "Budget : réel 1200 € / estimé 1000 € (écart +200 €)", or "estimé
+    // absent" when the worksite never had an estimate.
+    private static string Delta(string label, double actual, double? estimate, string unit)
+    {
+        string Amount(double value) => value.ToString("0.##", French) + " " + unit;
+        if (estimate is not double estimated)
+            return $"{label} : réel {Amount(actual)} / estimé absent";
+        double gap = actual - estimated;
+        string sign = gap > 0 ? "+" : gap < 0 ? "-" : "";
+        return $"{label} : réel {Amount(actual)} / estimé {Amount(estimated)} (écart {sign}{Amount(Math.Abs(gap))})";
+    }
+
+    private static double? PropertyNumber(JsonObject value, string propertyKey) =>
+        HomeObjectJson.Property(value, propertyKey)?["number"] is JsonValue number
+        && number.TryGetValue<double>(out double result)
+            ? result
+            : null;
 
     private static IEnumerable<JsonObject> TodosOf(HomeObjectIndex index, string worksiteId) =>
         index.Objects.Where(value =>

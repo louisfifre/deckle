@@ -184,6 +184,21 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
         SelectProperty(HomeSchema.Properties.State, "Statut", "in_progress", "En cours"),
         ObjectsProperty("backlinks", "Backlinks", backlinkIds));
 
+    public static JsonObject EstimatedWorksite(string id, string name, double budget, double effort)
+    {
+        JsonObject worksite = Worksite(id, name);
+        JsonArray properties = worksite["properties"]!.AsArray();
+        properties.Add(new JsonObject
+        {
+            ["key"] = HomeSchema.Properties.EstimatedBudget, ["name"] = "Budget estimé (€)", ["format"] = "number", ["number"] = budget,
+        });
+        properties.Add(new JsonObject
+        {
+            ["key"] = HomeSchema.Properties.EstimatedEffort, ["name"] = "Charge estimée (jours)", ["format"] = "number", ["number"] = effort,
+        });
+        return worksite;
+    }
+
     public static JsonObject Todo(string id, string name, string? worksiteId, bool done) =>
         worksiteId is null
             ? Object(

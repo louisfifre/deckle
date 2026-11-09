@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text;
 using System.Text.Json.Nodes;
 using Deckle.Anytype;
@@ -184,10 +183,10 @@ public sealed partial class HomeGestures
             var entries = new JsonArray();
             foreach (JsonObject product in group.Items.OrderBy(HomeObjectIndex.Display, StringComparer.OrdinalIgnoreCase))
             {
-                double? quantity = Number(product, HomeSchema.Properties.Quantity);
+                double? quantity = PropertyNumber(product, HomeSchema.Properties.Quantity);
                 text.Append("\n- ").Append(HomeObjectIndex.Display(product));
                 if (quantity is double amount)
-                    text.Append(" (quantité ").Append(amount.ToString("0.##", CultureInfo.GetCultureInfo("fr-FR"))).Append(')');
+                    text.Append(" (quantité ").Append(amount.ToString("0.##", French)).Append(')');
                 var entry = new JsonObject
                 {
                     ["id"] = HomeObjectJson.Id(product),
@@ -246,10 +245,4 @@ public sealed partial class HomeGestures
 
     private static string Candidate(JsonObject value) =>
         $"- {HomeObjectJson.Id(value)} · {HomeObjectIndex.Display(value)} ({HomeObjectJson.TypeKey(value)})";
-
-    private static double? Number(JsonObject value, string propertyKey) =>
-        HomeObjectJson.Property(value, propertyKey)?["number"] is JsonValue number
-        && number.TryGetValue<double>(out double result)
-            ? result
-            : null;
 }
