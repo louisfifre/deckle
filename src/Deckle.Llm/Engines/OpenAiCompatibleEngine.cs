@@ -153,6 +153,11 @@ public sealed class OpenAiCompatibleEngine : IGenerationEngine
         return trimmed + "/" + path;
     }
 
+    // The request's reasoning level is dropped on purpose. Ollama's /v1 and
+    // LM Studio (since 0.4.8) accept OpenAI's `reasoning_effort`, but which
+    // values a local model honours, and whether it can stop thinking at all,
+    // differs model by model (ReasoningLevel's header); the model's own
+    // default is what runs.
     static string FormatOptions(GenerationRequest request)
     {
         var parts = new List<string>(2);

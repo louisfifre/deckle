@@ -50,11 +50,9 @@
         <!-- The NavigationView's own pane toggle is off; the TitleBar carries it
              and relays through PaneToggleRequested — the WinUI 3 Gallery pattern,
              pure code-behind, no automatic link between the two controls.
-             No back button: every destination has a rail entry, even a child page
-             registered under a ParentId. Frame.Navigate pushes the back stack on
-             every nav change, siblings included, so a CanGoBack-bound button would
-             offer to retrace ordinary page switches. Wire it once a destination
-             exists that the rail does not list. -->
+             The back button shows only on a subpage, a destination the rail does
+             not list (SettingsWindow.Subpages.cs says why it ignores the frame's
+             back stack). -->
         <TitleBar Grid.Row="0"
                   x:Name="AppTitleBar"
                   x:Uid="SettingsTitleBar"
@@ -138,6 +136,28 @@
                         Collapsed="OnNavCollapsed"
                         Expanding="OnNavExpanding">
 
+            <!-- One ground for the whole window, as Windows 11 Settings and
+                 PowerToys draw it: the page sits on the window's Mica beside the
+                 rail, without the content layer NavigationView paints by default
+                 (LayerFillColorDefault plus a card stroke). That layer lifts the
+                 ground one step (#282828 for #1F1F1F in Dark) and every card with
+                 it, which washes the whole page out. HighContrast keeps the
+                 control's own SystemColorWindowColor ground. -->
+            <NavigationView.Resources>
+                <ResourceDictionary>
+                    <ResourceDictionary.ThemeDictionaries>
+                        <ResourceDictionary x:Key="Default">
+                            <StaticResource x:Key="NavigationViewContentBackground" ResourceKey="SystemControlTransparentBrush" />
+                            <StaticResource x:Key="NavigationViewContentGridBorderBrush" ResourceKey="SystemControlTransparentBrush" />
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="Light">
+                            <StaticResource x:Key="NavigationViewContentBackground" ResourceKey="SystemControlTransparentBrush" />
+                            <StaticResource x:Key="NavigationViewContentGridBorderBrush" ResourceKey="SystemControlTransparentBrush" />
+                        </ResourceDictionary>
+                    </ResourceDictionary.ThemeDictionaries>
+                </ResourceDictionary>
+            </NavigationView.Resources>
+
             <!-- Home, General and Shortcuts are the shell's static anchors; every
                  module page is materialised from SettingsModuleRegistry in the
                  code-behind, so a module can appear or disappear without editing
@@ -165,9 +185,9 @@
                 <NavigationViewItemSeparator />
             </NavigationView.MenuItems>
 
-            <!-- NavigationView already draws its content surface with the rounded
-                 top-left corner: no Border wrapper, no custom CornerRadius. Each
-                 Page owns its H1 title and ScrollViewer (Windows 11 Settings). -->
+            <!-- No Border wrapper around the Frame: the page has no surface of its
+                 own (see NavigationView.Resources above). Each Page owns its H1
+                 title and ScrollViewer (Windows 11 Settings). -->
             <Frame x:Name="PageFrame" />
         </NavigationView>
 

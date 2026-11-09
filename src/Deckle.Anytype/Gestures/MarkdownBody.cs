@@ -86,11 +86,215 @@ public static class MarkdownBody
         return new(EditStatus.Replaced, string.Join('\n', rebuilt), 1);
     }
 
-    // Read-after-write "intent" check against the re-read body.
+    // Read-after-write "intent" check against the re-read body. List
+    // indentation is compared by structure, not by spaces: the render indents
+    // a child by four spaces under a numbered item and two under a checkbox
+    // (measured 2026-11-09), whatever was sent.
     public static bool SectionContentMatches(string body, string heading, string intendedContent)
     {
         if (!TryReadSection(body, heading, out string actual)) return false;
-        return NormalizeBlock(actual).Equals(NormalizeBlock(intendedContent), StringComparison.Ordinal);
+        return NormalizeBlock(ReindentLists(actual))
+            .Equals(NormalizeBlock(ReindentLists(intendedContent)), StringComparison.Ordinal);
+    }
+
+    // ── writes ────────────────────────────────────────────────────────────────
+    //
+    // Markdown a caller wrote naturally, made safe for the server's parser
+    // before an insert. Two faults, both measured on 2026-11-09 against the
+    // backend that serves Deckle:
+    //
+    //   • A nested list item indented past its parent's content column shifts
+    //     one level down: under « - un », « ····- un.a » then « ····- un.b »
+    //     made un.b a child of un.a. Two spaces, the content column of « - »,
+    //     kept them siblings. A caller copying a read gets four spaces, since
+    //     the render indents that way, so the items are re-indented to their
+    //     parent's content column.
+    //   • An underscore at the edge of a word opens or closes emphasis: « _slot
+    //     et slot_ » came back in italics and « __init__ » in bold, while
+    //     « due_date » inside a word stayed. Keys are what an agent writes with
+    //     underscores, so an underscore at a word edge is escaped; « \_ » is
+    //     rendered as a literal underscore (measured). Emphasis is written with
+    //     « * », which is left alone.
+    //
+    // The list shift is the server's: CommonMark makes un.a and un.b siblings
+    // there (both sit past un's content column, neither past un.a's), so it is
+    // a defect of the backend's markdown import, worth reporting upstream. The
+    // underscore emphasis is CommonMark itself, not a defect: the escape is ours
+    // to write.
+    public static string PrepareForWrite(string markdown) =>
+        EscapeUnderscores(ReindentLists(markdown.Replace("\r\n", "\n")));
+
+    // Each list item gets the indentation its nesting calls for: none at the
+    // top, its parent's content column below (the marker's width plus one
+    // space: 2 under « - », 3 under « 1. »). The nesting is read the CommonMark
+    // way from the original indentation: an item that reaches its parent's
+    // content column is its child, one that falls short goes back up a level.
+    // A line that is not an item and starts at the margin ends the list, and so
+    // does a thematic break (« * * * », « --- »). Left as written: code fences,
+    // and an item indented four columns or more outside any list, which
+    // CommonMark reads as an indented code block.
+    public static string ReindentLists(string markdown)
+    {
+        string[] lines = markdown.Split('\n');
+        bool[] fenced = FenceMask(lines);
+        // Per open item: its content column as written, and as rewritten.
+        var stack = new List<(int Written, int Rewritten)>();
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (fenced[i]) continue;
+            string line = lines[i];
+            if (line.Trim().Length == 0) continue;
+
+            int indent = IndentWidth(line, out int textStart);
+            int marker = IsThematicBreak(line) ? 0 : ListMarkerLength(line, textStart);
+            if (marker == 0)
+            {
+                if (indent == 0) stack.Clear();
+                continue;
+            }
+
+            while (stack.Count > 0 && indent < stack[^1].Written) stack.RemoveAt(stack.Count - 1);
+            if (stack.Count == 0 && indent >= 4) continue;
+            int column = stack.Count == 0 ? 0 : stack[^1].Rewritten;
+            stack.Add((indent + marker + 1, column + marker + 1));
+            lines[i] = new string(' ', column) + line[textStart..];
+        }
+        return string.Join('\n', lines);
+    }
+
+    // Three or more of the same « - », « * » or « _ », spaces allowed between.
+    static bool IsThematicBreak(string line)
+    {
+        string bare = line.Replace(" ", "").Replace("\t", "");
+        return bare.Length >= 3 && bare[0] is '-' or '*' or '_' && bare.All(c => c == bare[0]);
+    }
+
+    // Escapes each underscore at a word edge, the only place it can open or
+    // close emphasis: inside a word (« due_date ») it is literal already, and
+    // left alone so a read gives back what was written. Never touched: code
+    // (fences and inline spans), an underscore escaped already, an autolink
+    // « <…> », a bare web address and a link's destination « ](…) », where a
+    // backslash would land in the address.
+    public static string EscapeUnderscores(string markdown)
+    {
+        string[] lines = markdown.Split('\n');
+        bool[] fenced = FenceMask(lines);
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (fenced[i] || lines[i].IndexOf('_') < 0) continue;
+
+            string line = lines[i];
+            var sb = new StringBuilder(line.Length + 8);
+            int p = 0;
+            while (p < line.Length)
+            {
+                char c = line[p];
+                if (c == '\\' && p + 1 < line.Length)
+                {
+                    sb.Append(c).Append(line[p + 1]);
+                    p += 2;
+                    continue;
+                }
+                if (c == '`')
+                {
+                    // An inline code span runs to the next backtick run of the
+                    // same length; without one, the backticks are literal.
+                    int run = 1;
+                    while (p + run < line.Length && line[p + run] == '`') run++;
+                    int close = line.IndexOf(new string('`', run), p + run, StringComparison.Ordinal);
+                    int end = close < 0 ? p + run : close + run;
+                    sb.Append(line, p, end - p);
+                    p = end;
+                    continue;
+                }
+                if (AddressEnd(line, p) is int addressEnd)
+                {
+                    sb.Append(line, p, addressEnd - p);
+                    p = addressEnd;
+                    continue;
+                }
+                if (c == '_' && !InsideWord(line, p)) sb.Append('\\');
+                sb.Append(c);
+                p++;
+            }
+            lines[i] = sb.ToString();
+        }
+        return string.Join('\n', lines);
+    }
+
+    static bool InsideWord(string line, int p) =>
+        p > 0 && p + 1 < line.Length && char.IsLetterOrDigit(line[p - 1]) && char.IsLetterOrDigit(line[p + 1]);
+
+    // Where an address starting at `p` ends, or null when none starts there:
+    // an autolink « <scheme:…> », a link destination « ](…) » (its « ]( »
+    // included), or a bare web address « http://… », « https://… », « www.… »
+    // that runs to the next space.
+    static int? AddressEnd(string line, int p)
+    {
+        char c = line[p];
+        if (c == '<')
+        {
+            int close = line.IndexOf('>', p + 1);
+            if (close < 0) return null;
+            ReadOnlySpan<char> inner = line.AsSpan(p + 1, close - p - 1);
+            int colon = inner.IndexOf(':');
+            bool scheme = colon >= 2 && char.IsAsciiLetter(inner[0])
+                && inner[..colon].IndexOfAnyExcept(SchemeChars) < 0;
+            return scheme && inner.IndexOfAny(' ', '<') < 0 ? close + 1 : null;
+        }
+        if (c == ']' && p + 1 < line.Length && line[p + 1] == '(')
+        {
+            int depth = 0;
+            for (int q = p + 1; q < line.Length; q++)
+            {
+                if (line[q] == '(') depth++;
+                else if (line[q] == ')' && --depth == 0) return q + 1;
+            }
+            return line.Length;
+        }
+        if ((p == 0 || !char.IsLetterOrDigit(line[p - 1]))
+            && (StartsAt(line, p, "http://") || StartsAt(line, p, "https://") || StartsAt(line, p, "www.")))
+        {
+            int end = p;
+            while (end < line.Length && !char.IsWhiteSpace(line[end])) end++;
+            return end;
+        }
+        return null;
+    }
+
+    static readonly System.Buffers.SearchValues<char> SchemeChars =
+        System.Buffers.SearchValues.Create("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+.-");
+
+    static bool StartsAt(string line, int p, string prefix) =>
+        string.Compare(line, p, prefix, 0, prefix.Length, StringComparison.OrdinalIgnoreCase) == 0;
+
+    // Leading width, a tab counting four columns, and where the text starts.
+    static int IndentWidth(string line, out int textStart)
+    {
+        int width = 0;
+        textStart = 0;
+        while (textStart < line.Length && line[textStart] is ' ' or '\t')
+        {
+            width += line[textStart] == '\t' ? 4 : 1;
+            textStart++;
+        }
+        return width;
+    }
+
+    // The width of a list marker at `start` (« - », « * », « + », « 12. »,
+    // « 3) ») when a space follows it, else 0.
+    static int ListMarkerLength(string line, int start)
+    {
+        if (start >= line.Length) return 0;
+        int end = start;
+        if (line[end] is '-' or '*' or '+') end++;
+        else
+        {
+            while (end < line.Length && end - start < 9 && char.IsAsciiDigit(line[end])) end++;
+            if (end == start || end >= line.Length || line[end] is not ('.' or ')')) return 0;
+            end++;
+        }
+        return end < line.Length && line[end] == ' ' ? end - start : 0;
     }
 
     // Normalized heading texts in document order, for the section-set guard: an

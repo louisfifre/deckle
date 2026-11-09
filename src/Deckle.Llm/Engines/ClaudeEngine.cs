@@ -12,9 +12,11 @@ namespace Deckle.Llm;
 // key changes), so saving a key in Settings is enough. Sampling hints
 // (temperature, top_p) are dropped: the current Claude models reject
 // non-default values, and a rewrite wants the model's default anyway.
-// Thinking stays at the SDK default; effort is held low because a rewrite is
-// a transcription task, not a reasoning one, and low effort keeps the answer
-// close to the input and the cost near the floor.
+// Without a reasoning level, thinking stays at the SDK default (adaptive) and
+// effort is held low, because a rewrite is a transcription task, not a
+// reasoning one, and low effort keeps the answer close to the input and the
+// cost near the floor. A level, when the request names one, is mapped by
+// ReasoningFor below; Low sends exactly the request without one.
 //
 // Transport only: the provider lookup, the hard cap and the human-facing
 // failure outcomes live above the seam in the consumer. This engine throws
@@ -54,17 +56,27 @@ public sealed class ClaudeEngine : IGenerationEngine
         // RewriteService opens and closes the rewrite milestone (before the
         // key check above, so a missing key still has its start); the engine
         // adds only what its transport sees.
+        ClaudeReasoning reasoning = ReasoningFor(request.Model, request.Reasoning);
         DeckleLlmSource.Log.RewriteStartedDetail(
-            request.UserText.Length, request.Model, request.Label, "claude", "effort=low");
+            request.UserText.Length, request.Model, request.Label, "claude", reasoning.Detail);
 
         var parameters = new MessageCreateParams
         {
             Model = request.Model,
             MaxTokens = MaxOutputTokens,
             System = request.SystemPrompt,
-            OutputConfig = new OutputConfig { Effort = Effort.Low },
+            OutputConfig = new OutputConfig { Effort = reasoning.Effort },
             Messages = [new() { Role = Role.User, Content = request.UserText }],
         };
+        // Left unset unless thinking must be turned off, so a request without
+        // a level stays byte for byte what it was.
+        if (reasoning.Thinking is { } thinking)
+            parameters = parameters with { Thinking = thinking };
+        // Set only when asked, so the app's request stays byte for byte what
+        // it was. The top-level marker caches up to the last block: the
+        // system prompt and the text together.
+        if (request.CachePrompt)
+            parameters = parameters with { CacheControl = new CacheControlEphemeral() };
 
         Message response;
         try
@@ -92,8 +104,10 @@ public sealed class ClaudeEngine : IGenerationEngine
                 text.Append(textBlock.Text);
         }
 
-        int promptTokens = (int)response.Usage.InputTokens;
-        int evalTokens   = (int)response.Usage.OutputTokens;
+        int promptTokens     = (int)response.Usage.InputTokens;
+        int evalTokens       = (int)response.Usage.OutputTokens;
+        int cacheWriteTokens = (int)(response.Usage.CacheCreationInputTokens ?? 0);
+        int cacheReadTokens  = (int)(response.Usage.CacheReadInputTokens ?? 0);
 
         sw.Stop();
         string trimmed = text.ToString().Trim();
@@ -111,8 +125,55 @@ public sealed class ClaudeEngine : IGenerationEngine
             PromptEvalMs: 0,
             EvalMs:       sw.ElapsedMilliseconds,
             PromptTokens: promptTokens,
-            EvalTokens:   evalTokens);
+            EvalTokens:   evalTokens,
+            CacheWriteTokens: cacheWriteTokens,
+            CacheReadTokens:  cacheReadTokens);
     }
+
+    /// <summary>What the Messages API is sent for a reasoning level:
+    /// <see cref="ClaudeReasoning.Thinking"/> null leaves thinking adaptive,
+    /// the default of every current model.</summary>
+    internal readonly record struct ClaudeReasoning(Effort Effort, ThinkingConfigParam? Thinking, string Detail);
+
+    // Turning thinking off is not one switch across the current models
+    // (claude-api reference, 2026-10): Claude Haiku 5.5 takes thinking
+    // "disabled"; Claude Sonnet 5.5 rejects "disabled" with a 400 and turns it
+    // off with "between_tools", which on a request without tools means no
+    // thinking at all; Claude Opus 5.5 and the Fable and Mythos lines think
+    // whatever is sent. Off is therefore offered only on the models listed
+    // here, each with the field it takes, and a model this list does not know
+    // yet gets Low and Medium until its rule is checked. A stored Off that
+    // meets a model outside the list (the profile's model changed) is sent as
+    // the lowest effort, the closest the model allows, rather than failing the
+    // rewrite; the page shows it as Low for the same model.
+    sealed record ThinkingOff(string Prefix, string Name, Func<ThinkingConfigParam> Build);
+
+    static readonly ThinkingOff[] ModelsThatTurnThinkingOff =
+    [
+        new("claude-haiku-5-5", "disabled", () => new ThinkingConfigDisabled()),
+        new("claude-sonnet-5-5", "between_tools", () => new ThinkingConfigBetweenTools()),
+    ];
+
+    /// <summary>Whether <paramref name="model"/> can be asked not to think,
+    /// so the profile's list offers Off only where it is honoured.</summary>
+    public static bool AcceptsOff(string? model) => OffFor(model) is not null;
+
+    static ThinkingOff? OffFor(string? model) =>
+        string.IsNullOrWhiteSpace(model)
+            ? null
+            : ModelsThatTurnThinkingOff.FirstOrDefault(
+                m => model.Trim().StartsWith(m.Prefix, StringComparison.OrdinalIgnoreCase));
+
+    internal static ClaudeReasoning ReasoningFor(string model, ReasoningLevel? level) => level switch
+    {
+        null                  => new(Effort.Low, null, "effort=low"),
+        ReasoningLevel.Low    => new(Effort.Low, null, "effort=low reasoning=low"),
+        ReasoningLevel.Medium => new(Effort.Medium, null, "effort=medium reasoning=medium"),
+        ReasoningLevel.Off when OffFor(model) is { } off
+                              => new(Effort.Low, off.Build(), $"effort=low reasoning=off thinking={off.Name}"),
+        ReasoningLevel.Off    => new(Effort.Low, null, "effort=low reasoning=off_unsupported"),
+        _ => throw new ArgumentOutOfRangeException(nameof(level), level, null),
+    };
 
     private AnthropicClient ClientFor(string key)
     {

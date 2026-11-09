@@ -18,7 +18,7 @@ namespace Deckle.Llm.Rewrite;
 //
 // **Never clears the active profile.** An orphan reference (id and name both
 // unresolvable) stays untouched so the user can repair it in the UI. The
-// delete-cascade lives in LlmProfilesSection.DeleteProfile_Click, which clears
+// delete-cascade lives in LlmProfilesSection.RemoveProfileAsync, which clears
 // references **before** the profile is removed. A ladder step whose profile no
 // longer exists stays too, and is skipped at selection.
 public static class LlmSettingsNormalizer

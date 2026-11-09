@@ -22,8 +22,10 @@ namespace Deckle.Llm.Rewrite;
 // inter-section events that retrigger a refresh or a targeted Reload, and
 // Reset all.
 
-public sealed partial class LlmPage : Page
+public sealed partial class LlmPage : Page, ISettingsSubpageSample
 {
+    public SettingsSubpage? SampleSubpage() => ProfilesSection.SampleSubpage();
+
     // Without a token, a provider that is saturated or asleep would hold the
     // page; with it the page falls into "unavailable" instead of freezing.
     private static readonly TimeSpan ProviderAdminTimeout = TimeSpan.FromSeconds(5);

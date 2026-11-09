@@ -11,13 +11,14 @@ namespace Deckle.Benchmark.ModelCompare;
 // already there (a row with an error is redone). A crash, a rate limit or a
 // closed terminal costs nothing already paid.
 //
-// Parallelism is one lane per model, sequential inside a lane: the latency
-// column of one model is never inflated by that model's own queue, and three
-// lanes keep the wall clock near a third of the sequential run. The judge runs
-// the same way, one lane per model.
+// Parallelism is one lane per arm (a model, or a model at one reasoning
+// level), sequential inside a lane: the latency column of one arm is never
+// inflated by that arm's own queue, and three lanes keep the wall clock near
+// a third of the sequential run. The judge runs the same way, one lane per
+// arm.
 //
 // Nothing here changes how a rewrite is produced: the generate step calls the
-// production ClaudeEngine exactly as the first study did.
+// production ClaudeEngine, with the arm's reasoning level when it has one.
 
 static class CampaignRun
 {
@@ -29,7 +30,7 @@ static class CampaignRun
         var raw = Corpus.LoadRaw();
         var resolved = CampaignFile.Resolve(campaign, outDir, raw);
 
-        Console.WriteLine($"campaign={campaign.Name} models={string.Join(",", campaign.Models)} iterations={campaign.Iterations} judge={campaign.Judge.Model} batch={campaign.Judge.Batch}");
+        Console.WriteLine($"campaign={campaign.Name} arms={string.Join(",", campaign.Arms)} iterations={campaign.Iterations} judge={campaign.Judge.Model} batch={campaign.Judge.Batch}");
         foreach (var (bucket, ids) in resolved.Dictations)
             Console.WriteLine($"  {bucket,-10} {string.Join(", ", ids.Select(id => $"{Judge.Short(id)} ({raw[id].WordsIn} w)"))}");
         foreach (var cell in campaign.Cells)
@@ -73,12 +74,18 @@ static class CampaignRun
         foreach (var cell in resolved.Campaign.Cells)
         foreach (string bucket in cell.Buckets)
         foreach (string id in resolved.Dictations[bucket])
-        foreach (string model in resolved.Campaign.Models)
+        foreach (string model in resolved.Campaign.Arms)
         for (int iteration = 1; iteration <= resolved.Campaign.Iterations; iteration++)
             items.Add(new WorkItem(raw[id], resolved.Prompts[cell.Key], model, iteration));
 
         var pending = items.Where(i => !done.Contains(GenKey(i))).ToList();
         Console.WriteLine($"generate: {items.Count} calls planned, {items.Count - pending.Count} already done, {pending.Count} to run");
+
+        // Inside a lane the iterations of one cell run back to back with the
+        // same request, so the first writes the cache and the others read it
+        // well within its five minutes. A single iteration would only pay the
+        // write, so it runs uncached.
+        bool cachePrompt = resolved.Campaign.Iterations > 1;
 
         var engine = new ClaudeEngine(() => apiKey);
         var writer = new StreamWriter(path, append: true);
@@ -86,11 +93,11 @@ static class CampaignRun
         double total = 0;
         int finished = 0;
 
-        var lanes = resolved.Campaign.Models.Select(model => Task.Run(() =>
+        var lanes = resolved.Campaign.Arms.Select(model => Task.Run(() =>
         {
             foreach (var item in pending.Where(i => i.Model == model))
             {
-                var row = GenerateOne(engine, item);
+                var row = GenerateOne(engine, item, cachePrompt);
                 lock (writeLock)
                 {
                     writer.WriteLine(JsonSerializer.Serialize(row, Json.Output));
@@ -98,7 +105,7 @@ static class CampaignRun
                     total += row.CostUsd ?? 0;
                     finished++;
                     Console.WriteLine(row.Error is null
-                        ? $"[{finished}/{pending.Count}] {Judge.Short(row.Id)} {row.Model,-18} {row.Prompt,-20} #{row.Iteration,-2} tok={row.PromptTokens}/{row.EvalTokens} {row.TotalMs}ms ${row.CostUsd:F4} words={row.WordsIn}->{row.WordsOut}"
+                        ? $"[{finished}/{pending.Count}] {Judge.Short(row.Id)} {row.Model,-18} {row.Prompt,-20} #{row.Iteration,-2} tok={row.PromptTokens}/{row.EvalTokens} cache={row.CacheReadTokens}r/{row.CacheWriteTokens}w {row.TotalMs}ms ${row.CostUsd:F4} words={row.WordsIn}->{row.WordsOut}"
                         : $"[{finished}/{pending.Count}] {Judge.Short(row.Id)} {row.Model,-18} {row.Prompt,-20} #{row.Iteration,-2} ERROR {row.Error}");
                 }
             }
@@ -111,13 +118,17 @@ static class CampaignRun
         Console.WriteLine();
     }
 
-    static GenerationRow GenerateOne(ClaudeEngine engine, WorkItem item)
+    static GenerationRow GenerateOne(ClaudeEngine engine, WorkItem item, bool cachePrompt)
     {
+        // item.Model is the arm's label: the API model and its reasoning level.
+        var (model, reasoning) = ModelVariant.Parse(item.Model);
         var request = new GenerationRequest(
-            Model:        item.Model,
+            Model:        model,
             SystemPrompt: item.Prompt.SystemPrompt,
             UserText:     item.Dictation.Text,
-            Label:        "benchmark");
+            Label:        "benchmark",
+            CachePrompt:  cachePrompt,
+            Reasoning:    reasoning);
 
         GenerationResult? result = null;
         string? error = null;
@@ -144,8 +155,8 @@ static class CampaignRun
                 Id: d.Id, Bucket: d.Bucket, WordsIn: d.WordsIn, WordsOut: Words.Count(r.Text),
                 Model: item.Model, Prompt: item.Prompt.Name, Source: "benchmark", Text: r.Text,
                 PromptTokens: r.PromptTokens, EvalTokens: r.EvalTokens, TotalMs: r.TotalMs,
-                CostUsd: Pricing.Cost(item.Model, r.PromptTokens, r.EvalTokens), Error: null,
-                Iteration: item.Iteration)
+                CostUsd: Pricing.Cost(item.Model, r.PromptTokens, r.EvalTokens, r.CacheWriteTokens, r.CacheReadTokens), Error: null,
+                Iteration: item.Iteration, CacheWriteTokens: r.CacheWriteTokens, CacheReadTokens: r.CacheReadTokens)
             : new GenerationRow(
                 Id: d.Id, Bucket: d.Bucket, WordsIn: d.WordsIn, WordsOut: 0,
                 Model: item.Model, Prompt: item.Prompt.Name, Source: "benchmark", Text: null,
@@ -203,28 +214,36 @@ static class CampaignRun
         double total = 0;
         int finished = 0;
 
-        // The judge's latency measures nothing, so its batches run four at a
+        // The judge's latency measures nothing, so four cells are judged at a
         // time inside a lane: a long cell's judging no longer takes longer
-        // than its generation.
-        var lanes = resolved.Campaign.Models.Select(model => Task.Run(() =>
+        // than its generation. The batches of one cell run one after the
+        // other: they share the raw dictation, and the cache is readable only
+        // once the call that writes it has answered, so batches sent together
+        // would each pay to write it and none would read it.
+        var lanes = resolved.Campaign.Arms.Select(model => Task.Run(() =>
         {
-            Parallel.ForEach(pending.Where(b => b.Rows[0].Model == model), new ParallelOptions { MaxDegreeOfParallelism = 4 }, item =>
+            var cells = pending.Where(b => b.Rows[0].Model == model)
+                .GroupBy(b => (b.Rows[0].Id, b.Rows[0].Prompt))
+                .ToList();
+            Parallel.ForEach(cells, new ParallelOptions { MaxDegreeOfParallelism = 4 }, cell =>
             {
-                var (key, rows) = item;
-                using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(20));
-                profileNotes.TryGetValue(rows[0].Prompt, out string? note);
-                var batch = BatchJudge.JudgeBatch(client, resolved.Campaign.Judge.Model, note, key, raw[rows[0].Id].Text, rows, cts.Token);
-                lock (writeLock)
+                foreach (var (key, rows) in cell)
                 {
-                    batchWriter.WriteLine(JsonSerializer.Serialize(batch, Json.Output));
-                    batchWriter.Flush();
-                    foreach (var flat in Flatten(batch, rows))
-                        flatWriter.WriteLine(JsonSerializer.Serialize(flat, Json.Output));
-                    flatWriter.Flush();
-                    total += batch.JudgeCostUsd ?? 0;
-                    finished++;
-                    string outcome = batch.Error ?? string.Join("/", batch.Judgements!.Select(j => j?.Verdict?[..Math.Min(3, j.Verdict.Length)] ?? "?"));
-                    Console.WriteLine($"[{finished}/{pending.Count}] {Judge.Short(rows[0].Id)} {model,-18} {rows[0].Prompt,-20} #{rows[0].Iteration}-{rows[^1].Iteration} {outcome,-22} tok={batch.JudgePromptTokens}/{batch.JudgeEvalTokens} {batch.JudgeMs}ms ${batch.JudgeCostUsd:F4}");
+                    using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(20));
+                    profileNotes.TryGetValue(rows[0].Prompt, out string? note);
+                    var batch = BatchJudge.JudgeBatch(client, resolved.Campaign.Judge.Model, note, key, raw[rows[0].Id].Text, rows, cts.Token);
+                    lock (writeLock)
+                    {
+                        batchWriter.WriteLine(JsonSerializer.Serialize(batch, Json.Output));
+                        batchWriter.Flush();
+                        foreach (var flat in Flatten(batch, rows))
+                            flatWriter.WriteLine(JsonSerializer.Serialize(flat, Json.Output));
+                        flatWriter.Flush();
+                        total += batch.JudgeCostUsd ?? 0;
+                        finished++;
+                        string outcome = batch.Error ?? string.Join("/", batch.Judgements!.Select(j => j?.Verdict?[..Math.Min(3, j.Verdict.Length)] ?? "?"));
+                        Console.WriteLine($"[{finished}/{pending.Count}] {Judge.Short(rows[0].Id)} {model,-18} {rows[0].Prompt,-20} #{rows[0].Iteration}-{rows[^1].Iteration} {outcome,-22} tok={batch.JudgePromptTokens}/{batch.JudgeEvalTokens} cache={batch.JudgeCacheReadTokens}r/{batch.JudgeCacheWriteTokens}w {batch.JudgeMs}ms ${batch.JudgeCostUsd:F4}");
+                    }
                 }
             });
         })).ToArray();
@@ -251,7 +270,8 @@ static class CampaignRun
             yield return new JudgementRow(
                 g.Id, g.Model, g.Prompt, g.Source, batch.JudgeModel, judgement, i == 0 ? batch.JudgeRaw : null,
                 batch.JudgePromptTokens / n, batch.JudgeEvalTokens / n, batch.JudgeMs / n, batch.JudgeCostUsd / n,
-                error, g.Iteration, batch.Key);
+                error, g.Iteration, batch.Key,
+                batch.JudgeCacheWriteTokens / n, batch.JudgeCacheReadTokens / n);
         }
     }
 }

@@ -29,6 +29,13 @@ public sealed class RewriteProfile
     public double? TopP { get; set; }
     public double? RepeatPenalty { get; set; }
 
+    // How much the model reasons before it answers. Per profile, not per
+    // provider, because what a level allows depends on the model, which the
+    // profile names. Null keeps the engine's own default (Claude: low effort,
+    // adaptive thinking), so a profile saved before this setting behaves as
+    // it did; the default moves only once the benchmark has measured a level.
+    public ReasoningLevel? Reasoning { get; set; }
+
     // Starts a dictation rewritten with this profile, whatever its length.
     // Registered by the App next to the other hotkeys only while
     // HotkeyEnabled is on and the chord is complete; switching it off keeps

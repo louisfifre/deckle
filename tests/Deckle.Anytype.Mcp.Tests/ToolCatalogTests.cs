@@ -10,18 +10,19 @@ public class ToolCatalogTests
 {
     static readonly string[] ExpectedToolNames =
     {
-        "open_report", "log",
-        "task_properties", "task_checklist", "task_notes", "project_overview",
+        "open_report", "log", "close_report",
+        "task_properties", "task_checklist", "task_notes", "project_overview", "today_overview",
         "epic_properties", "report_journal", "idea_text", "document_outline", "document_section",
-        "create_task", "complete", "archive", "link", "list_projects", "search", "subtask",
+        "create_task", "complete", "archive", "link", "unlink", "list_projects", "search", "subtask",
         "create_epic", "create_project", "create_idea", "create_document", "update", "replace_section",
+        "create_person", "create_company",
     };
 
     // Every read is typed and named by what it returns; a whole-object read
     // would bring the measured context cost back.
     static readonly string[] TypedReadNames =
     {
-        "task_properties", "task_checklist", "task_notes", "project_overview",
+        "task_properties", "task_checklist", "task_notes", "project_overview", "today_overview",
         "epic_properties", "report_journal", "idea_text", "document_outline", "document_section",
     };
 
@@ -40,7 +41,8 @@ public class ToolCatalogTests
             new ProjectGestures(client, resolver, client.V2),
             new QueryGestures(client, resolver, client.V2),
             new ReadGestures(resolver, client.V2),
-            new DocumentGestures(client));
+            new DocumentGestures(client),
+            new ContactGestures(client, resolver, client.V2));
     }
 
     [Fact]
@@ -182,6 +184,7 @@ public class ToolCatalogTests
         {
             ["open_report"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["log"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["close_report"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["task_properties"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["task_checklist"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["task_notes"] = AmbiguousOutcomePolicy.SafeToRetry,
@@ -191,10 +194,12 @@ public class ToolCatalogTests
             ["document_outline"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["document_section"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["project_overview"] = AmbiguousOutcomePolicy.SafeToRetry,
+            ["today_overview"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["create_task"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["complete"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["archive"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["link"] = AmbiguousOutcomePolicy.Uncertain,
+            ["unlink"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["list_projects"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["search"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["subtask"] = AmbiguousOutcomePolicy.SafeToRetry,
@@ -202,6 +207,8 @@ public class ToolCatalogTests
             ["create_project"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["create_idea"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["create_document"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["create_person"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["create_company"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["update"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["replace_section"] = AmbiguousOutcomePolicy.SafeToRetry,
         };
@@ -216,6 +223,7 @@ public class ToolCatalogTests
         {
             ["open_report"] = ToolChangeKind.Additive,
             ["log"] = ToolChangeKind.Additive,
+            ["close_report"] = ToolChangeKind.Additive,
             ["task_properties"] = ToolChangeKind.None,
             ["task_checklist"] = ToolChangeKind.None,
             ["task_notes"] = ToolChangeKind.None,
@@ -225,10 +233,12 @@ public class ToolCatalogTests
             ["document_outline"] = ToolChangeKind.None,
             ["document_section"] = ToolChangeKind.None,
             ["project_overview"] = ToolChangeKind.None,
+            ["today_overview"] = ToolChangeKind.None,
             ["create_task"] = ToolChangeKind.Additive,
             ["complete"] = ToolChangeKind.Overwriting,
             ["archive"] = ToolChangeKind.Overwriting,
             ["link"] = ToolChangeKind.Additive,
+            ["unlink"] = ToolChangeKind.Overwriting,
             ["list_projects"] = ToolChangeKind.None,
             ["search"] = ToolChangeKind.None,
             ["subtask"] = ToolChangeKind.Overwriting,
@@ -236,6 +246,8 @@ public class ToolCatalogTests
             ["create_project"] = ToolChangeKind.Additive,
             ["create_idea"] = ToolChangeKind.Additive,
             ["create_document"] = ToolChangeKind.Additive,
+            ["create_person"] = ToolChangeKind.Additive,
+            ["create_company"] = ToolChangeKind.Additive,
             ["update"] = ToolChangeKind.Overwriting,
             ["replace_section"] = ToolChangeKind.Overwriting,
         };

@@ -441,6 +441,100 @@ public class QueryGesturesTests
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
 
+    static string TaskRows(params (string Name, bool Done, bool Archived)[] tasks)
+    {
+        var data = new JsonArray();
+        int n = 0;
+        foreach (var (name, done, archived) in tasks)
+        {
+            var props = new JsonObject();
+            if (done) props[DevSpace.Props.Done] = true;
+            if (archived) props[DevSpace.Props.Archive] = true;
+            data.Add(new JsonObject
+            {
+                ["id"] = $"bafyreitask{n++}",
+                ["name"] = name,
+                ["type"] = DevSpace.Types.Task,
+                ["properties"] = props,
+            });
+        }
+        return new JsonObject { ["data"] = data, ["total"] = data.Count, ["has_more"] = false }.ToJsonString();
+    }
+
+    [Fact]
+    public async Task ArchiveRefusesAProjectWithOpenTasksAndListsThemByName()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        var v2 = new FakeV2Handler().Reply(HttpStatusCode.OK, TaskRows(
+            ("Écrire le test", false, false),
+            ("Livrer", true, false),
+            ("Abandonnée", false, true),
+            ("Relire", false, false)));
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server, v2).ArchiveAsync(ProjectId, ct: Ct));
+
+        Assert.Contains("2 tâche(s) ouverte(s)", ex.Message);
+        Assert.Contains("[ ] Écrire le test", ex.Message);
+        Assert.Contains("[ ] Relire", ex.Message);
+        Assert.DoesNotContain("Livrer", ex.Message);
+        Assert.DoesNotContain("Abandonnée", ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+
+        // The tasks are asked by their project link, on the server.
+        JsonObject search = (JsonObject)JsonNode.Parse(Assert.Single(v2.Requests).Body!)!;
+        JsonObject filter = (JsonObject)search["filters"]![0]!;
+        Assert.Equal(DevSpace.Props.RelationProjet, filter["property"]!.GetValue<string>());
+        Assert.Equal(ProjectId, filter["value"]![0]!.GetValue<string>());
+    }
+
+    // update writes the same Archivé box: it must not be the way around the
+    // refusal of archive.
+    [Fact]
+    public async Task UpdateRefusesToArchiveAProjectWithOpenTasks()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        var v2 = new FakeV2Handler().Reply(HttpStatusCode.OK, TaskRows(("Écrire le test", false, false)));
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server, v2).UpdateAsync(
+                ProjectId, null, new JsonObject { [DevSpace.Props.Archive] = true }, Ct));
+
+        Assert.Contains("[ ] Écrire le test", ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    [Fact]
+    public async Task ArchiveAcceptsAProjectWhoseTasksAreAllDoneOrArchived()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        server.OnPatchObject(ProjectId, ProjectObject());
+        var v2 = new FakeV2Handler().Reply(HttpStatusCode.OK, TaskRows(
+            ("Livrer", true, false), ("Abandonnée", false, true)));
+
+        string digest = await NewGestures(server, v2).ArchiveAsync(ProjectId, ct: Ct);
+
+        Assert.Contains("Archivé", digest);
+        Assert.Contains(server.Requests, r => r.Method == "PATCH");
+    }
+
+    [Fact]
+    public async Task RestoringAProjectDoesNotLookAtItsTasks()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        server.OnPatchObject(ProjectId, ProjectObject());
+        var v2 = new FakeV2Handler();
+
+        await NewGestures(server, v2).ArchiveAsync(ProjectId, value: false, ct: Ct);
+
+        Assert.Empty(v2.Requests);
+        Assert.Contains(server.Requests, r => r.Method == "PATCH");
+    }
+
     // A write never settles for the object a name merely resembles: a lone hit
     // that is not named exactly is refused with its id, and nothing is patched.
     [Fact]
@@ -533,6 +627,161 @@ public class QueryGesturesTests
         JsonArray objects = Assert.IsType<JsonArray>(posted["objects"]);
         string id = Assert.Single(objects)!.GetValue<string>();
         Assert.Equal(ProjectId, id);
+    }
+
+    // ── UnlinkAsync ───────────────────────────────────────────────────────────
+
+    const string OtherProjectId = "bafyreiotherprojectaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    static JsonObject TaskLinkedTo(params string[] projectIds)
+    {
+        JsonObject task = TaskObject();
+        var refs = new JsonArray();
+        foreach (string id in projectIds) refs.Add(id);
+        ((JsonArray)task["object"]!["properties"]!).Add(new JsonObject
+        {
+            ["key"] = DevSpace.Props.RelationProjet,
+            ["format"] = "objects",
+            ["objects"] = refs,
+        });
+        return task;
+    }
+
+    static JsonObject OtherProjectObject()
+    {
+        JsonObject project = ProjectObject();
+        project["object"]!["id"] = OtherProjectId;
+        project["object"]!["name"] = "Autre";
+        return project;
+    }
+
+    [Fact]
+    public async Task UnlinkRemovesOnlyTheNamedProjectFromATask()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskLinkedTo(ProjectId, OtherProjectId));
+        server.OnGetObject(ProjectId, ProjectObject());
+        server.OnPatchObject(TaskId, TaskObject());
+
+        string digest = await NewGestures(server).UnlinkAsync(TaskId, [ProjectId], Ct);
+
+        JsonObject patched = server.LastBodyFor("PATCH");
+        JsonObject entry = Assert.IsType<JsonObject>(((JsonArray)patched["properties"]!).Single());
+        Assert.Equal(DevSpace.Props.RelationProjet, entry["key"]!.GetValue<string>());
+        Assert.Equal([OtherProjectId], ((JsonArray)entry["objects"]!).Select(n => n!.GetValue<string>()));
+        Assert.Contains("1 retrait(s)", digest);
+    }
+
+    [Fact]
+    public async Task UnlinkRefusesToLeaveATaskWithoutAProjectAndSendsNoPatch()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskLinkedTo(ProjectId));
+        server.OnGetObject(ProjectId, ProjectObject());
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).UnlinkAsync(TaskId, [ProjectId], Ct));
+
+        Assert.Contains("projet", ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    // update writes the same project link: emptying it is refused there too.
+    [Fact]
+    public async Task UpdateRefusesToEmptyTheProjectOfATaskAndSendsNoPatch()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskLinkedTo(ProjectId));
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).UpdateAsync(
+                TaskId, null, new JsonObject { [DevSpace.Props.RelationProjet] = new JsonArray() }, Ct));
+
+        Assert.Contains("projet", ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    [Fact]
+    public async Task UnlinkOfATargetThatIsNotLinkedChangesNothing()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskLinkedTo(ProjectId));
+        server.OnGetObject(OtherProjectId, OtherProjectObject());
+
+        string digest = await NewGestures(server).UnlinkAsync(TaskId, [OtherProjectId], Ct);
+
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+        Assert.Contains("0 retrait(s)", digest);
+    }
+
+    [Fact]
+    public async Task UnlinkProjectFromEpicRemovesTheCollectionMembershipWithoutPatchingTheProject()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        server.OnGetObject(EpicId, EpicObject());
+        server.OnDeleteListObject(EpicId, ProjectId);
+
+        string digest = await NewGestures(server).UnlinkAsync(ProjectId, [EpicId], Ct);
+
+        Assert.Contains(server.Requests, r => r.Method == "DELETE"
+            && r.Path == $"/v1/spaces/{FakeAnytypeServer.Space}/lists/{EpicId}/objects/{ProjectId}");
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+        Assert.Contains("retrait(s) de collection", digest);
+    }
+
+    const string ContactId = "bafyreicontactaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    static JsonObject ContactObject() => new()
+    {
+        ["object"] = new JsonObject
+        {
+            ["id"] = ContactId,
+            ["name"] = "Camille",
+            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Contact },
+            ["properties"] = new JsonArray(),
+        },
+    };
+
+    [Fact]
+    public async Task LinkATaskToAPersonWritesTheContactLink()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskObject());
+        server.OnGetObject(ContactId, ContactObject());
+        server.OnPatchObject(TaskId, TaskObject());
+
+        await NewGestures(server).LinkAsync(TaskId, [ContactId], Ct);
+
+        JsonObject entry = (JsonObject)((JsonArray)server.LastBodyFor("PATCH")["properties"]!).Single()!;
+        Assert.Equal(DevSpace.Props.ContactLie, entry["key"]!.GetValue<string>());
+        Assert.Equal(ContactId, entry["objects"]![0]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task LinkAProjectToAPersonIsRefusedUntilTheProjectCarriesAContactLink()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        server.OnGetObject(ContactId, ContactObject());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).LinkAsync(ProjectId, [ContactId], Ct));
+
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    [Fact]
+    public async Task UnlinkRefusesAPairThatLinkDoesNotSupport()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(EpicId, EpicObject());
+        server.OnGetObject(TaskId, TaskObject());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).UnlinkAsync(EpicId, [TaskId], Ct));
+
+        Assert.DoesNotContain(server.Requests, r => r.Method is "PATCH" or "DELETE");
     }
 
     // ── ReplaceSectionAsync ─────────────────────────────────────────────────────
@@ -630,12 +879,72 @@ public class QueryGesturesTests
             .ReplaceSectionAsync(TaskId, "État", "En cours sur module_X.", Ct);
 
         Assert.Equal(
+            // Inside a word the underscore is literal already: sent as written.
             ["delete a1 recursive=true", "insert after h1: En cours sur module_X."],
             SentOps(v2));
         Assert.Equal(ETag, SentPatch(v2).Header("If-Match"));
         Assert.Equal(["GET", "PATCH", "GET"], v2.Requests.Select(r => r.Method));
         Assert.EndsWith("format=md", v2.Requests[2].PathAndQuery);
         Assert.Equal("Section « État » remplacée dans Ma tâche (vérifié).", digest);
+        Assert.Empty(server.Requests);
+    }
+
+    // Measured on 2026-11-09: nested items indented by four spaces under « - »
+    // came back shifted one level down, and « _slot et slot_ » came back in
+    // italics. The content is re-indented to its parent's content column and
+    // its bare underscores escaped before it reaches the server; the render
+    // indents by four again, which the verification reads as the same nesting.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ReplaceSectionKeepsNestedItemsAtTheirLevelAndUnderscoreKeysLiteral()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = ReplaceFlow(ThreeSections(),
+            "# Tâche\n## État\nClés \\_slot et slot\\_.\n- un\n    - un.a\n    - un.b\n## Notes\nrien");
+
+        string digest = await NewGestures(server, v2).ReplaceSectionAsync(
+            TaskId, "État", "Clés _slot et slot_.\n- un\n    - un.a\n    - un.b", Ct);
+
+        Assert.Equal(
+            ["delete a1 recursive=true", "insert after h1: Clés \\_slot et slot\\_.\n- un\n  - un.a\n  - un.b"],
+            SentOps(v2));
+        Assert.Equal("Section « État » remplacée dans Ma tâche (vérifié).", digest);
+    }
+
+    // The verification still catches a shifted item: un.b one level too deep.
+    [Fact]
+    public async Task ReplaceSectionReportsANestingTheServerDidNotKeep()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = ReplaceFlow(ThreeSections(),
+            "# Tâche\n## État\n- un\n    - un.a\n        - un.b\n## Notes\nrien");
+
+        string digest = await NewGestures(server, v2).ReplaceSectionAsync(
+            TaskId, "État", "- un\n  - un.a\n  - un.b", Ct);
+
+        Assert.Contains("vérification en échec", digest);
+    }
+
+    // ── CreateIdeaAsync ───────────────────────────────────────────────────────
+
+    // A long idea was sent its first words as a name and its whole text as a
+    // body, so the title showed twice. An idea is a note: body only.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task CreateIdeaSendsABodyAndNoName()
+    {
+        using var server = new FakeAnytypeServer();
+        var v2 = new FakeV2Handler().Reply(HttpStatusCode.Created, "{\"id\":\"bafyreiidea\"}");
+        string text = "Une idée assez longue pour dépasser quatre-vingts caractères, avec une clé slot_ dedans.\nEt une suite.";
+
+        string digest = await NewGestures(server, v2).CreateIdeaAsync(text, Ct);
+
+        FakeV2Handler.Seen post = Assert.Single(v2.Requests);
+        JsonObject body = (JsonObject)JsonNode.Parse(post.Body!)!;
+        Assert.Equal(DevSpace.Types.Idee, body["type"]!.GetValue<string>());
+        Assert.False(body.ContainsKey("name"));
+        Assert.Equal(text.Replace("slot_", "slot\\_"), body["markdown"]!.GetValue<string>());
+        Assert.StartsWith("Idée notée : Une idée assez longue", digest);
         Assert.Empty(server.Requests);
     }
 

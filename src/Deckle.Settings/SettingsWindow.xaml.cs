@@ -72,6 +72,8 @@ public sealed partial class SettingsWindow : Window
         // structure.
         SettingsNavigation.BreadcrumbFor = ResolveBreadcrumb;
 
+        InitializeSubpages();
+
         // The selection navigates through SelectionChanged: one navigation path,
         // no double navigation.
         Nav.SelectedItem = Nav.MenuItems[0];
@@ -477,6 +479,13 @@ public sealed partial class SettingsWindow : Window
     {
         NavigationViewItem? item = FindNavItem(pageTag);
         if (item is null) return;
+        // Already selected: no SelectionChanged will come, so a subpage on
+        // screen (the header's parent segment was clicked) is left by hand.
+        if (ReferenceEquals(item, Nav.SelectedItem))
+        {
+            ReturnToRailPage();
+            return;
+        }
         ExpandAncestorsOf(item);
         Nav.SelectedItem = item;
     }

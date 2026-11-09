@@ -108,11 +108,15 @@ static partial class Export
                 profile = ProfileOf(g.Prompt),
                 prompt = g.Prompt,
                 model = g.Model,
+                reasoning = ModelVariant.LevelName(g.Model),
                 iteration = g.Iteration,
                 source = g.Source,
                 words_in = g.WordsIn,
                 words_out = g.WordsOut,
                 prompt_tokens = g.PromptTokens,
+                cache_write_tokens = g.CacheWriteTokens,
+                cache_read_tokens = g.CacheReadTokens,
+                cache_hit = g.CacheReadTokens > 0,
                 eval_tokens = g.EvalTokens,
                 total_ms = g.TotalMs,
                 cost_usd = g.CostUsd,
@@ -134,6 +138,9 @@ static partial class Export
                 var judged = ok.Select(g => judgements.TryGetValue(CampaignRun.GenKey(g), out var j) ? j : null)
                     .Where(j => j?.Judgement is not null).Select(j => j!.Judgement!).ToList();
                 var ms = ok.Where(g => g.TotalMs is not null).Select(g => (double)g.TotalMs!.Value).OrderBy(v => v).ToList();
+                // A row that read the cache skipped the prompt's processing:
+                // the cold rows alone are comparable with the app.
+                var coldMs = ok.Where(g => g.TotalMs is not null && !(g.CacheReadTokens > 0)).Select(g => (double)g.TotalMs!.Value).OrderBy(v => v).ToList();
                 var ratios = ok.Where(g => raw.ContainsKey(g.Id) && g.Text is not null).Select(g => Markers.Delta(raw[g.Id].Text, g.Text!).WordRatio).ToList();
                 int Verdicts(string v) => judged.Count(j => string.Equals(j.Verdict, v, StringComparison.OrdinalIgnoreCase));
                 return new
@@ -143,6 +150,7 @@ static partial class Export
                     bucket = c.Key.Bucket,
                     id = c.Key.Id,
                     model = c.Key.Model,
+                    reasoning = ModelVariant.LevelName(c.Key.Model),
                     n = c.Count(),
                     ok = ok.Count,
                     errors = c.Count() - ok.Count,
@@ -157,6 +165,8 @@ static partial class Export
                         ["additions"] = judged.Average(j => j.Additions?.Count ?? 0),
                     },
                     latency_ms = ms.Count == 0 ? null : new { mean = ms.Average(), p50 = Percentile(ms, 0.5), p90 = Percentile(ms, 0.9), min = ms[0], max = ms[^1] },
+                    cache_hits = ok.Count(g => g.CacheReadTokens > 0),
+                    latency_cold_ms = coldMs.Count == 0 ? null : new { n = coldMs.Count, mean = coldMs.Average(), p50 = Percentile(coldMs, 0.5), p90 = Percentile(coldMs, 0.9), min = coldMs[0], max = coldMs[^1] },
                     cost_usd = new
                     {
                         generation_total = ok.Sum(g => g.CostUsd ?? 0),

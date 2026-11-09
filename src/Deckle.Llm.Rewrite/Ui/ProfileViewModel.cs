@@ -41,7 +41,7 @@ public partial class ProfileViewModel : ObservableObject
     public partial bool ShowsGenerationHints { get; set; }
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Summary))]
+    [NotifyPropertyChangedFor(nameof(Summary), nameof(OffersReasoningOff), nameof(ShownReasoning))]
     public partial string Model { get; set; }
 
     [ObservableProperty]
@@ -61,6 +61,25 @@ public partial class ProfileViewModel : ObservableObject
     [ObservableProperty]
     public partial double RepeatPenalty { get; set; }
 
+    // The profile's reasoning level. A profile saved before the setting
+    // existed (null) reads as Low, the request the engine sends without one.
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShownReasoning))]
+    public partial ReasoningLevel Reasoning { get; set; }
+
+    // Shown for a Claude provider only: the local engines drop the level.
+    [ObservableProperty]
+    public partial bool ShowsReasoning { get; set; }
+
+    // Whether the profile's model can stop thinking, so the list offers Off.
+    public bool OffersReasoningOff => ClaudeEngine.AcceptsOff(Model);
+
+    // The level as the list shows it: a stored Off on a model that cannot
+    // stop thinking is sent as Low (ClaudeEngine.ReasoningFor), so it shows
+    // as Low. The stored value is kept, should the model change back.
+    public ReasoningLevel ShownReasoning =>
+        Reasoning == ReasoningLevel.Off && !OffersReasoningOff ? ReasoningLevel.Low : Reasoning;
+
     // The shortcut that starts a dictation rewritten with this profile: a
     // switch, then the chord it reveals. Off keeps the chord.
     [ObservableProperty]
@@ -73,8 +92,8 @@ public partial class ProfileViewModel : ObservableObject
 
     // ── State ────────────────────────────────────────────────────────────────
 
-    // Drives IsExpanded so a freshly added profile opens. Never reset: once
-    // the expander is open, it no longer matters.
+    // A profile just added: its page opens with the name box focused. Never
+    // reset: the next Reload loads every profile as not new.
     [ObservableProperty]
     public partial bool IsNew { get; set; }
 
@@ -122,6 +141,7 @@ public partial class ProfileViewModel : ObservableObject
     partial void OnCtxIndexChanged(double value) { if (!_isSyncing) PushToSettings(); }
     partial void OnTopPChanged(double value) { if (!_isSyncing) PushToSettings(); }
     partial void OnRepeatPenaltyChanged(double value) { if (!_isSyncing) PushToSettings(); }
+    partial void OnReasoningChanged(ReasoningLevel value) { if (!_isSyncing) PushToSettings(); }
     partial void OnHotkeyEnabledChanged(bool value) { if (!_isSyncing) PushToSettings(); }
     partial void OnHotkeyChanged(HotkeyChord? value) { if (!_isSyncing) PushToSettings(); }
 
@@ -140,6 +160,8 @@ public partial class ProfileViewModel : ObservableObject
         CtxIndex = Array.IndexOf(CtxKSteps, DefaultNumCtxK);
         TopP = double.NaN;
         RepeatPenalty = double.NaN;
+        Reasoning = ReasoningLevel.Low;
+        ShowsReasoning = false;
         HotkeyEnabled = false;
         Hotkey = null;
         _isSyncing = false;
@@ -164,6 +186,7 @@ public partial class ProfileViewModel : ObservableObject
 
         TopP = profile.TopP ?? double.NaN;
         RepeatPenalty = profile.RepeatPenalty ?? double.NaN;
+        Reasoning = profile.Reasoning ?? ReasoningLevel.Low;
 
         HotkeyEnabled = profile.HotkeyEnabled;
         Hotkey = profile.Hotkey;
@@ -189,6 +212,7 @@ public partial class ProfileViewModel : ObservableObject
         p.NumCtxK = CtxKSteps[Math.Clamp((int)CtxIndex, 0, CtxKSteps.Length - 1)];
         p.TopP = double.IsNaN(TopP) ? null : (double?)TopP;
         p.RepeatPenalty = double.IsNaN(RepeatPenalty) ? null : (double?)RepeatPenalty;
+        p.Reasoning = Reasoning;
         p.HotkeyEnabled = HotkeyEnabled;
         p.Hotkey = Hotkey;
         LlmSettingsService.Instance.Save();

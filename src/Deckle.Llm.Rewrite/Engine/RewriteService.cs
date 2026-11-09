@@ -160,7 +160,8 @@ public class RewriteService : IRewriteService
                 Temperature:   profile.Temperature,
                 NumCtx:        profile.NumCtxK * 1024,   // stored in K
                 TopP:          profile.TopP,
-                RepeatPenalty: profile.RepeatPenalty);
+                RepeatPenalty: profile.RepeatPenalty,
+                Reasoning:     profile.Reasoning);
             GenerationResult result = engine.Generate(request, cts.Token);
             sw.Stop();
             DeckleLlmSource.Log.TranscriptRewriteCompleted(profile.ProviderId, sw.ElapsedMilliseconds, workId);

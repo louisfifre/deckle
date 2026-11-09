@@ -89,9 +89,89 @@ public class ProjectGesturesTests
         string id = Assert.Single(objects)!.GetValue<string>();
         Assert.Equal(ProjectId, id);
     }
+    // ── TodayAsync ───────────────────────────────────────────────────────────
+
+    // 2026-11-09, in UTC so the day does not depend on the machine's zone.
+    sealed class StoppedClock : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => new(2026, 11, 9, 10, 0, 0, TimeSpan.Zero);
+        public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
+    }
+
+    static ProjectGestures NewTodayReader(FakeV2Handler handler)
+    {
+        var credentials = new AnytypeCredentials("http://127.0.0.1:31012", "2025-11-08", "test-bearer", "space-1");
+        var v1 = new AnytypeApiClient(credentials);
+        return new ProjectGestures(v1, new NameResolver(v1), new AnytypeV2Client(credentials, null, handler), new StoppedClock());
+    }
+
+    static JsonObject DatedTask(string name, string? day, bool done = false, bool archived = false) =>
+        Row("bafyreitask" + name.GetHashCode().ToString("x"), name, "task", new JsonObject
+        {
+            ["due_date"] = day is null ? null : day + "T00:00:00Z",
+            ["done"] = done ? true : null,
+            ["archive"] = archived ? true : null,
+            ["relation_projet"] = new JsonArray(ProjectId),
+            ["type_de_tache"] = new JsonArray("Produire"),
+            ["priorite"] = new JsonArray("4"),
+            ["definition_de_fini"] = "Le test passe.",
+            ["charge_estimee"] = 1.5,
+        });
+
+    [Fact]
+    public async Task TodayListsTheTasksOfTheDayAndTheLateOnesThenTheProjectsInProgress()
+    {
+        var handler = new FakeV2Handler()
+            .Reply(HttpStatusCode.OK, SearchPage(false,
+                Row(ProjectId, "Anytype", "project", new JsonObject
+                {
+                    ["etat"] = new JsonArray("En cours"), ["priorite"] = new JsonArray("5"),
+                    ["due_date"] = "2026-11-15T00:00:00Z",
+                }),
+                Row(OtherProjectId, "Dormant", "project", new JsonObject { ["etat"] = new JsonArray("Dormant") }),
+                Row(EpicId, "Fini", "project", new JsonObject { ["etat"] = new JsonArray("En cours"), ["archive"] = true })))
+            .Reply(HttpStatusCode.OK, SearchPage(false,
+                DatedTask("Aujourd'hui", "2026-11-09"),
+                DatedTask("Retard", "2026-11-03"),
+                DatedTask("Demain", "2026-11-10"),
+                DatedTask("Sans date", null),
+                DatedTask("Faite", "2026-11-01", done: true),
+                DatedTask("Abandonnée", "2026-11-02", archived: true)));
+
+        string digest = await NewTodayReader(handler).TodayAsync(Ct);
+
+        Assert.Equal(
+            "Aujourd'hui, 2026-11-09 :\n\n" +
+            "[ ] Retard · en retard, prévue le 2026-11-03\n" +
+            "Projet : Anytype\n" +
+            "Produire · P4 · 1,5 h estimée(s)\n" +
+            "Définition de fini : Le test passe.\n\n" +
+            "[ ] Aujourd'hui\n" +
+            "Projet : Anytype\n" +
+            "Produire · P4 · 1,5 h estimée(s)\n" +
+            "Définition de fini : Le test passe.\n\n" +
+            "Projets en cours :\n" +
+            "Anytype · P5 · cible 2026-11-15",
+            digest);
+        Assert.All(handler.Requests, r => Assert.Equal("POST", r.Method));
+    }
+
+    [Fact]
+    public async Task TodaySaysSoWhenNothingIsDue()
+    {
+        var handler = new FakeV2Handler()
+            .Reply(HttpStatusCode.OK, SearchPage(false))
+            .Reply(HttpStatusCode.OK, SearchPage(false, DatedTask("Demain", "2026-11-10")));
+
+        string digest = await NewTodayReader(handler).TodayAsync(Ct);
+
+        Assert.Contains("Aucune tâche du jour ni en retard.", digest);
+        Assert.Contains("Projets en cours :\nAucun.", digest);
+    }
+
     // ── Reads over the v2 client ─────────────────────────────────────────────
 
-    const string ReportId = "bafyreiReportaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    const string ReportId ="bafyreiReportaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     // The resolver is never reached (selectors are ids) and creation is not
     // exercised here, so the v1 client is a placeholder; only the v2 handler talks.

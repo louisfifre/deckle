@@ -25,7 +25,10 @@ public sealed record PropertyDef(string Key, string Label, string Format, TagOpt
 //   • Props.TachesLiees   = "tache(s)_liee(s)"        — MALFORMED key (no accents).
 //   • Props.BudgetReel    = "budget_reel_("           — TRUNCATED key.
 //   • Props.ChargeReelle  = "charge_estimee_(jours)"  — MISLEADING key (named
-//     like an estimate, but it is the *real* charge field).
+//     like an estimate, but it is the *real* charge field). Its unit is the
+//     hour, despite « jours »: a number property carries its unit in its name,
+//     and Louis confirmed on 2026-11-09 that the field holds hours and was
+//     never filled. The recreation of the space renames it.
 //
 // Priorité is a select whose tag options are a mix of opaque ids and bare
 // integer strings — both forms are below. Its own key is served as "priorite"
@@ -77,6 +80,11 @@ public static class DevSpace
         public const string Idee     = "idee";
         public const string Document = "document";
         public const string Chat     = "chat_derived"; // layout: chat
+        // The actors. The model v6 names them person and company; the space of
+        // 2026-11-04 carries them under their v5 keys (inventory in the model
+        // document), and the recreation renames them.
+        public const string Contact    = "contact";    // layout: profile
+        public const string Entreprise = "entreprise"; // layout: profile
     }
 
     // ── Property keys (flat — properties are space-global) ────────────────────
@@ -119,12 +127,20 @@ public static class DevSpace
 
         public const string TypeDeDocument    = "type_de_document"; // select
         public const string DocumentSysteme   = "document_systeme"; // checkbox
+
+        // Keys from the inventory of 2026-11-04; formats NOT measured (an email
+        // and a phone format are likely), so they are written as plain text.
+        public const string EntrepriseLiee    = "entreprise_liee";     // objects
+        public const string Courriel          = "courriel";            // email
+        public const string Telephone         = "numero_de_telephone"; // phone
+        public const string Adresse           = "adresse";             // text
     }
 
     // ── État (select on Props.Etat) ──────────────────────────────────────────
     public static class Etat
     {
         public const string EnAttente = "en_attente";
+        public const string EnCours = "en_cours";
 
         public static readonly TagOption[] All =
         [
@@ -261,6 +277,28 @@ public static class DevSpace
         public static string? NameFor(string? key) => NameOfOption(All, key);
     }
 
+    // ── Selects of the model v6 the space does not carry yet ─────────────────
+    //
+    // Read live through LiveSelect, by key or by display name: the space of
+    // 2026-11-04 had neither (inventory in the model document), and their key
+    // depends on who creates them. The English key is the recreation's.
+    public static class Slot
+    {
+        public static readonly string[] Keys = ["slot", "creneau"];
+        public const string Name = "Créneau";
+        // A task takes Cap unless told otherwise (model v6, section Task).
+        public const string Default = "Cap";
+    }
+
+    // A person's role towards us, not their trade (model v6). The space of
+    // 2026-11-04 has only a link to a « Rôle » type, so the select is looked
+    // for live and a person is created without it until it exists.
+    public static class Role
+    {
+        public static readonly string[] Keys = ["role"];
+        public const string Name = "Rôle";
+    }
+
     // ── Per-type property tables ──────────────────────────────────────────────
     //
     // Row order is digest order.
@@ -337,6 +375,18 @@ public static class DevSpace
         new(Props.TachesLiees, "Tâche(s) liée(s)", "objects"),
     ];
 
+    static readonly PropertyDef[] ContactProps =
+    [
+        new(Props.EntrepriseLiee, "Entreprise", "objects"),
+        new(Props.Courriel, "Courriel", "text"),
+        new(Props.Telephone, "Téléphone", "text"),
+    ];
+
+    static readonly PropertyDef[] EntrepriseProps =
+    [
+        new(Props.Adresse, "Adresse", "text"),
+    ];
+
     static readonly PropertyDef[] NoProps = [];
 
     public static IReadOnlyList<PropertyDef> PropertiesFor(string typeKey) => typeKey switch
@@ -348,6 +398,8 @@ public static class DevSpace
         Types.Idee     => IdeeProps,
         Types.Document => DocumentProps,
         Types.Chat     => ChatProps,
+        Types.Contact    => ContactProps,
+        Types.Entreprise => EntrepriseProps,
         _              => NoProps,
     };
 
@@ -422,7 +474,8 @@ public static class DevSpace
         // first-seen-wins walk yields each key's label/options once.
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (PropertyDef[] table in
-            new[] { EpicProps, ProjectProps, TaskProps, RapportProps, IdeeProps, DocumentProps, ChatProps })
+            new[] { EpicProps, ProjectProps, TaskProps, RapportProps, IdeeProps, DocumentProps, ChatProps,
+                    ContactProps, EntrepriseProps })
             foreach (PropertyDef def in table)
                 if (seen.Add(def.Key))
                     yield return def;

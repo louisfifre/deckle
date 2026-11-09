@@ -30,6 +30,10 @@
 - **Recurrence cue:** a `DataContext` read or a `DataContextChanged` handler on
   the root of an `x:Bind` DataTemplate inside an `ItemsRepeater`; any
   `expander.Items.Add` or `Remove` outside a constructor.
+- **Since 2026-11-09:** the folds are gone; each profile is a card that opens
+  its own page (`LlmProfilePage`), which composes the cards into a plain
+  `StackPanel`. The second layer no longer applies; the first still does, and
+  `ProfileCard_Click` reads the profile from `Tag` for that reason.
 - **Guard:** none yet. The behaviour lives in WinUI controls inside a running
   window, which the unit suites do not host; it is checked on the Rewriting
   page, by eye or through UI Automation.

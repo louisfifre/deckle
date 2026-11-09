@@ -39,6 +39,9 @@ public sealed partial class SettingsPageHeader : UserControl
     private readonly TextBlock _description;
     private readonly HyperlinkButton _link;
     private readonly Button _resetAll;
+    // The trail the shell resolves (the page's own, or its parent's for a
+    // subpage), then the one shown, which adds the subpage's own segment.
+    private IReadOnlyList<SettingsBreadcrumbSegment>? _resolved;
     private IReadOnlyList<SettingsBreadcrumbSegment>? _segments;
 
     public event RoutedEventHandler? ResetAllRequested;
@@ -201,6 +204,13 @@ public sealed partial class SettingsPageHeader : UserControl
         set => SetValue(HasResetAllProperty, value);
     }
 
+    // Set by a subpage (opened through SettingsNavigation.OpenSubpage), before
+    // the header loads: the tag of the rail page it opens from. The trail is
+    // then that page's own, its last segment made a way back, then Title as
+    // the current segment ("Rewriting › Affinage"). Title may change after (a
+    // profile renamed on its page): the trail follows it.
+    public string? ParentPageTag { get; set; }
+
     // What the page's reset keeps or loses beyond the plain "values go back to
     // their defaults": the module switch that stays, a list that is replaced.
     // Set in code by the page, from its own resources; empty adds nothing. The
@@ -239,8 +249,8 @@ public sealed partial class SettingsPageHeader : UserControl
 
     private void ResolveBreadcrumb()
     {
-        Type? pageType = FindPageType();
-        _segments = pageType is null ? null : SettingsNavigation.BreadcrumbFor?.Invoke(pageType);
+        Type? pageType = ParentPageTag is { } parentTag ? Type.GetType(parentTag) : FindPageType();
+        _resolved = pageType is null ? null : SettingsNavigation.BreadcrumbFor?.Invoke(pageType);
         ApplyTitle();
     }
 
@@ -257,6 +267,10 @@ public sealed partial class SettingsPageHeader : UserControl
 
     private void ApplyTitle()
     {
+        _segments = _resolved is { Count: > 0 } && ParentPageTag is { } parentTag
+            ? [.. _resolved.Take(_resolved.Count - 1), _resolved[^1] with { PageTag = parentTag }, new(Title, null)]
+            : _resolved;
+
         if (_segments is { Count: > 0 })
         {
             _crumbs.ItemsSource = _segments.Select(s => s.Label).ToList();

@@ -24,7 +24,8 @@ public static class McpToolset
 
         IReadOnlyList<ToolDescriptor> tools = profile switch
         {
-            ToolProfile.ProjectManagement => ToolCatalog.Build(session, tasks, projects, query, reads, documents),
+            ToolProfile.ProjectManagement => ToolCatalog.Build(
+                session, tasks, projects, query, reads, documents, new ContactGestures(api, resolver, api.V2)),
             ToolProfile.SchemaAdmin => BuildSchemaAdmin(api, resolver, aliases),
             _ => throw new InvalidOperationException($"Profil MCP inconnu : {profile}."),
         };

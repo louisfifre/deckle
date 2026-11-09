@@ -264,7 +264,7 @@
     <value>Models</value>
   </data>
   <data name="LlmModelsBlock.Caption" xml:space="preserve">
-    <value>Installed in Ollama. Add or remove them with ollama pull or ollama create, then refresh.</value>
+    <value>Installed in Ollama. Add them with ollama pull, then refresh.</value>
   </data>
   <data name="LlmRefreshLabel.Text" xml:space="preserve">
     <value>Refresh</value>
@@ -277,41 +277,92 @@
   <data name="LlmProfilesBlock.Caption" xml:space="preserve">
     <value>Each profile sends a system prompt to one model at one provider.</value>
   </data>
-  <data name="LlmProfile_NameBox.Header" xml:space="preserve">
+  <!-- A profile's own page (LlmProfilePage), one card per field. Each Uid
+       serves one element type: the cards are SettingsCards, the boxes and
+       sliders carry only what their own control has. -->
+  <data name="LlmProfilePage_UntitledTitle" xml:space="preserve">
+    <value>New profile</value>
+  </data>
+  <data name="LlmProfilePage_NameCard.Header" xml:space="preserve">
     <value>Name</value>
   </data>
-  <data name="LlmProfile_NameBox.PlaceholderText" xml:space="preserve">
+  <data name="LlmProfilePage_NameBox.PlaceholderText" xml:space="preserve">
     <value>Profile name</value>
   </data>
-  <data name="LlmProfile_ProviderBox.Header" xml:space="preserve">
+  <data name="LlmProfilePage_NameBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="LlmProfilePage_ProviderCard.Header" xml:space="preserve">
     <value>Provider</value>
   </data>
-  <data name="LlmProfile_ModelBox.Header" xml:space="preserve">
+  <data name="LlmProfilePage_ModelCard.Header" xml:space="preserve">
     <value>Model</value>
   </data>
-  <data name="LlmProfile_ModelBox.PlaceholderText" xml:space="preserve">
-    <value>Model name as the provider lists it</value>
+  <data name="LlmProfilePage_ModelBox.PlaceholderText" xml:space="preserve">
+    <value>As the provider lists it</value>
   </data>
-  <data name="LlmProfile_SystemPromptBox.Header" xml:space="preserve">
+  <data name="LlmProfilePage_ModelBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Model</value>
+  </data>
+  <data name="LlmProfilePage_PromptCard.Header" xml:space="preserve">
     <value>System prompt</value>
   </data>
-  <data name="LlmProfile_SystemPromptBox.PlaceholderText" xml:space="preserve">
-    <value>How the model should rewrite your text...</value>
-  </data>
-  <data name="LlmProfile_SystemPromptBody.Text" xml:space="preserve">
+  <data name="LlmProfilePage_PromptCard.Description" xml:space="preserve">
     <value>Instructions sent with every request.</value>
   </data>
-  <data name="LlmProfile_TemperatureSlider.Header" xml:space="preserve">
+  <data name="LlmProfilePage_PromptBox.PlaceholderText" xml:space="preserve">
+    <value>How the model should rewrite your text...</value>
+  </data>
+  <data name="LlmProfilePage_PromptBox.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>System prompt</value>
+  </data>
+  <data name="LlmProfilePage_TemperatureCard.Header" xml:space="preserve">
     <value>Temperature</value>
   </data>
-  <data name="LlmProfile_TemperatureBody.Text" xml:space="preserve">
+  <data name="LlmProfilePage_TemperatureCard.Description" xml:space="preserve">
     <value>Lower is more focused, higher more varied.</value>
   </data>
-  <data name="LlmProfile_ContextSlider.Header" xml:space="preserve">
+  <data name="LlmProfilePage_TemperatureSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Temperature</value>
+  </data>
+  <data name="LlmProfilePage_ContextCard.Header" xml:space="preserve">
     <value>Context size</value>
   </data>
-  <data name="LlmProfile_ContextBody.Text" xml:space="preserve">
-    <value>Tokens the model considers at once. Larger is slower and heavier.</value>
+  <data name="LlmProfilePage_ContextCard.Description" xml:space="preserve">
+    <value>Tokens the model reads at once. Larger is slower.</value>
+  </data>
+  <data name="LlmProfilePage_ContextSlider.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Context size</value>
+  </data>
+  <data name="LlmProfilePage_RemoveCard.Header" xml:space="preserve">
+    <value>Remove this profile</value>
+  </data>
+  <data name="LlmProfilePage_RemoveButton.Content" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+  <!-- Reasoning cards of a profile (composed in LlmProfilesSection.ProfileCards):
+       the same setting, with Off for a model that can stop thinking and without
+       it for one that cannot; the profile's model shows one of the two. -->
+  <data name="LlmProfileReasoningCard.Header" xml:space="preserve">
+    <value>Reasoning</value>
+  </data>
+  <data name="LlmProfileReasoningCard.Description" xml:space="preserve">
+    <value>How much the model may think before it rewrites. Thinking counts like written text, so more of it answers later and costs more. Off answers soonest but can stray from what you said.</value>
+  </data>
+  <data name="LlmProfileReasoningNoOffCard.Header" xml:space="preserve">
+    <value>Reasoning</value>
+  </data>
+  <data name="LlmProfileReasoningNoOffCard.Description" xml:space="preserve">
+    <value>How much the model may think before it rewrites. Thinking counts like written text, so more of it answers later and costs more.</value>
+  </data>
+  <data name="LlmProfileReasoningOff.Content" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="LlmProfileReasoningLow.Content" xml:space="preserve">
+    <value>Low</value>
+  </data>
+  <data name="LlmProfileReasoningMedium.Content" xml:space="preserve">
+    <value>Medium</value>
   </data>
   <!-- Shortcut cards of a profile (composed in LlmProfilesSection.ProfileCards):
        a switch, then the chord it reveals. -->
@@ -319,7 +370,7 @@
     <value>Shortcut</value>
   </data>
   <data name="LlmProfileHotkeyEnabledCard.Description" xml:space="preserve">
-    <value>Starts a dictation rewritten with this profile, whatever its length or the Rewriting switch.</value>
+    <value>Starts a dictation rewritten with this profile, even with Rewriting off.</value>
   </data>
   <data name="LlmProfileHotkeyCard.Header" xml:space="preserve">
     <value>Keys</value>
@@ -329,7 +380,7 @@
     <value>Switch profile by length</value>
   </data>
   <data name="LlmLengthSwitchCard.Description" xml:space="preserve">
-    <value>A longer dictation can use another profile. To rewrite only long dictations, set the rewrite profile to None, then add a step. Not used when rewriting while you speak.</value>
+    <value>A longer dictation can use another profile. Not used while you speak.</value>
   </data>
   <data name="LlmLengthStep_Header" xml:space="preserve">
     <value>From (characters)</value>
@@ -355,9 +406,6 @@
   <data name="LlmProfile_HotkeyUsedByProfile_Format" xml:space="preserve">
     <value>The profile {0} already uses this shortcut.</value>
   </data>
-  <data name="LlmProfile_RemoveLabel.Text" xml:space="preserve">
-    <value>Remove</value>
-  </data>
   <data name="LlmAddProfileButton.Content" xml:space="preserve">
     <value>Add profile</value>
   </data>
@@ -367,7 +415,7 @@
     <value>Providers</value>
   </data>
   <data name="LlmProvidersBlock.Caption" xml:space="preserve">
-    <value>Where the models are served from: a local runtime or a hosted API. A switched-off provider stays listed and serves nothing.</value>
+    <value>Where the models run: on this PC or through a hosted API.</value>
   </data>
   <data name="LlmProvider_NameBox.Header" xml:space="preserve">
     <value>Name</value>
@@ -388,7 +436,7 @@
     <value>Claude</value>
   </data>
   <data name="LlmProvider_KindBody.Text" xml:space="preserve">
-    <value>Chat completions is the shape most servers and hosted APIs speak; pick it unless the provider is Ollama or Claude.</value>
+    <value>Pick Chat completions unless the provider is Ollama or Claude.</value>
   </data>
   <data name="LlmProvider_EndpointBox.Header" xml:space="preserve">
     <value>Address</value>
@@ -449,7 +497,7 @@
     <value>Rewrite while you speak</value>
   </data>
   <data name="LlmBatchRewriteGroup.Description" xml:space="preserve">
-    <value>Sends each stretch of speech to the rewrite profile as soon as you pause, so little is left to rewrite when you stop. Needs a rewrite profile: with None, nothing is rewritten while you speak. Each batch is rewritten on its own, so a profile that regroups a whole text by subject does not suit it. The length steps do not apply: the length is not known when the first batch leaves.</value>
+    <value>Rewrites each stretch of speech as soon as you pause, so little is left when you stop. Each stretch is rewritten on its own.</value>
   </data>
   <data name="LlmBatchSizeCard.Header" xml:space="preserve">
     <value>Batch size</value>
@@ -466,7 +514,7 @@
     <value>Rewriting</value>
   </data>
   <data name="LlmPageHeader.Description" xml:space="preserve">
-    <value>Clean up your transcriptions through a language model, local or hosted, with a profile per model and prompt.</value>
+    <value>Clean up your transcriptions with a language model, local or hosted.</value>
   </data>
   <!-- No longer an x:Uid: ResetAll_Click reads it with Loc.Get for the
        confirmation dialog's primary button. -->
