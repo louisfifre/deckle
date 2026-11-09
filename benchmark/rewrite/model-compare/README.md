@@ -68,7 +68,7 @@ model's latency column is never inflated by its own queue.
 ### Reasoning levels
 
 `"reasoning": ["auto", "off", "medium"]` runs every model at each listed
-level (`auto`, `off`, `low`, `medium`, `high`). Each (model, level) pair is an
+level (`auto`, `off`, `low`, `medium`). Each (model, level) pair is an
 arm with its own lane, and its rows record it as their model,
 `claude-haiku-5-5@off`, so the judge batches, the summary and the export keep
 the levels apart with no other change; the export adds a `reasoning` field
@@ -77,7 +77,8 @@ today (effort low, adaptive thinking), so its rows compare with those of a
 campaign that named no level. On Claude, `low` sends the same request as
 `auto`. `off` turns thinking off where the model allows it (`disabled` on
 Haiku 5.5, `between_tools` on Sonnet 5.5) and falls back to effort low on
-Opus 5.5, which always thinks. Without a `reasoning` key a campaign runs as
+the others, Opus 5.5 among them, which always thinks. The levels stop at
+`medium`, as the app's do. Without a `reasoning` key a campaign runs as
 before.
 
 Thinking is billed as output whether or not its text comes back, so

@@ -33,7 +33,7 @@ sealed record CampaignCell(string Profile, string[] Buckets, string? JudgeNote, 
 sealed record CampaignJudge(string Model, int Batch);
 
 // `Reasoning` lists the reasoning levels each model runs at ("auto", "off",
-// "low", "medium", "high"); absent, every model runs once with no level, the
+// "low", "medium"); absent, every model runs once with no level, the
 // app's default. Each (model, level) pair is an arm of the campaign: it gets
 // its own lane and its rows record it as their model, "claude-haiku-5-5@off",
 // so the judge, the summary and the export separate the levels the way they
@@ -83,7 +83,7 @@ static class ModelVariant
             ? null
             : Enum.TryParse(level, ignoreCase: true, out ReasoningLevel parsed) && Enum.IsDefined(parsed)
                 ? parsed
-                : throw new ArgumentException($"Unknown reasoning level '{level}': use auto, off, low, medium or high.");
+                : throw new ArgumentException($"Unknown reasoning level '{level}': use auto, off, low or medium.");
 }
 
 // The frozen prompt of one profile, as the run sent it. The hash is this
