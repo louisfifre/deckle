@@ -65,7 +65,9 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
         string definition = (doneDefinition ?? "").Trim();
 
         var items = (checklist ?? []).Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
-        string text = (notes ?? "").Trim();
+        // The notes go through the server's markdown parser, as replace_section
+        // does: same nesting and underscore faults, same preparation.
+        string text = MarkdownBody.PrepareForWrite((notes ?? "").Trim());
 
         // One insert_blocks takes 256 blocks at most. Said before the create,
         // so a list too long does not leave a half-made task behind.

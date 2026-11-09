@@ -146,7 +146,9 @@ public sealed class SessionGestures(
         // holding one no-break space (not measured on a live Anytype yet: if
         // the server trims it, the gap before the next divider is lost).
         string stamp = _time.GetLocalNow().ToString(MarkdownBody.JournalStampFormat, CultureInfo.InvariantCulture);
-        string entry = $"{stamp}\n\n{line.Trim()}\n\n{EntrySpacer}";
+        // A journal line names keys too: its underscores are escaped like any
+        // markdown the server parses (MarkdownBody.PrepareForWrite).
+        string entry = $"{stamp}\n\n{MarkdownBody.PrepareForWrite(line.Trim())}\n\n{EntrySpacer}";
 
         // Anytype puts no space between paragraphs, so one entry's text ran
         // straight into the next entry's stamp. A divider sits between two

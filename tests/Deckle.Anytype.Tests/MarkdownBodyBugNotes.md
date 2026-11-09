@@ -29,3 +29,13 @@ Regression: `MarkdownBodyTests.ReplaceSectionOfACrlfBodyKeepsEveryLineEndingCrlf
 - **Recurrence cue:** a journal read that filters lines by a markdown prefix instead of by position (the title precedes the first stamp).
 
 Regression: `MarkdownBodyTests.JournalEntriesKeepAnEntryWhoseTextOpensWithAHash`.
+
+## Written markdown came back with shifted list items, stray emphasis and a failed check
+
+- **Trigger:** `replace_section` (and the notes of `create_task`, a `log` line) given nested list items indented past their parent's content column, typically four spaces under `- ` as `document_section` renders them; or a key whose underscore sits at a word edge (`_slot`, `slot_`, `__init__`).
+- **Observed symptom:** measured on 2026-11-09 against the live backend, on a scratch document: under `- un`, `····- un.a` then `····- un.b` came back with un.b a child of un.a; `_slot et slot_` came back in italics and `__init__` in bold, while `due_date` inside a word stayed literal; and every write holding a nested list or a `_` emphasis reported « vérification en échec » even when the write was right.
+- **Cause:** the content went to the server's markdown parser as written. That parser shifts an item indented past its parent's content column (inferred from the measure: two spaces under `- ` and three under `1. ` nested correctly); an edge underscore is emphasis by CommonMark. The check compared the lines as spaced, and the render re-indents a child by four spaces under a numbered item and by two under a checkbox, whatever was sent.
+- **Violated invariant:** what a caller writes naturally lands with the nesting it meant and with its underscores literal, and the check compares nesting by structure. The traps are commented at `MarkdownBody.PrepareForWrite` and `SectionContentMatches`.
+- **Recurrence cue:** a new path that sends markdown to `insert_blocks` without `MarkdownBody.PrepareForWrite`, or a read-back check that compares list lines by their spaces.
+
+Regression: `MarkdownBodyTests.ReindentListsPutsEachItemAtItsParentsContentColumn`, `EscapeUnderscoresKeepsEveryBareUnderscoreLiteral`, `SectionContentMatchesReadsListNestingByStructureNotBySpaces`, `QueryGesturesTests.ReplaceSectionKeepsNestedItemsAtTheirLevelAndUnderscoreKeysLiteral`. Not covered: an item followed by an indented continuation paragraph, which is left as written.

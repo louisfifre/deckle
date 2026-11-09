@@ -86,11 +86,141 @@ public static class MarkdownBody
         return new(EditStatus.Replaced, string.Join('\n', rebuilt), 1);
     }
 
-    // Read-after-write "intent" check against the re-read body.
+    // Read-after-write "intent" check against the re-read body. List
+    // indentation is compared by structure, not by spaces: the render indents
+    // a child by four spaces under a numbered item and two under a checkbox
+    // (measured 2026-11-09), whatever was sent.
     public static bool SectionContentMatches(string body, string heading, string intendedContent)
     {
         if (!TryReadSection(body, heading, out string actual)) return false;
-        return NormalizeBlock(actual).Equals(NormalizeBlock(intendedContent), StringComparison.Ordinal);
+        return NormalizeBlock(ReindentLists(actual))
+            .Equals(NormalizeBlock(ReindentLists(intendedContent)), StringComparison.Ordinal);
+    }
+
+    // ── writes ────────────────────────────────────────────────────────────────
+    //
+    // Markdown a caller wrote naturally, made safe for the server's parser
+    // before an insert. Two faults, both measured on 2026-11-09 against the
+    // backend that serves Deckle:
+    //
+    //   • A nested list item indented past its parent's content column shifts
+    //     one level down: under « - un », « ····- un.a » then « ····- un.b »
+    //     made un.b a child of un.a. Two spaces, the content column of « - »,
+    //     kept them siblings. A caller copying a read gets four spaces, since
+    //     the render indents that way, so the items are re-indented to their
+    //     parent's content column.
+    //   • An underscore at the edge of a word opens or closes emphasis: « _slot
+    //     et slot_ » came back in italics and « __init__ » in bold, while
+    //     « due_date » inside a word stayed. Keys are what an agent writes with
+    //     underscores, so every bare underscore outside code is escaped; « \_ »
+    //     is rendered as a literal underscore (measured). Emphasis is written
+    //     with « * », which is left alone.
+    public static string PrepareForWrite(string markdown) =>
+        EscapeUnderscores(ReindentLists(markdown.Replace("\r\n", "\n")));
+
+    // Each list item gets the indentation its nesting calls for: none at the
+    // top, its parent's content column below (the marker's width plus one
+    // space: 2 under « - », 3 under « 1. »). The nesting is read from the
+    // original indentation: deeper than the item above opens a child, as deep
+    // or shallower goes back to the matching level. A line that is not an
+    // item and starts at the margin ends the list. Code fences are left as is.
+    public static string ReindentLists(string markdown)
+    {
+        string[] lines = markdown.Split('\n');
+        bool[] fenced = FenceMask(lines);
+        var stack = new List<(int Indent, int ContentColumn)>();
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (fenced[i]) continue;
+            string line = lines[i];
+            if (line.Trim().Length == 0) continue;
+
+            int indent = IndentWidth(line, out int textStart);
+            int marker = ListMarkerLength(line, textStart);
+            if (marker == 0)
+            {
+                if (indent == 0) stack.Clear();
+                continue;
+            }
+
+            while (stack.Count > 0 && stack[^1].Indent >= indent) stack.RemoveAt(stack.Count - 1);
+            int column = stack.Count == 0 ? 0 : stack[^1].ContentColumn;
+            stack.Add((indent, column + marker + 1));
+            lines[i] = new string(' ', column) + line[textStart..];
+        }
+        return string.Join('\n', lines);
+    }
+
+    // Escapes every underscore outside code (fences and inline spans) that is
+    // not escaped already.
+    public static string EscapeUnderscores(string markdown)
+    {
+        string[] lines = markdown.Split('\n');
+        bool[] fenced = FenceMask(lines);
+        for (int i = 0; i < lines.Length; i++)
+        {
+            if (fenced[i] || lines[i].IndexOf('_') < 0) continue;
+
+            string line = lines[i];
+            var sb = new StringBuilder(line.Length + 8);
+            int p = 0;
+            while (p < line.Length)
+            {
+                char c = line[p];
+                if (c == '\\' && p + 1 < line.Length)
+                {
+                    sb.Append(c).Append(line[p + 1]);
+                    p += 2;
+                    continue;
+                }
+                if (c == '`')
+                {
+                    // An inline code span runs to the next backtick run of the
+                    // same length; without one, the backticks are literal.
+                    int run = 1;
+                    while (p + run < line.Length && line[p + run] == '`') run++;
+                    int close = line.IndexOf(new string('`', run), p + run, StringComparison.Ordinal);
+                    int end = close < 0 ? p + run : close + run;
+                    sb.Append(line, p, end - p);
+                    p = end;
+                    continue;
+                }
+                if (c == '_') sb.Append('\\');
+                sb.Append(c);
+                p++;
+            }
+            lines[i] = sb.ToString();
+        }
+        return string.Join('\n', lines);
+    }
+
+    // Leading width, a tab counting four columns, and where the text starts.
+    static int IndentWidth(string line, out int textStart)
+    {
+        int width = 0;
+        textStart = 0;
+        while (textStart < line.Length && line[textStart] is ' ' or '\t')
+        {
+            width += line[textStart] == '\t' ? 4 : 1;
+            textStart++;
+        }
+        return width;
+    }
+
+    // The width of a list marker at `start` (« - », « * », « + », « 12. »,
+    // « 3) ») when a space follows it, else 0.
+    static int ListMarkerLength(string line, int start)
+    {
+        if (start >= line.Length) return 0;
+        int end = start;
+        if (line[end] is '-' or '*' or '+') end++;
+        else
+        {
+            while (end < line.Length && end - start < 9 && char.IsAsciiDigit(line[end])) end++;
+            if (end == start || end >= line.Length || line[end] is not ('.' or ')')) return 0;
+            end++;
+        }
+        return end < line.Length && line[end] == ' ' ? end - start : 0;
     }
 
     // Normalized heading texts in document order, for the section-set guard: an

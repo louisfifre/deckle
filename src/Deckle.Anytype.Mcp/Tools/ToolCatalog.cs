@@ -341,7 +341,7 @@ public static class ToolCatalog
                     [
                         Prop("object", "string", "Object whose body to edit, name or id."),
                         Prop("heading", "string", "Exact text of the section heading to replace, without the leading '#'."),
-                        Prop("content", "string", "New markdown content to place under the heading; write it naturally, without escaping."),
+                        Prop("content", "string", "New markdown content to place under the heading; write it naturally, without escaping. Underscores stay literal (keys such as due_date or slot_), so write emphasis with *; nested list items may be indented by any amount, they are re-indented by their nesting."),
                     ]),
                 async (args, ct) =>
                     await query.ReplaceSectionAsync(

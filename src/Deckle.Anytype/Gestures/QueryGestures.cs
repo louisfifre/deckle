@@ -405,7 +405,8 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
         foreach (string rootId in found.RootIds)
             ops.Add(AnytypeV2BlockOps.DeleteBlock(AnytypeV2BlockRef.ById(rootId), recursive: true));
         if (!string.IsNullOrWhiteSpace(content))
-            ops.Add(AnytypeV2BlockOps.InsertMarkdown(AnytypeV2Placement.After(found.HeadingId), content));
+            ops.Add(AnytypeV2BlockOps.InsertMarkdown(
+                AnytypeV2Placement.After(found.HeadingId), MarkdownBody.PrepareForWrite(content)));
 
         if (ops.Count > MaxBatchOps)
             throw new InvalidOperationException(

@@ -806,13 +806,49 @@ public class QueryGesturesTests
             .ReplaceSectionAsync(TaskId, "État", "En cours sur module_X.", Ct);
 
         Assert.Equal(
-            ["delete a1 recursive=true", "insert after h1: En cours sur module_X."],
+            ["delete a1 recursive=true", "insert after h1: En cours sur module\\_X."],
             SentOps(v2));
         Assert.Equal(ETag, SentPatch(v2).Header("If-Match"));
         Assert.Equal(["GET", "PATCH", "GET"], v2.Requests.Select(r => r.Method));
         Assert.EndsWith("format=md", v2.Requests[2].PathAndQuery);
         Assert.Equal("Section « État » remplacée dans Ma tâche (vérifié).", digest);
         Assert.Empty(server.Requests);
+    }
+
+    // Measured on 2026-11-09: nested items indented by four spaces under « - »
+    // came back shifted one level down, and « _slot et slot_ » came back in
+    // italics. The content is re-indented to its parent's content column and
+    // its bare underscores escaped before it reaches the server; the render
+    // indents by four again, which the verification reads as the same nesting.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task ReplaceSectionKeepsNestedItemsAtTheirLevelAndUnderscoreKeysLiteral()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = ReplaceFlow(ThreeSections(),
+            "# Tâche\n## État\nClés \\_slot et slot\\_.\n- un\n    - un.a\n    - un.b\n## Notes\nrien");
+
+        string digest = await NewGestures(server, v2).ReplaceSectionAsync(
+            TaskId, "État", "Clés _slot et slot_.\n- un\n    - un.a\n    - un.b", Ct);
+
+        Assert.Equal(
+            ["delete a1 recursive=true", "insert after h1: Clés \\_slot et slot\\_.\n- un\n  - un.a\n  - un.b"],
+            SentOps(v2));
+        Assert.Equal("Section « État » remplacée dans Ma tâche (vérifié).", digest);
+    }
+
+    // The verification still catches a shifted item: un.b one level too deep.
+    [Fact]
+    public async Task ReplaceSectionReportsANestingTheServerDidNotKeep()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = ReplaceFlow(ThreeSections(),
+            "# Tâche\n## État\n- un\n    - un.a\n        - un.b\n## Notes\nrien");
+
+        string digest = await NewGestures(server, v2).ReplaceSectionAsync(
+            TaskId, "État", "- un\n  - un.a\n  - un.b", Ct);
+
+        Assert.Contains("vérification en échec", digest);
     }
 
     // No ETag on the read means no condition on the write.
