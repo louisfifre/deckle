@@ -822,6 +822,13 @@ internal sealed class FakeAnytypeServer : IDisposable
     public void OnPostPropertyTag(string propertyId, JsonObject response) =>
         _routes.Add(new("POST", $"{SpacePath}/properties/{propertyId}/tags", 201, response.ToJsonString()));
 
+    // Space-level routes, outside the fixed space.
+    public void OnListSpaces(JsonObject response) =>
+        _routes.Add(new("GET", "/v1/spaces", 200, response.ToJsonString()));
+
+    public void OnPostSpace(JsonObject response, int status = 201) =>
+        _routes.Add(new("POST", "/v1/spaces", status, response.ToJsonString()));
+
     // ── Paged lists ───────────────────────────────────────────────────────────
     //
     // A list the way the live API serves it: from the query's offset, at most
@@ -841,6 +848,9 @@ internal sealed class FakeAnytypeServer : IDisposable
 
     public void OnPagedListPropertyTags(string propertyId, IEnumerable<JsonObject> rows, int? pageCap = null) =>
         OnPaged("GET", $"{SpacePath}/properties/{propertyId}/tags", rows, pageCap);
+
+    public void OnPagedListSpaces(IEnumerable<JsonObject> rows, int? pageCap = null) =>
+        OnPaged("GET", "/v1/spaces", rows, pageCap);
 
     void OnPaged(string method, string path, IEnumerable<JsonObject> rows, int? pageCap) =>
         _pagers.Add(new Pager(method, path, rows.Cast<JsonNode>().ToArray(), pageCap));

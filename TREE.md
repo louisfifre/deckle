@@ -408,6 +408,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── AnytypeApiClient.cs
 │   │   │   ├── AnytypeApiClient.Files.cs
 │   │   │   ├── AnytypeApiClient.Schema.cs
+│   │   │   ├── AnytypeApiClient.Spaces.cs
 │   │   │   ├── AnytypeCredentials.cs
 │   │   │   ├── AnytypeRequestGate.cs
 │   │   │   ├── ApiFailureIncidents.cs
@@ -2029,6 +2030,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesBugNotes.md
 │   │   ├── SessionGesturesTests.cs
+│   │   ├── SpaceCallsTests.cs
 │   │   ├── SpaceWriteLockBugNotes.md
 │   │   ├── SpaceWriteLockTests.cs
 │   │   ├── TaskGesturesBugNotes.md
