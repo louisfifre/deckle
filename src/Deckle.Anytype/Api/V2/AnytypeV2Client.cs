@@ -91,6 +91,27 @@ public sealed class AnytypeV2Client : IDisposable
         _endpointTrust = endpointTrust;
     }
 
+    // The same transport for a module that sits outside this assembly and so
+    // cannot build an AnytypeV2Request (the Home recreation, which reads and
+    // writes types, views, templates and widgets). The path is relative to the
+    // space ("types/room", "widgets"); spaceId names another space than this
+    // client's own, null is the client's. Nothing is added: the gate, the
+    // retry and the error envelope are SendAsync's. A read sent as GET is
+    // replay safe; a write is not, so a 5xx on it surfaces instead of resending.
+    public Task<AnytypeV2Response> SendJsonAsync(
+        HttpMethod method,
+        string spaceRelativePath,
+        JsonNode? body,
+        IReadOnlyList<KeyValuePair<string, string>>? query,
+        string? spaceId,
+        CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(method);
+        ArgumentException.ThrowIfNullOrWhiteSpace(spaceRelativePath);
+        return SendAsync(
+            new AnytypeV2Request(method, spaceRelativePath, body, query, SpaceId: spaceId), ct);
+    }
+
     internal async Task<AnytypeV2Response> SendAsync(
         AnytypeV2Request request, CancellationToken ct)
     {
