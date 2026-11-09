@@ -1014,6 +1014,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeObjects.cs
 │   │   ├── HomePartialWriteException.cs
 │   │   ├── HomePropertyWriter.cs
+│   │   ├── HomeRecreationComparer.cs
 │   │   ├── HomeRelationEdits.cs
 │   │   ├── HomeReplaySheet.cs
 │   │   ├── HomeRequests.cs
@@ -2258,6 +2259,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomePagingTests.cs
 │   │   ├── HomePartialWriteTests.cs
 │   │   ├── HomePointDictationTests.cs
+│   │   ├── HomeRecreationComparerTests.cs
 │   │   ├── HomeRehearsalFixtures.cs
 │   │   ├── HomeRelationTests.cs
 │   │   ├── HomeReplaySheetTests.cs
