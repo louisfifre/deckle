@@ -250,7 +250,10 @@ public static class DevSpace
             new("reference", "Référence"),
             new("specification", "Spécification"),
             new("instructions", "Instructions"),
-            new("research", "Recherche"),
+            // Not « research »: the server keeps option keys unique across the
+            // whole space, and task_type already owns that one (measured on a
+            // throwaway space, 2026-11-09).
+            new("research_note", "Recherche"),
             new("architecture", "Architecture"),
             new("resume", "Reprise"),
         ];

@@ -113,7 +113,7 @@
       "tags": [
       {"key": "tip", "name": "Astuce"}, {"key": "nomenclature", "name": "Nomenclature"},
       {"key": "reference", "name": "Référence"}, {"key": "specification", "name": "Spécification"},
-      {"key": "instructions", "name": "Instructions"}, {"key": "research", "name": "Recherche"},
+      {"key": "instructions", "name": "Instructions"}, {"key": "research_note", "name": "Recherche"},
       {"key": "architecture", "name": "Architecture"}, {"key": "resume", "name": "Reprise"}]},
     {"key": "document_global", "name": "Document global", "format": "checkbox"},
     {"key": "version", "name": "Version", "format": "text"},

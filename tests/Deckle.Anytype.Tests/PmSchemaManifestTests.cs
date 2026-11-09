@@ -126,6 +126,22 @@ public sealed class PmSchemaManifestTests
             }
     }
 
+    // The server refuses a second option with a key an earlier one holds, even
+    // under another property: « tag key "research" already exists », measured
+    // on a real space (2026-11-09). One option key therefore names one option.
+    [Fact]
+    public void NoOptionKeyIsDeclaredTwiceAcrossTheManifest()
+    {
+        var repeated = Load().Properties
+            .SelectMany(p => p.Tags.Select(t => (Property: p.Key, Key: t.Key ?? t.MatchKey)))
+            .GroupBy(o => o.Key)
+            .Where(g => g.Count() > 1)
+            .Select(g => $"{g.Key} ({string.Join(", ", g.Select(o => o.Property))})")
+            .ToList();
+
+        Assert.True(repeated.Count == 0, "Option keys declared twice: " + string.Join("; ", repeated));
+    }
+
     [Fact]
     public void EveryPropertyKeyDevSpaceNamesIsInTheManifestAndTheOtherWayRound()
     {
