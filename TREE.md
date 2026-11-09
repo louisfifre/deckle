@@ -128,6 +128,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── 0007-write-message-shape-per-level-in-the-template.md  — Every event's message template carries the shape its level calls for, a sentenc…
 │   │   ├── 0008-run-anytype-mcp-in-a-supervised-gateway-process.md  — The Anytype MCP host runs in its own gateway process that Deckle stages by cont…
 │   │   └── 0009-own-animation-setting-defaulting-to-windows.md  — Deckle's own animations follow a Deckle setting, Same as Windows by default, be…
+│   ├── media/
+│   │   ├── board-ambient.png
+│   │   ├── board-autocorrect.png
+│   │   ├── board-dictation.png
+│   │   ├── board-hero.png
+│   │   └── board-rewrite.png
 │   ├── research/
 │   │   ├── taskbar-briefs-2026-10-18/
 │   │   │   ├── brief-csharp-socle.md

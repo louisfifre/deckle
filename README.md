@@ -1,10 +1,6 @@
 <p align="center">
-  <img src="logo/primary.png" alt="Deckle logo" width="128">
+  <img src="docs/media/board-hero.png" alt="Deckle. A local companion for Windows 11: one app, many modules, each turned on or off as you like. Nothing leaves your machine." width="100%">
 </p>
-
-# Deckle
-
-**A local companion for Windows 11: one app, many modules, each turned on or off as you like. Nothing leaves your machine.**
 
 Voice dictation is the first module and the most established one. Press the hotkey, speak, and press it again when you are done. Deckle cuts your speech into utterances on your pauses and transcribes each one with a local Whisper model while you keep talking. A long pause becomes a new paragraph. The text goes to the clipboard, or straight into the focused field when you turn paste on.
 
@@ -13,6 +9,8 @@ Voice dictation is the first module and the most established one. Press the hotk
 > **Personal project, early public release.** Windows 11 x64, unpackaged, and installed per user without administrator privileges.
 
 ## Dictation, how it works
+
+<img src="docs/media/board-dictation.png" alt="Dictation: the HUD counts the take while the live transcript fills beside it, then confirms the text is on the clipboard. The HUD design is not final." width="100%">
 
 - **One hotkey, pressed twice.** Win + the key left of 1 starts a take; the same key stops it. It is a toggle, so your hands are free while you speak. Every hotkey, this one included, can be changed in **Settings › Shortcuts**.
 - **Utterances cut on your pauses.** An energy threshold watches the microphone level and cuts an utterance when you pause long enough. A Silero voice-activity model then trims each utterance down to the speech it contains.
@@ -41,6 +39,12 @@ Deckle is one app with several modules. You choose them at setup and can change 
 | **Ambient light** | Screen color mapped to Philips Hue lights over the local network. | In progress |
 | **Trackpad gestures** | Three-finger drag on a Windows precision touchpad. | Available |
 | **Anytype workspace** | A local Anytype backend and an MCP surface that AI assistants can read and write. | Available |
+
+<img src="docs/media/board-rewrite.png" alt="Rewrite: the Rewriting settings page with one profile on Ollama and one on LM Studio, and the HUD while a dictation is rewritten." width="100%">
+
+<img src="docs/media/board-autocorrect.png" alt="Autocorrect: French accents restored as you type, in the apps you enroll." width="100%">
+
+<img src="docs/media/board-ambient.png" alt="Ambient light, in progress: the Ambient Light settings page with the Hue bridge paired and the brightness response curve." width="100%">
 
 A left click on the tray icon opens a menu with a switch per background feature, Ambient Light, Record and Transcribe audio files. A right click opens the classic menu for Logs, Settings, the Playground, restart and quit. A double click opens Settings.
 
