@@ -22,6 +22,13 @@ public class MarkdownBodyTests
     // A tab counts four columns; an item at the margin stays there.
     [InlineData("- a\n\t- b", "- a\n  - b")]
     [InlineData("  - a\n  - b", "- a\n- b")]
+    // Short of the parent's content column is a sibling, as in CommonMark.
+    [InlineData("- a\n - b", "- a\n- b")]
+    [InlineData("10. dix\n    - dix.a", "10. dix\n    - dix.a")]
+    // A thematic break is no item and ends the list.
+    [InlineData("- a\n* * *\n  - b", "- a\n* * *\n- b")]
+    // Four columns outside any list is an indented code block.
+    [InlineData("Texte\n\n    - code", "Texte\n\n    - code")]
     public void ReindentListsPutsEachItemAtItsParentsContentColumn(string sent, string expected)
     {
         Assert.Equal(expected, MarkdownBody.ReindentLists(sent));
@@ -37,12 +44,18 @@ public class MarkdownBodyTests
 
     [Theory]
     [InlineData("_slot et slot_", "\\_slot et slot\\_")]
-    [InlineData("__init__ et due_date", "\\_\\_init\\_\\_ et due\\_date")]
+    // Inside a word an underscore is literal already, and stays as written.
+    [InlineData("__init__ et due_date", "\\_\\_init\\_\\_ et due_date")]
     // Already escaped, inside an inline code span, or in a fence: untouched.
     [InlineData("deja\\_echappe", "deja\\_echappe")]
-    [InlineData("`code_garde` puis cle_libre", "`code_garde` puis cle\\_libre")]
-    [InlineData("``a_`b`` c_d", "``a_`b`` c\\_d")]
+    [InlineData("`code_garde` puis _cle", "`code_garde` puis \\_cle")]
+    [InlineData("``a_`b`` _d", "``a_`b`` \\_d")]
     [InlineData("```\nx_y\n```", "```\nx_y\n```")]
+    // An address keeps its underscores bare: a backslash would land in it.
+    [InlineData("<https://x.com/_a_> et _b", "<https://x.com/_a_> et \\_b")]
+    [InlineData("voir https://x.com/_a puis _b", "voir https://x.com/_a puis \\_b")]
+    [InlineData("[_lien_](https://x.com/_a) _b", "[\\_lien\\_](https://x.com/_a) \\_b")]
+    [InlineData("<_pas une adresse_>", "<\\_pas une adresse\\_>")]
     // Emphasis written with « * » is the caller's and stays.
     [InlineData("*vrai italique*", "*vrai italique*")]
     public void EscapeUnderscoresKeepsEveryBareUnderscoreLiteral(string sent, string expected)

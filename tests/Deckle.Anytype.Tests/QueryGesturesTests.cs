@@ -879,7 +879,8 @@ public class QueryGesturesTests
             .ReplaceSectionAsync(TaskId, "État", "En cours sur module_X.", Ct);
 
         Assert.Equal(
-            ["delete a1 recursive=true", "insert after h1: En cours sur module\\_X."],
+            // Inside a word the underscore is literal already: sent as written.
+            ["delete a1 recursive=true", "insert after h1: En cours sur module_X."],
             SentOps(v2));
         Assert.Equal(ETag, SentPatch(v2).Header("If-Match"));
         Assert.Equal(["GET", "PATCH", "GET"], v2.Requests.Select(r => r.Method));

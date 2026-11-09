@@ -112,23 +112,33 @@ public static class MarkdownBody
     //   • An underscore at the edge of a word opens or closes emphasis: « _slot
     //     et slot_ » came back in italics and « __init__ » in bold, while
     //     « due_date » inside a word stayed. Keys are what an agent writes with
-    //     underscores, so every bare underscore outside code is escaped; « \_ »
-    //     is rendered as a literal underscore (measured). Emphasis is written
-    //     with « * », which is left alone.
+    //     underscores, so an underscore at a word edge is escaped; « \_ » is
+    //     rendered as a literal underscore (measured). Emphasis is written with
+    //     « * », which is left alone.
+    //
+    // The list shift is the server's: CommonMark makes un.a and un.b siblings
+    // there (both sit past un's content column, neither past un.a's), so it is
+    // a defect of the backend's markdown import, worth reporting upstream. The
+    // underscore emphasis is CommonMark itself, not a defect: the escape is ours
+    // to write.
     public static string PrepareForWrite(string markdown) =>
         EscapeUnderscores(ReindentLists(markdown.Replace("\r\n", "\n")));
 
     // Each list item gets the indentation its nesting calls for: none at the
     // top, its parent's content column below (the marker's width plus one
-    // space: 2 under « - », 3 under « 1. »). The nesting is read from the
-    // original indentation: deeper than the item above opens a child, as deep
-    // or shallower goes back to the matching level. A line that is not an
-    // item and starts at the margin ends the list. Code fences are left as is.
+    // space: 2 under « - », 3 under « 1. »). The nesting is read the CommonMark
+    // way from the original indentation: an item that reaches its parent's
+    // content column is its child, one that falls short goes back up a level.
+    // A line that is not an item and starts at the margin ends the list, and so
+    // does a thematic break (« * * * », « --- »). Left as written: code fences,
+    // and an item indented four columns or more outside any list, which
+    // CommonMark reads as an indented code block.
     public static string ReindentLists(string markdown)
     {
         string[] lines = markdown.Split('\n');
         bool[] fenced = FenceMask(lines);
-        var stack = new List<(int Indent, int ContentColumn)>();
+        // Per open item: its content column as written, and as rewritten.
+        var stack = new List<(int Written, int Rewritten)>();
         for (int i = 0; i < lines.Length; i++)
         {
             if (fenced[i]) continue;
@@ -136,23 +146,35 @@ public static class MarkdownBody
             if (line.Trim().Length == 0) continue;
 
             int indent = IndentWidth(line, out int textStart);
-            int marker = ListMarkerLength(line, textStart);
+            int marker = IsThematicBreak(line) ? 0 : ListMarkerLength(line, textStart);
             if (marker == 0)
             {
                 if (indent == 0) stack.Clear();
                 continue;
             }
 
-            while (stack.Count > 0 && stack[^1].Indent >= indent) stack.RemoveAt(stack.Count - 1);
-            int column = stack.Count == 0 ? 0 : stack[^1].ContentColumn;
-            stack.Add((indent, column + marker + 1));
+            while (stack.Count > 0 && indent < stack[^1].Written) stack.RemoveAt(stack.Count - 1);
+            if (stack.Count == 0 && indent >= 4) continue;
+            int column = stack.Count == 0 ? 0 : stack[^1].Rewritten;
+            stack.Add((indent + marker + 1, column + marker + 1));
             lines[i] = new string(' ', column) + line[textStart..];
         }
         return string.Join('\n', lines);
     }
 
-    // Escapes every underscore outside code (fences and inline spans) that is
-    // not escaped already.
+    // Three or more of the same « - », « * » or « _ », spaces allowed between.
+    static bool IsThematicBreak(string line)
+    {
+        string bare = line.Replace(" ", "").Replace("\t", "");
+        return bare.Length >= 3 && bare[0] is '-' or '*' or '_' && bare.All(c => c == bare[0]);
+    }
+
+    // Escapes each underscore at a word edge, the only place it can open or
+    // close emphasis: inside a word (« due_date ») it is literal already, and
+    // left alone so a read gives back what was written. Never touched: code
+    // (fences and inline spans), an underscore escaped already, an autolink
+    // « <…> », a bare web address and a link's destination « ](…) », where a
+    // backslash would land in the address.
     public static string EscapeUnderscores(string markdown)
     {
         string[] lines = markdown.Split('\n');
@@ -185,7 +207,13 @@ public static class MarkdownBody
                     p = end;
                     continue;
                 }
-                if (c == '_') sb.Append('\\');
+                if (AddressEnd(line, p) is int addressEnd)
+                {
+                    sb.Append(line, p, addressEnd - p);
+                    p = addressEnd;
+                    continue;
+                }
+                if (c == '_' && !InsideWord(line, p)) sb.Append('\\');
                 sb.Append(c);
                 p++;
             }
@@ -193,6 +221,52 @@ public static class MarkdownBody
         }
         return string.Join('\n', lines);
     }
+
+    static bool InsideWord(string line, int p) =>
+        p > 0 && p + 1 < line.Length && char.IsLetterOrDigit(line[p - 1]) && char.IsLetterOrDigit(line[p + 1]);
+
+    // Where an address starting at `p` ends, or null when none starts there:
+    // an autolink « <scheme:…> », a link destination « ](…) » (its « ]( »
+    // included), or a bare web address « http://… », « https://… », « www.… »
+    // that runs to the next space.
+    static int? AddressEnd(string line, int p)
+    {
+        char c = line[p];
+        if (c == '<')
+        {
+            int close = line.IndexOf('>', p + 1);
+            if (close < 0) return null;
+            ReadOnlySpan<char> inner = line.AsSpan(p + 1, close - p - 1);
+            int colon = inner.IndexOf(':');
+            bool scheme = colon >= 2 && char.IsAsciiLetter(inner[0])
+                && inner[..colon].IndexOfAnyExcept(SchemeChars) < 0;
+            return scheme && inner.IndexOfAny(' ', '<') < 0 ? close + 1 : null;
+        }
+        if (c == ']' && p + 1 < line.Length && line[p + 1] == '(')
+        {
+            int depth = 0;
+            for (int q = p + 1; q < line.Length; q++)
+            {
+                if (line[q] == '(') depth++;
+                else if (line[q] == ')' && --depth == 0) return q + 1;
+            }
+            return line.Length;
+        }
+        if ((p == 0 || !char.IsLetterOrDigit(line[p - 1]))
+            && (StartsAt(line, p, "http://") || StartsAt(line, p, "https://") || StartsAt(line, p, "www.")))
+        {
+            int end = p;
+            while (end < line.Length && !char.IsWhiteSpace(line[end])) end++;
+            return end;
+        }
+        return null;
+    }
+
+    static readonly System.Buffers.SearchValues<char> SchemeChars =
+        System.Buffers.SearchValues.Create("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+.-");
+
+    static bool StartsAt(string line, int p, string prefix) =>
+        string.Compare(line, p, prefix, 0, prefix.Length, StringComparison.OrdinalIgnoreCase) == 0;
 
     // Leading width, a tab counting four columns, and where the text starts.
     static int IndentWidth(string line, out int textStart)

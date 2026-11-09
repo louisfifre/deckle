@@ -38,7 +38,9 @@ Regression: `MarkdownBodyTests.JournalEntriesKeepAnEntryWhoseTextOpensWithAHash`
 - **Violated invariant:** what a caller writes naturally lands with the nesting it meant and with its underscores literal, and the check compares nesting by structure. The traps are commented at `MarkdownBody.PrepareForWrite` and `SectionContentMatches`.
 - **Recurrence cue:** a new path that sends markdown to `insert_blocks` without `MarkdownBody.PrepareForWrite`, or a read-back check that compares list lines by their spaces.
 
-Regression: `MarkdownBodyTests.ReindentListsPutsEachItemAtItsParentsContentColumn`, `EscapeUnderscoresKeepsEveryBareUnderscoreLiteral`, `SectionContentMatchesReadsListNestingByStructureNotBySpaces`, `QueryGesturesTests.ReplaceSectionKeepsNestedItemsAtTheirLevelAndUnderscoreKeysLiteral`. Not covered: an item followed by an indented continuation paragraph, which is left as written.
+- **Second pass (review of 2026-11-09):** escaping every underscore put a backslash into web addresses and autolinks, and the list rewrite took `* * *` for an item and a one-space indent for a child. Now only an underscore at a word edge is escaped, addresses are skipped, and nesting follows CommonMark's content-column rule. Only the list shift is a server defect (CommonMark keeps un.a and un.b siblings); the underscore emphasis is CommonMark itself.
+
+Regression: `MarkdownBodyTests.ReindentListsPutsEachItemAtItsParentsContentColumn`, `EscapeUnderscoresKeepsEveryBareUnderscoreLiteral`, `SectionContentMatchesReadsListNestingByStructureNotBySpaces`, `QueryGesturesTests.ReplaceSectionKeepsNestedItemsAtTheirLevelAndUnderscoreKeysLiteral`. Not covered: an item followed by an indented continuation paragraph, which is left as written; an indented code block inside a list; a Windows path whose separator precedes an underscore (`\_` reads as an escape).
 
 ## A long idea showed its title twice
 
