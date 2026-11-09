@@ -2262,6 +2262,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomePointDictationTests.cs
 │   │   ├── HomeRecreationComparerTests.cs
 │   │   ├── HomeRecreationRehearsalSafetyTests.cs
+│   │   ├── HomeRecreationRehearsalTests.cs
 │   │   ├── HomeRecreationRoundTripTests.cs
 │   │   ├── HomeRehearsalFixtures.cs
 │   │   ├── HomeRelationTests.cs
