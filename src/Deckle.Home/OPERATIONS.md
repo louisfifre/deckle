@@ -165,12 +165,24 @@ unless their variables are set. Running it is the maintainer's act.
    the exact name (for example `Home test`), `CreateTestSpace` creates it
    through `POST /v1/spaces`, refuses a name already taken, and prints the
    line to add to the `aliases` object of `spaces.json` in the anytype
-   module folder (`"home-test": "<id>"`). The public API has no invite: the
-   space is the bot's alone until the person joins it from the app.
+   module folder (`"home-test": "<id>"`). The public API has no invite and
+   the bot is an Anytype account of its own, so nobody can bring the person
+   into a space the bot created: use this step only for a space no person
+   needs to see. For a test space the person looks at, the person creates it
+   in the app and shares an invite link, the bot joins it
+   (`anytype space join <link>`), and its id goes into `spaces.json`.
 2. Rehearse. With `DECKLE_HOME_REHEARSAL_SOURCE` (an alias, `home`) and
    `DECKLE_HOME_REHEARSAL_TARGET` (the test space's alias) set,
    `RecreateOnTestSpace` runs `HomeRecreationRehearsal`: export, schema,
    replay, compare, counts.
+3. Or split the run, when the bot that reads the source cannot reach the
+   target (a cut-over from one Anytype network to another). `ExportSheet`
+   with `DECKLE_HOME_EXPORT_SOURCE` (an alias) writes the sheet and prints its
+   path; nothing else is written. Later, `ReplaySheetOnTestSpace` with
+   `DECKLE_HOME_REPLAY_SHEET` (that path) and `DECKLE_HOME_REHEARSAL_TARGET`
+   runs schema, replay, compare and counts from the file. The usual
+   refusals hold, plus one: the target alias is never the alias the sheet
+   was exported from.
 
 ```powershell
 $env:DECKLE_HOME_CREATE_TEST_SPACE = 'Home test'

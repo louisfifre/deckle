@@ -29,6 +29,41 @@ public sealed class HomeRecreationRehearsalSafetyTests
     public void ADistinctTestSpaceIsAccepted() =>
         HomeRecreationRehearsal.RefuseUnsafeTarget("source-id", "home-test", "target-id");
 
+    // A replay from a sheet does not know the source's id (it may live on
+    // another network): an empty source id skips that one check only.
+    [Fact]
+    public void AnUnknownSourceIdStillRefusesTheLiveSpace()
+    {
+        HomeRecreationRehearsal.RefuseUnsafeTarget("", "home-test", "target-id");
+        Assert.Throws<InvalidOperationException>(() =>
+            HomeRecreationRehearsal.RefuseUnsafeTarget("", "home", "target-id"));
+    }
+
+    [Fact]
+    public async Task AReplayRefusesTheAliasItsSheetWasExportedFromBeforeAnyRead()
+    {
+        string path = Path.Combine(Path.GetTempPath(), $"home-sheet-{Guid.NewGuid():N}.json");
+        try
+        {
+            new HomeReplaySheet { SourceAlias = "home-ancien" }.Save(path);
+            using var server = new FakeHomeAnytypeServer();
+            using var api = new Deckle.Anytype.AnytypeApiClient(server.Credentials);
+            var aliases = new Deckle.Anytype.AnytypeSpaceAliases(
+                new Dictionary<string, string> { ["home-ancien"] = "space-old" });
+
+            InvalidOperationException refusal = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+                new HomeRecreationRehearsal(api, aliases)
+                    .ReplayFromSheetAsync(path, "HOME-ANCIEN", TestContext.Current.CancellationToken));
+
+            Assert.Contains("exportée de « home-ancien »", refusal.Message);
+            Assert.Empty(server.Requests);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
     [Fact]
     public void TheAppliedManifestCarriesTheOpenOptionsTheSheetUsesOnce()
     {

@@ -21,6 +21,8 @@ public sealed class HomeRecreationRehearsalTests
     public const string SourceVariable = "DECKLE_HOME_REHEARSAL_SOURCE";
     public const string TargetVariable = "DECKLE_HOME_REHEARSAL_TARGET";
     public const string CreateSpaceVariable = "DECKLE_HOME_CREATE_TEST_SPACE";
+    public const string ExportSourceVariable = "DECKLE_HOME_EXPORT_SOURCE";
+    public const string ReplaySheetVariable = "DECKLE_HOME_REPLAY_SHEET";
 
     static CancellationToken Ct => TestContext.Current.CancellationToken;
 
@@ -50,6 +52,49 @@ public sealed class HomeRecreationRehearsalTests
         Assert.True(File.Exists(sheetPath));
     }
 
+    // The two halves of a run split across networks. ExportSheet writes the
+    // sheet of DECKLE_HOME_EXPORT_SOURCE (an alias) and prints its path;
+    // ReplaySheetOnTestSpace replays DECKLE_HOME_REPLAY_SHEET (that path) on
+    // DECKLE_HOME_REHEARSAL_TARGET (an EMPTY test space), then compares.
+    [Fact(Explicit = true)]
+    public async Task ExportSheet()
+    {
+        string? source = Variable(ExportSourceVariable);
+        Assert.SkipWhen(source is null,
+            $"Export non lancé : définis {ExportSourceVariable} (alias de l'espace source, par exemple home).");
+
+        AnytypeCredentials credentials = AnytypeCredentials.Load();
+        AnytypeSpaceAliases aliases = AnytypeSpaceAliases.Load(credentials.SpaceId);
+        using var api = new AnytypeApiClient(credentials);
+        string sheetPath = HomeReplaySheet.ResolvePath(source!, DateTimeOffset.Now);
+
+        HomeReplaySheetReport report = await new HomeRecreationRehearsal(api, aliases)
+            .ExportAsync(source!, sheetPath, Ct);
+
+        Write($"Feuille écrite : {sheetPath}");
+        Write($"Objets exportés : {report.Exported}.");
+        Assert.True(File.Exists(sheetPath));
+    }
+
+    [Fact(Explicit = true)]
+    public async Task ReplaySheetOnTestSpace()
+    {
+        string? sheetPath = Variable(ReplaySheetVariable);
+        string? target = Variable(TargetVariable);
+        Assert.SkipWhen(sheetPath is null || target is null,
+            $"Rejeu non lancé : définis {ReplaySheetVariable} (chemin d'une feuille exportée) "
+            + $"et {TargetVariable} (alias d'un espace de TEST vide, déclaré dans spaces.json).");
+
+        AnytypeCredentials credentials = AnytypeCredentials.Load();
+        AnytypeSpaceAliases aliases = AnytypeSpaceAliases.Load(credentials.SpaceId);
+        using var api = new AnytypeApiClient(credentials);
+
+        HomeRehearsalResult result = await new HomeRecreationRehearsal(api, aliases)
+            .ReplayFromSheetAsync(sheetPath!, target!, Ct);
+
+        Write(result.Summary());
+    }
+
     [Fact(Explicit = true)]
     public async Task CreateTestSpace()
     {
@@ -72,7 +117,8 @@ public sealed class HomeRecreationRehearsalTests
             name!, "Espace de test de la répétition de recréation Home : il ne reçoit que des copies.", Ct);
 
         Write($"Espace créé : « {created.Name} », id {created.Id}.");
-        Write("Il n'est visible que du bot tant que tu ne l'as pas rejoint depuis l'app.");
+        Write("Il n'est visible que du bot : personne ne peut t'y faire entrer. Pour un espace que tu dois voir, "
+            + "crée-le dans l'app et donne au bot un lien d'invitation.");
         Write("Ligne à ajouter dans l'objet « aliases » de spaces.json :");
         Write($"\"home-test\": \"{created.Id}\"");
     }

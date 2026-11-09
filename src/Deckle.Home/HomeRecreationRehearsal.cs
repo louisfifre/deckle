@@ -33,7 +33,54 @@ internal sealed class HomeRecreationRehearsal(AnytypeApiClient api, AnytypeSpace
         string sourceId = aliases.Resolve(sourceAlias);
         string targetId = aliases.Resolve(targetAlias);
         RefuseUnsafeTarget(sourceId, targetAlias, targetId);
+        await RefuseOccupiedTargetAsync(targetAlias, targetId, ct).ConfigureAwait(false);
 
+        // (b) Export, written at once so a later failure leaves the sheet.
+        HomeReplaySheet sheet = await ExportSheetAsync(sourceId, sourceAlias, sheetPath, ct).ConfigureAwait(false);
+        return await RecreateAsync(sheet, targetAlias, targetId, sheetPath, ct).ConfigureAwait(false);
+    }
+
+    // The export alone: the sheet on disk, nothing written anywhere else. The
+    // first half of a run split across two networks, when the bot that reads
+    // the source cannot reach the target (a cut-over from the official
+    // network to a self-hosted one): export now, replay the file later.
+    public async Task<HomeReplaySheetReport> ExportAsync(string sourceAlias, string sheetPath, CancellationToken ct)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sheetPath);
+        string sourceId = aliases.Resolve(sourceAlias);
+        HomeReplaySheet sheet = await ExportSheetAsync(sourceId, sourceAlias, sheetPath, ct).ConfigureAwait(false);
+        return sheet.Report;
+    }
+
+    // The second half: a sheet exported earlier, replayed on an empty test
+    // space. The source may live on another network, so its id is unknown
+    // here; the target is refused when its alias is the one the sheet was
+    // exported from, on top of the usual refusals.
+    public async Task<HomeRehearsalResult> ReplayFromSheetAsync(
+        string sheetPath, string targetAlias, CancellationToken ct)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sheetPath);
+        HomeReplaySheet sheet = HomeReplaySheet.Load(sheetPath);
+        if (string.Equals(sheet.SourceAlias?.Trim(), targetAlias.Trim(), StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException(
+                $"Refusé : la feuille a été exportée de « {sheet.SourceAlias} », la cible ne peut pas être ce même alias.");
+        string targetId = aliases.Resolve(targetAlias);
+        RefuseUnsafeTarget("", targetAlias, targetId);
+        await RefuseOccupiedTargetAsync(targetAlias, targetId, ct).ConfigureAwait(false);
+        return await RecreateAsync(sheet, targetAlias, targetId, sheetPath, ct).ConfigureAwait(false);
+    }
+
+    private async Task<HomeReplaySheet> ExportSheetAsync(
+        string sourceId, string sourceAlias, string sheetPath, CancellationToken ct)
+    {
+        HomeReplaySheet sheet = await new HomeSpaceExporter(api)
+            .ExportAsync(sourceId, sourceAlias.Trim(), DateTimeOffset.Now, ct).ConfigureAwait(false);
+        sheet.Save(sheetPath);
+        return sheet;
+    }
+
+    private async Task RefuseOccupiedTargetAsync(string targetAlias, string targetId, CancellationToken ct)
+    {
         HomeObjectIndex existing = await HomeObjectIndex.LoadAsync(api, targetId, ct).ConfigureAwait(false);
         int occupied = existing.Objects.Count(value =>
             HomeSchema.CreatableTypes.Contains(HomeObjectJson.TypeKey(value), StringComparer.Ordinal));
@@ -41,12 +88,12 @@ internal sealed class HomeRecreationRehearsal(AnytypeApiClient api, AnytypeSpace
             throw new InvalidOperationException(
                 $"L'espace cible « {targetAlias} » contient déjà {occupied} objet(s) Home : une répétition part "
                 + "d'un espace vide, sinon chaque objet serait doublé. Crée un nouvel espace de test.");
+    }
 
-        // (b) Export, written at once so a later failure leaves the sheet.
-        HomeReplaySheet sheet = await new HomeSpaceExporter(api)
-            .ExportAsync(sourceId, sourceAlias.Trim(), DateTimeOffset.Now, ct).ConfigureAwait(false);
-        sheet.Save(sheetPath);
-
+    // Schema, replay, compare and counts, from a sheet already on disk.
+    private async Task<HomeRehearsalResult> RecreateAsync(
+        HomeReplaySheet sheet, string targetAlias, string targetId, string sheetPath, CancellationToken ct)
+    {
         // (a) The manifest on the target, through the schema-admin gestures.
         (JsonObject manifest, int addedOptions) = ManifestFor(sheet);
         var admin = new SchemaAdminGestures(api, aliases);
@@ -81,7 +128,7 @@ internal sealed class HomeRecreationRehearsal(AnytypeApiClient api, AnytypeSpace
         if (string.Equals(alias, DevAlias, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException(
                 "Refusé : l'alias « dev » est l'espace de gestion de projet, pas un espace de test.");
-        if (string.Equals(sourceId.Trim(), targetId.Trim(), StringComparison.Ordinal))
+        if (sourceId.Trim().Length > 0 && string.Equals(sourceId.Trim(), targetId.Trim(), StringComparison.Ordinal))
             throw new InvalidOperationException(
                 "Refusé : la source et la cible désignent le même espace. La cible doit être un espace de TEST distinct.");
     }
