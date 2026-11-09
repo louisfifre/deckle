@@ -24,7 +24,22 @@ internal sealed record TaskbarCustomization
 
     /// <summary>The clock's lines and styles; null leaves Explorer's clock alone.</summary>
     public ClockCustomization? Clock { get; init; }
+
+    /// <summary>
+    /// The Start menu; null leaves Windows' own. It lives in another process
+    /// than the rest, so it has its own document (TaskbarDocumentBuilder.BuildStartMenu).
+    /// </summary>
+    public StartMenuCustomization? StartMenu { get; init; }
 }
+
+/// <summary>
+/// What Deckle wants the Start menu to look like.
+/// </summary>
+/// <param name="FullHeight">
+/// The menu is as high as the screen it opens on (minus the margin Windows keeps
+/// around it), at any scale. Windows caps the menu at 750 effective pixels.
+/// </param>
+internal sealed record StartMenuCustomization(bool FullHeight = true);
 
 internal enum TaskbarBackground
 {

@@ -88,6 +88,33 @@ internal static class TaskbarDocumentBuilder
         if (style.Color is { } color) rules.Add(new($"clock.{block}.color", target, "Foreground", color));
     }
 
+    /// <summary>
+    /// The settings document of the Start menu process, as one line of JSON. Its own
+    /// document, for its own engine: the Start menu is not part of explorer. An empty
+    /// customization gives an empty document, which restores everything.
+    /// </summary>
+    public static string BuildStartMenu(TaskbarCustomization customization)
+    {
+        using var buffer = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(buffer))
+        {
+            writer.WriteStartObject();
+            writer.WriteStartArray("rules");
+            writer.WriteEndArray();
+
+            writer.WriteStartObject("behaviors");
+            if (customization.StartMenu is { FullHeight: true })
+            {
+                writer.WriteStartObject("startMenuHeight");
+                writer.WriteBoolean("enabled", true);
+                writer.WriteEndObject();
+            }
+            writer.WriteEndObject();
+            writer.WriteEndObject();
+        }
+        return Encoding.UTF8.GetString(buffer.ToArray());
+    }
+
     /// <summary>The settings document as one line of JSON, ready for NativeCommand.Apply.</summary>
     public static string Build(TaskbarCustomization customization)
     {

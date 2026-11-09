@@ -1652,6 +1652,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskbarEngineHost.cs
 │   │   │   ├── TaskbarHookInjector.cs
 │   │   │   ├── TaskbarPipeServer.cs
+│   │   │   ├── TaskbarTarget.cs
 │   │   │   └── VersionedNativeCopy.cs
 │   │   ├── Registry/
 │   │   │   ├── ElevatedProcessRunner.cs
@@ -2483,6 +2484,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── NativeMessageTests.cs
 │   │   │   ├── NativeSelectorLibrary.cs
 │   │   │   ├── NativeSelectorTests.cs
+│   │   │   ├── StartMenuDocumentTests.cs
 │   │   │   ├── TaskbarDocumentBuilderTests.cs
 │   │   │   ├── TaskbarPipeServerTests.cs
 │   │   │   └── VersionedNativeCopyTests.cs

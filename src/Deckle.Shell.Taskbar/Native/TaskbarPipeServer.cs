@@ -34,12 +34,15 @@ internal sealed class TaskbarPipeServer : IAsyncDisposable
         _allowPackagedClients = allowPackagedClients;
     }
 
-    // The name the DLL computes in util.cpp: one pipe per terminal session.
-    public static string DefaultName()
+    // The name the DLL computes in util.cpp: one pipe per terminal session and
+    // per target process.
+    public static string NameFor(TaskbarTarget target)
     {
         using var current = System.Diagnostics.Process.GetCurrentProcess();
-        return $"Deckle.Taskbar.{current.SessionId}";
+        return target.PipeName(current.SessionId);
     }
+
+    public static string DefaultName() => NameFor(TaskbarTarget.Explorer);
 
     public bool IsConnected => _client is not null;
 

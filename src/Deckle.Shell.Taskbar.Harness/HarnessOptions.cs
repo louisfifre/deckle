@@ -10,8 +10,7 @@ internal sealed class HarnessOptions
     public double? StopAfter { get; private init; }
     public string? ControlFile { get; private init; }
     public bool Visual { get; private init; }
-    public string? TargetProcess { get; private init; }
-    public bool Packaged { get; private init; }
+    public TaskbarTarget Target { get; private init; } = TaskbarTarget.Explorer;
     public string? DocumentOut { get; private init; }
     public TaskbarCustomization Customization { get; private init; } = new();
     public string? DumpFile { get; private init; }
@@ -22,8 +21,9 @@ internal sealed class HarnessOptions
         string? dll = null, root = null, send = null, tree = null, control = null;
         double treeAfter = 6;
         double? stopAfter = null;
-        bool visual = false, packaged = false;
-        string? target = null, documentOut = null, dump = null;
+        bool visual = false;
+        TaskbarTarget target = TaskbarTarget.Explorer;
+        string? documentOut = null, dump = null;
         double dumpAfter = 6;
         var customization = new TaskbarCustomization();
 
@@ -40,8 +40,15 @@ internal sealed class HarnessOptions
                 case "--stop-after": stopAfter = double.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture); break;
                 case "--control": control = Next(); break;
                 case "--visual": visual = true; break;
-                case "--process": target = Next(); break;
-                case "--packaged": packaged = true; break;
+                case "--target":
+                    target = Next().ToLowerInvariant() switch
+                    {
+                        "explorer" => TaskbarTarget.Explorer,
+                        "startmenu" => TaskbarTarget.StartMenu,
+                        var other => throw new ArgumentException($"unknown target {other} (explorer or startmenu)"),
+                    };
+                    break;
+                case "--start-menu-full-height": customization = customization with { StartMenu = new StartMenuCustomization(FullHeight: true) }; break;
                 case "--doc-out": documentOut = Next(); break;
                 case "--bg":
                     customization = customization with { Background = Enum.Parse<TaskbarBackground>(Next(), ignoreCase: true) };
@@ -60,7 +67,7 @@ internal sealed class HarnessOptions
         return new HarnessOptions
         {
             DllPath = dll, Root = root, SendFile = send, TreeFile = tree, TreeAfter = treeAfter,
-            StopAfter = stopAfter, ControlFile = control, Visual = visual, TargetProcess = target, Packaged = packaged,
+            StopAfter = stopAfter, ControlFile = control, Visual = visual, Target = target,
             DocumentOut = documentOut, Customization = customization, DumpFile = dump, DumpAfter = dumpAfter,
         };
     }

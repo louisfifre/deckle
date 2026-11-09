@@ -26,7 +26,19 @@ namespace deckle::util
     {
         DWORD session = 0;
         ProcessIdToSessionId(GetCurrentProcessId(), &session);
-        return L"\\\\.\\pipe\\Deckle.Taskbar." + std::to_wstring(session);
+        std::wstring name = L"\\\\.\\pipe\\Deckle.Taskbar." + std::to_wstring(session);
+
+        // One pipe per target process: explorer keeps the bare name, any other
+        // host (the Start menu's StartMenuExperienceHost) gets its executable's
+        // name appended, so two engines in two processes never share a pipe.
+        // Deckle's side spells the same (TaskbarPipeServer.NameFor).
+        std::wstring image = ProcessImagePath();
+        size_t slash = image.find_last_of(L"\\/");
+        std::wstring file = slash == std::wstring::npos ? image : image.substr(slash + 1);
+        size_t dot = file.find_last_of(L'.');
+        if (dot != std::wstring::npos) file.resize(dot);
+        if (!file.empty() && _wcsicmp(file.c_str(), L"explorer") != 0) name += L"." + file;
+        return name;
     }
 
     std::wstring ModulePath(HMODULE module)

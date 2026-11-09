@@ -10,8 +10,11 @@ internal static class HarnessCommand
         var options = HarnessOptions.Parse(args);
         if (options.DocumentOut is { } documentOut)
         {
-            await File.WriteAllTextAsync(documentOut, TaskbarDocumentBuilder.Build(options.Customization));
-            Print($"doc     {TaskbarDocumentBuilder.Rules(options.Customization).Count} rules written to {documentOut}");
+            bool startMenu = options.Target.Kind == TaskbarTargetKind.StartMenu;
+            await File.WriteAllTextAsync(documentOut, startMenu
+                ? TaskbarDocumentBuilder.BuildStartMenu(options.Customization)
+                : TaskbarDocumentBuilder.Build(options.Customization));
+            Print($"doc     {(startMenu ? "start menu document" : TaskbarDocumentBuilder.Rules(options.Customization).Count + " rules")} written to {documentOut}");
             return 0;
         }
 
@@ -28,23 +31,7 @@ internal static class HarnessCommand
         var stop = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; stop.TrySetResult(); };
 
-        TaskbarEngineHost? hostRef = null;
-        Func<string, InjectionResult>? injector = null;
-        if (options.TargetProcess is { } processName)
-        {
-            injector = path =>
-            {
-                if (options.Packaged) VersionedNativeCopy.GrantPackagedAccess(path);
-                Process[] found = Process.GetProcessesByName(processName);
-                if (found.Length == 0) return InjectionResult.Failed("find_process", 0);
-                Print($"target  {processName} pid {found[0].Id}, {found[0].Threads.Count} threads");
-                return TaskbarHookInjector.InjectIntoThreads(path, found[0].Id, () => hostRef!.IsConnected, TimeSpan.FromMilliseconds(400));
-            };
-        }
-
-        await using var host = new TaskbarEngineHost(
-            source, copy, new TaskbarPipeServer(TaskbarPipeServer.DefaultName(), options.Packaged), injector);
-        hostRef = host;
+        await using var host = new TaskbarEngineHost(source, copy, options.Target);
         long connectedAt = 0;
         host.MessageReceived += message =>
         {
@@ -53,7 +40,7 @@ internal static class HarnessCommand
                 case NativeHello hello:
                     connectedAt = Environment.TickCount64;
                     recorder.Reset();   // a new DLL, a new explorer: the old trees are gone
-                    Print($"hello   explorer pid {hello.ProcessId}, protocol {hello.Protocol}, {hello.ModulePath}");
+                    Print($"hello   {options.Target.ProcessName} pid {hello.ProcessId}, protocol {hello.Protocol}, {hello.ModulePath}");
                     break;
                 case NativeLogRecord record:
                     recorder.Record(record);
@@ -77,7 +64,7 @@ internal static class HarnessCommand
         InjectionResult injected = host.Start();
         Print($"copy    {host.LoadedPath}");
         Print(injected.Succeeded
-            ? "inject  hook sent to explorer; waiting for the DLL (Ctrl+C stops it)"
+            ? $"inject  hook sent to {options.Target.ProcessName}; waiting for the DLL (Ctrl+C stops it)"
             : $"inject  FAILED at {injected.Step} (win32 {injected.Win32Error})");
 
         _ = Task.Run(() => WatchAsync(options, host, recorder, dumps, stop, () => connectedAt));
@@ -92,7 +79,7 @@ internal static class HarnessCommand
         TaskCompletionSource stop, Func<long> connectedAt)
     {
         var started = Stopwatch.StartNew();
-        bool sent = false;
+        long sentFor = 0;   // the connection the --send document went to: a new one gets it again
         bool treeWritten = false;
         bool dumpRequested = false;
         while (!stop.Task.IsCompleted)
@@ -106,13 +93,13 @@ internal static class HarnessCommand
                 return;
             }
 
-            if (host.IsConnected && !sent && options.SendFile is { } file)
+            long at = connectedAt();
+            if (host.IsConnected && at != 0 && sentFor != at && options.SendFile is { } file)
             {
-                sent = true;
+                sentFor = at;
                 await SendFileAsync(host, file);
             }
 
-            long at = connectedAt();
             if (host.IsConnected && !treeWritten && options.TreeFile is { } tree && at != 0
                 && Environment.TickCount64 - at > options.TreeAfter * 1000 && recorder.MillisecondsSinceLastChange > 1500)
             {
@@ -181,7 +168,7 @@ internal static class HarnessCommand
     {
         if (options.TreeFile is { } tree && recorder.Count > 0) WriteTree(recorder, tree);
 
-        int explorer = host.ExplorerProcessId;
+        int explorer = host.TargetProcessId;
         string loaded = host.LoadedPath;
         Print("stop    asking the DLL to restore, unadvise and unload");
         bool unloaded = await host.StopEngineAsync();
