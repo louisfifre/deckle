@@ -227,7 +227,7 @@ public sealed class SessionGestures(
         // stamp log is about to write.
         DateTime now = _time.GetLocalNow().DateTime;
         entries.Add(new ReportTime.Entry(now.AddTicks(-(now.Ticks % TimeSpan.TicksPerMinute)), summary));
-        double hours = correctedHours ?? ReportTime.Hours(ReportTime.Duration(entries));
+        double hours = correctedHours ?? ReportTime.TotalHours(entries);
 
         await LogAsync(ReportTime.ClosingLine(hours, summary, correctedHours is not null), reportId, ct);
 

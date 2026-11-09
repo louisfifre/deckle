@@ -78,13 +78,29 @@ public static class ReportTime
 
     // The figure of the last closing entry, or null for a report never closed
     // by this rule.
-    public static double? RecordedHours(IReadOnlyList<Entry> entries)
+    public static double? RecordedHours(IReadOnlyList<Entry> entries) =>
+        LastClosing(entries) is (_, double hours) ? hours : null;
+
+    // The real time of a report about to be closed, its new closing entry
+    // last. A report closed before keeps the figure of its last closing entry
+    // for everything up to it, a correction included, and only the work
+    // logged after it is added. The gap that starts at a closing entry does
+    // not count: the session had stopped there. Without this, closing again
+    // the next morning, to tick a task or mend the summary, counted the night.
+    public static double TotalHours(IReadOnlyList<Entry> entries)
+    {
+        if (LastClosing(entries) is not (int index, double recorded))
+            return Hours(Duration(entries));
+        return Math.Round(recorded + Duration(entries.Skip(index + 1).ToList()).TotalHours, 2);
+    }
+
+    static (int Index, double Hours)? LastClosing(IReadOnlyList<Entry> entries)
     {
         for (int i = entries.Count - 1; i >= 0; i--)
         {
             Match m = ClosingFigure.Match(entries[i].Text);
             if (m.Success)
-                return double.Parse(m.Groups[1].Value.Replace(',', '.'), CultureInfo.InvariantCulture);
+                return (i, double.Parse(m.Groups[1].Value.Replace(',', '.'), CultureInfo.InvariantCulture));
         }
         return null;
     }

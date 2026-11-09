@@ -77,6 +77,42 @@ public class ReportTimeTests
         Assert.Equal(2, hours);
     }
 
+    // Closed at 18:00, closed again the next morning to tick a task: the night
+    // between the two does not count, and nothing was logged in between.
+    [Fact]
+    public void ClosingAgainKeepsTheFirstFigureAndDoesNotCountTheGapAfterIt()
+    {
+        double hours = ReportTime.TotalHours(
+        [
+            At(9, 16, 0, "Début"),
+            At(9, 18, 0, ReportTime.ClosingLine(2, "Fini.", corrected: false)),
+            At(10, 9, 0, "Seconde clôture"),
+        ]);
+
+        Assert.Equal(2, hours);
+    }
+
+    // A corrected figure stands, and only the work logged after it is added.
+    [Fact]
+    public void ClosingAgainAddsOnlyTheWorkLoggedAfterTheLastClosing()
+    {
+        double hours = ReportTime.TotalHours(
+        [
+            At(9, 9, 0, "Début"),
+            At(9, 18, 0, ReportTime.ClosingLine(1.5, "Fini.", corrected: true)),
+            At(10, 9, 0, "Reprise pour un oubli"),
+            At(10, 9, 30, "Seconde clôture"),
+        ]);
+
+        Assert.Equal(2, hours);
+    }
+
+    [Fact]
+    public void AReportClosedOnceIsTimedByItsGaps()
+    {
+        Assert.Equal(1.25, ReportTime.TotalHours([At(9, 9, 0, "Début"), At(9, 10, 15, "Clôture")]));
+    }
+
     [Fact]
     public void AReportClosedBeforeTheRuleRecordsNothing()
     {
