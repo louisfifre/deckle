@@ -6,21 +6,28 @@ namespace deckle::behaviors
 {
     // The Start menu height behavior. The new Start menu ("StartBlendedFlexFrame")
     // is a Grid#FrameRoot whose height Windows caps (MaxHeight, a MaxHeightEnforcer
-    // rectangle, the StartSizes visual state group). This behavior makes FrameRoot
-    // as high as the Start window itself, whatever the scale of the screen: the
-    // window's size is read live in DIPs, so 100 %, 125 % and 150 % all come out
-    // as "the whole height" without a number being stored anywhere.
+    // rectangle, the StartSizes visual state group). This behavior makes the visible
+    // panel (FrameRoot's child AnimationRoot) as tall as the Start window allows,
+    // with the same gap above and below it, at any screen size and scale.
     //
-    // One hold per FrameRoot, on its UI thread. It
-    //   - measures: the window's height (Window.Bounds, effective pixels) minus
-    //     twice FrameRoot's top margin, so the visible panel has the same gap
-    //     above and below (the margin itself stays native);
-    //   - holds Height, MinHeight and MaxHeight at that value with
-    //     PropertyOverrides (so a write of Explorer's code or a visual state
-    //     is answered, and Restore gives the original values back);
-    //   - measures again when the window becomes visible (on the next
-    //     LayoutUpdated, once the menu has been laid out), and when the window
-    //     or the frame changes size (a change of scale or of the screen).
+    // Nothing is assumed about the layout: every figure is measured on the live
+    // tree, in effective pixels (DIP), the unit XAML lays out in.
+    //   - The gap is the panel's shadow inset inside FrameRoot, the room Windows
+    //     keeps around it and the gap it shows on the taskbar's side (12 DIP on
+    //     26100), measured once.
+    //   - The panel's insets inside FrameRoot (its shadow room) and FrameRoot's
+    //     position in its parent are measured at each update.
+    //   - From those, FrameRoot gets VerticalAlignment Top, a top margin that puts
+    //     the panel at the gap, no bottom margin, and Height = MinHeight =
+    //     MaxHeight that puts the panel's bottom at the gap from the window's
+    //     bottom. No bottom margin and a top alignment, because XAML clips an
+    //     element whose Height exceeds its layout slot, and centres one that
+    //     fits a stretched slot: either would break the equal gaps.
+    //   - After the next layout pass the result is measured again: both gaps and
+    //     whether the layout slot clips FrameRoot. A mismatch is corrected once
+    //     more; what remains is logged as start_menu_fit.
+    // Each value is held by a PropertyOverride (a write of Explorer's code or a
+    // visual state is answered; Restore gives the original back).
     class StartMenuHeightHold : public std::enable_shared_from_this<StartMenuHeightHold>
     {
     public:
@@ -41,13 +48,36 @@ namespace deckle::behaviors
         static bool IsFrameRoot(winrt::Windows::UI::Xaml::FrameworkElement const& element);
 
     private:
+        // Where things are, in DIP, relative to the window's content.
+        struct Measure
+        {
+            double window = 0;      // the window's height
+            double windowWidth = 0;
+            double panelLeft = 0;   // AnimationRoot's left
+            double panelWidth = 0;
+            double hostTop = 0;     // FrameRoot's parent's top
+            double frameTop = 0;    // FrameRoot's top
+            double frameHeight = 0;
+            double panelTop = 0;    // AnimationRoot's top
+            double panelHeight = 0;
+            double insetTop() const { return panelTop - frameTop; }
+            double insetBottom() const { return frameTop + frameHeight - (panelTop + panelHeight); }
+            double gapTop() const { return panelTop; }
+            double gapBottom() const { return window - (panelTop + panelHeight); }
+        };
+
         StartMenuHeightHold() = default;
         void Attach(winrt::Windows::UI::Xaml::FrameworkElement const& frameRoot);
+        std::optional<Measure> Take() const;
         void Update(const wchar_t* reason);
+        void AfterNextLayout(void (StartMenuHeightHold::*step)());
         void OnVisible();
+        void OnLaidOutVisible();
+        void Verify();
         void ReassertState();
 
         winrt::weak_ref<winrt::Windows::UI::Xaml::FrameworkElement> m_frameRoot;
+        winrt::weak_ref<winrt::Windows::UI::Xaml::FrameworkElement> m_panel;
         winrt::weak_ref<winrt::Windows::UI::Xaml::FrameworkElement> m_host;
         winrt::weak_ref<winrt::Windows::UI::Xaml::Window> m_window;
         winrt::weak_ref<winrt::Windows::UI::Xaml::FrameworkElement> m_content;
@@ -61,8 +91,11 @@ namespace deckle::behaviors
         bool m_layoutPending = false;
         bool m_applied = false;
         bool m_released = false;
-        double m_height = 0;
-        double m_lastLogged = -1;
+        int m_corrections = 0;      // corrections made since the last size or visibility change
+        double m_gap = -1;          // the gap Windows leaves above the panel, measured before any change
+        double m_height = 0;        // FrameRoot's held Height
+        double m_marginTop = 0;     // FrameRoot's held top margin
         double m_originalMax = 0;   // FrameRoot's effective MaxHeight when the hold began (the visual state's, when it owns it)
+        winrt::Windows::UI::Xaml::Thickness m_originalMargin{};   // FrameRoot's effective Margin when the hold began
     };
 }
