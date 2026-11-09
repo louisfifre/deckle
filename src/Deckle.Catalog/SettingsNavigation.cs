@@ -27,6 +27,18 @@ public static class SettingsNavigation
     public static Func<Type, IReadOnlyList<SettingsBreadcrumbSegment>?>? BreadcrumbFor { get; set; }
 }
 
+// A page that opens subpages names one of them for the self-check's walk,
+// which follows the rail and would otherwise never load a subpage: an x:Uid
+// that does not fit its element, or a binding that throws, then shows in the
+// report like a rail page's. Null when the page has nothing to open right now
+// (an empty list).
+public interface ISettingsSubpageSample
+{
+    SettingsSubpage? SampleSubpage();
+}
+
+public sealed record SettingsSubpage(Type Page, object? Parameter, string Label);
+
 // One segment of a page's path in the rail: its label as the rail prints it,
 // and the tag of the page it leads to, null for the segment of the page itself.
 public sealed record SettingsBreadcrumbSegment(string Label, string? PageTag);

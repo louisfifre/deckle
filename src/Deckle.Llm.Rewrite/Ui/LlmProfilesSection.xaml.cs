@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
-using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
@@ -78,7 +77,7 @@ public sealed partial class LlmProfilesSection : UserControl
     // The name and the hint visibility derive from the provider the profile
     // names; a provider no longer in the list leaves the name blank, which the
     // summary shows as "(no provider)".
-    private static void ApplyProvider(ProfileViewModel vm)
+    internal static void ApplyProvider(ProfileViewModel vm)
     {
         LlmProvider? provider = LlmSettingsService.Instance.Current.Providers
             .Find(p => p.Id == vm.ProviderId);
@@ -100,23 +99,39 @@ public sealed partial class LlmProfilesSection : UserControl
             ProfilesChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    private async void DeleteProfile_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is not FrameworkElement fe || fe.Tag is not ProfileViewModel vm)
-            return;
+    // ── Profile pages ───────────────────────────────────────────────────────
 
+    private void ProfileCard_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement { Tag: ProfileViewModel vm })
+            OpenProfile(vm);
+    }
+
+    private void OpenProfile(ProfileViewModel vm) =>
+        SettingsNavigation.OpenSubpage?.Invoke(typeof(LlmProfilePage), new LlmProfilePageArgs(this, vm));
+
+    // The first profile's page, for the self-check's walk (LlmPage relays it).
+    internal SettingsSubpage? SampleSubpage() =>
+        Profiles.Count == 0
+            ? null
+            : new SettingsSubpage(typeof(LlmProfilePage), new LlmProfilePageArgs(this, Profiles[0]), Profiles[0].Name);
+
+    // Asked from the profile's own page, whose XamlRoot hosts the dialog (this
+    // section is off screen then). True once the profile is gone.
+    internal async Task<bool> RemoveProfileAsync(ProfileViewModel vm, XamlRoot xamlRoot)
+    {
         // Removing the active profile clears the active choice (back to plain
         // transcription), so the page and the engine agree instead of keeping
         // an orphan the ComboBox shows as (None).
         bool confirmed = await ConfirmationService.RequestAsync(
-            this.XamlRoot,
+            xamlRoot,
             new ConfirmationRequest(
                 Loc.Get("Settings_RemoveProfileDialog_Title"),
                 Loc.Format("Settings_RemoveProfileDialog_Content_Format", vm.Name),
                 Loc.Get("Common_Remove"),
                 IsDestructive: true));
         if (!confirmed)
-            return;
+            return false;
 
         var settings = LlmSettingsService.Instance.Current;
         var profiles = settings.Profiles;
@@ -139,86 +154,11 @@ public sealed partial class LlmProfilesSection : UserControl
         }
         Reload();
         ProfilesChanged?.Invoke(this, EventArgs.Empty);
+        return true;
     }
 
-    // ── TextChanged → push value immediately for live auto-save ────────────
-    //
-    // x:Bind TwoWay on TextBox updates the source on LostFocus only. These
-    // handlers push the value on every keystroke so auto-save fires during
-    // typing.
-
-    private void NameBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        if (sender is TextBox tb && tb.Tag is ProfileViewModel vm)
-            vm.Name = tb.Text;
-    }
-
-    private void SystemPromptBox_TextChanged(object sender, TextChangedEventArgs e)
-    {
-        if (sender is TextBox tb && tb.Tag is ProfileViewModel vm)
-            vm.SystemPrompt = tb.Text;
-    }
-
-    // ── Provider picker ─────────────────────────────────────────────────────
-
-    private void ProviderCombo_Loaded(object sender, RoutedEventArgs e)
-    {
-        if (sender is not ComboBox combo || combo.Tag is not ProfileViewModel vm) return;
-        combo.ItemsSource = ProviderOptions;
-        combo.SelectedValue = vm.ProviderId;
-    }
-
-    private void ProviderCombo_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (sender is not ComboBox combo || combo.Tag is not ProfileViewModel vm) return;
-        if (combo.SelectedItem is not ProviderOption option || option.Id == vm.ProviderId) return;
-        vm.ProviderId = option.Id;
-        ApplyProvider(vm);
-    }
-
-    // ── Model picker (AutoSuggestBox) ──────────────────────────────────────
-    //
-    // Not an editable ComboBox: its dropdown-arrow mouse interaction is
-    // unreliable in WinUI 3. Text is OneWay (VM → UI) so the stored model name
-    // shows even when it is not in the suggestion list (provider offline, model
-    // renamed); the handlers below carry UI → VM.
-
-    private void ModelSuggest_GotFocus(object sender, RoutedEventArgs e)
-    {
-        if (sender is not AutoSuggestBox box || box.Tag is not ProfileViewModel vm) return;
-
-        box.ItemsSource = FilterModels(vm, box.Text);
-        box.IsSuggestionListOpen = true;
-    }
-
-    private void ModelSuggest_TextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
-    {
-        // Only react to user typing — ignore programmatic updates (x:Bind
-        // OneWay push, SuggestionChosen echo) to avoid filtering the list
-        // on values the user did not intend to search for.
-        if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput)
-            return;
-
-        if (sender.Tag is not ProfileViewModel vm) return;
-        vm.Model = sender.Text ?? string.Empty;
-        sender.ItemsSource = FilterModels(vm, sender.Text);
-    }
-
-    private void ModelSuggest_SuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
-    {
-        if (sender.Tag is ProfileViewModel vm && args.SelectedItem is string selected)
-            vm.Model = selected;
-    }
-
-    private void ModelSuggest_QuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
-    {
-        if (sender.Tag is not ProfileViewModel vm) return;
-
-        var text = args.ChosenSuggestion is string s ? s : args.QueryText;
-        vm.Model = text ?? string.Empty;
-    }
-
-    private List<string> FilterModels(ProfileViewModel vm, string? query)
+    // The model names the profile's provider serves, for the page's model box.
+    internal List<string> FilterModels(ProfileViewModel vm, string? query)
     {
         if (!_modelNamesByProvider.TryGetValue(vm.ProviderId, out var names))
             return new List<string>();
@@ -231,72 +171,16 @@ public sealed partial class LlmProfilesSection : UserControl
             .ToList();
     }
 
-    // ── Length threshold and shortcut cards ─────────────────────────────────
+    // ── Shortcut cards ──────────────────────────────────────────────────────
     //
-    // Composed rather than written in the template, so the shortcut gets the
-    // same chord editor as the Shortcuts page. They go into the profile's own
-    // fold after the editor card, each a card of its own: a fold never holds a
-    // fold, so the threshold card is revealed by the switch above it instead
-    // of folding under it.
+    // Composed rather than written in the page's XAML, so the shortcut gets the
+    // same chord editor as the Shortcuts page. The profile's page composes them
+    // from here: the chord check reads the other profiles.
     //
-    // The ItemsRepeater recycles an expander for another profile after a
-    // Reload, so the cards are tied to the profile they were composed for and
-    // recomposed when the expander changes hands.
-
-    private sealed record ComposedProfileCards(ProfileViewModel Profile, List<UIElement> Cards);
-
-    private readonly ConditionalWeakTable<SettingsExpander, ComposedProfileCards> _composed = new();
-
-    // The profile is read from Tag, never from DataContext: an ItemsRepeater
-    // whose template uses x:Bind drives the bindings itself and leaves the
-    // element's DataContext unset, so a DataContext test never matched and
-    // no card was ever composed. ElementPrepared runs for every realized
-    // expander, a recycled one included, after its x:Bind values are set.
-    private void ProfilesRepeater_ElementPrepared(ItemsRepeater sender, ItemsRepeaterElementPreparedEventArgs args)
-    {
-        if (args.Element is SettingsExpander expander && expander.Tag is ProfileViewModel vm)
-            ComposeProfileCards(expander, vm);
-    }
-
-    private void ProfileExpander_Loaded(object sender, RoutedEventArgs e)
-    {
-        if (sender is SettingsExpander expander && expander.Tag is ProfileViewModel vm)
-            ComposeProfileCards(expander, vm);
-    }
-
-    // SettingsExpander.Items is a plain List the expander hands to its inner
-    // repeater once, when its template applies: adding to that list later
-    // shows nothing. Assigning a new list is what makes the expander rebind,
-    // so the composed cards always arrive as a fresh Items.
-    private void ComposeProfileCards(SettingsExpander expander, ProfileViewModel vm)
-    {
-        var items = new List<object>(expander.Items);
-        if (_composed.TryGetValue(expander, out ComposedProfileCards? done))
-        {
-            if (ReferenceEquals(done.Profile, vm)) return;
-            foreach (UIElement card in done.Cards) items.Remove(card);
-            _composed.Remove(expander);
-        }
-
-        var host = new StackPanel();
-        new SettingsComposer(host, vm).Compose(ProfileCards(vm), inFold: true);
-
-        var cards = new List<UIElement>();
-        while (host.Children.Count > 0)
-        {
-            UIElement card = host.Children[0];
-            host.Children.RemoveAt(0);
-            items.Add(card);
-            cards.Add(card);
-        }
-        expander.Items = items;
-        _composed.Add(expander, new ComposedProfileCards(vm, cards));
-    }
-
     // A switch, then the chord it reveals: off is "no shortcut", so the chord
     // editor needs no unbound state of its own, and switching off keeps the
     // chord for the next time.
-    private IReadOnlyList<SettingDescriptor> ProfileCards(ProfileViewModel vm) =>
+    internal IReadOnlyList<SettingDescriptor> ProfileCards(ProfileViewModel vm) =>
     [
         Setting.Toggle("LlmProfileHotkeyEnabledCard",
             () => vm.HotkeyEnabled, v => vm.HotkeyEnabled = v,
@@ -345,6 +229,10 @@ public sealed partial class LlmProfilesSection : UserControl
         Profiles.Add(vm);
 
         ProfilesChanged?.Invoke(this, EventArgs.Empty);
+
+        // Straight to its page: a new profile is nothing until it has a name,
+        // a model and a prompt.
+        OpenProfile(vm);
     }
 
     // Scope: the Profiles list only, replaced by the defaults. The normalizer

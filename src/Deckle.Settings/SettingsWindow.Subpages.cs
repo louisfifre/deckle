@@ -58,8 +58,12 @@ public sealed partial class SettingsWindow
         try
         {
             // DrillIn is the transition WinUI gives a move into a detail page;
-            // GoBack plays it in reverse on the way out.
-            if (PageFrame.Navigate(pageType, parameter, new DrillInNavigationTransitionInfo()))
+            // GoBack plays it in reverse on the way out. None during the
+            // capture walk, which photographs the page once it has settled.
+            NavigationTransitionInfo transition = _suppressPageTransition
+                ? new SuppressNavigationTransitionInfo()
+                : new DrillInNavigationTransitionInfo();
+            if (PageFrame.Navigate(pageType, parameter, transition))
             {
                 DeckleSettingsSource.Log.NavCompleted();
                 DeckleSettingsSource.Log.NavCompletedDetail(
