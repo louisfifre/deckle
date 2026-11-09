@@ -77,6 +77,24 @@ public sealed class SentenceRewriteTests
         Assert.Equal("Lissage", engine.Request.Label);
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData(ReasoningLevel.Off)]
+    [InlineData(ReasoningLevel.High)]
+    public void TranscriptRewriteCarriesTheProfileReasoningLevel(ReasoningLevel? level)
+    {
+        var engine = new CapturingEngine();
+        var service = new RewriteService(new SingleEngine("claude", engine));
+        var profile = new RewriteProfile
+        {
+            Name = "Lissage", ProviderId = "claude", Model = "claude-haiku-5-5", Reasoning = level,
+        };
+
+        service.Rewrite("euh bonjour", profile);
+
+        Assert.Equal(level, engine.Request.Reasoning);
+    }
+
     private sealed class SingleEngine(string providerId, IGenerationEngine engine) : IGenerationEngineResolver
     {
         public IGenerationEngine? Resolve(string id) => id == providerId ? engine : null;

@@ -84,6 +84,7 @@ public sealed partial class LlmProfilesSection : UserControl
             .Find(p => p.Id == vm.ProviderId);
         vm.ProviderName = provider?.Name ?? "";
         vm.ShowsGenerationHints = provider is null || provider.Kind != LlmProviderKind.Claude;
+        vm.ShowsReasoning = provider is not null && provider.Kind != LlmProviderKind.Ollama;
     }
 
     // Only a Name change raises ProfilesChanged: the name is the only profile
@@ -293,11 +294,26 @@ public sealed partial class LlmProfilesSection : UserControl
         _composed.Add(expander, new ComposedProfileCards(vm, cards));
     }
 
-    // A switch, then the chord it reveals: off is "no shortcut", so the chord
+    // The reasoning level first, beside the model it depends on; then a
+    // switch and the chord it reveals: off is "no shortcut", so the chord
     // editor needs no unbound state of its own, and switching off keeps the
     // chord for the next time.
+    private static readonly IReadOnlyList<(ReasoningChoice Value, string LabelKey)> ReasoningOptions =
+    [
+        (ReasoningChoice.Automatic, "LlmProfileReasoningAutomatic"),
+        (ReasoningChoice.Off, "LlmProfileReasoningOff"),
+        (ReasoningChoice.Low, "LlmProfileReasoningLow"),
+        (ReasoningChoice.Medium, "LlmProfileReasoningMedium"),
+        (ReasoningChoice.High, "LlmProfileReasoningHigh"),
+    ];
+
     private IReadOnlyList<SettingDescriptor> ProfileCards(ProfileViewModel vm) =>
     [
+        Setting.Choice("LlmProfileReasoningCard",
+            () => vm.Reasoning, v => vm.Reasoning = v,
+            ReasoningOptions,
+            visibleWhen: () => vm.ShowsReasoning,
+            defaultValue: () => ReasoningChoice.Automatic),
         Setting.Toggle("LlmProfileHotkeyEnabledCard",
             () => vm.HotkeyEnabled, v => vm.HotkeyEnabled = v,
             defaultValue: () => false),

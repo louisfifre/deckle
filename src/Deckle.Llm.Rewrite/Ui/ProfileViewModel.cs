@@ -61,6 +61,16 @@ public partial class ProfileViewModel : ObservableObject
     [ObservableProperty]
     public partial double RepeatPenalty { get; set; }
 
+    // The profile's reasoning level, with Automatic standing for "none set"
+    // (null in the POCO): a choice list holds no null option.
+    [ObservableProperty]
+    public partial ReasoningChoice Reasoning { get; set; }
+
+    // Hidden for Ollama's raw mode, which drops the level, and while the
+    // provider is unknown.
+    [ObservableProperty]
+    public partial bool ShowsReasoning { get; set; }
+
     // The shortcut that starts a dictation rewritten with this profile: a
     // switch, then the chord it reveals. Off keeps the chord.
     [ObservableProperty]
@@ -122,6 +132,7 @@ public partial class ProfileViewModel : ObservableObject
     partial void OnCtxIndexChanged(double value) { if (!_isSyncing) PushToSettings(); }
     partial void OnTopPChanged(double value) { if (!_isSyncing) PushToSettings(); }
     partial void OnRepeatPenaltyChanged(double value) { if (!_isSyncing) PushToSettings(); }
+    partial void OnReasoningChanged(ReasoningChoice value) { if (!_isSyncing) PushToSettings(); }
     partial void OnHotkeyEnabledChanged(bool value) { if (!_isSyncing) PushToSettings(); }
     partial void OnHotkeyChanged(HotkeyChord? value) { if (!_isSyncing) PushToSettings(); }
 
@@ -140,6 +151,8 @@ public partial class ProfileViewModel : ObservableObject
         CtxIndex = Array.IndexOf(CtxKSteps, DefaultNumCtxK);
         TopP = double.NaN;
         RepeatPenalty = double.NaN;
+        Reasoning = ReasoningChoice.Automatic;
+        ShowsReasoning = false;
         HotkeyEnabled = false;
         Hotkey = null;
         _isSyncing = false;
@@ -164,6 +177,7 @@ public partial class ProfileViewModel : ObservableObject
 
         TopP = profile.TopP ?? double.NaN;
         RepeatPenalty = profile.RepeatPenalty ?? double.NaN;
+        Reasoning = ReasoningChoices.From(profile.Reasoning);
 
         HotkeyEnabled = profile.HotkeyEnabled;
         Hotkey = profile.Hotkey;
@@ -189,10 +203,47 @@ public partial class ProfileViewModel : ObservableObject
         p.NumCtxK = CtxKSteps[Math.Clamp((int)CtxIndex, 0, CtxKSteps.Length - 1)];
         p.TopP = double.IsNaN(TopP) ? null : (double?)TopP;
         p.RepeatPenalty = double.IsNaN(RepeatPenalty) ? null : (double?)RepeatPenalty;
+        p.Reasoning = ReasoningChoices.ToLevel(Reasoning);
         p.HotkeyEnabled = HotkeyEnabled;
         p.Hotkey = Hotkey;
         LlmSettingsService.Instance.Save();
     }
+}
+
+// ── Reasoning choice ────────────────────────────────────────────────────────
+//
+// What the profile's reasoning list offers: the four levels of ReasoningLevel
+// plus Automatic, which stores null and so leaves the engine's own default.
+
+public enum ReasoningChoice
+{
+    Automatic,
+    Off,
+    Low,
+    Medium,
+    High,
+}
+
+public static class ReasoningChoices
+{
+    public static ReasoningChoice From(ReasoningLevel? level) => level switch
+    {
+        null                  => ReasoningChoice.Automatic,
+        ReasoningLevel.Off    => ReasoningChoice.Off,
+        ReasoningLevel.Low    => ReasoningChoice.Low,
+        ReasoningLevel.Medium => ReasoningChoice.Medium,
+        ReasoningLevel.High   => ReasoningChoice.High,
+        _ => ReasoningChoice.Automatic,
+    };
+
+    public static ReasoningLevel? ToLevel(ReasoningChoice choice) => choice switch
+    {
+        ReasoningChoice.Off    => ReasoningLevel.Off,
+        ReasoningChoice.Low    => ReasoningLevel.Low,
+        ReasoningChoice.Medium => ReasoningLevel.Medium,
+        ReasoningChoice.High   => ReasoningLevel.High,
+        _ => null,
+    };
 }
 
 // ── Converters for slider tooltips ──────────────────────────────────────────

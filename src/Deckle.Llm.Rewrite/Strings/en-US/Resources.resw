@@ -313,6 +313,29 @@
   <data name="LlmProfile_ContextBody.Text" xml:space="preserve">
     <value>Tokens the model considers at once. Larger is slower and heavier.</value>
   </data>
+  <!-- Reasoning card of a profile (composed in LlmProfilesSection.ProfileCards).
+       Automatic stores no level and keeps the engine's own default. -->
+  <data name="LlmProfileReasoningCard.Header" xml:space="preserve">
+    <value>Reasoning</value>
+  </data>
+  <data name="LlmProfileReasoningCard.Description" xml:space="preserve">
+    <value>How much the model thinks before it rewrites. Thinking counts like written text, so a higher level answers later and, on a paid service, costs more.</value>
+  </data>
+  <data name="LlmProfileReasoningAutomatic.Content" xml:space="preserve">
+    <value>Automatic</value>
+  </data>
+  <data name="LlmProfileReasoningOff.Content" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="LlmProfileReasoningLow.Content" xml:space="preserve">
+    <value>Low</value>
+  </data>
+  <data name="LlmProfileReasoningMedium.Content" xml:space="preserve">
+    <value>Medium</value>
+  </data>
+  <data name="LlmProfileReasoningHigh.Content" xml:space="preserve">
+    <value>High</value>
+  </data>
   <!-- Shortcut cards of a profile (composed in LlmProfilesSection.ProfileCards):
        a switch, then the chord it reveals. -->
   <data name="LlmProfileHotkeyEnabledCard.Header" xml:space="preserve">

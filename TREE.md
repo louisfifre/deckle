@@ -2390,6 +2390,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── ParagraphDraftTests.cs
 │   │   ├── ParagraphRewriteCoordinatorTests.cs
+│   │   ├── ProfileReasoningTests.cs
 │   │   ├── ProfilesSectionBugNotes.md
 │   │   ├── RewriteDiffGateTests.cs
 │   │   ├── RewriteFailureMessageTests.cs
