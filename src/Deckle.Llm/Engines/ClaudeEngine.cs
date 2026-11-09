@@ -65,6 +65,11 @@ public sealed class ClaudeEngine : IGenerationEngine
             OutputConfig = new OutputConfig { Effort = Effort.Low },
             Messages = [new() { Role = Role.User, Content = request.UserText }],
         };
+        // Set only when asked, so the app's request stays byte for byte what
+        // it was. The top-level marker caches up to the last block: the
+        // system prompt and the text together.
+        if (request.CachePrompt)
+            parameters = parameters with { CacheControl = new CacheControlEphemeral() };
 
         Message response;
         try
@@ -92,8 +97,10 @@ public sealed class ClaudeEngine : IGenerationEngine
                 text.Append(textBlock.Text);
         }
 
-        int promptTokens = (int)response.Usage.InputTokens;
-        int evalTokens   = (int)response.Usage.OutputTokens;
+        int promptTokens     = (int)response.Usage.InputTokens;
+        int evalTokens       = (int)response.Usage.OutputTokens;
+        int cacheWriteTokens = (int)(response.Usage.CacheCreationInputTokens ?? 0);
+        int cacheReadTokens  = (int)(response.Usage.CacheReadInputTokens ?? 0);
 
         sw.Stop();
         string trimmed = text.ToString().Trim();
@@ -111,7 +118,9 @@ public sealed class ClaudeEngine : IGenerationEngine
             PromptEvalMs: 0,
             EvalMs:       sw.ElapsedMilliseconds,
             PromptTokens: promptTokens,
-            EvalTokens:   evalTokens);
+            EvalTokens:   evalTokens,
+            CacheWriteTokens: cacheWriteTokens,
+            CacheReadTokens:  cacheReadTokens);
     }
 
     private AnthropicClient ClientFor(string key)

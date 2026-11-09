@@ -8,6 +8,12 @@ namespace Deckle.Llm;
 // token; a hosted API reports 0. PromptEvalMs / EvalMs split the generation
 // where the provider reports it (Ollama does; a hosted API reports the whole
 // call as EvalMs).
+//
+// PromptTokens counts the input billed at full price. A provider that caches
+// prompts reports the rest apart: CacheWriteTokens were stored this call
+// (billed above the input price), CacheReadTokens were read back (billed far
+// below it). The whole prompt is the sum of the three; an engine that does not
+// cache leaves both at zero.
 public readonly record struct GenerationResult(
     string? Text,
     long    TotalMs,
@@ -15,4 +21,6 @@ public readonly record struct GenerationResult(
     long    PromptEvalMs,
     long    EvalMs,
     int     PromptTokens,
-    int     EvalTokens);
+    int     EvalTokens,
+    int     CacheWriteTokens = 0,
+    int     CacheReadTokens = 0);
