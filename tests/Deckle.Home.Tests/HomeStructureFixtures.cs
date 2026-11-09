@@ -9,9 +9,9 @@ namespace Deckle.Home.Tests;
 // does not travel). Every name is fictional.
 internal static class HomeStructureFixtures
 {
-    public static JsonObject Json(string text) => (JsonObject)JsonNode.Parse(text)!;
+    public static JsonObject Obj(string text) => (JsonObject)JsonNode.Parse(text)!;
 
-    public static JsonArray Array(string text) => (JsonArray)JsonNode.Parse(text)!;
+    public static JsonArray Arr(string text) => (JsonArray)JsonNode.Parse(text)!;
 
     // Source object ids of HomeRehearsalFixtures that the replay recreates.
     public const string OldTemplateRoom = "old-template-room";
@@ -27,11 +27,11 @@ internal static class HomeStructureFixtures
         source.SeedDefaultTypeStructure();
 
         source.SetTypeStructure("errand", "kanban", null,
-            Array("""
+            Arr("""
             [{"property":"errand_category","section":"featured"},{"property":"needed","section":"hidden"},
              {"property":"aisle","section":"hidden"},{"property":"quantity"}]
             """),
-            Array("""
+            Arr("""
             [{"id":"vE1","name":"All","sorts":[{"property":"last_modified_date","direction":"desc","id":"s1"},{"property":"aisle","direction":"asc","id":"s2"}],
               "filters":[{"property":"aisle","condition":"not_empty","id":"f1"},{"property":"needed","condition":"equal","value":true,"id":"f2"}],
               "columns":[{"property":"name","width":200},{"property":"errand_category","width":120},{"property":"aisle","width":100},{"property":"needed","hidden":true}]},
@@ -40,29 +40,29 @@ internal static class HomeStructureFixtures
             """));
 
         source.SetTypeStructure("room", "list", OldTemplateRoom,
-            Array("""
+            Arr("""
             [{"property":"code","section":"featured"},{"property":"floor","section":"featured"}]
             """),
-            Array("""
+            Arr("""
             [{"id":"vR1","type":"list","name":"Pièces","group_by":"floor",
               "sorts":[{"property":"floor","direction":"asc"},{"property":"name","direction":"asc"}],
-              "filters":[{"property":"floor","condition":"in","value":["floor-1","gone-1"]},{"property":"code","condition":"not_empty"}],
+              "filters":[{"property":"floor","condition":"in","value":["floor-1","bafyreigonegonegonegonegonegonegone"]},{"property":"code","condition":"not_empty"}],
               "columns":[{"property":"name"},{"property":"floor","width":150},{"property":"code"}]}]
             """));
 
         source.SetTypeStructure("device", null, OldTemplateDevice,
-            Array("""
+            Arr("""
             [{"property":"manufacturer","section":"featured"},{"property":"power_watts","section":"hidden"},{"property":"purchase_date"}]
             """),
-            Array("""
+            Arr("""
             [{"id":"vD1","name":"All",
               "sorts":[{"property":"power_watts","direction":"desc"},{"property":"purchase_date","direction":"asc"}],
               "columns":[{"property":"name"},{"property":"power_watts"},{"property":"manufacturer"},{"property":"purchase_date","hidden":true}]}]
             """));
 
         source.SetTypeStructure("worksite", null, null,
-            Array("""[{"property":"state","section":"featured"}]"""),
-            Array("""
+            Arr("""[{"property":"state","section":"featured"}]"""),
+            Arr("""
             [{"id":"vW1","name":"All","columns":[{"property":"name"},{"property":"state"}]},
              {"id":"vW2","type":"kanban","name":"Par état","group_by":"state","columns":[{"property":"name"}]},
              {"id":"vW3","type":"list","name":"En cours","filters":[{"property":"state","condition":"in","value":["En cours"]}],"columns":[{"property":"name"}]},
@@ -70,18 +70,18 @@ internal static class HomeStructureFixtures
             """));
 
         source.SetTypeStructure("todo", null, null,
-            Array("""[{"property":"worksite","section":"featured"},{"property":"priority","section":"featured"}]"""),
-            Array("""
+            Arr("""[{"property":"worksite","section":"featured"},{"property":"priority","section":"featured"}]"""),
+            Arr("""
             [{"id":"vT1","name":"All","sorts":[{"property":"worksite","direction":"asc"}],"columns":[{"property":"name"},{"property":"worksite"},{"property":"done"}]}]
             """));
 
         // Section collection: the object "section-1" of the object fixtures.
-        source.SetCollectionViews("section-1", Array("""
+        source.SetCollectionViews("section-1", Arr("""
             [{"id":"cv1","name":"All","columns":[{"property":"name"},{"property":"type"},{"property":"created_date","hidden":true}]},
              {"id":"cv2","type":"list","name":"Par nom","sorts":[{"property":"name","direction":"asc"}],"columns":[{"property":"name"},{"property":"manufacturer"},{"property":"power_watts"}]}]
             """));
 
-        source.AddTemplateDocument(Json("""
+        source.AddTemplateDocument(Obj("""
             {"kind":"template","id":"old-template-room","type":"template","template_for":"room",
              "properties":{"name":"Modèle pièce fictif","created_date":"2026-01-01","creator":"someone","layout":"basic","resolved_layout":"basic",
                            "target_object_type":["x"],"source_object":["y"],"tag":["z"],"floor":["floor-1"],"notes":"texte fictif","code":"ZZ"},
@@ -98,7 +98,7 @@ internal static class HomeStructureFixtures
                                  "filters":[{"property":"aisle","condition":"empty","id":"f9"},{"property":"errand_category","condition":"in","value":["Produits céréaliers secs"],"id":"f8","nested_property":"n"}]}]}]}
             """));
 
-        source.AddTemplateDocument(Json("""
+        source.AddTemplateDocument(Obj("""
             {"kind":"template","id":"old-template-device","type":"template","template_for":"device",
              "properties":{"name":"Modèle appareil fictif","domain":"Audio","equipment_category":"Catégorie fictive","purchase_price":12,
                            "power_watts":40,"receipt":["file-1"],"battery_capacity":3000,"manufacturer":"Marque fictive","last_modified_date":"2026-01-02"},
@@ -106,14 +106,14 @@ internal static class HomeStructureFixtures
                        {"id":"d3","type":"table","rows":[{"id":"r1","cells":["a","b"]}],"columns":[{"id":"c1","fields":{"w":1},"header":"a"},{"id":"c2"}]}]}
             """));
 
-        source.AddTemplateDocument(Json("""
+        source.AddTemplateDocument(Obj("""
             {"kind":"template","id":"old-template-zone","type":"template","template_for":"zone",
              "properties":{"name":"Modèle zone fictif"},
              "blocks":[{"id":"z1","type":"dataview","object_id":"type-room",
                         "views":[{"id":"zv","name":"Pièces","filters":[{"property":"floor","condition":"in","value":["_filter_template_1_"]}]}]}]}
             """));
 
-        source.AddTemplateDocument(Json("""
+        source.AddTemplateDocument(Obj("""
             {"kind":"template","id":"old-template-page","type":"template","template_for":"page",
              "properties":{"name":"Modèle de page fictif"},"blocks":[]}
             """));
