@@ -151,7 +151,7 @@ public static class ToolCatalog
 
             new(
                 "archive",
-                "Set an object's Archivé checkbox: omit archived to archive it (take it out of the views), pass archived:false to bring it back. Works on any object that carries the checkbox — not reports, which stay searchable. Archiving is the lifecycle mechanism; the état select is separate.",
+                "Set an object's Archivé checkbox: omit archived to archive it (take it out of the views), pass archived:false to bring it back. Works on any object that carries the checkbox — not reports, which stay searchable. A project is refused while one of its tasks is neither done nor archived; the refusal lists them. Archiving is the lifecycle mechanism; the état select is separate.",
                 Schema(
                     required: [Prop("object", "string", "Object, name or id.")],
                     optional: [Prop("archived", "boolean", "Archive state; omit to archive, pass false to restore.")]),

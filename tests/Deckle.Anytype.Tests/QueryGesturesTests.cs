@@ -441,6 +441,83 @@ public class QueryGesturesTests
         Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
     }
 
+    static string TaskRows(params (string Name, bool Done, bool Archived)[] tasks)
+    {
+        var data = new JsonArray();
+        int n = 0;
+        foreach (var (name, done, archived) in tasks)
+        {
+            var props = new JsonObject();
+            if (done) props[DevSpace.Props.Done] = true;
+            if (archived) props[DevSpace.Props.Archive] = true;
+            data.Add(new JsonObject
+            {
+                ["id"] = $"bafyreitask{n++}",
+                ["name"] = name,
+                ["type"] = DevSpace.Types.Task,
+                ["properties"] = props,
+            });
+        }
+        return new JsonObject { ["data"] = data, ["total"] = data.Count, ["has_more"] = false }.ToJsonString();
+    }
+
+    [Fact]
+    public async Task ArchiveRefusesAProjectWithOpenTasksAndListsThemByName()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        var v2 = new FakeV2Handler().Reply(HttpStatusCode.OK, TaskRows(
+            ("Écrire le test", false, false),
+            ("Livrer", true, false),
+            ("Abandonnée", false, true),
+            ("Relire", false, false)));
+
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server, v2).ArchiveAsync(ProjectId, ct: Ct));
+
+        Assert.Contains("2 tâche(s) ouverte(s)", ex.Message);
+        Assert.Contains("[ ] Écrire le test", ex.Message);
+        Assert.Contains("[ ] Relire", ex.Message);
+        Assert.DoesNotContain("Livrer", ex.Message);
+        Assert.DoesNotContain("Abandonnée", ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+
+        // The tasks are asked by their project link, on the server.
+        JsonObject search = (JsonObject)JsonNode.Parse(Assert.Single(v2.Requests).Body!)!;
+        JsonObject filter = (JsonObject)search["filters"]![0]!;
+        Assert.Equal(DevSpace.Props.RelationProjet, filter["property"]!.GetValue<string>());
+        Assert.Equal(ProjectId, filter["value"]![0]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task ArchiveAcceptsAProjectWhoseTasksAreAllDoneOrArchived()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        server.OnPatchObject(ProjectId, ProjectObject());
+        var v2 = new FakeV2Handler().Reply(HttpStatusCode.OK, TaskRows(
+            ("Livrer", true, false), ("Abandonnée", false, true)));
+
+        string digest = await NewGestures(server, v2).ArchiveAsync(ProjectId, ct: Ct);
+
+        Assert.Contains("Archivé", digest);
+        Assert.Contains(server.Requests, r => r.Method == "PATCH");
+    }
+
+    [Fact]
+    public async Task RestoringAProjectDoesNotLookAtItsTasks()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        server.OnPatchObject(ProjectId, ProjectObject());
+        var v2 = new FakeV2Handler();
+
+        await NewGestures(server, v2).ArchiveAsync(ProjectId, value: false, ct: Ct);
+
+        Assert.Empty(v2.Requests);
+        Assert.Contains(server.Requests, r => r.Method == "PATCH");
+    }
+
     // A write never settles for the object a name merely resembles: a lone hit
     // that is not named exactly is refused with its id, and nothing is patched.
     [Fact]

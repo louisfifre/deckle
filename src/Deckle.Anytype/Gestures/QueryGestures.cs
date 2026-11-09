@@ -13,6 +13,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
     readonly LiveTagResolver _liveTags = new(api);
     readonly AnytypeV2ObjectReader _reader = new(v2);
     readonly AnytypeV2Writer _writer = new(v2);
+    readonly AnytypeV2Searcher _searcher = new(v2);
 
     // One op per deleted root plus the insert must fit a single atomic batch.
     const int MaxBatchOps = 512;
@@ -340,6 +341,19 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
             throw new InvalidOperationException(
                 $"Le type {objType} ne porte pas de case « Archivé » — rien à archiver.");
 
+        // A project is closed by archiving it, so an open task would be lost
+        // with it: the model refuses, and names each task to tick or archive
+        // first. Restoring a project needs no such check.
+        if (value && objType == DevSpace.Types.Project)
+        {
+            IReadOnlyList<string> open = await OpenTaskNamesAsync(id, ct);
+            if (open.Count > 0)
+                throw new InvalidOperationException(
+                    $"Refusé : {QueryProp.Name(obj)} a encore {open.Count} tâche(s) ouverte(s), ni cochée(s) ni archivée(s). "
+                    + "Coche chacune (complete) si elle est faite, archive-la si elle est abandonnée, puis archive le projet. Rien n'a bougé.\n"
+                    + string.Join('\n', open.Select(n => $"[ ] {n}")));
+        }
+
         var payload = new JsonObject
         {
             ["properties"] = new JsonArray
@@ -517,6 +531,26 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
     }
 
     // ── Internals ─────────────────────────────────────────────────────────
+
+    // The tasks of a project that are neither done nor archived, by name. The
+    // server filters on the link; both checkboxes are served only when ticked,
+    // so they are read here rather than filtered on (how a filter treats an
+    // absent checkbox is not measured).
+    async Task<IReadOnlyList<string>> OpenTaskNamesAsync(string projectId, CancellationToken ct)
+    {
+        IReadOnlyList<AnytypeV2SearchRow> tasks = await _searcher.SearchAllAsync(
+            new AnytypeV2SearchRequest
+            {
+                Type = DevSpace.Types.Task,
+                Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.RelationProjet, [projectId])],
+                Fields = [DevSpace.Props.Done, DevSpace.Props.Archive],
+            }, ct);
+
+        return tasks
+            .Where(t => !t.Properties.Checkbox(DevSpace.Props.Done) && !t.Properties.Checkbox(DevSpace.Props.Archive))
+            .Select(t => t.Name.Length > 0 ? t.Name : t.Id)
+            .ToList();
+    }
 
     // A null PropertyKey routes to collection membership on the target.
     sealed record LinkRoute(string? PropertyKey);
