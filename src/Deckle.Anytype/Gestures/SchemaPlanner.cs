@@ -263,6 +263,9 @@ internal static class SchemaPlanner
         public bool Changed => Attached.Count > 0 || Detached.Count > 0 || Reordered;
     }
 
+    // The relations Anytype pins in every type's header.
+    private static readonly HashSet<string> HeaderKeys = new(StringComparer.Ordinal) { "tag", "backlinks" };
+
     internal static TypePropertyDiff DiffTypeProperties(
         TypeSpec type,
         SchemaTypeInfo live,
@@ -272,6 +275,11 @@ internal static class SchemaPlanner
         var unresolvable = new List<string>();
         foreach (SchemaPropertyLinkInfo link in live.PropertyLinks)
         {
+            // The header bucket is out of reach (the API drops its keys from the
+            // list it receives), so planning its removal never converges: a
+            // fresh space still showed 16 detach actions after a clean apply
+            // (trial of 2026-11-09, anytype-cli 0.5.0).
+            if (HeaderKeys.Contains(link.Key)) continue;
             if (TryResolveLink(link, propertiesByKey, out SchemaPropertyInfo? property))
                 liveKeys.Add(property!.Key);
             else if (link.HasPayload)
