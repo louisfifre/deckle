@@ -34,6 +34,13 @@ internal sealed class HomeReplaySheet
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
+    // Version 1: objects only. Version 2 adds `structure`. A sheet without the
+    // member loads as version 1 and carries no structure.
+    public const int StructureVersion = 2;
+
+    [JsonPropertyName("version")]
+    public int Version { get; set; } = 1;
+
     [JsonPropertyName("source_space")]
     public string SourceSpace { get; set; } = "";
 
@@ -48,6 +55,11 @@ internal sealed class HomeReplaySheet
 
     [JsonPropertyName("report")]
     public HomeReplaySheetReport Report { get; set; } = new();
+
+    // Type settings, views, templates and widgets, as the source holds them.
+    // Null on a sheet exported before the structure was carried.
+    [JsonPropertyName("structure")]
+    public HomeStructure? Structure { get; set; }
 
     public void Save(string path)
     {

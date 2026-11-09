@@ -1031,9 +1031,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeSearch.cs
 │   │   ├── HomeSpaceExporter.cs
 │   │   ├── HomeSpaceReplayer.cs
+│   │   ├── HomeStructure.cs
+│   │   ├── HomeStructureExporter.cs
 │   │   ├── HomeTerms.cs
 │   │   ├── HomeToolCatalog.cs
 │   │   ├── HomeTypedToolCatalog.cs
+│   │   ├── HomeV2.cs
 │   │   └── OPERATIONS.md
 │   ├── Deckle.Hud/
 │   │   ├── Chrono/
@@ -2257,6 +2260,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Home.Tests.csproj
 │   │   ├── FakeDeletionApproval.cs
 │   │   ├── FakeHomeAnytypeServer.cs
+│   │   ├── FakeHomeAnytypeServer.V2.cs
 │   │   ├── HomeArchiveTests.cs
 │   │   ├── HomeBodyTests.cs
 │   │   ├── HomeCodeTests.cs
@@ -2284,6 +2288,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeSearchTests.cs
 │   │   ├── HomeSpaceExporterTests.cs
 │   │   ├── HomeSpaceReplayerTests.cs
+│   │   ├── HomeStructureExporterTests.cs
+│   │   ├── HomeStructureFixtures.cs
 │   │   ├── HomeTermsTests.cs
 │   │   ├── HomeToolCatalogTests.cs
 │   │   ├── HomeTypedToolCatalogTests.cs

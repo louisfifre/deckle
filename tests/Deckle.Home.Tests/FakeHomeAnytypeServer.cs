@@ -8,7 +8,7 @@ using Deckle.TestSupport;
 
 namespace Deckle.Home.Tests;
 
-internal sealed class FakeHomeAnytypeServer : IDisposable
+internal sealed partial class FakeHomeAnytypeServer : IDisposable
 {
     public const string HomeSpace = "home-test-space";
     private const string DevSpace = "dev-test-space";
@@ -32,6 +32,10 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
     // The space this server answers for. Two servers with two ids stand for
     // a source and a target space in a recreation rehearsal.
     public string SpaceId { get; }
+
+    // How this space spells the object id of a type; a source and a target
+    // use two prefixes so a widget on a type cannot pass by coincidence.
+    public string TypeIdPrefix { get; set; } = "type-";
 
     public FakeHomeAnytypeServer(string spaceId = HomeSpace)
     {
@@ -305,6 +309,8 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
                 return (400, "{\"message\":\"injected failure\"}");
             }
         }
+        if (path.StartsWith($"/v2/spaces/{SpaceId}/", StringComparison.Ordinal))
+            return HandleV2(method, path[$"/v2/spaces/{SpaceId}/".Length..], body, query);
         if (method == "GET" && path == root + "/types") return (200, SchemaTypes().ToJsonString());
         if (method == "GET" && path.StartsWith(root + "/types/", StringComparison.Ordinal)
             && path.EndsWith("/templates", StringComparison.Ordinal))
@@ -356,7 +362,7 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
                 properties.Add(property!.GetValue<string>());
             data.Add(new JsonObject
             {
-                ["id"] = "type-" + spec["key"]!.GetValue<string>(),
+                ["id"] = TypeIdPrefix + spec["key"]!.GetValue<string>(),
                 ["key"] = spec["key"]!.GetValue<string>(),
                 ["name"] = spec["name"]!.GetValue<string>(),
                 ["plural_name"] = spec["plural_name"]!.GetValue<string>(),
@@ -364,6 +370,7 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
                 ["properties"] = properties,
             });
         }
+        AddStructureOnlyTypes(data);
         return Page(data);
     }
 
@@ -376,7 +383,7 @@ internal sealed class FakeHomeAnytypeServer : IDisposable
                 ["pagination"] = new JsonObject { ["has_more"] = true },
             };
 
-        string typeKey = typeId["type-".Length..];
+        string typeKey = typeId[TypeIdPrefix.Length..];
         var data = new JsonArray();
         if (_templates.TryGetValue(typeKey, out List<(string Id, string Name)>? seeded))
             foreach ((string id, string name) in seeded)
