@@ -180,6 +180,52 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── primary.png
 │   ├── primary.svg
 │   └── secondary.png
+├── native/
+│   ├── Deckle.Shell.Taskbar.Native/
+│   │   ├── xamldiag/
+│   │   │   ├── behaviors/
+│   │   │   │   ├── clock.cpp
+│   │   │   │   ├── clock.h
+│   │   │   │   ├── start_menu_height.cpp
+│   │   │   │   └── start_menu_height.h
+│   │   │   ├── rules/
+│   │   │   │   ├── element_matcher.cpp
+│   │   │   │   ├── element_matcher.h
+│   │   │   │   ├── property_override.cpp
+│   │   │   │   ├── property_override.h
+│   │   │   │   ├── rule_document.cpp
+│   │   │   │   ├── rule_document.h
+│   │   │   │   ├── rule_engine.cpp
+│   │   │   │   ├── rule_engine.h
+│   │   │   │   ├── selector.cpp
+│   │   │   │   ├── selector.h
+│   │   │   │   ├── style_resolver.cpp
+│   │   │   │   └── style_resolver.h
+│   │   │   ├── element_properties.cpp
+│   │   │   ├── element_properties.h
+│   │   │   ├── tap_connection.cpp
+│   │   │   ├── tap_connection.h
+│   │   │   ├── tap_site.cpp
+│   │   │   ├── tap_site.h
+│   │   │   ├── visual_tree_watcher.cpp
+│   │   │   └── visual_tree_watcher.h
+│   │   ├── channel.cpp
+│   │   ├── channel.h
+│   │   ├── Deckle.Shell.Taskbar.Native.def
+│   │   ├── Deckle.Shell.Taskbar.Native.vcxproj
+│   │   ├── dllmain.cpp
+│   │   ├── engine.cpp
+│   │   ├── engine.h
+│   │   ├── hook_entry.cpp
+│   │   ├── log.cpp
+│   │   ├── log.h
+│   │   ├── pch.cpp
+│   │   ├── pch.h
+│   │   ├── util.cpp
+│   │   ├── util.h
+│   │   └── version.rc
+│   ├── Directory.Build.props
+│   └── Directory.Build.targets
 ├── scripts/
 │   ├── .deckle-scripts/
 │   │   └── manifest.json
@@ -1603,16 +1649,32 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── FullscreenGeometry.cs
 │   ├── Deckle.Shell.Taskbar/
 │   │   ├── Interop/
-│   │   │   └── TaskbarNativeMethods.cs
+│   │   │   ├── TaskbarNativeMethods.cs
+│   │   │   └── TaskbarNativeMethods.Injection.cs
+│   │   ├── Native/
+│   │   │   ├── ITaskbarEngine.cs
+│   │   │   ├── JsonLineFraming.cs
+│   │   │   ├── NativeCommand.cs
+│   │   │   ├── NativeLogRelay.cs
+│   │   │   ├── NativeMessage.cs
+│   │   │   ├── TaskbarBackground.cs
+│   │   │   ├── TaskbarCreatedListener.cs
+│   │   │   ├── TaskbarCustomization.cs
+│   │   │   ├── TaskbarCustomizer.cs
+│   │   │   ├── TaskbarDocumentBuilder.cs
+│   │   │   ├── TaskbarEngineHost.cs
+│   │   │   ├── TaskbarHookInjector.cs
+│   │   │   ├── TaskbarOrientation.cs
+│   │   │   ├── TaskbarPart.cs
+│   │   │   ├── TaskbarPartNames.cs
+│   │   │   ├── TaskbarPipeServer.cs
+│   │   │   ├── TaskbarProblem.cs
+│   │   │   ├── TaskbarProblemReader.cs
+│   │   │   ├── TaskbarTarget.cs
+│   │   │   └── VersionedNativeCopy.cs
 │   │   ├── Registry/
-│   │   │   ├── ElevatedProcessRunner.cs
-│   │   │   ├── IElevatedProcessRunner.cs
 │   │   │   ├── NotifyIconSettingsKey.cs
 │   │   │   ├── NotifyIconSettingsWatcher.cs
-│   │   │   ├── PolicyElevation.cs
-│   │   │   ├── PolicyKey.cs
-│   │   │   ├── PolicyOutcome.cs
-│   │   │   ├── RecommendedSectionPolicy.cs
 │   │   │   ├── TrayIconPromoter.cs
 │   │   │   ├── TrayIconPromotion.cs
 │   │   │   ├── TrayOutcome.cs
@@ -1625,7 +1687,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── TaskbarPage.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   ├── TaskbarViewModel.cs
-│   │   │   ├── TaskbarViewModel.Recommended.cs
 │   │   │   └── TaskbarViewModel.Settings.cs
 │   │   ├── Deckle.Shell.Taskbar.csproj
 │   │   ├── DeckleShellTaskbarSource.cs
@@ -1633,6 +1694,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TaskbarSettings.cs
 │   │   ├── TaskbarSettingsModule.cs
 │   │   └── TaskbarSettingsService.cs
+│   ├── Deckle.Shell.Taskbar.Harness/
+│   │   ├── CustomizerCommand.cs
+│   │   ├── Deckle.Shell.Taskbar.Harness.csproj
+│   │   ├── HarnessCommand.cs
+│   │   ├── HarnessOptions.cs
+│   │   ├── Program.cs
+│   │   ├── TreeDumpCollector.cs
+│   │   └── VisualTreeRecorder.cs
 │   ├── Deckle.Shell.TaskbarCover/
 │   │   ├── Interop/
 │   │   │   └── TaskbarCoverNativeMethods.cs
@@ -2421,12 +2490,25 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   └── MilestoneClosersTests.cs
 │   ├── Deckle.Shell.Taskbar.Tests/
+│   │   ├── Native/
+│   │   │   ├── JsonLineFramingTests.cs
+│   │   │   ├── NativeCommandTests.cs
+│   │   │   ├── NativeEngineMessageTests.cs
+│   │   │   ├── NativeLogRelayTests.cs
+│   │   │   ├── NativeMessageTests.cs
+│   │   │   ├── NativeSelectorLibrary.cs
+│   │   │   ├── NativeSelectorTests.cs
+│   │   │   ├── StartMenuDocumentTests.cs
+│   │   │   ├── TaskbarCustomizerTests.cs
+│   │   │   ├── TaskbarDocumentBuilderTests.cs
+│   │   │   ├── TaskbarPipeServerTests.cs
+│   │   │   ├── TaskbarProblemReaderTests.cs
+│   │   │   └── VersionedNativeCopyTests.cs
 │   │   ├── Deckle.Shell.Taskbar.Tests.csproj
 │   │   ├── IsolatedDataRoot.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
-│   │   ├── PolicyElevationTests.cs
-│   │   ├── RecommendedSectionPolicyTests.cs
+│   │   ├── TaskbarCustomizationTests.cs
 │   │   ├── TaskbarObservabilityCollection.cs
 │   │   ├── TaskbarProfileCollection.cs
 │   │   ├── TaskbarSettingsModuleTests.cs
