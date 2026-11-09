@@ -299,6 +299,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │       ├── release-validation.tests.ps1
 │   │       ├── repository-inventory.tests.ps1
 │   │       ├── resource-inventory.tests.ps1
+│   │       ├── script-inventory.tests.ps1
 │   │       ├── script-layout.tests.ps1
 │   │       └── source-metrics.tests.ps1
 │   ├── build-locked.ps1

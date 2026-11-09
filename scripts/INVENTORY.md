@@ -110,5 +110,7 @@ Run one with `pwsh -NoProfile -File scripts/<path> [arguments]`. An action names
 - `setup/setup-assets.ps1` — **Set up runtime assets.** Populates the native and models folders under the user data root with the whisper.cpp DLLs, the Visual C++ runtime they import and the Whisper models the app needs at runtime.
   - Actions: Runtime assets / set up
   - Parameters: -DataRoot <string>, -FromRelease <string>, -WhisperRepo <string>, -WhisperBuildDir <string>, -WithLarge, -Force
+- `setup/update-inventory.ps1` — Regenerate scripts/INVENTORY.md. (not in the menu)
+  - Parameters: -Target <string>, -Apply
 - `setup/update-tree.ps1` — Regenerate TREE.md. (not in the menu)
   - Parameters: -Target <string>, -Apply
