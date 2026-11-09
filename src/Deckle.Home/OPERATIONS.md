@@ -251,6 +251,8 @@ aliases) and templates (by eye) with the live space.
 
 ## Local validation
 
-Local validation follows the repository's compile-only rule. Build the owning
-test project in Debug x64 with `/m:4`; do not infer a live probe or an executed
-test suite from successful compilation.
+Local validation runs the owning suite through
+`scripts/build-locked.ps1 -Test -Project tests/Deckle.Home.Tests/Deckle.Home.Tests.csproj`
+(Debug x64, the machine-wide build lock). A green suite proves the contract
+against the fake server, never a live space: the live proof is the recreation
+rehearsal above, run on a test space.
