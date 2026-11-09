@@ -35,6 +35,7 @@ internal sealed class CoverBand
     public NativeMethods.RECT Zone { get; private set; }
     // Fullscreen suppression only applies to a window on this monitor.
     public IntPtr Monitor { get; private set; }
+    public NativeMethods.RECT MonitorRect { get; private set; }
     public double DpiScale { get; private set; } = 1.0;
     // Approach distance, in DIP, the zone was built at.
     public int ApproachDip { get; private set; }
@@ -46,7 +47,9 @@ internal sealed class CoverBand
         => !Placed
         || p.Edge != Edge || approachDip != ApproachDip || p.DpiScale != DpiScale
         || p.Rect.left != Rect.left || p.Rect.top != Rect.top
-        || p.Rect.right != Rect.right || p.Rect.bottom != Rect.bottom;
+        || p.Rect.right != Rect.right || p.Rect.bottom != Rect.bottom
+        || p.MonitorRect.left != MonitorRect.left || p.MonitorRect.top != MonitorRect.top
+        || p.MonitorRect.right != MonitorRect.right || p.MonitorRect.bottom != MonitorRect.bottom;
 
     public void Place(TaskbarPlacement p, int approachDip)
     {
@@ -55,11 +58,12 @@ internal sealed class CoverBand
         Edge     = p.Edge;
         Rect     = p.Rect;
         Monitor  = p.Monitor;
+        MonitorRect = p.MonitorRect;
         DpiScale = p.DpiScale;
         ApproachDip = approachDip;
         // Converted with this band's own monitor scale: each taskbar may sit
-        // on a screen with its own DPI.
-        Zone     = CoverGeometry.ApproachZone(Rect, Edge, approachDip, DpiScale);
+        // on a screen with its own DPI, and capped at half that monitor.
+        Zone     = CoverGeometry.ApproachZone(Rect, Edge, approachDip, DpiScale, MonitorRect);
 
         bool ok = NativeMethods.SetWindowPos(Hwnd, NativeMethods.HWND_TOPMOST,
             Rect.left, Rect.top, Rect.right - Rect.left, Rect.bottom - Rect.top,
@@ -78,7 +82,7 @@ internal sealed class CoverBand
     public byte Alpha { get; private set; }
 
     public byte AlphaAt(POINT p) =>
-        (byte)Math.Round(CoverGeometry.Opacity(Rect, Edge, p, ApproachDip, DpiScale) * 255);
+        (byte)Math.Round(CoverGeometry.Opacity(Rect, Edge, p, ApproachDip, DpiScale, MonitorRect) * 255);
 
     // At 0 the window is hidden by the host instead, so no click lands on an
     // invisible band.

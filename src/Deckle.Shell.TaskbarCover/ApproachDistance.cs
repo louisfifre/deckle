@@ -16,13 +16,27 @@ namespace Deckle.Shell.TaskbarCover;
 public static class ApproachDistance
 {
     // Below 10 DIP the fade runs over a few pixels and reads as a flicker,
-    // not a reveal; 0 would leave no zone past the band at all. 320 DIP,
-    // five times the default, reaches a third of a 1080p screen's height,
-    // already further than a reveal gesture travels. With these bounds the
-    // slider's grain is 10 DIP (MagnitudeGrain.StepFor: 310 / 40 rounds up
-    // to 10).
+    // not a reveal; 0 would leave no zone past the band at all.
+    //
+    // The ceiling is two different things (2026-11-09). The maintainer found
+    // 320 DIP too short on a 4K screen and asked for half the screen. Half
+    // the screen depends on the monitor, so the stored figure only gets a
+    // generous absolute bound, 3840 DIP (the widest 100% screen in common
+    // use), that no hand-edit or screen change can exceed and that never
+    // loses a figure chosen on a large screen. The reach actually applied is
+    // capped per band at half its own monitor (CoverGeometry.ApproachSpan),
+    // and the Settings slider stops at that half (SliderMaximum).
     public const int MinimumDip = 10;
-    public const int MaximumDip = 320;
+    public const int MaximumDip = 3840;
+
+    // The slider's maximum when the primary taskbar's monitor cannot be read:
+    // half of a 4K screen at 200%, the maintainer's own.
+    public const int FallbackSliderMaximumDip = 960;
+
+    // The slider's maximum for a monitor whose half extent is halfScreenDip,
+    // kept inside the range so the slider always has room to move.
+    public static int SliderMaximum(int halfScreenDip)
+        => Math.Clamp(halfScreenDip, MinimumDip * 2, MaximumDip);
 
     // The unit the page shows beside the figure. Never "px": a person reads
     // that as physical pixels, the very misreading that made the setting a DIP

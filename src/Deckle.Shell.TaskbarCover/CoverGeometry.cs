@@ -34,6 +34,28 @@ public static class CoverGeometry
     public static int ApproachSpan(int approachDip, double dpiScale)
         => Dpi.ToPixels(approachDip, dpiScale);
 
+    // The same span, capped at half the monitor's extent perpendicular to the
+    // taskbar (2026-11-09): the setting is a DIP figure that may exceed what a
+    // smaller or lower-scale screen can hold, and a zone reaching past the
+    // middle of its own screen is no longer an approach. The cap is in this
+    // monitor's physical pixels, like the span, so a value chosen on a large
+    // screen still behaves on a small one.
+    public static int ApproachSpan(
+        int approachDip, double dpiScale, NativeMethods.RECT monitor, TaskbarEdge edge)
+        => Math.Min(ApproachSpan(approachDip, dpiScale), MaxApproachSpan(monitor, edge));
+
+    // Half the monitor's extent perpendicular to the taskbar, in physical
+    // pixels: the width for a left/right taskbar, the height for top/bottom.
+    public static int MaxApproachSpan(NativeMethods.RECT monitor, TaskbarEdge edge)
+        => (edge is TaskbarEdge.Left or TaskbarEdge.Right
+            ? monitor.right - monitor.left
+            : monitor.bottom - monitor.top) / 2;
+
+    // The same ceiling in DIP, rounded down so the slider never offers a
+    // figure the cap would cut: the Settings slider's maximum.
+    public static int MaxApproachDip(NativeMethods.RECT monitor, TaskbarEdge edge, double dpiScale)
+        => dpiScale > 0 ? (int)Math.Floor(MaxApproachSpan(monitor, edge) / dpiScale) : 0;
+
     public static int Thickness(NativeMethods.RECT band, TaskbarEdge edge)
         => edge is TaskbarEdge.Left or TaskbarEdge.Right
             ? band.right - band.left
@@ -61,9 +83,10 @@ public static class CoverGeometry
     // screen edge. It spans only the band's extent along the edge: a cursor
     // near the same screen edge on another monitor stays out of it.
     public static NativeMethods.RECT ApproachZone(
-        NativeMethods.RECT band, TaskbarEdge edge, int approachDip, double dpiScale)
+        NativeMethods.RECT band, TaskbarEdge edge, int approachDip, double dpiScale,
+        NativeMethods.RECT monitor)
     {
-        int depth = Thickness(band, edge) + ApproachSpan(approachDip, dpiScale);
+        int depth = Thickness(band, edge) + ApproachSpan(approachDip, dpiScale, monitor, edge);
         return edge switch
         {
             TaskbarEdge.Left   => new() { left = band.left,           top = band.top,            right = band.left + depth, bottom = band.bottom },
@@ -92,11 +115,12 @@ public static class CoverGeometry
     // Smoothstep over the span beyond the band, the same curve as the HUD's
     // proximity fade, so both surfaces ease the same way.
     public static double Opacity(
-        NativeMethods.RECT band, TaskbarEdge edge, POINT p, int approachDip, double dpiScale)
+        NativeMethods.RECT band, TaskbarEdge edge, POINT p, int approachDip, double dpiScale,
+        NativeMethods.RECT monitor)
     {
-        if (!Contains(ApproachZone(band, edge, approachDip, dpiScale), p)) return 1.0;
+        if (!Contains(ApproachZone(band, edge, approachDip, dpiScale, monitor), p)) return 1.0;
 
-        int span = ApproachSpan(approachDip, dpiScale);
+        int span = ApproachSpan(approachDip, dpiScale, monitor, edge);
         if (span <= 0) return 1.0;
 
         double t = (double)DistanceToBand(band, edge, p) / span;
