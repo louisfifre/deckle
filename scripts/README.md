@@ -36,7 +36,7 @@ pwsh -NoProfile -File scripts/menu.ps1 -Snapshot Level -LevelPath maintenance -W
 pwsh -NoProfile -File scripts/menu.ps1 -Snapshot Confirmation
 ```
 
-`-Snapshot` accepts `Menu`, `Level`, `Confirmation`, `Execution` and `Logs`. An agent inspects the interface through `-Snapshot` and `-List` only; the repository instructions forbid it to start the interactive launcher and to `-Run` an action that stops or relaunches the resident app.
+`-Snapshot` accepts `Menu`, `Level`, `Confirmation`, `Execution` and `Logs`. An agent inspects the interface through `-Snapshot` and `-List`, and runs no action that stops or starts the resident Deckle.
 
 What the menu offers today, level by level. A row reads as its action followed by its cells; the cells of one row may come from several scripts. The *Installed* column marks the scripts that come from Deckle Scripts; the others are Deckle's own.
 
