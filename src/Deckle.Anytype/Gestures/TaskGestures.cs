@@ -31,22 +31,46 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
     /// <param name="priority">0-5; null leaves it unset.</param>
     /// <param name="checklist">Subtask labels, one checklist item each.</param>
     /// <param name="notes">Text for the template's notes section.</param>
+    /// <param name="dueDate">The day the task is placed on, yyyy-MM-dd; null leaves it unplaced.</param>
+    /// <param name="timeEstimated">Estimated time in hours.</param>
+    /// <param name="doneDefinition">What lets the task be ticked.</param>
+    /// <param name="slot">Créneau option, key or name; null takes Cap.</param>
     public async Task<string> CreateAsync(
         string project, string name, string type,
         int? priority = null, IReadOnlyList<string>? checklist = null, string? notes = null,
+        string? dueDate = null, double? timeEstimated = null, string? doneDefinition = null,
+        string? slot = null,
         CancellationToken ct = default)
     {
         var sw = Stopwatch.StartNew();
-
-        string projectId = await resolver.ResolveAsync(
-            project, new[] { DevSpace.Types.Project }, NameMatch.Exact, ct);
 
         string typeKey = DevSpace.TypeDeTache.Resolve(type)
             ?? throw new ArgumentException(
                 $"Type de tâche inconnu « {type} ».", nameof(type));
 
+        // Shape refusals come before any request. The date is a day, the form
+        // a v2 date property takes (measured on the report's journal date). A
+        // blank date is an absent one, as for the slot and the done definition:
+        // a model says « not placed » with an empty string as often as by
+        // omitting the field.
+        string? day = null;
+        if (!string.IsNullOrWhiteSpace(dueDate))
+        {
+            if (!DateOnly.TryParseExact(dueDate.Trim(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.None, out DateOnly parsed))
+                throw new ArgumentException(
+                    $"Date cible « {dueDate} » illisible : attendu AAAA-MM-JJ, par exemple 2026-11-10.", nameof(dueDate));
+            day = parsed.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+        }
+        if (timeEstimated is double hours && (hours <= 0 || double.IsNaN(hours) || double.IsInfinity(hours)))
+            throw new ArgumentException(
+                $"Temps estimé « {timeEstimated} » refusé : un nombre d'heures plus grand que zéro.", nameof(timeEstimated));
+        string definition = (doneDefinition ?? "").Trim();
+
         var items = (checklist ?? []).Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
-        string text = (notes ?? "").Trim();
+        // The notes go through the server's markdown parser, as replace_section
+        // does: same nesting and underscore faults, same preparation.
+        string text = MarkdownBody.PrepareForWrite((notes ?? "").Trim());
 
         // One insert_blocks takes 256 blocks at most. Said before the create,
         // so a list too long does not leave a half-made task behind.
@@ -55,6 +79,14 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
                 $"Trop de sous-tâches à la création : {items.Count} (maximum {MaxBlockRun}). "
                 + "Crée la tâche avec les premières, puis ajoute le reste avec task_subtask.",
                 nameof(checklist));
+
+        string projectId = await resolver.ResolveAsync(
+            project, new[] { DevSpace.Types.Project }, NameMatch.Exact, ct);
+
+        // The slot is read before the create, so an unknown option is refused
+        // with nothing made. A space without the property yet (the one of
+        // 2026-11-04) still gets its task: the answer says the slot was not set.
+        (string? slotKey, string? slotName, string? slotNote) = await ResolveSlotAsync(slot, ct);
 
         // Properties are a {key: value} map. A select or a relation takes a
         // LIST (schema of POST /objects), and a select option is addressed by
@@ -75,6 +107,16 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
             props[DevSpace.Props.Priorite] = new JsonArray(
                 level.ToString(System.Globalization.CultureInfo.InvariantCulture));
         }
+
+        // A date as a plain day, a text as a string, a number as a number: the
+        // map form of POST /objects. Measured for the date (open_report), not
+        // for text and number on a create.
+        if (day is not null) props[DevSpace.Props.DueDate] = day;
+        if (definition.Length > 0) props[DevSpace.Props.DefinitionDeFini] = definition;
+        // The space of 2026-11-04 holds the estimate as « Charge estimée »; the
+        // model v6 renames it Temps estimé, in hours, at the recreation.
+        if (timeEstimated is double estimate) props[DevSpace.Props.ChargeEstimee] = estimate;
+        if (slotKey is not null && slotName is not null) props[slotKey] = new JsonArray(slotName);
 
         var payload = new JsonObject
         {
@@ -108,8 +150,29 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
 
         var facts = new List<string> { $"Tâche créée : {name}", $"id : {id}", $"Type : {DisplayType(typeKey)}" };
         if (priority is int p) facts.Add($"Priorité : {p}");
+        facts.Add(day is null ? "Date cible : aucune (pas encore placée)" : $"Date cible : {day}");
+        if (timeEstimated is double h) facts.Add($"Temps estimé : {Hours(h)} h");
+        if (slotName is not null) facts.Add($"Créneau : {slotName}");
+        if (slotNote is not null) facts.Add(slotNote);
         if (items.Count > 0) facts.Add($"Sous-tâches : {items.Count}");
         return string.Join('\n', facts);
+    }
+
+    static string Hours(double h) => h.ToString("0.##", System.Globalization.CultureInfo.GetCultureInfo("fr-FR"));
+
+    // The property key and option name of the slot, or a note saying why none
+    // is set. Asked and unknown is refused; not asked takes Cap when the space
+    // has it.
+    async Task<(string? Key, string? Name, string? Note)> ResolveSlotAsync(string? slot, CancellationToken ct)
+    {
+        LiveSelect? live = await LiveSelect.FindAsync(api, DevSpace.Slot.Keys, DevSpace.Slot.Name, ct);
+        if (live is null)
+            return (null, null, $"Créneau : non posé, l'espace n'a pas encore de propriété « {DevSpace.Slot.Name} ».");
+
+        string wanted = string.IsNullOrWhiteSpace(slot) ? DevSpace.Slot.Default : slot;
+        if (live.OptionName(wanted) is { } option) return (live.Key, option, null);
+        if (!string.IsNullOrWhiteSpace(slot)) throw live.Unknown(slot, nameof(slot));
+        return (null, null, $"Créneau : non posé, « {live.Name} » n'a pas d'option « {DevSpace.Slot.Default} ».");
     }
 
     // One read of the new task (block ids and ETag), one atomic batch. If it

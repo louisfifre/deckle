@@ -436,11 +436,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Gestures/
 │   │   │   ├── BlockSections.cs
 │   │   │   ├── CollectionMembershipGestures.cs
+│   │   │   ├── ContactGestures.cs
 │   │   │   ├── DeleteRefusalReasons.cs
 │   │   │   ├── DeletionApproval.cs
 │   │   │   ├── DeletionApprovalRelay.cs
 │   │   │   ├── DocumentGestures.cs
 │   │   │   ├── LinkedNames.cs
+│   │   │   ├── LiveSelect.cs
 │   │   │   ├── LiveTagResolver.cs
 │   │   │   ├── ManagementGestures.cs
 │   │   │   ├── MarkdownBody.cs
@@ -449,6 +451,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ProjectGestures.cs
 │   │   │   ├── QueryGestures.cs
 │   │   │   ├── ReadGestures.cs
+│   │   │   ├── ReportTime.cs
 │   │   │   ├── Resolution.cs
 │   │   │   ├── SchemaAdminGestures.cs
 │   │   │   ├── SchemaAdminGestures.Inspect.cs
@@ -2001,6 +2004,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── BackendTestFakes.cs
 │   │   ├── BackendUserIncidentTests.cs
 │   │   ├── BinLogTests.cs
+│   │   ├── ContactGesturesTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DeletionApprovalRelayTests.cs
 │   │   ├── DevSpaceBugNotes.md
@@ -2031,6 +2035,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── QueryGesturesTests.cs
 │   │   ├── ReadGesturesBugNotes.md
 │   │   ├── ReadGesturesTests.cs
+│   │   ├── ReportTimeTests.cs
 │   │   ├── SchemaAdminGesturesTests.cs
 │   │   ├── SessionGesturesBugNotes.md
 │   │   ├── SessionGesturesTests.cs

@@ -306,6 +306,12 @@ public sealed partial class AnytypeApiClient : IDisposable
     }
 
     // Removes list membership only; the object itself is untouched.
+    public Task RemoveFromCollectionAsync(
+        string collectionId,
+        string objectId,
+        CancellationToken ct = default) =>
+        RemoveFromCollectionAsync(SpaceId, collectionId, objectId, ct);
+
     public async Task RemoveFromCollectionAsync(
         string spaceId,
         string collectionId,

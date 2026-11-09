@@ -18,7 +18,8 @@ public static class ToolCatalog
 {
     public static IReadOnlyList<ToolDescriptor> Build(
         SessionGestures session, TaskGestures tasks,
-        ProjectGestures projects, QueryGestures query, ReadGestures reads, DocumentGestures documents)
+        ProjectGestures projects, QueryGestures query, ReadGestures reads, DocumentGestures documents,
+        ContactGestures contacts)
     {
         return new ToolDescriptor[]
         {
@@ -42,6 +43,26 @@ public static class ToolCatalog
                     ]),
                 async (args, ct) =>
                     await session.LogAsync(Str(args, "line"), Str(args, "report"), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplicationWithStableTarget),
+
+            new(
+                "close_report",
+                "Close a session report at the end of the work: write the closing entry (what is done, what is left, where to resume), compute the report's real time, tick the tasks the person says are done, and set the real time of every task the report carries. Real time is the sum of the gaps between journal entries, except a gap that starts at an entry ending with « en attente de retour »: end an entry with that mark whenever it waits on the person. Closing again replaces the figure; a report never counts twice. A report carrying several tasks gives each an equal share.",
+                Schema(
+                    required:
+                    [
+                        Prop("report", "string", "report_id returned by open_report; report names are refused."),
+                        Prop("summary", "string", "Closing entry: what is done, what is left, where to resume."),
+                    ],
+                    optional:
+                    [
+                        ArrayProp("done", "Tasks of this report the person says are finished, name or id; they are ticked."),
+                        Prop("corrected_hours", "number", "Real time in hours, when the person corrects the computed one."),
+                    ]),
+                async (args, ct) =>
+                    await session.CloseReportAsync(
+                        Str(args, "report"), Str(args, "summary"), StrArrayOpt(args, "done"),
+                        NumOpt(args, "corrected_hours"), ct),
                 ToolExecutionContract.AdditiveRequiresDeduplicationWithStableTarget),
 
             // ── typed reads: one per need, named by what they return ──────────
@@ -74,6 +95,13 @@ public static class ToolCatalog
                     required: [Prop("project", "string", "Project, name or id.")]),
                 async (args, ct) =>
                     await projects.OverviewAsync(Str(args, "project"), ct),
+                ToolExecutionContract.ReadOnly),
+
+            new(
+                "today_overview",
+                "What to do now, in one read: the tasks neither done nor archived whose due date is today or past (late ones first, with their date), each with its project, type, priority, estimate and Définition de fini; then the projects En cours, one line each. Read it when a session opens, or to see what runs elsewhere instead of searching.",
+                Schema(),
+                async (args, ct) => await projects.TodayAsync(ct),
                 ToolExecutionContract.ReadOnly),
 
             new(
@@ -119,7 +147,7 @@ public static class ToolCatalog
 
             new(
                 "create_task",
-                "Create a task under a project from the task template. Subtasks go in checklist, what to know in notes; both fill the template's sections. Answers with the new task's id.",
+                "Create a task under a project from the task template. A task is small, about an hour, so ask for its done_definition and time_estimated, and its due_date only when it is placed on a day; slot takes Cap when omitted. Subtasks go in checklist, what to know in notes; both fill the template's sections. Answers with the new task's id.",
                 Schema(
                     required:
                     [
@@ -132,11 +160,17 @@ public static class ToolCatalog
                         Prop("priority", "integer", "Priority 0-5, 5 = highest.", minimum: 0, maximum: 5),
                         ArrayProp("checklist", "Subtask labels, one checklist item each."),
                         Prop("notes", "string", "Markdown for the notes section: what to know before working on the task."),
+                        Prop("done_definition", "string", "What lets the task be ticked: a fine, checkable outcome."),
+                        Prop("time_estimated", "number", "Estimated time in hours, e.g. 1 or 0.5."),
+                        Prop("due_date", "string", "The day the task is placed on, YYYY-MM-DD. Omit while it is not placed in the week."),
+                        Prop("slot", "string", "Créneau, key or display name: Cap, Passion, Entraînement. Default Cap."),
                     ]),
                 async (args, ct) =>
                     await tasks.CreateAsync(
                         Str(args, "project"), Str(args, "name"), Str(args, "type"),
-                        IntOpt(args, "priority"), StrArrayOpt(args, "checklist"), StrOpt(args, "notes"), ct),
+                        IntOpt(args, "priority"), StrArrayOpt(args, "checklist"), StrOpt(args, "notes"),
+                        dueDate: StrOpt(args, "due_date"), timeEstimated: NumOpt(args, "time_estimated"),
+                        doneDefinition: StrOpt(args, "done_definition"), slot: StrOpt(args, "slot"), ct: ct),
                 ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new(
@@ -151,7 +185,7 @@ public static class ToolCatalog
 
             new(
                 "archive",
-                "Set an object's Archivé checkbox: omit archived to archive it (take it out of the views), pass archived:false to bring it back. Works on any object that carries the checkbox — not reports, which stay searchable. Archiving is the lifecycle mechanism; the état select is separate.",
+                "Set an object's Archivé checkbox: omit archived to archive it (take it out of the views), pass archived:false to bring it back. Works on any object that carries the checkbox — not reports, which stay searchable. A project is refused while one of its tasks is neither done nor archived; the refusal lists them. Archiving is the lifecycle mechanism; the état select is separate.",
                 Schema(
                     required: [Prop("object", "string", "Object, name or id.")],
                     optional: [Prop("archived", "boolean", "Archive state; omit to archive, pass false to restore.")]),
@@ -161,7 +195,7 @@ public static class ToolCatalog
 
             new(
                 "link",
-                "Link an object to targets via the natural relation of each (source, target) pair: task -> project, rapport -> task(s) (a report links the task(s) it concerns; its project is derived through them), project -> project (depend_de — the source depends on the target), project -> epic (collection membership). Targets are appended, never replaced.",
+                "Link an object to targets via the natural relation of each (source, target) pair: task -> project, rapport -> task(s) (a report links the task(s) it concerns; its project is derived through them), project -> project (depend_de — the source depends on the target), project -> epic (collection membership), task or rapport -> contact or entreprise (contact_lie: who the work was done with), contact -> entreprise (the person's company). Targets are appended, never replaced.",
                 Schema(
                     required:
                     [
@@ -171,6 +205,19 @@ public static class ToolCatalog
                 async (args, ct) =>
                     await query.LinkAsync(Str(args, "object"), StrArray(args, "targets"), ct),
                 ToolExecutionContract.AdditiveUncertain),
+
+            new(
+                "unlink",
+                "Remove links that link set, over the same (source, target) pairs: task -> project, rapport -> task(s), project -> project (depend_de), project -> epic (collection membership), task or rapport -> contact or entreprise, contact -> entreprise. Only the named targets are removed; a target that is not linked changes nothing. Refused when it would leave a task without a project or a report without a task: link the right target first, then unlink the wrong one.",
+                Schema(
+                    required:
+                    [
+                        Prop("object", "string", "Source object, name or id."),
+                        ArrayProp("targets", "Targets to unlink, each a name or id."),
+                    ]),
+                async (args, ct) =>
+                    await query.UnlinkAsync(Str(args, "object"), StrArray(args, "targets"), ct),
+                ToolExecutionContract.OverwritingIdempotent),
 
             new(
                 "list_projects",
@@ -189,7 +236,7 @@ public static class ToolCatalog
                     optional:
                     [
                         ArrayProp("types", "Type keys to restrict the search; omit for any type.",
-                                  itemEnum: ["epic", "project", "task", "rapport", "idee", "document"]),
+                                  itemEnum: ["epic", "project", "task", "rapport", "idee", "document", "contact", "entreprise"]),
                         Prop("context", "boolean", "Add Description, Définition de fini and up to three body lines per hit. Omit for identities only."),
                     ]),
                 async (args, ct) =>
@@ -249,6 +296,34 @@ public static class ToolCatalog
                 ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new(
+                "create_person",
+                "Create a person we work with (a contact object): name and coordinates, their company by name if it exists, their role towards us. A person needs no company; create the company first with create_company when it is worth notes of its own. Link the person from the task or report they took part in with link. Answers with the new person's id.",
+                Schema(
+                    required: [Prop("name", "string", "The person's full name.")],
+                    optional:
+                    [
+                        Prop("email", "string", "Email address."),
+                        Prop("phone", "string", "Phone number."),
+                        Prop("company", "string", "Their company (entreprise), exact name or id; it must exist."),
+                        Prop("role", "string", "Role towards us, not their trade: an option of the Rôle select, key or display name. Options are created by the person in Anytype, never here."),
+                    ]),
+                async (args, ct) =>
+                    await contacts.CreatePersonAsync(
+                        Str(args, "name"), StrOpt(args, "email"), StrOpt(args, "phone"),
+                        StrOpt(args, "company"), StrOpt(args, "role"), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
+
+            new(
+                "create_company",
+                "Create a company (an entreprise object) to note things about it or gather several people. Archiving it later does not archive its people. Answers with the new company's id.",
+                Schema(
+                    required: [Prop("name", "string", "Company name.")],
+                    optional: [Prop("address", "string", "Postal address.")]),
+                async (args, ct) =>
+                    await contacts.CreateCompanyAsync(Str(args, "name"), StrOpt(args, "address"), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
+
+            new(
                 "create_document",
                 "Create a stable reference document in the Anytype Dev space. Use documents for durable reference material: architecture, instructions, nomenclature, specifications, research, tips. Body edits after creation go through replace_section; property edits go through update.",
                 Schema(
@@ -295,7 +370,7 @@ public static class ToolCatalog
                     [
                         Prop("object", "string", "Object whose body to edit, name or id."),
                         Prop("heading", "string", "Exact text of the section heading to replace, without the leading '#'."),
-                        Prop("content", "string", "New markdown content to place under the heading; write it naturally, without escaping."),
+                        Prop("content", "string", "New markdown content to place under the heading; write it naturally, without escaping. Underscores stay literal (keys such as due_date or slot_), so write emphasis with *; nested list items may be indented by any amount, they are re-indented by their nesting."),
                     ]),
                 async (args, ct) =>
                     await query.ReplaceSectionAsync(
@@ -396,6 +471,15 @@ public static class ToolCatalog
         if (node is not JsonValue value || !value.TryGetValue<int>(out var i))
             throw new ArgumentException($"Argument '{name}' must be an integer.", name);
         return i;
+    }
+
+    static double? NumOpt(JsonObject? args, string name)
+    {
+        if (args is null || !args.TryGetPropertyValue(name, out var node) || node is null)
+            return null;
+        if (node is not JsonValue value || !value.TryGetValue<double>(out var d))
+            throw new ArgumentException($"Argument '{name}' must be a number.", name);
+        return d;
     }
 
     static bool? BoolOpt(JsonObject? args, string name)
