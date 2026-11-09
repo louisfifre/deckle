@@ -1034,6 +1034,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeStructure.cs
 │   │   ├── HomeStructureExporter.cs
 │   │   ├── HomeStructureRemap.cs
+│   │   ├── HomeStructureWriter.cs
 │   │   ├── HomeTerms.cs
 │   │   ├── HomeToolCatalog.cs
 │   │   ├── HomeTypedToolCatalog.cs
@@ -2292,6 +2293,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HomeStructureExporterTests.cs
 │   │   ├── HomeStructureFixtures.cs
 │   │   ├── HomeStructureRemapTests.cs
+│   │   ├── HomeStructureWriterTests.cs
 │   │   ├── HomeTermsTests.cs
 │   │   ├── HomeToolCatalogTests.cs
 │   │   ├── HomeTypedToolCatalogTests.cs

@@ -293,6 +293,7 @@ internal sealed partial class HomeStructureRemap(IReadOnlyDictionary<string, str
         var set = new JsonObject();
         foreach ((string field, JsonNode? value) in cleaned)
             if (ViewSettings.Contains(field)) set[field] = value?.DeepClone();
+        set["type"] ??= "table";
         set["sorts"] ??= new JsonArray();
         set["filters"] ??= new JsonArray();
 
@@ -552,7 +553,7 @@ internal sealed partial class HomeStructureRemap(IReadOnlyDictionary<string, str
         return new HomeWidgetPlan(widget.OldId, target, widget.Layout, widget.Limit, widget.ViewId);
     }
 
-    private void Drop(string kind, string where, string what)
+    internal void Drop(string kind, string where, string what)
     {
         Dropped[kind] = Dropped.TryGetValue(kind, out int count) ? count + 1 : 1;
         Details.Add(new HomeStructureDrop(kind, where, what));
@@ -577,4 +578,6 @@ internal sealed record HomeTypePlan(
 
 internal sealed record HomeTemplatePlan(string OldId, string Name, string Key, JsonObject Body);
 
-internal sealed record HomeWidgetPlan(string OldId, string Target, string? Layout, int? Limit, string? OldViewId);
+// ViewId is the id of the view written for OldViewId, set by the writer.
+internal sealed record HomeWidgetPlan(
+    string OldId, string Target, string? Layout, int? Limit, string? OldViewId, string? ViewId = null);
