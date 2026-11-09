@@ -435,6 +435,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Gestures/
 │   │   │   ├── BlockSections.cs
 │   │   │   ├── CollectionMembershipGestures.cs
+│   │   │   ├── ContactGestures.cs
 │   │   │   ├── DeleteRefusalReasons.cs
 │   │   │   ├── DeletionApproval.cs
 │   │   │   ├── DeletionApprovalRelay.cs
@@ -1998,6 +1999,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── BackendTestFakes.cs
 │   │   ├── BackendUserIncidentTests.cs
 │   │   ├── BinLogTests.cs
+│   │   ├── ContactGesturesTests.cs
 │   │   ├── Deckle.Anytype.Tests.csproj
 │   │   ├── DeletionApprovalRelayTests.cs
 │   │   ├── DevSpaceBugNotes.md

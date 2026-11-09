@@ -77,6 +77,11 @@ public static class DevSpace
         public const string Idee     = "idee";
         public const string Document = "document";
         public const string Chat     = "chat_derived"; // layout: chat
+        // The actors. The model v6 names them person and company; the space of
+        // 2026-11-04 carries them under their v5 keys (inventory in the model
+        // document), and the recreation renames them.
+        public const string Contact    = "contact";    // layout: profile
+        public const string Entreprise = "entreprise"; // layout: profile
     }
 
     // ── Property keys (flat — properties are space-global) ────────────────────
@@ -119,6 +124,13 @@ public static class DevSpace
 
         public const string TypeDeDocument    = "type_de_document"; // select
         public const string DocumentSysteme   = "document_systeme"; // checkbox
+
+        // Keys from the inventory of 2026-11-04; formats NOT measured (an email
+        // and a phone format are likely), so they are written as plain text.
+        public const string EntrepriseLiee    = "entreprise_liee";     // objects
+        public const string Courriel          = "courriel";            // email
+        public const string Telephone         = "numero_de_telephone"; // phone
+        public const string Adresse           = "adresse";             // text
     }
 
     // ── État (select on Props.Etat) ──────────────────────────────────────────
@@ -275,6 +287,15 @@ public static class DevSpace
         public const string Default = "Cap";
     }
 
+    // A person's role towards us, not their trade (model v6). The space of
+    // 2026-11-04 has only a link to a « Rôle » type, so the select is looked
+    // for live and a person is created without it until it exists.
+    public static class Role
+    {
+        public static readonly string[] Keys = ["role"];
+        public const string Name = "Rôle";
+    }
+
     // ── Per-type property tables ──────────────────────────────────────────────
     //
     // Row order is digest order.
@@ -351,6 +372,18 @@ public static class DevSpace
         new(Props.TachesLiees, "Tâche(s) liée(s)", "objects"),
     ];
 
+    static readonly PropertyDef[] ContactProps =
+    [
+        new(Props.EntrepriseLiee, "Entreprise", "objects"),
+        new(Props.Courriel, "Courriel", "text"),
+        new(Props.Telephone, "Téléphone", "text"),
+    ];
+
+    static readonly PropertyDef[] EntrepriseProps =
+    [
+        new(Props.Adresse, "Adresse", "text"),
+    ];
+
     static readonly PropertyDef[] NoProps = [];
 
     public static IReadOnlyList<PropertyDef> PropertiesFor(string typeKey) => typeKey switch
@@ -362,6 +395,8 @@ public static class DevSpace
         Types.Idee     => IdeeProps,
         Types.Document => DocumentProps,
         Types.Chat     => ChatProps,
+        Types.Contact    => ContactProps,
+        Types.Entreprise => EntrepriseProps,
         _              => NoProps,
     };
 
@@ -436,7 +471,8 @@ public static class DevSpace
         // first-seen-wins walk yields each key's label/options once.
         var seen = new HashSet<string>(StringComparer.Ordinal);
         foreach (PropertyDef[] table in
-            new[] { EpicProps, ProjectProps, TaskProps, RapportProps, IdeeProps, DocumentProps, ChatProps })
+            new[] { EpicProps, ProjectProps, TaskProps, RapportProps, IdeeProps, DocumentProps, ChatProps,
+                    ContactProps, EntrepriseProps })
             foreach (PropertyDef def in table)
                 if (seen.Add(def.Key))
                     yield return def;

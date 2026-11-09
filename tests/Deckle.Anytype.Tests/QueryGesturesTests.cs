@@ -698,6 +698,47 @@ public class QueryGesturesTests
         Assert.Contains("retrait(s) de collection", digest);
     }
 
+    const string ContactId = "bafyreicontactaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+
+    static JsonObject ContactObject() => new()
+    {
+        ["object"] = new JsonObject
+        {
+            ["id"] = ContactId,
+            ["name"] = "Camille",
+            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Contact },
+            ["properties"] = new JsonArray(),
+        },
+    };
+
+    [Fact]
+    public async Task LinkATaskToAPersonWritesTheContactLink()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(TaskId, TaskObject());
+        server.OnGetObject(ContactId, ContactObject());
+        server.OnPatchObject(TaskId, TaskObject());
+
+        await NewGestures(server).LinkAsync(TaskId, [ContactId], Ct);
+
+        JsonObject entry = (JsonObject)((JsonArray)server.LastBodyFor("PATCH")["properties"]!).Single()!;
+        Assert.Equal(DevSpace.Props.ContactLie, entry["key"]!.GetValue<string>());
+        Assert.Equal(ContactId, entry["objects"]![0]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task LinkAProjectToAPersonIsRefusedUntilTheProjectCarriesAContactLink()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnGetObject(ProjectId, ProjectObject());
+        server.OnGetObject(ContactId, ContactObject());
+
+        await Assert.ThrowsAsync<InvalidOperationException>(
+            () => NewGestures(server).LinkAsync(ProjectId, [ContactId], Ct));
+
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
     [Fact]
     public async Task UnlinkRefusesAPairThatLinkDoesNotSupport()
     {

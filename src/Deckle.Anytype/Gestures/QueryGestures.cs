@@ -568,12 +568,22 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
         if (sourceType == DevSpace.Types.Rapport && targetType == DevSpace.Types.Task) return new(DevSpace.Props.TachesLiees);
         if (sourceType == DevSpace.Types.Project && targetType == DevSpace.Types.Project) return new(DevSpace.Props.DependDe);
         if (sourceType == DevSpace.Types.Project && targetType == DevSpace.Types.Epic) return new(null);
+        // Actors are linked from the work: the link lives on the task or the
+        // report, the other way is read through backlinks (model v6). A project
+        // has no contact link in the space of 2026-11-04, so it waits for the
+        // recreation or for the property to be added to the type.
+        if (targetType is DevSpace.Types.Contact or DevSpace.Types.Entreprise
+            && sourceType is DevSpace.Types.Task or DevSpace.Types.Rapport)
+            return new(DevSpace.Props.ContactLie);
+        if (sourceType == DevSpace.Types.Contact && targetType == DevSpace.Types.Entreprise)
+            return new(DevSpace.Props.EntrepriseLiee);
         return null;
     }
 
     static string SupportedPairsError(string sourceType, string targetType) =>
         $"Lien non supporté : {sourceType} → {targetType}. " +
-        "Paires supportées : tâche→projet, rapport→tâche(s), projet→projet, projet→epic.";
+        "Paires supportées : tâche→projet, rapport→tâche(s), projet→projet, projet→epic, "
+        + "tâche ou rapport→contact ou entreprise, contact→entreprise.";
 
     // The body's headings, quoted, for the « introuvable » error — it tells the
     // model which titles actually exist so it can retry with one of them.

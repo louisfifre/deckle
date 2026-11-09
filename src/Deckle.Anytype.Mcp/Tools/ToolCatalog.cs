@@ -18,7 +18,8 @@ public static class ToolCatalog
 {
     public static IReadOnlyList<ToolDescriptor> Build(
         SessionGestures session, TaskGestures tasks,
-        ProjectGestures projects, QueryGestures query, ReadGestures reads, DocumentGestures documents)
+        ProjectGestures projects, QueryGestures query, ReadGestures reads, DocumentGestures documents,
+        ContactGestures contacts)
     {
         return new ToolDescriptor[]
         {
@@ -194,7 +195,7 @@ public static class ToolCatalog
 
             new(
                 "link",
-                "Link an object to targets via the natural relation of each (source, target) pair: task -> project, rapport -> task(s) (a report links the task(s) it concerns; its project is derived through them), project -> project (depend_de — the source depends on the target), project -> epic (collection membership). Targets are appended, never replaced.",
+                "Link an object to targets via the natural relation of each (source, target) pair: task -> project, rapport -> task(s) (a report links the task(s) it concerns; its project is derived through them), project -> project (depend_de — the source depends on the target), project -> epic (collection membership), task or rapport -> contact or entreprise (contact_lie: who the work was done with), contact -> entreprise (the person's company). Targets are appended, never replaced.",
                 Schema(
                     required:
                     [
@@ -207,7 +208,7 @@ public static class ToolCatalog
 
             new(
                 "unlink",
-                "Remove links that link set, over the same (source, target) pairs: task -> project, rapport -> task(s), project -> project (depend_de), project -> epic (collection membership). Only the named targets are removed; a target that is not linked changes nothing. Refused when it would leave a task without a project or a report without a task: link the right target first, then unlink the wrong one.",
+                "Remove links that link set, over the same (source, target) pairs: task -> project, rapport -> task(s), project -> project (depend_de), project -> epic (collection membership), task or rapport -> contact or entreprise, contact -> entreprise. Only the named targets are removed; a target that is not linked changes nothing. Refused when it would leave a task without a project or a report without a task: link the right target first, then unlink the wrong one.",
                 Schema(
                     required:
                     [
@@ -235,7 +236,7 @@ public static class ToolCatalog
                     optional:
                     [
                         ArrayProp("types", "Type keys to restrict the search; omit for any type.",
-                                  itemEnum: ["epic", "project", "task", "rapport", "idee", "document"]),
+                                  itemEnum: ["epic", "project", "task", "rapport", "idee", "document", "contact", "entreprise"]),
                         Prop("context", "boolean", "Add Description, Définition de fini and up to three body lines per hit. Omit for identities only."),
                     ]),
                 async (args, ct) =>
@@ -292,6 +293,34 @@ public static class ToolCatalog
                     required: [Prop("content", "string", "Idea text.")]),
                 async (args, ct) =>
                     await query.CreateIdeaAsync(Str(args, "content"), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
+
+            new(
+                "create_person",
+                "Create a person we work with (a contact object): name and coordinates, their company by name if it exists, their role towards us. A person needs no company; create the company first with create_company when it is worth notes of its own. Link the person from the task or report they took part in with link. Answers with the new person's id.",
+                Schema(
+                    required: [Prop("name", "string", "The person's full name.")],
+                    optional:
+                    [
+                        Prop("email", "string", "Email address."),
+                        Prop("phone", "string", "Phone number."),
+                        Prop("company", "string", "Their company (entreprise), exact name or id; it must exist."),
+                        Prop("role", "string", "Role towards us, not their trade: an option of the Rôle select, key or display name. Options are created by the person in Anytype, never here."),
+                    ]),
+                async (args, ct) =>
+                    await contacts.CreatePersonAsync(
+                        Str(args, "name"), StrOpt(args, "email"), StrOpt(args, "phone"),
+                        StrOpt(args, "company"), StrOpt(args, "role"), ct),
+                ToolExecutionContract.AdditiveRequiresDeduplication),
+
+            new(
+                "create_company",
+                "Create a company (an entreprise object) to note things about it or gather several people. Archiving it later does not archive its people. Answers with the new company's id.",
+                Schema(
+                    required: [Prop("name", "string", "Company name.")],
+                    optional: [Prop("address", "string", "Postal address.")]),
+                async (args, ct) =>
+                    await contacts.CreateCompanyAsync(Str(args, "name"), StrOpt(args, "address"), ct),
                 ToolExecutionContract.AdditiveRequiresDeduplication),
 
             new(

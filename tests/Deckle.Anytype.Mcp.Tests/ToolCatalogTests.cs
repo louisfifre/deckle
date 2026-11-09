@@ -15,6 +15,7 @@ public class ToolCatalogTests
         "epic_properties", "report_journal", "idea_text", "document_outline", "document_section",
         "create_task", "complete", "archive", "link", "unlink", "list_projects", "search", "subtask",
         "create_epic", "create_project", "create_idea", "create_document", "update", "replace_section",
+        "create_person", "create_company",
     };
 
     // Every read is typed and named by what it returns; a whole-object read
@@ -40,7 +41,8 @@ public class ToolCatalogTests
             new ProjectGestures(client, resolver, client.V2),
             new QueryGestures(client, resolver, client.V2),
             new ReadGestures(resolver, client.V2),
-            new DocumentGestures(client));
+            new DocumentGestures(client),
+            new ContactGestures(client, resolver, client.V2));
     }
 
     [Fact]
@@ -205,6 +207,8 @@ public class ToolCatalogTests
             ["create_project"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["create_idea"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["create_document"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["create_person"] = AmbiguousOutcomePolicy.RequiresDeduplication,
+            ["create_company"] = AmbiguousOutcomePolicy.RequiresDeduplication,
             ["update"] = AmbiguousOutcomePolicy.SafeToRetry,
             ["replace_section"] = AmbiguousOutcomePolicy.SafeToRetry,
         };
@@ -242,6 +246,8 @@ public class ToolCatalogTests
             ["create_project"] = ToolChangeKind.Additive,
             ["create_idea"] = ToolChangeKind.Additive,
             ["create_document"] = ToolChangeKind.Additive,
+            ["create_person"] = ToolChangeKind.Additive,
+            ["create_company"] = ToolChangeKind.Additive,
             ["update"] = ToolChangeKind.Overwriting,
             ["replace_section"] = ToolChangeKind.Overwriting,
         };
