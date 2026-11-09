@@ -302,6 +302,14 @@ internal sealed partial class FakeHomeAnytypeServer
                 if (op["position"]?.GetValue<string>() == "first") views.Insert(0, target); else views.Add(target);
                 created[$"/ops/{index}"] = target["id"]!.GetValue<string>();
             }
+            else if (name == "delete_view")
+            {
+                string wanted = op["view"]?.GetValue<string>() ?? "";
+                JsonObject? doomed = views.OfType<JsonObject>().FirstOrDefault(value => value["id"]!.GetValue<string>() == wanted);
+                if (doomed is null) return $"ops[{index}]: view {wanted} not found";
+                views.Remove(doomed);
+                continue;
+            }
             else if (name == "update_view")
             {
                 string wanted = op["view"]?.GetValue<string>() ?? "default";

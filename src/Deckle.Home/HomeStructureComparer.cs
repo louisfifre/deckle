@@ -80,13 +80,14 @@ internal sealed class HomeStructureComparer(AnytypeApiClient api)
         }
 
         CompareViews(
-            "type", what, type.Views, HomeV2.DataviewBlock(document)?["views"] as JsonArray ?? [], plan);
+            "type", what, type.OldTypeId, type.Views, HomeV2.DataviewBlock(document)?["views"] as JsonArray ?? [], plan);
     }
 
     // ── Views ───────────────────────────────────────────────────────────
 
     private void CompareViews(
-        string area, string what, IReadOnlyList<HomeViewPlan> plans, JsonArray actualViews, HomeStructurePlan plan)
+        string area, string what, string owner, IReadOnlyList<HomeViewPlan> plans, JsonArray actualViews,
+        HomeStructurePlan plan)
     {
         if (plans.Count == 0) return;
         Check($"{area}_view.count", what, plans.Count.ToString(), actualViews.Count.ToString());
@@ -94,7 +95,7 @@ internal sealed class HomeStructureComparer(AnytypeApiClient api)
         foreach (HomeViewPlan expected in plans)
         {
             string label = $"{what}, view « {expected.Name} »";
-            JsonObject? actual = plan.ViewIds.TryGetValue(expected.OldId, out string? id)
+            JsonObject? actual = plan.ViewIds.TryGetValue(HomeStructurePlan.ViewKey(owner, expected.OldId), out string? id)
                 ? actualViews.OfType<JsonObject>().FirstOrDefault(view => HomeObjectJson.Id(view) == id)
                 : null;
             if (actual is null)
@@ -226,7 +227,7 @@ internal sealed class HomeStructureComparer(AnytypeApiClient api)
             Unread("collection", what, ex);
             return;
         }
-        CompareViews("collection", what, collection.Views, new JsonArray(views.Select(view => (JsonNode?)view).ToArray()), plan);
+        CompareViews("collection", what, collection.Source.OldId, collection.Views, new JsonArray(views.Select(view => (JsonNode?)view).ToArray()), plan);
     }
 
     // ── Widgets ─────────────────────────────────────────────────────────

@@ -13,10 +13,10 @@ namespace Deckle.Home;
 //      featured / hidden section of each property (the target type's whole
 //      list is read first and sent back with only the sections changed, since
 //      the patch replaces the list);
-//   c. type views: the first source view updates the target's default view,
-//      the others are inserted; each is its own request, so one refused view
-//      costs that view only; the columns are then reconciled so the visible
-//      set matches (a patch leaves unnamed columns as they are);
+//   c. type views: every source view is inserted (each its own request, so one
+//      refused view costs that view only), then the views the target held
+//      before are deleted; the columns are then reconciled so the visible set
+//      matches (a patch leaves unnamed columns as they are);
 //   d. the views of each section collection, found on the target by name;
 //   e. widgets in the source order, each target mapped (a type to the target
 //      type, a collection to the target collection, another object through
@@ -181,7 +181,7 @@ internal sealed class HomeStructureWriter(AnytypeApiClient api, string spaceId)
         // (c) Views.
         JsonArray targetViews = HomeV2.DataviewBlock(document)?["views"] as JsonArray ?? [];
         await WriteViewsAsync(
-            "type_views", where, type.Views, targetViews,
+            "type_views", where, type.OldTypeId, type.Views, targetViews,
             ops => _v2.PatchAsync($"types/{type.Key}", new JsonObject { ["ops"] = ops }, ct),
             async () => HomeV2.DataviewBlock(
                 (await _v2.GetAsync($"types/{type.Key}", ct).ConfigureAwait(false) as JsonObject) ?? [])
@@ -238,7 +238,7 @@ internal sealed class HomeStructureWriter(AnytypeApiClient api, string spaceId)
         }
 
         await WriteViewsAsync(
-            "collection_views", where, collection.Views, targetViews,
+            "collection_views", where, collection.Source.OldId, collection.Views, targetViews,
             ops => _v2.PatchAsync($"objects/{collection.TargetId}", new JsonObject { ["ops"] = ops }, ct),
             async () => new JsonArray((await _v2.ListAsync($"collections/{collection.TargetId}/views", ct).ConfigureAwait(false))
                 .Select(view => (JsonNode?)view).ToArray()),
@@ -250,6 +250,7 @@ internal sealed class HomeStructureWriter(AnytypeApiClient api, string spaceId)
     private async Task WriteViewsAsync(
         string stage,
         string where,
+        string owner,
         IReadOnlyList<HomeViewPlan> plans,
         JsonArray existing,
         Func<JsonArray, Task<JsonNode?>> patch,
@@ -257,50 +258,57 @@ internal sealed class HomeStructureWriter(AnytypeApiClient api, string spaceId)
         HomeStructurePlan plan,
         CancellationToken ct)
     {
-        string? defaultId = existing.OfType<JsonObject>().Select(view => HomeObjectJson.Id(view))
-            .FirstOrDefault(id => id.Length > 0);
+        // The views the target held before our inserts (its default view).
+        string[] before = existing.OfType<JsonObject>().Select(view => HomeObjectJson.Id(view))
+            .Where(id => id.Length > 0).ToArray();
         var written = new List<(HomeViewPlan View, string TargetId)>();
 
-        for (int index = 0; index < plans.Count; index++)
+        // 2026-11-09: every source view is INSERTED, never written over a view
+        // that already existed. On the real server an update_view with `set.sorts`
+        // on an existing view answers right and reads right, then a deferred step
+        // seconds later cuts the type's default view back to its first sort or
+        // appends the old sorts again after the new ones. A view made by
+        // insert_view keeps its sorts (stable over 30 s), and later columns-only
+        // update_view ops on it do not disturb them.
+        foreach (HomeViewPlan view in plans)
         {
-            HomeViewPlan view = plans[index];
-            bool updatesDefault = index == 0 && defaultId is not null;
-            JsonObject set = (JsonObject)view.Set.DeepClone();
-            JsonObject op;
-            if (updatesDefault)
+            JsonObject op = new()
             {
-                if (view.Name.Length > 0) set["name"] = view.Name;
-                op = new JsonObject { ["op"] = "update_view", ["view"] = defaultId, ["set"] = set, ["columns"] = view.Columns.DeepClone() };
-            }
-            else
-            {
-                op = new JsonObject
-                {
-                    ["op"] = "insert_view",
-                    ["name"] = view.Name.Length > 0 ? view.Name : "Vue",
-                    ["set"] = set,
-                    ["columns"] = view.Columns.DeepClone(),
-                };
-            }
+                ["op"] = "insert_view",
+                ["name"] = view.Name.Length > 0 ? view.Name : "Vue",
+                ["set"] = view.Set.DeepClone(),
+                ["columns"] = view.Columns.DeepClone(),
+            };
 
             JsonNode? answer = null;
             bool ok = await TryAsync(stage, $"{where}, view « {view.Name} »", async () =>
                 answer = await patch(new JsonArray(op)).ConfigureAwait(false)).ConfigureAwait(false);
             if (!ok) continue;
 
-            string? targetId = updatesDefault ? defaultId : CreatedViewId(answer);
+            string? targetId = CreatedViewId(answer);
             if (targetId is null)
             {
                 Refuse(stage, $"{where}, view « {view.Name} »", new InvalidOperationException("the answer carried no view id"));
                 continue;
             }
             written.Add((view, targetId));
-            plan.ViewIds[view.OldId] = targetId;
+            plan.ViewIds[HomeStructurePlan.ViewKey(owner, view.OldId)] = targetId;
             _report.Count(_report.Written, stage);
         }
         if (written.Count == 0) return;
 
-        // Columns the patch did not name keep their state: hide, one view at
+        // 2026-11-09: the views that stood before are deleted once a replacement
+        // exists (delete_view works, including the type's view `default`; the
+        // type is left with only the inserted views, stable). One op per request,
+        // so one refusal costs one view and is counted.
+        foreach (string id in before)
+        {
+            JsonObject delete = new() { ["op"] = "delete_view", ["view"] = id };
+            await TryAsync("view_delete", $"{where}, view {id}", async () =>
+                await patch(new JsonArray(delete)).ConfigureAwait(false)).ConfigureAwait(false);
+        }
+
+        // Columns the insert did not name keep their state: hide, one view at
         // a time, those the target shows and the source does not.
         JsonArray now;
         try { now = await readViews().ConfigureAwait(false); }
@@ -327,7 +335,6 @@ internal sealed class HomeStructureWriter(AnytypeApiClient api, string spaceId)
                 await patch(new JsonArray(op)).ConfigureAwait(false)).ConfigureAwait(false);
         }
     }
-
     private static string? CreatedViewId(JsonNode? answer) =>
         (answer as JsonObject)?["created_views"] is JsonObject created
         && created.Select(pair => pair.Value).FirstOrDefault() is JsonValue id
@@ -348,7 +355,7 @@ internal sealed class HomeStructureWriter(AnytypeApiClient api, string spaceId)
             string? viewId = null;
             if (widget.OldViewId is not null)
             {
-                if (plan.ViewIds.TryGetValue(widget.OldViewId, out string? mapped)) viewId = mapped;
+                if (plan.ViewIds.TryGetValue(HomeStructurePlan.ViewKey(source.Target, widget.OldViewId), out string? mapped)) viewId = mapped;
                 else remap.Drop("widget_view", $"widget {widget.OldId}", widget.OldViewId);
             }
             widget = widget with { ViewId = viewId };
@@ -407,7 +414,11 @@ internal sealed class HomeStructurePlan
     public List<HomeTemplatePlan> Templates { get; } = [];
     public List<HomeWidgetPlan> Widgets { get; } = [];
 
-    // Source view id → the id of the view written for it.
+    // (Source owner id, source view id) → the id of the view written for it. A
+    // view id is only unique inside its owner: every type's first view is
+    // called `default`.
+    public static string ViewKey(string owner, string oldViewId) => owner + "|" + oldViewId;
+
     public Dictionary<string, string> ViewIds { get; } = new(StringComparer.Ordinal);
 
     // Source template id → the id of the template created for it.

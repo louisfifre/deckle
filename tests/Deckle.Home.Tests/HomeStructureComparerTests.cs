@@ -52,7 +52,7 @@ public sealed class HomeStructureComparerTests : IDisposable
         {
             ["ops"] = new JsonArray(new JsonObject
             {
-                ["op"] = "update_view", ["view"] = "default",
+                ["op"] = "update_view", ["view"] = run.Outcome.Plan.ViewIds[HomeStructurePlan.ViewKey("src-type-errand", "vE1")],
                 ["set"] = new JsonObject { ["group_by"] = "needed" },
                 ["columns"] = new JsonObject { ["quantity"] = new JsonObject { ["hidden"] = false } },
             }),

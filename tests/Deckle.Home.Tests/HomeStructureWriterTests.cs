@@ -123,7 +123,7 @@ public sealed class HomeStructureWriterTests : IDisposable
     }
 
     [Fact]
-    public async Task TheFirstSourceViewUpdatesTheDefaultViewAndTheOthersAreInserted()
+    public async Task EverySourceViewIsInsertedAndTheViewsTheTargetHeldAreDeleted()
     {
         using FakeHomeAnytypeServer source = Source();
         using FakeHomeAnytypeServer target = Target();
@@ -132,7 +132,8 @@ public sealed class HomeStructureWriterTests : IDisposable
 
         JsonArray views = Views(target, "product");
         Assert.Equal(2, views.Count);
-        Assert.Equal("default", views[0]!["id"]!.GetValue<string>());
+        Assert.DoesNotContain(views, view => view!["id"]!.GetValue<string>() == "default");
+        Assert.Equal(run.Outcome.Plan.ViewIds[HomeStructurePlan.ViewKey("src-type-errand", "vE1")], views[0]!["id"]!.GetValue<string>());
         Assert.Equal("All", views[0]!["name"]!.GetValue<string>());
         Assert.Equal("Par catégorie", views[1]!["name"]!.GetValue<string>());
         Assert.Equal("kanban", views[1]!["type"]!.GetValue<string>());
@@ -147,7 +148,7 @@ public sealed class HomeStructureWriterTests : IDisposable
         Assert.Equal(["name", "product_category"], Visible(views[0]));
         Assert.Equal(["name", "product_category", "quantity"], Visible(views[1]));
         Assert.Equal("sum", views[1]!["columns"]!.AsArray().Single(column => column!["property"]!.GetValue<string>() == "quantity")!["aggregation"]!.GetValue<string>());
-        Assert.Equal(run.Outcome.Plan.ViewIds["vE2"], views[1]!["id"]!.GetValue<string>());
+        Assert.Equal(run.Outcome.Plan.ViewIds[HomeStructurePlan.ViewKey("src-type-errand", "vE2")], views[1]!["id"]!.GetValue<string>());
         Assert.Equal(18, run.Outcome.Report.Written["type_views"]);
     }
 
@@ -247,7 +248,7 @@ public sealed class HomeStructureWriterTests : IDisposable
         Assert.Null(widgets[2]["limit"]);
 
         Assert.Equal("tgt-type-room", widgets[3]["target"]!.GetValue<string>());
-        Assert.Equal("default", widgets[3]["view_id"]!.GetValue<string>());
+        Assert.Equal(Views(target, "room")[0]!["id"]!.GetValue<string>(), widgets[3]["view_id"]!.GetValue<string>());
 
         // The view the source named is not one that was carried: the widget
         // stays, on the collection's default view.
@@ -266,7 +267,7 @@ public sealed class HomeStructureWriterTests : IDisposable
         using FakeHomeAnytypeServer target = Target();
         target.FailNext(request => request.Method == "PATCH"
             && request.Path.EndsWith("/types/device", StringComparison.Ordinal)
-            && request.Body.Contains("update_view", StringComparison.Ordinal));
+            && request.Body.Contains("insert_view", StringComparison.Ordinal));
 
         Run run = await RunAsync(source, target);
 
@@ -278,6 +279,43 @@ public sealed class HomeStructureWriterTests : IDisposable
         Assert.Contains("type device", details);
         Assert.Contains("injected failure", details);
         Assert.Contains("aisle", details);
+    }
+
+    [Fact]
+    public async Task ARefusedDeletionCostsThatViewOnlyAndIsCounted()
+    {
+        using FakeHomeAnytypeServer source = Source();
+        using FakeHomeAnytypeServer target = Target();
+        target.FailNext(request => request.Method == "PATCH"
+            && request.Path.EndsWith("/types/device", StringComparison.Ordinal)
+            && request.Body.Contains("delete_view", StringComparison.Ordinal));
+
+        Run run = await RunAsync(source, target);
+
+        Assert.Equal(1, run.Outcome.Report.Refused["view_delete"]);
+        Assert.Equal(18, run.Outcome.Report.Written["type_views"]);
+        // The default view stayed beside the inserted one; nothing else was lost.
+        Assert.Equal(2, Views(target, "device").Count);
+        Assert.Single(Views(target, "product"), view => view!["name"]!.GetValue<string>() == "All");
+    }
+
+    // 2026-11-09: update_view with `set` on a view that existed before corrupts
+    // its sorts on the real server a few seconds later. The writer inserts.
+    [Fact]
+    public async Task TheWriterNeverSendsASetOnAViewThatExistedBefore()
+    {
+        using FakeHomeAnytypeServer source = Source();
+        using FakeHomeAnytypeServer target = Target();
+
+        await RunAsync(source, target);
+
+        var ops = target.Requests
+            .Where(request => request.Method == "PATCH" && request.Body.Contains("\"ops\"", StringComparison.Ordinal))
+            .SelectMany(request => JsonNode.Parse(request.Body)!["ops"]!.AsArray().OfType<JsonObject>())
+            .ToArray();
+        Assert.NotEmpty(ops);
+        Assert.DoesNotContain(ops, op => op["op"]!.GetValue<string>() == "update_view" && op["set"] is not null);
+        Assert.Contains(ops, op => op["op"]!.GetValue<string>() == "delete_view");
     }
 
     [Fact]
