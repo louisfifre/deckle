@@ -129,7 +129,7 @@
     <value>Trackpad</value>
   </data>
   <data name="TrackpadPageHeader.Description" xml:space="preserve">
-    <value>Three-finger drag on a Magic Trackpad 2: move three fingers to pick something up, lift them to drop it.</value>
+    <value>Three-finger drag on any precision touchpad: move three fingers to pick something up, lift them to drop it.</value>
   </data>
 
   <!-- Three-finger drag -->

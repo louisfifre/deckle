@@ -25,7 +25,7 @@ public static class SettingsSearch
         new SettingSearchEntry
         {
             LabelKey = "TrackpadPage_DragCard",
-            Keywords = ["gesture", "magic trackpad", "pickup", "drop"],
+            Keywords = ["gesture", "touchpad", "magic trackpad", "pickup", "drop"],
         },
 
         new SettingSearchEntry
