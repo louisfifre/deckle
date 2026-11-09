@@ -12,8 +12,8 @@
 // https://github.com/ramensoftware/windhawk-mods/blob/main/mods/start-menu-size.wh.cpp
 // Different on purpose: the mod's height is a number of pixels from its settings;
 // here it is the window's own height in effective pixels, read live, so it holds
-// at any scale; FrameRoot's margin stays native and is subtracted instead of
-// being zeroed; and the values are held by PropertyOverride, which answers a
+// at any scale, and the panel keeps equal gaps above and below (see Update);
+// FrameRoot's margin stays native instead of being zeroed; and the values are held by PropertyOverride, which answers a
 // rewrite and gives the original back. See NOTICE.md.
 
 namespace
@@ -229,7 +229,15 @@ namespace deckle::behaviors
         try { scale = winrt::Windows::Graphics::Display::DisplayInformation::GetForCurrentView().RawPixelsPerViewPixel(); } catch (...) {}
 
         wux::Thickness margin = frameRoot.Margin();
-        const double height = (std::max)(available - margin.Top - margin.Bottom, kMinimumHeight);
+        // Equal gaps above and below the visible panel. The panel (AnimationRoot) sits 12 DIP
+        // inside FrameRoot on every side, FrameRoot starts at the window's top plus its top
+        // margin, and its native bottom margin (36) lies below it. Measured on 26100.9711 at
+        // 200 %: window 1080, FrameRoot 1044 high, panel 12 DIP from the top and 48 from the
+        // bottom. The gap above is inset + margin.Top; the gap below is
+        // inset + window - margin.Top - height. Equal when height = window - 2 * margin.Top,
+        // so the bottom margin is not subtracted: it overhangs the window, which clips nothing
+        // the person sees. Read live, so it holds at any scale.
+        const double height = (std::max)(available - 2 * margin.Top, kMinimumHeight);
 
         const bool changed = !m_applied || height != m_height;
         m_height = height;

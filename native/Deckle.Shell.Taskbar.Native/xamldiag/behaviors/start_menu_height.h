@@ -13,7 +13,8 @@ namespace deckle::behaviors
     //
     // One hold per FrameRoot, on its UI thread. It
     //   - measures: the window's height (Window.Bounds, effective pixels) minus
-    //     FrameRoot's own top and bottom margin, which stays native;
+    //     twice FrameRoot's top margin, so the visible panel has the same gap
+    //     above and below (the margin itself stays native);
     //   - holds Height, MinHeight and MaxHeight at that value with
     //     PropertyOverrides (so a write of Explorer's code or a visual state
     //     is answered, and Restore gives the original values back);

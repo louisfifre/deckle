@@ -60,8 +60,8 @@ internal sealed record TaskbarCustomization
 /// What Deckle wants the Start menu to look like.
 /// </summary>
 /// <param name="FullHeight">
-/// The menu is as high as the screen it opens on (minus the margin Windows keeps
-/// around it), at any scale. Windows caps the menu at 750 effective pixels.
+/// The menu is as high as the screen it opens on, with the same gap above and
+/// below it, at any scale. Windows caps the menu at 750 effective pixels.
 /// </param>
 internal sealed record StartMenuCustomization(bool FullHeight = true);
 

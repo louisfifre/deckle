@@ -13,6 +13,9 @@ using Deckle.Shell.Taskbar.Harness;
 //                                    [--tighten-quick-settings] [--clock-date-above-time]
 //                                    [--start-menu-full-height]]
 //
+//   Deckle.Shell.Taskbar.Harness customizer [--control <file>] [--stop-after <seconds>]
+//                                (see CustomizerCommand: the app's own wiring, no window)
+//
 // It injects the DLL into the running explorer, prints every record the DLL
 // logs, injects again each time explorer rebuilds its taskbar, and on Ctrl+C
 // (or --stop-after, or a "stop" line in the --control file) asks the DLL to
@@ -37,7 +40,9 @@ using Deckle.Shell.Taskbar.Harness;
 //              the engine for the trees as they are now.
 try
 {
-    return await HarnessCommand.RunAsync(args);
+    return args.Length > 0 && args[0] == "customizer"
+        ? await CustomizerCommand.RunAsync(args[1..])
+        : await HarnessCommand.RunAsync(args);
 }
 catch (Exception exception)
 {

@@ -1685,6 +1685,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TaskbarSettingsModule.cs
 │   │   └── TaskbarSettingsService.cs
 │   ├── Deckle.Shell.Taskbar.Harness/
+│   │   ├── CustomizerCommand.cs
 │   │   ├── Deckle.Shell.Taskbar.Harness.csproj
 │   │   ├── HarnessCommand.cs
 │   │   ├── HarnessOptions.cs
