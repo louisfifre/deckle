@@ -851,6 +851,29 @@ public class QueryGesturesTests
         Assert.Contains("vérification en échec", digest);
     }
 
+    // ── CreateIdeaAsync ───────────────────────────────────────────────────────
+
+    // A long idea was sent its first words as a name and its whole text as a
+    // body, so the title showed twice. An idea is a note: body only.
+    [Fact]
+    [Trait("Category", "regression")]
+    public async Task CreateIdeaSendsABodyAndNoName()
+    {
+        using var server = new FakeAnytypeServer();
+        var v2 = new FakeV2Handler().Reply(HttpStatusCode.Created, "{\"id\":\"bafyreiidea\"}");
+        string text = "Une idée assez longue pour dépasser quatre-vingts caractères, avec une clé slot_ dedans.\nEt une suite.";
+
+        string digest = await NewGestures(server, v2).CreateIdeaAsync(text, Ct);
+
+        FakeV2Handler.Seen post = Assert.Single(v2.Requests);
+        JsonObject body = (JsonObject)JsonNode.Parse(post.Body!)!;
+        Assert.Equal(DevSpace.Types.Idee, body["type"]!.GetValue<string>());
+        Assert.False(body.ContainsKey("name"));
+        Assert.Equal(text.Replace("slot_", "slot\\_"), body["markdown"]!.GetValue<string>());
+        Assert.StartsWith("Idée notée : Une idée assez longue", digest);
+        Assert.Empty(server.Requests);
+    }
+
     // No ETag on the read means no condition on the write.
     [Fact]
     public async Task ReplaceSectionSendsNoIfMatchWhenTheReadGaveNoETag()

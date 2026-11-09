@@ -510,25 +510,31 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
                 ? name
                 : fallback;
 
+    // An idea is a note: its first line is its title (model v6), so it is
+    // created with a body and no name. Sending both, the first words as the
+    // name and the whole text as the body, showed the title twice: once as the
+    // name, once at the head of the body. Same shape as a report on v2 (a note
+    // with markdown and no name, measured on open_report); not measured on an
+    // idea itself. The writer's Idempotency-Key keeps a resend from noting the
+    // idea twice.
     public async Task<string> CreateIdeaAsync(string content, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
 
         content = content.Trim();
-        bool isShort = content.Length <= 80;
-        string name = isShort ? content : FirstWords(content, 80);
+        if (content.Length == 0)
+            throw new ArgumentException("Une idée vide ne se note pas.", nameof(content));
 
         var payload = new JsonObject
         {
-            ["type_key"] = DevSpace.Types.Idee,
-            ["name"] = name,
+            ["type"] = DevSpace.Types.Idee,
+            ["markdown"] = MarkdownBody.PrepareForWrite(content),
         };
-        if (!isShort) payload["body"] = content;
-
-        JsonObject created = await api.CreateObjectAsync(payload, ct);
+        await _writer.CreateObjectAsync(payload, ct: ct);
 
         DeckleAnytypeSource.Log.GestureCompleted("create_idea", Elapsed(started));
-        return $"Idée notée : {name}";
+        string first = MarkdownBody.FirstLine(content);
+        return $"Idée notée : {(first.Length <= 80 ? first : FirstWords(first, 80))}";
     }
 
     // ── Internals ─────────────────────────────────────────────────────────

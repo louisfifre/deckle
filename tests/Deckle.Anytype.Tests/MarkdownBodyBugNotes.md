@@ -39,3 +39,13 @@ Regression: `MarkdownBodyTests.JournalEntriesKeepAnEntryWhoseTextOpensWithAHash`
 - **Recurrence cue:** a new path that sends markdown to `insert_blocks` without `MarkdownBody.PrepareForWrite`, or a read-back check that compares list lines by their spaces.
 
 Regression: `MarkdownBodyTests.ReindentListsPutsEachItemAtItsParentsContentColumn`, `EscapeUnderscoresKeepsEveryBareUnderscoreLiteral`, `SectionContentMatchesReadsListNestingByStructureNotBySpaces`, `QueryGesturesTests.ReplaceSectionKeepsNestedItemsAtTheirLevelAndUnderscoreKeysLiteral`. Not covered: an item followed by an indented continuation paragraph, which is left as written.
+
+## A long idea showed its title twice
+
+- **Trigger:** `create_idea` with a text longer than 80 characters.
+- **Observed symptom:** the idea carried a name (its first words, cut with « … ») and a body holding the whole text, so its first words appeared once as the title and again at the head of the body. Reported in the review of 2026-11-09; established by reading the code, not re-measured.
+- **Cause:** the gesture sent both a `name` and a `body`, while an idea is a note whose title is its first line.
+- **Violated invariant:** an idea, like a report, is created with a body and no name.
+- **Recurrence cue:** a creation of a note-layout type (idee, rapport) that sends a `name`. Uncertain: creating an idea on v2 with markdown and no name is measured on reports only.
+
+Regression: `QueryGesturesTests.CreateIdeaSendsABodyAndNoName` pins the payload; whether the server then titles the idea by its first line is not measured.
