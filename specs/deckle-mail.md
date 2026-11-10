@@ -38,6 +38,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 ### Navigation
 
 - The navigation lists Triage and Activity first, then the mailboxes, then Settings at the foot.
+- While there is no activity at all, neither by the person nor by the sorting, Activity is absent from the navigation.
 - A mailbox that has aliases is a group header: it folds and unfolds, and opens no page. Its first child is Global, the page of the whole mailbox; its aliases follow. The children stand one step in from the header, as Windows draws a group. A mailbox with no alias is a single item that opens its page.
 - A mailbox or an alias that has no name shows its address. One that has a name shows the name.
 - A folded group header wears the number of subjects waiting in the mailbox, its aliases included. Unfolded, the header wears no number and its children wear theirs. Example: three subjects wait in Perso, one of them through the alias shop; folded, Perso shows 3; unfolded, shop shows 1.
@@ -48,7 +49,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 ### Triage
 
 - The page has no title and no heading above the list: the selected item of the navigation says where the person is.
-- Before any mailbox exists, the page says that no mailbox is set and offers to add one.
+- Before any mailbox exists, the page shows the picture of an envelope, the title « No mailbox yet », one sentence, and the Add mailbox button.
 - While the first sort of a mailbox runs, the page says which mailbox is being sorted, shows a progress bar without a count, and adds each subject at the end of the list as it is found. A subject already shown never moves during the sort. The progress never shifts the page: nothing under it moves when it shows or when it goes.
 - With subjects waiting, the page shows one row per subject in a single list, every mailbox mixed, never grouped by mailbox. Every subject is on the page: none is folded away, however many there are.
 - A row shows one sentence, a paperclip when a mail of the subject carries a real file, the task control and the trash. It shows nothing else: no line under the sentence, and no sender, mailbox or deadline written apart.
@@ -263,9 +264,9 @@ Each question names the option the canvas recommends first, the frames that show
 42. **Where emptying the trash of a mailbox lives.** It is an action, not a setting: not on the page of a mailbox among options, not in Settings. The maintainer's lead: a small trash at the top right of the page a mailbox opens from the navigation. Open 33 depends on the place.
 43. **The word for Global.** The maintainer finds « Global » not understood; he says « racine », root in English. The word is still to find.
 44. **Commands shown on hover only.** The rule of the window wants every gesture shown under the pointer to have a double always visible. The maintainer dislikes « hovers everywhere », yet asks for Rename on hover only, and for the explanation of an unverified sender on demand. Not said: whether the rule gives way for these, or each gets a visible double.
-45. **Activity in the navigation while it is empty.** Shown as always, or hidden until there is a first line. The maintainer: « I don't know ».
+45. **Activity in the navigation while it is empty.** Settled 10 November: absent while there is no activity at all, shown from the first line.
 46. **One click on Add task when a day is proposed.** The maintainer's leaning, said with hesitation and to be drawn for him to settle: when the row proposes Today, the click adds the task at once; when it proposes a specific date, such as Fri 13, the click opens the menu with that date first, above Today and Tomorrow, whose order never changes. Not said: Tomorrow proposed.
 47. **Where the sender of a « No action needed » line sits.** In the column of the task controls, as written above, it leaves a gap the maintainer dislikes. Against the right edge, by the cross (34S), or against the sentence (34A); he leaned each way on a different frame. Both to be drawn.
-48. **Triage before any mailbox exists.** The sentence and Add mailbox alone (33Z), which the maintainer finds weak, or with a picture like the one of « Nothing is waiting. ». He is not sure.
+48. **Triage before any mailbox exists.** Settled 10 November: the envelope picture, « No mailbox yet », one sentence and Add mailbox. Not said: the words of the sentence.
 49. **The narrow window.** To be redone whole and made compact: the maintainer refused a command that drops under its sentence and stays at the right edge (30GN), the gap of 26V, and a search line that spends a line on the date alone. The sentences of the narrow window above stand until it is redrawn.
 50. **The icon of the problems button.** Not chosen. It must tell that something needs a look without alarming, so it is not a bell; the options are still to be drawn.
