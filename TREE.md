@@ -666,6 +666,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── CaptureDataFormat.cs
 │   │   │   ├── CaptureDataReader.cs
 │   │   │   ├── DeckleAtelierSource.Photos.cs
+│   │   │   ├── MarksApplier.cs
 │   │   │   ├── PhotoFolder.cs
 │   │   │   ├── PhotoFormats.cs
 │   │   │   ├── PhotoMarkStore.cs
