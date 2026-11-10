@@ -614,6 +614,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.SelfCheck.Atelier.cs
+│   │   ├── App.SelfCheck.Atelier.Photos.cs
+│   │   ├── App.SelfCheck.Atelier.Sizes.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs
@@ -704,7 +706,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ShellFileOperationInterop.cs
 │   │   │   └── ShellRecycleBin.cs
 │   │   ├── Sample/
-│   │   │   └── SampleFolder.cs
+│   │   │   ├── SampleFolder.cs
+│   │   │   ├── SamplePhotos.cs
+│   │   │   └── SizesSample.cs
 │   │   ├── Sizes/
 │   │   │   ├── FolderReader.cs
 │   │   │   ├── HeaviestFiles.cs
@@ -740,9 +744,27 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Map/
 │   │   │   │   └── MapTool.cs
 │   │   │   ├── Photos/
-│   │   │   │   └── PhotosTool.cs
+│   │   │   │   ├── ApplySummary.cs
+│   │   │   │   ├── PhotoDetails.cs
+│   │   │   │   ├── PhotoGlyphs.cs
+│   │   │   │   ├── PhotoMarkQueue.cs
+│   │   │   │   ├── PhotosReview.cs
+│   │   │   │   ├── PhotosTool.cs
+│   │   │   │   ├── PhotosView.Apply.cs
+│   │   │   │   ├── PhotosView.Darktable.cs
+│   │   │   │   ├── PhotosView.Large.cs
+│   │   │   │   ├── PhotosView.Review.cs
+│   │   │   │   ├── PhotosView.xaml
+│   │   │   │   ├── PhotosView.xaml.cs
+│   │   │   │   ├── PhotoText.cs
+│   │   │   │   └── PhotoTile.cs
 │   │   │   ├── Sizes/
-│   │   │   │   └── SizesTool.cs
+│   │   │   │   ├── SizeRow.cs
+│   │   │   │   ├── SizesPanel.xaml
+│   │   │   │   ├── SizesPanel.xaml.cs
+│   │   │   │   ├── SizesTool.cs
+│   │   │   │   ├── SizesView.xaml
+│   │   │   │   └── SizesView.xaml.cs
 │   │   │   ├── AtelierToolCatalog.cs
 │   │   │   ├── IAtelierTool.cs
 │   │   │   └── ToolPlaceholderView.cs
@@ -2228,6 +2250,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── PhotoRenamerTests.cs
 │   │   │   ├── PhotosEventsTests.cs
 │   │   │   ├── RawReadingMaintenanceTests.cs
+│   │   │   ├── SamplePhotosTests.cs
 │   │   │   └── ShellRecycleBinTests.cs
 │   │   ├── AddedFolderStoreTests.cs
 │   │   ├── AddressResolverTests.cs
@@ -2244,7 +2267,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PathRulesTests.cs
 │   │   ├── ScratchFolder.cs
 │   │   ├── SizeScanEventsTests.cs
-│   │   └── SizeScanTests.cs
+│   │   ├── SizeScanTests.cs
+│   │   └── SizesSampleTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── AudioPathRedactionTests.cs
 │   │   ├── AudioRecordingHostDefaultsTests.cs
