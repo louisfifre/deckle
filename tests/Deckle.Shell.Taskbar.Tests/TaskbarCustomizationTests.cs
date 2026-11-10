@@ -99,6 +99,39 @@ public sealed class TaskbarCustomizationTests
         Assert.Equal(button, customization.TaskButtonPitch);
     }
 
+    [Fact]
+    public void TheStartMenuWidthIsLeftToWindowsByDefault()
+    {
+        Assert.Null(From(new TaskbarSettings { StartMenuCustomWidth = 900 }, true).StartMenu);
+    }
+
+    // Fill carries no number; a custom width carries its own, and either alone
+    // reaches the Start menu process, with the height left as it is.
+    [Fact]
+    public void AStartMenuWidthIsCarriedWithOrWithoutTheFullHeight()
+    {
+        TaskbarCustomization fill = From(new TaskbarSettings { StartMenuWidth = StartMenuWidth.Fill }, true);
+        TaskbarCustomization custom = From(new TaskbarSettings { StartMenuWidth = StartMenuWidth.Custom, StartMenuCustomWidth = 580, StartMenuFullHeight = true }, false);
+
+        Assert.True(fill.CustomizesStartMenu);
+        Assert.Equal(StartMenuWidthRequest.Fill, fill.StartMenu!.Width);
+        Assert.False(fill.StartMenu.FullHeight);
+        Assert.Equal(StartMenuWidthRequest.Of(580), custom.StartMenu!.Width);
+        Assert.True(custom.StartMenu.FullHeight);
+    }
+
+    // A width written by hand is held to the page's range; the screen's own
+    // limit is the engine's, which measures it.
+    [Theory]
+    [InlineData(0, 320)]
+    [InlineData(99999, 1920)]
+    public void ACustomWidthOutsideItsRangeIsHeldToIt(int written, int carried)
+    {
+        var settings = new TaskbarSettings { StartMenuWidth = StartMenuWidth.Custom, StartMenuCustomWidth = written };
+
+        Assert.Equal(StartMenuWidthRequest.Of(carried), From(settings, true).StartMenu!.Width);
+    }
+
     // The clock's lines are the same on both bars; only the tightening of its
     // button is written for the column.
     [Fact]

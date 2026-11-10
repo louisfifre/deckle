@@ -51,7 +51,7 @@ internal sealed record TaskbarCustomization
         || TaskButtonPitch is not null || Clock is not null || TightenClockButton;
 
     /// <summary>Whether anything here lives in the Start menu process.</summary>
-    public bool CustomizesStartMenu => StartMenu is { FullHeight: true };
+    public bool CustomizesStartMenu => StartMenu is { IsEmpty: false };
 
     /// <summary>
     /// What the settings ask for on this taskbar. The compact tray, the compact
@@ -69,8 +69,39 @@ internal sealed record TaskbarCustomization
         TaskButtonPitch = settings.CompactTaskButtons && verticalBar ? TaskButtonPitchRange.Clamp(settings.TaskButtonPitch) : null,
         Clock = settings.CompactClock ? ClockCustomization.DateAboveTime : null,
         TightenClockButton = settings.CompactClock && verticalBar,
-        StartMenu = settings.StartMenuFullHeight ? new StartMenuCustomization() : null,
+        StartMenu = StartMenuFrom(settings),
     };
+
+    // Null when the Start menu is left to Windows. A custom width read from the
+    // file is held to the page's range, like a pitch.
+    private static StartMenuCustomization? StartMenuFrom(TaskbarSettings settings)
+    {
+        var startMenu = new StartMenuCustomization
+        {
+            FullHeight = settings.StartMenuFullHeight,
+            Width = settings.StartMenuWidth switch
+            {
+                StartMenuWidth.Fill => StartMenuWidthRequest.Fill,
+                StartMenuWidth.Custom => StartMenuWidthRequest.Of(StartMenuWidthRange.Clamp(settings.StartMenuCustomWidth)),
+                _ => null,
+            },
+        };
+        return startMenu.IsEmpty ? null : startMenu;
+    }
+
+    /// <summary>
+    /// The custom width the page starts at: narrower than Windows' own 834, so
+    /// choosing a width shows at once what it does.
+    /// </summary>
+    public const int DefaultStartMenuWidth = 640;
+
+    /// <summary>
+    /// A custom Start menu width: from 320, below which the pinned grid keeps
+    /// one or two columns, to 1920, a full HD screen's width (wider is what Fill
+    /// is for). The span gives the slider a grain of 50. Whatever the value, the
+    /// engine holds the menu to the screen it opens on.
+    /// </summary>
+    public static PixelRange StartMenuWidthRange { get; } = new(320, 1920);
 
     /// <summary>
     /// The pitch everything compact starts at: a tray icon, a quick-settings icon,
@@ -98,14 +129,33 @@ internal readonly record struct PixelRange(int Minimum, int Maximum)
     public int Clamp(int value) => Math.Clamp(value, Minimum, Maximum);
 }
 
+/// <summary>What Deckle wants the Start menu to look like.</summary>
+internal sealed record StartMenuCustomization
+{
+    /// <summary>
+    /// The menu is as high as the screen it opens on, with the same gap above and
+    /// below it, at any scale. Windows caps the menu at 750 effective pixels.
+    /// </summary>
+    public bool FullHeight { get; init; }
+
+    /// <summary>The menu's width; null leaves Windows' own.</summary>
+    public StartMenuWidthRequest? Width { get; init; }
+
+    /// <summary>Whether this asks nothing of the Start menu.</summary>
+    public bool IsEmpty => !FullHeight && Width is null;
+}
+
 /// <summary>
-/// What Deckle wants the Start menu to look like.
+/// A Start menu width: all the screen allows (Fill), or a value in effective
+/// pixels, the panel the person sees. The engine holds either to the screen the
+/// menu opens on, which only it can measure.
 /// </summary>
-/// <param name="FullHeight">
-/// The menu is as high as the screen it opens on, with the same gap above and
-/// below it, at any scale. Windows caps the menu at 750 effective pixels.
-/// </param>
-internal sealed record StartMenuCustomization(bool FullHeight = true);
+internal readonly record struct StartMenuWidthRequest(bool IsFill, int Value)
+{
+    public static StartMenuWidthRequest Fill { get; } = new(true, 0);
+
+    public static StartMenuWidthRequest Of(int value) => new(false, value);
+}
 
 internal enum ClockLineKind
 {

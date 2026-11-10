@@ -168,6 +168,17 @@ internal static class TaskbarDocumentBuilder
                 writer.WriteBoolean("enabled", true);
                 writer.WriteEndObject();
             }
+            // The width is a behavior and not a rule: held to the Start window,
+            // which only the engine can measure (it differs per screen, and a
+            // portrait screen is narrower than most menus).
+            if (customization.StartMenu?.Width is { } width)
+            {
+                writer.WriteStartObject("startMenuWidth");
+                writer.WriteBoolean("enabled", true);
+                writer.WriteBoolean("fill", width.IsFill);
+                if (!width.IsFill) writer.WriteNumber("width", width.Value);
+                writer.WriteEndObject();
+            }
             writer.WriteEndObject();
             writer.WriteEndObject();
         }

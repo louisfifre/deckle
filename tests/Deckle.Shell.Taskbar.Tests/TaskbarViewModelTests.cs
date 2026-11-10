@@ -40,6 +40,8 @@ public sealed class TaskbarViewModelTests : IDisposable
         settings.TaskButtonPitch = TaskbarCustomization.DefaultCompactPitch;
         settings.CompactClock = false;
         settings.StartMenuFullHeight = false;
+        settings.StartMenuWidth = StartMenuWidth.Native;
+        settings.StartMenuCustomWidth = TaskbarCustomization.DefaultStartMenuWidth;
         settings.WindowsKeyShowsTaskbar = false;
     }
 
@@ -123,6 +125,30 @@ public sealed class TaskbarViewModelTests : IDisposable
         Assert.Equal(((MagnitudeArgs)pitch.Args!).Maximum, written);
     }
 
+    // The width is a choice whose fold holds the value, shown under Custom only;
+    // the fold's reset goes back to Windows' own width.
+    [Fact]
+    public void TheStartMenuWidthIsAChoiceWhoseValueShowsUnderCustomOnly()
+    {
+        TaskbarViewModel viewModel = ViewModel();
+        SettingDescriptor mode = Card(viewModel, "TaskbarPage_StartMenuWidthCard");
+        SettingDescriptor width = Assert.Single(((ModeArgs)mode.Args!).Children);
+        Assert.Equal(StartMenuWidth.Native, mode.Default!());
+        Assert.Equal(640.0, width.Default!());
+        Assert.False(width.VisibleWhen!());
+
+        mode.SetValue(StartMenuWidth.Custom);
+        width.SetValue(580.0);
+
+        Assert.True(width.VisibleWhen!());
+        TaskbarSettings saved = TaskbarSettingsService.Instance.Current;
+        Assert.Equal(StartMenuWidth.Custom, saved.StartMenuWidth);
+        Assert.Equal(580, saved.StartMenuCustomWidth);
+
+        mode.SetValue(StartMenuWidth.Fill);
+        Assert.False(width.VisibleWhen!());
+    }
+
     [Fact]
     public void ALoadReadsTheSettingsWithoutWritingThemBack()
     {
@@ -204,7 +230,7 @@ public sealed class TaskbarViewModelTests : IDisposable
         viewModel.CompactClock = true;
 
         Assert.Equal("TaskbarPage_ProblemError", viewModel.ProblemKey(TaskbarPart.CompactClock));
-        Assert.Null(viewModel.ProblemKey(TaskbarPart.StartMenu));
+        Assert.Null(viewModel.ProblemKey(TaskbarPart.StartMenuHeight));
 
         viewModel.CompactClock = false;
 

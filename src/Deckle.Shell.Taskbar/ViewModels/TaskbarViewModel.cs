@@ -45,6 +45,12 @@ public partial class TaskbarViewModel : ObservableObject
     public partial bool StartMenuFullHeight { get; set; }
 
     [ObservableProperty]
+    public partial StartMenuWidth StartMenuWidth { get; set; }
+
+    [ObservableProperty]
+    public partial int StartMenuCustomWidth { get; set; }
+
+    [ObservableProperty]
     public partial bool WindowsKeyShowsTaskbar { get; set; }
 
     public TaskbarViewModel()
@@ -74,6 +80,8 @@ public partial class TaskbarViewModel : ObservableObject
             TaskButtonPitch = settings.TaskButtonPitch;
             CompactClock = settings.CompactClock;
             StartMenuFullHeight = settings.StartMenuFullHeight;
+            StartMenuWidth = settings.StartMenuWidth;
+            StartMenuCustomWidth = settings.StartMenuCustomWidth;
             WindowsKeyShowsTaskbar = settings.WindowsKeyShowsTaskbar;
         }
         finally
@@ -90,6 +98,8 @@ public partial class TaskbarViewModel : ObservableObject
     partial void OnTaskButtonPitchChanged(int value) => Write(settings => settings.TaskButtonPitch = value);
     partial void OnCompactClockChanged(bool value) => Write(settings => settings.CompactClock = value);
     partial void OnStartMenuFullHeightChanged(bool value) => Write(settings => settings.StartMenuFullHeight = value);
+    partial void OnStartMenuWidthChanged(StartMenuWidth value) => Write(settings => settings.StartMenuWidth = value);
+    partial void OnStartMenuCustomWidthChanged(int value) => Write(settings => settings.StartMenuCustomWidth = value);
     partial void OnWindowsKeyShowsTaskbarChanged(bool value) => Write(settings => settings.WindowsKeyShowsTaskbar = value);
 
     private void Write(Action<TaskbarSettings> change)

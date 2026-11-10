@@ -38,6 +38,11 @@ public static class SettingsSearch
         },
         new SettingSearchEntry
         {
+            LabelKey = "TaskbarPage_StartMenuWidthCard",
+            Keywords = ["start", "start menu", "width", "wide", "narrow", "fill", "size", "portrait", "vertical screen"],
+        },
+        new SettingSearchEntry
+        {
             LabelKey = "TaskbarPage_WindowsKeyShowsTaskbarCard",
             Keywords = ["windows key", "win key", "start", "start menu", "taskbar", "focus", "game", "fullscreen", "shortcut"],
         },

@@ -92,7 +92,32 @@ public partial class TaskbarViewModel
             () => StartMenuFullHeight,
             value => StartMenuFullHeight = value,
             defaultValue: () => new TaskbarSettings().StartMenuFullHeight,
-            advisory: () => ProblemAdvisory(TaskbarPart.StartMenu)),
+            advisory: () => ProblemAdvisory(TaskbarPart.StartMenuHeight)),
+        // A choice that decides whether a value exists: the width field shows
+        // under Custom only, and the engine holds any width to the screen.
+        Setting.Mode<StartMenuWidth>(
+            "TaskbarPage_StartMenuWidthCard",
+            () => StartMenuWidth,
+            value => StartMenuWidth = value,
+            [
+                (StartMenuWidth.Native, "TaskbarPage_StartMenuWidthDefault"),
+                (StartMenuWidth.Fill, "TaskbarPage_StartMenuWidthFill"),
+                (StartMenuWidth.Custom, "TaskbarPage_StartMenuWidthCustom"),
+            ],
+            [
+                Setting.Magnitude(
+                    "TaskbarPage_StartMenuCustomWidthCard",
+                    () => StartMenuCustomWidth,
+                    value => StartMenuCustomWidth = TaskbarCustomization.StartMenuWidthRange.Clamp((int)Math.Round(value)),
+                    new MagnitudeArgs(
+                        TaskbarCustomization.StartMenuWidthRange.Minimum,
+                        TaskbarCustomization.StartMenuWidthRange.Maximum,
+                        Unit: "px", Integer: true),
+                    visibleWhen: () => StartMenuWidth == StartMenuWidth.Custom,
+                    defaultValue: () => new TaskbarSettings().StartMenuCustomWidth),
+            ],
+            defaultValue: () => new TaskbarSettings().StartMenuWidth,
+            advisory: () => ProblemAdvisory(TaskbarPart.StartMenuWidth)),
         // Sits with the Start menu because it changes what the Windows key does to
         // Start. It asks nothing of the engine, so it has no advisory.
         Setting.Toggle(
@@ -158,7 +183,9 @@ public partial class TaskbarViewModel
             TaskbarPart.CompactTray => CompactTray,
             TaskbarPart.CompactTaskButtons => CompactTaskButtons,
             TaskbarPart.CompactClock => CompactClock,
-            _ => StartMenuFullHeight,
+            TaskbarPart.StartMenuHeight => StartMenuFullHeight,
+            TaskbarPart.StartMenuWidth => StartMenuWidth != StartMenuWidth.Native,
+            _ => false,
         };
         if (!on || !_customizer.Problems.TryGetValue(part, out TaskbarProblem problem)) return null;
 

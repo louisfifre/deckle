@@ -15,7 +15,7 @@ public sealed class TaskbarProblemReaderTests
         TrayIconPitch = 24,
         TightenQuickSettings = true,
         Clock = ClockCustomization.DateAboveTime,
-        StartMenu = new StartMenuCustomization(),
+        StartMenu = new StartMenuCustomization { FullHeight = true },
     };
 
     [Theory]
@@ -29,7 +29,7 @@ public sealed class TaskbarProblemReaderTests
     [InlineData("clock.upper.fontSize", TaskbarPart.CompactClock)]
     [InlineData("clock.button.padding", TaskbarPart.CompactClock)]
     [InlineData("clock", TaskbarPart.CompactClock)]
-    [InlineData("startMenuHeight", TaskbarPart.StartMenu)]
+    [InlineData("startMenuHeight", TaskbarPart.StartMenuHeight)]
     public void AnEngineIdBelongsToThePartThatAskedForIt(string id, TaskbarPart part)
     {
         Assert.Equal(part, TaskbarProblemReader.PartOf(id));
@@ -109,7 +109,7 @@ public sealed class TaskbarProblemReaderTests
         var problems = TaskbarProblemReader.Read(_everything, null, true, null, false);
 
         Assert.Equal(3, problems.Count);
-        Assert.DoesNotContain(TaskbarPart.StartMenu, problems.Keys);
+        Assert.DoesNotContain(TaskbarPart.StartMenuHeight, problems.Keys);
         Assert.All(problems.Values, problem => Assert.Equal(TaskbarProblem.Error, problem));
     }
 
@@ -119,6 +119,23 @@ public sealed class TaskbarProblemReaderTests
         var problems = TaskbarProblemReader.Read(_everything,
             null, false, new NativeStatus(1, true, [], [Rule("startMenuHeight", "never_matched")], []), false);
 
-        Assert.Equal(TaskbarProblem.NotApplied, problems[TaskbarPart.StartMenu]);
+        Assert.Equal(TaskbarProblem.NotApplied, problems[TaskbarPart.StartMenuHeight]);
+    }
+
+    // The height and the width are two cards: a width that fails speaks on the
+    // width card, and an unreachable Start menu process fails both.
+    [Fact]
+    public void TheStartMenuWidthIsAPartOfItsOwn()
+    {
+        var both = _everything with { StartMenu = new StartMenuCustomization { FullHeight = true, Width = StartMenuWidthRequest.Of(640) } };
+
+        var failed = TaskbarProblemReader.Read(both,
+            null, false, new NativeStatus(1, true, [], [Rule("startMenuHeight", "applied"), Rule("startMenuWidth", "error")], []), false);
+        var unreachable = TaskbarProblemReader.Read(both, null, false, null, true);
+
+        Assert.Equal(TaskbarPart.StartMenuWidth, TaskbarProblemReader.PartOf("startMenuWidth"));
+        Assert.Equal(TaskbarProblem.Error, Assert.Single(failed).Value);
+        Assert.Equal(TaskbarPart.StartMenuWidth, Assert.Single(failed).Key);
+        Assert.Equal([TaskbarPart.StartMenuHeight, TaskbarPart.StartMenuWidth], unreachable.Keys.Order());
     }
 }

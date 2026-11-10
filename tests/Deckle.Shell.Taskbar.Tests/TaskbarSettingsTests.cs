@@ -57,6 +57,18 @@ public sealed class TaskbarSettingsTests
         Assert.True(read.WindowsKeyShowsTaskbar);
     }
 
+    [Fact]
+    public void TheStartMenuWidthIsWrittenAsItsNameWithItsValue()
+    {
+        string json = JsonSerializer.Serialize(new TaskbarSettings { StartMenuWidth = StartMenuWidth.Custom, StartMenuCustomWidth = 580 }, TaskbarSettingsService.JsonOptions);
+        TaskbarSettings read = Read(json);
+
+        Assert.Contains("\"startMenuWidth\": \"custom\"", json);
+        Assert.Equal(StartMenuWidth.Custom, read.StartMenuWidth);
+        Assert.Equal(580, read.StartMenuCustomWidth);
+        Assert.Equal(StartMenuWidth.Native, Read("{}").StartMenuWidth);
+    }
+
     // A person editing the file by hand reads the background by its name.
     [Fact]
     public void TheBackgroundIsWrittenAsItsName()

@@ -50,6 +50,16 @@ public sealed class TaskbarSettings
     /// <summary>The Start menu as high as the screen it opens on.</summary>
     public bool StartMenuFullHeight { get; set; } = false;
 
+    /// <summary>How wide the Start menu is: Windows' own, the screen's, or <see cref="StartMenuCustomWidth"/>.</summary>
+    public StartMenuWidth StartMenuWidth { get; set; } = StartMenuWidth.Native;
+
+    /// <summary>
+    /// The Start menu's width while <see cref="StartMenuWidth"/> is Custom, in
+    /// effective pixels: the panel the person sees, its shadow left out. A value
+    /// wider than the screen the menu opens on is held to that screen.
+    /// </summary>
+    public int StartMenuCustomWidth { get; set; } = TaskbarCustomization.DefaultStartMenuWidth;
+
     /// <summary>
     /// The Windows key pressed on its own brings the taskbar forward instead of
     /// opening Start. Every shortcut that uses the key keeps working.
