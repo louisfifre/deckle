@@ -649,6 +649,22 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SecondaryWindowPlacement.cs
 │   │   ├── TrayIncidentLines.cs
 │   │   └── TrayRightClickMenu.cs
+│   ├── Deckle.Atelier/
+│   │   ├── AddedFolders/
+│   │   │   ├── AddedFolder.cs
+│   │   │   └── AddedFolderStore.cs
+│   │   ├── Browsing/
+│   │   │   ├── AddressResolver.cs
+│   │   │   ├── FolderListing.cs
+│   │   │   ├── FolderPaths.cs
+│   │   │   ├── FolderPlace.cs
+│   │   │   └── NavigationHistory.cs
+│   │   ├── Formatting/
+│   │   │   └── EntryFormat.cs
+│   │   ├── Sample/
+│   │   │   └── SampleFolder.cs
+│   │   ├── Deckle.Atelier.csproj
+│   │   └── DeckleAtelierSource.cs
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
 │   │   │   ├── CaptureAnomalyEpisode.cs
@@ -2105,6 +2121,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SelfCheckTests.cs
 │   │   ├── TrayIncidentLinesTests.cs
 │   │   └── TrayRightClickMenuTests.cs
+│   ├── Deckle.Atelier.Tests/
+│   │   ├── AddedFolderStoreTests.cs
+│   │   ├── AddressResolverTests.cs
+│   │   ├── Deckle.Atelier.Tests.csproj
+│   │   ├── DeckleAtelierSourceTests.cs
+│   │   ├── EntryFormatTests.cs
+│   │   ├── FolderListingTests.cs
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── NavigationHistoryTests.cs
+│   │   ├── PathRulesTests.cs
+│   │   └── ScratchFolder.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── AudioPathRedactionTests.cs
 │   │   ├── AudioRecordingHostDefaultsTests.cs
