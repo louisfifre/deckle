@@ -614,6 +614,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.SelfCheck.Atelier.cs
+│   │   ├── App.SelfCheck.Atelier.Map.cs
 │   │   ├── App.SelfCheck.Atelier.Photos.cs
 │   │   ├── App.SelfCheck.Atelier.Sizes.cs
 │   │   ├── App.SelfCheck.cs
@@ -686,6 +687,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── MapItemKind.cs
 │   │   │   ├── MapLink.cs
 │   │   │   ├── MapLinkReader.cs
+│   │   │   ├── MapListFilter.cs
+│   │   │   ├── MapNeighbourhood.cs
 │   │   │   ├── MapSkip.cs
 │   │   │   ├── McpDeclarations.cs
 │   │   │   └── TokenEstimate.cs
@@ -706,6 +709,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ShellFileOperationInterop.cs
 │   │   │   └── ShellRecycleBin.cs
 │   │   ├── Sample/
+│   │   │   ├── MapSampleFolder.cs
 │   │   │   ├── SampleFolder.cs
 │   │   │   ├── SamplePhotos.cs
 │   │   │   └── SizesSample.cs
@@ -742,7 +746,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── FilesView.xaml
 │   │   │   │   └── FilesView.xaml.cs
 │   │   │   ├── Map/
-│   │   │   │   └── MapTool.cs
+│   │   │   │   ├── MapDetails.cs
+│   │   │   │   ├── MapKindText.cs
+│   │   │   │   ├── MapLinkGraph.cs
+│   │   │   │   ├── MapPanelSection.cs
+│   │   │   │   ├── MapReview.cs
+│   │   │   │   ├── MapRow.cs
+│   │   │   │   ├── MapTool.cs
+│   │   │   │   ├── MapView.xaml
+│   │   │   │   └── MapView.xaml.cs
 │   │   │   ├── Photos/
 │   │   │   │   ├── ApplySummary.cs
 │   │   │   │   ├── PhotoDetails.cs
@@ -2260,6 +2272,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FolderListingTests.cs
 │   │   ├── HeaviestFilesTests.cs
 │   │   ├── MapInventoryTests.cs
+│   │   ├── MapListFilterTests.cs
+│   │   ├── MapNeighbourhoodTests.cs
+│   │   ├── MapSampleFolderTests.cs
 │   │   ├── MapSampleRepository.cs
 │   │   ├── MapTextTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs

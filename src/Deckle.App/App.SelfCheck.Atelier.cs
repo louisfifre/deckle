@@ -72,6 +72,8 @@ public partial class App
         await Capture("files-subfolder", () => window.OpenForReviewAsync("Photos"));
         if (loaded) await WalkAtelierPhotosAsync(report, run, outputFolder, step, window, sample);
 
+        await WalkAtelierMapAsync(window, sample, Capture);
+
         // The chevron's list is a popup, which every image closes first, so
         // only the text mode is photographed.
         await Capture("address-text", () =>
