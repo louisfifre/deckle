@@ -13,7 +13,7 @@ internal static class AtelierGlyphs
     public const string ChevronRight = "";
 
     public const string Folder = "";
-    public const string File = "";
+    public const string File = "";
     public const string AddFolder = "";
 
     public const string FilesTool = "";

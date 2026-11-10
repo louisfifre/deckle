@@ -159,5 +159,12 @@ public partial class App
             context.Compose(ModuleIds.Anytype, StartAnytypeRuntime);
         else
             context.Skip(ModuleIds.Anytype, SkipNotPresent);
+
+        // Nothing runs at start: the window is built the first time the tray
+        // opens it (App.Atelier.cs). Logged so the boot names the module.
+        if (ModulePresence.IsPresent(ModuleIds.Atelier))
+            context.Compose(ModuleIds.Atelier, () => { });
+        else
+            context.Skip(ModuleIds.Atelier, SkipNotPresent);
     }
 }

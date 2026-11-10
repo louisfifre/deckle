@@ -20,7 +20,7 @@
           Height="32"
           Background="{ThemeResource ControlFillColorDefaultBrush}"
           BorderBrush="{ThemeResource ControlElevationBorderBrush}"
-          BorderThickness="{ThemeResource ControlBorderThemeThickness}"
+          BorderThickness="1"
           CornerRadius="{ThemeResource ControlCornerRadius}">
 
         <Grid x:Name="SegmentsMode"

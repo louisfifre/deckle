@@ -38,7 +38,7 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
         if (cancellation.IsCancellationRequested) return;
 
         _place = place;
-        List<FileRow> rows = [.. listing.Entries.Select(e => new FileRow(e, _host.Icons.For(e.Path, e.IsFolder)))];
+        List<FileRow> rows = [.. listing.Entries.Select(e => new FileRow(e))];
         _filling = true;
         try
         {
@@ -64,7 +64,23 @@ internal sealed partial class FilesView : UserControl, IAtelierToolView
         };
         Message.Text = message ?? "";
         Message.Visibility = message is null ? Visibility.Collapsed : Visibility.Visible;
+
+        await LoadIconsAsync(rows, cancellation);
     }
+
+    // After the rows are shown, so the list never waits for its icons. The
+    // size asked for is the 16 DIP cell in physical pixels.
+    private async Task LoadIconsAsync(List<FileRow> rows, CancellationToken cancellation)
+    {
+        int pixelSize = (int)Math.Round(IconCellSize * (XamlRoot?.RasterizationScale ?? 1.0));
+        foreach (FileRow row in rows)
+        {
+            if (cancellation.IsCancellationRequested) return;
+            row.Icon = await _host.Icons.GetAsync(row.Entry.Path, row.Entry.IsFolder, pixelSize, cancellation);
+        }
+    }
+
+    private const double IconCellSize = 16;
 
     private void OnSelectionChanged(object sender, SelectionChangedEventArgs e)
     {

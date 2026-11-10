@@ -557,6 +557,9 @@
   <data name="TrayMenu_Playground" xml:space="preserve">
     <value>Playground</value>
   </data>
+  <data name="TrayMenu_Atelier" xml:space="preserve">
+    <value>Deckle Atelier</value>
+  </data>
   <data name="TrayMenu_AmbientLight" xml:space="preserve">
     <value>Ambient Light</value>
   </data>
@@ -1577,6 +1580,12 @@
   </data>
   <data name="Setup_Module_anytype_Description" xml:space="preserve">
     <value>Hosts the local Anytype backend that AI assistants read and write</value>
+  </data>
+  <data name="Setup_Module_atelier_Label" xml:space="preserve">
+    <value>Deckle Atelier</value>
+  </data>
+  <data name="Setup_Module_atelier_Description" xml:space="preserve">
+    <value>One window to look at the folders you add, with a file list and tools for photos, sizes and repositories</value>
   </data>
   <data name="Setup_Module_Requires_Format" xml:space="preserve">
     <value>{0}. Requires {1}</value>

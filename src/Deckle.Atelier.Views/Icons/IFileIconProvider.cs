@@ -1,23 +1,27 @@
-using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Atelier.Views;
 
 // Maps a path to the icon a list shows for it (spec, File list: every file
 // shows an icon for its type). One seam, so that the icons Windows itself
-// draws can replace the neutral glyphs without touching a tool (spec, Open 31:
-// where the icons come from is not looked up yet).
+// draws can come in without touching a tool (spec, Open 31).
+//
+// Asynchronous and keyed by path and pixel size, because the shell's icons
+// are images drawn at the size asked for, read off the UI thread and cached
+// per extension and size (per file for .exe, .lnk, .ico and folders). Null
+// means "no image": the row keeps its neutral glyph, so a list never waits
+// for its icons and an icon that cannot be read costs nothing.
 public interface IFileIconProvider
 {
-    IconSource For(string path, bool isFolder);
+    // pixelSize is in physical pixels: the cell's size in DIPs times the
+    // XamlRoot's rasterization scale. Called on the UI thread; the returned
+    // ImageSource is used on it.
+    Task<ImageSource?> GetAsync(string path, bool isFolder, int pixelSize, CancellationToken cancellation);
 }
 
-// For now: one glyph for every folder, one for every file.
+// For now: no image, so every row shows the neutral folder or file glyph.
 internal sealed class NeutralFileIconProvider : IFileIconProvider
 {
-    // IconSource describes an icon; each IconSourceElement builds its own
-    // element from it, so one instance serves every row.
-    private readonly FontIconSource _folder = new() { Glyph = AtelierGlyphs.Folder };
-    private readonly FontIconSource _file = new() { Glyph = AtelierGlyphs.File };
-
-    public IconSource For(string path, bool isFolder) => isFolder ? _folder : _file;
+    public Task<ImageSource?> GetAsync(string path, bool isFolder, int pixelSize, CancellationToken cancellation) =>
+        Task.FromResult<ImageSource?>(null);
 }

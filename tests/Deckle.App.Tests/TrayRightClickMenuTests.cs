@@ -3,14 +3,15 @@ using Xunit;
 
 namespace Deckle.App.Tests;
 
-// The right-click tray menu and its one developer entry: the Playground shows
-// only when the developer setting is on.
+// The right-click tray menu and its two conditional entries: the Atelier shows
+// only while its module is present, the Playground only while the developer
+// setting is on.
 [Trait("Category", "unit")]
 public sealed class TrayRightClickMenuTests
 {
-    private static IReadOnlyList<TrayMenuEntry> Compose(bool showPlayground)
+    private static IReadOnlyList<TrayMenuEntry> Compose(bool showPlayground, bool showAtelier = false)
         => TrayRightClickMenu.Compose(
-            showPlayground, key => key, () => { }, () => { }, () => { }, () => { }, () => { });
+            showAtelier, showPlayground, key => key, () => { }, () => { }, () => { }, () => { }, () => { }, () => { });
 
     private static IEnumerable<string> CommandIds(IReadOnlyList<TrayMenuEntry> entries)
         => entries.OfType<TrayMenuCommand>().Select(c => c.Id);
@@ -27,6 +28,15 @@ public sealed class TrayRightClickMenuTests
         Assert.Equal(
             ["logs", "settings", "playground", "restart", "quit"],
             CommandIds(Compose(true)));
+    }
+
+    [Fact]
+    public void TheAtelierEntryComesAfterSettingsWhenItsModuleIsPresent()
+    {
+        Assert.Equal(
+            ["logs", "settings", "atelier", "playground", "restart", "quit"],
+            CommandIds(Compose(true, showAtelier: true)));
+        Assert.DoesNotContain(TrayRightClickMenu.AtelierId, CommandIds(Compose(true, showAtelier: false)));
     }
 
     [Fact]

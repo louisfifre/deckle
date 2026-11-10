@@ -49,12 +49,14 @@ public sealed partial class AtelierWindow : IAtelierToolHost
 
     // The active tool's button is pressed and shows its name; the others
     // show their glyph alone (spec, Window).
+    // With no folder added there is nothing to look at, so no tool is
+    // active either (12.11 draws every tool as a bare, disabled glyph).
     private void MarkActiveTool()
     {
         foreach (IAtelierTool tool in _tools)
         {
             ToggleButton button = _toolButtons[tool.Id];
-            bool active = ReferenceEquals(tool, ActiveTool);
+            bool active = ReferenceEquals(tool, ActiveTool) && _folders.Folders.Count > 0;
             button.IsChecked = active;
             ((TextBlock)button.Tag).Visibility = active ? Visibility.Visible : Visibility.Collapsed;
         }
@@ -83,7 +85,10 @@ public sealed partial class AtelierWindow : IAtelierToolHost
         {
             IAtelierToolView view = ViewOf(tool);
             CentreHost.Content = view.Content;
-            if (_selection is null) Select(null, null);
+            // The selection stays across tools, but what the panel holds is
+            // the active tool's to say: it is emptied here and the tool fills
+            // it again for the selection it is handed.
+            Select(_selection, null);
             await view.ShowAsync(place, _selection, showing.Token);
             if (!showing.IsCancellationRequested)
                 DeckleAtelierSource.Log.ToolShown(tool.Id, clock.ElapsedMilliseconds);

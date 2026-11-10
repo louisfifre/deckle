@@ -20,12 +20,21 @@ public sealed partial class AtelierWindow
         foreach (AddedFolder folder in _folders.Folders)
         {
             var text = new StackPanel { VerticalAlignment = VerticalAlignment.Center };
-            text.Children.Add(new TextBlock { Text = folder.Name, TextTrimming = TextTrimming.CharacterEllipsis });
+            // One line each, trimmed: CaptionTextBlockStyle wraps, and in the
+            // 48 px rail a wrapping path breaks at every letter and stretches
+            // the item to the window's height.
+            text.Children.Add(new TextBlock
+            {
+                Text = folder.Name,
+                TextWrapping = TextWrapping.NoWrap,
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            });
             text.Children.Add(new TextBlock
             {
                 Text = folder.Path,
                 Style = (Style)Application.Current.Resources["CaptionTextBlockStyle"],
                 Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["TextFillColorSecondaryBrush"],
+                TextWrapping = TextWrapping.NoWrap,
                 TextTrimming = TextTrimming.CharacterEllipsis,
             });
             var item = new NavigationViewItem
