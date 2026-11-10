@@ -661,6 +661,20 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── NavigationHistory.cs
 │   │   ├── Formatting/
 │   │   │   └── EntryFormat.cs
+│   │   ├── Map/
+│   │   │   ├── FrontMatter.cs
+│   │   │   ├── MapConventions.cs
+│   │   │   ├── MapFileFacts.cs
+│   │   │   ├── MapFolderWalk.cs
+│   │   │   ├── MapInventory.cs
+│   │   │   ├── MapInventoryBuilder.cs
+│   │   │   ├── MapItem.cs
+│   │   │   ├── MapItemKind.cs
+│   │   │   ├── MapLink.cs
+│   │   │   ├── MapLinkReader.cs
+│   │   │   ├── MapSkip.cs
+│   │   │   ├── McpDeclarations.cs
+│   │   │   └── TokenEstimate.cs
 │   │   ├── Sample/
 │   │   │   └── SampleFolder.cs
 │   │   ├── Deckle.Atelier.csproj
