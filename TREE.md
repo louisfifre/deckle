@@ -663,6 +663,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── NavigationHistory.cs
 │   │   ├── Formatting/
 │   │   │   └── EntryFormat.cs
+│   │   ├── Icons/
+│   │   │   ├── FileContentPresence.cs
+│   │   │   ├── FileIconKey.cs
+│   │   │   ├── FileThumbnailProbe.cs
+│   │   │   ├── MemoryBoundedCache.cs
+│   │   │   ├── ShellImage.cs
+│   │   │   ├── ShellImageNativeMethods.cs
+│   │   │   ├── ShellImagePixels.cs
+│   │   │   ├── ShellImageReader.cs
+│   │   │   └── ShellWorkQueue.cs
 │   │   ├── Map/
 │   │   │   ├── FrontMatter.cs
 │   │   │   ├── MapConventions.cs
@@ -715,7 +725,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Details/
 │   │   │   └── DetailsSheet.cs
 │   │   ├── Icons/
-│   │   │   └── IFileIconProvider.cs
+│   │   │   ├── IFileIconProvider.cs
+│   │   │   └── ShellFileIconProvider.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -2201,6 +2212,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TrayIncidentLinesTests.cs
 │   │   └── TrayRightClickMenuTests.cs
 │   ├── Deckle.Atelier.Tests/
+│   │   ├── Icons/
+│   │   │   ├── FileIconKeyTests.cs
+│   │   │   ├── MemoryBoundedCacheTests.cs
+│   │   │   ├── ShellImageReaderSystemTests.cs
+│   │   │   ├── ShellPixelRulesTests.cs
+│   │   │   └── ShellWorkQueueTests.cs
 │   │   ├── Photos/
 │   │   │   ├── CaptureDataTests.cs
 │   │   │   ├── DarktableTests.cs
