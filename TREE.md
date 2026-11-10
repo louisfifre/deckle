@@ -1430,6 +1430,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TriageState.Delivery.cs
 │   │   │   ├── TriageState.Gestures.cs
 │   │   │   └── TriageState.Sorting.cs
+│   │   ├── Views/
+│   │   │   ├── ActivityLog.cs
+│   │   │   ├── DaySummary.cs
+│   │   │   ├── MailCalendar.cs
+│   │   │   ├── NavigationCounts.cs
+│   │   │   ├── TaskDayProposal.cs
+│   │   │   └── TriageList.cs
 │   │   └── Deckle.Mail.csproj
 │   ├── Deckle.Modules/
 │   │   ├── Deckle.Modules.csproj
