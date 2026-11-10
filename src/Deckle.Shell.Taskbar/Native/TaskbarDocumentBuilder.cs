@@ -54,9 +54,11 @@ internal static class TaskbarDocumentBuilder
     private const string TaskButtonPanel = "Taskbar.TaskListButton > Grid#IconPanel";
 
     // Start and Task view: the same kind of button with its own panel, whose
-    // Padding (4,7 for Start, 4,2 for Task view) frames a 16 px icon.
+    // Padding (4,7 for Start, 4,2 for Task view) frames a 16 px icon. Both are
+    // named LaunchListButton on this build; the name keeps the rule off the other
+    // experience buttons (widgets, search), whose content is not a 16 px icon.
     private const string ExperienceButtonPanel =
-        "Taskbar.ExperienceToggleButton > Taskbar.TaskListButtonPanel#ExperienceToggleButtonRootPanel";
+        "Taskbar.ExperienceToggleButton#LaunchListButton > Taskbar.TaskListButtonPanel#ExperienceToggleButtonRootPanel";
 
     public static IReadOnlyList<TaskbarRule> Rules(TaskbarCustomization customization)
     {
