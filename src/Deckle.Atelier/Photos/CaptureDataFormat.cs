@@ -9,7 +9,8 @@ namespace Deckle.Atelier;
 // an empty one.
 public static class CaptureDataFormat
 {
-    private const char NoBreakSpace = ' ';
+    // Between a number and its unit, so a narrow panel never splits them.
+    private const char NoBreakSpace = ' ';
     private const string Separator = " · ";
 
     public static string? Taken(CaptureData data, CultureInfo culture) =>
