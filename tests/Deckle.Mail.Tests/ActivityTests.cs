@@ -144,4 +144,21 @@ public class ActivityTests
         Assert.Contains(Rows(state), row => row.Sentence == "Lettre de décembre");
         Assert.Equal(2, TriageList.SetAsideCount(state));
     }
+
+    [Fact]
+    public void UndoOnASortingLineBringsTheSubjectBackWhateverItBecameSince()
+    {
+        // Set aside, then turned into an information line by a later mail, then dismissed and trashed.
+        var onItsWay = To(minutesAgo: 600);
+        var delivered = To(minutesAgo: 60) with { InReplyTo = onItsWay.Id };
+        var state = Sorted(
+            (onItsWay, MailJudgment.SetAside(SetAsideReason.NoActionNeeded, "Colis en route")),
+            (delivered, MailJudgment.Informs("Colis livré")));
+        state = state.Dismiss(onItsWay.Id, Now).State;
+
+        var change = state.UndoSorting(onItsWay.Id, Now.AddMinutes(5));
+
+        Assert.Equal(onItsWay.Id, Assert.Single(Rows(change.State)).SubjectId);
+        Assert.Equal([onItsWay.Id, delivered.Id], Assert.IsType<RestoreFromTrash>(Assert.Single(change.Intents)).MailIds);
+    }
 }

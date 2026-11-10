@@ -22,26 +22,35 @@ public sealed partial record TriageState
             Corrections = Corrections.Add(SortingCorrection.For(record.Sender.Address, record.Reason)),
         };
 
-        // Only a subject still set aside moves: one a later mail already
-        // brought to Triage, or one the person treated since, stays as it is.
-        if (subject.Place != MailPlace.SetAside)
+        // Since it was set aside, the subject may have become anything: a row
+        // the person treated, an information line they dismissed. A gesture of
+        // theirs that still holds it is undone first, which brings its mails
+        // back from the trash and removes its task, so the line never claims a
+        // return that did not happen.
+        var intents = new List<MailIntent>();
+        if (next.LiveTreatmentOf(subject.Id) is { } treatment)
         {
-            return new TriageChange(next, []);
+            var undone = next.UndoTreatments([treatment], now);
+            next = undone.State;
+            intents.AddRange(undone.Intents);
+        }
+        else if (subject.Stage == SubjectStage.Closed)
+        {
+            // Closed with no gesture of the person: set-aside mail the end of
+            // the day sent to the trash.
+            var restored = next.Deliver(TrashIntents(subject, treatmentId: null)
+                .Select(trash => new RestoreFromTrash(trash.MailboxId, trash.MailIds)));
+            next = restored.State;
+            intents.AddRange(restored.Intents);
         }
 
-        // Set-aside mail that is closed went to the trash when the day ended,
-        // so it comes back from there.
-        var restore = subject.Stage == SubjectStage.Closed
-            ? TrashIntents(subject, treatmentId: null).Select(trash => new RestoreFromTrash(trash.MailboxId, trash.MailIds))
-            : [];
-
-        next = next.WithSubject(subject with
+        next = next.WithSubject(next.Subjects[subject.Id] with
         {
             Place = MailPlace.Triage,
             SetAsideReason = null,
             Stage = SubjectStage.Open,
             ChangedAt = now,
         });
-        return next.Deliver(restore);
+        return new TriageChange(next, intents);
     }
 }
