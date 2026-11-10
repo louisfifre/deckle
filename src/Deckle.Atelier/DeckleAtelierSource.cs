@@ -25,6 +25,13 @@ public sealed class DeckleAtelierSource : DeckleEventSource
     public const int EvtToolShown              = 7;
     public const int EvtToolFailed             = 8;
 
+    // The Sizes engine's block starts at 30, so the tools built side by side
+    // each add theirs without taking the next free number from one another.
+    public const int EvtSizeScanStarted        = 30;
+    public const int EvtSizeScanEnded          = 31;
+    public const int EvtSizeScanPartial        = 32;
+    public const int EvtSizeScanFailed         = 33;
+
     // The file exists and cannot be read: the window opens with no folder,
     // and the unreadable file is kept aside so nothing is lost.
     [Event(EvtAddedFoldersLoadFailed,
@@ -101,5 +108,50 @@ public sealed class DeckleAtelierSource : DeckleEventSource
     public void ToolFailed(string tool, string ex_type)
     {
         if (IsEnabled()) WriteEvent(EvtToolFailed, tool, ex_type);
+    }
+
+    // A size analysis of a place: started, then ended with its outcome
+    // ("Completed", "Cancelled", "Failed") and its counts. scan_id pairs the two
+    // in the file; the place's path stays out.
+    [Event(EvtSizeScanStarted,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Milestone,
+           Message = "A size analysis started")]
+    public void SizeScanStarted(long scan_id, int workers)
+    {
+        if (IsEnabled()) WriteEvent(EvtSizeScanStarted, scan_id, workers);
+    }
+
+    [Event(EvtSizeScanEnded,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Milestone,
+           Message = "A size analysis ended")]
+    public void SizeScanEnded(long scan_id, string outcome, long folders, long files,
+        long unreadable_folders, long links_skipped, long elapsed_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtSizeScanEnded, scan_id, outcome, folders, files,
+            unreadable_folders, links_skipped, elapsed_ms);
+    }
+
+    // Folders beneath the place refused or failed to list: one line per
+    // analysis, not per folder, and the sizes shown leave them out.
+    [Event(EvtSizeScanPartial,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "Some folders could not be read; the sizes leave them out\nscan_id={0} | unreadable_folders={1}")]
+    public void SizeScanPartial(long scan_id, long unreadable_folders)
+    {
+        if (IsEnabled()) WriteEvent(EvtSizeScanPartial, scan_id, unreadable_folders);
+    }
+
+    [Event(EvtSizeScanFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "A size analysis stopped on an unexpected error\nscan_id={0} | ex_type={1}")]
+    public void SizeScanFailed(long scan_id, string ex_type)
+    {
+        if (IsEnabled()) WriteEvent(EvtSizeScanFailed, scan_id, ex_type);
     }
 }

@@ -663,6 +663,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── EntryFormat.cs
 │   │   ├── Sample/
 │   │   │   └── SampleFolder.cs
+│   │   ├── Sizes/
+│   │   │   ├── FolderReader.cs
+│   │   │   ├── HeaviestFiles.cs
+│   │   │   ├── HeavyFile.cs
+│   │   │   ├── ScanCounters.cs
+│   │   │   ├── SizeNode.cs
+│   │   │   ├── SizeProgress.cs
+│   │   │   ├── SizeReport.cs
+│   │   │   ├── SizeScan.cs
+│   │   │   └── SizeScanOptions.cs
 │   │   ├── Deckle.Atelier.csproj
 │   │   └── DeckleAtelierSource.cs
 │   ├── Deckle.Atelier.Views/
