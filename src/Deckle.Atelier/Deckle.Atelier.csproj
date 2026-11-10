@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Atelier</RootNamespace>
+    <!-- EventSource [Event] parameters use snake_case so the ETW payload
+         keys land as-is in the JSONL output; IDE1006 would flag them. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
+  </PropertyGroup>
+
+  <!-- The Atelier's logic: the folders the person added and their
+       persistence, the listing of a folder, the place inside an added folder
+       and its navigation history. No XAML and no WindowsAppSDK, so every rule
+       here is tested without a window; Deckle.Atelier.Views presents it.
+       Deckle.Diagnostics is referenced only for the EventSource. -->
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Atelier.Tests" />
+  </ItemGroup>
+</Project>
