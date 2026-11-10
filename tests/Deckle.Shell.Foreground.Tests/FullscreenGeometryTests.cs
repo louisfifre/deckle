@@ -63,4 +63,27 @@ public class FullscreenGeometryTests
     {
         Assert.False(FullscreenGeometry.CoversMonitor(default, Monitor));
     }
+
+    [Fact]
+    public void A_drawn_window_covering_the_monitor_reads_as_fullscreen()
+    {
+        Assert.True(FullscreenGeometry.ReadsAsFullscreen(drawn: true, Monitor, Monitor));
+    }
+
+    // The Alt+Tab switcher: a transparent Explorer window the size of the
+    // monitor, already hidden when its foreground event is delivered. Read
+    // as fullscreen, it held the taskbar cover down after the switch.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void A_hidden_window_covering_the_monitor_never_reads_as_fullscreen()
+    {
+        Assert.False(FullscreenGeometry.ReadsAsFullscreen(drawn: false, Monitor, Monitor));
+    }
+
+    [Fact]
+    public void A_drawn_window_short_of_the_monitor_does_not_read_as_fullscreen()
+    {
+        var bounds = Monitor with { right = Monitor.right - 1 };
+        Assert.False(FullscreenGeometry.ReadsAsFullscreen(drawn: true, bounds, Monitor));
+    }
 }

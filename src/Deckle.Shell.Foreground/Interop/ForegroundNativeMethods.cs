@@ -63,6 +63,19 @@ internal static class ForegroundNativeMethods
     public static extern int DwmGetWindowAttribute(
         IntPtr hWnd, uint dwAttribute, out NativeMethods.RECT pvAttribute, uint cbAttribute);
 
+    // Non-zero when DWM keeps the window but does not draw it: a window on
+    // another virtual desktop, a suspended UWP frame, a shell surface parked
+    // between two uses.
+    public const uint DWMWA_CLOAKED = 14;
+
+    [DllImport("dwmapi.dll")]
+    public static extern int DwmGetWindowAttribute(
+        IntPtr hWnd, uint dwAttribute, out int pvAttribute, uint cbAttribute);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool IsWindowVisible(IntPtr hWnd);
+
     // ── Monitor ──────────────────────────────────────────────────────────────
 
     public const uint MONITOR_DEFAULTTONEAREST = 2;
