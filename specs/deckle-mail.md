@@ -1,6 +1,6 @@
 # Deckle Mail
 
-Proposed on 2026-11-09, revised on 2026-11-10 from what the maintainer said of canvas page 15. Nothing is built and no real mailbox is connected. The sentences below hold what he decided on 10 November and, where he left a choice, the direction canvas page 18 recommends; every choice he has not confirmed is listed under Open, with the frames that show the options.
+Proposed on 2026-11-09, revised on 2026-11-10 from what the maintainer said of canvas page 15. Nothing is built and no real mailbox is connected. The sentences below hold what he decided on 10 November and, where he left a choice, the direction canvas page 18 recommends, with the layout of rows that canvas page 19 settled over three reviewed loops; every choice he has not confirmed is listed under Open, with the frames that show the options.
 
 ## Intention
 
@@ -178,9 +178,9 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 **Look and wording**
 
 - The interface is in English, in sentence case. Sentences taken from mails stay in their language.
-- The interface uses the greys of Windows and the person's accent colour, on Deckle's design system, in the light and the dark theme.
-- A date is written one way everywhere: the weekday and the day for the coming days, then the day and the month.
-- One role of text keeps one style on every page: a sentence in the main text colour, a sender beside it in grey, a state as a symbol or a framed label.
+- The interface uses the greys of Windows and the person's accent colour, on Deckle's design system, in the light and the dark theme. No cue rests on the accent alone: the maintainer's accent is grey, so a link is also underlined.
+- A date is written one way everywhere: the weekday and the day (« Fri 13 »), with the month when it is not the current one (« Tue 1 Dec »).
+- One role of text keeps one style on every page: a sentence in the main text colour, a sender beside it in grey, the result of a gesture in grey words after Undo, a state the sorting sets as a framed label.
 - The interface holds no sentence of explanation on a row, a line or a page header. What a symbol or a place already says is not written.
 
 ## Limits
