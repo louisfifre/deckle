@@ -661,6 +661,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── NavigationHistory.cs
 │   │   ├── Formatting/
 │   │   │   └── EntryFormat.cs
+│   │   ├── Photos/
+│   │   │   ├── CaptureData.cs
+│   │   │   ├── CaptureDataFormat.cs
+│   │   │   ├── CaptureDataReader.cs
+│   │   │   ├── DeckleAtelierSource.Photos.cs
+│   │   │   ├── PhotoFolder.cs
+│   │   │   └── PhotoFormats.cs
 │   │   ├── Sample/
 │   │   │   └── SampleFolder.cs
 │   │   ├── Deckle.Atelier.csproj

@@ -13,6 +13,8 @@
        Deckle.Diagnostics is referenced only for the EventSource. -->
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- Photos: capture data. Used by Photos/CaptureDataReader.cs alone. -->
+    <PackageReference Include="MetadataExtractor" />
   </ItemGroup>
 
   <ItemGroup>
