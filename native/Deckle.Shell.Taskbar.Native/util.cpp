@@ -22,7 +22,41 @@ namespace deckle::util
         return result;
     }
 
-    std::wstring PipeName()
+    namespace
+    {
+        // The instance named by the file beside the DLL, or empty. Only letters,
+        // digits and dashes, at most 32: anything else is ignored, so a stray file
+        // can never turn the pipe's name into a path.
+        std::wstring InstanceName(HMODULE module)
+        {
+            std::wstring path = ModulePath(module);
+            size_t slash = path.find_last_of(L"\\/");
+            if (slash == std::wstring::npos) return {};
+            path.resize(slash + 1);
+            path += InstanceFileName;
+
+            HANDLE file = CreateFileW(path.c_str(), GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
+            if (file == INVALID_HANDLE_VALUE) return {};
+            char buffer[33]{};
+            DWORD read = 0;
+            BOOL ok = ReadFile(file, buffer, 32, &read, nullptr);
+            CloseHandle(file);
+            if (!ok) return {};
+
+            std::wstring name;
+            for (DWORD i = 0; i < read; ++i)
+            {
+                char c = buffer[i];
+                if (c == '\r' || c == '\n' || c == ' ') break;
+                bool allowed = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-';
+                if (!allowed) return {};
+                name += static_cast<wchar_t>(c);
+            }
+            return name;
+        }
+    }
+
+    std::wstring PipeName(HMODULE module)
     {
         DWORD session = 0;
         ProcessIdToSessionId(GetCurrentProcessId(), &session);
@@ -31,13 +65,17 @@ namespace deckle::util
         // One pipe per target process: explorer keeps the bare name, any other
         // host (the Start menu's StartMenuExperienceHost) gets its executable's
         // name appended, so two engines in two processes never share a pipe.
-        // Deckle's side spells the same (TaskbarPipeServer.NameFor).
+        // Deckle's side spells the same (TaskbarTarget.PipeName).
         std::wstring image = ProcessImagePath();
         size_t slash = image.find_last_of(L"\\/");
         std::wstring file = slash == std::wstring::npos ? image : image.substr(slash + 1);
         size_t dot = file.find_last_of(L'.');
         if (dot != std::wstring::npos) file.resize(dot);
         if (!file.empty() && _wcsicmp(file.c_str(), L"explorer") != 0) name += L"." + file;
+
+        // A side instance (the development console) last, so it never meets the app's pipe.
+        std::wstring instance = InstanceName(module);
+        if (!instance.empty()) name += L"." + instance;
         return name;
     }
 

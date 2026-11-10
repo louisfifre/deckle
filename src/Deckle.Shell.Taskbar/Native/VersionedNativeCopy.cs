@@ -90,6 +90,27 @@ internal sealed class VersionedNativeCopy
         info.SetAccessControl(security);
     }
 
+    /// <summary>
+    /// Names a side instance of the engine beside the copy at `dllPath`, or removes the name
+    /// when `instance` is null. The DLL appends it to its pipe's name (util.cpp PipeName), so a
+    /// development console can inject its own copy while the app keeps its engine in explorer.
+    /// </summary>
+    public static void WriteInstance(string dllPath, string? instance)
+    {
+        string path = Path.Combine(Path.GetDirectoryName(dllPath)!, InstanceFileName);
+        if (string.IsNullOrEmpty(instance))
+        {
+            if (File.Exists(path)) File.Delete(path);
+            return;
+        }
+        if (instance.Length > 32 || !instance.All(c => char.IsAsciiLetterOrDigit(c) || c == '-'))
+            throw new ArgumentException("An instance name is 1 to 32 ASCII letters, digits or dashes.", nameof(instance));
+        File.WriteAllText(path, instance);
+    }
+
+    /// <summary>The file beside the DLL that names a side instance (util.h InstanceFileName).</summary>
+    public const string InstanceFileName = "Deckle.Shell.Taskbar.Native.instance";
+
     // Deletes the version folders other than the one holding `keepPath`.
     // A folder whose DLL explorer still holds cannot be deleted: it stays, and
     // the next sweep tries again. Returns the folders it removed.

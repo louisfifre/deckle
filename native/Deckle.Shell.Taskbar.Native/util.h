@@ -8,7 +8,12 @@ namespace deckle::util
 
     // \\.\pipe\Deckle.Taskbar.<terminal session id>: the pipe Deckle's side
     // serves. The session id keeps two signed-in users on one machine apart.
-    std::wstring PipeName();
+    // `module` is this DLL: an instance file beside it (InstanceFileName) adds
+    // its name to the pipe's, so a development console runs beside the app.
+    std::wstring PipeName(HMODULE module);
+
+    // The optional file beside the DLL that names a side instance of the engine.
+    inline constexpr wchar_t InstanceFileName[] = L"Deckle.Shell.Taskbar.Native.instance";
 
     // Full path of the DLL file this code runs from.
     std::wstring ModulePath(HMODULE module);

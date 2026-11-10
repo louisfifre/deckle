@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "channel.h"
 #include "util.h"
+#include "engine.h"
 
 namespace deckle
 {
@@ -37,7 +38,7 @@ namespace deckle
 
     bool Channel::Connect(std::chrono::milliseconds timeout, HANDLE cancelEvent)
     {
-        const std::wstring name = util::PipeName();
+        const std::wstring name = util::PipeName(engine::Module());
         const auto deadline = std::chrono::steady_clock::now() + timeout;
 
         for (;;)

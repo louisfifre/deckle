@@ -70,6 +70,14 @@ public sealed class StartMenuDocumentTests
     }
 
     [Fact]
+    public void ASideInstanceGetsItsNameAfterTheTargetsPipe()
+    {
+        Assert.Equal("Deckle.Taskbar.3.harness", TaskbarTarget.Explorer.PipeName(3, "harness"));
+        Assert.Equal("Deckle.Taskbar.3.StartMenuExperienceHost.harness", TaskbarTarget.StartMenu.PipeName(3, "harness"));
+        Assert.Equal("Deckle.Taskbar.3", TaskbarTarget.Explorer.PipeName(3, ""));
+    }
+
+    [Fact]
     public void OnlyTheStartMenuHostIsPackaged()
     {
         Assert.False(TaskbarTarget.Explorer.Packaged);

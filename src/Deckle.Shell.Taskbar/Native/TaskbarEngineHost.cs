@@ -33,6 +33,7 @@ internal sealed class TaskbarEngineHost : ITaskbarEngine
     private readonly VersionedNativeCopy _copy;
     private readonly TaskbarPipeServer _server;
     private readonly TaskbarTarget _target;
+    private readonly string? _instance;
     private readonly CancellationTokenSource _cancellation = new();
     private readonly object _gate = new();
     private TaskbarCreatedListener? _listener;
@@ -48,13 +49,18 @@ internal sealed class TaskbarEngineHost : ITaskbarEngine
     /// <param name="copy">Where the versioned copies live.</param>
     /// <param name="target">The process to customize; its pipe and injection route follow from it.</param>
     /// <param name="server">The pipe server to serve; null creates the target's own. The host owns it.</param>
+    /// <param name="instance">
+    /// A side instance's name (the development console), which gives its engine a pipe of its
+    /// own beside the app's; null for the app. Its copy must live under a root of its own.
+    /// </param>
     public TaskbarEngineHost(string sourceDllPath, VersionedNativeCopy copy, TaskbarTarget target,
-        TaskbarPipeServer? server = null)
+        TaskbarPipeServer? server = null, string? instance = null)
     {
         _target = target;
         _sourceDllPath = sourceDllPath;
         _copy = copy;
-        _server = server ?? new TaskbarPipeServer(TaskbarPipeServer.NameFor(target), target.Packaged);
+        _instance = instance;
+        _server = server ?? new TaskbarPipeServer(TaskbarPipeServer.NameFor(target, instance), target.Packaged);
         _server.MessageReceived += OnMessage;
         _server.ClientConnected += () => _disconnected = NewSignal();
         _server.ClientDisconnected += OnDisconnected;
@@ -90,6 +96,7 @@ internal sealed class TaskbarEngineHost : ITaskbarEngine
     {
         _loadedPath = _copy.Ensure(_sourceDllPath);
         _copy.Sweep(_loadedPath);
+        VersionedNativeCopy.WriteInstance(_loadedPath, _instance);
         if (_target.Packaged) VersionedNativeCopy.GrantPackagedAccess(_loadedPath);
 
         _serverTask = Task.Run(() => _server.RunAsync(_cancellation.Token));
