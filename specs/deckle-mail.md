@@ -78,8 +78,8 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 ### Activity
 
 - The page is titled Activity and has two parts, one shown at a time: what the person did, and what the sorting did alone.
-- In each part, lines are grouped by day, newest first. A line shows the time, the sentence, what happened, Undo, and a chevron that opens the subject.
-- In the person's part, what happened is a symbol: the Anytype logo with a tick and the day of the task, or the trash.
+- In each part, lines are grouped by day, newest first. A line shows the time, the sentence, Undo, what happened, and a chevron that opens the subject. It holds the columns of a treated row in Triage: Undo at the left edge of the task column, what happened right after it, the chevron in the end column.
+- In the person's part, what happened is written in words, as on a treated row: « Task for Fri 13 » or « Moved to trash ».
 - In the sorting's part, each mail has its own line, even several from one sender, and what happened is a framed word among newsletter, promotion, receipt and no action needed.
 - A line that was undone stays, says that its subject is back in Triage, and keeps its chevron only.
 - The page holds no search field.
@@ -140,7 +140,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - The proposed day follows one fixed rule, without a setting: two days before the deadline, and never before today. A deadline of today or already past proposes today.
 - The task created in Anytype holds the sentence of the row, the text of the mail and its sender. It does not need a link back to the mail.
 - When no deadline was found, one click on Add task creates the task with no day, and the chevron opens the choice of days.
-- Once the task exists, the subject leaves the list: its row greys in place, says « Task added » and the day of the task, and the subject becomes a line of Activity.
+- Once the task exists, the subject leaves the list: its row greys in place, says « Task for » and the day of the task, and the subject becomes a line of Activity.
 - Deckle Mail shows no box to tick and never completes a task: a task is done in Anytype.
 - When Anytype cannot be reached, a bar says so, and a task added meanwhile is kept and created when Anytype is back.
 - When Anytype is not connected, nothing about tasks is drawn: the trash is the only command on a row.
@@ -151,7 +151,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - When a subject is treated, by a task or by the trash, its mails go to the trash of the mail server of their mailbox. The inbox then holds only what waits, on the phone and in the webmail too.
 - Deckle Mail never deletes a mail and never empties a trash on its own. The mail provider deletes what stays in its trash after its own delay. Example: Infomaniak deletes a mail thirty days after it reached the trash.
 - The first time a gesture would send a mail to the trash, a notice says so, once, with the provider's delay. The gesture happens only if the person accepts.
-- After a gesture the row stays where it was, greyed. Undo stands at the left edge of the task column, where the task control was, followed by what happened in words: « Task added · Fri 13 » or « Moved to trash ». A cross stands where the trash was and removes the line. No short timer removes it.
+- After a gesture the row stays where it was, greyed. Undo stands at the left edge of the task column, where the task control was, followed by what happened in words: « Task for Fri 13 » or « Moved to trash ». The words fit the column with the longest date, « Task for Wed 30 Dec »: « Task added · Wed 30 Dec » did not. A cross stands where the trash was and removes the line. No short timer removes it.
 - A click that lands on a row in the instant after a gesture changed it does nothing: a double click on Add task never undoes the task it has just created.
 - A treated row leaves when the person clicks its cross or ends the day, when the window is closed or refreshed, or after a long fixed time.
 - Undo brings the mails back from the trash to the inbox, removes the task when one was created, and gives the row its controls back. Ctrl+Z undoes the last gesture.
