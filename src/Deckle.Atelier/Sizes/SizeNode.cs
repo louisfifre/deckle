@@ -10,7 +10,7 @@ namespace Deckle.Atelier;
 // (SizeReport.ForFolder) without reading the disk again. Its sub-folders are
 // kept as rows (a name and a total). Deeper nodes live only while the scan
 // climbs through them, so memory follows the top of the tree, not the whole
-// disk.
+// disk (SizeScanOptions.NavigableDepth says how much that costs).
 internal sealed class SizeNode
 {
     private long _total = -1;
@@ -20,10 +20,12 @@ internal sealed class SizeNode
     private long _unreadableBeneath;
     private int _pending;
 
+    private string? _path;
+
     public SizeNode(string name, string path, SizeNode? parent, bool keepsChildren, int heaviestCapacity)
     {
         Name = name;
-        Path = path;
+        _path = path;
         Parent = parent;
         Depth = parent is null ? 0 : parent.Depth + 1;
         KeepsChildren = keepsChildren;
@@ -31,7 +33,17 @@ internal sealed class SizeNode
     }
 
     public string Name { get; }
-    public string Path { get; }
+
+    // The full path is held only while the folder waits to be read; after
+    // that it is rebuilt from the parents on demand. A wide tree keeps one row
+    // per folder (90 000 under C:\Windows\WinSxS), and its paths were most of
+    // the memory a report held.
+    public string Path => Volatile.Read(ref _path) ?? System.IO.Path.Join(Parent!.Path, Name);
+
+    public void ForgetPath()
+    {
+        if (Parent is not null) Volatile.Write(ref _path, null);
+    }
     public SizeNode? Parent { get; }
     public int Depth { get; }
     public bool KeepsChildren { get; }

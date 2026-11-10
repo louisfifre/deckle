@@ -158,12 +158,14 @@ public sealed class SizeScan
         _counters.FolderRead(!read);
 
         bool childrenKept = node.Depth + 1 <= _options.NavigableDepth;
+        string path = node.Path;
         var children = new List<SizeNode>(subfolders.Count);
         foreach (string name in subfolders)
         {
-            children.Add(new SizeNode(name, Path.Join(node.Path, name), node, childrenKept, _options.HeaviestCount));
+            children.Add(new SizeNode(name, Path.Join(path, name), node, childrenKept, _options.HeaviestCount));
         }
         node.Read(looseBytes, looseFiles, unreadable: !read, children);
+        node.ForgetPath();
         if (node.Parent is null) _counters.ChildrenKnown(children.Count);
 
         foreach (SizeNode child in children) _queue.Writer.TryWrite(child);
