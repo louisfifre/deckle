@@ -59,6 +59,9 @@ public static class PhotosReview
     {
         if (element is null) return null;
         if (element is PhotosView view) return view;
+        // A view just placed in the window's centre is its ContentPresenter's
+        // content before the next layout makes it a visual child.
+        if (element is Microsoft.UI.Xaml.Controls.ContentPresenter { Content: PhotosView placed }) return placed;
         int count = VisualTreeHelper.GetChildrenCount(element);
         for (int i = 0; i < count; i++)
         {

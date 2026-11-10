@@ -130,6 +130,10 @@ internal sealed partial class PhotosView : UserControl, IAtelierToolView
         DeleteRun.Text = AtelierText.Format("Photos_Count_Delete_Format", counts.Delete);
         Counters.Visibility = _tiles.Count == 0 || _applying ? Visibility.Collapsed : Visibility.Visible;
 
+        // A folder with no photo has nothing to apply nor to hand to darktable:
+        // the row is empty and the message below says why (Open 33).
+        Commands.Visibility = _tiles.Count == 0 ? Visibility.Collapsed : Visibility.Visible;
+
         bool somethingToApply = counts.Delete > 0;
         ApplyButton.IsEnabled = somethingToApply && !_applying;
         ApplyButton.Style = ButtonStyle(somethingToApply ? "AccentButtonStyle" : "DefaultButtonStyle");
@@ -201,12 +205,23 @@ internal sealed partial class PhotosView : UserControl, IAtelierToolView
     private Task SetMark(IReadOnlyList<PhotoTile> tiles, PhotoMark mark)
     {
         foreach (PhotoTile tile in tiles) tile.Mark = mark;
-        _details?.ShowMark(mark);
+        ShowSelectionMark();
         ShowCounts();
 
         if (_store is not { } store) return Task.CompletedTask;
         string[] names = [.. tiles.Select(t => t.Name)];
         return _queue.Run(() => store.Mark(names, mark));
+    }
+
+    // The panel's buttons show the mark of what the panel is about, whatever
+    // was just marked: one mark when the selection shares it, else none.
+    private void ShowSelectionMark()
+    {
+        if (_details is null) return;
+        IReadOnlyList<PhotoTile> shown = _largeTile is { } large ? [large] : SelectedTiles();
+        if (shown.Count == 0) return;
+        PhotoMark first = shown[0].Mark;
+        _details.ShowMark(shown.All(t => t.Mark == first) ? first : PhotoMark.None);
     }
 
     // ── Keyboard ──────────────────────────────────────────────────────────

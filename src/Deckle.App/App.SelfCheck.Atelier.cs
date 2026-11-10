@@ -69,6 +69,7 @@ public partial class App
         window.SetPaneOpenForReview(false);
 
         await Capture("files-subfolder", () => window.OpenForReviewAsync("Photos"));
+        if (loaded) await WalkAtelierPhotosAsync(report, run, outputFolder, step, window, sample);
 
         // The chevron's list is a popup, which every image closes first, so
         // only the text mode is photographed.

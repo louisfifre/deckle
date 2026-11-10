@@ -10,4 +10,5 @@ internal static class PhotoGlyphs
     public const string Previous = "";      // ChevronLeft
     public const string Next = "";          // ChevronRight
     public const string LeaveLarge = "";    // BackToWindow
+    public const string Placeholder = "";   // Photo, where a picture has not come
 }

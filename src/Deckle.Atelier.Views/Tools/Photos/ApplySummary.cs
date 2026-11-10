@@ -90,6 +90,12 @@ internal static class ApplySummary
                 BorderBrush = (Brush)Application.Current.Resources["CardStrokeColorDefaultBrush"],
                 BorderThickness = new Thickness(1),
             };
+            tile.Children.Add(new FontIcon
+            {
+                Glyph = PhotoGlyphs.Placeholder,
+                FontSize = 12,
+                Foreground = (Brush)Application.Current.Resources["TextFillColorTertiaryBrush"],
+            });
             tile.Children.Add(image);
             ToolTipService.SetToolTip(tile, recycle.Photo.Name);
             strip.Children.Add(tile);
