@@ -161,4 +161,19 @@ public class ActivityTests
         Assert.Equal(onItsWay.Id, Assert.Single(Rows(change.State)).SubjectId);
         Assert.Equal([onItsWay.Id, delivered.Id], Assert.IsType<RestoreFromTrash>(Assert.Single(change.Intents)).MailIds);
     }
+
+    [Fact]
+    public void TheSortingLinesOfOneSubjectAllSayItIsBackInTriage()
+    {
+        var onItsWay = To(minutesAgo: 600);
+        var stillOnItsWay = To(minutesAgo: 60) with { InReplyTo = onItsWay.Id };
+        var state = Sorted(
+            (onItsWay, MailJudgment.SetAside(SetAsideReason.NoActionNeeded, "Colis en route")),
+            (stillOnItsWay, MailJudgment.SetAside(SetAsideReason.NoActionNeeded, "Colis toujours en route")));
+
+        state = state.UndoSorting(onItsWay.Id, Now).State;
+
+        Assert.Single(Rows(state));
+        Assert.All(Assert.Single(ActivityLog.BySorting(state)).Lines, line => Assert.True(line.BackInTriage));
+    }
 }

@@ -16,9 +16,13 @@ public sealed partial record TriageState
             return TriageChange.Unchanged(this);
         }
 
+        // The whole subject comes back, so every live line of it says so: lines
+        // of one subject agree with where it is. The correction stays the one
+        // the person asked for, on the sender and kind of the line clicked.
         var next = this with
         {
-            SortingRecords = SortingRecords.Replace(record, record with { Undone = true }),
+            SortingRecords = SortingRecords.ConvertAll(line =>
+                line.SubjectId == subject.Id && !line.Undone ? line with { Undone = true } : line),
             Corrections = Corrections.Add(SortingCorrection.For(record.Sender.Address, record.Reason)),
         };
 
