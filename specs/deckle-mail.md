@@ -22,65 +22,82 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 ## Surfaces
 
+### The window
+
+- The title bar holds the back button, the button that opens and closes the navigation, and one search field. The back button shows only when there is a page to go back to.
+- The search field looks in the senders, the sentences and the text of the mails of every mailbox. No page holds a search field of its own.
+- No command is reached by a right-click: Deckle Mail has no context menu.
+- A gesture that shows only under the pointer has a double that is always visible. Example: the cross of a secondary information line and Dismiss all; the pencil in the navigation and the pencil on the page.
+
 ### Navigation
 
-- The navigation lists Triage and Activity first, then each mailbox with its aliases as its children, then Settings at the foot.
+- The navigation lists Triage and Activity first, then the mailboxes, then Settings at the foot.
+- A mailbox that has aliases is a group header: it folds and unfolds, and opens no page. Its first child is Global, the page of the whole mailbox; its aliases follow. A mailbox with no alias is a single item that opens its page.
 - A mailbox or an alias that has no name shows its address. One that has a name shows the name.
-- A mailbox wears a badge with the number of things waiting in it, its aliases included. An alias wears a plain number: the part of them that arrived through it. Example: three things wait in Perso, one of them through the alias shop; Perso shows 3 and shop shows 1.
-- A mailbox or an alias where nothing waits shows no number.
-- No number anywhere counts what was sorted, filed or done.
+- A folded group header wears the number of subjects waiting in the mailbox, its aliases included. Unfolded, the header wears no number and its children wear theirs. Example: three subjects wait in Perso, one of them through the alias shop; folded, Perso shows 3; unfolded, shop shows 1.
+- An item where nothing waits shows no number. No number anywhere counts what was treated or set aside.
+- The navigation is as wide as its longest label needs, up to 280 px. A longer label ends with an ellipsis. The number of an item always fits inside that width.
+- A pencil to rename shows on a mailbox or an alias when the pointer or the keyboard focus is on it.
 
 ### Triage
 
-- The page has no title and no heading above the list of things to do: the selected item of the navigation says where the person is.
+- The page has no title and no heading above the list: the selected item of the navigation says where the person is.
 - Before any mailbox exists, the page says that no mailbox is set and offers to add one.
-- While the first sort of a mailbox runs, the page says which mailbox is being sorted, shows a progress bar without a count, and adds each thing at the end of the list as it is found. A thing already shown never moves during the sort.
-- With things waiting, the page shows one tile per thing, every mailbox mixed, never grouped by mailbox. Every thing is on the page: none is folded away, however many there are.
-- A tile shows the sentence of what is asked, then on one grey line the sender, where the mail arrived, and the deadline when the mail states one. A mailbox name on a tile is text, never a link.
-- Under the tiles, a caption « Good to know » introduces the facts, one line each, with no control on them. The caption says that each line leaves by itself. Beyond three lines, one last line gives the number of the others and leads to them.
-- With nothing waiting, the page shows a small flat picture in pale grey, the sentence « Nothing is waiting. » and a line saying that new mail is sorted as it arrives. The picture is not an icon, not a skeleton of rows, and nothing on the page moves: the person does not take it for a loading page. Good to know stays under it when there are facts.
-- When one mailbox cannot connect, a bar at the top names it and says since when its content is shown. Its tiles stay and keep their controls: a File made meanwhile is kept and sent when the mailbox is back.
-- When new mail waits to be sorted because the sorting cannot run, a bar at the top says how many mails arrived since when, and that they will be sorted. The tiles already there stay usable.
+- While the first sort of a mailbox runs, the page says which mailbox is being sorted, shows a progress bar without a count, and adds each subject at the end of the list as it is found. A subject already shown never moves during the sort.
+- With subjects waiting, the page shows one row per subject in a single list, every mailbox mixed, never grouped by mailbox. Every subject is on the page: none is folded away, however many there are.
+- A row shows one sentence, a paperclip when a mail of the subject carries a real file, the task control and the trash. It shows nothing else: no line under the sentence, and no sender, mailbox or deadline written apart.
+- Under the list, each secondary information is one thin line, without a frame of its own: its sentence, and the sender in grey at the other end. A cross shows on the line under the pointer, and a command above the lines, always visible, dismisses them all.
+- After the lines, one last line gives the number of mails that were set aside without a line, and leads to the part of Activity that lists them.
+- At the bottom right of the page, one command ends the day: it removes the rows already treated and the secondary information lines.
+- With nothing waiting, the page shows a small flat picture in pale grey and the sentence « Nothing is waiting. ». The picture is not an icon, not a skeleton of rows, and nothing on the page moves: the person does not take it for a loading page. Secondary information stays under it when there is some.
+- When one mailbox cannot connect, a bar at the top names it and says since when its content is shown. Its rows stay and keep their controls: a gesture made meanwhile is kept and sent when the mailbox is back.
+- When new mail waits to be sorted because the sorting cannot run, a bar at the top says how many mails arrived since when, and that they will be sorted. The rows already there stay usable.
 
-### A mailbox page, an alias page
+### A Global page, an alias page
 
-- The page shows the name, a control to rename it, and the address under the name. An alias shows its mailbox before its own name, as a breadcrumb.
+- The page is titled by a breadcrumb: the mailbox, then Global or the name of the alias. A pencil to rename stands beside it, always visible, and the address is written under it.
 - A name being entered or changed is edited in place, at the size of the title, and the placeholder of an empty name fits inside the field.
-- Under the header the page is Triage kept to that mailbox or alias: its tiles, then its Good to know lines.
-- On a mailbox page a tile names the alias only when the mail arrived through one. On an alias page no tile repeats the alias.
-- Under them, a caption « Sorted away » introduces, in small text and without controls, the latest mails the sorting put away there: for each, the mail's own subject, its sender, where it arrived and the one-word reason. A link leads to Activity kept to that mailbox.
+- Under the header the page is Triage kept to that mailbox or alias: its rows, then its secondary information.
+- A Global page then holds what belongs to the mailbox itself. A switch sorts the mailbox by alias; it is on as soon as the mailbox has aliases, and off makes the mailbox a single item in the navigation. A card gives the number of mails in the trash of the mailbox and a command that empties it.
+- Emptying the trash asks first, in a dialog that names the mailbox and the number of mails, and whose default button cancels.
+- These pages list no mail that was set aside: Activity does.
 
 ### A subject opened
 
-- The page opens from a tile, a Good to know line or an Activity line. Its breadcrumb names the page the person came from. Its title is the sentence of the row they clicked.
-- Under the title, grey lines give the mail's own subject, the sender with their real address, the mailbox or alias with its address, and the date and time of reception.
+- The page opens from a row or from an Activity line. Its title is the sentence of the row.
+- Under the title, one grey line gives the sender with their real address and the date and time of reception.
 - Then comes the text of the latest mail, whole and as written: greeting, request, signature. Deckle Mail restyles no part of it and rewrites nothing. The text column stays narrow enough to read, about sixty characters a line.
-- After the text come the files really attached to that mail, each as a row with its name, kind and size, which opens the file. An image that belongs to the body of the mail, a logo or the icons of a signature, is never listed as a file.
-- Beside the text, a list shows every mail of the subject, newest first, each with its date, its sender and its first words, and a mark when it carries a file. The mail shown is marked as selected. Clicking another shows that one in place of the first, and the list stays, so the person can always come back.
+- After the text come the files really attached to that mail, each as a tile with its name, kind and size, which opens the file. An image that belongs to the body of the mail, a logo or the icons of a signature, is never listed as a file.
+- Beside the text, a list shows every mail of the subject, newest first, each with its date, its sender, one short sentence of what it says, and a mark when it carries a file. The mail shown is marked as selected. Clicking another shows that one in place of the first, and the list stays, so the person can always come back.
 - A mail of the person's own, sent from elsewhere in the same thread, appears in that list under « You ».
-- The page has no button: nothing files, plans or answers from here.
 - A mail with no text shows a bar saying so instead of the text. A mail whose sender failed the checks shows a bar saying so above the text, and its grey line gives the address alone.
 - A page that cannot show its mail because the mailbox is unreachable says so and keeps the header and the list.
 
 ### Activity
 
-- The page is titled Activity and opens with a search field that looks in senders, subjects and the text of mails.
-- Under it, lines are grouped by day, newest first. A line shows the time, the sentence or subject of the mail, then on a grey line the sender, where it arrived and what happened: sorted away with its reason, shown in Good to know, filed by the person, a task added.
-- A line whose mail is not in Triage offers one command, To Triage. A line whose mail is in Triage says so instead.
-- The text of a line opens the subject, so the person reads before deciding.
-- Reached from a mailbox page, the page opens kept to that mailbox, and says so with a filter the person can remove.
-- With nothing yet, the page says that what the sorting does will be listed here.
+- The page is titled Activity and has two parts, one shown at a time: what the person did, and what the sorting did alone.
+- In each part, lines are grouped by day, newest first. A line shows the time, the sentence, what happened, Undo, and a chevron that opens the subject.
+- In the person's part, what happened is a symbol: the Anytype logo with a tick and the day of the task, or the trash.
+- In the sorting's part, each mail has its own line, even several from one sender, and what happened is a framed word among newsletter, promotion, receipt and no action needed.
+- A line that was undone stays, says that its subject is back in Triage, and keeps its chevron only.
+- The page holds no search field.
+- With nothing yet, a part says that what will be done will be listed here.
 
 ### Settings
 
-- The page lists the mailboxes, each leading to its own page where it is named and removed, and offers to add one.
-- It holds a switch for tasks in Anytype and a switch for filing on the mail server too.
+- The page lists the mailboxes, one fold each. The header of a fold gives the name, the address, the number of aliases, and in words whether the mailbox is connected.
+- An open fold shows the address, the mail server, and the app password with one command to save it and one to forget it. A saved password is never shown again: a line under the field says only whether one is saved.
+- A fold offers to remove its mailbox, after a confirmation.
+- When a mailbox cannot connect, a bar at the top of the page names it and says what to do.
+- Under the folds, a command adds a mailbox.
+- The page shows, by the Anytype logo and in words, whether Anytype is connected.
 - The page has no Reset all.
 
 ### A narrow window
 
-- In a narrow window the navigation folds to its rail of icons and the mailbox badges stay visible on it.
-- A tile goes on two levels: its text, then its controls.
+- In a narrow window the navigation folds to its rail of icons and the numbers of the mailboxes stay visible on it. A click on a mailbox that has aliases opens its pages as a menu.
+- The search field becomes a button in the title bar.
+- A row goes on two levels: its sentence, then its controls.
 - On an opened subject the list of its mails goes under the text.
 
 ## Behaviours
