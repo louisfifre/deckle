@@ -32,6 +32,9 @@ public abstract record MailIntent
 
     /// <summary>The treatment that asked for it, so a held intent marks the right row as waiting.</summary>
     internal int? TreatmentId { get; init; }
+
+    /// <summary>The subject it acts on, so a late report of failure can be checked against where the subject is now.</summary>
+    internal string? SubjectActedOn { get; init; }
 }
 
 /// <summary>Move these mails of one mailbox to the trash of its server.</summary>

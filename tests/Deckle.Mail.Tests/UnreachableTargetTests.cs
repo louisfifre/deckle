@@ -73,4 +73,35 @@ public class UnreachableTargetTests
         Assert.True(Assert.Single(Rows(state)).Result!.Waiting);
         Assert.Equal(trashed.Intents, state.TargetReachable(MailTarget.Mailbox("perso")).Intents);
     }
+
+    [Fact]
+    public void AnUndeliveredIntentOfAnUndoneGestureIsDropped()
+    {
+        var mail = To();
+        var state = Sorted((mail, MailJudgment.Asks("Facture Infomaniak de novembre disponible")));
+        var trashed = state.Trash(mail.Id, Now);
+        state = trashed.State.Undo(mail.Id, Now.AddSeconds(5)).State;
+
+        // The trash is reported lost after the row was already given back.
+        state = state.ReportUndelivered(trashed.Intents[0]).State;
+
+        Assert.Empty(state.HeldIntents);
+        Assert.Empty(state.TargetReachable(MailTarget.Mailbox("perso")).Intents);
+    }
+
+    [Fact]
+    public void AnUndeliveredReverseIntentIsDroppedOnceTheSubjectIsTreatedAgain()
+    {
+        var mail = To();
+        var state = Sorted((mail, MailJudgment.Asks("Facture Infomaniak de novembre disponible")));
+        state = state.Trash(mail.Id, Now).State;
+        var undone = state.Undo(mail.Id, Now.AddSeconds(5));
+        state = undone.State.Trash(mail.Id, Now.AddSeconds(10)).State;
+
+        // The restore of the Undo is reported lost after the second trash went out.
+        state = state.ReportUndelivered(Assert.IsType<RestoreFromTrash>(Assert.Single(undone.Intents))).State;
+
+        Assert.Empty(state.HeldIntents);
+        Assert.False(Assert.Single(Rows(state)).Result!.Waiting);
+    }
 }

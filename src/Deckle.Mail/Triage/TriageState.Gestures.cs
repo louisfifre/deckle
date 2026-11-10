@@ -17,7 +17,11 @@ public sealed partial record TriageState
         }
 
         var (next, treatment) = Treat(subject, TreatmentKind.Task, day, gestureId: LastGestureId + 1, now);
-        var task = new CreateTask(subject.Id, subject.Sentence, subject.SentenceMail.From, subject.SentenceMail.Id, day) { TreatmentId = treatment.Id };
+        var task = new CreateTask(subject.Id, subject.Sentence, subject.SentenceMail.From, subject.SentenceMail.Id, day)
+        {
+            TreatmentId = treatment.Id,
+            SubjectActedOn = subject.Id,
+        };
         return (next with { LastGestureId = next.LastGestureId + 1 }).Deliver([task, .. TrashIntents(subject, treatment.Id)]);
     }
 
@@ -169,12 +173,11 @@ public sealed partial record TriageState
 
             if (treatment.Kind == TreatmentKind.Task && !held.Exists(intent => intent is CreateTask))
             {
-                intents.Add(new RemoveTask(subject.Id) { TreatmentId = treatment.Id });
+                intents.Add(new RemoveTask(subject.Id) { TreatmentId = treatment.Id, SubjectActedOn = subject.Id });
             }
 
-            intents.AddRange(TrashIntents(subject, treatment.Id)
-                .Where(trash => !held.Exists(intent => intent is MoveToTrash kept && kept.MailboxId == trash.MailboxId))
-                .Select(trash => new RestoreFromTrash(trash.MailboxId, trash.MailIds) { TreatmentId = treatment.Id }));
+            intents.AddRange(RestoreIntents(subject, treatment.Id)
+                .Where(restore => !held.Exists(intent => intent is MoveToTrash kept && kept.MailboxId == restore.MailboxId)));
 
             next = next.WithTreatment(treatment with { Undone = true })
                 .WithSubject(subject with { Stage = SubjectStage.Open, ChangedAt = now });

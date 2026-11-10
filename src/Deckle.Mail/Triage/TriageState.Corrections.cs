@@ -42,8 +42,7 @@ public sealed partial record TriageState
         {
             // Closed with no gesture of the person: set-aside mail the end of
             // the day sent to the trash.
-            var restored = next.Deliver(TrashIntents(subject, treatmentId: null)
-                .Select(trash => new RestoreFromTrash(trash.MailboxId, trash.MailIds)));
+            var restored = next.Deliver(RestoreIntents(subject, treatmentId: null));
             next = restored.State;
             intents.AddRange(restored.Intents);
         }

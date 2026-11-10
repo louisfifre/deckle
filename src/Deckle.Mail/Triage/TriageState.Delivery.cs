@@ -23,17 +23,44 @@ public sealed partial record TriageState
 
     /// <summary>
     /// An intent sent earlier did not arrive: it is kept for when its target is
-    /// back, and its target counts as unreachable until then.
+    /// back, and its target counts as unreachable until then. An intent the
+    /// subject no longer wants, because its gesture was undone or redone since,
+    /// is dropped: sending it later would undo what the row now shows.
     /// </summary>
     public TriageChange ReportUndelivered(MailIntent intent)
     {
         ArgumentNullException.ThrowIfNull(intent);
-        var next = this with
+        var next = this with { UnreachableTargets = UnreachableTargets.Add(intent.Target) };
+        if (IsStillWanted(intent))
         {
-            UnreachableTargets = UnreachableTargets.Add(intent.Target),
-            HeldIntents = HeldIntents.Add(intent),
-        };
+            next = next with { HeldIntents = HeldIntents.Add(intent) };
+        }
+
         return new TriageChange(next, []);
+    }
+
+    // Whether an intent still matches where its subject stands now. Mails are
+    // in the trash exactly while their subject is treated or closed, and a
+    // task exists exactly while the gesture that created it holds.
+    private bool IsStillWanted(MailIntent intent)
+    {
+        if (intent.SubjectActedOn is null || !Subjects.TryGetValue(intent.SubjectActedOn, out var subject))
+        {
+            return true;
+        }
+
+        var live = LiveTreatmentOf(subject.Id);
+        return intent switch
+        {
+            MoveToTrash => subject.Stage != SubjectStage.Open,
+            RestoreFromTrash => subject.Stage == SubjectStage.Open,
+            CreateTask => live is not null && live.Id == intent.TreatmentId,
+
+            // RemoveTask names the subject, not one task: once a new task
+            // holds the subject, removing "its task" would remove that one.
+            RemoveTask => live is not { Kind: TreatmentKind.Task },
+            _ => true,
+        };
     }
 
     // Splits what a transition asks for: an intent for a reachable target goes
@@ -61,5 +88,17 @@ public sealed partial record TriageState
     private static IEnumerable<MoveToTrash> TrashIntents(Subject subject, int? treatmentId) =>
         subject.Mails
             .GroupBy(mail => mail.MailboxId, StringComparer.Ordinal)
-            .Select(group => new MoveToTrash(group.Key, [.. group.Select(mail => mail.Id)]) { TreatmentId = treatmentId });
+            .Select(group => new MoveToTrash(group.Key, [.. group.Select(mail => mail.Id)])
+            {
+                TreatmentId = treatmentId,
+                SubjectActedOn = subject.Id,
+            });
+
+    // The reverse of TrashIntents, one intent per mailbox as well.
+    private static IEnumerable<RestoreFromTrash> RestoreIntents(Subject subject, int? treatmentId) =>
+        TrashIntents(subject, treatmentId).Select(trash => new RestoreFromTrash(trash.MailboxId, trash.MailIds)
+        {
+            TreatmentId = treatmentId,
+            SubjectActedOn = subject.Id,
+        });
 }
