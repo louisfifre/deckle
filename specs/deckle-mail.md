@@ -181,36 +181,38 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 ## Limits
 
-- Deckle Mail does not write, answer or forward a mail. To answer, the person uses their own mail app; Open in webmail leads there.
-- It holds no calendar. An appointment a mail fixes is a thing to do like another, and reaches the person's planning as a task.
-- It does not open a folder of the server as a list. A mail put away is found through Activity.
+- Deckle Mail does not write, answer or forward a mail. To answer, the person uses their own mail app.
+- It holds no calendar. An appointment a mail fixes is a subject like another, and reaches the person's planning as a task.
+- It does not open a folder of the server as a list. A treated mail is found through Activity and the search, for as long as the provider keeps it in the trash.
+- A treated mail is gone once the provider has emptied it from the trash. What the person will need later has to be in the task: the text of the mail is, a pickup code carried by an image or a file is not.
 - It does not load the remote content of a mail. An attachment opens in the app Windows uses for its kind.
 - It does not notify. Alerts for a mail that matters belong to a later spec.
-- A wrong sort is silent: nothing warns the person that a mail was put away by mistake. The rule that a doubtful mail waits in Triage is the only guard, and it holds as well as the sorting knows its own doubt.
+- A wrong sort is silent, and now has a term: a mail set aside by mistake is deleted by the provider thirty days after it reached the trash. The rule that a doubtful mail waits in Triage is the only guard, and it holds as well as the sorting knows its own doubt.
+- The sentence of a row is written by a model and carries the sender and the date alone: nothing beside it can contradict a wrong sentence.
+- A task that is late does not show in Deckle Mail. Only Anytype says so.
 - Joining mails into one subject by a number found in their text can join two matters or split one. A subject wrongly joined shows mails of another matter in the list of an opened page.
-- The person sees no way to answer from an opened subject. Every cold reader of the pass looked for one.
+- The earlier mails of a subject are listed on its opened page only while the provider keeps them.
 
 ## Open
 
-Each question names the option the pass recommends first, the canvas frames that show the options, and what depends on the answer.
+Each question names the option the canvas recommends first, the frames that show the options, and what depends on the answer.
 
-1. **What puts a mail away.** A File button, with the tick kept for tasks (15A, 11D), or a tick on every tile (11A). The tile's controls, the right-click menu and the page without Anytype (11E) depend on it.
-2. **How many things show.** Every thing (15B), or five then « 8 more » (9B). The maintainer said « 8 more » is fine when the list is long; both expert reviewers refuse to hide a thing to do. The order rule and the height of Triage depend on it.
-3. **The order of the list.** Deadlines first then the oldest (15B), the oldest first only, or the order of the navigation, mailbox then alias. The maintainer leaned to « by date, maybe the oldest on top » without settling.
-4. **How a task is created.** A menu of days on the tile (15C), one click with the day set in Anytype (11B), or a page to write the task (11C).
-5. **A task whose matter is over.** The tile stays until the person ticks (15M, moment 5), or Deckle Mail completes the task itself. The second writes into Anytype on the word of a mail.
-6. **Where a new task goes in Anytype.** Which space and which project receive it, and whether the person chooses each time. Add task cannot be built before this.
-7. **Good to know lines.** They leave the day after they were seen and cannot be removed (15A), or the person can remove one. Every cold reader expected to remove a line; the maintainer asked for no action.
-8. **The sentence of a tile.** A short sentence written when the mail is sorted (15A), or the mail's own sentence quoted word for word (12E). The first reads faster; the second writes nothing and cannot invent.
-9. **The opened subject.** The latest mail with the list of the subject beside it (15I, 15J), every mail in one text (10C), or the latest mail alone (10D).
-10. **« Say whether one can go back or not ».** Whether this means going back to an earlier mail of the subject, which the list allows, or telling a step that cannot be undone. The maintainer's sentence can be read both ways.
-11. **The title of an opened subject.** The sentence of the row clicked (15I), or the mail's own subject (13D).
-12. **Settings in the navigation.** At the foot, as Windows does (13F, variant 1), or on top with Triage and Activity (variant 3).
-13. **Folders of the server in the navigation.** Not listed (variant 1), or listed under the mailboxes with a folder opening as a list (variant 2, 13G). Both expert reviewers reject the second.
-14. **Filing on the server.** On by default with one folder per alias (13H), or off. What the phone and the webmail show depends on it, and so does the right to write to the mailbox at all.
-15. **The first sort of a mailbox.** The last thirty days (14A), or the whole history.
-16. **The colour of a warning.** The yellow of Windows for an unverified sender, or grey (14B, both drawn). The rule « grey and accent only » and the speed at which a danger is seen pull apart here.
-17. **The navigation in a narrow window.** The rail of icons with its badges (15E), or the pane folded behind the menu button (8C, which the maintainer liked).
-18. **Where a mail arrived, in words.** « to shop » (15A) was read by two cold readers as the place Deckle Mail filed the mail. « received at shop » is the other wording.
-19. **Read and unread on the server.** Whether opening a subject, filing it or sorting it away marks the mail read for the other mail apps.
-20. **A visible way to answer.** None beyond the right-click (15D), or one on the opened page, against the rule of no button in the reading.
+1. **When a mail that was set aside goes to the trash.** When the person ends the day (18M, reading A), or as soon as it is set aside (reading C). The maintainer said the trash is always a gesture of his; the first reading follows from it without his having said it. The thirty days a wrong sort has to be caught start from that moment.
+2. **A secondary information line under a click.** It opens nothing and its detail is read in Activity (18A), or it opens its subject. The maintainer said no, then « a little clickable ».
+3. **One command or two to clear the page.** Dismiss all above the lines and the end of the day at the bottom right, as asked (18M, reading A), or the end of the day alone (reading B). The two overlap when no row was treated.
+4. **Commands on an opened subject.** The two gestures of the row and a link to answer in the webmail (18K), or no command at all, as approved in 15I (18L). Without the right-click, the second leaves no path to answer.
+5. **The order of the list.** Deadlines first then the oldest (18B), the oldest first only, or the order of the navigation. The maintainer leaned to « by date, maybe the oldest on top » without settling.
+6. **The proposed day of a task.** Two days before the deadline (18A), or three. He said « two or three ».
+7. **How long a treated row stays.** He said a long fixed time, between one and four hours.
+8. **The number on Global.** The total of the mailbox, the same number the folded header wears (18E, Global A), or none (Global B). With none, a mail that arrived at the main address is counted nowhere while the group is unfolded.
+9. **The mark of a mailbox in the navigation.** Its initial (18E, mark A), the same envelope for all (mark B), or none (mark C). On the rail, three envelopes cannot be told apart.
+10. **The navigation on Triage.** Open by default (18A), or closed to its rail (18T), and whether Activity needs to stay in it.
+11. **The person answered from another mail app.** The subject leaves Triage by itself and is listed in the sorting's part of Activity; whether its mails then go to the trash without a gesture of the person is not said.
+12. **Words.** The caption of secondary information (« No action needed »), the command that ends the day (« Done for today »), the two parts of Activity (« By you », « By Deckle »), the proposal on a row (« Task · Fri 13 »), and whether the first page keeps the name Triage.
+13. **Where a new task goes in Anytype.** Which space and which project receive it, and whether the person chooses each time. Add task cannot be built before this.
+14. **The first sort of a mailbox.** The last thirty days, or the whole history.
+15. **The colour of a warning.** The yellow of Windows for an unverified sender, or grey (14B, both drawn).
+16. **Read and unread on the server.** Whether opening a subject or treating it marks the mail read for the other mail apps.
+17. **Settings in the navigation.** At the foot, as Windows does (18A), or on top with Triage and Activity (13F, variant 3).
+18. **Two passages of the dictation read by interpretation.** The short sentence of each mail in the list of an opened subject, « shared » (read: the same on every screen); and « capitals or not » for aliases (read: a display setting of the name). Neither is drawn as a setting.
+19. **« Say whether one can go back or not ».** Whether this means going back to an earlier mail of the subject, which the list allows, or telling a step that cannot be undone. Still unanswered from 9 November.
