@@ -43,6 +43,20 @@ public class WhereAMailLandsTests
     }
 
     [Fact]
+    public void TheSetAsideCountCountsTheMailsTheSortingSetAside()
+    {
+        // A mail that asked, then a reply that sets its subject aside: one mail was set aside.
+        var request = To(minutesAgo: 60);
+        var reply = To(minutesAgo: 10) with { InReplyTo = request.Id };
+        var state = Sorted(
+            (request, MailJudgment.Asks("Confirmer la commande")),
+            (reply, MailJudgment.SetAside(SetAsideReason.Receipt, "Commande confirmée")));
+
+        Assert.Equal(1, TriageList.SetAsideCount(state));
+        Assert.Single(Assert.Single(ActivityLog.BySorting(state)).Lines);
+    }
+
+    [Fact]
     public void AMailTheSortingIsNotSureToSetAsideWaitsInTriage()
     {
         var state = Sorted((To(), MailJudgment.SetAside(SetAsideReason.NoActionNeeded, "Point sur votre dossier", doubtful: true)));

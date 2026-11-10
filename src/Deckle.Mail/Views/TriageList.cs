@@ -82,9 +82,13 @@ public static class TriageList
     public static int SetAsideCount(TriageState state)
     {
         ArgumentNullException.ThrowIfNull(state);
-        return state.Subjects.Values
-            .Where(subject => subject.Place == MailPlace.SetAside && subject.Stage == SubjectStage.Open)
-            .Sum(subject => subject.Mails.Count);
+
+        // The count leads to the sorting's part of Activity, so it counts that
+        // part's lines, not the mails of the subject: a mail that asked before
+        // a reply set its subject aside was never set aside itself.
+        return state.SortingRecords.Count(record =>
+            !record.Undone
+            && state.Subjects[record.SubjectId] is { Place: MailPlace.SetAside, Stage: SubjectStage.Open });
     }
 
     private static TreatmentResult? ResultOf(TriageState state, Subject subject) =>
