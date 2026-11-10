@@ -32,7 +32,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 ### Navigation
 
 - The navigation lists Triage and Activity first, then the mailboxes, then Settings at the foot.
-- A mailbox that has aliases is a group header: it folds and unfolds, and opens no page. Its first child is Global, the page of the whole mailbox; its aliases follow. A mailbox with no alias is a single item that opens its page.
+- A mailbox that has aliases is a group header: it folds and unfolds, and opens no page. Its first child is Global, the page of the whole mailbox; its aliases follow. The children stand one step in from the header, as Windows draws a group. A mailbox with no alias is a single item that opens its page.
 - A mailbox or an alias that has no name shows its address. One that has a name shows the name.
 - A folded group header wears the number of subjects waiting in the mailbox, its aliases included. Unfolded, the header wears no number and its children wear theirs. Example: three subjects wait in Perso, one of them through the alias shop; folded, Perso shows 3; unfolded, shop shows 1.
 - An item where nothing waits shows no number. No number anywhere counts what was treated or set aside.
@@ -52,7 +52,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - After the lines, one last line gives the number of mails that were set aside without a line, and leads to the part of Activity that lists them.
 - At the bottom right of the page, one command ends the day: it removes the rows already treated and the secondary information lines.
 - With nothing waiting, the page shows a small flat picture in pale grey and the sentence « Nothing is waiting. ». The picture is not an icon, not a skeleton of rows, and nothing on the page moves: the person does not take it for a loading page. Secondary information stays under it when there is some.
-- When one mailbox cannot connect, a bar at the top names it and says since when its content is shown. Its rows stay and keep their controls: a gesture made meanwhile is kept and sent when the mailbox is back.
+- When one mailbox cannot connect, a bar at the top names it, says since when its content is shown, and offers to open Settings. Its rows stay and keep their controls: a gesture made meanwhile is kept and sent when the mailbox is back.
 - When new mail waits to be sorted because the sorting cannot run, a bar at the top says how many mails arrived since when, and that they will be sorted. The rows already there stay usable.
 
 ### A Global page, an alias page
@@ -87,10 +87,11 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 ### Settings
 
-- The page lists the mailboxes, one fold each. The header of a fold gives the name, the address, the number of aliases, and in words whether the mailbox is connected.
-- An open fold shows the address, the mail server, and the app password with one command to save it and one to forget it. A saved password is never shown again: a line under the field says only whether one is saved.
+- The page lists the mailboxes, one fold each. The header of a fold gives the name, the address, the number of aliases, and whether the mailbox is connected, by a coloured dot and in words.
+- An open fold shows the address, the mail server, and the app password with one command to save it and one to forget it. A saved password is never shown again: a line under the field says only whether one is saved. With no password saved, the command to forget it is hidden, not greyed.
 - A fold offers to remove its mailbox, after a confirmation.
-- When a mailbox cannot connect, a bar at the top of the page names it and says what to do.
+- When a mailbox cannot connect, a bar at the top of the page names it and says what to do. It stays as long as the mailbox cannot connect: it has no cross.
+- A mailbox that cannot connect is one condition with one severity wherever a bar names it, in Triage and here: a caution, since its mail is still shown and nothing is lost.
 - Under the folds, a command adds a mailbox.
 - The page shows, by the Anytype logo and in words, whether Anytype is connected.
 - The page has no Reset all.
