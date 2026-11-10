@@ -63,9 +63,13 @@ public sealed class WindowsKeyTaskbarFocus : IDisposable
     private void Arm()
     {
         _host.KeyReceived += OnKey;
+        _host.PointerInteraction += OnPointer;
+        _host.WheelObserved += OnWheel;
         if (!_host.Start())
         {
             _host.KeyReceived -= OnKey;
+            _host.PointerInteraction -= OnPointer;
+            _host.WheelObserved -= OnWheel;
             DeckleShellTaskbarSource.Log.WindowsKeyFocusUnavailable("host_start_failed");
             return;
         }
@@ -79,6 +83,8 @@ public sealed class WindowsKeyTaskbarFocus : IDisposable
     {
         lock (_detectorGate) _detector.Enabled = false;
         _host.KeyReceived -= OnKey;
+        _host.PointerInteraction -= OnPointer;
+        _host.WheelObserved -= OnWheel;
         _host.Stop();
         _armed = false;
         DeckleShellTaskbarSource.Log.WindowsKeyFocusDisarmed();
@@ -102,6 +108,14 @@ public sealed class WindowsKeyTaskbarFocus : IDisposable
                 break;
         }
     }
+
+    // A click or a wheel turn while the Windows key is held makes it a shortcut.
+    private void OnPointer()
+    {
+        lock (_detectorGate) _detector.OnPointer();
+    }
+
+    private void OnWheel(MouseWheelEvent wheel) => OnPointer();
 
     private void NoteSend(string step, bool sent)
     {

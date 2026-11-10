@@ -46,6 +46,20 @@ public sealed class WindowsKeyTapDetectorTests
         Assert.Equal(WindowsKeyAction.None, Up(LeftWindows));
     }
 
+    // Windows + click: the release must not bring the taskbar forward, and a
+    // click with no Windows key held changes nothing for the next tap.
+    [Fact]
+    public void AClickWhileTheWindowsKeyIsHeldMakesItAShortcut()
+    {
+        _detector.OnPointer();
+        Assert.Equal(WindowsKeyAction.SuppressStart, Down(LeftWindows));
+        _detector.OnPointer();
+        Assert.Equal(WindowsKeyAction.None, Up(LeftWindows));
+
+        Assert.Equal(WindowsKeyAction.SuppressStart, Down(LeftWindows));
+        Assert.Equal(WindowsKeyAction.FocusTaskbar, Up(LeftWindows));
+    }
+
     // Windows + Shift + S: a modifier is a key like any other.
     [Fact]
     public void AModifierPressedWithTheWindowsKeyMakesItAShortcut()

@@ -107,4 +107,14 @@ public sealed class WindowsKeyTapDetector
         if (isKeyDown && _held != 0) _shortcut = true;
         return WindowsKeyAction.None;
     }
+
+    /// <summary>
+    /// A mouse or touchpad button went down, or the wheel turned. With the
+    /// Windows key held that is a shortcut too (Windows + click, Windows + wheel
+    /// in some tools), so its release must not bring the taskbar forward.
+    /// </summary>
+    public void OnPointer()
+    {
+        if (_enabled && _held != 0) _shortcut = true;
+    }
 }
