@@ -615,6 +615,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Relocate.cs
 │   │   ├── App.SelfCheck.Atelier.cs
 │   │   ├── App.SelfCheck.Atelier.Photos.cs
+│   │   ├── App.SelfCheck.Atelier.Sizes.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs
@@ -664,6 +665,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── NavigationHistory.cs
 │   │   ├── Formatting/
 │   │   │   └── EntryFormat.cs
+│   │   ├── Icons/
+│   │   │   ├── FileContentPresence.cs
+│   │   │   ├── FileIconKey.cs
+│   │   │   ├── FileThumbnailProbe.cs
+│   │   │   ├── MemoryBoundedCache.cs
+│   │   │   ├── ShellImage.cs
+│   │   │   ├── ShellImageNativeMethods.cs
+│   │   │   ├── ShellImagePixels.cs
+│   │   │   ├── ShellImageReader.cs
+│   │   │   └── ShellWorkQueue.cs
 │   │   ├── Map/
 │   │   │   ├── FrontMatter.cs
 │   │   │   ├── MapConventions.cs
@@ -696,7 +707,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ShellRecycleBin.cs
 │   │   ├── Sample/
 │   │   │   ├── SampleFolder.cs
-│   │   │   └── SamplePhotos.cs
+│   │   │   ├── SamplePhotos.cs
+│   │   │   └── SizesSample.cs
 │   │   ├── Sizes/
 │   │   │   ├── FolderReader.cs
 │   │   │   ├── HeaviestFiles.cs
@@ -717,7 +729,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Details/
 │   │   │   └── DetailsSheet.cs
 │   │   ├── Icons/
-│   │   │   └── IFileIconProvider.cs
+│   │   │   ├── IFileIconProvider.cs
+│   │   │   └── ShellFileIconProvider.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
@@ -746,7 +759,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── PhotoText.cs
 │   │   │   │   └── PhotoTile.cs
 │   │   │   ├── Sizes/
-│   │   │   │   └── SizesTool.cs
+│   │   │   │   ├── SizeRow.cs
+│   │   │   │   ├── SizesPanel.xaml
+│   │   │   │   ├── SizesPanel.xaml.cs
+│   │   │   │   ├── SizesTool.cs
+│   │   │   │   ├── SizesView.xaml
+│   │   │   │   └── SizesView.xaml.cs
 │   │   │   ├── AtelierToolCatalog.cs
 │   │   │   ├── IAtelierTool.cs
 │   │   │   └── ToolPlaceholderView.cs
@@ -2216,6 +2234,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TrayIncidentLinesTests.cs
 │   │   └── TrayRightClickMenuTests.cs
 │   ├── Deckle.Atelier.Tests/
+│   │   ├── Icons/
+│   │   │   ├── FileIconKeyTests.cs
+│   │   │   ├── MemoryBoundedCacheTests.cs
+│   │   │   ├── ShellImageReaderSystemTests.cs
+│   │   │   ├── ShellPixelRulesTests.cs
+│   │   │   └── ShellWorkQueueTests.cs
 │   │   ├── Photos/
 │   │   │   ├── CaptureDataTests.cs
 │   │   │   ├── DarktableTests.cs
@@ -2243,7 +2267,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PathRulesTests.cs
 │   │   ├── ScratchFolder.cs
 │   │   ├── SizeScanEventsTests.cs
-│   │   └── SizeScanTests.cs
+│   │   ├── SizeScanTests.cs
+│   │   └── SizesSampleTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── AudioPathRedactionTests.cs
 │   │   ├── AudioRecordingHostDefaultsTests.cs

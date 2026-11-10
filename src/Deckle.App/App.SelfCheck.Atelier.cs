@@ -60,6 +60,7 @@ public partial class App
 
         foreach (string tool in window.ToolIds.Where(t => t != "files"))
             await Capture(tool, () => window.ShowToolForReviewAsync(tool));
+        await WalkAtelierSizesAsync(window, sample, Capture);
 
         await Capture("pane-open", async () =>
         {

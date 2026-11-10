@@ -13,7 +13,7 @@ public sealed partial class AtelierWindow : IAtelierToolHost
     private readonly IReadOnlyList<IAtelierTool> _tools = AtelierToolCatalog.Create();
     private readonly Dictionary<string, IAtelierToolView> _views = new(StringComparer.Ordinal);
     private readonly Dictionary<string, ToggleButton> _toolButtons = new(StringComparer.Ordinal);
-    private readonly IFileIconProvider _icons = new NeutralFileIconProvider();
+    private readonly ShellFileIconProvider _icons = new();
     private IAtelierTool? _activeTool;
     private CancellationTokenSource? _showing;
     private string? _selection;

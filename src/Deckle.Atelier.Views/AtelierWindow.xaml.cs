@@ -38,6 +38,8 @@ public sealed partial class AtelierWindow : Window
 
         BuildToolButtons();
         RebuildFolderItems();
+        // The icon provider's shell threads end with the window.
+        Closed += (_, _) => _icons.Dispose();
 
         if (_folders.Folders.Count > 0) _ = NavigateTo(FolderPlace.AtRoot(_folders.Folders[0]));
         else ShowEmptyState();
