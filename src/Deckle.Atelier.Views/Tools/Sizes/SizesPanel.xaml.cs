@@ -46,9 +46,6 @@ internal sealed partial class SizesPanel : UserControl
         string total = report.IsComplete || report.State == SizeScanState.Cancelled
             ? EntryFormat.Size(report.TotalBytes, AtelierText.Culture)
             : AtelierText.Get("Sizes_Pending");
-        string? finished = report.IsComplete && report.FinishedAt is { } at
-            ? at.ToLocalTime().ToString("t", AtelierText.Culture)
-            : null;
         string? state = report.State switch
         {
             SizeScanState.Running => AtelierText.Get("Sizes_Panel_Running"),
@@ -68,7 +65,6 @@ internal sealed partial class SizesPanel : UserControl
                 AtelierText.Get("Sizes_Panel_Section"),
                 (AtelierText.Get("Sizes_Panel_Total"), total),
                 (AtelierText.Get("Sizes_Panel_State"), state),
-                (AtelierText.Get("Sizes_Panel_Finished"), finished),
                 (AtelierText.Get("Sizes_Panel_Unreadable"), unreadable))
             .Element;
 

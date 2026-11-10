@@ -109,7 +109,6 @@
   <data name="Sizes_Panel_State" xml:space="preserve"><value>État</value></data>
   <data name="Sizes_Panel_Running" xml:space="preserve"><value>En cours…</value></data>
   <data name="Sizes_Panel_Failed" xml:space="preserve"><value>Échec</value></data>
-  <data name="Sizes_Panel_Finished" xml:space="preserve"><value>Analysé à</value></data>
   <data name="Sizes_Panel_Unreadable" xml:space="preserve"><value>Non lus</value></data>
   <data name="Sizes_Panel_Unreadable_One" xml:space="preserve"><value>1 dossier</value></data>
   <data name="Sizes_Panel_Unreadable_Many_Format" xml:space="preserve"><value>{0} dossiers</value></data>
