@@ -2175,6 +2175,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TrayIncidentLinesTests.cs
 │   │   └── TrayRightClickMenuTests.cs
 │   ├── Deckle.Atelier.Tests/
+│   │   ├── Photos/
+│   │   │   ├── CaptureDataTests.cs
+│   │   │   ├── DarktableTests.cs
+│   │   │   ├── ExifSample.cs
+│   │   │   ├── MarksApplierTests.cs
+│   │   │   ├── PhotoFolderTests.cs
+│   │   │   ├── PhotoMarkStoreTests.cs
+│   │   │   ├── PhotoRenamerTests.cs
+│   │   │   ├── PhotosEventsTests.cs
+│   │   │   └── ShellRecycleBinTests.cs
 │   │   ├── AddedFolderStoreTests.cs
 │   │   ├── AddressResolverTests.cs
 │   │   ├── Deckle.Atelier.Tests.csproj
