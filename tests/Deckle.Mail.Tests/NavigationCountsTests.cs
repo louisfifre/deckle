@@ -85,4 +85,25 @@ public class NavigationCountsTests
 
         Assert.Null(NavigationCounts.For(state, Perso, folded: true).Mailbox);
     }
+
+    [Fact]
+    public void AMailToAnAliasCountsOnItWhateverTheCaseOfTheAddress()
+    {
+        var state = Sorted((To(deliveredTo: "Shop@Exemple.fr"), MailJudgment.Asks("Colis au point relais jusqu'au 18")));
+
+        Assert.Equal(1, NavigationCounts.For(state, Perso, folded: false).Aliases["shop@exemple.fr"]);
+        Assert.Single(Rows(state, MailScope.Alias("perso", "shop@exemple.fr")));
+    }
+
+    [Fact]
+    public void AMailboxNotSortedByAliasIsASingleItemWithTheWholeCount()
+    {
+        var mailbox = Perso with { SortsByAlias = false };
+
+        var counts = NavigationCounts.For(ThreeWaitingInPerso(), mailbox, folded: false);
+
+        Assert.Equal(3, counts.Mailbox);
+        Assert.Null(counts.Inbox);
+        Assert.Empty(counts.Aliases);
+    }
 }

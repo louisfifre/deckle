@@ -198,4 +198,27 @@ public class GestureTests
         Assert.True(state.AddTask(mail.Id, Today, s_later).IsUnchanged);
         Assert.True(state.Trash(mail.Id, s_later).IsUnchanged);
     }
+
+    [Fact]
+    public void TheCrossOfATreatedRowDoesNothingInTheInstantAfterTheGesture()
+    {
+        var (state, mail) = OneRow();
+        state = state.Trash(mail.Id, Now).State;
+
+        Assert.True(state.RemoveRow(mail.Id, Now + state.Options.ClickGuard / 2).IsUnchanged);
+        Assert.False(state.RemoveRow(mail.Id, Now + state.Options.ClickGuard).IsUnchanged);
+    }
+
+    [Fact]
+    public void TheCrossOfALineDoesNothingInTheInstantAfterItCameBack()
+    {
+        var mail = To();
+        var state = Sorted((mail, MailJudgment.Informs("Remboursement de 42,10 € reçu")));
+        state = state.Dismiss(mail.Id, Now).State;
+        var back = Now + state.Options.ClickGuard;
+        state = state.Undo(mail.Id, back).State;
+
+        Assert.True(state.Dismiss(mail.Id, back + state.Options.ClickGuard / 2).IsUnchanged);
+        Assert.False(state.Dismiss(mail.Id, back + state.Options.ClickGuard).IsUnchanged);
+    }
 }

@@ -104,4 +104,23 @@ public class UnreachableTargetTests
         Assert.Empty(state.HeldIntents);
         Assert.False(Assert.Single(Rows(state)).Result!.Waiting);
     }
+
+    [Fact]
+    public void EndingTheDayWhileAMailboxIsUnreachableKeepsItsTrashForWhenItIsBack()
+    {
+        var line = To();
+        var newsletter = To();
+        var elsewhere = To(deliveredTo: "maison@exemple.fr", mailboxId: "maison");
+        var state = Sorted(
+            (line, MailJudgment.Informs("Coupure d'eau jeudi")),
+            (newsletter, MailJudgment.SetAside(SetAsideReason.Newsletter, "Lettre de novembre")),
+            (elsewhere, MailJudgment.SetAside(SetAsideReason.Promotion, "Soldes")));
+        state = state.TargetUnreachable(MailTarget.Mailbox("perso")).State;
+
+        var ended = state.EndDay(Now.AddHours(9));
+
+        Assert.Equal("maison", Assert.IsType<MoveToTrash>(Assert.Single(ended.Intents)).MailboxId);
+        var released = ended.State.TargetReachable(MailTarget.Mailbox("perso")).Intents;
+        Assert.Equal([line.Id, newsletter.Id], released.Cast<MoveToTrash>().SelectMany(trash => trash.MailIds));
+    }
 }

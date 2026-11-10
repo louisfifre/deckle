@@ -49,6 +49,16 @@ public class SubjectTests
     }
 
     [Fact]
+    public void AMatterNumberJoinsWhateverItsCase()
+    {
+        var state = Sorted(
+            (To(minutesAgo: 600), MailJudgment.SetAside(SetAsideReason.Receipt, "Dossier AB-4521 ouvert") with { MatterNumbers = ["AB-4521"] }),
+            (To(minutesAgo: 60), MailJudgment.Asks("Pièce manquante au dossier ab-4521") with { MatterNumbers = ["ab-4521"] }));
+
+        Assert.Equal(2, state.Subjects[Assert.Single(Rows(state)).SubjectId].Mails.Count);
+    }
+
+    [Fact]
     public void MailsThatShareOnlyTheirSenderAreSeparateSubjects()
     {
         // Two refund statements from the same insurer are two lines; its request for a document is a third subject.
