@@ -51,7 +51,7 @@ internal sealed class SelfCheckReport
     public string Outcome { get; set; } = "failed";
 
     // The windows the run must have shown for "passed" to mean something.
-    private static readonly string[] RequiredWindows = ["settings", "log", "playground"];
+    private static readonly string[] RequiredWindows = ["settings", "log", "playground", "atelier"];
 
     // Recomputes Failures, Warnings and Outcome from what was recorded.
     public void Judge()

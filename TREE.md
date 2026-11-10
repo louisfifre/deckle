@@ -596,6 +596,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Ambient.cs
 │   │   ├── App.Animations.cs
 │   │   ├── App.Anytype.cs
+│   │   ├── App.Atelier.cs
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Autocorrect.Lifecycle.cs
 │   │   ├── App.FileTranscription.cs
@@ -612,6 +613,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.PlaygroundAccess.cs
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
+│   │   ├── App.SelfCheck.Atelier.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs

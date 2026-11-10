@@ -70,5 +70,12 @@ internal static class AppModules
             Glyph = Glyphs.List,
             Order = 600,
         });
+
+        ModuleRegistry.Register(new ModuleDescriptor
+        {
+            Id = ModuleIds.Atelier,
+            Glyph = Glyphs.Folder,
+            Order = 700,
+        });
     }
 }
