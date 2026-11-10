@@ -587,6 +587,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Startup.Shell.cs
 │   │   ├── App.Taskbar.cs
 │   │   ├── App.TaskbarCover.cs
+│   │   ├── App.TaskbarWindowsKey.cs
 │   │   ├── App.Theme.cs
 │   │   ├── App.Trackpad.cs
 │   │   ├── App.TranscriptPanel.cs
