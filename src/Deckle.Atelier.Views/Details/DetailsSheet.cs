@@ -81,5 +81,22 @@ public sealed class DetailsSheet
         return this;
     }
 
+    // A section whose content is not label/value pairs (the photo tool's mark
+    // buttons), framed and titled as the others so the panel reads as one.
+    public DetailsSheet Section(string title, UIElement content)
+    {
+        var section = new StackPanel
+        {
+            Padding = new Thickness(16, 16, 16, 12),
+            Spacing = 8,
+            BorderBrush = Resource<Brush>("DividerStrokeColorDefaultBrush"),
+            BorderThickness = new Thickness(0, 1, 0, 0),
+        };
+        section.Children.Add(new TextBlock { Text = title, Style = Resource<Style>("BodyStrongTextBlockStyle") });
+        section.Children.Add(content);
+        _root.Children.Add(section);
+        return this;
+    }
+
     private static T Resource<T>(string key) => (T)Application.Current.Resources[key];
 }

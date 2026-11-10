@@ -81,4 +81,60 @@
   <data name="Kind_Folder" xml:space="preserve"><value>Dossier de fichiers</value></data>
   <data name="Kind_File" xml:space="preserve"><value>Fichier</value></data>
   <data name="Kind_File_Format" xml:space="preserve"><value>Fichier {0}</value></data>
+
+  <!-- ── Photo tool (Tools/Photos) ── -->
+  <data name="Photos_Gallery" xml:space="preserve"><value>Photos du dossier</value></data>
+  <data name="Photos_Empty" xml:space="preserve"><value>Aucune photo dans ce dossier.</value></data>
+  <data name="Photos_Count_Unmarked_Format" xml:space="preserve"><value>{0} sans marque</value></data>
+  <data name="Photos_Count_Keep_Format" xml:space="preserve"><value> · {0} à garder</value></data>
+  <data name="Photos_Count_Delete_Format" xml:space="preserve"><value> · {0} à supprimer</value></data>
+  <data name="Photos_Apply" xml:space="preserve"><value>Appliquer les marques…</value></data>
+  <data name="Photos_Darktable" xml:space="preserve"><value>Ouvrir dans darktable</value></data>
+  <data name="Photos_Darktable_Tip" xml:space="preserve"><value>Ouvrir ce dossier dans darktable pour le retoucher</value></data>
+  <data name="Photos_Darktable_TipMissing" xml:space="preserve"><value>darktable n'est pas installé sur cet ordinateur</value></data>
+  <data name="Photos_Darktable_NotFound" xml:space="preserve"><value>darktable est introuvable</value></data>
+  <data name="Photos_Darktable_NotFoundBody" xml:space="preserve"><value>Installez darktable, puis cliquez à nouveau sur Ouvrir dans darktable.</value></data>
+  <data name="Photos_Darktable_Install" xml:space="preserve"><value>Télécharger darktable</value></data>
+  <data name="Photos_Darktable_Failed" xml:space="preserve"><value>darktable ne s'est pas ouvert</value></data>
+  <data name="Photos_Darktable_FailedBody" xml:space="preserve"><value>Réessayez. Si cela se reproduit, réinstallez darktable.</value></data>
+  <data name="Photos_Tile_Keep_Format" xml:space="preserve"><value>{0}, à garder</value></data>
+  <data name="Photos_Tile_Delete_Format" xml:space="preserve"><value>{0}, à supprimer</value></data>
+  <data name="Photos_LeaveLarge" xml:space="preserve"><value>Revenir à la galerie (Échap)</value></data>
+  <data name="Photos_Previous" xml:space="preserve"><value>Photo précédente (Gauche)</value></data>
+  <data name="Photos_Next" xml:space="preserve"><value>Photo suivante (Droite)</value></data>
+  <data name="Photos_Kind_Raw" xml:space="preserve"><value>Raw</value></data>
+  <data name="Photos_Kind_Format" xml:space="preserve"><value>{0} · {1}</value></data>
+  <data name="Photos_KindRank_Format" xml:space="preserve"><value>{0} · {1} sur {2}</value></data>
+  <data name="Photos_ManyKind_Format" xml:space="preserve"><value>Photos · {0}</value></data>
+  <data name="Photos_ManyTitle_Format" xml:space="preserve"><value>{0} photos sélectionnées</value></data>
+  <data name="Photos_Section_Mark" xml:space="preserve"><value>Marque</value></data>
+  <data name="Photos_Mark_Keep" xml:space="preserve"><value>À garder</value></data>
+  <data name="Photos_Mark_Delete" xml:space="preserve"><value>À supprimer</value></data>
+  <data name="Photos_Mark_Keys" xml:space="preserve"><value>G à garder · X à supprimer</value></data>
+  <data name="Photos_Mark_KeysLarge" xml:space="preserve"><value>G à garder · X à supprimer · ← → photo voisine</value></data>
+  <data name="Photos_Section_Capture" xml:space="preserve"><value>Prise de vue</value></data>
+  <data name="Photos_Capture_Taken" xml:space="preserve"><value>Date</value></data>
+  <data name="Photos_Capture_Camera" xml:space="preserve"><value>Appareil</value></data>
+  <data name="Photos_Capture_Lens" xml:space="preserve"><value>Objectif</value></data>
+  <data name="Photos_Capture_Exposure" xml:space="preserve"><value>Exposition</value></data>
+  <data name="Photos_Capture_Place" xml:space="preserve"><value>Lieu</value></data>
+  <data name="Photos_Capture_None" xml:space="preserve"><value>Ce fichier n'indique rien de la prise de vue.</value></data>
+  <data name="Photos_Capture_Unreadable" xml:space="preserve"><value>Les données de prise de vue de ce fichier ne peuvent pas être lues.</value></data>
+  <data name="Photos_Summary_Title_One" xml:space="preserve"><value>{0} photo va à la Corbeille de Windows</value></data>
+  <data name="Photos_Summary_Title_Other" xml:space="preserve"><value>{0} photos vont à la Corbeille de Windows</value></data>
+  <data name="Photos_Summary_Weight_Format" xml:space="preserve"><value>{0}. Récupérables tant que la Corbeille n'est pas vidée.</value></data>
+  <data name="Photos_Summary_More_Format" xml:space="preserve"><value>+{0}</value></data>
+  <data name="Photos_Summary_Kept_One" xml:space="preserve"><value>{0} photo à garder : rien ne change sur le disque.</value></data>
+  <data name="Photos_Summary_Kept_Other" xml:space="preserve"><value>{0} photos à garder : rien ne change sur le disque.</value></data>
+  <data name="Photos_Summary_Unmarked_One" xml:space="preserve"><value>{0} photo sans marque : rien ne change.</value></data>
+  <data name="Photos_Summary_Unmarked_Other" xml:space="preserve"><value>{0} photos sans marque : rien ne change.</value></data>
+  <data name="Photos_Summary_Confirm_One" xml:space="preserve"><value>Mettre {0} photo à la Corbeille</value></data>
+  <data name="Photos_Summary_Confirm_Other" xml:space="preserve"><value>Mettre {0} photos à la Corbeille</value></data>
+  <data name="Photos_Summary_Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Photos_Applying_Format" xml:space="preserve"><value>Mise à la Corbeille : {0} sur {1}</value></data>
+  <data name="Photos_Stayed_One" xml:space="preserve"><value>{0} photo n'a pas pu aller à la Corbeille. Elle reste dans le dossier, avec sa marque.</value></data>
+  <data name="Photos_Stayed_Other" xml:space="preserve"><value>{0} photos n'ont pas pu aller à la Corbeille. Elles restent dans le dossier, avec leur marque.</value></data>
+  <data name="Photos_Destroyed_One" xml:space="preserve"><value>{0} photo a été supprimée définitivement au lieu d'aller à la Corbeille.</value></data>
+  <data name="Photos_Destroyed_Other" xml:space="preserve"><value>{0} photos ont été supprimées définitivement au lieu d'aller à la Corbeille.</value></data>
+  <data name="Photos_NamesMore_Format" xml:space="preserve"><value>{0} et {1} autres</value></data>
 </root>

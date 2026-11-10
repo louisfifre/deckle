@@ -730,7 +730,20 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Map/
 │   │   │   │   └── MapTool.cs
 │   │   │   ├── Photos/
-│   │   │   │   └── PhotosTool.cs
+│   │   │   │   ├── ApplySummary.cs
+│   │   │   │   ├── PhotoDetails.cs
+│   │   │   │   ├── PhotoGlyphs.cs
+│   │   │   │   ├── PhotoMarkQueue.cs
+│   │   │   │   ├── PhotosReview.cs
+│   │   │   │   ├── PhotosTool.cs
+│   │   │   │   ├── PhotosView.Apply.cs
+│   │   │   │   ├── PhotosView.Darktable.cs
+│   │   │   │   ├── PhotosView.Large.cs
+│   │   │   │   ├── PhotosView.Review.cs
+│   │   │   │   ├── PhotosView.xaml
+│   │   │   │   ├── PhotosView.xaml.cs
+│   │   │   │   ├── PhotoText.cs
+│   │   │   │   └── PhotoTile.cs
 │   │   │   ├── Sizes/
 │   │   │   │   └── SizesTool.cs
 │   │   │   ├── AtelierToolCatalog.cs
