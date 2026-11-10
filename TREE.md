@@ -1413,6 +1413,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── MailPlace.cs
 │   │   ├── Intents/
 │   │   │   └── MailIntent.cs
+│   │   ├── Strings/
+│   │   │   ├── MailStrings.resx
+│   │   │   └── MailWording.cs
 │   │   ├── Subjects/
 │   │   │   ├── MailPlacement.cs
 │   │   │   ├── SortingCorrection.cs
@@ -1433,6 +1436,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Views/
 │   │   │   ├── ActivityLog.cs
 │   │   │   ├── DaySummary.cs
+│   │   │   ├── MailboxNaming.cs
 │   │   │   ├── MailCalendar.cs
 │   │   │   ├── NavigationCounts.cs
 │   │   │   ├── TaskDayProposal.cs

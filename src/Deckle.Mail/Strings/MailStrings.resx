@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Every English text of Deckle Mail that the core composes, under a stable key.
+     MailWording is the only reader; a UI takes these words through it, or takes
+     the keys over into its own .resw. Sentences taken from mails never come here:
+     they stay in their language. -->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Inbox" xml:space="preserve">
+    <value>Inbox</value>
+    <comment>The first child of a mailbox group: the page of the whole mailbox, standing for its main address.</comment>
+  </data>
+  <data name="DayFormat" xml:space="preserve">
+    <value>ddd d</value>
+    <comment>A .NET date pattern: weekday and day, « Fri 13 ». Used when the day is in the current month.</comment>
+  </data>
+  <data name="DayWithMonthFormat" xml:space="preserve">
+    <value>ddd d MMM</value>
+    <comment>A .NET date pattern: weekday, day and month, « Tue 1 Dec ». Used when the day is not in the current month.</comment>
+  </data>
+  <data name="TaskForToday" xml:space="preserve">
+    <value>Task for today</value>
+    <comment>The result after Undo once a task was added for today.</comment>
+  </data>
+  <data name="TaskForDay" xml:space="preserve">
+    <value>Task for {0}</value>
+    <comment>The result after Undo once a task was added; {0} is a day, « Fri 13 ».</comment>
+  </data>
+  <data name="TaskWithoutDay" xml:space="preserve">
+    <value>Task, no day</value>
+    <comment>The result after Undo once a task was added with No day yet. Spec Open 23: « Task, no day » or « Task added ».</comment>
+  </data>
+  <data name="MovedToTrash" xml:space="preserve">
+    <value>Moved to trash</value>
+    <comment>The result after Undo once a row went to the trash.</comment>
+  </data>
+  <data name="Dismissed" xml:space="preserve">
+    <value>Dismissed</value>
+    <comment>What a line of the person's part of Activity says happened to a dismissed information line. Not written in the spec; taken from its summary of the day.</comment>
+  </data>
+  <data name="BackInTriage" xml:space="preserve">
+    <value>Back in Triage</value>
+    <comment>What an undone line of Activity says in place of its result.</comment>
+  </data>
+  <data name="AddTask" xml:space="preserve">
+    <value>Add task</value>
+    <comment>The task control of a row when no day is proposed.</comment>
+  </data>
+  <data name="AddTaskForDay" xml:space="preserve">
+    <value>Add task · {0}</value>
+    <comment>The task control of a row with its proposed day; {0} is a day, « Fri 13 ». Spec Open 12, frame 19B.</comment>
+  </data>
+  <data name="SenderNotVerified" xml:space="preserve">
+    <value>Sender not verified</value>
+    <comment>The framed label of a row whose sender failed the checks.</comment>
+  </data>
+  <data name="UnreadableImagesOnly" xml:space="preserve">
+    <value>Images only</value>
+    <comment>The framed label of a mail the sorting could not read because it holds only images. Not worded in the spec.</comment>
+  </data>
+  <data name="UnreadableEncrypted" xml:space="preserve">
+    <value>Encrypted</value>
+    <comment>The framed label of a mail the sorting could not read because it is encrypted. Not worded in the spec.</comment>
+  </data>
+  <data name="ReasonNewsletter" xml:space="preserve">
+    <value>Newsletter</value>
+    <comment>The framed word of a mail set aside as a newsletter.</comment>
+  </data>
+  <data name="ReasonPromotion" xml:space="preserve">
+    <value>Promotion</value>
+    <comment>The framed word of a mail set aside as a promotion.</comment>
+  </data>
+  <data name="ReasonReceipt" xml:space="preserve">
+    <value>Receipt</value>
+    <comment>The framed word of a mail set aside as a receipt.</comment>
+  </data>
+  <data name="ReasonNoActionNeeded" xml:space="preserve">
+    <value>No action needed</value>
+    <comment>The framed word of a mail set aside that needs no action.</comment>
+  </data>
+  <data name="SummaryToday" xml:space="preserve">
+    <value>Today</value>
+    <comment>The first part of the summary of the day.</comment>
+  </data>
+  <data name="SummarySeparator" xml:space="preserve">
+    <value> · </value>
+    <comment>Between two parts of the summary of the day, spaces included.</comment>
+  </data>
+  <data name="SummaryTaskOne" xml:space="preserve">
+    <value>{0} task</value>
+    <comment>The tasks part of the summary of the day, for one task.</comment>
+  </data>
+  <data name="SummaryTaskMany" xml:space="preserve">
+    <value>{0} tasks</value>
+    <comment>The tasks part of the summary of the day, for several tasks.</comment>
+  </data>
+  <data name="SummaryMovedToTrash" xml:space="preserve">
+    <value>{0} moved to trash</value>
+    <comment>The trash part of the summary of the day.</comment>
+  </data>
+  <data name="SummaryDismissed" xml:space="preserve">
+    <value>{0} dismissed</value>
+    <comment>The dismissed part of the summary of the day.</comment>
+  </data>
+  <data name="NothingWaiting" xml:space="preserve">
+    <value>Nothing is waiting.</value>
+    <comment>The sentence of Triage when no subject waits and the sorting runs.</comment>
+  </data>
+</root>
