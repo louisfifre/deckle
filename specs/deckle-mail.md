@@ -10,7 +10,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 **Opening the window.** The mail is already sorted when the window opens. The person lands on Triage and sees, in one list, each subject that waits for them, whatever mailbox it came to. A subject is one mail, or a run of mails about one matter. Under the list they see the few facts worth knowing and the number of mails that were set aside.
 
-**Sorting in a row.** The person reads a row and knows what is asked, by whom and by when, without opening anything. If they will deal with it, they add a task: in one click when the row proposes a day, from a menu of days otherwise. If the matter is settled or is not theirs, they choose the trash. Either way the row greys where it is, with Undo, and they go on to the next one. They end on « Nothing is waiting. » and close the window.
+**Sorting in a row.** The person reads a row and knows what is asked, by whom and by when, without opening anything. If they will deal with it, they add a task with Add task, on the day the row proposes or on another. If the matter is settled or is not theirs, they choose the trash. Either way the row greys where it is, with Undo, and they go on to the next one. They end on « Nothing is waiting. » and close the window.
 
 **Reading a mail.** The person clicks a row and its subject opens on a page of its own: the latest mail in full, as it was written, and beside it the list of every mail of the same subject. They go back with the back button of the title bar, Alt+Left or the mouse back button, and find the list as they left it.
 
@@ -49,11 +49,13 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - With subjects waiting, the page shows one row per subject in a single list, every mailbox mixed, never grouped by mailbox. Every subject is on the page: none is folded away, however many there are.
 - A row shows one sentence, a paperclip when a mail of the subject carries a real file, the task control and the trash. It shows nothing else: no line under the sentence, and no sender, mailbox or deadline written apart.
 - The controls of a row stand in two fixed columns at its end, the same on every row and every page: the task control, then the trash. A command never changes place from one row to the next, nor from one state of a row to the next.
-- The task control has one shape and one width on every row: a split button that reads Add task, with the proposed day written in it when there is one, and a chevron that opens the choice of days. It is drawn without a frame, so the sentences stay what the eye reads first.
+- The task control has one shape and one width on every row: one button that reads Add task, with the proposed day written in it when there is one, and no separate chevron. It is drawn without a frame, so the sentences stay what the eye reads first.
+- The task control is one control wherever it shows, on a row, on an opened subject and after a gesture beside Undo, and it carries its own form for a narrow window.
 - Under the list, each secondary information is one thin line, without a frame of its own: its sentence, and the sender in grey in the column of the task controls above. A cross shows on the line under the pointer or the keyboard focus, in the column of the trash, and a command above the lines, always visible, dismisses them all.
 - A row or a line that holds the keyboard focus takes the fill it has under the pointer, so the eye ties the focused command to its sentence.
 - After the lines, one last line gives the number of mails that were set aside without a line, and leads to the part of Activity that lists them.
-- At the bottom right of the page, one command ends the day: it removes the rows already treated and the secondary information lines. When every row is treated, it becomes the one emphasised command of the page.
+- At the bottom right of the page, one command ends the day: it removes the rows already treated and every secondary information line. When every row is treated, it becomes the one emphasised command of the page. Both it and Dismiss all stay.
+- A summary of the day may count the dismissed lines beside the tasks and the mails moved to the trash. Example: « Today · 2 tasks · 2 moved to trash · 3 dismissed ».
 - With nothing waiting, the page shows a small flat picture in pale grey and the sentence « Nothing is waiting. ». The picture is not an icon, not a skeleton of rows, and nothing on the page moves: the person does not take it for a loading page. Secondary information stays under it when there is some.
 - When one mailbox cannot connect, no bar is added at the top of the page. Where the person learns which mailbox fails, since when its content is shown and how many gestures wait for it is Open 25. Its rows stay and keep their controls: a gesture made meanwhile is kept and sent when the mailbox is back. Until then the treated row shows its result as any other, followed by a caution dot whose name says it waits for that mailbox.
 - A mailbox that cannot connect wears a caution dot on its mark in the navigation, and its name says so to a screen reader. The dot takes no width: the navigation does not move when a mailbox fails.
@@ -145,10 +147,10 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 **Adding a task**
 
 - When Anytype is connected, a row offers Add task with the choices Today, Tomorrow, Pick a day and No day yet.
-- When the sorting found a deadline, the row offers instead the task on a proposed day: one click creates it, and the same control still opens the choice of another day.
+- When the sorting found a deadline, the row offers instead the task on a proposed day. What one click does then is Open 46.
 - The proposed day follows one fixed rule, without a setting: two days before the deadline, and never before today. A deadline of today or already past proposes today.
 - The task created in Anytype holds the sentence of the row, the text of the mail and its sender. It does not need a link back to the mail.
-- When no deadline was found, one click on Add task creates the task with no day, and the chevron opens the choice of days.
+- When no deadline was found, one click on Add task opens the choice of days, and a second click on a day creates the task.
 - Once the task exists, the subject leaves the list: its row greys in place, says « Task for » and the day of the task, and the subject becomes a line of Activity.
 - Deckle Mail shows no box to tick and never completes a task: a task is done in Anytype.
 - When Anytype cannot be reached, no bar is added at the top of the page; it is named in the words used for a mailbox, in the place Open 25 asks for. A task added meanwhile is kept and created when Anytype is back. Until then its row shows its result followed by the same caution dot as a gesture waiting on a mailbox: one sign for "done here, not yet arrived", whatever the cause.
@@ -214,7 +216,7 @@ Each question names the option the canvas recommends first, the frames that show
 
 1. **When a mail that was set aside goes to the trash.** When the person ends the day (18M, reading A), or as soon as it is set aside (reading C). The maintainer said the trash is always a gesture of his; the first reading follows from it without his having said it. The thirty days a wrong sort has to be caught start from that moment.
 2. **A secondary information line under a click.** It opens nothing and its detail is read in Activity (18A), or it opens its subject. The maintainer said no, then « a little clickable ».
-3. **One command or two to clear the page.** Dismiss all above the lines and the end of the day at the bottom right, as asked (18M, reading A), or the end of the day alone (reading B). The two overlap when no row was treated.
+3. **One command or two to clear the page.** Settled 10 November: Dismiss all and the end of the day both stay (18M, reading A).
 4. **Commands on an opened subject.** The two gestures of the row and a link to answer in the webmail (18K), or no command at all, as approved in 15I (18L). Without the right-click, the second leaves no path to answer.
 5. **The order of the list.** Deadlines first then the oldest (18B), the oldest first only, or the order of the navigation. The maintainer leaned to « by date, maybe the oldest on top » without settling.
 6. **The proposed day of a task.** Two days before the deadline (18A), or three. He said « two or three ».
@@ -231,7 +233,7 @@ Each question names the option the canvas recommends first, the frames that show
 17. **Settings in the navigation.** At the foot, as Windows does (18A), or on top with Triage and Activity (13F, variant 3).
 18. **A passage of the dictation read by interpretation.** The short sentence of each mail in the list of an opened subject, « shared » (read: the same on every screen); it is not drawn as a setting. The other passage, « capitals or not » for aliases, was settled on 10 November as an option of the aliases on the page of a mailbox.
 19. **« Say whether one can go back or not ».** Whether this means going back to an earlier mail of the subject, which the list allows, or telling a step that cannot be undone. Still unanswered from 9 November.
-20. **One click on Add task when no day is proposed.** It creates the task with no day (19A), or it opens the choice of days as the chevron does. The first keeps one behaviour for the main part of the control on every row; the second never creates a task without a day the person chose.
+20. **One click on Add task when no day is proposed.** Settled 10 November: with no chevron, it opens the choice of days.
 21. **Ending the day while a first sort runs.** The command is disabled until the sort ends (27S), or stays live. Live, it would send to the trash mails the sort set aside before it finished judging the mailbox.
 22. **The order of the list once a first sort ends.** During the sort a subject never moves; whether the list is then put in its usual order in one step, or stays in the order of arrival until the next opening.
 23. **The result of a task that has no day.** « Task, no day » (28U) or « Task added » (26U). The spec words only « Task for » and a day.
@@ -257,3 +259,5 @@ Each question names the option the canvas recommends first, the frames that show
 43. **The word for Global.** The maintainer finds « Global » not understood; he says « racine », root in English. The word is still to find.
 44. **Commands shown on hover only.** The rule of the window wants every gesture shown under the pointer to have a double always visible. The maintainer dislikes « hovers everywhere », yet asks for Rename on hover only, and for the explanation of an unverified sender on demand. Not said: whether the rule gives way for these, or each gets a visible double.
 45. **Activity in the navigation while it is empty.** Shown as always, or hidden until there is a first line. The maintainer: « I don't know ».
+46. **One click on Add task when a day is proposed.** The maintainer's leaning, said with hesitation and to be drawn for him to settle: when the row proposes Today, the click adds the task at once; when it proposes a specific date, such as Fri 13, the click opens the menu with that date first, above Today and Tomorrow, whose order never changes. Not said: Tomorrow proposed.
+47. **Where the sender of a « No action needed » line sits.** In the column of the task controls, as written above, it leaves a gap the maintainer dislikes. Against the right edge, by the cross (34S), or against the sentence (34A); he leaned each way on a different frame. Both to be drawn.
