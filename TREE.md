@@ -669,6 +669,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── PhotoFolder.cs
 │   │   │   ├── PhotoFormats.cs
 │   │   │   ├── PhotoMarkStore.cs
+│   │   │   ├── PhotoRenamer.cs
+│   │   │   ├── PhotoRenameRule.cs
+│   │   │   ├── PhotoSidecars.cs
 │   │   │   ├── RecycleBin.cs
 │   │   │   ├── ShellFileOperationInterop.cs
 │   │   │   └── ShellRecycleBin.cs
