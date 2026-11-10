@@ -596,6 +596,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Ambient.cs
 │   │   ├── App.Animations.cs
 │   │   ├── App.Anytype.cs
+│   │   ├── App.Atelier.cs
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Autocorrect.Lifecycle.cs
 │   │   ├── App.FileTranscription.cs
@@ -612,6 +613,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.PlaygroundAccess.cs
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
+│   │   ├── App.SelfCheck.Atelier.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs
@@ -675,6 +677,22 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── MapSkip.cs
 │   │   │   ├── McpDeclarations.cs
 │   │   │   └── TokenEstimate.cs
+│   │   ├── Photos/
+│   │   │   ├── CaptureData.cs
+│   │   │   ├── CaptureDataFormat.cs
+│   │   │   ├── CaptureDataReader.cs
+│   │   │   ├── Darktable.cs
+│   │   │   ├── DeckleAtelierSource.Photos.cs
+│   │   │   ├── MarksApplier.cs
+│   │   │   ├── PhotoFolder.cs
+│   │   │   ├── PhotoFormats.cs
+│   │   │   ├── PhotoMarkStore.cs
+│   │   │   ├── PhotoRenamer.cs
+│   │   │   ├── PhotoRenameRule.cs
+│   │   │   ├── PhotoSidecars.cs
+│   │   │   ├── RecycleBin.cs
+│   │   │   ├── ShellFileOperationInterop.cs
+│   │   │   └── ShellRecycleBin.cs
 │   │   ├── Sample/
 │   │   │   └── SampleFolder.cs
 │   │   ├── Sizes/
@@ -2183,6 +2201,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TrayIncidentLinesTests.cs
 │   │   └── TrayRightClickMenuTests.cs
 │   ├── Deckle.Atelier.Tests/
+│   │   ├── Photos/
+│   │   │   ├── CaptureDataTests.cs
+│   │   │   ├── DarktableTests.cs
+│   │   │   ├── ExifSample.cs
+│   │   │   ├── MarksApplierTests.cs
+│   │   │   ├── PhotoFolderTests.cs
+│   │   │   ├── PhotoMarkStoreTests.cs
+│   │   │   ├── PhotoRenamerTests.cs
+│   │   │   ├── PhotosEventsTests.cs
+│   │   │   ├── RawReadingMaintenanceTests.cs
+│   │   │   └── ShellRecycleBinTests.cs
 │   │   ├── AddedFolderStoreTests.cs
 │   │   ├── AddressResolverTests.cs
 │   │   ├── Deckle.Atelier.Tests.csproj

@@ -17,11 +17,20 @@ public interface IFileIconProvider
     // XamlRoot's rasterization scale. Called on the UI thread; the returned
     // ImageSource is used on it.
     Task<ImageSource?> GetAsync(string path, bool isFolder, int pixelSize, CancellationToken cancellation);
+
+    // The picture of the file's content, as File Explorer's large views show
+    // it (a photo, a PDF's first page), at most pixelSize on its longer side.
+    // Per file, never per extension. Null means "no picture": the gallery
+    // keeps its placeholder.
+    Task<ImageSource?> GetThumbnailAsync(string path, int pixelSize, CancellationToken cancellation);
 }
 
 // For now: no image, so every row shows the neutral folder or file glyph.
 internal sealed class NeutralFileIconProvider : IFileIconProvider
 {
     public Task<ImageSource?> GetAsync(string path, bool isFolder, int pixelSize, CancellationToken cancellation) =>
+        Task.FromResult<ImageSource?>(null);
+
+    public Task<ImageSource?> GetThumbnailAsync(string path, int pixelSize, CancellationToken cancellation) =>
         Task.FromResult<ImageSource?>(null);
 }
