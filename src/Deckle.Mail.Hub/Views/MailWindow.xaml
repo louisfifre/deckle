@@ -90,6 +90,7 @@
                     <Grid>
                         <FontIcon Glyph="{StaticResource Icon.Mail.Problems}" FontSize="16" />
                         <InfoBadge x:Name="ProblemsBadge"
+                                   Style="{StaticResource CautionValueInfoBadgeStyle}"
                                    HorizontalAlignment="Right"
                                    VerticalAlignment="Top"
                                    Margin="0,-6,-10,0" />
