@@ -74,7 +74,7 @@
                                 VerticalAlignment="Center"
                                 ItemTemplate="{StaticResource SearchLineTemplate}"
                                 TextChanged="OnSearchTextChanged"
-                                SuggestionChosen="OnSearchSuggestionChosen"
+                                UpdateTextOnSelect="False"
                                 QuerySubmitted="OnSearchQuerySubmitted" />
             </TitleBar.Content>
             <TitleBar.RightHeader>

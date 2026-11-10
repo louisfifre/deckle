@@ -7,6 +7,13 @@ namespace Deckle.Mail.Hub;
 // It answers in the menu under the field as the person types; choosing a line
 // opens its subject. No page lists results (spec, The window). Matching and
 // the place of each subject are MailSearch's.
+//
+// Only QuerySubmitted opens a subject. SuggestionChosen also fires while the
+// person arrows through the menu (Learn, AutoSuggestBox: it exists to fill the
+// box as the selection moves), so navigating there opened the first line on
+// the first Down. UpdateTextOnSelect is off in the XAML: arrowing never
+// replaces what the person typed, and the box is emptied only once a subject
+// actually opens. The "no mail matches" line opens nothing and keeps the text.
 public sealed partial class MailWindow
 {
     private void OnSearchTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
@@ -15,13 +22,6 @@ public sealed partial class MailWindow
         sender.ItemsSource = SearchLines(sender.Text);
     }
 
-    private void OnSearchSuggestionChosen(AutoSuggestBox sender, AutoSuggestBoxSuggestionChosenEventArgs args)
-    {
-        // The chosen line would otherwise fill the box with its type name.
-        sender.Text = "";
-        if (args.SelectedItem is SearchLine { SubjectId: { } id })
-            Go(MailDestination.Subject(id));
-    }
 
     private void OnSearchQuerySubmitted(AutoSuggestBox sender, AutoSuggestBoxQuerySubmittedEventArgs args)
     {
