@@ -668,7 +668,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── DeckleAtelierSource.Photos.cs
 │   │   │   ├── PhotoFolder.cs
 │   │   │   ├── PhotoFormats.cs
-│   │   │   └── PhotoMarkStore.cs
+│   │   │   ├── PhotoMarkStore.cs
+│   │   │   ├── RecycleBin.cs
+│   │   │   ├── ShellFileOperationInterop.cs
+│   │   │   └── ShellRecycleBin.cs
 │   │   ├── Sample/
 │   │   │   └── SampleFolder.cs
 │   │   ├── Deckle.Atelier.csproj
