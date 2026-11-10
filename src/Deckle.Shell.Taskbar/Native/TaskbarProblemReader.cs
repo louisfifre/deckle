@@ -17,6 +17,7 @@ internal static class TaskbarProblemReader
         _ when id.StartsWith("clock.", StringComparison.Ordinal) || id == "clock" => TaskbarPart.CompactClock,
         "startMenuHeight" => TaskbarPart.StartMenuHeight,
         "startMenuWidth" => TaskbarPart.StartMenuWidth,
+        _ when id.StartsWith("startMenu.recommended.", StringComparison.Ordinal) => TaskbarPart.StartMenuRecommended,
         _ => null,
     };
 
@@ -39,6 +40,7 @@ internal static class TaskbarProblemReader
         if (wanted.Clock is not null || wanted.TightenClockButton) parts.Add(TaskbarPart.CompactClock);
         if (wanted.StartMenu is { FullHeight: true }) parts.Add(TaskbarPart.StartMenuHeight);
         if (wanted.StartMenu?.Width is not null) parts.Add(TaskbarPart.StartMenuWidth);
+        if (wanted.StartMenu is { HideRecommended: true }) parts.Add(TaskbarPart.StartMenuRecommended);
         return parts;
     }
 

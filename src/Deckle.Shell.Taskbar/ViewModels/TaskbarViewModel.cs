@@ -51,6 +51,9 @@ public partial class TaskbarViewModel : ObservableObject
     public partial int StartMenuCustomWidth { get; set; }
 
     [ObservableProperty]
+    public partial bool HideStartMenuRecommended { get; set; }
+
+    [ObservableProperty]
     public partial bool WindowsKeyShowsTaskbar { get; set; }
 
     public TaskbarViewModel()
@@ -82,6 +85,7 @@ public partial class TaskbarViewModel : ObservableObject
             StartMenuFullHeight = settings.StartMenuFullHeight;
             StartMenuWidth = settings.StartMenuWidth;
             StartMenuCustomWidth = settings.StartMenuCustomWidth;
+            HideStartMenuRecommended = settings.HideStartMenuRecommended;
             WindowsKeyShowsTaskbar = settings.WindowsKeyShowsTaskbar;
         }
         finally
@@ -100,6 +104,7 @@ public partial class TaskbarViewModel : ObservableObject
     partial void OnStartMenuFullHeightChanged(bool value) => Write(settings => settings.StartMenuFullHeight = value);
     partial void OnStartMenuWidthChanged(StartMenuWidth value) => Write(settings => settings.StartMenuWidth = value);
     partial void OnStartMenuCustomWidthChanged(int value) => Write(settings => settings.StartMenuCustomWidth = value);
+    partial void OnHideStartMenuRecommendedChanged(bool value) => Write(settings => settings.HideStartMenuRecommended = value);
     partial void OnWindowsKeyShowsTaskbarChanged(bool value) => Write(settings => settings.WindowsKeyShowsTaskbar = value);
 
     private void Write(Action<TaskbarSettings> change)

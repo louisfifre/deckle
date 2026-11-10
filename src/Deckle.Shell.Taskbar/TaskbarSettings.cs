@@ -61,6 +61,12 @@ public sealed class TaskbarSettings
     public int StartMenuCustomWidth { get; set; } = TaskbarCustomization.DefaultStartMenuWidth;
 
     /// <summary>
+    /// The section under the pinned apps that lists recent files and suggestions
+    /// ("Recommended", "Recent" on newer builds), taken out of Start.
+    /// </summary>
+    public bool HideStartMenuRecommended { get; set; } = false;
+
+    /// <summary>
     /// The Windows key pressed on its own brings the taskbar forward instead of
     /// opening Start. Every shortcut that uses the key keeps working.
     /// </summary>

@@ -26,9 +26,17 @@ public sealed class TaskbarCustomizationTests
         Assert.True(From(new TaskbarSettings { CompactTray = true }, true).CustomizesExplorer);
         Assert.True(From(new TaskbarSettings { CompactTaskButtons = true }, true).CustomizesExplorer);
 
-        TaskbarCustomization start = From(new TaskbarSettings { StartMenuFullHeight = true }, true);
-        Assert.True(start.CustomizesStartMenu);
-        Assert.False(start.CustomizesExplorer);
+        foreach (TaskbarSettings settings in new[]
+        {
+            new TaskbarSettings { StartMenuFullHeight = true },
+            new TaskbarSettings { StartMenuWidth = StartMenuWidth.Fill },
+            new TaskbarSettings { HideStartMenuRecommended = true },
+        })
+        {
+            TaskbarCustomization start = From(settings, true);
+            Assert.True(start.CustomizesStartMenu);
+            Assert.False(start.CustomizesExplorer);
+        }
     }
 
     [Fact]
