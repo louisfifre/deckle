@@ -20,7 +20,8 @@ namespace Deckle.App;
 // What it does: refuses to run unless DECKLE_DATA_ROOT names a root of its own;
 // composes a short, explicit list of pieces (below); probes the microphone once;
 // opens the Settings window and walks every page of the rail, then opens the Log
-// window and the Playground; photographs each; writes report.json (the contract
+// window and the Playground, then the Mail window and its walk of drawn states;
+// photographs each; writes report.json (the contract
 // with scripts/self-check.ps1) and exits 0 when all is well, 1 otherwise.
 //
 // What it composes, in one place. Everything else of the boot is left out, and
@@ -44,7 +45,7 @@ public partial class App
         "module registry and presence flags (a fresh root has no choice, so every module is present)",
         "settings surface: host hooks and every module's pages and search entries, as the resident app registers them",
         "theme from the settings of the run's own root",
-        "windows: Settings, Log, Playground, created by the same lazy paths the tray uses",
+        "windows: Settings, Log, Playground, Mail, created by the same lazy paths the tray uses",
         "microphone: one shared open and close through MicrophoneCapture.Probe",
         "interface capture: the walk and the WindowSnapshot of the interface capture",
     ];
@@ -252,6 +253,47 @@ public partial class App
 
         Step("playground");
         await OpenAndCaptureAsync(report, run, outputFolder, "playground", EnsurePlaygroundWindow);
+
+        // The Mail window on its built-in sample: the window once, then each
+        // state the maintainer drew, page by page (MailWindow.Capture.cs), with
+        // the whole window again where the rail or the title bar changes.
+        Step("mail");
+        Mail.Hub.MailWindow mail = EnsureMailWindow();
+        OffscreenWindow.ShowInactive(mail);
+        await WaitUntilLoadedAsync(mail);
+        await mail.WalkCapturesAsync(
+            async visit =>
+            {
+                (int closed, int left) = await CloseTransientPopupsAsync(mail);
+                SelfCheckSurface surface = new("mail", visit.Slug, visit.Label, visit.Loaded, visit.LoadMs, null,
+                    closed, left, "page-render");
+                if (visit.Loaded && mail.CurrentPage is { } page)
+                {
+                    try
+                    {
+                        ElementImage.Result image = await ElementImage.CapturePageAsync(
+                            page, Path.Combine(captures, $"mail-{visit.Slug}"));
+                        string[] files = [.. image.Files.Select(f => Path.GetRelativePath(outputFolder, f))];
+                        surface = surface with
+                        {
+                            Png = files[0],
+                            Parts = files.Length > 1 ? files : null,
+                            Width = image.Width,
+                            Height = image.Height,
+                        };
+                    }
+                    catch (Exception ex)
+                    {
+                        surface = surface with { Error = $"{ex.GetType().Name}: {ex.Message}" };
+                    }
+                }
+                report.Surfaces.Add(surface);
+                if (visit.WholeWindow)
+                    report.Surfaces.Add(await CaptureWindowFrameAsync(
+                        run, mail, "mail", $"{visit.Slug}-window", visit.Label, visit.Loaded, visit.LoadMs));
+                Step($"mail/{visit.Slug} done");
+            },
+            starting: (slug, label) => Step($"mail/{slug} ({label})"));
 
         run.Complete();
         Settings.SettingsService.Instance.Flush();
