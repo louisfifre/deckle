@@ -22,6 +22,8 @@ public sealed partial class MailboxSettingsPage : Page
     {
         InitializeComponent();
         Header.CrumbClicked += target => _shell?.Go(target);
+        // Closing the window unloads the page without a navigation away.
+        Unloaded += (_, _) => PasswordField.Password = "";
     }
 
     private Mailbox? Mailbox => _session?.FindMailbox(_mailboxId);
@@ -37,10 +39,17 @@ public sealed partial class MailboxSettingsPage : Page
         }
         _shell = args.Shell;
         _session = args.Shell.Session;
-        bool other = _mailboxId != args.Destination.MailboxId;
         _mailboxId = args.Destination.MailboxId;
-        if (other) PasswordField.Password = "";
         Build();
+    }
+
+    // The page is cached (NavigationCacheMode Required), so a typed and
+    // unsaved app password would otherwise stay in its PasswordBox for the
+    // life of the window. Leaving the page empties it.
+    protected override void OnNavigatedFrom(NavigationEventArgs e)
+    {
+        base.OnNavigatedFrom(e);
+        PasswordField.Password = "";
     }
 
     private void OnSessionChanged(SessionChange change)
