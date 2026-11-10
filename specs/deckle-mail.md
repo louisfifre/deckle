@@ -69,6 +69,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 - The page opens from a row or from an Activity line. Its title is the sentence of the row.
 - Beside the title stand the task control and the trash of the row, in the same two columns and at the same right edge as on a row, so a gesture stays where the hand already goes.
+- After a gesture made on the page, Undo and the result stand in the task column, as on a treated row. The title keeps its colour: on a page it says where the person is. The end column is empty, since the page has no line to remove; the back button returns to the list.
 - Under the title, one grey line gives the sender with their real address and the date and time of reception.
 - Then comes the text of the latest mail, whole and as written: greeting, request, signature. Deckle Mail restyles no part of it and rewrites nothing. The text column stays narrow enough to read, about sixty characters a line.
 - After the text come the files really attached to that mail, each as a tile with its name, kind and size, which opens the file. An image that belongs to the body of the mail, a logo or the icons of a signature, is never listed as a file.
@@ -102,7 +103,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 - In a narrow window the navigation folds to its rail of icons and the numbers of the mailboxes stay visible on it. A click on a mailbox that has aliases opens its pages as a menu.
 - The search field becomes a button in the title bar.
-- A row goes on two levels: its sentence, then its controls.
+- A row goes on two levels: its sentence, then its controls, which keep their two columns at the right edge. A secondary information line does the same: its sentence, then its sender.
 - On an opened subject the list of its mails goes under the text.
 
 ## Behaviours
