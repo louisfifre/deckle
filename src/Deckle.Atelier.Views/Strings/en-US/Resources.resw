@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Atelier's wording. The project keeps one catalog per module under
+     Strings/en-US, its neutral language; the Atelier is written in French
+     from the start (spec: the boards and every string Louis approved are
+     French), so the French text sits in that neutral file. Product names
+     ("Deckle Atelier") stay in code, as Loc.cs asks. Code reads these keys
+     through AtelierText (Loc.GetFrom), so they need no copy in Deckle.App. -->
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+  <!-- Top row -->
+  <data name="Pane_Open" xml:space="preserve"><value>Ouvrir le volet des dossiers</value></data>
+  <data name="Nav_Back" xml:space="preserve"><value>Précédent (Alt+Gauche)</value></data>
+  <data name="Nav_Forward" xml:space="preserve"><value>Suivant (Alt+Droite)</value></data>
+  <data name="Nav_Up" xml:space="preserve"><value>Dossier parent (Alt+Haut)</value></data>
+  <data name="Nav_Refresh" xml:space="preserve"><value>Actualiser (F5)</value></data>
+  <data name="Search" xml:space="preserve"><value>Rechercher</value></data>
+  <data name="Tools_Group" xml:space="preserve"><value>Outils</value></data>
+
+  <!-- Address bar -->
+  <data name="Address_Label" xml:space="preserve"><value>Adresse</value></data>
+  <data name="Address_None" xml:space="preserve"><value>Aucun dossier</value></data>
+  <data name="Address_Chevron_Format" xml:space="preserve"><value>Dossiers dans {0}</value></data>
+  <data name="Address_NotFound_Format" xml:space="preserve"><value>Deckle Atelier ne trouve pas « {0} ». Vérifiez l'orthographe et réessayez.</value></data>
+  <data name="Address_Outside_Format" xml:space="preserve"><value>« {0} » n'est dans aucun dossier ajouté. Ajoutez d'abord le dossier qui le contient.</value></data>
+  <data name="Common_Ok" xml:space="preserve"><value>OK</value></data>
+
+  <!-- Added folders -->
+  <data name="Folders_Pane" xml:space="preserve"><value>Dossiers ajoutés</value></data>
+  <data name="Folders_Add" xml:space="preserve"><value>Ajouter un dossier…</value></data>
+  <data name="Folders_Item_Format" xml:space="preserve"><value>{0}, {1}</value></data>
+
+  <!-- Tools -->
+  <data name="Tool_Files" xml:space="preserve"><value>Fichiers</value></data>
+  <data name="Tool_Photos" xml:space="preserve"><value>Photos</value></data>
+  <data name="Tool_Sizes" xml:space="preserve"><value>Tailles</value></data>
+  <data name="Tool_Map" xml:space="preserve"><value>Carte</value></data>
+  <data name="Tool_Placeholder" xml:space="preserve"><value>Cet outil n'est pas encore construit.</value></data>
+
+  <!-- Empty state (board 12.11) -->
+  <data name="EmptyTitle.Text" xml:space="preserve"><value>Deckle Atelier ne montre que les dossiers que vous ajoutez</value></data>
+  <data name="EmptyBody.Text" xml:space="preserve"><value>Rien d'autre sur le disque n'est lu. Aucune photo et aucune donnée de photo ne quitte cet ordinateur.</value></data>
+  <data name="EmptyDrop.Text" xml:space="preserve"><value>ou glissez un dossier ici</value></data>
+  <data name="EmptyStep1Title.Text" xml:space="preserve"><value>Vous ajoutez un dossier</value></data>
+  <data name="EmptyStep1Body.Text" xml:space="preserve"><value>Deckle Atelier y trouve seul les photos, les documents, le code et les scripts.</value></data>
+  <data name="EmptyStep2Title.Text" xml:space="preserve"><value>Vous demandez les descriptions, si vous voulez</value></data>
+  <data name="EmptyStep2Body.Text" xml:space="preserve"><value>Un modèle sur cet ordinateur décrit une photo, ou tout un dossier. Rien ne se lance seul.</value></data>
+  <data name="EmptyStep3Title.Text" xml:space="preserve"><value>La recherche les retrouve</value></data>
+  <data name="EmptyStep3Body.Text" xml:space="preserve"><value>Depuis la loupe, en haut à droite : un nom de personne, un mot de la description.</value></data>
+
+  <!-- File list -->
+  <data name="FilesHeaderName.Text" xml:space="preserve"><value>Nom</value></data>
+  <data name="FilesHeaderModified.Text" xml:space="preserve"><value>Modifié</value></data>
+  <data name="FilesHeaderSize.Text" xml:space="preserve"><value>Taille</value></data>
+  <data name="Files_Empty" xml:space="preserve"><value>Ce dossier est vide.</value></data>
+  <data name="Files_NotFound" xml:space="preserve"><value>Ce dossier n'existe plus.</value></data>
+  <data name="Files_AccessDenied" xml:space="preserve"><value>Vous n'avez pas accès à ce dossier.</value></data>
+  <data name="Files_Unreadable" xml:space="preserve"><value>Ce dossier ne peut pas être lu.</value></data>
+  <data name="Display_Group" xml:space="preserve"><value>Affichage</value></data>
+  <data name="Display_List" xml:space="preserve"><value>Liste</value></data>
+  <data name="Display_LargeRows" xml:space="preserve"><value>Grandes lignes</value></data>
+  <data name="Display_Gallery" xml:space="preserve"><value>Galerie</value></data>
+
+  <!-- Details panel -->
+  <data name="Details_Panel" xml:space="preserve"><value>Détails</value></data>
+  <data name="Details_Section" xml:space="preserve"><value>Détails</value></data>
+  <data name="Details_Size" xml:space="preserve"><value>Taille</value></data>
+  <data name="Details_Modified" xml:space="preserve"><value>Modifié</value></data>
+  <data name="Details_Location" xml:space="preserve"><value>Emplacement</value></data>
+  <data name="Kind_Folder" xml:space="preserve"><value>Dossier de fichiers</value></data>
+  <data name="Kind_File" xml:space="preserve"><value>Fichier</value></data>
+  <data name="Kind_File_Format" xml:space="preserve"><value>Fichier {0}</value></data>
+</root>

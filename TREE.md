@@ -665,6 +665,43 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── SampleFolder.cs
 │   │   ├── Deckle.Atelier.csproj
 │   │   └── DeckleAtelierSource.cs
+│   ├── Deckle.Atelier.Views/
+│   │   ├── Address/
+│   │   │   ├── AddressBar.xaml
+│   │   │   ├── AddressBar.xaml.cs
+│   │   │   └── AddressCrumb.cs
+│   │   ├── Details/
+│   │   │   └── DetailsSheet.cs
+│   │   ├── Icons/
+│   │   │   └── IFileIconProvider.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Tools/
+│   │   │   ├── Files/
+│   │   │   │   ├── FileDetails.cs
+│   │   │   │   ├── FileRow.cs
+│   │   │   │   ├── FilesTool.cs
+│   │   │   │   ├── FilesView.xaml
+│   │   │   │   └── FilesView.xaml.cs
+│   │   │   ├── Map/
+│   │   │   │   └── MapTool.cs
+│   │   │   ├── Photos/
+│   │   │   │   └── PhotosTool.cs
+│   │   │   ├── Sizes/
+│   │   │   │   └── SizesTool.cs
+│   │   │   ├── AtelierToolCatalog.cs
+│   │   │   ├── IAtelierTool.cs
+│   │   │   └── ToolPlaceholderView.cs
+│   │   ├── AtelierGlyphs.cs
+│   │   ├── AtelierText.cs
+│   │   ├── AtelierWindow.Folders.cs
+│   │   ├── AtelierWindow.Navigation.cs
+│   │   ├── AtelierWindow.Review.cs
+│   │   ├── AtelierWindow.Tools.cs
+│   │   ├── AtelierWindow.xaml
+│   │   ├── AtelierWindow.xaml.cs
+│   │   └── Deckle.Atelier.Views.csproj
 │   ├── Deckle.Audio/
 │   │   ├── Internal/
 │   │   │   ├── CaptureAnomalyEpisode.cs
