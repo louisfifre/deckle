@@ -731,7 +731,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Photos/
 │   │   │   │   └── PhotosTool.cs
 │   │   │   ├── Sizes/
-│   │   │   │   └── SizesTool.cs
+│   │   │   │   ├── SizeRow.cs
+│   │   │   │   ├── SizesPanel.xaml
+│   │   │   │   ├── SizesPanel.xaml.cs
+│   │   │   │   ├── SizesTool.cs
+│   │   │   │   ├── SizesView.xaml
+│   │   │   │   └── SizesView.xaml.cs
 │   │   │   ├── AtelierToolCatalog.cs
 │   │   │   ├── IAtelierTool.cs
 │   │   │   └── ToolPlaceholderView.cs

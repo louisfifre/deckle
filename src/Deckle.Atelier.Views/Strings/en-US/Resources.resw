@@ -81,4 +81,38 @@
   <data name="Kind_Folder" xml:space="preserve"><value>Dossier de fichiers</value></data>
   <data name="Kind_File" xml:space="preserve"><value>Fichier</value></data>
   <data name="Kind_File_Format" xml:space="preserve"><value>Fichier {0}</value></data>
+
+  <!-- Sizes tool (boards 12.7, 12.21, 12.23) -->
+  <data name="Sizes_HeaderName" xml:space="preserve"><value>Nom</value></data>
+  <data name="Sizes_HeaderSize" xml:space="preserve"><value>Taille</value></data>
+  <data name="Sizes_Share_Total_Format" xml:space="preserve"><value>Longueur des barres = part des {0} du dossier</value></data>
+  <data name="Sizes_Share_Measured_Format" xml:space="preserve"><value>Longueur des barres = part des {0} mesurés</value></data>
+  <data name="Sizes_Progress_Format" xml:space="preserve"><value>{0} sur {1} mesurés</value></data>
+  <data name="Sizes_Progress_Reading" xml:space="preserve"><value>Lecture du dossier…</value></data>
+  <data name="Sizes_Progress_Name" xml:space="preserve"><value>Avancement de l'analyse</value></data>
+  <data name="Sizes_Stop" xml:space="preserve"><value>Arrêter</value></data>
+  <data name="Sizes_Stopped" xml:space="preserve"><value>Analyse arrêtée</value></data>
+  <data name="Sizes_Finished_Format" xml:space="preserve"><value>Analysé à {0}</value></data>
+  <data name="Sizes_Failed" xml:space="preserve"><value>L'analyse a échoué. Actualisez (F5) pour réessayer.</value></data>
+  <data name="Sizes_Pending" xml:space="preserve"><value>…</value></data>
+  <data name="Sizes_LooseFiles_Format" xml:space="preserve"><value>Fichiers de ce dossier ({0})</value></data>
+  <data name="Sizes_Row_Automation_Format" xml:space="preserve"><value>{0}, {1}</value></data>
+  <data name="Sizes_Heavy_Automation_Format" xml:space="preserve"><value>{0}, dans {1}, {2}</value></data>
+  <data name="Sizes_Unreadable_One" xml:space="preserve"><value>Un dossier n'a pas pu être lu. Sa taille n'est pas comptée.</value></data>
+  <data name="Sizes_Unreadable_Many_Format" xml:space="preserve"><value>{0} dossiers n'ont pas pu être lus. Leur taille n'est pas comptée.</value></data>
+  <data name="Sizes_PlaceUnreadable" xml:space="preserve"><value>Ce dossier n'a pas pu être lu en entier. Les tailles ne comptent que ce qui a été lu.</value></data>
+  <data name="Sizes_RowUnreadable_One" xml:space="preserve"><value>Un dossier n'a pas pu être lu dessous : il n'est pas compté.</value></data>
+  <data name="Sizes_RowUnreadable_Many_Format" xml:space="preserve"><value>{0} dossiers n'ont pas pu être lus dessous : ils ne sont pas comptés.</value></data>
+  <data name="Sizes_Panel_Kind" xml:space="preserve"><value>Dossier où vous êtes</value></data>
+  <data name="Sizes_Panel_Section" xml:space="preserve"><value>Analyse</value></data>
+  <data name="Sizes_Panel_Total" xml:space="preserve"><value>Taille</value></data>
+  <data name="Sizes_Panel_State" xml:space="preserve"><value>État</value></data>
+  <data name="Sizes_Panel_Running" xml:space="preserve"><value>En cours…</value></data>
+  <data name="Sizes_Panel_Failed" xml:space="preserve"><value>Échec</value></data>
+  <data name="Sizes_Panel_Finished" xml:space="preserve"><value>Analysé à</value></data>
+  <data name="Sizes_Panel_Unreadable" xml:space="preserve"><value>Non lus</value></data>
+  <data name="Sizes_Panel_Unreadable_One" xml:space="preserve"><value>1 dossier</value></data>
+  <data name="Sizes_Panel_Unreadable_Many_Format" xml:space="preserve"><value>{0} dossiers</value></data>
+  <data name="Sizes_Heaviest" xml:space="preserve"><value>Les plus lourds en dessous</value></data>
+  <data name="Sizes_Heaviest_None" xml:space="preserve"><value>Aucun fichier.</value></data>
 </root>
