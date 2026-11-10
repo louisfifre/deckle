@@ -2179,6 +2179,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleAtelierSourceTests.cs
 │   │   ├── EntryFormatTests.cs
 │   │   ├── FolderListingTests.cs
+│   │   ├── MapInventoryTests.cs
+│   │   ├── MapSampleRepository.cs
+│   │   ├── MapTextTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── NavigationHistoryTests.cs
 │   │   ├── PathRulesTests.cs

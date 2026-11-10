@@ -98,7 +98,7 @@ internal static partial class MapLinkReader
     private static partial Regex ScriptPath();
 
     // /name, the way a skill or a command is called; not a path segment.
-    [GeneratedRegex(@"(?<![\w/.:\\-])/([a-z0-9][a-z0-9_-]*)(?![\w/.\\-])", RegexOptions.IgnoreCase)]
+    [GeneratedRegex(@"(?<![\w/.:\\-])/([a-z0-9][a-z0-9_-]*)(?![\w/\\-]|\.\w)", RegexOptions.IgnoreCase)]
     private static partial Regex SlashCommand();
 
     // mcp__server__tool, the name Claude Code gives a server's tool.
