@@ -189,9 +189,20 @@ public sealed partial class MailWindow
         SearchBox.Text = text;
         SearchBox.ItemsSource = SearchLines(text);
         // The list lives in a popup of the box's template; constrained, it is
-        // drawn inside the window where its capture sees it.
-        if (FindPopup(SearchBox) is { } popup) popup.ShouldConstrainToRootBounds = true;
+        // drawn inside the window where its capture sees it. WinUI refuses the
+        // change once a popup has opened, so it is made only before the first
+        // opening and never undone (this is the self-check's own instance).
+        if (FindPopup(SearchBox) is { ShouldConstrainToRootBounds: false } popup)
+            TryConstrain(() => popup.ShouldConstrainToRootBounds = true);
         SearchBox.IsSuggestionListOpen = true;
+    }
+
+    // Refused (COMException) on a popup already opened once: it then opens
+    // as it is, and the capture shows whatever the window shows.
+    internal static void TryConstrain(Action constrain)
+    {
+        try { constrain(); }
+        catch (System.Runtime.InteropServices.COMException) { }
     }
 
     private static Microsoft.UI.Xaml.Controls.Primitives.Popup? FindPopup(DependencyObject node)
@@ -209,7 +220,7 @@ public sealed partial class MailWindow
     {
         SearchBox.IsSuggestionListOpen = false;
         SearchBox.Text = "";
-        if (FindPopup(SearchBox) is { } searchPopup) searchPopup.ShouldConstrainToRootBounds = false;
+
         if (Content?.XamlRoot is { } root)
         {
             foreach (var popup in VisualTreeHelper.GetOpenPopupsForXamlRoot(root))

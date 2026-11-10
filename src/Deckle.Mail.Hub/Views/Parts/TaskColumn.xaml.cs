@@ -96,7 +96,10 @@ public sealed partial class TaskColumn : UserControl
     public void OpenMenu(bool constrainToWindow = false)
     {
         if (_menu is null) return;
-        _menu.ShouldConstrainToRootBounds = constrainToWindow;
+        // Set only when asked: WinUI refuses the change once the menu has
+        // opened, so a person's second click must not touch it.
+        if (constrainToWindow && !_menu.ShouldConstrainToRootBounds)
+            MailWindow.TryConstrain(() => _menu.ShouldConstrainToRootBounds = true);
         _menu.ShowAt(AddTaskButton);
     }
 

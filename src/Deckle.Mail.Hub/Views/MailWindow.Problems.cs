@@ -58,7 +58,10 @@ public sealed partial class MailWindow
     public void OpenProblems(bool constrainToWindow = false)
     {
         if (!ProblemsButton.IsHitTestVisible) return;
-        ProblemsFlyout.ShouldConstrainToRootBounds = constrainToWindow;
+        // Set only when asked: WinUI refuses the change once the flyout has
+        // opened, so a person's later openings must not touch it.
+        if (constrainToWindow && !ProblemsFlyout.ShouldConstrainToRootBounds)
+            TryConstrain(() => ProblemsFlyout.ShouldConstrainToRootBounds = true);
         ProblemsFlyout.ShowAt(ProblemsButton);
     }
 
