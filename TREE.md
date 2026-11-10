@@ -1713,8 +1713,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskbarViewModel.cs
 │   │   │   └── TaskbarViewModel.Settings.cs
 │   │   ├── WindowsKey/
+│   │   │   ├── IWindowsKeyInjector.cs
 │   │   │   ├── WindowsKeyAction.cs
-│   │   │   └── WindowsKeyTapDetector.cs
+│   │   │   ├── WindowsKeyInjector.cs
+│   │   │   ├── WindowsKeyTapDetector.cs
+│   │   │   └── WindowsKeyTaskbarFocus.cs
 │   │   ├── Deckle.Shell.Taskbar.csproj
 │   │   ├── DeckleShellTaskbarSource.cs
 │   │   ├── SettingsSearch.cs
@@ -2539,7 +2542,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskbarProblemReaderTests.cs
 │   │   │   └── VersionedNativeCopyTests.cs
 │   │   ├── WindowsKey/
-│   │   │   └── WindowsKeyTapDetectorTests.cs
+│   │   │   ├── WindowsKeyTapDetectorTests.cs
+│   │   │   └── WindowsKeyTaskbarFocusTests.cs
 │   │   ├── Deckle.Shell.Taskbar.Tests.csproj
 │   │   ├── IsolatedDataRoot.cs
 │   │   ├── MessageTemplateDoctrineTests.cs

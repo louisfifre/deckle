@@ -45,6 +45,12 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public const int EvtTaskbarPartProblemEnded      = 29;
     public const int EvtTaskbarEngineUnloadUnconfirmed = 30;
     public const int EvtTaskbarCustomizerFailed      = 31;
+    public const int EvtWindowsKeyFocusArmed         = 32;
+    public const int EvtWindowsKeyFocusDisarmed      = 33;
+    public const int EvtWindowsKeyFocusUnavailable   = 34;
+    public const int EvtWindowsKeyTapHandledDetail   = 35;
+    public const int EvtWindowsKeyInjectionFailed    = 36;
+    public const int EvtWindowsKeyInjectionRecovered = 37;
 
     // ── Tray icon promotion ───────────────────────────────────────────────────
     //
@@ -357,5 +363,77 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public void TaskbarCustomizerFailed(string trigger, string ex_type)
     {
         if (IsEnabled()) WriteEvent(EvtTaskbarCustomizerFailed, trigger, ex_type);
+    }
+
+    // ── Windows key ───────────────────────────────────────────────────────────
+    //
+    // Armed and Disarmed bracket the time the setting is in effect: the Windows
+    // key pressed on its own brings the taskbar forward instead of opening Start.
+    // The keys themselves never reach a line, only that a lone press was handled.
+
+    [Event(EvtWindowsKeyFocusArmed,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The Windows key now brings the taskbar forward instead of opening Start")]
+    public void WindowsKeyFocusArmed()
+    {
+        if (IsEnabled()) WriteEvent(EvtWindowsKeyFocusArmed);
+    }
+
+    [Event(EvtWindowsKeyFocusDisarmed,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The Windows key opens Start again")]
+    public void WindowsKeyFocusDisarmed()
+    {
+        if (IsEnabled()) WriteEvent(EvtWindowsKeyFocusDisarmed);
+    }
+
+    // Work that does not happen, with its reason. reason: host_start_failed (the
+    // shared keyboard host could not start).
+    [Event(EvtWindowsKeyFocusUnavailable,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The Windows key could not be set to bring the taskbar forward, so it keeps opening Start\nreason={0}")]
+    public void WindowsKeyFocusUnavailable(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtWindowsKeyFocusUnavailable, reason);
+    }
+
+    // One per Windows key pressed on its own. sent: whether Windows accepted the
+    // Windows + T that brings the taskbar forward.
+    [Event(EvtWindowsKeyTapHandledDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "sent={0}")]
+    public void WindowsKeyTapHandledDetail(bool sent)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtWindowsKeyTapHandledDetail, sent);
+    }
+
+    // One Warning per incident: a send Windows refused opens it, the first send
+    // it accepts closes it (WindowsKeyInjectionRecovered). step: suppress_start or
+    // focus_taskbar. error is the Win32 error code, 0 when Windows gave none (a
+    // window of a higher integrity level, which Windows shields from our input).
+    [Event(EvtWindowsKeyInjectionFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Windows refused a key press Deckle sent, so the Windows key may open Start or do nothing\nstep={0} | error={1}")]
+    public void WindowsKeyInjectionFailed(string step, int error)
+    {
+        if (IsEnabled()) WriteEvent(EvtWindowsKeyInjectionFailed, step, error);
+    }
+
+    [Event(EvtWindowsKeyInjectionRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Windows accepted the Windows key presses again")]
+    public void WindowsKeyInjectionRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtWindowsKeyInjectionRecovered);
     }
 }
