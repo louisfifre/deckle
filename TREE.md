@@ -2175,10 +2175,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleAtelierSourceTests.cs
 │   │   ├── EntryFormatTests.cs
 │   │   ├── FolderListingTests.cs
+│   │   ├── HeaviestFilesTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── NavigationHistoryTests.cs
 │   │   ├── PathRulesTests.cs
-│   │   └── ScratchFolder.cs
+│   │   ├── ScratchFolder.cs
+│   │   ├── SizeScanEventsTests.cs
+│   │   └── SizeScanTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── AudioPathRedactionTests.cs
 │   │   ├── AudioRecordingHostDefaultsTests.cs

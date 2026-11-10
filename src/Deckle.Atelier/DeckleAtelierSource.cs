@@ -118,7 +118,7 @@ public sealed class DeckleAtelierSource : DeckleEventSource
            Keywords = (EventKeywords)Keywords.Pipeline,
            Tags = ObservationTags.Milestone,
            Message = "A size analysis started")]
-    public void SizeScanStarted(long scan_id, int workers)
+    public void SizeScanStarted(long scan_id, long workers)
     {
         if (IsEnabled()) WriteEvent(EvtSizeScanStarted, scan_id, workers);
     }
