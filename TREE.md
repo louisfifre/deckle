@@ -2337,8 +2337,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── ThreeFingerDragRecognizerBugNotes.md
 │   │   ├── ThreeFingerDragRecognizerTests.cs
+│   │   ├── TrackpadEnginePressDelayTests.cs
 │   │   ├── TrackpadObservabilityBugNotes.md
-│   │   └── TrackpadObservabilityCollection.cs
+│   │   ├── TrackpadObservabilityCollection.cs
+│   │   └── TrackpadSettingsTests.cs
 │   ├── Deckle.Install.Tests/
 │   │   ├── Deckle.Install.Tests.csproj
 │   │   ├── InstallPathsTests.cs

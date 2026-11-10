@@ -27,14 +27,6 @@ public sealed class TrackpadEngine : IDisposable
     // fingers lift.
     private const double GraceDelayMs = 0;
 
-    // The button waits this long after three fingers land; the cursor does
-    // not. Measured on two months of recorded Magic Trackpad sessions: when
-    // a four-finger gesture passes through three fingers, 50 ms holds back
-    // about 70% of the stray presses the immediate press caused. Longer
-    // catches more, but the grabbed object starts to lag behind the
-    // cursor visibly.
-    private const double PressDelayMs = 50;
-
     // Start threshold as a fraction of the X range — the calibrated
     // minimum, perceptually instant. Not zero on purpose: at exactly 0 the
     // drag would commit on the first frame even without movement, turning
@@ -128,6 +120,7 @@ public sealed class TrackpadEngine : IDisposable
         lock (_gate)
         {
             if (!_running) return;
+            ApplyPressDelay(_recognizer, TrackpadSettingsService.Instance.Current);
             _recognizer.ProcessFrame(frame);
             ArmDeadlineTimer();
         }
@@ -138,6 +131,7 @@ public sealed class TrackpadEngine : IDisposable
         lock (_gate)
         {
             if (!_running) return;
+            ApplyPressDelay(_recognizer, TrackpadSettingsService.Instance.Current);
             _recognizer.Tick(RawInputHost.NowMs);
             ArmDeadlineTimer();
         }
@@ -284,16 +278,26 @@ public sealed class TrackpadEngine : IDisposable
 
     // Thresholds are expressed relative to the device's logical range —
     // no absolute magic units. Re-applied on device connect because the
-    // range comes from the device's capabilities. Drag speed needs no
-    // re-apply hook: OnDragMoved reads it from the settings live.
+    // range comes from the device's capabilities. The person's settings
+    // need no re-apply hook: OnDragMoved reads the drag speed live, and the
+    // press delay is copied before every frame and every deadline.
     private void ApplyThresholds()
     {
         var caps = _host.Touchpad;
         int xRange = caps?.XRange > 0 ? caps.XRange : 4096;
 
         _recognizer.GraceDelayMs        = GraceDelayMs;
-        _recognizer.PressDelayMs        = PressDelayMs;
         _recognizer.StartThresholdUnits = StartThresholdRatio * xRange;
         _recognizer.MaxFrameDeltaUnits  = MaxFrameDeltaRatio * xRange;
+        ApplyPressDelay(_recognizer, TrackpadSettingsService.Instance.Current);
     }
+
+    // Read live, like the drag speed: a slider move takes effect on the
+    // next frame, with no settings-changed subscription to keep in step.
+    // A drag already hovering re-reads its deadline, which the recognizer
+    // computes from the delay on demand. Clamped because the settings file
+    // can be edited by hand; the page never leaves the range.
+    internal static void ApplyPressDelay(ThreeFingerDragRecognizer recognizer, TrackpadSettings settings) =>
+        recognizer.PressDelayMs = Math.Clamp(
+            settings.PressDelayMs, TrackpadSettings.MinPressDelayMs, TrackpadSettings.MaxPressDelayMs);
 }

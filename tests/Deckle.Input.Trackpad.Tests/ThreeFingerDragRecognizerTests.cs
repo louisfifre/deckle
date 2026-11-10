@@ -147,6 +147,48 @@ public class ThreeFingerDragRecognizerTests
         Assert.Equal(new[] { "press", "move" }, rec.Sequence.ToArray());
     }
 
+    // The delay is a setting now: a longer one must hold the press past the
+    // instant the default would have pressed, and press at its own deadline.
+    [Fact]
+    public void LongerPressDelayHoldsThePressUntilItsOwnDeadline()
+    {
+        var r = new ThreeFingerDragRecognizer { StartThresholdUnits = 50, PressDelayMs = 150 };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(10, Three(60)));
+        r.ProcessFrame(Frame(100, Three(70)));
+        Assert.Equal(DragPhase.Hovering, r.Phase);
+        Assert.Equal(150, r.NextDeadlineMs!.Value, precision: 6);
+
+        r.Tick(149);
+        Assert.Equal(0, rec.Started);
+
+        r.Tick(150);
+        Assert.Equal(1, rec.Started);
+        Assert.Equal(DragPhase.Dragging, r.Phase);
+    }
+
+    // The engine copies the setting before every frame, so a delay changed
+    // while a hover is pending moves that hover's deadline.
+    [Fact]
+    public void PressDelayChangedWhileHoveringMovesTheDeadline()
+    {
+        var r = new ThreeFingerDragRecognizer { StartThresholdUnits = 50, PressDelayMs = 150 };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(10, Three(60)));
+        Assert.Equal(DragPhase.Hovering, r.Phase);
+
+        r.PressDelayMs = 40;
+        Assert.Equal(40, r.NextDeadlineMs!.Value, precision: 6);
+        r.ProcessFrame(Frame(40, Three(70)));
+
+        Assert.Equal(1, rec.Started);
+        Assert.Equal(DragPhase.Dragging, r.Phase);
+    }
+
     [Fact]
     public void CancelWhileHoveringPressesNothing()
     {
