@@ -32,6 +32,14 @@ public sealed class DeckleAtelierSource : DeckleEventSource
     public const int EvtSizeScanPartial        = 32;
     public const int EvtSizeScanFailed         = 33;
 
+    // The map's events take 40 to 49, so the engines built beside it each
+    // add theirs without touching these lines.
+    public const int EvtMapInventoryBuilt      = 40;
+    public const int EvtMapInventoryFailed     = 41;
+    public const int EvtMapInventoryTruncated  = 42;
+    public const int EvtMapInventoryCancelled  = 43;
+    public const int EvtMapConfigUnreadable    = 44;
+
     // The file exists and cannot be read: the window opens with no folder,
     // and the unreadable file is kept aside so nothing is lost.
     [Event(EvtAddedFoldersLoadFailed,
@@ -153,5 +161,56 @@ public sealed class DeckleAtelierSource : DeckleEventSource
     public void SizeScanFailed(long scan_id, string ex_type)
     {
         if (IsEnabled()) WriteEvent(EvtSizeScanFailed, scan_id, ex_type);
+    }
+
+    // ── Map ─────────────────────────────────────────────────────────────
+
+    [Event(EvtMapInventoryBuilt,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "items={0} | links={1} | skipped={2} | elapsed_ms={3}")]
+    public void MapInventoryBuilt(int items, int links, int skipped, long elapsed_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtMapInventoryBuilt, items, links, skipped, elapsed_ms);
+    }
+
+    // The folder vanished or is not readable: the map shows it as such.
+    [Event(EvtMapInventoryFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "A folder could not be mapped; the map shows it as unreadable\nreason={0}")]
+    public void MapInventoryFailed(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtMapInventoryFailed, reason);
+    }
+
+    // A folder larger than the limit: the map shows what it saw and says it
+    // is partial.
+    [Event(EvtMapInventoryTruncated,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "The map reached its entry limit; the inventory is partial\nmax_entries={0}")]
+    public void MapInventoryTruncated(int max_entries)
+    {
+        if (IsEnabled()) WriteEvent(EvtMapInventoryTruncated, max_entries);
+    }
+
+    // The person left the folder or the tool before the map was done.
+    [Event(EvtMapInventoryCancelled,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "elapsed_ms={0}")]
+    public void MapInventoryCancelled(long elapsed_ms)
+    {
+        if (IsEnabled()) WriteEvent(EvtMapInventoryCancelled, elapsed_ms);
+    }
+
+    [Event(EvtMapConfigUnreadable,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Pipeline,
+           Message = "An MCP configuration file could not be read; its servers are left out of the map\nex_type={0}")]
+    public void MapConfigUnreadable(string ex_type)
+    {
+        if (IsEnabled()) WriteEvent(EvtMapConfigUnreadable, ex_type);
     }
 }
