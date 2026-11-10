@@ -66,7 +66,7 @@ public sealed partial class MailSettingsPage : Page
             1 => MailText.Get("Settings_OneAlias"),
             int n => MailText.Format("Settings_Aliases_Format", n),
         };
-        return MailNames.Mailbox(mailbox) == mailbox.Address ? aliases : $"{mailbox.Address} · {aliases}";
+        return MailNames.Mailbox(mailbox) == mailbox.Address ? aliases : MailText.Format("Join_Dot_Format", mailbox.Address, aliases);
     }
 
     private void OnAddMailboxClick(object sender, RoutedEventArgs e) => _shell?.Go(MailDestination.AddMailbox);

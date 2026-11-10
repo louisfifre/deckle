@@ -11,7 +11,7 @@ public sealed partial class FileTile : UserControl
     {
         InitializeComponent();
         NameText.Text = file.Name;
-        MetaText.Text = $"{file.Kind} · {MailDates.Size(file.SizeBytes)}";
-        AutomationProperties.SetName(TileButton, $"{file.Name}, {MetaText.Text}");
+        MetaText.Text = MailText.Format("Join_Dot_Format", file.Kind, MailText.Size(file.SizeBytes));
+        AutomationProperties.SetName(TileButton, MailText.Format("Join_Comma_Format", file.Name, MetaText.Text));
     }
 }

@@ -83,7 +83,7 @@ public sealed partial class MailboxSettingsPage : Page
 
             ServerExpander.Description = string.IsNullOrEmpty(mailbox.Server.Provider)
                 ? mailbox.Server.Host
-                : $"{mailbox.Server.Provider} · {mailbox.Server.Host}";
+                : MailText.Format("Join_Dot_Format", mailbox.Server.Provider, mailbox.Server.Host);
             HostText.Text = mailbox.Server.Host;
             PortText.Text = mailbox.Server.Port.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
@@ -159,8 +159,8 @@ public sealed partial class MailboxSettingsPage : Page
         string body = subjects switch
         {
             0 => MailText.Get("Remove_Body"),
-            1 => $"{MailText.Get("Remove_Body")} {MailText.Get("Remove_OneSubject")}",
-            int n => $"{MailText.Get("Remove_Body")} {MailText.Format("Remove_Subjects_Format", n)}",
+            1 => MailText.Get("Remove_BodyOneSubject"),
+            int n => MailText.Format("Remove_BodySubjects_Format", n),
         };
         bool confirmed = await ConfirmationService.RequestAsync(XamlRoot, new ConfirmationRequest(
             MailText.Format("Remove_Title_Format", MailNames.Mailbox(mailbox)),

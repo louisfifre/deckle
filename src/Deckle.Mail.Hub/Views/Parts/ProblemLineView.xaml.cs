@@ -22,12 +22,14 @@ public sealed partial class ProblemLineView : UserControl
         {
             Badge.Style = BadgeStyle("CautionIconInfoBadgeStyle");
             TitleText.Text = MailText.Format("Problem_CannotConnect_Format", MailNames.Mailbox(mailbox));
-            string shownAsOf = MailText.Format("Problem_ShownAsOf_Format", MailDates.Time(mailbox.ShownAsOf));
+            // Whole sentences in the resources, so a translation orders them
+            // as its language does.
+            string time = MailDates.Time(mailbox.ShownAsOf);
             MessageText.Text = problem.WaitingGestures switch
             {
-                0 => shownAsOf,
-                1 => $"{shownAsOf} {MailText.Get("Problem_OneChangeWaits")}",
-                int n => $"{shownAsOf} {MailText.Format("Problem_ChangesWait_Format", n)}",
+                0 => MailText.Format("Problem_ShownAsOf_Format", time),
+                1 => MailText.Format("Problem_ShownAsOfOneChange_Format", time),
+                int n => MailText.Format("Problem_ShownAsOfChanges_Format", time, n),
             };
         }
         else

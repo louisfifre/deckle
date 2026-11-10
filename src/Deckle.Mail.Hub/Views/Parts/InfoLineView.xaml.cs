@@ -22,7 +22,7 @@ public sealed partial class InfoLineView : UserControl
         // Two spaces, not a column: the sender follows the sentence.
         SenderRun.Text = "  " + line.Sender;
         LineText.Language = line.Language;
-        AutomationProperties.SetName(this, $"{line.Sentence}, {line.Sender}");
+        AutomationProperties.SetName(this, MailText.Format("Join_Comma_Format", line.Sentence, line.Sender));
         AutomationProperties.SetName(DismissButton, MailText.Format("Info_DismissName_Format", line.Sentence));
     }
 

@@ -112,7 +112,7 @@ public sealed partial class SubjectPage : Page
         _showingLatest = ReferenceEquals(mail, _subject.Latest);
 
         string sender = mail.IsFromYou ? MailText.Get("Subject_You") : mail.SenderName;
-        FromText.Text = $"{sender} · {mail.SenderAddress} · {MailDates.DayAndTime(mail.Received, _session.Today)}";
+        FromText.Text = MailText.Format("Join_Dot3_Format", sender, mail.SenderAddress, MailText.DayAndTime(mail.Received, _session.Today));
         EarlierText.Visibility = _showingLatest ? Visibility.Collapsed : Visibility.Visible;
         LatestLink.Visibility = _showingLatest ? Visibility.Collapsed : Visibility.Visible;
 

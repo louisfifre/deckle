@@ -104,12 +104,6 @@
   <data name="Problem_ShownAsOf_Format" xml:space="preserve">
     <value>Its mail is shown as of {0}.</value>
   </data>
-  <data name="Problem_OneChangeWaits" xml:space="preserve">
-    <value>1 change waits until it connects.</value>
-  </data>
-  <data name="Problem_ChangesWait_Format" xml:space="preserve">
-    <value>{0} changes wait until it connects.</value>
-  </data>
   <data name="Problem_AnytypeNotConnected" xml:space="preserve">
     <value>Anytype is not connected</value>
   </data>
@@ -426,12 +420,6 @@
   <data name="Remove_Body" xml:space="preserve">
     <value>Its mail stays on the server.</value>
   </data>
-  <data name="Remove_OneSubject" xml:space="preserve">
-    <value>1 subject leaves Triage.</value>
-  </data>
-  <data name="Remove_Subjects_Format" xml:space="preserve">
-    <value>{0} subjects leave Triage.</value>
-  </data>
   <data name="Remove_Primary" xml:space="preserve">
     <value>Remove</value>
   </data>
@@ -478,5 +466,44 @@
   </data>
   <data name="AddMailboxCancelButton.Content" xml:space="preserve">
     <value>Cancel</value>
+  </data>
+  <data name="Problem_ShownAsOfOneChange_Format" xml:space="preserve">
+    <value>Its mail is shown as of {0}. 1 change waits until it connects.</value>
+  </data>
+  <data name="Problem_ShownAsOfChanges_Format" xml:space="preserve">
+    <value>Its mail is shown as of {0}. {1} changes wait until it connects.</value>
+  </data>
+  <data name="Remove_BodyOneSubject" xml:space="preserve">
+    <value>Its mail stays on the server. 1 subject leaves Triage.</value>
+  </data>
+  <data name="Remove_BodySubjects_Format" xml:space="preserve">
+    <value>Its mail stays on the server. {0} subjects leave Triage.</value>
+  </data>
+  <data name="Task_AddName_Format" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="Date_DayAndTime_Format" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Size_Bytes_Format" xml:space="preserve">
+    <value>{0} B</value>
+  </data>
+  <data name="Size_Kilobytes_Format" xml:space="preserve">
+    <value>{0} KB</value>
+  </data>
+  <data name="Size_Megabytes_Format" xml:space="preserve">
+    <value>{0} MB</value>
+  </data>
+  <data name="Join_Dot_Format" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="Join_Dot3_Format" xml:space="preserve">
+    <value>{0} · {1} · {2}</value>
+  </data>
+  <data name="Join_Comma_Format" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Join_Comma3_Format" xml:space="preserve">
+    <value>{0}, {1}, {2}</value>
   </data>
 </root>

@@ -82,5 +82,5 @@ public sealed class SearchLine(string? subjectId, string sentence, string langua
         => new(null, text, "en-US", "", "");
 
     // Narrator reads the line, not the type name.
-    public override string ToString() => SubjectId is null ? Sentence : $"{Sentence}, {Where}, {Date}";
+    public override string ToString() => SubjectId is null ? Sentence : MailText.Format("Join_Comma3_Format", Sentence, Where, Date);
 }

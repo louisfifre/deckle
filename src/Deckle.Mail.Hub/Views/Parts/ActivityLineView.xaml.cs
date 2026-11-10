@@ -36,7 +36,7 @@ public sealed partial class ActivityLineView : UserControl
             Task.ShowReason(MailText.Reason(reason));
         }
         Task.SetUndoName(MailText.Format("Row_UndoName_Format", entry.Sentence));
-        AutomationProperties.SetName(this, $"{TimeText.Text}, {entry.Sentence}");
+        AutomationProperties.SetName(this, MailText.Format("Join_Comma_Format", TimeText.Text, entry.Sentence));
     }
 
     public ActivityEntry Entry { get; }

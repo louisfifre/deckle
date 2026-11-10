@@ -54,6 +54,18 @@ internal static class MailText
         _ => MailDates.Day(day, today),
     };
 
+    // « Sat 7, 10:15 »: the reception of a mail on an opened subject. The
+    // separator is the resource's, like every word of the window.
+    public static string DayAndTime(DateTimeOffset at, DateOnly today)
+        => Format("Date_DayAndTime_Format", MailDates.Day(DateOnly.FromDateTime(at.DateTime), today), MailDates.Time(at));
+
+    // « 96 KB »: the size of an attached file, its unit from the resources.
+    // The number is written in English, as every date and number of the window.
+    public static string Size(long bytes)
+        => bytes < 1024 ? Format("Size_Bytes_Format", bytes)
+            : bytes < 1024 * 1024 ? Format("Size_Kilobytes_Format", Math.Max(1, bytes / 1024))
+            : Format("Size_Megabytes_Format", (bytes / (1024.0 * 1024.0)).ToString("0.#", CultureInfo.GetCultureInfo("en-US")));
+
     // A day never breaks across two lines: « Fri 13 » stays whole in a
     // narrow column.
     public static string NoBreak(string text) => text.Replace(' ', ' ');

@@ -38,7 +38,7 @@ public sealed partial class TaskColumn : UserControl
         _today = today;
         _proposed = proposed;
         AddTaskText.Text = MailText.AddTask(proposed, today);
-        AutomationProperties.SetName(AddTaskButton, $"{AddTaskText.Text}: {accessibleSentence}");
+        AutomationProperties.SetName(AddTaskButton, MailText.Format("Task_AddName_Format", AddTaskText.Text, accessibleSentence));
         _menu = BuildMenu();
         AddTaskButton.Visibility = Visibility.Visible;
         DonePanel.Visibility = Visibility.Collapsed;

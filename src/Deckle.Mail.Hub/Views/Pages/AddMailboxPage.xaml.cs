@@ -52,7 +52,7 @@ public sealed partial class AddMailboxPage : Page
 
         if (known is not null)
         {
-            ProviderText.Text = $"{known.Provider} · {known.Host}";
+            ProviderText.Text = MailText.Format("Join_Dot_Format", known.Provider, known.Host);
             ProviderText.Visibility = Visibility.Visible;
             ServerExpander.Description = MailText.Format("AddMailbox_ServerFound_Format", known.Provider);
             if (HostBox.FocusState == FocusState.Unfocused) HostBox.Text = known.Host;
