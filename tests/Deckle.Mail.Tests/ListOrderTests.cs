@@ -31,6 +31,12 @@ public class ListOrderTests
     }
 
     [Fact]
+    public void ADeadlineComparesAfterNoDeadlineAsIComparableRequires()
+    {
+        Assert.True(On(11, 13).CompareTo(null) > 0);
+    }
+
+    [Fact]
     public void ATimeSlotsDeadlineIsItsEnd()
     {
         var judgment = MailJudgment.AsksWithin("Livraison jeudi entre 9 h et 12 h", On(11, 12, hour: 9), On(11, 12, hour: 12));

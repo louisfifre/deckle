@@ -13,9 +13,11 @@ public sealed record Deadline(DateOnly Day, TimeOnly? Time = null) : IComparable
     /// </summary>
     public int CompareTo(Deadline? other)
     {
+        // IComparable: any instance follows null. The list puts subjects with a
+        // deadline first through its own key, not through this order.
         if (other is null)
         {
-            return -1;
+            return 1;
         }
 
         var byDay = Day.CompareTo(other.Day);
