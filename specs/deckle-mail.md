@@ -208,7 +208,7 @@ Each question names the option the canvas recommends first, the frames that show
 9. **The mark of a mailbox in the navigation.** Its initial (18E, mark A), the same envelope for all (mark B), or none (mark C). On the rail, three envelopes cannot be told apart.
 10. **The navigation on Triage.** Open by default (18A), or closed to its rail (18T), and whether Activity needs to stay in it.
 11. **The person answered from another mail app.** The subject leaves Triage by itself and is listed in the sorting's part of Activity; whether its mails then go to the trash without a gesture of the person is not said.
-12. **Words.** The caption of secondary information (« No action needed »), the command that ends the day (« Done for today »), the two parts of Activity (« By you », « By Deckle »), the proposal on a row (« Task · Fri 13 »), and whether the first page keeps the name Triage.
+12. **Words.** The caption of secondary information (« No action needed »), the command that ends the day (« Done for today »), the two parts of Activity (« By you », « By Deckle »), the proposal on a row (« Add task · Fri 13 »; the maintainer had said « Task · today », which a cold reader took for a task already created), and whether the first page keeps the name Triage.
 13. **Where a new task goes in Anytype.** Which space and which project receive it, and whether the person chooses each time. Add task cannot be built before this.
 14. **The first sort of a mailbox.** The last thirty days, or the whole history.
 15. **The colour of a warning.** The yellow of Windows for an unverified sender, or grey (14B, both drawn).
