@@ -1404,6 +1404,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LlmSettingsNormalizer.cs
 │   │   ├── LlmSettingsService.cs
 │   │   └── SettingsSearch.cs
+│   ├── Deckle.Mail/
+│   │   └── Deckle.Mail.csproj
 │   ├── Deckle.Modules/
 │   │   ├── Deckle.Modules.csproj
 │   │   ├── DeckleModulesSource.cs
@@ -2441,6 +2443,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ClaudeReasoningTests.cs
 │   │   ├── Deckle.Llm.Tests.csproj
 │   │   └── ReasoningOnTheWireTests.cs
+│   ├── Deckle.Mail.Tests/
+│   │   └── Deckle.Mail.Tests.csproj
 │   ├── Deckle.Modules.Tests/
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Modules.Tests.csproj

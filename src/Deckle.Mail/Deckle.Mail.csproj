@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The deterministic core of Deckle Mail (specs/deckle-mail.md): the domain,
+       the rules the spec states, and the gestures as pure state transitions that
+       return the intents an outer layer sends to the mail server or Anytype.
+       It reads no network, no storage and no clock, and references no other
+       Deckle project, so it stays a portable library. -->
+  <PropertyGroup>
+    <RootNamespace>Deckle.Mail</RootNamespace>
+
+    <!-- The root Directory.Build.props imposes the Windows target framework on
+         every project. Nothing here calls a Windows API, so this project takes
+         the plain framework back: the compiler then refuses any Windows-only
+         API that would creep in. The override sits in the project body, which
+         MSBuild evaluates after Directory.Build.props, so no other project
+         changes. TargetPlatformMinVersion only means something beside a
+         platform target framework, so it is emptied with it. -->
+    <TargetFramework>net10.0</TargetFramework>
+    <TargetPlatformMinVersion></TargetPlatformMinVersion>
+
+    <!-- The shared x64 platform would stamp this IL-only assembly x64-only.
+         AnyCPU keeps it loadable from any process, x64 Deckle included. -->
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+</Project>
