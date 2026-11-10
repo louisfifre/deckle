@@ -29,7 +29,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - No command is reached by a right-click: Deckle Mail has no context menu.
 - No bar at the top of a page pushes its content down. Whatever fails or comes back, the rows and lines of a page stay where they were.
 - A mailbox that connects again says nothing: its caution dots go, and that is the sign.
-- A gesture that shows only under the pointer has a double that is always visible. Example: the cross of a secondary information line and Dismiss all; the pencil in the navigation and the pencil on the page.
+- A gesture that shows only under the pointer has a double that is always visible. Example: the cross of a secondary information line and Dismiss all. Rename shows on hover or focus only, both in the navigation and on the page (Open 44).
 
 ### Navigation
 
@@ -61,11 +61,10 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 ### A Global page, an alias page
 
-- The page is titled by a breadcrumb: the mailbox, then Global or the name of the alias. A pencil to rename stands beside it, always visible, and the address is written under it.
+- The page is titled by a breadcrumb: the mailbox, then Global or the name of the alias. A pencil to rename shows on the line of the name when the pointer or the keyboard focus is on it, and the address is written under it.
 - A name being entered or changed is edited in place, at the size of the title, and the placeholder of an empty name fits inside the field.
 - Under the header the page is Triage kept to that mailbox or alias: its rows, then its secondary information.
-- A Global page then holds what belongs to the mailbox itself. A switch sorts the mailbox by alias; it is on as soon as the mailbox has aliases, and off makes the mailbox a single item in the navigation. A card gives the number of mails in the trash of the mailbox and a command that empties it.
-- Emptying the trash asks first, in a dialog that names the mailbox and the number of mails, and whose default button cancels.
+- These pages carry no option of the mailbox: the options are on its page in Settings. In the navigation, a mailbox or an alias only filters Triage.
 - These pages list no mail that was set aside: Activity does.
 
 ### A subject opened
@@ -93,12 +92,14 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 ### Settings
 
-- The page lists the mailboxes, one fold each. The header of a fold gives the name, the address, the number of aliases, and whether the mailbox is connected, by a coloured dot and in words.
-- An open fold shows the address, the mail server, and the app password with one command to save it and one to forget it. A saved password is never shown again: a line under the field says only whether one is saved. With no password saved, the command to forget it is hidden, not greyed.
-- A fold offers to remove its mailbox, after a confirmation.
+- The page lists the mailboxes, one line each, which opens the page of that mailbox. The line gives the name, the address, the number of aliases, and whether the mailbox is connected, by a coloured dot and in words.
+- The page of a mailbox holds all its options: its connection, the sorting by alias with the options of its aliases, and its removal.
+- The connection shows the address, the mail server, and the app password with one command to save it and one to forget it. A saved password is never shown again: a line under the field says only whether one is saved. With no password saved, the command to forget it is hidden, not greyed.
+- A switch sorts the mailbox by alias; it is on as soon as the mailbox has aliases, and off makes the mailbox a single item in the navigation. The options of the aliases unfold under it. One of them names an alias from its address with a capital. Example: the alias shop@ is named « Shop ».
+- The page of a mailbox offers to remove it, after a confirmation.
 - When a mailbox cannot connect, no bar at the top of the page names it.
 - A mailbox that cannot connect is one condition with one severity wherever it is named, in Triage and here: a caution, since its mail is still shown and nothing is lost.
-- Under the folds, a command adds a mailbox.
+- Under the list of mailboxes, Add mailbox opens a page of its own, where the person sets the connection of the new mailbox. Settings holds no fold to add one.
 - The page shows, by the Anytype logo and in words, whether Anytype is connected.
 - The page has no Reset all.
 
@@ -158,6 +159,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 - The second command of a row is the trash, drawn as its symbol, without a word. It says that nothing is to be done.
 - When a subject is treated, by a task or by the trash, its mails go to the trash of the mail server of their mailbox. The inbox then holds only what waits, on the phone and in the webmail too.
+- Emptying the trash of a mailbox is neither an option of its page nor a setting; where it lives is Open 42. It asks first, in a dialog that names the mailbox and the number of mails, and whose default button cancels. It also removes from Activity the lines of the mails it deletes.
 - Deckle Mail never deletes a mail and never empties a trash on its own. The mail provider deletes what stays in its trash after its own delay. Example: Infomaniak deletes a mail thirty days after it reached the trash.
 - The first time a gesture would send a mail to the trash, a notice says so, once, with the provider's delay. The gesture happens only if the person accepts.
 - After a gesture the row stays where it was, greyed. Undo stands at the left edge of the task column, where the task control was, followed by what happened in words: « Task for Fri 13 » or « Moved to trash ». The words fit the column with the longest date, « Task for Wed 30 Dec »: « Task added · Wed 30 Dec » did not. A cross stands where the trash was and removes the line. No short timer removes it.
@@ -218,7 +220,7 @@ Each question names the option the canvas recommends first, the frames that show
 6. **The proposed day of a task.** Two days before the deadline (18A), or three. He said « two or three ».
 7. **How long a treated row stays.** He said a long fixed time, between one and four hours.
 8. **The number on Global.** The total of the mailbox, the same number the folded header wears (19A, 19E; 18E, Global A), or none (Global B). With none, a mail that arrived at the main address is counted nowhere while the group is unfolded. With the total, three cold reviewers of page 19 added Global 3 and shop 1 into 4: the total reads as a count of its own.
-9. **The mark of a mailbox in the navigation.** Its initial (18E, mark A), the same envelope for all (mark B), or none (mark C). On the rail, three envelopes cannot be told apart.
+9. **The mark of a mailbox and the width of the navigation.** Its initial (18E, mark A), the same envelope for all (mark B), or none (mark C). On the rail, three envelopes cannot be told apart. On 10 November the maintainer found the initials in their circle the ugliest he had seen: the letter is too small, and should be almost as large as the other icons; to be redrawn from the design system. He also found the navigation too wide: fit it to the longest label, shrink the mark, tighten; it condenses and is never resized by hand. Not said: the new width, and which mark.
 10. **The navigation on Triage.** Open by default (18A), or closed to its rail (18T), and whether Activity needs to stay in it.
 11. **The person answered from another mail app.** The subject leaves Triage by itself and is listed in the sorting's part of Activity; whether its mails then go to the trash without a gesture of the person is not said.
 12. **Words.** The caption of secondary information (« No action needed »), the command that ends the day (« Done for today »), the two parts of Activity (« By you », « By Deckle »), the proposal on a row (« Add task · Fri 13 », 19B; the maintainer had said « Task · today », which a cold reader took for a task already created; or the day alone, « Fri 13 », 19F, which reviewers found faster to scan and less clear to click), and whether the first page keeps the name Triage.
@@ -227,7 +229,7 @@ Each question names the option the canvas recommends first, the frames that show
 15. **The colour of a warning.** The yellow of Windows for an unverified sender, or grey (14B, both drawn).
 16. **Read and unread on the server.** Whether opening a subject or treating it marks the mail read for the other mail apps.
 17. **Settings in the navigation.** At the foot, as Windows does (18A), or on top with Triage and Activity (13F, variant 3).
-18. **Two passages of the dictation read by interpretation.** The short sentence of each mail in the list of an opened subject, « shared » (read: the same on every screen); and « capitals or not » for aliases (read: a display setting of the name). Neither is drawn as a setting.
+18. **A passage of the dictation read by interpretation.** The short sentence of each mail in the list of an opened subject, « shared » (read: the same on every screen); it is not drawn as a setting. The other passage, « capitals or not » for aliases, was settled on 10 November as an option of the aliases on the page of a mailbox.
 19. **« Say whether one can go back or not ».** Whether this means going back to an earlier mail of the subject, which the list allows, or telling a step that cannot be undone. Still unanswered from 9 November.
 20. **One click on Add task when no day is proposed.** It creates the task with no day (19A), or it opens the choice of days as the chevron does. The first keeps one behaviour for the main part of the control on every row; the second never creates a task without a day the person chose.
 21. **Ending the day while a first sort runs.** The command is disabled until the sort ends (27S), or stays live. Live, it would send to the trash mails the sort set aside before it finished judging the mailbox.
@@ -251,3 +253,7 @@ Each question names the option the canvas recommends first, the frames that show
 39. **The end of a first sort.** Its progress line goes and the list stays (33LF), or a bar says the mailbox is sorted and how many subjects wait (34LG).
 40. **An earlier mail of an opened subject.** The canvas keeps the title and the two gestures, which act on the whole subject, and changes only the line of the sender and the text (34KS). Not said: whether « Reply in webmail » then opens that mail or the latest.
 41. **Open settings from a subject whose mailbox fails.** An opened subject that cannot show its mail offers to open Settings (28R), or offers nothing. The maintainer doubts the first: it sends the person to a page where there may be nothing to do.
+42. **Where emptying the trash of a mailbox lives.** It is an action, not a setting: not on the page of a mailbox among options, not in Settings. The maintainer's lead: a small trash at the top right of the page a mailbox opens from the navigation. Open 33 depends on the place.
+43. **The word for Global.** The maintainer finds « Global » not understood; he says « racine », root in English. The word is still to find.
+44. **Commands shown on hover only.** The rule of the window wants every gesture shown under the pointer to have a double always visible. The maintainer dislikes « hovers everywhere », yet asks for Rename on hover only, and for the explanation of an unverified sender on demand. Not said: whether the rule gives way for these, or each gets a visible double.
+45. **Activity in the navigation while it is empty.** Shown as always, or hidden until there is a first line. The maintainer: « I don't know ».
