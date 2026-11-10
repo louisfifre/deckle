@@ -69,5 +69,13 @@ public partial class App
         window.SetPaneOpenForReview(false);
 
         await Capture("files-subfolder", () => window.OpenForReviewAsync("Photos"));
+
+        // The chevron's list is a popup, which every image closes first, so
+        // only the text mode is photographed.
+        await Capture("address-text", () =>
+        {
+            window.EditAddressForReview();
+            return Task.CompletedTask;
+        });
     }
 }

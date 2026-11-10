@@ -45,6 +45,9 @@ public sealed partial class AtelierWindow
 
     public void SetPaneOpenForReview(bool open) => Nav.IsPaneOpen = open;
 
+    // The address bar's text mode (12.12b), as Ctrl+L opens it.
+    public void EditAddressForReview() => Address.EditAddress();
+
     private void SwitchToWithoutShowing(IAtelierTool tool)
     {
         _activeTool = tool;
