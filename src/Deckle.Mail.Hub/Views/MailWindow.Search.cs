@@ -51,7 +51,8 @@ public sealed partial class MailWindow
             hit.Sentence,
             hit.Language,
             WhereOf(hit.Place),
-            MailDates.Day(hit.Date, Session.Today)))];
+            MailDates.Day(hit.Date, Session.Today),
+            whereIsState: hit.Place.Gesture is null && hit.Place.Reason is not null))];
     }
 
     private string WhereOf(MailSearchPlace place)
@@ -62,14 +63,20 @@ public sealed partial class MailWindow
 }
 
 // One line of the search menu. SubjectId is null for the notice that nothing
-// matches, which opens nothing.
-public sealed class SearchLine(string? subjectId, string sentence, string language, string where, string date)
+// matches, which opens nothing. Where a subject stands is either plain grey
+// words (In Triage, the result of a gesture) or, when the sorting set it
+// aside, the state the sorting set, which is a framed label like everywhere
+// else (spec: a state the sorting sets on a row is a framed label, never
+// plain text).
+public sealed class SearchLine(string? subjectId, string sentence, string language, string where, string date, bool whereIsState = false)
 {
     public string? SubjectId { get; } = subjectId;
     public string Sentence { get; } = sentence;
     public string Language { get; } = language;
     public string Where { get; } = where;
     public string Date { get; } = date;
+    public Microsoft.UI.Xaml.Visibility WhereAsWords => whereIsState ? Microsoft.UI.Xaml.Visibility.Collapsed : Microsoft.UI.Xaml.Visibility.Visible;
+    public Microsoft.UI.Xaml.Visibility WhereAsLabel => whereIsState ? Microsoft.UI.Xaml.Visibility.Visible : Microsoft.UI.Xaml.Visibility.Collapsed;
 
     public static SearchLine Notice(string text)
         => new(null, text, "en-US", "", "");

@@ -240,7 +240,7 @@
     <value>No action needed</value>
   </data>
   <data name="Mark_Unreadable" xml:space="preserve">
-    <value>Could not be read</value>
+    <value>Could not read</value>
   </data>
   <data name="Mark_SenderNotVerified" xml:space="preserve">
     <value>Sender not verified</value>

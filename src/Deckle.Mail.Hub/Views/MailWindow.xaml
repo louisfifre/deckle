@@ -24,9 +24,13 @@
                                VerticalAlignment="Center" />
                     <TextBlock Grid.Column="1"
                                Text="{x:Bind Where}"
+                               Visibility="{x:Bind WhereAsWords}"
                                Style="{StaticResource CaptionTextBlockStyle}"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                VerticalAlignment="Center" />
+                    <local:FramedLabel Grid.Column="1"
+                                       Text="{x:Bind Where}"
+                                       Visibility="{x:Bind WhereAsLabel}" />
                     <TextBlock Grid.Column="2"
                                Text="{x:Bind Date}"
                                MinWidth="56"
