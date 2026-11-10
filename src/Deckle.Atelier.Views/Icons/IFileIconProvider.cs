@@ -10,7 +10,9 @@ namespace Deckle.Atelier.Views;
 // are images drawn at the size asked for, read off the UI thread and cached
 // per extension and size (per file for .exe, .lnk, .ico and folders). Null
 // means "no image": the row keeps its neutral glyph, so a list never waits
-// for its icons and an icon that cannot be read costs nothing.
+// for its icons and an icon that cannot be read costs nothing. A cancelled
+// request answers null too, so a caller has nothing to catch.
+// ShellFileIconProvider is the one the window uses.
 public interface IFileIconProvider
 {
     // pixelSize is in physical pixels: the cell's size in DIPs times the
@@ -23,14 +25,4 @@ public interface IFileIconProvider
     // Per file, never per extension. Null means "no picture": the gallery
     // keeps its placeholder.
     Task<ImageSource?> GetThumbnailAsync(string path, int pixelSize, CancellationToken cancellation);
-}
-
-// For now: no image, so every row shows the neutral folder or file glyph.
-internal sealed class NeutralFileIconProvider : IFileIconProvider
-{
-    public Task<ImageSource?> GetAsync(string path, bool isFolder, int pixelSize, CancellationToken cancellation) =>
-        Task.FromResult<ImageSource?>(null);
-
-    public Task<ImageSource?> GetThumbnailAsync(string path, int pixelSize, CancellationToken cancellation) =>
-        Task.FromResult<ImageSource?>(null);
 }

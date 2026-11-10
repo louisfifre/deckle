@@ -725,7 +725,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Details/
 │   │   │   └── DetailsSheet.cs
 │   │   ├── Icons/
-│   │   │   └── IFileIconProvider.cs
+│   │   │   ├── IFileIconProvider.cs
+│   │   │   └── ShellFileIconProvider.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
