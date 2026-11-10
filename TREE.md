@@ -2536,6 +2536,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── UpdateToastRoutingTests.cs
 │   ├── Deckle.Shell.Foreground.Tests/
 │   │   ├── Deckle.Shell.Foreground.Tests.csproj
+│   │   ├── ForegroundBugNotes.md
 │   │   ├── FullscreenGeometryTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   └── MilestoneClosersTests.cs
