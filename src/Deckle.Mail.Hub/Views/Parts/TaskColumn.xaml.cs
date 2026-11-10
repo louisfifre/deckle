@@ -91,8 +91,14 @@ public sealed partial class TaskColumn : UserControl
 
     public void SetUndoName(string accessibleName) => AutomationProperties.SetName(UndoButton, accessibleName);
 
-    // For the self-check's frame 2.2: the menu as a click opens it.
-    public void OpenMenu() => _menu?.ShowAt(AddTaskButton);
+    // For the self-check: the menu as a click opens it. constrainToWindow
+    // draws it inside the window, where a window capture sees it.
+    public void OpenMenu(bool constrainToWindow = false)
+    {
+        if (_menu is null) return;
+        _menu.ShouldConstrainToRootBounds = constrainToWindow;
+        _menu.ShowAt(AddTaskButton);
+    }
 
     // The menu is opened here rather than through Button.Flyout, which opens
     // on every click and cannot be refused one.

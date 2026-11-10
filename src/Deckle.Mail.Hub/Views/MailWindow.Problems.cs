@@ -53,10 +53,13 @@ public sealed partial class MailWindow
     }
 
     // For the self-check: the list as the person sees it once opened.
-    public void OpenProblems()
+    // constrainToWindow draws it inside the window, where a window capture
+    // sees it.
+    public void OpenProblems(bool constrainToWindow = false)
     {
-        if (ProblemsButton.IsHitTestVisible)
-            ProblemsFlyout.ShowAt(ProblemsButton);
+        if (!ProblemsButton.IsHitTestVisible) return;
+        ProblemsFlyout.ShouldConstrainToRootBounds = constrainToWindow;
+        ProblemsFlyout.ShowAt(ProblemsButton);
     }
 
     private void SetProblemsButtonPresent(bool present)

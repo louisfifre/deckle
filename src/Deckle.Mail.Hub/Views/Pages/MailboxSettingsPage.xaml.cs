@@ -152,7 +152,10 @@ public sealed partial class MailboxSettingsPage : Page
     // Removal asks first, in the dialog every Deckle confirmation uses; its
     // default button is Cancel (Open 29 weighs Remove as the default, since
     // the mail stays on the server; frame 7.6 draws Cancel).
-    private async void OnRemoveClick(object sender, RoutedEventArgs e)
+    private void OnRemoveClick(object sender, RoutedEventArgs e) => AskRemove();
+
+    // Also the self-check's way to the confirmation, through the same call.
+    public async void AskRemove()
     {
         if (_session is null || Mailbox is not { } mailbox) return;
         int subjects = _session.WaitingCount(MailFilter.Mailbox(mailbox.Id));

@@ -264,6 +264,16 @@ public partial class App
         await mail.WalkCapturesAsync(
             async visit =>
             {
+                // A menu, flyout or dialog left open on purpose is the subject
+                // of the step: the window is photographed with it, and the
+                // walk closes it afterwards.
+                if (visit.KeepsPopup)
+                {
+                    report.Surfaces.Add(await CaptureWindowFrameAsync(
+                        run, mail, "mail", visit.Slug, visit.Label, visit.Loaded, visit.LoadMs));
+                    Step($"mail/{visit.Slug} done");
+                    return;
+                }
                 (int closed, int left) = await CloseTransientPopupsAsync(mail);
                 SelfCheckSurface surface = new("mail", visit.Slug, visit.Label, visit.Loaded, visit.LoadMs, null,
                     closed, left, "page-render");
