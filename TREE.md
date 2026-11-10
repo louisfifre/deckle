@@ -1405,6 +1405,31 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LlmSettingsService.cs
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Mail/
+│   │   ├── Domain/
+│   │   │   ├── Deadline.cs
+│   │   │   ├── Mail.cs
+│   │   │   ├── Mailbox.cs
+│   │   │   ├── MailJudgment.cs
+│   │   │   └── MailPlace.cs
+│   │   ├── Intents/
+│   │   │   └── MailIntent.cs
+│   │   ├── Subjects/
+│   │   │   ├── MailPlacement.cs
+│   │   │   ├── SortingCorrection.cs
+│   │   │   ├── Subject.cs
+│   │   │   └── SubjectJoining.cs
+│   │   ├── Triage/
+│   │   │   ├── MailScope.cs
+│   │   │   ├── SortingRecord.cs
+│   │   │   ├── Treatment.cs
+│   │   │   ├── TriageChange.cs
+│   │   │   ├── TriageOptions.cs
+│   │   │   ├── TriageState.Corrections.cs
+│   │   │   ├── TriageState.cs
+│   │   │   ├── TriageState.Day.cs
+│   │   │   ├── TriageState.Delivery.cs
+│   │   │   ├── TriageState.Gestures.cs
+│   │   │   └── TriageState.Sorting.cs
 │   │   └── Deckle.Mail.csproj
 │   ├── Deckle.Modules/
 │   │   ├── Deckle.Modules.csproj
