@@ -694,7 +694,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ShellFileOperationInterop.cs
 │   │   │   └── ShellRecycleBin.cs
 │   │   ├── Sample/
-│   │   │   └── SampleFolder.cs
+│   │   │   ├── SampleFolder.cs
+│   │   │   └── SamplePhotos.cs
 │   │   ├── Sizes/
 │   │   │   ├── FolderReader.cs
 │   │   │   ├── HeaviestFiles.cs
@@ -2211,6 +2212,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── PhotoRenamerTests.cs
 │   │   │   ├── PhotosEventsTests.cs
 │   │   │   ├── RawReadingMaintenanceTests.cs
+│   │   │   ├── SamplePhotosTests.cs
 │   │   │   └── ShellRecycleBinTests.cs
 │   │   ├── AddedFolderStoreTests.cs
 │   │   ├── AddressResolverTests.cs
