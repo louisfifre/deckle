@@ -1,0 +1,72 @@
+<UserControl
+    x:Class="Deckle.Atelier.Views.SizesPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Atelier.Views">
+
+    <!-- The details panel of the sizes tool (12.7): about the folder the
+         person is in, whatever is selected (spec, Open 24, as drawn). The
+         head and the analysis section come from DetailsSheet so the panel
+         reads like every other tool's; the heaviest files are a list of
+         their own, because a click on one selects it in the main list. -->
+    <UserControl.Resources>
+        <x:Double x:Key="ListViewItemMinHeight">40</x:Double>
+    </UserControl.Resources>
+
+    <StackPanel>
+        <ContentPresenter x:Name="SheetHost" />
+
+        <StackPanel Padding="16,16,16,12"
+                    Spacing="8"
+                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                    BorderThickness="0,1,0,0">
+            <TextBlock x:Name="HeaviestTitle" Style="{StaticResource BodyStrongTextBlockStyle}" />
+
+            <!-- The list's items sit 4 px in from their rounded fill; the
+                 negative margin lines their text up with the title above. -->
+            <ListView x:Name="Heaviest"
+                      Margin="-16,0"
+                      SelectionMode="Single"
+                      SelectionChanged="OnHeaviestSelectionChanged">
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+                        <Setter Property="Padding" Value="12,4" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                    </Style>
+                </ListView.ItemContainerStyle>
+                <ListView.ItemTemplate>
+                    <DataTemplate x:DataType="local:HeavyItem">
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Text="{x:Bind Name}"
+                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                           TextTrimming="CharacterEllipsis"
+                                           TextWrapping="NoWrap" />
+                                <TextBlock Text="{x:Bind Where}"
+                                           Style="{StaticResource CaptionTextBlockStyle}"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           TextWrapping="NoWrap"
+                                           Visibility="{x:Bind WhereVisibility}" />
+                            </StackPanel>
+                            <TextBlock Grid.Column="1"
+                                       Text="{x:Bind Size}"
+                                       Style="{StaticResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       VerticalAlignment="Center" />
+                        </Grid>
+                    </DataTemplate>
+                </ListView.ItemTemplate>
+            </ListView>
+
+            <TextBlock x:Name="HeaviestNone"
+                       Style="{StaticResource CaptionTextBlockStyle}"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Visibility="Collapsed" />
+        </StackPanel>
+    </StackPanel>
+</UserControl>
