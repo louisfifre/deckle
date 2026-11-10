@@ -50,9 +50,10 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - The task control has one shape and one width on every row: a split button that reads Add task, with the proposed day written in it when there is one, and a chevron that opens the choice of days. It is drawn without a frame, so the sentences stay what the eye reads first.
 - Under the list, each secondary information is one thin line, without a frame of its own: its sentence, and the sender in grey in the column of the task controls above. A cross shows on the line under the pointer or the keyboard focus, in the column of the trash, and a command above the lines, always visible, dismisses them all.
 - After the lines, one last line gives the number of mails that were set aside without a line, and leads to the part of Activity that lists them.
-- At the bottom right of the page, one command ends the day: it removes the rows already treated and the secondary information lines.
+- At the bottom right of the page, one command ends the day: it removes the rows already treated and the secondary information lines. When every row is treated, it becomes the one emphasised command of the page.
 - With nothing waiting, the page shows a small flat picture in pale grey and the sentence « Nothing is waiting. ». The picture is not an icon, not a skeleton of rows, and nothing on the page moves: the person does not take it for a loading page. Secondary information stays under it when there is some.
-- When one mailbox cannot connect, a bar at the top names it, says since when its content is shown, and offers to open Settings. Its rows stay and keep their controls: a gesture made meanwhile is kept and sent when the mailbox is back.
+- When one mailbox cannot connect, a bar at the top names it, says since when its content is shown, and offers to open Settings. Its rows stay and keep their controls: a gesture made meanwhile is kept and sent when the mailbox is back. Until then the treated row shows its result as any other, followed by a caution dot whose name says it waits for that mailbox.
+- A mailbox that cannot connect wears a caution dot on its mark in the navigation, and its name says so to a screen reader. The dot takes no width: the navigation does not move when a mailbox fails.
 - When new mail waits to be sorted because the sorting cannot run, a bar at the top says how many mails arrived since when, and that they will be sorted. The rows already there stay usable.
 
 ### A Global page, an alias page
@@ -114,7 +115,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - A mail that asks nothing and changes nothing is set aside with one reason among newsletter, promotion, receipt and no action needed. Example: a newsletter, the progress of an order on its way, the notice of a delivery the person received in hand.
 - When the sorting is not sure a mail can be set aside, the mail waits in Triage. Example: a mail with a vague subject from a sender whose other mails matter.
 - A mail the sorting could not read, because it holds only images or is encrypted, waits in Triage with its own subject as its sentence and the reason as a framed label on its row. It is never set aside unread.
-- A mail whose sender failed the checks waits in Triage with the framed label « Sender not verified », shows the address in place of the name the sender gave itself, and offers the trash only: it cannot become a task.
+- A mail whose sender failed the checks waits in Triage with the framed label « Sender not verified », shows the address in place of the name the sender gave itself, and offers the trash only: it cannot become a task. Its task column stays empty, so its trash stands where every other trash stands.
 - A state the sorting sets on a row is a framed label, never plain text.
 
 **Subjects**
