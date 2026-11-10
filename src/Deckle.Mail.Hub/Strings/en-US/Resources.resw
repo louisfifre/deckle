@@ -512,4 +512,7 @@
   <data name="Subject_Unverified_Message" xml:space="preserve">
     <value>Your mail provider could not confirm that this mail comes from this address. Be careful with its links and with any payment it asks for.</value>
   </data>
+  <data name="TrashNotice_Where_Format" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
 </root>

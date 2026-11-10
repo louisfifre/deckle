@@ -14,7 +14,7 @@ internal static class TrashNotice
         Mailbox? mailbox = session.FindMailbox(subject.MailboxId);
         string where = mailbox is null ? ""
             : MailNames.Mailbox(mailbox) == mailbox.Address ? mailbox.Address
-            : $"{MailNames.Mailbox(mailbox)} ({mailbox.Address})";
+            : MailText.Format("TrashNotice_Where_Format", MailNames.Mailbox(mailbox), mailbox.Address);
 
         var dialog = new ContentDialog
         {
