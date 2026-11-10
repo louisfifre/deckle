@@ -88,7 +88,13 @@
     <value>Compact app buttons</value>
   </data>
   <data name="TaskbarPage_CompactTaskButtonsCard.Description" xml:space="preserve">
-    <value>Brings the app buttons, Start and Task view as close together as the tray icons. Applies to a vertical taskbar only.</value>
+    <value>Brings the app buttons, Start and Task view closer together. Applies to a vertical taskbar only.</value>
+  </data>
+  <data name="TaskbarPage_TaskButtonPitchCard.Header" xml:space="preserve">
+    <value>Button height</value>
+  </data>
+  <data name="TaskbarPage_TaskButtonPitchCard.Description" xml:space="preserve">
+    <value>The room each app button, Start and Task view take on the taskbar.</value>
   </data>
   <data name="TaskbarPage_CompactClockCard.Header" xml:space="preserve">
     <value>Compact clock</value>
@@ -101,6 +107,12 @@
   </data>
   <data name="TaskbarPage_CompactTrayCard.Description" xml:space="preserve">
     <value>Brings the tray icons and the quick settings icons closer together. Applies to a vertical taskbar only.</value>
+  </data>
+  <data name="TaskbarPage_TrayIconPitchCard.Header" xml:space="preserve">
+    <value>Icon spacing</value>
+  </data>
+  <data name="TaskbarPage_TrayIconPitchCard.Description" xml:space="preserve">
+    <value>The room each tray icon and quick settings icon takes on the taskbar.</value>
   </data>
   <data name="TaskbarPage_HorizontalBarNoEffect" xml:space="preserve">
     <value>Your taskbar is horizontal, so this has no effect.</value>

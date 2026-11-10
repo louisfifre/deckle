@@ -53,13 +53,50 @@ public sealed class TaskbarCustomizationTests
     }
 
     [Fact]
-    public void TheCompactAppButtonsTakeTheTraysPitchOnAVerticalBarOnly()
+    public void TheCompactAppButtonsTakeTheirPitchOnAVerticalBarOnly()
     {
         var settings = new TaskbarSettings { CompactTaskButtons = true };
 
-        Assert.Equal(TaskbarCustomization.CompactPitch, From(settings, vertical: true).TaskButtonPitch);
+        Assert.Equal(TaskbarCustomization.DefaultCompactPitch, From(settings, vertical: true).TaskButtonPitch);
         Assert.Null(From(settings, vertical: false).TaskButtonPitch);
         Assert.False(From(settings, vertical: false).CustomizesExplorer);
+    }
+
+    // Each card carries its own value: the tray and the app buttons no longer
+    // share one pitch.
+    [Fact]
+    public void EachCompactCardCarriesItsOwnPitch()
+    {
+        var settings = new TaskbarSettings { CompactTray = true, TrayIconPitch = 28, CompactTaskButtons = true, TaskButtonPitch = 36 };
+
+        TaskbarCustomization customization = From(settings, vertical: true);
+
+        Assert.Equal(28, customization.TrayIconPitch);
+        Assert.Equal(36, customization.TaskButtonPitch);
+    }
+
+    // A pitch only reaches the engine while its switch is on.
+    [Fact]
+    public void APitchIsNotSentWhileItsSwitchIsOff()
+    {
+        var settings = new TaskbarSettings { TrayIconPitch = 28, TaskButtonPitch = 36 };
+
+        Assert.False(From(settings, vertical: true).CustomizesExplorer);
+    }
+
+    // A file edited by hand cannot squash an icon to nothing or blow a row up.
+    [Theory]
+    [InlineData(0, 16, 20)]
+    [InlineData(-5, 16, 20)]
+    [InlineData(500, 40, 48)]
+    public void APitchOutsideItsRangeIsHeldToIt(int written, int tray, int button)
+    {
+        var settings = new TaskbarSettings { CompactTray = true, TrayIconPitch = written, CompactTaskButtons = true, TaskButtonPitch = written };
+
+        TaskbarCustomization customization = From(settings, vertical: true);
+
+        Assert.Equal(tray, customization.TrayIconPitch);
+        Assert.Equal(button, customization.TaskButtonPitch);
     }
 
     // The clock's lines are the same on both bars; only the tightening of its

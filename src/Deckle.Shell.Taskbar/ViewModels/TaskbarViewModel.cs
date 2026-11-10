@@ -30,7 +30,13 @@ public partial class TaskbarViewModel : ObservableObject
     public partial bool CompactTray { get; set; }
 
     [ObservableProperty]
+    public partial int TrayIconPitch { get; set; }
+
+    [ObservableProperty]
     public partial bool CompactTaskButtons { get; set; }
+
+    [ObservableProperty]
+    public partial int TaskButtonPitch { get; set; }
 
     [ObservableProperty]
     public partial bool CompactClock { get; set; }
@@ -63,7 +69,9 @@ public partial class TaskbarViewModel : ObservableObject
             ShowAllTrayIcons = settings.ShowAllTrayIcons;
             Background = settings.Background;
             CompactTray = settings.CompactTray;
+            TrayIconPitch = settings.TrayIconPitch;
             CompactTaskButtons = settings.CompactTaskButtons;
+            TaskButtonPitch = settings.TaskButtonPitch;
             CompactClock = settings.CompactClock;
             StartMenuFullHeight = settings.StartMenuFullHeight;
             WindowsKeyShowsTaskbar = settings.WindowsKeyShowsTaskbar;
@@ -77,7 +85,9 @@ public partial class TaskbarViewModel : ObservableObject
     partial void OnShowAllTrayIconsChanged(bool value) => Write(settings => settings.ShowAllTrayIcons = value);
     partial void OnBackgroundChanged(TaskbarBackground value) => Write(settings => settings.Background = value);
     partial void OnCompactTrayChanged(bool value) => Write(settings => settings.CompactTray = value);
+    partial void OnTrayIconPitchChanged(int value) => Write(settings => settings.TrayIconPitch = value);
     partial void OnCompactTaskButtonsChanged(bool value) => Write(settings => settings.CompactTaskButtons = value);
+    partial void OnTaskButtonPitchChanged(int value) => Write(settings => settings.TaskButtonPitch = value);
     partial void OnCompactClockChanged(bool value) => Write(settings => settings.CompactClock = value);
     partial void OnStartMenuFullHeightChanged(bool value) => Write(settings => settings.StartMenuFullHeight = value);
     partial void OnWindowsKeyShowsTaskbarChanged(bool value) => Write(settings => settings.WindowsKeyShowsTaskbar = value);

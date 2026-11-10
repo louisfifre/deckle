@@ -13,7 +13,7 @@ namespace Deckle.Shell.Taskbar.Harness;
 //   Deckle.Shell.Taskbar.Harness customizer [--control <file>] [--stop-after <seconds>]
 //
 // Control file lines (the file is deleted once read):
-//   set <background|compactTray|compactClock|startMenuFullHeight|showAllTrayIcons> <value>
+//   set <background|compactTray|trayIconPitch|compactTaskButtons|taskButtonPitch|compactClock|startMenuFullHeight> <value>
 //   status    prints the parts asked for, the problems, and who has the DLL loaded
 //   stop      restores, unloads and exits
 internal static class CustomizerCommand
@@ -84,7 +84,9 @@ internal static class CustomizerCommand
         {
             case "background": current.Background = Enum.Parse<TaskbarBackground>(parts[1], ignoreCase: true); break;
             case "compactTray": current.CompactTray = flag; break;
+            case "trayIconPitch": current.TrayIconPitch = int.Parse(parts[1], CultureInfo.InvariantCulture); break;
             case "compactTaskButtons": current.CompactTaskButtons = flag; break;
+            case "taskButtonPitch": current.TaskButtonPitch = int.Parse(parts[1], CultureInfo.InvariantCulture); break;
             case "compactClock": current.CompactClock = flag; break;
             case "startMenuFullHeight": current.StartMenuFullHeight = flag; break;
             case "showAllTrayIcons": throw new ArgumentException("showAllTrayIcons belongs to the tray promoter, not driven here");

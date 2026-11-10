@@ -32,10 +32,17 @@ public partial class TaskbarViewModel
             ],
             defaultValue: () => new TaskbarSettings().Background,
             advisory: () => ProblemAdvisory(TaskbarPart.Background)),
-        Setting.Toggle(
+        // A switch whose fold holds its one value: the pitch is meaningless while
+        // the buttons keep Explorer's own, so it shows only once the switch is on.
+        Setting.Group(
             "TaskbarPage_CompactTaskButtonsCard",
             () => CompactTaskButtons,
             value => CompactTaskButtons = value,
+            [
+                Pitch("TaskbarPage_TaskButtonPitchCard",
+                    () => TaskButtonPitch, value => TaskButtonPitch = value,
+                    TaskbarCustomization.TaskButtonPitchRange, () => new TaskbarSettings().TaskButtonPitch),
+            ],
             defaultValue: () => new TaskbarSettings().CompactTaskButtons,
             advisory: CompactTaskButtonsAdvisory),
         Setting.Toggle(
@@ -54,13 +61,29 @@ public partial class TaskbarViewModel
             value => ShowAllTrayIcons = value,
             defaultValue: () => new TaskbarSettings().ShowAllTrayIcons,
             advisory: TrayAdvisory),
-        Setting.Toggle(
+        Setting.Group(
             "TaskbarPage_CompactTrayCard",
             () => CompactTray,
             value => CompactTray = value,
+            [
+                Pitch("TaskbarPage_TrayIconPitchCard",
+                    () => TrayIconPitch, value => TrayIconPitch = value,
+                    TaskbarCustomization.TrayPitchRange, () => new TaskbarSettings().TrayIconPitch),
+            ],
             defaultValue: () => new TaskbarSettings().CompactTray,
             advisory: CompactTrayAdvisory),
     ];
+
+    // A size in effective pixels, typed or swept: whole pixels only (a half
+    // pixel would blur the icons), so the field shows no decimals.
+    private static SettingDescriptor Pitch(
+        string labelKey, Func<int> get, Action<int> set, PixelRange range, Func<int> defaultValue) =>
+        Setting.Magnitude(
+            labelKey,
+            () => get(),
+            value => set(range.Clamp((int)Math.Round(value))),
+            new MagnitudeArgs(range.Minimum, range.Maximum, Unit: "px", Integer: true),
+            defaultValue: () => defaultValue());
 
     public IReadOnlyList<SettingDescriptor> StartManifest =>
     [

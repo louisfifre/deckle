@@ -36,7 +36,9 @@ public sealed class TaskbarSettingsTests
             ShowAllTrayIcons = true,
             Background = TaskbarBackground.Transparent,
             CompactTray = true,
+            TrayIconPitch = 30,
             CompactTaskButtons = true,
+            TaskButtonPitch = 36,
             CompactClock = true,
             StartMenuFullHeight = true,
             WindowsKeyShowsTaskbar = true,
@@ -47,7 +49,9 @@ public sealed class TaskbarSettingsTests
         Assert.True(read.ShowAllTrayIcons);
         Assert.Equal(TaskbarBackground.Transparent, read.Background);
         Assert.True(read.CompactTray);
+        Assert.Equal(30, read.TrayIconPitch);
         Assert.True(read.CompactTaskButtons);
+        Assert.Equal(36, read.TaskButtonPitch);
         Assert.True(read.CompactClock);
         Assert.True(read.StartMenuFullHeight);
         Assert.True(read.WindowsKeyShowsTaskbar);
@@ -61,6 +65,19 @@ public sealed class TaskbarSettingsTests
 
         Assert.Contains("\"background\": \"black\"", json);
         Assert.Equal(TaskbarBackground.Black, Read("""{ "background": "black" }""").Background);
+    }
+
+    // A file written before the pitches could be set (v0.104) has the switches
+    // and no pitch: the compact cards keep the 24 px they always had.
+    [Fact]
+    public void AFileFromBeforeThePitchesKeepsTheCompactPitch()
+    {
+        TaskbarSettings settings = Read("""{ "compactTray": true, "compactTaskButtons": true }""");
+
+        Assert.True(settings.CompactTray);
+        Assert.True(settings.CompactTaskButtons);
+        Assert.Equal(24, settings.TrayIconPitch);
+        Assert.Equal(24, settings.TaskButtonPitch);
     }
 
     [Fact]

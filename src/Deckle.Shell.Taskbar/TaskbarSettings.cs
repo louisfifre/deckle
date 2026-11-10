@@ -18,17 +18,31 @@ public sealed class TaskbarSettings
     public TaskbarBackground Background { get; set; } = TaskbarBackground.Native;
 
     /// <summary>
-    /// Tray icons and the quick-settings group packed at a 24 px pitch. It is
-    /// applied on a vertical taskbar only; on a horizontal one the value is
+    /// Tray icons and the quick-settings group packed at <see cref="TrayIconPitch"/>.
+    /// It is applied on a vertical taskbar only; on a horizontal one the value is
     /// kept and does nothing.
     /// </summary>
     public bool CompactTray { get; set; } = false;
 
     /// <summary>
-    /// App buttons, Start and Task view packed at the tray's 24 px pitch. Like
-    /// the compact tray, it is applied on a vertical taskbar only.
+    /// The distance between two tray icons while <see cref="CompactTray"/> is on,
+    /// in effective pixels. Explorer's own is 32. A settings file written before
+    /// this value existed reads 24, the pitch the compact tray always had.
+    /// </summary>
+    public int TrayIconPitch { get; set; } = TaskbarCustomization.DefaultCompactPitch;
+
+    /// <summary>
+    /// App buttons, Start and Task view packed at <see cref="TaskButtonPitch"/>.
+    /// Like the compact tray, it is applied on a vertical taskbar only.
     /// </summary>
     public bool CompactTaskButtons { get; set; } = false;
+
+    /// <summary>
+    /// The height of an app button while <see cref="CompactTaskButtons"/> is on,
+    /// in effective pixels. Explorer's own is 32 in Small mode. Older files read
+    /// 24, as for the tray.
+    /// </summary>
+    public int TaskButtonPitch { get; set; } = TaskbarCustomization.DefaultCompactPitch;
 
     /// <summary>The clock as stacked lines (month, day, weekday, hours, minutes).</summary>
     public bool CompactClock { get; set; } = false;

@@ -87,7 +87,7 @@ internal static class TaskbarDocumentBuilder
             // 4 px of Padding above and below; each icon is given the pitch as
             // its height. The button's own Padding goes too, so its hover
             // highlight fits the icons it covers.
-            int iconPitch = customization.TrayIconPitch ?? TaskbarCustomization.CompactPitch;
+            int iconPitch = customization.TrayIconPitch ?? TaskbarCustomization.DefaultCompactPitch;
             rules.Add(new("quickSettings.spacing", QuickSettingsStack, "Spacing", "0"));
             rules.Add(new("quickSettings.stack.padding", QuickSettingsStack, "Padding", "0"));
             rules.Add(new("quickSettings.button.padding", QuickSettingsButton, "Padding", "0"));

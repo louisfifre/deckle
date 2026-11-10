@@ -35,7 +35,9 @@ public sealed class TaskbarViewModelTests : IDisposable
         settings.ShowAllTrayIcons = false;
         settings.Background = TaskbarBackground.Native;
         settings.CompactTray = false;
+        settings.TrayIconPitch = TaskbarCustomization.DefaultCompactPitch;
         settings.CompactTaskButtons = false;
+        settings.TaskButtonPitch = TaskbarCustomization.DefaultCompactPitch;
         settings.CompactClock = false;
         settings.StartMenuFullHeight = false;
         settings.WindowsKeyShowsTaskbar = false;
@@ -97,6 +99,28 @@ public sealed class TaskbarViewModelTests : IDisposable
         Assert.Equal(false, Card(viewModel, "TaskbarPage_CompactClockCard").Default!());
         Assert.Equal(false, Card(viewModel, "TaskbarPage_StartMenuFullHeightCard").Default!());
         Assert.Equal(false, Card(viewModel, "TaskbarPage_WindowsKeyShowsTaskbarCard").Default!());
+    }
+
+    // The pitch sits in its switch's fold, writes the setting as a whole pixel
+    // held to its range, and resets to the compact pitch.
+    [Theory]
+    [InlineData("TaskbarPage_CompactTrayCard", "TaskbarPage_TrayIconPitchCard")]
+    [InlineData("TaskbarPage_CompactTaskButtonsCard", "TaskbarPage_TaskButtonPitchCard")]
+    public void APitchIsSetInsideItsSwitchsFold(string switchKey, string pitchKey)
+    {
+        TaskbarViewModel viewModel = ViewModel();
+        SettingDescriptor group = Card(viewModel, switchKey);
+        SettingDescriptor pitch = Assert.Single(((GroupArgs)group.Args!).Children);
+        Assert.Equal(pitchKey, pitch.LabelKey);
+        Assert.Equal(24.0, pitch.Default!());
+
+        pitch.SetValue(29.6);
+        Assert.Equal(30.0, pitch.GetValue());
+
+        pitch.SetValue(1000.0);
+        TaskbarSettings saved = TaskbarSettingsService.Instance.Current;
+        int written = switchKey == "TaskbarPage_CompactTrayCard" ? saved.TrayIconPitch : saved.TaskButtonPitch;
+        Assert.Equal(((MagnitudeArgs)pitch.Args!).Maximum, written);
     }
 
     [Fact]

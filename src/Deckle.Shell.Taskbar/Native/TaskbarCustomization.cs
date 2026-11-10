@@ -18,7 +18,8 @@ internal sealed record TaskbarCustomization
     /// <summary>
     /// Brings the quick-settings group (network, volume, battery) and the system
     /// icons beside the tray (microphone or location in use) to the same pitch as
-    /// the tray icons, <see cref="TrayIconPitch"/> or 24 when that is not set.
+    /// the tray icons, <see cref="TrayIconPitch"/> or <see cref="DefaultCompactPitch"/>
+    /// when that is not set.
     /// </summary>
     public bool TightenQuickSettings { get; init; }
 
@@ -55,25 +56,46 @@ internal sealed record TaskbarCustomization
     /// <summary>
     /// What the settings ask for on this taskbar. The compact tray, the compact
     /// app buttons and the clock button's tightening are only carried to a
-    /// vertical bar: their rules (a 24 px row, a tightened stack) are written for
-    /// the column layout, and on a horizontal bar the items run the other way.
+    /// vertical bar: their rules (a row of the pitch, a tightened stack) are
+    /// written for the column layout, and on a horizontal bar the items run the
+    /// other way. A pitch read from the file is held to its range: a value
+    /// written by hand cannot squash an icon to nothing.
     /// </summary>
     public static TaskbarCustomization From(TaskbarSettings settings, bool verticalBar) => new()
     {
         Background = settings.Background,
-        TrayIconPitch = settings.CompactTray && verticalBar ? CompactPitch : null,
+        TrayIconPitch = settings.CompactTray && verticalBar ? TrayPitchRange.Clamp(settings.TrayIconPitch) : null,
         TightenQuickSettings = settings.CompactTray && verticalBar,
-        TaskButtonPitch = settings.CompactTaskButtons && verticalBar ? CompactPitch : null,
+        TaskButtonPitch = settings.CompactTaskButtons && verticalBar ? TaskButtonPitchRange.Clamp(settings.TaskButtonPitch) : null,
         Clock = settings.CompactClock ? ClockCustomization.DateAboveTime : null,
         TightenClockButton = settings.CompactClock && verticalBar,
         StartMenu = settings.StartMenuFullHeight ? new StartMenuCustomization() : null,
     };
 
     /// <summary>
-    /// The pitch of everything compact: a tray icon, a quick-settings icon, an app
-    /// button. One value, so the column reads as one rhythm from top to bottom.
+    /// The pitch everything compact starts at: a tray icon, a quick-settings icon,
+    /// an app button. One value, so the column reads as one rhythm from top to
+    /// bottom until the person sets the two apart.
     /// </summary>
-    public const int CompactPitch = 24;
+    public const int DefaultCompactPitch = 24;
+
+    /// <summary>
+    /// A tray icon's pitch: from 16, the icon itself with no room around it, to
+    /// 40, beyond Explorer's own 32.
+    /// </summary>
+    public static PixelRange TrayPitchRange { get; } = new(16, 40);
+
+    /// <summary>
+    /// An app button's height: from 20, the 16 px icon with 2 px above and below
+    /// (Start's padding goes to 0 there), to 48, the height of a Large-mode button.
+    /// </summary>
+    public static PixelRange TaskButtonPitchRange { get; } = new(20, 48);
+}
+
+/// <summary>The bounds of a size in effective pixels: what the page offers, and what a value read from the file is held to.</summary>
+internal readonly record struct PixelRange(int Minimum, int Maximum)
+{
+    public int Clamp(int value) => Math.Clamp(value, Minimum, Maximum);
 }
 
 /// <summary>
