@@ -7,6 +7,7 @@
 #include "xamldiag/visual_tree_watcher.h"
 #include "xamldiag/rules/rule_document.h"
 #include "xamldiag/rules/rule_engine.h"
+#include "patches/constant_return.h"
 
 namespace
 {
@@ -22,12 +23,26 @@ namespace
     std::wstring g_stopReason;
     std::mutex g_stopReasonLock;
 
+    // The functions the patches change are ones the taskbar reads when it lays
+    // itself out (its thickness). The Settings app sends this same message when
+    // a taskbar setting changes: the taskbar lays itself out again, and the work
+    // area follows. Sent, not posted: the text travels by pointer.
+    void RelayOutTaskbar()
+    {
+        HWND taskbar = FindWindowW(L"Shell_TrayWnd", nullptr);
+        if (!taskbar) return;
+        DWORD_PTR result = 0;
+        SendMessageTimeoutW(taskbar, WM_SETTINGCHANGE, 0, reinterpret_cast<LPARAM>(L"TraySettings"),
+                            SMTO_ABORTIFHUNG, 2000, &result);
+    }
+
     // Restores everything the engine changed in explorer: the rule engine gives
-    // back every property it holds. The parts that will change something else
-    // (tier 3 hooks) register here, each with its own restore.
+    // back every property it holds, the patches every function's own code.
     size_t RestoreAll()
     {
-        return deckle::rules::Engine::Instance().Shutdown();
+        size_t functions = deckle::patches::RestoreAll();
+        if (functions > 0) RelayOutTaskbar();
+        return functions + deckle::rules::Engine::Instance().Shutdown();
     }
 
     std::wstring ReadString(json::JsonObject const& object, std::wstring_view key)
@@ -65,7 +80,12 @@ namespace
                 deckle::Log(deckle::LogLevel::Warning, L"document_unreadable", L"The apply command carries no document");
                 return true;
             }
-            deckle::rules::Engine::Instance().Apply(deckle::rules::ParseSettingsDocument(command.GetNamedObject(L"doc")));
+            auto document = command.GetNamedObject(L"doc");
+            std::vector<std::wstring> problems;
+            if (deckle::patches::Apply(deckle::patches::Parse(document, problems))) RelayOutTaskbar();
+            for (auto const& problem : problems)
+                deckle::Log(deckle::LogLevel::Warning, L"document_problem", L"Part of the settings document could not be read", { { L"problem", problem } });
+            deckle::rules::Engine::Instance().Apply(deckle::rules::ParseSettingsDocument(document));
             return true;
         }
         if (kind == L"dump")
