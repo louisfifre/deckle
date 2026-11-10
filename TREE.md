@@ -2489,6 +2489,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MailboxNamingTests.cs
 │   │   ├── MailWordingTests.cs
 │   │   ├── NavigationCountsTests.cs
+│   │   ├── OpenDecisionTests.cs
 │   │   ├── SubjectTests.cs
 │   │   ├── SyntheticMail.cs
 │   │   ├── TaskDayProposalTests.cs
