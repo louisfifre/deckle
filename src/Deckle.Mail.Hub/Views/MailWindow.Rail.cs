@@ -12,7 +12,7 @@ namespace Deckle.Mail.Hub;
 // file only turns its entries into NavigationViewItems. A structural change (a
 // mailbox added, renamed, removed, Activity's first line) rebuilds the items;
 // a gesture only refreshes the numbers, so the rail never flickers under the
-// hand.
+// hand. MailRail.Shape tells the two apart.
 //
 // The numbers are native InfoBadges. A mailbox that cannot connect wears the
 // caution style of the badge, a dot or its number in caution colour, and its
@@ -28,6 +28,7 @@ public sealed partial class MailWindow
 
     private readonly List<(NavigationViewItem Item, RailEntry Entry)> _railItems = [];
     private bool _syncingSelection;
+    private string _railShape = "";
 
     // The open pane fits its longest label between these two widths. Neither
     // is set by the spec (the current design is 216 px); kept here alone so
@@ -42,6 +43,7 @@ public sealed partial class MailWindow
         Nav.FooterMenuItems.Clear();
 
         IReadOnlyList<RailEntry> entries = MailRail.Build(Session, id => !_folded.Contains(id));
+        _railShape = MailRail.Shape(entries);
         bool separated = false;
         foreach (RailEntry entry in entries)
         {

@@ -79,6 +79,31 @@ public sealed class NavigationTests
         Assert.Equal("Boutique", MailNames.Alias(new MailAlias("a", "shop@exemple.fr", "Boutique"), true));
     }
 
+    // A gesture changes numbers, not the items: the window keeps its items
+    // (focus, selection) and only refreshes the badges.
+    [Fact]
+    public void AGestureKeepsTheShapeOfTheRail()
+    {
+        TriageSession session = Open();
+        string before = MailRail.Shape(MailRail.Build(session, _ => true));
+
+        session.MoveToTrash("s-drive");
+        session.AddTask("s-devis", null);
+
+        Assert.Equal(before, MailRail.Shape(MailRail.Build(session, _ => true)));
+    }
+
+    [Fact]
+    public void ARenamedMailboxChangesTheShapeOfTheRail()
+    {
+        TriageSession session = Open();
+        string before = MailRail.Shape(MailRail.Build(session, _ => true));
+
+        session.RenameMailbox("mb-maison", "Maison");
+
+        Assert.NotEqual(before, MailRail.Shape(MailRail.Build(session, _ => true)));
+    }
+
     [Fact]
     public void BackIsDisabledOnTheFirstPageAndLeadsToThePreviousOne()
     {

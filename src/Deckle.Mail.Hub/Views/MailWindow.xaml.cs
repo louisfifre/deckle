@@ -118,8 +118,14 @@ public sealed partial class MailWindow : Window, IMailShell
     // follows it on its own.
     private void OnSessionChanged(SessionChange change)
     {
-        if ((change & (SessionChange.Mailboxes | SessionChange.Activity)) != 0) RebuildRail();
-        else if ((change & SessionChange.Rows) != 0) RefreshRailCounts();
+        // Rebuild only when the items themselves change (a mailbox added,
+        // renamed or removed, Activity appearing or leaving); a gesture
+        // changes numbers only, refreshed in place.
+        if ((change & (SessionChange.Mailboxes | SessionChange.Activity | SessionChange.Rows)) != 0)
+        {
+            if (MailRail.Shape(MailRail.Build(Session, id => !_folded.Contains(id))) != _railShape) RebuildRail();
+            else RefreshRailCounts();
+        }
 
         if ((change & (SessionChange.Mailboxes | SessionChange.Problems | SessionChange.Rows)) != 0)
             RefreshProblems();

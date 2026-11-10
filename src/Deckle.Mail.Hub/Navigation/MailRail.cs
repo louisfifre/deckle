@@ -67,6 +67,26 @@ public static class MailRail
     }
 
     private static int? Count(int n) => n > 0 ? n : null;
+
+    // What makes the items themselves: which entries, in which order, with
+    // which words. Numbers and the failing state are left out, since a badge
+    // changes in place. Two equal shapes mean the window keeps its items, so
+    // focus and selection survive a gesture.
+    public static string Shape(IReadOnlyList<RailEntry> entries)
+    {
+        var shape = new System.Text.StringBuilder();
+        void Add(IEnumerable<RailEntry> list)
+        {
+            foreach (RailEntry e in list)
+            {
+                shape.Append(e.Kind).Append('|').Append(e.MailboxId).Append('|')
+                     .Append(e.AliasId).Append('|').Append(e.Label).Append('\n');
+                Add(e.Children);
+            }
+        }
+        Add(entries);
+        return shape.ToString();
+    }
 }
 
 // Label is null where the window supplies its own word (Triage, Activity,
