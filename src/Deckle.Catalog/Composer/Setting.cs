@@ -253,7 +253,8 @@ public static class Setting
 
     // A master toggle that reveals child settings: get/set are the master's own
     // bool, and the composer hides the children while it is off. enabledWhen and
-    // visibleWhen gate the whole group.
+    // visibleWhen gate the whole group. An advisory speaks for the whole feature
+    // the master turns on, so it hangs under the fold, not under one child.
     public static SettingDescriptor Group(
         string labelKey,
         Func<bool> get,
@@ -264,7 +265,8 @@ public static class Setting
         Func<bool>? enabledWhen = null,
         Func<bool>? visibleWhen = null,
         Func<bool>? defaultValue = null,
-        Func<XamlRoot, Task<bool>>? confirmOnEnable = null) => new()
+        Func<XamlRoot, Task<bool>>? confirmOnEnable = null,
+        Func<string?>? advisory = null) => new()
         {
             Kind = SettingKind.Group,
             LabelKey = labelKey,
@@ -279,6 +281,7 @@ public static class Setting
             // child's Default; a master without one still resets its children.
             Default = defaultValue is null ? null : () => defaultValue(),
             ConfirmOnEnable = confirmOnEnable,
+            Advisory = advisory,
         };
 
     // A fold with no master toggle. The section has no value, so it takes no

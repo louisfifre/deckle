@@ -310,4 +310,17 @@ public class SettingFactoryTests
         var args = Assert.IsType<GroupArgs>(g.Args);
         Assert.Single(args.Children);
     }
+
+    // A group speaks for the feature its master turns on, through the same live
+    // channel as a leaf.
+    [Fact]
+    public void GroupCarriesALiveAdvisory()
+    {
+        string? message = null;
+        var g = Setting.Group("g", () => true, _ => { }, [], advisory: () => message);
+
+        Assert.Null(g.Advisory!());
+        message = "beware";
+        Assert.Equal("beware", g.Advisory!());
+    }
 }

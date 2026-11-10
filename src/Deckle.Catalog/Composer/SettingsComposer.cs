@@ -153,10 +153,15 @@ public sealed partial class SettingsComposer
 
     // A leaf with an advisory is wrapped so the message hangs beneath the card; a
     // fold child gets its advisory through AddFoldChild instead. A standalone
-    // Path is a fold of its own (BuildPathExpander), advised like a leaf.
+    // Path is a fold of its own (BuildPathExpander), advised like a leaf, and so
+    // is a Group, whose message speaks for the feature its master turns on.
     private FrameworkElement BuildElement(SettingDescriptor s)
     {
-        if (s.Kind == SettingKind.Group) return BuildGroup(s);
+        if (s.Kind == SettingKind.Group)
+        {
+            SettingsExpander group = BuildGroup(s);
+            return HasAdvisory(s) ? WrapWithAdvisory(group, s) : group;
+        }
         if (s.Kind == SettingKind.Section) return BuildSection(s);
         if (s.Kind == SettingKind.Mode) return BuildMode(s);
 
