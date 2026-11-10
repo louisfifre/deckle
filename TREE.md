@@ -1712,6 +1712,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ViewModels/
 │   │   │   ├── TaskbarViewModel.cs
 │   │   │   └── TaskbarViewModel.Settings.cs
+│   │   ├── WindowsKey/
+│   │   │   ├── WindowsKeyAction.cs
+│   │   │   └── WindowsKeyTapDetector.cs
 │   │   ├── Deckle.Shell.Taskbar.csproj
 │   │   ├── DeckleShellTaskbarSource.cs
 │   │   ├── SettingsSearch.cs
@@ -2535,6 +2538,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskbarPipeServerTests.cs
 │   │   │   ├── TaskbarProblemReaderTests.cs
 │   │   │   └── VersionedNativeCopyTests.cs
+│   │   ├── WindowsKey/
+│   │   │   └── WindowsKeyTapDetectorTests.cs
 │   │   ├── Deckle.Shell.Taskbar.Tests.csproj
 │   │   ├── IsolatedDataRoot.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
