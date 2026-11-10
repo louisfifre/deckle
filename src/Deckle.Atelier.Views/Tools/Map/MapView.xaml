@@ -89,15 +89,21 @@
                      IsIndeterminate="True"
                      Visibility="Collapsed" />
 
+        <!-- Top-aligned so the list is as tall as its rows and the total
+             follows the last one; past the window's height it scrolls. -->
         <ListView x:Name="Rows"
                   Grid.Row="3"
                   Margin="0,4,0,0"
+                  VerticalAlignment="Top"
                   SelectionMode="Single"
                   IsItemClickEnabled="False"
                   SelectionChanged="OnSelectionChanged">
             <ListView.ItemContainerStyle>
+                <!-- The item spans the list's width and insets only its
+                     rounded fill by 4 px; 16 px puts the content where the
+                     header's and the total's columns start (4 + 12). -->
                 <Style TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
-                    <Setter Property="Padding" Value="12,0" />
+                    <Setter Property="Padding" Value="16,0" />
                     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                 </Style>
             </ListView.ItemContainerStyle>

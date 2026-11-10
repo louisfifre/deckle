@@ -49,21 +49,18 @@ internal sealed partial class MapLinkGraph : Grid
         _drawnFor = side;
         _canvas.Children.Clear();
         var centre = new Point(side / 2, side / 2);
-        double radius = side * 0.34;
-        double nodeMaxWidth = side * 0.42;
 
-        Border middle = Node(_around.Centre, nodeMaxWidth, isCentre: true);
+        Border middle = Node(_around.Centre, side * 0.6, isCentre: true);
         Rect middleBox = Place(middle, centre, side);
 
-        double[] angles = Angles(_around.Shown.Count, _around.Hidden > 0);
+        (double X, double Y)[] slots = Slots(_around.Shown.Count);
         var edges = new List<UIElement>();
         var nodes = new List<UIElement> { middle };
         for (int i = 0; i < _around.Shown.Count; i++)
         {
             MapNeighbour neighbour = _around.Shown[i];
-            double a = angles[i] * Math.PI / 180;
-            Border node = Node(neighbour.Item, nodeMaxWidth, isCentre: false);
-            Rect box = Place(node, new Point(centre.X + radius * Math.Cos(a), centre.Y + radius * Math.Sin(a)), side);
+            Border node = Node(neighbour.Item, side * 0.46, isCentre: false);
+            Rect box = Place(node, new Point(centre.X + slots[i].X * side, centre.Y + slots[i].Y * side), side);
             nodes.Add(node);
             edges.AddRange(Edge(middleBox, box, neighbour.Direction));
         }
@@ -77,7 +74,7 @@ internal sealed partial class MapLinkGraph : Grid
                 Foreground = Resource<Brush>("TextFillColorSecondaryBrush"),
             };
             AutomationProperties.SetName(more, AtelierText.Format("Map_Graph_More_Name_Format", _around.Hidden));
-            Rect box = Place(more, new Point(centre.X, centre.Y + radius), side);
+            Rect box = Place(more, new Point(centre.X, centre.Y + Reach * side), side);
             Point from = Border(middleBox, Mid(box));
             Point to = Border(box, Mid(middleBox));
             edges.Add(new Line
@@ -97,16 +94,22 @@ internal sealed partial class MapLinkGraph : Grid
         foreach (UIElement node in nodes) _canvas.Children.Add(node);
     }
 
-    // Where the neighbours sit, in degrees, 0 to the right and clockwise. Four
-    // take the corners, as 12.8a draws them, leaving the bottom to "+N"; fewer
-    // spread evenly from the top.
-    private static double[] Angles(int count, bool hasMore) => count switch
+    // How far from the middle the neighbours sit, as a share of the side: far
+    // enough that the four of them fill the square rather than huddle in it.
+    private const double Reach = 0.32;
+    private const double Aside = 0.26;
+
+    // Where the neighbours sit, as offsets from the middle in shares of the
+    // side. Four take the corners, as 12.8a draws them, with "+N" between the
+    // two at the bottom; fewer sit above and below the item, never beside
+    // it, where a long name would run into the item's own.
+    private static (double X, double Y)[] Slots(int count) => count switch
     {
         0 => [],
-        1 => [-90],
-        2 => [180, 0],
-        3 when !hasMore => [-90, 30, 150],
-        _ => [-135, -45, 45, 135],
+        1 => [(0, -Reach)],
+        2 => [(0, -Reach), (0, Reach)],
+        3 => [(0, -Reach), (Aside, Reach), (-Aside, Reach)],
+        _ => [(-Aside, -Reach), (Aside, -Reach), (Aside, Reach), (-Aside, Reach)],
     };
 
     private Border Node(MapItem item, double maxWidth, bool isCentre)

@@ -614,6 +614,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.SelfCheck.Atelier.cs
+│   │   ├── App.SelfCheck.Atelier.Map.cs
 │   │   ├── App.SelfCheck.cs
 │   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs
@@ -696,6 +697,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ShellFileOperationInterop.cs
 │   │   │   └── ShellRecycleBin.cs
 │   │   ├── Sample/
+│   │   │   ├── MapSampleFolder.cs
 │   │   │   └── SampleFolder.cs
 │   │   ├── Sizes/
 │   │   │   ├── FolderReader.cs
@@ -2232,6 +2234,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MapInventoryTests.cs
 │   │   ├── MapListFilterTests.cs
 │   │   ├── MapNeighbourhoodTests.cs
+│   │   ├── MapSampleFolderTests.cs
 │   │   ├── MapSampleRepository.cs
 │   │   ├── MapTextTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
