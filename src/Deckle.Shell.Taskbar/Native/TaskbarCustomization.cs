@@ -16,13 +16,27 @@ internal sealed record TaskbarCustomization
     public int? TrayIconPitch { get; init; }
 
     /// <summary>
-    /// Brings the quick-settings group (network, volume, battery) to the same
-    /// pitch as the tray icons, <see cref="TrayIconPitch"/> or 24 when that is not set.
+    /// Brings the quick-settings group (network, volume, battery) and the system
+    /// icons beside the tray (microphone or location in use) to the same pitch as
+    /// the tray icons, <see cref="TrayIconPitch"/> or 24 when that is not set.
     /// </summary>
     public bool TightenQuickSettings { get; init; }
 
+    /// <summary>
+    /// The height of an app button, of Start and of Task view on a vertical bar;
+    /// null leaves Explorer's (32 for an app, 43 for Start in Small mode).
+    /// </summary>
+    public int? TaskButtonPitch { get; init; }
+
     /// <summary>The clock's lines and styles; null leaves Explorer's clock alone.</summary>
     public ClockCustomization? Clock { get; init; }
+
+    /// <summary>
+    /// Takes away the empty band the clock's button keeps above and below the
+    /// stacked lines, leaving a small gap above it to set the clock apart from
+    /// the icons. Vertical bar only.
+    /// </summary>
+    public bool TightenClockButton { get; init; }
 
     /// <summary>
     /// The Start menu; null leaves Windows' own. It lives in another process
@@ -32,28 +46,34 @@ internal sealed record TaskbarCustomization
 
     /// <summary>Whether anything here lives in explorer, which is where the taskbar host is needed.</summary>
     public bool CustomizesExplorer =>
-        Background != TaskbarBackground.Native || TrayIconPitch is not null || TightenQuickSettings || Clock is not null;
+        Background != TaskbarBackground.Native || TrayIconPitch is not null || TightenQuickSettings
+        || TaskButtonPitch is not null || Clock is not null || TightenClockButton;
 
     /// <summary>Whether anything here lives in the Start menu process.</summary>
     public bool CustomizesStartMenu => StartMenu is { FullHeight: true };
 
     /// <summary>
-    /// What the settings ask for on this taskbar. The compact tray is only
-    /// carried to a vertical bar: its rules (a 24 px row, a tightened
-    /// quick-settings stack) are written for the column layout, and on a
-    /// horizontal bar the tray is laid out the other way.
+    /// What the settings ask for on this taskbar. The compact tray, the compact
+    /// app buttons and the clock button's tightening are only carried to a
+    /// vertical bar: their rules (a 24 px row, a tightened stack) are written for
+    /// the column layout, and on a horizontal bar the items run the other way.
     /// </summary>
     public static TaskbarCustomization From(TaskbarSettings settings, bool verticalBar) => new()
     {
         Background = settings.Background,
-        TrayIconPitch = settings.CompactTray && verticalBar ? CompactTrayPitch : null,
+        TrayIconPitch = settings.CompactTray && verticalBar ? CompactPitch : null,
         TightenQuickSettings = settings.CompactTray && verticalBar,
+        TaskButtonPitch = settings.CompactTaskButtons && verticalBar ? CompactPitch : null,
         Clock = settings.CompactClock ? ClockCustomization.DateAboveTime : null,
+        TightenClockButton = settings.CompactClock && verticalBar,
         StartMenu = settings.StartMenuFullHeight ? new StartMenuCustomization() : null,
     };
 
-    /// <summary>The distance between two notification icons when the tray is compact.</summary>
-    public const int CompactTrayPitch = 24;
+    /// <summary>
+    /// The pitch of everything compact: a tray icon, a quick-settings icon, an app
+    /// button. One value, so the column reads as one rhythm from top to bottom.
+    /// </summary>
+    public const int CompactPitch = 24;
 }
 
 /// <summary>
@@ -79,15 +99,17 @@ internal readonly record struct ClockLine(ClockLineKind Kind, string Format)
 }
 
 /// <summary>
-/// How one of the clock's two TextBlocks is drawn. A null weight or color keeps
-/// Explorer's own. Size is in effective pixels, weight a XAML FontWeight name
-/// (Medium, SemiBold), color a XAML color (#C8C8C8).
+/// How one of the clock's two TextBlocks is drawn. A null weight, color or line
+/// height keeps Explorer's own. Size and line height are in effective pixels,
+/// weight a XAML FontWeight name (Medium, SemiBold), color a XAML color (#C8C8C8).
+/// A line height is held exactly (BlockLineHeight): the font's own leading would
+/// leave about a third of the size between two stacked lines.
 ///
 /// There is no alignment: on a vertical bar Explorer already centers both blocks
 /// (a visual state sets it), and a rule cannot hold or give back a value that a
 /// visual state owns.
 /// </summary>
-internal sealed record ClockTextStyle(double FontSize, string? FontWeight = null, string? Color = null);
+internal sealed record ClockTextStyle(double FontSize, string? FontWeight = null, string? Color = null, double? LineHeight = null);
 
 /// <summary>
 /// The clock as stacked lines. The taskbar clock is two TextBlocks, the upper one
@@ -106,12 +128,14 @@ internal sealed record ClockCustomization(
     /// The clock Louis had with Windhawk's taskbar-clock-customization: "MMM." "dd"
     /// "ddd" small and grey above "HH" "mm" large and medium weight, 4 px between
     /// the two blocks, all in English. Values from that mod's settings (TopLine,
-    /// BottomLine, TimeStyle, DateStyle, TextSpacing).
+    /// BottomLine, TimeStyle, DateStyle, TextSpacing). The line heights, a little
+    /// above each size, close the stack up (81 px tall instead of 100 with the
+    /// font's own leading, measured on the live bar on 2026-11-10).
     /// </summary>
     public static ClockCustomization DateAboveTime { get; } = new(
         UpperLines: [ClockLine.Date("MMM."), ClockLine.Date("dd"), ClockLine.Date("ddd")],
         LowerLines: [ClockLine.Time("HH"), ClockLine.Time("mm")],
-        UpperStyle: new ClockTextStyle(FontSize: 12, Color: "#C8C8C8"),
-        LowerStyle: new ClockTextStyle(FontSize: 18, FontWeight: "Medium"),
+        UpperStyle: new ClockTextStyle(FontSize: 12, Color: "#C8C8C8", LineHeight: 13),
+        LowerStyle: new ClockTextStyle(FontSize: 18, FontWeight: "Medium", LineHeight: 19),
         LineSpacing: 4);
 }

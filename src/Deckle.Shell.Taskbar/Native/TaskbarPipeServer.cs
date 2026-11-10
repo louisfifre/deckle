@@ -36,10 +36,10 @@ internal sealed class TaskbarPipeServer : IAsyncDisposable
 
     // The name the DLL computes in util.cpp: one pipe per terminal session and
     // per target process.
-    public static string NameFor(TaskbarTarget target)
+    public static string NameFor(TaskbarTarget target, string? instance = null)
     {
         using var current = System.Diagnostics.Process.GetCurrentProcess();
-        return target.PipeName(current.SessionId);
+        return target.PipeName(current.SessionId, instance);
     }
 
     public static string DefaultName() => NameFor(TaskbarTarget.Explorer);

@@ -13,6 +13,7 @@ internal static class TaskbarProblemReader
         _ when id.StartsWith("background.", StringComparison.Ordinal) => TaskbarPart.Background,
         _ when id.StartsWith("tray.", StringComparison.Ordinal) => TaskbarPart.CompactTray,
         _ when id.StartsWith("quickSettings.", StringComparison.Ordinal) => TaskbarPart.CompactTray,
+        _ when id.StartsWith("taskButtons.", StringComparison.Ordinal) => TaskbarPart.CompactTaskButtons,
         _ when id.StartsWith("clock.", StringComparison.Ordinal) || id == "clock" => TaskbarPart.CompactClock,
         "startMenuHeight" => TaskbarPart.StartMenu,
         _ => null,
@@ -33,7 +34,8 @@ internal static class TaskbarProblemReader
         var parts = new List<TaskbarPart>();
         if (wanted.Background != TaskbarBackground.Native) parts.Add(TaskbarPart.Background);
         if (wanted.TrayIconPitch is not null || wanted.TightenQuickSettings) parts.Add(TaskbarPart.CompactTray);
-        if (wanted.Clock is not null) parts.Add(TaskbarPart.CompactClock);
+        if (wanted.TaskButtonPitch is not null) parts.Add(TaskbarPart.CompactTaskButtons);
+        if (wanted.Clock is not null || wanted.TightenClockButton) parts.Add(TaskbarPart.CompactClock);
         if (wanted.CustomizesStartMenu) parts.Add(TaskbarPart.StartMenu);
         return parts;
     }
@@ -65,10 +67,14 @@ internal static class TaskbarProblemReader
         if (status is null) return;
 
         IReadOnlyList<TaskbarPart> asked = WantedParts(wanted);
+        HashSet<string> optional = TaskbarDocumentBuilder.Rules(wanted)
+            .Where(rule => rule.Optional).Select(rule => rule.Id).ToHashSet(StringComparer.Ordinal);
         foreach (NativeRuleState state in status.Rules.Concat(status.Behaviors))
         {
             if (PartOf(state.Id) is not { } part || !asked.Contains(part)) continue;
             if (ProblemOf(state.State) is not { } problem) continue;
+            // An element that is only there now and then may well be absent.
+            if (problem == TaskbarProblem.NotApplied && optional.Contains(state.Id)) continue;
             if (!problems.TryGetValue(part, out TaskbarProblem known) || problem > known) problems[part] = problem;
         }
     }

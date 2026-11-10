@@ -15,7 +15,7 @@ public partial class TaskbarViewModel
     private const string ProblemNotAppliedKey = "TaskbarPage_ProblemNotApplied";
     private const string ProblemContestedKey = "TaskbarPage_ProblemContested";
     private const string ProblemErrorKey = "TaskbarPage_ProblemError";
-    private const string HorizontalBarKey = "TaskbarPage_CompactTrayHorizontal";
+    private const string HorizontalBarKey = "TaskbarPage_HorizontalBarNoEffect";
 
     public IReadOnlyList<SettingDescriptor> BarManifest =>
     [
@@ -32,6 +32,12 @@ public partial class TaskbarViewModel
             ],
             defaultValue: () => new TaskbarSettings().Background,
             advisory: () => ProblemAdvisory(TaskbarPart.Background)),
+        Setting.Toggle(
+            "TaskbarPage_CompactTaskButtonsCard",
+            () => CompactTaskButtons,
+            value => CompactTaskButtons = value,
+            defaultValue: () => new TaskbarSettings().CompactTaskButtons,
+            advisory: CompactTaskButtonsAdvisory),
         Setting.Toggle(
             "TaskbarPage_CompactClockCard",
             () => CompactClock,
@@ -64,6 +70,13 @@ public partial class TaskbarViewModel
             value => StartMenuFullHeight = value,
             defaultValue: () => new TaskbarSettings().StartMenuFullHeight,
             advisory: () => ProblemAdvisory(TaskbarPart.StartMenu)),
+        // Sits with the Start menu because it changes what the Windows key does to
+        // Start. It asks nothing of the engine, so it has no advisory.
+        Setting.Toggle(
+            "TaskbarPage_WindowsKeyShowsTaskbarCard",
+            () => WindowsKeyShowsTaskbar,
+            value => WindowsKeyShowsTaskbar = value,
+            defaultValue: () => new TaskbarSettings().WindowsKeyShowsTaskbar),
     ];
 
     // The promoter's last pass, said only when it did not go through. While
@@ -96,6 +109,19 @@ public partial class TaskbarViewModel
         }
     }
 
+    // The compact app buttons speak the same way, for the same reason.
+    private string? CompactTaskButtonsAdvisory() =>
+        CompactTaskButtonsMessageKey is { } key ? Loc.GetFromOptional(TaskbarSettingsModule.ResourceLibrary, key) : null;
+
+    internal string? CompactTaskButtonsMessageKey
+    {
+        get
+        {
+            if (!CompactTaskButtons) return null;
+            return _isBarVertical() ? ProblemKey(TaskbarPart.CompactTaskButtons) : HorizontalBarKey;
+        }
+    }
+
     private string? ProblemAdvisory(TaskbarPart part) =>
         ProblemKey(part) is { } key ? Loc.GetFromOptional(TaskbarSettingsModule.ResourceLibrary, key) : null;
 
@@ -107,6 +133,7 @@ public partial class TaskbarViewModel
         {
             TaskbarPart.Background => Background != TaskbarBackground.Native,
             TaskbarPart.CompactTray => CompactTray,
+            TaskbarPart.CompactTaskButtons => CompactTaskButtons,
             TaskbarPart.CompactClock => CompactClock,
             _ => StartMenuFullHeight,
         };

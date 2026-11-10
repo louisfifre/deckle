@@ -13,6 +13,11 @@ public static class SettingsSearch
         },
         new SettingSearchEntry
         {
+            LabelKey = "TaskbarPage_CompactTaskButtonsCard",
+            Keywords = ["taskbar", "buttons", "apps", "icons", "spacing", "compact", "vertical", "start", "task view"],
+        },
+        new SettingSearchEntry
+        {
             LabelKey = "TaskbarPage_CompactClockCard",
             Keywords = ["taskbar", "clock", "time", "date", "stacked", "lines", "compact"],
         },
@@ -30,6 +35,11 @@ public static class SettingsSearch
         {
             LabelKey = "TaskbarPage_StartMenuFullHeightCard",
             Keywords = ["start", "start menu", "height", "tall", "full height", "size"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "TaskbarPage_WindowsKeyShowsTaskbarCard",
+            Keywords = ["windows key", "win key", "start", "start menu", "taskbar", "focus", "game", "fullscreen", "shortcut"],
         },
     ];
 }

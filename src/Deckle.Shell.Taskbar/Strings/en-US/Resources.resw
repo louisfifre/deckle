@@ -64,7 +64,7 @@
     <value>Taskbar</value>
   </data>
   <data name="TaskbarPageHeader.Description" xml:space="preserve">
-    <value>Restyle the taskbar, tighten its tray and clock, and size the Start menu.</value>
+    <value>Restyle the taskbar, tighten its buttons, tray and clock, and size the Start menu.</value>
   </data>
   <data name="TaskbarPageBarSection.Title" xml:space="preserve">
     <value>Taskbar</value>
@@ -84,6 +84,12 @@
   <data name="TaskbarPage_BackgroundBlack.Content" xml:space="preserve">
     <value>Black</value>
   </data>
+  <data name="TaskbarPage_CompactTaskButtonsCard.Header" xml:space="preserve">
+    <value>Compact app buttons</value>
+  </data>
+  <data name="TaskbarPage_CompactTaskButtonsCard.Description" xml:space="preserve">
+    <value>Brings the app buttons, Start and Task view as close together as the tray icons. Applies to a vertical taskbar only.</value>
+  </data>
   <data name="TaskbarPage_CompactClockCard.Header" xml:space="preserve">
     <value>Compact clock</value>
   </data>
@@ -96,7 +102,7 @@
   <data name="TaskbarPage_CompactTrayCard.Description" xml:space="preserve">
     <value>Brings the tray icons and the quick settings icons closer together. Applies to a vertical taskbar only.</value>
   </data>
-  <data name="TaskbarPage_CompactTrayHorizontal" xml:space="preserve">
+  <data name="TaskbarPage_HorizontalBarNoEffect" xml:space="preserve">
     <value>Your taskbar is horizontal, so this has no effect.</value>
   </data>
   <data name="TaskbarPage_StartMenuFullHeightCard.Header" xml:space="preserve">
@@ -104,6 +110,12 @@
   </data>
   <data name="TaskbarPage_StartMenuFullHeightCard.Description" xml:space="preserve">
     <value>Makes the Start menu as tall as the screen, with the same space above and below it.</value>
+  </data>
+  <data name="TaskbarPage_WindowsKeyShowsTaskbarCard.Header" xml:space="preserve">
+    <value>Windows key shows the taskbar</value>
+  </data>
+  <data name="TaskbarPage_WindowsKeyShowsTaskbarCard.Description" xml:space="preserve">
+    <value>Pressing the Windows key on its own brings the taskbar forward instead of opening Start. Shortcuts such as Windows + E keep working.</value>
   </data>
   <data name="TaskbarPageStartSection.Title" xml:space="preserve">
     <value>Start menu</value>

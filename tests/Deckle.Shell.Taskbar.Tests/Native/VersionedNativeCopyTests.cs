@@ -39,6 +39,30 @@ public sealed class VersionedNativeCopyTests : IDisposable
     private VersionedNativeCopy NewCopy() => new(Path.Combine(_folder, "root"));
 
     [Fact]
+    public void AnInstanceNameIsWrittenBesideTheCopyAndRemovedWhenNull()
+    {
+        string dll = NewCopy().Ensure(MakeSource("a.dll"));
+        string file = Path.Combine(Path.GetDirectoryName(dll)!, VersionedNativeCopy.InstanceFileName);
+
+        VersionedNativeCopy.WriteInstance(dll, "harness");
+        Assert.Equal("harness", File.ReadAllText(file));
+
+        VersionedNativeCopy.WriteInstance(dll, null);
+        Assert.False(File.Exists(file));
+    }
+
+    [Theory]
+    [InlineData("..\\pipe")]
+    [InlineData("a b")]
+    [InlineData("abcdefghijklmnopqrstuvwxyz0123456")]
+    public void AnInstanceNameThatCouldBendThePipeNameIsRefused(string instance)
+    {
+        string dll = NewCopy().Ensure(MakeSource("a.dll"));
+
+        Assert.Throws<ArgumentException>(() => VersionedNativeCopy.WriteInstance(dll, instance));
+    }
+
+    [Fact]
     public void TheFolderNameIsTheFileVersionAndEightHexOfTheContentHash()
     {
         string name = VersionedNativeCopy.FolderNameFor(MakeSource("a.dll"));

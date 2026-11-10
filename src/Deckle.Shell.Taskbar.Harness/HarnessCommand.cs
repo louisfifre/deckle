@@ -5,6 +5,8 @@ namespace Deckle.Shell.Taskbar.Harness;
 
 internal static class HarnessCommand
 {
+    private const string HarnessInstance = "harness";
+
     public static async Task<int> RunAsync(string[] args)
     {
         var options = HarnessOptions.Parse(args);
@@ -26,12 +28,16 @@ internal static class HarnessCommand
             return 2;
         }
 
-        var copy = new VersionedNativeCopy(options.Root ?? VersionedNativeCopy.DefaultRoot());
+        // Never the app's own root: a build the app also runs would share its
+        // versioned folder, and the instance file beside the DLL would turn the
+        // app's engine to the console's pipe.
+        var copy = new VersionedNativeCopy(options.Root ?? VersionedNativeCopy.DefaultRoot() + "-harness");
         var recorder = new VisualTreeRecorder();
         var stop = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; stop.TrySetResult(); };
 
-        await using var host = new TaskbarEngineHost(source, copy, options.Target);
+        // Its own pipe, so the console runs while the app keeps its engine in explorer.
+        await using var host = new TaskbarEngineHost(source, copy, options.Target, instance: HarnessInstance);
         long connectedAt = 0;
         host.MessageReceived += message =>
         {

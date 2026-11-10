@@ -291,6 +291,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── action-summary.ps1
 │   │   ├── agent-state-maintenance.psm1
 │   │   ├── agent-state-maintenance.strings.psd1
+│   │   ├── anytype-backend.psm1
 │   │   ├── build-outputs.ps1
 │   │   ├── build-server-cleanup.ps1
 │   │   ├── context-inventory.psm1
@@ -314,6 +315,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── reset-agent-state.ps1  — Inspect or reset local AI sessions Builds a cleanup plan for the local Claude Code session data of the current acc…
 │   │   ├── stop-build-servers.ps1  — Stop .NET build servers Stops the MSBuild and Roslyn build servers left behind by dotnet builds, which…
 │   │   ├── sweep-exposables.ps1  — Sweep exposable source values Text sweep of the exposables carried by the source tree. An exposable is a code…
+│   │   ├── switch-anytype-backend.ps1  — Switch the Anytype backend Points the Anytype backend at the version the app pins, once that version is st…
 │   │   └── validate-resources.ps1  — Validate WinUI resources Read-only audit of the WinUI resource inventories. Reports missing resource key…
 │   ├── release/
 │   │   ├── build-anytype-backend.ps1  — Build the Anytype backend Rebuilds one anytype-cli release tag from source for Windows with the tantivy-g…
@@ -351,6 +353,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── update-readme-stats.tests.ps1
 │   │   └── lib/
 │   │       ├── agent-skills-layout.tests.ps1
+│   │       ├── anytype-backend.tests.ps1
 │   │       ├── context-inventory.tests.ps1
 │   │       ├── deckle-process.tests.ps1
 │   │       ├── native-runtime-release.tests.ps1
@@ -584,6 +587,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Startup.Shell.cs
 │   │   ├── App.Taskbar.cs
 │   │   ├── App.TaskbarCover.cs
+│   │   ├── App.TaskbarWindowsKey.cs
 │   │   ├── App.Theme.cs
 │   │   ├── App.Trackpad.cs
 │   │   ├── App.TranscriptPanel.cs
@@ -1709,6 +1713,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ViewModels/
 │   │   │   ├── TaskbarViewModel.cs
 │   │   │   └── TaskbarViewModel.Settings.cs
+│   │   ├── WindowsKey/
+│   │   │   ├── IWindowsKeyInjector.cs
+│   │   │   ├── WindowsKeyAction.cs
+│   │   │   ├── WindowsKeyInjector.cs
+│   │   │   ├── WindowsKeyTapDetector.cs
+│   │   │   └── WindowsKeyTaskbarFocus.cs
 │   │   ├── Deckle.Shell.Taskbar.csproj
 │   │   ├── DeckleShellTaskbarSource.cs
 │   │   ├── SettingsSearch.cs
@@ -2532,6 +2542,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskbarPipeServerTests.cs
 │   │   │   ├── TaskbarProblemReaderTests.cs
 │   │   │   └── VersionedNativeCopyTests.cs
+│   │   ├── WindowsKey/
+│   │   │   ├── WindowsKeyTapDetectorTests.cs
+│   │   │   └── WindowsKeyTaskbarFocusTests.cs
 │   │   ├── Deckle.Shell.Taskbar.Tests.csproj
 │   │   ├── IsolatedDataRoot.cs
 │   │   ├── MessageTemplateDoctrineTests.cs

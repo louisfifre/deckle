@@ -23,7 +23,11 @@ public sealed class TaskbarProblemReaderTests
     [InlineData("background.stroke", TaskbarPart.Background)]
     [InlineData("tray.icon.minHeight", TaskbarPart.CompactTray)]
     [InlineData("quickSettings.spacing", TaskbarPart.CompactTray)]
+    [InlineData("tray.mainStack.icon.minHeight", TaskbarPart.CompactTray)]
+    [InlineData("taskButtons.app.height", TaskbarPart.CompactTaskButtons)]
+    [InlineData("taskButtons.experience.padding", TaskbarPart.CompactTaskButtons)]
     [InlineData("clock.upper.fontSize", TaskbarPart.CompactClock)]
+    [InlineData("clock.button.padding", TaskbarPart.CompactClock)]
     [InlineData("clock", TaskbarPart.CompactClock)]
     [InlineData("startMenuHeight", TaskbarPart.StartMenu)]
     public void AnEngineIdBelongsToThePartThatAskedForIt(string id, TaskbarPart part)
@@ -60,6 +64,21 @@ public sealed class TaskbarProblemReaderTests
 
         Assert.Equal(expected, Assert.Single(problems).Value);
         Assert.Equal(TaskbarPart.CompactTray, Assert.Single(problems).Key);
+    }
+
+    // The microphone-in-use icon is absent most of the time: its rule finding
+    // nothing is not a fault of the compact tray, but its failing still is.
+    [Fact]
+    public void AnOptionalRuleThatFindsNothingSaysNothing()
+    {
+        var quiet = TaskbarProblemReader.Read(_everything,
+            Status(Rule("tray.mainStack.icon.minHeight", "never_matched"), Rule("tray.nonActivatableStack.icon.minHeight", "never_matched")),
+            false, null, false);
+        var failed = TaskbarProblemReader.Read(_everything,
+            Status(Rule("tray.mainStack.icon.minHeight", "error")), false, null, false);
+
+        Assert.Empty(quiet);
+        Assert.Equal(TaskbarProblem.Error, failed[TaskbarPart.CompactTray]);
     }
 
     [Fact]

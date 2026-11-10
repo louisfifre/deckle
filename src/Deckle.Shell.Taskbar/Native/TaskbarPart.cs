@@ -8,6 +8,7 @@ public enum TaskbarPart
 {
     Background,
     CompactTray,
+    CompactTaskButtons,
     CompactClock,
     StartMenu,
 }

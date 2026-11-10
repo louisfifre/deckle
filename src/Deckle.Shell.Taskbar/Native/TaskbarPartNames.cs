@@ -7,6 +7,7 @@ internal static class TaskbarPartNames
     {
         TaskbarPart.Background => "background",
         TaskbarPart.CompactTray => "compact_tray",
+        TaskbarPart.CompactTaskButtons => "compact_task_buttons",
         TaskbarPart.CompactClock => "compact_clock",
         TaskbarPart.StartMenu => "start_menu",
         _ => "unknown",

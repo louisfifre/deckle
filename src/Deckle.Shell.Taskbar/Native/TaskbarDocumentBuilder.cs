@@ -6,7 +6,10 @@ namespace Deckle.Shell.Taskbar;
 // One rule of the settings document: set `Property` to `Value` on the elements
 // `Target` names. The wire shape and the target syntax are documented in
 // native/Deckle.Shell.Taskbar.Native/xamldiag/rules/rule_document.h and selector.h.
-internal sealed record TaskbarRule(string Id, string Target, string Property, string Value, string? VisualState = null);
+// An optional rule targets elements that exist only now and then (the
+// microphone-in-use icon): finding none is not a problem to tell on the page.
+// It stays on Deckle's side; the engine treats every rule alike.
+internal sealed record TaskbarRule(string Id, string Target, string Property, string Value, string? VisualState = null, bool Optional = false);
 
 // Builds the settings document the injected engine applies, from a
 // TaskbarCustomization. The rules live here, on the C# side, and not in the
@@ -31,11 +34,31 @@ internal static class TaskbarDocumentBuilder
     private const string NotifyIcon =
         "SystemTray.NotificationAreaIcons > ItemsPresenter > StackPanel > ContentPresenter > SystemTray.NotifyIconView#NotifyItemIcon";
 
-    private const string QuickSettingsStack =
-        "SystemTray.OmniButton#ControlCenterButton > Grid > ContentPresenter#ContentPresenter > ItemsPresenter > StackPanel";
+    // The two buttons of the tray's end: quick settings (network, volume) and the
+    // clock. Each holds its icons in a StackPanel under its template.
+    private const string QuickSettingsButton = "SystemTray.OmniButton#ControlCenterButton";
+    private const string ClockButton = "SystemTray.OmniButton#NotificationCenterButton";
+    private const string OmniButtonStack = " > Grid > ContentPresenter#ContentPresenter > ItemsPresenter > StackPanel";
+    private const string QuickSettingsStack = QuickSettingsButton + OmniButtonStack;
+
+    // The system icons between the tray and quick settings (microphone, camera
+    // or location in use), one stack each, the same shape under both names.
+    private const string SystemIconStackTail =
+        " > Grid#Content > SystemTray.StackListView#IconStack > ItemsPresenter > StackPanel > ContentPresenter > SystemTray.IconView#SystemTrayIcon";
 
     private const string ClockStack =
         "SystemTray.DateTimeIconContent > Grid#ContainerGrid > StackPanel";
+
+    // An app button's row; its height is the button's (Explorer sets it from
+    // the bar's size, 32 in Small mode) and the column of buttons packs on it.
+    private const string TaskButtonPanel = "Taskbar.TaskListButton > Grid#IconPanel";
+
+    // Start and Task view: the same kind of button with its own panel, whose
+    // Padding (4,7 for Start, 4,2 for Task view) frames a 16 px icon. Both are
+    // named LaunchListButton on this build; the name keeps the rule off the other
+    // experience buttons (widgets, search), whose content is not a 16 px icon.
+    private const string ExperienceButtonPanel =
+        "Taskbar.ExperienceToggleButton#LaunchListButton > Taskbar.TaskListButtonPanel#ExperienceToggleButtonRootPanel";
 
     public static IReadOnlyList<TaskbarRule> Rules(TaskbarCustomization customization)
     {
@@ -60,11 +83,35 @@ internal static class TaskbarDocumentBuilder
 
         if (customization.TightenQuickSettings)
         {
-            // The group's icons sit in a StackPanel with 4 px between them;
-            // each icon is given the pitch as its height.
-            int iconPitch = customization.TrayIconPitch ?? TaskbarCustomization.CompactTrayPitch;
+            // The group's icons sit in a StackPanel with 4 px between them and
+            // 4 px of Padding above and below; each icon is given the pitch as
+            // its height. The button's own Padding goes too, so its hover
+            // highlight fits the icons it covers.
+            int iconPitch = customization.TrayIconPitch ?? TaskbarCustomization.CompactPitch;
             rules.Add(new("quickSettings.spacing", QuickSettingsStack, "Spacing", "0"));
+            rules.Add(new("quickSettings.stack.padding", QuickSettingsStack, "Padding", "0"));
+            rules.Add(new("quickSettings.button.padding", QuickSettingsButton, "Padding", "0"));
             rules.Add(new("quickSettings.icon.height", QuickSettingsStack + " > ContentPresenter > SystemTray.IconView#SystemTrayIcon", "Height", Number(iconPitch)));
+
+            // The microphone-in-use icon and its kin: Explorer gives them a 28 px
+            // row. They come and go, so these two rules may find nothing.
+            rules.Add(new("tray.mainStack.icon.minHeight", "SystemTray.Stack#MainStack" + SystemIconStackTail, "MinHeight", Number(iconPitch), Optional: true));
+            rules.Add(new("tray.nonActivatableStack.icon.minHeight", "SystemTray.Stack#NonActivatableStack" + SystemIconStackTail, "MinHeight", Number(iconPitch), Optional: true));
+        }
+
+        if (customization.TaskButtonPitch is { } buttonPitch)
+        {
+            // Explorer writes an app button's height again when it lays the bar
+            // out; the engine holds it. The column of buttons follows each
+            // button's height, so the buttons pack at the pitch.
+            rules.Add(new("taskButtons.app.height", TaskButtonPanel, "Height", Number(buttonPitch)));
+
+            // Start and Task view: the same height, and a padding that leaves
+            // their 16 px icon whole (Start's own 7 above and below would leave it
+            // 10 px at a 24 px pitch). 4 on the sides is Explorer's own.
+            double vertical = Math.Max(0, (buttonPitch - 20) / 2.0);
+            rules.Add(new("taskButtons.experience.height", ExperienceButtonPanel, "Height", Number(buttonPitch)));
+            rules.Add(new("taskButtons.experience.padding", ExperienceButtonPanel, "Padding", $"4,{Number(vertical)},4,{Number(vertical)}"));
         }
 
         if (customization.Clock is { } clock)
@@ -72,6 +119,15 @@ internal static class TaskbarDocumentBuilder
             rules.Add(new("clock.spacing", ClockStack, "Spacing", Number(clock.LineSpacing)));
             AddClockStyle(rules, "upper", "TimeInnerTextBlock", clock.UpperStyle);
             AddClockStyle(rules, "lower", "DateInnerTextBlock", clock.LowerStyle);
+        }
+
+        if (customization.TightenClockButton)
+        {
+            // The clock's button keeps 4 px of Padding around its stack and 4 more
+            // in the stack: they go, and 4 px above set the clock apart from the
+            // icons over it.
+            rules.Add(new("clock.button.padding", ClockButton, "Padding", "0"));
+            rules.Add(new("clock.button.stack.padding", ClockButton + OmniButtonStack, "Padding", "0,4,0,0"));
         }
 
         return rules;
@@ -84,6 +140,11 @@ internal static class TaskbarDocumentBuilder
         rules.Add(new($"clock.{block}.fontSize", target, "FontSize", Number(style.FontSize)));
         if (style.FontWeight is { } weight) rules.Add(new($"clock.{block}.fontWeight", target, "FontWeight", weight));
         if (style.Color is { } color) rules.Add(new($"clock.{block}.color", target, "Foreground", color));
+        if (style.LineHeight is { } lineHeight)
+        {
+            rules.Add(new($"clock.{block}.lineHeight", target, "LineHeight", Number(lineHeight)));
+            rules.Add(new($"clock.{block}.lineStacking", target, "LineStackingStrategy", "BlockLineHeight"));
+        }
     }
 
     /// <summary>

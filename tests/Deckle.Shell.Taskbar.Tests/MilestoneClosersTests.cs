@@ -13,9 +13,9 @@ public sealed class MilestoneClosersTests
     [Fact]
     public void DeckleShellTaskbarSourceRecoveryClosersTravelInTheLog()
     {
-        // Stopped closes the Started milestone the promoter writes.
+        // Stopped closes the Started milestone the promoter writes, Disarmed the Windows key's Armed, Recovered its failed send.
         IReadOnlyList<string> outside = ProviderManifest.ClosersOutsideTheLog(
-            typeof(DeckleShellTaskbarSource), "TrayPromotionStopped");
+            typeof(DeckleShellTaskbarSource), "TrayPromotionStopped", "WindowsKeyFocusDisarmed", "WindowsKeyInjectionRecovered");
 
         Assert.Empty(outside);
     }

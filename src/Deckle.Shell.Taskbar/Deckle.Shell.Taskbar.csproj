@@ -22,6 +22,7 @@
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
   </ItemGroup>
 
   <!-- The tests wait on the tray watcher's own debounce rather than a copy. -->
