@@ -39,10 +39,14 @@ public static class NavigationCounts
         // carries the total of the mailbox, the number the folded header wore
         // (spec Open 8, the option drawn in 19A and 19E): with none, a mail
         // that arrived at the main address would be counted nowhere.
-        var aliases = mailbox.Aliases.ToDictionary(
-            alias => alias.Address,
-            alias => Waiting(state, MailScope.Alias(mailbox.Id, alias.Address)),
-            StringComparer.OrdinalIgnoreCase);
+        // Addresses compare without case, as mail does: Shop@ and shop@ are one
+        // alias, counted once under the first spelling the mailbox lists.
+        var aliases = new Dictionary<string, int?>(StringComparer.OrdinalIgnoreCase);
+        foreach (var alias in mailbox.Aliases)
+        {
+            aliases.TryAdd(alias.Address, Waiting(state, MailScope.Alias(mailbox.Id, alias.Address)));
+        }
+
         return new MailboxCounts(null, total, aliases);
     }
 

@@ -40,6 +40,16 @@ public class NavigationCountsTests
     }
 
     [Fact]
+    public void TwoAliasesThatDifferOnlyByCaseAreOneAddress()
+    {
+        var mailbox = Perso with { Aliases = [new MailAlias("Shop@exemple.fr"), new MailAlias("shop@exemple.fr")] };
+
+        var counts = NavigationCounts.For(ThreeWaitingInPerso(), mailbox, folded: false);
+
+        Assert.Equal(1, Assert.Single(counts.Aliases).Value);
+    }
+
+    [Fact]
     public void AnItemWhereNothingWaitsHasNoNumber()
     {
         var counts = NavigationCounts.For(ThreeWaitingInPerso(), Perso, folded: false);
