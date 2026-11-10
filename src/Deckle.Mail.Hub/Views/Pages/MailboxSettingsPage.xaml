@@ -93,13 +93,16 @@
                  does (spec, Settings, decided 10 November). Deckle has no
                  destructive style (App.xaml says why); this one is scoped to
                  this button alone, in lightweight styling, and the red is the
-                 theme's critical fill, so dark and high contrast follow. -->
+                 theme's critical fill in Dark and Light. A contrast theme
+                 keeps the system's own colours: its dictionary repeats the
+                 Button values of WinUI generic.xaml, so no red is forced on
+                 it. -->
             <controls:SettingsCard x:Uid="MailboxRemoveCard" Margin="0,28,0,0">
                 <Button x:Name="RemoveButton" x:Uid="MailboxRemoveButton" Click="OnRemoveClick">
                     <Button.Resources>
                         <ResourceDictionary>
                             <ResourceDictionary.ThemeDictionaries>
-                                <ResourceDictionary x:Key="Default">
+                                <ResourceDictionary x:Key="Dark">
                                     <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SystemFillColorCriticalBrush" />
                                     <StaticResource x:Key="ButtonBorderBrushPointerOver" ResourceKey="SystemFillColorCriticalBrush" />
                                     <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
@@ -114,6 +117,14 @@
                                     <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="SystemFillColorCriticalBrush" />
                                     <StaticResource x:Key="ButtonBorderBrushPressed" ResourceKey="SystemFillColorCriticalBrush" />
                                     <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="TextOnAccentFillColorSecondaryBrush" />
+                                </ResourceDictionary>
+                                <ResourceDictionary x:Key="HighContrast">
+                                    <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SystemColorHighlightTextColorBrush" />
+                                    <StaticResource x:Key="ButtonBorderBrushPointerOver" ResourceKey="SystemColorHighlightColorBrush" />
+                                    <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="SystemControlHighlightBaseHighBrush" />
+                                    <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="SystemColorHighlightTextColorBrush" />
+                                    <StaticResource x:Key="ButtonBorderBrushPressed" ResourceKey="SystemColorHighlightTextColorBrush" />
+                                    <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="SystemControlHighlightBaseHighBrush" />
                                 </ResourceDictionary>
                             </ResourceDictionary.ThemeDictionaries>
                         </ResourceDictionary>

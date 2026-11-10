@@ -125,17 +125,24 @@
 
             <!-- One ground for the whole window, as SettingsWindow draws it:
                  the page sits on the window's Mica beside the rail, without the
-                 content layer NavigationView paints by default. HighContrast
-                 keeps the control's own ground. -->
+                 content layer NavigationView paints by default. Without a
+                 HighContrast dictionary of its own, HighContrast fell back to
+                 Default and lost its ground too; the HighContrast dictionary
+                 below repeats the control's own values (WinUI generic.xaml),
+                 so a contrast theme keeps SystemColorWindowColor. -->
             <NavigationView.Resources>
                 <ResourceDictionary>
                     <ResourceDictionary.ThemeDictionaries>
-                        <ResourceDictionary x:Key="Default">
+                        <ResourceDictionary x:Key="Dark">
                             <StaticResource x:Key="NavigationViewContentBackground" ResourceKey="SystemControlTransparentBrush" />
                             <StaticResource x:Key="NavigationViewContentGridBorderBrush" ResourceKey="SystemControlTransparentBrush" />
                         </ResourceDictionary>
                         <ResourceDictionary x:Key="Light">
                             <StaticResource x:Key="NavigationViewContentBackground" ResourceKey="SystemControlTransparentBrush" />
+                            <StaticResource x:Key="NavigationViewContentGridBorderBrush" ResourceKey="SystemControlTransparentBrush" />
+                        </ResourceDictionary>
+                        <ResourceDictionary x:Key="HighContrast">
+                            <SolidColorBrush x:Key="NavigationViewContentBackground" Color="{ThemeResource SystemColorWindowColor}" />
                             <StaticResource x:Key="NavigationViewContentGridBorderBrush" ResourceKey="SystemControlTransparentBrush" />
                         </ResourceDictionary>
                     </ResourceDictionary.ThemeDictionaries>
