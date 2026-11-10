@@ -311,7 +311,8 @@ public static class Setting
     // mode that shows it through its own visibleWhen. A preset family's selector
     // is declared this way, with SelectorOptions() as the options and the hand
     // values as Custom-only children. The fold's reset returns the choice to its
-    // default and every defaulted child to its own.
+    // default and every defaulted child to its own. An advisory hangs under the
+    // whole fold, as a Group's does.
     public static SettingDescriptor Mode<T>(
         string labelKey,
         Func<T> get,
@@ -322,7 +323,8 @@ public static class Setting
         bool isAdvanced = false,
         Func<bool>? enabledWhen = null,
         Func<bool>? visibleWhen = null,
-        Func<T>? defaultValue = null)
+        Func<T>? defaultValue = null,
+        Func<string?>? advisory = null)
     {
         var boxed = new List<ChoiceOption>(options.Count);
         foreach ((T value, string optionKey) in options)
@@ -330,6 +332,7 @@ public static class Setting
 
         return new()
         {
+            Advisory = advisory,
             Kind = SettingKind.Mode,
             LabelKey = labelKey,
             Glyph = glyph,

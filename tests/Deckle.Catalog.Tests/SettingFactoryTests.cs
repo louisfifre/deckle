@@ -318,9 +318,12 @@ public class SettingFactoryTests
     {
         string? message = null;
         var g = Setting.Group("g", () => true, _ => { }, [], advisory: () => message);
+        var m = Setting.Mode("m", () => 0, _ => { }, [(0, "zero")], [], advisory: () => message);
 
         Assert.Null(g.Advisory!());
+        Assert.Null(m.Advisory!());
         message = "beware";
         Assert.Equal("beware", g.Advisory!());
+        Assert.Equal("beware", m.Advisory!());
     }
 }
