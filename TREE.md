@@ -694,7 +694,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ShellFileOperationInterop.cs
 │   │   │   └── ShellRecycleBin.cs
 │   │   ├── Sample/
-│   │   │   └── SampleFolder.cs
+│   │   │   ├── SampleFolder.cs
+│   │   │   └── SizesSample.cs
 │   │   ├── Sizes/
 │   │   │   ├── FolderReader.cs
 │   │   │   ├── HeaviestFiles.cs
@@ -2232,7 +2233,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PathRulesTests.cs
 │   │   ├── ScratchFolder.cs
 │   │   ├── SizeScanEventsTests.cs
-│   │   └── SizeScanTests.cs
+│   │   ├── SizeScanTests.cs
+│   │   └── SizesSampleTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── AudioPathRedactionTests.cs
 │   │   ├── AudioRecordingHostDefaultsTests.cs
