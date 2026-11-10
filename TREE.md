@@ -2484,6 +2484,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Mail.Tests.csproj
 │   │   ├── EndOfDayTests.cs
 │   │   ├── GestureTests.cs
+│   │   ├── ImmutabilityTests.cs
 │   │   ├── ListOrderTests.cs
 │   │   ├── MailboxNamingTests.cs
 │   │   ├── MailWordingTests.cs

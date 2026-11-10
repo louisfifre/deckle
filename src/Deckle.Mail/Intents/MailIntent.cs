@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace Deckle.Mail;
 
 /// <summary>
@@ -40,12 +42,18 @@ public abstract record MailIntent
 /// <summary>Move these mails of one mailbox to the trash of its server.</summary>
 public sealed record MoveToTrash(string MailboxId, IReadOnlyList<string> MailIds) : MailIntent
 {
+    /// <remarks>Copied on the way in, so the caller's list cannot change an intent waiting to be sent.</remarks>
+    public IReadOnlyList<string> MailIds { get; init => field = value.ToImmutableArray(); } = MailIds.ToImmutableArray();
+
     public override MailTarget Target => MailTarget.Mailbox(MailboxId);
 }
 
 /// <summary>Bring these mails of one mailbox back from the trash of its server to its inbox.</summary>
 public sealed record RestoreFromTrash(string MailboxId, IReadOnlyList<string> MailIds) : MailIntent
 {
+    /// <remarks>Copied on the way in, so the caller's list cannot change an intent waiting to be sent.</remarks>
+    public IReadOnlyList<string> MailIds { get; init => field = value.ToImmutableArray(); } = MailIds.ToImmutableArray();
+
     public override MailTarget Target => MailTarget.Mailbox(MailboxId);
 }
 

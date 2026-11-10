@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace Deckle.Mail;
 
 /// <summary>
@@ -10,7 +12,8 @@ namespace Deckle.Mail;
 /// <param name="Name">The name given when the mailbox was added, or null when none was.</param>
 public sealed record Mailbox(string Id, string Address, string? Name = null)
 {
-    public IReadOnlyList<MailAlias> Aliases { get; init; } = [];
+    /// <remarks>Copied on the way in, so the caller's list cannot change a mailbox afterwards.</remarks>
+    public IReadOnlyList<MailAlias> Aliases { get; init => field = value.ToImmutableArray(); } = ImmutableArray<MailAlias>.Empty;
 
     /// <summary>
     /// The switch of the mailbox page. It is on as soon as the mailbox has

@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace Deckle.Mail;
 
 /// <summary>
@@ -22,7 +24,8 @@ public sealed record Mail(
     public string? InReplyTo { get; init; }
 
     /// <summary>The References header, as message ids.</summary>
-    public IReadOnlyList<string> References { get; init; } = [];
+    /// <remarks>Copied on the way in, so the caller's list cannot change a mail the state holds.</remarks>
+    public IReadOnlyList<string> References { get; init => field = value.ToImmutableArray(); } = ImmutableArray<string>.Empty;
 
     /// <summary>
     /// True when the mail carries a real file. An image that belongs to the body,

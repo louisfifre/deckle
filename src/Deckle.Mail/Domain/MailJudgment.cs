@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace Deckle.Mail;
 
 /// <summary>
@@ -45,7 +47,8 @@ public sealed record MailJudgment
     /// The order, parcel or file numbers found in the mail. Two mails that carry
     /// the same number are one subject.
     /// </summary>
-    public IReadOnlyList<string> MatterNumbers { get; init; } = [];
+    /// <remarks>Copied on the way in, so the caller's list cannot change a judgment afterwards.</remarks>
+    public IReadOnlyList<string> MatterNumbers { get; init => field = value.ToImmutableArray(); } = ImmutableArray<string>.Empty;
 
     /// <summary>A mail that asks something of the person, with the deadline its text states, if any.</summary>
     public static MailJudgment Asks(string sentence, Deadline? deadline = null) =>
