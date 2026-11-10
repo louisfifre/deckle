@@ -674,6 +674,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── MapItemKind.cs
 │   │   │   ├── MapLink.cs
 │   │   │   ├── MapLinkReader.cs
+│   │   │   ├── MapListFilter.cs
+│   │   │   ├── MapNeighbourhood.cs
 │   │   │   ├── MapSkip.cs
 │   │   │   ├── McpDeclarations.cs
 │   │   │   └── TokenEstimate.cs
@@ -2220,6 +2222,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FolderListingTests.cs
 │   │   ├── HeaviestFilesTests.cs
 │   │   ├── MapInventoryTests.cs
+│   │   ├── MapListFilterTests.cs
+│   │   ├── MapNeighbourhoodTests.cs
 │   │   ├── MapSampleRepository.cs
 │   │   ├── MapTextTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
