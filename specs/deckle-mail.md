@@ -104,67 +104,70 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 **Where a mail lands**
 
-- Each new mail lands in exactly one of three places: a thing to do in Triage, a line in Good to know, or sorted away.
-- A mail that asks something of the person is a thing to do.
-- A mail that asks nothing but states a fact that changes something for the person is a Good to know line. Example: a refund received, a water cut on Thursday.
-- A mail that asks nothing and changes nothing is sorted away with one reason among newsletter, promotion, receipt and nothing to do. Example: a newsletter, the progress of an order on its way, the notice of a delivery the person received in hand.
-- When the sorting is not sure a mail can be put away, the mail waits in Triage. Example: a mail with a vague subject from a sender whose other mails matter.
-- A mail the sorting could not read, because it holds only images or is encrypted, waits in Triage with its own subject as its sentence and the reason as a framed label on its grey line. It is never sorted away unread.
-- A mail whose sender failed the checks waits in Triage with the framed label « Sender not verified », shows the address in place of the name the sender gave itself, and offers File only: it cannot become a task.
-- A state the sorting sets on a row is a framed label, never plain text: the darker grey of a grey line means a deadline and nothing else.
+- Each new mail lands in exactly one of three places: a subject in Triage, a secondary information line, or set aside.
+- A mail that asks something of the person is a subject in Triage.
+- A mail that asks nothing but states a fact that changes something for the person is a secondary information. Example: a refund received, a water cut on Thursday.
+- A mail that asks nothing and changes nothing is set aside with one reason among newsletter, promotion, receipt and no action needed. Example: a newsletter, the progress of an order on its way, the notice of a delivery the person received in hand.
+- When the sorting is not sure a mail can be set aside, the mail waits in Triage. Example: a mail with a vague subject from a sender whose other mails matter.
+- A mail the sorting could not read, because it holds only images or is encrypted, waits in Triage with its own subject as its sentence and the reason as a framed label on its row. It is never set aside unread.
+- A mail whose sender failed the checks waits in Triage with the framed label « Sender not verified », shows the address in place of the name the sender gave itself, and offers the trash only: it cannot become a task.
+- A state the sorting sets on a row is a framed label, never plain text.
 
 **Subjects**
 
-- Mails of one subject are one object everywhere: one tile, one line, one opened page.
+- Mails of one subject are one object everywhere: one row, one line, one opened page.
 - Two mails belong to one subject when they are in the same thread of replies, or when they carry the same order, parcel or file number. Example: the order confirmation from a shop and the pickup notice from its carrier are one subject.
 - Two mails that share only their sender are two subjects. Example: two refund statements from the same insurer are two lines; the insurer's request for a document is a third subject.
-- When a new mail joins a subject, the subject is sorted again from that mail: it can become a thing to do, a Good to know line or be sorted away. Example: a parcel on its way is sorted away; « at the pickup point until the 18th » makes it a thing to do.
-- A tile carries the sentence that asks, even when a later mail of the thread only repeats the request.
-- When the person answers in the thread from another mail app, the thing leaves Triage as if filed.
+- When a new mail joins a subject that still waits, the subject is sorted again from that mail: it can stay in Triage, become a secondary information or be set aside. Example: a parcel on its way is set aside; « at the pickup point until the 18th » makes it a subject in Triage.
+- A mail that arrives for a subject already treated is sorted as a new mail.
+- A row carries the sentence that asks, even when a later mail of the thread only repeats the request.
 
-**What a tile says**
+**What a row says**
 
-- The sentence of a tile is short enough to read at a glance and says what the person has to do. It is written once when the mail is sorted and does not change between two openings of the window.
-- A deadline shows only when the text of the mail states one. The date a mail arrived never stands for a deadline and never shows in a list.
-- A deadline is written in two forms only: « Due » with its day while it is ahead, « Overdue · » with its day once it is behind. When the mail gives a time slot, the deadline is the end of the slot, with its hour.
-- Tiles are ordered so that what presses comes first: the things with a deadline, the nearest first, then the others, the oldest first.
+- The sentence of a row is explicit by itself and telegraphic: it says what is asked or what happened, names the sender when the sentence needs it to be understood, and carries the date or the time slot the mail states. Example: « Facture Infomaniak de novembre disponible », not « Votre facture de novembre est disponible ».
+- The sentence is written once, when the mail is sorted, in the language of the mail, and does not change between two openings of the window.
+- Two subjects on one page never show the same sentence: the sentence carries the amount, the date or the number that tells them apart. Example: two refund statements of one insurer each give their amount.
+- A deadline is never written apart from the sentence. It is kept as a piece of data: it orders the list and proposes the day of the task.
+- A deadline exists only when the text of the mail states one. The date a mail arrived never stands for a deadline. When the mail gives a time slot, the deadline is the end of the slot.
+- Rows are ordered so that what presses comes first: the subjects with a deadline, the nearest first, then the others, the oldest first.
 
-**File**
+**Adding a task**
 
-- File puts the mail away, whatever the reason, and the thing leaves Triage.
-- Right after File, the tile is replaced by a line that says where the mail went and offers Undo. The line stays until the person's next gesture. Ctrl+Z undoes too.
-- A right-click on a tile, or its keyboard equivalent, offers the tile's own commands, then Open in webmail, Copy the sender's address and Not something to do. Not something to do files the mail and lets the person say why in one optional sentence.
-- No command appears on hover alone.
+- When Anytype is connected, a row offers Add task with the choices Today, Tomorrow, Pick a day and No day yet.
+- When the sorting found a deadline, the row offers instead the task on a proposed day: one click creates it, and the same control still opens the choice of another day.
+- The proposed day follows one fixed rule, without a setting: two days before the deadline, and never before today. A deadline of today or already past proposes today.
+- The task created in Anytype holds the sentence of the row, the text of the mail and its sender. It does not need a link back to the mail.
+- Once the task exists, the subject leaves the list: its row greys in place, wears the Anytype logo with a tick and the day of the task, and the subject becomes a line of Activity.
+- Deckle Mail shows no box to tick and never completes a task: a task is done in Anytype.
+- When Anytype cannot be reached, a bar says so, and a task added meanwhile is kept and created when Anytype is back.
+- When Anytype is not connected, nothing about tasks is drawn: the trash is the only command on a row.
 
-**Tasks in Anytype**
+**The trash**
 
-- When Anytype is connected, a tile offers Add task with the choices Today, Tomorrow, Pick a day and No day yet.
-- Add task creates in Anytype a task that holds the tile's sentence, the lines of the mail that say it, the sender, where it arrived, and a link that opens the subject in Deckle Mail.
-- A tile that is a task shows the task's round tick and its day, or « no day yet », in place of Add task and File.
-- A day set or changed in Anytype shows on the tile.
-- Ticking the task, on the tile or in Anytype, completes the task and puts the mail away. The tile is replaced by a line that says so, with Undo, which reopens both.
-- A task whose day has passed without a tick stays in Triage and says it is overdue. The mail and the task stay linked.
-- A thing that is a task never leaves by itself. When a later mail says the matter is over, the tile shows that sentence and waits for the tick. Deckle Mail never completes a task on its own.
-- A thing that is not a task leaves by itself when a later mail of its subject says the matter is over, and Activity says so.
-- When the task is deleted in Anytype, the tile gets Add task and File back.
-- When Anytype cannot be reached, a bar says so, tiles keep the last day they knew, and a tick made meanwhile is kept and sent when Anytype is back.
-- When Anytype is not connected, nothing about tasks is drawn: File is the only command on a tile.
+- The second command of a row is the trash, drawn as its symbol, without a word. It says that nothing is to be done.
+- When a subject is treated, by a task or by the trash, its mails go to the trash of the mail server of their mailbox. The inbox then holds only what waits, on the phone and in the webmail too.
+- Deckle Mail never deletes a mail and never empties a trash on its own. The mail provider deletes what stays in its trash after its own delay. Example: Infomaniak deletes a mail thirty days after it reached the trash.
+- The first time a gesture would send a mail to the trash, a notice says so, once, with the provider's delay. The gesture happens only if the person accepts.
+- After a gesture the row stays where it was, greyed, with Undo under the task controls of the other rows and a cross that removes the line. No short timer removes it.
+- A treated row leaves when the person clicks its cross or ends the day, when the window is closed or refreshed, or after a long fixed time.
+- Undo brings the mails back from the trash to the inbox, removes the task when one was created, and gives the row its controls back. Ctrl+Z undoes the last gesture.
+- A mail the sorting set aside goes to the trash when the person ends the day, not before.
 
-**Good to know**
+**Secondary information**
 
-- A Good to know line carries no command. Clicking it opens its subject.
-- A line leaves by itself the day after the person first saw it, or earlier when a later mail of its subject replaces it.
-- A newsletter never shows in Good to know.
+- The cross of a line dismisses it, and Dismiss all dismisses every line. A dismissed line is treated: its mail goes to the trash as for a subject.
+- A line carries no other command and opens nothing: its detail is read in Activity.
+- A line stays until it is dismissed or the day is ended, or until a later mail of its subject replaces it.
+- A newsletter never shows as secondary information.
 
 **Corrections**
 
-- To Triage on an Activity line brings the mail back to Triage as a thing to do, whatever it was before.
-- To Triage and Not something to do tell the sorting it was wrong: the next mails of the same kind from the same sender are sorted with that correction, and with the person's sentence when they gave one.
+- Undo on a line of the sorting's part brings the mail back to Triage as a subject, whatever it was before.
+- That Undo tells the sorting it was wrong: the next mails of the same kind from the same sender are sorted with that correction.
 
 **Outside the window**
 
-- When filing on the server is on, a mail that is filed or sorted away leaves the inbox of its mailbox for the folder of its alias, so the webmail and the phone show the same order. Things still waiting stay in the inbox.
-- When it is off, Deckle Mail changes nothing on the server.
+- Deckle Mail reads the inbox of each mailbox and ignores the folders of the server: it sorts by the alias a mail arrived through. It creates no folder and moves a mail only to the trash and back.
 - Opening the window, changing page or opening a subject shows what was sorted before, at once, without sorting anything again.
 - No text of a mail leaves the machine with a value that identifies the person. Such values are replaced before the text goes to a remote model, and stay readable in the window.
 
@@ -173,7 +176,8 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - The interface is in English, in sentence case. Sentences taken from mails stay in their language.
 - The interface uses the greys of Windows and the person's accent colour, on Deckle's design system, in the light and the dark theme.
 - A date is written one way everywhere: the weekday and the day for the coming days, then the day and the month.
-- One role of text keeps one position and one colour on every page: the sentence first, then the sender, where it arrived, and the deadline in the darker grey.
+- One role of text keeps one style on every page: a sentence in the main text colour, a sender beside it in grey, a state as a symbol or a framed label.
+- The interface holds no sentence of explanation on a row, a line or a page header. What a symbol or a place already says is not written.
 
 ## Limits
 
