@@ -152,15 +152,15 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 **Adding a task**
 
-- When Anytype is connected, a row offers Add task with the choices Today, Tomorrow, Pick a day and No day yet.
-- When the sorting found a deadline, the row offers instead the task on a proposed day. What one click does then is Open 46.
+- When Anytype is connected, a row offers Add task, which opens a menu of days: Today, Tomorrow, Pick a day and No day yet. Whether No day yet stays is Open 51.
+- A click on Add task always opens that menu, and a click on a day of the menu creates the task. A click on Add task never creates a task at once, so the row never changes under the click that opened the menu.
+- When the sorting found a deadline, Add task carries the proposed day, and the menu opens with that day as its first line, already selected. Example: a row proposing Fri 13 opens on Fri 13, then Today and Tomorrow.
 - The proposed day follows one fixed rule, without a setting: two days before the deadline, and never before today. A deadline of today or already past proposes today.
 - The task created in Anytype holds the sentence of the row, the text of the mail and its sender. It does not need a link back to the mail.
-- When no deadline was found, one click on Add task opens the choice of days, and a second click on a day creates the task.
 - Once the task exists, the subject leaves the list: its row greys in place, says « Task for » and the day of the task, and the subject becomes a line of Activity.
 - Deckle Mail shows no box to tick and never completes a task: a task is done in Anytype.
 - When Anytype cannot be reached, no bar is added at the top of the page; the problems button lists it, in the words used for a mailbox. A task added meanwhile is kept and created when Anytype is back. Until then its row shows its result followed by the same caution dot as a gesture waiting on a mailbox: one sign for "done here, not yet arrived", whatever the cause.
-- When Anytype is not connected, nothing about tasks is drawn: the trash is the only command on a row.
+- When Anytype is not connected, Add task is absent from the rows, as Windows hides what cannot work: the trash is the only command on a row, and the notice that Anytype is not connected says why.
 - The notice that Anytype is not connected can be dismissed, so a person who does not want Anytype does not keep it in sight.
 
 **The trash**
@@ -239,7 +239,7 @@ Each question names the option the canvas recommends first, the frames that show
 17. **Settings in the navigation.** At the foot, as Windows does (18A), or on top with Triage and Activity (13F, variant 3).
 18. **A passage of the dictation read by interpretation.** The short sentence of each mail in the list of an opened subject, « shared » (read: the same on every screen); it is not drawn as a setting. The other passage, « capitals or not » for aliases, was settled on 10 November as an option of the aliases on the page of a mailbox.
 19. **« Say whether one can go back or not ».** Whether this means going back to an earlier mail of the subject, which the list allows, or telling a step that cannot be undone. Still unanswered from 9 November.
-20. **One click on Add task when no day is proposed.** Settled 10 November: with no chevron, it opens the choice of days.
+20. **One click on Add task when no day is proposed.** Settled 10 November: it opens the menu of days, as it does when a day is proposed. What that menu holds is Open 51.
 21. **Ending the day while a first sort runs.** The command is disabled until the sort ends (27S), or stays live. Live, it would send to the trash mails the sort set aside before it finished judging the mailbox.
 22. **The order of the list once a first sort ends.** During the sort a subject never moves; whether the list is then put in its usual order in one step, or stays in the order of arrival until the next opening.
 23. **The result of a task that has no day.** « Task, no day » (28U) or « Task added » (26U). The spec words only « Task for » and a day.
@@ -265,8 +265,10 @@ Each question names the option the canvas recommends first, the frames that show
 43. **The word for Global.** The maintainer finds « Global » not understood; he says « racine », root in English. The word is still to find.
 44. **Commands shown on hover only.** The rule of the window wants every gesture shown under the pointer to have a double always visible. The maintainer dislikes « hovers everywhere », yet asks for Rename on hover only, and for the explanation of an unverified sender on demand. Not said: whether the rule gives way for these, or each gets a visible double.
 45. **Activity in the navigation while it is empty.** Settled 10 November: absent while there is no activity at all, shown from the first line.
-46. **One click on Add task when a day is proposed.** The maintainer's leaning, said with hesitation and to be drawn for him to settle: when the row proposes Today, the click adds the task at once; when it proposes a specific date, such as Fri 13, the click opens the menu with that date first, above Today and Tomorrow, whose order never changes. Not said: Tomorrow proposed.
+46. **One click on Add task when a day is proposed.** Settled 10 November: the click always opens the menu, with the proposed day as its first line, already selected; it never adds the task at once, since adding at once shifted the row.
 47. **Where the sender of a « No action needed » line sits.** In the column of the task controls, as written above, it leaves a gap the maintainer dislikes. Against the right edge, by the cross (34S), or against the sentence (34A); he leaned each way on a different frame. Both to be drawn.
 48. **Triage before any mailbox exists.** Settled 10 November: the envelope picture, « No mailbox yet », one sentence and Add mailbox. Not said: the words of the sentence.
 49. **The narrow window.** To be redone whole and made compact: the maintainer refused a command that drops under its sentence and stays at the right edge (30GN), the gap of 26V, and a search line that spends a line on the date alone. The sentences of the narrow window above stand until it is redrawn.
 50. **The icon of the problems button.** Not chosen. It must tell that something needs a look without alarming, so it is not a bell; the options are still to be drawn.
+51. **What the menu of days holds.** The spec lists Today, Tomorrow, Pick a day and No day yet; on 10 November the maintainer listed only Today, Tomorrow and « Pick a date ». Whether No day yet stays, and whether the word is day or date, awaits his word. Open 23 falls if No day yet goes.
+52. **Anytype that cannot be reached.** The maintainer said Add task disappears when Anytype is not available; the spec reads it as not connected, and keeps Add task when a connected Anytype cannot be reached for a while, the task being kept and created later. Whether Add task also disappears then awaits his word.
