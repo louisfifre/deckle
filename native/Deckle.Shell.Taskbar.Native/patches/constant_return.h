@@ -1,7 +1,7 @@
 #pragma once
 
-#include <array>
-#include <string>
+#include "function_site.h"
+
 #include <vector>
 
 namespace deckle::patches
@@ -16,25 +16,17 @@ namespace deckle::patches
     // It only fits a function that returns a double and needs no side effect,
     // such as TaskbarConfiguration::GetFrameSize, which answers the taskbar's
     // thickness. Which function, at which address, is Deckle's business: the
-    // C# side resolves it from Microsoft's public symbols and sends it here.
+    // C# side resolves it and sends it here (function_site.h), with the value.
     //
     //   "constantReturns": [ { "id": "bar.thickness", "module": "Taskbar.View.dll",
     //                          "timestamp": 1789085818, "imageSize": 10055680,
     //                          "rva": 283120, "original": "4883EC2885C97438...", "value": 32 } ]
     //
-    // timestamp and imageSize are the module's TimeDateStamp and SizeOfImage as
-    // Deckle read them on disk; "original" is the function's first 16 bytes, in
-    // hex, from the same file. The patch applies only when the module in memory
-    // is that file and the bytes are those (or a patch of ours left by an earlier
-    // engine): another build of Windows, or another tool's patch, is left alone.
+    // A function whose bytes are a patch of ours left by an earlier engine is
+    // taken as its own.
     struct ConstantReturn
     {
-        std::wstring id;
-        std::wstring module;
-        uint32_t timestamp = 0;
-        uint32_t imageSize = 0;
-        uint32_t rva = 0;
-        std::array<uint8_t, 16> original{};
+        FunctionSite site;
         double value = 0;
     };
 

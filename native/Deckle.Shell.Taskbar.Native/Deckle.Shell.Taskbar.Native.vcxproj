@@ -96,7 +96,9 @@
     <ClInclude Include="xamldiag\behaviors\clock.h" />
     <ClInclude Include="xamldiag\behaviors\start_menu_height.h" />
     <ClInclude Include="xamldiag\behaviors\start_menu_width.h" />
+    <ClInclude Include="patches\code_write.h" />
     <ClInclude Include="patches\constant_return.h" />
+    <ClInclude Include="patches\function_site.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -121,7 +123,9 @@
     <ClCompile Include="xamldiag\behaviors\clock.cpp" />
     <ClCompile Include="xamldiag\behaviors\start_menu_height.cpp" />
     <ClCompile Include="xamldiag\behaviors\start_menu_width.cpp" />
+    <ClCompile Include="patches\code_write.cpp" />
     <ClCompile Include="patches\constant_return.cpp" />
+    <ClCompile Include="patches\function_site.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Deckle.Shell.Taskbar.Native.def" />

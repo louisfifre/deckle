@@ -196,8 +196,12 @@ _Generated from `git ls-files` — do not edit by hand._
 ├── native/
 │   ├── Deckle.Shell.Taskbar.Native/
 │   │   ├── patches/
+│   │   │   ├── code_write.cpp
+│   │   │   ├── code_write.h
 │   │   │   ├── constant_return.cpp
-│   │   │   └── constant_return.h
+│   │   │   ├── constant_return.h
+│   │   │   ├── function_site.cpp
+│   │   │   └── function_site.h
 │   │   ├── xamldiag/
 │   │   │   ├── behaviors/
 │   │   │   │   ├── clock.cpp
