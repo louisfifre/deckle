@@ -134,12 +134,14 @@ public sealed partial class MailWindow
     };
 
     // The initial alone, drawn at the size of the other icons, with no
-    // circle (spec, Navigation; Open 9). A FontIcon in the display face, so
-    // it scales and recolours with the rail like any glyph.
+    // circle (spec, Navigation; Open 9). A FontIcon in the theme's text face
+    // (ContentControlThemeFontFamily, Segoe UI Variable, which picks its
+    // optical size itself), so it scales and recolours with the rail like any
+    // glyph. 16 is the size NavigationView gives its icons.
     private static FontIcon MailboxMark(string label) => new()
     {
         Glyph = MailNames.Initial(label),
-        FontFamily = new FontFamily("Segoe UI Variable Display"),
+        FontFamily = (FontFamily)Application.Current.Resources["ContentControlThemeFontFamily"],
         FontSize = 16,
     };
 

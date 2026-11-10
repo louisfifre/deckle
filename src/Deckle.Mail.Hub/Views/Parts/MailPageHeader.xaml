@@ -41,8 +41,6 @@
                  size of the title (spec, An Inbox page). -->
             <TextBox x:Name="NameBox"
                      MinWidth="320"
-                     FontSize="28"
-                     FontWeight="SemiBold"
                      Visibility="Collapsed"
                      KeyDown="OnNameBoxKeyDown"
                      LostFocus="OnNameBoxLostFocus" />

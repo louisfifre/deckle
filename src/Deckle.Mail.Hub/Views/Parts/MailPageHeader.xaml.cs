@@ -17,12 +17,37 @@ public sealed partial class MailPageHeader : UserControl
     public MailPageHeader()
     {
         InitializeComponent();
-        // Set locally, as SettingsPageHeader does: the size and weight a
-        // FontWeight resource cannot take in XAML, and room around the chevron.
-        Crumbs.Resources["BreadcrumbBarItemThemeFontSize"] = 28d;
-        Crumbs.Resources["BreadcrumbBarItemFontWeight"] = FontWeights.SemiBold;
+        // The breadcrumb and the name being edited read as the title, so both
+        // take TitleTextBlockStyle's own size and weight, read from the theme
+        // rather than written here; a TextBox and a BreadcrumbBar cannot take
+        // a TextBlock style. Set locally, as SettingsPageHeader does, since a
+        // FontWeight resource cannot be given in XAML; with room around the
+        // chevron.
+        (double size, Windows.UI.Text.FontWeight weight) = TitleType();
+        Crumbs.Resources["BreadcrumbBarItemThemeFontSize"] = size;
+        Crumbs.Resources["BreadcrumbBarItemFontWeight"] = weight;
         Crumbs.Resources["BreadcrumbBarChevronFontSize"] = 16d;
         Crumbs.Resources["BreadcrumbBarChevronPadding"] = new Thickness(8, 8, 8, 0);
+        NameBox.FontSize = size;
+        NameBox.FontWeight = weight;
+    }
+
+    private static (double Size, Windows.UI.Text.FontWeight Weight) TitleType()
+    {
+        double size = 28;
+        Windows.UI.Text.FontWeight weight = FontWeights.SemiBold;
+        // A style's setters, then those of the style it is based on.
+        var seen = new HashSet<DependencyProperty>();
+        for (Style? style = Application.Current.Resources["TitleTextBlockStyle"] as Style; style is not null; style = style.BasedOn)
+        {
+            foreach (SetterBase setterBase in style.Setters)
+            {
+                if (setterBase is not Setter { Property: { } property } setter || !seen.Add(property)) continue;
+                if (property == TextBlock.FontSizeProperty && setter.Value is double s) size = s;
+                else if (property == TextBlock.FontWeightProperty && setter.Value is Windows.UI.Text.FontWeight w) weight = w;
+            }
+        }
+        return (size, weight);
     }
 
     // A crumb that leads to its target when clicked; the last one is the page.
