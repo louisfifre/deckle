@@ -32,6 +32,23 @@ public class GestureTests
     }
 
     [Fact]
+    public void TheTaskCarriesTheMailWhoseSentenceTheRowShows()
+    {
+        // A reminder that only repeats the request: the row keeps the request's sentence, so the task keeps its mail.
+        var request = To(from: "assureur@example.com", minutesAgo: 600);
+        var reminder = To(from: "relance@example.com", minutesAgo: 60) with { InReplyTo = request.Id };
+        var state = Sorted(
+            (request, MailJudgment.Asks("Envoyer l'attestation demandée par l'assureur")),
+            (reminder, MailJudgment.RepeatsEarlierRequest("Relance : attestation")));
+
+        var task = Assert.IsType<CreateTask>(state.AddTask(request.Id, Today, Now).Intents[0]);
+
+        Assert.Equal("Envoyer l'attestation demandée par l'assureur", task.Sentence);
+        Assert.Equal(request.Id, task.MailId);
+        Assert.Equal("assureur@example.com", task.Sender.Address);
+    }
+
+    [Fact]
     public void ATreatedRowGreysInPlaceWithItsResult()
     {
         var (state, mail) = OneRow();

@@ -35,6 +35,13 @@ public sealed record Subject
     /// <summary>The sentence of its row or line: the sentence that asks, when the subject asks.</summary>
     public required string Sentence { get; init; }
 
+    /// <summary>
+    /// The mail whose sentence the row shows: the asking mail after a mere
+    /// reminder, else the latest. A task carries this mail's text and sender,
+    /// so the task and the row it came from speak of the same mail.
+    /// </summary>
+    public required Mail SentenceMail { get; init; }
+
     /// <summary>The deadline the asking mail states, or null.</summary>
     public Deadline? Deadline { get; init; }
 

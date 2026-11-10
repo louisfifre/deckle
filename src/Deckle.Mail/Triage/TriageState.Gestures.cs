@@ -17,7 +17,7 @@ public sealed partial record TriageState
         }
 
         var (next, treatment) = Treat(subject, TreatmentKind.Task, day, gestureId: LastGestureId + 1, now);
-        var task = new CreateTask(subject.Id, subject.Sentence, subject.Latest.From, subject.Latest.Id, day) { TreatmentId = treatment.Id };
+        var task = new CreateTask(subject.Id, subject.Sentence, subject.SentenceMail.From, subject.SentenceMail.Id, day) { TreatmentId = treatment.Id };
         return (next with { LastGestureId = next.LastGestureId + 1 }).Deliver([task, .. TrashIntents(subject, treatment.Id)]);
     }
 
