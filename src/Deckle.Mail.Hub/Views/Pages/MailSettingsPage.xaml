@@ -1,0 +1,42 @@
+<Page
+    x:Class="Deckle.Mail.Hub.MailSettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Mail.Hub"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:catalog="using:Deckle.Catalog"
+    NavigationCacheMode="Required">
+
+    <!-- The Settings of the Mail window: one card per mailbox, which opens
+         its page; Add mailbox under them, a page of its own; and whether
+         Anytype is connected. No Reset all: nothing here has a default to go
+         back to (spec, Settings). -->
+    <ScrollViewer>
+        <StackPanel MaxWidth="1000"
+                    HorizontalAlignment="Stretch"
+                    Margin="32,32,32,24"
+                    Spacing="{StaticResource SettingsCardSpacing}">
+            <local:MailPageHeader x:Name="Header" Margin="0,0,0,-20" />
+
+            <catalog:SettingsSection x:Uid="MailSettingsMailboxes">
+                <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                    <StackPanel x:Name="MailboxCards" Spacing="{StaticResource SettingsCardSpacing}" />
+                    <Button x:Name="AddMailboxButton" Margin="0,8,0,0" Click="OnAddMailboxClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource Icon.Mail.Add}" FontSize="14" />
+                            <TextBlock x:Uid="MailSettingsAddMailbox" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </catalog:SettingsSection>
+
+            <catalog:SettingsSection x:Uid="MailSettingsTasks">
+                <!-- The Anytype logo the spec asks for is not in the
+                     repository; its words carry the state alone for now. -->
+                <controls:SettingsCard x:Uid="MailSettingsAnytype">
+                    <local:ConnectionStatus x:Name="AnytypeStatus" />
+                </controls:SettingsCard>
+            </catalog:SettingsSection>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

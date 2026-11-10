@@ -1,0 +1,48 @@
+<UserControl
+    x:Class="Deckle.Mail.Hub.ActivityLineView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Mail.Hub">
+
+    <!-- A line of Activity holds the columns of a treated row of Triage: the
+         time, the sentence, Undo at the left edge of the task column with
+         what happened right after it, and the chevron that opens the subject
+         in the end column (spec, Activity). -->
+    <Grid MinHeight="48" ColumnSpacing="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="40" />
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="32" />
+        </Grid.ColumnDefinitions>
+
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="UndoneStates">
+                <VisualState x:Name="Done" />
+                <!-- A line that was undone stays, greyed, saying its subject
+                     is back in Triage. -->
+                <VisualState x:Name="Undone">
+                    <VisualState.Setters>
+                        <Setter Target="SentenceText.Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <TextBlock x:Name="TimeText"
+                   Style="{StaticResource CaptionTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                   VerticalAlignment="Center" />
+        <TextBlock x:Name="SentenceText"
+                   Grid.Column="1"
+                   VerticalAlignment="Center"
+                   Margin="0,12"
+                   TextWrapping="Wrap" />
+        <local:TaskColumn x:Name="Task" Grid.Column="2" />
+        <FontIcon Grid.Column="3"
+                  Glyph="{StaticResource Icon.Mail.Open}"
+                  FontSize="12"
+                  HorizontalAlignment="Center"
+                  Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+    </Grid>
+</UserControl>

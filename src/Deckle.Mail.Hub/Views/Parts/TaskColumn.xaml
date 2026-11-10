@@ -1,0 +1,55 @@
+<UserControl
+    x:Class="Deckle.Mail.Hub.TaskColumn"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Mail.Hub"
+    Width="216"
+    VerticalAlignment="Center">
+
+    <!-- The task column of a row, an opened subject and an Activity line: the
+         same 216 px wherever it stands, so a command never changes place from
+         one row to the next, nor from one state of a row to the next (spec,
+         Triage). Waiting, it holds Add task; after a gesture, Undo then what
+         happened; without Anytype, or for a sender not verified, nothing. -->
+    <Grid>
+        <!-- One button, no frame, no separate chevron: a click always opens
+             the menu of days, and a day of the menu creates the task (spec,
+             Adding a task). -->
+        <Button x:Name="AddTaskButton"
+                Style="{StaticResource SubtleButtonStyle}"
+                HorizontalAlignment="Left"
+                Visibility="Collapsed">
+            <TextBlock x:Name="AddTaskText" TextTrimming="CharacterEllipsis" />
+        </Button>
+
+        <StackPanel x:Name="DonePanel"
+                    Orientation="Horizontal"
+                    Spacing="4"
+                    Visibility="Collapsed">
+            <Button x:Name="UndoButton"
+                    Style="{StaticResource SubtleButtonStyle}"
+                    Click="OnUndoClick">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <FontIcon Glyph="{StaticResource Icon.Mail.Undo}" FontSize="14" />
+                    <TextBlock x:Uid="TaskColumnUndo" />
+                </StackPanel>
+            </Button>
+            <!-- Holds Undo's place on a line that was undone, so its words
+                 stand where every result stands (frame 5.2). -->
+            <Border x:Name="UndoPlaceholder" Width="81" Visibility="Collapsed" />
+            <TextBlock x:Name="ResultText"
+                       VerticalAlignment="Center"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       TextTrimming="CharacterEllipsis" />
+            <local:FramedLabel x:Name="ReasonLabel" Visibility="Collapsed" />
+            <!-- "Done here, not yet arrived": the result is followed by a
+                 caution dot while its mailbox cannot connect, one sign
+                 whatever the cause (spec, Adding a task; Open 24). -->
+            <InfoBadge x:Name="PendingDot"
+                       Style="{StaticResource CautionDotInfoBadgeStyle}"
+                       VerticalAlignment="Center"
+                       Margin="4,0,0,0"
+                       Visibility="Collapsed" />
+        </StackPanel>
+    </Grid>
+</UserControl>

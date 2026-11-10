@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Mail.Hub</RootNamespace>
+    <UseWinUI>true</UseWinUI>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <!-- Generates the lib's own .pri so x:Uid lookups resolve against
+         Deckle.Mail.Hub/Strings. -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <!-- SettingsCard and SettingsExpander for the window's Settings pages, as
+         Deckle.Settings and the Playground draw theirs. -->
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
+    <ProjectReference Include="..\Deckle.Shell.WindowChrome\Deckle.Shell.WindowChrome.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Mail.Hub.Tests" />
+  </ItemGroup>
+</Project>

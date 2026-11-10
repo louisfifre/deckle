@@ -1,0 +1,125 @@
+<Page
+    x:Class="Deckle.Mail.Hub.MailboxSettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Mail.Hub"
+    xmlns:controls="using:CommunityToolkit.WinUI.Controls"
+    xmlns:catalog="using:Deckle.Catalog"
+    NavigationCacheMode="Required">
+
+    <!-- The page of a mailbox holds all its options: its name, its
+         connection, the sorting by alias with the options of its aliases,
+         and its removal (spec, Settings). Nothing here connects: a typed
+         app password lives in its PasswordBox only, and the page keeps only
+         whether one is saved. -->
+    <ScrollViewer>
+        <StackPanel MaxWidth="1000"
+                    HorizontalAlignment="Stretch"
+                    Margin="32,32,32,24"
+                    Spacing="{StaticResource SettingsCardSpacing}">
+            <local:MailPageHeader x:Name="Header" Margin="0,0,0,-20" />
+
+            <catalog:SettingsSection x:Uid="MailboxSectionMailbox">
+                <controls:SettingsCard x:Name="NameCard" x:Uid="MailboxNameCard">
+                    <TextBox x:Name="NameBox"
+                             Width="240"
+                             KeyDown="OnNameKeyDown"
+                             LostFocus="OnNameLostFocus" />
+                </controls:SettingsCard>
+            </catalog:SettingsSection>
+
+            <catalog:SettingsSection x:Uid="MailboxSectionConnection">
+                <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                    <controls:SettingsCard x:Name="StatusCard" x:Uid="MailboxStatusCard">
+                        <local:ConnectionStatus x:Name="Status" />
+                    </controls:SettingsCard>
+
+                    <!-- One command to save the password and one to forget it.
+                         A saved password is never shown again: the line under
+                         the field says only whether one is saved; with none
+                         saved, Forget is hidden, not greyed. -->
+                    <controls:SettingsCard x:Uid="MailboxPasswordCard" ContentAlignment="Vertical">
+                        <StackPanel Spacing="6" HorizontalAlignment="Left">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <PasswordBox x:Name="PasswordField"
+                                             x:Uid="MailboxPasswordField"
+                                             Width="320"
+                                             PasswordChanged="OnPasswordChanged" />
+                                <Button x:Name="SavePasswordButton"
+                                        x:Uid="MailboxSavePassword"
+                                        IsEnabled="False"
+                                        Click="OnSavePasswordClick" />
+                                <Button x:Name="ForgetPasswordButton"
+                                        x:Uid="MailboxForgetPassword"
+                                        Click="OnForgetPasswordClick" />
+                            </StackPanel>
+                            <TextBlock x:Name="PasswordStateText"
+                                       Style="{StaticResource CaptionTextBlockStyle}"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                    </controls:SettingsCard>
+
+                    <controls:SettingsExpander x:Name="ServerExpander" x:Uid="MailboxServerExpander">
+                        <controls:SettingsExpander.Items>
+                            <controls:SettingsCard x:Uid="MailboxServerHost">
+                                <TextBox x:Name="HostBox" Width="240" />
+                            </controls:SettingsCard>
+                            <controls:SettingsCard x:Uid="MailboxServerPort">
+                                <NumberBox x:Name="PortBox" Width="120" Minimum="1" Maximum="65535" SpinButtonPlacementMode="Hidden" />
+                            </controls:SettingsCard>
+                        </controls:SettingsExpander.Items>
+                    </controls:SettingsExpander>
+                </StackPanel>
+            </catalog:SettingsSection>
+
+            <catalog:SettingsSection x:Uid="MailboxSectionAliases">
+                <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+                    <!-- On as soon as the mailbox has aliases; off makes it a
+                         single item in the navigation. The options of the
+                         aliases unfold under it. -->
+                    <controls:SettingsExpander x:Name="AliasesExpander" x:Uid="MailboxSortByAlias">
+                        <ToggleSwitch x:Name="SortByAliasToggle" x:Uid="MailboxSortByAliasToggle" Toggled="OnSortByAliasToggled" />
+                        <controls:SettingsExpander.Items>
+                            <controls:SettingsCard x:Uid="MailboxNameAliases">
+                                <ToggleSwitch x:Name="NameAliasesToggle" x:Uid="MailboxNameAliasesToggle" Toggled="OnNameAliasesToggled" />
+                            </controls:SettingsCard>
+                        </controls:SettingsExpander.Items>
+                    </controls:SettingsExpander>
+                </StackPanel>
+            </catalog:SettingsSection>
+
+            <!-- Remove mailbox: a standard button at rest that turns red under
+                 the pointer, as the Close button of the Windows 11 title bar
+                 does (spec, Settings, decided 10 November). Deckle has no
+                 destructive style (App.xaml says why); this one is scoped to
+                 this button alone, in lightweight styling, and the red is the
+                 theme's critical fill, so dark and high contrast follow. -->
+            <controls:SettingsCard x:Uid="MailboxRemoveCard" Margin="0,28,0,0">
+                <Button x:Name="RemoveButton" x:Uid="MailboxRemoveButton" Click="OnRemoveClick">
+                    <Button.Resources>
+                        <ResourceDictionary>
+                            <ResourceDictionary.ThemeDictionaries>
+                                <ResourceDictionary x:Key="Default">
+                                    <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SystemFillColorCriticalBrush" />
+                                    <StaticResource x:Key="ButtonBorderBrushPointerOver" ResourceKey="SystemFillColorCriticalBrush" />
+                                    <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
+                                    <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="SystemFillColorCriticalBrush" />
+                                    <StaticResource x:Key="ButtonBorderBrushPressed" ResourceKey="SystemFillColorCriticalBrush" />
+                                    <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="TextOnAccentFillColorSecondaryBrush" />
+                                </ResourceDictionary>
+                                <ResourceDictionary x:Key="Light">
+                                    <StaticResource x:Key="ButtonBackgroundPointerOver" ResourceKey="SystemFillColorCriticalBrush" />
+                                    <StaticResource x:Key="ButtonBorderBrushPointerOver" ResourceKey="SystemFillColorCriticalBrush" />
+                                    <StaticResource x:Key="ButtonForegroundPointerOver" ResourceKey="TextOnAccentFillColorPrimaryBrush" />
+                                    <StaticResource x:Key="ButtonBackgroundPressed" ResourceKey="SystemFillColorCriticalBrush" />
+                                    <StaticResource x:Key="ButtonBorderBrushPressed" ResourceKey="SystemFillColorCriticalBrush" />
+                                    <StaticResource x:Key="ButtonForegroundPressed" ResourceKey="TextOnAccentFillColorSecondaryBrush" />
+                                </ResourceDictionary>
+                            </ResourceDictionary.ThemeDictionaries>
+                        </ResourceDictionary>
+                    </Button.Resources>
+                </Button>
+            </controls:SettingsCard>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

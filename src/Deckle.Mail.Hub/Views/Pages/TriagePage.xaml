@@ -1,0 +1,113 @@
+<Page
+    x:Class="Deckle.Mail.Hub.TriagePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Mail.Hub"
+    NavigationCacheMode="Required">
+
+    <Page.Resources>
+        <!-- The rows and lines are ListViewItems: hover, press and keyboard
+             focus are Windows' own visuals. The content fills the item, the
+             item's own padding gives the 16 px lead of the frames. -->
+        <Style x:Key="MailRowContainerStyle" TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+            <Setter Property="Padding" Value="16,0,8,0" />
+            <Setter Property="MinHeight" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <ScrollViewer x:Name="Scroller">
+            <!-- Triage has no title and no heading above the list: the
+                 selected item of the navigation says where the person is. An
+                 Inbox or alias page wears its breadcrumb. -->
+            <StackPanel x:Name="Column"
+                        MaxWidth="1000"
+                        HorizontalAlignment="Stretch"
+                        Margin="32,32,32,24">
+                <local:MailPageHeader x:Name="Header" Visibility="Collapsed" />
+
+                <!-- The empty page: no mailbox yet, or nothing waiting. -->
+                <StackPanel x:Name="EmptyPanel"
+                            Spacing="4"
+                            Margin="1,8,0,0"
+                            Visibility="Collapsed">
+                    <local:EnvelopePicture Margin="0,0,0,16" />
+                    <TextBlock x:Name="EmptyTitle" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock x:Name="EmptySentence"
+                               Style="{StaticResource BodyTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Visibility="Collapsed" />
+                    <Button x:Name="AddMailboxButton"
+                            Style="{StaticResource AccentButtonStyle}"
+                            Margin="0,12,0,0"
+                            Visibility="Collapsed"
+                            Click="OnAddMailboxClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource Icon.Mail.Add}" FontSize="14" />
+                            <TextBlock x:Uid="TriageAddMailbox" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- One row per subject, every mailbox mixed in one list, never
+                     grouped and never folded away. -->
+                <Border x:Name="RowsCard"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{ThemeResource OverlayCornerRadius}"
+                        Padding="0,4">
+                    <ListView x:Name="RowsList"
+                              SelectionMode="None"
+                              IsItemClickEnabled="True"
+                              ItemClick="OnRowClick"
+                              ItemContainerStyle="{StaticResource MailRowContainerStyle}" />
+                </Border>
+
+                <!-- The secondary information: a caption with its always
+                     visible double, then thin lines without a frame. -->
+                <Grid x:Name="InfoCaption" Margin="1,28,8,4" MinHeight="32">
+                    <TextBlock x:Uid="TriageNoActionNeeded"
+                               Style="{StaticResource BodyStrongTextBlockStyle}"
+                               VerticalAlignment="Center" />
+                    <Button x:Uid="TriageDismissAll"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            HorizontalAlignment="Right"
+                            Click="OnDismissAllClick" />
+                </Grid>
+                <ListView x:Name="InfoList"
+                          SelectionMode="None"
+                          IsItemClickEnabled="False"
+                          ItemContainerStyle="{StaticResource MailRowContainerStyle}"
+                          GotFocus="OnInfoListFocusChanged"
+                          LostFocus="OnInfoListFocusChanged" />
+
+                <!-- The mails set aside without a line, counted, leading to
+                     the sorting's part of Activity. Underlined: the
+                     maintainer's accent is grey, so a link cannot rest on
+                     colour alone (spec, Look and wording). -->
+                <HyperlinkButton x:Name="SetAsideLink"
+                                 Margin="5,4,0,0"
+                                 Click="OnSetAsideClick">
+                    <TextBlock x:Name="SetAsideText" TextDecorations="Underline" />
+                </HyperlinkButton>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- One command ends the day, at the bottom right of the page; when
+             every row is treated it becomes the one emphasised command. -->
+        <Grid x:Name="DoneRow" Grid.Row="1" MaxWidth="1000" Margin="32,12,32,24">
+            <Button x:Name="DoneButton"
+                    x:Uid="TriageDoneForToday"
+                    HorizontalAlignment="Right"
+                    Margin="0,0,9,0"
+                    Click="OnDoneClick" />
+        </Grid>
+    </Grid>
+</Page>

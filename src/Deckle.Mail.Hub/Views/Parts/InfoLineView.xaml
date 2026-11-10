@@ -1,0 +1,36 @@
+<UserControl
+    x:Class="Deckle.Mail.Hub.InfoLineView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    PointerEntered="OnPointerEntered"
+    PointerExited="OnPointerExited"
+    GotFocus="OnFocusChanged"
+    LostFocus="OnFocusChanged">
+
+    <!-- A secondary information: one thin line without a frame of its own,
+         its sentence and the sender in grey right after it, not set against
+         the right edge nor in a column. Its cross shows under the pointer or
+         the keyboard focus, in the column of the trash; Dismiss all above the
+         lines is its double, always visible (spec, Triage). -->
+    <Grid MinHeight="36" ColumnSpacing="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="32" />
+        </Grid.ColumnDefinitions>
+
+        <TextBlock x:Name="LineText" VerticalAlignment="Center" Margin="0,8" TextWrapping="Wrap">
+            <Run x:Name="SentenceRun" />
+            <Run x:Name="SenderRun" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </TextBlock>
+
+        <Button x:Name="DismissButton"
+                x:Uid="InfoLineDismiss"
+                Grid.Column="1"
+                Style="{StaticResource SubtleButtonStyle}"
+                Padding="8"
+                Opacity="0"
+                Click="OnDismissClick">
+            <FontIcon Glyph="{StaticResource Icon.Cancel}" FontSize="16" />
+        </Button>
+    </Grid>
+</UserControl>

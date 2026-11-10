@@ -1,0 +1,24 @@
+<UserControl
+    x:Class="Deckle.Mail.Hub.EnvelopePicture"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Width="152"
+    Height="96"
+    HorizontalAlignment="Left"
+    IsTabStop="False">
+
+    <!-- The small flat picture of an empty page, in pale grey (the divider
+         grey the frames draw it in): an envelope,
+         its flap drawn as a cut in the page's own ground. Not an icon and not
+         a skeleton of rows, and nothing in it moves, so it never reads as a
+         page still loading (spec, Triage). A picture, so screen readers skip
+         it: the sentence under it says everything. -->
+    <Grid>
+        <Border CornerRadius="{ThemeResource OverlayCornerRadius}"
+                Background="{ThemeResource DividerStrokeColorDefaultBrush}" />
+        <Path Data="M 0,0 L 76,60 L 152,0"
+              Stroke="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+              StrokeThickness="4"
+              StrokeLineJoin="Round" />
+    </Grid>
+</UserControl>
