@@ -1679,9 +1679,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── FullscreenGeometry.cs
 │   ├── Deckle.Shell.Taskbar/
 │   │   ├── Interop/
+│   │   │   ├── DbgHelpNativeMethods.cs
 │   │   │   ├── TaskbarNativeMethods.cs
 │   │   │   └── TaskbarNativeMethods.Injection.cs
 │   │   ├── Native/
+│   │   │   ├── ExplorerFunctionLocator.cs
 │   │   │   ├── ITaskbarEngine.cs
 │   │   │   ├── JsonLineFraming.cs
 │   │   │   ├── NativeCommand.cs

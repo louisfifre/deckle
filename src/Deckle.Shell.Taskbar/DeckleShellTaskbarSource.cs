@@ -51,6 +51,8 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public const int EvtWindowsKeyTapHandledDetail   = 35;
     public const int EvtWindowsKeyInjectionFailed    = 36;
     public const int EvtWindowsKeyInjectionRecovered = 37;
+    public const int EvtSymbolsDownloaded            = 38;
+    public const int EvtSymbolLookupFailed           = 39;
 
     // ── Tray icon promotion ───────────────────────────────────────────────────
     //
@@ -363,6 +365,35 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public void TaskbarCustomizerFailed(string trigger, string ex_type)
     {
         if (IsEnabled()) WriteEvent(EvtTaskbarCustomizerFailed, trigger, ex_type);
+    }
+
+    // ── Symbols ───────────────────────────────────────────────────────────────
+    //
+    // The bar's thickness needs the offset of one function of explorer, read
+    // from Microsoft's public symbols once per build of the module. These two
+    // lines say when Deckle went to the network for it, and why it came back
+    // empty. module: the file name (Taskbar.View.dll).
+
+    [Event(EvtSymbolsDownloaded,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Downloaded Microsoft's public symbols for a taskbar module")]
+    public void SymbolsDownloaded(string module, int megabytes, int seconds)
+    {
+        if (IsEnabled()) WriteEvent(EvtSymbolsDownloaded, module, megabytes, seconds);
+    }
+
+    // reason: download_failed (offline, the server did not answer),
+    // no_symbols_published, pdb_unreadable or dbghelp_failed. The lookup is
+    // tried again ten minutes later at the earliest.
+    [Event(EvtSymbolLookupFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Could not read where a function of the taskbar lives, so the bar keeps its thickness\nmodule={0} | reason={1}")]
+    public void SymbolLookupFailed(string module, string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtSymbolLookupFailed, module, reason);
     }
 
     // ── Windows key ───────────────────────────────────────────────────────────
