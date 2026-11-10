@@ -92,6 +92,7 @@ public partial class App
         }
         Add(_logWindow, "log");
         Add(_playgroundWindow, "playground");
+        Add(_mailWindow, "mail");
         Add(_hudWindow, "hud");
         return names;
     }

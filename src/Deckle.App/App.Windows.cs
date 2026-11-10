@@ -112,6 +112,40 @@ public partial class App
         return _playgroundWindow;
     }
 
+    // The Deckle Mail window, on its built-in sample until the engine is
+    // wired. A preview for the maintainer: it opens only under the developer
+    // setting that governs the Playground, and no module or setting of its
+    // own registers it yet (that comes with the real engine).
+    private void ShowMailLazy()
+    {
+        if (!PlaygroundEnabled) return;
+        EnsureMailWindow().ShowAndActivate();
+    }
+
+    private Mail.Hub.MailWindow EnsureMailWindow()
+    {
+        if (_mailWindow is null)
+        {
+            // Not gated: one Stopwatch per window per process, and the provider
+            // declares this milestone ungoverned.
+            var sw = Stopwatch.StartNew();
+            var window = CreateWindowOrLog("mail", () => new Mail.Hub.MailWindow());
+            SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Mail);
+            window.AppWindow.Closing += (_, _) =>
+                SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.Mail);
+            window.Closed += (_, _) =>
+            {
+                if (ReferenceEquals(_mailWindow, window)) _mailWindow = null;
+            };
+
+            _mailWindow = window;
+            window.SetRecordingState(_lastRecordingState);
+            ApplyThemeToSingle(window);
+            DeckleWindowingSource.Log.WindowLoadComplete("mail", sw.ElapsedMilliseconds);
+        }
+        return _mailWindow;
+    }
+
     // The constructor is where XAML parsing and page composition fail. The
     // exception is named here, then rethrown so the crash net and the caller
     // keep their current behaviour.
