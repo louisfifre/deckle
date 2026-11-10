@@ -49,6 +49,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - The controls of a row stand in two fixed columns at its end, the same on every row and every page: the task control, then the trash. A command never changes place from one row to the next, nor from one state of a row to the next.
 - The task control has one shape and one width on every row: a split button that reads Add task, with the proposed day written in it when there is one, and a chevron that opens the choice of days. It is drawn without a frame, so the sentences stay what the eye reads first.
 - Under the list, each secondary information is one thin line, without a frame of its own: its sentence, and the sender in grey in the column of the task controls above. A cross shows on the line under the pointer or the keyboard focus, in the column of the trash, and a command above the lines, always visible, dismisses them all.
+- A row or a line that holds the keyboard focus takes the fill it has under the pointer, so the eye ties the focused command to its sentence.
 - After the lines, one last line gives the number of mails that were set aside without a line, and leads to the part of Activity that lists them.
 - At the bottom right of the page, one command ends the day: it removes the rows already treated and the secondary information lines. When every row is treated, it becomes the one emphasised command of the page.
 - With nothing waiting, the page shows a small flat picture in pale grey and the sentence « Nothing is waiting. ». The picture is not an icon, not a skeleton of rows, and nothing on the page moves: the person does not take it for a loading page. Secondary information stays under it when there is some.
@@ -101,7 +102,8 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 ### A narrow window
 
-- In a narrow window the navigation folds to its rail of icons and the numbers of the mailboxes stay visible on it. A click on a mailbox that has aliases opens its pages as a menu.
+- In a narrow window the navigation folds to its rail of icons and the numbers of the mailboxes stay visible on it. A click on a mailbox that has aliases opens its pages as a menu, which names the mailbox: the rail shows its mark only.
+- A mailbox that cannot connect keeps its caution dot on the rail. The dot sits at the bottom of the mark, away from the number, so both can show.
 - The search field becomes a button in the title bar.
 - A row goes on two levels: its sentence, then its controls, which keep their two columns at the right edge. A secondary information line does the same: its sentence, then its sender.
 - On an opened subject the list of its mails goes under the text.
