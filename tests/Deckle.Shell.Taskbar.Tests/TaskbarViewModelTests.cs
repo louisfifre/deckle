@@ -148,7 +148,7 @@ public sealed class TaskbarViewModelTests : IDisposable
         Assert.Null(viewModel.CompactTrayMessageKey);
 
         viewModel.CompactTray = true;
-        Assert.Equal("TaskbarPage_CompactTrayHorizontal", viewModel.CompactTrayMessageKey);
+        Assert.Equal("TaskbarPage_HorizontalBarNoEffect", viewModel.CompactTrayMessageKey);
 
         _vertical = true;
         Assert.Null(viewModel.CompactTrayMessageKey);
@@ -162,7 +162,7 @@ public sealed class TaskbarViewModelTests : IDisposable
         Assert.Null(viewModel.CompactTaskButtonsMessageKey);
 
         viewModel.CompactTaskButtons = true;
-        Assert.Equal("TaskbarPage_CompactTrayHorizontal", viewModel.CompactTaskButtonsMessageKey);
+        Assert.Equal("TaskbarPage_HorizontalBarNoEffect", viewModel.CompactTaskButtonsMessageKey);
 
         _vertical = true;
         Assert.Null(viewModel.CompactTaskButtonsMessageKey);

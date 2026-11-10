@@ -15,7 +15,7 @@ public partial class TaskbarViewModel
     private const string ProblemNotAppliedKey = "TaskbarPage_ProblemNotApplied";
     private const string ProblemContestedKey = "TaskbarPage_ProblemContested";
     private const string ProblemErrorKey = "TaskbarPage_ProblemError";
-    private const string HorizontalBarKey = "TaskbarPage_CompactTrayHorizontal";
+    private const string HorizontalBarKey = "TaskbarPage_HorizontalBarNoEffect";
 
     public IReadOnlyList<SettingDescriptor> BarManifest =>
     [

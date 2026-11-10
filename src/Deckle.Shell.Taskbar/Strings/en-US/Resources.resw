@@ -102,7 +102,7 @@
   <data name="TaskbarPage_CompactTrayCard.Description" xml:space="preserve">
     <value>Brings the tray icons and the quick settings icons closer together. Applies to a vertical taskbar only.</value>
   </data>
-  <data name="TaskbarPage_CompactTrayHorizontal" xml:space="preserve">
+  <data name="TaskbarPage_HorizontalBarNoEffect" xml:space="preserve">
     <value>Your taskbar is horizontal, so this has no effect.</value>
   </data>
   <data name="TaskbarPage_StartMenuFullHeightCard.Header" xml:space="preserve">

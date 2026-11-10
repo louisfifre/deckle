@@ -5,9 +5,9 @@ namespace Deckle.Shell.Taskbar;
 
 // The page's state. Every value is a setting: a change writes it and saves, and
 // applying it belongs to the App, which observes the store. The tray promoter
-// carries "show all tray icons", WindowsKeyTaskbarFocus the Windows key and TaskbarCustomizer the rest. The page
-// only reads back how each ended: the promoter's last pass, and the parts the
-// engine could not put in effect.
+// carries "show all tray icons", WindowsKeyTaskbarFocus the Windows key and
+// TaskbarCustomizer the rest. The page only reads back how each ended: the
+// promoter's last pass, and the parts the engine could not put in effect.
 public partial class TaskbarViewModel : ObservableObject
 {
     // Raised so the composer re-reads every advisory and every switch; no
