@@ -18,7 +18,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 **Checking what was done.** The person opens Activity and sees, newest first, what they did themselves and, apart from it, what the sorting did alone. They undo a line to bring its subject back to Triage, and open a line to read its mails. To find an older mail they search from the title bar.
 
-**Starting.** On a first launch the person adds a mailbox in Settings, with its address and an app password. Deckle Mail sorts its recent mail while they watch subjects appear, and from then on sorts each mail as it arrives. The first time a gesture of theirs would send a mail to the trash, a notice says where treated mail goes and what the mail provider does with it.
+**Starting.** On a first launch the person adds a mailbox in Settings, with its name, its address and an app password. Deckle Mail sorts its recent mail while they watch subjects appear, and from then on sorts each mail as it arrives. The first time a gesture of theirs would send a mail to the trash, a notice says where treated mail goes and what the mail provider does with it.
 
 ## Surfaces
 
@@ -102,14 +102,15 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 ### Settings
 
-- The page lists the mailboxes, one line each, which opens the page of that mailbox. The line gives the name, the address, the number of aliases, and whether the mailbox is connected, by a coloured dot and in words.
-- The page of a mailbox holds all its options: its connection, the sorting by alias with the options of its aliases, and its removal.
+- The page lists the mailboxes, one card each, which opens the page of that mailbox. The card gives the name, the address, the number of aliases, and whether the mailbox is connected, by a coloured dot and in words.
+- The page of a mailbox holds all its options: its name, its connection, the sorting by alias with the options of its aliases, and its removal.
 - The connection shows the address, the mail server, and the app password with one command to save it and one to forget it. A saved password is never shown again: a line under the field says only whether one is saved. With no password saved, the command to forget it is hidden, not greyed.
 - A switch sorts the mailbox by alias; it is on as soon as the mailbox has aliases, and off makes the mailbox a single item in the navigation. The options of the aliases unfold under it. One of them names an alias from its address with a capital. Example: the alias shop@ is named « Shop ». It is on by default.
-- The page of a mailbox offers to remove it, after a confirmation.
+- The page of a mailbox offers to remove it, after a confirmation. Remove mailbox is quiet at rest and turns red under the pointer, as Microsoft draws a command that destroys.
 - When a mailbox cannot connect, no bar at the top of the page names it.
 - A mailbox that cannot connect is one condition with one severity wherever it is named, in Triage and here: a caution, since its mail is still shown and nothing is lost.
-- Under the list of mailboxes, Add mailbox opens a page of its own, where the person sets the connection of the new mailbox. Settings holds no fold to add one.
+- Under the list of mailboxes, Add mailbox opens a page of its own. Settings holds no fold to add one.
+- The page of Add mailbox asks, in one compact form, for the name of the mailbox, its address and its connection.
 - The page shows, by the Anytype logo and in words, whether Anytype is connected.
 - The page has no Reset all.
 
@@ -257,9 +258,9 @@ Each question names the option the canvas recommends first, the frames that show
 33. **Emptying the trash of a mailbox that cannot connect.** Greyed, with the reason on its line (31GB), since an emptying cannot be undone and would run later on a count that is no longer true; or kept and sent later like a gesture on a row.
 34. **Connecting Anytype.** Settings says whether Anytype is connected (31MA) and offers no command; a command to connect it (32MC) depends on Open 13.
 35. **Triage when Anytype was never connected.** Nothing about tasks is drawn (31NA), as written above; three reviewers did not understand why a row that asks for an action only offers the trash. The maintainer settled on 10 November that the notice saying Anytype is not connected can be dismissed; the information bar of 32NB falls with the bars. Not said: what form the notice takes, where it stands, and whether it leads to Settings.
-36. **The moment between a saved password and a mailbox that is back.** The canvas draws before (32JP) and after (32JC). Not said: what the fold shows while the mailbox tries to connect, and what it says when the new password is refused too.
+36. **The moment between a saved password and a mailbox that is back.** The canvas draws before (32JP) and after (32JC). Not said: what the connection on the page of the mailbox shows while the mailbox tries to connect, and what it says when the new password is refused too.
 37. **A mailbox that comes back.** Settled 10 November: it says nothing, its dots go (32JT).
-38. **The moment a first mailbox is added.** The canvas draws the fold saying it connects, the command greyed (34LC), a refusal in the words of a failed mailbox (34LR), then Triage shown by itself while the first sort runs (34S). Not said: whether the person is taken to Triage or stays in Settings.
+38. **The moment a first mailbox is added.** The canvas draws the fold saying it connects, the command greyed (34LC), which now stands on the page of Add mailbox since Settings holds no fold, a refusal in the words of a failed mailbox (34LR), then Triage shown by itself while the first sort runs (34S). Not said: whether the person is taken to Triage or stays in Settings.
 39. **The end of a first sort.** Its progress line goes and the list stays (33LF). The other option, a bar saying the mailbox is sorted and how many subjects wait (34LG), falls with the bars (Open 25). Not said: whether the end of the sort is told in any other way.
 40. **An earlier mail of an opened subject.** Settled 10 November: a mention leads back to the latest (35KS). Still not said: whether « Reply in webmail » then opens that mail or the latest.
 41. **Open settings from a subject whose mailbox fails.** An opened subject that cannot show its mail offers to open Settings (28R), or offers nothing. The maintainer doubts the first: it sends the person to a page where there may be nothing to do.
