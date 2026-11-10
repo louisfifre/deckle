@@ -59,6 +59,7 @@ public interface IAtelierToolHost
     // opens the item (spec, Behaviours).
     void Select(string? path, UIElement? details);
 
-    // Maps a path to the icon a list shows for it.
+    // Maps a path and a pixel size to the icon a list shows for it, or null
+    // for the neutral glyph.
     IFileIconProvider Icons { get; }
 }

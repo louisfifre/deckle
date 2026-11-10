@@ -74,11 +74,13 @@
                             <ColumnDefinition Width="{StaticResource SizeColumnWidth}" />
                         </Grid.ColumnDefinitions>
                         <StackPanel Orientation="Horizontal" Spacing="12">
-                            <IconSourceElement IconSource="{x:Bind Icon}"
-                                               Width="16"
-                                               Height="16"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               VerticalAlignment="Center" />
+                            <Grid Width="16" Height="16" VerticalAlignment="Center">
+                                <FontIcon Glyph="{x:Bind Glyph}"
+                                          FontSize="16"
+                                          Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                          Visibility="{x:Bind GlyphVisibility, Mode=OneWay}" />
+                                <Image Source="{x:Bind Icon, Mode=OneWay}" Stretch="Uniform" />
+                            </Grid>
                             <TextBlock Text="{x:Bind Name}"
                                        TextTrimming="CharacterEllipsis"
                                        VerticalAlignment="Center" />
