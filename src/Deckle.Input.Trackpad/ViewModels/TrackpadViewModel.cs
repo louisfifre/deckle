@@ -5,7 +5,7 @@ namespace Deckle.Input.Trackpad;
 // The _isSyncing flag suppresses the write-back while Load() seeds the
 // properties, so re-hydration never re-saves. Push() rounds before persisting
 // so a snapped slider value's float noise (1.3666670…) never reaches the store.
-// Push writes only the two fields this model owns: the raw-frame recording
+// Push writes only the fields this model owns: the raw-frame recording
 // belongs to TrackpadTelemetryViewModel, and a save here must not overwrite it.
 public partial class TrackpadViewModel : ObservableObject
 {
@@ -22,6 +22,10 @@ public partial class TrackpadViewModel : ObservableObject
     [ObservableProperty]
     public partial double DragSpeed { get; set; }
 
+    // Wait between three fingers landing and the button press, in ms.
+    [ObservableProperty]
+    public partial double PressDelayMs { get; set; }
+
     partial void OnEnabledChanged(bool value)
     {
         if (_isSyncing) return;
@@ -29,6 +33,12 @@ public partial class TrackpadViewModel : ObservableObject
     }
 
     partial void OnDragSpeedChanged(double value)
+    {
+        if (_isSyncing) return;
+        Push();
+    }
+
+    partial void OnPressDelayMsChanged(double value)
     {
         if (_isSyncing) return;
         Push();
@@ -52,6 +62,7 @@ public partial class TrackpadViewModel : ObservableObject
             var s = TrackpadSettingsService.Instance.Current;
             Enabled = s.Enabled;
             DragSpeed = s.DragSpeed;
+            PressDelayMs = s.PressDelayMs;
         }
         finally
         {
@@ -64,6 +75,7 @@ public partial class TrackpadViewModel : ObservableObject
         var s = TrackpadSettingsService.Instance.Current;
         s.Enabled = Enabled;
         s.DragSpeed = Math.Round(DragSpeed, 2);
+        s.PressDelayMs = Math.Round(PressDelayMs);
         TrackpadSettingsService.Instance.Save();
     }
 }
