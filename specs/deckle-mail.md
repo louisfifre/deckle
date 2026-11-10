@@ -46,7 +46,9 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - While the first sort of a mailbox runs, the page says which mailbox is being sorted, shows a progress bar without a count, and adds each subject at the end of the list as it is found. A subject already shown never moves during the sort.
 - With subjects waiting, the page shows one row per subject in a single list, every mailbox mixed, never grouped by mailbox. Every subject is on the page: none is folded away, however many there are.
 - A row shows one sentence, a paperclip when a mail of the subject carries a real file, the task control and the trash. It shows nothing else: no line under the sentence, and no sender, mailbox or deadline written apart.
-- Under the list, each secondary information is one thin line, without a frame of its own: its sentence, and the sender in grey at the other end. A cross shows on the line under the pointer, and a command above the lines, always visible, dismisses them all.
+- The controls of a row stand in two fixed columns at its end, the same on every row and every page: the task control, then the trash. A command never changes place from one row to the next, nor from one state of a row to the next.
+- The task control has one shape and one width on every row: a split button that reads Add task, with the proposed day written in it when there is one, and a chevron that opens the choice of days. It is drawn without a frame, so the sentences stay what the eye reads first.
+- Under the list, each secondary information is one thin line, without a frame of its own: its sentence, and the sender in grey in the column of the task controls above. A cross shows on the line under the pointer or the keyboard focus, in the column of the trash, and a command above the lines, always visible, dismisses them all.
 - After the lines, one last line gives the number of mails that were set aside without a line, and leads to the part of Activity that lists them.
 - At the bottom right of the page, one command ends the day: it removes the rows already treated and the secondary information lines.
 - With nothing waiting, the page shows a small flat picture in pale grey and the sentence « Nothing is waiting. ». The picture is not an icon, not a skeleton of rows, and nothing on the page moves: the person does not take it for a loading page. Secondary information stays under it when there is some.
@@ -137,7 +139,8 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - When the sorting found a deadline, the row offers instead the task on a proposed day: one click creates it, and the same control still opens the choice of another day.
 - The proposed day follows one fixed rule, without a setting: two days before the deadline, and never before today. A deadline of today or already past proposes today.
 - The task created in Anytype holds the sentence of the row, the text of the mail and its sender. It does not need a link back to the mail.
-- Once the task exists, the subject leaves the list: its row greys in place, wears the Anytype logo with a tick and the day of the task, and the subject becomes a line of Activity.
+- When no deadline was found, one click on Add task creates the task with no day, and the chevron opens the choice of days.
+- Once the task exists, the subject leaves the list: its row greys in place, says « Task added » and the day of the task, and the subject becomes a line of Activity.
 - Deckle Mail shows no box to tick and never completes a task: a task is done in Anytype.
 - When Anytype cannot be reached, a bar says so, and a task added meanwhile is kept and created when Anytype is back.
 - When Anytype is not connected, nothing about tasks is drawn: the trash is the only command on a row.
@@ -148,7 +151,8 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - When a subject is treated, by a task or by the trash, its mails go to the trash of the mail server of their mailbox. The inbox then holds only what waits, on the phone and in the webmail too.
 - Deckle Mail never deletes a mail and never empties a trash on its own. The mail provider deletes what stays in its trash after its own delay. Example: Infomaniak deletes a mail thirty days after it reached the trash.
 - The first time a gesture would send a mail to the trash, a notice says so, once, with the provider's delay. The gesture happens only if the person accepts.
-- After a gesture the row stays where it was, greyed, with Undo under the task controls of the other rows and a cross that removes the line. No short timer removes it.
+- After a gesture the row stays where it was, greyed. Undo stands at the left edge of the task column, where the task control was, followed by what happened in words: « Task added · Fri 13 » or « Moved to trash ». A cross stands where the trash was and removes the line. No short timer removes it.
+- A click that lands on a row in the instant after a gesture changed it does nothing: a double click on Add task never undoes the task it has just created.
 - A treated row leaves when the person clicks its cross or ends the day, when the window is closed or refreshed, or after a long fixed time.
 - Undo brings the mails back from the trash to the inbox, removes the task when one was created, and gives the row its controls back. Ctrl+Z undoes the last gesture.
 - A mail the sorting set aside goes to the trash when the person ends the day, not before.
