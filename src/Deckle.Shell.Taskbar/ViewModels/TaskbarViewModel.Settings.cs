@@ -70,6 +70,13 @@ public partial class TaskbarViewModel
             value => StartMenuFullHeight = value,
             defaultValue: () => new TaskbarSettings().StartMenuFullHeight,
             advisory: () => ProblemAdvisory(TaskbarPart.StartMenu)),
+        // Sits with the Start menu because it changes what the Windows key does to
+        // Start. It asks nothing of the engine, so it has no advisory.
+        Setting.Toggle(
+            "TaskbarPage_WindowsKeyShowsTaskbarCard",
+            () => WindowsKeyShowsTaskbar,
+            value => WindowsKeyShowsTaskbar = value,
+            defaultValue: () => new TaskbarSettings().WindowsKeyShowsTaskbar),
     ];
 
     // The promoter's last pass, said only when it did not go through. While

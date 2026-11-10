@@ -24,6 +24,7 @@ public sealed class TaskbarSettingsTests
             Assert.False(settings.CompactTaskButtons);
             Assert.False(settings.CompactClock);
             Assert.False(settings.StartMenuFullHeight);
+            Assert.False(settings.WindowsKeyShowsTaskbar);
         }
     }
 
@@ -38,6 +39,7 @@ public sealed class TaskbarSettingsTests
             CompactTaskButtons = true,
             CompactClock = true,
             StartMenuFullHeight = true,
+            WindowsKeyShowsTaskbar = true,
         }, TaskbarSettingsService.JsonOptions);
 
         TaskbarSettings read = Read(json);
@@ -48,6 +50,7 @@ public sealed class TaskbarSettingsTests
         Assert.True(read.CompactTaskButtons);
         Assert.True(read.CompactClock);
         Assert.True(read.StartMenuFullHeight);
+        Assert.True(read.WindowsKeyShowsTaskbar);
     }
 
     // A person editing the file by hand reads the background by its name.

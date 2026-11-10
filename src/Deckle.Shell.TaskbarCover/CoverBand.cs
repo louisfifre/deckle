@@ -98,6 +98,9 @@ internal sealed class CoverBand
     public bool Visible { get; private set; }
     // A fullscreen/presentation app is foreground on this band's monitor.
     public bool AppSuppressed { get; set; }
+    // This band's own taskbar is the foreground window (Windows + T, the
+    // Windows key setting): the band is out of its way until focus moves on.
+    public bool TaskbarFocused { get; set; }
 
     public void Show(string reason)
     {
