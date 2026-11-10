@@ -16,8 +16,10 @@ internal sealed class NeutralFileIconProvider : IFileIconProvider
 {
     // IconSource describes an icon; each IconSourceElement builds its own
     // element from it, so one instance serves every row.
-    private readonly FontIconSource _folder = new() { Glyph = AtelierGlyphs.Folder };
-    private readonly FontIconSource _file = new() { Glyph = AtelierGlyphs.File };
+    // FontSize matches the 16 px cell the list gives an icon; the default
+    // (20) draws past the cell and the glyph is cut on the right.
+    private readonly FontIconSource _folder = new() { Glyph = AtelierGlyphs.Folder, FontSize = 16 };
+    private readonly FontIconSource _file = new() { Glyph = AtelierGlyphs.File, FontSize = 16 };
 
     public IconSource For(string path, bool isFolder) => isFolder ? _folder : _file;
 }
