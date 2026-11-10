@@ -145,6 +145,12 @@
   <data name="TrackpadPage_SpeedCard.Description" xml:space="preserve">
     <value>How far the drag travels for the same finger movement.</value>
   </data>
+  <data name="TrackpadPage_PressDelayCard.Header" xml:space="preserve">
+    <value>Pick-up delay</value>
+  </data>
+  <data name="TrackpadPage_PressDelayCard.Description" xml:space="preserve">
+    <value>How long the drag waits after three fingers land before it picks up. A longer wait keeps four-finger gestures from clicking, but what you drag trails the cursor.</value>
+  </data>
 
   <!-- Windows integration -->
   <data name="TrackpadPageWindowsSection.Title" xml:space="preserve">
