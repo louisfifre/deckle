@@ -2480,7 +2480,19 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Llm.Tests.csproj
 │   │   └── ReasoningOnTheWireTests.cs
 │   ├── Deckle.Mail.Tests/
-│   │   └── Deckle.Mail.Tests.csproj
+│   │   ├── ActivityTests.cs
+│   │   ├── Deckle.Mail.Tests.csproj
+│   │   ├── EndOfDayTests.cs
+│   │   ├── GestureTests.cs
+│   │   ├── ListOrderTests.cs
+│   │   ├── MailboxNamingTests.cs
+│   │   ├── MailWordingTests.cs
+│   │   ├── NavigationCountsTests.cs
+│   │   ├── SubjectTests.cs
+│   │   ├── SyntheticMail.cs
+│   │   ├── TaskDayProposalTests.cs
+│   │   ├── UnreachableTargetTests.cs
+│   │   └── WhereAMailLandsTests.cs
 │   ├── Deckle.Modules.Tests/
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Modules.Tests.csproj
