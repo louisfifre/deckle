@@ -729,7 +729,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── FilesView.xaml
 │   │   │   │   └── FilesView.xaml.cs
 │   │   │   ├── Map/
-│   │   │   │   └── MapTool.cs
+│   │   │   │   ├── MapDetails.cs
+│   │   │   │   ├── MapKindText.cs
+│   │   │   │   ├── MapLinkGraph.cs
+│   │   │   │   ├── MapPanelSection.cs
+│   │   │   │   ├── MapReview.cs
+│   │   │   │   ├── MapRow.cs
+│   │   │   │   ├── MapTool.cs
+│   │   │   │   ├── MapView.xaml
+│   │   │   │   └── MapView.xaml.cs
 │   │   │   ├── Photos/
 │   │   │   │   └── PhotosTool.cs
 │   │   │   ├── Sizes/

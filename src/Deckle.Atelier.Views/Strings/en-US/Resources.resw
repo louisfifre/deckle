@@ -81,4 +81,64 @@
   <data name="Kind_Folder" xml:space="preserve"><value>Dossier de fichiers</value></data>
   <data name="Kind_File" xml:space="preserve"><value>Fichier</value></data>
   <data name="Kind_File_Format" xml:space="preserve"><value>Fichier {0}</value></data>
+
+  <!-- Map tool (name not chosen): list, filters, empty state, panel -->
+  <data name="MapFilters_Group" xml:space="preserve"><value>Filtres</value></data>
+  <data name="MapAlwaysRead.Content" xml:space="preserve"><value>Toujours lu par un LLM</value></data>
+  <data name="MapHeaderName.Text" xml:space="preserve"><value>Nom</value></data>
+  <data name="MapHeaderKind.Text" xml:space="preserve"><value>Type</value></data>
+  <data name="MapHeaderLinks.Text" xml:space="preserve"><value>Liens</value></data>
+  <data name="MapHeaderLines.Text" xml:space="preserve"><value>Lignes</value></data>
+  <data name="MapHeaderTokens.Text" xml:space="preserve"><value>Tokens estimés</value></data>
+  <data name="MapHeaderModified.Text" xml:space="preserve"><value>Modifié</value></data>
+  <data name="Map_TokensHint" xml:space="preserve"><value>Estimation sans modèle : environ un token pour quatre caractères. Le français et le code en prennent souvent davantage.</value></data>
+  <data name="Map_Kind_ContextFile" xml:space="preserve"><value>Fichier de contexte</value></data>
+  <data name="Map_Kind_Skill" xml:space="preserve"><value>Skill</value></data>
+  <data name="Map_Kind_McpServer" xml:space="preserve"><value>Serveur MCP</value></data>
+  <data name="Map_Kind_Script" xml:space="preserve"><value>Script</value></data>
+  <data name="Map_Kind_StandardFile" xml:space="preserve"><value>Fichier standard</value></data>
+  <data name="Map_Kinds_ContextFile" xml:space="preserve"><value>Fichiers de contexte</value></data>
+  <data name="Map_Kinds_Skill" xml:space="preserve"><value>Skills</value></data>
+  <data name="Map_Kinds_McpServer" xml:space="preserve"><value>Serveurs MCP</value></data>
+  <data name="Map_Kinds_Script" xml:space="preserve"><value>Scripts</value></data>
+  <data name="Map_Kinds_StandardFile" xml:space="preserve"><value>Fichiers standard</value></data>
+  <data name="Map_LookedFor_ContextFile" xml:space="preserve"><value>fichier de contexte</value></data>
+  <data name="Map_LookedFor_Skill" xml:space="preserve"><value>skill</value></data>
+  <data name="Map_LookedFor_McpServer" xml:space="preserve"><value>serveur MCP</value></data>
+  <data name="Map_LookedFor_Script" xml:space="preserve"><value>script</value></data>
+  <data name="Map_LookedFor_StandardFile" xml:space="preserve"><value>fichier standard de dépôt</value></data>
+  <data name="Map_LookedFor_Separator" xml:space="preserve"><value>, ni </value></data>
+  <data name="Map_LookedFor_Format" xml:space="preserve"><value>Ni {0}.</value></data>
+  <data name="Map_Empty_Format" xml:space="preserve"><value>Rien à montrer dans {0}</value></data>
+  <data name="Map_NoMatch" xml:space="preserve"><value>Aucun élément ne correspond aux filtres.</value></data>
+  <data name="Map_NotFound" xml:space="preserve"><value>Ce dossier n'existe plus.</value></data>
+  <data name="Map_AccessDenied" xml:space="preserve"><value>Vous n'avez pas accès à ce dossier.</value></data>
+  <data name="Map_Truncated_Format" xml:space="preserve"><value>Inventaire partiel : le parcours s'est arrêté après {0} éléments.</value></data>
+  <data name="Map_Total_Format" xml:space="preserve"><value>Total toujours lu ({0})</value></data>
+  <data name="Map_Details_Section" xml:space="preserve"><value>Détails</value></data>
+  <data name="Map_Details_Description" xml:space="preserve"><value>Description</value></data>
+  <data name="Map_Details_Command" xml:space="preserve"><value>Démarre par</value></data>
+  <data name="Map_Details_Loading" xml:space="preserve"><value>Lu</value></data>
+  <data name="Map_Loading_AtSessionStart" xml:space="preserve"><value>Au début de chaque session</value></data>
+  <data name="Map_Loading_OnDemand" xml:space="preserve"><value>Quand le travail en a besoin</value></data>
+  <data name="Map_Loading_NotLoaded" xml:space="preserve"><value>Jamais comme consigne</value></data>
+  <data name="Map_Details_ReadBy" xml:space="preserve"><value>Par</value></data>
+  <data name="Map_Details_Startup" xml:space="preserve"><value>Au départ</value></data>
+  <data name="Map_Startup_Format" xml:space="preserve"><value>Nom et description, environ {0} tokens</value></data>
+  <data name="Map_Details_Lines" xml:space="preserve"><value>Lignes</value></data>
+  <data name="Map_Details_Tokens" xml:space="preserve"><value>Tokens</value></data>
+  <data name="Map_Tokens_Format" xml:space="preserve"><value>Environ {0}</value></data>
+  <data name="Map_Details_Modified" xml:space="preserve"><value>Modifié</value></data>
+  <data name="Map_Details_Location" xml:space="preserve"><value>Emplacement</value></data>
+  <data name="Map_Location_Line_Format" xml:space="preserve"><value>{0}, ligne {1}</value></data>
+  <data name="Map_Graph_Section" xml:space="preserve"><value>Graphe</value></data>
+  <data name="Map_Graph_Name_Format" xml:space="preserve"><value>Graphe des liens de {0}</value></data>
+  <data name="Map_Graph_More_Format" xml:space="preserve"><value>+{0}</value></data>
+  <data name="Map_Graph_More_Name_Format" xml:space="preserve"><value>{0} autres liens, listés plus bas</value></data>
+  <data name="Map_Links_Section" xml:space="preserve"><value>Liens</value></data>
+  <data name="Map_Cites_Format" xml:space="preserve"><value>Cite ({0})</value></data>
+  <data name="Map_CitedBy_Format" xml:space="preserve"><value>Est cité par ({0})</value></data>
+  <data name="Map_Mutual" xml:space="preserve"><value>dans les deux sens</value></data>
+  <data name="Map_None" xml:space="preserve"><value>Rien dans ce dossier.</value></data>
+  <data name="Map_NoLinks" xml:space="preserve"><value>Ne cite rien et n'est cité par rien dans ce dossier.</value></data>
 </root>
