@@ -1,6 +1,6 @@
 # Deckle Mail
 
-Proposed on 2026-11-09, from what the maintainer said of the canvas « Tri des mails — scène d'ouverture » and from the review pass that followed (canvas pages 9 to 17). Nothing is built and no real mailbox is connected. The sentences below describe the direction the pass recommends; every choice the maintainer has not confirmed is listed under Open, with the options the canvas shows.
+Proposed on 2026-11-09, revised on 2026-11-10 from what the maintainer said of canvas page 15. Nothing is built and no real mailbox is connected. The sentences below hold what he decided on 10 November and, where he left a choice, the direction canvas page 18 recommends; every choice he has not confirmed is listed under Open, with the frames that show the options.
 
 ## Intention
 
@@ -8,17 +8,17 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 ## Journeys
 
-**Opening the window.** The mail is already sorted when the window opens. The person lands on Triage and sees, in one list, each thing a mail asks of them, whatever mailbox it came to. Under the list they see the few facts worth knowing. Everything else has been put away and does not show.
+**Opening the window.** The mail is already sorted when the window opens. The person lands on Triage and sees, in one list, each subject that waits for them, whatever mailbox it came to. A subject is one mail, or a run of mails about one matter. Under the list they see the few facts worth knowing and the number of mails that were set aside.
 
-**Sorting one thing.** The person reads a tile and knows what is asked, by whom, where it arrived and by when, without opening anything. If the matter is settled or is not theirs, they choose File and the tile leaves. If they will deal with it later, they choose Add task, pick a day, and the thing becomes a task in Anytype that keeps its link to the mail. When they have done it, they tick the task, in Deckle Mail or in Anytype, and the mail is put away.
+**Sorting in a row.** The person reads a row and knows what is asked, by whom and by when, without opening anything. If they will deal with it, they add a task: in one click when the row proposes a day, from a menu of days otherwise. If the matter is settled or is not theirs, they choose the trash. Either way the row greys where it is, with Undo, and they go on to the next one. They end on « Nothing is waiting. » and close the window.
 
-**Reading a mail.** The person clicks a row and its subject opens on a page of its own: the latest mail in full, as it was written, and beside it the list of every mail of the same subject. They go back with the breadcrumb, Alt+Left or the mouse back button, and find the list as they left it.
+**Reading a mail.** The person clicks a row and its subject opens on a page of its own: the latest mail in full, as it was written, and beside it the list of every mail of the same subject. They go back with the back button of the title bar, Alt+Left or the mouse back button, and find the list as they left it.
 
-**Going mailbox by mailbox.** The person clicks a mailbox or an alias in the navigation and gets the same view as Triage, kept to what arrived there. The number beside each mailbox and alias tells them where something waits before they click.
+**Going mailbox by mailbox.** The person clicks Global under a mailbox, or one of its aliases, and gets the same list as Triage, kept to what arrived there. The number beside each of them tells where something waits before they click.
 
-**Checking what was put away.** The person opens Activity and sees everything that happened, newest first: what the sorting put away and why, and what they did themselves. They search by sender, subject or text, open a line to read the mail, and send it back to Triage when the sorting was wrong.
+**Checking what was done.** The person opens Activity and sees, newest first, what they did themselves and, apart from it, what the sorting did alone. They undo a line to bring its subject back to Triage, and open a line to read its mails. To find an older mail they search from the title bar.
 
-**Starting.** On a first launch the person adds a mailbox. Deckle Mail sorts its recent mail while they watch things appear, and from then on sorts each mail as it arrives.
+**Starting.** On a first launch the person adds a mailbox in Settings, with its address and an app password. Deckle Mail sorts its recent mail while they watch subjects appear, and from then on sorts each mail as it arrives. The first time a gesture of theirs would send a mail to the trash, a notice says where treated mail goes and what the mail provider does with it.
 
 ## Surfaces
 
