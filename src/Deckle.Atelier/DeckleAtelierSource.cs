@@ -7,7 +7,7 @@ namespace Deckle.Atelier;
 // durations, reasons and error types. An added folder's path is the person's
 // own disk, so no event carries a path or a name.
 [EventSource(Name = "Deckle-Atelier")]
-public sealed class DeckleAtelierSource : DeckleEventSource
+public sealed partial class DeckleAtelierSource : DeckleEventSource
 {
     public static readonly DeckleAtelierSource Log = new();
 
