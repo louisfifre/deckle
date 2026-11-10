@@ -60,6 +60,24 @@ public sealed class TaskbarSettings
     /// <summary>The clock as stacked lines (month, day, weekday, hours, minutes).</summary>
     public bool CompactClock { get; set; } = false;
 
+    /// <summary>
+    /// The hover thumbnails grown, each keeping its window's ratio, to the
+    /// largest size inside <see cref="ThumbnailMaxWidth"/> x <see cref="ThumbnailMaxHeight"/>.
+    /// </summary>
+    public bool LargerThumbnails { get; set; } = false;
+
+    /// <summary>
+    /// The widest a larger thumbnail grows, in effective pixels. 640 lets a
+    /// 16:9 window reach the full height below.
+    /// </summary>
+    public double ThumbnailMaxWidth { get; set; } = 640;
+
+    /// <summary>
+    /// The tallest a larger thumbnail grows, in effective pixels: three times
+    /// Explorer's 110, the size Louis had with Windhawk's thumbnail mod at 300 %.
+    /// </summary>
+    public double ThumbnailMaxHeight { get; set; } = 330;
+
     /// <summary>The Start menu as high as the screen it opens on.</summary>
     public bool StartMenuFullHeight { get; set; } = false;
 

@@ -246,6 +246,16 @@ internal static class TaskbarDocumentBuilder
                 WriteLines(writer, "lower", clock.LowerLines);
                 writer.WriteEndObject();
             }
+            if (customization.Thumbnails is { } box)
+            {
+                // A behavior and not a rule: each thumbnail has its window's ratio,
+                // which only the live size Explorer gives it carries.
+                writer.WriteStartObject("thumbnailSize");
+                writer.WriteBoolean("enabled", true);
+                writer.WriteNumber("maxWidth", box.MaxWidth);
+                writer.WriteNumber("maxHeight", box.MaxHeight);
+                writer.WriteEndObject();
+            }
             writer.WriteEndObject();
 
             writer.WriteEndObject();

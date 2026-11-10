@@ -15,6 +15,7 @@ internal static class TaskbarProblemReader
         _ when id.StartsWith("quickSettings.", StringComparison.Ordinal) => TaskbarPart.CompactTray,
         _ when id.StartsWith("taskButtons.", StringComparison.Ordinal) => TaskbarPart.CompactTaskButtons,
         _ when id.StartsWith("clock.", StringComparison.Ordinal) || id == "clock" => TaskbarPart.CompactClock,
+        _ when id.StartsWith("thumbnails.", StringComparison.Ordinal) => TaskbarPart.Thumbnails,
         "startMenuHeight" => TaskbarPart.StartMenuHeight,
         "startMenuWidth" => TaskbarPart.StartMenuWidth,
         _ when id.StartsWith("startMenu.recommended.", StringComparison.Ordinal) => TaskbarPart.StartMenuRecommended,
@@ -39,6 +40,7 @@ internal static class TaskbarProblemReader
         if (wanted.TrayIconPitch is not null || wanted.TightenQuickSettings) parts.Add(TaskbarPart.CompactTray);
         if (wanted.TaskButtonPitch is not null) parts.Add(TaskbarPart.CompactTaskButtons);
         if (wanted.Clock is not null || wanted.TightenClockButton) parts.Add(TaskbarPart.CompactClock);
+        if (wanted.Thumbnails is not null) parts.Add(TaskbarPart.Thumbnails);
         if (wanted.StartMenu is { FullHeight: true }) parts.Add(TaskbarPart.StartMenuHeight);
         if (wanted.StartMenu?.Width is not null) parts.Add(TaskbarPart.StartMenuWidth);
         if (wanted.StartMenu is { HideRecommended: true }) parts.Add(TaskbarPart.StartMenuRecommended);
@@ -85,6 +87,8 @@ internal static class TaskbarProblemReader
             if (ProblemOf(state.State) is not { } problem) continue;
             // An element that is only there now and then may well be absent.
             if (problem == TaskbarProblem.NotApplied && optional.Contains(state.Id)) continue;
+            // So may a thumbnail: it exists only while a hover flyout is open.
+            if (problem == TaskbarProblem.NotApplied && part == TaskbarPart.Thumbnails) continue;
             if (!problems.TryGetValue(part, out TaskbarProblem known) || problem > known) problems[part] = problem;
         }
     }

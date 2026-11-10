@@ -11,6 +11,7 @@ public enum TaskbarPart
     CompactTray,
     CompactTaskButtons,
     CompactClock,
+    Thumbnails,
     StartMenuHeight,
     StartMenuWidth,
     StartMenuRecommended,

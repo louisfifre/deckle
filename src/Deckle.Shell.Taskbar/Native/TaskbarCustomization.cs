@@ -46,6 +46,9 @@ internal sealed record TaskbarCustomization
     /// </summary>
     public bool TightenClockButton { get; init; }
 
+    /// <summary>The box the hover thumbnails grow to fit; null leaves Explorer's size.</summary>
+    public ThumbnailBox? Thumbnails { get; init; }
+
     /// <summary>
     /// The Start menu; null leaves Windows' own. It lives in another process
     /// than the rest, so it has its own document (TaskbarDocumentBuilder.BuildStartMenu).
@@ -55,7 +58,7 @@ internal sealed record TaskbarCustomization
     /// <summary>Whether anything here lives in explorer, which is where the taskbar host is needed.</summary>
     public bool CustomizesExplorer =>
         Background != TaskbarBackground.Native || BarThickness is not null || TrayIconPitch is not null || TightenQuickSettings
-        || TaskButtonPitch is not null || Clock is not null || TightenClockButton;
+        || TaskButtonPitch is not null || Clock is not null || TightenClockButton || Thumbnails is not null;
 
     /// <summary>Whether anything here lives in the Start menu process.</summary>
     public bool CustomizesStartMenu => StartMenu is { IsEmpty: false };
@@ -77,6 +80,7 @@ internal sealed record TaskbarCustomization
         TaskButtonPitch = settings.CompactTaskButtons && verticalBar ? TaskButtonPitchRange.Clamp(settings.TaskButtonPitch) : null,
         Clock = settings.CompactClock ? ClockCustomization.DateAboveTime : null,
         TightenClockButton = settings.CompactClock && verticalBar,
+        Thumbnails = settings.LargerThumbnails ? new ThumbnailBox(settings.ThumbnailMaxWidth, settings.ThumbnailMaxHeight) : null,
         StartMenu = StartMenuFrom(settings),
     };
 
@@ -180,6 +184,13 @@ internal readonly record struct StartMenuWidthRequest(bool IsFill, int Value)
 
     public static StartMenuWidthRequest Of(int value) => new(false, value);
 }
+
+/// <summary>
+/// The box, in effective pixels, a hover thumbnail grows to fit. Each thumbnail
+/// keeps its window's ratio: a wide window meets <paramref name="MaxWidth"/>, a
+/// tall one <paramref name="MaxHeight"/>. Either orientation of the bar.
+/// </summary>
+internal sealed record ThumbnailBox(double MaxWidth, double MaxHeight);
 
 internal enum ClockLineKind
 {

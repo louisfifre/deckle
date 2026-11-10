@@ -82,6 +82,14 @@ internal sealed class HarnessOptions
                 case "--task-button-pitch":
                     customization = customization with { TaskButtonPitch = int.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture) };
                     break;
+                case "--thumbnail-box":
+                    customization = customization with
+                    {
+                        Thumbnails = new ThumbnailBox(
+                            double.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture),
+                            double.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture)),
+                    };
+                    break;
                 case "--dump": dump = Next(); break;
                 case "--dump-after": dumpAfter = double.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture); break;
                 default: throw new ArgumentException($"unknown option {args[i]}");
