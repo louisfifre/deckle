@@ -52,9 +52,9 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - After the lines, one last line gives the number of mails that were set aside without a line, and leads to the part of Activity that lists them.
 - At the bottom right of the page, one command ends the day: it removes the rows already treated and the secondary information lines. When every row is treated, it becomes the one emphasised command of the page.
 - With nothing waiting, the page shows a small flat picture in pale grey and the sentence « Nothing is waiting. ». The picture is not an icon, not a skeleton of rows, and nothing on the page moves: the person does not take it for a loading page. Secondary information stays under it when there is some.
-- When one mailbox cannot connect, a bar at the top names it, says since when its content is shown, and offers to open Settings. Its rows stay and keep their controls: a gesture made meanwhile is kept and sent when the mailbox is back. Until then the treated row shows its result as any other, followed by a caution dot whose name says it waits for that mailbox.
+- When one mailbox cannot connect, a bar at the top names it, says since when its content is shown, counts the gestures that wait for it once there is one, and offers to open Settings. Its rows stay and keep their controls: a gesture made meanwhile is kept and sent when the mailbox is back. Until then the treated row shows its result as any other, followed by a caution dot whose name says it waits for that mailbox.
 - A mailbox that cannot connect wears a caution dot on its mark in the navigation, and its name says so to a screen reader. The dot takes no width: the navigation does not move when a mailbox fails.
-- When new mail waits to be sorted because the sorting cannot run, a bar at the top says how many mails arrived since when, and that they will be sorted. The rows already there stay usable.
+- When new mail waits to be sorted because the sorting cannot run, a bar at the top says how many mails arrived since when, and that they will be sorted. The rows already there stay usable. With no row left, the page shows the bar and not « Nothing is waiting. », which would be false.
 
 ### A Global page, an alias page
 
@@ -76,7 +76,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - Beside the text, a list shows every mail of the subject, newest first, each with its date, its sender, one short sentence of what it says, and a mark when it carries a file. The mail shown is marked as selected. Clicking another shows that one in place of the first, and the list stays, so the person can always come back.
 - A mail of the person's own, sent from elsewhere in the same thread, appears in that list under « You ».
 - A mail with no text shows a bar saying so instead of the text. A mail whose sender failed the checks shows a bar saying so above the text, and its grey line gives the address alone.
-- A page that cannot show its mail because the mailbox is unreachable says so and keeps the header and the list.
+- A page that cannot show its mail because the mailbox is unreachable says so in a bar that offers to open Settings, and keeps the header and the list.
 
 ### Activity
 
@@ -146,7 +146,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - When no deadline was found, one click on Add task creates the task with no day, and the chevron opens the choice of days.
 - Once the task exists, the subject leaves the list: its row greys in place, says « Task for » and the day of the task, and the subject becomes a line of Activity.
 - Deckle Mail shows no box to tick and never completes a task: a task is done in Anytype.
-- When Anytype cannot be reached, a bar says so, and a task added meanwhile is kept and created when Anytype is back. Until then its row shows its result followed by the same caution dot as a gesture waiting on a mailbox: one sign for "done here, not yet arrived", whatever the cause.
+- When Anytype cannot be reached, a bar says so in the words used for a mailbox, counts the tasks that wait and offers to open Settings; a task added meanwhile is kept and created when Anytype is back. Until then its row shows its result followed by the same caution dot as a gesture waiting on a mailbox: one sign for "done here, not yet arrived", whatever the cause.
 - When Anytype is not connected, nothing about tasks is drawn: the trash is the only command on a row.
 
 **The trash**
