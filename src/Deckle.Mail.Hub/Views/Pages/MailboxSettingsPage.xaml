@@ -13,7 +13,13 @@
          app password lives in its PasswordBox only, and the page keeps only
          whether one is saved. -->
     <ScrollViewer>
-        <StackPanel MaxWidth="1000"
+        <Grid>
+            <!-- The column of the page, at most 1000 wide inside its 32 px margins and
+                 held at the left as the frames hold it. A capped Grid column, not
+                 MaxWidth on a stretched panel: WinUI centres such a panel from its
+                 desired width, which drifted a narrow page to the middle. -->
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*" MaxWidth="1064" /></Grid.ColumnDefinitions>
+            <StackPanel
                     HorizontalAlignment="Stretch"
                     Margin="32,32,32,24"
                     Spacing="{StaticResource SettingsCardSpacing}">
@@ -132,5 +138,6 @@
                 </Button>
             </controls:SettingsCard>
         </StackPanel>
+        </Grid>
     </ScrollViewer>
 </Page>

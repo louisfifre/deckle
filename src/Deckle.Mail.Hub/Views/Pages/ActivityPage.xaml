@@ -19,7 +19,13 @@
     </Page.Resources>
 
     <ScrollViewer x:Name="Scroller">
-        <StackPanel MaxWidth="1000" HorizontalAlignment="Stretch" Margin="32,32,32,24">
+        <Grid>
+            <!-- The column of the page, at most 1000 wide inside its 32 px margins and
+                 held at the left as the frames hold it. A capped Grid column, not
+                 MaxWidth on a stretched panel: WinUI centres such a panel from its
+                 desired width, which drifted a narrow page to the middle. -->
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*" MaxWidth="1064" /></Grid.ColumnDefinitions>
+            <StackPanel HorizontalAlignment="Stretch" Margin="32,32,32,24">
             <local:MailPageHeader x:Name="Header" />
             <!-- Two parts, one shown at a time: what the person did, and
                  what the sorting did alone (spec, Activity; Open 12 for the
@@ -36,5 +42,6 @@
                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                        Visibility="Collapsed" />
         </StackPanel>
+        </Grid>
     </ScrollViewer>
 </Page>

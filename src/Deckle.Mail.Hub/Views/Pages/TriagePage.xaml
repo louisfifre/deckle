@@ -26,8 +26,14 @@
             <!-- Triage has no title and no heading above the list: the
                  selected item of the navigation says where the person is. An
                  Inbox or alias page wears its breadcrumb. -->
+            <!-- The column of the page, at most 1000 wide inside its 32 px
+                 margins and held at the left as the frames hold it. A capped
+                 Grid column, not MaxWidth on a stretched panel: WinUI centres
+                 such a panel from its desired width, which pushed the empty
+                 page's block to the middle once the window was wide enough. -->
+            <Grid>
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*" MaxWidth="1064" /></Grid.ColumnDefinitions>
             <StackPanel x:Name="Column"
-                        MaxWidth="1000"
                         HorizontalAlignment="Stretch"
                         Margin="32,32,32,24">
                 <local:MailPageHeader x:Name="Header" Visibility="Collapsed" />
@@ -98,15 +104,18 @@
                     <TextBlock x:Name="SetAsideText" TextDecorations="Underline" />
                 </HyperlinkButton>
             </StackPanel>
+            </Grid>
         </ScrollViewer>
 
         <!-- One command ends the day, at the bottom right of the page; when
              every row is treated it becomes the one emphasised command. -->
-        <Grid x:Name="DoneRow" Grid.Row="1" MaxWidth="1000" Margin="32,12,32,24">
+        <!-- Held to the right edge of the same column, for the same reason. -->
+        <Grid x:Name="DoneRow" Grid.Row="1">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*" MaxWidth="1064" /></Grid.ColumnDefinitions>
             <Button x:Name="DoneButton"
                     x:Uid="TriageDoneForToday"
                     HorizontalAlignment="Right"
-                    Margin="0,0,9,0"
+                    Margin="32,12,41,24"
                     Click="OnDoneClick" />
         </Grid>
     </Grid>
