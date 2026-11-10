@@ -260,6 +260,18 @@ public sealed class MapInventoryTests
     }
 
     [Fact]
+    public void AnItemsPathWrittenInCodeLinksToIt()
+    {
+        using var scratch = new ScratchFolder();
+        scratch.File("x\n", "scripts", "README.md");
+        scratch.File("What is installed: `scripts/README.md`.\n", "AGENTS.md");
+
+        MapInventory map = Map(scratch.Path);
+
+        Assert.Equal(["scripts/README.md"], map.LinksFrom(Item(map, "AGENTS.md")).Select(l => l.ToId));
+    }
+
+    [Fact]
     public void WebLinksAnchorsAndCodeBlocksLinkNothing()
     {
         using var scratch = new ScratchFolder();

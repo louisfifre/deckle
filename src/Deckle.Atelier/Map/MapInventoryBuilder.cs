@@ -290,19 +290,26 @@ internal static class MapInventoryBuilder
                     case MapHitKind.Name:
                         if (byName.TryGetValue(hit.Value, out List<string>? named))
                             foreach (string n in named) yield return n;
+                        // `scripts/README.md` in code: an item's path, written out.
+                        else if (hit.Value.Contains('/') && ItemByPath(hit.Value) is { } written) yield return written;
                         break;
                 }
             }
 
             // A path is tried from the document's folder, then from the root;
             // a bare file name links only when one script carries it.
-            string? ScriptByPath(string raw)
+            string? ItemByPath(string raw)
             {
                 foreach (string basis in (string[])[file.Folder, ""])
                 {
-                    if (MapPaths.Resolve(root, basis, raw) is { } resolved && byPath.TryGetValue(resolved, out string? id)
-                        && drafts[id].Kind == MapItemKind.Script) return id;
+                    if (MapPaths.Resolve(root, basis, raw) is { } resolved && byPath.TryGetValue(resolved, out string? id)) return id;
                 }
+                return null;
+            }
+
+            string? ScriptByPath(string raw)
+            {
+                if (ItemByPath(raw) is { } id && drafts[id].Kind == MapItemKind.Script) return id;
                 string name = System.IO.Path.GetFileName(raw.Replace('\\', '/'));
                 return scriptsByFileName.TryGetValue(name, out List<string>? same) && same.Count == 1 ? same[0] : null;
             }
