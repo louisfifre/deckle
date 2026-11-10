@@ -21,6 +21,7 @@ public sealed class TaskbarSettingsTests
             Assert.False(settings.ShowAllTrayIcons);
             Assert.Equal(TaskbarBackground.Native, settings.Background);
             Assert.False(settings.CompactTray);
+            Assert.False(settings.CompactTaskButtons);
             Assert.False(settings.CompactClock);
             Assert.False(settings.StartMenuFullHeight);
         }
@@ -34,6 +35,7 @@ public sealed class TaskbarSettingsTests
             ShowAllTrayIcons = true,
             Background = TaskbarBackground.Transparent,
             CompactTray = true,
+            CompactTaskButtons = true,
             CompactClock = true,
             StartMenuFullHeight = true,
         }, TaskbarSettingsService.JsonOptions);
@@ -43,6 +45,7 @@ public sealed class TaskbarSettingsTests
         Assert.True(read.ShowAllTrayIcons);
         Assert.Equal(TaskbarBackground.Transparent, read.Background);
         Assert.True(read.CompactTray);
+        Assert.True(read.CompactTaskButtons);
         Assert.True(read.CompactClock);
         Assert.True(read.StartMenuFullHeight);
     }

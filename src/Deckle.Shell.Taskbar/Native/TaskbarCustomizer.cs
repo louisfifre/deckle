@@ -43,6 +43,7 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
     private IReadOnlyDictionary<TaskbarPart, TaskbarProblem> _problems = new Dictionary<TaskbarPart, TaskbarProblem>();
     private string _loggedParts = "none";
     private bool _loggedCompactTrayLeftOut;
+    private bool _loggedCompactTaskButtonsLeftOut;
     private bool _stopped;
 
     private TaskbarCustomizer()
@@ -292,6 +293,14 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
             _loggedCompactTrayLeftOut = leftOut;
             if (leftOut)
                 DeckleShellTaskbarSource.Log.TaskbarPartSkipped(TaskbarPart.CompactTray.ForLog(), "taskbar_horizontal");
+        }
+
+        bool buttonsLeftOut = settings.CompactTaskButtons && wanted.TaskButtonPitch is null;
+        if (buttonsLeftOut != _loggedCompactTaskButtonsLeftOut)
+        {
+            _loggedCompactTaskButtonsLeftOut = buttonsLeftOut;
+            if (buttonsLeftOut)
+                DeckleShellTaskbarSource.Log.TaskbarPartSkipped(TaskbarPart.CompactTaskButtons.ForLog(), "taskbar_horizontal");
         }
     }
 

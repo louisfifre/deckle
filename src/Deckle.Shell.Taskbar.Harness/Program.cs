@@ -11,6 +11,7 @@ using Deckle.Shell.Taskbar.Harness;
 //                                [--dump <out file>] [--dump-after <seconds>]
 //                                [--doc-out <file> [--bg native|transparent|black] [--tray-pitch <px>]
 //                                    [--tighten-quick-settings] [--clock-date-above-time]
+//                                    [--tighten-clock-button] [--task-button-pitch <px>]
 //                                    [--start-menu-full-height]]
 //
 //   Deckle.Shell.Taskbar.Harness customizer [--control <file>] [--stop-after <seconds>]

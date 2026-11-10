@@ -24,6 +24,12 @@ public sealed class TaskbarSettings
     /// </summary>
     public bool CompactTray { get; set; } = false;
 
+    /// <summary>
+    /// App buttons, Start and Task view packed at the tray's 24 px pitch. Like
+    /// the compact tray, it is applied on a vertical taskbar only.
+    /// </summary>
+    public bool CompactTaskButtons { get; set; } = false;
+
     /// <summary>The clock as stacked lines (month, day, weekday, hours, minutes).</summary>
     public bool CompactClock { get; set; } = false;
 

@@ -24,6 +24,7 @@ public sealed class TaskbarCustomizationTests
         Assert.True(From(new TaskbarSettings { Background = TaskbarBackground.Black }, true).CustomizesExplorer);
         Assert.True(From(new TaskbarSettings { CompactClock = true }, true).CustomizesExplorer);
         Assert.True(From(new TaskbarSettings { CompactTray = true }, true).CustomizesExplorer);
+        Assert.True(From(new TaskbarSettings { CompactTaskButtons = true }, true).CustomizesExplorer);
 
         TaskbarCustomization start = From(new TaskbarSettings { StartMenuFullHeight = true }, true);
         Assert.True(start.CustomizesStartMenu);
@@ -52,15 +53,32 @@ public sealed class TaskbarCustomizationTests
     }
 
     [Fact]
-    public void TheOtherPartsDoNotDependOnTheBar()
+    public void TheCompactAppButtonsTakeTheTraysPitchOnAVerticalBarOnly()
     {
-        var settings = new TaskbarSettings { Background = TaskbarBackground.Transparent, CompactClock = true };
+        var settings = new TaskbarSettings { CompactTaskButtons = true };
 
-        TaskbarCustomization vertical = From(settings, vertical: true);
-        TaskbarCustomization horizontal = From(settings, vertical: false);
+        Assert.Equal(TaskbarCustomization.CompactPitch, From(settings, vertical: true).TaskButtonPitch);
+        Assert.Null(From(settings, vertical: false).TaskButtonPitch);
+        Assert.False(From(settings, vertical: false).CustomizesExplorer);
+    }
 
-        Assert.Equal(TaskbarBackground.Transparent, horizontal.Background);
-        Assert.NotNull(horizontal.Clock);
-        Assert.Equal(vertical, horizontal);
+    // The clock's lines are the same on both bars; only the tightening of its
+    // button is written for the column.
+    [Fact]
+    public void TheCompactClockTightensItsButtonOnAVerticalBarOnly()
+    {
+        var settings = new TaskbarSettings { CompactClock = true };
+
+        Assert.True(From(settings, vertical: true).TightenClockButton);
+        Assert.False(From(settings, vertical: false).TightenClockButton);
+        Assert.NotNull(From(settings, vertical: false).Clock);
+    }
+
+    [Fact]
+    public void TheBackgroundDoesNotDependOnTheBar()
+    {
+        var settings = new TaskbarSettings { Background = TaskbarBackground.Transparent };
+
+        Assert.Equal(From(settings, vertical: true), From(settings, vertical: false));
     }
 }

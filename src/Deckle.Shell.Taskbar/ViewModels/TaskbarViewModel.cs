@@ -30,6 +30,9 @@ public partial class TaskbarViewModel : ObservableObject
     public partial bool CompactTray { get; set; }
 
     [ObservableProperty]
+    public partial bool CompactTaskButtons { get; set; }
+
+    [ObservableProperty]
     public partial bool CompactClock { get; set; }
 
     [ObservableProperty]
@@ -57,6 +60,7 @@ public partial class TaskbarViewModel : ObservableObject
             ShowAllTrayIcons = settings.ShowAllTrayIcons;
             Background = settings.Background;
             CompactTray = settings.CompactTray;
+            CompactTaskButtons = settings.CompactTaskButtons;
             CompactClock = settings.CompactClock;
             StartMenuFullHeight = settings.StartMenuFullHeight;
         }
@@ -69,6 +73,7 @@ public partial class TaskbarViewModel : ObservableObject
     partial void OnShowAllTrayIconsChanged(bool value) => Write(settings => settings.ShowAllTrayIcons = value);
     partial void OnBackgroundChanged(TaskbarBackground value) => Write(settings => settings.Background = value);
     partial void OnCompactTrayChanged(bool value) => Write(settings => settings.CompactTray = value);
+    partial void OnCompactTaskButtonsChanged(bool value) => Write(settings => settings.CompactTaskButtons = value);
     partial void OnCompactClockChanged(bool value) => Write(settings => settings.CompactClock = value);
     partial void OnStartMenuFullHeightChanged(bool value) => Write(settings => settings.StartMenuFullHeight = value);
 

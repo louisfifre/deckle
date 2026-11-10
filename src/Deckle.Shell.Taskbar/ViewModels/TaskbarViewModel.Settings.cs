@@ -33,6 +33,12 @@ public partial class TaskbarViewModel
             defaultValue: () => new TaskbarSettings().Background,
             advisory: () => ProblemAdvisory(TaskbarPart.Background)),
         Setting.Toggle(
+            "TaskbarPage_CompactTaskButtonsCard",
+            () => CompactTaskButtons,
+            value => CompactTaskButtons = value,
+            defaultValue: () => new TaskbarSettings().CompactTaskButtons,
+            advisory: CompactTaskButtonsAdvisory),
+        Setting.Toggle(
             "TaskbarPage_CompactClockCard",
             () => CompactClock,
             value => CompactClock = value,
@@ -96,6 +102,19 @@ public partial class TaskbarViewModel
         }
     }
 
+    // The compact app buttons speak the same way, for the same reason.
+    private string? CompactTaskButtonsAdvisory() =>
+        CompactTaskButtonsMessageKey is { } key ? Loc.GetFromOptional(TaskbarSettingsModule.ResourceLibrary, key) : null;
+
+    internal string? CompactTaskButtonsMessageKey
+    {
+        get
+        {
+            if (!CompactTaskButtons) return null;
+            return _isBarVertical() ? ProblemKey(TaskbarPart.CompactTaskButtons) : HorizontalBarKey;
+        }
+    }
+
     private string? ProblemAdvisory(TaskbarPart part) =>
         ProblemKey(part) is { } key ? Loc.GetFromOptional(TaskbarSettingsModule.ResourceLibrary, key) : null;
 
@@ -107,6 +126,7 @@ public partial class TaskbarViewModel
         {
             TaskbarPart.Background => Background != TaskbarBackground.Native,
             TaskbarPart.CompactTray => CompactTray,
+            TaskbarPart.CompactTaskButtons => CompactTaskButtons,
             TaskbarPart.CompactClock => CompactClock,
             _ => StartMenuFullHeight,
         };

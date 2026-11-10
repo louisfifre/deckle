@@ -64,7 +64,7 @@
     <value>Taskbar</value>
   </data>
   <data name="TaskbarPageHeader.Description" xml:space="preserve">
-    <value>Restyle the taskbar, tighten its tray and clock, and size the Start menu.</value>
+    <value>Restyle the taskbar, tighten its buttons, tray and clock, and size the Start menu.</value>
   </data>
   <data name="TaskbarPageBarSection.Title" xml:space="preserve">
     <value>Taskbar</value>
@@ -83,6 +83,12 @@
   </data>
   <data name="TaskbarPage_BackgroundBlack.Content" xml:space="preserve">
     <value>Black</value>
+  </data>
+  <data name="TaskbarPage_CompactTaskButtonsCard.Header" xml:space="preserve">
+    <value>Compact app buttons</value>
+  </data>
+  <data name="TaskbarPage_CompactTaskButtonsCard.Description" xml:space="preserve">
+    <value>Brings the app buttons, Start and Task view as close together as the tray icons. Applies to a vertical taskbar only.</value>
   </data>
   <data name="TaskbarPage_CompactClockCard.Header" xml:space="preserve">
     <value>Compact clock</value>

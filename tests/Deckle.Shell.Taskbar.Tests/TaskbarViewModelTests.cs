@@ -35,6 +35,7 @@ public sealed class TaskbarViewModelTests : IDisposable
         settings.ShowAllTrayIcons = false;
         settings.Background = TaskbarBackground.Native;
         settings.CompactTray = false;
+        settings.CompactTaskButtons = false;
         settings.CompactClock = false;
         settings.StartMenuFullHeight = false;
     }
@@ -74,6 +75,7 @@ public sealed class TaskbarViewModelTests : IDisposable
         viewModel.ShowAllTrayIcons = true;
         viewModel.Background = TaskbarBackground.Transparent;
         viewModel.CompactTray = true;
+        viewModel.CompactTaskButtons = true;
         viewModel.CompactClock = true;
         viewModel.StartMenuFullHeight = true;
 
@@ -81,12 +83,14 @@ public sealed class TaskbarViewModelTests : IDisposable
         Assert.True(saved.ShowAllTrayIcons);
         Assert.Equal(TaskbarBackground.Transparent, saved.Background);
         Assert.True(saved.CompactTray);
+        Assert.True(saved.CompactTaskButtons);
         Assert.True(saved.CompactClock);
         Assert.True(saved.StartMenuFullHeight);
 
         Assert.Equal(false, Card(viewModel, "TaskbarPage_ShowAllTrayIconsCard").Default!());
         Assert.Equal(TaskbarBackground.Native, Card(viewModel, "TaskbarPage_BackgroundCard").Default!());
         Assert.Equal(false, Card(viewModel, "TaskbarPage_CompactTrayCard").Default!());
+        Assert.Equal(false, Card(viewModel, "TaskbarPage_CompactTaskButtonsCard").Default!());
         Assert.Equal(false, Card(viewModel, "TaskbarPage_CompactClockCard").Default!());
         Assert.Equal(false, Card(viewModel, "TaskbarPage_StartMenuFullHeightCard").Default!());
     }
@@ -144,6 +148,20 @@ public sealed class TaskbarViewModelTests : IDisposable
 
         _vertical = true;
         Assert.Null(viewModel.CompactTrayMessageKey);
+    }
+
+    [Fact]
+    public void TheCompactAppButtonsSayTheyDoNothingOnAHorizontalBarOnlyWhileOn()
+    {
+        _vertical = false;
+        TaskbarViewModel viewModel = ViewModel();
+        Assert.Null(viewModel.CompactTaskButtonsMessageKey);
+
+        viewModel.CompactTaskButtons = true;
+        Assert.Equal("TaskbarPage_CompactTrayHorizontal", viewModel.CompactTaskButtonsMessageKey);
+
+        _vertical = true;
+        Assert.Null(viewModel.CompactTaskButtonsMessageKey);
     }
 
     // The customizer says a part is in error (here: no engine could be started);

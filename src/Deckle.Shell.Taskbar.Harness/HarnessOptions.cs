@@ -58,6 +58,10 @@ internal sealed class HarnessOptions
                     break;
                 case "--tighten-quick-settings": customization = customization with { TightenQuickSettings = true }; break;
                 case "--clock-date-above-time": customization = customization with { Clock = ClockCustomization.DateAboveTime }; break;
+                case "--tighten-clock-button": customization = customization with { TightenClockButton = true }; break;
+                case "--task-button-pitch":
+                    customization = customization with { TaskButtonPitch = int.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture) };
+                    break;
                 case "--dump": dump = Next(); break;
                 case "--dump-after": dumpAfter = double.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture); break;
                 default: throw new ArgumentException($"unknown option {args[i]}");

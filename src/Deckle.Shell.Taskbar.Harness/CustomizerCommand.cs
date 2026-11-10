@@ -84,6 +84,7 @@ internal static class CustomizerCommand
         {
             case "background": current.Background = Enum.Parse<TaskbarBackground>(parts[1], ignoreCase: true); break;
             case "compactTray": current.CompactTray = flag; break;
+            case "compactTaskButtons": current.CompactTaskButtons = flag; break;
             case "compactClock": current.CompactClock = flag; break;
             case "startMenuFullHeight": current.StartMenuFullHeight = flag; break;
             case "showAllTrayIcons": throw new ArgumentException("showAllTrayIcons belongs to the tray promoter, not driven here");

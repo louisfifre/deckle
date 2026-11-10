@@ -19,7 +19,9 @@ public sealed class TaskbarDocumentBuilderTests : IDisposable
         Background = TaskbarBackground.Transparent,
         TrayIconPitch = 24,
         TightenQuickSettings = true,
+        TaskButtonPitch = 24,
         Clock = ClockCustomization.DateAboveTime,
+        TightenClockButton = true,
     };
 
     [Fact]
@@ -72,7 +74,51 @@ public sealed class TaskbarDocumentBuilderTests : IDisposable
         Assert.Equal("28", Rule(followed, "quickSettings.icon.height").Value);
         Assert.Equal("24", Rule(alone, "quickSettings.icon.height").Value);
         Assert.Equal("0", Rule(alone, "quickSettings.spacing").Value);
-        Assert.DoesNotContain(TaskbarDocumentBuilder.Rules(alone), rule => rule.Id.StartsWith("tray.", StringComparison.Ordinal));
+        Assert.DoesNotContain(TaskbarDocumentBuilder.Rules(alone), rule => rule.Id.StartsWith("tray.icon.", StringComparison.Ordinal));
+    }
+
+    // Measured on the live bar (2026-11-10): the group stood 56 px tall for two
+    // 24 px icons, the 8 px being the stack's Padding; the microphone-in-use
+    // icon beside the tray had a 28 px row.
+    [Fact]
+    public void TighteningTheQuickSettingsEmptiesTheirPaddingAndPacksTheSystemIcons()
+    {
+        var customization = new TaskbarCustomization { TightenQuickSettings = true };
+
+        Assert.Equal(("Padding", "0"), (Rule(customization, "quickSettings.stack.padding").Property, Rule(customization, "quickSettings.stack.padding").Value));
+        Assert.Equal("0", Rule(customization, "quickSettings.button.padding").Value);
+        Assert.Equal("24", Rule(customization, "tray.mainStack.icon.minHeight").Value);
+        Assert.Equal("24", Rule(customization, "tray.nonActivatableStack.icon.minHeight").Value);
+    }
+
+    [Fact]
+    public void CompactAppButtonsSetEveryButtonsHeightAndLeaveStartsIconWhole()
+    {
+        var customization = new TaskbarCustomization { TaskButtonPitch = 24 };
+
+        Assert.Equal(("Height", "24"), (Rule(customization, "taskButtons.app.height").Property, Rule(customization, "taskButtons.app.height").Value));
+        Assert.Equal("24", Rule(customization, "taskButtons.experience.height").Value);
+        // 24 - 2 x 2 leaves the 16 px icon its 20 px box, as Task view has natively.
+        Assert.Equal("4,2,4,2", Rule(customization, "taskButtons.experience.padding").Value);
+    }
+
+    [Fact]
+    public void ATightenedClockButtonKeepsOnlyAGapAboveTheClock()
+    {
+        var customization = new TaskbarCustomization { TightenClockButton = true };
+
+        Assert.Equal("0", Rule(customization, "clock.button.padding").Value);
+        Assert.Equal("0,4,0,0", Rule(customization, "clock.button.stack.padding").Value);
+    }
+
+    [Fact]
+    public void TheClockLinesAreHeldAtAFixedHeight()
+    {
+        var customization = new TaskbarCustomization { Clock = ClockCustomization.DateAboveTime };
+
+        Assert.Equal("13", Rule(customization, "clock.upper.lineHeight").Value);
+        Assert.Equal("19", Rule(customization, "clock.lower.lineHeight").Value);
+        Assert.Equal("BlockLineHeight", Rule(customization, "clock.lower.lineStacking").Value);
     }
 
     [Fact]
@@ -166,6 +212,6 @@ public sealed class TaskbarDocumentBuilderTests : IDisposable
         Assert.DoesNotContain('\n', line);
         using JsonDocument command = JsonDocument.Parse(line);
         Assert.Equal("apply", command.RootElement.GetProperty("t").GetString());
-        Assert.Equal(11, command.RootElement.GetProperty("doc").GetProperty("rules").GetArrayLength());
+        Assert.Equal(TaskbarDocumentBuilder.Rules(_everything).Count, command.RootElement.GetProperty("doc").GetProperty("rules").GetArrayLength());
     }
 }
