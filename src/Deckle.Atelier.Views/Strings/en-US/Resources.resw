@@ -3,7 +3,7 @@
      Strings/en-US, its neutral language; the Atelier is written in French
      from the start (spec: the boards and every string Louis approved are
      French), so the French text sits in that neutral file. Product names
-     ("Deckle Atelier") stay in code, as Loc.cs asks. Code reads these keys
+     ("Deckle Folders") stay in code, as Loc.cs asks. Code reads these keys
      through AtelierText (Loc.GetFrom), so they need no copy in Deckle.App. -->
 <root>
   <resheader name="resmimetype">
@@ -32,7 +32,7 @@
   <data name="Address_Label" xml:space="preserve"><value>Adresse</value></data>
   <data name="Address_None" xml:space="preserve"><value>Aucun dossier</value></data>
   <data name="Address_Chevron_Format" xml:space="preserve"><value>Dossiers dans {0}</value></data>
-  <data name="Address_NotFound_Format" xml:space="preserve"><value>Deckle Atelier ne trouve pas « {0} ». Vérifiez l'orthographe et réessayez.</value></data>
+  <data name="Address_NotFound_Format" xml:space="preserve"><value>Deckle Folders ne trouve pas « {0} ». Vérifiez l'orthographe et réessayez.</value></data>
   <data name="Address_Outside_Format" xml:space="preserve"><value>« {0} » n'est dans aucun dossier ajouté. Ajoutez d'abord le dossier qui le contient.</value></data>
   <data name="Common_Ok" xml:space="preserve"><value>OK</value></data>
 
@@ -49,11 +49,11 @@
   <data name="Tool_Placeholder" xml:space="preserve"><value>Cet outil n'est pas encore construit.</value></data>
 
   <!-- Empty state (board 12.11) -->
-  <data name="EmptyTitle.Text" xml:space="preserve"><value>Deckle Atelier ne montre que les dossiers que vous ajoutez</value></data>
+  <data name="EmptyTitle.Text" xml:space="preserve"><value>Deckle Folders ne montre que les dossiers que vous ajoutez</value></data>
   <data name="EmptyBody.Text" xml:space="preserve"><value>Rien d'autre sur le disque n'est lu. Aucune photo et aucune donnée de photo ne quitte cet ordinateur.</value></data>
   <data name="EmptyDrop.Text" xml:space="preserve"><value>ou glissez un dossier ici</value></data>
   <data name="EmptyStep1Title.Text" xml:space="preserve"><value>Vous ajoutez un dossier</value></data>
-  <data name="EmptyStep1Body.Text" xml:space="preserve"><value>Deckle Atelier y trouve seul les photos, les documents, le code et les scripts.</value></data>
+  <data name="EmptyStep1Body.Text" xml:space="preserve"><value>Deckle Folders y trouve seul les photos, les documents, le code et les scripts.</value></data>
   <data name="EmptyStep2Title.Text" xml:space="preserve"><value>Vous demandez les descriptions, si vous voulez</value></data>
   <data name="EmptyStep2Body.Text" xml:space="preserve"><value>Un modèle sur cet ordinateur décrit une photo, ou tout un dossier. Rien ne se lance seul.</value></data>
   <data name="EmptyStep3Title.Text" xml:space="preserve"><value>La recherche les retrouve</value></data>

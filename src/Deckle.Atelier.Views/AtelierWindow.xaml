@@ -3,7 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Deckle.Atelier.Views"
-    Title="Deckle Atelier">
+    Title="Deckle Folders">
 
     <Grid x:Name="RootGrid">
         <Grid.Resources>
@@ -49,7 +49,7 @@
              the row's full height. -->
         <TitleBar x:Name="AppTitleBar"
                   Grid.Row="0"
-                  Title="Deckle Atelier"
+                  Title="Deckle Folders"
                   IsBackButtonVisible="False"
                   IsPaneToggleButtonVisible="True"
                   PaneToggleRequested="OnPaneToggleRequested">

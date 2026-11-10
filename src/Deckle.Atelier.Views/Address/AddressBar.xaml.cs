@@ -153,7 +153,7 @@ internal sealed partial class AddressBar : UserControl
             var dialog = new ContentDialog
             {
                 XamlRoot = XamlRoot,
-                Title = "Deckle Atelier",
+                Title = "Deckle Folders",
                 Content = AtelierText.Format(
                     resolution.Failure == AddressFailure.OutsideAddedFolders ? "Address_Outside_Format" : "Address_NotFound_Format",
                     text.Trim()),

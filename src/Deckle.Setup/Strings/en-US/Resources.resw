@@ -478,7 +478,7 @@
     <value>Hosts the local Anytype backend that AI assistants read and write</value>
   </data>
   <data name="Setup_Module_atelier_Label" xml:space="preserve">
-    <value>Deckle Atelier</value>
+    <value>Deckle Folders</value>
   </data>
   <data name="Setup_Module_atelier_Description" xml:space="preserve">
     <value>One window to look at the folders you add, with a file list and tools for photos, sizes and repositories</value>
