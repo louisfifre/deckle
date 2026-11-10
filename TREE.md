@@ -2539,7 +2539,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── MilestoneClosersTests.cs
 │   ├── Deckle.Shell.Taskbar.Tests/
 │   │   ├── Native/
+│   │   │   ├── BarThicknessTests.cs
 │   │   │   ├── JsonLineFramingTests.cs
+│   │   │   ├── ModuleIdentityTests.cs
 │   │   │   ├── NativeCommandTests.cs
 │   │   │   ├── NativeEngineMessageTests.cs
 │   │   │   ├── NativeLogRelayTests.cs
