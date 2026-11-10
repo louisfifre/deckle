@@ -78,7 +78,8 @@
                                 QuerySubmitted="OnSearchQuerySubmitted" />
             </TitleBar.Content>
             <TitleBar.RightHeader>
-                <!-- Present only while something does not work. The count
+                <!-- Present only while something does not work, its slot kept
+                     either way so the search field never moves (Problems.cs). The count
                      badge is the only colour; the glyph keeps the ink of the
                      other commands of the bar (spec Open 50). -->
                 <Button x:Name="ProblemsButton"
@@ -86,7 +87,9 @@
                         VerticalAlignment="Center"
                         MinWidth="36"
                         Padding="8,4"
-                        Visibility="Collapsed">
+                        Opacity="0"
+                        IsHitTestVisible="False"
+                        IsTabStop="False">
                     <Grid>
                         <FontIcon Glyph="{StaticResource Icon.Mail.Problems}" FontSize="16" />
                         <InfoBadge x:Name="ProblemsBadge"
