@@ -15,4 +15,7 @@ public enum SampleScenario
     AnytypeNotConnected,
     // 6.1: one mailbox cannot connect.
     MailboxCannotConnect,
+    // 2.5: a normal day with a row the sorting could not read and a row
+    // whose sender failed the checks.
+    Marks,
 }

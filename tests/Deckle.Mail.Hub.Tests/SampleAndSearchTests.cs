@@ -18,6 +18,20 @@ public sealed class SampleAndSearchTests
         Assert.Empty(session.Problems);
     }
 
+    // Frame 2.5: a row the sorting could not read and a row whose sender
+    // failed the checks, both waiting in Triage, each with its mark.
+    [Fact]
+    public void TheMarksDayHasOneWaitingSubjectOfEachMark()
+    {
+        var session = new TriageSession(new SampleMailHubSource(SampleScenario.Marks));
+
+        TriageRow unreadable = Assert.Single(session.RowsIn(MailFilter.All), r => r.Subject.Mark == SubjectMark.Unreadable);
+        TriageRow unverified = Assert.Single(session.RowsIn(MailFilter.All), r => r.Subject.Mark == SubjectMark.SenderNotVerified);
+        Assert.True(unreadable.Subject.CanBecomeTask);
+        Assert.False(unverified.Subject.CanBecomeTask);
+        Assert.False(session.AddTask(unverified.Id, null));
+    }
+
     [Fact]
     public void NoMailboxYetHasNothingAtAll()
     {

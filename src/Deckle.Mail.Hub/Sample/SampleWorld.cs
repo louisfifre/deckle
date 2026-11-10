@@ -35,6 +35,11 @@ internal static class SampleWorld
         subjects.Add(FranceTravail(today));
         subjects.Add(Camille(today));
         subjects.Add(Devis(today));
+        if (scenario == SampleScenario.Marks)
+        {
+            subjects.Add(Colis());
+            subjects.Add(Releve());
+        }
         if (nothingWaiting)
         {
             activity.Add(ByYou("a-drive", At(9, 9, 30), subjects[0], GestureResult.Task(Today)));
@@ -152,6 +157,34 @@ internal static class SampleWorld
                 ],
                 []),
         ], place);
+
+    // ── The marks of frame 2.5 ───────────────────────────────────────────────
+
+    // A sender that failed the checks: the sentence names it by its address,
+    // never by the name it gave itself, and the row offers the trash only.
+    private static MailSubject Colis() => new(
+        "s-colis", "mb-perso", null,
+        "livraison@colis-suivi.example : frais de douane à régler pour un colis retenu", Fr, null,
+        [
+            Mail("m-colis", "Service Livraison", "livraison@colis-suivi.example", At(8, 23, 41),
+                "Frais de douane de 2,99 € demandés sous 48 h",
+                "Cher client,",
+                "Votre colis est retenu au centre de tri. Des frais de douane de 2,99 € restent à régler sous 48 heures, faute de quoi il sera renvoyé à l'expéditeur.",
+                "Réglez vos frais sur colis-suivi.example.",
+                "Service Livraison"),
+        ], SubjectPlace.Waiting, SubjectMark.SenderNotVerified);
+
+    // A mail of images only: its own subject is its sentence, and it waits
+    // with its reason rather than being set aside unread.
+    private static MailSubject Releve() => new(
+        "s-releve", "mb-perso", null,
+        "Relevé de situation novembre", Fr, null,
+        [
+            Mail("m-releve", "Banque", "releves@banque.example", At(8, 6, 2),
+                "Relevé de situation novembre",
+                [],
+                [new MailAttachment("Releve-novembre.pdf", "PDF", 212 * 1024)]),
+        ], SubjectPlace.Waiting, SubjectMark.Unreadable);
 
     // ── What the person did before this day ──────────────────────────────────
 
