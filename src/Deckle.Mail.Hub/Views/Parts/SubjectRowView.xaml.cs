@@ -18,6 +18,7 @@ public sealed partial class SubjectRowView : UserControl
         Row = row;
         Task.DayChosen += OnDayChosen;
         Task.UndoRequested += OnUndo;
+        Task.AcceptsClick = () => _session.AcceptsClick(Row.Id);
 
         MailSubject subject = row.Subject;
         SentenceRun.Text = subject.Sentence;

@@ -18,7 +18,8 @@
         <Button x:Name="AddTaskButton"
                 Style="{StaticResource SubtleButtonStyle}"
                 HorizontalAlignment="Left"
-                Visibility="Collapsed">
+                Visibility="Collapsed"
+                Click="OnAddTaskClick">
             <TextBlock x:Name="AddTaskText" TextTrimming="CharacterEllipsis" />
         </Button>
 

@@ -21,6 +21,12 @@ public sealed partial class TaskColumn : UserControl
 
     public event Action? UndoRequested;
 
+    // Asked before the menu opens: false in the instant after a gesture on
+    // the same row (TriageSession.AcceptsClick), so the second click of a
+    // double click on Undo, landing on the Add task that Undo brings back,
+    // opens nothing. Null accepts every click.
+    public Func<bool>? AcceptsClick { get; set; }
+
     public Button UndoTarget => UndoButton;
 
     public Button AddTaskTarget => AddTaskButton;
@@ -33,7 +39,7 @@ public sealed partial class TaskColumn : UserControl
         _proposed = proposed;
         AddTaskText.Text = MailText.AddTask(proposed, today);
         AutomationProperties.SetName(AddTaskButton, $"{AddTaskText.Text}: {accessibleSentence}");
-        AddTaskButton.Flyout = BuildMenu();
+        _menu = BuildMenu();
         AddTaskButton.Visibility = Visibility.Visible;
         DonePanel.Visibility = Visibility.Collapsed;
     }
@@ -86,7 +92,17 @@ public sealed partial class TaskColumn : UserControl
     public void SetUndoName(string accessibleName) => AutomationProperties.SetName(UndoButton, accessibleName);
 
     // For the self-check's frame 2.2: the menu as a click opens it.
-    public void OpenMenu() => AddTaskButton.Flyout?.ShowAt(AddTaskButton);
+    public void OpenMenu() => _menu?.ShowAt(AddTaskButton);
+
+    // The menu is opened here rather than through Button.Flyout, which opens
+    // on every click and cannot be refused one.
+    private MenuFlyout? _menu;
+
+    private void OnAddTaskClick(object sender, RoutedEventArgs e)
+    {
+        if (AcceptsClick?.Invoke() == false) return;
+        OpenMenu();
+    }
 
     private void ShowDone(bool canUndo)
     {

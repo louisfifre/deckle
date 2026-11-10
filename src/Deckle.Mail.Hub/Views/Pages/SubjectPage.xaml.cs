@@ -33,6 +33,7 @@ public sealed partial class SubjectPage : Page
         InitializeComponent();
         Task.DayChosen += OnDayChosen;
         Task.UndoRequested += OnUndo;
+        Task.AcceptsClick = () => _subject is null || _session is null || _session.AcceptsClick(_subject.Id);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)

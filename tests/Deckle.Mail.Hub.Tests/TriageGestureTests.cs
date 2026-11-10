@@ -79,6 +79,21 @@ public sealed class TriageGestureTests
         Assert.True(session.AcceptsClick("s-drive"));
     }
 
+    // The second click of a double click on Undo lands on the Add task that
+    // Undo brings back; it must not open the menu of days.
+    [Fact]
+    public void AClickInTheInstantAfterUndoIsDropped()
+    {
+        (TriageSession session, _, ManualClock clock) = Open();
+        session.AddTask("s-drive", session.Today);
+        clock.Advance(TriageSession.ClickGuard);
+        session.Undo("s-drive");
+
+        Assert.False(session.AcceptsClick("s-drive"));
+        clock.Advance(TriageSession.ClickGuard);
+        Assert.True(session.AcceptsClick("s-drive"));
+    }
+
     [Fact]
     public void TheCrossRemovesOnlyATreatedRow()
     {
