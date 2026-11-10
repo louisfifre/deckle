@@ -107,11 +107,11 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - The page of a mailbox holds all its options: its name, its connection, the sorting by alias with the options of its aliases, and its removal.
 - The connection shows the address, the mail server, and the app password with one command to save it and one to forget it. A saved password is never shown again: a line under the field says only whether one is saved. With no password saved, the command to forget it is hidden, not greyed.
 - A switch sorts the mailbox by alias; it is on as soon as the mailbox has aliases, and off makes the mailbox a single item in the navigation. The options of the aliases unfold under it. One of them names an alias from its address with a capital. Example: the alias shop@ is named « Shop ». It is on by default.
-- The page of a mailbox offers to remove it, after a confirmation. Remove mailbox is quiet at rest and turns red under the pointer, as Microsoft draws a command that destroys.
+- The page of a mailbox offers to remove it, after a confirmation. Remove mailbox is a standard button at rest and turns red under the pointer, as the Close button of the Windows 11 title bar does.
 - When a mailbox cannot connect, no bar at the top of the page names it.
 - A mailbox that cannot connect is one condition with one severity wherever it is named, in Triage and here: a caution, since its mail is still shown and nothing is lost.
 - Under the list of mailboxes, Add mailbox opens a page of its own. Settings holds no fold to add one.
-- The page of Add mailbox asks, in one compact form, for the name of the mailbox, its address and its connection.
+- The page of Add mailbox asks for the address and the name of the mailbox side by side on one line of a compact card, then for its connection. A name left empty makes the mailbox show its address.
 - The page shows, by the Anytype logo and in words, whether Anytype is connected.
 - The page has no Reset all.
 
