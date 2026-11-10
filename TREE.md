@@ -2184,6 +2184,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── PhotoMarkStoreTests.cs
 │   │   │   ├── PhotoRenamerTests.cs
 │   │   │   ├── PhotosEventsTests.cs
+│   │   │   ├── RawReadingMaintenanceTests.cs
 │   │   │   └── ShellRecycleBinTests.cs
 │   │   ├── AddedFolderStoreTests.cs
 │   │   ├── AddressResolverTests.cs
