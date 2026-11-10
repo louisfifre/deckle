@@ -137,6 +137,34 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── board-hero.png
 │   │   └── board-rewrite.png
 │   ├── research/
+│   │   ├── atelier-boards/
+│   │   │   ├── P12-01-fichiers.dc.html
+│   │   │   ├── P12-02-volet.dc.html
+│   │   │   ├── P12-03-personnaliser.dc.html
+│   │   │   ├── P12-04-photos.dc.html
+│   │   │   ├── P12-05-photo.dc.html
+│   │   │   ├── P12-06-appliquer.dc.html
+│   │   │   ├── P12-07-tailles.dc.html
+│   │   │   ├── P12-08a-carte-sections.dc.html
+│   │   │   ├── P12-08b-carte-plat.dc.html
+│   │   │   ├── P12-08c-carte-toujours-lu.dc.html
+│   │   │   ├── P12-09-grand-graphe.dc.html
+│   │   │   ├── P12-10-graphe-3d.dc.html
+│   │   │   ├── P12-11-vide.dc.html
+│   │   │   ├── P12-12a-adresse-chevron.dc.html
+│   │   │   ├── P12-12b-adresse-saisie.dc.html
+│   │   │   ├── P12-13-recherche-absente.dc.html
+│   │   │   ├── P12-14-carte-vide.dc.html
+│   │   │   ├── P12-15-fichiers-photo.dc.html
+│   │   │   ├── P12-16-grandes-lignes.dc.html
+│   │   │   ├── P12-17-galerie.dc.html
+│   │   │   ├── P12-18-fichiers-meme-dossier.dc.html
+│   │   │   ├── P12-19-photos-description.dc.html
+│   │   │   ├── P12-20-dossier-ajoute.dc.html
+│   │   │   ├── P12-21-tailles-fichier-lourd.dc.html
+│   │   │   ├── P12-22-photos-apres-appliquer.dc.html
+│   │   │   ├── P12-23-tailles-analyse.dc.html
+│   │   │   └── P12-24-photo-description.dc.html
 │   │   ├── taskbar-briefs-2026-10-18/
 │   │   │   ├── brief-csharp-socle.md
 │   │   │   ├── brief-native-foundation.md
