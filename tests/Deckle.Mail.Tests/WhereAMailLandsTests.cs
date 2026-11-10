@@ -92,10 +92,15 @@ public class WhereAMailLandsTests
     [Fact]
     public void AnUnverifiedSenderShowsItsAddressInPlaceOfTheNameItGaveItself()
     {
-        var mail = To(from: "banque@example.com") with { SenderVerified = false };
-        var state = Sorted((mail, MailJudgment.Informs("Votre compte est suspendu")));
+        // The grey line of an opened subject reads Subject.ShownSender; both senders call themselves « Service ».
+        var verified = To(from: "banque@example.com");
+        var unverified = To(from: "banque@example.com") with { SenderVerified = false };
+        var state = Sorted(
+            (verified, MailJudgment.Asks("Signer le contrat")),
+            (unverified, MailJudgment.Asks("Votre compte est suspendu")));
 
-        Assert.Equal("banque@example.com", state.Subjects[mail.Id].ShownSender);
+        Assert.Equal("Service", state.Subjects[verified.Id].ShownSender);
+        Assert.Equal("banque@example.com", state.Subjects[unverified.Id].ShownSender);
     }
 
     [Fact]

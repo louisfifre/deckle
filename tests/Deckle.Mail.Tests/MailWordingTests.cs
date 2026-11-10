@@ -104,10 +104,12 @@ public class MailWordingTests
         Assert.Equal(word, MailWording.Label(reason));
     }
 
-    [Fact]
-    public void EveryUnreadableReasonHasALabel()
+    [Theory]
+    [InlineData(UnreadableReason.ImagesOnly, "Images only")]
+    [InlineData(UnreadableReason.Encrypted, "Encrypted")]
+    public void EachUnreadableReasonHasItsFramedLabel(UnreadableReason reason, string label)
     {
-        Assert.All(Enum.GetValues<UnreadableReason>(), reason => Assert.False(string.IsNullOrWhiteSpace(MailWording.Label(reason))));
+        Assert.Equal(label, MailWording.Label(reason));
     }
 
     [Fact]

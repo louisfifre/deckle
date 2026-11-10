@@ -32,11 +32,8 @@ public class NavigationCountsTests
     [Fact]
     public void UnfoldedInboxCarriesTheTotalOfTheMailbox()
     {
-        var state = ThreeWaitingInPerso();
-
-        Assert.Equal(
-            NavigationCounts.For(state, Perso, folded: true).Mailbox,
-            NavigationCounts.For(state, Perso, folded: false).Inbox);
+        // Two subjects reached the main address and one shop@: Inbox carries all three.
+        Assert.Equal(3, NavigationCounts.For(ThreeWaitingInPerso(), Perso, folded: false).Inbox);
     }
 
     [Fact]

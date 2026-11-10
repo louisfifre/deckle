@@ -23,11 +23,15 @@ public class ListOrderTests
     [Fact]
     public void TheDateAMailArrivedNeverStandsForADeadline()
     {
-        var state = Sorted((To(minutesAgo: 5), MailJudgment.Asks("Facture Infomaniak de novembre disponible")));
+        // Arrived today, it would come before a deadline in December if its arrival counted as one.
+        var state = Sorted(
+            (To(minutesAgo: 5), MailJudgment.Asks("Facture Infomaniak de novembre disponible")),
+            (To(minutesAgo: 900), MailJudgment.Asks("Renouveler l'assurance avant le 20 décembre", On(12, 20))));
 
-        var row = Assert.Single(Rows(state));
-        Assert.Null(row.ProposedDay);
-        Assert.Null(state.Subjects[row.SubjectId].Deadline);
+        Assert.Equal(
+            ["Renouveler l'assurance avant le 20 décembre", "Facture Infomaniak de novembre disponible"],
+            Rows(state).Select(row => row.Sentence));
+        Assert.Null(Rows(state)[1].ProposedDay);
     }
 
     [Fact]

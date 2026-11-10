@@ -33,21 +33,22 @@ public class ActivityTests
     [Fact]
     public void LinesAreGroupedByDayNewestFirst()
     {
-        var monday = To(minutesAgo: 60);
-        var tuesdayEarly = To(minutesAgo: 50);
-        var tuesdayLate = To(minutesAgo: 40);
+        // Named after when each subject is trashed, not when it arrived.
+        var trashedYesterday = To(minutesAgo: 60);
+        var trashedThisMorning = To(minutesAgo: 50);
+        var trashedLater = To(minutesAgo: 40);
         var state = Sorted(
-            (monday, MailJudgment.Asks("A")),
-            (tuesdayEarly, MailJudgment.Asks("B")),
-            (tuesdayLate, MailJudgment.Asks("C")));
-        state = state.Trash(monday.Id, Now.AddDays(-1)).State;
-        state = state.Trash(tuesdayEarly.Id, Now).State;
-        state = state.Trash(tuesdayLate.Id, Now.AddHours(1)).State;
+            (trashedYesterday, MailJudgment.Asks("A")),
+            (trashedThisMorning, MailJudgment.Asks("B")),
+            (trashedLater, MailJudgment.Asks("C")));
+        state = state.Trash(trashedYesterday.Id, Now.AddDays(-1)).State;
+        state = state.Trash(trashedThisMorning.Id, Now).State;
+        state = state.Trash(trashedLater.Id, Now.AddHours(1)).State;
 
         var days = ActivityLog.ByPerson(state);
 
         Assert.Equal([Today, Today.AddDays(-1)], days.Select(day => day.Day));
-        Assert.Equal([tuesdayLate.Id, tuesdayEarly.Id], days[0].Lines.Select(line => line.SubjectId));
+        Assert.Equal([trashedLater.Id, trashedThisMorning.Id], days[0].Lines.Select(line => line.SubjectId));
     }
 
     [Fact]
