@@ -32,6 +32,20 @@ public partial class TaskbarViewModel
             ],
             defaultValue: () => new TaskbarSettings().Background,
             advisory: () => ProblemAdvisory(TaskbarPart.Background)),
+        // A switch whose fold holds its value, like the compact app buttons: the
+        // thickness means nothing while the bar keeps Explorer's own. It holds
+        // on any edge, so it has no horizontal-bar line.
+        Setting.Group(
+            "TaskbarPage_BarThicknessCard",
+            () => CustomBarThickness,
+            value => CustomBarThickness = value,
+            [
+                Pitch("TaskbarPage_BarThicknessValueCard",
+                    () => BarThickness, value => BarThickness = value,
+                    TaskbarCustomization.BarThicknessRange, () => new TaskbarSettings().BarThickness),
+            ],
+            defaultValue: () => new TaskbarSettings().CustomBarThickness,
+            advisory: () => ProblemAdvisory(TaskbarPart.BarThickness)),
         // A switch whose fold holds its one value: the pitch is meaningless while
         // the buttons keep Explorer's own, so it shows only once the switch is on.
         Setting.Group(
@@ -186,6 +200,7 @@ public partial class TaskbarViewModel
         bool on = part switch
         {
             TaskbarPart.Background => Background != TaskbarBackground.Native,
+            TaskbarPart.BarThickness => CustomBarThickness,
             TaskbarPart.CompactTray => CompactTray,
             TaskbarPart.CompactTaskButtons => CompactTaskButtons,
             TaskbarPart.CompactClock => CompactClock,

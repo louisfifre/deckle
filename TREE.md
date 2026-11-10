@@ -195,12 +195,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   └── secondary.png
 ├── native/
 │   ├── Deckle.Shell.Taskbar.Native/
+│   │   ├── patches/
+│   │   │   ├── constant_return.cpp
+│   │   │   └── constant_return.h
 │   │   ├── xamldiag/
 │   │   │   ├── behaviors/
 │   │   │   │   ├── clock.cpp
 │   │   │   │   ├── clock.h
 │   │   │   │   ├── start_menu_height.cpp
-│   │   │   │   └── start_menu_height.h
+│   │   │   │   ├── start_menu_height.h
+│   │   │   │   ├── start_menu_width.cpp
+│   │   │   │   └── start_menu_width.h
 │   │   │   ├── rules/
 │   │   │   │   ├── element_matcher.cpp
 │   │   │   │   ├── element_matcher.h
@@ -1674,14 +1679,17 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── FullscreenGeometry.cs
 │   ├── Deckle.Shell.Taskbar/
 │   │   ├── Interop/
+│   │   │   ├── DbgHelpNativeMethods.cs
 │   │   │   ├── TaskbarNativeMethods.cs
 │   │   │   └── TaskbarNativeMethods.Injection.cs
 │   │   ├── Native/
+│   │   │   ├── ExplorerFunctionLocator.cs
 │   │   │   ├── ITaskbarEngine.cs
 │   │   │   ├── JsonLineFraming.cs
 │   │   │   ├── NativeCommand.cs
 │   │   │   ├── NativeLogRelay.cs
 │   │   │   ├── NativeMessage.cs
+│   │   │   ├── StartMenuWidth.cs
 │   │   │   ├── TaskbarBackground.cs
 │   │   │   ├── TaskbarCreatedListener.cs
 │   │   │   ├── TaskbarCustomization.cs
@@ -2531,7 +2539,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── MilestoneClosersTests.cs
 │   ├── Deckle.Shell.Taskbar.Tests/
 │   │   ├── Native/
+│   │   │   ├── BarThicknessTests.cs
 │   │   │   ├── JsonLineFramingTests.cs
+│   │   │   ├── ModuleIdentityTests.cs
 │   │   │   ├── NativeCommandTests.cs
 │   │   │   ├── NativeEngineMessageTests.cs
 │   │   │   ├── NativeLogRelayTests.cs

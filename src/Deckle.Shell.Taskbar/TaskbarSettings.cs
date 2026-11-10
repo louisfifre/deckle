@@ -18,6 +18,19 @@ public sealed class TaskbarSettings
     public TaskbarBackground Background { get; set; } = TaskbarBackground.Native;
 
     /// <summary>
+    /// The taskbar at <see cref="BarThickness"/> instead of Explorer's own, on
+    /// whichever edge it sits: its width when it stands on a side, its height at
+    /// the bottom. Maximized windows follow the bar's new edge.
+    /// </summary>
+    public bool CustomBarThickness { get; set; } = false;
+
+    /// <summary>
+    /// The bar's thickness while <see cref="CustomBarThickness"/> is on, in
+    /// effective pixels. Explorer's own is 48 for a bar on a side.
+    /// </summary>
+    public int BarThickness { get; set; } = TaskbarCustomization.DefaultBarThickness;
+
+    /// <summary>
     /// Tray icons and the quick-settings group packed at <see cref="TrayIconPitch"/>.
     /// It is applied on a vertical taskbar only; on a horizontal one the value is
     /// kept and does nothing.

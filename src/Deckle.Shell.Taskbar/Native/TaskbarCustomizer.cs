@@ -34,6 +34,7 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
     private readonly Func<TaskbarSettings> _settings;
     private readonly Func<bool> _isBarVertical;
     private readonly Func<TaskbarTarget, ITaskbarEngine> _createEngine;
+    private readonly Func<string, string, Task<FunctionLookup>> _findFunction;
     private readonly SemaphoreSlim _turn = new(1, 1);
     private readonly object _stateGate = new();
     private readonly TargetState _explorer = new(TaskbarTarget.Explorer);
@@ -41,6 +42,10 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
 
     private TaskbarCustomization _wanted = new();
     private IReadOnlyDictionary<TaskbarPart, TaskbarProblem> _problems = new Dictionary<TaskbarPart, TaskbarProblem>();
+    // The thickness has no status line: a failed lookup, or the engine's
+    // constant_return_* record about it, is the problem. Under the state gate.
+    private TaskbarProblem? _thicknessLookupProblem;
+    private TaskbarProblem? _thicknessEngineProblem;
     private string _loggedParts = "none";
     private bool _loggedCompactTrayLeftOut;
     private bool _loggedCompactTaskButtonsLeftOut;
@@ -52,11 +57,13 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
     }
 
     internal TaskbarCustomizer(
-        Func<TaskbarSettings> settings, Func<bool> isBarVertical, Func<TaskbarTarget, ITaskbarEngine> createEngine)
+        Func<TaskbarSettings> settings, Func<bool> isBarVertical, Func<TaskbarTarget, ITaskbarEngine> createEngine,
+        Func<string, string, Task<FunctionLookup>>? findFunction = null)
     {
         _settings = settings;
         _isBarVertical = isBarVertical;
         _createEngine = createEngine;
+        _findFunction = findFunction ?? ((module, symbol) => ExplorerFunctionLocator.Instance.FindAsync(module, symbol));
     }
 
     /// <summary>
@@ -92,7 +99,8 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
             lock (_stateGate) _wanted = wanted;
             LogWanted(settings, wanted);
 
-            await ApplyAsync(_explorer, wanted.CustomizesExplorer, () => TaskbarDocumentBuilder.Build(wanted)).ConfigureAwait(false);
+            ExplorerFunction? frameSize = await FindFrameSizeAsync(wanted).ConfigureAwait(false);
+            await ApplyAsync(_explorer, wanted.CustomizesExplorer, () => TaskbarDocumentBuilder.Build(wanted, frameSize)).ConfigureAwait(false);
             await ApplyAsync(_startMenu, wanted.CustomizesStartMenu, () => TaskbarDocumentBuilder.BuildStartMenu(wanted)).ConfigureAwait(false);
             RecomputeProblems();
         }
@@ -127,6 +135,28 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
     }
 
     public ValueTask DisposeAsync() => new(ShutdownAsync());
+
+    // Where the thickness function lives in this explorer: a read of the cache,
+    // or once per build of Windows a download. A function that this build's
+    // symbols do not name is Windows having moved on (not applied); anything
+    // else (offline, explorer starting) is an error the next turn tries again.
+    private async Task<ExplorerFunction?> FindFrameSizeAsync(TaskbarCustomization wanted)
+    {
+        if (wanted.BarThickness is null)
+        {
+            lock (_stateGate) _thicknessLookupProblem = null;
+            return null;
+        }
+
+        FunctionLookup lookup = await _findFunction(TaskbarDocumentBuilder.FrameSizeModule, TaskbarDocumentBuilder.FrameSizeSymbol).ConfigureAwait(false);
+        lock (_stateGate)
+        {
+            _thicknessLookupProblem = lookup.Function is not null ? null
+                : lookup.FunctionGone ? TaskbarProblem.NotApplied
+                : TaskbarProblem.Error;
+        }
+        return lookup.Function;
+    }
 
     // ── One process ───────────────────────────────────────────────────────────
 
@@ -215,13 +245,30 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
                 // A new DLL knows nothing: it gets the document again. The bar
                 // may also have changed edge with the restart that brought it.
                 Interlocked.Increment(ref process.Connection);
-                lock (_stateGate) process.Status = null;
+                lock (_stateGate)
+                {
+                    process.Status = null;
+                    if (process == _explorer) _thicknessEngineProblem = null;
+                }
                 process.Unavailable = false;
                 process.SentDocument = null;
                 _ = Task.Run(() => ReconcileAsync("engine_connected"));
                 break;
             case NativeStatus status:
                 lock (_stateGate) process.Status = status;
+                RecomputeProblems();
+                break;
+            case NativeLogRecord record when record.Fields.TryGetValue("id", out string? id) && id == TaskbarDocumentBuilder.BarThicknessId:
+                TaskbarProblem? problem = record.Event switch
+                {
+                    "constant_return_applied" or "constant_return_restored" => null,
+                    // Another build than the one resolved, or code that is not
+                    // what the file holds (another tool patched it first).
+                    "constant_return_skipped" => TaskbarProblem.NotApplied,
+                    _ when record.Event.StartsWith("constant_return_", StringComparison.Ordinal) => TaskbarProblem.Error,
+                    _ => _thicknessEngineProblem,
+                };
+                lock (_stateGate) _thicknessEngineProblem = problem;
                 RecomputeProblems();
                 break;
         }
@@ -244,7 +291,8 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
         lock (_stateGate)
         {
             next = TaskbarProblemReader.Read(_wanted,
-                _explorer.Status, _explorer.Unavailable, _startMenu.Status, _startMenu.Unavailable);
+                _explorer.Status, _explorer.Unavailable, _startMenu.Status, _startMenu.Unavailable,
+                _thicknessLookupProblem ?? _thicknessEngineProblem);
             previous = _problems;
             if (SameProblems(previous, next)) return;
             _problems = next;

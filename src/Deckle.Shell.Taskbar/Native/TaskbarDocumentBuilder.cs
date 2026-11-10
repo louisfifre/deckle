@@ -199,14 +199,42 @@ internal static class TaskbarDocumentBuilder
         return Encoding.UTF8.GetString(buffer.ToArray());
     }
 
-    /// <summary>The settings document as one line of JSON, ready for NativeCommand.Apply.</summary>
-    public static string Build(TaskbarCustomization customization)
+    // The bar's thickness is no element of the tree: Explorer asks this function
+    // (static, one argument, the TaskbarSize, small regular or large) and sizes
+    // the bar's window, its XAML and the work area from the answer. It answers
+    // the thickness of a bar on any edge.
+    public const string FrameSizeModule = "Taskbar.View.dll";
+    public const string FrameSizeSymbol =
+        "?GetFrameSize@TaskbarConfiguration@implementation@Taskbar@winrt@@SANW4TaskbarSize@Shell@UI@WindowsUdk@4@@Z";
+    public const string BarThicknessId = "bar.thickness";
+
+    /// <summary>
+    /// The settings document as one line of JSON, ready for NativeCommand.Apply.
+    /// <paramref name="frameSize"/> is where <see cref="FrameSizeSymbol"/> lives
+    /// in the explorer running now; without it the thickness is left out.
+    /// </summary>
+    public static string Build(TaskbarCustomization customization, ExplorerFunction? frameSize = null)
     {
         using var buffer = new MemoryStream();
         using (var writer = new Utf8JsonWriter(buffer))
         {
             writer.WriteStartObject();
             WriteRules(writer, Rules(customization));
+
+            if (customization.BarThickness is { } thickness && frameSize is { } function)
+            {
+                writer.WriteStartArray("constantReturns");
+                writer.WriteStartObject();
+                writer.WriteString("id", BarThicknessId);
+                writer.WriteString("module", function.Module);
+                writer.WriteNumber("timestamp", function.TimeDateStamp);
+                writer.WriteNumber("imageSize", function.ImageSize);
+                writer.WriteNumber("rva", function.Rva);
+                writer.WriteString("original", Convert.ToHexString(function.Prologue));
+                writer.WriteNumber("value", thickness);
+                writer.WriteEndObject();
+                writer.WriteEndArray();
+            }
 
             writer.WriteStartObject("behaviors");
             if (customization.Clock is { } clock)

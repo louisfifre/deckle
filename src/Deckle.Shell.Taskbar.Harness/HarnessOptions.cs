@@ -70,6 +70,9 @@ internal sealed class HarnessOptions
                 case "--bg":
                     customization = customization with { Background = Enum.Parse<TaskbarBackground>(Next(), ignoreCase: true) };
                     break;
+                case "--bar-thickness":
+                    customization = customization with { BarThickness = int.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture) };
+                    break;
                 case "--tray-pitch":
                     customization = customization with { TrayIconPitch = int.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture) };
                     break;

@@ -9,6 +9,13 @@ internal sealed record TaskbarCustomization
     public TaskbarBackground Background { get; init; } = TaskbarBackground.Native;
 
     /// <summary>
+    /// The bar's thickness in effective pixels, on any edge; null leaves
+    /// Explorer's. Not a XAML rule: the engine makes the function Explorer asks
+    /// for it return this value (TaskbarDocumentBuilder.FrameSizeSymbol).
+    /// </summary>
+    public int? BarThickness { get; init; }
+
+    /// <summary>
     /// The distance, in pixels, between two notification icons on a vertical bar;
     /// null leaves Explorer's 32. The rules assume a vertical bar: on a horizontal
     /// one the tray is laid out the other way and these rules would be wrong.
@@ -47,7 +54,7 @@ internal sealed record TaskbarCustomization
 
     /// <summary>Whether anything here lives in explorer, which is where the taskbar host is needed.</summary>
     public bool CustomizesExplorer =>
-        Background != TaskbarBackground.Native || TrayIconPitch is not null || TightenQuickSettings
+        Background != TaskbarBackground.Native || BarThickness is not null || TrayIconPitch is not null || TightenQuickSettings
         || TaskButtonPitch is not null || Clock is not null || TightenClockButton;
 
     /// <summary>Whether anything here lives in the Start menu process.</summary>
@@ -64,6 +71,7 @@ internal sealed record TaskbarCustomization
     public static TaskbarCustomization From(TaskbarSettings settings, bool verticalBar) => new()
     {
         Background = settings.Background,
+        BarThickness = settings.CustomBarThickness ? BarThicknessRange.Clamp(settings.BarThickness) : null,
         TrayIconPitch = settings.CompactTray && verticalBar ? TrayPitchRange.Clamp(settings.TrayIconPitch) : null,
         TightenQuickSettings = settings.CompactTray && verticalBar,
         TaskButtonPitch = settings.CompactTaskButtons && verticalBar ? TaskButtonPitchRange.Clamp(settings.TaskButtonPitch) : null,
@@ -89,6 +97,18 @@ internal sealed record TaskbarCustomization
         };
         return startMenu.IsEmpty ? null : startMenu;
     }
+
+    /// <summary>
+    /// The thickness the page starts at, two thirds of Explorer's 48: a 16 px
+    /// icon with 8 px on each side.
+    /// </summary>
+    public const int DefaultBarThickness = 32;
+
+    /// <summary>
+    /// A thickness: from 24, a 16 px icon with 4 px on each side, to 72, the
+    /// height of a Large-mode bar at the bottom of the screen.
+    /// </summary>
+    public static PixelRange BarThicknessRange { get; } = new(24, 72);
 
     /// <summary>
     /// The custom width the page starts at: narrower than Windows' own 834, so

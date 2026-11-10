@@ -60,6 +60,9 @@ public sealed class TaskbarCustomizerTests
         public void Report(params NativeRuleState[] rules) =>
             MessageReceived?.Invoke(new NativeStatus(1, true, rules, [], []));
 
+        public void Log(string name, string id) =>
+            MessageReceived?.Invoke(new NativeLogRecord(NativeLogLevel.Info, name, "", new Dictionary<string, string> { ["id"] = id }));
+
         public void Leave()
         {
             IsConnected = false;
@@ -72,13 +75,23 @@ public sealed class TaskbarCustomizerTests
     private bool _vertical = true;
     private bool _dllMissing;
 
+    // Where the thickness function lives; never the network in a test.
+    private FunctionLookup _frameSize = new(new ExplorerFunction(
+        "Taskbar.View.dll", 0x6AA3487A, 10055680, 0x451F0, new byte[16]), null);
+
     private TaskbarCustomizer Customizer() => new(() => _settings, () => _vertical, target =>
     {
         if (_dllMissing) throw new FileNotFoundException("no dll");
         var engine = new FakeEngine(target);
         _engines.Add(engine);
         return engine;
-    });
+    }, (_, _) => Task.FromResult(_frameSize));
+
+    private static bool HasConstantReturn(string line)
+    {
+        using JsonDocument document = JsonDocument.Parse(line);
+        return document.RootElement.GetProperty("doc").TryGetProperty("constantReturns", out _);
+    }
 
     private FakeEngine? Engine(TaskbarTargetKind kind) => _engines.LastOrDefault(engine => engine.Target.Kind == kind);
 
@@ -95,6 +108,62 @@ public sealed class TaskbarCustomizerTests
         using JsonDocument document = JsonDocument.Parse(line);
         return document.RootElement.GetProperty("doc").GetProperty("rules").EnumerateArray()
             .Any(rule => rule.GetProperty("id").GetString() == id);
+    }
+
+    [Fact]
+    public async Task TheThicknessGoesOutWithTheFunctionTheLookupFound()
+    {
+        _settings.CustomBarThickness = true;
+        TaskbarCustomizer customizer = Customizer();
+        await customizer.ReconcileAsync("startup");
+
+        FakeEngine explorer = Engine(TaskbarTargetKind.Explorer)!;
+        explorer.SayHello();
+
+        await WaitUntil(() => explorer.Sent.Count == 1);
+        Assert.True(HasConstantReturn(explorer.Sent[0]));
+        Assert.Empty(customizer.Problems);
+    }
+
+    [Fact]
+    public async Task AFunctionThisBuildNoLongerNamesLeavesTheThicknessNotApplied()
+    {
+        _settings.CustomBarThickness = true;
+        _frameSize = new(null, FunctionLookup.SymbolMissing);
+        TaskbarCustomizer customizer = Customizer();
+
+        await customizer.ReconcileAsync("startup");
+
+        Assert.Equal(TaskbarProblem.NotApplied, customizer.Problems[TaskbarPart.BarThickness]);
+    }
+
+    [Fact]
+    public async Task ALookupThatCouldNotReachTheServerIsAnError()
+    {
+        _settings.CustomBarThickness = true;
+        _frameSize = new(null, "download_failed");
+        TaskbarCustomizer customizer = Customizer();
+
+        await customizer.ReconcileAsync("startup");
+
+        Assert.Equal(TaskbarProblem.Error, customizer.Problems[TaskbarPart.BarThickness]);
+    }
+
+    [Fact]
+    public async Task TheEngineLeavingTheFunctionAloneIsSaidUntilItAppliesIt()
+    {
+        _settings.CustomBarThickness = true;
+        TaskbarCustomizer customizer = Customizer();
+        await customizer.ReconcileAsync("startup");
+        FakeEngine explorer = Engine(TaskbarTargetKind.Explorer)!;
+        explorer.SayHello();
+        await WaitUntil(() => explorer.Sent.Count == 1);
+
+        explorer.Log("constant_return_skipped", TaskbarDocumentBuilder.BarThicknessId);
+        Assert.Equal(TaskbarProblem.NotApplied, customizer.Problems[TaskbarPart.BarThickness]);
+
+        explorer.Log("constant_return_applied", TaskbarDocumentBuilder.BarThicknessId);
+        Assert.Empty(customizer.Problems);
     }
 
     [Fact]
