@@ -387,6 +387,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── stats.ps1  — Repository statistics Walk every project under src\ and build one file inventory per Deckle module, w…
 │   └── update-readme-stats.ps1  — Update the README pulse Regenerate the small "Development pulse" section in README.md from the local Gi…
 ├── specs/
+│   ├── atelier.md
 │   └── deckle-mail.md
 ├── src/
 │   ├── Deckle.Anytype/
