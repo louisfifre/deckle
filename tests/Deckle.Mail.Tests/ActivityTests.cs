@@ -26,8 +26,8 @@ public class ActivityTests
             (newsletter, MailJudgment.SetAside(SetAsideReason.Newsletter, "Lettre de novembre")));
         state = state.Trash(asks.Id, Now).State;
 
-        Assert.Equal([asks.Id], ActivityLog.ByPerson(state, Now).SelectMany(day => day.Lines).Select(line => line.SubjectId));
-        Assert.Equal([newsletter.Id], ActivityLog.BySorting(state, Now).SelectMany(day => day.Lines).Select(line => line.MailId));
+        Assert.Equal([asks.Id], ActivityLog.ByPerson(state).SelectMany(day => day.Lines).Select(line => line.SubjectId));
+        Assert.Equal([newsletter.Id], ActivityLog.BySorting(state).SelectMany(day => day.Lines).Select(line => line.MailId));
     }
 
     [Fact]
@@ -44,10 +44,24 @@ public class ActivityTests
         state = state.Trash(tuesdayEarly.Id, Now).State;
         state = state.Trash(tuesdayLate.Id, Now.AddHours(1)).State;
 
-        var days = ActivityLog.ByPerson(state, Now.AddHours(2));
+        var days = ActivityLog.ByPerson(state);
 
         Assert.Equal([Today, Today.AddDays(-1)], days.Select(day => day.Day));
         Assert.Equal([tuesdayLate.Id, tuesdayEarly.Id], days[0].Lines.Select(line => line.SubjectId));
+    }
+
+    [Fact]
+    public void ALineStaysOnTheDayItWasMadeAfterTheClockChanges()
+    {
+        // 00:30 on 20 October in summer time is 23:30 on 19 October in winter time.
+        var summerNight = new DateTimeOffset(2026, 10, 20, 0, 30, 0, TimeSpan.FromHours(2));
+        var mail = To();
+        var state = Sorted((mail, MailJudgment.Asks("A")));
+        state = state.Trash(mail.Id, summerNight).State;
+
+        var day = Assert.Single(ActivityLog.ByPerson(state));
+
+        Assert.Equal(new DateOnly(2026, 10, 20), day.Day);
     }
 
     [Fact]
@@ -57,7 +71,7 @@ public class ActivityTests
             (To(from: "lettre@example.com", minutesAgo: 20), MailJudgment.SetAside(SetAsideReason.Newsletter, "Lettre de novembre")),
             (To(from: "lettre@example.com", minutesAgo: 10), MailJudgment.SetAside(SetAsideReason.Promotion, "Soldes de novembre")));
 
-        var lines = Assert.Single(ActivityLog.BySorting(state, Now)).Lines;
+        var lines = Assert.Single(ActivityLog.BySorting(state)).Lines;
         Assert.Equal([SetAsideReason.Promotion, SetAsideReason.Newsletter], lines.Select(line => line.Reason));
     }
 
@@ -70,7 +84,7 @@ public class ActivityTests
 
         state = state.UndoLastGesture(Now).State;
 
-        var line = Assert.Single(Assert.Single(ActivityLog.ByPerson(state, Now)).Lines);
+        var line = Assert.Single(Assert.Single(ActivityLog.ByPerson(state)).Lines);
         Assert.True(line.BackInTriage);
         Assert.Single(Rows(state));
     }
@@ -100,7 +114,7 @@ public class ActivityTests
 
         Assert.Equal("Lettre de novembre", Assert.Single(Rows(state)).Sentence);
         Assert.Equal(0, TriageList.SetAsideCount(state));
-        Assert.True(Assert.Single(Assert.Single(ActivityLog.BySorting(state, Now)).Lines).BackInTriage);
+        Assert.True(Assert.Single(Assert.Single(ActivityLog.BySorting(state)).Lines).BackInTriage);
     }
 
     [Fact]

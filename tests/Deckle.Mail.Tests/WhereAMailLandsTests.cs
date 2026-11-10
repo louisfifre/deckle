@@ -37,7 +37,7 @@ public class WhereAMailLandsTests
         Assert.Empty(Rows(state));
         Assert.Empty(TriageList.InformationLines(state, MailScope.All));
         Assert.Equal(1, TriageList.SetAsideCount(state));
-        var line = Assert.Single(Assert.Single(ActivityLog.BySorting(state, Now)).Lines);
+        var line = Assert.Single(Assert.Single(ActivityLog.BySorting(state)).Lines);
         Assert.Equal(SetAsideReason.Newsletter, line.Reason);
         Assert.Equal(mail.Id, line.MailId);
     }

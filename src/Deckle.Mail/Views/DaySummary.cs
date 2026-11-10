@@ -12,7 +12,7 @@ public sealed record DaySummary(int Tasks, int MovedToTrash, int Dismissed)
         ArgumentNullException.ThrowIfNull(state);
         var today = MailCalendar.Today(now);
         var done = state.Treatments
-            .Where(treatment => !treatment.Undone && MailCalendar.DayOf(treatment.At, now) == today)
+            .Where(treatment => !treatment.Undone && MailCalendar.DayOf(treatment.At) == today)
             .ToList();
 
         return new DaySummary(

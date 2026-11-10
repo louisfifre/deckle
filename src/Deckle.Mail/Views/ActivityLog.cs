@@ -36,7 +36,7 @@ public static class ActivityLog
         return state.Treatments.IsEmpty && state.SortingRecords.IsEmpty;
     }
 
-    public static IReadOnlyList<ActivityDay<PersonActivityLine>> ByPerson(TriageState state, DateTimeOffset now)
+    public static IReadOnlyList<ActivityDay<PersonActivityLine>> ByPerson(TriageState state)
     {
         ArgumentNullException.ThrowIfNull(state);
         var lines = state.Treatments.Select(treatment => new PersonActivityLine(
@@ -46,10 +46,10 @@ public static class ActivityLog
             state.Subjects[treatment.SubjectId].Sentence,
             state.ResultOf(treatment),
             treatment.Undone));
-        return ByDay(lines, line => line.At, now);
+        return ByDay(lines, line => line.At);
     }
 
-    public static IReadOnlyList<ActivityDay<SortingActivityLine>> BySorting(TriageState state, DateTimeOffset now)
+    public static IReadOnlyList<ActivityDay<SortingActivityLine>> BySorting(TriageState state)
     {
         ArgumentNullException.ThrowIfNull(state);
         var lines = state.SortingRecords.Select(record => new SortingActivityLine(
@@ -59,16 +59,16 @@ public static class ActivityLog
             record.Sentence,
             record.Reason,
             record.Undone));
-        return ByDay(lines, line => line.At, now);
+        return ByDay(lines, line => line.At);
     }
 
     // Lines come in the order they were made, oldest first. Two lines of the
     // same moment, a Dismiss all or a burst of sorting, keep that order
     // reversed, so newest first holds on a tie too.
-    private static List<ActivityDay<TLine>> ByDay<TLine>(IEnumerable<TLine> lines, Func<TLine, DateTimeOffset> at, DateTimeOffset now) =>
+    private static List<ActivityDay<TLine>> ByDay<TLine>(IEnumerable<TLine> lines, Func<TLine, DateTimeOffset> at) =>
         [.. lines
             .Select((line, made) => (Line: line, Made: made))
-            .GroupBy(entry => MailCalendar.DayOf(at(entry.Line), now))
+            .GroupBy(entry => MailCalendar.DayOf(at(entry.Line)))
             .OrderByDescending(day => day.Key)
             .Select(day => new ActivityDay<TLine>(
                 day.Key,

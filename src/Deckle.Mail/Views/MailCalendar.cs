@@ -1,14 +1,15 @@
 namespace Deckle.Mail;
 
 /// <summary>
-/// The day a moment falls on, as the person lives it. Every rule takes the
-/// present as an argument and reads the day in its offset, so a mail received
-/// at 23:30 in another time zone falls on the person's day, not the sender's.
+/// The day a moment falls on, as the person lived it. Every rule takes the
+/// present as an argument instead of reading a clock.
 /// </summary>
 internal static class MailCalendar
 {
-    public static DateOnly Today(DateTimeOffset now) => DateOnly.FromDateTime(now.DateTime);
+    public static DateOnly Today(DateTimeOffset now) => DayOf(now);
 
-    public static DateOnly DayOf(DateTimeOffset moment, DateTimeOffset now) =>
-        DateOnly.FromDateTime(moment.ToOffset(now.Offset).DateTime);
+    // A moment's day is read in the offset it was recorded with. Converting it
+    // to today's offset would move a gesture made at 00:30 in summer time to
+    // the day before once the clocks go back.
+    public static DateOnly DayOf(DateTimeOffset moment) => DateOnly.FromDateTime(moment.DateTime);
 }
