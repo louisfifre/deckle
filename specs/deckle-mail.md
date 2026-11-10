@@ -145,7 +145,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - When no deadline was found, one click on Add task creates the task with no day, and the chevron opens the choice of days.
 - Once the task exists, the subject leaves the list: its row greys in place, says « Task for » and the day of the task, and the subject becomes a line of Activity.
 - Deckle Mail shows no box to tick and never completes a task: a task is done in Anytype.
-- When Anytype cannot be reached, a bar says so, and a task added meanwhile is kept and created when Anytype is back.
+- When Anytype cannot be reached, a bar says so, and a task added meanwhile is kept and created when Anytype is back. Until then its row shows its result followed by the same caution dot as a gesture waiting on a mailbox: one sign for "done here, not yet arrived", whatever the cause.
 - When Anytype is not connected, nothing about tasks is drawn: the trash is the only command on a row.
 
 **The trash**
