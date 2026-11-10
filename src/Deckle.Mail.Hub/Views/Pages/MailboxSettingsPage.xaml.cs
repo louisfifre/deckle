@@ -9,8 +9,8 @@ namespace Deckle.Mail.Hub;
 
 // The page of one mailbox in the window's Settings. A change applies at once,
 // in memory: the name when its field is left or Enter is pressed, a switch
-// when it is turned. The server fields are drawn and editable but go nowhere
-// yet: nothing connects until the engine is wired.
+// when it is turned. The server is shown, not edited: this version keeps no
+// server setting, and nothing connects until the engine is wired.
 public sealed partial class MailboxSettingsPage : Page
 {
     private IMailShell? _shell;
@@ -84,8 +84,8 @@ public sealed partial class MailboxSettingsPage : Page
             ServerExpander.Description = string.IsNullOrEmpty(mailbox.Server.Provider)
                 ? mailbox.Server.Host
                 : $"{mailbox.Server.Provider} · {mailbox.Server.Host}";
-            HostBox.Text = mailbox.Server.Host;
-            PortBox.Value = mailbox.Server.Port;
+            HostText.Text = mailbox.Server.Host;
+            PortText.Text = mailbox.Server.Port.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
             SortByAliasToggle.IsOn = mailbox.SortsByAlias;
             NameAliasesToggle.IsOn = mailbox.NamesAliasesFromAddress;

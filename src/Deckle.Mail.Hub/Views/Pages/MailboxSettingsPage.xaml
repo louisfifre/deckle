@@ -65,13 +65,16 @@
                         </StackPanel>
                     </controls:SettingsCard>
 
+                    <!-- Shown, not edited: this version keeps no server
+                         setting, so a field would take a change and drop it.
+                         Selectable text, so the values can still be copied. -->
                     <controls:SettingsExpander x:Name="ServerExpander" x:Uid="MailboxServerExpander">
                         <controls:SettingsExpander.Items>
                             <controls:SettingsCard x:Uid="MailboxServerHost">
-                                <TextBox x:Name="HostBox" Width="240" />
+                                <TextBlock x:Name="HostText" IsTextSelectionEnabled="True" />
                             </controls:SettingsCard>
                             <controls:SettingsCard x:Uid="MailboxServerPort">
-                                <NumberBox x:Name="PortBox" Width="120" Minimum="1" Maximum="65535" SpinButtonPlacementMode="Hidden" />
+                                <TextBlock x:Name="PortText" IsTextSelectionEnabled="True" />
                             </controls:SettingsCard>
                         </controls:SettingsExpander.Items>
                     </controls:SettingsExpander>
