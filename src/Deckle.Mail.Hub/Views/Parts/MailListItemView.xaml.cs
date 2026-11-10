@@ -5,11 +5,15 @@ namespace Deckle.Mail.Hub;
 
 public sealed partial class MailListItemView : UserControl
 {
-    public MailListItemView(SubjectMail mail, string language, DateOnly today)
+    // showAddress: a sender not verified is named by its address, never by
+    // the name it gave itself.
+    public MailListItemView(SubjectMail mail, string language, DateOnly today, bool showAddress = false)
     {
         InitializeComponent();
         Mail = mail;
-        string sender = mail.IsFromYou ? MailText.Get("Subject_You") : mail.SenderName;
+        string sender = mail.IsFromYou ? MailText.Get("Subject_You")
+            : showAddress ? mail.SenderAddress
+            : mail.SenderName;
         MetaRun.Text = MailText.Format("Join_Dot_Format", MailDates.Day(DateOnly.FromDateTime(mail.Received.DateTime), today), sender);
         if (mail.Attachments.Count > 0) ClipRun.Text = "  " + Deckle.Catalog.Glyphs.Mail.Attachment;
         SummaryText.Text = mail.Summary;

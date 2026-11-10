@@ -506,4 +506,10 @@
   <data name="Join_Comma3_Format" xml:space="preserve">
     <value>{0}, {1}, {2}</value>
   </data>
+  <data name="Subject_AfterMark_Format" xml:space="preserve">
+    <value>· {0}</value>
+  </data>
+  <data name="Subject_Unverified_Message" xml:space="preserve">
+    <value>Your mail provider could not confirm that this mail comes from this address. Be careful with its links and with any payment it asks for.</value>
+  </data>
 </root>

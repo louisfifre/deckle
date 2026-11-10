@@ -60,13 +60,19 @@ public sealed partial class SubjectPage : Page
     private void Build()
     {
         if (_subject is null || _session is null) return;
+        string mark = MailText.Get("Mark_SenderNotVerified");
+        UnverifiedMarkText.Text = mark;
+        UnverifiedTitle.Text = mark;
+        UnverifiedMessage.Text = MailText.Get("Subject_Unverified_Message");
+        AutomationProperties.SetName(UnverifiedMark, mark);
         TitleText.Text = _subject.Sentence;
         TitleText.Language = _subject.Language;
         AutomationProperties.SetName(TrashButton, MailText.Format("Row_TrashName_Format", _subject.Sentence));
 
         MailsList.Items.Clear();
         foreach (SubjectMail mail in _subject.Mails)
-            MailsList.Items.Add(new MailListItemView(mail, _subject.Language, _session.Today));
+            MailsList.Items.Add(new MailListItemView(mail, _subject.Language, _session.Today,
+                showAddress: _subject.Mark == SubjectMark.SenderNotVerified));
         CountText.Text = _subject.Mails.Count == 1
             ? MailText.Get("Subject_OneMail")
             : MailText.Format("Subject_Mails_Format", _subject.Mails.Count);
@@ -111,8 +117,22 @@ public sealed partial class SubjectPage : Page
         if (_subject is null || _session is null) return;
         _showingLatest = ReferenceEquals(mail, _subject.Latest);
 
-        string sender = mail.IsFromYou ? MailText.Get("Subject_You") : mail.SenderName;
-        FromText.Text = MailText.Format("Join_Dot3_Format", sender, mail.SenderAddress, MailText.DayAndTime(mail.Received, _session.Today));
+        string when = MailText.DayAndTime(mail.Received, _session.Today);
+        bool unverified = _subject.Mark == SubjectMark.SenderNotVerified && !mail.IsFromYou;
+        if (unverified)
+        {
+            // The address alone: the name a sender gives itself is what an
+            // unverified sender can fake.
+            FromText.Text = mail.SenderAddress;
+            WhenText.Text = MailText.Format("Subject_AfterMark_Format", when);
+        }
+        else
+        {
+            string sender = mail.IsFromYou ? MailText.Get("Subject_You") : mail.SenderName;
+            FromText.Text = MailText.Format("Join_Dot3_Format", sender, mail.SenderAddress, when);
+        }
+        UnverifiedMark.Visibility = unverified ? Visibility.Visible : Visibility.Collapsed;
+        WhenText.Visibility = unverified ? Visibility.Visible : Visibility.Collapsed;
         EarlierText.Visibility = _showingLatest ? Visibility.Collapsed : Visibility.Visible;
         LatestLink.Visibility = _showingLatest ? Visibility.Collapsed : Visibility.Visible;
 

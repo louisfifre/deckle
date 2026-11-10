@@ -51,12 +51,42 @@
 
             <!-- One grey line: the sender with their real address, and the
                  reception; on an earlier mail, the mention that leads back to
-                 the latest (35KS). -->
+                 the latest (35KS). For a sender not verified, the address
+                 alone, then a small mark that explains itself when opened
+                 (spec, A subject opened; frame 2.5 opened). -->
             <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
                 <TextBlock x:Name="FromText"
                            Style="{StaticResource BodyTextBlockStyle}"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            VerticalAlignment="Center" />
+                <Button x:Name="UnverifiedMark"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        Padding="6,2"
+                        Margin="4,0"
+                        VerticalAlignment="Center"
+                        Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="{StaticResource Icon.Badge.Warning}"
+                                  FontSize="14"
+                                  Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                        <TextBlock x:Name="UnverifiedMarkText"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                    <Button.Flyout>
+                        <Flyout Placement="BottomEdgeAlignedLeft">
+                            <StackPanel MaxWidth="320" Spacing="4">
+                                <TextBlock x:Name="UnverifiedTitle" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <TextBlock x:Name="UnverifiedMessage" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+                <TextBlock x:Name="WhenText"
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           VerticalAlignment="Center"
+                           Visibility="Collapsed" />
                 <TextBlock x:Name="EarlierText"
                            x:Uid="SubjectEarlierMail"
                            Style="{StaticResource BodyTextBlockStyle}"
