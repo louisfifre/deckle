@@ -105,6 +105,12 @@
   <data name="TaskbarPage_StartMenuFullHeightCard.Description" xml:space="preserve">
     <value>Makes the Start menu as tall as the screen, with the same space above and below it.</value>
   </data>
+  <data name="TaskbarPage_WindowsKeyShowsTaskbarCard.Header" xml:space="preserve">
+    <value>Windows key shows the taskbar</value>
+  </data>
+  <data name="TaskbarPage_WindowsKeyShowsTaskbarCard.Description" xml:space="preserve">
+    <value>Pressing the Windows key on its own brings the taskbar forward instead of opening Start. Shortcuts such as Windows + E keep working.</value>
+  </data>
   <data name="TaskbarPageStartSection.Title" xml:space="preserve">
     <value>Start menu</value>
   </data>

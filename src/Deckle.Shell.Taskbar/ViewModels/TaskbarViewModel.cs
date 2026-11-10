@@ -5,7 +5,7 @@ namespace Deckle.Shell.Taskbar;
 
 // The page's state. Every value is a setting: a change writes it and saves, and
 // applying it belongs to the App, which observes the store. The tray promoter
-// carries "show all tray icons" and TaskbarCustomizer carries the rest. The page
+// carries "show all tray icons", WindowsKeyTaskbarFocus the Windows key and TaskbarCustomizer the rest. The page
 // only reads back how each ended: the promoter's last pass, and the parts the
 // engine could not put in effect.
 public partial class TaskbarViewModel : ObservableObject
@@ -35,6 +35,9 @@ public partial class TaskbarViewModel : ObservableObject
     [ObservableProperty]
     public partial bool StartMenuFullHeight { get; set; }
 
+    [ObservableProperty]
+    public partial bool WindowsKeyShowsTaskbar { get; set; }
+
     public TaskbarViewModel()
         : this(TrayIconPromoter.Instance, TaskbarCustomizer.Instance, TaskbarOrientation.IsVertical)
     {
@@ -59,6 +62,7 @@ public partial class TaskbarViewModel : ObservableObject
             CompactTray = settings.CompactTray;
             CompactClock = settings.CompactClock;
             StartMenuFullHeight = settings.StartMenuFullHeight;
+            WindowsKeyShowsTaskbar = settings.WindowsKeyShowsTaskbar;
         }
         finally
         {
@@ -71,6 +75,7 @@ public partial class TaskbarViewModel : ObservableObject
     partial void OnCompactTrayChanged(bool value) => Write(settings => settings.CompactTray = value);
     partial void OnCompactClockChanged(bool value) => Write(settings => settings.CompactClock = value);
     partial void OnStartMenuFullHeightChanged(bool value) => Write(settings => settings.StartMenuFullHeight = value);
+    partial void OnWindowsKeyShowsTaskbarChanged(bool value) => Write(settings => settings.WindowsKeyShowsTaskbar = value);
 
     private void Write(Action<TaskbarSettings> change)
     {

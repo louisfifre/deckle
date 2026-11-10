@@ -29,4 +29,10 @@ public sealed class TaskbarSettings
 
     /// <summary>The Start menu as high as the screen it opens on.</summary>
     public bool StartMenuFullHeight { get; set; } = false;
+
+    /// <summary>
+    /// The Windows key pressed on its own brings the taskbar forward instead of
+    /// opening Start. Every shortcut that uses the key keeps working.
+    /// </summary>
+    public bool WindowsKeyShowsTaskbar { get; set; } = false;
 }

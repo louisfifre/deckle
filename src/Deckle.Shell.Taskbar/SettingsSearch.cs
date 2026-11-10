@@ -31,5 +31,10 @@ public static class SettingsSearch
             LabelKey = "TaskbarPage_StartMenuFullHeightCard",
             Keywords = ["start", "start menu", "height", "tall", "full height", "size"],
         },
+        new SettingSearchEntry
+        {
+            LabelKey = "TaskbarPage_WindowsKeyShowsTaskbarCard",
+            Keywords = ["windows key", "win key", "start", "start menu", "taskbar", "focus", "game", "fullscreen", "shortcut"],
+        },
     ];
 }

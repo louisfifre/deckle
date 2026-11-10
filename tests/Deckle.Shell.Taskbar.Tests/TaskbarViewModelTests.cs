@@ -37,6 +37,7 @@ public sealed class TaskbarViewModelTests : IDisposable
         settings.CompactTray = false;
         settings.CompactClock = false;
         settings.StartMenuFullHeight = false;
+        settings.WindowsKeyShowsTaskbar = false;
     }
 
     // An engine is never created: the settings stay off, and a status is raised by hand.
@@ -76,6 +77,7 @@ public sealed class TaskbarViewModelTests : IDisposable
         viewModel.CompactTray = true;
         viewModel.CompactClock = true;
         viewModel.StartMenuFullHeight = true;
+        viewModel.WindowsKeyShowsTaskbar = true;
 
         TaskbarSettings saved = TaskbarSettingsService.Instance.Current;
         Assert.True(saved.ShowAllTrayIcons);
@@ -83,12 +85,14 @@ public sealed class TaskbarViewModelTests : IDisposable
         Assert.True(saved.CompactTray);
         Assert.True(saved.CompactClock);
         Assert.True(saved.StartMenuFullHeight);
+        Assert.True(saved.WindowsKeyShowsTaskbar);
 
         Assert.Equal(false, Card(viewModel, "TaskbarPage_ShowAllTrayIconsCard").Default!());
         Assert.Equal(TaskbarBackground.Native, Card(viewModel, "TaskbarPage_BackgroundCard").Default!());
         Assert.Equal(false, Card(viewModel, "TaskbarPage_CompactTrayCard").Default!());
         Assert.Equal(false, Card(viewModel, "TaskbarPage_CompactClockCard").Default!());
         Assert.Equal(false, Card(viewModel, "TaskbarPage_StartMenuFullHeightCard").Default!());
+        Assert.Equal(false, Card(viewModel, "TaskbarPage_WindowsKeyShowsTaskbarCard").Default!());
     }
 
     [Fact]
