@@ -55,11 +55,24 @@ namespace deckle::rules
         bool enabled = false;
     };
 
+    // The Start menu width behavior (behaviors/start_menu_width.cpp): the menu's
+    // panel is as wide as asked, or as the Start window allows, and never wider.
+    //   "startMenuWidth": { "enabled": true, "fill": false, "width": 640 }
+    // width is in effective pixels and ignored when fill is true. Like the
+    // height, it only matches in StartMenuExperienceHost.
+    struct StartMenuWidthConfiguration
+    {
+        bool enabled = false;
+        bool fill = false;
+        double width = 0;
+    };
+
     struct SettingsDocument
     {
         std::vector<RuleDefinition> rules;
         ClockConfiguration clock;
         StartMenuHeightConfiguration startMenuHeight;
+        StartMenuWidthConfiguration startMenuWidth;
         std::vector<std::wstring> problems;   // what could not be read; the rest still applies
     };
 

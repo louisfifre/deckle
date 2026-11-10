@@ -88,7 +88,13 @@
     <value>Compact app buttons</value>
   </data>
   <data name="TaskbarPage_CompactTaskButtonsCard.Description" xml:space="preserve">
-    <value>Brings the app buttons, Start and Task view as close together as the tray icons. Applies to a vertical taskbar only.</value>
+    <value>Brings the app buttons, Start and Task view closer together. Applies to a vertical taskbar only.</value>
+  </data>
+  <data name="TaskbarPage_TaskButtonPitchCard.Header" xml:space="preserve">
+    <value>Button height</value>
+  </data>
+  <data name="TaskbarPage_TaskButtonPitchCard.Description" xml:space="preserve">
+    <value>The room each app button, Start and Task view take on the taskbar.</value>
   </data>
   <data name="TaskbarPage_CompactClockCard.Header" xml:space="preserve">
     <value>Compact clock</value>
@@ -102,6 +108,12 @@
   <data name="TaskbarPage_CompactTrayCard.Description" xml:space="preserve">
     <value>Brings the tray icons and the quick settings icons closer together. Applies to a vertical taskbar only.</value>
   </data>
+  <data name="TaskbarPage_TrayIconPitchCard.Header" xml:space="preserve">
+    <value>Icon spacing</value>
+  </data>
+  <data name="TaskbarPage_TrayIconPitchCard.Description" xml:space="preserve">
+    <value>The room each tray icon and quick settings icon takes on the taskbar.</value>
+  </data>
   <data name="TaskbarPage_HorizontalBarNoEffect" xml:space="preserve">
     <value>Your taskbar is horizontal, so this has no effect.</value>
   </data>
@@ -110,6 +122,33 @@
   </data>
   <data name="TaskbarPage_StartMenuFullHeightCard.Description" xml:space="preserve">
     <value>Makes the Start menu as tall as the screen, with the same space above and below it.</value>
+  </data>
+  <data name="TaskbarPage_StartMenuWidthCard.Header" xml:space="preserve">
+    <value>Start menu width</value>
+  </data>
+  <data name="TaskbarPage_StartMenuWidthCard.Description" xml:space="preserve">
+    <value>Fill the screen stretches Start across the screen it opens on. A custom width never goes past the screen's edge.</value>
+  </data>
+  <data name="TaskbarPage_StartMenuWidthDefault.Content" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="TaskbarPage_StartMenuWidthFill.Content" xml:space="preserve">
+    <value>Fill the screen</value>
+  </data>
+  <data name="TaskbarPage_StartMenuWidthCustom.Content" xml:space="preserve">
+    <value>Custom</value>
+  </data>
+  <data name="TaskbarPage_StartMenuCustomWidthCard.Header" xml:space="preserve">
+    <value>Width</value>
+  </data>
+  <data name="TaskbarPage_StartMenuCustomWidthCard.Description" xml:space="preserve">
+    <value>On a narrower screen, such as one turned upright, Start stops at its edge.</value>
+  </data>
+  <data name="TaskbarPage_HideStartMenuRecommendedCard.Header" xml:space="preserve">
+    <value>Hide recent and recommended items</value>
+  </data>
+  <data name="TaskbarPage_HideStartMenuRecommendedCard.Description" xml:space="preserve">
+    <value>Takes the section under your pinned apps out of Start, so the list of all apps moves up.</value>
   </data>
   <data name="TaskbarPage_WindowsKeyShowsTaskbarCard.Header" xml:space="preserve">
     <value>Windows key shows the taskbar</value>

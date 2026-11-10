@@ -48,7 +48,24 @@ internal sealed class HarnessOptions
                         var other => throw new ArgumentException($"unknown target {other} (explorer or startmenu)"),
                     };
                     break;
-                case "--start-menu-full-height": customization = customization with { StartMenu = new StartMenuCustomization(FullHeight: true) }; break;
+                case "--start-menu-full-height":
+                    customization = customization with { StartMenu = (customization.StartMenu ?? new()) with { FullHeight = true } };
+                    break;
+                case "--hide-start-recommended":
+                    customization = customization with { StartMenu = (customization.StartMenu ?? new()) with { HideRecommended = true } };
+                    break;
+                case "--start-menu-width":
+                    string width = Next();
+                    customization = customization with
+                    {
+                        StartMenu = (customization.StartMenu ?? new()) with
+                        {
+                            Width = width == "fill"
+                                ? StartMenuWidthRequest.Fill
+                                : StartMenuWidthRequest.Of(int.Parse(width, System.Globalization.CultureInfo.InvariantCulture)),
+                        },
+                    };
+                    break;
                 case "--doc-out": documentOut = Next(); break;
                 case "--bg":
                     customization = customization with { Background = Enum.Parse<TaskbarBackground>(Next(), ignoreCase: true) };

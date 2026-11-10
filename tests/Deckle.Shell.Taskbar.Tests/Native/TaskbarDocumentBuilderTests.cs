@@ -102,6 +102,20 @@ public sealed class TaskbarDocumentBuilderTests : IDisposable
         Assert.Equal("4,2,4,2", Rule(customization, "taskButtons.experience.padding").Value);
     }
 
+    // Across the page's whole range Start's icon keeps its 20 px box, the rest of
+    // the row split above and below it.
+    [Theory]
+    [InlineData(20, "4,0,4,0")]
+    [InlineData(32, "4,6,4,6")]
+    [InlineData(48, "4,14,4,14")]
+    public void StartsPaddingCentresItsIconAtAnyButtonHeight(int pitch, string padding)
+    {
+        var customization = new TaskbarCustomization { TaskButtonPitch = pitch };
+
+        Assert.Equal(pitch.ToString(System.Globalization.CultureInfo.InvariantCulture), Rule(customization, "taskButtons.app.height").Value);
+        Assert.Equal(padding, Rule(customization, "taskButtons.experience.padding").Value);
+    }
+
     [Fact]
     public void ATightenedClockButtonKeepsOnlyAGapAboveTheClock()
     {

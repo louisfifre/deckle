@@ -35,9 +35,14 @@ public sealed class TaskbarViewModelTests : IDisposable
         settings.ShowAllTrayIcons = false;
         settings.Background = TaskbarBackground.Native;
         settings.CompactTray = false;
+        settings.TrayIconPitch = TaskbarCustomization.DefaultCompactPitch;
         settings.CompactTaskButtons = false;
+        settings.TaskButtonPitch = TaskbarCustomization.DefaultCompactPitch;
         settings.CompactClock = false;
         settings.StartMenuFullHeight = false;
+        settings.StartMenuWidth = StartMenuWidth.Native;
+        settings.StartMenuCustomWidth = TaskbarCustomization.DefaultStartMenuWidth;
+        settings.HideStartMenuRecommended = false;
         settings.WindowsKeyShowsTaskbar = false;
     }
 
@@ -79,6 +84,7 @@ public sealed class TaskbarViewModelTests : IDisposable
         viewModel.CompactTaskButtons = true;
         viewModel.CompactClock = true;
         viewModel.StartMenuFullHeight = true;
+        viewModel.HideStartMenuRecommended = true;
         viewModel.WindowsKeyShowsTaskbar = true;
 
         TaskbarSettings saved = TaskbarSettingsService.Instance.Current;
@@ -88,6 +94,7 @@ public sealed class TaskbarViewModelTests : IDisposable
         Assert.True(saved.CompactTaskButtons);
         Assert.True(saved.CompactClock);
         Assert.True(saved.StartMenuFullHeight);
+        Assert.True(saved.HideStartMenuRecommended);
         Assert.True(saved.WindowsKeyShowsTaskbar);
 
         Assert.Equal(false, Card(viewModel, "TaskbarPage_ShowAllTrayIconsCard").Default!());
@@ -96,7 +103,54 @@ public sealed class TaskbarViewModelTests : IDisposable
         Assert.Equal(false, Card(viewModel, "TaskbarPage_CompactTaskButtonsCard").Default!());
         Assert.Equal(false, Card(viewModel, "TaskbarPage_CompactClockCard").Default!());
         Assert.Equal(false, Card(viewModel, "TaskbarPage_StartMenuFullHeightCard").Default!());
+        Assert.Equal(false, Card(viewModel, "TaskbarPage_HideStartMenuRecommendedCard").Default!());
         Assert.Equal(false, Card(viewModel, "TaskbarPage_WindowsKeyShowsTaskbarCard").Default!());
+    }
+
+    // The pitch sits in its switch's fold, writes the setting as a whole pixel
+    // held to its range, and resets to the compact pitch.
+    [Theory]
+    [InlineData("TaskbarPage_CompactTrayCard", "TaskbarPage_TrayIconPitchCard")]
+    [InlineData("TaskbarPage_CompactTaskButtonsCard", "TaskbarPage_TaskButtonPitchCard")]
+    public void APitchIsSetInsideItsSwitchsFold(string switchKey, string pitchKey)
+    {
+        TaskbarViewModel viewModel = ViewModel();
+        SettingDescriptor group = Card(viewModel, switchKey);
+        SettingDescriptor pitch = Assert.Single(((GroupArgs)group.Args!).Children);
+        Assert.Equal(pitchKey, pitch.LabelKey);
+        Assert.Equal(24.0, pitch.Default!());
+
+        pitch.SetValue(29.6);
+        Assert.Equal(30.0, pitch.GetValue());
+
+        pitch.SetValue(1000.0);
+        TaskbarSettings saved = TaskbarSettingsService.Instance.Current;
+        int written = switchKey == "TaskbarPage_CompactTrayCard" ? saved.TrayIconPitch : saved.TaskButtonPitch;
+        Assert.Equal(((MagnitudeArgs)pitch.Args!).Maximum, written);
+    }
+
+    // The width is a choice whose fold holds the value, shown under Custom only;
+    // the fold's reset goes back to Windows' own width.
+    [Fact]
+    public void TheStartMenuWidthIsAChoiceWhoseValueShowsUnderCustomOnly()
+    {
+        TaskbarViewModel viewModel = ViewModel();
+        SettingDescriptor mode = Card(viewModel, "TaskbarPage_StartMenuWidthCard");
+        SettingDescriptor width = Assert.Single(((ModeArgs)mode.Args!).Children);
+        Assert.Equal(StartMenuWidth.Native, mode.Default!());
+        Assert.Equal(640.0, width.Default!());
+        Assert.False(width.VisibleWhen!());
+
+        mode.SetValue(StartMenuWidth.Custom);
+        width.SetValue(580.0);
+
+        Assert.True(width.VisibleWhen!());
+        TaskbarSettings saved = TaskbarSettingsService.Instance.Current;
+        Assert.Equal(StartMenuWidth.Custom, saved.StartMenuWidth);
+        Assert.Equal(580, saved.StartMenuCustomWidth);
+
+        mode.SetValue(StartMenuWidth.Fill);
+        Assert.False(width.VisibleWhen!());
     }
 
     [Fact]
@@ -180,7 +234,7 @@ public sealed class TaskbarViewModelTests : IDisposable
         viewModel.CompactClock = true;
 
         Assert.Equal("TaskbarPage_ProblemError", viewModel.ProblemKey(TaskbarPart.CompactClock));
-        Assert.Null(viewModel.ProblemKey(TaskbarPart.StartMenu));
+        Assert.Null(viewModel.ProblemKey(TaskbarPart.StartMenuHeight));
 
         viewModel.CompactClock = false;
 

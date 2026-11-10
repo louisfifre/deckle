@@ -95,6 +95,7 @@
     <ClInclude Include="xamldiag\rules\rule_engine.h" />
     <ClInclude Include="xamldiag\behaviors\clock.h" />
     <ClInclude Include="xamldiag\behaviors\start_menu_height.h" />
+    <ClInclude Include="xamldiag\behaviors\start_menu_width.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -118,6 +119,7 @@
     <ClCompile Include="xamldiag\rules\rule_engine.cpp" />
     <ClCompile Include="xamldiag\behaviors\clock.cpp" />
     <ClCompile Include="xamldiag\behaviors\start_menu_height.cpp" />
+    <ClCompile Include="xamldiag\behaviors\start_menu_width.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Deckle.Shell.Taskbar.Native.def" />

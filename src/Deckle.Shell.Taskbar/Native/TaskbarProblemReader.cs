@@ -15,7 +15,9 @@ internal static class TaskbarProblemReader
         _ when id.StartsWith("quickSettings.", StringComparison.Ordinal) => TaskbarPart.CompactTray,
         _ when id.StartsWith("taskButtons.", StringComparison.Ordinal) => TaskbarPart.CompactTaskButtons,
         _ when id.StartsWith("clock.", StringComparison.Ordinal) || id == "clock" => TaskbarPart.CompactClock,
-        "startMenuHeight" => TaskbarPart.StartMenu,
+        "startMenuHeight" => TaskbarPart.StartMenuHeight,
+        "startMenuWidth" => TaskbarPart.StartMenuWidth,
+        _ when id.StartsWith("startMenu.recommended.", StringComparison.Ordinal) => TaskbarPart.StartMenuRecommended,
         _ => null,
     };
 
@@ -36,7 +38,9 @@ internal static class TaskbarProblemReader
         if (wanted.TrayIconPitch is not null || wanted.TightenQuickSettings) parts.Add(TaskbarPart.CompactTray);
         if (wanted.TaskButtonPitch is not null) parts.Add(TaskbarPart.CompactTaskButtons);
         if (wanted.Clock is not null || wanted.TightenClockButton) parts.Add(TaskbarPart.CompactClock);
-        if (wanted.CustomizesStartMenu) parts.Add(TaskbarPart.StartMenu);
+        if (wanted.StartMenu is { FullHeight: true }) parts.Add(TaskbarPart.StartMenuHeight);
+        if (wanted.StartMenu?.Width is not null) parts.Add(TaskbarPart.StartMenuWidth);
+        if (wanted.StartMenu is { HideRecommended: true }) parts.Add(TaskbarPart.StartMenuRecommended);
         return parts;
     }
 
@@ -53,7 +57,7 @@ internal static class TaskbarProblemReader
         var problems = new Dictionary<TaskbarPart, TaskbarProblem>();
         foreach (TaskbarPart part in WantedParts(wanted))
         {
-            bool unavailable = part == TaskbarPart.StartMenu ? startMenuUnavailable : explorerUnavailable;
+            bool unavailable = part.IsStartMenu() ? startMenuUnavailable : explorerUnavailable;
             if (unavailable) problems[part] = TaskbarProblem.Error;
         }
 

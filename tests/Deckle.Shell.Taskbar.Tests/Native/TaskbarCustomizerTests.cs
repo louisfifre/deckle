@@ -297,7 +297,7 @@ public sealed class TaskbarCustomizerTests
         await customizer.ReconcileAsync("startup");
 
         Assert.Equal(TaskbarProblem.Error, customizer.Problems[TaskbarPart.Background]);
-        Assert.Equal(TaskbarProblem.Error, customizer.Problems[TaskbarPart.StartMenu]);
+        Assert.Equal(TaskbarProblem.Error, customizer.Problems[TaskbarPart.StartMenuHeight]);
         Assert.Equal(1, raised);
     }
 

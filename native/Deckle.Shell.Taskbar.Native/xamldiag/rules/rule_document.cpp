@@ -89,6 +89,23 @@ namespace deckle::rules
                 result.startMenuHeight.enabled = height.HasKey(L"enabled") && height.GetNamedValue(L"enabled").ValueType() == json::JsonValueType::Boolean
                                                  && height.GetNamedBoolean(L"enabled");
             }
+            if (behaviors.HasKey(L"startMenuWidth") && behaviors.GetNamedValue(L"startMenuWidth").ValueType() == json::JsonValueType::Object)
+            {
+                auto width = behaviors.GetNamedObject(L"startMenuWidth");
+                auto flag = [&](std::wstring_view key)
+                {
+                    return width.HasKey(key) && width.GetNamedValue(key).ValueType() == json::JsonValueType::Boolean && width.GetNamedBoolean(key);
+                };
+                result.startMenuWidth.enabled = flag(L"enabled");
+                result.startMenuWidth.fill = flag(L"fill");
+                if (width.HasKey(L"width") && width.GetNamedValue(L"width").ValueType() == json::JsonValueType::Number)
+                    result.startMenuWidth.width = width.GetNamedNumber(L"width");
+                if (result.startMenuWidth.enabled && !result.startMenuWidth.fill && result.startMenuWidth.width <= 0)
+                {
+                    result.problems.push_back(L"startMenuWidth: a width that does not fill needs a positive width");
+                    result.startMenuWidth.enabled = false;
+                }
+            }
         }
 
         return result;

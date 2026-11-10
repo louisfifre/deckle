@@ -14,7 +14,7 @@ public static class SettingsSearch
         new SettingSearchEntry
         {
             LabelKey = "TaskbarPage_CompactTaskButtonsCard",
-            Keywords = ["taskbar", "buttons", "apps", "icons", "spacing", "compact", "vertical", "start", "task view"],
+            Keywords = ["taskbar", "buttons", "apps", "icons", "spacing", "compact", "vertical", "start", "task view", "button height", "size"],
         },
         new SettingSearchEntry
         {
@@ -29,12 +29,22 @@ public static class SettingsSearch
         new SettingSearchEntry
         {
             LabelKey = "TaskbarPage_CompactTrayCard",
-            Keywords = ["taskbar", "tray", "notification area", "icons", "spacing", "compact", "vertical", "quick settings"],
+            Keywords = ["taskbar", "tray", "notification area", "icons", "spacing", "icon spacing", "compact", "vertical", "quick settings"],
         },
         new SettingSearchEntry
         {
             LabelKey = "TaskbarPage_StartMenuFullHeightCard",
             Keywords = ["start", "start menu", "height", "tall", "full height", "size"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "TaskbarPage_StartMenuWidthCard",
+            Keywords = ["start", "start menu", "width", "wide", "narrow", "fill", "size", "portrait", "vertical screen"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "TaskbarPage_HideStartMenuRecommendedCard",
+            Keywords = ["start", "start menu", "recommended", "recent", "recent files", "suggestions", "hide"],
         },
         new SettingSearchEntry
         {

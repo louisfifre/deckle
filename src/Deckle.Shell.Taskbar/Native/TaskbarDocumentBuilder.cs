@@ -87,7 +87,7 @@ internal static class TaskbarDocumentBuilder
             // 4 px of Padding above and below; each icon is given the pitch as
             // its height. The button's own Padding goes too, so its hover
             // highlight fits the icons it covers.
-            int iconPitch = customization.TrayIconPitch ?? TaskbarCustomization.CompactPitch;
+            int iconPitch = customization.TrayIconPitch ?? TaskbarCustomization.DefaultCompactPitch;
             rules.Add(new("quickSettings.spacing", QuickSettingsStack, "Spacing", "0"));
             rules.Add(new("quickSettings.stack.padding", QuickSettingsStack, "Padding", "0"));
             rules.Add(new("quickSettings.button.padding", QuickSettingsButton, "Padding", "0"));
@@ -147,6 +147,21 @@ internal static class TaskbarDocumentBuilder
         }
     }
 
+    // The section under the pinned apps: its header ("Recent" on 26100,
+    // "Recommended" before) and its list, one Grid in StartHome's TopLevelHeader.
+    // Collapsing it lets the All list move up. Measured live on 2026-11-10: the
+    // value holds, no visual state takes it back.
+    private const string StartRecommendedSection = "Grid#TopLevelSuggestionsRoot";
+
+    /// <summary>The rules of the Start menu process, built from the Start menu part of a customization.</summary>
+    public static IReadOnlyList<TaskbarRule> StartMenuRules(TaskbarCustomization customization)
+    {
+        var rules = new List<TaskbarRule>();
+        if (customization.StartMenu is { HideRecommended: true })
+            rules.Add(new("startMenu.recommended.visibility", StartRecommendedSection, "Visibility", "Collapsed"));
+        return rules;
+    }
+
     /// <summary>
     /// The settings document of the Start menu process, as one line of JSON. Its own
     /// document, for its own engine: the Start menu is not part of explorer. An empty
@@ -158,14 +173,24 @@ internal static class TaskbarDocumentBuilder
         using (var writer = new Utf8JsonWriter(buffer))
         {
             writer.WriteStartObject();
-            writer.WriteStartArray("rules");
-            writer.WriteEndArray();
+            WriteRules(writer, StartMenuRules(customization));
 
             writer.WriteStartObject("behaviors");
             if (customization.StartMenu is { FullHeight: true })
             {
                 writer.WriteStartObject("startMenuHeight");
                 writer.WriteBoolean("enabled", true);
+                writer.WriteEndObject();
+            }
+            // The width is a behavior and not a rule: held to the Start window,
+            // which only the engine can measure (it differs per screen, and a
+            // portrait screen is narrower than most menus).
+            if (customization.StartMenu?.Width is { } width)
+            {
+                writer.WriteStartObject("startMenuWidth");
+                writer.WriteBoolean("enabled", true);
+                writer.WriteBoolean("fill", width.IsFill);
+                if (!width.IsFill) writer.WriteNumber("width", width.Value);
                 writer.WriteEndObject();
             }
             writer.WriteEndObject();
@@ -181,19 +206,7 @@ internal static class TaskbarDocumentBuilder
         using (var writer = new Utf8JsonWriter(buffer))
         {
             writer.WriteStartObject();
-
-            writer.WriteStartArray("rules");
-            foreach (TaskbarRule rule in Rules(customization))
-            {
-                writer.WriteStartObject();
-                writer.WriteString("id", rule.Id);
-                writer.WriteString("target", rule.Target);
-                writer.WriteString("property", rule.Property);
-                writer.WriteString("value", rule.Value);
-                if (rule.VisualState is { } state) writer.WriteString("visualState", state);
-                writer.WriteEndObject();
-            }
-            writer.WriteEndArray();
+            WriteRules(writer, Rules(customization));
 
             writer.WriteStartObject("behaviors");
             if (customization.Clock is { } clock)
@@ -210,6 +223,22 @@ internal static class TaskbarDocumentBuilder
             writer.WriteEndObject();
         }
         return Encoding.UTF8.GetString(buffer.ToArray());
+    }
+
+    private static void WriteRules(Utf8JsonWriter writer, IReadOnlyList<TaskbarRule> rules)
+    {
+        writer.WriteStartArray("rules");
+        foreach (TaskbarRule rule in rules)
+        {
+            writer.WriteStartObject();
+            writer.WriteString("id", rule.Id);
+            writer.WriteString("target", rule.Target);
+            writer.WriteString("property", rule.Property);
+            writer.WriteString("value", rule.Value);
+            if (rule.VisualState is { } state) writer.WriteString("visualState", state);
+            writer.WriteEndObject();
+        }
+        writer.WriteEndArray();
     }
 
     private static void WriteLines(Utf8JsonWriter writer, string name, IReadOnlyList<ClockLine> lines)

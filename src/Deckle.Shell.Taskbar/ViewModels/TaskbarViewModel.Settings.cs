@@ -32,10 +32,17 @@ public partial class TaskbarViewModel
             ],
             defaultValue: () => new TaskbarSettings().Background,
             advisory: () => ProblemAdvisory(TaskbarPart.Background)),
-        Setting.Toggle(
+        // A switch whose fold holds its one value: the pitch is meaningless while
+        // the buttons keep Explorer's own, so it shows only once the switch is on.
+        Setting.Group(
             "TaskbarPage_CompactTaskButtonsCard",
             () => CompactTaskButtons,
             value => CompactTaskButtons = value,
+            [
+                Pitch("TaskbarPage_TaskButtonPitchCard",
+                    () => TaskButtonPitch, value => TaskButtonPitch = value,
+                    TaskbarCustomization.TaskButtonPitchRange, () => new TaskbarSettings().TaskButtonPitch),
+            ],
             defaultValue: () => new TaskbarSettings().CompactTaskButtons,
             advisory: CompactTaskButtonsAdvisory),
         Setting.Toggle(
@@ -54,13 +61,29 @@ public partial class TaskbarViewModel
             value => ShowAllTrayIcons = value,
             defaultValue: () => new TaskbarSettings().ShowAllTrayIcons,
             advisory: TrayAdvisory),
-        Setting.Toggle(
+        Setting.Group(
             "TaskbarPage_CompactTrayCard",
             () => CompactTray,
             value => CompactTray = value,
+            [
+                Pitch("TaskbarPage_TrayIconPitchCard",
+                    () => TrayIconPitch, value => TrayIconPitch = value,
+                    TaskbarCustomization.TrayPitchRange, () => new TaskbarSettings().TrayIconPitch),
+            ],
             defaultValue: () => new TaskbarSettings().CompactTray,
             advisory: CompactTrayAdvisory),
     ];
+
+    // A size in effective pixels, typed or swept: whole pixels only (a half
+    // pixel would blur the icons), so the field shows no decimals.
+    private static SettingDescriptor Pitch(
+        string labelKey, Func<int> get, Action<int> set, PixelRange range, Func<int> defaultValue) =>
+        Setting.Magnitude(
+            labelKey,
+            () => get(),
+            value => set(range.Clamp((int)Math.Round(value))),
+            new MagnitudeArgs(range.Minimum, range.Maximum, Unit: "px", Integer: true),
+            defaultValue: () => defaultValue());
 
     public IReadOnlyList<SettingDescriptor> StartManifest =>
     [
@@ -69,7 +92,38 @@ public partial class TaskbarViewModel
             () => StartMenuFullHeight,
             value => StartMenuFullHeight = value,
             defaultValue: () => new TaskbarSettings().StartMenuFullHeight,
-            advisory: () => ProblemAdvisory(TaskbarPart.StartMenu)),
+            advisory: () => ProblemAdvisory(TaskbarPart.StartMenuHeight)),
+        // A choice that decides whether a value exists: the width field shows
+        // under Custom only, and the engine holds any width to the screen.
+        Setting.Mode<StartMenuWidth>(
+            "TaskbarPage_StartMenuWidthCard",
+            () => StartMenuWidth,
+            value => StartMenuWidth = value,
+            [
+                (StartMenuWidth.Native, "TaskbarPage_StartMenuWidthDefault"),
+                (StartMenuWidth.Fill, "TaskbarPage_StartMenuWidthFill"),
+                (StartMenuWidth.Custom, "TaskbarPage_StartMenuWidthCustom"),
+            ],
+            [
+                Setting.Magnitude(
+                    "TaskbarPage_StartMenuCustomWidthCard",
+                    () => StartMenuCustomWidth,
+                    value => StartMenuCustomWidth = TaskbarCustomization.StartMenuWidthRange.Clamp((int)Math.Round(value)),
+                    new MagnitudeArgs(
+                        TaskbarCustomization.StartMenuWidthRange.Minimum,
+                        TaskbarCustomization.StartMenuWidthRange.Maximum,
+                        Unit: "px", Integer: true),
+                    visibleWhen: () => StartMenuWidth == StartMenuWidth.Custom,
+                    defaultValue: () => new TaskbarSettings().StartMenuCustomWidth),
+            ],
+            defaultValue: () => new TaskbarSettings().StartMenuWidth,
+            advisory: () => ProblemAdvisory(TaskbarPart.StartMenuWidth)),
+        Setting.Toggle(
+            "TaskbarPage_HideStartMenuRecommendedCard",
+            () => HideStartMenuRecommended,
+            value => HideStartMenuRecommended = value,
+            defaultValue: () => new TaskbarSettings().HideStartMenuRecommended,
+            advisory: () => ProblemAdvisory(TaskbarPart.StartMenuRecommended)),
         // Sits with the Start menu because it changes what the Windows key does to
         // Start. It asks nothing of the engine, so it has no advisory.
         Setting.Toggle(
@@ -135,7 +189,10 @@ public partial class TaskbarViewModel
             TaskbarPart.CompactTray => CompactTray,
             TaskbarPart.CompactTaskButtons => CompactTaskButtons,
             TaskbarPart.CompactClock => CompactClock,
-            _ => StartMenuFullHeight,
+            TaskbarPart.StartMenuHeight => StartMenuFullHeight,
+            TaskbarPart.StartMenuWidth => StartMenuWidth != StartMenuWidth.Native,
+            TaskbarPart.StartMenuRecommended => HideStartMenuRecommended,
+            _ => false,
         };
         if (!on || !_customizer.Problems.TryGetValue(part, out TaskbarProblem problem)) return null;
 
