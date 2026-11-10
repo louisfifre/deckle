@@ -145,7 +145,7 @@ On 2026-11-10 Louis reviewed pass 12 without answering the questions one by one:
 
 Settled since the last revision, kept for the record. Where Louis changes tool: the top row (2026-11-10, after seeing three drawn variants). Whether the large graph is 3D from the start: no, later.
 
-1. **How does Deckle Atelier fit into Deckle?** Louis: "it will be the first application, maybe"; this has to be decided before anything is built. Depends on it: where the repository lives, what is shared with Deckle (design system, settings, the animation rule), how it is installed.
+1. **How does Deckle Atelier fit into Deckle?** Louis: "it will be the first application, maybe"; this has to be decided before anything is built. Depends on it: where the repository lives, what is shared with Deckle (design system, settings, the animation rule), how it is installed. On the evening of 2026-11-10 Louis said it is "intégré à Deckle" and has to be available in the app when it is tested, then gave his go to the orchestrating session's proposal: a module inside the Deckle app, its logic (scan, sizes, inventory) in libraries without interface code, built on the branch `feat/atelier` and merged into main only once he has seen it. Not said by him: whether it stays a module or later becomes an executable of its own.
 2. **What does the photo tool look at?** Louis said first "a special photo view inside a folder", then wondered about a global Photos with its own folders. He did not come back to it on the second pass, which drew A. Drawn: A.
    - A. The folder he is in, like every other tool.
    - B. Its own list of photo folders, apart from the other added folders.
