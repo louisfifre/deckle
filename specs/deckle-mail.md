@@ -27,6 +27,8 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - The title bar holds the back button, the button that opens and closes the navigation, and one search field. The back button shows only when there is a page to go back to.
 - The search field looks in the senders, the sentences and the text of the mails of every mailbox. No page holds a search field of its own.
 - No command is reached by a right-click: Deckle Mail has no context menu.
+- No bar at the top of a page pushes its content down. Whatever fails or comes back, the rows and lines of a page stay where they were.
+- A mailbox that connects again says nothing: its caution dots go, and that is the sign.
 - A gesture that shows only under the pointer has a double that is always visible. Example: the cross of a secondary information line and Dismiss all; the pencil in the navigation and the pencil on the page.
 
 ### Navigation
@@ -43,7 +45,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 - The page has no title and no heading above the list: the selected item of the navigation says where the person is.
 - Before any mailbox exists, the page says that no mailbox is set and offers to add one.
-- While the first sort of a mailbox runs, the page says which mailbox is being sorted, shows a progress bar without a count, and adds each subject at the end of the list as it is found. A subject already shown never moves during the sort.
+- While the first sort of a mailbox runs, the page says which mailbox is being sorted, shows a progress bar without a count, and adds each subject at the end of the list as it is found. A subject already shown never moves during the sort. The progress never shifts the page: nothing under it moves when it shows or when it goes.
 - With subjects waiting, the page shows one row per subject in a single list, every mailbox mixed, never grouped by mailbox. Every subject is on the page: none is folded away, however many there are.
 - A row shows one sentence, a paperclip when a mail of the subject carries a real file, the task control and the trash. It shows nothing else: no line under the sentence, and no sender, mailbox or deadline written apart.
 - The controls of a row stand in two fixed columns at its end, the same on every row and every page: the task control, then the trash. A command never changes place from one row to the next, nor from one state of a row to the next.
@@ -53,9 +55,9 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - After the lines, one last line gives the number of mails that were set aside without a line, and leads to the part of Activity that lists them.
 - At the bottom right of the page, one command ends the day: it removes the rows already treated and the secondary information lines. When every row is treated, it becomes the one emphasised command of the page.
 - With nothing waiting, the page shows a small flat picture in pale grey and the sentence « Nothing is waiting. ». The picture is not an icon, not a skeleton of rows, and nothing on the page moves: the person does not take it for a loading page. Secondary information stays under it when there is some.
-- When one mailbox cannot connect, a bar at the top names it, says since when its content is shown, counts the gestures that wait for it once there is one, and offers to open Settings. Its rows stay and keep their controls: a gesture made meanwhile is kept and sent when the mailbox is back. Until then the treated row shows its result as any other, followed by a caution dot whose name says it waits for that mailbox.
+- When one mailbox cannot connect, no bar is added at the top of the page. Where the person learns which mailbox fails, since when its content is shown and how many gestures wait for it is Open 25. Its rows stay and keep their controls: a gesture made meanwhile is kept and sent when the mailbox is back. Until then the treated row shows its result as any other, followed by a caution dot whose name says it waits for that mailbox.
 - A mailbox that cannot connect wears a caution dot on its mark in the navigation, and its name says so to a screen reader. The dot takes no width: the navigation does not move when a mailbox fails.
-- When new mail waits to be sorted because the sorting cannot run, a bar at the top says how many mails arrived since when, and that they will be sorted. The rows already there stay usable. With no row left, the page shows the bar and not « Nothing is waiting. », which would be false.
+- When new mail waits to be sorted because the sorting cannot run, no bar is added at the top of the page and the rows already there stay usable. With no row left, the page does not say « Nothing is waiting. », which would be false. What tells the person how many mails wait, and since when, is Open 25.
 
 ### A Global page, an alias page
 
@@ -76,8 +78,8 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - After the text come the files really attached to that mail, each as a tile with its name, kind and size, which opens the file. An image that belongs to the body of the mail, a logo or the icons of a signature, is never listed as a file.
 - Beside the text, a list shows every mail of the subject, newest first, each with its date, its sender, one short sentence of what it says, and a mark when it carries a file. The mail shown is marked as selected. Clicking another shows that one in place of the first, and the list stays, so the person can always come back.
 - A mail of the person's own, sent from elsewhere in the same thread, appears in that list under « You ».
-- A mail with no text shows a bar saying so instead of the text. A mail whose sender failed the checks shows a bar saying so above the text, and its grey line gives the address alone.
-- A page that cannot show its mail because the mailbox is unreachable says so in a bar that offers to open Settings, and keeps the header and the list.
+- A mail with no text shows a bar saying so instead of the text. A mail whose sender failed the checks shows no bar: its grey line gives the address alone, with a small mark at the address whose explanation shows on demand. A bar above the text is kept for a mail found to be a probable scam, which a later spec covers.
+- A page that cannot show its mail because the mailbox is unreachable says so where the text would be, and keeps the header and the list. Whether it offers to open Settings is Open 41.
 
 ### Activity
 
@@ -94,8 +96,8 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - The page lists the mailboxes, one fold each. The header of a fold gives the name, the address, the number of aliases, and whether the mailbox is connected, by a coloured dot and in words.
 - An open fold shows the address, the mail server, and the app password with one command to save it and one to forget it. A saved password is never shown again: a line under the field says only whether one is saved. With no password saved, the command to forget it is hidden, not greyed.
 - A fold offers to remove its mailbox, after a confirmation.
-- When a mailbox cannot connect, a bar at the top of the page names it and says what to do. It stays as long as the mailbox cannot connect: it has no cross.
-- A mailbox that cannot connect is one condition with one severity wherever a bar names it, in Triage and here: a caution, since its mail is still shown and nothing is lost.
+- When a mailbox cannot connect, no bar at the top of the page names it.
+- A mailbox that cannot connect is one condition with one severity wherever it is named, in Triage and here: a caution, since its mail is still shown and nothing is lost.
 - Under the folds, a command adds a mailbox.
 - The page shows, by the Anytype logo and in words, whether Anytype is connected.
 - The page has no Reset all.
@@ -148,8 +150,9 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - When no deadline was found, one click on Add task creates the task with no day, and the chevron opens the choice of days.
 - Once the task exists, the subject leaves the list: its row greys in place, says « Task for » and the day of the task, and the subject becomes a line of Activity.
 - Deckle Mail shows no box to tick and never completes a task: a task is done in Anytype.
-- When Anytype cannot be reached, a bar says so in the words used for a mailbox, counts the tasks that wait and offers to open Settings; a task added meanwhile is kept and created when Anytype is back. Until then its row shows its result followed by the same caution dot as a gesture waiting on a mailbox: one sign for "done here, not yet arrived", whatever the cause.
+- When Anytype cannot be reached, no bar is added at the top of the page; it is named in the words used for a mailbox, in the place Open 25 asks for. A task added meanwhile is kept and created when Anytype is back. Until then its row shows its result followed by the same caution dot as a gesture waiting on a mailbox: one sign for "done here, not yet arrived", whatever the cause.
 - When Anytype is not connected, nothing about tasks is drawn: the trash is the only command on a row.
+- The notice that Anytype is not connected can be dismissed, so a person who does not want Anytype does not keep it in sight.
 
 **The trash**
 
@@ -231,19 +234,20 @@ Each question names the option the canvas recommends first, the frames that show
 22. **The order of the list once a first sort ends.** During the sort a subject never moves; whether the list is then put in its usual order in one step, or stays in the order of arrival until the next opening.
 23. **The result of a task that has no day.** « Task, no day » (28U) or « Task added » (26U). The spec words only « Task for » and a day.
 24. **A gesture that waits, in words or by its dot.** The result followed by the caution dot, with the count in the bar (27T, 27B), or the words « Task waiting » in place of the result, which loses the day (28TW). Six reviewers over four loops asked for a word.
-25. **What the person can do when the sorting cannot run.** Nothing: the bar only informs (26Q), or a command to try again (27Q). What stops the sorting, and whether the bar names it, is not said.
+25. **What replaces the failure bars.** The maintainer refused bars at the top of a page on 10 November, and with them the options 26Q and 27Q. His lead, to be drawn: one place for the whole window that lists what is wrong (a mailbox that cannot connect, the sorting that cannot run, Anytype that cannot be reached), each with its useful command such as Open settings, and a dot that shows something is listed; one place for everything, not a sign on each subject. He named a small tab in the status bar; not said: where exactly it lives (title bar, foot of the navigation), what it replaces of the bars, whether it offers to try the sorting again, and whether it names what stops the sorting.
 26. **What a search shows.** The canvas draws the plainest answer (28SR): a page titled by the word searched, one line per mail found, in the form of an Activity line, with where the mail stands, in Triage, treated or set aside. Not said: whether a subject still waiting keeps its two gestures there.
 27. **A sign on Settings when Anytype cannot connect.** The caution dot of a failed mailbox, on the Settings item (26T), or none. The spec gives the dot to mailboxes only.
 28. **The search field before any mailbox exists.** Shown as everywhere (26Z), or hidden until there is mail to search.
 29. **The default button when removing a mailbox.** Remove (28RM), since the mail stays on the server and the mailbox can be added again, or Cancel as for emptying a trash.
-30. **Two failures at once.** A mailbox that cannot connect while the sorting cannot run: two bars, the one that offers a command first (31BB), or one bar that says both (32BM), which takes 66 px less before the first row. Two reviewers of three prefer one bar.
+30. **Two failures at once.** A mailbox that cannot connect while the sorting cannot run. The two bars of 31BB and the one bar of 32BM fall with the bars (Open 25). Not said: whether the one place that lists what is wrong gives them two entries, the one that offers a command first, or one entry that says both.
 31. **The keyboard on the list.** Each command of a row is a stop for Tab (30FK), or the list is one stop where arrows move from row to row and Tab enters the row, as Windows documents for a list whose items hold controls (31FR). And where the focus goes after a gesture: on Undo of the same row (31FG) or on the next row (32FN). Which keys make the two gestures from a focused row is not said; the spec gives Ctrl+Z only.
 32. **Gestures that wait when their mailbox is removed.** The canvas draws that they are dropped and that the confirmation names them (32RM). Not said: whether they could be sent first, or the removal refused until the mailbox is back.
 33. **Emptying the trash of a mailbox that cannot connect.** Greyed, with the reason on its line (31GB), since an emptying cannot be undone and would run later on a count that is no longer true; or kept and sent later like a gesture on a row.
 34. **Connecting Anytype.** Settings says whether Anytype is connected (31MA) and offers no command; a command to connect it (32MC) depends on Open 13.
-35. **Triage when Anytype was never connected.** Nothing about tasks is drawn (31NA), as written above; three reviewers did not understand why a row that asks for an action only offers the trash. Option: an information bar, not a warning, that says it once and leads to Settings (32NB).
+35. **Triage when Anytype was never connected.** Nothing about tasks is drawn (31NA), as written above; three reviewers did not understand why a row that asks for an action only offers the trash. The maintainer settled on 10 November that the notice saying Anytype is not connected can be dismissed; the information bar of 32NB falls with the bars. Not said: what form the notice takes, where it stands, and whether it leads to Settings.
 36. **The moment between a saved password and a mailbox that is back.** The canvas draws before (32JP) and after (32JC). Not said: what the fold shows while the mailbox tries to connect, and what it says when the new password is refused too.
-37. **A mailbox that comes back.** Silently: its bar and its dots go, and that is the sign (32JT); or a bar says it is back and counts the changes sent (33JT), and then what makes that bar go. Two reviewers found the silent return too little, one found the bar too much.
+37. **A mailbox that comes back.** Settled 10 November: it says nothing, its dots go (32JT).
 38. **The moment a first mailbox is added.** The canvas draws the fold saying it connects, the command greyed (34LC), a refusal in the words of a failed mailbox (34LR), then Triage shown by itself while the first sort runs (34S). Not said: whether the person is taken to Triage or stays in Settings.
 39. **The end of a first sort.** Its progress line goes and the list stays (33LF), or a bar says the mailbox is sorted and how many subjects wait (34LG).
 40. **An earlier mail of an opened subject.** The canvas keeps the title and the two gestures, which act on the whole subject, and changes only the line of the sender and the text (34KS). Not said: whether « Reply in webmail » then opens that mail or the latest.
+41. **Open settings from a subject whose mailbox fails.** An opened subject that cannot show its mail offers to open Settings (28R), or offers nothing. The maintainer doubts the first: it sends the person to a page where there may be nothing to do.
