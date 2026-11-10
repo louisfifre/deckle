@@ -9,7 +9,7 @@ using Deckle.Shell.Taskbar.Harness;
 //                                [--stop-after <seconds>] [--control <file>] [--visual]
 //                                [--target explorer|startmenu]
 //                                [--dump <out file>] [--dump-after <seconds>]
-//                                [--doc-out <file> [--bg native|transparent|black] [--tray-pitch <px>]
+//                                [--doc-out <file> [--bg native|transparent|black] [--bar-thickness <px>] [--tray-pitch <px>]
 //                                    [--tighten-quick-settings] [--clock-date-above-time]
 //                                    [--tighten-clock-button] [--task-button-pitch <px>]
 //                                    [--start-menu-full-height] [--start-menu-width fill|<px>]

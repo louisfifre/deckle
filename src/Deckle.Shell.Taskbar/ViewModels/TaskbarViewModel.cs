@@ -27,6 +27,12 @@ public partial class TaskbarViewModel : ObservableObject
     public partial TaskbarBackground Background { get; set; }
 
     [ObservableProperty]
+    public partial bool CustomBarThickness { get; set; }
+
+    [ObservableProperty]
+    public partial int BarThickness { get; set; }
+
+    [ObservableProperty]
     public partial bool CompactTray { get; set; }
 
     [ObservableProperty]
@@ -77,6 +83,8 @@ public partial class TaskbarViewModel : ObservableObject
         {
             ShowAllTrayIcons = settings.ShowAllTrayIcons;
             Background = settings.Background;
+            CustomBarThickness = settings.CustomBarThickness;
+            BarThickness = settings.BarThickness;
             CompactTray = settings.CompactTray;
             TrayIconPitch = settings.TrayIconPitch;
             CompactTaskButtons = settings.CompactTaskButtons;
@@ -96,6 +104,8 @@ public partial class TaskbarViewModel : ObservableObject
 
     partial void OnShowAllTrayIconsChanged(bool value) => Write(settings => settings.ShowAllTrayIcons = value);
     partial void OnBackgroundChanged(TaskbarBackground value) => Write(settings => settings.Background = value);
+    partial void OnCustomBarThicknessChanged(bool value) => Write(settings => settings.CustomBarThickness = value);
+    partial void OnBarThicknessChanged(int value) => Write(settings => settings.BarThickness = value);
     partial void OnCompactTrayChanged(bool value) => Write(settings => settings.CompactTray = value);
     partial void OnTrayIconPitchChanged(int value) => Write(settings => settings.TrayIconPitch = value);
     partial void OnCompactTaskButtonsChanged(bool value) => Write(settings => settings.CompactTaskButtons = value);

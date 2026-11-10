@@ -13,6 +13,11 @@ public static class SettingsSearch
         },
         new SettingSearchEntry
         {
+            LabelKey = "TaskbarPage_BarThicknessCard",
+            Keywords = ["taskbar", "thickness", "width", "height", "thin", "narrow", "size", "vertical", "work area", "maximized"],
+        },
+        new SettingSearchEntry
+        {
             LabelKey = "TaskbarPage_CompactTaskButtonsCard",
             Keywords = ["taskbar", "buttons", "apps", "icons", "spacing", "compact", "vertical", "start", "task view", "button height", "size"],
         },

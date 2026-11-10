@@ -84,6 +84,18 @@
   <data name="TaskbarPage_BackgroundBlack.Content" xml:space="preserve">
     <value>Black</value>
   </data>
+  <data name="TaskbarPage_BarThicknessCard.Header" xml:space="preserve">
+    <value>Custom taskbar thickness</value>
+  </data>
+  <data name="TaskbarPage_BarThicknessCard.Description" xml:space="preserve">
+    <value>Makes the taskbar thinner or thicker, on any edge of the screen. Maximized windows stay against it.</value>
+  </data>
+  <data name="TaskbarPage_BarThicknessValueCard.Header" xml:space="preserve">
+    <value>Thickness</value>
+  </data>
+  <data name="TaskbarPage_BarThicknessValueCard.Description" xml:space="preserve">
+    <value>The taskbar's width on a side of the screen, or its height at the bottom.</value>
+  </data>
   <data name="TaskbarPage_CompactTaskButtonsCard.Header" xml:space="preserve">
     <value>Compact app buttons</value>
   </data>

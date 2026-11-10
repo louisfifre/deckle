@@ -7,6 +7,7 @@ namespace Deckle.Shell.Taskbar;
 public enum TaskbarPart
 {
     Background,
+    BarThickness,
     CompactTray,
     CompactTaskButtons,
     CompactClock,

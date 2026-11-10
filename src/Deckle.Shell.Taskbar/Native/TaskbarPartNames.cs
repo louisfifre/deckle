@@ -6,6 +6,7 @@ internal static class TaskbarPartNames
     public static string ForLog(this TaskbarPart part) => part switch
     {
         TaskbarPart.Background => "background",
+        TaskbarPart.BarThickness => "bar_thickness",
         TaskbarPart.CompactTray => "compact_tray",
         TaskbarPart.CompactTaskButtons => "compact_task_buttons",
         TaskbarPart.CompactClock => "compact_clock",
