@@ -57,7 +57,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - A row shows one sentence, a paperclip when a mail of the subject carries a real file, the task control and the trash. It shows nothing else: no line under the sentence, and no sender, mailbox or deadline written apart.
 - The controls of a row stand in two fixed columns at its end, the same on every row and every page: the task control, then the trash. A command never changes place from one row to the next, nor from one state of a row to the next.
 - The task control has one shape and one width on every row: one button that reads Add task, with the proposed day written in it when there is one, and no separate chevron. It is drawn without a frame, so the sentences stay what the eye reads first.
-- The task control is one control wherever it shows, on a row, on an opened subject and after a gesture beside Undo, and it carries its own form for a narrow window.
+- The task control is one control wherever it shows, on a row, on an opened subject and after a gesture beside Undo, and it keeps its full label in a narrow window.
 - Under the list, each secondary information is one thin line, without a frame of its own: its sentence, and the sender in grey right after it, not set against the right edge nor in a column. A cross shows on the line under the pointer or the keyboard focus, in the column of the trash, and a command above the lines, always visible, dismisses them all.
 - A row or a line that holds the keyboard focus takes the fill it has under the pointer, so the eye ties the focused command to its sentence.
 - After the lines, one last line gives the number of mails that were set aside without a line, and leads to the part of Activity that lists them.
@@ -119,7 +119,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - In a narrow window the navigation folds to its rail of icons and the numbers of the mailboxes stay visible on it. A click on a mailbox that has aliases opens its pages as a menu, which names the mailbox: the rail shows its mark only.
 - A mailbox that cannot connect keeps its caution dot on the rail. The dot sits at the bottom of the mark, away from the number, so both can show.
 - The search field becomes a button in the title bar.
-- A row goes on two levels: its sentence, then its controls, which keep their two columns at the right edge. A secondary information line does the same: its sentence, then its sender.
+- Each row holds on one level: its sentence, then its controls on the same line. Add task keeps its full label.
 - On an opened subject the list of its mails goes under the text.
 
 ## Behaviours
@@ -271,7 +271,7 @@ Each question names the option the canvas recommends first, the frames that show
 46. **One click on Add task when a day is proposed.** Settled 10 November: the click always opens the menu, with the proposed day as its first line, already selected; it never adds the task at once, since adding at once shifted the row.
 47. **Where the sender of a « No action needed » line sits.** Settled 10 November: right after the sentence (34A), not against the right edge.
 48. **Triage before any mailbox exists.** Settled 10 November: the envelope picture, « No mailbox yet », one sentence and Add mailbox. Not said: the words of the sentence.
-49. **The narrow window.** To be redone whole and made compact: the maintainer refused a command that drops under its sentence and stays at the right edge (30GN), the gap of 26V, and a search line that spends a line on the date alone. The sentences of the narrow window above stand until it is redrawn.
+49. **The narrow window.** To be redone whole and made compact: the maintainer refused a command that drops under its sentence and stays at the right edge (30GN), the gap of 26V, and a search line that spends a line on the date alone. Settled 10 November: each row holds on one level and Add task keeps its full label. Still not said: what gives way when the sentence does not fit beside the controls, and whether a secondary information line also holds on one level. The other sentences of the narrow window above stand until it is redrawn.
 50. **The icon of the problems button.** Not chosen. It must tell that something needs a look without alarming, so it is not a bell; the options are still to be drawn.
 51. **What the menu of days holds.** The spec lists Today, Tomorrow, Pick a day and No day yet; on 10 November the maintainer listed only Today, Tomorrow and « Pick a date ». Whether No day yet stays, and whether the word is day or date, awaits his word. Open 23 falls if No day yet goes.
 52. **Anytype that cannot be reached.** The maintainer said Add task disappears when Anytype is not available; the spec reads it as not connected, and keeps Add task when a connected Anytype cannot be reached for a while, the task being kept and created later. Whether Add task also disappears then awaits his word.
