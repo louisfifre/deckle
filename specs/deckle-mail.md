@@ -40,13 +40,14 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - The navigation lists Triage and Activity first, then the mailboxes, then Settings at the foot.
 - While there is no activity at all, neither by the person nor by the sorting, Activity is absent from the navigation.
 - A mailbox that has aliases is a group header: it folds and unfolds, and opens no page. Its first child is Inbox, the page of the whole mailbox; its aliases follow. The children stand one step in from the header, as Windows draws a group. A mailbox with no alias is a single item that opens its page.
-- A mailbox or an alias that has no name shows its address. One that has a name shows the name.
-- By default each alias, and the main address too, is named by the part of its address before the @, with a capital. Example: moi@ is named « Moi », facture@ « Facture ». The person can rename any of them by hand.
+- A mailbox shows the name given when it was added, or its address when it was given none. Example: a mailbox named Perso shows « Perso »; maison@exemple.fr, added without a name, shows « maison@exemple.fr ».
+- Inbox stands for the main address of the mailbox. It is not renamed.
+- By default each alias is named by the part of its address before the @, with a capital. Example: facture@ is named « Facture », shop@ « Shop ». The person can rename an alias by hand.
 - A mailbox is marked by its initial alone, drawn as a glyph like the other icons of the navigation, with no circle around it. An icon the person picks is a later step (Open 53).
-- A folded group header wears the number of subjects waiting in the mailbox, its aliases included. Unfolded, the header wears no number and its children wear theirs. Example: three subjects wait in Perso, one of them through the alias shop; folded, Perso shows 3; unfolded, shop shows 1.
+- A folded group header wears the number of subjects waiting in the mailbox, its aliases included. Unfolded, the header wears no number and its children wear theirs. Example: three subjects wait in Perso, one of them through the alias shop@; folded, Perso shows 3; unfolded, Shop shows 1.
 - An item where nothing waits shows no number. No number anywhere counts what was treated or set aside.
 - The navigation is as wide as its longest label needs, between a minimum and a maximum width. Neither value is set yet; the current design is 216 px wide. A label longer than the maximum is cut with an ellipsis before its number, so the number of an item always shows.
-- A pencil to rename shows on a mailbox or an alias when the pointer or the keyboard focus is on it.
+- A pencil to rename shows on a mailbox or an alias when the pointer or the keyboard focus is on it. Inbox shows none.
 
 ### Triage
 
@@ -70,7 +71,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 
 ### An Inbox page, an alias page
 
-- The page is titled by a breadcrumb: the mailbox, then Inbox or the name of the alias. A pencil to rename shows on the line of the name when the pointer or the keyboard focus is on it, and the address is written under it.
+- The page is titled by a breadcrumb: the mailbox, then Inbox or the name of the alias. On an alias page, a pencil to rename shows on the line of the name when the pointer or the keyboard focus is on it. The address, the main one for Inbox, is written under it.
 - A name being entered or changed is edited in place, at the size of the title, and the placeholder of an empty name fits inside the field.
 - Under the header the page is Triage kept to that mailbox or alias: its rows, then its secondary information.
 - These pages carry no option of the mailbox: the options are on its page in Settings. In the navigation, a mailbox or an alias only filters Triage.
@@ -280,3 +281,4 @@ Each question names the option the canvas recommends first, the frames that show
 55. **The cross of a « No action needed » line.** Whether each line keeps its cross, or only Done for today clears them, since it clears them all. Dismiss all depends on the answer too.
 56. **The layout of a row.** The maintainer finds the row weak and thought of moving Add task to the far left of the row. He keeps the row as written for now.
 57. **Primary buttons in a grey accent.** With the maintainer's grey accent, a primary button reads as disabled. Whether Deckle's design system draws it otherwise is not answered.
+58. **A name for the main address.** The maintainer mentioned naming the main address « Moi », from the part of moi@ before the @. The frames and the sentences above have Inbox stand for the main address, not renamed. Not confirmed: whether the main address gets a name of its own, and where it would show.
