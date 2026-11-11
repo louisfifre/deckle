@@ -127,6 +127,7 @@ public sealed partial class MailWindow
 
     private void OnRootPointerPressed(object sender, PointerRoutedEventArgs e)
     {
+        CloseSearchOverlayOnPressOutside(e);
         PointerPointProperties props = e.GetCurrentPoint(RootGrid).Properties;
         if (!props.IsXButton1Pressed) return;
         GoBack();
