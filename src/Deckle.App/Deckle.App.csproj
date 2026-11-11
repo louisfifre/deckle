@@ -255,12 +255,14 @@
   </Target>
 
   <!-- The autocorrect lexicons must sit flat under Data/ beside the executable,
-       where App.Autocorrect loads them. Transitive Content from
-       Deckle.Autocorrect lands under "Deckle.Autocorrect\Data\"
-       instead (the SDK prefixes referenced-project content with the project
-       name) and re-declaring it here loses to that copy on source-path dedup,
-       so the engine silently finds nothing and never arms. Flatten it
-       deterministically after the build instead. -->
+       where App.Autocorrect loads them. While Deckle.Autocorrect set
+       EnableMsixTooling, its transitive Content landed under
+       "Deckle.Autocorrect\Data\" instead (the packaging prefixes a library's
+       content with its project name) and re-declaring it here lost to that
+       copy on source-path dedup, so the engine silently found nothing and
+       never armed. The engine no longer sets it and its Content now arrives
+       flat on its own; this copy stays as the guarantee, so a library that
+       turns the tooling back on cannot disarm autocorrect silently. -->
   <Target Name="FlattenAutocorrectLexicons" AfterTargets="Build">
     <ItemGroup>
       <_AutocorrectLexicon Include="..\Deckle.Autocorrect\Data\**\*" Exclude="..\Deckle.Autocorrect\Data\lexicon-en.tsv.gz" />

@@ -1,31 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Autocorrect</RootNamespace>
-    <!-- WinUI XAML compilation for the module's own Settings pages, as a
-         library with its own PRI. The live engine depends on none of this. -->
-    <UseWinUI>true</UseWinUI>
-    <DefaultLanguage>en-US</DefaultLanguage>
-    <EnableMsixTooling>true</EnableMsixTooling>
+    <!-- EventSource [Event] parameters use snake_case so the ETW
+         payload keys land directly in the JSONL output and must
+         match the ETW manifest. -->
+    <NoWarn>$(NoWarn);IDE1006</NoWarn>
   </PropertyGroup>
 
+  <!-- The autocorrect logic: the keystroke tracking, the focused-surface gate,
+       the correction engine, the lexicons and domain packs, the learning
+       stores, the injection and the caret recovery, the autocorrect settings
+       and their file, and the DeckleAutocorrect event source. No XAML, no
+       UseWinUI and no project that holds XAML, so the engine, its tests and
+       its lab never run the XAML compiler on its account, and every rule here
+       is tested without a window.
+       Deckle.Autocorrect.Views presents it: the Autocorrect settings page and
+       its Lexical domains and Apps enrolled subpages. -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
-    <PackageReference Include="CommunityToolkit.Mvvm" />
-    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <!-- KeyDecoder reads the keyboard hook's KeyboardKeyEvent stream and
+         TextInjector stamps its SendInput burst with the shared injection tag. -->
     <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
-    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
-    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
-    <!-- The page's Diagnostics section reads and writes the two telemetry
-         opt-ins (TelemetrySettings). Neither Diagnostics project references
-         Deckle.Autocorrect, so these refs add no cycle. -->
-    <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
-    <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -35,20 +31,16 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Derived lexical artifacts (build-data output) ride next to the binary.
-         This Content lands flat under "Data\" in THIS project's own output, but
-         a consuming app gets it prefixed with the project name. Deckle.App
-         flattens it back with its FlattenAutocorrectLexicons target so the
-         engine finds it beside the exe. -->
+    <!-- Derived lexical artifacts (build-data output) ride next to the binary,
+         flat under "Data\" in this project's output and in every project that
+         references it (the App, the tests, the lab), where
+         AutocorrectLexiconArtifacts.DataDirectory looks. That holds because
+         this project sets no EnableMsixTooling: with it, a referencing app got
+         this Content under a folder named after the library
+         ("Deckle.Autocorrect\Data\"), the trap Deckle.Audio.csproj records
+         for portaudio. -->
     <!-- lexicon-en.tsv.gz stays in the repository as the lab's derived artifact
          but nothing in the product reads it, so it is not shipped. -->
     <Content Include="Data\**" Exclude="Data\lexicon-en.tsv.gz" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
-
-  <PropertyGroup>
-    <!-- EventSource [Event] parameters use snake_case so the ETW
-         payload keys land directly in the JSONL output and must
-         match the ETW manifest. -->
-    <NoWarn>$(NoWarn);IDE1006</NoWarn>
-  </PropertyGroup>
 </Project>
