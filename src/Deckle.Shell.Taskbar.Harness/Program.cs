@@ -12,7 +12,8 @@ using Deckle.Shell.Taskbar.Harness;
 //                                [--doc-out <file> [--bg native|transparent|black] [--bar-thickness <px>] [--tray-pitch <px>]
 //                                    [--tighten-quick-settings] [--clock-date-above-time]
 //                                    [--tighten-clock-button] [--task-button-pitch <px>]
-//                                    [--start-menu-full-height] [--start-menu-width fill|<px>]]
+//                                    [--start-menu-full-height] [--start-menu-width fill|<px>]
+//                                    [--thumbnail-box <width> <height>]]
 //
 //   Deckle.Shell.Taskbar.Harness customizer [--control <file>] [--stop-after <seconds>]
 //                                (see CustomizerCommand: the app's own wiring, no window)

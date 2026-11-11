@@ -13,20 +13,14 @@ internal static class HarnessCommand
         if (options.DocumentOut is { } documentOut)
         {
             bool startMenu = options.Target.Kind == TaskbarTargetKind.StartMenu;
-            ExplorerFunction? frameSize = null;
+            ExplorerFunction? frameSize = null, thumbnailSize = null;
             if (!startMenu && options.Customization.BarThickness is not null)
-            {
-                // The app's own lookup and cache: a first run on a build downloads its PDB.
-                FunctionLookup lookup = await ExplorerFunctionLocator.Instance.FindAsync(
-                    TaskbarDocumentBuilder.FrameSizeModule, TaskbarDocumentBuilder.FrameSizeSymbol);
-                frameSize = lookup.Function;
-                Print(frameSize is { } f
-                    ? $"lookup  {f.Module} rva 0x{f.Rva:X} prologue {Convert.ToHexString(f.Prologue)}"
-                    : $"lookup  FAILED: {lookup.Failure}");
-            }
+                frameSize = await FindAsync(TaskbarDocumentBuilder.FrameSizeModule, TaskbarDocumentBuilder.FrameSizeSymbol);
+            if (!startMenu && options.Customization.Thumbnails is not null)
+                thumbnailSize = await FindAsync(TaskbarDocumentBuilder.ThumbnailSizeModule, TaskbarDocumentBuilder.ThumbnailSizeSymbol);
             await File.WriteAllTextAsync(documentOut, startMenu
                 ? TaskbarDocumentBuilder.BuildStartMenu(options.Customization)
-                : TaskbarDocumentBuilder.Build(options.Customization, frameSize));
+                : TaskbarDocumentBuilder.Build(options.Customization, frameSize, thumbnailSize));
             Print($"doc     {(startMenu ? "start menu document" : TaskbarDocumentBuilder.Rules(options.Customization).Count + " rules")} written to {documentOut}");
             return 0;
         }
@@ -213,6 +207,16 @@ internal static class HarnessCommand
         {
             return false;
         }
+    }
+
+    // The app's own lookup and cache: a first run on a build downloads its PDB.
+    private static async Task<ExplorerFunction?> FindAsync(string module, string symbol)
+    {
+        FunctionLookup lookup = await ExplorerFunctionLocator.Instance.FindAsync(module, symbol);
+        Print(lookup.Function is { } f
+            ? $"lookup  {f.Module} rva 0x{f.Rva:X} prologue {Convert.ToHexString(f.Prologue)}"
+            : $"lookup  FAILED: {lookup.Failure}");
+        return lookup.Function;
     }
 
     internal static void Print(string line) =>

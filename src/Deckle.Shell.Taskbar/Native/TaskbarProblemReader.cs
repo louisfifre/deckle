@@ -38,6 +38,7 @@ internal static class TaskbarProblemReader
         if (wanted.TrayIconPitch is not null || wanted.TightenQuickSettings) parts.Add(TaskbarPart.CompactTray);
         if (wanted.TaskButtonPitch is not null) parts.Add(TaskbarPart.CompactTaskButtons);
         if (wanted.Clock is not null || wanted.TightenClockButton) parts.Add(TaskbarPart.CompactClock);
+        if (wanted.Thumbnails is not null) parts.Add(TaskbarPart.Thumbnails);
         if (wanted.StartMenu is { FullHeight: true }) parts.Add(TaskbarPart.StartMenuHeight);
         if (wanted.StartMenu?.Width is not null) parts.Add(TaskbarPart.StartMenuWidth);
         return parts;
@@ -46,15 +47,16 @@ internal static class TaskbarProblemReader
     /// <summary>
     /// What is wrong with the parts asked for. An unavailable process (no
     /// engine to ask) puts its parts in error; otherwise the status decides,
-    /// and no status yet says nothing. The thickness is no rule, so it has no
-    /// status line: <paramref name="barThickness"/> is what the customizer
-    /// learned of it (the function's lookup, the engine's word on the patch).
+    /// and no status yet says nothing. The thickness and the thumbnails are no
+    /// rule, so they have no status line: <paramref name="barThickness"/> and
+    /// <paramref name="thumbnails"/> are what the customizer learned of each
+    /// (the function's lookup, the engine's word on the patch).
     /// </summary>
     public static IReadOnlyDictionary<TaskbarPart, TaskbarProblem> Read(
         TaskbarCustomization wanted,
         NativeStatus? explorer, bool explorerUnavailable,
         NativeStatus? startMenu, bool startMenuUnavailable,
-        TaskbarProblem? barThickness = null)
+        TaskbarProblem? barThickness = null, TaskbarProblem? thumbnails = null)
     {
         var problems = new Dictionary<TaskbarPart, TaskbarProblem>();
         foreach (TaskbarPart part in WantedParts(wanted))
@@ -64,6 +66,8 @@ internal static class TaskbarProblemReader
         }
         if (wanted.BarThickness is not null && barThickness is { } thickness && !problems.ContainsKey(TaskbarPart.BarThickness))
             problems[TaskbarPart.BarThickness] = thickness;
+        if (wanted.Thumbnails is not null && thumbnails is { } thumbnail && !problems.ContainsKey(TaskbarPart.Thumbnails))
+            problems[TaskbarPart.Thumbnails] = thumbnail;
 
         AddFrom(problems, wanted, explorer);
         AddFrom(problems, wanted, startMenu);

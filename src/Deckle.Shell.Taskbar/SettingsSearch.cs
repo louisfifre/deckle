@@ -28,6 +28,11 @@ public static class SettingsSearch
         },
         new SettingSearchEntry
         {
+            LabelKey = "TaskbarPage_LargerThumbnailsCard",
+            Keywords = ["taskbar", "thumbnails", "previews", "hover", "size", "larger", "bigger", "width", "height"],
+        },
+        new SettingSearchEntry
+        {
             LabelKey = "TaskbarPage_ShowAllTrayIconsCard",
             Keywords = ["taskbar", "tray", "notification area", "overflow", "icons", "show all"],
         },

@@ -230,8 +230,14 @@ _Generated from `git ls-files` — do not edit by hand._
 ├── native/
 │   ├── Deckle.Shell.Taskbar.Native/
 │   │   ├── patches/
+│   │   │   ├── code_write.cpp
+│   │   │   ├── code_write.h
 │   │   │   ├── constant_return.cpp
-│   │   │   └── constant_return.h
+│   │   │   ├── constant_return.h
+│   │   │   ├── function_site.cpp
+│   │   │   ├── function_site.h
+│   │   │   ├── thumbnail_box.cpp
+│   │   │   └── thumbnail_box.h
 │   │   ├── xamldiag/
 │   │   │   ├── behaviors/
 │   │   │   │   ├── clock.cpp
@@ -2941,6 +2947,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskbarEngineHostStopTests.cs
 │   │   │   ├── TaskbarPipeServerTests.cs
 │   │   │   ├── TaskbarProblemReaderTests.cs
+│   │   │   ├── ThumbnailBoxTests.cs
 │   │   │   └── VersionedNativeCopyTests.cs
 │   │   ├── WindowsKey/
 │   │   │   ├── WindowsKeyTapDetectorTests.cs

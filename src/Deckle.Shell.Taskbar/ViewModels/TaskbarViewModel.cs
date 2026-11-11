@@ -48,6 +48,15 @@ public partial class TaskbarViewModel : ObservableObject
     public partial bool CompactClock { get; set; }
 
     [ObservableProperty]
+    public partial bool LargerThumbnails { get; set; }
+
+    [ObservableProperty]
+    public partial double ThumbnailMaxWidth { get; set; }
+
+    [ObservableProperty]
+    public partial double ThumbnailMaxHeight { get; set; }
+
+    [ObservableProperty]
     public partial bool StartMenuFullHeight { get; set; }
 
     [ObservableProperty]
@@ -87,6 +96,9 @@ public partial class TaskbarViewModel : ObservableObject
             CompactTaskButtons = settings.CompactTaskButtons;
             TaskButtonPitch = settings.TaskButtonPitch;
             CompactClock = settings.CompactClock;
+            LargerThumbnails = settings.LargerThumbnails;
+            ThumbnailMaxWidth = settings.ThumbnailMaxWidth;
+            ThumbnailMaxHeight = settings.ThumbnailMaxHeight;
             StartMenuFullHeight = settings.StartMenuFullHeight;
             StartMenuWidth = settings.StartMenuWidth;
             StartMenuCustomWidth = settings.StartMenuCustomWidth;
@@ -107,6 +119,9 @@ public partial class TaskbarViewModel : ObservableObject
     partial void OnCompactTaskButtonsChanged(bool value) => Write(settings => settings.CompactTaskButtons = value);
     partial void OnTaskButtonPitchChanged(int value) => Write(settings => settings.TaskButtonPitch = value);
     partial void OnCompactClockChanged(bool value) => Write(settings => settings.CompactClock = value);
+    partial void OnLargerThumbnailsChanged(bool value) => Write(settings => settings.LargerThumbnails = value);
+    partial void OnThumbnailMaxWidthChanged(double value) => Write(settings => settings.ThumbnailMaxWidth = value);
+    partial void OnThumbnailMaxHeightChanged(double value) => Write(settings => settings.ThumbnailMaxHeight = value);
     partial void OnStartMenuFullHeightChanged(bool value) => Write(settings => settings.StartMenuFullHeight = value);
     partial void OnStartMenuWidthChanged(StartMenuWidth value) => Write(settings => settings.StartMenuWidth = value);
     partial void OnStartMenuCustomWidthChanged(int value) => Write(settings => settings.StartMenuCustomWidth = value);

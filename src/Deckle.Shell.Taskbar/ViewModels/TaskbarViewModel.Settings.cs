@@ -66,7 +66,39 @@ public partial class TaskbarViewModel
             value => CompactClock = value,
             defaultValue: () => new TaskbarSettings().CompactClock,
             advisory: () => ProblemAdvisory(TaskbarPart.CompactClock)),
+        // A switch that unfolds the box the thumbnails grow to fit: two numbers,
+        // each a field with a slider (a size is judged by eye). A group's own card
+        // carries no advisory, so the engine's word hangs under the first child,
+        // which is on screen whenever the switch is.
+        Setting.Group(
+            "TaskbarPage_LargerThumbnailsCard",
+            () => LargerThumbnails,
+            value => LargerThumbnails = value,
+            [
+                Setting.Magnitude(
+                    "TaskbarPage_ThumbnailMaxWidthCard",
+                    () => ThumbnailMaxWidth,
+                    value => ThumbnailMaxWidth = value,
+                    new MagnitudeArgs(ThumbnailMinimumWidth, ThumbnailMaximumWidth, Unit: "px", Integer: true),
+                    defaultValue: () => new TaskbarSettings().ThumbnailMaxWidth,
+                    advisory: () => ProblemAdvisory(TaskbarPart.Thumbnails)),
+                Setting.Magnitude(
+                    "TaskbarPage_ThumbnailMaxHeightCard",
+                    () => ThumbnailMaxHeight,
+                    value => ThumbnailMaxHeight = value,
+                    new MagnitudeArgs(ThumbnailMinimumHeight, ThumbnailMaximumHeight, Unit: "px", Integer: true),
+                    defaultValue: () => new TaskbarSettings().ThumbnailMaxHeight),
+            ],
+            defaultValue: () => new TaskbarSettings().LargerThumbnails),
     ];
+
+    // The box's bounds, in effective pixels. The low ends are Explorer's own
+    // size (a box below it would shrink the thumbnails); the high ends a third
+    // of a 4K screen's width and two thirds of a 1080p one's height.
+    internal const double ThumbnailMinimumWidth = 200;
+    internal const double ThumbnailMaximumWidth = 1280;
+    internal const double ThumbnailMinimumHeight = 110;
+    internal const double ThumbnailMaximumHeight = 720;
 
     public IReadOnlyList<SettingDescriptor> TrayManifest =>
     [
@@ -199,6 +231,7 @@ public partial class TaskbarViewModel
             TaskbarPart.CompactTray => CompactTray,
             TaskbarPart.CompactTaskButtons => CompactTaskButtons,
             TaskbarPart.CompactClock => CompactClock,
+            TaskbarPart.Thumbnails => LargerThumbnails,
             TaskbarPart.StartMenuHeight => StartMenuFullHeight,
             TaskbarPart.StartMenuWidth => StartMenuWidth != StartMenuWidth.Native,
             _ => false,

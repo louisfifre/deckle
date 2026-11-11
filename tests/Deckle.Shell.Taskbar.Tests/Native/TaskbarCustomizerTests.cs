@@ -192,6 +192,64 @@ public sealed class TaskbarCustomizerTests
         Assert.Empty(customizer.Problems);
     }
 
+    private static bool HasThumbnailBox(string line)
+    {
+        using JsonDocument document = JsonDocument.Parse(line);
+        return document.RootElement.GetProperty("doc").TryGetProperty("thumbnailBox", out _);
+    }
+
+    [Fact]
+    public async Task TheThumbnailBoxGoesOutWithTheFunctionTheLookupFound()
+    {
+        _settings.LargerThumbnails = true;
+        TaskbarCustomizer customizer = Customizer();
+        await customizer.ReconcileAsync("startup");
+
+        FakeEngine explorer = Engine(TaskbarTargetKind.Explorer)!;
+        explorer.SayHello();
+
+        await WaitUntil(() => explorer.Sent.Count == 1);
+        Assert.True(HasThumbnailBox(explorer.Sent[0]));
+        Assert.False(HasConstantReturn(explorer.Sent[0]));
+        Assert.Empty(customizer.Problems);
+    }
+
+    [Fact]
+    public async Task AFunctionThisBuildNoLongerNamesLeavesTheThumbnailsNotApplied()
+    {
+        _settings.LargerThumbnails = true;
+        _frameSize = new(null, FunctionLookup.SymbolMissing);
+        TaskbarCustomizer customizer = Customizer();
+
+        await customizer.ReconcileAsync("startup");
+
+        Assert.Equal(TaskbarProblem.NotApplied, customizer.Problems[TaskbarPart.Thumbnails]);
+    }
+
+    // Each patch is told apart by its id: what the engine says of the
+    // thumbnails never lands on the thickness, nor the other way round.
+    [Fact]
+    public async Task TheEngineLeavingTheThumbnailFunctionAloneIsSaidUntilItAppliesIt()
+    {
+        _settings.LargerThumbnails = true;
+        _settings.CustomBarThickness = true;
+        TaskbarCustomizer customizer = Customizer();
+        await customizer.ReconcileAsync("startup");
+        FakeEngine explorer = Engine(TaskbarTargetKind.Explorer)!;
+        explorer.SayHello();
+        await WaitUntil(() => explorer.Sent.Count == 1);
+
+        explorer.Log("thumbnail_box_skipped", TaskbarDocumentBuilder.ThumbnailBoxId);
+        Assert.Equal(TaskbarProblem.NotApplied, Assert.Single(customizer.Problems).Value);
+        Assert.Equal(TaskbarProblem.NotApplied, customizer.Problems[TaskbarPart.Thumbnails]);
+
+        explorer.Log("thumbnail_box_failed", TaskbarDocumentBuilder.ThumbnailBoxId);
+        Assert.Equal(TaskbarProblem.Error, customizer.Problems[TaskbarPart.Thumbnails]);
+
+        explorer.Log("thumbnail_box_applied", TaskbarDocumentBuilder.ThumbnailBoxId);
+        Assert.Empty(customizer.Problems);
+    }
+
     [Fact]
     public async Task WhenNothingIsOnNoEngineIsStarted()
     {

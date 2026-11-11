@@ -9,6 +9,7 @@
 #include "xamldiag/rules/rule_document.h"
 #include "xamldiag/rules/rule_engine.h"
 #include "patches/constant_return.h"
+#include "patches/thumbnail_box.h"
 
 namespace
 {
@@ -37,13 +38,21 @@ namespace
                             SMTO_ABORTIFHUNG, 2000, &result);
     }
 
+    // Gives every patched function its own code back. Only the constant returns
+    // need the taskbar laid out again: a thumbnail is sized when it next shows.
+    size_t RestoreFunctions()
+    {
+        size_t functions = deckle::patches::RestoreAll();
+        if (functions > 0) RelayOutTaskbar();
+        if (deckle::patches::RestoreThumbnailBox()) ++functions;
+        return functions;
+    }
+
     // Restores everything the engine changed in explorer: the rule engine gives
     // back every property it holds, the patches every function's own code.
     size_t RestoreAll()
     {
-        size_t functions = deckle::patches::RestoreAll();
-        if (functions > 0) RelayOutTaskbar();
-        return functions + deckle::rules::Engine::Instance().Shutdown();
+        return RestoreFunctions() + deckle::rules::Engine::Instance().Shutdown();
     }
 
     std::wstring ReadString(json::JsonObject const& object, std::wstring_view key)
@@ -84,6 +93,7 @@ namespace
             auto document = command.GetNamedObject(L"doc");
             std::vector<std::wstring> problems;
             if (deckle::patches::Apply(deckle::patches::Parse(document, problems))) RelayOutTaskbar();
+            deckle::patches::ApplyThumbnailBox(deckle::patches::ParseThumbnailBox(document, problems));
             for (auto const& problem : problems)
                 deckle::Log(deckle::LogLevel::Warning, L"document_problem", L"Part of the settings document could not be read", { { L"problem", problem } });
             deckle::rules::Engine::Instance().Apply(deckle::rules::ParseSettingsDocument(document));
@@ -139,11 +149,13 @@ namespace
         deckle::residency::Release();
 
         // Objects this DLL created for explorer (the TAP site, the watcher)
-        // carry its code. The DLL may only go once none is alive.
+        // carry its code, and so does a function of explorer that still jumps
+        // here. The DLL may only go once none is alive and the jump is out.
         bool clear = false;
         for (int waited = 0; waited < 100; ++waited)   // 5 s
         {
-            if (winrt::get_module_lock() == 0) { clear = true; break; }
+            if (deckle::patches::ThumbnailBoxInPlace()) deckle::patches::RestoreThumbnailBox();
+            if (winrt::get_module_lock() == 0 && !deckle::patches::ThumbnailBoxInPlace()) { clear = true; break; }
             Sleep(50);
         }
 
@@ -177,9 +189,7 @@ namespace
 
         Log(LogLevel::Info, L"stopping", L"Stopping the taskbar engine", { { L"reason", std::wstring(reason) } });
 
-        size_t functions = deckle::patches::RestoreAll();
-        if (functions > 0) RelayOutTaskbar();
-        size_t restored = functions + deckle::rules::Engine::Instance().Park();
+        size_t restored = RestoreFunctions() + deckle::rules::Engine::Instance().Park();
         Log(LogLevel::Info, L"restored", L"Gave back everything the engine changed",
             { { L"parts", std::to_wstring(restored) } });
 

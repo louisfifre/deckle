@@ -194,12 +194,23 @@ internal static class TaskbarDocumentBuilder
         "?GetFrameSize@TaskbarConfiguration@implementation@Taskbar@winrt@@SANW4TaskbarSize@Shell@UI@WindowsUdk@4@@Z";
     public const string BarThicknessId = "bar.thickness";
 
+    // A hover thumbnail's size is no element of the tree either: Explorer asks
+    // this function (free, a window's size and the display's scale) and it
+    // shrinks the size into a box of 200 x 110 held in its code. The engine
+    // leads it to its own, which does the same with Deckle's box
+    // (native/.../patches/thumbnail_box.h).
+    public const string ThumbnailSizeModule = "Taskbar.View.dll";
+    public const string ThumbnailSizeSymbol =
+        "?GetScaledThumbnailSize@ThumbnailHelpers@implementation@Taskbar@winrt@@YA?AUSize@Foundation@Windows@4@U5674@M@Z";
+    public const string ThumbnailBoxId = "thumbnails.size";
+
     /// <summary>
     /// The settings document as one line of JSON, ready for NativeCommand.Apply.
-    /// <paramref name="frameSize"/> is where <see cref="FrameSizeSymbol"/> lives
-    /// in the explorer running now; without it the thickness is left out.
+    /// <paramref name="frameSize"/> and <paramref name="thumbnailSize"/> are
+    /// where <see cref="FrameSizeSymbol"/> and <see cref="ThumbnailSizeSymbol"/>
+    /// live in the explorer running now; without its function a part is left out.
     /// </summary>
-    public static string Build(TaskbarCustomization customization, ExplorerFunction? frameSize = null)
+    public static string Build(TaskbarCustomization customization, ExplorerFunction? frameSize = null, ExplorerFunction? thumbnailSize = null)
     {
         using var buffer = new MemoryStream();
         using (var writer = new Utf8JsonWriter(buffer))
@@ -211,15 +222,19 @@ internal static class TaskbarDocumentBuilder
             {
                 writer.WriteStartArray("constantReturns");
                 writer.WriteStartObject();
-                writer.WriteString("id", BarThicknessId);
-                writer.WriteString("module", function.Module);
-                writer.WriteNumber("timestamp", function.TimeDateStamp);
-                writer.WriteNumber("imageSize", function.ImageSize);
-                writer.WriteNumber("rva", function.Rva);
-                writer.WriteString("original", Convert.ToHexString(function.Prologue));
+                WriteSite(writer, BarThicknessId, function);
                 writer.WriteNumber("value", thickness);
                 writer.WriteEndObject();
                 writer.WriteEndArray();
+            }
+
+            if (customization.Thumbnails is { } box && thumbnailSize is { } sizing)
+            {
+                writer.WriteStartObject("thumbnailBox");
+                WriteSite(writer, ThumbnailBoxId, sizing);
+                writer.WriteNumber("maxWidth", box.MaxWidth);
+                writer.WriteNumber("maxHeight", box.MaxHeight);
+                writer.WriteEndObject();
             }
 
             writer.WriteStartObject("behaviors");
@@ -237,6 +252,17 @@ internal static class TaskbarDocumentBuilder
             writer.WriteEndObject();
         }
         return Encoding.UTF8.GetString(buffer.ToArray());
+    }
+
+    // The fields the engine checks before it touches a function (function_site.h).
+    private static void WriteSite(Utf8JsonWriter writer, string id, ExplorerFunction function)
+    {
+        writer.WriteString("id", id);
+        writer.WriteString("module", function.Module);
+        writer.WriteNumber("timestamp", function.TimeDateStamp);
+        writer.WriteNumber("imageSize", function.ImageSize);
+        writer.WriteNumber("rva", function.Rva);
+        writer.WriteString("original", Convert.ToHexString(function.Prologue));
     }
 
     private static void WriteRules(Utf8JsonWriter writer, IReadOnlyList<TaskbarRule> rules)
