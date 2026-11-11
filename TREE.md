@@ -2782,6 +2782,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SentenceBoundaryTests.cs
 │   │   └── SentenceRewriteTests.cs
 │   ├── Deckle.Llm.Tests/
+│   │   ├── ClaudePromptCacheTests.cs
 │   │   ├── ClaudeReasoningTests.cs
 │   │   ├── Deckle.Llm.Tests.csproj
 │   │   └── ReasoningOnTheWireTests.cs
