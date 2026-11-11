@@ -139,7 +139,7 @@ public sealed class LlmSettings
     public bool Enabled { get; set; } = true;
 
     // Per-batch rewriting during a dictation; applies the active profile to
-    // each batch, then the pasted text is the batches' rewrites in order.
+    // each batch, then the take's text is the batches' rewrites in order.
     public BatchRewriteSettings BatchRewriting { get; set; } = new();
 
     // Another profile than the active one past a given length.
