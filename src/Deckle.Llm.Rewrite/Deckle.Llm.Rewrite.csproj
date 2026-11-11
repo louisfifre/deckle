@@ -1,30 +1,22 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Llm.Rewrite</RootNamespace>
-    <UseWinUI>true</UseWinUI>
-    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.App.csproj. -->
-    <DefaultLanguage>en-US</DefaultLanguage>
-    <!-- Generates the lib's own .pri so x:Uid lookups in LlmPage / sections
-         resolve against the Deckle.Llm.Rewrite/Resources subtree. -->
-    <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
+  <!-- The rewrite logic: the LLM settings and their file, the rewrite service
+       and its deadline, the dictation batching, the diff gate and the
+       paragraph offer coordinator. No XAML, no UseWinUI and no project that
+       holds XAML, so the projects that rewrite through it (Transcription)
+       never run the XAML compiler on its account, and every rule here is
+       tested without a window. Deckle.Llm.Rewrite.Views presents it: the
+       Rewriting settings page and the paragraph offer window. -->
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
-    <PackageReference Include="CommunityToolkit.Mvvm" />
-    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
-    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\Deckle.Llm\Deckle.Llm.csproj" />
-    <!-- ISecretVault: the Providers section writes a provider's API key to
-         the vault and never to settings.json. -->
-    <ProjectReference Include="..\Deckle.Security\Deckle.Security.csproj" />
+    <!-- Loc: RewriteService's timeout notice, read from the Views assembly's
+         PRI subtree (see RewriteService.Module). -->
+    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
   </ItemGroup>
 
   <ItemGroup>
