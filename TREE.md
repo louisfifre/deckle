@@ -219,6 +219,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── inventaire-exposables.md
 │   └── transcription-audio-chain.md  — How a dictation travels from the hotkey to the clipboard — vocabulary, three di…
 ├── logo/
+│   ├── deckle-rewriting.svg
+│   ├── deckle-transcribing.svg
+│   ├── deckle.svg
+│   ├── generate.mjs
 │   ├── primary.png
 │   ├── primary.svg
 │   └── secondary.png

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 760" role="img" aria-label="Deckle, transcribing and rewriting">
+<defs>
+<linearGradient id="rest" gradientUnits="userSpaceOnUse" x1="201.5" y1="729.5" x2="730.5" y2="411.5"><stop offset="0" stop-color="#05B2FC"/><stop offset="0.25" stop-color="#1F7DFB"/><stop offset="0.5" stop-color="#4F49FB"/><stop offset="0.75" stop-color="#7137FB"/><stop offset="1" stop-color="#8A2EFB"/></linearGradient>
+<radialGradient id="ember" gradientUnits="userSpaceOnUse" cx="201.5" cy="729.5" r="720"><stop offset="0.15" stop-color="#FFC21A"/><stop offset="0.42" stop-color="#FF8A1F"/><stop offset="0.66" stop-color="#FF4D2E"/><stop offset="0.86" stop-color="#F5245E"/><stop offset="1" stop-color="#E01E8C"/></radialGradient>
+</defs>
+<path id="blade-a" d="M273.58 53.93A34 34 0 0 1 321.35 34.14L555.66 153.53A40 40 0 0 1 577.5 189.17L577.5 408A36 36 0 0 1 564.64 435.58L217.23 727.09A1.5 1.5 0 0 1 215.03 725.1L416.56 427.52A52 52 0 0 0 425.5 398.36L425.5 287.93A54 54 0 0 0 396.02 239.82L246.76 163.77A10 10 0 0 1 241.79 151.77Z" fill="url(#ember)"/>
+<path id="blade-b" d="M174.22 190.48A26 26 0 0 1 211.46 172.72L385.12 261.2A30 30 0 0 1 401.5 287.93L401.5 399.4A28 28 0 0 1 397.25 414.24L206.88 718.89A1.5 1.5 0 0 1 204.16 717.7L271.96 468.08A44 44 0 0 0 273.5 456.55L273.5 367.72A46 46 0 0 0 248.38 326.74L162.17 282.81A10 10 0 0 1 156.93 271.82Z" fill="url(#rest)"/>
+<path id="blade-c" d="M97.5 309.43A20 20 0 0 1 126.58 291.61L237.49 348.12A22 22 0 0 1 249.5 367.72L249.5 457.79A20 20 0 0 1 249.06 461.95L196.13 711A1.5 1.5 0 0 1 193.16 710.81L170.97 440.82A40 40 0 0 0 149.27 408.45L102.96 384.86A10 10 0 0 1 97.5 375.95Z" fill="url(#rest)"/>
+<path id="blade-d" d="M49.5 410.66A16 16 0 0 1 72.76 396.41L139.7 430.51A16 16 0 0 1 148.28 442.54L185.52 707.51A1.5 1.5 0 0 1 182.76 708.52L50.72 497.2A8 8 0 0 1 49.5 492.96Z" fill="url(#rest)"/>
+<path id="blade-e" d="M570.46 461.67A14 14 0 0 1 585.48 460.19L686.12 511.47A22 22 0 0 1 684.37 551.47L226.25 736.56A1.5 1.5 0 0 1 224.76 733.99Z" fill="url(#ember)"/>
+</svg>
