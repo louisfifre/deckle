@@ -1,4 +1,4 @@
-using Deckle.Catalog;
+using Deckle.Core;
 
 namespace Deckle.Settings;
 

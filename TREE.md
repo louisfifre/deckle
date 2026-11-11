@@ -1035,9 +1035,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SettingsComposer.Numeric.cs
 │   │   │   ├── SettingsPageHeader.cs
 │   │   │   └── SettingsSection.cs
-│   │   ├── Hotkeys/
-│   │   │   ├── HotkeyChord.cs
-│   │   │   └── HotkeyModifiers.cs
 │   │   ├── Themes/
 │   │   │   ├── Icons.xaml
 │   │   │   └── SettingsPageHeaderBrushes.xaml
@@ -1078,6 +1075,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Design/
 │   │   │   ├── Dpi.cs
 │   │   │   └── Spacing.cs
+│   │   ├── Hotkeys/
+│   │   │   ├── HotkeyChord.cs
+│   │   │   └── HotkeyModifiers.cs
 │   │   ├── Interop/
 │   │   │   ├── NativeMethods.Audio.cs
 │   │   │   ├── NativeMethods.cs
@@ -1691,6 +1691,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── TaskColumn.xaml
 │   │   │   │   ├── TaskColumn.xaml.cs
 │   │   │   │   └── TrashNotice.cs
+│   │   │   ├── ComponentMotion.cs
 │   │   │   ├── IMailShell.cs
 │   │   │   ├── MailText.cs
 │   │   │   ├── MailWindow.Capture.cs
@@ -2514,7 +2515,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DefaultValueTextTests.cs
 │   │   ├── DialogDefaultButtonTests.cs
 │   │   ├── GestureHoldTests.cs
-│   │   ├── HotkeyChordTests.cs
 │   │   ├── HotkeyChordTextTests.cs
 │   │   ├── MagnitudeGrainBugNotes.md
 │   │   ├── MagnitudeGrainIntegerTests.cs
@@ -2534,6 +2534,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Core.Tests/
 │   │   ├── Deckle.Core.Tests.csproj
 │   │   ├── DpiTests.cs
+│   │   ├── HotkeyChordTests.cs
 │   │   ├── JsonSettingsStoreBugNotes.md
 │   │   ├── JsonSettingsStoreTests.cs
 │   │   ├── ModuleDirectoryNameTests.cs
@@ -2787,7 +2788,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── NavigationTests.cs
 │   │   ├── SampleAndSearchTests.cs
 │   │   ├── TaskDayTests.cs
-│   │   └── TriageGestureTests.cs
+│   │   ├── TriageGestureTests.cs
+│   │   └── TypesetTests.cs
 │   ├── Deckle.Mail.Tests/
 │   │   ├── ActivityTests.cs
 │   │   ├── Deckle.Mail.Tests.csproj

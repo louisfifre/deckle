@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Deckle.Catalog;
+using Deckle.Core;
 using Xunit;
 
 namespace Deckle.Catalog.Tests;

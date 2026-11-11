@@ -1,8 +1,7 @@
 using System.Text.Json;
-using Deckle.Catalog;
 using Xunit;
 
-namespace Deckle.Catalog.Tests;
+namespace Deckle.Core.Tests;
 
 // The chord is persisted in settings.json (camelCase, like every Deckle
 // store) and gates registration through IsComplete.

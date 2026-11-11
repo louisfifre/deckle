@@ -1,4 +1,5 @@
 using Deckle.Catalog;
+using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Shell;
 using Deckle.Shell.TrayMenu;

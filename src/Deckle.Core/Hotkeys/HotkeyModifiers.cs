@@ -1,4 +1,4 @@
-namespace Deckle.Catalog;
+namespace Deckle.Core;
 
 // Modifier keys of a global hotkey chord. The bit values are the Win32
 // MOD_ALT / MOD_CONTROL / MOD_SHIFT / MOD_WIN flags of RegisterHotKey, so the

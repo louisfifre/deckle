@@ -22,5 +22,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
+    <!-- HotkeyChord and HotkeyModifiers: the hotkey card edits a chord that
+         engines persist, so the type lives in Core, which holds no XAML. -->
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,6 @@
 using System.Linq;
 using System.Text.Json;
-using Deckle.Catalog;
+using Deckle.Core;
 using Xunit;
 
 namespace Deckle.Llm.Rewrite.Tests;

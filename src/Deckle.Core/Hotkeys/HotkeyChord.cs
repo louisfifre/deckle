@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Deckle.Catalog;
+namespace Deckle.Core;
 
 // A global hotkey as the user binds it: modifiers plus one physical key.
 //

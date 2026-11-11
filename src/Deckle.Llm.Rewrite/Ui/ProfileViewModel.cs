@@ -1,6 +1,7 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Catalog;
+using Deckle.Core;
 using Microsoft.UI.Xaml.Data;
 using Deckle.Localization;
 namespace Deckle.Llm.Rewrite;
