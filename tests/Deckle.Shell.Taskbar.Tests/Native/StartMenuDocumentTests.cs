@@ -40,23 +40,6 @@ public sealed class StartMenuDocumentTests
         Assert.False(filled.TryGetProperty("width", out _));
     }
 
-    // Measured live (2026-11-10): collapsing the section's Grid holds, and the
-    // All list moves up into its place.
-    [Fact]
-    public void HidingTheRecommendedSectionCollapsesItsGrid()
-    {
-        var customization = new TaskbarCustomization { StartMenu = new StartMenuCustomization { HideRecommended = true } };
-
-        TaskbarRule rule = Assert.Single(TaskbarDocumentBuilder.StartMenuRules(customization));
-        using JsonDocument document = JsonDocument.Parse(TaskbarDocumentBuilder.BuildStartMenu(customization));
-
-        Assert.Equal(("Grid#TopLevelSuggestionsRoot", "Visibility", "Collapsed"), (rule.Target, rule.Property, rule.Value));
-        Assert.Equal(TaskbarPart.StartMenuRecommended, TaskbarProblemReader.PartOf(rule.Id));
-        JsonElement written = Assert.Single(document.RootElement.GetProperty("rules").EnumerateArray());
-        Assert.Equal(rule.Id, written.GetProperty("id").GetString());
-        Assert.Empty(document.RootElement.GetProperty("behaviors").EnumerateObject());
-    }
-
     [Fact]
     public void ANativeStartMenuBuildsAnEmptyDocumentThatRestoresEverything()
     {

@@ -42,7 +42,6 @@ public sealed class TaskbarViewModelTests : IDisposable
         settings.StartMenuFullHeight = false;
         settings.StartMenuWidth = StartMenuWidth.Native;
         settings.StartMenuCustomWidth = TaskbarCustomization.DefaultStartMenuWidth;
-        settings.HideStartMenuRecommended = false;
         settings.WindowsKeyShowsTaskbar = false;
     }
 
@@ -84,7 +83,6 @@ public sealed class TaskbarViewModelTests : IDisposable
         viewModel.CompactTaskButtons = true;
         viewModel.CompactClock = true;
         viewModel.StartMenuFullHeight = true;
-        viewModel.HideStartMenuRecommended = true;
         viewModel.WindowsKeyShowsTaskbar = true;
 
         TaskbarSettings saved = TaskbarSettingsService.Instance.Current;
@@ -94,7 +92,6 @@ public sealed class TaskbarViewModelTests : IDisposable
         Assert.True(saved.CompactTaskButtons);
         Assert.True(saved.CompactClock);
         Assert.True(saved.StartMenuFullHeight);
-        Assert.True(saved.HideStartMenuRecommended);
         Assert.True(saved.WindowsKeyShowsTaskbar);
 
         Assert.Equal(false, Card(viewModel, "TaskbarPage_ShowAllTrayIconsCard").Default!());
@@ -103,7 +100,6 @@ public sealed class TaskbarViewModelTests : IDisposable
         Assert.Equal(false, Card(viewModel, "TaskbarPage_CompactTaskButtonsCard").Default!());
         Assert.Equal(false, Card(viewModel, "TaskbarPage_CompactClockCard").Default!());
         Assert.Equal(false, Card(viewModel, "TaskbarPage_StartMenuFullHeightCard").Default!());
-        Assert.Equal(false, Card(viewModel, "TaskbarPage_HideStartMenuRecommendedCard").Default!());
         Assert.Equal(false, Card(viewModel, "TaskbarPage_WindowsKeyShowsTaskbarCard").Default!());
     }
 

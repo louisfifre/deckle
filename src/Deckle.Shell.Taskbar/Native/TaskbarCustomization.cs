@@ -87,7 +87,6 @@ internal sealed record TaskbarCustomization
         var startMenu = new StartMenuCustomization
         {
             FullHeight = settings.StartMenuFullHeight,
-            HideRecommended = settings.HideStartMenuRecommended,
             Width = settings.StartMenuWidth switch
             {
                 StartMenuWidth.Fill => StartMenuWidthRequest.Fill,
@@ -162,11 +161,8 @@ internal sealed record StartMenuCustomization
     /// <summary>The menu's width; null leaves Windows' own.</summary>
     public StartMenuWidthRequest? Width { get; init; }
 
-    /// <summary>The section of recent files and suggestions under the pinned apps is taken out.</summary>
-    public bool HideRecommended { get; init; }
-
     /// <summary>Whether this asks nothing of the Start menu.</summary>
-    public bool IsEmpty => !FullHeight && Width is null && !HideRecommended;
+    public bool IsEmpty => !FullHeight && Width is null;
 }
 
 /// <summary>

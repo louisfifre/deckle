@@ -424,6 +424,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   └── update-readme-stats.ps1  — Update the README pulse Regenerate the small "Development pulse" section in README.md from the local Gi…
 ├── specs/
 │   ├── atelier.md
+│   ├── deckle-dictation-rewriting.md
 │   └── deckle-mail.md
 ├── src/
 │   ├── Deckle.Anytype/
@@ -1531,6 +1532,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── DictationBatcher.cs
 │   │   │   ├── DictationBatchResult.cs
 │   │   │   ├── DictationBatchRewriter.cs
+│   │   │   ├── DictationDocument.cs
 │   │   │   └── SentenceBoundary.cs
 │   │   ├── Engine/
 │   │   │   ├── ParagraphRewrite.cs
@@ -1548,7 +1550,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ParagraphRewriteCoordinator.cs
 │   │   │   └── ParagraphRewriteOffer.cs
 │   │   ├── Settings/
-│   │   │   └── RewriteAvailability.cs
+│   │   │   ├── RewriteAvailability.cs
+│   │   │   └── StepTimelineLayout.cs
 │   │   ├── Deckle.Llm.Rewrite.csproj
 │   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite vocabulary. It draws the Correction / Rewrite boundary, which decides w…
 │   │   ├── LlmResetDefaults.cs
@@ -1560,14 +1563,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
-│   │   │   ├── LlmDictationViewModel.cs
-│   │   │   ├── LlmDictationViewModel.Settings.cs
 │   │   │   ├── LlmGeneralViewModel.cs
 │   │   │   └── LlmGeneralViewModel.Settings.cs
 │   │   ├── BoolToVisibilityConverter.cs
 │   │   ├── Deckle.Llm.Rewrite.Views.csproj
-│   │   ├── LlmActiveProfileSection.xaml
-│   │   ├── LlmActiveProfileSection.xaml.cs
 │   │   ├── LlmDictationSection.xaml
 │   │   ├── LlmDictationSection.xaml.cs
 │   │   ├── LlmGeneralSection.xaml
@@ -1589,6 +1588,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteChangeView.cs
 │   │   ├── RewriteOfferWindow.xaml
 │   │   ├── RewriteOfferWindow.xaml.cs
+│   │   ├── RewriteStepTimeline.cs
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Localization/
 │   │   ├── Deckle.Localization.csproj
@@ -2774,6 +2774,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
 │   │   ├── DictationBatcherTests.cs
 │   │   ├── DictationBatchRewriterTests.cs
+│   │   ├── DictationStepsMigrationTests.cs
 │   │   ├── LlmResetDefaultsTests.cs
 │   │   ├── LlmSettingsBugNotes.md
 │   │   ├── LlmSettingsFileTests.cs
@@ -2790,7 +2791,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteServiceCacheTests.cs
 │   │   ├── RewriteServiceFeedbackTests.cs
 │   │   ├── SentenceBoundaryTests.cs
-│   │   └── SentenceRewriteTests.cs
+│   │   ├── SentenceRewriteTests.cs
+│   │   └── StepTimelineLayoutTests.cs
 │   ├── Deckle.Llm.Tests/
 │   │   ├── ClaudePromptCacheTests.cs
 │   │   ├── ClaudeReasoningTests.cs
@@ -3020,7 +3022,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs
 │   │   ├── FileTranscriptionResultTests.cs
-│   │   ├── LengthStepBatchRewriteTests.cs
 │   │   ├── LiveTranscriptionPipelineTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
@@ -3034,6 +3035,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteProfileSelectionTests.cs
 │   │   ├── SegmentedTranscriptionSessionTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
+│   │   ├── StreamingStepsRewriteTests.cs
 │   │   ├── TakeAudioRecoveryBugNotes.md
 │   │   ├── TakeAudioRecoveryEngineTests.cs
 │   │   ├── TakeAudioRecoveryStoreTests.cs

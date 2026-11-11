@@ -48,11 +48,6 @@ public static class SettingsSearch
         },
         new SettingSearchEntry
         {
-            LabelKey = "TaskbarPage_HideStartMenuRecommendedCard",
-            Keywords = ["start", "start menu", "recommended", "recent", "recent files", "suggestions", "hide"],
-        },
-        new SettingSearchEntry
-        {
             LabelKey = "TaskbarPage_WindowsKeyShowsTaskbarCard",
             Keywords = ["windows key", "win key", "start", "start menu", "taskbar", "focus", "game", "fullscreen", "shortcut"],
         },
