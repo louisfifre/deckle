@@ -81,4 +81,34 @@ public sealed class ThumbnailBoxTests
 
         Assert.Empty(TaskbarProblemReader.Read(asked, null, false, null, false, barThickness: TaskbarProblem.Error));
     }
+
+    // Explorer caps the width of a thumbnail's view on its own: without this
+    // rule a thumbnail grown past that cap is cut on the right.
+    [Fact]
+    public void TheViewsOwnWidthCapIsLiftedOnlyWhileTheThumbnailsGrow()
+    {
+        var asked = new TaskbarCustomization { Thumbnails = new ThumbnailBox(650, 330) };
+
+        TaskbarRule rule = Assert.Single(TaskbarDocumentBuilder.Rules(asked));
+        Assert.Equal(TaskbarDocumentBuilder.ThumbnailViewMaxWidthId, rule.Id);
+        Assert.Equal("Taskbar.TaskItemThumbnailView", rule.Target);
+        Assert.Equal("MaxWidth", rule.Property);
+        Assert.True(double.Parse(rule.Value, System.Globalization.CultureInfo.InvariantCulture) > 650);
+
+        Assert.Empty(TaskbarDocumentBuilder.Rules(new TaskbarCustomization()));
+    }
+
+    // A thumbnail's view exists only while a thumbnail shows: the rule finding
+    // none says nothing, but its failing is the thumbnails' problem.
+    [Fact]
+    public void TheWidthRuleFindingNoViewSaysNothingButItsFailingDoes()
+    {
+        var asked = new TaskbarCustomization { Thumbnails = new ThumbnailBox(650, 330) };
+        static NativeStatus Status(string state) =>
+            new(1, true, [new NativeRuleState(TaskbarDocumentBuilder.ThumbnailViewMaxWidthId, state, 1, 1, 0, 0, "")], [], []);
+
+        Assert.Empty(TaskbarProblemReader.Read(asked, Status("never_matched"), false, null, false));
+        Assert.Equal(TaskbarProblem.Contested,
+            TaskbarProblemReader.Read(asked, Status("contested"), false, null, false)[TaskbarPart.Thumbnails]);
+    }
 }
