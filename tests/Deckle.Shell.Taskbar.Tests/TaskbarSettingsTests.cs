@@ -24,7 +24,6 @@ public sealed class TaskbarSettingsTests
             Assert.False(settings.CompactTaskButtons);
             Assert.False(settings.CompactClock);
             Assert.False(settings.StartMenuFullHeight);
-            Assert.False(settings.HideStartMenuRecommended);
             Assert.False(settings.WindowsKeyShowsTaskbar);
         }
     }

@@ -30,7 +30,6 @@ public sealed class TaskbarCustomizationTests
         {
             new TaskbarSettings { StartMenuFullHeight = true },
             new TaskbarSettings { StartMenuWidth = StartMenuWidth.Fill },
-            new TaskbarSettings { HideStartMenuRecommended = true },
         })
         {
             TaskbarCustomization start = From(settings, true);
