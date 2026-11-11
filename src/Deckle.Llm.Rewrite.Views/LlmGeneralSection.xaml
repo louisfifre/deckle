@@ -1,5 +1,5 @@
 <UserControl
-    x:Class="Deckle.Llm.Rewrite.LlmGeneralSection"
+    x:Class="Deckle.Llm.Rewrite.Views.LlmGeneralSection"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 

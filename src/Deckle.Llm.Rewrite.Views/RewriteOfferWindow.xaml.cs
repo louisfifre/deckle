@@ -8,7 +8,7 @@ using WinRT.Interop;
 using Windows.Graphics;
 using Deckle.Localization;
 
-namespace Deckle.Llm.Rewrite;
+namespace Deckle.Llm.Rewrite.Views;
 
 // Interactive transient: shown without activation so typing stays in the
 // target, but intentionally activatable when selected so its native Buttons,
@@ -27,7 +27,7 @@ public sealed partial class RewriteOfferWindow : Window
         InitializeComponent();
         _hwnd = WindowNative.GetWindowHandle(this);
 
-        Title = Loc.GetFrom("Deckle.Llm.Rewrite", "RewriteOffer_WindowTitle");
+        Title = Loc.GetFrom("Deckle.Llm.Rewrite.Views", "RewriteOffer_WindowTitle");
         SystemBackdrop = new DesktopAcrylicBackdrop();
 
         var presenter = OverlappedPresenter.Create();

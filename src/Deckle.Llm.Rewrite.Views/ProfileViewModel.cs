@@ -4,7 +4,7 @@ using Deckle.Catalog;
 using Deckle.Core;
 using Microsoft.UI.Xaml.Data;
 using Deckle.Localization;
-namespace Deckle.Llm.Rewrite;
+namespace Deckle.Llm.Rewrite.Views;
 
 // Auto-saves on every change; there is no Save/Cancel surface.
 //

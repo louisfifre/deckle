@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Deckle.Catalog;
 
-namespace Deckle.Llm.Rewrite;
+namespace Deckle.Llm.Rewrite.Views;
 
 // ── SettingsSearch — LlmPage's search contribution ────────────────────────────
 //

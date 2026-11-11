@@ -8,7 +8,7 @@ using Deckle.Llm;
 using Deckle.Catalog;
 using Deckle.Localization;
 
-namespace Deckle.Llm.Rewrite;
+namespace Deckle.Llm.Rewrite.Views;
 
 // ─── LlmPage Models section ────────────────────────────────────────────────
 //

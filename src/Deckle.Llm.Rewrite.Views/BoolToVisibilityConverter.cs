@@ -2,7 +2,7 @@ using System;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Data;
 
-namespace Deckle.Llm.Rewrite;
+namespace Deckle.Llm.Rewrite.Views;
 
 // ── bool → Visibility ────────────────────────────────────────────────────────
 //

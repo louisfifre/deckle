@@ -1,11 +1,11 @@
 using System.Globalization;
 using Deckle.Localization;
 
-namespace Deckle.Llm.Rewrite;
+namespace Deckle.Llm.Rewrite.Views;
 
 public sealed record RewriteChangeView(string Original, string Rewritten)
 {
-    private const string ResourceMap = "Deckle.Llm.Rewrite";
+    private const string ResourceMap = "Deckle.Llm.Rewrite.Views";
 
     public string OriginalDisplay => string.IsNullOrEmpty(Original)
         ? Loc.GetFrom(ResourceMap, "RewriteOffer_Added")

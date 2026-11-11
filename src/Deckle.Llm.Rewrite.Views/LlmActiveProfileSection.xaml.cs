@@ -9,7 +9,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Deckle.Localization;
 
-namespace Deckle.Llm.Rewrite;
+namespace Deckle.Llm.Rewrite.Views;
 
 // ─── Dictation section of LlmPage: the profile a dictation takes ───────────
 //
@@ -32,7 +32,7 @@ public sealed partial class LlmActiveProfileSection : UserControl
     // minutes, the length past which a dictation starts reading as a text.
     private const int FirstStepChars = 2000;
 
-    private const string Module = "Deckle.Llm.Rewrite";
+    private const string Module = "Deckle.Llm.Rewrite.Views";
 
     private bool _loading;
 

@@ -12,7 +12,7 @@ using Deckle.Catalog;
 using Deckle.Llm;
 using Deckle.Localization;
 
-namespace Deckle.Llm.Rewrite;
+namespace Deckle.Llm.Rewrite.Views;
 
 public sealed partial class LlmProfilesSection : UserControl
 {
@@ -234,7 +234,7 @@ public sealed partial class LlmProfilesSection : UserControl
         return other is null
             ? null
             : string.Format(
-                Loc.GetFrom("Deckle.Llm.Rewrite", "LlmProfile_HotkeyUsedByProfile_Format"),
+                Loc.GetFrom("Deckle.Llm.Rewrite.Views", "LlmProfile_HotkeyUsedByProfile_Format"),
                 other.Name);
     }
 

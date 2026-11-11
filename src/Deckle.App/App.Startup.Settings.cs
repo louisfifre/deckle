@@ -154,7 +154,7 @@ public partial class App
                 Transcription.SettingsSearch.TelemetryEntries);
         }
         if (context.RewritePresent)
-            RegisterSettingsModule(Llm.Rewrite.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.SettingsSearch.Entries);
+            RegisterSettingsModule(Llm.Rewrite.Views.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.Views.SettingsSearch.Entries);
         if (context.AutocorrectPresent)
         {
             // Each page of the family registers on its own: the search index

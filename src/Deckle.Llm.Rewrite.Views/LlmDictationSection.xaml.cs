@@ -1,7 +1,7 @@
 using Microsoft.UI.Xaml.Controls;
 using Deckle.Catalog;
 
-namespace Deckle.Llm.Rewrite;
+namespace Deckle.Llm.Rewrite.Views;
 
 // ─── LlmPage "While you dictate" section ───────────────────────────────────
 //

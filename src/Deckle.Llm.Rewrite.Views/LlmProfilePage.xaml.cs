@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Localization;
 
-namespace Deckle.Llm.Rewrite;
+namespace Deckle.Llm.Rewrite.Views;
 
 // What the Profiles section hands its subpage: the profile to edit and the
 // section that owns the list, the provider choices and the model names. The
@@ -71,7 +71,7 @@ public sealed partial class LlmProfilePage : Page
     // profile without a name yet still needs a last segment to read.
     private void ShowName() =>
         Header.Title = string.IsNullOrWhiteSpace(Profile.Name)
-            ? Loc.GetFrom("Deckle.Llm.Rewrite", "LlmProfilePage_UntitledTitle")
+            ? Loc.GetFrom("Deckle.Llm.Rewrite.Views", "LlmProfilePage_UntitledTitle")
             : Profile.Name.Trim();
 
     // The reasoning level and the shortcut, composed by the section (it knows

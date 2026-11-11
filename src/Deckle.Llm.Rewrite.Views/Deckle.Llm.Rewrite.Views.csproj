@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Llm.Rewrite.Views</RootNamespace>
+    <UseWinUI>true</UseWinUI>
+    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.App.csproj. -->
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <!-- Generates the lib's own .pri so x:Uid lookups in LlmPage, its sections,
+         LlmProfilePage and RewriteOfferWindow, the composed cards
+         (SettingsComposer reads the view model's assembly) and Loc.GetFrom
+         resolve against the Deckle.Llm.Rewrite.Views/Resources subtree
+         (Strings/en-US/Resources.resw). The engine's own code-side strings
+         (RewriteService's timeout notice) live in that subtree too. -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+  </PropertyGroup>
+
+  <!-- The Rewriting settings page, its sections and its profile subpage, their
+       view models, the paragraph offer window, and the strings they read.
+       Dependencies point one way: this project reads Deckle.Llm.Rewrite, which
+       holds no XAML and knows nothing of it, so the engines that rewrite
+       through it (Transcription) never run the XAML compiler on its
+       account. -->
+  <ItemGroup>
+    <!-- One WinAppSDK runtime per process: never override the central version. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Llm.Rewrite\Deckle.Llm.Rewrite.csproj" />
+    <ProjectReference Include="..\Deckle.Llm\Deckle.Llm.csproj" />
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
+    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <!-- ISecretVault: the Providers section writes a provider's API key to
+         the vault and never to settings.json. -->
+    <ProjectReference Include="..\Deckle.Security\Deckle.Security.csproj" />
+  </ItemGroup>
+</Project>

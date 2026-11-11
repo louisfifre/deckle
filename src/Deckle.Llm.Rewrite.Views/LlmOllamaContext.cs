@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Deckle.Llm;
 
-namespace Deckle.Llm.Rewrite;
+namespace Deckle.Llm.Rewrite.Views;
 
 // ─── Shared Ollama state across LlmPage subsections ─────────────────────────
 //

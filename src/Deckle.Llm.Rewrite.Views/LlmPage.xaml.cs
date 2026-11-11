@@ -13,7 +13,7 @@ using Deckle.Llm;
 using Deckle.Security;
 using Deckle.Localization;
 
-namespace Deckle.Llm.Rewrite;
+namespace Deckle.Llm.Rewrite.Views;
 
 // ─── LlmPage — thin host ───────────────────────────────────────────────────
 //

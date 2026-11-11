@@ -1538,45 +1538,46 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ParagraphRewriteOffer.cs
 │   │   ├── Settings/
 │   │   │   └── RewriteAvailability.cs
+│   │   ├── Deckle.Llm.Rewrite.csproj
+│   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite vocabulary. It draws the Correction / Rewrite boundary, which decides w…
+│   │   ├── LlmResetDefaults.cs
+│   │   ├── LlmSettings.cs
+│   │   ├── LlmSettingsNormalizer.cs
+│   │   └── LlmSettingsService.cs
+│   ├── Deckle.Llm.Rewrite.Views/
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
-│   │   ├── Ui/
-│   │   │   ├── BoolToVisibilityConverter.cs
-│   │   │   ├── LlmActiveProfileSection.xaml
-│   │   │   ├── LlmActiveProfileSection.xaml.cs
-│   │   │   ├── LlmDictationSection.xaml
-│   │   │   ├── LlmDictationSection.xaml.cs
-│   │   │   ├── LlmGeneralSection.xaml
-│   │   │   ├── LlmGeneralSection.xaml.cs
-│   │   │   ├── LlmModelsSection.xaml
-│   │   │   ├── LlmModelsSection.xaml.cs
-│   │   │   ├── LlmOllamaContext.cs
-│   │   │   ├── LlmPage.xaml
-│   │   │   ├── LlmPage.xaml.cs
-│   │   │   ├── LlmProfilePage.xaml
-│   │   │   ├── LlmProfilePage.xaml.cs
-│   │   │   ├── LlmProfilesSection.xaml
-│   │   │   ├── LlmProfilesSection.xaml.cs
-│   │   │   ├── LlmProvidersSection.xaml
-│   │   │   ├── LlmProvidersSection.xaml.cs
-│   │   │   ├── ProfileViewModel.cs
-│   │   │   ├── ProviderViewModel.cs
-│   │   │   ├── RewriteChangeView.cs
-│   │   │   ├── RewriteOfferWindow.xaml
-│   │   │   └── RewriteOfferWindow.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   ├── LlmDictationViewModel.cs
 │   │   │   ├── LlmDictationViewModel.Settings.cs
 │   │   │   ├── LlmGeneralViewModel.cs
 │   │   │   └── LlmGeneralViewModel.Settings.cs
-│   │   ├── Deckle.Llm.Rewrite.csproj
-│   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite vocabulary. It draws the Correction / Rewrite boundary, which decides w…
-│   │   ├── LlmResetDefaults.cs
-│   │   ├── LlmSettings.cs
+│   │   ├── BoolToVisibilityConverter.cs
+│   │   ├── Deckle.Llm.Rewrite.Views.csproj
+│   │   ├── LlmActiveProfileSection.xaml
+│   │   ├── LlmActiveProfileSection.xaml.cs
+│   │   ├── LlmDictationSection.xaml
+│   │   ├── LlmDictationSection.xaml.cs
+│   │   ├── LlmGeneralSection.xaml
+│   │   ├── LlmGeneralSection.xaml.cs
+│   │   ├── LlmModelsSection.xaml
+│   │   ├── LlmModelsSection.xaml.cs
+│   │   ├── LlmOllamaContext.cs
+│   │   ├── LlmPage.xaml
+│   │   ├── LlmPage.xaml.cs
+│   │   ├── LlmProfilePage.xaml
+│   │   ├── LlmProfilePage.xaml.cs
+│   │   ├── LlmProfilesSection.xaml
+│   │   ├── LlmProfilesSection.xaml.cs
+│   │   ├── LlmProvidersSection.xaml
+│   │   ├── LlmProvidersSection.xaml.cs
 │   │   ├── LlmSettingsModule.cs
-│   │   ├── LlmSettingsNormalizer.cs
-│   │   ├── LlmSettingsService.cs
+│   │   ├── ProfileViewModel.cs
+│   │   ├── ProviderViewModel.cs
+│   │   ├── RewriteChangeView.cs
+│   │   ├── RewriteOfferWindow.xaml
+│   │   ├── RewriteOfferWindow.xaml.cs
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Localization/
 │   │   ├── Deckle.Localization.csproj

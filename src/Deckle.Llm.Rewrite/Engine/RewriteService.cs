@@ -27,8 +27,11 @@ public interface IRewriteService
 
 public class RewriteService : IRewriteService
 {
-    // The module's own resource subtree, where its code-side strings live.
-    private const string Module = "Deckle.Llm.Rewrite";
+    // The resource subtree that holds these strings. The engine compiles no
+    // .resw: its strings ship with the project that presents it,
+    // Deckle.Llm.Rewrite.Views, so this names that assembly's PRI subtree. A
+    // string, not a project reference: the engine never loads the Views.
+    private const string Module = "Deckle.Llm.Rewrite.Views";
 
     readonly IGenerationEngineResolver _engines;
     readonly Func<string, LlmProvider?> _findProvider;

@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Llm;
 using Deckle.Localization;
 
-namespace Deckle.Llm.Rewrite;
+namespace Deckle.Llm.Rewrite.Views;
 
 // One provider card of the Providers section. Auto-saves on every change like
 // ProfileViewModel; the API key never passes through here, the section writes

@@ -201,6 +201,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Audio.Views", "src\D
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Audio.Views.Tests", "tests\Deckle.Audio.Views.Tests\Deckle.Audio.Views.Tests.csproj", "{DEC50C50-0A48-474F-BC91-FBD3030ABF59}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Llm.Rewrite.Views", "src\Deckle.Llm.Rewrite.Views\Deckle.Llm.Rewrite.Views.csproj", "{705118A5-9B05-4B87-81B1-A6AC058CF80F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1375,6 +1377,18 @@ Global
 		{DEC50C50-0A48-474F-BC91-FBD3030ABF59}.Release|x64.Build.0 = Release|x64
 		{DEC50C50-0A48-474F-BC91-FBD3030ABF59}.Release|x86.ActiveCfg = Release|x64
 		{DEC50C50-0A48-474F-BC91-FBD3030ABF59}.Release|x86.Build.0 = Release|x64
+		{705118A5-9B05-4B87-81B1-A6AC058CF80F}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{705118A5-9B05-4B87-81B1-A6AC058CF80F}.Debug|Any CPU.Build.0 = Debug|x64
+		{705118A5-9B05-4B87-81B1-A6AC058CF80F}.Debug|x64.ActiveCfg = Debug|x64
+		{705118A5-9B05-4B87-81B1-A6AC058CF80F}.Debug|x64.Build.0 = Debug|x64
+		{705118A5-9B05-4B87-81B1-A6AC058CF80F}.Debug|x86.ActiveCfg = Debug|x64
+		{705118A5-9B05-4B87-81B1-A6AC058CF80F}.Debug|x86.Build.0 = Debug|x64
+		{705118A5-9B05-4B87-81B1-A6AC058CF80F}.Release|Any CPU.ActiveCfg = Release|x64
+		{705118A5-9B05-4B87-81B1-A6AC058CF80F}.Release|Any CPU.Build.0 = Release|x64
+		{705118A5-9B05-4B87-81B1-A6AC058CF80F}.Release|x64.ActiveCfg = Release|x64
+		{705118A5-9B05-4B87-81B1-A6AC058CF80F}.Release|x64.Build.0 = Release|x64
+		{705118A5-9B05-4B87-81B1-A6AC058CF80F}.Release|x86.ActiveCfg = Release|x64
+		{705118A5-9B05-4B87-81B1-A6AC058CF80F}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1477,5 +1491,6 @@ Global
 		{A69D4479-CA9B-498B-BBDE-0020B1570DA2} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{9198479E-5685-4FE8-B7B7-C00A485A5710} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{DEC50C50-0A48-474F-BC91-FBD3030ABF59} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{705118A5-9B05-4B87-81B1-A6AC058CF80F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

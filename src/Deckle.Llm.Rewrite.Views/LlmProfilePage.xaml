@@ -1,9 +1,9 @@
 <Page
-    x:Class="Deckle.Llm.Rewrite.LlmProfilePage"
+    x:Class="Deckle.Llm.Rewrite.Views.LlmProfilePage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:vm="using:Deckle.Llm.Rewrite"
+    xmlns:vm="using:Deckle.Llm.Rewrite.Views"
     xmlns:catalog="using:Deckle.Catalog">
 
     <Page.Resources>
