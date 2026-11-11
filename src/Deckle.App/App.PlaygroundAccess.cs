@@ -27,10 +27,12 @@ public partial class App
     {
         _trayPlaygroundShown = PlaygroundEnabled;
         return TrayRightClickMenu.Compose(
+            AtelierPresent,
             _trayPlaygroundShown,
             key => Loc.Get(key),
             () => ShowLogWindowLazy(),
             () => ShowSettingsWindowLazy(),
+            () => ShowAtelierWindowLazy(),
             () => ShowPlaygroundLazy(),
             () => ShowMailLazy(),
             () => RestartAppFromTray(),

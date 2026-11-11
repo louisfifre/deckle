@@ -45,7 +45,8 @@ public partial class App
         "module registry and presence flags (a fresh root has no choice, so every module is present)",
         "settings surface: host hooks and every module's pages and search entries, as the resident app registers them",
         "theme from the settings of the run's own root",
-        "windows: Settings, Log, Playground, Mail, created by the same lazy paths the tray uses",
+        "windows: Settings, Log, Playground, Mail, Atelier, created by the same lazy paths the tray uses",
+        "atelier: a sample folder generated under the run's own root, added as the picker adds one",
         "microphone: one shared open and close through MicrophoneCapture.Probe",
         "interface capture: the walk and the WindowSnapshot of the interface capture",
     ];
@@ -304,6 +305,9 @@ public partial class App
                 Step($"mail/{visit.Slug} done");
             },
             starting: (slug, label) => Step($"mail/{slug} ({label})"));
+
+        Step("atelier");
+        await WalkAtelierAsync(report, run, outputFolder, Step);
 
         run.Complete();
         Settings.SettingsService.Instance.Flush();

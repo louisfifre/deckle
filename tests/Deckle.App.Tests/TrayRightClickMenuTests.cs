@@ -3,14 +3,16 @@ using Xunit;
 
 namespace Deckle.App.Tests;
 
-// The right-click tray menu and its developer entries: the Playground and the
-// Deckle Mail preview show only when the developer setting is on.
+// The right-click tray menu and its conditional entries: the Atelier shows
+// only while its module is present, the Playground and the Deckle Mail preview
+// only while the developer setting is on.
 [Trait("Category", "unit")]
 public sealed class TrayRightClickMenuTests
 {
-    private static IReadOnlyList<TrayMenuEntry> Compose(bool showDeveloperSurfaces)
+    private static IReadOnlyList<TrayMenuEntry> Compose(bool showDeveloperSurfaces, bool showAtelier = false)
         => TrayRightClickMenu.Compose(
-            showDeveloperSurfaces, key => key, () => { }, () => { }, () => { }, () => { }, () => { }, () => { });
+            showAtelier, showDeveloperSurfaces, key => key,
+            () => { }, () => { }, () => { }, () => { }, () => { }, () => { }, () => { });
 
     private static IEnumerable<string> CommandIds(IReadOnlyList<TrayMenuEntry> entries)
         => entries.OfType<TrayMenuCommand>().Select(c => c.Id);
@@ -35,11 +37,29 @@ public sealed class TrayRightClickMenuTests
     {
         bool opened = false;
         IReadOnlyList<TrayMenuEntry> entries = TrayRightClickMenu.Compose(
-            true, key => key, () => { }, () => { }, () => { }, () => opened = true, () => { }, () => { });
+            false, true, key => key,
+            () => { }, () => { }, () => { }, () => { }, () => opened = true, () => { }, () => { });
 
         entries.OfType<TrayMenuCommand>().Single(c => c.Id == TrayRightClickMenu.MailId).Invoke();
 
         Assert.True(opened);
+    }
+
+    [Fact]
+    public void TheAtelierEntryComesAfterSettingsWhenItsModuleIsPresent()
+    {
+        Assert.Equal(
+            ["logs", "settings", "atelier", "playground", "mail", "restart", "quit"],
+            CommandIds(Compose(true, showAtelier: true)));
+        Assert.DoesNotContain(TrayRightClickMenu.AtelierId, CommandIds(Compose(true, showAtelier: false)));
+    }
+
+    [Fact]
+    public void TheAtelierEntryFollowsItsModuleAndNotTheDeveloperSetting()
+    {
+        Assert.Equal(
+            ["logs", "settings", "atelier", "restart", "quit"],
+            CommandIds(Compose(false, showAtelier: true)));
     }
 
     [Fact]

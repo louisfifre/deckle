@@ -70,6 +70,7 @@ public class SelfCheckTests
         report.Surfaces.Add(new SelfCheckSurface("log", null, null, true, 400, @"captures\log.png"));
         report.Surfaces.Add(new SelfCheckSurface("playground", null, null, true, 400, @"captures\playground.png"));
         report.Surfaces.Add(new SelfCheckSurface("mail", "triage", "Triage", true, 300, @"captures\mail-triage.png"));
+        report.Surfaces.Add(new SelfCheckSurface("atelier", "files", null, true, 400, @"captures\atelier-files.png"));
         report.Microphone = new SelfCheckMicrophone(SelfCheckMicrophone.Ok, null, "OK", "0");
         return report;
     }
@@ -158,6 +159,7 @@ public class SelfCheckTests
     [InlineData("log")]
     [InlineData("playground")]
     [InlineData("mail")]
+    [InlineData("atelier")]
     [Trait("Category", "unit")]
     public void Verdict_FailsWhenARequiredWindowWasNeverWalked(string window)
     {
@@ -237,7 +239,7 @@ public class SelfCheckTests
         SelfCheckReport? read = SelfCheckReport.Parse(report.ToJson());
 
         Assert.NotNull(read);
-        Assert.Equal(4, read.Surfaces.Count);
+        Assert.Equal(5, read.Surfaces.Count);
         Assert.Equal("passed", read.Outcome);
         Assert.Equal("settings/home", read.Current);
     }

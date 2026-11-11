@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>12.10 Grand graphe, 3D (plus tard)</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="ds/deckle/tokens.css">
+<link rel="stylesheet" href="ds/deckle/components/bundle.css">
+<script src="ds/deckle/components/bundle.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+.w{width:1280px;height:800px;box-sizing:border-box;display:flex;flex-direction:column;background:var(--bg-base);color:var(--text-primary);font-family:var(--font-text);font-size:14px;line-height:20px;overflow:hidden;border:1px solid var(--surface-stroke);border-radius:8px;position:relative}
+.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.25px;stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}
+.g10{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:1px;flex:none;display:block}
+.top{height:48px;display:flex;align-items:center;gap:2px;padding-left:4px;flex:none}
+.pb{width:40px;height:36px;border:0;border-radius:4px;background:transparent;color:var(--text-primary);display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.pb.on{background:var(--subtle-bg-hover)}
+.appn{font-family:var(--font-small);font-size:12px;line-height:16px;margin-right:10px;white-space:nowrap}
+.addr{flex:1;min-width:0;height:32px;box-sizing:border-box;display:flex;align-items:center;padding:0 4px 0 2px;margin:0 6px;border:1px solid var(--control-stroke);border-bottom-color:var(--control-stroke-secondary);background:var(--control-bg);border-radius:4px;overflow:hidden}
+.fi{width:28px;height:24px;border:0;border-radius:4px;background:transparent;display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.sg{height:24px;display:inline-flex;align-items:center;gap:6px;padding:0 6px;border:0;border-radius:4px;background:transparent;color:var(--text-primary);font:inherit;white-space:nowrap}
+.sv{width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:4px;background:transparent;color:var(--text-secondary);padding:0;flex:none}
+.tg{display:flex;gap:2px;margin-right:6px}
+.tl{height:32px;min-width:32px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 8px;border:0;border-radius:4px;background:transparent;color:var(--text-primary);font:inherit;box-sizing:border-box}
+.tl.on{background:var(--accent);color:var(--text-on-accent);padding:0 12px 0 10px}
+.cap{display:flex;align-self:flex-start;margin-left:6px}
+.cb{height:48px}
+.bd{flex:1;display:flex;min-height:0}
+.lay{flex:1;display:flex;min-height:0;min-width:0;background:var(--bg-layer);border-top:1px solid var(--card-stroke);border-left:1px solid var(--card-stroke);border-top-left-radius:8px}
+.mn{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+.ch{height:52px;display:flex;align-items:center;gap:8px;padding:0 16px;flex:none}
+.pn{width:320px;flex:none;border-left:1px solid var(--divider);display:flex;flex-direction:column;overflow:hidden}
+.ph{padding:16px 16px 12px;display:flex;flex-direction:column;gap:2px}
+.pt{font-family:var(--font-display);font-size:20px;line-height:28px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ps{border-top:1px solid var(--divider);padding:16px 16px 12px;display:flex;flex-direction:column;gap:8px}
+.h2{font-weight:600}
+.h3{font-family:var(--font-small);font-size:12px;line-height:16px;font-weight:600}
+.kv{display:grid;grid-template-columns:88px minmax(0,1fr);gap:4px 12px}
+.c{font-family:var(--font-small);font-size:12px;line-height:16px}
+.t2{color:var(--text-secondary)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.rail{width:48px;flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0 8px;box-sizing:border-box}
+.ri{width:40px;height:36px;border:0;border-radius:4px;background:transparent;color:var(--text-primary);display:flex;align-items:center;justify-content:center;position:relative;padding:0}
+.ri.on{background:var(--subtle-bg-hover)}
+.ri.on::before{content:"";position:absolute;left:0;top:10px;width:3px;height:16px;border-radius:2px;background:var(--accent)}
+.fs{position:relative;display:flex;align-items:center;justify-content:center;flex:none;color:var(--text-on-accent)}
+.fs .sh{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+.gl{position:relative;fill:none;stroke:currentColor;stroke-width:1.5px;stroke-linecap:round;stroke-linejoin:round;display:block;flex:none}
+.ov{position:absolute;left:0;top:49px;bottom:0;width:280px;box-sizing:border-box;padding:4px 4px 8px;display:flex;flex-direction:column;gap:2px;background:var(--bg-flyout);border-top:1px solid var(--surface-stroke);border-right:1px solid var(--surface-stroke);border-top-right-radius:8px;box-shadow:var(--shadow-flyout);z-index:6}
+.ni{height:52px;width:100%;flex:none;display:flex;align-items:center;gap:12px;padding:0 8px;border:0;border-radius:4px;background:transparent;color:var(--text-primary);font:inherit;text-align:left;position:relative;box-sizing:border-box}
+.ni.on{background:var(--subtle-bg-hover)}
+.ni.on::before{content:"";position:absolute;left:0;top:18px;width:3px;height:16px;border-radius:2px;background:var(--accent)}
+.nt{display:flex;flex-direction:column;min-width:0}
+.lh{display:grid;align-items:center;height:32px;padding:0 12px;column-gap:12px;font-family:var(--font-small);font-size:12px;line-height:16px;color:var(--text-secondary);border-bottom:1px solid var(--divider)}
+.lr{display:grid;align-items:center;height:28px;padding:0 12px;column-gap:12px;border-radius:4px;position:relative;font-family:var(--font-small);font-size:12px;line-height:16px;color:var(--text-secondary)}
+.lr.on{background:var(--subtle-bg-hover)}
+.lr.on::before{content:"";position:absolute;left:0;top:7px;width:3px;height:14px;border-radius:2px;background:var(--accent)}
+.lr.tall.on::before{top:16px;height:16px}
+.nm{display:flex;align-items:center;gap:10px;min-width:0;font-family:var(--font-text);font-size:14px;line-height:20px;color:var(--text-primary)}
+.nm span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nm .i{color:var(--text-secondary)}
+.cf{grid-template-columns:minmax(0,1fr) 120px 80px 60px}
+.cm{grid-template-columns:minmax(0,1fr) 56px 64px 72px 88px}
+.cp{grid-template-columns:minmax(0,1fr) 136px 56px 64px 72px 88px}
+.st{display:flex;align-items:baseline;gap:8px;height:28px;padding:16px 12px 0;font-weight:600}
+.lk{height:20px;display:flex;align-items:center;font-family:var(--font-small);font-size:12px;line-height:16px}
+.dk-check{font-family:var(--font-small);font-size:12px;line-height:16px}
+.vh{position:absolute;width:1px;height:1px;opacity:0;margin:0}
+.sw{display:flex;border:1px solid var(--control-stroke);border-bottom-color:var(--control-stroke-secondary);border-radius:4px;overflow:hidden;flex:none}
+.sw button{height:30px;padding:0 12px;border:0;background:var(--control-bg);color:var(--text-primary);font:inherit;font-family:var(--font-small);font-size:12px}
+.sw button.on{background:var(--accent);color:var(--text-on-accent)}
+.dd{font-family:var(--font-small);font-size:12px;gap:6px;padding:5px 8px 6px 11px}
+.tip{position:absolute;padding:5px 8px 6px;background:var(--bg-flyout);border:1px solid var(--surface-stroke);border-radius:4px;box-shadow:var(--shadow-flyout);font-family:var(--font-small);font-size:12px;line-height:16px;white-space:nowrap;z-index:5}
+.fly{position:absolute;box-sizing:border-box;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg-flyout);border:1px solid var(--surface-stroke);border-radius:8px;box-shadow:var(--shadow-flyout);z-index:5}
+.gb{width:36px;height:36px;border:0;border-radius:4px;background:transparent;color:var(--text-primary);display:flex;align-items:center;justify-content:center;padding:0;flex:none}
+.gb.on{background:var(--accent);color:var(--text-on-accent)}
+.ct{width:28px;height:28px;border:0;border-radius:4px;padding:0;flex:none}
+.ct.on{outline:2px solid var(--accent);outline-offset:2px;display:flex;align-items:center;justify-content:center}
+.lr.m.on::before{top:9px}
+button.dk-menu-item{width:100%;border:0;background:transparent;color:var(--text-primary);font:inherit;text-align:left}
+.hr{width:calc(100% + 16px);display:grid;grid-template-columns:minmax(0,1fr) 72px;gap:8px;height:24px;align-items:center;margin:0 -8px;padding:0 8px;border:0;border-radius:4px;background:transparent;color:var(--text-primary);font:inherit;text-align:left;position:relative}
+.hr.on{background:var(--subtle-bg-hover)}
+.hr.on::before{content:"";position:absolute;left:0;top:5px;width:3px;height:14px;border-radius:2px;background:var(--accent)}
+.gr{position:relative;flex:none}
+.gr>svg{position:absolute;left:0;top:0;display:block;pointer-events:none}
+.gn{position:absolute;box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:0 0 0 8px;border:1px solid var(--control-strong-stroke);border-radius:4px;background:var(--bg-flyout);color:var(--text-secondary);font-family:var(--font-small);font-size:12px;line-height:16px;white-space:nowrap}
+.gn .i{width:12px;height:12px;stroke-width:1.5px}
+.gn.nb{color:var(--text-primary)}
+.gn.on{background:var(--accent);border-color:var(--accent);color:var(--text-on-accent)}
+.sb{position:absolute;right:4px;top:2px;width:2px;border-radius:1px;background:var(--text-secondary);pointer-events:none}
+.gp{position:absolute;box-sizing:border-box;width:40px;height:24px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--control-bg);border:1px solid var(--control-stroke-secondary);font-family:var(--font-small);font-size:12px;line-height:16px}
+</style>
+</helmet>
+<x-import component-from-global-scope="Deckle.Root" theme="dark">
+<div class="w">
+  <div class="top">
+    <button class="pb" aria-label="Ouvrir le volet des dossiers"><svg class="i" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h11"></path></svg></button>
+    <span class="dk-titlebar-icon" aria-hidden="true" style="margin: 0 10px 0 4px"></span>
+    <span class="appn">Deckle Atelier</span>
+    <button class="dk-btn dk-btn-subtle dk-btn-icon" aria-label="Précédent"><svg class="i" aria-hidden="true"><path d="M13 8H3M7 4 3 8l4 4"></path></svg></button>
+    <button class="dk-btn dk-btn-subtle dk-btn-icon" aria-label="Suivant" disabled=""><svg class="i" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"></path></svg></button>
+    <button class="dk-btn dk-btn-subtle dk-btn-icon" aria-label="Dossier parent"><svg class="i" aria-hidden="true"><path d="M8 13V3M4 7l4-4 4 4"></path></svg></button>
+    <button class="dk-btn dk-btn-subtle dk-btn-icon" aria-label="Actualiser"><svg class="i" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.46-3.54M12 1.8v2.9H9.1"></path></svg></button>
+    <div class="addr"><button class="fi" aria-label="Changer l'icône de Projets"><span class="fs" style="width: 20px; height: 20px"><svg class="sh" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .6l10 5.7v11.4L12 23.4 2 17.7V6.3z" style="fill: #6CA0DC"></path></svg><svg class="gl" viewBox="0 0 16 16" aria-hidden="true" style="width: 12px; height: 12px"><path d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5"></path></svg></span></button><button class="sg">Projets</button><button class="sv" aria-label="Dossiers dans Projets"><svg class="i" aria-hidden="true"><path d="M6.5 5l3 3-3 3"></path></svg></button><button class="sg">carnet</button></div>
+    <nav class="tg" aria-label="Outils">
+      <button class="tl" aria-label="Fichiers"><svg class="i" aria-hidden="true"><path d="M5.5 4h8M5.5 8h8M5.5 12h8M2.5 4h.3M2.5 8h.3M2.5 12h.3"></path></svg></button>
+      <button class="tl" aria-label="Photos"><svg class="i" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"></rect><circle cx="5.5" cy="6" r="1.25"></circle><path d="M2 12l4-3.5 3 2.5 2-1.5 3.5 2.5"></path></svg></button>
+      <button class="tl" aria-label="Tailles"><svg class="i" aria-hidden="true"><rect x="2" y="3" width="12" height="2" rx=".5"></rect><rect x="2" y="7" width="8" height="2" rx=".5"></rect><rect x="2" y="11" width="4.5" height="2" rx=".5"></rect></svg></button>
+      <button class="tl on"><svg class="i" aria-hidden="true"><circle cx="4" cy="4" r="2"></circle><circle cx="12.5" cy="6" r="2"></circle><circle cx="6.5" cy="12.5" r="2"></circle><path d="M6 4.5l4.5 1M4.6 5.9l1.2 4.7M11.2 7.5l-3.3 3.6"></path></svg>Carte</button>
+    </nav>
+    <button class="dk-btn dk-btn-subtle dk-btn-icon" aria-label="Rechercher"><svg class="i" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="M10.4 10.4 14 14"></path></svg></button>
+    <div class="cap">
+      <button class="dk-caption-btn cb" aria-label="Réduire"><svg class="g10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0 5.5h10"></path></svg></button>
+      <button class="dk-caption-btn cb" aria-label="Agrandir"><svg class="g10" viewBox="0 0 10 10" aria-hidden="true"><rect x="0.5" y="0.5" width="9" height="9" rx="1"></rect></svg></button>
+      <button class="dk-caption-btn cb is-close" aria-label="Fermer"><svg class="g10" viewBox="0 0 10 10" aria-hidden="true"><path d="M0.5 0.5l9 9M9.5 0.5l-9 9"></path></svg></button>
+    </div>
+  </div>  <div class="bd">
+    <nav class="rail" aria-label="Dossiers ajoutés">
+      <button class="ri" aria-label="Photos, D:\Photos"><span class="fs" style="width: 24px; height: 24px"><svg class="sh" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11.5" style="fill: #E8A35C"></circle></svg><svg class="gl" viewBox="0 0 16 16" aria-hidden="true" style="width: 14px; height: 14px"><path d="M1.5 5.5h3l1.2-2h4.6l1.2 2h3v8h-13z"></path><circle cx="8" cy="9.3" r="2.4"></circle></svg></span></button>
+      <button class="ri" aria-label="Archives, D:\Archives"><span class="fs" style="width: 24px; height: 24px"><svg class="sh" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="5" style="fill: var(--accent)"></rect></svg><svg class="gl" viewBox="0 0 16 16" aria-hidden="true" style="width: 14px; height: 14px"><rect x="1.5" y="2.5" width="13" height="3.5" rx=".5"></rect><path d="M2.5 6v7.5h11V6M6.5 8.5h3"></path></svg></span></button>
+      <button class="ri on" aria-label="Projets, D:\Projets"><span class="fs" style="width: 24px; height: 24px"><svg class="sh" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .6l10 5.7v11.4L12 23.4 2 17.7V6.3z" style="fill: #6CA0DC"></path></svg><svg class="gl" viewBox="0 0 16 16" aria-hidden="true" style="width: 14px; height: 14px"><path d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5"></path></svg></span></button>
+      <button class="ri" aria-label="Documents, D:\Documents"><span class="fs" style="width: 24px; height: 24px"><svg class="sh" viewBox="0 0 24 24" aria-hidden="true"><rect x="1" y="1" width="22" height="22" rx="5" style="fill: #9BD88F"></rect></svg><svg class="gl" viewBox="0 0 16 16" aria-hidden="true" style="width: 14px; height: 14px"><path d="M4 1.5h5l3 3v10H4zM9 1.5v3h3"></path></svg></span></button>
+      <button class="ri" aria-label="Musique, D:\Musique"><span class="fs" style="width: 24px; height: 24px"><svg class="sh" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.2 23.2 22.6H.8z" style="fill: #8268C6"></path></svg><svg class="gl" viewBox="0 0 16 16" aria-hidden="true" style="width: 10px; height: 10px; margin-top: 7px"><path d="M6 12V3.5l7-1.5v8.5"></path><circle cx="4.3" cy="12" r="1.7"></circle><circle cx="11.3" cy="10.5" r="1.7"></circle></svg></span></button>
+      <div style="flex: 1"></div>
+      <button class="ri" aria-label="Ajouter un dossier"><svg class="i" aria-hidden="true"><path d="M8 3v10M3 8h10"></path></svg></button>
+    </nav>
+    <div class="lay">
+      <div class="mn">
+        <div class="ch" style="white-space: nowrap"><div class="sw" role="group" aria-label="Dimensions"><button>2D</button><button class="on">3D</button></div><button class="dk-btn dd">X&nbsp;: Type<svg class="i" aria-hidden="true" style="width: 12px; height: 12px" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"></path></svg></button><button class="dk-btn dd">Y&nbsp;: Liens<svg class="i" aria-hidden="true" style="width: 12px; height: 12px" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"></path></svg></button><button class="dk-btn dd">Z&nbsp;: Modifié<svg class="i" aria-hidden="true" style="width: 12px; height: 12px" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"></path></svg></button><div style="flex: 1"></div><button class="dk-btn dk-btn-subtle dk-btn-icon" aria-label="Quitter le grand graphe"><svg class="i" aria-hidden="true"><path d="M13.5 6.5h-4v-4M9.5 6.5 14 2M2.5 9.5h4v4M6.5 9.5 2 14"></path></svg></button></div>
+        <div class="ch" style="height: 40px; gap: 16px; white-space: nowrap"><label class="dk-check"><input type="checkbox" class="vh"><span class="dk-check-box"></span>Toujours lu par un LLM</label><span aria-hidden="true" style="width: 1px; height: 20px; background: var(--divider); flex: none"></span><label class="dk-check is-on"><input type="checkbox" class="vh" checked=""><span class="dk-check-box"><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 2px; stroke-linecap: round; stroke-linejoin: round"><path d="M3 8.5l3 3 7-7"></path></svg></span>Fichiers de contexte</label><label class="dk-check is-on"><input type="checkbox" class="vh" checked=""><span class="dk-check-box"><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 2px; stroke-linecap: round; stroke-linejoin: round"><path d="M3 8.5l3 3 7-7"></path></svg></span>Skills</label><label class="dk-check is-on"><input type="checkbox" class="vh" checked=""><span class="dk-check-box"><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 2px; stroke-linecap: round; stroke-linejoin: round"><path d="M3 8.5l3 3 7-7"></path></svg></span>Serveurs MCP</label><label class="dk-check is-on"><input type="checkbox" class="vh" checked=""><span class="dk-check-box"><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 2px; stroke-linecap: round; stroke-linejoin: round"><path d="M3 8.5l3 3 7-7"></path></svg></span>Scripts</label><label class="dk-check is-on"><input type="checkbox" class="vh" checked=""><span class="dk-check-box"><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true" style="fill: none; stroke: currentColor; stroke-width: 2px; stroke-linecap: round; stroke-linejoin: round"><path d="M3 8.5l3 3 7-7"></path></svg></span>Fichiers standard</label></div>
+        <div style="flex: 1; min-height: 0; padding: 0 16px 16px; overflow: hidden">
+          <div class="gr" role="group" aria-label="Graphe des liens de carnet, publier-version choisi" style="width: 876px; height: 640px">
+            <svg width="876" height="640" viewBox="0 0 876 640" aria-hidden="true">
+              <g style="stroke: var(--text-tertiary); stroke-width: 1; fill: none"><line x1="24" y1="600" x2="184" y2="600"></line><line x1="24" y1="600" x2="24" y2="480"></line><line x1="24" y1="600" x2="96" y2="552"></line></g>
+              <g style="fill: var(--text-secondary); font-family: var(--font-small); font-size: 12px"><text x="190" y="604">X</text><text x="20" y="472">Y</text><text x="100" y="548">Z</text></g>
+              <path d="M225.1 37.6L158.9 48.9" style="fill: none; stroke: var(--text-primary); stroke-width: 1.5"></path>
+              <path d="M97.1 357L285.3 46.8" style="fill: none; stroke: var(--text-primary); stroke-width: 1.5"></path>
+              <path d="M307.1 40L542.5 452.1" style="fill: none; stroke: var(--text-primary); stroke-width: 1.5"></path>
+              <path d="M310.7 40L553.8 338.8" style="fill: none; stroke: var(--text-primary); stroke-width: 1.5"></path>
+              <path d="M303.6 40L402.2 332.4" style="fill: none; stroke: var(--text-primary); stroke-width: 1.5"></path>
+              <path d="M88 76L88 349" style="fill: none; stroke: var(--text-disabled); stroke-width: 1"></path>
+              <path d="M139.8 76L646.9 222.8" style="fill: none; stroke: var(--text-disabled); stroke-width: 1"></path>
+              <path d="M97.4 76L264.4 341.2" style="fill: none; stroke: var(--text-disabled); stroke-width: 1"></path>
+              <path d="M93.6 76L235.5 453.5" style="fill: none; stroke: var(--text-disabled); stroke-width: 1"></path>
+              <path d="M337 372.9L535.1 409" style="fill: none; stroke: var(--text-disabled); stroke-width: 1"></path>
+              <path d="M448.3 412L423.3 374.6" style="fill: none; stroke: var(--text-disabled); stroke-width: 1"></path>
+              <path d="M620.6 345L743.4 307.9" style="fill: none; stroke: var(--text-disabled); stroke-width: 1"></path>
+              <path d="M727.6 253L766.2 275" style="fill: none; stroke: var(--text-disabled); stroke-width: 1"></path>
+              <path d="M706.1 253L736.4 389.2" style="fill: none; stroke: var(--text-disabled); stroke-width: 1"></path>
+            </svg>
+            <button class="gn" style="left: 405px; top: 413px; width: 104px; height: 24px; opacity: 0.75" aria-label="Serveur MCP, navigateur"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 1.5v3M10.5 1.5v3M3.5 4.5h9v3a4.5 4.5 0 0 1-9 0zM8 12v2.5"></path></svg><span>navigateur</span></button>
+            <button class="gn" style="left: 565px; top: 496px; width: 123px; height: 24px; opacity: 0.75" aria-label="Script, check-links.py"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"></rect><path d="M4.5 6l2 2-2 2M8 10.5h3.5"></path></svg><span>check-links.py</span></button>
+            <button class="gn" style="left: 724px; top: 280px; width: 144px; height: 24px; opacity: 0.75" aria-label="Fichier standard, CONTRIBUTING.md"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1.5h5l3 3v10H4zM9 1.5v3h3"></path></svg><span>CONTRIBUTING.md</span></button>
+            <button class="gn" style="left: 689px; top: 398px; width: 104px; height: 24px; opacity: 0.75" aria-label="Fichier standard, LICENSE"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1.5h5l3 3v10H4zM9 1.5v3h3"></path></svg><span>LICENSE</span></button>
+            <button class="gn" style="left: 219px; top: 349px; width: 117px; height: 26px; opacity: 0.85" aria-label="Skill, capture-ecran"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5l1.5 4 4 1.5-4 1.5L8 12.5l-1.5-4-4-1.5 4-1.5z"></path></svg><span>capture-ecran</span></button>
+            <button class="gn nb" style="left: 351px; top: 341px; width: 117px; height: 26px; opacity: 0.85" aria-label="Serveur MCP, notes-locales"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 1.5v3M10.5 1.5v3M3.5 4.5h9v3a4.5 4.5 0 0 1-9 0zM8 12v2.5"></path></svg><span>notes-locales</span></button>
+            <button class="gn" style="left: 544px; top: 408px; width: 114px; height: 26px; opacity: 0.85" aria-label="Script, capture.ps1"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"></rect><path d="M4.5 6l2 2-2 2M8 10.5h3.5"></path></svg><span>capture.ps1</span></button>
+            <button class="gn" style="left: 646px; top: 226px; width: 114px; height: 26px; opacity: 0.85" aria-label="Fichier standard, README.md"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1.5h5l3 3v10H4zM9 1.5v3h3"></path></svg><span>README.md</span></button>
+            <button class="gn nb" style="left: 26px; top: 47px; width: 124px; height: 28px" aria-label="Fichier de contexte, CLAUDE.md"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1.5h5l3 3v10H4zM9 1.5v3h3M6 8.5h4M6 11h4"></path></svg><span>CLAUDE.md</span></button>
+            <button class="gn nb" style="left: 26px; top: 358px; width: 124px; height: 28px" aria-label="Fichier de contexte, AGENTS.md"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1.5h5l3 3v10H4zM9 1.5v3h3M6 8.5h4M6 11h4"></path></svg><span>AGENTS.md</span></button>
+            <button class="gn" style="left: 182px; top: 462px; width: 124px; height: 28px" aria-label="Skill, ecrire-spec"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5l1.5 4 4 1.5-4 1.5L8 12.5l-1.5-4-4-1.5 4-1.5z"></path></svg><span>ecrire-spec</span></button>
+            <button class="gn on" style="left: 234px; top: 11px; width: 129px; height: 28px" aria-label="Skill, publier-version" aria-current="true"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5l1.5 4 4 1.5-4 1.5L8 12.5l-1.5-4-4-1.5 4-1.5z"></path></svg><span>publier-version</span></button>
+            <button class="gn nb" style="left: 509px; top: 346px; width: 124px; height: 28px" aria-label="Script, build.ps1"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"></rect><path d="M4.5 6l2 2-2 2M8 10.5h3.5"></path></svg><span>build.ps1</span></button>
+            <button class="gn nb" style="left: 493px; top: 460px; width: 124px; height: 28px" aria-label="Script, release.ps1"><svg class="i" viewBox="0 0 16 16" aria-hidden="true"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"></rect><path d="M4.5 6l2 2-2 2M8 10.5h3.5"></path></svg><span>release.ps1</span></button>
+            <svg width="876" height="640" viewBox="0 0 876 640" aria-hidden="true">
+              <path d="M151 50.2L158.2 44.9L159.6 52.8z" style="fill: var(--text-primary)"></path><path d="M233 36.2L225.8 41.5L224.4 33.6z" style="fill: var(--text-primary)"></path>
+              <path d="M289.4 40L288.7 48.9L281.8 44.8z" style="fill: var(--text-primary)"></path>
+              <path d="M546.4 459L539 454L545.9 450.1z" style="fill: var(--text-primary)"></path>
+              <path d="M558.8 345L550.6 341.3L556.9 336.3z" style="fill: var(--text-primary)"></path>
+              <path d="M404.8 340L398.4 333.7L406 331.1z" style="fill: var(--text-primary)"></path>
+              <path d="M88 357L84 349L92 349z" style="fill: var(--text-disabled)"></path>
+              <path d="M654.6 225L645.8 226.6L648.1 218.9z" style="fill: var(--text-disabled)"></path>
+              <path d="M268.7 348L261 343.4L267.8 339.1z" style="fill: var(--text-disabled)"></path>
+              <path d="M238.4 461L231.8 454.9L239.3 452.1z" style="fill: var(--text-disabled)"></path>
+              <path d="M543 410.4L534.4 412.9L535.8 405.1z" style="fill: var(--text-disabled)"></path>
+              <path d="M418.9 368L426.6 372.4L420 376.9z" style="fill: var(--text-disabled)"></path>
+              <path d="M751.1 305.6L744.6 311.7L742.3 304.1z" style="fill: var(--text-disabled)"></path>
+              <path d="M773.2 279L764.3 278.5L768.2 271.6z" style="fill: var(--text-disabled)"></path>
+              <path d="M738.1 397L732.5 390.1L740.3 388.3z" style="fill: var(--text-disabled)"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <aside class="pn" aria-label="Détails et liens">
+        <div class="ph">
+          <span class="c t2">Skill · .claude/skills/publier-version</span>
+          <span class="pt">publier-version</span>
+        </div>
+        <div class="ps">
+          <span class="h2">Détails</span>
+          <span class="c">Monte la version et publie une release.</span>
+        </div>        <div class="ps" style="padding-bottom: 0">
+          <span class="h2">Liens</span>
+          <div style="display: flex; flex-direction: column"><span class="h3" style="margin-bottom: 2px">Cite (4)</span><div class="lk" style="height: 24px">release.ps1</div><div class="lk" style="height: 24px">build.ps1</div><div class="lk" style="height: 24px">notes-locales</div><div class="lk" style="height: 24px">CLAUDE.md<span class="t2">&nbsp;· dans les deux sens</span></div></div>
+          <div style="display: flex; flex-direction: column; margin-top: 4px"><span class="h3" style="margin-bottom: 2px">Est cité par (2)</span><div class="lk" style="height: 24px">CLAUDE.md<span class="t2">&nbsp;· dans les deux sens</span></div><div class="lk" style="height: 24px">AGENTS.md</div></div>
+        </div>
+      </aside>
+    </div>
+
+  </div>
+</div>
+</x-import>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
