@@ -14,7 +14,9 @@ namespace Deckle.Llm.Rewrite;
 //     (the id wins, then the name), so a rename or a reset keeps the active
 //     choice;
 //   - keep the length ladder well formed: steps on the grain, within range,
-//     strictly increasing.
+//     strictly increasing;
+//   - keep the dictation steps well formed, and build them from the shape
+//     before the steps when a file has none (NormalizeDictation).
 //
 // **Never clears the active profile.** An orphan reference (id and name both
 // unresolvable) stays untouched so the user can repair it in the UI. The
@@ -31,7 +33,157 @@ public static class LlmSettingsNormalizer
         s.LengthSwitch ??= new LengthSwitchSettings();
         s.LengthSwitch.Steps ??= new List<LengthStep>();
         bool ladder = NormalizeLadder(s.LengthSwitch);
-        return profiles || ladder;
+        bool dictation = NormalizeDictation(s);
+        return profiles || ladder || dictation;
+    }
+
+    // ── Dictation steps ──────────────────────────────────────────────────────
+
+    // Keeps the steps well formed, and builds them from the shape before the
+    // steps when there are none (MigrateToSteps):
+    //   - a first step always exists, with a profile (the first one when it
+    //     names none);
+    //   - every length on its grain and within range; each later step strictly
+    //     above the one before (the first counting only with "Start at" on),
+    //     a step landing on or below its neighbour moving just above it rather
+    //     than being dropped; only a step pushed past the maximum is lost;
+    //   - the later steps sorted by length, the first one staying first;
+    //   - the passage size within its bounds.
+    // A step whose profile no longer exists stays, and is skipped when a
+    // dictation picks its step, as the ladder's were.
+    public static bool NormalizeDictation(LlmSettings s)
+    {
+        bool changed = false;
+        if (s.Dictation is null)
+        {
+            s.Dictation = new DictationRewriteSettings();
+            changed = true;
+        }
+        DictationRewriteSettings d = s.Dictation;
+        if (d.Steps is null)
+        {
+            d.Steps = new List<RewriteStep>();
+            changed = true;
+        }
+        d.Steps.RemoveAll(step => step is null);
+
+        if (d.Steps.Count == 0)
+        {
+            MigrateToSteps(s);
+            changed = true;
+        }
+
+        RewriteStep first = d.Steps[0];
+        if (string.IsNullOrEmpty(first.ProfileId) && s.Profiles.Count > 0)
+        {
+            first.ProfileId = s.Profiles[0].Id;
+            changed = true;
+        }
+
+        var normalized = new List<RewriteStep> { Normalized(first, DictationRewriteSettings.Snap(first.FromChars)) };
+        int previous = d.StartAtLength ? normalized[0].FromChars : 0;
+        foreach (RewriteStep step in d.Steps.Skip(1).OrderBy(step => step.FromChars))
+        {
+            int snapped = DictationRewriteSettings.Snap(step.FromChars);
+            if (snapped <= previous) snapped = DictationRewriteSettings.Above(previous);
+            if (snapped > DictationRewriteSettings.MaxChars) continue;
+            normalized.Add(Normalized(step, snapped));
+            previous = snapped;
+        }
+
+        bool stepsChanged = normalized.Count != d.Steps.Count
+            || normalized.Where((step, i) =>
+                step.FromChars != d.Steps[i].FromChars
+                || step.ProfileId != d.Steps[i].ProfileId
+                || step.Streaming != d.Steps[i].Streaming).Any();
+        if (stepsChanged)
+        {
+            d.Steps = normalized;
+            changed = true;
+        }
+
+        int passage = Math.Clamp(d.PassageChars,
+            DictationRewriteSettings.MinPassageChars, DictationRewriteSettings.MaxPassageChars);
+        if (passage != d.PassageChars)
+        {
+            d.PassageChars = passage;
+            changed = true;
+        }
+
+        return changed;
+
+        static RewriteStep Normalized(RewriteStep step, int fromChars) => new()
+        {
+            ProfileId = step.ProfileId ?? "",
+            FromChars = fromChars,
+            Streaming = step.Streaming,
+        };
+    }
+
+    // The shape before the steps (an active profile, a length ladder, a
+    // switch for batches) becomes steps, so a dictation goes where it went:
+    //   - an active profile becomes the first step, from the beginning, and
+    //     the ladder's steps follow it;
+    //   - with no active profile, the ladder's first step becomes the first
+    //     step with "Start at" on at its length, since below it a dictation
+    //     stayed as said;
+    //   - with neither, "Rewrite dictations" is off and the first step takes
+    //     the first profile, ready for the day it is switched on;
+    //   - the switch for batches sets Streaming on every step, and the batch
+    //     size becomes the passage size.
+    // A ladder that was switched off is not carried over: its steps never
+    // applied, and as steps they would.
+    //
+    // Also what a fresh LlmSettings goes through: its old fields hold their
+    // defaults (nothing active, ladder and batches off), so it gets the
+    // third case.
+    private static void MigrateToSteps(LlmSettings s)
+    {
+        DictationRewriteSettings d = s.Dictation;
+        bool streaming = s.BatchRewriting?.Enabled ?? false;
+        if (s.BatchRewriting is { } batching) d.PassageChars = batching.ThresholdChars;
+
+        List<LengthStep> ladder = s.LengthSwitch is { Enabled: true, Steps: { } ladderSteps }
+            ? ladderSteps.Where(step => step is not null).OrderBy(step => step.FromChars).ToList()
+            : new List<LengthStep>();
+
+        RewriteStep FromLadder(LengthStep step) =>
+            new() { ProfileId = step.ProfileId ?? "", FromChars = step.FromChars, Streaming = streaming };
+
+        // RepairProfileReferences ran first, so a name that still resolves
+        // has its id by now; an id that resolves to nothing is kept, as the
+        // active profile was, and the step is skipped at selection.
+        bool hasActive = !string.IsNullOrEmpty(s.ActiveProfileId)
+            || !string.IsNullOrWhiteSpace(s.ActiveProfileName);
+
+        if (hasActive)
+        {
+            d.Enabled = true;
+            d.StartAtLength = false;
+            d.Steps.Add(new RewriteStep
+            {
+                ProfileId = s.ActiveProfileId ?? "",
+                FromChars = DictationRewriteSettings.DefaultStartAtChars,
+                Streaming = streaming,
+            });
+            d.Steps.AddRange(ladder.Select(FromLadder));
+        }
+        else if (ladder.Count > 0)
+        {
+            d.Enabled = true;
+            d.StartAtLength = true;
+            d.Steps.AddRange(ladder.Select(FromLadder));
+        }
+        else
+        {
+            d.Enabled = false;
+            d.StartAtLength = false;
+            d.Steps.Add(new RewriteStep
+            {
+                FromChars = DictationRewriteSettings.DefaultStartAtChars,
+                Streaming = streaming,
+            });
+        }
     }
 
     public static bool RepairProfileReferences(LlmSettings s)

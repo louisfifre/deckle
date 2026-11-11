@@ -2770,6 +2770,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Llm.Rewrite.Tests.csproj
 │   │   ├── DictationBatcherTests.cs
 │   │   ├── DictationBatchRewriterTests.cs
+│   │   ├── DictationStepsMigrationTests.cs
 │   │   ├── LlmResetDefaultsTests.cs
 │   │   ├── LlmSettingsBugNotes.md
 │   │   ├── LlmSettingsFileTests.cs
