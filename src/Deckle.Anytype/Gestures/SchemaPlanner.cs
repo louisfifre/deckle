@@ -6,6 +6,16 @@ namespace Deckle.Anytype;
 
 internal static class SchemaPlanner
 {
+    // The types a fresh space ships, by the keys it listed on 2026-11-11
+    // (desktop app 0.57.7, anytype-cli 0.5.2). One of them missing means it was
+    // deleted, and its key is not free again: a `task` created after the native
+    // Task was deleted and the bin emptied came back as `task_2`.
+    internal static readonly IReadOnlySet<string> NativeTypeKeys = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "audio", "bookmark", "chat_derived", "collection", "file", "image", "note", "page",
+        "participant", "project", "set", "task", "template", "video",
+    };
+
     internal static SchemaPreview Build(
         string spaceAlias,
         string spaceId,
@@ -47,7 +57,12 @@ internal static class SchemaPlanner
         foreach (TypeSpec type in manifest.Types)
         {
             bool exists = snapshot.Types.TryGetValue(type.Key, out SchemaTypeInfo? existingType);
-            if (!exists)
+            if (!exists && NativeTypeKeys.Contains(type.Key))
+                conflicts.Add(
+                    $"type {type.Key} : type natif d'Anytype absent de l'espace, donc supprimé. Sa clé reste prise : " +
+                    $"le créer donnerait une autre clé ({type.Key}_2), que les commandes ne trouvent pas. " +
+                    "Repars d'un espace neuf sans y supprimer de type.");
+            else if (!exists)
                 actions.Add(new SchemaAction("create_type", type.Key, type.Name));
             else if (!string.Equals(existingType!.Name, type.Name, StringComparison.Ordinal)
                 || !string.Equals(existingType.PluralName, type.PluralName, StringComparison.Ordinal))
