@@ -100,7 +100,8 @@ public sealed class ClaudeEngine : IGenerationEngine
         // Messages API reports no load or prompt-evaluation timing.
         DeckleLlmSource.Log.RewriteResponseDetail(
             sw.ElapsedMilliseconds, request.UserText.Length, trimmed.Length, request.Label,
-            0, 0, sw.ElapsedMilliseconds, promptTokens, evalTokens, $"{response.StopReason}");
+            0, 0, sw.ElapsedMilliseconds, promptTokens, evalTokens, $"{response.StopReason}",
+            cacheWriteTokens, cacheReadTokens);
 
         return new GenerationResult(
             Text:         trimmed,
