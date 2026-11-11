@@ -11,6 +11,17 @@
 - Guard: `WhispModelLifecycleTests.AColdLoadAndItsWarmupEachPairTheirStartAndEndInTheLog`, `AWarmupThatCannotLoadTheModelEndsInAWarningWithTheStartsId`.
 - Interpretation: the backend (`DeckleWhisperSource`) keeps its own log lines for the same load (`ModelLoadStarting`, `ModelOnGpu`, `ModelOnCpu`). They are not paired by id with the engine's pair, because that would put an identifier in the `IAsrBackend` contract. The log therefore shows two start lines per load; this is a choice, not an oversight.
 
+## A failed model load ended as an exception when the settings page's strings were absent
+
+- Trigger: the model cannot be loaded in a process whose resources hold no map for the library that carries the settings page's strings. Seen in the engine's tests on 2026-11-11, the day those strings moved from `Deckle.Transcription` to `Deckle.Transcription.Views`: the test host compiles no `.resw` any more.
+- Symptom: the warmup ended in `WarmupFailed` with the reason `prime_exception` instead of `model_load_failed`.
+- Cause: the message for a failed load names the settings page through `Loc.GetFrom`. `Loc.TryGetFrom` built the library's `ResourceLoader` outside its `try`, and that constructor throws `COMException: ResourceMap Not Found` when the map is absent. Established from the exception the test reported.
+- Violated invariant: a missing string is a miss (a marker in Debug, empty in Release), never an exception, whether the key or its whole map is absent. The trap is one line: see the comment in `Loc.TryGetFrom` (`src/Deckle.Localization/Loc.cs`).
+- Fix: the loader is built inside the `try`; a failed construction is not cached.
+- Recurrence cue: a `prime_exception` on a load that failed for an ordinary reason, or any `ResourceMap Not Found` crossing `Loc`.
+- Guard: `WhispModelLifecycleTests.AWarmupThatCannotLoadTheModelEndsInAWarningWithTheStartsId`. It guards this only while the test project references no project that compiles the page's strings. `Loc` has no suite of its own, so no test calls `Loc.GetFrom` on an absent map directly.
+- Interpretation: the installed app was not affected, since it ships the Views assembly and its map. Not observed there, inferred from how the map is built.
+
 ## An unavailable model was an incident with no id, and its recovery named no incident
 
 - Trigger: the model file is missing or unusable, and each take or file batch retries the load until it works.
