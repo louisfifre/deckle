@@ -219,14 +219,19 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── inventaire-exposables.md
 │   └── transcription-audio-chain.md  — How a dictation travels from the hotkey to the clipboard — vocabulary, three di…
 ├── logo/
+│   ├── deckle-five.svg
 │   ├── deckle-recording.svg
 │   ├── deckle-rewriting.svg
+│   ├── deckle-small-recording.svg
+│   ├── deckle-small-rewriting.svg
+│   ├── deckle-small.svg
 │   ├── deckle.svg
 │   ├── generate.mjs
 │   ├── palettes.md
 │   ├── primary.png
 │   ├── primary.svg
-│   └── secondary.png
+│   ├── secondary.png
+│   └── sheet.html
 ├── native/
 │   ├── Deckle.Shell.Taskbar.Native/
 │   │   ├── patches/
@@ -559,9 +564,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Icons/
 │   │   │   │   ├── deckle--state--recording--32px.png
 │   │   │   │   ├── deckle--state--recording--incident--true.ico
+│   │   │   │   ├── deckle--state--recording--mode--dark.ico
+│   │   │   │   ├── deckle--state--recording--mode--light.ico
 │   │   │   │   ├── deckle--state--recording.ico
 │   │   │   │   ├── deckle--state--rest--32px.png
 │   │   │   │   ├── deckle--state--rest--incident--true.ico
+│   │   │   │   ├── deckle--state--rest--mode--dark.ico
+│   │   │   │   ├── deckle--state--rest--mode--light.ico
 │   │   │   │   ├── deckle--state--rest.ico
 │   │   │   │   ├── deckle--state--rewriting--32px.png
 │   │   │   │   ├── deckle--state--rewriting--incident--true.ico
@@ -1986,7 +1995,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SessionEndWatcher.cs
 │   │   ├── StartupService.cs
 │   │   ├── TrayIconManager.cs
-│   │   └── TrayIconRegistration.cs
+│   │   ├── TrayIconRegistration.cs
+│   │   └── WindowsMode.cs
 │   ├── Deckle.Shell.Foreground/
 │   │   ├── Interop/
 │   │   │   └── ForegroundNativeMethods.cs
@@ -2434,7 +2444,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ScratchFolder.cs
 │   │   ├── SizeScanEventsTests.cs
 │   │   ├── SizeScanTests.cs
-│   │   └── SizesSampleTests.cs
+│   │   ├── SizesSampleTests.cs
+│   │   ├── WindowShortcutBugNotes.md
+│   │   └── WindowShortcutTooltipTests.cs
 │   ├── Deckle.Audio.Tests/
 │   │   ├── AudioPathRedactionTests.cs
 │   │   ├── AudioRecordingHostDefaultsTests.cs
@@ -2989,7 +3001,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TrayIconBugNotes.md
 │   │   ├── TrayIconFallbackObservabilityTests.cs
 │   │   ├── TrayIconRegistrationTests.cs
-│   │   └── TrayMarkTests.cs
+│   │   ├── TrayMarkTests.cs
+│   │   └── WindowIconTests.cs
 │   ├── Deckle.Shell.TrayMenu.Tests/
 │   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs
