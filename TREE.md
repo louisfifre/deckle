@@ -1989,7 +1989,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SessionEndWatcher.cs
 │   │   ├── StartupService.cs
 │   │   ├── TrayIconManager.cs
-│   │   └── TrayIconRegistration.cs
+│   │   ├── TrayIconRegistration.cs
+│   │   └── WindowsMode.cs
 │   ├── Deckle.Shell.Foreground/
 │   │   ├── Interop/
 │   │   │   └── ForegroundNativeMethods.cs
@@ -2991,7 +2992,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TrayIconBugNotes.md
 │   │   ├── TrayIconFallbackObservabilityTests.cs
 │   │   ├── TrayIconRegistrationTests.cs
-│   │   └── TrayMarkTests.cs
+│   │   ├── TrayMarkTests.cs
+│   │   └── WindowIconTests.cs
 │   ├── Deckle.Shell.TrayMenu.Tests/
 │   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs
