@@ -124,7 +124,7 @@ public class ManagementGesturesTests
     public async Task AnUnlinkedRapportIsPreviewedThenBinnedAfterApproval()
     {
         using var server = new FakeAnytypeServer();
-        server.OnGetObject(ObjId, Obj(DevSpace.Types.Rapport));
+        server.OnGetObject(ObjId, Obj(DevSpace.Types.Report));
         server.OnV2Search(Backlinks()); // served again for every links read
         server.OnDeleteObject(ObjId, new JsonObject());
         var approval = new FakeApproval(DeletionApprovalOutcome.Approved);
@@ -148,7 +148,7 @@ public class ManagementGesturesTests
     public async Task ARapportAnotherObjectLinksToIsPreviewedWithItsLinkThenBinnedLikeAnyObject()
     {
         using var server = new FakeAnytypeServer();
-        server.OnGetObject(ObjId, Obj(DevSpace.Types.Rapport));
+        server.OnGetObject(ObjId, Obj(DevSpace.Types.Report));
         server.OnV2Search(Backlinks(OtherId)); // served again for every links read
         server.OnDeleteObject(ObjId, new JsonObject());
         var approval = new FakeApproval(DeletionApprovalOutcome.Approved);

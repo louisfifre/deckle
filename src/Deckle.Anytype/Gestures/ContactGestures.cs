@@ -5,15 +5,12 @@ namespace Deckle.Anytype;
 
 // The actors of the model v6: a person and a company, created in two gestures
 // (a person never needs a company), then linked from the work they took part
-// in with link. The space of 2026-11-04 holds them as the v5 types « contact »
-// and « entreprise », with an email and a phone on the person and an address
-// on the company only; what the model adds (a website, the company's own
-// email and phone, the person's address) waits for the recreation, so it is
-// not taken here rather than taken and lost.
+// in with link. Both carry the shared coordinates: email, phone, website and
+// address.
 //
-// The role is a select the person creates in Anytype, never this code: it is
-// looked for live, and a person asked with a role the space cannot hold yet
-// is still created, with the answer saying so.
+// The role is a select whose options the person creates in Anytype, never this
+// code: it is looked for live, and a person asked with a role the space cannot
+// hold is still created, with the answer saying so.
 //
 // Both creations go through the v2 writer, whose Idempotency-Key keeps a
 // resend from making a second person. The property values are plain strings:
@@ -25,7 +22,7 @@ public sealed class ContactGestures(AnytypeApiClient api, NameResolver resolver,
 
     public async Task<string> CreatePersonAsync(
         string name, string? email = null, string? phone = null, string? company = null,
-        string? role = null, CancellationToken ct = default)
+        string? role = null, string? website = null, string? address = null, CancellationToken ct = default)
     {
         long t0 = Stopwatch.GetTimestamp();
         name = RequireName(name);
@@ -34,7 +31,7 @@ public sealed class ContactGestures(AnytypeApiClient api, NameResolver resolver,
         string? companyId = null, companyName = null;
         if (!string.IsNullOrWhiteSpace(company))
         {
-            companyId = await resolver.ResolveAsync(company, [DevSpace.Types.Entreprise], NameMatch.Exact, ct);
+            companyId = await resolver.ResolveAsync(company, [DevSpace.Types.Company], NameMatch.Exact, ct);
             companyName = await NameAsync(companyId, company, ct);
         }
 
@@ -52,12 +49,14 @@ public sealed class ContactGestures(AnytypeApiClient api, NameResolver resolver,
         }
 
         var props = new JsonObject();
-        if (Clean(email) is { } mail) props[DevSpace.Props.Courriel] = mail;
-        if (Clean(phone) is { } tel) props[DevSpace.Props.Telephone] = tel;
-        if (companyId is not null) props[DevSpace.Props.EntrepriseLiee] = new JsonArray(companyId);
+        if (Clean(email) is { } mail) props[DevSpace.Props.Email] = mail;
+        if (Clean(phone) is { } tel) props[DevSpace.Props.Phone] = tel;
+        if (Clean(website) is { } site) props[DevSpace.Props.Website] = site;
+        if (Clean(address) is { } where) props[DevSpace.Props.Address] = where;
+        if (companyId is not null) props[DevSpace.Props.Company] = new JsonArray(companyId);
         if (roleKey is not null && roleName is not null) props[roleKey] = new JsonArray(roleName);
 
-        string id = await CreateAsync(DevSpace.Types.Contact, name, props, ct);
+        string id = await CreateAsync(DevSpace.Types.Person, name, props, ct);
 
         var facts = new List<string> { $"Personne créée : {name}", $"id : {id}" };
         if (companyName is not null) facts.Add($"Entreprise : {companyName}");
@@ -68,15 +67,19 @@ public sealed class ContactGestures(AnytypeApiClient api, NameResolver resolver,
     }
 
     public async Task<string> CreateCompanyAsync(
-        string name, string? address = null, CancellationToken ct = default)
+        string name, string? address = null, string? email = null, string? phone = null,
+        string? website = null, CancellationToken ct = default)
     {
         long t0 = Stopwatch.GetTimestamp();
         name = RequireName(name);
 
         var props = new JsonObject();
-        if (Clean(address) is { } where) props[DevSpace.Props.Adresse] = where;
+        if (Clean(address) is { } where) props[DevSpace.Props.Address] = where;
+        if (Clean(email) is { } mail) props[DevSpace.Props.Email] = mail;
+        if (Clean(phone) is { } tel) props[DevSpace.Props.Phone] = tel;
+        if (Clean(website) is { } site) props[DevSpace.Props.Website] = site;
 
-        string id = await CreateAsync(DevSpace.Types.Entreprise, name, props, ct);
+        string id = await CreateAsync(DevSpace.Types.Company, name, props, ct);
 
         DeckleAnytypeSource.Log.GestureCompleted("create_company", Stopwatch.GetElapsedTime(t0).TotalMilliseconds);
         return $"Entreprise créée : {name}\nid : {id}";

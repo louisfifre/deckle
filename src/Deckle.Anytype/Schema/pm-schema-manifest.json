@@ -1,0 +1,139 @@
+{
+  "types": [
+    {
+      "key": "epic",
+      "name": "Epic",
+      "plural_name": "Epics",
+      "description": "Regroupement durable de projets : une grande application, une activité.",
+      "layout": "collection",
+      "icon": {"format": "icon", "name": "apps", "color": "purple"},
+      "properties": [
+        "status", "priority", "done_definition",
+        "budget_estimated", "budget_actual", "effort_estimated", "effort_actual",
+        "documents", "archive"
+      ]
+    },
+    {
+      "key": "project",
+      "name": "Projet",
+      "plural_name": "Projets",
+      "description": "Un sujet large et durable dans lequel on travaille.",
+      "layout": "basic",
+      "icon": {"format": "icon", "name": "construct", "color": "orange"},
+      "properties": [
+        "status", "priority", "done_definition", "due_date",
+        "budget_estimated", "budget_actual", "effort_estimated", "effort_actual",
+        "epic", "depends_on", "documents", "contacts", "archive"
+      ]
+    },
+    {
+      "key": "task",
+      "name": "Tâche",
+      "plural_name": "Tâches",
+      "description": "Une unité exécutable qui fait avancer un sujet et se coche vite.",
+      "layout": "action",
+      "icon": {"format": "icon", "name": "checkbox", "color": "orange"},
+      "properties": [
+        "done", "task_type", "priority", "due_date", "slot", "done_definition",
+        "projects", "documents", "contacts",
+        "time_estimated", "time_actual", "files", "status", "archive"
+      ]
+    },
+    {
+      "key": "report",
+      "name": "Rapport",
+      "plural_name": "Rapports",
+      "description": "Le journal d'une séance de travail.",
+      "layout": "note",
+      "icon": {"format": "icon", "name": "journal", "color": "blue"},
+      "properties": ["tasks", "contacts", "archive"]
+    },
+    {
+      "key": "idea",
+      "name": "Idée",
+      "plural_name": "Idées",
+      "description": "Ce qui est dit en passant, à trier plus tard.",
+      "layout": "note",
+      "icon": {"format": "icon", "name": "bulb", "color": "yellow"},
+      "properties": ["documents", "archive"]
+    },
+    {
+      "key": "document",
+      "name": "Document",
+      "plural_name": "Documents",
+      "description": "La documentation : instructions, références, recherches, spécifications.",
+      "layout": "basic",
+      "icon": {"format": "icon", "name": "document-text", "color": "ice"},
+      "properties": ["document_type", "document_global", "version", "archive"]
+    },
+    {
+      "key": "person",
+      "name": "Personne",
+      "plural_name": "Personnes",
+      "description": "Une personne avec qui on travaille.",
+      "layout": "profile",
+      "icon": {"format": "icon", "name": "person", "color": "teal"},
+      "properties": ["company", "role", "email", "phone", "website", "address", "archive"]
+    },
+    {
+      "key": "company",
+      "name": "Entreprise",
+      "plural_name": "Entreprises",
+      "description": "Une entreprise avec laquelle on travaille.",
+      "layout": "profile",
+      "icon": {"format": "icon", "name": "business", "color": "teal"},
+      "properties": ["email", "phone", "website", "address", "archive"]
+    }
+  ],
+  "properties": [
+    {"key": "status", "name": "État", "format": "select", "tags": [
+      {"key": "ready", "name": "Prêt"}, {"key": "doing", "name": "En cours"},
+      {"key": "paused", "name": "En pause"}, {"key": "dormant", "name": "Dormant"}]},
+    {"key": "priority", "name": "Priorité", "format": "select", "tags": [
+      {"key": "p_0", "name": "0"}, {"key": "p_1", "name": "1"}, {"key": "p_2", "name": "2"},
+      {"key": "p_3", "name": "3"}, {"key": "p_4", "name": "4"}, {"key": "p_5", "name": "5"}]},
+    {"key": "done_definition", "name": "Définition de fini", "format": "text"},
+    {"key": "budget_estimated", "name": "Budget estimé", "format": "number"},
+    {"key": "budget_actual", "name": "Budget réel", "format": "number"},
+    {"key": "effort_estimated", "name": "Charge estimée", "format": "number"},
+    {"key": "effort_actual", "name": "Charge réelle", "format": "number"},
+    {"key": "done", "name": "Fini", "format": "checkbox"},
+    {"key": "task_type", "name": "Type de tâche", "format": "select",
+      "tags": [
+      {"key": "research", "name": "Chercher"}, {"key": "production", "name": "Produire"},
+      {"key": "organizing", "name": "Organiser"}, {"key": "exchange", "name": "Échanger"},
+      {"key": "management", "name": "Gérer"}, {"key": "monitoring", "name": "Surveiller"}]},
+    {"key": "slot", "name": "Créneau", "format": "select", "tags": [
+      {"key": "cap", "name": "Cap"}, {"key": "passion", "name": "Passion"},
+      {"key": "training", "name": "Entraînement"}]},
+    {"key": "time_estimated", "name": "Temps estimé", "format": "number"},
+    {"key": "time_actual", "name": "Temps réel", "format": "number"},
+    {"key": "files", "name": "Fichiers liés", "format": "files"},
+    {"key": "document_type", "name": "Type de document", "format": "select",
+      "tags": [
+      {"key": "tip", "name": "Astuce"}, {"key": "nomenclature", "name": "Nomenclature"},
+      {"key": "reference", "name": "Référence"}, {"key": "specification", "name": "Spécification"},
+      {"key": "instructions", "name": "Instructions"}, {"key": "research_note", "name": "Recherche"},
+      {"key": "architecture", "name": "Architecture"}, {"key": "resume", "name": "Reprise"}]},
+    {"key": "document_global", "name": "Document global", "format": "checkbox"},
+    {"key": "version", "name": "Version", "format": "text"},
+    {"key": "role", "name": "Rôle", "format": "select",
+      "tags": [
+      {"key": "administrative", "name": "Administratif"}, {"key": "decision", "name": "Décision"},
+      {"key": "finance", "name": "Finances"}, {"key": "product", "name": "Produit"},
+      {"key": "technical", "name": "Technique"}]},
+    {"key": "email", "name": "Courriel", "format": "email"},
+    {"key": "phone", "name": "Téléphone", "format": "phone"},
+    {"key": "website", "name": "Site web", "format": "url"},
+    {"key": "address", "name": "Adresse", "format": "text"},
+    {"key": "due_date", "name": "Date cible", "format": "date"},
+    {"key": "epic", "name": "Epic", "format": "objects"},
+    {"key": "depends_on", "name": "Dépend de", "format": "objects"},
+    {"key": "projects", "name": "Projets", "format": "objects"},
+    {"key": "tasks", "name": "Tâches", "format": "objects"},
+    {"key": "documents", "name": "Documents", "format": "objects"},
+    {"key": "contacts", "name": "Contacts", "format": "objects"},
+    {"key": "company", "name": "Entreprise", "format": "objects"},
+    {"key": "archive", "name": "Archivé", "format": "checkbox"}
+  ]
+}

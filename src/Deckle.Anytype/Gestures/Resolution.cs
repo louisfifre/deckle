@@ -221,7 +221,7 @@ public sealed class NameResolver(AnytypeApiClient api, AnytypeV2Client? v2 = nul
     // of one request, where reading each v2 candidate would cost one per hit.
     static bool TitledByBody(IReadOnlyList<string>? typeKeys) =>
         typeKeys is { Count: > 0 }
-        && typeKeys.Any(t => t is DevSpace.Types.Idee or DevSpace.Types.Rapport);
+        && typeKeys.Any(t => t is DevSpace.Types.Idea or DevSpace.Types.Report);
 
     // v2 takes ONE type per search, so several types cost one search each; the
     // hits are merged by id. A nameless object found without a type filter

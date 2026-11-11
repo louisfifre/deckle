@@ -229,7 +229,7 @@ public class NameResolverTests
     [Fact]
     public async Task NoTypeFilterSearchesOnceWithoutAType()
     {
-        var handler = new FakeV2Handler().Reply(HttpStatusCode.OK, Rows((FirstId, "Idée", "idee")));
+        var handler = new FakeV2Handler().Reply(HttpStatusCode.OK, Rows((FirstId, "Idée", "idea")));
 
         await ResolverOver(handler).ResolveAsync("Idée", null, NameMatch.Tolerant, Ct);
 
@@ -241,8 +241,8 @@ public class NameResolverTests
     public async Task ANamelessObjectReadsAsUntitledInAnAmbiguityMessage()
     {
         var handler = new FakeV2Handler().Reply(HttpStatusCode.OK, Rows(
-            (FirstId, "", "rapport"),
-            (SecondId, "", "idee")));
+            (FirstId, "", "report"),
+            (SecondId, "", "idea")));
 
         AmbiguousNameException error = await Assert.ThrowsAsync<AmbiguousNameException>(
             () => ResolverOver(handler).ResolveAsync("Journal", null, NameMatch.Tolerant, Ct));
@@ -273,7 +273,7 @@ public class NameResolverTests
         var resolver = new NameResolver(v1, new AnytypeV2Client(
             new AnytypeCredentials("http://127.0.0.1:31012", "2025-11-08", "test-bearer", v1.SpaceId), null, handler));
 
-        string id = await resolver.ResolveAsync("Socle MCP", [DevSpace.Types.Idee], match, Ct);
+        string id = await resolver.ResolveAsync("Socle MCP", [DevSpace.Types.Idea], match, Ct);
 
         Assert.Equal(FirstId, id);
         Assert.Empty(handler.Requests);
@@ -283,7 +283,7 @@ public class NameResolverTests
             ["id"] = id,
             ["name"] = "",
             ["snippet"] = snippet,
-            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Idee },
+            ["type"] = new JsonObject { ["key"] = DevSpace.Types.Idea },
         };
     }
 

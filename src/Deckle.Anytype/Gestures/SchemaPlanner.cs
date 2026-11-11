@@ -24,6 +24,10 @@ internal static class SchemaPlanner
                 if (!string.Equals(existing.Format, prop.Format, StringComparison.Ordinal))
                     conflicts.Add(
                         $"propriété {prop.Key} : format existant {existing.Format}, demandé {prop.Format}");
+                // A fresh space ships status, done and due_date under English
+                // names; the manifest names them, so the name is aligned.
+                else if (!string.Equals(existing.Name, prop.Name, StringComparison.Ordinal))
+                    actions.Add(new SchemaAction("rename", $"property:{prop.Key}", prop.Name));
             }
             else
             {
@@ -45,6 +49,9 @@ internal static class SchemaPlanner
             bool exists = snapshot.Types.TryGetValue(type.Key, out SchemaTypeInfo? existingType);
             if (!exists)
                 actions.Add(new SchemaAction("create_type", type.Key, type.Name));
+            else if (!string.Equals(existingType!.Name, type.Name, StringComparison.Ordinal)
+                || !string.Equals(existingType.PluralName, type.PluralName, StringComparison.Ordinal))
+                actions.Add(new SchemaAction("rename", $"type:{type.Key}", type.Name));
 
             if (type.Icon is not null)
             {
@@ -190,7 +197,7 @@ internal static class SchemaPlanner
         foreach (SchemaAction action in preview.Actions)
         {
             sb.Append("- ").Append(action.Kind).Append(" · ").Append(action.Key);
-            if (action.Kind is "set_icon" or "set_description" or "order_properties")
+            if (action.Kind is "set_icon" or "set_description" or "order_properties" or "rename")
                 sb.Append(" · ").Append(action.Name);
             sb.Append('\n');
         }
@@ -263,6 +270,9 @@ internal static class SchemaPlanner
         public bool Changed => Attached.Count > 0 || Detached.Count > 0 || Reordered;
     }
 
+    // The relations Anytype pins in every type's header.
+    private static readonly HashSet<string> HeaderKeys = new(StringComparer.Ordinal) { "tag", "backlinks" };
+
     internal static TypePropertyDiff DiffTypeProperties(
         TypeSpec type,
         SchemaTypeInfo live,
@@ -272,6 +282,11 @@ internal static class SchemaPlanner
         var unresolvable = new List<string>();
         foreach (SchemaPropertyLinkInfo link in live.PropertyLinks)
         {
+            // The header bucket is out of reach (the API drops its keys from the
+            // list it receives), so planning its removal never converges: a
+            // fresh space still showed 16 detach actions after a clean apply
+            // (trial of 2026-11-09, anytype-cli 0.5.0).
+            if (HeaderKeys.Contains(link.Key)) continue;
             if (TryResolveLink(link, propertiesByKey, out SchemaPropertyInfo? property))
                 liveKeys.Add(property!.Key);
             else if (link.HasPayload)

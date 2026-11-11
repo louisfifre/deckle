@@ -38,10 +38,10 @@ public class ContactGesturesTests
         }));
         server.OnListPropertyTags(RolePropertyId, Page(
             new JsonObject { ["key"] = "decision", ["name"] = "Décision" },
-            new JsonObject { ["key"] = "technique", ["name"] = "Technique" }));
+            new JsonObject { ["key"] = "technical", ["name"] = "Technique" }));
     }
 
-    // The space of 2026-11-04: only the v5 link to the « Rôle » type.
+    // A space whose role is still the v5 link to a « Rôle » type, not a select.
     static void WithoutRoleSelect(FakeAnytypeServer server) =>
         server.OnListProperties(Page(new JsonObject
         {
@@ -57,7 +57,7 @@ public class ContactGesturesTests
         using var server = new FakeAnytypeServer();
         WithRoleSelect(server);
         FakeV2Handler v2 = new FakeV2Handler()
-            .Reply(HttpStatusCode.OK, "{\"id\":\"" + CompanyId + "\",\"type\":\"entreprise\",\"properties\":{\"name\":\"Atelier\"}}")
+            .Reply(HttpStatusCode.OK, "{\"id\":\"" + CompanyId + "\",\"type\":\"company\",\"properties\":{\"name\":\"Atelier\"}}")
             .Reply(HttpStatusCode.Created, "{\"id\":\"" + PersonId + "\"}");
 
         string digest = await NewGestures(server, v2).CreatePersonAsync(
@@ -65,12 +65,12 @@ public class ContactGesturesTests
             company: CompanyId, role: "décision", ct: Ct);
 
         JsonObject body = PostedBody(v2);
-        Assert.Equal(DevSpace.Types.Contact, body["type"]!.GetValue<string>());
+        Assert.Equal(DevSpace.Types.Person, body["type"]!.GetValue<string>());
         Assert.Equal("Camille Martin", body["name"]!.GetValue<string>());
         JsonObject props = body["properties"]!.AsObject();
-        Assert.Equal("camille@example.test", props[DevSpace.Props.Courriel]!.GetValue<string>());
-        Assert.Equal("01 02 03 04 05", props[DevSpace.Props.Telephone]!.GetValue<string>());
-        Assert.Equal(CompanyId, props[DevSpace.Props.EntrepriseLiee]!.AsArray().Single()!.GetValue<string>());
+        Assert.Equal("camille@example.test", props[DevSpace.Props.Email]!.GetValue<string>());
+        Assert.Equal("01 02 03 04 05", props[DevSpace.Props.Phone]!.GetValue<string>());
+        Assert.Equal(CompanyId, props[DevSpace.Props.Company]!.AsArray().Single()!.GetValue<string>());
         Assert.Equal("Décision", props["role"]!.AsArray().Single()!.GetValue<string>());
 
         Assert.Contains("Personne créée : Camille Martin", digest);
@@ -109,6 +109,39 @@ public class ContactGesturesTests
         Assert.Empty(v2.Requests);
     }
 
+    // The model v6 gives a person a website and an address, and a company the
+    // same coordinates as a person.
+    [Fact]
+    public async Task CreatePersonAlsoSendsTheWebsiteAndTheAddress()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = new FakeV2Handler().Reply(HttpStatusCode.Created, "{\"id\":\"" + PersonId + "\"}");
+
+        await NewGestures(server, v2).CreatePersonAsync(
+            "Camille", website: " https://camille.example.test ", address: "2 quai Neuf", ct: Ct);
+
+        JsonObject props = PostedBody(v2)["properties"]!.AsObject();
+        Assert.Equal("https://camille.example.test", props[DevSpace.Props.Website]!.GetValue<string>());
+        Assert.Equal("2 quai Neuf", props[DevSpace.Props.Address]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task CreateCompanyAlsoSendsTheEmailThePhoneAndTheWebsite()
+    {
+        using var server = new FakeAnytypeServer();
+        FakeV2Handler v2 = new FakeV2Handler().Reply(HttpStatusCode.Created, "{\"id\":\"" + CompanyId + "\"}");
+
+        await NewGestures(server, v2).CreateCompanyAsync(
+            "Atelier", email: "contact@atelier.example.test", phone: "09 87 65 43 21",
+            website: "https://atelier.example.test", ct: Ct);
+
+        JsonObject props = PostedBody(v2)["properties"]!.AsObject();
+        Assert.Equal("contact@atelier.example.test", props[DevSpace.Props.Email]!.GetValue<string>());
+        Assert.Equal("09 87 65 43 21", props[DevSpace.Props.Phone]!.GetValue<string>());
+        Assert.Equal("https://atelier.example.test", props[DevSpace.Props.Website]!.GetValue<string>());
+        Assert.False(props.ContainsKey(DevSpace.Props.Address));
+    }
+
     [Fact]
     public async Task CreateCompanySendsItsNameAndAddress()
     {
@@ -118,8 +151,8 @@ public class ContactGesturesTests
         string digest = await NewGestures(server, v2).CreateCompanyAsync("Atelier", address: "1 rue du Port", ct: Ct);
 
         JsonObject body = PostedBody(v2);
-        Assert.Equal(DevSpace.Types.Entreprise, body["type"]!.GetValue<string>());
-        Assert.Equal("1 rue du Port", body["properties"]![DevSpace.Props.Adresse]!.GetValue<string>());
+        Assert.Equal(DevSpace.Types.Company, body["type"]!.GetValue<string>());
+        Assert.Equal("1 rue du Port", body["properties"]![DevSpace.Props.Address]!.GetValue<string>());
         Assert.Contains("Entreprise créée : Atelier", digest);
         Assert.Empty(server.Requests);
     }

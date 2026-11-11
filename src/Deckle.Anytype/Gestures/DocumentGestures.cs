@@ -2,7 +2,7 @@ using System.Text.Json.Nodes;
 
 namespace Deckle.Anytype;
 
-// Document gestures: create stable reference documents in the Dev space. Reads,
+// Document gestures: create stable reference documents. Reads,
 // property updates, and section edits stay on the generic query surface; this
 // class owns only the document-specific creation intent.
 public sealed class DocumentGestures(AnytypeApiClient api)
@@ -12,7 +12,7 @@ public sealed class DocumentGestures(AnytypeApiClient api)
         string type,
         string? body = null,
         string? version = null,
-        bool system = false,
+        bool isGlobal = false,
         CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
@@ -20,21 +20,21 @@ public sealed class DocumentGestures(AnytypeApiClient api)
         if (string.IsNullOrWhiteSpace(name))
             throw new ArgumentException("Le nom du document ne peut pas être vide.", nameof(name));
 
-        string typeKey = DevSpace.TypeDeDocument.Resolve(type)
+        string typeKey = DevSpace.DocumentType.Resolve(type)
             ?? throw new ArgumentException($"Type de document inconnu « {type} ».", nameof(type));
 
         string? versionValue = string.IsNullOrWhiteSpace(version) ? null : version.Trim();
 
         var properties = new JsonArray
         {
-            SelectProp(DevSpace.Props.TypeDeDocument, typeKey),
+            SelectProp(DevSpace.Props.DocumentType, typeKey),
         };
 
         if (versionValue is not null)
             properties.Add(TextProp(DevSpace.Props.Version, versionValue));
 
-        if (system)
-            properties.Add(CheckboxProp(DevSpace.Props.DocumentSysteme, true));
+        if (isGlobal)
+            properties.Add(CheckboxProp(DevSpace.Props.DocumentGlobal, true));
 
         var payload = new JsonObject
         {
@@ -52,7 +52,7 @@ public sealed class DocumentGestures(AnytypeApiClient api)
 
         string objName = NameOf(created, name.Trim());
         string suffix = versionValue is null ? "" : $", version {versionValue}";
-        if (system) suffix += ", système";
+        if (isGlobal) suffix += ", global";
         return $"Document créé : {objName} ({DisplayType(typeKey)}{suffix})";
     }
 
@@ -66,7 +66,7 @@ public sealed class DocumentGestures(AnytypeApiClient api)
         => new() { ["key"] = key, ["checkbox"] = value };
 
     static string DisplayType(string typeKey)
-        => DevSpace.TypeDeDocument.NameFor(typeKey) ?? typeKey;
+        => DevSpace.DocumentType.NameFor(typeKey) ?? typeKey;
 
     static string NameOf(JsonObject obj, string fallback)
     {

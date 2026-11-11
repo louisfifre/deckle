@@ -27,7 +27,7 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
     // One insert_blocks run holds 1 to 256 blocks.
     const int MaxBlockRun = 256;
 
-    /// <param name="type">type_de_tache tag KEY or display name (both accepted).</param>
+    /// <param name="type">task_type option KEY or display name (both accepted).</param>
     /// <param name="priority">0-5; null leaves it unset.</param>
     /// <param name="checklist">Subtask labels, one checklist item each.</param>
     /// <param name="notes">Text for the template's notes section.</param>
@@ -44,7 +44,7 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
     {
         var sw = Stopwatch.StartNew();
 
-        string typeKey = DevSpace.TypeDeTache.Resolve(type)
+        string typeKey = DevSpace.TaskType.Resolve(type)
             ?? throw new ArgumentException(
                 $"Type de tâche inconnu « {type} ».", nameof(type));
 
@@ -84,27 +84,27 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
             project, new[] { DevSpace.Types.Project }, NameMatch.Exact, ct);
 
         // The slot is read before the create, so an unknown option is refused
-        // with nothing made. A space without the property yet (the one of
-        // 2026-11-04) still gets its task: the answer says the slot was not set.
+        // with nothing made. A space without the property still gets its task:
+        // the answer says the slot was not set.
         (string? slotKey, string? slotName, string? slotNote) = await ResolveSlotAsync(slot, ct);
 
         // Properties are a {key: value} map. A select or a relation takes a
         // LIST (schema of POST /objects), and a select option is addressed by
         // its NAME, not by the v1 tag key: a v1 key answers 400 "option does
-        // not exist" (measured on PATCH, not on a create). `template` replaces
-        // the v1 `template_id`; naming it is reported as source "request"
-        // (measured on a dry run).
+        // not exist" (measured on PATCH, not on a create). No template is named:
+        // the type's default one applies (receipt source "type_default"), so the
+        // template of each task type is chosen in Anytype.
         var props = new JsonObject
         {
-            [DevSpace.Props.RelationProjet] = new JsonArray(projectId),
-            [DevSpace.Props.TypeDeTache] = new JsonArray(DisplayType(typeKey)),
+            [DevSpace.Props.Projects] = new JsonArray(projectId),
+            [DevSpace.Props.TaskType] = new JsonArray(DisplayType(typeKey)),
         };
 
         if (priority is int level)
         {
             DevSpace.Priority.KeyFor(level); // refuses a level outside 0-5
             // The options of priorite are named "0" to "5" (measured).
-            props[DevSpace.Props.Priorite] = new JsonArray(
+            props[DevSpace.Props.Priority] = new JsonArray(
                 level.ToString(System.Globalization.CultureInfo.InvariantCulture));
         }
 
@@ -112,17 +112,15 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
         // map form of POST /objects. Measured for the date (open_report), not
         // for text and number on a create.
         if (day is not null) props[DevSpace.Props.DueDate] = day;
-        if (definition.Length > 0) props[DevSpace.Props.DefinitionDeFini] = definition;
-        // The space of 2026-11-04 holds the estimate as « Charge estimée »; the
-        // model v6 renames it Temps estimé, in hours, at the recreation.
-        if (timeEstimated is double estimate) props[DevSpace.Props.ChargeEstimee] = estimate;
+        if (definition.Length > 0) props[DevSpace.Props.DoneDefinition] = definition;
+        // Temps estimé, in hours (model v6).
+        if (timeEstimated is double estimate) props[DevSpace.Props.TimeEstimated] = estimate;
         if (slotKey is not null && slotName is not null) props[slotKey] = new JsonArray(slotName);
 
         var payload = new JsonObject
         {
             ["type"] = DevSpace.Types.Task,
             ["name"] = name,
-            ["template"] = DevSpace.Templates.Task,
             ["properties"] = props,
         };
 
@@ -481,5 +479,5 @@ public sealed class TaskGestures(AnytypeApiClient api, NameResolver resolver, An
                 : fallback;
 
     static string DisplayType(string typeKey)
-        => DevSpace.TypeDeTache.NameFor(typeKey) ?? typeKey;
+        => DevSpace.TaskType.NameFor(typeKey) ?? typeKey;
 }

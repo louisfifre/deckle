@@ -91,19 +91,84 @@ public class ToolCatalogTests
     }
 
     [Fact]
-    public void ProjectManagementToolsAdvertiseTheEpicChantierTaskModel()
+    public void ProjectManagementToolsAdvertiseTheEpicProjectTaskModel()
     {
         var tools = BuildCatalog();
         ToolDescriptor complete = tools.Single(t => t.Name == "complete");
         ToolDescriptor createTask = tools.Single(t => t.Name == "create_task");
         ToolDescriptor createProject = tools.Single(t => t.Name == "create_project");
 
-        Assert.Contains("project or task", complete.Description);
+        // The done box is a task's signal; a project is refused and sent to archive.
+        Assert.Contains("a task's built-in done checkbox", complete.Description);
+        Assert.Contains("closed with archive", complete.Description);
         Assert.True(((JsonObject)complete.InputSchema["properties"]!).ContainsKey("object"));
-        Assert.Contains("surveillance", PropertyDescription(createTask, "type"));
+        Assert.Contains("monitoring", PropertyDescription(createTask, "type"));
+        Assert.DoesNotContain("surveillance", PropertyDescription(createTask, "type"));
         Assert.Contains("Existing projects", PropertyDescription(createProject, "epic"));
         Assert.Contains("permanent Epic", McpSurfaceDescriptor.ProjectManagement.Instructions);
-        Assert.Contains("Project (chantier)", McpSurfaceDescriptor.ProjectManagement.Instructions);
+        Assert.Contains("A Project is a durable subject", McpSurfaceDescriptor.ProjectManagement.Instructions);
+    }
+
+    // The model v6 retired the chantier renamed at each stage and the done box of
+    // a project: the words of the old model must not come back in what the server
+    // tells a client.
+    [Fact]
+    public void ProjectManagementTextsSpeakTheV6ModelAndNotTheOldOne()
+    {
+        string instructions = McpSurfaceDescriptor.ProjectManagement.Instructions;
+        string all = instructions + "\n" + string.Join(
+            "\n", BuildCatalog().Select(t => t.Description + "\n" + t.InputSchema.ToJsonString()));
+
+        Assert.Contains("closed by archiving", instructions);
+        Assert.Contains("has no done checkbox", instructions);
+        Assert.Contains("ready (Prêt), doing (En cours), paused (En pause), dormant (Dormant)", instructions);
+        Assert.Contains("État is kept on projects only", instructions);
+
+        foreach (string old in new[]
+        {
+            "chantier", "Chantier", "termine", "en_cours", "en_attente", "abandonne", "ouvert",
+            "renamed after", "depend_de", "contact_lie", "entreprise", "rapport", "idee",
+            "recherche", "organiser", "echanger", "gestion", "surveillance",
+        })
+            Assert.DoesNotContain(old, all);
+    }
+
+    [Fact]
+    public void ListProjectsAndCreateProjectNameTheFourStatesOfAProject()
+    {
+        var tools = BuildCatalog();
+
+        foreach ((string tool, string argument) in new[] { ("list_projects", "state"), ("create_project", "state") })
+        {
+            string text = PropertyDescription(tools.Single(t => t.Name == tool), argument);
+            Assert.Contains("ready (Prêt)", text);
+            Assert.Contains("dormant (Dormant)", text);
+            Assert.DoesNotContain("termine", text);
+        }
+    }
+
+    // An epic carries no état the tools write, and a project is created with its
+    // état, priority and broad done definition (model v6, section Project).
+    [Fact]
+    public void CreateEpicTakesOnlyANameAndCreateProjectTakesTheProjectFacts()
+    {
+        var tools = BuildCatalog();
+
+        Assert.Equal(
+            ["name"],
+            ((JsonObject)tools.Single(t => t.Name == "create_epic").InputSchema["properties"]!).Select(p => p.Key));
+        var project = (JsonObject)tools.Single(t => t.Name == "create_project").InputSchema["properties"]!;
+        Assert.Contains("priority", project.Select(p => p.Key));
+        Assert.Contains("done_definition", project.Select(p => p.Key));
+    }
+
+    [Fact]
+    public void SearchRestrictsItsTypesToTheV6TypeKeys()
+    {
+        ToolDescriptor search = BuildCatalog().Single(t => t.Name == "search");
+        JsonArray types = (JsonArray)search.InputSchema["properties"]!["types"]!["items"]!["enum"]!;
+
+        Assert.Equal(DevSpace.TypeKeys, types.Select(n => n!.GetValue<string>()));
     }
 
     [Fact]

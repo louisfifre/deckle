@@ -52,10 +52,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
             if (context)
             {
                 if (typeKey is DevSpace.Types.Project or DevSpace.Types.Task)
-                {
-                    AppendSearchProperty(sb, o, DevSpace.Props.Description, "Description");
-                    AppendSearchProperty(sb, o, DevSpace.Props.DefinitionDeFini, "Définition de fini");
-                }
+                    AppendSearchProperty(sb, o, DevSpace.Props.DoneDefinition, "Définition de fini");
 
                 string snippet = QueryProp.Snippet(o);
                 if (snippet.Length > 0)
@@ -79,8 +76,9 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
             sb.Append('\n').Append(label).Append(" : ").Append(value.Trim());
     }
 
-    // État remains planning state; completion is the built-in `done` signal for
-    // both chantier and task.
+    // The built-in `done` box is the completion signal of a task. A project has
+    // none: it is a durable subject, closed by archiving. A project is still
+    // resolved here, so the refusal can tell where its closing gesture is.
     public async Task<string> CompleteAsync(
         string selector, bool value = true, CancellationToken ct = default)
     {
@@ -92,9 +90,13 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
         using var _ = await api.AcquireWriteScopeAsync("complete", id, ct);
         JsonObject obj = await api.GetObjectAsync(id, ct);
         string type = QueryProp.TypeKey(obj) ?? "";
-        if (type is not (DevSpace.Types.Project or DevSpace.Types.Task))
+        if (type == DevSpace.Types.Project)
             throw new InvalidOperationException(
-                "Seuls un chantier (project) ou une tâche portent le signal de fin canonique.");
+                $"Refusé : {QueryProp.Name(obj)} est un projet, et un projet n'a pas de case Fini : il se clôt en l'archivant (archive), "
+                + "ce qui est refusé tant qu'une de ses tâches est ouverte. Rien n'a bougé.");
+        if (type != DevSpace.Types.Task)
+            throw new InvalidOperationException(
+                "Seule une tâche porte la case Fini ; un projet se clôt avec archive.");
 
         var payload = new JsonObject
         {
@@ -109,14 +111,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
         DeckleAnytypeSource.Log.GestureCompleted("complete", Elapsed(started));
 
         string name = QueryProp.Name(updated);
-        bool project = type == DevSpace.Types.Project;
-        return (project, value) switch
-        {
-            (true, true) => $"Chantier terminé : {name}",
-            (true, false) => $"Chantier rouvert : {name}",
-            (false, true) => $"Tâche terminée : {name}",
-            _ => $"Tâche rouverte : {name}",
-        };
+        return value ? $"Tâche terminée : {name}" : $"Tâche rouverte : {name}";
     }
 
     // The API PATCH replaces a property's value wholesale, so this is a
@@ -137,6 +132,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
         // destination property and writes each property once.
         var byProp = new Dictionary<string, List<string>>(StringComparer.Ordinal);
         var collectionAdds = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        var single = new HashSet<string>(StringComparer.Ordinal);
         foreach (string t in targets)
         {
             string targetId = await resolver.ResolveAsync(t, typeKeys: null, NameMatch.Exact, ct);
@@ -148,20 +144,39 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
                 throw new InvalidOperationException(SupportedPairsError(sourceType, targetType));
 
             if (route.PropertyKey is { } propKey)
+            {
                 (byProp.TryGetValue(propKey, out var list) ? list : byProp[propKey] = []).Add(targetId);
-            else
-                (collectionAdds.TryGetValue(targetId, out var list) ? list : collectionAdds[targetId] = []).Add(sourceId);
+                if (route.Single) single.Add(propKey);
+            }
+            if (route.AlsoCollection)
+                (collectionAdds.TryGetValue(targetId, out var members) ? members : collectionAdds[targetId] = []).Add(sourceId);
         }
 
         var entries = new JsonArray();
+        var leftCollections = new List<string>();
         int added = 0;
         foreach ((string propKey, List<string> ids) in byProp)
         {
-            var union = new List<string>(QueryProp.ObjectRefs(sourceObj, propKey));
-            foreach (string id in ids)
+            var current = QueryProp.ObjectRefs(sourceObj, propKey);
+            var union = new List<string>(current);
+            if (single.Contains(propKey))
             {
-                if (!union.Contains(id)) { union.Add(id); added++; }
+                // A link to « zero or one » object: the target replaces the
+                // current one. Several targets cannot all be kept.
+                List<string> wanted = ids.Distinct(StringComparer.Ordinal).ToList();
+                if (wanted.Count > 1)
+                    throw new InvalidOperationException(
+                        $"Refusé : {QueryProp.Name(sourceObj)} ne peut avoir qu'une cible pour « {DevSpace.PropertyLabel(propKey) ?? propKey} », {wanted.Count} données. Rien n'a bougé.");
+                if (propKey == DevSpace.Props.Epic)
+                    leftCollections.AddRange(current.Where(id => id != wanted[0]));
+                union = wanted;
+                added += wanted.Count(id => !current.Contains(id));
             }
+            else
+                foreach (string id in ids)
+                {
+                    if (!union.Contains(id)) { union.Add(id); added++; }
+                }
 
             var refs = new JsonArray();
             foreach (string id in union) refs.Add(id);
@@ -170,6 +185,11 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
 
         if (entries.Count > 0)
             await api.UpdateObjectAsync(sourceId, new JsonObject { ["properties"] = entries }, ct);
+
+        // The epic a project leaves loses it as a collection too, so the property
+        // and the collection never name two epics.
+        foreach (string collectionId in leftCollections)
+            await api.RemoveFromCollectionAsync(collectionId, sourceId, ct);
 
         int collectionRequests = 0;
         foreach ((string collectionId, List<string> ids) in collectionAdds)
@@ -219,7 +239,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
 
             if (route.PropertyKey is { } propKey)
                 (byProp.TryGetValue(propKey, out var set) ? set : byProp[propKey] = new(StringComparer.Ordinal)).Add(targetId);
-            else if (!collections.Contains(targetId))
+            if (route.AlsoCollection && !collections.Contains(targetId))
                 collections.Add(targetId);
         }
 
@@ -258,8 +278,8 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
     // The links the model forbids to empty, with the reason the refusal gives.
     static string? MustKeepOne(string sourceType, string propKey) => (sourceType, propKey) switch
     {
-        (DevSpace.Types.Task, DevSpace.Props.RelationProjet) => "une tâche vit toujours dans un projet",
-        (DevSpace.Types.Rapport, DevSpace.Props.TachesLiees) => "un rapport appartient toujours à une tâche",
+        (DevSpace.Types.Task, DevSpace.Props.Projects) => "une tâche vit toujours dans un projet",
+        (DevSpace.Types.Report, DevSpace.Props.Tasks) => "un rapport appartient toujours à une tâche",
         _ => null,
     };
 
@@ -288,7 +308,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
         // rapport and idee are body-titled (empty `name`, title = first line of the
         // body): they have no own name to rewrite. Detection goes by type key
         // because the GET carries no `layout` field.
-        if (hasName && (objType == DevSpace.Types.Rapport || objType == DevSpace.Types.Idee))
+        if (hasName && (objType == DevSpace.Types.Report || objType == DevSpace.Types.Idea))
             throw new InvalidOperationException(
                 $"Le type {objType} tire son titre de la première ligne de son corps — " +
                 "il n'a pas de nom propre à renommer. Édite le corps (replace_section) plutôt que de passer un nom.");
@@ -302,6 +322,17 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
                     throw new InvalidOperationException(
                         $"Propriété inconnue « {nameOrKey} » pour le type {objType}. " +
                         $"Connues : {string.Join(", ", DevSpace.PropertiesFor(objType).Select(p => p.Label))}.");
+
+                // État is kept on projects only: on an epic or a task it is a hidden
+                // property the MCP never writes.
+                if (key == DevSpace.Props.Status && objType != DevSpace.Types.Project)
+                    throw new InvalidOperationException(
+                        $"Refusé : l'état ne se tient que sur un projet ; {QueryProp.Name(obj)} est un objet {objType}. Rien n'a bougé.");
+                // A project enters its epic by the property and by the collection;
+                // link writes both, update would write one.
+                if (key == DevSpace.Props.Epic)
+                    throw new InvalidOperationException(
+                        "Refusé : le lien d'un projet à son epic s'écrit avec link (la propriété et la collection ensemble). Rien n'a bougé.");
 
                 JsonObject entry = await BuildEntryAsync(key, format, value, ct);
 
@@ -338,8 +369,8 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
     }
 
     // A lifecycle verb kept distinct from update for the small model's sake,
-    // though update can write the same checkbox. Rapport carries no « Archivé »:
-    // a report is never archived, it stays searchable.
+    // though update can write the same checkbox. A report carries the box but is
+    // never archived in practice: it stays searchable.
     public async Task<string> ArchiveAsync(string selector, bool value = true, CancellationToken ct = default)
     {
         var started = DateTime.UtcNow;
@@ -533,7 +564,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
 
         var payload = new JsonObject
         {
-            ["type"] = DevSpace.Types.Idee,
+            ["type"] = DevSpace.Types.Idea,
             ["markdown"] = MarkdownBody.PrepareForWrite(content),
         };
         await _writer.CreateObjectAsync(payload, ct: ct);
@@ -567,7 +598,7 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
             new AnytypeV2SearchRequest
             {
                 Type = DevSpace.Types.Task,
-                Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.RelationProjet, [projectId])],
+                Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.Projects, [projectId])],
                 Fields = [DevSpace.Props.Done, DevSpace.Props.Archive],
             }, ct);
 
@@ -577,31 +608,37 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
             .ToList();
     }
 
-    // A null PropertyKey routes to collection membership on the target.
-    sealed record LinkRoute(string? PropertyKey);
+    // PropertyKey is the link property written on the source (null: none).
+    // Single marks a « zero or one » link, replaced by the new target.
+    // AlsoCollection adds the source to the target's collection too: a project
+    // enters its epic by the property and by the collection (model v6).
+    sealed record LinkRoute(string? PropertyKey, bool Single = false, bool AlsoCollection = false);
 
     static LinkRoute? LinkRouteFor(string sourceType, string targetType)
     {
-        if (sourceType == DevSpace.Types.Task && targetType == DevSpace.Types.Project) return new(DevSpace.Props.RelationProjet);
-        if (sourceType == DevSpace.Types.Rapport && targetType == DevSpace.Types.Task) return new(DevSpace.Props.TachesLiees);
-        if (sourceType == DevSpace.Types.Project && targetType == DevSpace.Types.Project) return new(DevSpace.Props.DependDe);
-        if (sourceType == DevSpace.Types.Project && targetType == DevSpace.Types.Epic) return new(null);
-        // Actors are linked from the work: the link lives on the task or the
-        // report, the other way is read through backlinks (model v6). A project
-        // has no contact link in the space of 2026-11-04, so it waits for the
-        // recreation or for the property to be added to the type.
-        if (targetType is DevSpace.Types.Contact or DevSpace.Types.Entreprise
-            && sourceType is DevSpace.Types.Task or DevSpace.Types.Rapport)
-            return new(DevSpace.Props.ContactLie);
-        if (sourceType == DevSpace.Types.Contact && targetType == DevSpace.Types.Entreprise)
-            return new(DevSpace.Props.EntrepriseLiee);
+        if (sourceType == DevSpace.Types.Task && targetType == DevSpace.Types.Project) return new(DevSpace.Props.Projects);
+        if (sourceType == DevSpace.Types.Report && targetType == DevSpace.Types.Task) return new(DevSpace.Props.Tasks);
+        if (sourceType == DevSpace.Types.Project && targetType == DevSpace.Types.Project) return new(DevSpace.Props.DependsOn);
+        if (sourceType == DevSpace.Types.Project && targetType == DevSpace.Types.Epic)
+            return new(DevSpace.Props.Epic, Single: true, AlsoCollection: true);
+        // Actors and documents are linked from the work: the link lives on the
+        // project, the task or the report (the document also from the epic and
+        // the idea); the other way is read through backlinks (model v6).
+        if (targetType is DevSpace.Types.Person or DevSpace.Types.Company
+            && sourceType is DevSpace.Types.Project or DevSpace.Types.Task or DevSpace.Types.Report)
+            return new(DevSpace.Props.Contacts);
+        if (targetType == DevSpace.Types.Document
+            && sourceType is DevSpace.Types.Project or DevSpace.Types.Task or DevSpace.Types.Epic or DevSpace.Types.Idea)
+            return new(DevSpace.Props.Documents);
+        if (sourceType == DevSpace.Types.Person && targetType == DevSpace.Types.Company)
+            return new(DevSpace.Props.Company, Single: true);
         return null;
     }
 
     static string SupportedPairsError(string sourceType, string targetType) =>
         $"Lien non supporté : {sourceType} → {targetType}. " +
-        "Paires supportées : tâche→projet, rapport→tâche(s), projet→projet, projet→epic, "
-        + "tâche ou rapport→contact ou entreprise, contact→entreprise.";
+        "Paires supportées : task→project, report→task(s), project→project, project→epic, "
+        + "project, task ou report→person ou company, project, task, epic ou idea→document, person→company.";
 
     // The body's headings, quoted, for the « introuvable » error — it tells the
     // model which titles actually exist so it can retry with one of them.
@@ -616,6 +653,9 @@ public sealed class QueryGestures(AnytypeApiClient api, NameResolver resolver, A
         "multi_select" => new JsonObject { ["key"] = key, ["multi_select"] = await MultiTagsAsync(key, value, ct) },
         "objects"      => new JsonObject { ["key"] = key, ["objects"] = AsStringArray(value) },
         "date"         => new JsonObject { ["key"] = key, ["date"] = AsString(value) },
+        "email"        => new JsonObject { ["key"] = key, ["email"] = AsString(value) },
+        "phone"        => new JsonObject { ["key"] = key, ["phone"] = AsString(value) },
+        "url"          => new JsonObject { ["key"] = key, ["url"] = AsString(value) },
         _              => new JsonObject { ["key"] = key, ["text"] = AsString(value) },
     };
 

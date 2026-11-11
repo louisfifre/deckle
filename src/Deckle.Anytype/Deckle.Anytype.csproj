@@ -11,6 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Schema\pm-schema-manifest.json" WithCulture="false" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Deckle.Anytype.Tests" />
   </ItemGroup>
 

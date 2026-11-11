@@ -7,8 +7,9 @@ namespace Deckle.Anytype;
 
 // Session gestures: open a daily report anchored to a task, append journal lines
 // to it, and link further tasks to the open report. Anchoring is done from the
-// report side — the rapport carries journal date + the linked task(s) in its
-// « Tâche(s) liée(s) » property; its project is derived through those tasks.
+// report side — the report carries the linked task(s) in its « Tâches »
+// property; its project is derived through those tasks, and its date is its
+// native creation date.
 // open_report and session_log run on API v2; session_touch still goes through v1.
 public sealed class SessionGestures(
     AnytypeApiClient api,
@@ -61,7 +62,7 @@ public sealed class SessionGestures(
         try
         {
             project = await LinkedNames.JoinAsync(
-                _reader, taskProps.ObjectIds(DevSpace.Props.RelationProjet), ct) ?? "—";
+                _reader, taskProps.ObjectIds(DevSpace.Props.Projects), ct) ?? "—";
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException && !ct.IsCancellationRequested)
         {
@@ -73,16 +74,17 @@ public sealed class SessionGestures(
         // the first session_log finds a body and appends under it. A report is a
         // note: it has no name, and a `name` sent anyway lands as a paragraph
         // ahead of the heading, so none is sent. Properties are a {key: value}
-        // map; a relation takes a list of ids, the date a plain yyyy-MM-dd.
+        // map; a relation takes a list of ids. The model v6 has no journal-date
+        // property: the report's date is its native creation date, and the
+        // heading above carries it for the reader.
         string today = Today();
         var reportPayload = new JsonObject
         {
-            ["type"] = DevSpace.Types.Rapport,
+            ["type"] = DevSpace.Types.Report,
             ["markdown"] = $"# Journal {today}",
             ["properties"] = new JsonObject
             {
-                [DevSpace.Props.DateDuJournal] = today,
-                [DevSpace.Props.TachesLiees] = new JsonArray(taskId),
+                [DevSpace.Props.Tasks] = new JsonArray(taskId),
             },
         };
 
@@ -124,8 +126,7 @@ public sealed class SessionGestures(
         // depends on nothing the read saw, so it carries no If-Match.
         //
         // The read only tells whether the body has any block and whether an
-        // entry is already there, and gives the journal date for the empty
-        // case; the outline is its cheapest shape.
+        // entry is already there; the outline is its cheapest shape.
         AnytypeV2ObjectDocument report = await _reader.ReadAsync(
             reportId,
             new AnytypeV2ObjectReadOptions { Outline = true, Parts = AnytypeV2ObjectParts.Properties },
@@ -158,7 +159,7 @@ public sealed class SessionGestures(
 
         string markdown = hasBody
             ? entry
-            : $"# Journal {JournalDate(report)}\n\n{entry}";
+            : $"# Journal {Today()}\n\n{entry}";
 
         await _writer.ApplyObjectOpsAsync(
             reportId,
@@ -205,9 +206,9 @@ public sealed class SessionGestures(
         AnytypeV2ObjectDocument report = await _reader.ReadAsync(
             reportId, new AnytypeV2ObjectReadOptions { Parts = AnytypeV2ObjectParts.Properties }, ct);
         string actual = report.Body["type"]?.GetValue<string>() ?? "";
-        if (actual.Length > 0 && actual != DevSpace.Types.Rapport)
+        if (actual.Length > 0 && actual != DevSpace.Types.Report)
             throw new InvalidOperationException($"{reportId} est un objet {actual}, pas un rapport : seul un rapport se clôt.");
-        IReadOnlyList<string> taskIds = AnytypeV2PropertyMap.Of(report).ObjectIds(DevSpace.Props.TachesLiees);
+        IReadOnlyList<string> taskIds = AnytypeV2PropertyMap.Of(report).ObjectIds(DevSpace.Props.Tasks);
 
         var toTick = new List<string>();
         foreach (string selector in done ?? [])
@@ -247,7 +248,7 @@ public sealed class SessionGestures(
             double taskHours = await TaskRealHoursAsync(taskId, reportId, hours, taskIds.Count, ct);
             await _api.UpdateObjectAsync(taskId, new JsonObject
             {
-                ["properties"] = new JsonArray(new JsonObject { ["key"] = DevSpace.Props.ChargeReelle, ["number"] = taskHours }),
+                ["properties"] = new JsonArray(new JsonObject { ["key"] = DevSpace.Props.TimeActual, ["number"] = taskHours }),
             }, ct);
             string name = await TaskNameAsync(taskId, ct);
             lines.Add($"{(toTick.Contains(taskId) ? "[x]" : "[ ]")} {name} · temps réel {ReportTime.Format(taskHours)} h");
@@ -267,16 +268,16 @@ public sealed class SessionGestures(
         IReadOnlyList<AnytypeV2SearchRow> reports = await _searcher.SearchAllAsync(
             new AnytypeV2SearchRequest
             {
-                Type = DevSpace.Types.Rapport,
-                Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.TachesLiees, [taskId])],
-                Fields = [DevSpace.Props.TachesLiees],
+                Type = DevSpace.Types.Report,
+                Filters = [AnytypeV2SearchFilter.In(DevSpace.Props.Tasks, [taskId])],
+                Fields = [DevSpace.Props.Tasks],
             }, ct);
 
         double total = 0;
         bool sawClosing = false;
         foreach (AnytypeV2SearchRow r in reports)
         {
-            int share = Math.Max(1, r.Properties.ObjectIds(DevSpace.Props.TachesLiees).Count);
+            int share = Math.Max(1, r.Properties.ObjectIds(DevSpace.Props.Tasks).Count);
             double? recorded;
             if (r.Id == closingId)
             {
@@ -312,7 +313,7 @@ public sealed class SessionGestures(
         long t0 = Stopwatch.GetTimestamp();
 
         string reportId = await _resolver.ResolveAsync(
-            report, new[] { DevSpace.Types.Rapport }, NameMatch.Exact, ct);
+            report, new[] { DevSpace.Types.Report }, NameMatch.Exact, ct);
         string taskId = await _resolver.ResolveAsync(
             task, new[] { DevSpace.Types.Task }, NameMatch.Exact, ct);
         JsonObject taskObj = await _api.GetObjectAsync(taskId, ct);
@@ -332,13 +333,13 @@ public sealed class SessionGestures(
         using var _ = await _api.AcquireWriteScopeAsync("session_touch", reportId, ct);
         JsonObject report = await _api.GetObjectAsync(reportId, ct);
 
-        var ids = ReadObjectIds(report, DevSpace.Props.TachesLiees).ToList();
+        var ids = ReadObjectIds(report, DevSpace.Props.Tasks).ToList();
         if (ids.Contains(taskId)) return;
         ids.Add(taskId);
 
         var payload = new JsonObject
         {
-            ["properties"] = new JsonArray(ObjectsProp(DevSpace.Props.TachesLiees, ids)),
+            ["properties"] = new JsonArray(ObjectsProp(DevSpace.Props.Tasks, ids)),
         };
         await _api.UpdateObjectAsync(reportId, payload, ct);
     }
@@ -391,15 +392,6 @@ public sealed class SessionGestures(
             block?["type"] is not JsonValue type
             || !type.TryGetValue(out string? name)
             || name?.StartsWith("heading", StringComparison.Ordinal) != true);
-
-    // v2 serves the date as a string with a time suffix,
-    // « 2026-10-22T00:00:00Z » (measured on a real report).
-    string JournalDate(AnytypeV2ObjectDocument report) =>
-        report.Properties?[DevSpace.Props.DateDuJournal] is JsonValue value
-            && value.TryGetValue(out string? iso)
-            && iso is { Length: >= 10 }
-                ? iso[..10]
-                : Today();
 
     string Today() =>
         _time.GetLocalNow().ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);

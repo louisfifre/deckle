@@ -25,7 +25,7 @@ public class AnytypeApiClientReplayTests
 
         HttpRequestException error = await Assert.ThrowsAsync<HttpRequestException>(
             () => client.CreateObjectAsync(
-                new JsonObject { ["type_key"] = DevSpace.Types.Idee, ["name"] = "Une idée" },
+                new JsonObject { ["type_key"] = DevSpace.Types.Idea, ["name"] = "Une idée" },
                 Ct));
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, error.StatusCode);
@@ -67,7 +67,7 @@ public class AnytypeApiClientReplayTests
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
             () => client.CreateObjectAsync(
-                new JsonObject { ["type_key"] = DevSpace.Types.Idee, ["name"] = "Une idée" },
+                new JsonObject { ["type_key"] = DevSpace.Types.Idea, ["name"] = "Une idée" },
                 Ct));
 
         Assert.Contains("not owned by a trusted Deckle provider", error.Message);
@@ -86,7 +86,7 @@ public class AnytypeApiClientReplayTests
 
         InvalidOperationException error = await Assert.ThrowsAsync<InvalidOperationException>(
             () => client.CreateObjectAsync(
-                new JsonObject { ["type_key"] = DevSpace.Types.Idee, ["name"] = "Une idée" },
+                new JsonObject { ["type_key"] = DevSpace.Types.Idea, ["name"] = "Une idée" },
                 Ct));
 
         Assert.Contains("not serving yet", error.Message);

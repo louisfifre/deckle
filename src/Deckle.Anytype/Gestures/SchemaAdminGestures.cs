@@ -1,3 +1,4 @@
+using System.Net.Http;
 using System.Text;
 using System.Text.Json.Nodes;
 using Deckle.Diagnostics;
@@ -83,6 +84,32 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
 
         var applied = new List<string>();
 
+        // Renames first: the type PATCH below rebuilds property links from the
+        // live names, so they must already be the manifest's. A type is renamed
+        // with its plural; a property with its name alone.
+        foreach (PropertySpec spec in preview.Manifest.Properties)
+        {
+            if (!preview.Actions.Any(a => a.Kind == "rename" && a.Key == $"property:{spec.Key}")) continue;
+            SchemaPropertyInfo live = propertiesByKey[spec.Key];
+            await api.UpdatePropertyAsync(
+                preview.SpaceId, live.Id, new JsonObject { ["name"] = spec.Name }, ct);
+            propertiesByKey[spec.Key] = live with { Name = spec.Name };
+            applied.Add($"propriété renommée {spec.Key} · {live.Name} → {spec.Name}");
+        }
+
+        foreach (TypeSpec spec in preview.Manifest.Types)
+        {
+            if (!preview.Actions.Any(a => a.Kind == "rename" && a.Key == $"type:{spec.Key}")) continue;
+            SchemaTypeInfo live = typesByKey[spec.Key];
+            await api.UpdateTypeAsync(
+                preview.SpaceId,
+                live.Id,
+                new JsonObject { ["name"] = spec.Name, ["plural_name"] = spec.PluralName },
+                ct);
+            typesByKey[spec.Key] = live with { Name = spec.Name, PluralName = spec.PluralName };
+            applied.Add($"type renommé {spec.Key} · {live.Name} → {spec.Name}");
+        }
+
         foreach (PropertySpec spec in preview.Manifest.Properties)
         {
             if (propertiesByKey.ContainsKey(spec.Key)) continue;
@@ -128,6 +155,9 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
                     ["name"] = tag.Name,
                     ["color"] = tag.Color ?? "grey",
                 };
+                // A declared key is sent so the option's wire key is the one
+                // DevSpace speaks; without it the server derives its own.
+                if (tag.Key is not null) payload["key"] = tag.Key;
                 await api.CreatePropertyTagAsync(preview.SpaceId, property.Id, payload, ct);
                 applied.Add($"tag créé {spec.Key}:{tag.Name}");
             }
@@ -136,6 +166,36 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
         foreach (TypeSpec spec in preview.Manifest.Types)
         {
             if (typesByKey.ContainsKey(spec.Key)) continue;
+
+            // v1 refuses to create a collection-layout type (« invalid type
+            // layout »), and a layout cannot be changed afterwards (measured on
+            // anytype-cli 0.5.0, 2026-11-09). v2 creates it, bare; the loop below
+            // attaches the properties and the icon through v1 like any other type.
+            if (spec.Layout == "collection")
+            {
+                await api.V2.SendAsync(
+                    new AnytypeV2Request(
+                        HttpMethod.Post,
+                        "types",
+                        new JsonObject
+                        {
+                            ["api_key"] = spec.Key,
+                            ["name"] = spec.Name,
+                            ["plural_name"] = spec.PluralName,
+                            ["layout"] = spec.Layout,
+                        },
+                        IdempotencyKey: Guid.NewGuid().ToString("N"),
+                        SpaceId: spaceId),
+                    ct).ConfigureAwait(false);
+
+                SchemaSnapshot reread = await _snapshotReader.ReadAsync(spaceId, null, ct).ConfigureAwait(false);
+                typesByKey[spec.Key] = reread.Types.TryGetValue(spec.Key, out SchemaTypeInfo? made)
+                    ? made
+                    : throw new InvalidOperationException(
+                        $"Le type « {spec.Key} » créé en v2 est introuvable en v1.");
+                applied.Add($"type créé {spec.Key} (v2, layout {spec.Layout})");
+                continue;
+            }
 
             IReadOnlyList<SchemaPropertyLinkInfo> links = SchemaPlanner.RequestedPropertyLinks(spec, propertiesByKey);
 
