@@ -105,16 +105,21 @@ public static class Loc
 
     private static string? TryGetFrom(string library, string key)
     {
-        ResourceLoader loader = _libLoaders.GetOrAdd(library, static lib =>
-            new ResourceLoader(ResourceLoader.GetDefaultResourceFilePath(), lib + "/Resources"));
         try
         {
+            // Built inside the try: the constructor throws ("ResourceMap Not
+            // Found") when the process's PRI holds no subtree for the library,
+            // as in a test host that compiles no .resw, or for an engine that
+            // names the strings of a Views assembly its process does not ship.
+            // A failed construction is not cached, so a later call tries again.
+            ResourceLoader loader = _libLoaders.GetOrAdd(library, static lib =>
+                new ResourceLoader(ResourceLoader.GetDefaultResourceFilePath(), lib + "/Resources"));
             return loader.GetString(key);
         }
         catch
         {
-            // Unpackaged MRT throws on a missing key instead of returning empty;
-            // fold it into the miss contract — same reason as Get().
+            // Unpackaged MRT throws on a missing key or map instead of returning
+            // empty; fold it into the miss contract — same reason as Get().
             return null;
         }
     }
