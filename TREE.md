@@ -239,6 +239,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── log.h
 │   │   ├── pch.cpp
 │   │   ├── pch.h
+│   │   ├── residency.cpp
+│   │   ├── residency.h
 │   │   ├── util.cpp
 │   │   ├── util.h
 │   │   └── version.rc
