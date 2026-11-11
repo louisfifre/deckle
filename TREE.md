@@ -219,8 +219,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── inventaire-exposables.md
 │   └── transcription-audio-chain.md  — How a dictation travels from the hotkey to the clipboard — vocabulary, three di…
 ├── logo/
+│   ├── deckle-recording.svg
 │   ├── deckle-rewriting.svg
-│   ├── deckle-transcribing.svg
 │   ├── deckle.svg
 │   ├── generate.mjs
 │   ├── palettes.md
@@ -550,12 +550,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Fonts/
 │   │   │   │   └── BitcountSingle.ttf
 │   │   │   ├── Icons/
-│   │   │   │   ├── recording--indicator--false--32px.ico
-│   │   │   │   ├── recording--indicator--false--32px.png
-│   │   │   │   ├── recording--indicator--false--incident--true--32px.ico
-│   │   │   │   ├── recording--indicator--true--32px.ico
-│   │   │   │   ├── recording--indicator--true--32px.png
-│   │   │   │   └── recording--indicator--true--incident--true--32px.ico
+│   │   │   │   ├── deckle--state--recording--32px.png
+│   │   │   │   ├── deckle--state--recording--incident--true.ico
+│   │   │   │   ├── deckle--state--recording.ico
+│   │   │   │   ├── deckle--state--rest--32px.png
+│   │   │   │   ├── deckle--state--rest--incident--true.ico
+│   │   │   │   ├── deckle--state--rest.ico
+│   │   │   │   ├── deckle--state--rewriting--32px.png
+│   │   │   │   ├── deckle--state--rewriting--incident--true.ico
+│   │   │   │   └── deckle--state--rewriting.ico
 │   │   │   └── Sounds/
 │   │   │       └── speech.wav
 │   │   ├── Diagnostics/
