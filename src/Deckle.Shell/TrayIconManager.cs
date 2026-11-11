@@ -89,6 +89,15 @@ public sealed class TrayIconManager : IDisposable
     /// </summary>
     public event Action? TaskbarCreated;
 
+    /// <summary>
+    /// Raised when Windows says a colour mode changed, on the message pump
+    /// thread of the owner window. Windows may say it several times for one
+    /// change, and for the app mode as well as the Windows mode: a subscriber
+    /// reads <see cref="WindowsMode.IsLight()"/> again and must not let an
+    /// exception out.
+    /// </summary>
+    public event Action? WindowsModeChanged;
+
     // ── Initialization ───────────────────────────────────────────────────────
 
     // Creates the owner window and adds the icon with the current status.
@@ -222,6 +231,14 @@ public sealed class TrayIconManager : IDisposable
         {
             TryReadd();
             return IntPtr.Zero;
+        }
+
+        // Heard here because this window is top-level and lives as long as the
+        // app. The message still goes to DefWindowProc.
+        if (msg == NativeMethods.WM_SETTINGCHANGE && lParam != IntPtr.Zero
+            && WindowsMode.IsModeChange(Marshal.PtrToStringUni(lParam)))
+        {
+            WindowsModeChanged?.Invoke();
         }
 
         return NativeMethods.DefWindowProc(hWnd, msg, wParam, lParam);

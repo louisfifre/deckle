@@ -45,8 +45,6 @@ public sealed partial class PlaygroundWindow : Window
     // Swapping the .ico on disk propagates everywhere.
     private BitmapImage? _iconIdle;
     private BitmapImage? _iconRecording;
-    private string? _iconIdlePath;
-    private string? _iconRecordingPath;
 
     // Page references resolved on first navigate so the shell can call
     // ForcePause / DisposeResources without walking the Frame's content
@@ -61,7 +59,7 @@ public sealed partial class PlaygroundWindow : Window
 
         LoadAppIcons();
         AppTitleBarIcon.ImageSource = _iconIdle;
-        if (_iconIdlePath is not null) AppWindow.SetIcon(_iconIdlePath);
+        IconAssets.ApplyToWindow(AppWindow);
 
         // Native title bar. Standard height (not Tall) — no SearchBox in
         // this window so caption buttons don't need the extended chrome.
@@ -234,19 +232,17 @@ public sealed partial class PlaygroundWindow : Window
         {
             ImageSource = isRecording ? _iconRecording : _iconIdle,
         };
-        var path = isRecording ? _iconRecordingPath : _iconIdlePath;
-        if (path is not null) AppWindow.SetIcon(path);
+        IconAssets.ApplyToWindow(AppWindow, isRecording);
     }
 
+    // The title bar shows the bare mark; the window's own icon, a tile, is
+    // IconAssets' to pick.
     private void LoadAppIcons()
     {
-        _iconIdlePath      = IconAssets.ResolvePath(recording: false);
-        _iconRecordingPath = IconAssets.ResolvePath(recording: true);
-
-        if (_iconIdlePath is not null)
-            _iconIdle = new BitmapImage(new Uri(_iconIdlePath));
-        if (_iconRecordingPath is not null)
-            _iconRecording = new BitmapImage(new Uri(_iconRecordingPath));
+        if (IconAssets.ResolveImagePath(recording: false) is { } idlePath)
+            _iconIdle = new BitmapImage(new Uri(idlePath));
+        if (IconAssets.ResolveImagePath(recording: true) is { } recordingPath)
+            _iconRecording = new BitmapImage(new Uri(recordingPath));
     }
 
     // ── Window close → page resource disposal ───────────────────────────────

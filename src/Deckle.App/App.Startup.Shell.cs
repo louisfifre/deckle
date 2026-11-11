@@ -46,6 +46,18 @@ public partial class App
 
         _tray = new TrayIconManager();
         _tray.TaskbarCreated += ReapplyTaskbarTrayAfterExplorerRestart;
+        // A window's icon sits on a tile made for the Windows mode: applying
+        // the recording state again makes each window pick its tile again.
+        // Raised from the tray's WndProc, where an exception must not escape.
+        _tray.WindowsModeChanged += () =>
+        {
+            try { ApplyRecordingStateToWindows(_lastRecordingState); }
+            catch (Exception ex)
+            {
+                DeckleAppSource.Log.WindowOperationFailed(
+                    "all", "icon_reapply", "windows_mode_changed", ex.GetType().Name, ex.Message);
+            }
+        };
         context.Milestone("tray");
 
         // Lives as long as the process, so it is never disposed: the process
@@ -70,10 +82,7 @@ public partial class App
                 _tray.UpdateStatus(
                     _quitPending ? QuitPendingStatus(status) : status, isRecording);
                 _lastRecordingState = isRecording;
-                _logWindow?.SetRecordingState(isRecording);
-                _playgroundWindow?.SetRecordingState(isRecording);
-                _mailWindow?.SetRecordingState(isRecording);
-                _settingsWindow?.SetRecordingState(isRecording);
+                ApplyRecordingStateToWindows(isRecording);
 
                 if (isRecording)
                     _hudWindow.ShowRecording();

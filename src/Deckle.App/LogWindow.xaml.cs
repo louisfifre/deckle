@@ -42,8 +42,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     private BitmapImage? _iconIdle;
     private BitmapImage? _iconRecording;
-    private string? _iconIdlePath;
-    private string? _iconRecordingPath;
 
     private ScrollViewer? _listScrollViewer;
     private bool _autoScrollPending;
@@ -77,7 +75,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
         LoadAppIcons();
         AppTitleBarIcon.ImageSource = _iconIdle;
-        if (_iconIdlePath is not null) AppWindow.SetIcon(_iconIdlePath);
+        IconAssets.ApplyToWindow(AppWindow);
 
         // The TitleBar control still needs both calls to replace the system title bar.
         ExtendsContentIntoTitleBar = true;

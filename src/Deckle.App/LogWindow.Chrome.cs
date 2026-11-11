@@ -47,26 +47,26 @@ public sealed partial class LogWindow : Window, ILogWindowSink
             ImageSource = isRecording ? _iconRecording : _iconIdle,
         };
 
-        // AppWindow.SetIcon takes an .ico file path on disk.
-        var path = isRecording ? _iconRecordingPath : _iconIdlePath;
-        if (path is not null) AppWindow.SetIcon(path);
+        IconAssets.ApplyToWindow(AppWindow, isRecording);
     }
 
+    // The title bar shows the bare mark; the window's own icon, a tile, is
+    // IconAssets' to pick.
     private void LoadAppIcons()
     {
-        _iconIdlePath      = IconAssets.ResolvePath(recording: false);
-        _iconRecordingPath = IconAssets.ResolvePath(recording: true);
+        string? idlePath      = IconAssets.ResolveImagePath(recording: false);
+        string? recordingPath = IconAssets.ResolveImagePath(recording: true);
 
-        if (_iconIdlePath is not null)
-            _iconIdle = new BitmapImage(new Uri(_iconIdlePath));
+        if (idlePath is not null)
+            _iconIdle = new BitmapImage(new Uri(idlePath));
         else
         {
             DeckleAppSource.Log.WindowOperationFailed(
                 "log", "icon_load", "idle_icon_not_found", "", "");
         }
 
-        if (_iconRecordingPath is not null)
-            _iconRecording = new BitmapImage(new Uri(_iconRecordingPath));
+        if (recordingPath is not null)
+            _iconRecording = new BitmapImage(new Uri(recordingPath));
         else
         {
             DeckleAppSource.Log.WindowOperationFailed(
