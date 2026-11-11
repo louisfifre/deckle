@@ -44,5 +44,14 @@ public partial class TrackpadViewModel
             new MagnitudeArgs(TrackpadSettings.MinPressDelayMs, TrackpadSettings.MaxPressDelayMs,
                 Unit: "ms", Integer: true),
             defaultValue: () => new TrackpadSettings().PressDelayMs),
+
+        // The delay's partner: the press lands at whichever is met first.
+        // Tuned by feel too, so it gets the same slider.
+        Setting.Magnitude("TrackpadPage_PressDistanceCard",
+            () => PressDistancePx,
+            value => PressDistancePx = value,
+            new MagnitudeArgs(TrackpadSettings.MinPressDistancePx, TrackpadSettings.MaxPressDistancePx,
+                Unit: "px", Integer: true),
+            defaultValue: () => new TrackpadSettings().PressDistancePx),
     ];
 }

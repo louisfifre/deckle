@@ -120,7 +120,7 @@ public sealed class TrackpadEngine : IDisposable
         lock (_gate)
         {
             if (!_running) return;
-            ApplyPressDelay(_recognizer, TrackpadSettingsService.Instance.Current);
+            ApplyPressGuards(_recognizer, TrackpadSettingsService.Instance.Current);
             _recognizer.ProcessFrame(frame);
             ArmDeadlineTimer();
         }
@@ -131,7 +131,7 @@ public sealed class TrackpadEngine : IDisposable
         lock (_gate)
         {
             if (!_running) return;
-            ApplyPressDelay(_recognizer, TrackpadSettingsService.Instance.Current);
+            ApplyPressGuards(_recognizer, TrackpadSettingsService.Instance.Current);
             _recognizer.Tick(RawInputHost.NowMs);
             ArmDeadlineTimer();
         }
@@ -280,7 +280,7 @@ public sealed class TrackpadEngine : IDisposable
     // no absolute magic units. Re-applied on device connect because the
     // range comes from the device's capabilities. The person's settings
     // need no re-apply hook: OnDragMoved reads the drag speed live, and the
-    // press delay is copied before every frame and every deadline.
+    // press guards are copied before every frame and every deadline.
     private void ApplyThresholds()
     {
         var caps = _host.Touchpad;
@@ -289,7 +289,7 @@ public sealed class TrackpadEngine : IDisposable
         _recognizer.GraceDelayMs        = GraceDelayMs;
         _recognizer.StartThresholdUnits = StartThresholdRatio * xRange;
         _recognizer.MaxFrameDeltaUnits  = MaxFrameDeltaRatio * xRange;
-        ApplyPressDelay(_recognizer, TrackpadSettingsService.Instance.Current);
+        ApplyPressGuards(_recognizer, TrackpadSettingsService.Instance.Current);
     }
 
     // Read live, like the drag speed: a slider move takes effect on the
@@ -297,7 +297,20 @@ public sealed class TrackpadEngine : IDisposable
     // A drag already hovering re-reads its deadline, which the recognizer
     // computes from the delay on demand. Clamped because the settings file
     // can be edited by hand; the page never leaves the range.
-    internal static void ApplyPressDelay(ThreeFingerDragRecognizer recognizer, TrackpadSettings settings) =>
+    //
+    // The distance is set in cursor pixels and the recognizer counts finger
+    // units, so it goes back through the same scale OnDragMoved applies.
+    // Approximate on purpose: Windows pointer ballistics sit between the
+    // injected mickeys and the pixels, and a few pixels either way do not
+    // change what the guard is for.
+    internal static void ApplyPressGuards(ThreeFingerDragRecognizer recognizer, TrackpadSettings settings)
+    {
         recognizer.PressDelayMs = Math.Clamp(
             settings.PressDelayMs, TrackpadSettings.MinPressDelayMs, TrackpadSettings.MaxPressDelayMs);
+
+        double distancePx = Math.Clamp(
+            settings.PressDistancePx, TrackpadSettings.MinPressDistancePx, TrackpadSettings.MaxPressDistancePx);
+        double unitsToPx = BaseScale * Math.Max(settings.DragSpeed, 0.01);
+        recognizer.PressDistanceUnits = distancePx / unitsToPx;
+    }
 }

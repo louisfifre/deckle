@@ -189,6 +189,82 @@ public class ThreeFingerDragRecognizerTests
         Assert.Equal(DragPhase.Dragging, r.Phase);
     }
 
+    // A hand that sets down and sweeps at once is dragging: waiting out the
+    // delay made a screenshot selection start visibly late. Travel past the
+    // pick-up distance presses before the deadline.
+    [Fact]
+    public void TravelPastThePressDistancePressesBeforeTheDeadline()
+    {
+        var r = new ThreeFingerDragRecognizer
+        {
+            StartThresholdUnits = 10, PressDelayMs = 50, PressDistanceUnits = 40,
+        };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(5, Three(20)));
+        Assert.Equal(DragPhase.Hovering, r.Phase);
+
+        r.ProcessFrame(Frame(10, Three(45)));
+
+        Assert.Equal(DragPhase.Dragging, r.Phase);
+        Assert.Equal(new[] { "hover", "move", "move", "press" }, rec.Sequence.ToArray());
+    }
+
+    [Fact]
+    public void TravelPastThePressDistanceOnTheFirstMovePressesWithoutHovering()
+    {
+        var r = new ThreeFingerDragRecognizer
+        {
+            StartThresholdUnits = 10, PressDelayMs = 50, PressDistanceUnits = 40,
+        };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(5, Three(60)));
+
+        Assert.Equal(DragPhase.Dragging, r.Phase);
+        Assert.Equal(new[] { "press", "move" }, rec.Sequence.ToArray());
+    }
+
+    // The distance is net displacement since landing: fingers rolling back
+    // and forth while settling for a four-finger gesture add up no travel.
+    [Fact]
+    public void BackAndForthBelowTheDistanceKeepsWaitingForTheDeadline()
+    {
+        var r = new ThreeFingerDragRecognizer
+        {
+            StartThresholdUnits = 10, PressDelayMs = 50, PressDistanceUnits = 40,
+        };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(5, Three(30)));
+        r.ProcessFrame(Frame(10, Three(0)));
+        r.ProcessFrame(Frame(15, Three(30)));
+
+        Assert.Equal(DragPhase.Hovering, r.Phase);
+        Assert.Equal(0, rec.Started);
+    }
+
+    [Fact]
+    public void FourthFingerBeforeTheDistanceAndTheDeadlineStillPressesNothing()
+    {
+        var r = new ThreeFingerDragRecognizer
+        {
+            StartThresholdUnits = 10, PressDelayMs = 50, PressDistanceUnits = 40,
+        };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(5, Three(20)));
+        r.ProcessFrame(Frame(10, Four(25)));
+
+        Assert.Equal(DragPhase.Idle, r.Phase);
+        Assert.Equal(0, rec.Started);
+        Assert.Equal(new[] { "fourth-finger" }, rec.Abandoned.ToArray());
+    }
+
     [Fact]
     public void CancelWhileHoveringPressesNothing()
     {
