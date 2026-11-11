@@ -49,11 +49,31 @@ public sealed partial class MailWindow
     // A little over the window's floor (400), where a person's screenshot
     // showed the title a few letters a line.
     private const int NarrowestWidth = 430;
+    // Just under 1008, where the navigation folds to its rail of icons.
+    private const int RailWidth = 1000;
     private Windows.Graphics.SizeInt32? _sizeBeforeNarrow;
     private (ElementTheme Content, TitleBarTheme TitleBar)? _themeBeforeLight;
 
     private static readonly CaptureStep[] Steps =
     [
+        // The navigation folded by its button in a wide window, then opened
+        // again: the page takes the room and gives it back.
+        //
+        // These two come first, on the navigation as the window built it.
+        // Once the rail has been rebuilt in a loaded window (UseScenario
+        // below), setting IsPaneOpen from here throws E_FAIL out of WinUI and
+        // a folded rail keeps the room of its groups' children: seen on 11
+        // November 2026 with and without ComponentMotion, cause not found.
+        // The narrow steps further down show that rail.
+        new("pane-folded", "2.1 Triage, the navigation folded by its button", true, w =>
+        {
+            w.Go(MailDestination.Triage);
+            w.Nav.IsPaneOpen = false;
+        })
+        {
+            After = w => w.Nav.IsPaneOpen = true,
+        },
+        new("pane-reopened", "2.1 Triage, the navigation opened again", true, _ => { }),
         new("triage", "2.1 Triage, a normal day", true, w => w.UseScenario(SampleScenario.NormalDay)),
         new("triage-gestures", "2.2 Triage after two gestures", false, w =>
         {
@@ -128,6 +148,23 @@ public sealed partial class MailWindow
             w._sizeBeforeNarrow = w.AppWindow.Size;
             double scale = w.Content?.XamlRoot?.RasterizationScale ?? 1.0;
             w.AppWindow.Resize(new Windows.Graphics.SizeInt32((int)(NarrowWidth * scale), (int)(NarrowHeight * scale)));
+        })
+        {
+            After = w =>
+            {
+                if (w._sizeBeforeNarrow is { } size) w.AppWindow.Resize(size);
+                w._sizeBeforeNarrow = null;
+            },
+        },
+        // Between wide and narrow: the navigation has folded to its rail and
+        // the page has gained its width. The list of mails stays under the
+        // text, as in the wider window that stacked it first.
+        new("subject-rail", "3.1 A subject opened, the navigation folded to its rail", true, w =>
+        {
+            w.Go(MailDestination.Subject("s-drive"));
+            w._sizeBeforeNarrow = w.AppWindow.Size;
+            double scale = w.Content?.XamlRoot?.RasterizationScale ?? 1.0;
+            w.AppWindow.Resize(new Windows.Graphics.SizeInt32((int)(RailWidth * scale), (int)(NarrowHeight * scale)));
         })
         {
             After = w =>
