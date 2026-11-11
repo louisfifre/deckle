@@ -50,6 +50,18 @@ public sealed partial class ActivityPage : Page
         Build();
     }
 
+    // Chooses a part through its tab's own selection pattern, the path a click
+    // and Narrator both take; for the self-check, which must see what a
+    // person's choice does and not what ShowPart sets.
+    public void ChoosePart(ActivityPart part)
+    {
+        SelectorBarItem tab = part == ActivityPart.ByYou ? ByYouItem : ByDeckleItem;
+        var peer = Microsoft.UI.Xaml.Automation.Peers.FrameworkElementAutomationPeer.CreatePeerForElement(tab);
+        if (peer?.GetPattern(Microsoft.UI.Xaml.Automation.Peers.PatternInterface.SelectionItem)
+            is Microsoft.UI.Xaml.Automation.Provider.ISelectionItemProvider selection)
+            selection.Select();
+    }
+
     private void OnPartChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
         if (_choosingPart) return;
@@ -90,6 +102,7 @@ public sealed partial class ActivityPage : Page
                 IsItemClickEnabled = true,
                 ItemContainerStyle = (Style)Resources["MailRowContainerStyle"],
             };
+            ComponentMotion.Still(list);
             list.ItemClick += OnLineClick;
             foreach (ActivityEntry entry in day.Entries)
                 list.Items.Add(new ActivityLineView(_session, entry));

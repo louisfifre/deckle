@@ -31,6 +31,10 @@ public sealed partial class TaskColumn : UserControl
 
     public Button AddTaskTarget => AddTaskButton;
 
+    // True while the column holds nothing: neither Add task nor a result.
+    public bool IsEmpty
+        => AddTaskButton.Visibility == Visibility.Collapsed && DonePanel.Visibility == Visibility.Collapsed;
+
     // Waiting with Add task. accessibleSentence names what the task would be
     // about, so a screen reader does not hear "Add task" four times.
     public void ShowAddTask(DateOnly? proposed, DateOnly today, string accessibleSentence)
@@ -131,7 +135,7 @@ public sealed partial class TaskColumn : UserControl
     // menu's own grey.
     private MenuFlyout BuildMenu()
     {
-        var menu = new MenuFlyout { Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft };
+        var menu = ComponentMotion.Still(new MenuFlyout { Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft });
         MenuFlyoutItem? selected = null;
 
         foreach (TaskDayChoice choice in TaskDays.Menu(_proposed, _today))
@@ -165,10 +169,13 @@ public sealed partial class TaskColumn : UserControl
                 menu.Items.Add(new MenuFlyoutSeparator());
         }
 
-        // The proposed day is the first line, already selected: Enter takes
-        // it, and the eye finds it lit (spec, Adding a task).
+        // The proposed day is the first line and holds the focus when the menu
+        // opens: Enter takes it (spec, Adding a task). Programmatic, not
+        // Keyboard: Windows then draws its focus rectangle only for a person
+        // who opened the menu from the keyboard. Under a pointer the heavy
+        // rectangle read as a selected state the menu does not have.
         if (selected is not null)
-            menu.Opened += (_, _) => selected.Focus(FocusState.Keyboard);
+            menu.Opened += (_, _) => selected.Focus(FocusState.Programmatic);
         return menu;
     }
 
@@ -188,7 +195,24 @@ public sealed partial class TaskColumn : UserControl
         }
     }
 
-    // Pick a day opens the calendar Windows draws, from today on.
+    // Pick a day opens the calendar Windows draws, from today on. The calendar
+    // fills its flyout, as the one CalendarDatePicker opens does: the flyout
+    // is the frame, so the calendar wears none of its own and the presenter
+    // keeps no padding around it. Left as they come, the two frames stood one
+    // inside the other with a 16 px band between them.
+    // For the self-check: the calendar as Pick a day opens it, drawn inside
+    // the window where a window capture sees it.
+    public void OpenCalendar(bool constrainToWindow = false)
+    {
+        ShowCalendar();
+        if (constrainToWindow && _calendarFlyout is { ShouldConstrainToRootBounds: false } flyout)
+        {
+            flyout.Hide();
+            MailWindow.TryConstrain(() => flyout.ShouldConstrainToRootBounds = true);
+            flyout.ShowAt(AddTaskButton);
+        }
+    }
+
     private void ShowCalendar()
     {
         var calendar = new CalendarView
@@ -196,6 +220,8 @@ public sealed partial class TaskColumn : UserControl
             SelectionMode = CalendarViewSelectionMode.Single,
             MinDate = new DateTimeOffset(_today.ToDateTime(TimeOnly.MinValue)),
             FirstDayOfWeek = Windows.Globalization.DayOfWeek.Monday,
+            BorderThickness = new Thickness(0),
+            Background = new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.Transparent),
         };
         calendar.SetDisplayDate(new DateTimeOffset((_proposed ?? _today).ToDateTime(TimeOnly.MinValue)));
         calendar.SelectedDatesChanged += (sender, args) =>
@@ -204,7 +230,17 @@ public sealed partial class TaskColumn : UserControl
             _calendarFlyout?.Hide();
             DayChosen?.Invoke(DateOnly.FromDateTime(args.AddedDates[0].DateTime));
         };
-        _calendarFlyout = new Flyout { Content = calendar, Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft };
+        var presenter = new Style(typeof(FlyoutPresenter))
+        {
+            BasedOn = Application.Current.Resources["DefaultFlyoutPresenterStyle"] as Style,
+        };
+        presenter.Setters.Add(new Setter(PaddingProperty, new Thickness(0)));
+        _calendarFlyout = ComponentMotion.Still(new Flyout
+        {
+            Content = calendar,
+            Placement = FlyoutPlacementMode.BottomEdgeAlignedLeft,
+            FlyoutPresenterStyle = presenter,
+        });
         _calendarFlyout.ShowAt(AddTaskButton);
     }
 }
