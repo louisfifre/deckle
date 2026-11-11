@@ -126,6 +126,7 @@ public sealed partial class TranscriptionEngine
     }
 
     private readonly record struct FinalizeDelivery(TranscriptionOutcome Outcome);
+
     // ── File-transcription delivery ─────────────────────────────────────────────
     //
     // A write failure returns None: no fallback output was delivered. The catch
