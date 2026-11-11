@@ -501,10 +501,11 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(
             new[] { FirstLongUtterance, SecondLongUtterance }.Order(),
             rewrite.Inputs.Order());
-        // Raw copy, then the assembled rewrite: one copy per take, never one
-        // per batch. The first utterance ended on silence, so its batch ends on
-        // a pause and the seam is a paragraph break.
-        Assert.Equal(2, clipboard.WriteCount);
+        // The take as it read at Stop, then the assembled rewrite when it
+        // differs: at most two copies per take, never one per passage. The
+        // first utterance ended on silence, so its passage ends on a pause and
+        // the seam is a paragraph break.
+        Assert.InRange(clipboard.WriteCount, 1, 2);
         Assert.Equal(
             "[" + FirstLongUtterance + "]\n\n[" + SecondLongUtterance + "]",
             clipboard.Text);
@@ -534,14 +535,14 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal("[" + rawTake + "]", clipboard.Text);
     }
 
-    // No active profile, so only the length ladder can choose: a step the
-    // take's raw transcript reaches rewrites it, one it does not reach leaves
-    // the raw text. A single character stands for "reached" and a million
-    // for "not reached", whatever the scripted utterances hold.
+    // The first step with "Start at": a length the take's raw transcript
+    // reaches rewrites it, one it does not reach leaves the raw text. A single
+    // character stands for "reached" and a million for "not reached",
+    // whatever the scripted utterances hold.
     [Theory]
     [InlineData(1, true)]
     [InlineData(1_000_000, false)]
-    public async Task ALengthStepChoosesTheProfileOfAStreamedTake(int fromChars, bool rewritten)
+    public async Task TheFirstStepsStartAtChoosesWhetherAStreamedTakeIsRewritten(int fromChars, bool rewritten)
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
@@ -549,15 +550,10 @@ public sealed class LiveTranscriptionPipelineTests
         var clipboard = new RecordingClipboardWriter();
         var rewrite = new BracketingRewriteService();
         StreamingHost host = RewritingHost(batchRewriting: false);
-        host.Llm.ActiveProfileId = null;
-        host.Llm.ActiveProfileName = null;
         RewriteProfile byLength = host.Llm.Profiles[1];
         byLength.Id = "by-length";
-        host.Llm.LengthSwitch = new LengthSwitchSettings
-        {
-            Enabled = true,
-            Steps = [new LengthStep { FromChars = fromChars, ProfileId = "by-length" }],
-        };
+        host.Llm.Dictation.StartAtLength = true;
+        host.Llm.Dictation.Steps = [new RewriteStep { FromChars = fromChars, ProfileId = "by-length" }];
         using var engine = new TranscriptionEngine(host, backend, capture, clipboard, rewrite, captureTail: TestCaptureTail);
 
         await RunOneTakeAsync(engine, backend, testCancellation);
@@ -566,8 +562,8 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(rewritten ? 2 : 1, clipboard.WriteCount);
     }
 
-    // The profile's own shortcut wins over the active profile, and holds even
-    // with rewriting switched off: the press asked for that rewrite.
+    // The profile's own shortcut wins over the steps, and holds even with
+    // rewriting switched off: the press asked for that rewrite.
     [Fact]
     public async Task AProfileShortcutRewritesTheTakeWithThatProfile()
     {
@@ -709,8 +705,8 @@ public sealed class LiveTranscriptionPipelineTests
         await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
     }
 
-    // Rewriting on, with the first default profile active and the batch
-    // threshold at its minimum.
+    // Rewriting dictations on, with one step from the beginning on the first
+    // default profile, streaming or not, and the passage size at its minimum.
     internal static StreamingHost RewritingHost(bool batchRewriting)
     {
         var host = new StreamingHost();
@@ -718,10 +714,12 @@ public sealed class LiveTranscriptionPipelineTests
         llm.Enabled = true;
         RewriteProfile profile = llm.Profiles[0];
         profile.Id = "test-profile";
-        llm.ActiveProfileId = profile.Id;
-        llm.ActiveProfileName = profile.Name;
-        llm.BatchRewriting.Enabled = batchRewriting;
-        llm.BatchRewriting.ThresholdChars = BatchRewriteSettings.MinThresholdChars;
+        llm.Dictation = new DictationRewriteSettings
+        {
+            Enabled = true,
+            Steps = [new RewriteStep { ProfileId = profile.Id, Streaming = batchRewriting }],
+            PassageChars = DictationRewriteSettings.MinPassageChars,
+        };
         return host;
     }
 
@@ -944,14 +942,19 @@ public sealed class LiveTranscriptionPipelineTests
 
     internal sealed class RecordingClipboardWriter : IClipboardWriter
     {
+        private readonly ConcurrentQueue<string> _texts = new();
         private int _writeCount;
 
         public int WriteCount => Volatile.Read(ref _writeCount);
         public string? Text { get; private set; }
 
+        // Every text written, in order.
+        public string[] Texts => _texts.ToArray();
+
         public ClipboardWriteResult TryWriteText(string text)
         {
             Text = text;
+            _texts.Enqueue(text);
             Interlocked.Increment(ref _writeCount);
             return new ClipboardWriteResult(
                 ClipboardWriteStatus.Success,

@@ -1525,6 +1525,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── DictationBatcher.cs
 │   │   │   ├── DictationBatchResult.cs
 │   │   │   ├── DictationBatchRewriter.cs
+│   │   │   ├── DictationDocument.cs
 │   │   │   └── SentenceBoundary.cs
 │   │   ├── Engine/
 │   │   │   ├── ParagraphRewrite.cs
@@ -3016,7 +3017,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── FileBatchLifecycleTests.cs
 │   │   ├── FileTranscriptionQueueTests.cs
 │   │   ├── FileTranscriptionResultTests.cs
-│   │   ├── LengthStepBatchRewriteTests.cs
 │   │   ├── LiveTranscriptionPipelineTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
@@ -3030,6 +3030,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteProfileSelectionTests.cs
 │   │   ├── SegmentedTranscriptionSessionTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
+│   │   ├── StreamingStepsRewriteTests.cs
 │   │   ├── TakeAudioRecoveryBugNotes.md
 │   │   ├── TakeAudioRecoveryEngineTests.cs
 │   │   ├── TakeAudioRecoveryStoreTests.cs
