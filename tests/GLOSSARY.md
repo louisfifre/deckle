@@ -38,7 +38,7 @@ In ordinary use, a test of collected usage data. A test that checks emitted Even
 A test that exercises a heavy native runtime in realistic conditions, such as loading a 1 GB Whisper model, transcribing a reference audio file stored in the test repo, or reading a Hue Entertainment payload on a real bridge. It can be automated locally, but it is slow, demanding, and depends on native artifacts and hardware being available. It stays in the hands of Louis or a dedicated workstation.
 
 **interactive** :
-A test that needs an interactive Windows workstation and a human, or a stand-in for one, able to present real conditions to the system, such as a real microphone that picks up sound, a global hotkey that must not conflict with another app, a UIAutomation target window to validate the paste, or a physical display for DXGI Output Duplication.
+A test that needs an interactive Windows workstation and a human, or a stand-in for one, able to present real conditions to the system, such as a real microphone that picks up sound, a global hotkey that must not conflict with another app, a UIAutomation target window to validate a focus probe, or a physical display for DXGI Output Duplication.
 
 **maintenance** :
 A test that is in fact an explicit maintainer operation, hosted by the test runner because it composes existing library modules and benefits from assertions, such as regenerating a derived lexicon, mining a collected corpus or refreshing a calibrated artifact. It may read local maintainer data or write versioned or runtime artifacts, so it never runs during an ordinary `dotnet test`.

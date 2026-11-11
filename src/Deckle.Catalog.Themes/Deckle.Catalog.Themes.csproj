@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Catalog.Themes</RootNamespace>
+    <!-- The compiled XAML dictionaries of the settings catalog: the icon
+         catalog the host App.xaml merges
+         (ms-appx:///Deckle.Catalog.Themes/Icons.xaml) and the brushes
+         SettingsPageHeader loads
+         (ms-appx:///Deckle.Catalog.Themes/SettingsPageHeaderBrushes.xaml).
+         No code here.
+
+         They live apart from Deckle.Catalog because the WinUI XAML compiler
+         reruns on every build of a project that holds .xaml, changed or not.
+         Catalog builds its controls in code and every module with a settings
+         page references it, so it holds no .xaml. Only the host that shows the
+         pages references this project: Catalog and the modules name these
+         dictionaries by URI and never reference it, or its compile would be
+         back in their builds. -->
+    <UseWinUI>true</UseWinUI>
+    <!-- Emits the lib's .pri, so the host's resource map carries the two
+         dictionaries under Deckle.Catalog.Themes/. -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- One WinAppSDK runtime per process: never override the central version. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+  </ItemGroup>
+</Project>

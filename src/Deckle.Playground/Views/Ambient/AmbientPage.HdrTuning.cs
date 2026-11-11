@@ -5,6 +5,8 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Deckle.Catalog;
 using Deckle.Lighting.Ambient;
+using Deckle.Lighting.Ambient.Views;
+using Deckle.Localization;
 
 namespace Deckle.Playground;
 
@@ -103,7 +105,7 @@ public sealed partial class AmbientPage
 
     // PRI subtree of the module that owns the preset labels — the
     // OwningAssembly AmbientSettingsModule declares.
-    private const string AmbientModuleResources = "Deckle.Lighting.Ambient";
+    private const string AmbientModuleResources = AmbientSettingsModule.ResourceLibrary;
 
     private void SelectAmbientModeInCombo(string preset)
     {

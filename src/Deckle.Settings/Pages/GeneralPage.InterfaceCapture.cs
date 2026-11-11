@@ -4,6 +4,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
+using Deckle.Localization;
 
 namespace Deckle.Settings;
 

@@ -1,5 +1,6 @@
 using System.Xml.Linq;
 using Xunit;
+using Deckle.Localization;
 
 namespace Deckle.Setup.Tests;
 

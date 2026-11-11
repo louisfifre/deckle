@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Transcription.Views</RootNamespace>
+    <UseWinUI>true</UseWinUI>
+    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.App.csproj. -->
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <!-- Generates the lib's own .pri so x:Uid lookups in WhisperPage,
+         DecodingPage and StreamingPage, the composed cards (SettingsComposer
+         reads the view model's assembly), the Diagnostics contribution and
+         Loc.GetFrom resolve against the Deckle.Transcription.Views/Resources
+         subtree (Strings/en-US/Resources.resw). The engine's own code-side
+         strings read from a library (the page label a failed model load
+         names) live in that subtree too. -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+  </PropertyGroup>
+
+  <!-- The Transcription settings page and its Decoding and Streaming
+       subpages, their view model, the dictation-dataset card it contributes
+       to Diagnostics, and the strings they read. Dependencies point one way:
+       this project reads Deckle.Transcription, which holds no XAML and knows
+       nothing of it, so the projects that transcribe through the engine never
+       run the XAML compiler on its account. -->
+  <ItemGroup>
+    <!-- One WinAppSDK runtime per process: never override the central version. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
+    <!-- Telemetry POCOs: the dictation-dataset consents read and write
+         TelemetrySettings through TelemetrySettingsService. -->
+    <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
+    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <!-- SettingsHost: the page's "Restart now" footer (RestartApp), the
+         setup call-to-action (OpenSetupWizard) and the provisioning probe the
+         App answers (IsSpeechProvisioned). One-way: Settings does not
+         reference Transcription. -->
+    <ProjectReference Include="..\Deckle.Settings\Deckle.Settings.csproj" />
+  </ItemGroup>
+</Project>

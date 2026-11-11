@@ -13,7 +13,6 @@ internal static class TaskbarPartNames
         TaskbarPart.Thumbnails => "thumbnails",
         TaskbarPart.StartMenuHeight => "start_menu_height",
         TaskbarPart.StartMenuWidth => "start_menu_width",
-        TaskbarPart.StartMenuRecommended => "start_menu_recommended",
         _ => "unknown",
     };
 }

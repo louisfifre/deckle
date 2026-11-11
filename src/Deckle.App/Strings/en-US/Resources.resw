@@ -275,7 +275,7 @@
     <value>Deckle will copy every log line to a trace file on this device (trace.jsonl), so you can follow an issue across restarts.</value>
   </data>
   <data name="ApplicationLogConsent_Body_What" xml:space="preserve">
-    <value>Every log line from every subsystem (capture, VAD, Whisper, rewriting, clipboard, paste, UI) at every verbosity level. Log messages can include partial transcription text when a pipeline step logs what it just produced. Nothing is sent over the network.</value>
+    <value>Every log line from every subsystem (capture, VAD, Whisper, rewriting, clipboard, UI) at every verbosity level. Log messages can include partial transcription text when a pipeline step logs what it just produced. Nothing is sent over the network.</value>
   </data>
   <data name="ApplicationLogConsent_Body_Remind" xml:space="preserve">
     <value>The trace is chatty. Expect roughly 2 MB per 30 minutes of active use. Every 8,000 lines, the file moves to the archive folder, which keeps the last 10 and deletes older ones. Turn it off once you have what you need.</value>
@@ -490,12 +490,9 @@
     <value>That key isn't on this keyboard.</value>
   </data>
   <!-- ─── HUD ────────────────────────────────────────────────────────
-       Short post-paste / post-copy confirmations rendered in the HUD
-       message slot. Hud_Copied_Hint sits under the title to remind the
-       user how to paste manually when the auto-paste path didn't run. -->
-  <data name="Hud_Pasted_Title" xml:space="preserve">
-    <value>Pasted</value>
-  </data>
+       Short post-copy confirmations rendered in the HUD message slot.
+       Hud_Copied_Hint sits under the title to remind the user how to paste
+       the text themselves. -->
   <data name="Hud_Copied_Title" xml:space="preserve">
     <value>Copied to clipboard</value>
   </data>
@@ -557,6 +554,15 @@
   <data name="TrayMenu_Playground" xml:space="preserve">
     <value>Playground</value>
   </data>
+  <data name="TrayMenu_Atelier" xml:space="preserve">
+    <value>Deckle Folders</value>
+  </data>
+  <data name="TrayMenu_Mail" xml:space="preserve">
+    <value>Deckle Mail (preview)</value>
+  </data>
+  <data name="TrayMenu_CaptureInterface" xml:space="preserve">
+    <value>Capture the interface</value>
+  </data>
   <data name="TrayMenu_AmbientLight" xml:space="preserve">
     <value>Ambient Light</value>
   </data>
@@ -607,7 +613,7 @@
   <!-- ─── File transcription — engine feedback ───────────────────────
        UserFeedback Title/Body pairs raised by TranscriptionEngine on the
        file-transcription path (busy guard, decode failure per cause, write
-       failure). Mirrored from the Deckle.Transcription satellite .resw so the
+       failure). Mirrored from the Deckle.Transcription.Views satellite .resw so the
        default ResourceLoader (host "Resources/" subtree only) can resolve
        them — same Loc-mirror-pattern as the AmbientPage block below : the
        module copy is the source of truth for wording, keep this mirror in
@@ -886,7 +892,7 @@
   </data>
 
   <!-- RecordingPage mic-check detail line and VoiceLevelMeter code-behind
-       (Loc.Get / Loc.Format) — duplicated from src/Deckle.Audio/Strings/en-US/
+       (Loc.Get / Loc.Format) — duplicated from src/Deckle.Audio.Views/Strings/en-US/
        Resources.resw, which stays the source of truth for wording. -->
   <data name="RecordingPageMicResultAbove_Format" xml:space="preserve">
     <value>{0} dBFS → {1} dBFS · loudest tenth {2} dB above your voice level</value>
@@ -1132,7 +1138,7 @@
   </data>
 
   <!-- ── AmbientPage code-behind (Loc.Get / Loc.Format) ──────
-       Duplicated from src/Deckle.Lighting.Ambient/Strings/en-US/
+       Duplicated from src/Deckle.Lighting.Ambient.Views/Strings/en-US/
        Resources.resw because the default ResourceLoader binds to
        the main app's PRI ; per-module x:Uid lookups resolve
        automatically against the module's own PRI but Loc.Get
@@ -1236,14 +1242,14 @@
   </data>
 
   <!-- AmbientPage Reset all dialog — duplicated from
-       src/Deckle.Lighting.Ambient/Strings/en-US/Resources.resw, which
+       src/Deckle.Lighting.Ambient.Views/Strings/en-US/Resources.resw, which
        stays the source of truth for wording. -->
   <data name="Settings_ResetAmbientDialog_Detail" xml:space="preserve">
     <value>Your Hue bridge pairing, the selected light group, the display, the per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
   </data>
 
   <!-- AmbientPreviewCard and LightZonesCard code-behind (Loc.Get) —
-       duplicated from src/Deckle.Lighting.Ambient/Strings/en-US/
+       duplicated from src/Deckle.Lighting.Ambient.Views/Strings/en-US/
        Resources.resw, which stays the source of truth for wording. -->
   <data name="AmbientPreview_GroupSwatch" xml:space="preserve">
     <value>All lights</value>
@@ -1578,6 +1584,12 @@
   <data name="Setup_Module_anytype_Description" xml:space="preserve">
     <value>Hosts the local Anytype backend that AI assistants read and write</value>
   </data>
+  <data name="Setup_Module_atelier_Label" xml:space="preserve">
+    <value>Deckle Folders</value>
+  </data>
+  <data name="Setup_Module_atelier_Description" xml:space="preserve">
+    <value>One window to look at the folders you add, with a file list and tools for photos, sizes and repositories</value>
+  </data>
   <data name="Setup_Module_Requires_Format" xml:space="preserve">
     <value>{0}. Requires {1}</value>
   </data>
@@ -1591,7 +1603,7 @@
     <value>No download</value>
   </data>
   <!-- ProfileViewModel (Loc.Get / Loc.Format) — mirrored from
-       src/Deckle.Llm.Rewrite/Strings/en-US/Resources.resw, which stays the
+       src/Deckle.Llm.Rewrite.Views/Strings/en-US/Resources.resw, which stays the
        source of truth for wording; Loc.Get reads this file only. -->
   <data name="LlmProfile_NoModel" xml:space="preserve">
     <value>(no model)</value>
@@ -1603,7 +1615,7 @@
     <value>context {0}K  ·  temperature {1}</value>
   </data>
   <!-- Action of the same notice: opens the Diagnostics page. The label names
-       the page as its nav label does (Deckle.Diagnostics.Logging). -->
+       the page as its nav label does (Deckle.Diagnostics.Logging.Views). -->
   <data name="LogWindowDroppedSettingsButton.Content" xml:space="preserve">
     <value>Open Diagnostics settings</value>
   </data>

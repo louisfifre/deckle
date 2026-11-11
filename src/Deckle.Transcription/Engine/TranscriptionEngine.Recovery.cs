@@ -17,7 +17,7 @@ public sealed partial class TranscriptionEngine
     //      is written by the first utterance that carries text, so a take that
     //      never gets a word leaves nothing behind.
     //   2. FinalizeTranscription deletes it the moment the raw copy lands on
-    //      the clipboard, before the rewrite and the paste: from there the
+    //      the clipboard, before the rewrite: from there the
     //      clipboard holds the text, and a later failure cannot leave a file
     //      that would overwrite the clipboard at the next launch.
     //   3. Every other ending keeps it for the next launch to restore: the raw

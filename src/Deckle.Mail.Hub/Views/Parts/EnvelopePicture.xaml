@@ -1,0 +1,28 @@
+<UserControl
+    x:Class="Deckle.Mail.Hub.EnvelopePicture"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Width="152"
+    Height="96"
+    HorizontalAlignment="Left"
+    IsTabStop="False">
+
+    <!-- The small flat picture of an empty page, in pale grey (the divider
+         grey the frames draw it in): an envelope. Not an icon and not a
+         skeleton of rows, and nothing in it moves, so it never reads as a
+         page still loading (spec, Triage). A picture, so screen readers skip
+         it: the sentence under it says everything.
+
+         The flap is a gap, not a stroke: two filled figures, the flap above
+         and the body below, with nothing painted between them, so the gap
+         shows whatever ground the page has (Mica, a contrast theme) and no
+         ground colour is assumed. Each figure follows the 8 px rounded
+         corners (OverlayCornerRadius) where the gap meets them: the V line
+         y = 60/76·x crosses the top-left corner's circle, centred (8,8), at
+         (2.63,2.07); the body's edge, 4 px lower, at (0.76,4.60); the right
+         side mirrors them. -->
+    <Path Fill="{ThemeResource DividerStrokeColorDefaultBrush}"
+          Data="M 2.63,2.07 A 8,8 0 0 1 8,0 L 144,0 A 8,8 0 0 1 149.37,2.07 L 76,60 Z
+                M 0.76,4.60 L 76,64 L 151.24,4.60 A 8,8 0 0 1 152,8 L 152,88 A 8,8 0 0 1 144,96
+                L 8,96 A 8,8 0 0 1 0,88 L 0,8 A 8,8 0 0 1 0.76,4.60 Z" />
+</UserControl>

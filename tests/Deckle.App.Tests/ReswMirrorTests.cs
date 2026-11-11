@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Xunit;
+using Deckle.Localization;
 
 namespace Deckle.App.Tests;
 

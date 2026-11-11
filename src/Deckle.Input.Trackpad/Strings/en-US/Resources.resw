@@ -149,7 +149,13 @@
     <value>Pick-up delay</value>
   </data>
   <data name="TrackpadPage_PressDelayCard.Description" xml:space="preserve">
-    <value>How long the drag waits after three fingers land before it picks up. A longer wait keeps four-finger gestures from clicking, but what you drag trails the cursor.</value>
+    <value>How long the drag waits after three fingers land before it picks up, unless the cursor moves the pick-up distance first. A longer wait keeps four-finger gestures from clicking, but what you drag trails the cursor.</value>
+  </data>
+  <data name="TrackpadPage_PressDistanceCard.Header" xml:space="preserve">
+    <value>Pick-up distance</value>
+  </data>
+  <data name="TrackpadPage_PressDistanceCard.Description" xml:space="preserve">
+    <value>How far the cursor moves before the drag picks up without waiting out the delay. A shorter distance picks up sooner, but four-finger gestures may click.</value>
   </data>
 
   <!-- Windows integration -->

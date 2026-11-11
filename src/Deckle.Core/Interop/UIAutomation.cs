@@ -5,8 +5,8 @@ namespace Deckle.Core;
 // ── UI Automation — focused-element probes ───────────────────────────────────
 //
 // Every probe reads the system-focused element and returns false when UIA
-// cannot answer (UIA refuses, COM exception, protected process). The paste
-// and autocorrect gates treat that "can't tell" as not safe.
+// cannot answer (UIA refuses, COM exception, protected process). The
+// autocorrect gate treats that "can't tell" as not safe.
 //
 // COM interop via classic ComImport (no AOT in this project). Only the vtable
 // slots actually needed are declared; earlier slots are placeholders with
@@ -43,40 +43,6 @@ public static partial class UIAutomation
     // across the life of the process.
     private static IUIAutomation? _instance;
     private static readonly object _lock = new();
-
-    // Strict paste gate: true only when the focused element's ControlType is
-    // Edit or Document. `diagnostic` carries a short line for the Paste log.
-    public static bool IsFocusedElementTextEditable(out string diagnostic)
-    {
-        try
-        {
-            var ua = GetInstance();
-            int hr = ua.GetFocusedElement(out var el);
-            if (hr != 0 || el is null)
-            {
-                diagnostic = $"GetFocusedElement hr=0x{hr:X} el={(el is null ? "null" : "ok")}";
-                return false;
-            }
-
-            hr = el.GetCurrentPropertyValue(UIA_ControlTypePropertyId, out var value);
-            if (hr != 0 || value is null)
-            {
-                diagnostic = $"GetCurrentPropertyValue hr=0x{hr:X} value={(value is null ? "null" : "ok")}";
-                return false;
-            }
-
-            int controlType = Convert.ToInt32(value);
-            bool ok = controlType == UIA_EditControlTypeId
-                   || controlType == UIA_DocumentControlTypeId;
-            diagnostic = $"ControlType={controlType} (editable={ok})";
-            return ok;
-        }
-        catch (Exception ex)
-        {
-            diagnostic = $"UIA exception: {ex.GetType().Name}: {ex.Message}";
-            return false;
-        }
-    }
 
     // Describes the system-focused element for the autocorrect surface gate:
     // IsPassword (UIA's own flag — required before the surface is trusted),

@@ -160,9 +160,9 @@
        for diagnostic clarity. -->
 
   <!-- ─── HUD ────────────────────────────────────────────────────────
-       Short post-paste / post-copy confirmations rendered in the HUD
-       message slot. Hud_Copied_Hint sits under the title to remind the
-       user how to paste manually when the auto-paste path didn't run. -->
+       Short post-copy confirmations rendered in the HUD message slot.
+       Hud_Copied_Hint sits under the title to remind the user how to paste
+       the text themselves. -->
 
   <!-- ─── Tray ───────────────────────────────────────────────────────
        Tray icon tooltip. Capped at 127 chars by Shell_NotifyIcon. The
@@ -408,7 +408,7 @@
        through AppWindow.Title in each window's ConfigureWindow. -->
 
   <!-- ── AmbientPage code-behind (Loc.Get / Loc.Format) ──────
-       Duplicated from src/Deckle.Lighting.Ambient/Strings/en-US/
+       Duplicated from src/Deckle.Lighting.Ambient.Views/Strings/en-US/
        Resources.resw because the default ResourceLoader binds to
        the main app's PRI ; per-module x:Uid lookups resolve
        automatically against the module's own PRI but Loc.Get
@@ -476,6 +476,12 @@
   </data>
   <data name="Setup_Module_anytype_Description" xml:space="preserve">
     <value>Hosts the local Anytype backend that AI assistants read and write</value>
+  </data>
+  <data name="Setup_Module_atelier_Label" xml:space="preserve">
+    <value>Deckle Folders</value>
+  </data>
+  <data name="Setup_Module_atelier_Description" xml:space="preserve">
+    <value>One window to look at the folders you add, with a file list and tools for photos, sizes and repositories</value>
   </data>
   <data name="Setup_Module_Requires_Format" xml:space="preserve">
     <value>{0}. Requires {1}</value>

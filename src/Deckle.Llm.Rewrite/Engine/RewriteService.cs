@@ -1,7 +1,7 @@
 using System.Globalization;
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Llm;
+using Deckle.Localization;
 
 namespace Deckle.Llm.Rewrite;
 
@@ -21,14 +21,26 @@ namespace Deckle.Llm.Rewrite;
 public interface IRewriteService
 {
     GenerationResult Rewrite(string text, RewriteProfile profile);
+
+    /// <summary>Rewrites one batch of a dictation sent in several. Same
+    /// outcome as <see cref="Rewrite"/>; the difference is what the provider
+    /// is asked to remember: the next batch sends the same profile prompt
+    /// within the minute, so a provider that caches prompts keeps this one
+    /// and bills the next batches a fraction of it. A service with nothing
+    /// to cache rewrites the batch as it would a whole dictation.</summary>
+    GenerationResult RewriteBatch(string text, RewriteProfile profile) => Rewrite(text, profile);
+
     GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken);
     GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken);
 }
 
 public class RewriteService : IRewriteService
 {
-    // The module's own resource subtree, where its code-side strings live.
-    private const string Module = "Deckle.Llm.Rewrite";
+    // The resource subtree that holds these strings. The engine compiles no
+    // .resw: its strings ship with the project that presents it,
+    // Deckle.Llm.Rewrite.Views, so this names that assembly's PRI subtree. A
+    // string, not a project reference: the engine never loads the Views.
+    private const string Module = "Deckle.Llm.Rewrite.Views";
 
     readonly IGenerationEngineResolver _engines;
     readonly Func<string, LlmProvider?> _findProvider;
@@ -118,7 +130,20 @@ public class RewriteService : IRewriteService
         }
     }
 
-    public GenerationResult Rewrite(string text, RewriteProfile profile)
+    // A whole dictation is one call: the next one rarely comes within the
+    // cache's five minutes, and a cache write costs a quarter more than a
+    // plain call, so nothing is cached.
+    public GenerationResult Rewrite(string text, RewriteProfile profile) =>
+        Rewrite(text, profile, PromptCacheScope.None);
+
+    // Measured on 2026-11-11 with the benchmark's cache-probe: three batches
+    // sent one after the other cost a third less than without the cache
+    // (Sonnet 5.5, a prompt of 3,000 tokens), the first writing the prompt and
+    // the next two reading it.
+    public GenerationResult RewriteBatch(string text, RewriteProfile profile) =>
+        Rewrite(text, profile, PromptCacheScope.SystemPrompt);
+
+    GenerationResult Rewrite(string text, RewriteProfile profile, PromptCacheScope cache)
     {
         if (string.IsNullOrWhiteSpace(profile.Model))
         {
@@ -161,6 +186,7 @@ public class RewriteService : IRewriteService
                 NumCtx:        profile.NumCtxK * 1024,   // stored in K
                 TopP:          profile.TopP,
                 RepeatPenalty: profile.RepeatPenalty,
+                Cache:         cache,
                 Reasoning:     profile.Reasoning);
             GenerationResult result = engine.Generate(request, cts.Token);
             sw.Stop();

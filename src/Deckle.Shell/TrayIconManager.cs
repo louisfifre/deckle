@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 using Deckle.Core;
-using Deckle.Catalog;
+using Deckle.Localization;
 
 namespace Deckle.Shell;
 
@@ -39,10 +39,10 @@ public sealed class TrayIconManager : IDisposable
     private IntPtr _hwnd;
     private uint   _wmTaskbarCreated;
 
-    // The four marks, indexed by IconIndex: idle or recording, each with and
-    // without the dot of an open user incident. Owned is false for the
-    // fallback LoadIcon, a shared icon that DestroyIcon must not touch.
-    private readonly (IntPtr Icon, bool Owned)[] _icons = new (IntPtr, bool)[4];
+    // The six marks, indexed by IconIndex: each MarkState with and without
+    // the dot of an open user incident. Owned is false for the fallback
+    // LoadIcon, a shared icon that DestroyIcon must not touch.
+    private readonly (IntPtr Icon, bool Owned)[] _icons = new (IntPtr, bool)[6];
     private bool   _disposed;
 
     private TrayIconRegistration? _registration;
@@ -58,6 +58,7 @@ public sealed class TrayIconManager : IDisposable
     private readonly object _statusGate = new();
     private string _tip = "";
     private bool   _isRecording;
+    private bool   _isRewriting;
     private bool   _hasIncident;
 
     /// <summary>
@@ -91,37 +92,44 @@ public sealed class TrayIconManager : IDisposable
     // ── Initialization ───────────────────────────────────────────────────────
 
     // Creates the owner window and adds the icon with the current status.
-    // Throws when the window cannot be created or the shell refuses the
-    // first add: without an icon the app has no surface at all.
+    // Throws only when the window cannot be created. A shell that refuses the
+    // first add is retried on the re-add timer, and the window stays alive to
+    // hear TaskbarCreated: the app goes on starting, hotkeys included, and the
+    // icon appears as soon as the shell takes it. Throwing there once cost the
+    // icon and every hotkey for the whole run (2026-11-11), with no window
+    // left to hear Explorer come back.
     public void Register()
     {
-        foreach (bool recording in new[] { false, true })
+        foreach (MarkState state in Enum.GetValues<MarkState>())
         foreach (bool incident in new[] { false, true })
-            _icons[IconIndex(recording, incident)] = LoadIconFromFile(recording, incident);
+            _icons[IconIndex(state, incident)] = LoadIconFromFile(state, incident);
 
         CreateOwnerWindow();
 
-        IntPtr icon;
         lock (_statusGate)
         {
             _registration = new TrayIconRegistration(_hwnd, new Win32NotifyIconApi());
-            icon = CurrentIcon();
-            _registration.Update(_tip, icon);
+            _registration.Update(_tip, CurrentIcon());
         }
-        if (!_registration.Add())
-        {
-            int error = Marshal.GetLastWin32Error();
-            Dispose();
-            throw new InvalidOperationException(
-                $"Shell_NotifyIcon(NIM_ADD) failed — hWnd={_hwnd}, hIcon={icon} (Win32 err {error})");
-        }
+        if (_registration.Add() == TrayIconReaddOutcome.Added) return;
+
+        DeckleShellSource.Log.TrayIconAddRefused(Marshal.GetLastWin32Error());
+        NativeMethods.SetTimer(_hwnd, ReaddTimerId, ReaddRetryDelayMs, IntPtr.Zero);
     }
 
-    private static int IconIndex(bool recording, bool incident)
-        => (recording ? 1 : 0) + (incident ? 2 : 0);
+    private static int IconIndex(MarkState state, bool incident)
+        => (int)state + (incident ? 3 : 0);
+
+    // An open microphone is the signal that must not be missed, so it wins
+    // over a rewrite that overlaps it.
+    internal static MarkState MarkFor(bool recording, bool rewriting)
+        => recording ? MarkState.Recording
+         : rewriting ? MarkState.Rewriting
+         : MarkState.Rest;
 
     // Under _statusGate.
-    private IntPtr CurrentIcon() => _icons[IconIndex(_isRecording, _hasIncident)].Icon;
+    private IntPtr CurrentIcon()
+        => _icons[IconIndex(MarkFor(_isRecording, _isRewriting), _hasIncident)].Icon;
 
     // ── Owner window ─────────────────────────────────────────────────────────
     //
@@ -290,9 +298,21 @@ public sealed class TrayIconManager : IDisposable
         }
     }
 
+    // Lights or dims the blade that says a rewrite is running. The host names
+    // the phase; the tooltip keeps following UpdateStatus.
+    public void SetRewritingIndicator(bool shown)
+    {
+        lock (_statusGate)
+        {
+            if (_isRewriting == shown) return;
+            _isRewriting = shown;
+            _registration?.Update(_tip, CurrentIcon());
+        }
+    }
+
     // Shows or hides the dot that says a user incident is open. The host
-    // decides what counts; this primitive only swaps the mark, in both the
-    // idle and the recording state.
+    // decides what counts; this primitive only swaps the mark, in every
+    // state.
     public void SetIncidentIndicator(bool shown)
     {
         lock (_statusGate)
@@ -307,9 +327,9 @@ public sealed class TrayIconManager : IDisposable
 
     // Returns (hIcon, owned): owned=true if loaded from file (DestroyIcon
     // required), owned=false if shared system icon (DO NOT call DestroyIcon).
-    internal static (IntPtr hIcon, bool owned) LoadIconFromFile(bool recording, bool incident)
+    internal static (IntPtr hIcon, bool owned) LoadIconFromFile(MarkState mark, bool incident)
     {
-        string? path = IconAssets.ResolveTrayIconPath(recording, incident);
+        string? path = IconAssets.ResolveTrayIconPath(mark, incident);
         string reason = "asset_missing";
         int error = 0;
         if (path is not null)
@@ -329,7 +349,12 @@ public sealed class TrayIconManager : IDisposable
         // The shared IDI_APPLICATION icon keeps the tray item visible when the
         // assets were not copied; the tray then shows the wrong mark, so the
         // fallback is a Warning, not a silence.
-        string state = (recording ? "recording" : "idle") + (incident ? "_incident" : "");
+        string state = mark switch
+        {
+            MarkState.Recording => "recording",
+            MarkState.Rewriting => "rewriting",
+            _                   => "idle",
+        } + (incident ? "_incident" : "");
         DeckleShellSource.Log.TrayIconFallback(state, reason, error);
         const nint IDI_APPLICATION = 32512;
         return (NativeMethods.LoadIcon(IntPtr.Zero, new IntPtr(IDI_APPLICATION)), owned: false);

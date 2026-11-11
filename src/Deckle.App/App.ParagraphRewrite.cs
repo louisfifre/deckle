@@ -2,13 +2,15 @@ using Deckle.Autocorrect;
 using Deckle.Core;
 using Deckle.Input;
 using Deckle.Llm.Rewrite;
+using Deckle.Llm.Rewrite.Views;
 using Deckle.Shell;
 using System.Collections.Concurrent;
 
 namespace Deckle.App;
 
-// Host bridge for the paragraph-retaille interaction. Business state and UI
-// live in Deckle.Llm.Rewrite; this file wires the process-shared Raw Input
+// Host bridge for the paragraph-retaille interaction. Business state lives in
+// Deckle.Llm.Rewrite and the offer window in Deckle.Llm.Rewrite.Views; this
+// file wires the process-shared Raw Input
 // stream to that surface through a keystroke state machine (OnParagraphKey:
 // text and Backspace grow the draft, Shift+Enter closes it and requests an
 // offer, any other key, click or focus change invalidates it, and a disabled

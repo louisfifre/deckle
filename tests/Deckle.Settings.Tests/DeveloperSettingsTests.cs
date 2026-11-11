@@ -14,45 +14,28 @@ public sealed class DeveloperSettingsTests
     };
 
     [Fact]
-    public void ThePlaygroundIsHiddenByDefault()
-    {
-        Assert.False(new AppSettings().Developer.ShowPlayground);
-    }
-
-    [Fact]
-    public void AFileWrittenBeforeTheSettingExistedLoadsWithThePlaygroundHidden()
-    {
-        var loaded = JsonSerializer.Deserialize<AppSettings>("""{"appearance":{"theme":"Dark"}}""", Options)!;
-
-        Assert.False(loaded.Developer.ShowPlayground);
-    }
-
-    [Fact]
-    public void TheSwitchSurvivesASaveAndALoad()
-    {
-        var settings = new AppSettings();
-        settings.Developer.ShowPlayground = true;
-
-        var loaded = JsonSerializer.Deserialize<AppSettings>(
-            JsonSerializer.Serialize(settings, Options), Options)!;
-
-        Assert.True(loaded.Developer.ShowPlayground);
-    }
-
-    [Fact]
     public void DeveloperModeIsOffByDefault()
     {
         Assert.False(new AppSettings().Developer.DeveloperMode);
     }
 
     [Fact]
-    public void AFileWrittenBeforeDeveloperModeExistedLoadsWithItOff()
+    public void AFileWrittenBeforeTheSettingExistedLoadsWithDeveloperModeOff()
+    {
+        var loaded = JsonSerializer.Deserialize<AppSettings>("""{"appearance":{"theme":"Dark"}}""", Options)!;
+
+        Assert.False(loaded.Developer.DeveloperMode);
+    }
+
+    // The Playground once had a switch of its own. A file that still carries
+    // it loads, and the old switch does not turn Developer mode on.
+    [Fact]
+    public void AFileThatStillCarriesThePlaygroundSwitchLoadsWithDeveloperModeOff()
     {
         var loaded = JsonSerializer.Deserialize<AppSettings>(
             """{"developer":{"showPlayground":true}}""", Options)!;
 
         Assert.False(loaded.Developer.DeveloperMode);
-        Assert.True(loaded.Developer.ShowPlayground);
     }
 
     [Fact]

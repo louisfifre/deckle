@@ -44,10 +44,10 @@ namespace deckle::xamldiag
         }
 
         // InitializeXamlDiagnosticsEx loaded this DLL once more to host the
-        // TAP. That extra reference would keep the DLL mapped for the life of
-        // explorer, so it is given back here, as the styler does. The DLL
-        // stays loaded through the pin the engine took at start, and unloads
-        // when the engine drops it.
+        // TAP. That reference is given back here, as the styler does, so the
+        // engine's own pin is the one that counts. Once XAML Diagnostics
+        // answered, the engine keeps that pin for the life of the process
+        // (residency.h says why).
         FreeLibrary(engine::Module());
 
         Log(LogLevel::Info, L"tap_site_set", L"Connected to XAML Diagnostics");

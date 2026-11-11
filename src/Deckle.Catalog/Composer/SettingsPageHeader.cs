@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;
+using Deckle.Localization;
 
 namespace Deckle.Catalog;
 
@@ -239,12 +240,17 @@ public sealed partial class SettingsPageHeader : UserControl
     // theme's grey whenever Deckle's theme differed from Windows'. In theme
     // dictionaries, the template's ThemeResource lookups resolve against the
     // element's own theme and follow it when it changes. The dictionary is
-    // compiled XAML (Themes/SettingsPageHeaderBrushes.xaml), not a XamlReader
+    // compiled XAML (SettingsPageHeaderBrushes.xaml), not a XamlReader
     // string: XamlReader.Load parses without Application.Resources in sight, so
     // the StaticResource aliases would fail at parse time, in this constructor.
+    //
+    // The file is compiled in Deckle.Catalog.Themes, which this project does
+    // not reference, so that Catalog holds no .xaml (see the .csproj). The host
+    // that shows a page must reference Deckle.Catalog.Themes: without it this
+    // constructor throws, and the page does not load.
     private readonly ResourceDictionary _headerBrushes = new()
     {
-        Source = new Uri("ms-appx:///Deckle.Catalog/Themes/SettingsPageHeaderBrushes.xaml"),
+        Source = new Uri("ms-appx:///Deckle.Catalog.Themes/SettingsPageHeaderBrushes.xaml"),
     };
 
     private void ResolveBreadcrumb()

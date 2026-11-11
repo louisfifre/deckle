@@ -51,6 +51,7 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     public const int EvtShowIgnoredAfterDismissDetail = 27;
     public const int EvtActivationMovedToOwnedPopup  = 36;
     public const int EvtFlyoutShownAtDetail          = 46;
+    public const int EvtSwitcherExclusionRefused     = 47;
 
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -124,6 +125,19 @@ public sealed class DeckleShellTrayMenuSource : DeckleEventSource
     {
         if (IsDetailEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtWindowActivated, state, is_visible);
+    }
+
+    // AppWindow.IsShownInSwitchers was refused (seen at startup while the
+    // shell was busy). The anchor stays out of Alt+Tab through
+    // WS_EX_TOOLWINDOW instead, and the menu works as usual. window: the
+    // Windowing vocabulary ("tray-popup", "tray-actions").
+    [Event(EvtSwitcherExclusionRefused,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Windows refused to keep the tray menu anchor out of the window switchers, so its window style does it instead\nwindow={0} | hresult=0x{1:X}")]
+    public void SwitcherExclusionRefused(string window, int hresult)
+    {
+        if (IsEnabled()) WriteEvent(EvtSwitcherExclusionRefused, window, hresult);
     }
 
     // The anchor lost activation to a window it owns (the menu's popup took

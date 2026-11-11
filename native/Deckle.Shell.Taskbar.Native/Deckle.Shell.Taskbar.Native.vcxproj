@@ -83,6 +83,7 @@
     <ClInclude Include="log.h" />
     <ClInclude Include="channel.h" />
     <ClInclude Include="engine.h" />
+    <ClInclude Include="residency.h" />
     <ClInclude Include="xamldiag\tap_site.h" />
     <ClInclude Include="xamldiag\visual_tree_watcher.h" />
     <ClInclude Include="xamldiag\element_properties.h" />
@@ -109,6 +110,7 @@
     <ClCompile Include="log.cpp" />
     <ClCompile Include="channel.cpp" />
     <ClCompile Include="engine.cpp" />
+    <ClCompile Include="residency.cpp" />
     <ClCompile Include="hook_entry.cpp" />
     <ClCompile Include="xamldiag\tap_site.cpp" />
     <ClCompile Include="xamldiag\visual_tree_watcher.cpp" />

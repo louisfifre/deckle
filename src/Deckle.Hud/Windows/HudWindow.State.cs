@@ -5,9 +5,9 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using WinRT.Interop;
 using Deckle.Core;
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Shell;
+using Deckle.Localization;
 
 namespace Deckle.Hud;
 
@@ -38,14 +38,8 @@ public sealed partial class HudWindow : Window
             new MessagePayload(MessageKind.Critical, title, body, FeedbackDuration(2)),
             reason: "show_error"));
 
-    public void ShowPasted() =>
-        EnqueueUI(() => SetState(HudState.Message,
-            new MessagePayload(MessageKind.Success, Loc.Get("Hud_Pasted_Title"), string.Empty,
-                SuccessDuration),
-            reason: "show_pasted"));
-
     // "Copied to clipboard" is a *success* outcome: the transcription landed
-    // on the clipboard, the default flow when AutoPasteEnabled is off. "Ctrl+V
+    // on the clipboard, the only way a dictation is delivered. "Ctrl+V
     // where you want it" is a next-step hint, not a failure notice.
     public void ShowCopied() =>
         EnqueueUI(() => SetState(HudState.Message,
@@ -113,40 +107,6 @@ public sealed partial class HudWindow : Window
         if (HudHidePolicy.ShouldHonorHide(_state, _messageKind))
             SetState(HudState.Hidden, reason: "hide");
     });
-
-    // Blocking variant: explicit rendezvous between the transcribe thread
-    // and the UI thread. Called just before PasteFromClipboard so SW_HIDE
-    // is effective before SendInput queues the Ctrl+V — otherwise the
-    // hide can redistribute activation while the keystrokes are in flight
-    // and the paste lands in the wrong target.
-    public void HideSync()
-    {
-        if (DispatcherQueue.HasThreadAccess) { SetState(HudState.Hidden, reason: "hide_sync"); return; }
-        var done = new ManualResetEventSlim();
-        bool enqueued = DispatcherQueue.TryEnqueueObserved(
-            "window-show", "hud-window-hide-sync",
-            () =>
-            {
-                try { SetState(HudState.Hidden, reason: "hide_sync"); } finally { done.Set(); }
-            },
-            "HUD", "HideSync");
-
-        // If enqueue failed (queue closed during teardown), avoid an infinite
-        // Wait by releasing immediately. The HUD will not be hidden, but the
-        // caller (transcribe thread) must continue so the paste can proceed.
-        if (!enqueued) { done.Set(); return; }
-
-        // Defensive timeout: SetState takes microseconds under normal
-        // conditions, but if the UI thread is blocked (composition glitch,
-        // external deadlock), release the caller instead of hanging the
-        // pipeline. Paste will be emitted without the Hide rendezvous, creating
-        // a race risk, accepted in pathological cases.
-        if (!done.Wait(HideSyncTimeout))
-            DeckleHudSource.Log.HideSyncTimedOut(
-                "ui_thread_unresponsive", (int)HideSyncTimeout.TotalMilliseconds);
-    }
-
-    private static readonly TimeSpan HideSyncTimeout = TimeSpan.FromSeconds(5);
 
     // The MessageKind mapped back onto the feedback contract's severity
     // (0=Info, 1=Warning, 2+=Error), so a suppressed display reads on the same

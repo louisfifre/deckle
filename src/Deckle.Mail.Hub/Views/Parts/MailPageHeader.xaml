@@ -1,0 +1,68 @@
+<UserControl
+    x:Class="Deckle.Mail.Hub.MailPageHeader"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- The header of a page of the Mail window: its title, or its
+         breadcrumb when it stands under another (Perso › Shop, Settings ›
+         Perso), then one grey line (the address of a mailbox). The breadcrumb
+         reads as the title, in TitleTextBlockStyle's size, with the brushes
+         SettingsPageHeader gives its own: parents grey, the current page in
+         the primary ink. -->
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="ms-appx:///Deckle.Catalog.Themes/SettingsPageHeaderBrushes.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <StackPanel Margin="0,0,0,20">
+        <Grid x:Name="TitleRow"
+              ColumnSpacing="8"
+              Background="Transparent"
+              PointerEntered="OnTitlePointerEntered"
+              PointerExited="OnTitlePointerExited">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <BreadcrumbBar x:Name="Crumbs"
+                           VerticalAlignment="Center"
+                           Visibility="Collapsed"
+                           ItemClicked="OnCrumbClicked" />
+            <TextBlock x:Name="TitleText"
+                       Style="{StaticResource TitleTextBlockStyle}"
+                       TextWrapping="Wrap"
+                       Visibility="Collapsed" />
+            <!-- A name being entered or changed is edited in place, at the
+                 size of the title (spec, An Inbox page). -->
+            <TextBox x:Name="NameBox"
+                     MinWidth="320"
+                     Visibility="Collapsed"
+                     KeyDown="OnNameBoxKeyDown"
+                     LostFocus="OnNameBoxLostFocus" />
+            <!-- Rename shows on hover or focus only (spec Open 44). -->
+            <Button x:Name="RenameButton"
+                    Grid.Column="1"
+                    Style="{StaticResource SubtleButtonStyle}"
+                    Padding="8"
+                    VerticalAlignment="Center"
+                    Opacity="0"
+                    Visibility="Collapsed"
+                    GotFocus="OnRenameFocusChanged"
+                    LostFocus="OnRenameFocusChanged"
+                    Click="OnRenameClick">
+                <FontIcon Glyph="{StaticResource Icon.Mail.Rename}" FontSize="16" />
+            </Button>
+        </Grid>
+        <TextBlock x:Name="DescriptionText"
+                   Margin="0,4,0,0"
+                   Style="{StaticResource BodyTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                   TextWrapping="Wrap"
+                   Visibility="Collapsed" />
+    </StackPanel>
+</UserControl>

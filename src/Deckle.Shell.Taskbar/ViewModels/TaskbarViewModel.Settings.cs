@@ -1,4 +1,5 @@
 using Deckle.Catalog;
+using Deckle.Localization;
 
 namespace Deckle.Shell.Taskbar;
 
@@ -164,12 +165,6 @@ public partial class TaskbarViewModel
             ],
             defaultValue: () => new TaskbarSettings().StartMenuWidth,
             advisory: () => ProblemAdvisory(TaskbarPart.StartMenuWidth)),
-        Setting.Toggle(
-            "TaskbarPage_HideStartMenuRecommendedCard",
-            () => HideStartMenuRecommended,
-            value => HideStartMenuRecommended = value,
-            defaultValue: () => new TaskbarSettings().HideStartMenuRecommended,
-            advisory: () => ProblemAdvisory(TaskbarPart.StartMenuRecommended)),
         // Sits with the Start menu because it changes what the Windows key does to
         // Start. It asks nothing of the engine, so it has no advisory.
         Setting.Toggle(
@@ -239,7 +234,6 @@ public partial class TaskbarViewModel
             TaskbarPart.Thumbnails => LargerThumbnails,
             TaskbarPart.StartMenuHeight => StartMenuFullHeight,
             TaskbarPart.StartMenuWidth => StartMenuWidth != StartMenuWidth.Native,
-            TaskbarPart.StartMenuRecommended => HideStartMenuRecommended,
             _ => false,
         };
         if (!on || !_customizer.Problems.TryGetValue(part, out TaskbarProblem problem)) return null;

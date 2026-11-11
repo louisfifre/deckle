@@ -4,6 +4,7 @@ using System.Linq;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Shell;
+using Deckle.Localization;
 
 namespace Deckle.Settings;
 
@@ -184,17 +185,12 @@ public partial class GeneralViewModel
             defaultValue: () => new UpdatesSettings().AutoCheckEnabled),
     ];
 
-    // The App reads the persisted value to show or hide every Playground entry
-    // point, so the toggle needs no side effect beyond PushToSettings.
-    //
-    // Developer mode comes last: the page's "Capture the interface" card, an
-    // action and so not composed, follows it and shows only while it is on.
+    // The App reads the persisted value to show or hide every developer entry
+    // point, so the toggle needs no side effect beyond PushToSettings. The
+    // page's "Capture the interface" card, an action and so not composed,
+    // follows it and shows only while it is on.
     public IReadOnlyList<SettingDescriptor> DeveloperSettings =>
     [
-        Setting.Toggle("GeneralShowPlaygroundCard",
-            () => ShowPlayground,
-            value => ShowPlayground = value,
-            defaultValue: () => new DeveloperSettings().ShowPlayground),
         Setting.Toggle("GeneralDeveloperModeCard",
             () => DeveloperMode,
             value => DeveloperMode = value,

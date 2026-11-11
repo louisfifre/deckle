@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Atelier.Views</RootNamespace>
+    <UseWinUI>true</UseWinUI>
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <!-- Generates the lib's own .pri so x:Uid lookups and Loc.GetFrom resolve
+         against the Deckle.Atelier.Views/Resources subtree. -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+  </PropertyGroup>
+
+  <!-- The Atelier window and its tools. Dependencies point one way: this
+       project reads Deckle.Atelier, which knows nothing of it. A tool lives
+       in its own folder under Tools/ and joins the window through one line
+       of AtelierToolCatalog. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Atelier\Deckle.Atelier.csproj" />
+    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
+    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
+    <ProjectReference Include="..\Deckle.Shell.WindowChrome\Deckle.Shell.WindowChrome.csproj" />
+  </ItemGroup>
+</Project>

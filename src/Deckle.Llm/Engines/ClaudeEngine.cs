@@ -60,23 +60,7 @@ public sealed class ClaudeEngine : IGenerationEngine
         DeckleLlmSource.Log.RewriteStartedDetail(
             request.UserText.Length, request.Model, request.Label, "claude", reasoning.Detail);
 
-        var parameters = new MessageCreateParams
-        {
-            Model = request.Model,
-            MaxTokens = MaxOutputTokens,
-            System = request.SystemPrompt,
-            OutputConfig = new OutputConfig { Effort = reasoning.Effort },
-            Messages = [new() { Role = Role.User, Content = request.UserText }],
-        };
-        // Left unset unless thinking must be turned off, so a request without
-        // a level stays byte for byte what it was.
-        if (reasoning.Thinking is { } thinking)
-            parameters = parameters with { Thinking = thinking };
-        // Set only when asked, so the app's request stays byte for byte what
-        // it was. The top-level marker caches up to the last block: the
-        // system prompt and the text together.
-        if (request.CachePrompt)
-            parameters = parameters with { CacheControl = new CacheControlEphemeral() };
+        MessageCreateParams parameters = BuildParameters(request, reasoning);
 
         Message response;
         try
@@ -116,7 +100,8 @@ public sealed class ClaudeEngine : IGenerationEngine
         // Messages API reports no load or prompt-evaluation timing.
         DeckleLlmSource.Log.RewriteResponseDetail(
             sw.ElapsedMilliseconds, request.UserText.Length, trimmed.Length, request.Label,
-            0, 0, sw.ElapsedMilliseconds, promptTokens, evalTokens, $"{response.StopReason}");
+            0, 0, sw.ElapsedMilliseconds, promptTokens, evalTokens, $"{response.StopReason}",
+            cacheWriteTokens, cacheReadTokens);
 
         return new GenerationResult(
             Text:         trimmed,
@@ -128,6 +113,46 @@ public sealed class ClaudeEngine : IGenerationEngine
             EvalTokens:   evalTokens,
             CacheWriteTokens: cacheWriteTokens,
             CacheReadTokens:  cacheReadTokens);
+    }
+
+    // The request as the Messages API receives it. Apart from Generate so a
+    // test can read where the cache marker sits without a network call.
+    internal static MessageCreateParams BuildParameters(GenerationRequest request, ClaudeReasoning reasoning)
+    {
+        var parameters = new MessageCreateParams
+        {
+            Model = request.Model,
+            MaxTokens = MaxOutputTokens,
+            System = request.SystemPrompt,
+            OutputConfig = new OutputConfig { Effort = reasoning.Effort },
+            Messages = [new() { Role = Role.User, Content = request.UserText }],
+        };
+        // Left unset unless thinking must be turned off, so a request without
+        // a level stays byte for byte what it was.
+        if (reasoning.Thinking is { } thinking)
+            parameters = parameters with { Thinking = thinking };
+
+        // The cache keeps everything up to its marker and matches the next
+        // request from its first byte, so the marker goes where the part that
+        // repeats ends. Without a scope nothing is added and the request
+        // stays byte for byte what it was.
+        return request.Cache switch
+        {
+            // On the prompt's own block: the text that follows is new on
+            // every call, so it is neither written to the cache nor needed
+            // to read the prompt back.
+            PromptCacheScope.SystemPrompt => parameters with
+            {
+                System = new List<TextBlockParam>
+                {
+                    new() { Text = request.SystemPrompt, CacheControl = new CacheControlEphemeral() },
+                },
+            },
+            // The top-level marker caches up to the last block: the system
+            // prompt and the text together.
+            PromptCacheScope.WholeRequest => parameters with { CacheControl = new CacheControlEphemeral() },
+            _ => parameters,
+        };
     }
 
     /// <summary>What the Messages API is sent for a reasoning level:

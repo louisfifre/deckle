@@ -4,6 +4,7 @@ using Deckle.Core;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Shapes;
+using Deckle.Localization;
 
 namespace Deckle.Shell.TaskbarCover;
 

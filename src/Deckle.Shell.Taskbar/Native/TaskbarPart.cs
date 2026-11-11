@@ -14,12 +14,11 @@ public enum TaskbarPart
     Thumbnails,
     StartMenuHeight,
     StartMenuWidth,
-    StartMenuRecommended,
 }
 
 internal static class TaskbarPartProcess
 {
     /// <summary>Whether the part lives in the Start menu's process rather than in explorer.</summary>
     public static bool IsStartMenu(this TaskbarPart part) =>
-        part is TaskbarPart.StartMenuHeight or TaskbarPart.StartMenuWidth or TaskbarPart.StartMenuRecommended;
+        part is TaskbarPart.StartMenuHeight or TaskbarPart.StartMenuWidth;
 }

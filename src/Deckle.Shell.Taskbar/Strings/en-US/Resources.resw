@@ -174,12 +174,6 @@
   <data name="TaskbarPage_StartMenuCustomWidthCard.Description" xml:space="preserve">
     <value>On a narrower screen, such as one turned upright, Start stops at its edge.</value>
   </data>
-  <data name="TaskbarPage_HideStartMenuRecommendedCard.Header" xml:space="preserve">
-    <value>Hide recent and recommended items</value>
-  </data>
-  <data name="TaskbarPage_HideStartMenuRecommendedCard.Description" xml:space="preserve">
-    <value>Takes the section under your pinned apps out of Start, so the list of all apps moves up.</value>
-  </data>
   <data name="TaskbarPage_WindowsKeyShowsTaskbarCard.Header" xml:space="preserve">
     <value>Windows key shows the taskbar</value>
   </data>

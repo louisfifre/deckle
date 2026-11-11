@@ -127,7 +127,7 @@ static class CampaignRun
             SystemPrompt: item.Prompt.SystemPrompt,
             UserText:     item.Dictation.Text,
             Label:        "benchmark",
-            CachePrompt:  cachePrompt,
+            Cache:        cachePrompt ? PromptCacheScope.WholeRequest : PromptCacheScope.None,
             Reasoning:    reasoning);
 
         GenerationResult? result = null;

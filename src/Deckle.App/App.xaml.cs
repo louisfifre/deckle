@@ -29,10 +29,11 @@ public partial class App : Microsoft.UI.Xaml.Application
 
     private Settings.SettingsWindow? _settingsWindow;
     private PlaygroundWindow? _playgroundWindow;
+    private Mail.Hub.MailWindow? _mailWindow;
     private HudWindow? _hudWindow;
     private HudOverlayManager? _overlayManager;
     private TrayIconManager? _tray;
-    private TrayMenuHost? _trayMenu;
+    private TrayMenuHost? _trayDeveloperMenu;
     private TrayMenuHost? _trayActions;
     private TranscriptionEngine? _engine;
     private SpeechEngine? _speechEngine;
@@ -135,11 +136,38 @@ public partial class App : Microsoft.UI.Xaml.Application
         // Load-bearing order: the phases compile in any order but break silently
         // when reordered.
         var context = new StartupContext();
-        InitializeStartupFoundation(context);
-        InitializeStartupModules(context);
-        WireStartupSettings(context);
-        InitializeStartupShell(context);
+        try
+        {
+            InitializeStartupFoundation(context);
+            InitializeStartupModules(context);
+            WireStartupSettings(context);
+            InitializeStartupShell(context);
+        }
+        catch (Exception ex)
+        {
+            EndFailedStartup(ex);
+            return;
+        }
         ApplyStartupPreferencesAndArguments(context);
+    }
+
+    // A startup that stops before the tray icon and the hotkeys exist leaves
+    // a process with no surface. The UI thread's net would mark the exception
+    // handled and keep that process alive: it holds the resident mutex, so
+    // every later launch exits in silence, and only Task Manager can end it.
+    // That happened on 2026-11-11 (12:59), when Explorer was restarting and
+    // refused one call made while the tray menus were built. Ending here
+    // gives the launcher its one relaunch (CrashRelaunchPolicy), a few seconds
+    // later, when what refused has usually come back; a second failure leaves
+    // no Deckle running, which the next launch by the person repairs.
+    // ApplyStartupPreferencesAndArguments stays outside: by then the icon and
+    // the hotkeys exist, and a failure there leaves a usable app.
+    private static void EndFailedStartup(Exception ex)
+    {
+        DeckleAppSource.Log.StartupFailed(ex.GetType().Name, ex.Message);
+        DeckleAppSource.Log.CrashStackTrace(ex.ToString());
+        AppDiagnosticsBootstrap.Flush(CrashFlushDeadline);
+        Environment.Exit(CrashRelaunchPolicy.StartupFailedExitCode);
     }
 
 }

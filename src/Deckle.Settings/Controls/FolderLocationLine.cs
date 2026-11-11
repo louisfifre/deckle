@@ -8,6 +8,7 @@ using WinRT.Interop;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
+using Deckle.Localization;
 
 namespace Deckle.Settings;
 

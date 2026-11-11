@@ -23,7 +23,7 @@ public partial class App
             var window = CreateWindowOrLog("log", () => new LogWindow
             {
                 OnShowSettingsRequested = () => ShowSettingsWindowLazy(
-                    Diagnostics.Logging.DiagnosticsSettingsModule.PageTag),
+                    Diagnostics.Logging.Views.DiagnosticsSettingsModule.PageTag),
                 OnShowPlaygroundRequested = ShowPlaygroundLazy,
             });
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Log);
@@ -36,7 +36,7 @@ public partial class App
             };
 
             _logWindow = window;
-            window.SetPlaygroundAvailable(PlaygroundEnabled);
+            window.SetPlaygroundAvailable(DeveloperModeEnabled);
             AppDiagnosticsBootstrap.AttachLogWindowSink(window);
             window.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(window);
@@ -69,7 +69,7 @@ public partial class App
             };
 
             _settingsWindow = window;
-            window.SetPlaygroundAvailable(PlaygroundEnabled);
+            window.SetPlaygroundAvailable(DeveloperModeEnabled);
             window.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(window);
             DeckleWindowingSource.Log.WindowLoadComplete("settings", sw.ElapsedMilliseconds);
@@ -80,7 +80,7 @@ public partial class App
     private void ShowPlaygroundLazy()
     {
         // A developer surface: no path opens it while the setting is off.
-        if (!PlaygroundEnabled) return;
+        if (!DeveloperModeEnabled) return;
         EnsurePlaygroundWindow().ShowAndActivate();
     }
 
@@ -110,6 +110,40 @@ public partial class App
             DeckleWindowingSource.Log.WindowLoadComplete("playground", sw.ElapsedMilliseconds);
         }
         return _playgroundWindow;
+    }
+
+    // The Deckle Mail window, on its built-in sample until the engine is
+    // wired. A preview for the maintainer: it opens only under the developer
+    // setting that governs the Playground, and no module or setting of its
+    // own registers it yet (that comes with the real engine).
+    private void ShowMailLazy()
+    {
+        if (!DeveloperModeEnabled) return;
+        EnsureMailWindow().ShowAndActivate();
+    }
+
+    private Mail.Hub.MailWindow EnsureMailWindow()
+    {
+        if (_mailWindow is null)
+        {
+            // Not gated: one Stopwatch per window per process, and the provider
+            // declares this milestone ungoverned.
+            var sw = Stopwatch.StartNew();
+            var window = CreateWindowOrLog("mail", () => new Mail.Hub.MailWindow());
+            SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Mail);
+            window.AppWindow.Closing += (_, _) =>
+                SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.Mail);
+            window.Closed += (_, _) =>
+            {
+                if (ReferenceEquals(_mailWindow, window)) _mailWindow = null;
+            };
+
+            _mailWindow = window;
+            window.SetRecordingState(_lastRecordingState);
+            ApplyThemeToSingle(window);
+            DeckleWindowingSource.Log.WindowLoadComplete("mail", sw.ElapsedMilliseconds);
+        }
+        return _mailWindow;
     }
 
     // The constructor is where XAML parsing and page composition fail. The

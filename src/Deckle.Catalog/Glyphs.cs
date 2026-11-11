@@ -2,7 +2,8 @@ namespace Deckle.Catalog;
 
 // ─── Glyphs ───────────────────────────────────────────────────────
 //
-// C# mirror of Themes/Icons.xaml, for code that sets FontIcon.Glyph.
+// C# mirror of Icons.xaml (in Deckle.Catalog.Themes), for code that sets
+// FontIcon.Glyph.
 // Any key added here must be added to Icons.xaml too, and vice versa:
 // the two are kept in sync by hand.
 //
@@ -107,5 +108,19 @@ public static class Glyphs
         public const string Critical = "";
         public const string Warning = "";
         public const string Info = "";
+    }
+
+    // The Mail window (Icons.xaml, Mail cluster). Written as escapes: the
+    // code points are listed there with their names.
+    public static class Mail
+    {
+        public const string Activity = "\uE81C";
+        public const string Attachment = "\uE723";
+        public const string Undo = "\uE7A7";
+        public const string Rename = "\uE70F";
+        public const string Open = "\uE76C";
+        public const string Problems = "\uE783";
+        public const string Add = "\uE710";
+        public const string File = "\uE8A5";
     }
 }

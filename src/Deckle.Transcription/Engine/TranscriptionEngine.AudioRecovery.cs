@@ -1,6 +1,6 @@
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
+using Deckle.Localization;
 
 namespace Deckle.Transcription;
 
@@ -42,9 +42,8 @@ public sealed partial class TranscriptionEngine
     // let the caller delete the only copy of the audio, so the run fails and the
     // caller keeps the audio for another try.
     //
-    // Delivery is the raw text on the clipboard, never a paste and never a
-    // rewrite: the person is not at the keyboard of a target, and this mirrors
-    // the text recovery at launch (App.Startup.DictationRecovery.cs). The caller
+    // Delivery is the raw text on the clipboard, never a rewrite: the person
+    // is not at the keyboard, and this mirrors the text recovery at launch (App.Startup.DictationRecovery.cs). The caller
     // tells the person; the engine raises Finished with None, so the HUD hides
     // its "transcribing" state without announcing a copy that the caller
     // announces better.
@@ -104,7 +103,6 @@ public sealed partial class TranscriptionEngine
             _recordingSw         = null;
             _recordDrainDuration = System.TimeSpan.Zero;
             _stopToPipelineSw    = null;
-            _shouldPaste         = false;
 
             _idleTimer?.Change(Timeout.Infinite, Timeout.Infinite);
 

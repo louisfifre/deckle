@@ -147,21 +147,6 @@ internal static class TaskbarDocumentBuilder
         }
     }
 
-    // The section under the pinned apps: its header ("Recent" on 26100,
-    // "Recommended" before) and its list, one Grid in StartHome's TopLevelHeader.
-    // Collapsing it lets the All list move up. Measured live on 2026-11-10: the
-    // value holds, no visual state takes it back.
-    private const string StartRecommendedSection = "Grid#TopLevelSuggestionsRoot";
-
-    /// <summary>The rules of the Start menu process, built from the Start menu part of a customization.</summary>
-    public static IReadOnlyList<TaskbarRule> StartMenuRules(TaskbarCustomization customization)
-    {
-        var rules = new List<TaskbarRule>();
-        if (customization.StartMenu is { HideRecommended: true })
-            rules.Add(new("startMenu.recommended.visibility", StartRecommendedSection, "Visibility", "Collapsed"));
-        return rules;
-    }
-
     /// <summary>
     /// The settings document of the Start menu process, as one line of JSON. Its own
     /// document, for its own engine: the Start menu is not part of explorer. An empty
@@ -173,7 +158,8 @@ internal static class TaskbarDocumentBuilder
         using (var writer = new Utf8JsonWriter(buffer))
         {
             writer.WriteStartObject();
-            WriteRules(writer, StartMenuRules(customization));
+            // Nothing of the Start menu is a XAML rule today: its settings are behaviors.
+            WriteRules(writer, []);
 
             writer.WriteStartObject("behaviors");
             if (customization.StartMenu is { FullHeight: true })

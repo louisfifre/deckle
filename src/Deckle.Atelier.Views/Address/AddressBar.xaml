@@ -1,0 +1,92 @@
+<UserControl
+    x:Class="Deckle.Atelier.Views.AddressBar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Atelier.Views">
+
+    <!-- File Explorer's address bar (spec, Window): the path as segments, a
+         chevron after a segment that lists the folders inside it, a click on
+         a segment goes there, a click on the empty part turns the bar into a
+         text field with suggestions.
+
+         What BreadcrumbBar gives is kept: the segments, ItemClicked, and the
+         ellipsis that folds the leftmost segments when the path is too long.
+         What it lacks is built here: its separator is a TextBlock of its
+         template (PART_ChevronTextBlock), not a control, so it cannot open a
+         list. The template's separator glyph is emptied through its
+         lightweight-styling key, and each segment carries a real chevron
+         Button with a MenuFlyout instead. -->
+    <Grid x:Name="Frame"
+          Height="32"
+          Background="{ThemeResource ControlFillColorDefaultBrush}"
+          BorderBrush="{ThemeResource ControlElevationBorderBrush}"
+          BorderThickness="1"
+          CornerRadius="{ThemeResource ControlCornerRadius}">
+
+        <Grid x:Name="SegmentsMode"
+              Background="Transparent"
+              Padding="2,0,4,0"
+              ColumnSpacing="2"
+              Tapped="OnSegmentsModeTapped">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <FontIcon x:Name="RootIcon"
+                      Width="28"
+                      Glyph="&#xE8B7;"
+                      FontSize="16"
+                      VerticalAlignment="Center" />
+
+            <BreadcrumbBar x:Name="Crumbs"
+                           Grid.Column="1"
+                           HorizontalAlignment="Left"
+                           VerticalAlignment="Center"
+                           ItemClicked="OnCrumbClicked">
+                <BreadcrumbBar.Resources>
+                    <x:String x:Key="BreadcrumbBarChevronLeftToRight">&#x200B;</x:String>
+                    <x:String x:Key="BreadcrumbBarChevronRightToLeft">&#x200B;</x:String>
+                    <Thickness x:Key="BreadcrumbBarChevronPadding">0</Thickness>
+                    <x:Double x:Key="BreadcrumbBarItemThemeFontSize">14</x:Double>
+                </BreadcrumbBar.Resources>
+                <BreadcrumbBar.ItemTemplate>
+                    <DataTemplate x:DataType="local:AddressCrumb">
+                        <StackPanel Orientation="Horizontal" Spacing="2">
+                            <TextBlock Text="{x:Bind Name}" VerticalAlignment="Center" />
+                            <Button Width="24"
+                                    Height="24"
+                                    Padding="0"
+                                    Margin="2,0,0,0"
+                                    Style="{StaticResource SubtleButtonStyle}"
+                                    Visibility="{x:Bind ChevronVisibility}"
+                                    AutomationProperties.Name="{x:Bind ChevronLabel}"
+                                    ToolTipService.ToolTip="{x:Bind ChevronLabel}"
+                                    Tag="{x:Bind}"
+                                    Click="OnChevronClick">
+                                <FontIcon Glyph="&#xE76C;" FontSize="10" />
+                            </Button>
+                        </StackPanel>
+                    </DataTemplate>
+                </BreadcrumbBar.ItemTemplate>
+            </BreadcrumbBar>
+
+            <TextBlock x:Name="Placeholder"
+                       Grid.Column="1"
+                       Margin="6,0"
+                       VerticalAlignment="Center"
+                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                       Visibility="Collapsed" />
+        </Grid>
+
+        <!-- The text mode (12.12b). -->
+        <AutoSuggestBox x:Name="PathBox"
+                        Visibility="Collapsed"
+                        VerticalAlignment="Center"
+                        UpdateTextOnSelect="True"
+                        TextChanged="OnPathTextChanged"
+                        QuerySubmitted="OnPathSubmitted"
+                        KeyDown="OnPathKeyDown"
+                        LostFocus="OnPathLostFocus" />
+    </Grid>
+</UserControl>

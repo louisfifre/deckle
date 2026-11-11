@@ -10,6 +10,7 @@ using VirtualKey = Windows.System.VirtualKey;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Shell;
+using Deckle.Localization;
 
 namespace Deckle.Settings;
 

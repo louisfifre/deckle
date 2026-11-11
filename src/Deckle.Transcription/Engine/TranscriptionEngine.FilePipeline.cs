@@ -1,10 +1,10 @@
 using System.Diagnostics.Tracing;
 using System.Threading.Channels;
 using Deckle.Audio;
-using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
+using Deckle.Localization;
 
 namespace Deckle.Transcription;
 

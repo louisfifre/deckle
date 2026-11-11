@@ -85,17 +85,17 @@ sealed record Judgement(
 
 static class Pricing
 {
-    // USD per million tokens (input, output, cache read). A 2026-10 snapshot
-    // of the public price list: check it against the Anthropic console before
+    // USD per million tokens (input, output, cache read), read on the public
+    // price list on 2026-11-11: check it against the Anthropic console before
     // trusting a cost column. Output tokens include thinking tokens, which are
-    // billed as output. Cache reads: Fable 5.1 and Opus 5.5 have their own
-    // published price; Sonnet and Haiku take the usual tenth of the input
-    // price (Haiku 5.5's is an assumption until checked in the console).
+    // billed as output. A cache read has its own published price on each
+    // model, a twentieth of the input price on Opus 5.5 and Sonnet 5.5 and a
+    // tenth on Haiku 5.5 (for prompts up to 100,000 tokens).
     static readonly Dictionary<string, (double In, double Out, double CacheRead)> PerMTok = new(StringComparer.OrdinalIgnoreCase)
     {
         ["claude-fable-5-1"]  = (10.00, 50.00, 0.25),
         ["claude-opus-5-5"]   = (4.00, 20.00, 0.20),
-        ["claude-sonnet-5-5"] = (2.00, 10.00, 0.20),
+        ["claude-sonnet-5-5"] = (2.00, 10.00, 0.10),
         ["claude-haiku-5-5"]  = (0.10, 0.50, 0.01),
     };
 

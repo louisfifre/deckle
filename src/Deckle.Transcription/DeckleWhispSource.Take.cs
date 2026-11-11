@@ -58,10 +58,7 @@ public static class TakeKinds
 // Closed `outcome` vocabulary of TakeEnded.
 public static class TakeOutcomes
 {
-    // The text reached the target field.
-    public const string Pasted = "pasted";
-
-    // The text is on the clipboard, nothing was pasted.
+    // The text is on the clipboard.
     public const string ClipboardOnly = "clipboard_only";
 
     // The transcript was written beside its source audio.
@@ -80,7 +77,7 @@ public static class TakeOutcomes
 // Closed `reason` vocabulary of TakeEnded.
 public static class TakeEndReasons
 {
-    // The text was delivered (outcome pasted, clipboard_only, saved_to_file).
+    // The text was delivered (outcome clipboard_only, saved_to_file).
     public const string Delivered = "delivered";
 
     // The capture ended on a microphone error.

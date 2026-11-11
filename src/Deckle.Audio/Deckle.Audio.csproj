@@ -1,22 +1,26 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Audio</RootNamespace>
-    <!-- WinUI XAML compilation: the module owns both the audio domain and its
-         settings page (RecordingPage). -->
-    <UseWinUI>true</UseWinUI>
-    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.App.csproj. -->
-    <DefaultLanguage>en-US</DefaultLanguage>
-    <!-- Generates the lib's own .pri so x:Uid lookups in RecordingPage resolve
-         against the Deckle.Audio/Resources subtree (Strings/en-US/Resources.resw). -->
-    <EnableMsixTooling>true</EnableMsixTooling>
     <!-- EventSource [Event] parameters use snake_case so the ETW
          payload keys land directly in the JSONL output and must
          match the ETW manifest. -->
     <NoWarn>$(NoWarn);IDE1006</NoWarn>
   </PropertyGroup>
 
+  <!-- The audio logic: microphone capture and its settings, the level feeds
+       and testers, file decoding, the transcription preprocessing, speaker
+       output and the microphone telemetry calculation. No XAML, no UseWinUI
+       and no project that holds XAML, so the projects that capture through it
+       (Transcription, Speech) never run the XAML compiler on its
+       account, and every rule here is tested without a window.
+       Deckle.Audio.Views presents it: the Recording settings page and the
+       voice level meter. -->
   <ItemGroup>
     <InternalsVisibleTo Include="Deckle.Audio.Tests" />
+    <!-- The voice meter's host and scale stay here, beside the capture they
+         drive and the tests that pin them, while the meter control that uses
+         them lives in Deckle.Audio.Views. -->
+    <InternalsVisibleTo Include="Deckle.Audio.Views" />
   </ItemGroup>
 
   <!-- portaudio.dll, the microphone capture's native backend, built by
@@ -26,30 +30,16 @@
        library (Deckle.Audio\portaudio.dll), where the P/Invoke loader, held to
        the assembly directory and System32 (PortAudioInterop.cs), never looks;
        the tests got it at their root, so they passed while the app had no
-       microphone. None flows to every referencing project and to a publish at
-       the output root. -->
+       microphone. This project no longer sets EnableMsixTooling, but the
+       rule holds for any library that does. None flows to every referencing
+       project and to a publish at the output root. -->
   <ItemGroup>
     <None Include="Native\win-x64\portaudio.dll" Link="portaudio.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
     <None Include="Native\win-x64\portaudio.LICENSE.txt" Link="portaudio.LICENSE.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
-    <PackageReference Include="CommunityToolkit.Mvvm" />
-    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
-    <!-- Telemetry POCOs: the microphone-telemetry opt-in reads/writes
-         TelemetrySettings via TelemetrySettingsService. No cycle — Diagnostics.Telemetry
-         does not reference Audio. -->
-    <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
-    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
-    <!-- Shell: RecordingPage uses the instrumented DispatcherQueue.TryEnqueueObserved
-         wrapper. One-way (Shell does not reference Audio), so no cycle. -->
-    <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
   </ItemGroup>
 </Project>

@@ -7,10 +7,10 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Anytype;
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Install;
 using Deckle.Modules;
+using Deckle.Localization;
 
 namespace Deckle.Setup;
 

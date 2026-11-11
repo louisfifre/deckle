@@ -98,11 +98,21 @@ public sealed partial class ForegroundWatcher : IDisposable
 
     // ── Hook callbacks (hooking thread) ───────────────────────────────────
 
+    // The event is only a cue to look again. Out-of-context events are queued,
+    // and during an Alt+Tab Explorer raises one for its switcher window after
+    // the chosen app already holds the foreground: trusting the event's hwnd
+    // let a hidden switcher overwrite the real foreground until the next
+    // switch. The window probed is the one Windows names at delivery; the
+    // event's hwnd stands in only when no window holds the foreground, for
+    // the instant of a transition.
     private void OnForegroundEvent(
         IntPtr hWinEventHook, uint evt, IntPtr hwnd,
         int idObject, int idChild, uint idEventThread, uint dwmsEventTime)
     {
         if (!_started || idObject != OBJID_WINDOW) return;
+
+        IntPtr foreground = Deckle.Core.NativeMethods.GetForegroundWindow();
+        if (foreground != IntPtr.Zero) hwnd = foreground;
         if (hwnd == _current.Hwnd) return;
 
         var state = ProbeWindow(hwnd);

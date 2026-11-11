@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Deckle.Hud;
 using Xunit;
+using Deckle.Localization;
 
 namespace Deckle.Hud.Tests;
 
@@ -59,7 +60,7 @@ public sealed partial class HudMessageFitTests
     // The page these messages name, read where the code reads it.
     private static string TranscriptionPageLabel()
     {
-        string resw = Path.Combine(RepoRoot(), "src", "Deckle.Transcription", "Strings", "en-US", "Resources.resw");
+        string resw = Path.Combine(RepoRoot(), "src", "Deckle.Transcription.Views", "Strings", "en-US", "Resources.resw");
         return XDocument.Load(resw).Root!.Elements("data")
             .Where(d => (string?)d.Attribute("name") == "SettingsModuleNavLabel")
             .Select(d => (string?)d.Element("value"))

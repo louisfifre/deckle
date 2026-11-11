@@ -162,7 +162,17 @@ function Invoke-ResourceInventory {
     }
 
     foreach ($project in $projects) {
-        $localCs = @(Get-ChildItem -LiteralPath $project.Root -Recurse -File -Filter '*.cs' | Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' } | Select-Object -Expand FullName)
+        # A <Module>.Views project holds the strings of the module it presents:
+        # the engine beside it compiles no .resw, so what the engine reads
+        # counts as a local use of the Views map. An engine that keeps its own
+        # map is audited on its own.
+        $codeRoots = @($project.Root)
+        if ($project.Assembly -like '*.Views') {
+            $engine = $project.Assembly -replace '\.Views$', ''
+            $engineRoot = Join-Path (Split-Path $project.Root -Parent) $engine
+            if (-not $maps.ContainsKey($engine) -and (Test-Path -LiteralPath $engineRoot -PathType Container)) { $codeRoots += $engineRoot }
+        }
+        $localCs = @($codeRoots | ForEach-Object { Get-ChildItem -LiteralPath $_ -Recurse -File -Filter '*.cs' } | Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' } | Select-Object -Expand FullName)
         $localXaml = @(Get-ChildItem -LiteralPath $project.Root -Recurse -File -Filter '*.xaml' | Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' } | Select-Object -Expand FullName)
         $uids = Get-XamlUids -Paths $localXaml
         $literals = Get-CSharpStringLiterals -Paths $localCs

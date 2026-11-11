@@ -65,6 +65,15 @@ public static class CrashRelaunchPolicy
     public static bool IsCrash(int exitCode)
         => exitCode != -1 && ((uint)exitCode & 0x80000000u) != 0;
 
+    // The code Deckle exits with when its startup stops before the tray icon
+    // and the hotkeys exist. No exception killed the process, Deckle ended
+    // itself rather than stay alive with no surface, but the launcher must
+    // treat it as a crash and start Deckle once more: the high bit says so.
+    // The value is Deckle's own, in the range Windows leaves to applications
+    // (the 0xE prefix, as the runtime's 0xE0434352), so supervisor.txt tells
+    // a failed startup from a real crash.
+    public const int StartupFailedExitCode = unchecked((int)0xE0000001);
+
     public static string FormatAfterCrash(int exitCode, int relaunchOrdinal)
         => $"{(uint)exitCode:X8}:{relaunchOrdinal}";
 

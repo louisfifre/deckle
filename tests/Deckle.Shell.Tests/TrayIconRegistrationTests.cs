@@ -24,7 +24,7 @@ public sealed class TrayIconRegistrationTests
         var registration = new TrayIconRegistration(Window, shell);
         registration.Update("Deckle — Ready", IdleIcon);
 
-        Assert.True(registration.Add());
+        Assert.Equal(TrayIconReaddOutcome.Added, registration.Add());
 
         (uint message, NOTIFYICONDATA data) = Assert.Single(shell.Sent);
         Assert.Equal(NativeMethods.NIM_ADD, message);
@@ -149,6 +149,48 @@ public sealed class TrayIconRegistrationTests
         // The next broadcast starts a sequence of its own.
         registration.Readd();
         Assert.Equal(1, registration.ReaddAttempts);
+    }
+
+    // Deckle started on 2026-11-11 (01:12) while Explorer was busy: the shell
+    // refused the first add, the startup threw, and the app ran the whole
+    // session with no icon and no hotkeys. A refused first add now opens the
+    // sequence a re-add runs, and the icon goes in once the shell takes it.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void AFirstAddTheShellRefusesIsRetriedUntilItIsTaken()
+    {
+        var shell = new FakeShell { Refusing = true };
+        var registration = new TrayIconRegistration(Window, shell);
+        registration.Update("Deckle — Ready", IdleIcon);
+
+        Assert.Equal(TrayIconReaddOutcome.RetryLater, registration.Add());
+        Assert.False(registration.IsAdded);
+        Assert.Equal(TrayIconReaddOutcome.RetryLater, registration.Readd());
+
+        shell.Refusing = false;
+        Assert.Equal(TrayIconReaddOutcome.Added, registration.Readd());
+        Assert.True(registration.IsAdded);
+        Assert.Equal(3, registration.ReaddAttempts);
+        Assert.Equal("Deckle — Ready", shell.Sent[^1].Data.szTip);
+    }
+
+    // The first add counts in the sequence: a shell that never takes the icon
+    // is asked MaxReaddAttempts times in all, then left alone until the next
+    // TaskbarCreated.
+    [Fact]
+    [Trait("Category", "unit")]
+    public void ARefusedFirstAddCountsAsTheFirstAttemptOfTheSequence()
+    {
+        var shell = new FakeShell { Refusing = true };
+        var registration = new TrayIconRegistration(Window, shell);
+        registration.Add();
+
+        var outcomes = new List<TrayIconReaddOutcome>();
+        for (int attempt = 1; attempt < TrayIconRegistration.MaxReaddAttempts; attempt++)
+            outcomes.Add(registration.Readd());
+
+        Assert.Equal(TrayIconReaddOutcome.GaveUp, outcomes[^1]);
+        Assert.All(outcomes.SkipLast(1), outcome => Assert.Equal(TrayIconReaddOutcome.RetryLater, outcome));
     }
 
     // A broadcast that did not follow a restart finds the entry still there:

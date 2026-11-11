@@ -39,8 +39,7 @@ public sealed partial class TrayMenuHost
     }
 
     // An item hides the menu BEFORE invoking: hiding the anchor hands
-    // activation back to the window the user was in, which a dictation's
-    // paste at Stop needs.
+    // activation back to the window the user was in.
     private MenuFlyoutItem CreateCommandItem(TrayMenuCommand command)
     {
         var item = new MenuFlyoutItem { Text = command.Label() };

@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.Tracing;
 using Deckle.Audio;
-using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Telemetry;
@@ -10,6 +9,7 @@ using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Deckle.Transcription;
 using Xunit;
+using Deckle.Localization;
 
 namespace Deckle.Transcription.Tests;
 
@@ -57,14 +57,14 @@ public sealed class LiveTranscriptionPipelineTests
 
         Assert.Equal(
             ToggleResult.Started,
-            engine.RequestToggle(shouldPaste: false));
+            engine.RequestToggle());
         await backend.AllCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), testCancellation);
 
         Assert.True(engine.IsRecording);
         Assert.Equal(
             ToggleResult.Stopped,
-            engine.RequestToggle(shouldPaste: false));
+            engine.RequestToggle());
 
         Assert.Equal(
             TranscriptionOutcome.ClipboardOnly,
@@ -117,7 +117,7 @@ public sealed class LiveTranscriptionPipelineTests
             new RecordingClipboardWriter(),
             captureTail: TestCaptureTail);
 
-        Assert.Equal(ToggleResult.IgnoredBusy, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.IgnoredBusy, engine.RequestToggle());
 
         UserIncident incident = Assert.Single(
             UserIncidentRegistry.Instance.Snapshot(), i => i.Id == UserIncidents.Microphone);
@@ -155,10 +155,10 @@ public sealed class LiveTranscriptionPipelineTests
 
         Assert.Equal(
             ToggleResult.Started,
-            engine.RequestToggle(shouldPaste: false));
+            engine.RequestToggle());
         await backend.AllCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), testCancellation);
-        engine.RequestToggle(shouldPaste: false);
+        engine.RequestToggle();
         await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
 
         IReadOnlyList<TranscriptionContext> contexts = backend.Contexts;
@@ -187,19 +187,19 @@ public sealed class LiveTranscriptionPipelineTests
             TaskCreationOptions.RunContinuationsAsynchronously);
         engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
 
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         await backend.AllCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), testCancellation);
 
         long pressTimestamp = System.Diagnostics.Stopwatch.GetTimestamp();
-        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
 
         // The press returned, the HUD would already read "transcribing", and
         // the microphone is still listening.
         Assert.False(capture.RecordToken.IsCancellationRequested);
 
         // A second press inside the tail finds the engine already stopping.
-        Assert.Equal(ToggleResult.IgnoredBusy, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.IgnoredBusy, engine.RequestToggle());
 
         await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
 
@@ -299,12 +299,12 @@ public sealed class LiveTranscriptionPipelineTests
 
         Assert.Equal(
             ToggleResult.Started,
-            engine.RequestToggle(shouldPaste: false));
+            engine.RequestToggle());
         await backend.AllCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), testCancellation);
         Assert.Equal(
             ToggleResult.Stopped,
-            engine.RequestToggle(shouldPaste: false));
+            engine.RequestToggle());
 
         await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
         await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
@@ -344,7 +344,7 @@ public sealed class LiveTranscriptionPipelineTests
             };
             engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
 
-            Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+            Assert.Equal(ToggleResult.Started, engine.RequestToggle());
             await backend.AllCallsCompleted.Task.WaitAsync(
                 TimeSpan.FromSeconds(5), testCancellation);
 
@@ -358,7 +358,7 @@ public sealed class LiveTranscriptionPipelineTests
             }
             Assert.Equal("bonjour\n\nDeckle", text);
 
-            Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+            Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
             // Finished is raised inside finalize, before the file is cleared;
             // Ready comes after the worker has settled.
             await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
@@ -392,7 +392,7 @@ public sealed class LiveTranscriptionPipelineTests
                 recovery: store,
                 captureTail: TestCaptureTail);
 
-            await RunTakeToIdleAsync(engine, store, "bonjour\n\nDeckle", shouldPaste: false, testCancellation);
+            await RunTakeToIdleAsync(engine, store, "bonjour\n\nDeckle", testCancellation);
 
             Assert.Equal(0, clipboard.WriteCount);
             Assert.Equal(DictationRecoveryReadStatus.Restored, store.TryRead(out string kept));
@@ -404,11 +404,11 @@ public sealed class LiveTranscriptionPipelineTests
         }
     }
 
-    // The raw copy landed, then the paste step failed. A file kept here would
+    // The raw copy landed, then the rewrite threw. A file kept here would
     // overwrite the clipboard with this old text at the next launch.
     [Fact]
     [Trait("Category", "regression")]
-    public async Task RecoveryFileIsGoneWhenDeliveryFailsAfterTheRawCopy()
+    public async Task RecoveryFileIsGoneWhenTheRewriteFailsAfterTheRawCopy()
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         string root = Path.Combine(AppContext.BaseDirectory, $"live-recovery-{Guid.NewGuid():N}");
@@ -416,17 +416,21 @@ public sealed class LiveTranscriptionPipelineTests
         {
             var store = new DictationRecoveryStore(Path.Combine(root, "dictation.dat"));
             var clipboard = new RecordingClipboardWriter();
+            var rewrite = new ThrowingRewriteService();
             using var engine = new TranscriptionEngine(
-                new StreamingHost(),
+                RewritingHost(batchRewriting: false),
                 new SequencedBackend([TestInference, "bonjour", "Deckle"]),
                 new ScriptedMicrophoneCapture(utteranceCount: 2),
                 clipboard,
+                rewrite,
                 recovery: store,
                 captureTail: TestCaptureTail);
-            engine.OnReadyToPaste = () => throw new InvalidOperationException("paste failed");
 
-            await RunTakeToIdleAsync(engine, store, "bonjour\n\nDeckle", shouldPaste: true, testCancellation);
+            await RunTakeToIdleAsync(engine, store, "bonjour\n\nDeckle", testCancellation);
 
+            // The failure this test is about did happen: without it the file
+            // would be gone on the plain path too.
+            Assert.Equal(1, rewrite.Calls);
             Assert.Equal("bonjour\n\nDeckle", clipboard.Text);
             Assert.False(store.Exists);
         }
@@ -442,7 +446,6 @@ public sealed class LiveTranscriptionPipelineTests
         TranscriptionEngine engine,
         DictationRecoveryStore store,
         string expectedText,
-        bool shouldPaste,
         CancellationToken testCancellation)
     {
         int stopped = 0;
@@ -454,7 +457,7 @@ public sealed class LiveTranscriptionPipelineTests
                 ready.TrySetResult();
         };
 
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
 
         // The write follows the backend call on the consumer task, so poll.
         string text = string.Empty;
@@ -467,7 +470,7 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(expectedText, text);
 
         Volatile.Write(ref stopped, 1);
-        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste));
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
         await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
     }
     // Each utterance is longer than the minimum threshold and ends on a full
@@ -501,10 +504,11 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(
             new[] { FirstLongUtterance, SecondLongUtterance }.Order(),
             rewrite.Inputs.Order());
-        // Raw copy, then the assembled rewrite: one copy per take, never one
-        // per batch. The first utterance ended on silence, so its batch ends on
-        // a pause and the seam is a paragraph break.
-        Assert.Equal(2, clipboard.WriteCount);
+        // The take as it read at Stop, then the assembled rewrite when it
+        // differs: at most two copies per take, never one per passage. The
+        // first utterance ended on silence, so its passage ends on a pause and
+        // the seam is a paragraph break.
+        Assert.InRange(clipboard.WriteCount, 1, 2);
         Assert.Equal(
             "[" + FirstLongUtterance + "]\n\n[" + SecondLongUtterance + "]",
             clipboard.Text);
@@ -534,14 +538,14 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal("[" + rawTake + "]", clipboard.Text);
     }
 
-    // No active profile, so only the length ladder can choose: a step the
-    // take's raw transcript reaches rewrites it, one it does not reach leaves
-    // the raw text. A single character stands for "reached" and a million
-    // for "not reached", whatever the scripted utterances hold.
+    // The first step with "Start at": a length the take's raw transcript
+    // reaches rewrites it, one it does not reach leaves the raw text. A single
+    // character stands for "reached" and a million for "not reached",
+    // whatever the scripted utterances hold.
     [Theory]
     [InlineData(1, true)]
     [InlineData(1_000_000, false)]
-    public async Task ALengthStepChoosesTheProfileOfAStreamedTake(int fromChars, bool rewritten)
+    public async Task TheFirstStepsStartAtChoosesWhetherAStreamedTakeIsRewritten(int fromChars, bool rewritten)
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
@@ -549,15 +553,10 @@ public sealed class LiveTranscriptionPipelineTests
         var clipboard = new RecordingClipboardWriter();
         var rewrite = new BracketingRewriteService();
         StreamingHost host = RewritingHost(batchRewriting: false);
-        host.Llm.ActiveProfileId = null;
-        host.Llm.ActiveProfileName = null;
         RewriteProfile byLength = host.Llm.Profiles[1];
         byLength.Id = "by-length";
-        host.Llm.LengthSwitch = new LengthSwitchSettings
-        {
-            Enabled = true,
-            Steps = [new LengthStep { FromChars = fromChars, ProfileId = "by-length" }],
-        };
+        host.Llm.Dictation.StartAtLength = true;
+        host.Llm.Dictation.Steps = [new RewriteStep { FromChars = fromChars, ProfileId = "by-length" }];
         using var engine = new TranscriptionEngine(host, backend, capture, clipboard, rewrite, captureTail: TestCaptureTail);
 
         await RunOneTakeAsync(engine, backend, testCancellation);
@@ -566,8 +565,8 @@ public sealed class LiveTranscriptionPipelineTests
         Assert.Equal(rewritten ? 2 : 1, clipboard.WriteCount);
     }
 
-    // The profile's own shortcut wins over the active profile, and holds even
-    // with rewriting switched off: the press asked for that rewrite.
+    // The profile's own shortcut wins over the steps, and holds even with
+    // rewriting switched off: the press asked for that rewrite.
     [Fact]
     public async Task AProfileShortcutRewritesTheTakeWithThatProfile()
     {
@@ -637,8 +636,8 @@ public sealed class LiveTranscriptionPipelineTests
         };
         engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
 
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
-        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
         Assert.Equal(
             TranscriptionOutcome.None,
             await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation));
@@ -696,12 +695,12 @@ public sealed class LiveTranscriptionPipelineTests
 
         Assert.Equal(
             ToggleResult.Started,
-            engine.RequestToggle(shouldPaste: false, rewriteProfileId));
+            engine.RequestToggle(rewriteProfileId));
         await backend.AllCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), testCancellation);
         Assert.Equal(
             ToggleResult.Stopped,
-            engine.RequestToggle(shouldPaste: false));
+            engine.RequestToggle());
 
         Assert.Equal(
             TranscriptionOutcome.ClipboardOnly,
@@ -709,8 +708,8 @@ public sealed class LiveTranscriptionPipelineTests
         await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
     }
 
-    // Rewriting on, with the first default profile active and the batch
-    // threshold at its minimum.
+    // Rewriting dictations on, with one step from the beginning on the first
+    // default profile, streaming or not, and the passage size at its minimum.
     internal static StreamingHost RewritingHost(bool batchRewriting)
     {
         var host = new StreamingHost();
@@ -718,10 +717,12 @@ public sealed class LiveTranscriptionPipelineTests
         llm.Enabled = true;
         RewriteProfile profile = llm.Profiles[0];
         profile.Id = "test-profile";
-        llm.ActiveProfileId = profile.Id;
-        llm.ActiveProfileName = profile.Name;
-        llm.BatchRewriting.Enabled = batchRewriting;
-        llm.BatchRewriting.ThresholdChars = BatchRewriteSettings.MinThresholdChars;
+        llm.Dictation = new DictationRewriteSettings
+        {
+            Enabled = true,
+            Steps = [new RewriteStep { ProfileId = profile.Id, Streaming = batchRewriting }],
+            PassageChars = DictationRewriteSettings.MinPassageChars,
+        };
         return host;
     }
 
@@ -740,6 +741,24 @@ public sealed class LiveTranscriptionPipelineTests
             _inputs.Enqueue(text);
             _profileIds.Enqueue(profile.Id);
             return new GenerationResult("[" + text + "]", 1, 0, 0, 0, 0, 0);
+        }
+
+        public GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken) => default;
+
+        public GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken) => default;
+    }
+
+    // Fails every whole-take rewrite, the one step left after the raw copy.
+    private sealed class ThrowingRewriteService : IRewriteService
+    {
+        private int _calls;
+
+        public int Calls => Volatile.Read(ref _calls);
+
+        public GenerationResult Rewrite(string text, RewriteProfile profile)
+        {
+            Interlocked.Increment(ref _calls);
+            throw new InvalidOperationException("rewrite failed");
         }
 
         public GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken) => default;
@@ -944,14 +963,19 @@ public sealed class LiveTranscriptionPipelineTests
 
     internal sealed class RecordingClipboardWriter : IClipboardWriter
     {
+        private readonly ConcurrentQueue<string> _texts = new();
         private int _writeCount;
 
         public int WriteCount => Volatile.Read(ref _writeCount);
         public string? Text { get; private set; }
 
+        // Every text written, in order.
+        public string[] Texts => _texts.ToArray();
+
         public ClipboardWriteResult TryWriteText(string text)
         {
             Text = text;
+            _texts.Enqueue(text);
             Interlocked.Increment(ref _writeCount);
             return new ClipboardWriteResult(
                 ClipboardWriteStatus.Success,

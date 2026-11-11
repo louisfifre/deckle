@@ -14,6 +14,7 @@ using Deckle.Diagnostics;
 using Deckle.Modules;
 using Deckle.Shell.WindowChrome;
 using Deckle.Transcription.Whisper;
+using Deckle.Localization;
 
 namespace Deckle.Setup;
 

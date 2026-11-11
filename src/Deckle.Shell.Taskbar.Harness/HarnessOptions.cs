@@ -51,9 +51,6 @@ internal sealed class HarnessOptions
                 case "--start-menu-full-height":
                     customization = customization with { StartMenu = (customization.StartMenu ?? new()) with { FullHeight = true } };
                     break;
-                case "--hide-start-recommended":
-                    customization = customization with { StartMenu = (customization.StartMenu ?? new()) with { HideRecommended = true } };
-                    break;
                 case "--start-menu-width":
                     string width = Next();
                     customization = customization with
