@@ -68,23 +68,6 @@ public static partial class NativeMethods
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern int GetClassName(IntPtr hWnd, System.Text.StringBuilder lpClassName, int nMaxCount);
 
-    [DllImport("user32.dll", SetLastError = true)]
-    public static extern bool GetGUIThreadInfo(uint idThread, ref GUITHREADINFO lpgui);
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct GUITHREADINFO
-    {
-        public int    cbSize;
-        public uint   flags;
-        public IntPtr hwndActive;
-        public IntPtr hwndFocus;
-        public IntPtr hwndCapture;
-        public IntPtr hwndMenuOwner;
-        public IntPtr hwndMoveSize;
-        public IntPtr hwndCaret;
-        public RECT   rcCaret;
-    }
-
     [StructLayout(LayoutKind.Sequential)]
     public struct RECT { public int left, top, right, bottom; }
 
