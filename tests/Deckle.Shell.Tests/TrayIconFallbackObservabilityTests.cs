@@ -16,7 +16,7 @@ public sealed class TrayIconFallbackObservabilityTests
     {
         using var listener = new TestEventListener("Deckle-Shell");
 
-        (IntPtr hIcon, bool owned) = TrayIconManager.LoadIconFromFile(recording: true, incident: false);
+        (IntPtr hIcon, bool owned) = TrayIconManager.LoadIconFromFile(MarkState.Recording, incident: false);
 
         Assert.NotEqual(IntPtr.Zero, hIcon);
         Assert.False(owned);
@@ -32,11 +32,22 @@ public sealed class TrayIconFallbackObservabilityTests
     {
         using var listener = new TestEventListener("Deckle-Shell");
 
-        (IntPtr hIcon, bool owned) = TrayIconManager.LoadIconFromFile(recording: false, incident: true);
+        (IntPtr hIcon, bool owned) = TrayIconManager.LoadIconFromFile(MarkState.Rest, incident: true);
 
         Assert.NotEqual(IntPtr.Zero, hIcon);
         Assert.False(owned);
         var ev = Assert.Single(listener.Events, e => e.EventId == DeckleShellSource.EvtTrayIconFallback);
         Assert.Equal("idle_incident", ev.Payload?[0]);
+    }
+
+    [Fact]
+    public void ARewritingIconThatCannotBeFoundNamesTheRewritingState()
+    {
+        using var listener = new TestEventListener("Deckle-Shell");
+
+        TrayIconManager.LoadIconFromFile(MarkState.Rewriting, incident: false);
+
+        var ev = Assert.Single(listener.Events, e => e.EventId == DeckleShellSource.EvtTrayIconFallback);
+        Assert.Equal("rewriting", ev.Payload?[0]);
     }
 }

@@ -52,9 +52,9 @@ public sealed class TakeStartCheckTests
         var finished = NewFinishedSignal(engine);
         Task ready = NewReadySignal(engine);
 
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         await backend.AllUtterancesServed.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
-        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
         Assert.Equal(
             TranscriptionOutcome.ClipboardOnly,
             await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation));
@@ -109,7 +109,7 @@ public sealed class TakeStartCheckTests
         Task ready = NewReadySignal(engine);
 
         long started = Stopwatch.GetTimestamp();
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
 
         // No Stop press: the engine ends the take on its own.
         Assert.Equal(
@@ -172,9 +172,9 @@ public sealed class TakeStartCheckTests
         var finished = NewFinishedSignal(engine);
         Task ready = NewReadySignal(engine);
 
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         await backend.SecondTestReached.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
-        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
         backend.HoldSecondFailure.Set();
 
         Assert.Equal(
@@ -206,9 +206,9 @@ public sealed class TakeStartCheckTests
         var finished = NewFinishedSignal(engine);
         Task ready = NewReadySignal(engine);
 
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         await backend.SecondFailureReturned.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
-        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
 
         Assert.Equal(
             TranscriptionOutcome.None,
@@ -300,7 +300,7 @@ public sealed class TakeStartCheckTests
         Task unload = Task.Run(() => idleUnload.Invoke(engine, null), testCancellation);
         await backend.UnloadEntered.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
 
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
 
         // Room for a prime that did not wait to reach the backend.
         await Task.Delay(500, testCancellation);
@@ -311,7 +311,7 @@ public sealed class TakeStartCheckTests
         await unload.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
         await backend.Transcribed.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
 
-        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
         await finished.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
         await ready.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
 

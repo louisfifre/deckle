@@ -63,5 +63,29 @@ public class TrackpadSettingsTests : IDisposable
         Assert.True(store.Current.Enabled);
         Assert.Equal(1.5, store.Current.DragSpeed);
         Assert.Equal(50, store.Current.PressDelayMs);
+        Assert.Equal(new TrackpadSettings().PressDistancePx, store.Current.PressDistancePx);
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void PressDistance_DefaultsInsideThePageRange()
+    {
+        var s = new TrackpadSettings();
+        Assert.InRange(s.PressDistancePx, TrackpadSettings.MinPressDistancePx, TrackpadSettings.MaxPressDistancePx);
+    }
+
+    [Fact]
+    [Trait("Category", "integration")]
+    public void PressDistance_RoundTripsThroughStore()
+    {
+        using (var store = new JsonSettingsStore<TrackpadSettings>(_path, _mutex, Options()))
+        {
+            store.Current.PressDistancePx = 12;
+            store.Flush();
+        }
+
+        Assert.Contains("\"pressDistancePx\": 12", File.ReadAllText(_path));
+        using var reloaded = new JsonSettingsStore<TrackpadSettings>(_path, _mutex, Options());
+        Assert.Equal(12, reloaded.Current.PressDistancePx);
     }
 }

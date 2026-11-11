@@ -133,6 +133,19 @@ public class ToolCatalogTests
         Assert.Contains("open_report and log take an id only", instructions);
     }
 
+    // A compaction shrinks the conversation into a summary; the instructions
+    // survive it, so they carry the resume rule for every client, where a
+    // client hook would serve only one.
+    [Fact]
+    public void ProjectManagementInstructionsResumeFromTheReportAfterASummary()
+    {
+        string instructions = McpSurfaceDescriptor.ProjectManagement.Instructions;
+
+        Assert.Contains("after a compaction", instructions);
+        Assert.Contains("read the report's journal and the task's checklist before the next action", instructions);
+        Assert.DoesNotContain("after a compaction", McpSurfaceDescriptor.SchemaAdmin.Instructions);
+    }
+
     [Fact]
     [Trait("Category", "regression")]
     public void OpenReportTakesATaskIdAndNothingElse()

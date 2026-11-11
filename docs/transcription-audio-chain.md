@@ -1,5 +1,5 @@
 ---
-description: How a dictation travels from the hotkey to the pasted text — vocabulary, three diagrams, every parameter with its default and where it is exposed, the latencies the code measures, and how the energy segmenter cuts utterances.
+description: How a dictation travels from the hotkey to the clipboard — vocabulary, three diagrams, every parameter with its default and where it is exposed, the latencies the code measures, and how the energy segmenter cuts utterances.
 ---
 
 # The dictation chain
@@ -56,7 +56,7 @@ flowchart TD
         PHANTOM["Phantom filter<br/>text-level judgement<br/>of a short utterance"]
         ASSEMBLE["Text assembly<br/>silence cut = paragraph break"]
         MONO["Monolithic: whole take,<br/>DSP once, Silero edge trim once,<br/>noise pad, one backend call"]
-        FIN["FinalizeTranscription<br/>clipboard, optional rewrite,<br/>optional paste"]
+        FIN["FinalizeTranscription<br/>clipboard,<br/>optional rewrite"]
     end
 
     subgraph VAD["Deckle.Vad"]
@@ -69,7 +69,7 @@ flowchart TD
 
     subgraph HUDM["Deckle.Hud"]
         HUD["HUD states<br/>Charging, Recording,<br/>Transcribing, Rewriting"]
-        OUT["ShowPasted or ShowCopied"]
+        OUT["ShowCopied"]
         PANEL["Transcript panel<br/>one Append per utterance"]
     end
 
@@ -89,13 +89,13 @@ Notes on the diagram:
 - In Streaming, the pre-processing and the Silero trim run once per utterance, inside the consumer. In Monolithic, the pre-processing and then the Silero trim run once over the whole take, which the trim treats as one utterance (index 0 in its log lines) and cuts at its edges only, removing the leading and trailing silence and keeping the pauses inside: a take where it finds no speech is not dropped, it goes to the backend untrimmed and unpadded, whose own no-speech filter judges it, so a take with nothing in it ends with `no_text` as in Streaming. The Silero model is made ready before the capture starts, so its loading stays off the Stop→text path (`src/Deckle.Transcription/Engine/TranscriptionEngine.MonolithicPipeline.cs`; the trim helpers `PrepareSpeechTrim`, `TrimSpeech` (the consumer's) and `TrimSpeechEdges` (the monolithic take's) live in `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs`).
 - The phantom filter belongs to the consumer, so it runs for every take that goes through the segmented session: a live Streaming dictation, a file transcription and an audio recovery. The Monolithic path does not run it. The noise pad runs in both: in the consumer for each utterance, and in Monolithic after a successful trim of the take, on the backend buffer only (`src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs`, `src/Deckle.Transcription/Engine/TranscriptionEngine.MonolithicPipeline.cs`).
 - File transcription is the second entry point: a tray command decodes an audio file and pushes its frames into the same energy segmenter, channel and consumer, then writes the text beside the file (`src/Deckle.Transcription/GLOSSARY.md`, `src/Deckle.Transcription/Engine/TranscriptionEngine.FilePipeline.cs`). It is left out of the diagrams.
-- Audio recovery is a third way into the same consumer, used at launch when a take died before it was delivered. The audio the take left on disk is decoded to samples and pushed through `StartSegmentedTranscription` like a file, with the dictation's initial prompt and `ApplyPreprocessing` set to true (the pre-processing still applies only if `Preprocessing.Enabled` is on). Unlike a live take it rejects an incomplete result (`RejectIncompleteResults`): a skipped utterance would leave holes in the text, so the run fails and the audio is kept for the next launch. It delivers the raw text to the clipboard, never a paste and never a rewrite (`src/Deckle.Transcription/Engine/TranscriptionEngine.AudioRecovery.cs` → `RecoverTakeFromAudioAsync`, launch-time decision in `src/Deckle.Transcription/Recovery/TakeAudioRecovery.cs`). It is left out of the diagrams.
+- Audio recovery is a third way into the same consumer, used at launch when a take died before it was delivered. The audio the take left on disk is decoded to samples and pushed through `StartSegmentedTranscription` like a file, with the dictation's initial prompt and `ApplyPreprocessing` set to true (the pre-processing still applies only if `Preprocessing.Enabled` is on). Unlike a live take it rejects an incomplete result (`RejectIncompleteResults`): a skipped utterance would leave holes in the text, so the run fails and the audio is kept for the next launch. It delivers the raw text to the clipboard, never a rewrite (`src/Deckle.Transcription/Engine/TranscriptionEngine.AudioRecovery.cs` → `RecoverTakeFromAudioAsync`, launch-time decision in `src/Deckle.Transcription/Recovery/TakeAudioRecovery.cs`). It is left out of the diagrams.
 
 ### Node → file
 
 | Node | File (→ member) | What it does |
 |---|---|---|
-| Hotkey press | `src/Deckle.App/App.Hotkeys.cs` → `ToggleRecordingFromHotkey` → `_engine.RequestToggle`; `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `RequestToggle` | The chord is `HotkeysSettings.Record` in `src/Deckle.Settings/Persistence/AppSettings.cs`: Win + the key left of 1 (scan code `0x29`) by default, editable in Settings ▸ General. The Record button of the tray panel lands on the same method. The press carries no rewrite profile: the active profile applies at finalize. A press while Idle starts; a press while Recording stops; any other state ignores the press. |
+| Hotkey press | `src/Deckle.App/App.Hotkeys.cs` → `ToggleRecordingFromHotkey` → `_engine.RequestToggle`; `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `RequestToggle` | The chord is `HotkeysSettings.Record` in `src/Deckle.Settings/Persistence/AppSettings.cs`: Win + the key left of 1 (scan code `0x29`) by default, editable in Settings ▸ Shortcuts. The Record button of the tray panel lands on the same method. The press carries no rewrite profile: the active profile applies at finalize. A press while Idle starts; a press while Recording stops; any other state ignores the press. |
 | Mic probe | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `TryStartFromIdleLocked` (`_capture.Probe`) | Checks the microphone before anything else. On failure, an error is shown and no take starts. Then the worker thread starts at AboveNormal priority. |
 | PortAudio capture | `src/Deckle.Audio/MicrophoneCapture.cs` → `Record`; `src/Deckle.Audio/Internal/PortAudioEndpointProvider.cs` → `Open`, `OpenStream`; `src/Deckle.Audio/Internal/PortAudioCaptureEndpoint.cs`; `src/Deckle.Audio/Internal/PortAudioHost.cs` | Opens the microphone through PortAudio's WASAPI host API, in blocking mode (no callback), in the device's own format: float32 at its sample rate and channel count, so neither Windows nor PortAudio converts anything. The processing mode is the rawest the device gives: raw first, default as a fallback (logged as `CaptureModeFallback`). Exclusive access is tried first only when `CaptureSettings.ExclusiveMode` is on; the order is then exclusive raw, exclusive default, shared raw, shared default. The mic probe opens it shared. `CaptureStarted` fires once the stream has started. |
 | Capture loop and signal path | `src/Deckle.Audio/Internal/CaptureLoop.cs` → `Pump`; `src/Deckle.Audio/Internal/CapturePipeline.cs` → `Accept`; `src/Deckle.Audio/Internal/MonoConverter.cs`; `src/Deckle.Audio/Internal/StreamingResampler.cs` | The loop polls `Available()` and reads exactly the frames that are ready, sleeping `CaptureLoop.PollIntervalMs` (4 ms) when none are. Each read goes through the pipeline: mean of the channels (`MonoConverter`), then resampling to 16 kHz (`StreamingResampler`, a windowed-sinc filter written in Deckle's code, bypassed when the device is already at 16 kHz). No gain, filter or compressor sits on this path. |
@@ -112,10 +112,10 @@ Notes on the diagram:
 | Phantom filter | `src/Deckle.Transcription/Engine/PhantomUtteranceFilter.cs` → `Evaluate`; called in `ConsumeUtterancesAsync` | Judges the decoded text of an utterance, not its audio. Only an utterance of less than 1 s of audio (before the pad) can be rejected. It is rejected when it holds more than 12 text tokens per second (`token_rate`), or when its average token probability is under 0.7 and its weakest token under 0.1 (`low_confidence`). A result that reports no text tokens is kept. A rejected utterance contributes no text, its tail is not carried into the next prompt, and `UtterancePhantomRejected` is logged. |
 | Text assembly | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `pendingParagraphBreak = u.EndedOnSilence` | Joins the texts. After an utterance that ended on a silence, the next text starts a new paragraph (`\n\n`); otherwise a space. Only the last utterance of a take can end without a silence (the Flush at Stop), so in a dictation the texts are joined by paragraph breaks. See "The paragraph rule" below. |
 | Monolithic | `src/Deckle.Transcription/Engine/TranscriptionEngine.MonolithicPipeline.cs` → `ProduceMonolithicAsync`; `src/Deckle.Transcription/Engine/TranscriptionEngine.Pipeline.cs` → `ConsumeMonolithicAudioAsync` | Captures the whole take, waits for the prime after Stop, runs the pre-processing once, then the Silero trim once (a take where it finds no speech goes on untrimmed), appends the noise pad after a successful trim, makes one backend call. Whisper then cuts its own 30 s windows inside that call. |
-| FinalizeTranscription | `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.cs` → `FinalizeTranscription`, `CopyToClipboard`, `DeliverTranscript`, `PasteFromClipboard`; `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.Rewrite.cs` → `ApplyRewrite` | Copies the raw text to the clipboard first. Then, if a rewrite profile applies, rewrites it with Ollama. Then pastes with Ctrl+V only if paste is enabled, the foreground window is not Deckle, and UI Automation confirms the focused element is a text field (Edit or Document). Paste is off by default (`AutoPasteEnabled = false` in `src/Deckle.Settings/Persistence/AppSettings.cs`). |
+| FinalizeTranscription | `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.cs` → `FinalizeTranscription`, `CopyToClipboard`, `DeliverTranscript`; `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.Rewrite.cs` → `ApplyRewrite` | Copies the take as it reads at Stop to the clipboard first: the raw text, or the passages a streaming step already rewrote with the rest as said. Then, if a step at Stop applies, rewrites the whole text. Nothing is pasted: the clipboard copy is the delivery, and the HUD says it was copied. |
 | HUD states | `src/Deckle.App/App.Startup.Shell.cs` → `StatusChanged` handler; `src/Deckle.App/App.Hotkeys.cs` → `ShowPreparing`, `SwitchToTranscribing`; `src/Deckle.Hud/Model/HudState.cs`; `src/Deckle.Hud/Windows/HudWindow.State.cs` | Start press → Charging. "Recording" status → Recording. Stop press → Transcribing at once. "Rewriting…" status → Rewriting. |
-| ShowPasted or ShowCopied | `src/Deckle.App/App.Startup.Shell.cs` → `TranscriptionFinished` handler | Pasted → green flash. ClipboardOnly → the "copied" message. No text → the HUD hides. |
-| Transcript panel | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `RaiseTranscriptChanged` (event `TranscriptChanged` declared in `src/Deckle.Transcription/Engine/TranscriptionEngine.Utterances.cs`, snapshot in `src/Deckle.Transcription/Streaming/TranscriptSnapshot.cs`); `src/Deckle.App/App.TranscriptPanel.cs`; `src/Deckle.Hud/Transcript/TranscriptPanelWindow.xaml.cs` | The engine raises a `TranscriptSnapshot`, the whole text of the take as it would be delivered at that moment, after each utterance that yields text (`Appended`), after each passage rewrite that changes what the take reads during the recording (`Revised`, `TranscriptionEngine.BatchRewrite.cs` → `FeedStreamingRewrite`, text from the take's `DictationDocument.Snapshot`) and when the whole-take rewrite replaces the raw text at finalize (`Revised`, `TranscriptionEngine.Finalize.cs`). The panel shows the snapshot as is, it assembles nothing: what it shows is what the clipboard gets. A revision cross-fades the text; an append lays out the longer text. The panel opens a take when the engine starts recording, closes it when the transcription finishes, hides with the HUD and comes back with it after the paste, beside "Pasted". With the HUD turned off (`Overlay.Enabled`), no take opens. Its side is `Overlay.TranscriptPanelSide` (Settings ▸ Transcription). Monolithic raises no snapshot before finalize, so the panel stays hidden there. `UtteranceTranscribed` still fires per utterance for the feeds that need the unit (batch rewriter, recovery file). |
+| ShowCopied | `src/Deckle.App/App.Startup.Shell.cs` → `TranscriptionFinished` handler | ClipboardOnly → the "copied" message. No text → the HUD hides. |
+| Transcript panel | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `RaiseTranscriptChanged` (event `TranscriptChanged` declared in `src/Deckle.Transcription/Engine/TranscriptionEngine.Utterances.cs`, snapshot in `src/Deckle.Transcription/Streaming/TranscriptSnapshot.cs`); `src/Deckle.App/App.TranscriptPanel.cs`; `src/Deckle.Hud/Transcript/TranscriptPanelWindow.xaml.cs` | The engine raises a `TranscriptSnapshot`, the whole text of the take as it would be delivered at that moment, after each utterance that yields text (`Appended`), after each passage rewrite that changes what the take reads during the recording (`Revised`, `TranscriptionEngine.BatchRewrite.cs` → `FeedStreamingRewrite`, text from the take's `DictationDocument.Snapshot`) and when the whole-take rewrite replaces the raw text at finalize (`Revised`, `TranscriptionEngine.Finalize.cs`). The panel shows the snapshot as is, it assembles nothing: what it shows is what the clipboard gets. A revision cross-fades the text; an append lays out the longer text. The panel opens a take when the engine starts recording, closes it when the transcription finishes, hides with the HUD and comes back with it, beside "Copied". With the HUD turned off (`Overlay.Enabled`), no take opens. Its side is `Overlay.TranscriptPanelSide` (Settings ▸ Transcription). Monolithic raises no snapshot before finalize, so the panel stays hidden there. `UtteranceTranscribed` still fires per utterance for the feeds that need the unit (batch rewriter, recovery file). |
 
 ## Diagram 2 — one Streaming take over time
 
@@ -160,8 +160,8 @@ sequenceDiagram
     WB-->>C: Last text
     C-->>W: Assembled text
     W->>W: State Stopping to Transcribing
-    W->>W: FinalizeTranscription - clipboard, rewrite, paste
-    W->>HUD: ShowPasted or ShowCopied
+    W->>W: FinalizeTranscription - clipboard, rewrite
+    W->>HUD: ShowCopied
     W->>W: State Idle, raise Ready, arm the 5 min idle unload
 ```
 
@@ -193,7 +193,7 @@ Notes on the diagram:
 | Flush, channel completed | `src/Deckle.Transcription/Streaming/SegmentedTranscriptionSession.cs` → `Complete`; `src/Deckle.Transcription/Streaming/EnergySegmenter.cs` → `Flush` |
 | Stopping → Transcribing | `src/Deckle.Transcription/Engine/TranscriptionEngine.StreamingPipeline.cs` → `ProduceStreamingAsync` (CAS after `session.Completion`) |
 | Finalize | `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.cs` → `FinalizeTranscription` |
-| ShowPasted or ShowCopied | `src/Deckle.App/App.Startup.Shell.cs` → `TranscriptionFinished` handler |
+| ShowCopied | `src/Deckle.App/App.Startup.Shell.cs` → `TranscriptionFinished` handler |
 | Idle, Ready, idle unload | `src/Deckle.Transcription/Engine/TranscriptionEngine.StateMachine.cs` → `SettleWorkerToIdle`; `src/Deckle.Transcription/Engine/TranscriptionEngine.Lifecycle.cs` → `ResetIdleTimer`, `UnloadModel`; `MODEL_IDLE_TIMEOUT_MS` in `src/Deckle.Transcription/Engine/TranscriptionEngine.cs` |
 
 ## Parameters
@@ -203,7 +203,6 @@ Where the files live:
 - Transcription settings are stored in `<UserDataRoot>/modules/transcription/settings.json` (comment at the top of `src/Deckle.Transcription/TranscriptionSettings.cs`).
 - Every settings file writes its keys in camelCase (`JsonNamingPolicy.CamelCase` in `src/Deckle.Transcription/TranscriptionSettingsService.cs`, `src/Deckle.Audio/CaptureSettingsService.cs` and `src/Deckle.Settings/Persistence/SettingsService.cs`). The section column below uses those keys.
 - Audio settings are stored in `<UserDataRoot>/modules/audio/settings.json` (`src/Deckle.Audio/CaptureSettingsService.cs`). The file holds `CaptureSettings` at its root.
-- `AutoPasteEnabled` lives in the app-wide `<UserDataRoot>/settings.json`, section `paste` (`src/Deckle.Settings/Persistence/AppSettings.cs`, `SettingsFilePath` in `src/Deckle.Core/Paths/AppPaths.cs`).
 - `<UserDataRoot>` is `%LOCALAPPDATA%\Deckle`, unless the `DECKLE_DATA_ROOT` environment variable is set (`src/Deckle.Core/Paths/AppPaths.cs`).
 
 Where the settings are shown:
@@ -305,7 +304,6 @@ At the end of each dictation, `RecordPipelineMetrics` emits the `LatencyRecorded
 | `whisper_ms` | Whisper's total time minus `whisper_init_ms`, summed over all utterances: the encode and decode | same |
 | `llm_ms` | Ollama rewrite, 0 without a profile | `src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.Rewrite.cs` |
 | `clipboard_ms` | Raw copy to the clipboard | `FinalizeTranscription` |
-| `paste_ms` | UI Automation check plus Ctrl+V, 0 when paste is off | `DeliverTranscript` |
 
 On a cold take, `AwaitPrime` also emits `PrimeOverlap` with the prime's own duration, the time the gate actually waited, and the phase (`during_recording` or `at_stop`) (`src/Deckle.Transcription/Engine/TranscriptionEngine.Lifecycle.cs`). It shows how much of the cold cost the recording hid.
 

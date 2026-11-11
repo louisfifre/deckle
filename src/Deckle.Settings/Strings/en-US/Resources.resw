@@ -184,7 +184,7 @@
     <value>Deckle will copy every log line to a trace file on this device (trace.jsonl), so you can follow an issue across restarts.</value>
   </data>
   <data name="ApplicationLogConsent_Body_What" xml:space="preserve">
-    <value>Every log line from every subsystem (capture, VAD, Whisper, rewriting, clipboard, paste, UI) at every verbosity level. Log messages can include partial transcription text when a pipeline step logs what it just produced. Nothing is sent over the network.</value>
+    <value>Every log line from every subsystem (capture, VAD, Whisper, rewriting, clipboard, UI) at every verbosity level. Log messages can include partial transcription text when a pipeline step logs what it just produced. Nothing is sent over the network.</value>
   </data>
   <data name="ApplicationLogConsent_Body_Remind" xml:space="preserve">
     <value>The trace is chatty. Expect roughly 2 MB per 30 minutes of active use. Every 8,000 lines, the file moves to the archive folder, which keeps the last 10 and deletes older ones. Turn it off once you have what you need.</value>
@@ -265,9 +265,9 @@
        for diagnostic clarity. -->
 
   <!-- ─── HUD ────────────────────────────────────────────────────────
-       Short post-paste / post-copy confirmations rendered in the HUD
-       message slot. Hud_Copied_Hint sits under the title to remind the
-       user how to paste manually when the auto-paste path didn't run. -->
+       Short post-copy confirmations rendered in the HUD message slot.
+       Hud_Copied_Hint sits under the title to remind the user how to paste
+       the text themselves. -->
 
   <!-- ─── Tray ───────────────────────────────────────────────────────
        Tray icon tooltip. Capped at 127 chars by Shell_NotifyIcon. The
@@ -610,7 +610,7 @@
   </data>
   <!-- ─── RecordingPage ───────────────────────────────────────────────
        Page extracted from GeneralPage in slice S3. Owns microphone
-       device, auto-paste, overlay HUD. Card-level x:Uid keys
+       device, overlay HUD. Card-level x:Uid keys
        (GeneralMicrophoneCard, GeneralOverlay*) reused as-is — General*
        prefix is a historical naming artifact, renaming would touch every
        translation file. -->

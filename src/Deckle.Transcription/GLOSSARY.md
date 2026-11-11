@@ -16,7 +16,7 @@ The entry point in which the person dictates. A hotkey starts it, Deckle capture
 _Avoid_ : recording (the capture phase, not the whole path), dictation delivery (only the last edge of the path).
 
 **File transcription** :
-The entry point that transcribes one pre-recorded audio file chosen from the tray, through the same pipeline as dictation. What sets it apart is its edges. Delivery is an explicit command, the text is written beside the audio and copied to the clipboard, and paste and rewrite never run.
+The entry point that transcribes one pre-recorded audio file chosen from the tray, through the same pipeline as dictation. What sets it apart is its edges. Delivery is an explicit command, the text is written beside the audio and copied to the clipboard, and rewrite never runs.
 _Avoid_ : import (nothing enters a library).
 
 **File transcription batch** :
@@ -24,11 +24,11 @@ The unit of work made of one tray selection, indivisible. Its file transcription
 _Avoid_ : file transcription (one file's run), import (nothing enters a library).
 
 **Dictation delivery** :
-The delivery edge of dictation, which writes the text to the clipboard, may rewrite it first and may paste it. It is one of the two deliveries the pipeline can be told to end in, and it says nothing about how the text was produced.
+The delivery edge of dictation, which writes the text to the clipboard and may rewrite it first. It is one of the two deliveries the pipeline can be told to end in, and it says nothing about how the text was produced.
 _Avoid_ : dictation (the whole entry point, not its last edge).
 
 **Adjacent file delivery** :
-The delivery edge of file transcription, which writes the text beside the audio file and copies it to the clipboard. Paste and rewrite never run here.
+The delivery edge of file transcription, which writes the text beside the audio file and copies it to the clipboard. Rewrite never runs here.
 _Avoid_ : file transcription (the whole entry point, not its last edge), export (nothing is converted for another tool, the text lands beside its source).
 
 **Recording** :

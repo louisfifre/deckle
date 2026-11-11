@@ -55,7 +55,6 @@ public sealed partial class TranscriptionEngine
     // "none" when there was nothing to deliver; the reason decides.
     internal static string TakeOutcomeName(TranscriptionOutcome outcome, string? reason) => outcome switch
     {
-        TranscriptionOutcome.Pasted        => TakeOutcomes.Pasted,
         TranscriptionOutcome.ClipboardOnly => TakeOutcomes.ClipboardOnly,
         TranscriptionOutcome.SavedToFile   => TakeOutcomes.SavedToFile,
         _ => IsFailureReason(reason) ? TakeOutcomes.Failed : TakeOutcomes.None,

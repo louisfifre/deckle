@@ -204,9 +204,9 @@
        for diagnostic clarity. -->
 
   <!-- ─── HUD ────────────────────────────────────────────────────────
-       Short post-paste / post-copy confirmations rendered in the HUD
-       message slot. Hud_Copied_Hint sits under the title to remind the
-       user how to paste manually when the auto-paste path didn't run. -->
+       Short post-copy confirmations rendered in the HUD message slot.
+       Hud_Copied_Hint sits under the title to remind the user how to
+       paste the text themselves. -->
 
   <!-- ─── Tray ───────────────────────────────────────────────────────
        Tray icon tooltip. Capped at 127 chars by Shell_NotifyIcon. The

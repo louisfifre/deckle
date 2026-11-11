@@ -74,8 +74,8 @@
                     </InfoBar.ActionButton>
                 </InfoBar>
 
-                <!-- ── Overlay and pasting ──────────────────────────────────────
-                     The dictation experience — the on-screen HUD and auto-paste,
+                <!-- ── Overlay ──────────────────────────────────────────────────
+                     The dictation experience — the on-screen HUD,
                      relocated from General. Composed from WhisperViewModel.BehaviourSettings
                      into the host below; its own section reset gates active-when-dirty. -->
                 <catalog:SettingsSection x:Name="BehaviourSection"

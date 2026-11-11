@@ -217,8 +217,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── research--youtube-maison--2026-10-22.md  — Cadrage (2026-10-22) — un client YouTube maison comme module de Deckle : la nou…
 │   ├── inventaire-exposables.csv
 │   ├── inventaire-exposables.md
-│   └── transcription-audio-chain.md  — How a dictation travels from the hotkey to the pasted text — vocabulary, three…
+│   └── transcription-audio-chain.md  — How a dictation travels from the hotkey to the clipboard — vocabulary, three di…
 ├── logo/
+│   ├── deckle-recording.svg
+│   ├── deckle-rewriting.svg
+│   ├── deckle.svg
+│   ├── generate.mjs
+│   ├── palettes.md
 │   ├── primary.png
 │   ├── primary.svg
 │   └── secondary.png
@@ -546,12 +551,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Fonts/
 │   │   │   │   └── BitcountSingle.ttf
 │   │   │   ├── Icons/
-│   │   │   │   ├── recording--indicator--false--32px.ico
-│   │   │   │   ├── recording--indicator--false--32px.png
-│   │   │   │   ├── recording--indicator--false--incident--true--32px.ico
-│   │   │   │   ├── recording--indicator--true--32px.ico
-│   │   │   │   ├── recording--indicator--true--32px.png
-│   │   │   │   └── recording--indicator--true--incident--true--32px.ico
+│   │   │   │   ├── deckle--state--recording--32px.png
+│   │   │   │   ├── deckle--state--recording--incident--true.ico
+│   │   │   │   ├── deckle--state--recording.ico
+│   │   │   │   ├── deckle--state--rest--32px.png
+│   │   │   │   ├── deckle--state--rest--incident--true.ico
+│   │   │   │   ├── deckle--state--rest.ico
+│   │   │   │   ├── deckle--state--rewriting--32px.png
+│   │   │   │   ├── deckle--state--rewriting--incident--true.ico
+│   │   │   │   └── deckle--state--rewriting.ico
 │   │   │   └── Sounds/
 │   │   │       └── speech.wav
 │   │   ├── Diagnostics/
@@ -1092,8 +1100,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Structs.cs
 │   │   │   ├── UIAutomation.cs
 │   │   │   ├── UIAutomation.Text.cs
-│   │   │   ├── Win32Clipboard.cs
-│   │   │   └── Win32Util.cs
+│   │   │   └── Win32Clipboard.cs
 │   │   ├── Io/
 │   │   │   ├── Downloader.cs
 │   │   │   └── ProvisioningResult.cs
@@ -2545,9 +2552,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── JsonSettingsStoreBugNotes.md
 │   │   ├── JsonSettingsStoreTests.cs
 │   │   ├── ModuleDirectoryNameTests.cs
-│   │   ├── SpacingTests.cs
-│   │   ├── Win32UtilTests.cs
-│   │   └── WindowDescriptionBugNotes.md
+│   │   └── SpacingTests.cs
 │   ├── Deckle.Diagnostics.Logging.Tests/
 │   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
 │   │   ├── LogAutoScrollTests.cs
@@ -2976,7 +2981,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ShellObservabilityCollection.cs
 │   │   ├── TrayIconBugNotes.md
 │   │   ├── TrayIconFallbackObservabilityTests.cs
-│   │   └── TrayIconRegistrationTests.cs
+│   │   ├── TrayIconRegistrationTests.cs
+│   │   └── TrayMarkTests.cs
 │   ├── Deckle.Shell.TrayMenu.Tests/
 │   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs

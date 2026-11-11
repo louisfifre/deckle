@@ -81,6 +81,9 @@ public partial class App
             // The HUD follows the phase the engine names, never its sentence.
             _engine.StatusPhaseChanged += phase =>
             {
+                // Every phase passes here, so the one after the rewrite dims
+                // the blade again.
+                _tray.SetRewritingIndicator(phase == StatusPhase.Rewriting);
                 if (_engine.IsRecording) return;
                 switch (phase)
                 {
@@ -96,9 +99,6 @@ public partial class App
             {
                 switch (outcome)
                 {
-                    case TranscriptionOutcome.Pasted:
-                        _hudWindow.ShowPasted();
-                        break;
                     case TranscriptionOutcome.ClipboardOnly:
                         _hudWindow.ShowCopied();
                         break;
@@ -111,12 +111,6 @@ public partial class App
                         break;
                 }
             };
-            // Synchronous rendezvous just before paste: hide the HUD and wait for
-            // SW_HIDE to be effective on the UI thread before the engine sends
-            // SendInput. Avoids the race where Hide() (triggered async after paste)
-            // redistributes activation while Ctrl+V is still in the target's input queue.
-            _engine.OnReadyToPaste = () => _hudWindow.HideSync();
-
             // Raised on the audio thread. OnAudioLevel only writes a
             // CompositionPropertySet, which is thread-safe, so no dispatcher.
             _engine.AudioLevel += _hudWindow.OnAudioLevel;
@@ -191,10 +185,10 @@ public partial class App
         if (context.TranscriptionPresent)
         {
             // Record runs the exact path of the transcription hotkey; the menu
-            // closes first so the paste at Stop reaches the window the user
-            // was in. Its label follows the engine state at each open. File
-            // transcription opens the system file picker and runs each file
-            // through the dictation pipeline (see App.FileTranscription.cs).
+            // closes first, as for any command. Its label follows the engine
+            // state at each open. File transcription opens the system file
+            // picker and runs each file through the dictation pipeline (see
+            // App.FileTranscription.cs).
             if (actions.Count > 0) actions.Add(new TrayMenuSeparator());
             actions.Add(new TrayMenuCommand(
                 "record",

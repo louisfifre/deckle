@@ -32,7 +32,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     public const int EvtRevealGeometry      = 10;
     // 11 retired.
     public const int EvtTranscriptPanelVisibilityChanged = 12;
-    public const int EvtHideSyncTimedOut          = 13;
+    // 13 retired.
     public const int EvtRevealMaskDegraded        = 14;
     public const int EvtRevealBuildAttemptFailed  = 15;
     public const int EvtRevealMaskRecovered       = 16;
@@ -54,20 +54,6 @@ public sealed class DeckleHudSource : DeckleEventSource
     public bool IsHudDetailEnabled(EventKeywords keywords)
         => OperationalLogAdmission.IsDetailEnabled(
             OperationalLogActivity.Windowing, this, EventLevel.Verbose, keywords);
-
-    // ─── Paste rendezvous ───────────────────────────────────────────────
-    //
-    // HideSync released the transcribe thread without the hide: the paste goes
-    // ahead while the HUD may still be visible, so activation can move while
-    // the keystrokes are in flight.
-    [Event(EvtHideSyncTimedOut,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The HUD could not hide before the paste, so focus may move while the text is pasted\nreason={0} | timeout_ms={1}")]
-    public void HideSyncTimedOut(string reason, int timeout_ms)
-    {
-        if (IsEnabled()) WriteEvent(EvtHideSyncTimedOut, reason, timeout_ms);
-    }
 
     // ─── Digit reveal mask ──────────────────────────────────────────────
     //

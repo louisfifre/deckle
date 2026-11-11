@@ -36,10 +36,6 @@ public sealed partial class TranscriptionEngine
             if (delivery.Outcome == TranscriptionOutcome.SavedToFile)
                 DeckleWhispSource.Log.FileTranscriptionCompleted();
         }
-        else if (delivery.Outcome == TranscriptionOutcome.Pasted)
-        {
-            DeckleWhispSource.Log.DictationPasted();
-        }
         else
         {
             DeckleWhispSource.Log.DictationCopied();
@@ -49,7 +45,7 @@ public sealed partial class TranscriptionEngine
         DeckleWhispSource.Log.PipelineTimings(
             recordingDurationSec, _modelLoadMs, hotkeyToCaptureMs, recordDrainMs,
             stopToPipelineMs, whisperInitMs, whisperMs, rewrite.LlmMs,
-            clipboardMs, delivery.PasteMs);
+            clipboardMs);
         DeckleWhispSource.Log.PipelineLlmMetrics(
             rewrite.LlmLoadMs,
             rewrite.LlmPromptEvalMs,
@@ -85,13 +81,11 @@ public sealed partial class TranscriptionEngine
                 llm_prompt_tokens:    rewrite.LlmPromptTokens,
                 llm_eval_tokens:      rewrite.LlmEvalTokens,
                 clipboard_ms:         clipboardMs,
-                paste_ms:             delivery.PasteMs,
                 strategy:             strategyLabel,
                 n_segments:           production.NSegments,
                 text_chars:           rewrite.Text.Length,
                 text_words:           finalWordCount,
                 profile:              rewrite.Profile?.Name ?? "",
-                pasted:               delivery.PasteVerified,
                 outcome:              delivery.Outcome.ToString(),
                 llm_cache_write_tokens: rewrite.LlmCacheWriteTokens,
                 llm_cache_read_tokens:  rewrite.LlmCacheReadTokens);

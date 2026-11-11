@@ -16,14 +16,6 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtPipelineCompletedDetail, outcome);
     }
 
-    [Event(EvtDictationPasted,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "Dictation completed and pasted")]
-    public void DictationPasted()
-    {
-        if (IsEnabled()) WriteEvent(EvtDictationPasted);
-    }
 
     [Event(EvtDictationCopied,
            Level = EventLevel.Informational,
@@ -48,20 +40,20 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPipelineTimings,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "audio_s={0,6:F1} | model_load_ms={1,6} | hotkey_to_capture_ms={2,5} | record_drain_ms={3,5} | stop_to_pipeline_ms={4,6} | whisper_init_ms={5,6} | whisper_ms={6,6} | llm_ms={7,6} | clipboard_ms={8,5} | paste_ms={9,5}")]
-    public void PipelineTimings(double audio_s, long model_load_ms, long hotkey_to_capture_ms, long record_drain_ms, long stop_to_pipeline_ms, long whisper_init_ms, long whisper_ms, long llm_ms, long clipboard_ms, long paste_ms)
+           Message = "audio_s={0,6:F1} | model_load_ms={1,6} | hotkey_to_capture_ms={2,5} | record_drain_ms={3,5} | stop_to_pipeline_ms={4,6} | whisper_init_ms={5,6} | whisper_ms={6,6} | llm_ms={7,6} | clipboard_ms={8,5}")]
+    public void PipelineTimings(double audio_s, long model_load_ms, long hotkey_to_capture_ms, long record_drain_ms, long stop_to_pipeline_ms, long whisper_init_ms, long whisper_ms, long llm_ms, long clipboard_ms)
     {
         if (!OperationalLogAdmission.IsSummaryEnabled(
                 OperationalLogActivity.Transcription, this,
                 EventLevel.Verbose, (EventKeywords)Keywords.Pipeline)) return;
-        WriteEvent(EvtPipelineTimings, audio_s, model_load_ms, hotkey_to_capture_ms, record_drain_ms, stop_to_pipeline_ms, whisper_init_ms, whisper_ms, llm_ms, clipboard_ms, paste_ms);
+        WriteEvent(EvtPipelineTimings, audio_s, model_load_ms, hotkey_to_capture_ms, record_drain_ms, stop_to_pipeline_ms, whisper_init_ms, whisper_ms, llm_ms, clipboard_ms);
     }
 
     // The take keeps its raw transcript although a rewriting profile was
     // active. reason (closed vocabulary): empty_result (the rewriter returned
     // no text; its own provider logs why), copy_failed (the rewritten text
     // could not replace the raw copy on the clipboard, so the raw text is
-    // what gets pasted).
+    // what stays on the clipboard).
     [Event(EvtRewriteFellBackToRaw,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,

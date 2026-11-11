@@ -4,7 +4,7 @@ using Microsoft.UI.Xaml.Media;
 
 namespace Deckle.Hud;
 
-// Message card for Pasted / Copied / Error / UserFeedback feedback, fixed
+// Message card for Copied / Error / UserFeedback feedback, fixed
 // 272x78, filling the whole HUD window.
 public sealed partial class HudMessage : UserControl
 {

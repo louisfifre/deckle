@@ -12,13 +12,11 @@ namespace Deckle.Transcription;
 
 // Result of a pipeline pass, consumed by the HUD.
 //   None            — nothing to show (empty audio, empty text, error).
-//   Pasted          — UIA confirmed a text field and Ctrl+V was delivered.
-//   ClipboardOnly   — text is on the clipboard but paste was skipped (UIA
-//                     couldn't confirm, foreground was Deckle, SendInput
-//                     partial…). The safe default when in doubt.
+//   ClipboardOnly   — the text is on the clipboard, the one way a dictation
+//                     delivers it: nothing is ever pasted.
 //   SavedToFile     — file-transcription run: the transcript was written to a
 //                     .txt beside its source. Never emitted by a dictation run.
-public enum TranscriptionOutcome { None, Pasted, ClipboardOnly, SavedToFile }
+public enum TranscriptionOutcome { None, ClipboardOnly, SavedToFile }
 
 // Pipeline state, manipulated only through Interlocked operations on _state.
 // Every transition is a CAS so rapid double-presses, or a Stop racing the
@@ -81,11 +79,6 @@ public sealed partial class TranscriptionEngine : IDisposable
     // marshal to UI.
     public event Action? FileTranscriptionStarted;
 
-    // Synchronous rendezvous just before PasteFromClipboard. The host hooks
-    // HudWindow.HideSync() so no activation change from Deckle occurs while
-    // SendInput is in flight to the target.
-    public Action? OnReadyToPaste { get; set; }
-
     // Microphone level, linear RMS [0, 1], one emission per 50 ms sub-window.
     // Fired from the recording thread; subscribers marshal to UI.
     public event Action<float>? AudioLevel;
@@ -136,8 +129,6 @@ public sealed partial class TranscriptionEngine : IDisposable
     // Every call into whisper.cpp goes through this interface; the engine never
     // touches the backend's P/Invoke, callbacks or native structs.
     private readonly IAsrBackend _backend;
-
-    private volatile bool _shouldPaste = false;
 
     // The profile whose own shortcut started the live take, or null when the
     // plain Record shortcut did. Written at start under the lifecycle lock,

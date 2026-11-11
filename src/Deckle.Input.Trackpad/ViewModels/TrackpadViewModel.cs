@@ -26,6 +26,16 @@ public partial class TrackpadViewModel : ObservableObject
     [ObservableProperty]
     public partial double PressDelayMs { get; set; }
 
+    // Cursor travel that picks up before the delay runs out, in px.
+    [ObservableProperty]
+    public partial double PressDistancePx { get; set; }
+
+    partial void OnPressDistancePxChanged(double value)
+    {
+        if (_isSyncing) return;
+        Push();
+    }
+
     partial void OnEnabledChanged(bool value)
     {
         if (_isSyncing) return;
@@ -63,6 +73,7 @@ public partial class TrackpadViewModel : ObservableObject
             Enabled = s.Enabled;
             DragSpeed = s.DragSpeed;
             PressDelayMs = s.PressDelayMs;
+            PressDistancePx = s.PressDistancePx;
         }
         finally
         {
@@ -76,6 +87,7 @@ public partial class TrackpadViewModel : ObservableObject
         s.Enabled = Enabled;
         s.DragSpeed = Math.Round(DragSpeed, 2);
         s.PressDelayMs = Math.Round(PressDelayMs);
+        s.PressDistancePx = Math.Round(PressDistancePx);
         TrackpadSettingsService.Instance.Save();
     }
 }
