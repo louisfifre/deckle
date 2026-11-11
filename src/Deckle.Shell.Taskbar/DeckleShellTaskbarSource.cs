@@ -43,8 +43,18 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public const int EvtTaskbarPartSkipped           = 27;
     public const int EvtTaskbarPartNotInEffect       = 28;
     public const int EvtTaskbarPartProblemEnded      = 29;
-    public const int EvtTaskbarEngineUnloadUnconfirmed = 30;
+    public const int EvtTaskbarEngineStopUnconfirmed = 30;
     public const int EvtTaskbarCustomizerFailed      = 31;
+    public const int EvtWindowsKeyFocusArmed         = 32;
+    public const int EvtWindowsKeyFocusDisarmed      = 33;
+    public const int EvtWindowsKeyFocusUnavailable   = 34;
+    public const int EvtWindowsKeyTapHandledDetail   = 35;
+    public const int EvtWindowsKeyInjectionFailed    = 36;
+    public const int EvtWindowsKeyInjectionRecovered = 37;
+    public const int EvtSymbolsDownloaded            = 38;
+    public const int EvtSymbolLookupFailed           = 39;
+    public const int EvtNativeEngineBuildMismatch    = 40;
+    public const int EvtNativeEngineHeldOff          = 41;
 
     // ── Tray icon promotion ───────────────────────────────────────────────────
     //
@@ -226,8 +236,11 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtNativeEngineConnected, explorer_pid, protocol);
     }
 
-    // outcome: unloaded (the DLL reported that it unloaded itself) or lost (the
-    // pipe closed with no word, as when explorer exits).
+    // outcome: parked (the DLL restored everything and stays in its target,
+    // idle, for the next Deckle), unloaded (it left its target, which happens
+    // only when XAML Diagnostics never answered there) or lost (the pipe closed
+    // with no word, as when explorer exits or a copy is refused because another
+    // engine serves its target).
     [Event(EvtNativeEngineDisconnected,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -338,14 +351,42 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     }
 
     // target: explorer or start_menu. The DLL left with the pipe, not with its
-    // own word, so explorer may still hold it until it exits.
-    [Event(EvtTaskbarEngineUnloadUnconfirmed,
+    // own word, so what it changed may still be in force until the target exits.
+    [Event(EvtTaskbarEngineStopUnconfirmed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The taskbar engine did not confirm that it unloaded\ntarget={0}")]
-    public void TaskbarEngineUnloadUnconfirmed(string target)
+           Message = "The taskbar engine did not confirm that it stopped\ntarget={0}")]
+    public void TaskbarEngineStopUnconfirmed(string target)
     {
-        if (IsEnabled()) WriteEvent(EvtTaskbarEngineUnloadUnconfirmed, target);
+        if (IsEnabled()) WriteEvent(EvtTaskbarEngineStopUnconfirmed, target);
+    }
+
+    // target: explorer or start_menu. resident: the versioned folder of the
+    // engine that answered, which an earlier Deckle left parked in the target.
+    // offered: this Deckle's. The resident build keeps running until the
+    // target restarts: XAML Diagnostics are never initialized twice in one
+    // process, so a newer copy cannot take its place.
+    [Event(EvtNativeEngineBuildMismatch,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar engine already in place is another build, and stays until its process restarts\ntarget={0} | resident={1} | offered={2}")]
+    public void NativeEngineBuildMismatch(string target, string resident, string offered)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineBuildMismatch, target, resident, offered);
+    }
+
+    // target: explorer or start_menu. The process died quick_losses times in
+    // a row, each within window_seconds of receiving the engine, so Deckle
+    // stops sending it: one more injection would only kill it again. Windows
+    // runs its own taskbar until Deckle restarts, and the page marks the
+    // parts that are no longer applied.
+    [Event(EvtNativeEngineHeldOff,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar engine is no longer sent into its process, which kept dying just after receiving it; restart Deckle to try again\ntarget={0} | quick_losses={1} | window_seconds={2}")]
+    public void NativeEngineHeldOff(string target, int quick_losses, int window_seconds)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineHeldOff, target, quick_losses, window_seconds);
     }
 
     // A pass over the settings threw. trigger: startup, setting or
@@ -357,5 +398,106 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public void TaskbarCustomizerFailed(string trigger, string ex_type)
     {
         if (IsEnabled()) WriteEvent(EvtTaskbarCustomizerFailed, trigger, ex_type);
+    }
+
+    // ── Symbols ───────────────────────────────────────────────────────────────
+    //
+    // The bar's thickness needs the offset of one function of explorer, read
+    // from Microsoft's public symbols once per build of the module. These two
+    // lines say when Deckle went to the network for it, and why it came back
+    // empty. module: the file name (Taskbar.View.dll).
+
+    [Event(EvtSymbolsDownloaded,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Downloaded Microsoft's public symbols for a taskbar module")]
+    public void SymbolsDownloaded(string module, int megabytes, int seconds)
+    {
+        if (IsEnabled()) WriteEvent(EvtSymbolsDownloaded, module, megabytes, seconds);
+    }
+
+    // reason: download_failed (offline, the server did not answer),
+    // no_symbols_published, pdb_unreadable or dbghelp_failed. The lookup is
+    // tried again ten minutes later at the earliest.
+    [Event(EvtSymbolLookupFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Could not read where a function of the taskbar lives, so the bar keeps its thickness\nmodule={0} | reason={1}")]
+    public void SymbolLookupFailed(string module, string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtSymbolLookupFailed, module, reason);
+    }
+
+    // ── Windows key ───────────────────────────────────────────────────────────
+    //
+    // Armed and Disarmed bracket the time the setting is in effect: the Windows
+    // key pressed on its own brings the taskbar forward instead of opening Start.
+    // The keys themselves never reach a line, only that a lone press was handled.
+
+    [Event(EvtWindowsKeyFocusArmed,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The Windows key now brings the taskbar forward instead of opening Start")]
+    public void WindowsKeyFocusArmed()
+    {
+        if (IsEnabled()) WriteEvent(EvtWindowsKeyFocusArmed);
+    }
+
+    [Event(EvtWindowsKeyFocusDisarmed,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "The Windows key opens Start again")]
+    public void WindowsKeyFocusDisarmed()
+    {
+        if (IsEnabled()) WriteEvent(EvtWindowsKeyFocusDisarmed);
+    }
+
+    // Work that does not happen, with its reason. reason: host_start_failed (the
+    // shared keyboard host could not start).
+    [Event(EvtWindowsKeyFocusUnavailable,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The Windows key could not be set to bring the taskbar forward, so it keeps opening Start\nreason={0}")]
+    public void WindowsKeyFocusUnavailable(string reason)
+    {
+        if (IsEnabled()) WriteEvent(EvtWindowsKeyFocusUnavailable, reason);
+    }
+
+    // One per Windows key pressed on its own. sent: whether Windows accepted the
+    // Windows + T that brings the taskbar forward.
+    [Event(EvtWindowsKeyTapHandledDetail,
+           Level = EventLevel.Verbose,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "sent={0}")]
+    public void WindowsKeyTapHandledDetail(bool sent)
+    {
+        if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle)) return;
+        WriteEvent(EvtWindowsKeyTapHandledDetail, sent);
+    }
+
+    // One Warning per incident: a send Windows refused opens it, the first send
+    // it accepts closes it (WindowsKeyInjectionRecovered). step: suppress_start or
+    // focus_taskbar. error is the Win32 error code, 0 when Windows gave none (a
+    // window of a higher integrity level, which Windows shields from our input).
+    [Event(EvtWindowsKeyInjectionFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Windows refused a key press Deckle sent, so the Windows key may open Start or do nothing\nstep={0} | error={1}")]
+    public void WindowsKeyInjectionFailed(string step, int error)
+    {
+        if (IsEnabled()) WriteEvent(EvtWindowsKeyInjectionFailed, step, error);
+    }
+
+    [Event(EvtWindowsKeyInjectionRecovered,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "Windows accepted the Windows key presses again")]
+    public void WindowsKeyInjectionRecovered()
+    {
+        if (IsEnabled()) WriteEvent(EvtWindowsKeyInjectionRecovered);
     }
 }

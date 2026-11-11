@@ -2,6 +2,7 @@ using Deckle.App;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Transcription;
+using Deckle.Localization;
 
 namespace Deckle.App;
 
@@ -80,7 +81,7 @@ public partial class App
     // The figure is an estimate from the pipeline's stages, not a measure.
     private static readonly TimeSpan QuitWorkBound = TimeSpan.FromSeconds(60);
 
-    // Time the HUD keeps its "pasted" or "copied" confirmation on screen before
+    // Time the HUD keeps its "copied" confirmation on screen before
     // the process exits; without it the person never sees the take arrived.
     private static readonly TimeSpan QuitConfirmationHold = TimeSpan.FromMilliseconds(800);
 
@@ -91,7 +92,7 @@ public partial class App
     private volatile bool _quitPending;
 
     private string QuitPendingStatus(string status) =>
-        Deckle.Catalog.Loc.Format("Status_QuitPending_Format", status);
+        Deckle.Localization.Loc.Format("Status_QuitPending_Format", status);
 
     // Every path that ends the app arrives here: tray Quit, the three restarts,
     // the update and the data move. Work in flight is finished first (the
@@ -136,7 +137,7 @@ public partial class App
         try
         {
             _tray?.UpdateStatus(
-                QuitPendingStatus(Deckle.Catalog.Loc.Get(
+                QuitPendingStatus(Deckle.Localization.Loc.Get(
                     wasRecording ? "Status_Recording" : "Status_Transcribing")),
                 isRecording: false);
             // The same acknowledgement as the hotkey release: the next engine
@@ -186,7 +187,7 @@ public partial class App
         TryShutdown("update_checks_stop", StopUpdateChecks);
         TryShutdown("hotkeys_dispose", () => _hotkeyManager?.Dispose());
         TryShutdown("tray_dispose", () => _tray?.Dispose());
-        TryShutdown("tray_menu_dispose", () => _trayMenu?.Dispose());
+        TryShutdown("tray_menu_dispose", () => _trayDeveloperMenu?.Dispose());
         TryShutdown("tray_actions_dispose", () => _trayActions?.Dispose());
         // Before _messageHost: the signal's subclass + Raw Input sink sit on the
         // host's HWND, which _messageHost.Dispose destroys.
@@ -204,6 +205,7 @@ public partial class App
         TryShutdown("foreground_watcher_dispose", () => _foregroundWatcher?.Dispose());
         TryShutdown("precision_scroll_shutdown", ShutdownPrecisionScroll);
         TryShutdown("orchestration_shutdown", ShutdownOrchestration);
+        TryShutdown("taskbar_windows_key_shutdown", ShutdownTaskbarWindowsKey);
         TryShutdown("mouse_wheel_shutdown", ShutdownMouseWheel);
         TryShutdown("paragraph_rewrite_shutdown", ShutdownParagraphRewrite);
         TryShutdown("autocorrect_shutdown", ShutdownAutocorrect);

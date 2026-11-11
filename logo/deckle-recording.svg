@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 760" role="img" aria-label="Deckle, recording">
+<defs>
+<linearGradient id="rest" gradientUnits="userSpaceOnUse" x1="201.5" y1="729.5" x2="730.5" y2="411.5"><stop offset="0" stop-color="#05B2FC"/><stop offset="0.25" stop-color="#1F7DFB"/><stop offset="0.5" stop-color="#4F49FB"/><stop offset="0.75" stop-color="#7137FB"/><stop offset="1" stop-color="#8A2EFB"/></linearGradient>
+<radialGradient id="ember" gradientUnits="userSpaceOnUse" cx="201.5" cy="729.5" r="720"><stop offset="0.15" stop-color="#FFC21A"/><stop offset="0.42" stop-color="#FF8A1F"/><stop offset="0.66" stop-color="#FF4D2E"/><stop offset="0.86" stop-color="#F5245E"/><stop offset="1" stop-color="#E01E8C"/></radialGradient>
+</defs>
+<path id="blade-a" d="M273.58 53.93A34 34 0 0 1 321.35 34.14L555.66 153.53A40 40 0 0 1 577.5 189.17L577.5 406.25A36 36 0 0 1 564.64 433.82L222.56 720.86A3 3 0 0 1 218.11 716.95L401.81 430.23A74 74 0 0 0 413.5 390.31L413.5 295.27A78 78 0 0 0 370.91 225.77L247.11 162.69A10 10 0 0 1 242.14 150.69Z" fill="url(#ember)"/>
+<path id="blade-b" d="M147.6 204.89A30 30 0 0 1 190.77 183.36L350.94 264.97A34 34 0 0 1 369.5 295.27L369.5 393.54A30 30 0 0 1 365.99 407.62L204.11 712.07A3 3 0 0 1 198.47 710.46L216.65 446.39A66 66 0 0 0 180.77 383.05L128.1 356.22A10 10 0 0 1 122.8 345.57Z" fill="url(#rest)"/>
+<path id="blade-d" d="M49.5 401.45A22 22 0 0 1 81.49 381.85L165.03 424.42A22 22 0 0 1 177.03 443.25L186.11 703.31A3 3 0 0 1 180.57 705.01L51.02 497.69A10 10 0 0 1 49.5 492.39Z" fill="url(#rest)"/>
+<path id="blade-e" d="M568.59 486.89A18 18 0 0 1 587.28 485.46L647.74 516.26A28 28 0 0 1 645.51 567.17L239.54 731.19A3 3 0 0 1 236.67 725.97Z" fill="url(#rest)"/>
+</svg>

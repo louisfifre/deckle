@@ -43,6 +43,10 @@ using Deckle.Security;
 // round after round, under a budget, and validates the best on held-out
 // dictations:
 //   ModelCompare.exe optimize --spec optimize/<name>.json [--out results/opt-<name>]
+//
+// A cache probe (CacheProbe.cs) sends three batches of one dictation with a
+// profile's live prompt and prints what the API cached and read back:
+//   ModelCompare.exe cache-probe --profile <name> [--model <id>] [--head-start-ms 1500]
 
 string? command = args.Length > 0 ? args[0] : null;
 try
@@ -63,6 +67,11 @@ try
         "optimize" => Optimize.Run(
             Arg("--spec") ?? throw new ArgumentException("optimize needs --spec optimize/<name>.json"),
             Arg("--out"), ApiKey()),
+        "cache-probe" => CacheProbe.Run(
+            Arg("--profile") ?? throw new ArgumentException("cache-probe needs --profile <name>"),
+            Arg("--model"),
+            int.TryParse(Arg("--head-start-ms"), out int headStart) ? headStart : 1500,
+            ApiKey()),
         _ => Usage(),
     };
 }
@@ -217,7 +226,7 @@ string ApiKey()
 
 int Usage()
 {
-    Console.Error.WriteLine("usage: ModelCompare check|run|export|optimize|generate|judge|summary [options] — see README.md");
+    Console.Error.WriteLine("usage: ModelCompare check|run|export|optimize|cache-probe|generate|judge|summary [options] — see README.md");
     return 1;
 }
 

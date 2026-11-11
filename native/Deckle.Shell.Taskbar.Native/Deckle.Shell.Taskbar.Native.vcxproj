@@ -83,6 +83,7 @@
     <ClInclude Include="log.h" />
     <ClInclude Include="channel.h" />
     <ClInclude Include="engine.h" />
+    <ClInclude Include="residency.h" />
     <ClInclude Include="xamldiag\tap_site.h" />
     <ClInclude Include="xamldiag\visual_tree_watcher.h" />
     <ClInclude Include="xamldiag\element_properties.h" />
@@ -95,6 +96,11 @@
     <ClInclude Include="xamldiag\rules\rule_engine.h" />
     <ClInclude Include="xamldiag\behaviors\clock.h" />
     <ClInclude Include="xamldiag\behaviors\start_menu_height.h" />
+    <ClInclude Include="xamldiag\behaviors\start_menu_width.h" />
+    <ClInclude Include="patches\code_write.h" />
+    <ClInclude Include="patches\constant_return.h" />
+    <ClInclude Include="patches\function_site.h" />
+    <ClInclude Include="patches\thumbnail_box.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -105,6 +111,7 @@
     <ClCompile Include="log.cpp" />
     <ClCompile Include="channel.cpp" />
     <ClCompile Include="engine.cpp" />
+    <ClCompile Include="residency.cpp" />
     <ClCompile Include="hook_entry.cpp" />
     <ClCompile Include="xamldiag\tap_site.cpp" />
     <ClCompile Include="xamldiag\visual_tree_watcher.cpp" />
@@ -118,6 +125,11 @@
     <ClCompile Include="xamldiag\rules\rule_engine.cpp" />
     <ClCompile Include="xamldiag\behaviors\clock.cpp" />
     <ClCompile Include="xamldiag\behaviors\start_menu_height.cpp" />
+    <ClCompile Include="xamldiag\behaviors\start_menu_width.cpp" />
+    <ClCompile Include="patches\code_write.cpp" />
+    <ClCompile Include="patches\constant_return.cpp" />
+    <ClCompile Include="patches\function_site.cpp" />
+    <ClCompile Include="patches\thumbnail_box.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Deckle.Shell.Taskbar.Native.def" />

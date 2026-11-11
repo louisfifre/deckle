@@ -10,7 +10,8 @@ namespace Deckle.App;
 // into <UserDataRoot>\diagnostics\interface-captures\<date>_<time>\ with an
 // index.json, so a review agent can judge the interface from files without
 // driving it. Started from Settings > General > Developer > Capture the
-// interface, shown only while Developer mode is on.
+// interface, or from the developer tray menu; both exist only while Developer
+// mode is on.
 //
 // The App is the one place that knows which window is which, so it names them:
 // the Log window "log", the Playground "playground", the HUD "hud". Any other
@@ -82,6 +83,30 @@ public partial class App
         return new InterfaceCaptureOutcome(run.Directory, run.Captured, run.Failed);
     }
 
+    // From the developer tray menu. Settings is opened first, so its pages are
+    // part of the run whatever was on screen; the folder opens at the end, the
+    // menu having no place to show an outcome. A run that wrote nothing has
+    // logged why and opens nothing.
+    private async void CaptureInterfaceFromTray()
+    {
+        try
+        {
+            ShowSettingsWindowLazy();
+            InterfaceCaptureOutcome? outcome = await CaptureInterfaceAsync();
+            if (outcome is not { Captured: > 0 }) return;
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = outcome.Folder,
+                UseShellExecute = true,
+            });
+        }
+        catch (Exception ex)
+        {
+            // An exception out of an async void handler would end the app.
+            DeckleAppSource.Log.CaptureFolderOpenFailed(ex.GetType().Name, ex.Message);
+        }
+    }
+
     // The windows the App holds, by the stable name their images take.
     private Dictionary<nint, string> NamedWindows()
     {
@@ -92,6 +117,7 @@ public partial class App
         }
         Add(_logWindow, "log");
         Add(_playgroundWindow, "playground");
+        Add(_mailWindow, "mail");
         Add(_hudWindow, "hud");
         return names;
     }

@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:Deckle.App"
     xmlns:diag="using:Deckle.App"
-    xmlns:loggingControls="using:Deckle.Diagnostics.Logging.Ui.Controls"
+    xmlns:loggingControls="using:Deckle.Diagnostics.Logging.Views"
     xmlns:catalog="using:Deckle.Catalog"
     Title="Deckle Logs">
 

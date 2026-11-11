@@ -13,8 +13,10 @@ internal static class TaskbarProblemReader
         _ when id.StartsWith("background.", StringComparison.Ordinal) => TaskbarPart.Background,
         _ when id.StartsWith("tray.", StringComparison.Ordinal) => TaskbarPart.CompactTray,
         _ when id.StartsWith("quickSettings.", StringComparison.Ordinal) => TaskbarPart.CompactTray,
+        _ when id.StartsWith("taskButtons.", StringComparison.Ordinal) => TaskbarPart.CompactTaskButtons,
         _ when id.StartsWith("clock.", StringComparison.Ordinal) || id == "clock" => TaskbarPart.CompactClock,
-        "startMenuHeight" => TaskbarPart.StartMenu,
+        "startMenuHeight" => TaskbarPart.StartMenuHeight,
+        "startMenuWidth" => TaskbarPart.StartMenuWidth,
         _ => null,
     };
 
@@ -32,28 +34,40 @@ internal static class TaskbarProblemReader
     {
         var parts = new List<TaskbarPart>();
         if (wanted.Background != TaskbarBackground.Native) parts.Add(TaskbarPart.Background);
+        if (wanted.BarThickness is not null) parts.Add(TaskbarPart.BarThickness);
         if (wanted.TrayIconPitch is not null || wanted.TightenQuickSettings) parts.Add(TaskbarPart.CompactTray);
-        if (wanted.Clock is not null) parts.Add(TaskbarPart.CompactClock);
-        if (wanted.CustomizesStartMenu) parts.Add(TaskbarPart.StartMenu);
+        if (wanted.TaskButtonPitch is not null) parts.Add(TaskbarPart.CompactTaskButtons);
+        if (wanted.Clock is not null || wanted.TightenClockButton) parts.Add(TaskbarPart.CompactClock);
+        if (wanted.Thumbnails is not null) parts.Add(TaskbarPart.Thumbnails);
+        if (wanted.StartMenu is { FullHeight: true }) parts.Add(TaskbarPart.StartMenuHeight);
+        if (wanted.StartMenu?.Width is not null) parts.Add(TaskbarPart.StartMenuWidth);
         return parts;
     }
 
     /// <summary>
     /// What is wrong with the parts asked for. An unavailable process (no
     /// engine to ask) puts its parts in error; otherwise the status decides,
-    /// and no status yet says nothing.
+    /// and no status yet says nothing. The thickness and the thumbnails are no
+    /// rule, so they have no status line: <paramref name="barThickness"/> and
+    /// <paramref name="thumbnails"/> are what the customizer learned of each
+    /// (the function's lookup, the engine's word on the patch).
     /// </summary>
     public static IReadOnlyDictionary<TaskbarPart, TaskbarProblem> Read(
         TaskbarCustomization wanted,
         NativeStatus? explorer, bool explorerUnavailable,
-        NativeStatus? startMenu, bool startMenuUnavailable)
+        NativeStatus? startMenu, bool startMenuUnavailable,
+        TaskbarProblem? barThickness = null, TaskbarProblem? thumbnails = null)
     {
         var problems = new Dictionary<TaskbarPart, TaskbarProblem>();
         foreach (TaskbarPart part in WantedParts(wanted))
         {
-            bool unavailable = part == TaskbarPart.StartMenu ? startMenuUnavailable : explorerUnavailable;
+            bool unavailable = part.IsStartMenu() ? startMenuUnavailable : explorerUnavailable;
             if (unavailable) problems[part] = TaskbarProblem.Error;
         }
+        if (wanted.BarThickness is not null && barThickness is { } thickness && !problems.ContainsKey(TaskbarPart.BarThickness))
+            problems[TaskbarPart.BarThickness] = thickness;
+        if (wanted.Thumbnails is not null && thumbnails is { } thumbnail && !problems.ContainsKey(TaskbarPart.Thumbnails))
+            problems[TaskbarPart.Thumbnails] = thumbnail;
 
         AddFrom(problems, wanted, explorer);
         AddFrom(problems, wanted, startMenu);
@@ -65,10 +79,14 @@ internal static class TaskbarProblemReader
         if (status is null) return;
 
         IReadOnlyList<TaskbarPart> asked = WantedParts(wanted);
+        HashSet<string> optional = TaskbarDocumentBuilder.Rules(wanted)
+            .Where(rule => rule.Optional).Select(rule => rule.Id).ToHashSet(StringComparer.Ordinal);
         foreach (NativeRuleState state in status.Rules.Concat(status.Behaviors))
         {
             if (PartOf(state.Id) is not { } part || !asked.Contains(part)) continue;
             if (ProblemOf(state.State) is not { } problem) continue;
+            // An element that is only there now and then may well be absent.
+            if (problem == TaskbarProblem.NotApplied && optional.Contains(state.Id)) continue;
             if (!problems.TryGetValue(part, out TaskbarProblem known) || problem > known) problems[part] = problem;
         }
     }

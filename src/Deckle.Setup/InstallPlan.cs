@@ -4,12 +4,12 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Deckle.Anytype;
-using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Modules;
 using Deckle.Transcription;
 using Deckle.Transcription.Whisper;
 using Deckle.Vad;
+using Deckle.Localization;
 
 namespace Deckle.Setup;
 

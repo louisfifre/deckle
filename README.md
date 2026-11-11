@@ -2,7 +2,7 @@
   <img src="docs/media/board-hero.png" alt="Deckle. A local companion for Windows 11: one app, many modules, each turned on or off as you like. Nothing leaves your machine." width="100%">
 </p>
 
-Voice dictation is the first module and the most established one. Press the hotkey, speak, and press it again when you are done. Deckle cuts your speech into utterances on your pauses and transcribes each one with a local Whisper model while you keep talking. A long pause becomes a new paragraph. The text goes to the clipboard, or straight into the focused field when you turn paste on.
+Voice dictation is the first module and the most established one. Press the hotkey, speak, and press it again when you are done. Deckle cuts your speech into utterances on your pauses and transcribes each one with a local Whisper model while you keep talking. A long pause becomes a new paragraph. The text goes to the clipboard.
 
 **[Get the newest release](https://github.com/louisfifre/deckle/releases)**
 
@@ -19,7 +19,7 @@ Voice dictation is the first module and the most established one. Press the hotk
 - **The text as it comes.** A panel beside the HUD shows each utterance's text as soon as it is transcribed. You pick its side, left or right, in **Settings › Transcription**.
 - **A countdown before each cut.** While you pause, the HUD outline shows how much of the pause is left before the utterance is cut, and draws back when you speak again.
 - **A pause becomes a paragraph.** Each utterance cut on a pause starts a new paragraph in the text.
-- **Clipboard first, paste on request.** The text always goes to the clipboard. Paste is off by default; when you turn it on, Deckle pastes only into a field that UI Automation confirms is editable.
+- **Clipboard only.** The text always goes to the clipboard and Deckle never pastes it for you: you press Ctrl+V where you want it.
 - **Optional rewrite.** A language model can clean up the transcript before it is delivered. You pick the provider on the **Rewriting** page: a local [Ollama](https://ollama.com/) or [LM Studio](https://lmstudio.ai/), any OpenAI-compatible endpoint, or Claude through its API. Nothing is rewritten until you choose a profile, and a hosted provider receives the transcript text. With **Rewrite while you speak** on, the dictation is rewritten in batches while you are still recording.
 - **No length limit by default.** A **Maximum recording length** can be set on the **Recording** page.
 
@@ -46,7 +46,7 @@ Deckle is one app with several modules. You choose them at setup and can change 
 
 <img src="docs/media/board-ambient.png" alt="Ambient light, in progress: the Ambient Light settings page with the Hue bridge paired and the brightness response curve." width="100%">
 
-A left click on the tray icon opens a menu with a switch per background feature, Ambient Light, Record and Transcribe audio files. A right click opens the classic menu for Logs, Settings, the Playground, restart and quit. A double click opens Settings.
+A left click on the tray icon opens a menu with a switch per background feature, Ambient Light, Record and Transcribe audio files, then Settings, Logs, Restart and Quit. A right click opens the same menu, or, with Developer mode on, a developer menu with the Playground and the features still in preview. A double click opens Settings.
 
 Smaller touches outside the module list: a **taskbar cover** that masks the taskbar with an opaque band (in progress); an **Apps and games** page, still foundations: a registry of your apps, filled by hand or from your Steam libraries and chosen folders, with an HDR rule per monitor applied while an app runs; **read-aloud**, scaffolded but dormant; and **smooth scrolling** for the mouse wheel, still groundwork.
 
@@ -57,9 +57,9 @@ Smaller touches outside the module list: a **taskbar cover** that masks the task
 
 | First commit | Commits | Active days | Lines added | Lines touched | Current tracked lines |
 |---:|---:|---:|---:|---:|---:|
-| 2026-04-01 | 3,858 | 126 | 553,617 | 823,284 | 285,789 |
+| 2026-04-01 | 4,440 | 133 | 616,766 | 934,528 | 300,328 |
 
-<sub>Generated from Git history on 2026-11-04. Counts include tracked text files only for the current line total.</sub>
+<sub>Generated from Git history on 2026-11-11. Counts include tracked text files only for the current line total.</sub>
 <!-- deckle-stats:end -->
 
 ## Privacy and network use

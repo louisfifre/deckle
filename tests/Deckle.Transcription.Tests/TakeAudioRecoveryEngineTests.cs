@@ -1,10 +1,10 @@
 using Deckle.Audio;
-using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.TestSupport;
 using Xunit;
 using static Deckle.Transcription.Tests.LiveTranscriptionPipelineTests;
+using Deckle.Localization;
 
 namespace Deckle.Transcription.Tests;
 
@@ -46,7 +46,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             takeAudio: store,
             captureTail: TestCaptureTail);
 
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         await backend.AllCallsCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
 
         // The third utterance made 16 800 samples: one whole second is sealed
@@ -62,7 +62,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
         Assert.Equal(1, read.Records);
         Assert.Equal(16_000, read.Samples.Length);
 
-        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
     }
 
     [Fact]
@@ -182,7 +182,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             TaskCreationOptions.RunContinuationsAsynchronously);
         engine.TranscriptionFinished += result => finished.TrySetResult(result);
 
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
 
         // No Stop press: the engine ends the take on its own.
         TranscriptionOutcome outcome = await finished.Task.WaitAsync(
@@ -227,8 +227,8 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
     // skipped). Not fixed in this change: keeping the audio "until the next
     // full delivery" needs a second slot beside take-audio.dat, because the next
     // take's TryBegin replaces that file, plus a size cap and a recovery rule for
-    // a take whose text was already pasted. Keeping it in the single slot would
-    // only last until the next hotkey press. To pick up: the Anytype task
+    // a take whose text already reached the clipboard. Keeping it in the single
+    // slot would only last until the next hotkey press. To pick up: the Anytype task
     // "Durcir le filet audio des prises", weakness 2.
     [Fact(Skip = "Weakness (b) reproduced, fix needs a second audio slot: see the comment above.")]
     [Trait("Category", "regression")]
@@ -269,7 +269,7 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
             takeAudio: store,
             captureTail: TestCaptureTail);
 
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         await backend.AllCallsCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
 
         engine.Dispose();
@@ -309,7 +309,6 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
     }
 
     [Theory]
-    [InlineData(TakeOutcomes.Pasted, TakeEndReasons.Delivered, true)]
     [InlineData(TakeOutcomes.ClipboardOnly, TakeEndReasons.Delivered, true)]
     [InlineData(TakeOutcomes.None, TakeEndReasons.NoText, true)]
     [InlineData(TakeOutcomes.None, TakeEndReasons.EmptyAudio, true)]
@@ -365,10 +364,10 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
         };
         engine.TranscriptionFinished += result => finished.TrySetResult(result);
 
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         if (calls is not null)
             await calls.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
-        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
 
         TranscriptionOutcome outcome = await finished.Task.WaitAsync(
             TimeSpan.FromSeconds(10), testCancellation);

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Deckle.Core;
 using Microsoft.UI.Xaml;
 
 namespace Deckle.Catalog;
@@ -253,7 +254,8 @@ public static class Setting
 
     // A master toggle that reveals child settings: get/set are the master's own
     // bool, and the composer hides the children while it is off. enabledWhen and
-    // visibleWhen gate the whole group.
+    // visibleWhen gate the whole group. An advisory speaks for the whole feature
+    // the master turns on, so it hangs under the fold, not under one child.
     public static SettingDescriptor Group(
         string labelKey,
         Func<bool> get,
@@ -264,7 +266,8 @@ public static class Setting
         Func<bool>? enabledWhen = null,
         Func<bool>? visibleWhen = null,
         Func<bool>? defaultValue = null,
-        Func<XamlRoot, Task<bool>>? confirmOnEnable = null) => new()
+        Func<XamlRoot, Task<bool>>? confirmOnEnable = null,
+        Func<string?>? advisory = null) => new()
         {
             Kind = SettingKind.Group,
             LabelKey = labelKey,
@@ -279,6 +282,7 @@ public static class Setting
             // child's Default; a master without one still resets its children.
             Default = defaultValue is null ? null : () => defaultValue(),
             ConfirmOnEnable = confirmOnEnable,
+            Advisory = advisory,
         };
 
     // A fold with no master toggle. The section has no value, so it takes no
@@ -308,7 +312,8 @@ public static class Setting
     // mode that shows it through its own visibleWhen. A preset family's selector
     // is declared this way, with SelectorOptions() as the options and the hand
     // values as Custom-only children. The fold's reset returns the choice to its
-    // default and every defaulted child to its own.
+    // default and every defaulted child to its own. An advisory hangs under the
+    // whole fold, as a Group's does.
     public static SettingDescriptor Mode<T>(
         string labelKey,
         Func<T> get,
@@ -319,7 +324,8 @@ public static class Setting
         bool isAdvanced = false,
         Func<bool>? enabledWhen = null,
         Func<bool>? visibleWhen = null,
-        Func<T>? defaultValue = null)
+        Func<T>? defaultValue = null,
+        Func<string?>? advisory = null)
     {
         var boxed = new List<ChoiceOption>(options.Count);
         foreach ((T value, string optionKey) in options)
@@ -327,6 +333,7 @@ public static class Setting
 
         return new()
         {
+            Advisory = advisory,
             Kind = SettingKind.Mode,
             LabelKey = labelKey,
             Glyph = glyph,

@@ -13,9 +13,9 @@ namespace Deckle.Shell.Taskbar.Harness;
 //   Deckle.Shell.Taskbar.Harness customizer [--control <file>] [--stop-after <seconds>]
 //
 // Control file lines (the file is deleted once read):
-//   set <background|compactTray|compactClock|startMenuFullHeight|showAllTrayIcons> <value>
+//   set <background|customBarThickness|barThickness|compactTray|trayIconPitch|compactTaskButtons|taskButtonPitch|compactClock|largerThumbnails|thumbnailMaxWidth|thumbnailMaxHeight|startMenuFullHeight|startMenuWidth|startMenuCustomWidth> <value>
 //   status    prints the parts asked for, the problems, and who has the DLL loaded
-//   stop      restores, unloads and exits
+//   stop      restores, parks both engines and exits
 internal static class CustomizerCommand
 {
     public static async Task<int> RunAsync(string[] args)
@@ -69,7 +69,7 @@ internal static class CustomizerCommand
             }
         }
 
-        HarnessCommand.Print("stop     restoring and unloading both engines");
+        HarnessCommand.Print("stop     restoring and parking both engines");
         await customizer.ShutdownAsync();
         HarnessCommand.Print("stop     " + LoadedBy());
         return 0;
@@ -83,9 +83,19 @@ internal static class CustomizerCommand
         switch (parts[0])
         {
             case "background": current.Background = Enum.Parse<TaskbarBackground>(parts[1], ignoreCase: true); break;
+            case "customBarThickness": current.CustomBarThickness = flag; break;
+            case "barThickness": current.BarThickness = int.Parse(parts[1], CultureInfo.InvariantCulture); break;
             case "compactTray": current.CompactTray = flag; break;
+            case "trayIconPitch": current.TrayIconPitch = int.Parse(parts[1], CultureInfo.InvariantCulture); break;
+            case "compactTaskButtons": current.CompactTaskButtons = flag; break;
+            case "taskButtonPitch": current.TaskButtonPitch = int.Parse(parts[1], CultureInfo.InvariantCulture); break;
             case "compactClock": current.CompactClock = flag; break;
+            case "largerThumbnails": current.LargerThumbnails = flag; break;
+            case "thumbnailMaxWidth": current.ThumbnailMaxWidth = double.Parse(parts[1], CultureInfo.InvariantCulture); break;
+            case "thumbnailMaxHeight": current.ThumbnailMaxHeight = double.Parse(parts[1], CultureInfo.InvariantCulture); break;
             case "startMenuFullHeight": current.StartMenuFullHeight = flag; break;
+            case "startMenuWidth": current.StartMenuWidth = Enum.Parse<StartMenuWidth>(parts[1], ignoreCase: true); break;
+            case "startMenuCustomWidth": current.StartMenuCustomWidth = int.Parse(parts[1], CultureInfo.InvariantCulture); break;
             case "showAllTrayIcons": throw new ArgumentException("showAllTrayIcons belongs to the tray promoter, not driven here");
             default: throw new ArgumentException($"unknown setting {parts[0]}");
         }

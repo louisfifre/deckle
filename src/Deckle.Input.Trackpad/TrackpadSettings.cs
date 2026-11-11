@@ -22,5 +22,38 @@ public sealed class TrackpadSettings
     /// </summary>
     public bool RecordFrames { get; set; } = false;
 
-    // Grace delay and start threshold are TrackpadEngine constants, not settings.
+    /// <summary>
+    /// Pick-up delay — how long the button press waits after three fingers
+    /// land, in milliseconds; the cursor follows from the first frame either
+    /// way. A four-finger gesture passes through three fingers, so the wait
+    /// keeps a late fourth finger from turning into a click. The default
+    /// comes from two months of recorded Magic Trackpad sessions: 50 ms
+    /// holds back about 70% of those stray presses before the grabbed
+    /// object visibly lags the cursor. Exposed because the right wait
+    /// depends on the hand and the pad.
+    /// </summary>
+    public double PressDelayMs { get; set; } = 50;
+
+    /// <summary>The range the page offers; the engine clamps a hand-edited file to it.</summary>
+    public const double MinPressDelayMs = 0;
+    public const double MaxPressDelayMs = 200;
+
+    /// <summary>
+    /// Pick-up distance — how far the cursor moves, in pixels, before the
+    /// press lands even though the pick-up delay has not run out. Fingers
+    /// settling for a four-finger gesture barely move before the fourth
+    /// lands; a hand that sets down and sweeps at once is dragging, and
+    /// waiting out the delay there made the drag start late. Measured on
+    /// the cursor (finger travel × drag speed) because that is the motion
+    /// the person sees. The default is a first guess to try by hand, not a
+    /// value measured on the recorded sessions.
+    /// </summary>
+    public double PressDistancePx { get; set; } = 5;
+
+    /// <summary>The range the page offers; the engine clamps a hand-edited file to it.</summary>
+    public const double MinPressDistancePx = 0;
+    public const double MaxPressDistancePx = 50;
+
+    // Grace delay and start threshold stay TrackpadEngine constants, not
+    // settings.
 }

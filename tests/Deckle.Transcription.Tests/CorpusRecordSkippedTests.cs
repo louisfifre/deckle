@@ -1,8 +1,8 @@
 using System.Diagnostics.Tracing;
-using Deckle.Catalog;
 using Deckle.TestSupport;
 using Xunit;
 using static Deckle.Transcription.Tests.LiveTranscriptionPipelineTests;
+using Deckle.Localization;
 
 namespace Deckle.Transcription.Tests;
 
@@ -50,9 +50,9 @@ public sealed class CorpusRecordSkippedTests : IDisposable
         };
         engine.TranscriptionFinished += result => finished.TrySetResult(result);
 
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         await backend.AllCallsCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellation);
-        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
         await finished.Task.WaitAsync(TimeSpan.FromSeconds(10), cancellation);
         await ready.Task.WaitAsync(TimeSpan.FromSeconds(5), cancellation);
     }

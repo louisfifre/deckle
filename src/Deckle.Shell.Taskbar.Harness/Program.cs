@@ -9,9 +9,11 @@ using Deckle.Shell.Taskbar.Harness;
 //                                [--stop-after <seconds>] [--control <file>] [--visual]
 //                                [--target explorer|startmenu]
 //                                [--dump <out file>] [--dump-after <seconds>]
-//                                [--doc-out <file> [--bg native|transparent|black] [--tray-pitch <px>]
+//                                [--doc-out <file> [--bg native|transparent|black] [--bar-thickness <px>] [--tray-pitch <px>]
 //                                    [--tighten-quick-settings] [--clock-date-above-time]
-//                                    [--start-menu-full-height]]
+//                                    [--tighten-clock-button] [--task-button-pitch <px>]
+//                                    [--start-menu-full-height] [--start-menu-width fill|<px>]
+//                                    [--thumbnail-box <width> <height>]]
 //
 //   Deckle.Shell.Taskbar.Harness customizer [--control <file>] [--stop-after <seconds>]
 //                                (see CustomizerCommand: the app's own wiring, no window)
@@ -19,7 +21,12 @@ using Deckle.Shell.Taskbar.Harness;
 // It injects the DLL into the running explorer, prints every record the DLL
 // logs, injects again each time explorer rebuilds its taskbar, and on Ctrl+C
 // (or --stop-after, or a "stop" line in the --control file) asks the DLL to
-// restore and unload, then checks that explorer let the file go.
+// restore everything and park, then checks that explorer is still running.
+//
+// One engine per process (native residency.h): the console is served by the
+// engine already parked in the target, whatever build it is, and is refused
+// (an engine_busy warning) while the app's engine is connected there. A new
+// DLL build reaches a target only after that process restarts.
 //
 // --visual     also print the visual_add / visual_remove records (hundreds of lines).
 // --target     explorer (default) or startmenu (StartMenuExperienceHost, found again

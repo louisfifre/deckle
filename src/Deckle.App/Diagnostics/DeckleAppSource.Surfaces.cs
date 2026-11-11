@@ -71,6 +71,17 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtTrayToggleChanged, toggle, enabled);
     }
 
+    // The capture started from the tray menu wrote its images, but Explorer
+    // did not open on them, the only sign the person would have had.
+    [Event(EvtCaptureFolderOpenFailed,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The interface capture folder could not be opened; the images are saved in it\nex_type={0} | ex_message={1}")]
+    public void CaptureFolderOpenFailed(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtCaptureFolderOpenFailed, ex_type, ex_message);
+    }
+
     // source: app-init for the boot apply, user for a change from Settings.
     [Event(EvtThemeApplied,
            Level = EventLevel.Verbose,

@@ -5,9 +5,9 @@ namespace Deckle.Shell.Taskbar;
 
 // The page's state. Every value is a setting: a change writes it and saves, and
 // applying it belongs to the App, which observes the store. The tray promoter
-// carries "show all tray icons" and TaskbarCustomizer carries the rest. The page
-// only reads back how each ended: the promoter's last pass, and the parts the
-// engine could not put in effect.
+// carries "show all tray icons", WindowsKeyTaskbarFocus the Windows key and
+// TaskbarCustomizer the rest. The page only reads back how each ended: the
+// promoter's last pass, and the parts the engine could not put in effect.
 public partial class TaskbarViewModel : ObservableObject
 {
     // Raised so the composer re-reads every advisory and every switch; no
@@ -27,13 +27,46 @@ public partial class TaskbarViewModel : ObservableObject
     public partial TaskbarBackground Background { get; set; }
 
     [ObservableProperty]
+    public partial bool CustomBarThickness { get; set; }
+
+    [ObservableProperty]
+    public partial int BarThickness { get; set; }
+
+    [ObservableProperty]
     public partial bool CompactTray { get; set; }
+
+    [ObservableProperty]
+    public partial int TrayIconPitch { get; set; }
+
+    [ObservableProperty]
+    public partial bool CompactTaskButtons { get; set; }
+
+    [ObservableProperty]
+    public partial int TaskButtonPitch { get; set; }
 
     [ObservableProperty]
     public partial bool CompactClock { get; set; }
 
     [ObservableProperty]
+    public partial bool LargerThumbnails { get; set; }
+
+    [ObservableProperty]
+    public partial double ThumbnailMaxWidth { get; set; }
+
+    [ObservableProperty]
+    public partial double ThumbnailMaxHeight { get; set; }
+
+    [ObservableProperty]
     public partial bool StartMenuFullHeight { get; set; }
+
+    [ObservableProperty]
+    public partial StartMenuWidth StartMenuWidth { get; set; }
+
+    [ObservableProperty]
+    public partial int StartMenuCustomWidth { get; set; }
+
+    [ObservableProperty]
+    public partial bool WindowsKeyShowsTaskbar { get; set; }
 
     public TaskbarViewModel()
         : this(TrayIconPromoter.Instance, TaskbarCustomizer.Instance, TaskbarOrientation.IsVertical)
@@ -56,9 +89,20 @@ public partial class TaskbarViewModel : ObservableObject
         {
             ShowAllTrayIcons = settings.ShowAllTrayIcons;
             Background = settings.Background;
+            CustomBarThickness = settings.CustomBarThickness;
+            BarThickness = settings.BarThickness;
             CompactTray = settings.CompactTray;
+            TrayIconPitch = settings.TrayIconPitch;
+            CompactTaskButtons = settings.CompactTaskButtons;
+            TaskButtonPitch = settings.TaskButtonPitch;
             CompactClock = settings.CompactClock;
+            LargerThumbnails = settings.LargerThumbnails;
+            ThumbnailMaxWidth = settings.ThumbnailMaxWidth;
+            ThumbnailMaxHeight = settings.ThumbnailMaxHeight;
             StartMenuFullHeight = settings.StartMenuFullHeight;
+            StartMenuWidth = settings.StartMenuWidth;
+            StartMenuCustomWidth = settings.StartMenuCustomWidth;
+            WindowsKeyShowsTaskbar = settings.WindowsKeyShowsTaskbar;
         }
         finally
         {
@@ -68,9 +112,20 @@ public partial class TaskbarViewModel : ObservableObject
 
     partial void OnShowAllTrayIconsChanged(bool value) => Write(settings => settings.ShowAllTrayIcons = value);
     partial void OnBackgroundChanged(TaskbarBackground value) => Write(settings => settings.Background = value);
+    partial void OnCustomBarThicknessChanged(bool value) => Write(settings => settings.CustomBarThickness = value);
+    partial void OnBarThicknessChanged(int value) => Write(settings => settings.BarThickness = value);
     partial void OnCompactTrayChanged(bool value) => Write(settings => settings.CompactTray = value);
+    partial void OnTrayIconPitchChanged(int value) => Write(settings => settings.TrayIconPitch = value);
+    partial void OnCompactTaskButtonsChanged(bool value) => Write(settings => settings.CompactTaskButtons = value);
+    partial void OnTaskButtonPitchChanged(int value) => Write(settings => settings.TaskButtonPitch = value);
     partial void OnCompactClockChanged(bool value) => Write(settings => settings.CompactClock = value);
+    partial void OnLargerThumbnailsChanged(bool value) => Write(settings => settings.LargerThumbnails = value);
+    partial void OnThumbnailMaxWidthChanged(double value) => Write(settings => settings.ThumbnailMaxWidth = value);
+    partial void OnThumbnailMaxHeightChanged(double value) => Write(settings => settings.ThumbnailMaxHeight = value);
     partial void OnStartMenuFullHeightChanged(bool value) => Write(settings => settings.StartMenuFullHeight = value);
+    partial void OnStartMenuWidthChanged(StartMenuWidth value) => Write(settings => settings.StartMenuWidth = value);
+    partial void OnStartMenuCustomWidthChanged(int value) => Write(settings => settings.StartMenuCustomWidth = value);
+    partial void OnWindowsKeyShowsTaskbarChanged(bool value) => Write(settings => settings.WindowsKeyShowsTaskbar = value);
 
     private void Write(Action<TaskbarSettings> change)
     {

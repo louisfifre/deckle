@@ -50,6 +50,18 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtCrashAppDomainDetail, ex_type, ex_message);
     }
 
+    // The startup stopped before the tray icon and the hotkeys existed, so the
+    // process ends instead of staying alive with no surface. The launcher
+    // reads the exit as a crash and starts Deckle once more.
+    [Event(EvtStartupFailed,
+           Level = EventLevel.Error,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "Deckle could not finish starting, so it ends and the launcher starts it once more\nex_type={0} | ex_message={1}")]
+    public void StartupFailed(string ex_type, string ex_message)
+    {
+        if (IsEnabled()) WriteEvent(EvtStartupFailed, ex_type, ex_message);
+    }
+
     [Event(EvtCrashStackTrace,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,

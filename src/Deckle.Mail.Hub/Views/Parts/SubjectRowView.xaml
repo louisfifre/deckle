@@ -1,0 +1,69 @@
+<UserControl
+    x:Class="Deckle.Mail.Hub.SubjectRowView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Mail.Hub">
+
+    <!-- One row per subject: one sentence, a paperclip when a mail of the
+         subject carries a real file, a framed label when the sorting set a
+         state, then the two fixed columns at its end, the task control and
+         the trash. Nothing else: no sender, mailbox or deadline written apart
+         (spec, Triage). The row itself is a ListViewItem, whose hover, press
+         and focus visuals are Windows' own. -->
+    <Grid x:Name="RowRoot" MinHeight="48" ColumnSpacing="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="32" />
+        </Grid.ColumnDefinitions>
+
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="TreatedStates">
+                <VisualState x:Name="Waiting" />
+                <!-- A treated row greys where it is. -->
+                <VisualState x:Name="Treated">
+                    <VisualState.Setters>
+                        <Setter Target="SentenceText.Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+
+        <!-- The paperclip is a run of the sentence in the icon font, so it
+             follows the last word wherever the sentence wraps. -->
+        <TextBlock x:Name="SentenceText"
+                   VerticalAlignment="Center"
+                   Margin="0,12"
+                   TextWrapping="Wrap">
+            <Run x:Name="SentenceRun" />
+            <Run x:Name="ClipRun"
+                 FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                 FontSize="14"
+                 Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+        </TextBlock>
+        <local:FramedLabel x:Name="MarkLabel" Grid.Column="1" Visibility="Collapsed" />
+
+        <local:TaskColumn x:Name="Task" Grid.Column="2" />
+
+        <Grid Grid.Column="3" VerticalAlignment="Center">
+            <Button x:Name="TrashButton"
+                    x:Uid="SubjectRowTrash"
+                    Style="{StaticResource SubtleButtonStyle}"
+                    Padding="8"
+                    Click="OnTrashClick">
+                <FontIcon Glyph="{StaticResource Icon.Delete}" FontSize="16" />
+            </Button>
+            <!-- On a treated row, where the trash was: the cross that removes
+                 the line. No short timer removes it. -->
+            <Button x:Name="RemoveButton"
+                    x:Uid="SubjectRowRemove"
+                    Style="{StaticResource SubtleButtonStyle}"
+                    Padding="8"
+                    Visibility="Collapsed"
+                    Click="OnRemoveClick">
+                <FontIcon Glyph="{StaticResource Icon.Cancel}" FontSize="16" />
+            </Button>
+        </Grid>
+    </Grid>
+</UserControl>

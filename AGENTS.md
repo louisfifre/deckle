@@ -18,7 +18,7 @@ Build and test through `scripts/build-locked.ps1 [-Test] -Project <csproj>`, Deb
 
 The session that merges a branch into main runs the test suites of the modules it touched and builds `Deckle.Tests.sln` on the merged tree, then merges, records the version and runs `scripts/deploy-prod.ps1`, which builds main in Release, self-checks it and stages it for the next start of the maintainer's Deckle. A failed deploy leaves the prod copy as it was; repairing main comes first.
 
-What leaves the machine is the maintainer's act: a push, a pushed tag, a GitHub release. So is the running Deckle: an agent never stops or starts it, and sees the app through `scripts/self-check.ps1`, a separate instance on its own data root.
+The remote, origin, holds the main every machine starts from: a merge into main begins from origin's main and ends by pushing main and its version tag. Giving a version to other people is the maintainer's decision: a GitHub release is published on his word. The running Deckle is his too: an agent never stops or starts it, and sees the app through `scripts/self-check.ps1`, a separate instance on its own data root.
 
 The launcher, its library, its Settings folder and the packs under `scripts/` are installed from the deckle-scripts repository; `scripts/.deckle-scripts/manifest.json` names the installed files. They are never edited here: an improvement goes to that repository, and applying its update stays the maintainer's act.
 

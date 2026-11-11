@@ -18,7 +18,7 @@ public sealed partial class TranscriptionEngine
     // A host that quits while a take is recording or transcribing calls this
     // first. It does what a Stop press does, then waits, bounded, for the
     // worker to settle on its own path: transcription of the queued utterances,
-    // the rewrite, the clipboard and the paste, exactly as on a normal take.
+    // the rewrite and the clipboard, exactly as on a normal take.
     //
     // Why the bound is the host's: only the host knows how long a person will
     // accept a quit that has not happened.
@@ -60,7 +60,7 @@ public sealed partial class TranscriptionEngine
             // The same CAS as a hotkey release; losing it means the take is
             // already stopping, which is what we want.
             if ((PipelineState)Volatile.Read(ref _state) == PipelineState.Recording)
-                RequestToggle(shouldPaste: false);
+                RequestToggle();
 
             if (_idleEvent.Wait(FINISH_POLL_MS)
                 || (PipelineState)Volatile.Read(ref _state) == PipelineState.Disposed)

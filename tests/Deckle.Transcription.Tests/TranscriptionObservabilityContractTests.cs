@@ -69,14 +69,14 @@ public sealed class TranscriptionObservabilityContractTests : IDisposable
             llm_prompt_tokens: 0,
             llm_eval_tokens: 0,
             clipboard_ms: 0,
-            paste_ms: 0,
             strategy: "greedy",
             n_segments: 1,
             text_chars: 4,
             text_words: 1,
             profile: "",
-            pasted: false,
-            outcome: "ClipboardOnly");
+            outcome: "ClipboardOnly",
+            llm_cache_write_tokens: 0,
+            llm_cache_read_tokens: 0);
 
         Assert.Collection(listener.Events,
             operational => Assert.Equal(id, PayloadValue(operational, "transcription_id")),

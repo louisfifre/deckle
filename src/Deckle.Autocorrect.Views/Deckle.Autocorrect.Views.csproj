@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Autocorrect.Views</RootNamespace>
+    <UseWinUI>true</UseWinUI>
+    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.App.csproj. -->
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <!-- Generates the lib's own .pri so x:Uid lookups in AutocorrectPage,
+         LexicalDomainsPage and AppsEnrolledPage, the composed cards
+         (SettingsComposer reads the view model's assembly), the Diagnostics
+         contribution and Loc.GetFrom (the lexical domain labels) resolve
+         against the Deckle.Autocorrect.Views/Resources subtree
+         (Strings/en-US/Resources.resw). -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+  </PropertyGroup>
+
+  <!-- The Autocorrect settings page and its Lexical domains and Apps enrolled
+       subpages, their view models, the two dataset consents it contributes to
+       Diagnostics, and the strings they read. Dependencies point one way: this
+       project reads Deckle.Autocorrect, which holds no XAML and knows nothing
+       of it, so the engine, its tests and its lab never run the XAML compiler
+       on its account. -->
+  <ItemGroup>
+    <!-- One WinAppSDK runtime per process: never override the central version. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
+    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
+    <!-- Telemetry POCOs: the two dataset consents read and write
+         TelemetrySettings through TelemetrySettingsService. No cycle:
+         Diagnostics.Telemetry does not reference Autocorrect. -->
+    <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
+    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+  </ItemGroup>
+</Project>

@@ -49,4 +49,42 @@ public class CoverSuppressionTests
     {
         Assert.False(CoverSuppression.Applies(ForegroundState.None, BandMonitor));
     }
-}
+
+    private static readonly IntPtr BandTaskbar = new(0x3000);
+
+    // After Windows + T the taskbar is the foreground window: a band left over
+    // it would hide what the person just asked for.
+    [Fact]
+    [Trait("Category", "unit")]
+    public void TheBandsOwnTaskbarInTheForegroundStandsItDown()
+    {
+        var state = new ForegroundState(BandTaskbar, 1234, "explorer", BandMonitor, default, default, FullscreenStage.None);
+
+        Assert.True(CoverSuppression.TaskbarFocused(state, BandTaskbar));
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void AnotherWindowInTheForegroundLeavesTheCoverUp()
+    {
+        var state = Foreground(BandMonitor, FullscreenStage.None);
+
+        Assert.False(CoverSuppression.TaskbarFocused(state, BandTaskbar));
+    }
+
+    // The secondary taskbar's band hides nothing of the primary one.
+    [Fact]
+    [Trait("Category", "unit")]
+    public void AnotherTaskbarInTheForegroundLeavesTheCoverUp()
+    {
+        var otherTaskbar = new ForegroundState(new IntPtr(0x3001), 1234, "explorer", OtherMonitor, default, default, FullscreenStage.None);
+
+        Assert.False(CoverSuppression.TaskbarFocused(otherTaskbar, BandTaskbar));
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void ABandNotYetPlacedIsNeverStoodDown()
+    {
+        Assert.False(CoverSuppression.TaskbarFocused(ForegroundState.None, IntPtr.Zero));
+    }}

@@ -9,6 +9,7 @@ using Deckle.Settings;
 using Deckle.Core;
 using Deckle.Shell;
 using Deckle.Diagnostics;
+using Deckle.Localization;
 
 namespace Deckle.Settings;
 

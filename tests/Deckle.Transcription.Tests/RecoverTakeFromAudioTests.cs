@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.Tracing;
-using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.TestSupport;
 using Xunit;
 using static Deckle.Transcription.Tests.LiveTranscriptionPipelineTests;
+using Deckle.Localization;
 
 namespace Deckle.Transcription.Tests;
 
@@ -41,7 +41,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
     }
 
     [Fact]
-    public async Task TheRecoveredTextGoesToTheClipboardAndNothingIsPasted()
+    public async Task TheRecoveredTextGoesToTheClipboardAndTheCallerAnnouncesIt()
     {
         var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         var clipboard = new RecordingClipboardWriter();
@@ -134,7 +134,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
         {
             // Raised on the recovery's worker, while the engine owns the state.
             if (status != Loc.Get("Status_Transcribing")) return;
-            hotkey = engine.RequestToggle(shouldPaste: false);
+            hotkey = engine.RequestToggle();
             second = engine.RecoverTakeFromAudioAsync(Utterances(1)).GetAwaiter().GetResult();
         };
 
@@ -153,7 +153,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
             new StreamingHost(), backend, new ScriptedMicrophoneCapture(utteranceCount: 2),
             new RecordingClipboardWriter(),
             captureTail: TestCaptureTail);
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         await backend.AllCallsCompleted.Task.WaitAsync(
             TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
 

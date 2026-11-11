@@ -20,18 +20,38 @@ public sealed class LlmResetDefaultsTests
         Assert.Equal(enabled, fresh.Enabled);
     }
 
+    // "Rewrite dictations" is the same kind of choice, for dictations.
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ResetKeepsRewriteDictationsAsSet(bool enabled)
+    {
+        var current = new LlmSettings();
+        current.Dictation.Enabled = enabled;
+
+        LlmSettings fresh = LlmResetDefaults.From(current);
+
+        Assert.Equal(enabled, fresh.Dictation.Enabled);
+    }
+
     [Fact]
     public void ResetRestoresTheOtherValuesToTheirDefaults()
     {
         var current = new LlmSettings { Enabled = false };
-        current.BatchRewriting.Enabled = true;
+        current.Dictation.Steps =
+        [
+            new RewriteStep { ProfileId = "x", Streaming = true },
+            new RewriteStep { ProfileId = "y", FromChars = 4000 },
+        ];
         current.Providers.Clear();
         current.Profiles.Clear();
 
         LlmSettings fresh = LlmResetDefaults.From(current);
 
         var defaults = new LlmSettings();
-        Assert.Equal(defaults.BatchRewriting.Enabled, fresh.BatchRewriting.Enabled);
+        RewriteStep first = Assert.Single(fresh.Dictation.Steps);
+        Assert.False(first.Streaming);
+        Assert.Equal(fresh.Profiles[0].Id, first.ProfileId);
         Assert.Equal(defaults.Providers.Count, fresh.Providers.Count);
         Assert.Equal(defaults.Profiles.Count, fresh.Profiles.Count);
     }

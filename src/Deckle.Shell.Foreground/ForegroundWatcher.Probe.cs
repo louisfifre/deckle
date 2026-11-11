@@ -47,8 +47,8 @@ public sealed partial class ForegroundWatcher
 
     // Two stages: the shell's own notion of "busy fullscreen" first (cheap,
     // catches D3D exclusive and presentation mode), then the geometric test —
-    // the window's DWM visual bounds covering its whole monitor (catches
-    // borderless fullscreen and F11).
+    // the window drawn, and its DWM visual bounds covering its whole monitor
+    // (catches borderless fullscreen and F11).
     private static FullscreenStage FullscreenStageOf(IntPtr hwnd, IntPtr monitor, NativeMethods.RECT monitorRect)
     {
         if (SHQueryUserNotificationState(out int quns) == 0
@@ -59,13 +59,23 @@ public sealed partial class ForegroundWatcher
 
         if (monitor != IntPtr.Zero && !IsDesktopWindow(hwnd)
             && DwmGetWindowAttribute(hwnd, DWMWA_EXTENDED_FRAME_BOUNDS,
-                   out var bounds, (uint)Marshal.SizeOf<NativeMethods.RECT>()) == 0
-            && FullscreenGeometry.CoversMonitor(bounds, monitorRect))
+                   out NativeMethods.RECT bounds, (uint)Marshal.SizeOf<NativeMethods.RECT>()) == 0
+            && FullscreenGeometry.ReadsAsFullscreen(IsDrawn(hwnd), bounds, monitorRect))
         {
             return FullscreenStage.Geometry;
         }
 
         return FullscreenStage.None;
+    }
+
+    // Visible and not cloaked. A failed cloak query counts as not cloaked:
+    // the attribute only exists on DWM-composed windows, and a window DWM
+    // does not compose is drawn as soon as it is visible.
+    private static bool IsDrawn(IntPtr hwnd)
+    {
+        if (!IsWindowVisible(hwnd)) return false;
+        return DwmGetWindowAttribute(hwnd, DWMWA_CLOAKED, out int cloaked, sizeof(int)) != 0
+            || cloaked == 0;
     }
 
     // The desktop covers the whole monitor and would pass the geometry test

@@ -12,6 +12,7 @@ using Deckle.Core;
 using Deckle.Modules;
 using Deckle.Transcription;
 using Deckle.Transcription.Whisper;
+using Deckle.Localization;
 
 namespace Deckle.Setup;
 

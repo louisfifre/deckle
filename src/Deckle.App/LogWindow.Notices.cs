@@ -1,9 +1,9 @@
 // LogWindow — notice above the list: entries the inbound queue dropped.
 
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Deckle.Localization;
 
 namespace Deckle.App;
 

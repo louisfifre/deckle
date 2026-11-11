@@ -69,6 +69,10 @@ public static partial class NativeMethods
 
     public const uint WM_TIMER = 0x0113;
 
+    // Broadcast to every top-level window when a system-wide setting changes;
+    // lParam points to the name of what changed.
+    public const uint WM_SETTINGCHANGE = 0x001A;
+
     [DllImport("user32.dll", SetLastError = true)]
     public static extern UIntPtr SetTimer(IntPtr hWnd, UIntPtr nIDEvent, uint uElapse, IntPtr lpTimerFunc);
 

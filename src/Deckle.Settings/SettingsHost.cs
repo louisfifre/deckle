@@ -65,7 +65,7 @@ public static class SettingsHost
     public static Func<Task<InterfaceCaptureOutcome?>>? CaptureInterface;
 }
 
-public sealed record ProfileHotkey(string ProfileName, Deckle.Catalog.HotkeyChord Chord);
+public sealed record ProfileHotkey(string ProfileName, Deckle.Core.HotkeyChord Chord);
 
 // What an interface capture wrote: the folder, the images saved in it, and the
 // windows or pages that could not be captured (listed in its index.json).

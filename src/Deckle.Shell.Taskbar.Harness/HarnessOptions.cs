@@ -48,16 +48,45 @@ internal sealed class HarnessOptions
                         var other => throw new ArgumentException($"unknown target {other} (explorer or startmenu)"),
                     };
                     break;
-                case "--start-menu-full-height": customization = customization with { StartMenu = new StartMenuCustomization(FullHeight: true) }; break;
+                case "--start-menu-full-height":
+                    customization = customization with { StartMenu = (customization.StartMenu ?? new()) with { FullHeight = true } };
+                    break;
+                case "--start-menu-width":
+                    string width = Next();
+                    customization = customization with
+                    {
+                        StartMenu = (customization.StartMenu ?? new()) with
+                        {
+                            Width = width == "fill"
+                                ? StartMenuWidthRequest.Fill
+                                : StartMenuWidthRequest.Of(int.Parse(width, System.Globalization.CultureInfo.InvariantCulture)),
+                        },
+                    };
+                    break;
                 case "--doc-out": documentOut = Next(); break;
                 case "--bg":
                     customization = customization with { Background = Enum.Parse<TaskbarBackground>(Next(), ignoreCase: true) };
+                    break;
+                case "--bar-thickness":
+                    customization = customization with { BarThickness = int.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture) };
                     break;
                 case "--tray-pitch":
                     customization = customization with { TrayIconPitch = int.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture) };
                     break;
                 case "--tighten-quick-settings": customization = customization with { TightenQuickSettings = true }; break;
                 case "--clock-date-above-time": customization = customization with { Clock = ClockCustomization.DateAboveTime }; break;
+                case "--tighten-clock-button": customization = customization with { TightenClockButton = true }; break;
+                case "--task-button-pitch":
+                    customization = customization with { TaskButtonPitch = int.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture) };
+                    break;
+                case "--thumbnail-box":
+                    customization = customization with
+                    {
+                        Thumbnails = new ThumbnailBox(
+                            double.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture),
+                            double.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture)),
+                    };
+                    break;
                 case "--dump": dump = Next(); break;
                 case "--dump-after": dumpAfter = double.Parse(Next(), System.Globalization.CultureInfo.InvariantCulture); break;
                 default: throw new ArgumentException($"unknown option {args[i]}");

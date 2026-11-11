@@ -12,6 +12,7 @@ using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Transcription;
 using Deckle.Transcription.Whisper;
+using Deckle.Localization;
 
 namespace Deckle.App;
 
@@ -66,7 +67,7 @@ public partial class App
             bool ok = await setup.Completion;
             if (ok)
                 RestartApp(ModulePresence.IsPresent(ModuleIds.Transcription)
-                    ? WhisperSettingsModule.PageTag
+                    ? Transcription.Views.WhisperSettingsModule.PageTag
                     : null);
         };
 
@@ -118,7 +119,7 @@ public partial class App
         // under the Diagnostics page with the module's assembly, where their words
         // live. Described once here because every contribution needs its page
         // coordinates before the page itself registers, further down.
-        var diagnostics = Diagnostics.Logging.DiagnosticsSettingsModule.Describe(order: 600);
+        var diagnostics = Diagnostics.Logging.Views.DiagnosticsSettingsModule.Describe(order: 600);
 
         void ContributeDiagnostics(
             Catalog.DiagnosticsContribution contribution,
@@ -130,51 +131,59 @@ public partial class App
                 diagnostics.PageTag,
                 owningAssembly,
                 diagnostics.Glyph,
-                Deckle.Catalog.Loc.GetFrom(diagnostics.OwningAssembly, diagnostics.LabelKey),
+                Deckle.Localization.Loc.GetFrom(diagnostics.OwningAssembly, diagnostics.LabelKey),
                 entries);
         }
 
         if (context.TranscriptionPresent)
         {
-            RegisterSettingsModule(Audio.RecordingSettingsModule.Describe(order: 50), Audio.SettingsSearch.Entries);
+            RegisterSettingsModule(Audio.Views.RecordingSettingsModule.Describe(order: 50), Audio.Views.SettingsSearch.Entries);
             ContributeDiagnostics(
-                Audio.RecordingTelemetryViewModel.Contribution(order: 50),
-                "Deckle.Audio",
-                Audio.SettingsSearch.TelemetryEntries);
+                Audio.Views.RecordingTelemetryViewModel.Contribution(order: 50),
+                "Deckle.Audio.Views",
+                Audio.Views.SettingsSearch.TelemetryEntries);
             // One module, three rail entries: the module's page (General under the
             // node) then Decoding and Streaming nested under it, each registered on
             // its own so the search index resolves page coordinates per page.
-            RegisterSettingsModule(Transcription.WhisperSettingsModule.Describe(order: 100), Transcription.SettingsSearch.Entries);
-            RegisterSettingsModule(Transcription.WhisperSettingsModule.DescribeDecoding(order: 110), Transcription.SettingsSearch.DecodingEntries);
-            RegisterSettingsModule(Transcription.WhisperSettingsModule.DescribeStreaming(order: 120), Transcription.SettingsSearch.StreamingEntries);
+            RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.Describe(order: 100), Transcription.Views.SettingsSearch.Entries);
+            RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.DescribeDecoding(order: 110), Transcription.Views.SettingsSearch.DecodingEntries);
+            RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.DescribeStreaming(order: 120), Transcription.Views.SettingsSearch.StreamingEntries);
             ContributeDiagnostics(
-                Transcription.WhisperTelemetryViewModel.Contribution(order: 100),
-                "Deckle.Transcription",
-                Transcription.SettingsSearch.TelemetryEntries);
+                Transcription.Views.WhisperTelemetryViewModel.Contribution(order: 100),
+                "Deckle.Transcription.Views",
+                Transcription.Views.SettingsSearch.TelemetryEntries);
         }
         if (context.RewritePresent)
-            RegisterSettingsModule(Llm.Rewrite.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.SettingsSearch.Entries);
+        {
+            // The dictation steps stream only on a streaming transcription;
+            // without the transcription module, nothing is dictated anyway.
+            bool transcriptionPresent = context.TranscriptionPresent;
+            Llm.Rewrite.Views.LlmSettingsModule.TranscriptionStreams = () =>
+                transcriptionPresent
+                && TranscriptionSettingsService.Instance.Current.Streaming.Strategy == PipelineStrategyKind.Streaming;
+            RegisterSettingsModule(Llm.Rewrite.Views.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.Views.SettingsSearch.Entries);
+        }
         if (context.AutocorrectPresent)
         {
             // Each page of the family registers on its own: the search index
             // resolves page coordinates per registration, so a child folded into
             // its parent's call would send every hit to the parent's page.
             RegisterSettingsModule(
-                Autocorrect.AutocorrectSettingsModule.Describe(order: 300),
-                Autocorrect.SettingsSearch.Entries);
+                Autocorrect.Views.AutocorrectSettingsModule.Describe(order: 300),
+                Autocorrect.Views.SettingsSearch.Entries);
             RegisterSettingsModule(
-                Autocorrect.AutocorrectSettingsModule.DescribeLexicalDomains(order: 310),
-                Autocorrect.SettingsSearch.LexicalDomainsEntries);
+                Autocorrect.Views.AutocorrectSettingsModule.DescribeLexicalDomains(order: 310),
+                Autocorrect.Views.SettingsSearch.LexicalDomainsEntries);
             RegisterSettingsModule(
-                Autocorrect.AutocorrectSettingsModule.DescribeAppsEnrolled(order: 320),
-                Autocorrect.SettingsSearch.AppsEnrolledEntries);
+                Autocorrect.Views.AutocorrectSettingsModule.DescribeAppsEnrolled(order: 320),
+                Autocorrect.Views.SettingsSearch.AppsEnrolledEntries);
             ContributeDiagnostics(
-                Autocorrect.AutocorrectTelemetryViewModel.Contribution(order: 300),
-                "Deckle.Autocorrect",
-                Autocorrect.SettingsSearch.TelemetryEntries);
+                Autocorrect.Views.AutocorrectTelemetryViewModel.Contribution(order: 300),
+                "Deckle.Autocorrect.Views",
+                Autocorrect.Views.SettingsSearch.TelemetryEntries);
         }
         if (context.AmbientPresent)
-            RegisterSettingsModule(Lighting.Ambient.AmbientSettingsModule.Describe(order: 400), Lighting.Ambient.SettingsSearch.Entries);
+            RegisterSettingsModule(Lighting.Ambient.Views.AmbientSettingsModule.Describe(order: 400), Lighting.Ambient.Views.SettingsSearch.Entries);
         if (context.TrackpadPresent)
         {
             RegisterSettingsModule(Input.Trackpad.TrackpadSettingsModule.Describe(order: 500), Input.Trackpad.SettingsSearch.Entries);
@@ -194,7 +203,7 @@ public partial class App
         RegisterSettingsModule(Shell.TaskbarCover.TaskbarCoverSettingsModule.Describe(order: 581), Shell.TaskbarCover.SettingsSearch.Entries);
         // Diagnostics is shell-level observability, not a presence module —
         // always registered.
-        RegisterSettingsModule(diagnostics, Diagnostics.Logging.SettingsSearch.Entries);
+        RegisterSettingsModule(diagnostics, Diagnostics.Logging.Views.SettingsSearch.Entries);
 
         // General and Shortcuts are static nav anchors of the shell, not registry
         // modules, so their cards register with the values their NavigationViewItems
@@ -204,13 +213,13 @@ public partial class App
             "Deckle.Settings.GeneralPage",
             "Deckle.Settings",
             Deckle.Catalog.Glyphs.Settings,
-            Deckle.Catalog.Loc.GetFrom("Deckle.Settings", "SettingsNavGeneral/Content"),
+            Deckle.Localization.Loc.GetFrom("Deckle.Settings", "SettingsNavGeneral/Content"),
             Settings.SettingsSearch.Entries);
         Settings.SettingsSearchIndex.RegisterPage(
             "Deckle.Settings.HotkeysPage",
             "Deckle.Settings",
             Deckle.Catalog.Glyphs.Shortcut,
-            Deckle.Catalog.Loc.GetFrom("Deckle.Settings", "SettingsNavHotkeys/Content"),
+            Deckle.Localization.Loc.GetFrom("Deckle.Settings", "SettingsNavHotkeys/Content"),
             Settings.SettingsSearch.HotkeyEntries);
     }
 }

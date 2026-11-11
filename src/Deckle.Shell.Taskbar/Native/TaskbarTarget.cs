@@ -16,10 +16,18 @@ internal sealed record TaskbarTarget(TaskbarTargetKind Kind, string ProcessName,
     /// </summary>
     public static TaskbarTarget StartMenu { get; } = new(TaskbarTargetKind.StartMenu, "StartMenuExperienceHost", Packaged: true);
 
-    /// <summary>The pipe's name without the \\.\pipe\ prefix; the DLL computes the same (util.cpp PipeName).</summary>
-    public string PipeName(int sessionId) => Kind == TaskbarTargetKind.Explorer
-        ? $"Deckle.Taskbar.{sessionId}"
-        : $"Deckle.Taskbar.{sessionId}.{ProcessName}";
+    /// <summary>
+    /// The pipe's name without the \\.\pipe\ prefix; the DLL computes the same (util.cpp PipeName).
+    /// A side instance (the development console) appends its name, which the DLL reads from
+    /// the instance file beside its copy (VersionedNativeCopy.WriteInstance).
+    /// </summary>
+    public string PipeName(int sessionId, string? instance = null)
+    {
+        string name = Kind == TaskbarTargetKind.Explorer
+            ? $"Deckle.Taskbar.{sessionId}"
+            : $"Deckle.Taskbar.{sessionId}.{ProcessName}";
+        return string.IsNullOrEmpty(instance) ? name : $"{name}.{instance}";
+    }
 }
 
 internal enum TaskbarTargetKind

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Deckle.Catalog;
+using Deckle.Core;
 using Xunit;
 
 namespace Deckle.Catalog.Tests;
@@ -309,5 +310,21 @@ public class SettingFactoryTests
 
         var args = Assert.IsType<GroupArgs>(g.Args);
         Assert.Single(args.Children);
+    }
+
+    // A group speaks for the feature its master turns on, through the same live
+    // channel as a leaf.
+    [Fact]
+    public void GroupCarriesALiveAdvisory()
+    {
+        string? message = null;
+        var g = Setting.Group("g", () => true, _ => { }, [], advisory: () => message);
+        var m = Setting.Mode("m", () => 0, _ => { }, [(0, "zero")], [], advisory: () => message);
+
+        Assert.Null(g.Advisory!());
+        Assert.Null(m.Advisory!());
+        message = "beware";
+        Assert.Equal("beware", g.Advisory!());
+        Assert.Equal("beware", m.Advisory!());
     }
 }

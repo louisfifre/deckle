@@ -5,15 +5,22 @@ namespace Deckle.Shell.Taskbar.Harness;
 
 internal static class HarnessCommand
 {
+    private const string HarnessInstance = "harness";
+
     public static async Task<int> RunAsync(string[] args)
     {
         var options = HarnessOptions.Parse(args);
         if (options.DocumentOut is { } documentOut)
         {
             bool startMenu = options.Target.Kind == TaskbarTargetKind.StartMenu;
+            ExplorerFunction? frameSize = null, thumbnailSize = null;
+            if (!startMenu && options.Customization.BarThickness is not null)
+                frameSize = await FindAsync(TaskbarDocumentBuilder.FrameSizeModule, TaskbarDocumentBuilder.FrameSizeSymbol);
+            if (!startMenu && options.Customization.Thumbnails is not null)
+                thumbnailSize = await FindAsync(TaskbarDocumentBuilder.ThumbnailSizeModule, TaskbarDocumentBuilder.ThumbnailSizeSymbol);
             await File.WriteAllTextAsync(documentOut, startMenu
                 ? TaskbarDocumentBuilder.BuildStartMenu(options.Customization)
-                : TaskbarDocumentBuilder.Build(options.Customization));
+                : TaskbarDocumentBuilder.Build(options.Customization, frameSize, thumbnailSize));
             Print($"doc     {(startMenu ? "start menu document" : TaskbarDocumentBuilder.Rules(options.Customization).Count + " rules")} written to {documentOut}");
             return 0;
         }
@@ -26,12 +33,17 @@ internal static class HarnessCommand
             return 2;
         }
 
-        var copy = new VersionedNativeCopy(options.Root ?? VersionedNativeCopy.DefaultRoot());
+        // Never the app's own root: a build the app also runs would share its
+        // versioned folder, and the instance file beside the DLL would turn the
+        // app's engine to the console's pipe.
+        var copy = new VersionedNativeCopy(options.Root ?? VersionedNativeCopy.DefaultRoot() + "-harness");
         var recorder = new VisualTreeRecorder();
         var stop = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; stop.TrySetResult(); };
 
-        await using var host = new TaskbarEngineHost(source, copy, options.Target);
+        // Its own pipe, so the console never meets the app's. The process's
+        // one engine serves it only while no other Deckle is connected there.
+        await using var host = new TaskbarEngineHost(source, copy, options.Target, instance: HarnessInstance);
         long connectedAt = 0;
         host.MessageReceived += message =>
         {
@@ -169,39 +181,19 @@ internal static class HarnessCommand
         if (options.TreeFile is { } tree && recorder.Count > 0) WriteTree(recorder, tree);
 
         int explorer = host.TargetProcessId;
-        string loaded = host.LoadedPath;
-        Print("stop    asking the DLL to restore, unadvise and unload");
-        bool unloaded = await host.StopEngineAsync();
-        Print(unloaded ? "stop    the DLL reported that it unloaded" : "stop    the DLL did NOT report an unload");
+        Print("stop    asking the DLL to restore everything and park");
+        bool stopped = await host.StopEngineAsync();
+        Print(stopped ? "stop    the DLL reported that it stopped" : "stop    the DLL did NOT report a stop");
 
-        // The pipe closing is the DLL's word. The proof is explorer's module list.
-        bool moduleGone = explorer == 0 || await WaitAsync(() => !IsModuleLoaded(explorer, loaded), TimeSpan.FromSeconds(10));
-        Print(moduleGone ? "stop    explorer no longer lists the DLL" : "stop    explorer STILL lists the DLL");
-
-        bool unlocked = TryOpenExclusively(loaded);
-        Print(unlocked ? "stop    the DLL file can be opened for writing (not locked)" : "stop    the DLL file is LOCKED");
-
+        // The engine parks in the target on purpose and stays there until the
+        // process restarts (native residency.h): XAML Diagnostics are never
+        // initialized twice in one process. So a new DLL build reaches the
+        // target only after that restart, and the check that matters is that
+        // the target survived.
         bool alive = explorer == 0 || IsProcessAlive(explorer);
-        Print(alive ? "stop    explorer is still running" : "stop    explorer is GONE");
+        Print(alive ? "stop    the target is still running" : "stop    the target is GONE");
 
-        return unloaded && moduleGone && unlocked && alive ? 0 : 3;
-    }
-
-    private static bool IsModuleLoaded(int processId, string path)
-    {
-        try
-        {
-            using Process process = Process.GetProcessById(processId);
-            foreach (ProcessModule module in process.Modules)
-            {
-                if (string.Equals(module.FileName, path, StringComparison.OrdinalIgnoreCase)) return true;
-            }
-            return false;
-        }
-        catch (Exception)
-        {
-            return false;
-        }
+        return stopped && alive ? 0 : 3;
     }
 
     private static bool IsProcessAlive(int processId)
@@ -217,26 +209,14 @@ internal static class HarnessCommand
         }
     }
 
-    private static bool TryOpenExclusively(string path)
+    // The app's own lookup and cache: a first run on a build downloads its PDB.
+    private static async Task<ExplorerFunction?> FindAsync(string module, string symbol)
     {
-        try
-        {
-            using var stream = new FileStream(path, FileMode.Open, FileAccess.Write, FileShare.None);
-            return true;
-        }
-        catch (IOException) { return false; }
-        catch (UnauthorizedAccessException) { return false; }
-    }
-
-    private static async Task<bool> WaitAsync(Func<bool> condition, TimeSpan timeout)
-    {
-        var watch = Stopwatch.StartNew();
-        while (watch.Elapsed < timeout)
-        {
-            if (condition()) return true;
-            await Task.Delay(250);
-        }
-        return condition();
+        FunctionLookup lookup = await ExplorerFunctionLocator.Instance.FindAsync(module, symbol);
+        Print(lookup.Function is { } f
+            ? $"lookup  {f.Module} rva 0x{f.Rva:X} prologue {Convert.ToHexString(f.Prologue)}"
+            : $"lookup  FAILED: {lookup.Failure}");
+        return lookup.Function;
     }
 
     internal static void Print(string line) =>

@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Mail.Hub\Deckle.Mail.Hub.csproj" />
+  </ItemGroup>
+</Project>

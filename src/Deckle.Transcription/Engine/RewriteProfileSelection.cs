@@ -2,81 +2,92 @@ using Deckle.Llm.Rewrite;
 
 namespace Deckle.Transcription;
 
-// Which profile rewrites a dictation:
-//   1. a profile whose own shortcut started the take, whatever its length,
-//      and even with rewriting switched off; the rest needs it on;
-//   2. else, once the length is known and the length ladder is on, the
-//      profile of the highest step the raw transcript reached;
-//   3. else the active profile, which so acts as the default below the
-//      first step. No active profile keeps the raw result: that is the floor.
+// The steps one take is rewritten by (specs/deckle-dictation-rewriting.md),
+// read from the settings once, when the take starts, so a change made in
+// Settings during the recording cannot send part of the take to a profile it
+// was never meant for.
+//
+// Forced: a profile whose own shortcut started the take. It rewrites the
+// whole raw text at Stop, whatever the length and the steps, and even with
+// rewriting switched off: the press asked for that rewrite.
+//
+// Steps: in order, each with where it starts, its profile (null when the one
+// it names no longer exists: the step is then skipped) and its moment. Empty
+// when rewriting or rewriting dictations is off.
+internal sealed record RewriteStepPlan(RewriteProfile? Forced, IReadOnlyList<PlannedStep> Steps)
+{
+    public static readonly RewriteStepPlan None = new(null, []);
+
+    // A step that streams in this plan: a take with none has no passage to
+    // send while the person speaks.
+    public bool HasStreamingStep => Forced is null && Steps.Any(step => step.Streaming && step.Profile is not null);
+
+    // The highest step rawChars reaches whose profile exists, or null below
+    // the first one.
+    public PlannedStep? Highest(int rawChars) => HighestWhere(rawChars, streamingOnly: false);
+
+    // The same among the streaming steps: the profile passages are rewritten
+    // with while the person speaks. A step "at Stop" crossed in between does
+    // not change it (the panel goes on with the streaming step below).
+    public PlannedStep? HighestStreaming(int rawChars) => HighestWhere(rawChars, streamingOnly: true);
+
+    // The profile a reached step names and that no longer exists, when it
+    // stands above the step that takes the dictation: that step was skipped.
+    public string? MissingProfileAbove(int rawChars)
+    {
+        PlannedStep? taken = Highest(rawChars);
+        for (int i = Steps.Count - 1; i >= 0; i--)
+        {
+            PlannedStep step = Steps[i];
+            if (taken is { } t && step.Index <= t.Index) break;
+            if (rawChars >= step.FromChars && step.Profile is null) return step.ProfileId;
+        }
+        return null;
+    }
+
+    private PlannedStep? HighestWhere(int rawChars, bool streamingOnly)
+    {
+        for (int i = Steps.Count - 1; i >= 0; i--)
+        {
+            PlannedStep step = Steps[i];
+            if (rawChars < step.FromChars || step.Profile is null) continue;
+            if (streamingOnly && !step.Streaming) continue;
+            return step;
+        }
+        return null;
+    }
+}
+
+internal readonly record struct PlannedStep(
+    int Index, int FromChars, string ProfileId, RewriteProfile? Profile, bool Streaming);
+
 internal static class RewriteProfileSelection
 {
-    // rawChars null = length not known yet (a batched take picks its profile
-    // at start), so only the forced and the active profile apply.
-    public static RewriteProfile? ForDictation(
-        LlmSettings settings, int? rawChars = null, string? forcedProfileId = null)
+    // streamingTranscription false: the take is transcribed in one call at
+    // Stop, so nothing exists to rewrite while the person speaks and every
+    // step rewrites at Stop.
+    public static RewriteStepPlan ForTake(
+        LlmSettings settings, string? forcedProfileId, bool streamingTranscription)
     {
-        // A profile's own shortcut is an explicit request for that rewrite, so
-        // it holds even while automatic rewriting is switched off.
         if (!string.IsNullOrEmpty(forcedProfileId)
             && settings.Profiles.Find(profile => profile.Id == forcedProfileId) is { } forced)
-            return forced;
+            return new RewriteStepPlan(forced, []);
 
-        if (!settings.Enabled)
-            return null;
+        DictationRewriteSettings? dictation = settings.Dictation;
+        if (!settings.Enabled || dictation is not { Enabled: true } || dictation.Steps is not { Count: > 0 } steps)
+            return RewriteStepPlan.None;
 
-        if (rawChars is { } chars && ByLength(settings, chars) is { } byLength)
-            return byLength;
-
-        return Active(settings);
-    }
-
-    // A step whose profile was deleted is skipped, so the step below it, or
-    // the active profile, takes the dictation instead.
-    public static RewriteProfile? ByLength(LlmSettings settings, int rawChars)
-    {
-        LengthSwitchSettings? ladder = settings.LengthSwitch;
-        if (ladder is not { Enabled: true }) return null;
-
-        RewriteProfile? best = null;
-        int bestFrom = -1;
-        foreach (LengthStep step in ladder.Steps)
+        var planned = new List<PlannedStep>(steps.Count);
+        for (int i = 0; i < steps.Count; i++)
         {
-            if (rawChars < step.FromChars || step.FromChars <= bestFrom) continue;
-            RewriteProfile? profile = settings.Profiles.Find(p => p.Id == step.ProfileId);
-            if (profile is null) continue;
-            best = profile;
-            bestFrom = step.FromChars;
+            RewriteStep step = steps[i];
+            planned.Add(new PlannedStep(
+                i,
+                dictation.StartOf(i),
+                step.ProfileId,
+                settings.Profiles.Find(profile => profile.Id == step.ProfileId),
+                streamingTranscription && step.Streaming));
         }
-        return best;
+        return new RewriteStepPlan(null, planned);
     }
-
-    private static RewriteProfile? Active(LlmSettings settings)
-    {
-        if (!HasActiveProfile(settings))
-            return null;
-
-        if (!string.IsNullOrEmpty(settings.ActiveProfileId))
-        {
-            RewriteProfile? byId = settings.Profiles.Find(profile =>
-                profile.Id == settings.ActiveProfileId);
-            if (byId is not null)
-                return byId;
-        }
-
-        if (string.IsNullOrWhiteSpace(settings.ActiveProfileName))
-            return null;
-
-        return settings.Profiles.Find(profile =>
-            string.Equals(
-                profile.Name,
-                settings.ActiveProfileName,
-                StringComparison.OrdinalIgnoreCase));
-    }
-
-    // True when the settings name an active profile, whether or not it still
-    // resolves — lets the caller tell "plain dictation" from "profile lost".
-    public static bool HasActiveProfile(LlmSettings settings) =>
-        !string.IsNullOrEmpty(settings.ActiveProfileId)
-        || !string.IsNullOrWhiteSpace(settings.ActiveProfileName);
 }

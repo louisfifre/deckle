@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Audio.Views\Deckle.Audio.Views.csproj" />
+  </ItemGroup>
+</Project>

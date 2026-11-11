@@ -11,6 +11,7 @@ using Microsoft.UI.Xaml.Shapes;
 using Windows.Foundation;
 using Windows.Globalization.NumberFormatting;
 using Windows.System;
+using Deckle.Localization;
 
 namespace Deckle.Catalog;
 

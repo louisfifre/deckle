@@ -49,6 +49,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $ScriptDir = $PSScriptRoot
 . (Join-Path $ScriptDir 'lib\action-summary.ps1')
+Import-Module (Join-Path $ScriptDir 'lib\anytype-backend.psm1') -Force
 
 $WorkflowOutput = New-WorkflowOutput -Category 'deploy'
 $Workflow = 'Update prod'
@@ -89,6 +90,23 @@ function Get-BuildVersion([string]$Folder) {
     return ((Get-Item -LiteralPath $exe).VersionInfo.ProductVersion -split '\+')[0]
 }
 
+# The Anytype backend the deployed commit pins against the one this machine
+# activates. The supervisor spawns what active.json names and never reads the
+# pin, so a deploy that moves the pin changes nothing until someone switches;
+# the summary says so. Read through git show so it works whether or not the
+# build tree is checked out. Information only: it never fails a deploy and
+# downloads nothing.
+function Get-AnytypeBackendLine([string]$At) {
+    try {
+        $text = git -C $primary show "${At}:src/Deckle.Anytype/Backend/BackendInstallation.cs" 2>$null
+        if ($LASTEXITCODE -ne 0) { return 'no pin in this commit' }
+        $pin = Get-AnytypeBackendPin -SourceText ($text -join "`n")
+        return (Get-AnytypeBackendPinStatus -PinnedVersion $pin.Version).Line
+    } catch {
+        return "not read: $($_.Exception.Message)"
+    }
+}
+
 New-Item -ItemType Directory -Force -Path $Root | Out-Null
 
 # The helper the staged build ships: the swap is run by the code of the build it
@@ -126,7 +144,7 @@ if (-not $Force) {
     if ($place) {
         Write-ActionSummary -Workflow $Workflow -Result Skipped `
             -Sentence "This commit is already $place in the prod copy." `
-            -Details ([ordered]@{ Root = $Root; Ref = $Ref; Commit = $Commit })
+            -Details ([ordered]@{ Root = $Root; Ref = $Ref; Commit = $Commit; Anytype = Get-AnytypeBackendLine $Commit })
         return
     }
 }
@@ -183,4 +201,5 @@ Write-ActionSummary -Workflow $Workflow -Result Success -Sentence $sentence `
         Commit  = $Commit
         Running = Get-BuildVersion $current
         Exe     = Join-Path $current 'Deckle.exe'
+        Anytype = Get-AnytypeBackendLine $Commit
     })

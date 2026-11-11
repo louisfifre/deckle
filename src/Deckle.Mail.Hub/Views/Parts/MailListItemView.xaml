@@ -1,0 +1,19 @@
+<UserControl
+    x:Class="Deckle.Mail.Hub.MailListItemView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- A mail of the subject in the list beside the text: its date, its
+         sender (« You » for the person's own), a mark when it carries a
+         file, and one short sentence of what it says. -->
+    <StackPanel Spacing="2">
+        <TextBlock Style="{StaticResource CaptionTextBlockStyle}"
+                   Foreground="{ThemeResource TextFillColorSecondaryBrush}">
+            <Run x:Name="MetaRun" />
+            <Run x:Name="ClipRun"
+                 FontFamily="{ThemeResource SymbolThemeFontFamily}"
+                 FontSize="12" />
+        </TextBlock>
+        <TextBlock x:Name="SummaryText" TextWrapping="Wrap" />
+    </StackPanel>
+</UserControl>

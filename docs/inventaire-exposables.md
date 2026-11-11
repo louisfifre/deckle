@@ -350,7 +350,7 @@ Total : **625 entrées** réparties sur **38 modules**.
 | HudWindow.MAX_ALPHA | tuning-constant | `255` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:60 | non |  |
 | HudWindow.MIN_ALPHA | tuning-constant | `40` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:61 | non | Floor alpha of the main-HUD proximity fade. |
 | HudWindow.FADE_IN_MS | tuning-constant | `150` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:103 | non | Animation duration; gated by the Windows animation preference. |
-| HudWindow.SuccessDuration | tuning-constant | `TimeSpan.FromSeconds(2)` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:246 | non | How long the Copied/Pasted confirmation stays up - directly user-perceivable dwell time. |
+| HudWindow.SuccessDuration | tuning-constant | `TimeSpan.FromSeconds(2)` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:246 | non | How long the Copied confirmation stays up - directly user-perceivable dwell time. |
 | WindowSlideAnimator.FrameIntervalMs | tuning-constant | `16` | src/Deckle.Hud/Windows/WindowSlideAnimator.cs:24 | non | ~60 Hz tick; implementation cadence rather than a knob. |
 | WindowSlideAnimator.Duration | tuning-constant | `TimeSpan.FromMilliseconds(150)` | src/Deckle.Hud/Windows/WindowSlideAnimator.cs:25 | non |  |
 | LayeredAlphaAnimator.FrameIntervalMs | tuning-constant | `16` | src/Deckle.Hud/Windows/WindowSlideAnimator.cs:153 | non | Second declaration in the same file (LayeredAlphaAnimator, not WindowSlideAnimator); same doubt as above. |
@@ -644,7 +644,6 @@ Total : **625 entrées** réparties sur **38 modules**.
 | OverlaySettings.Enabled | persisted-setting | `true` | src/Deckle.Settings/Persistence/AppSettings.cs:62 | oui |  |
 | OverlaySettings.FadeOnProximity | persisted-setting | `true` | src/Deckle.Settings/Persistence/AppSettings.cs:63 | oui |  |
 | OverlaySettings.Position | persisted-setting | `"BottomCenter"` | src/Deckle.Settings/Persistence/AppSettings.cs:64 | oui | Closed vocabulary documented in-code: BottomCenter \| BottomRight \| TopCenter. |
-| PasteSettings.AutoPasteEnabled | persisted-setting | `false` | src/Deckle.Settings/Persistence/AppSettings.cs:49 | oui |  |
 | UpdatesSettings.AutoCheckEnabled | persisted-setting | `true` | src/Deckle.Settings/Persistence/AppSettings.cs:40 | non | Composed card GeneralUpdateAutoCheckCard exists (GeneralViewModel.Settings.cs:72-78); June inventory has no Updates category — likely post-June addition. |
 | PathsSettings.BackupDirectory | persisted-setting | `""` | src/Deckle.Settings/Persistence/AppSettings.cs:85 | non | Empty = auto-resolve via AppPaths.SettingsBackupDirectory. June lists a diagnostics 'Storage directory' but not this backup path — confirm they are distinct. |
 | AutostartEnabled | persisted-setting | `false (StartupService.DefaultEnabled)` | src/Deckle.Settings/ViewModels/GeneralViewModel.cs:47 | oui | ADDED FROM JUNE — sweep missed it. Not backed by AppSettings: source of truth is the OS (HKCU\Run + elevated scheduled task) via StartupService; default read from src/Deckle.Shell/AutostartService.cs:42. |
@@ -674,8 +673,6 @@ Total : **625 entrées** réparties sur **38 modules**.
 
 | Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
 |---|---|---|---|---|---|
-| FileIdle | tuning-constant | `"recording--indicator--false--32px.ico"` | src/Deckle.Shell/IconAssets.cs:16 | non | Tray icon asset filename. Kept only under the doubt rule — a user could conceivably want a different tray icon, but this is an asset path, not a value. |
-| FileRecording | tuning-constant | `"recording--indicator--true--32px.ico"` | src/Deckle.Shell/IconAssets.cs:17 | non | Same as FileIdle — recording-state tray icon asset filename. |
 | AutostartService.DefaultEnabled | default-value | `false` | src/Deckle.Shell/AutostartService.cs:42 | oui | Added from the June inventory — the sweep missed it. June lists it as 'Start with Windows' / 'Autostart Enabled', hand-authored, registry-backed (HKCU Run). Expression-bodied static property, which is likely why the sweep's accessor filter dropped it; that same filter may have swallowed other real defaults repo-wide. |
 
 ## Deckle.Shell.TaskbarCover

@@ -17,6 +17,7 @@ public sealed class TaskbarCustomizerTests
         public bool Stopped { get; private set; }
         public bool Disposed { get; private set; }
         public bool InjectionSucceeds { get; set; } = true;
+        public bool HeldOff { get; set; }
         public List<string> Sent { get; } = [];
 
         public event Action<NativeMessage>? MessageReceived;
@@ -60,6 +61,9 @@ public sealed class TaskbarCustomizerTests
         public void Report(params NativeRuleState[] rules) =>
             MessageReceived?.Invoke(new NativeStatus(1, true, rules, [], []));
 
+        public void Log(string name, string id) =>
+            MessageReceived?.Invoke(new NativeLogRecord(NativeLogLevel.Info, name, "", new Dictionary<string, string> { ["id"] = id }));
+
         public void Leave()
         {
             IsConnected = false;
@@ -72,13 +76,23 @@ public sealed class TaskbarCustomizerTests
     private bool _vertical = true;
     private bool _dllMissing;
 
+    // Where the thickness function lives; never the network in a test.
+    private FunctionLookup _frameSize = new(new ExplorerFunction(
+        "Taskbar.View.dll", 0x6AA3487A, 10055680, 0x451F0, new byte[16]), null);
+
     private TaskbarCustomizer Customizer() => new(() => _settings, () => _vertical, target =>
     {
         if (_dllMissing) throw new FileNotFoundException("no dll");
         var engine = new FakeEngine(target);
         _engines.Add(engine);
         return engine;
-    });
+    }, (_, _) => Task.FromResult(_frameSize));
+
+    private static bool HasConstantReturn(string line)
+    {
+        using JsonDocument document = JsonDocument.Parse(line);
+        return document.RootElement.GetProperty("doc").TryGetProperty("constantReturns", out _);
+    }
 
     private FakeEngine? Engine(TaskbarTargetKind kind) => _engines.LastOrDefault(engine => engine.Target.Kind == kind);
 
@@ -95,6 +109,145 @@ public sealed class TaskbarCustomizerTests
         using JsonDocument document = JsonDocument.Parse(line);
         return document.RootElement.GetProperty("doc").GetProperty("rules").EnumerateArray()
             .Any(rule => rule.GetProperty("id").GetString() == id);
+    }
+
+    [Fact]
+    public async Task TheThicknessGoesOutWithTheFunctionTheLookupFound()
+    {
+        _settings.CustomBarThickness = true;
+        TaskbarCustomizer customizer = Customizer();
+        await customizer.ReconcileAsync("startup");
+
+        FakeEngine explorer = Engine(TaskbarTargetKind.Explorer)!;
+        explorer.SayHello();
+
+        await WaitUntil(() => explorer.Sent.Count == 1);
+        Assert.True(HasConstantReturn(explorer.Sent[0]));
+        Assert.Empty(customizer.Problems);
+    }
+
+    // A host that gave up injecting (its target kept dying just after it
+    // received the engine) leaves the parts unapplied until Deckle restarts:
+    // the page must say so, where an ordinary loss says nothing and waits for
+    // the engine to come back.
+    [Fact]
+    public async Task AnEngineHeldOffAfterRepeatedLossesPutsItsPartsInError()
+    {
+        _settings.Background = TaskbarBackground.Transparent;
+        TaskbarCustomizer customizer = Customizer();
+        await customizer.ReconcileAsync("startup");
+        FakeEngine explorer = Engine(TaskbarTargetKind.Explorer)!;
+        explorer.SayHello();
+        await WaitUntil(() => explorer.Sent.Count == 1);
+
+        explorer.Leave();
+        Assert.Empty(customizer.Problems);
+
+        explorer.SayHello();
+        await WaitUntil(() => explorer.Sent.Count == 2);
+        explorer.HeldOff = true;
+        explorer.Leave();
+
+        Assert.Equal(TaskbarProblem.Error, customizer.Problems[TaskbarPart.Background]);
+    }
+
+    [Fact]
+    public async Task AFunctionThisBuildNoLongerNamesLeavesTheThicknessNotApplied()
+    {
+        _settings.CustomBarThickness = true;
+        _frameSize = new(null, FunctionLookup.SymbolMissing);
+        TaskbarCustomizer customizer = Customizer();
+
+        await customizer.ReconcileAsync("startup");
+
+        Assert.Equal(TaskbarProblem.NotApplied, customizer.Problems[TaskbarPart.BarThickness]);
+    }
+
+    [Fact]
+    public async Task ALookupThatCouldNotReachTheServerIsAnError()
+    {
+        _settings.CustomBarThickness = true;
+        _frameSize = new(null, "download_failed");
+        TaskbarCustomizer customizer = Customizer();
+
+        await customizer.ReconcileAsync("startup");
+
+        Assert.Equal(TaskbarProblem.Error, customizer.Problems[TaskbarPart.BarThickness]);
+    }
+
+    [Fact]
+    public async Task TheEngineLeavingTheFunctionAloneIsSaidUntilItAppliesIt()
+    {
+        _settings.CustomBarThickness = true;
+        TaskbarCustomizer customizer = Customizer();
+        await customizer.ReconcileAsync("startup");
+        FakeEngine explorer = Engine(TaskbarTargetKind.Explorer)!;
+        explorer.SayHello();
+        await WaitUntil(() => explorer.Sent.Count == 1);
+
+        explorer.Log("constant_return_skipped", TaskbarDocumentBuilder.BarThicknessId);
+        Assert.Equal(TaskbarProblem.NotApplied, customizer.Problems[TaskbarPart.BarThickness]);
+
+        explorer.Log("constant_return_applied", TaskbarDocumentBuilder.BarThicknessId);
+        Assert.Empty(customizer.Problems);
+    }
+
+    private static bool HasThumbnailBox(string line)
+    {
+        using JsonDocument document = JsonDocument.Parse(line);
+        return document.RootElement.GetProperty("doc").TryGetProperty("thumbnailBox", out _);
+    }
+
+    [Fact]
+    public async Task TheThumbnailBoxGoesOutWithTheFunctionTheLookupFound()
+    {
+        _settings.LargerThumbnails = true;
+        TaskbarCustomizer customizer = Customizer();
+        await customizer.ReconcileAsync("startup");
+
+        FakeEngine explorer = Engine(TaskbarTargetKind.Explorer)!;
+        explorer.SayHello();
+
+        await WaitUntil(() => explorer.Sent.Count == 1);
+        Assert.True(HasThumbnailBox(explorer.Sent[0]));
+        Assert.False(HasConstantReturn(explorer.Sent[0]));
+        Assert.Empty(customizer.Problems);
+    }
+
+    [Fact]
+    public async Task AFunctionThisBuildNoLongerNamesLeavesTheThumbnailsNotApplied()
+    {
+        _settings.LargerThumbnails = true;
+        _frameSize = new(null, FunctionLookup.SymbolMissing);
+        TaskbarCustomizer customizer = Customizer();
+
+        await customizer.ReconcileAsync("startup");
+
+        Assert.Equal(TaskbarProblem.NotApplied, customizer.Problems[TaskbarPart.Thumbnails]);
+    }
+
+    // Each patch is told apart by its id: what the engine says of the
+    // thumbnails never lands on the thickness, nor the other way round.
+    [Fact]
+    public async Task TheEngineLeavingTheThumbnailFunctionAloneIsSaidUntilItAppliesIt()
+    {
+        _settings.LargerThumbnails = true;
+        _settings.CustomBarThickness = true;
+        TaskbarCustomizer customizer = Customizer();
+        await customizer.ReconcileAsync("startup");
+        FakeEngine explorer = Engine(TaskbarTargetKind.Explorer)!;
+        explorer.SayHello();
+        await WaitUntil(() => explorer.Sent.Count == 1);
+
+        explorer.Log("thumbnail_box_skipped", TaskbarDocumentBuilder.ThumbnailBoxId);
+        Assert.Equal(TaskbarProblem.NotApplied, Assert.Single(customizer.Problems).Value);
+        Assert.Equal(TaskbarProblem.NotApplied, customizer.Problems[TaskbarPart.Thumbnails]);
+
+        explorer.Log("thumbnail_box_failed", TaskbarDocumentBuilder.ThumbnailBoxId);
+        Assert.Equal(TaskbarProblem.Error, customizer.Problems[TaskbarPart.Thumbnails]);
+
+        explorer.Log("thumbnail_box_applied", TaskbarDocumentBuilder.ThumbnailBoxId);
+        Assert.Empty(customizer.Problems);
     }
 
     [Fact]
@@ -297,7 +450,7 @@ public sealed class TaskbarCustomizerTests
         await customizer.ReconcileAsync("startup");
 
         Assert.Equal(TaskbarProblem.Error, customizer.Problems[TaskbarPart.Background]);
-        Assert.Equal(TaskbarProblem.Error, customizer.Problems[TaskbarPart.StartMenu]);
+        Assert.Equal(TaskbarProblem.Error, customizer.Problems[TaskbarPart.StartMenuHeight]);
         Assert.Equal(1, raised);
     }
 

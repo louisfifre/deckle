@@ -138,9 +138,9 @@
                 </catalog:SettingsSection>
 
                 <!-- ── Developer ───────────────────────────────────────────── -->
-                <!-- Last on the page: switches only the people building Deckle
-                     reach for. The Playground's entry points, then Developer
-                     mode, which shows the developer tools below it while on. -->
+                <!-- Last on the page: the one switch only the people building
+                     Deckle reach for. Developer mode shows the developer tools
+                     below it while on. -->
                 <catalog:SettingsSection x:Name="DeveloperSection"
                                          x:Uid="GeneralPageDeveloperSection"
                                          HasReset="True"

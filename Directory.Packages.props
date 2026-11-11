@@ -70,6 +70,12 @@
     <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.1.0" />
     <PackageVersion Include="JsonSchema.Net" Version="9.4.0" />
 
+    <!-- Capture data of photos for the Atelier (Deckle.Atelier): reads EXIF, XMP
+         and maker notes from JPEG, HEIF and camera raw files without decoding the
+         image and without a Windows codec. WIC would read a raw only once the
+         Store's Raw Image Extension is installed. Apache-2.0; pulls XmpCore (BSD). -->
+    <PackageVersion Include="MetadataExtractor" Version="2.9.3" />
+
     <!-- Test stack (tests/Deckle.*.Tests): xUnit v3 on the Microsoft Testing Platform,
          VSTest bridge for the Test Explorer. -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.13.0" />

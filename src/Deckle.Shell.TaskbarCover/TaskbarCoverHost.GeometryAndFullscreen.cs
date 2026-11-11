@@ -178,6 +178,16 @@ public sealed partial class TaskbarCoverHost
 
     private void UpdateAppSuppressed(CoverBand band, ForegroundState state)
     {
+        // The taskbar taking focus (Windows + T) is read on the same triggers as
+        // a fullscreen window. It changes nothing else, so it needs no event of
+        // its own: the band's Hidden and Shown lines carry the reason.
+        bool focused = CoverSuppression.TaskbarFocused(state, band.Taskbar);
+        if (focused != band.TaskbarFocused)
+        {
+            band.TaskbarFocused = focused;
+            UpdateCover(band, focused ? "taskbar_focused" : "taskbar_unfocused");
+        }
+
         bool suppressed = CoverSuppression.Applies(state, band.Monitor);
         if (suppressed == band.AppSuppressed) return;
         band.AppSuppressed = suppressed;

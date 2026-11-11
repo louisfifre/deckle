@@ -39,7 +39,7 @@ public sealed class QuitDuringWorkTests : IDisposable
         var outcomes = new List<TranscriptionOutcome>();
         engine.TranscriptionFinished += outcome => { lock (outcomes) outcomes.Add(outcome); };
 
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         await backend.AllCallsCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
         Assert.True(engine.IsRecording);
 
@@ -88,7 +88,7 @@ public sealed class QuitDuringWorkTests : IDisposable
             recovery: recovery,
             captureTail: TestCaptureTail);
 
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         await backend.AllCallsCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5), testCancellation);
 
         try
@@ -122,7 +122,7 @@ public sealed class QuitDuringWorkTests : IDisposable
         await Task.Run(
             () => engine.FinishInFlightWork("test", TimeSpan.FromSeconds(1)), testCancellation);
 
-        Assert.Equal(ToggleResult.IgnoredDisposed, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.IgnoredDisposed, engine.RequestToggle());
         Assert.False(engine.IsBusy);
     }
 

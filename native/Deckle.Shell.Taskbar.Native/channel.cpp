@@ -1,6 +1,5 @@
 #include "pch.h"
 #include "channel.h"
-#include "util.h"
 
 namespace deckle
 {
@@ -25,6 +24,7 @@ namespace deckle
     {
         {
             std::lock_guard guard(m_lock);
+            if (!m_accepting) return;
             if (m_queue.size() >= MaxQueued)
             {
                 m_queue.pop_front();
@@ -35,9 +35,19 @@ namespace deckle
         SetEvent(m_queueEvent);
     }
 
-    bool Channel::Connect(std::chrono::milliseconds timeout, HANDLE cancelEvent)
+    void Channel::SetAccepting(bool accepting)
     {
-        const std::wstring name = util::PipeName();
+        std::lock_guard guard(m_lock);
+        m_accepting = accepting;
+        if (!accepting)
+        {
+            m_queue.clear();
+            m_dropped = 0;
+        }
+    }
+
+    bool Channel::Connect(std::wstring const& name, std::chrono::milliseconds timeout, HANDLE cancelEvent)
+    {
         const auto deadline = std::chrono::steady_clock::now() + timeout;
 
         for (;;)

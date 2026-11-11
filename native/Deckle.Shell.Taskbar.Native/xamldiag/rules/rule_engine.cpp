@@ -6,6 +6,7 @@
 #include "style_resolver.h"
 #include "../behaviors/clock.h"
 #include "../behaviors/start_menu_height.h"
+#include "../behaviors/start_menu_width.h"
 #include "../element_properties.h"
 #include "../../channel.h"
 #include "../../log.h"
@@ -50,6 +51,8 @@ namespace
         std::shared_ptr<OverrideCounters> clockCounters = std::make_shared<OverrideCounters>();
         bool startMenuHeight = false;
         std::shared_ptr<OverrideCounters> startMenuCounters = std::make_shared<OverrideCounters>();
+        StartMenuWidthConfiguration startMenuWidth;
+        std::shared_ptr<OverrideCounters> startMenuWidthCounters = std::make_shared<OverrideCounters>();
         std::vector<std::wstring> problems;
     };
 
@@ -86,6 +89,7 @@ namespace
         std::vector<Tracked> tracked;
         std::vector<Held> held;
         std::vector<std::shared_ptr<deckle::behaviors::StartMenuHeightHold>> startHolds;
+        std::vector<std::shared_ptr<deckle::behaviors::StartMenuWidthHold>> widthHolds;
         std::map<std::pair<uint64_t, size_t>, Resolved> resolved;
     };
 
@@ -427,6 +431,44 @@ namespace deckle::rules
             }
         }
 
+        static void ApplyStartMenuWidth(ThreadContext& context, wux::FrameworkElement const& element, const RuleSet& set)
+        {
+            if (!set.startMenuWidth.enabled) return;
+
+            // The tree reports FrameRoot before its content, so the hold is also
+            // tried when MainMenu (FrameRoot > AnimationRoot > MainMenu) arrives.
+            wux::FrameworkElement frameRoot = element;
+            if (element.Name() == L"MainMenu")
+            {
+                auto animationRoot = ParentOf(element);
+                frameRoot = animationRoot ? ParentOf(animationRoot).try_as<wux::FrameworkElement>() : nullptr;
+                if (!frameRoot) return;
+            }
+            if (!behaviors::StartMenuHeightHold::IsFrameRoot(frameRoot)) return;
+
+            void* target = Identity(frameRoot);
+            for (auto const& hold : context.widthHolds)
+            {
+                if (hold->TargetIdentity() == target) return;
+            }
+
+            try
+            {
+                if (auto hold = behaviors::StartMenuWidthHold::TryCreate(
+                        frameRoot, set.startMenuWidth.fill, set.startMenuWidth.width, set.startMenuWidthCounters))
+                {
+                    Log(LogLevel::Info, L"start_menu_width_hold", L"The Start menu width is now held by Deckle",
+                        { { L"tid", std::to_wstring(GetCurrentThreadId()) } });
+                    context.widthHolds.push_back(std::move(hold));
+                }
+            }
+            catch (winrt::hresult_error const& error)
+            {
+                ++set.startMenuWidthCounters->failed;
+                set.startMenuWidthCounters->SetError(Hex(error));
+            }
+        }
+
         static void ApplyRules(ThreadContext& context, wux::FrameworkElement const& element, const RuleSet& set)
         {
             for (size_t i = 0; i < set.rules.size(); ++i)
@@ -438,6 +480,7 @@ namespace deckle::rules
             }
             ApplyClock(context, element, set);
             ApplyStartMenuHeight(context, element, set);
+            ApplyStartMenuWidth(context, element, set);
         }
 
         static size_t ClearAll(ThreadContext& context)
@@ -455,6 +498,12 @@ namespace deckle::rules
                 hold->Release();
             }
             context.startHolds.clear();
+            for (auto& hold : context.widthHolds)
+            {
+                ++active;
+                hold->Release();
+            }
+            context.widthHolds.clear();
             context.resolved.clear();
             return active;
         }
@@ -464,6 +513,7 @@ namespace deckle::rules
             std::erase_if(context.tracked, [](Tracked const& entry) { return !entry.element.get(); });
             std::erase_if(context.held, [](Held const& held) { return held.override_->IsTargetGone(); });
             std::erase_if(context.startHolds, [](auto const& hold) { return hold->IsTargetGone(); });
+            std::erase_if(context.widthHolds, [](auto const& hold) { return hold->IsTargetGone(); });
         }
 
         static void Reapply(ThreadContext& context, const std::shared_ptr<const RuleSet>& set)
@@ -539,6 +589,10 @@ namespace deckle::rules
             {
                 behaviors.Append(RuleStatus(L"startMenuHeight", L"", *set->startMenuCounters, settled));
             }
+            if (set->startMenuWidth.enabled)
+            {
+                behaviors.Append(RuleStatus(L"startMenuWidth", L"", *set->startMenuWidthCounters, settled));
+            }
             status.SetNamedValue(L"behaviors", behaviors);
 
             json::JsonArray problems;
@@ -562,9 +616,21 @@ namespace deckle::rules
             {
                 try
                 {
+                    const auto now = Clock::now();
+
+                    // Parked too: the watcher keeps reporting elements while no
+                    // document is in force, and the dead ones must still go.
+                    if (now - lastPrune >= 5s)
+                    {
+                        lastPrune = now;
+                        for (ThreadContext* context : Contexts())
+                        {
+                            RunOn(*context, [context] { Prune(*context); }, 0ms);
+                        }
+                    }
+
                     auto set = Current();
                     if (!set) continue;
-                    const auto now = Clock::now();
 
                     // The clock: rewrite the text when the minute changes, and
                     // every 30 s regardless, in case a write of Explorer's
@@ -580,15 +646,6 @@ namespace deckle::rules
                             {
                                 RunOn(*context, [context] { RefreshClocks(*context); }, 0ms);
                             }
-                        }
-                    }
-
-                    if (now - lastPrune >= 5s)
-                    {
-                        lastPrune = now;
-                        for (ThreadContext* context : Contexts())
-                        {
-                            RunOn(*context, [context] { Prune(*context); }, 0ms);
                         }
                     }
 
@@ -628,6 +685,7 @@ namespace deckle::rules
         set->problems = std::move(document.problems);
         set->clock = std::make_shared<const ClockConfiguration>(std::move(document.clock));
         set->startMenuHeight = document.startMenuHeight.enabled;
+        set->startMenuWidth = document.startMenuWidth;
 
         for (RuleDefinition& definition : document.rules)
         {
@@ -674,8 +732,32 @@ namespace deckle::rules
 
         Log(LogLevel::Info, L"document_applied", L"Applied a settings document",
             { { L"generation", std::to_wstring(set->generation) }, { L"rules", std::to_wstring(set->rules.size()) },
-              { L"clock", set->clock->enabled ? L"on" : L"off" }, { L"start_menu_height", set->startMenuHeight ? L"on" : L"off" }, { L"unreachable_threads", std::to_wstring(unreachable) } });
+              { L"clock", set->clock->enabled ? L"on" : L"off" }, { L"start_menu_height", set->startMenuHeight ? L"on" : L"off" }, { L"start_menu_width", !set->startMenuWidth.enabled ? L"off" : set->startMenuWidth.fill ? L"fill" : L"value" }, { L"unreachable_threads", std::to_wstring(unreachable) } });
         m_impl->SendStatus(true);
+    }
+
+    size_t Engine::Park()
+    {
+        {
+            std::lock_guard guard(m_impl->lock);
+            m_impl->current.reset();
+        }
+
+        auto restored = std::make_shared<std::atomic<size_t>>(0);
+        for (ThreadContext* context : m_impl->Contexts())
+        {
+            bool done = Impl::RunOn(*context, [context, restored]
+            {
+                *restored += Impl::ClearAll(*context);
+            }, kWaitForUiThread);
+
+            if (!done)
+            {
+                Log(LogLevel::Warning, L"ui_thread_busy", L"A XAML thread did not give its overrides back in time",
+                    { { L"tid", std::to_wstring(context->tid) } });
+            }
+        }
+        return restored->load();
     }
 
     size_t Engine::Shutdown()

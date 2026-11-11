@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UserControl
+    x:Class="Deckle.Audio.Views.VoiceLevelMeter"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:catalog="using:Deckle.Catalog">
+
+    <!-- The voice meter in the compact preview block, inside the Voice level
+         card under its header row (2026-11-07 review, change 4): the
+         microphone's level on a fixed dB track, with the voice level marked on
+         it, and the detector's entry level when its margin is positive; under
+         the track, a slider on the same scale whose thumb is the voice level.
+         The meter shows and never writes; the slider writes, at the end of its
+         gesture, the same value as the field in the header row. The track is
+         drawn while Listen is off too, so the slider always has its scale;
+         the readouts show while Listen is on. The note under the block says why
+         the microphone closed when it closed on its own. -->
+    <StackPanel Spacing="{StaticResource SettingsCardSpacing}">
+        <catalog:PreviewBlock x:Name="Block"
+                              IsCompact="True">
+
+            <!-- One command, on the meter itself: open the microphone. A toggle,
+                 because the state it starts lasts; page state, not a setting. -->
+            <catalog:PreviewBlock.Commands>
+                <ToggleButton x:Name="ListenToggle"
+                              x:Uid="RecordingVoiceMeterListenToggle"
+                              Click="ListenToggle_Click" />
+            </catalog:PreviewBlock.Commands>
+
+            <!-- The stage: the scale's two ends, the track, the slider, the
+                 captions of the two marks. The track and its marks sit on a
+                 Canvas laid out by the code-behind from the canvas's own width
+                 (LayoutMarks), so every position comes from VoiceLevelMeterScale.
+                 The scale row, the track and the captions are inset by half the
+                 slider's thumb (ApplyThumbInset), so a value's mark on the track
+                 and the thumb's centre fall at the same x. Drawing order: the
+                 track, the faint voice band, the fill (accent while the meter's
+                 detector says voiced, neutral otherwise; two rectangles so each
+                 keeps its ThemeResource across a theme change), the peak tick,
+                 then the two marks on top. -->
+            <StackPanel Spacing="4">
+                <Grid x:Name="ScaleRow">
+                    <TextBlock x:Name="ScaleMinText"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               HorizontalAlignment="Left" />
+                    <TextBlock x:Name="ScaleMaxText"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                               HorizontalAlignment="Right" />
+                </Grid>
+
+                <Canvas x:Name="MeterCanvas"
+                        Height="20"
+                        HorizontalAlignment="Stretch"
+                        SizeChanged="MeterCanvas_SizeChanged">
+                    <Rectangle x:Name="TrackRect"
+                               Canvas.Top="4"
+                               Height="12"
+                               RadiusX="2"
+                               RadiusY="2"
+                               Fill="{ThemeResource ControlAltFillColorTertiaryBrush}"
+                               Stroke="{ThemeResource CardStrokeColorDefaultBrush}"
+                               StrokeThickness="1" />
+                    <!-- "This side is voice": the band from the voice level to
+                         the track's end, the accent at a faint opacity set on
+                         the element so the shared brush is never mutated. -->
+                    <Rectangle x:Name="VoiceBandRect"
+                               Canvas.Top="4"
+                               Height="12"
+                               Opacity="0.15"
+                               Fill="{ThemeResource AccentFillColorDefaultBrush}" />
+                    <Rectangle x:Name="SilentFillRect"
+                               Canvas.Top="4"
+                               Height="12"
+                               Width="0"
+                               RadiusX="2"
+                               RadiusY="2"
+                               Fill="{ThemeResource ControlStrongFillColorDefaultBrush}" />
+                    <Rectangle x:Name="VoicedFillRect"
+                               Canvas.Top="4"
+                               Height="12"
+                               Width="0"
+                               RadiusX="2"
+                               RadiusY="2"
+                               Visibility="Collapsed"
+                               Fill="{ThemeResource AccentFillColorDefaultBrush}" />
+                    <Rectangle x:Name="PeakRect"
+                               Canvas.Top="4"
+                               Height="12"
+                               Width="2"
+                               Visibility="Collapsed"
+                               Fill="{ThemeResource TextFillColorPrimaryBrush}" />
+                    <!-- The voice level, the detector's exit: solid. -->
+                    <Rectangle x:Name="VoiceMark"
+                               Canvas.Top="0"
+                               Height="20"
+                               Width="2"
+                               Fill="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <!-- The entry level, the detector's margin above it: dashed.
+                         Collapsed with its caption while the margin is 0. -->
+                    <Line x:Name="EntryMark"
+                          Y1="0"
+                          Y2="20"
+                          StrokeThickness="1"
+                          StrokeDashArray="2,2"
+                          Stroke="{ThemeResource TextFillColorSecondaryBrush}" />
+                </Canvas>
+
+                <!-- The voice level as a gesture, on the meter's own scale: its
+                     thumb is the mark above, so dragging it shows at once what
+                     passes over. Bounds and step come from VoiceLevelMeterScale;
+                     the field in the header row keeps the setting's wider range,
+                     and a value beyond the scale pins the thumb at its end, as
+                     it pins the bar. -->
+                <Slider x:Name="LevelSlider"
+                        x:Uid="RecordingVoiceMeterLevelSlider"
+                        IsThumbToolTipEnabled="False"
+                        ValueChanged="LevelSlider_ValueChanged" />
+
+                <!-- The marks' captions: the voice level's ends at its mark, on
+                     the quiet side; the entry's starts at its mark, on the loud
+                     side, so the two never overlap however close the marks. -->
+                <Canvas x:Name="CaptionCanvas" Height="16">
+                    <TextBlock x:Name="VoiceCaption"
+                               x:Uid="RecordingVoiceMeterVoiceCaption"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               SizeChanged="Caption_SizeChanged" />
+                    <TextBlock x:Name="EntryCaption"
+                               Style="{StaticResource CaptionTextBlockStyle}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               SizeChanged="Caption_SizeChanged" />
+                </Canvas>
+            </StackPanel>
+
+            <!-- Readouts read from the live microphone, never typed: the level
+                 the bar shows, the meter detector's decision, the loudest frame
+                 of the last few seconds, and the signal Windows granted (raw, or
+                 its default processing). Four columns that share the width. -->
+            <catalog:PreviewBlock.Readouts>
+                <Grid ColumnSpacing="24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <catalog:Readout x:Name="LevelReadout"   x:Uid="RecordingVoiceMeterLevelReadout"
+                                     Grid.Column="0" />
+                    <catalog:Readout x:Name="VoiceReadout"   x:Uid="RecordingVoiceMeterVoiceReadout"
+                                     Grid.Column="1" />
+                    <catalog:Readout x:Name="LoudestReadout" x:Uid="RecordingVoiceMeterLoudestReadout"
+                                     Grid.Column="2" />
+                    <catalog:Readout x:Name="SignalReadout"  x:Uid="RecordingVoiceMeterSignalReadout"
+                                     Grid.Column="3" />
+                </Grid>
+            </catalog:PreviewBlock.Readouts>
+        </catalog:PreviewBlock>
+
+        <!-- Why the microphone closed, when it closed without being asked. The
+             wording and the severity come from the code-behind, per cause: a
+             failure warns, the idle timeout informs. -->
+        <InfoBar x:Name="FailureBar"
+                 IsClosable="True"
+                 Severity="Warning"
+                 catalog:InfoBarLayout.CollapseWhenClosed="True" />
+    </StackPanel>
+</UserControl>

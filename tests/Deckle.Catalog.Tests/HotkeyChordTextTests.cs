@@ -1,4 +1,5 @@
 using Deckle.Catalog;
+using Deckle.Core;
 using Xunit;
 
 namespace Deckle.Catalog.Tests;

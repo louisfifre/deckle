@@ -30,7 +30,7 @@ public sealed record SettingsModuleDescriptor
     public required string Id { get; init; }
 
     // Assembly-qualified for a page in its own module assembly
-    // (e.g. "Deckle.Transcription.WhisperPage, Deckle.Transcription").
+    // (e.g. "Deckle.Transcription.Views.WhisperPage, Deckle.Transcription.Views").
     public required string PageTag { get; init; }
 
     // The module assembly whose PRI subtree carries the nav label.

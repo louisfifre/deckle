@@ -3,11 +3,11 @@ using System.Diagnostics.Tracing;
 using System.Text;
 using System.Threading.Channels;
 using Deckle.Audio;
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Transcription;
 using Deckle.Vad;
+using Deckle.Localization;
 
 namespace Deckle.Transcription;
 
@@ -36,15 +36,15 @@ public sealed partial class TranscriptionEngine
     private async Task<PipelineProduction?> ProduceStreamingAsync(
         CancellationToken producerCt, CancellationToken drainCt, Task<bool> primeTask)
     {
-        // Opt-in batch rewriting (TranscriptionEngine.BatchRewrite.cs). The feed
+        // The streaming steps (TranscriptionEngine.BatchRewrite.cs). The feed
         // is subscribed before the consumer starts and disposed when this method
         // exits, which every exit path reaches only after the consumer drain has
         // ended, so no utterance is missed and the subscription never outlives
-        // the take. On an abandoned production (a null return) the batches
+        // the take. On an abandoned production (a null return) the passages
         // already sent finish on their own and their results are dropped with
         // the rewriter.
-        BatchRewriteTake? batchTake = StartBatchRewrite();
-        using IDisposable? batchFeed = FeedBatchRewrite(batchTake);
+        StreamingRewriteTake rewriteTake = StartStreamingRewrite();
+        using IDisposable? rewriteFeed = FeedStreamingRewrite(rewriteTake);
 
         // Crash-safety copy of the raw text (TranscriptionEngine.Recovery.cs),
         // with the same lifetime as the batch feed.
@@ -55,7 +55,7 @@ public sealed partial class TranscriptionEngine
             ApplyPreprocessing: true,
             RejectIncompleteResults: false,
             StopCaptureOnPrimeFailure: true,
-            DeliveredText: batchTake is null ? null : batchTake.Snapshot);
+            DeliveredText: rewriteTake.Rewriter is null ? null : rewriteTake.Snapshot);
         SegmentedTranscriptionSession<StreamingConsumeResult> session =
             StartSegmentedTranscription(policy, drainCt, primeTask);
 
@@ -275,16 +275,14 @@ public sealed partial class TranscriptionEngine
 
         if (consumed.BackendAudio is not null) EmitPreprocessedTelemetry(consumed.BackendAudio);
 
-        // Sends the last open batch now rather than at Assemble, so its request
-        // runs while the finalize copies the raw text. Only here, on the path
-        // that finalizes: an abandoned take must not send a request whose
-        // result nobody reads.
-        //
-        // A run opened at a length step is checked against the final length
-        // first: when the take belongs to another profile the run is dropped
-        // here, and the finalize rewrites the whole take as it always did.
-        BatchRewriteRun? batchRewrite = batchTake?.RunForFinalize(consumed.Text.Length);
-        batchRewrite?.Rewriter.Complete();
+        // Sends the last open passage now rather than at Assemble, so its
+        // request runs while the finalize copies the text. Only here, on the
+        // path that finalizes, and only when the take ends on a streaming step:
+        // an abandoned take, or one whose whole text a step "at Stop" rewrites,
+        // must not send a request whose result nobody reads.
+        if (rewriteTake.Rewriter is { } rewriter
+            && rewriteTake.Plan.Highest(consumed.Text.Length) is { Streaming: true })
+            rewriter.Complete();
 
         return new PipelineProduction(
             RawText:           consumed.Text,
@@ -293,7 +291,7 @@ public sealed partial class TranscriptionEngine
             TotalTranscribeMs: consumed.TotalMs,
             InitMs:            consumed.InitMs,
             NSegments:         consumed.NSegments,
-            BatchRewrite:      batchRewrite);
+            StreamingRewrite:  new StreamingRewrite(rewriteTake.Plan, rewriteTake.Rewriter));
     }
 
     // Creates the source-neutral segmenter/channel/consumer core shared by live
@@ -767,10 +765,9 @@ public sealed partial class TranscriptionEngine
     // A file batch has no capture to stop and handles the failed gate itself.
     //
     // DeliveredText, when set, is where the take's delivered text differs from
-    // the consumer's raw assembly: a live take with a batch run reads it from
-    // the rewriter, so the Appended snapshots carry the rewrites already back.
-    // The function returns null while the take has no run yet (a take waiting
-    // for its first length step): the raw assembly then stands.
+    // the consumer's raw assembly: a live take whose steps can stream reads it
+    // from its document, so the Appended snapshots carry the rewrites already
+    // back. A null return lets the raw assembly stand.
     private readonly record struct SegmentedTranscriptionPolicy(
         string FixedPrompt,
         bool ApplyPreprocessing,

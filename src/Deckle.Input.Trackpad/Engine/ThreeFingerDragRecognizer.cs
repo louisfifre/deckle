@@ -38,6 +38,13 @@ internal enum DragPhase
 //     fourth finger or a lift before the deadline abandons the hover with
 //     nothing pressed; at the deadline the press lands at the point where
 //     the cursor started (HoverStarted lets the host record it);
+//   • travel cuts the wait short: once the fingers have moved
+//     PressDistanceUnits since landing, the press lands at once. Fingers
+//     settling for a four-finger gesture barely move before the fourth
+//     arrives, while a hand that sets down and sweeps (a screenshot
+//     selection) means a drag from the first millimetres — waiting out the
+//     delay there made the drag start visibly late. The press comes at
+//     whichever guard is met first;
 //   • lifting below three fingers during a drag opens a grace window;
 //     three tips returning before the deadline resume the SAME drag, no
 //     release-and-repress;
@@ -54,6 +61,9 @@ internal sealed class ThreeFingerDragRecognizer
 
     /// <summary>Delay after the three fingers land before the button is pressed, in milliseconds. 0 presses as soon as the drag starts.</summary>
     public double PressDelayMs { get; set; }
+
+    /// <summary>Travel since the fingers landed (logical units) that presses before the delay runs out. Infinity leaves the press to the delay alone.</summary>
+    public double PressDistanceUnits { get; set; } = double.PositiveInfinity;
 
     /// <summary>Per-frame centroid delta above which the motion is discarded as a glitch.</summary>
     public double MaxFrameDeltaUnits { get; set; } = double.MaxValue;
@@ -117,11 +127,9 @@ internal sealed class ThreeFingerDragRecognizer
                 {
                     _engagedTravelX += dx;
                     _engagedTravelY += dy;
-                    double travel = Math.Sqrt(
-                        _engagedTravelX * _engagedTravelX + _engagedTravelY * _engagedTravelY);
-                    if (travel >= StartThresholdUnits)
+                    if (EngagedTravel >= StartThresholdUnits)
                     {
-                        if (frame.TimestampMs >= _engagedAtMs + PressDelayMs)
+                        if (PressDue(frame.TimestampMs))
                         {
                             Phase = DragPhase.Dragging;
                             DragStarted?.Invoke();
@@ -145,13 +153,17 @@ internal sealed class ThreeFingerDragRecognizer
                 }
 
                 if (TryMatchedDelta(frame, out dx, out dy))
+                {
+                    _engagedTravelX += dx;
+                    _engagedTravelY += dy;
                     DragMoved?.Invoke(dx, dy);
+                }
                 CaptureTips(frame);
 
                 // Moved first, pressed second: the press carries the cursor
                 // back to where it started, so it must see this frame's
                 // motion already applied.
-                if (frame.TimestampMs >= _engagedAtMs + PressDelayMs)
+                if (PressDue(frame.TimestampMs))
                     CommitPress();
                 break;
 
@@ -222,6 +234,16 @@ internal sealed class ThreeFingerDragRecognizer
             ToIdle();
         _lastTipCount = 0;
     }
+
+    // Net displacement since the fingers landed, not the path length: a
+    // finger rolling back and forth while settling must not add up to a drag.
+    private double EngagedTravel =>
+        Math.Sqrt(_engagedTravelX * _engagedTravelX + _engagedTravelY * _engagedTravelY);
+
+    // The two guards on the press; whichever is met first lets it through.
+    // Tick checks the delay only: travel arrives on frames.
+    private bool PressDue(double nowMs) =>
+        nowMs >= _engagedAtMs + PressDelayMs || EngagedTravel >= PressDistanceUnits;
 
     private void CommitPress()
     {

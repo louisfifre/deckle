@@ -10,6 +10,7 @@ using Deckle.Core;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Shell;
+using Deckle.Localization;
 
 namespace Deckle.Hud;
 
@@ -30,9 +31,9 @@ namespace Deckle.Hud;
 //               does not); a revision cross-fades the content;
 //   EndTake   → later SetText calls are ignored, the window stays;
 //   Hide      → fade out, SW_HIDE, the take closes;
-//   ShowAgain → after a Hide that the HUD caused mid-take (the paste hides
-//               the HUD), the panel comes back with the HUD, so the final
-//               text is read beside "Pasted" as it is beside "Copied".
+//   ShowAgain → after a Hide that the HUD caused mid-take, the panel comes
+//               back with the HUD, so the final text is read beside
+//               "Copied".
 // Every public method is thread-safe: engine events arrive on background
 // threads and each call marshals to the UI thread through EnqueueUI.
 //
@@ -84,7 +85,7 @@ public sealed partial class TranscriptPanelWindow : Window
     private double _lineHeightDip; // 0 until measured on first render
 
     // True after a Hide while the take was open and text was on screen: the
-    // HUD hid for the paste, and the panel comes back when the HUD does.
+    // HUD hid, and the panel comes back when the HUD does.
     private bool _hiddenWithText;
 
     // The revision cross-fade in flight, if any. A new text during the dip is

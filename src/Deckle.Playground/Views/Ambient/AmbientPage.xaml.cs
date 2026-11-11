@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Lighting;
 using Deckle.Lighting.Ambient;
+using Deckle.Lighting.Ambient.Views;
 using Deckle.Catalog;
 using Deckle.Playground;
 using Deckle.Shell;

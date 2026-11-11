@@ -1,0 +1,154 @@
+<Page
+    x:Class="Deckle.Mail.Hub.SubjectPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Deckle.Mail.Hub"
+    NavigationCacheMode="Required"
+    SizeChanged="OnSizeChanged">
+
+    <Page.Resources>
+        <Style x:Key="MailListContainerStyle" TargetType="ListViewItem" BasedOn="{StaticResource DefaultListViewItemStyle}">
+            <Setter Property="Padding" Value="12,8" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        </Style>
+    </Page.Resources>
+
+    <ScrollViewer x:Name="Scroller">
+        <Grid>
+            <!-- The column of the page, at most 1000 wide inside its 32 px margins and
+                 held at the left as the frames hold it. A capped Grid column, not
+                 MaxWidth on a stretched panel: WinUI centres such a panel from its
+                 desired width, which drifted a narrow page to the middle. -->
+            <Grid.ColumnDefinitions><ColumnDefinition Width="*" MaxWidth="1064" /></Grid.ColumnDefinitions>
+            <StackPanel HorizontalAlignment="Stretch" Margin="32,32,32,24">
+            <!-- The title is the sentence of the row; beside it, the task
+                 control and the trash of the row, in the same two columns and
+                 at the same right edge (spec, A subject opened). The two
+                 commands are one block (Commands) that the code places
+                 (ApplyLayout): beside the title in a wide window, under the
+                 grey line in a narrow one, and nowhere when the subject has no
+                 gesture left, so the title then has the whole width. Held
+                 beside the title at any width, their 260 px left a narrow
+                 title a few letters a line. -->
+            <Grid x:Name="HeaderGrid" ColumnSpacing="12" Margin="0,0,8,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock x:Name="TitleText"
+                           Style="{StaticResource TitleTextBlockStyle}"
+                           TextWrapping="Wrap" />
+                <Grid x:Name="Commands"
+                      Grid.Column="1"
+                      ColumnSpacing="12"
+                      VerticalAlignment="Top"
+                      Margin="0,2,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="32" />
+                    </Grid.ColumnDefinitions>
+                    <local:TaskColumn x:Name="Task" VerticalAlignment="Top" />
+                    <Button x:Name="TrashButton"
+                            x:Uid="SubjectRowTrash"
+                            Grid.Column="1"
+                            VerticalAlignment="Top"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            Padding="8"
+                            Click="OnTrashClick">
+                        <FontIcon Glyph="{StaticResource Icon.Delete}" FontSize="16" />
+                    </Button>
+                </Grid>
+
+            <!-- One grey line: the sender with their real address, and the
+                 reception; on an earlier mail, the mention that leads back to
+                 the latest (35KS). For a sender not verified, the address
+                 alone, then a small mark that explains itself when opened
+                 (spec, A subject opened; frame 2.5 opened). -->
+            <StackPanel x:Name="FromPanel" Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,4,0,0">
+                <TextBlock x:Name="FromText"
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           TextWrapping="Wrap"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           VerticalAlignment="Center" />
+                <Button x:Name="UnverifiedMark"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        Padding="6,2"
+                        Margin="4,0"
+                        VerticalAlignment="Center"
+                        Visibility="Collapsed">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <FontIcon Glyph="{StaticResource Icon.Badge.Warning}"
+                                  FontSize="14"
+                                  Foreground="{ThemeResource SystemFillColorCautionBrush}" />
+                        <TextBlock x:Name="UnverifiedMarkText"
+                                   Style="{StaticResource CaptionTextBlockStyle}"
+                                   VerticalAlignment="Center" />
+                    </StackPanel>
+                    <Button.Flyout>
+                        <Flyout x:Name="UnverifiedFlyout" Placement="BottomEdgeAlignedLeft">
+                            <StackPanel MaxWidth="320" Spacing="4">
+                                <TextBlock x:Name="UnverifiedTitle" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                <TextBlock x:Name="UnverifiedMessage" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
+                            </StackPanel>
+                        </Flyout>
+                    </Button.Flyout>
+                </Button>
+                <TextBlock x:Name="WhenText"
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           VerticalAlignment="Center"
+                           Visibility="Collapsed" />
+                <TextBlock x:Name="EarlierText"
+                           x:Uid="SubjectEarlierMail"
+                           Style="{StaticResource BodyTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           VerticalAlignment="Center"
+                           Visibility="Collapsed" />
+                <HyperlinkButton x:Name="LatestLink"
+                                 Padding="6,0"
+                                 VerticalAlignment="Center"
+                                 Visibility="Collapsed"
+                                 Click="OnShowLatestClick">
+                    <TextBlock x:Uid="SubjectShowLatest" TextDecorations="Underline" />
+                </HyperlinkButton>
+            </StackPanel>
+            </Grid>
+
+            <!-- The text beside the list of the subject's mails; in a narrow
+                 window the list goes under the text. -->
+            <Grid x:Name="MailGrid" Margin="0,24,0,0" ColumnSpacing="56" RowSpacing="28">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="TextColumn" Width="*" MaxWidth="560" />
+                    <ColumnDefinition x:Name="ListColumn" Width="288" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Whole and as written: greeting, request, signature. About
+                     sixty characters a line, nothing restyled. -->
+                <StackPanel x:Name="ReadPanel" Spacing="12">
+                    <StackPanel x:Name="BodyPanel" Spacing="12" />
+                    <StackPanel x:Name="FilesPanel" Spacing="8" Margin="0,8,0,0" />
+                </StackPanel>
+
+                <StackPanel x:Name="ListPanel" Grid.Column="1">
+                    <TextBlock x:Name="CountText"
+                               Style="{StaticResource BodyStrongTextBlockStyle}"
+                               Margin="12,0,0,4" />
+                    <ListView x:Name="MailsList"
+                              SelectionMode="Single"
+                              ItemContainerStyle="{StaticResource MailListContainerStyle}"
+                              SelectionChanged="OnMailSelectionChanged" />
+                </StackPanel>
+            </Grid>
+        </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</Page>

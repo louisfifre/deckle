@@ -1,0 +1,377 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using CommunityToolkit.WinUI.Controls;
+using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Controls;
+using Deckle.Localization;
+
+namespace Deckle.Llm.Rewrite.Views;
+
+// ─── Dictation section of LlmPage: the dictation steps ─────────────────────
+//
+// specs/deckle-dictation-rewriting.md, group Page. "Rewrite dictations" alone;
+// while it is on, the timeline (RewriteStepTimeline, which shows and never
+// writes), one card per step (LlmSettings.Dictation.Steps), then "Add a step".
+// A step card holds its profile, its length and its "Streaming" switch; the
+// first one has "Start at" in place of "From" and no remove button, since it
+// always exists.
+//
+// The lists depend on the defined profiles: the host must call Reload() after
+// any mutation of the Profiles section so added, renamed or removed profiles
+// show up here. It also depends on the transcription strategy, which lives in
+// another module: the host gives it through LlmSettingsModule.TranscriptionStreams,
+// and Reload reads it again on every navigation.
+//
+// Each length field is bounded by its neighbours, so a step stops short of
+// them rather than pushing one out of order.
+public sealed partial class LlmDictationSection : UserControl
+{
+    private const string Module = "Deckle.Llm.Rewrite.Views";
+
+    // Where a second step lands when the first starts from the beginning:
+    // about three minutes, the length past which a dictation starts reading
+    // as a text.
+    private const int SecondStepChars = 2000;
+
+    private const double ProfileColumnWidth = 200;
+    private const double LengthColumnWidth = 320;
+
+    private bool _loading;
+
+    // The length field of each step card, in step order, and the "Start at"
+    // box of the first. A committed length moves its neighbours' bounds in
+    // place: rebuilding the cards would pull the field out from under the
+    // pointer between two clicks on its arrows.
+    private readonly List<NumberBox> _lengthBoxes = new();
+
+    // Set while code writes a length field, so its ValueChanged is not taken
+    // for the person's edit.
+    private bool _syncingLengths;
+
+    public LlmDictationSection()
+    {
+        InitializeComponent();
+    }
+
+    private static LlmSettings Settings => LlmSettingsService.Instance.Current;
+    private static DictationRewriteSettings Dictation => Settings.Dictation;
+
+    // Page 8: without streaming transcription no passage exists before Stop,
+    // so the steps' "Streaming" switch is hidden and every step reads "At stop".
+    private static bool TranscriptionStreams => LlmSettingsModule.TranscriptionStreams?.Invoke() ?? true;
+
+    public void Reload()
+    {
+        _loading = true;
+        EnableToggle.IsOn = Dictation.Enabled;
+        _loading = false;
+        RebuildSteps();
+    }
+
+    private void EnableToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_loading) return;
+        Dictation.Enabled = EnableToggle.IsOn;
+        LlmSettingsService.Instance.Save();
+        ApplyState();
+    }
+
+    private void AddStep_Click(object sender, RoutedEventArgs e)
+    {
+        if (NextStepChars() is not { } chars || Settings.Profiles.Count == 0) return;
+
+        // Taken by the first profile no step names yet (else the first
+        // profile), with the moment of the step before it: the field and the
+        // list move it from there.
+        List<RewriteStep> steps = Dictation.Steps;
+        RewriteProfile profile = Settings.Profiles.FirstOrDefault(p => !steps.Any(step => step.ProfileId == p.Id))
+            ?? Settings.Profiles[0];
+        steps.Add(new RewriteStep { ProfileId = profile.Id, FromChars = chars, Streaming = steps[^1].Streaming });
+        LlmSettingsService.Instance.Save();
+        RebuildSteps();
+    }
+
+    // A new step lands at twice the last one's start (SecondStepChars after a
+    // first step from the beginning). Doubling keeps the steps growing apart
+    // as dictations lengthen. Null once the last one is at the maximum.
+    private static int? NextStepChars()
+    {
+        int last = Dictation.StartOf(Dictation.Steps.Count - 1);
+        if (last == 0) return SecondStepChars;
+        if (last >= DictationRewriteSettings.MaxChars) return null;
+        return DictationRewriteSettings.Snap(last * 2);
+    }
+
+    private void RebuildSteps()
+    {
+        StepsHost.Children.Clear();
+        _lengthBoxes.Clear();
+        List<RewriteStep> steps = Dictation.Steps;
+        for (int i = 0; i < steps.Count; i++)
+            StepsHost.Children.Add(BuildStepCard(i));
+
+        UpdateLengthBounds();
+        ApplyState();
+    }
+
+    private void ApplyState()
+    {
+        StepsPanel.Visibility = Dictation.Enabled ? Visibility.Visible : Visibility.Collapsed;
+        AddStepButton.IsEnabled = NextStepChars() is not null && Settings.Profiles.Count > 0;
+        RefreshTimeline();
+    }
+
+    private void RefreshTimeline()
+    {
+        List<RewriteProfile> profiles = Settings.Profiles;
+        Timeline.Show(StepTimelineLayout.For(
+            Dictation,
+            id => profiles.Find(p => p.Id == id)?.Name,
+            TranscriptionStreams));
+    }
+
+    // Each field stops one grain short of its neighbours, so the steps stay
+    // strictly increasing whatever is typed. A step's bounds always hold its
+    // own value, so moving them never changes it. The arrows step by the grain
+    // of the current length, so they move finely on a short length and
+    // coarsely on a long one.
+    private void UpdateLengthBounds()
+    {
+        List<RewriteStep> steps = Dictation.Steps;
+        _syncingLengths = true;
+        try
+        {
+            for (int i = 0; i < _lengthBoxes.Count && i < steps.Count; i++)
+            {
+                NumberBox box = _lengthBoxes[i];
+                int below = i > 0 ? Dictation.StartOf(i - 1) : 0;
+                box.Minimum = below > 0
+                    ? DictationRewriteSettings.Above(below)
+                    : DictationRewriteSettings.MinChars;
+                box.Maximum = i + 1 < steps.Count
+                    ? Math.Max(box.Minimum, DictationRewriteSettings.Below(steps[i + 1].FromChars))
+                    : DictationRewriteSettings.MaxChars;
+                int grain = DictationRewriteSettings.GrainAt(steps[i].FromChars);
+                box.SmallChange = grain;
+                box.LargeChange = grain * 10;
+            }
+        }
+        finally { _syncingLengths = false; }
+    }
+
+    // [Profile ▾]   (Start at | From) [1000] characters   Streaming [○]   [🗑]
+    // The first step's length shows only while "Start at" is ticked: off, the
+    // step starts with the dictation and a length would not apply.
+    private SettingsCard BuildStepCard(int index)
+    {
+        RewriteStep step = Dictation.Steps[index];
+        bool first = index == 0;
+
+        var profileCombo = new ComboBox { VerticalAlignment = VerticalAlignment.Center };
+        AutomationProperties.SetName(profileCombo, Loc.GetFrom(Module, "LlmStep_ProfileName"));
+        foreach (RewriteProfile profile in Settings.Profiles)
+            profileCombo.Items.Add(new ComboBoxItem { Content = profile.Name, Tag = profile.Id });
+        profileCombo.SelectedIndex = Settings.Profiles.FindIndex(p => p.Id == step.ProfileId);
+        profileCombo.SelectionChanged += (_, _) =>
+        {
+            if (profileCombo.SelectedItem is not ComboBoxItem { Tag: string id } || id == step.ProfileId) return;
+            step.ProfileId = id;
+            LlmSettingsService.Instance.Save();
+            RefreshTimeline();
+        };
+
+        NumberBox lengthBox = BuildLengthBox(step);
+        var characters = Caption(Loc.GetFrom(Module, "LlmStep_Characters"));
+
+        var length = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+        if (first)
+        {
+            var startAt = new CheckBox
+            {
+                Content = Loc.GetFrom(Module, "LlmStep_StartAt"),
+                IsChecked = Dictation.StartAtLength,
+                MinWidth = 0,
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            void ShowLength()
+            {
+                Visibility shown = Dictation.StartAtLength ? Visibility.Visible : Visibility.Collapsed;
+                lengthBox.Visibility = shown;
+                characters.Visibility = shown;
+            }
+            startAt.Click += (_, _) =>
+            {
+                Dictation.StartAtLength = startAt.IsChecked == true;
+                // Ticked again under a later step's length: the first step
+                // takes the length just below it, so the order holds.
+                if (Dictation.StartAtLength && Dictation.Steps.Count > 1
+                    && step.FromChars >= Dictation.Steps[1].FromChars)
+                {
+                    step.FromChars = Math.Max(DictationRewriteSettings.MinChars,
+                        DictationRewriteSettings.Below(Dictation.Steps[1].FromChars));
+                    _syncingLengths = true;
+                    try { lengthBox.Value = step.FromChars; }
+                    finally { _syncingLengths = false; }
+                }
+                LlmSettingsService.Instance.Save();
+                ShowLength();
+                UpdateLengthBounds();
+                ApplyState();
+            };
+            ShowLength();
+            length.Children.Add(startAt);
+        }
+        else
+        {
+            length.Children.Add(Caption(Loc.GetFrom(Module, "LlmStep_From")));
+        }
+        length.Children.Add(lengthBox);
+        length.Children.Add(characters);
+
+        var streamingToggle = new ToggleSwitch
+        {
+            IsOn = step.Streaming,
+            OnContent = "",
+            OffContent = "",
+            MinWidth = 0,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        string streamingName = Loc.GetFrom(Module, "LlmStep_Streaming");
+        AutomationProperties.SetName(streamingToggle, streamingName);
+        streamingToggle.Toggled += (_, _) =>
+        {
+            if (streamingToggle.IsOn == step.Streaming) return;
+            step.Streaming = streamingToggle.IsOn;
+            LlmSettingsService.Instance.Save();
+            RefreshTimeline();
+        };
+        var streaming = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = 12,
+            VerticalAlignment = VerticalAlignment.Center,
+            Visibility = TranscriptionStreams ? Visibility.Visible : Visibility.Collapsed,
+        };
+        streaming.Children.Add(Caption(streamingName));
+        streaming.Children.Add(streamingToggle);
+
+        // The first card keeps the room of the remove button, laid out but
+        // not shown, so every card's fields line up on the same edges.
+        var remove = new Button
+        {
+            Content = new FontIcon { Glyph = (string)Application.Current.Resources["Icon.Delete"], FontSize = 14 },
+            VerticalAlignment = VerticalAlignment.Center,
+            Opacity = first ? 0 : 1,
+            IsHitTestVisible = !first,
+            IsTabStop = !first,
+        };
+        if (first) AutomationProperties.SetAccessibilityView(remove, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
+        string removeName = Loc.GetFrom(Module, "LlmStep_RemoveName");
+        AutomationProperties.SetName(remove, removeName);
+        ToolTipService.SetToolTip(remove, removeName);
+        remove.Click += (_, _) =>
+        {
+            Dictation.Steps.Remove(step);
+            LlmSettingsService.Instance.Save();
+            RebuildSteps();
+        };
+        // A card laid out with its content on the left does not stretch it,
+        // so a star column would shrink to its content: the profile and the
+        // length take fixed widths instead, the widest of their forms ("Start
+        // at" with its field), and every card's columns line up.
+        var row = new Grid { ColumnSpacing = 24 };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(ProfileColumnWidth) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(LengthColumnWidth) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        Place(row, profileCombo, 0);
+        profileCombo.HorizontalAlignment = HorizontalAlignment.Stretch;
+        Place(row, length, 1);
+        Place(row, streaming, 2);
+        Place(row, remove, 3);
+
+        return new SettingsCard
+        {
+            ContentAlignment = ContentAlignment.Left,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
+            Content = row,
+        };
+
+        static void Place(Grid grid, FrameworkElement element, int column)
+        {
+            Grid.SetColumn(element, column);
+            grid.Children.Add(element);
+        }
+    }
+
+    private NumberBox BuildLengthBox(RewriteStep step)
+    {
+        var lengthBox = new NumberBox
+        {
+            Value = step.FromChars,
+            // Arrows on hover and focus, in a flyout that pushes no layout.
+            SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
+            ValidationMode = NumberBoxValidationMode.InvalidInputOverwritten,
+            MinWidth = 96,
+            VerticalAlignment = VerticalAlignment.Center,
+            // Digits only, no grouping, as every number field of the app.
+            NumberFormatter = new Windows.Globalization.NumberFormatting.DecimalFormatter
+            {
+                IntegerDigits = 1,
+                FractionDigits = 0,
+                IsGrouped = false,
+            },
+        };
+        AutomationProperties.SetName(lengthBox, Loc.GetFrom(Module, "LlmStep_LengthName"));
+        _lengthBoxes.Add(lengthBox);
+
+        // ValueChanged on a NumberBox is the commit (Enter, focus loss, an
+        // arrow click), the end of the gesture, so it writes at once.
+        lengthBox.ValueChanged += (_, _) =>
+        {
+            if (_syncingLengths) return;
+            // A cleared field gives NaN: the stored length comes back rather
+            // than an empty field. A typed figure is kept on the grain and
+            // between the neighbours, here rather than trusting the control.
+            int chars = double.IsNaN(lengthBox.Value)
+                ? step.FromChars
+                : Math.Clamp(DictationRewriteSettings.Snap(lengthBox.Value),
+                    (int)lengthBox.Minimum, (int)lengthBox.Maximum);
+            if (lengthBox.Value != chars)
+            {
+                _syncingLengths = true;
+                try { lengthBox.Value = chars; }
+                finally { _syncingLengths = false; }
+            }
+            if (chars == step.FromChars) return;
+
+            step.FromChars = chars;
+            LlmSettingsService.Instance.Save();
+            UpdateLengthBounds();
+            ApplyState();
+        };
+        return lengthBox;
+    }
+
+    private static TextBlock Caption(string text) => new()
+    {
+        Text = text,
+        VerticalAlignment = VerticalAlignment.Center,
+    };
+
+    // Scope: the steps, back to one first step from the beginning; the
+    // profiles stay, and so does "Rewrite dictations", the person's choice
+    // rather than a value to tune (the rule LlmResetDefaults keeps for the
+    // module switch). No confirmation: the steps come back in a few clicks.
+    private void ResetSection_Click(object sender, RoutedEventArgs e)
+    {
+        bool enabled = Dictation.Enabled;
+        Settings.Dictation = new DictationRewriteSettings();
+        LlmSettingsNormalizer.NormalizeDictation(Settings);
+        Settings.Dictation.Enabled = enabled;
+        LlmSettingsService.Instance.Save();
+        Reload();
+    }
+}

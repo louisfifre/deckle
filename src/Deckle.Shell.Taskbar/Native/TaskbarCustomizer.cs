@@ -34,6 +34,7 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
     private readonly Func<TaskbarSettings> _settings;
     private readonly Func<bool> _isBarVertical;
     private readonly Func<TaskbarTarget, ITaskbarEngine> _createEngine;
+    private readonly Func<string, string, Task<FunctionLookup>> _findFunction;
     private readonly SemaphoreSlim _turn = new(1, 1);
     private readonly object _stateGate = new();
     private readonly TargetState _explorer = new(TaskbarTarget.Explorer);
@@ -41,8 +42,14 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
 
     private TaskbarCustomization _wanted = new();
     private IReadOnlyDictionary<TaskbarPart, TaskbarProblem> _problems = new Dictionary<TaskbarPart, TaskbarProblem>();
+    // The thickness and the thumbnails are functions the engine patches, with
+    // no status line: a failed lookup, or the engine's record about the patch
+    // (constant_return_*, thumbnail_box_*), is the problem. Under the state gate.
+    private readonly PatchProblem _thickness = new();
+    private readonly PatchProblem _thumbnails = new();
     private string _loggedParts = "none";
     private bool _loggedCompactTrayLeftOut;
+    private bool _loggedCompactTaskButtonsLeftOut;
     private bool _stopped;
 
     private TaskbarCustomizer()
@@ -51,11 +58,13 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
     }
 
     internal TaskbarCustomizer(
-        Func<TaskbarSettings> settings, Func<bool> isBarVertical, Func<TaskbarTarget, ITaskbarEngine> createEngine)
+        Func<TaskbarSettings> settings, Func<bool> isBarVertical, Func<TaskbarTarget, ITaskbarEngine> createEngine,
+        Func<string, string, Task<FunctionLookup>>? findFunction = null)
     {
         _settings = settings;
         _isBarVertical = isBarVertical;
         _createEngine = createEngine;
+        _findFunction = findFunction ?? ((module, symbol) => ExplorerFunctionLocator.Instance.FindAsync(module, symbol));
     }
 
     /// <summary>
@@ -91,7 +100,13 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
             lock (_stateGate) _wanted = wanted;
             LogWanted(settings, wanted);
 
-            await ApplyAsync(_explorer, wanted.CustomizesExplorer, () => TaskbarDocumentBuilder.Build(wanted)).ConfigureAwait(false);
+            ExplorerFunction? frameSize = await FindFunctionAsync(
+                wanted.BarThickness is not null, _thickness,
+                TaskbarDocumentBuilder.FrameSizeModule, TaskbarDocumentBuilder.FrameSizeSymbol).ConfigureAwait(false);
+            ExplorerFunction? thumbnailSize = await FindFunctionAsync(
+                wanted.Thumbnails is not null, _thumbnails,
+                TaskbarDocumentBuilder.ThumbnailSizeModule, TaskbarDocumentBuilder.ThumbnailSizeSymbol).ConfigureAwait(false);
+            await ApplyAsync(_explorer, wanted.CustomizesExplorer, () => TaskbarDocumentBuilder.Build(wanted, frameSize, thumbnailSize)).ConfigureAwait(false);
             await ApplyAsync(_startMenu, wanted.CustomizesStartMenu, () => TaskbarDocumentBuilder.BuildStartMenu(wanted)).ConfigureAwait(false);
             RecomputeProblems();
         }
@@ -126,6 +141,29 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
     }
 
     public ValueTask DisposeAsync() => new(ShutdownAsync());
+
+    // Where a function the engine patches lives in this explorer: a read of the
+    // cache, or once per build of Windows a download. A function that this
+    // build's symbols do not name is Windows having moved on (not applied);
+    // anything else (offline, explorer starting) is an error the next turn
+    // tries again. A part that is off looks nothing up.
+    private async Task<ExplorerFunction?> FindFunctionAsync(bool wanted, PatchProblem patch, string module, string symbol)
+    {
+        if (!wanted)
+        {
+            lock (_stateGate) patch.Lookup = null;
+            return null;
+        }
+
+        FunctionLookup lookup = await _findFunction(module, symbol).ConfigureAwait(false);
+        lock (_stateGate)
+        {
+            patch.Lookup = lookup.Function is not null ? null
+                : lookup.FunctionGone ? TaskbarProblem.NotApplied
+                : TaskbarProblem.Error;
+        }
+        return lookup.Function;
+    }
 
     // ── One process ───────────────────────────────────────────────────────────
 
@@ -196,9 +234,9 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
         if (engine is null) return;
 
         bool connected = engine.IsConnected;
-        bool unloaded = await engine.StopEngineAsync().ConfigureAwait(false);
-        if (connected && !unloaded)
-            DeckleShellTaskbarSource.Log.TaskbarEngineUnloadUnconfirmed(process.Target.Kind == TaskbarTargetKind.Explorer ? "explorer" : "start_menu");
+        bool stopped = await engine.StopEngineAsync().ConfigureAwait(false);
+        if (connected && !stopped)
+            DeckleShellTaskbarSource.Log.TaskbarEngineStopUnconfirmed(process.Target.Kind == TaskbarTargetKind.Explorer ? "explorer" : "start_menu");
         await engine.DisposeAsync().ConfigureAwait(false);
     }
 
@@ -214,7 +252,11 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
                 // A new DLL knows nothing: it gets the document again. The bar
                 // may also have changed edge with the restart that brought it.
                 Interlocked.Increment(ref process.Connection);
-                lock (_stateGate) process.Status = null;
+                lock (_stateGate)
+                {
+                    process.Status = null;
+                    if (process == _explorer) _thickness.Engine = _thumbnails.Engine = null;
+                }
                 process.Unavailable = false;
                 process.SentDocument = null;
                 _ = Task.Run(() => ReconcileAsync("engine_connected"));
@@ -223,13 +265,47 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
                 lock (_stateGate) process.Status = status;
                 RecomputeProblems();
                 break;
+            case NativeLogRecord record when record.Fields.TryGetValue("id", out string? id) && PatchOf(id) is (var patch, var prefix):
+                if (!record.Event.StartsWith(prefix, StringComparison.Ordinal)) break;
+                TaskbarProblem? problem = record.Event[prefix.Length..] switch
+                {
+                    "applied" or "restored" => null,
+                    // Another build than the one resolved, or code that is not
+                    // what the file holds (another tool patched it first).
+                    "skipped" => TaskbarProblem.NotApplied,
+                    _ => TaskbarProblem.Error,
+                };
+                lock (_stateGate) patch.Engine = problem;
+                RecomputeProblems();
+                break;
         }
+    }
+
+    // The patch an engine record speaks of, by the id Deckle gave it, with the
+    // prefix of the records the engine writes about that kind of patch.
+    private (PatchProblem Patch, string Prefix)? PatchOf(string id) => id switch
+    {
+        TaskbarDocumentBuilder.BarThicknessId => (_thickness, "constant_return_"),
+        TaskbarDocumentBuilder.ThumbnailBoxId => (_thumbnails, "thumbnail_box_"),
+        _ => null,
+    };
+
+    // What Deckle knows is wrong with one patched function. The lookup comes
+    // first: without the function the engine was told nothing.
+    private sealed class PatchProblem
+    {
+        public TaskbarProblem? Lookup;
+        public TaskbarProblem? Engine;
+        public TaskbarProblem? Current => Lookup ?? Engine;
     }
 
     private void OnDisconnected(TargetState process, ITaskbarEngine engine)
     {
         if (!ReferenceEquals(process.Engine, engine)) return;
         process.SentDocument = null;
+        // A host that gave up injecting has no engine to offer until Deckle
+        // restarts: the page marks the parts it carried.
+        if (engine.HeldOff) process.Unavailable = true;
         lock (_stateGate) process.Status = null;
         RecomputeProblems();
     }
@@ -243,7 +319,8 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
         lock (_stateGate)
         {
             next = TaskbarProblemReader.Read(_wanted,
-                _explorer.Status, _explorer.Unavailable, _startMenu.Status, _startMenu.Unavailable);
+                _explorer.Status, _explorer.Unavailable, _startMenu.Status, _startMenu.Unavailable,
+                _thickness.Current, _thumbnails.Current);
             previous = _problems;
             if (SameProblems(previous, next)) return;
             _problems = next;
@@ -292,6 +369,14 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
             _loggedCompactTrayLeftOut = leftOut;
             if (leftOut)
                 DeckleShellTaskbarSource.Log.TaskbarPartSkipped(TaskbarPart.CompactTray.ForLog(), "taskbar_horizontal");
+        }
+
+        bool buttonsLeftOut = settings.CompactTaskButtons && wanted.TaskButtonPitch is null;
+        if (buttonsLeftOut != _loggedCompactTaskButtonsLeftOut)
+        {
+            _loggedCompactTaskButtonsLeftOut = buttonsLeftOut;
+            if (buttonsLeftOut)
+                DeckleShellTaskbarSource.Log.TaskbarPartSkipped(TaskbarPart.CompactTaskButtons.ForLog(), "taskbar_horizontal");
         }
     }
 

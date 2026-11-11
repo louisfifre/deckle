@@ -4,9 +4,8 @@ using Xunit;
 
 namespace Deckle.Transcription.Tests;
 
-// The paste events describe the window the text goes to. That description names
-// the program the person is using, so it stays on Verbose detail events and
-// never on a line the log keeps.
+// An application or process name names the program the person is using, so it
+// stays on Verbose detail events and never on a line the log keeps.
 [Trait("Category", "observability")]
 public sealed class TranscriptionAppNameTests
 {
@@ -17,7 +16,7 @@ public sealed class TranscriptionAppNameTests
     }
 
     [Fact]
-    public void TheForegroundDescriptorStaysOnVerboseDetailEventsThatTheLogDoesNotKeep()
+    public void AnAppNameStaysOnVerboseDetailEventsThatTheLogDoesNotKeep()
     {
         var carrying = LoggedPayloads
             .Carrying(typeof(DeckleWhispSource), LoggedPayloads.AppNameFields)
@@ -25,8 +24,6 @@ public sealed class TranscriptionAppNameTests
             .DistinctBy(e => e.Name)
             .ToArray();
 
-        Assert.Contains(nameof(DeckleWhispSource.PasteForeground), carrying.Select(e => e.Name));
-        Assert.Contains(nameof(DeckleWhispSource.PasteSent), carrying.Select(e => e.Name));
         Assert.All(carrying, e =>
         {
             Assert.Equal(EventLevel.Verbose, e.Level);
