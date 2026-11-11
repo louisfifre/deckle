@@ -7,6 +7,16 @@ namespace Deckle.App;
 
 public partial class App
 {
+    // Each open window shows the recording state in its icons. Also the way a
+    // window picks its taskbar icon again: see IconAssets.ResolvePath.
+    private void ApplyRecordingStateToWindows(bool isRecording)
+    {
+        _logWindow?.SetRecordingState(isRecording);
+        _playgroundWindow?.SetRecordingState(isRecording);
+        _mailWindow?.SetRecordingState(isRecording);
+        _settingsWindow?.SetRecordingState(isRecording);
+    }
+
     private void ShowLogWindowLazy() => EnsureLogWindow().ShowAndActivate();
 
     // The window created and wired, not shown: the self-check shows it without
