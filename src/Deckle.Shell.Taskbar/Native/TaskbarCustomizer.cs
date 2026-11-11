@@ -227,9 +227,9 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
         if (engine is null) return;
 
         bool connected = engine.IsConnected;
-        bool unloaded = await engine.StopEngineAsync().ConfigureAwait(false);
-        if (connected && !unloaded)
-            DeckleShellTaskbarSource.Log.TaskbarEngineUnloadUnconfirmed(process.Target.Kind == TaskbarTargetKind.Explorer ? "explorer" : "start_menu");
+        bool stopped = await engine.StopEngineAsync().ConfigureAwait(false);
+        if (connected && !stopped)
+            DeckleShellTaskbarSource.Log.TaskbarEngineStopUnconfirmed(process.Target.Kind == TaskbarTargetKind.Explorer ? "explorer" : "start_menu");
         await engine.DisposeAsync().ConfigureAwait(false);
     }
 

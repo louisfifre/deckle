@@ -23,6 +23,9 @@ internal interface ITaskbarEngine : IAsyncDisposable
     /// <summary>Sends one command line; false when no DLL is connected or the write failed.</summary>
     Task<bool> SendAsync(string json, CancellationToken cancellation = default);
 
-    /// <summary>Asks the DLL to restore, unadvise and unload. True when it reported that it unloaded itself.</summary>
+    /// <summary>
+    /// Asks the DLL to restore everything and end its session. True when it said it stopped:
+    /// parked in its target, or unloaded.
+    /// </summary>
     Task<bool> StopEngineAsync();
 }

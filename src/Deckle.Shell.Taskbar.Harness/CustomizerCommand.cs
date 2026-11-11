@@ -15,7 +15,7 @@ namespace Deckle.Shell.Taskbar.Harness;
 // Control file lines (the file is deleted once read):
 //   set <background|customBarThickness|barThickness|compactTray|trayIconPitch|compactTaskButtons|taskButtonPitch|compactClock|startMenuFullHeight|startMenuWidth|startMenuCustomWidth|hideStartMenuRecommended> <value>
 //   status    prints the parts asked for, the problems, and who has the DLL loaded
-//   stop      restores, unloads and exits
+//   stop      restores, parks both engines and exits
 internal static class CustomizerCommand
 {
     public static async Task<int> RunAsync(string[] args)
@@ -69,7 +69,7 @@ internal static class CustomizerCommand
             }
         }
 
-        HarnessCommand.Print("stop     restoring and unloading both engines");
+        HarnessCommand.Print("stop     restoring and parking both engines");
         await customizer.ShutdownAsync();
         HarnessCommand.Print("stop     " + LoadedBy());
         return 0;

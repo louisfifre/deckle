@@ -2556,6 +2556,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── StartMenuDocumentTests.cs
 │   │   │   ├── TaskbarCustomizerTests.cs
 │   │   │   ├── TaskbarDocumentBuilderTests.cs
+│   │   │   ├── TaskbarEngineHostStopTests.cs
 │   │   │   ├── TaskbarPipeServerTests.cs
 │   │   │   ├── TaskbarProblemReaderTests.cs
 │   │   │   └── VersionedNativeCopyTests.cs
