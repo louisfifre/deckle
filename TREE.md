@@ -2546,6 +2546,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Native/
 │   │   │   ├── BarThicknessTests.cs
 │   │   │   ├── EngineResidencyTests.cs
+│   │   │   ├── ExplorerReinjectionBugNotes.md
 │   │   │   ├── JsonLineFramingTests.cs
 │   │   │   ├── ModuleIdentityTests.cs
 │   │   │   ├── NativeCommandTests.cs
