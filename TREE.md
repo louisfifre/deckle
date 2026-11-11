@@ -223,6 +223,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── deckle-transcribing.svg
 │   ├── deckle.svg
 │   ├── generate.mjs
+│   ├── palettes.md
 │   ├── primary.png
 │   ├── primary.svg
 │   └── secondary.png
