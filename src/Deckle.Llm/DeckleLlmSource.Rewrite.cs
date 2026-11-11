@@ -102,15 +102,21 @@ public sealed partial class DeckleLlmSource
     // What the engine received back, emitted by the engine before the
     // service closes the rewrite. stop_reason is the provider's own word
     // (stop, length, end_turn, max_tokens), empty when it reports none: a
-    // truncated answer shows here first.
+    // truncated answer shows here first. prompt_tokens is the input billed
+    // at the plain price; a provider that caches prompts reports apart what
+    // it stored this call (cache_write_tokens) and what it read back
+    // (cache_read_tokens), and the whole prompt is the three together. A
+    // batch that reads nothing while the one before it wrote is the sign of
+    // a cache that does not serve.
     [Event(EvtRewriteResponseDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "elapsed_ms={0} | in_chars={1} | out_chars={2} | profile={3} | load_ms={4} | prompt_eval_ms={5} | eval_ms={6} | prompt_tokens={7} | eval_tokens={8} | stop_reason={9}")]
+           Message = "elapsed_ms={0} | in_chars={1} | out_chars={2} | profile={3} | load_ms={4} | prompt_eval_ms={5} | eval_ms={6} | prompt_tokens={7} | eval_tokens={8} | stop_reason={9} | cache_write_tokens={10} | cache_read_tokens={11}")]
     public void RewriteResponseDetail(
         long elapsed_ms, int in_chars, int out_chars, string profile,
         long load_ms, long prompt_eval_ms, long eval_ms,
-        int prompt_tokens, int eval_tokens, string stop_reason)
+        int prompt_tokens, int eval_tokens, string stop_reason,
+        int cache_write_tokens = 0, int cache_read_tokens = 0)
     {
         if (IsEnabled())
             WriteEvent(EvtRewriteResponseDetail, new object[]
@@ -118,6 +124,7 @@ public sealed partial class DeckleLlmSource
                 elapsed_ms, in_chars, out_chars, profile,
                 load_ms, prompt_eval_ms, eval_ms,
                 prompt_tokens, eval_tokens, stop_reason,
+                cache_write_tokens, cache_read_tokens,
             });
     }
 

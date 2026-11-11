@@ -18,6 +18,19 @@ namespace Deckle.Llm.Rewrite;
 // a stretch of the dictation would be worse than pasting it unrewritten, and
 // the rest of the take still gets its rewrites; FallbackCount tells the take
 // how many seams are raw.
+//
+// The provider's prompt cache: every batch sends the profile's whole prompt
+// for a few sentences of text, so the batches ask the provider to keep it
+// (IRewriteService.RewriteBatch). A cached prompt can only be read by a
+// request that leaves after the one that wrote it has been taken in: batches
+// sent together all pay the write, a quarter above the plain price, and none
+// reads (measured on 2026-11-11 with the benchmark's cache-probe: 13 to 17 %
+// dearer than no cache at all, against a third cheaper one after the other).
+// So the first batch leaves alone, and the batches that close while it is
+// still out wait for its answer before they leave. While the person speaks
+// that wait is hidden: batches close forty seconds apart and only a catch-up
+// burst ever queues. The batch flushed at Stop is the one the person waits
+// for, so it never queues, whatever that costs.
 public sealed class DictationBatchRewriter
 {
     readonly IRewriteService _service;
@@ -25,6 +38,10 @@ public sealed class DictationBatchRewriter
     readonly DictationBatcher _batcher;
     readonly object _gate = new();
     readonly List<BatchSlot> _batches = new();
+
+    // The first batch sent with the prompt cached, the one that writes it.
+    // Guarded by _gate.
+    Task? _cacheWriter;
 
     public DictationBatchRewriter(IRewriteService service, RewriteProfile profile, int thresholdChars)
     {
@@ -48,7 +65,7 @@ public sealed class DictationBatchRewriter
         lock (_gate)
         {
             DictationBatch? batch = _batcher.Push(text, endedOnSilence);
-            if (batch is not null) Start(batch);
+            if (batch is not null) Start(batch, flushed: false);
         }
     }
 
@@ -61,7 +78,7 @@ public sealed class DictationBatchRewriter
         lock (_gate)
         {
             DictationBatch? batch = _batcher.Flush();
-            if (batch is not null) Start(batch);
+            if (batch is not null) Start(batch, flushed: true);
         }
     }
 
@@ -111,7 +128,7 @@ public sealed class DictationBatchRewriter
         var text = new StringBuilder();
         int fallbacks = 0;
         long llmMs = 0, loadMs = 0, promptEvalMs = 0, evalMs = 0;
-        int promptTokens = 0, evalTokens = 0;
+        int promptTokens = 0, evalTokens = 0, cacheWriteTokens = 0, cacheReadTokens = 0;
         DictationBatch? previous = null;
 
         foreach (BatchSlot slot in batches)
@@ -149,35 +166,61 @@ public sealed class DictationBatchRewriter
             evalMs       += outcome.Result.EvalMs;
             promptTokens += outcome.Result.PromptTokens;
             evalTokens   += outcome.Result.EvalTokens;
+            cacheWriteTokens += outcome.Result.CacheWriteTokens;
+            cacheReadTokens  += outcome.Result.CacheReadTokens;
             previous = batch;
         }
 
         return new DictationBatchResult(
             text.ToString(), batches.Length, fallbacks,
-            llmMs, loadMs, promptEvalMs, evalMs, promptTokens, evalTokens);
+            llmMs, loadMs, promptEvalMs, evalMs, promptTokens, evalTokens,
+            cacheWriteTokens, cacheReadTokens);
     }
 
     // Called under _gate, so batches enter the list in Index order. The slot
     // is listed before its task starts, so a Snapshot taken from BatchReturned
     // always sees the batch the event is about.
-    void Start(DictationBatch batch)
+    //
+    // flushed: the batch was closed by Complete, at Stop, and not by the
+    // speech going on. See the class comment for what it changes.
+    void Start(DictationBatch batch, bool flushed)
     {
-        DeckleLlmSource.Log.BatchRewriteSent();
-        DeckleLlmSource.Log.BatchRewriteSentDetail(batch.Index, batch.Text.Length, _profile.Name);
         var slot = new BatchSlot(batch);
+
+        // A take that ends as one batch has no second request to read the
+        // prompt back: caching it would only pay the write.
+        bool cached = !(flushed && _batches.Count == 0);
         _batches.Add(slot);
-        slot.Rewrite = Task.Run(() => RewriteOne(slot));
+
+        if (!flushed && _cacheWriter is { } writer)
+        {
+            // Runs whatever the writer's outcome: a failed first batch must
+            // not hold the others back, and the next one then writes the cache.
+            slot.Rewrite = writer.ContinueWith(
+                _ => RewriteOne(slot, cached),
+                CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
+            return;
+        }
+
+        slot.Rewrite = Task.Run(() => RewriteOne(slot, cached));
+        if (cached) _cacheWriter ??= slot.Rewrite;
     }
 
-    BatchOutcome RewriteOne(BatchSlot slot)
+    BatchOutcome RewriteOne(BatchSlot slot, bool cached)
     {
         DictationBatch batch = slot.Batch;
+        // Logged here, where the batch really leaves: one that waited for the
+        // cache writer's answer would otherwise read as sent while it queued.
+        DeckleLlmSource.Log.BatchRewriteSent();
+        DeckleLlmSource.Log.BatchRewriteSentDetail(batch.Index, batch.Text.Length, _profile.Name);
         var sw = Stopwatch.StartNew();
         GenerationResult result = default;
         Exception? thrown = null;
         try
         {
-            result = _service.Rewrite(batch.Text, _profile);
+            result = cached
+                ? _service.RewriteBatch(batch.Text, _profile)
+                : _service.Rewrite(batch.Text, _profile);
         }
         catch (Exception ex)
         {

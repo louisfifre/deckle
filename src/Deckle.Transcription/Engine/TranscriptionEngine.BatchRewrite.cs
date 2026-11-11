@@ -234,7 +234,9 @@ public sealed partial class TranscriptionEngine
             result.LlmPromptEvalMs,
             result.LlmEvalMs,
             result.LlmPromptTokens,
-            result.LlmEvalTokens);
+            result.LlmEvalTokens,
+            result.LlmCacheWriteTokens,
+            result.LlmCacheReadTokens);
     }
 
     // Also used by the recovery feed (TranscriptionEngine.Recovery.cs), which
