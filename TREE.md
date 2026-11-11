@@ -934,9 +934,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Recovery/
 │   │   │   ├── CaretParagraphContext.cs
 │   │   │   └── CaretTextReader.cs
-│   │   ├── Strings/
-│   │   │   └── en-US/
-│   │   │       └── Resources.resw
 │   │   ├── Surfaces/
 │   │   │   ├── FocusedSurface.cs
 │   │   │   ├── ISurfaceProber.cs
@@ -948,30 +945,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TypingStream.cs
 │   │   │   ├── WordBoundaries.cs
 │   │   │   └── WordCommit.cs
-│   │   ├── Ui/
-│   │   │   ├── AppsEnrolledPage.xaml
-│   │   │   ├── AppsEnrolledPage.xaml.cs
-│   │   │   ├── AutocorrectPage.xaml
-│   │   │   ├── AutocorrectPage.xaml.cs
-│   │   │   ├── LexicalDomainsPage.xaml
-│   │   │   └── LexicalDomainsPage.xaml.cs
-│   │   ├── ViewModels/
-│   │   │   ├── AppsEnrolledViewModel.cs
-│   │   │   ├── AutocorrectAppRow.cs
-│   │   │   ├── AutocorrectExcludedWordRow.cs
-│   │   │   ├── AutocorrectTelemetryViewModel.cs
-│   │   │   ├── AutocorrectViewModel.cs
-│   │   │   ├── AutocorrectViewModel.Settings.cs
-│   │   │   ├── DomainLanguageRow.cs
-│   │   │   ├── LexicalDomainsViewModel.cs
-│   │   │   └── LexicalDomainTab.cs
 │   │   ├── AutocorrectSettings.cs
-│   │   ├── AutocorrectSettingsModule.cs
 │   │   ├── AutocorrectSettingsService.cs
 │   │   ├── Deckle.Autocorrect.csproj
 │   │   ├── DeckleAutocorrectSource.cs
-│   │   ├── GLOSSARY.md  — glossary-deckle-autocorrect Autocorrect vocabulary. It covers where correction may act (surfaces, enrollmen…
-│   │   └── SettingsSearch.cs
+│   │   └── GLOSSARY.md  — glossary-deckle-autocorrect Autocorrect vocabulary. It covers where correction may act (surfaces, enrollmen…
 │   ├── Deckle.Autocorrect.Lab/
 │   │   ├── Mining/
 │   │   │   ├── MistouchFamilyReport.cs
@@ -1002,6 +980,29 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PairModelTrainer.cs
 │   │   ├── RestorationEvaluator.cs
 │   │   └── RestorationReport.cs
+│   ├── Deckle.Autocorrect.Views/
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── ViewModels/
+│   │   │   ├── AppsEnrolledViewModel.cs
+│   │   │   ├── AutocorrectAppRow.cs
+│   │   │   ├── AutocorrectExcludedWordRow.cs
+│   │   │   ├── AutocorrectTelemetryViewModel.cs
+│   │   │   ├── AutocorrectViewModel.cs
+│   │   │   ├── AutocorrectViewModel.Settings.cs
+│   │   │   ├── DomainLanguageRow.cs
+│   │   │   ├── LexicalDomainsViewModel.cs
+│   │   │   └── LexicalDomainTab.cs
+│   │   ├── AppsEnrolledPage.xaml
+│   │   ├── AppsEnrolledPage.xaml.cs
+│   │   ├── AutocorrectPage.xaml
+│   │   ├── AutocorrectPage.xaml.cs
+│   │   ├── AutocorrectSettingsModule.cs
+│   │   ├── Deckle.Autocorrect.Views.csproj
+│   │   ├── LexicalDomainsPage.xaml
+│   │   ├── LexicalDomainsPage.xaml.cs
+│   │   └── SettingsSearch.cs
 │   ├── Deckle.Catalog/
 │   │   ├── Composer/
 │   │   │   ├── AxisTicks.cs

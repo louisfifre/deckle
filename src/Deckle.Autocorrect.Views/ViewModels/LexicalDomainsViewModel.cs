@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace Deckle.Autocorrect;
+namespace Deckle.Autocorrect.Views;
 
 // ViewModel for LexicalDomainsPage. Every user change routes back through
 // AutocorrectSettingsService, which owns the write.

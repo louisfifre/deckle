@@ -140,6 +140,7 @@
     <ProjectReference Include="..\Deckle.Install\Deckle.Install.csproj" />
     <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
     <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
+    <ProjectReference Include="..\Deckle.Autocorrect.Views\Deckle.Autocorrect.Views.csproj" />
     <ProjectReference Include="..\Deckle.Input.Trackpad\Deckle.Input.Trackpad.csproj" />
     <ProjectReference Include="..\Deckle.Input.PrecisionScroll\Deckle.Input.PrecisionScroll.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />

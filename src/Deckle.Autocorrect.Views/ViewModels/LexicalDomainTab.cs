@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.UI.Xaml;
 using Deckle.Localization;
 
-namespace Deckle.Autocorrect;
+namespace Deckle.Autocorrect.Views;
 
 // One tab of the domain selector on LexicalDomainsPage. Immutable — a domain is
 // fixed by the build, only its rows carry state — so there is nothing to

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Page
-    x:Class="Deckle.Autocorrect.LexicalDomainsPage"
+    x:Class="Deckle.Autocorrect.Views.LexicalDomainsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
-    xmlns:vm="using:Deckle.Autocorrect"
+    xmlns:vm="using:Deckle.Autocorrect.Views"
     xmlns:catalog="using:Deckle.Catalog">
 
     <!-- Child page of the Autocorrect family. While the master switch is off the

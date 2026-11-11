@@ -2,7 +2,7 @@ using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Deckle.Autocorrect;
+namespace Deckle.Autocorrect.Views;
 
 // One row of the per-app list on AppsEnrolledPage. The row never touches
 // persistence itself — toggling Enabled and invoking Forget call back into the

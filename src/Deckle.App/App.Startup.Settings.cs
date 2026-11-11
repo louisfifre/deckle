@@ -161,18 +161,18 @@ public partial class App
             // resolves page coordinates per registration, so a child folded into
             // its parent's call would send every hit to the parent's page.
             RegisterSettingsModule(
-                Autocorrect.AutocorrectSettingsModule.Describe(order: 300),
-                Autocorrect.SettingsSearch.Entries);
+                Autocorrect.Views.AutocorrectSettingsModule.Describe(order: 300),
+                Autocorrect.Views.SettingsSearch.Entries);
             RegisterSettingsModule(
-                Autocorrect.AutocorrectSettingsModule.DescribeLexicalDomains(order: 310),
-                Autocorrect.SettingsSearch.LexicalDomainsEntries);
+                Autocorrect.Views.AutocorrectSettingsModule.DescribeLexicalDomains(order: 310),
+                Autocorrect.Views.SettingsSearch.LexicalDomainsEntries);
             RegisterSettingsModule(
-                Autocorrect.AutocorrectSettingsModule.DescribeAppsEnrolled(order: 320),
-                Autocorrect.SettingsSearch.AppsEnrolledEntries);
+                Autocorrect.Views.AutocorrectSettingsModule.DescribeAppsEnrolled(order: 320),
+                Autocorrect.Views.SettingsSearch.AppsEnrolledEntries);
             ContributeDiagnostics(
-                Autocorrect.AutocorrectTelemetryViewModel.Contribution(order: 300),
-                "Deckle.Autocorrect",
-                Autocorrect.SettingsSearch.TelemetryEntries);
+                Autocorrect.Views.AutocorrectTelemetryViewModel.Contribution(order: 300),
+                "Deckle.Autocorrect.Views",
+                Autocorrect.Views.SettingsSearch.TelemetryEntries);
         }
         if (context.AmbientPresent)
             RegisterSettingsModule(Lighting.Ambient.AmbientSettingsModule.Describe(order: 400), Lighting.Ambient.SettingsSearch.Entries);

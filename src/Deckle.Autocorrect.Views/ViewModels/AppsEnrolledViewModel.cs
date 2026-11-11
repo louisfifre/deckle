@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace Deckle.Autocorrect;
+namespace Deckle.Autocorrect.Views;
 
 // ViewModel for AppsEnrolledPage — the per-app decision map, and nothing else.
 // Each user change routes back through AutocorrectSettingsService, which owns

@@ -3,11 +3,11 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
-namespace Deckle.Autocorrect;
+namespace Deckle.Autocorrect.Views;
 
 // Child page of the Autocorrect family — the per-app decision map. Resolved by
 // the Settings NavigationView via the item Tag
-// "Deckle.Autocorrect.AppsEnrolledPage, Deckle.Autocorrect".
+// "Deckle.Autocorrect.Views.AppsEnrolledPage, Deckle.Autocorrect.Views".
 public sealed partial class AppsEnrolledPage : Page
 {
     public AppsEnrolledViewModel ViewModel { get; } = new();

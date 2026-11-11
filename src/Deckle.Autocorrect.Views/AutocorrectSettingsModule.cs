@@ -1,7 +1,7 @@
 ﻿using Deckle.Catalog;
 using Deckle.Localization;
 
-namespace Deckle.Autocorrect;
+namespace Deckle.Autocorrect.Views;
 
 // ── AutocorrectSettingsModule ─────────────────────────────────────────────────
 //
@@ -15,15 +15,15 @@ public static class AutocorrectSettingsModule
 {
     // This module's PRI subtree. Code resolving a module string through
     // Loc.GetFrom reads it from here, never from a repeated literal.
-    public const string ResourceLibrary = "Deckle.Autocorrect";
+    public const string ResourceLibrary = "Deckle.Autocorrect.Views";
 
-    public const string PageTag = "Deckle.Autocorrect.AutocorrectPage, Deckle.Autocorrect";
+    public const string PageTag = "Deckle.Autocorrect.Views.AutocorrectPage, Deckle.Autocorrect.Views";
 
     public const string LexicalDomainsPageTag =
-        "Deckle.Autocorrect.LexicalDomainsPage, Deckle.Autocorrect";
+        "Deckle.Autocorrect.Views.LexicalDomainsPage, Deckle.Autocorrect.Views";
 
     public const string AppsEnrolledPageTag =
-        "Deckle.Autocorrect.AppsEnrolledPage, Deckle.Autocorrect";
+        "Deckle.Autocorrect.Views.AppsEnrolledPage, Deckle.Autocorrect.Views";
 
     private const string ModuleId = "autocorrect";
 

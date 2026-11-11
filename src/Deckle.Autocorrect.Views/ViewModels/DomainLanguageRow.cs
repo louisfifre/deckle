@@ -3,7 +3,7 @@ using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Localization;
 
-namespace Deckle.Autocorrect;
+namespace Deckle.Autocorrect.Views;
 
 // One language row inside a lexical domain on LexicalDomainsPage. The row never
 // persists anything itself: toggling Active calls back into the view-model,

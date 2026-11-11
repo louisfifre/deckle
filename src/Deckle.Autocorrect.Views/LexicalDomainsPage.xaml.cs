@@ -3,11 +3,11 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
-namespace Deckle.Autocorrect;
+namespace Deckle.Autocorrect.Views;
 
 // Child page of the Autocorrect family — the lexical domains. Resolved by the
 // Settings NavigationView via the item Tag
-// "Deckle.Autocorrect.LexicalDomainsPage, Deckle.Autocorrect".
+// "Deckle.Autocorrect.Views.LexicalDomainsPage, Deckle.Autocorrect.Views".
 public sealed partial class LexicalDomainsPage : Page
 {
     public LexicalDomainsViewModel ViewModel { get; } = new();

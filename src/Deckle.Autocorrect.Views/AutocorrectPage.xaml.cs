@@ -6,11 +6,11 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Navigation;
 
-namespace Deckle.Autocorrect;
+namespace Deckle.Autocorrect.Views;
 
 // Settings page for the Autocorrect module — the family's landing surface.
 // Resolved by the Settings NavigationView via the item Tag
-// "Deckle.Autocorrect.AutocorrectPage, Deckle.Autocorrect".
+// "Deckle.Autocorrect.Views.AutocorrectPage, Deckle.Autocorrect.Views".
 //
 // Persisted state binds through AutocorrectViewModel — auto-save on every
 // change, no OK/Cancel.

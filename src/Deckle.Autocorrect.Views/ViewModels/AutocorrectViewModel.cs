@@ -4,7 +4,7 @@ using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Deckle.Autocorrect;
+namespace Deckle.Autocorrect.Views;
 
 // ViewModel for AutocorrectPage. Load() seeds the bound state with writes
 // suppressed (_isSyncing), then each user change routes back through the

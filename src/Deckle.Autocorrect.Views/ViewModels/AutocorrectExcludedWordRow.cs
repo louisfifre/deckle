@@ -1,7 +1,7 @@
 using System;
 using CommunityToolkit.Mvvm.Input;
 
-namespace Deckle.Autocorrect;
+namespace Deckle.Autocorrect.Views;
 
 // One entry of the exclusion register on AutocorrectPage. The row never
 // persists anything: the undo calls back into the view-model.
