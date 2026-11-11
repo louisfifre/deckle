@@ -5,7 +5,11 @@
     xmlns:local="using:Deckle.Atelier.Views"
     Title="Deckle Folders">
 
-    <Grid x:Name="RootGrid">
+    <!-- Hidden: an element that carries accelerators gets a tooltip naming the
+         first one, opened when keyboard focus lands anywhere inside it. On the
+         root that is a stray "F5" under the window whenever focus arrives by
+         keyboard; the buttons' own tooltips say what the keys do. -->
+    <Grid x:Name="RootGrid" KeyboardAcceleratorPlacementMode="Hidden">
         <Grid.Resources>
             <!-- The three numbered lines of the empty state (12.11). -->
             <Style x:Key="EmptyStepCard" TargetType="Grid">

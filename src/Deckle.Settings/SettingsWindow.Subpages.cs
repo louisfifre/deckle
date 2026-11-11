@@ -36,6 +36,9 @@ public sealed partial class SettingsWindow
         var back = new KeyboardAccelerator { Key = VirtualKey.Left, Modifiers = VirtualKeyModifiers.Menu };
         back.Invoked += (_, args) => args.Handled = ReturnToRailPage();
         RootGrid.KeyboardAccelerators.Add(back);
+        // Hidden: the root would otherwise show a tooltip naming the shortcut
+        // under the window whenever keyboard focus lands inside it.
+        RootGrid.KeyboardAcceleratorPlacementMode = KeyboardAcceleratorPlacementMode.Hidden;
 
         // The mouse's back button (XButton1), handled even when a card under
         // the pointer marked the press as handled.
