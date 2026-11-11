@@ -119,7 +119,12 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     public const int EvtProviderKeyReadFailedDetail  = 80;
     public const int EvtTranscriptRewriteStarted     = 81;
     public const int EvtTranscriptRewriteCompleted   = 82;
-    public const int EvtBatchRewriteDiscarded        = 83;
-    public const int EvtBatchRewriteDiscardedDetail  = 84;
+    // 83 retired.
+    // 84 retired.
+    public const int EvtBatchRewriteProfileChanged       = 85;
+    public const int EvtBatchRewriteProfileChangedDetail = 86;
+    public const int EvtBatchRewriteReadingIgnored       = 87;
+    public const int EvtBatchRewriteSuperseded           = 88;
+    public const int EvtBatchRewriteSupersededDetail     = 89;
 
 }

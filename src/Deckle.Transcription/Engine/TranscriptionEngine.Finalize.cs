@@ -48,7 +48,7 @@ public sealed partial class TranscriptionEngine
         // replace the continuous batch HUD with a clipboard error.
         if (isFileRun)
         {
-            FinalizeRewrite fileRewrite = ApplyRewrite(rawText, isFileRun: true);
+            FinalizeRewrite fileRewrite = ApplyRewrite(rawText, rawText, isFileRun: true);
             FinalizeDelivery fileDelivery = DeliverTranscript(fileRewrite.Text, delivery);
             RecordPipelineMetrics(
                 production,
@@ -65,15 +65,21 @@ public sealed partial class TranscriptionEngine
             return fileDelivery.Outcome;
         }
 
-        // The raw copy is the safety net for every later stage. A failed rewrite
-        // copy therefore leaves useful text behind.
-        // Every write lands in the Windows clipboard history, so a take writes the
-        // raw text once and at most one rewrite, never per utterance. That is the
-        // whole clipboard contract: at most two contents per transcription, the raw
-        // text then the rewritten text when a profile is active, never token by
-        // token, and the sentence as the grain.
+        // The first copy is the safety net for every later stage. A failed
+        // rewrite copy therefore leaves useful text behind. It is the take as
+        // it reads at Stop: the raw text, or, when
+        // passages were rewritten while the person spoke, those rewrites with
+        // the rest as said (the document of the take holds the whole text
+        // either way). Every write lands in the Windows clipboard history, so a
+        // take writes that text once and at most one rewrite, never per
+        // utterance or per passage. That is the whole clipboard contract: at
+        // most two contents per transcription, never token by token, and the
+        // sentence as the grain.
+        string firstCopy = production.StreamingRewrite?.Rewriter is { Profile: not null } streamed
+            ? streamed.Snapshot()
+            : rawText;
         var clipboardStopwatch = System.Diagnostics.Stopwatch.StartNew();
-        bool rawCopySucceeded = CopyToClipboard(rawText);
+        bool rawCopySucceeded = CopyToClipboard(firstCopy);
         clipboardStopwatch.Stop();
         if (!rawCopySucceeded)
         {
@@ -92,10 +98,10 @@ public sealed partial class TranscriptionEngine
         // in the rewrite cannot leave a stale file behind.
         ClearRecovery();
 
-        FinalizeRewrite rewrite = ApplyRewrite(rawText, isFileRun, production.BatchRewrite);
+        FinalizeRewrite rewrite = ApplyRewrite(rawText, firstCopy, isFileRun, production.StreamingRewrite);
         // The surfaces showing the live text learn the final text before the
         // delivery, so what they show when the HUD says Copied is
-        // what landed. A batched take already showed each batch; its final
+        // what landed. A streamed take already showed each passage; its final
         // text then equals the last snapshot and the reader has nothing to do.
         if (rewrite.Text != rawText)
             RaiseTranscriptChanged(rewrite.Text, TranscriptChangeKind.Revised);

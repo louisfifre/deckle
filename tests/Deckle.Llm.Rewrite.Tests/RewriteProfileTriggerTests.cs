@@ -5,8 +5,8 @@ using Xunit;
 
 namespace Deckle.Llm.Rewrite.Tests;
 
-// What starts a profile, the length ladder and a profile's shortcut, survives
-// the settings file.
+// What starts a profile, the dictation steps and a profile's shortcut,
+// survives the settings file.
 [Trait("Category", "unit")]
 public sealed class RewriteProfileTriggerTests
 {
@@ -21,24 +21,40 @@ public sealed class RewriteProfileTriggerTests
         JsonSerializer.Deserialize<LlmSettings>(JsonSerializer.Serialize(settings, FileOptions), FileOptions)!;
 
     [Fact]
-    public void LadderAndShortcutRoundTripThroughTheSettingsFile()
+    public void StepsAndShortcutRoundTripThroughTheSettingsFile()
     {
         var settings = new LlmSettings();
         LlmSettingsNormalizer.Apply(settings);
-        settings.LengthSwitch.Enabled = true;
-        settings.LengthSwitch.Steps.Add(new LengthStep { FromChars = 3000, ProfileId = settings.Profiles[1].Id });
+        settings.Dictation.Enabled = true;
+        settings.Dictation.StartAtLength = true;
+        settings.Dictation.Steps.Add(new RewriteStep { FromChars = 3000, ProfileId = settings.Profiles[1].Id, Streaming = true });
         settings.Profiles[0].HotkeyEnabled = true;
         settings.Profiles[0].Hotkey = new HotkeyChord(HotkeyModifiers.Control | HotkeyModifiers.Win, 0x29);
 
         LlmSettings read = RoundTrip(settings);
 
-        Assert.True(read.LengthSwitch.Enabled);
-        LengthStep step = Assert.Single(read.LengthSwitch.Steps);
-        Assert.Equal(3000, step.FromChars);
-        Assert.Equal(settings.Profiles[1].Id, step.ProfileId);
+        Assert.True(read.Dictation.Enabled);
+        Assert.True(read.Dictation.StartAtLength);
+        Assert.Equal(2, read.Dictation.Steps.Count);
+        RewriteStep step = read.Dictation.Steps[1];
+        Assert.Equal((3000, settings.Profiles[1].Id, true), (step.FromChars, step.ProfileId, step.Streaming));
         Assert.True(read.Profiles[0].HasActiveHotkey);
         Assert.Equal(settings.Profiles[0].Hotkey, read.Profiles[0].Hotkey);
         Assert.False(read.Profiles[1].HasActiveHotkey);
+    }
+
+    // The fields from before the steps are read to migrate, never written.
+    [Fact]
+    public void TheFieldsFromBeforeTheStepsAreNotWritten()
+    {
+        var settings = new LlmSettings();
+        LlmSettingsNormalizer.Apply(settings);
+
+        string json = JsonSerializer.Serialize(settings, FileOptions);
+
+        Assert.DoesNotContain("activeProfileId", json);
+        Assert.DoesNotContain("lengthSwitch", json);
+        Assert.DoesNotContain("batchRewriting", json);
     }
 
     // A length typed in the field is any value on its grain, not one of a
@@ -46,19 +62,18 @@ public sealed class RewriteProfileTriggerTests
     [Fact]
     public void ATypedLengthSurvivesTheNextLoad()
     {
-        var ladder = new LengthSwitchSettings
-        {
-            Steps =
-            [
-                new LengthStep { FromChars = 2300, ProfileId = "a" },
-                new LengthStep { FromChars = 2400, ProfileId = "b" },
-                new LengthStep { FromChars = 17500, ProfileId = "c" },
-            ],
-        };
+        var settings = new LlmSettings();
+        LlmSettingsNormalizer.Apply(settings);
+        settings.Dictation.Steps =
+        [
+            new RewriteStep { FromChars = 1000, ProfileId = "a" },
+            new RewriteStep { FromChars = 2400, ProfileId = "b" },
+            new RewriteStep { FromChars = 17500, ProfileId = "c" },
+        ];
 
-        Assert.False(LlmSettingsNormalizer.NormalizeLadder(ladder));
+        Assert.False(LlmSettingsNormalizer.NormalizeDictation(settings));
 
-        Assert.Equal([2300, 2400, 17500], ladder.Steps.Select(step => step.FromChars));
+        Assert.Equal([1000, 2400, 17500], settings.Dictation.Steps.Select(step => step.FromChars));
     }
 
     // The grain grows with the length: fine on a short dictation, coarse on
@@ -69,11 +84,11 @@ public sealed class RewriteProfileTriggerTests
     [InlineData(4321, 4400)]
     [InlineData(12345, 12500)]
     [InlineData(23456, 23000)]
-    [InlineData(40, LengthSwitchSettings.MinChars)]
-    [InlineData(99999, LengthSwitchSettings.MaxChars)]
+    [InlineData(40, DictationRewriteSettings.MinChars)]
+    [InlineData(99999, DictationRewriteSettings.MaxChars)]
     public void ALengthSnapsToTheGrainOfItsSize(int typed, int expected)
     {
-        Assert.Equal(expected, LengthSwitchSettings.Snap(typed));
+        Assert.Equal(expected, DictationRewriteSettings.Snap(typed));
     }
 
     // A snapped length snaps to itself, across the band edges too, and its
@@ -82,77 +97,35 @@ public sealed class RewriteProfileTriggerTests
     [Fact]
     public void SnappingIsStableAcrossTheWholeRange()
     {
-        for (int chars = 0; chars <= LengthSwitchSettings.MaxChars + 1000; chars += 7)
+        for (int chars = 0; chars <= DictationRewriteSettings.MaxChars + 1000; chars += 7)
         {
-            int snapped = LengthSwitchSettings.Snap(chars);
-            Assert.Equal(snapped, LengthSwitchSettings.Snap(snapped));
-            if (snapped < LengthSwitchSettings.MaxChars)
-                Assert.Equal(LengthSwitchSettings.Above(snapped), LengthSwitchSettings.Snap(LengthSwitchSettings.Above(snapped)));
-            if (snapped > LengthSwitchSettings.MinChars)
-                Assert.Equal(LengthSwitchSettings.Below(snapped), LengthSwitchSettings.Snap(LengthSwitchSettings.Below(snapped)));
+            int snapped = DictationRewriteSettings.Snap(chars);
+            Assert.Equal(snapped, DictationRewriteSettings.Snap(snapped));
+            if (snapped < DictationRewriteSettings.MaxChars)
+                Assert.Equal(DictationRewriteSettings.Above(snapped), DictationRewriteSettings.Snap(DictationRewriteSettings.Above(snapped)));
+            if (snapped > DictationRewriteSettings.MinChars)
+                Assert.Equal(DictationRewriteSettings.Below(snapped), DictationRewriteSettings.Snap(DictationRewriteSettings.Below(snapped)));
         }
     }
 
-    // Two thresholds on one value: the second moves just above the first
+    // Two later steps on one value: the second moves just above the first
     // instead of losing its step.
     [Fact]
-    public void TwoThresholdsOnOneValueBothKeepAStep()
+    public void TwoStepsOnOneValueBothKeepAStep()
     {
-        var ladder = new LengthSwitchSettings
-        {
-            Steps =
-            [
-                new LengthStep { FromChars = 2000, ProfileId = "first" },
-                new LengthStep { FromChars = 2040, ProfileId = "second" },
-            ],
-        };
+        var settings = new LlmSettings();
+        LlmSettingsNormalizer.Apply(settings);
+        settings.Dictation.Steps =
+        [
+            new RewriteStep { ProfileId = "base" },
+            new RewriteStep { FromChars = 2000, ProfileId = "first" },
+            new RewriteStep { FromChars = 2040, ProfileId = "second" },
+        ];
 
-        LlmSettingsNormalizer.NormalizeLadder(ladder);
+        LlmSettingsNormalizer.NormalizeDictation(settings);
 
-        Assert.Collection(ladder.Steps,
-            step => { Assert.Equal(2000, step.FromChars); Assert.Equal("first", step.ProfileId); },
-            step => { Assert.Equal(2100, step.FromChars); Assert.Equal("second", step.ProfileId); });
-    }
-
-    [Fact]
-    public void TheLadderIsKeptOnTheGrainWithinRangeStrictlyIncreasing()
-    {
-        var ladder = new LengthSwitchSettings
-        {
-            Steps =
-            [
-                new LengthStep { FromChars = 10240, ProfileId = "x" },
-                new LengthStep { FromChars = 1950, ProfileId = "y" },
-                new LengthStep { FromChars = 40, ProfileId = "z" },
-                new LengthStep { FromChars = 99999, ProfileId = "w" },
-            ],
-        };
-
-        Assert.True(LlmSettingsNormalizer.NormalizeLadder(ladder));
-
-        Assert.Collection(ladder.Steps,
-            step => { Assert.Equal(LengthSwitchSettings.MinChars, step.FromChars); Assert.Equal("z", step.ProfileId); },
-            step => { Assert.Equal(2000, step.FromChars); Assert.Equal("y", step.ProfileId); },
-            step => { Assert.Equal(10000, step.FromChars); Assert.Equal("x", step.ProfileId); },
-            step => { Assert.Equal(LengthSwitchSettings.MaxChars, step.FromChars); Assert.Equal("w", step.ProfileId); });
-    }
-
-    // Only a step pushed past the maximum by the one below it is lost.
-    [Fact]
-    public void AStepPushedPastTheMaximumIsDropped()
-    {
-        var ladder = new LengthSwitchSettings
-        {
-            Steps =
-            [
-                new LengthStep { FromChars = LengthSwitchSettings.MaxChars, ProfileId = "top" },
-                new LengthStep { FromChars = 40000, ProfileId = "over" },
-            ],
-        };
-
-        LlmSettingsNormalizer.NormalizeLadder(ladder);
-
-        LengthStep kept = Assert.Single(ladder.Steps);
-        Assert.Equal("top", kept.ProfileId);
+        Assert.Equal(
+            [("first", 2000), ("second", 2100)],
+            settings.Dictation.Steps.Skip(1).Select(step => (step.ProfileId, step.FromChars)));
     }
 }

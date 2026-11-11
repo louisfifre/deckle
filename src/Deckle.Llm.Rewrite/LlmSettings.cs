@@ -1,9 +1,33 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Deckle.Core;
 using Deckle.Llm;
 
 namespace Deckle.Llm.Rewrite;
+
+// ── Before the steps ─────────────────────────────────────────────────────────
+//
+// The length ladder and the batch switch as a file held them before
+// 2026-11-11, read once to migrate (LlmSettingsNormalizer.MigrateToSteps) and
+// never written again.
+public sealed class LegacyLengthStep
+{
+    public int FromChars { get; set; }
+    public string ProfileId { get; set; } = "";
+}
+
+public sealed class LegacyLengthSwitchSettings
+{
+    public bool Enabled { get; set; }
+    public List<LegacyLengthStep> Steps { get; set; } = new();
+}
+
+public sealed class LegacyBatchRewriteSettings
+{
+    public bool Enabled { get; set; }
+    public int ThresholdChars { get; set; } = 600;
+}
 
 // ── LLM rewriting settings ───────────────────────────────────────────────────
 
@@ -47,44 +71,86 @@ public sealed class RewriteProfile
     public bool HasActiveHotkey => HotkeyEnabled && Hotkey is { IsComplete: true };
 }
 
-// One step of the length ladder: a dictation whose raw transcript holds at
-// least FromChars characters is rewritten with ProfileId, the highest step
-// reached winning. Below the first step the active profile applies.
-public sealed class LengthStep
+// One step of the dictation timeline (specs/deckle-dictation-rewriting.md):
+// from FromChars characters of raw transcript, the dictation belongs to
+// ProfileId. Streaming on: the profile rewrites passage by passage while the
+// person speaks. Off: it rewrites the whole raw text at Stop.
+//
+// The moment lives on the step, not on the profile: one profile can stream
+// at one length and wait for Stop at another, and the page sets both where
+// the steps are.
+public sealed class RewriteStep
 {
-    public int FromChars { get; set; }
     public string ProfileId { get; set; } = "";
+
+    // The first step's FromChars counts only while
+    // DictationRewriteSettings.StartAtLength is on; off, it is kept so that
+    // ticking "Start at" again finds the length the person had set.
+    public int FromChars { get; set; }
+
+    public bool Streaming { get; set; }
 }
 
-// Picking the rewrite profile by the length of the dictation.
+// Which profile rewrites a dictation, and when: an ordered list of steps.
+//
+// The first step is the base rewrite and always exists: it starts at the
+// beginning of the dictation, or at its own length with StartAtLength on.
+// Every later step starts at its FromChars, strictly above the step before.
+// The highest step a dictation reaches takes it, and a dictation is always
+// rewritten from its beginning, never from the length of the step.
 //
 // Characters of raw transcript, not minutes: they are counted the same way
 // whichever pipeline transcribed the take, where a duration needed one
 // measure for a monolithic take (the recording) and another for a streamed
-// one (the speech sent). A person judges by how long they spoke, so the page
-// shows each step with its spoken duration beside it (CharsPerMinute).
-//
-// Not applied to a take rewritten batch by batch: its profile is fixed when
-// the first batch leaves, before any length is known.
-public sealed class LengthSwitchSettings
+// one (the speech sent), and a silence must not make a step cross. A person
+// judges by how long they spoke, so the timeline shows each length with its
+// spoken duration beside it (CharsPerMinute).
+public sealed class DictationRewriteSettings
 {
     // Measured on 2,821 of the maintainer's dictations (latency telemetry,
     // 2026-11-06): median 786 characters a minute raw, 701 on takes over two
-    // minutes, the ones a ladder is about. A display ratio only, never a
-    // threshold.
+    // minutes, the ones the later steps are about. A display ratio only,
+    // never a threshold.
     public const int CharsPerMinute = 700;
 
     // From about nine seconds to about forty-five minutes of speech.
     public const int MinChars = 100;
     public const int MaxChars = 30000;
 
+    // Where the first step's "Start at" lands when nothing was set yet:
+    // about a minute and a half of speech.
+    public const int DefaultStartAtChars = 1000;
+
+    // A passage: the stretch of raw transcript a streaming step rewrites in
+    // one request, closed at the first pause once it reaches PassageChars
+    // (DictationBatcher). 600 is about a hundred French words, forty seconds
+    // of speech: enough context for the profile to condense a repeated idea,
+    // short enough that the last passage at Stop is a quick one. The bounds
+    // keep a passage between a long sentence and a page. Not on the page: a
+    // value the app decides for the person (2026-11-11).
+    public const int MinPassageChars = 200;
+    public const int MaxPassageChars = 2000;
+
+    // "Rewrite dictations". Off, a dictation arrives as said; a profile's own
+    // shortcut still rewrites (RewriteProfile.HotkeyEnabled).
     public bool Enabled { get; set; }
 
-    // Sorted by FromChars, strictly increasing; each one on the grain of its
-    // length (GrainAt), between MinChars and MaxChars.
-    public List<LengthStep> Steps { get; set; } = new();
+    // The first step's "Start at": on, a dictation shorter than
+    // Steps[0].FromChars stays as said.
+    public bool StartAtLength { get; set; }
 
-    // The precision a threshold is held at: about a twentieth of it, on the
+    // Never empty once normalized (LlmSettingsNormalizer.NormalizeDictation):
+    // Steps[0] is the base rewrite. Empty in a file written before the steps
+    // existed, which is what tells the normalizer to migrate it.
+    public List<RewriteStep> Steps { get; set; } = new();
+
+    public int PassageChars { get; set; } = 600;
+
+    // Where a step starts counting, the first one at 0 unless StartAtLength.
+    public int StartOf(int index) =>
+        index == 0 && !StartAtLength ? 0 : Steps[index].FromChars;
+
+    // The precision a length is held at: about a twentieth of it, on the
     // 1-2-5 ladder, never under MinChars. A length is meant in relative
     // terms: 500 against 600 characters is another dictation, 20,000 against
     // 20,100 is not. That gives 100 up to 4,000, then 200, 500 from 10,000
@@ -102,7 +168,7 @@ public sealed class LengthSwitchSettings
             }
     }
 
-    // The nearest threshold on the grain of its length, within the range.
+    // The nearest length on the grain of its size, within the range.
     public static int Snap(double chars)
     {
         int clamped = (int)Math.Clamp(Math.Round(chars), MinChars, MaxChars);
@@ -111,39 +177,29 @@ public sealed class LengthSwitchSettings
         return Math.Clamp(rounded, MinChars, MaxChars);
     }
 
-    // The thresholds next to a snapped one, on either side.
+    // The lengths next to a snapped one, on either side.
     public static int Above(int chars) => chars + GrainAt(chars);
     public static int Below(int chars) => chars - GrainAt(chars - 1);
-}
-
-// Rewriting while the dictation runs, batch by batch, instead of once at Stop.
-// Off by default: it costs one request per batch and the seams between
-// batches are a quality risk the whole-take rewrite does not have. The
-// threshold is in characters of raw transcript: a batch closes at the first
-// pause once the accumulated text reaches it (DictationBatcher). 600 is about
-// a hundred French words, forty seconds of speech: enough context for the
-// profile to condense a repeated idea, short enough that the last batch at
-// Stop is a quick one. The bounds keep a batch between a long sentence and
-// a page.
-public sealed class BatchRewriteSettings
-{
-    public const int MinThresholdChars = 200;
-    public const int MaxThresholdChars = 2000;
-
-    public bool Enabled { get; set; } = false;
-    public int ThresholdChars { get; set; } = 600;
 }
 
 public sealed class LlmSettings
 {
     public bool Enabled { get; set; } = true;
 
-    // Per-batch rewriting during a dictation; applies the active profile to
-    // each batch, then the take's text is the batches' rewrites in order.
-    public BatchRewriteSettings BatchRewriting { get; set; } = new();
+    // The steps that choose the profile of a dictation and its moment.
+    public DictationRewriteSettings Dictation { get; set; } = new();
 
-    // Another profile than the active one past a given length.
-    public LengthSwitchSettings LengthSwitch { get; set; } = new();
+    // ── Before the steps (read once, to migrate) ──────────────────────────
+    //
+    // The shape a file had before 2026-11-11: an active profile, a length
+    // ladder and a switch for batches. LlmSettingsNormalizer.NormalizeDictation
+    // turns them into Dictation the first time such a file loads, then clears
+    // them; null is never written, so the next save drops them from the file.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public LegacyBatchRewriteSettings? BatchRewriting { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public LegacyLengthSwitchSettings? LengthSwitch { get; set; }
 
     // Where a model is served from. A profile names one by Id. These defaults
     // are the three shapes the market has (a local Ollama, a chat-completions
@@ -156,11 +212,13 @@ public sealed class LlmSettings
         new() { Id = "claude",    Name = "Claude",    Kind = LlmProviderKind.Claude },
     };
 
-    // The one persisted choice applied to every dictation when Enabled.
-    // null = plain transcription (opt-in by default). Lookup prefers the Id
-    // (stable across renames) and falls back to the Name;
-    // LlmSettingsNormalizer.RepairProfileReferences keeps the pair in sync.
+    // Before the steps too: the profile every dictation took. null = plain
+    // transcription. Lookup prefers the Id (stable across renames) and falls
+    // back to the Name.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ActiveProfileId { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ActiveProfileName { get; set; }
 
     // Two depths of intervention, decided with Louis on 2026-10-15. The quick

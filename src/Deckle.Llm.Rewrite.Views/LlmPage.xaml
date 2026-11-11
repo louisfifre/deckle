@@ -52,12 +52,10 @@
                 <!-- Mask-not-grey: the dependent sections collapse out of layout
                      when rewriting is off, driven by the module switch. The
                      switch itself (in GeneralSection) stays always visible.
-                     Order: what a dictation uses first, then what that profile
-                     does while you speak, then the profiles it picks from,
-                     then the providers they send to, then the Ollama models
-                     (shown by code, only while an Ollama provider is on). -->
-                <llm:LlmActiveProfileSection x:Name="ActiveProfileSection"
-                                            Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                     Order: the steps a dictation goes through, then the
+                     profiles they pick from, then the providers they send to,
+                     then the Ollama models (shown by code, only while an
+                     Ollama provider is on). -->
                 <llm:LlmDictationSection x:Name="DictationSection"
                                          Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
                 <llm:LlmProfilesSection x:Name="ProfilesSection"

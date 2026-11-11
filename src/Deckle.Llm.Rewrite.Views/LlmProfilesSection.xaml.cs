@@ -140,16 +140,9 @@ public sealed partial class LlmProfilesSection : UserControl
         if (vm.ProfileIndex < profiles.Count)
         {
             RewriteProfile removed = profiles[vm.ProfileIndex];
-            if (!string.IsNullOrEmpty(settings.ActiveProfileId)
-                    ? settings.ActiveProfileId == removed.Id
-                    : string.Equals(settings.ActiveProfileName, removed.Name, StringComparison.OrdinalIgnoreCase))
-            {
-                settings.ActiveProfileId = null;
-                settings.ActiveProfileName = null;
-            }
-            // Its ladder steps go with it: a step names a profile, and one
-            // left behind would hold a threshold nobody can see the use of.
-            settings.LengthSwitch.Steps.RemoveAll(step => step.ProfileId == removed.Id);
+            // Its later steps go with it, and the first step, which always
+            // exists, takes another profile (LlmSettingsNormalizer).
+            LlmSettingsNormalizer.RemoveProfileFromSteps(settings, removed.Id);
             profiles.RemoveAt(vm.ProfileIndex);
             LlmSettingsNormalizer.RepairProfileReferences(LlmSettingsService.Instance.Current);
             LlmSettingsService.Instance.Save();

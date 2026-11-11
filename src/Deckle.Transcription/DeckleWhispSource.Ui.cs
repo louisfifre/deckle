@@ -25,7 +25,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtManualProfileNotFound,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The selected rewriting profile was not found, so the transcript was delivered without rewriting. Pick an existing profile on the Rewriting page.")]
+           Message = "A rewriting step the dictation reached names a profile that no longer exists, so a lower step or none rewrote it. Pick an existing profile for that step on the Rewriting page.")]
     public void ManualProfileNotFound()
     {
         if (IsEnabled()) WriteEvent(EvtManualProfileNotFound);

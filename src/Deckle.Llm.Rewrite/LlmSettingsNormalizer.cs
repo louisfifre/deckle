@@ -10,17 +10,17 @@ namespace Deckle.Llm.Rewrite;
 // LlmSettingsService's JsonSettingsStore (returning true flushes the repair to
 // disk) and on fresh defaults, which carry no profile ids:
 //   - fill missing stable profile ids;
-//   - re-pair ActiveProfileId/ActiveProfileName against the live Profiles list
-//     (the id wins, then the name), so a rename or a reset keeps the active
-//     choice;
-//   - keep the length ladder well formed: steps on the grain, within range,
-//     strictly increasing.
+//   - re-pair an old file's ActiveProfileId/ActiveProfileName against the
+//     live Profiles list (the id wins, then the name), so the migration reads
+//     the profile the person had;
+//   - keep the dictation steps well formed, build them from the shape before
+//     the steps when a file has none, and drop that old shape
+//     (NormalizeDictation).
 //
-// **Never clears the active profile.** An orphan reference (id and name both
-// unresolvable) stays untouched so the user can repair it in the UI. The
-// delete-cascade lives in LlmProfilesSection.RemoveProfileAsync, which clears
-// references **before** the profile is removed. A ladder step whose profile no
-// longer exists stays too, and is skipped at selection.
+// **Never clears a step's profile.** A step whose profile no longer exists
+// stays untouched, so the person can repair it on the page, and is skipped at
+// selection. The delete-cascade lives in RemoveProfileFromSteps, which the
+// Profiles section runs **before** the profile is removed.
 public static class LlmSettingsNormalizer
 {
     /// <summary>Every repair in order; the postLoadMigration hook of the
@@ -28,10 +28,183 @@ public static class LlmSettingsNormalizer
     public static bool Apply(LlmSettings s)
     {
         bool profiles = RepairProfileReferences(s);
-        s.LengthSwitch ??= new LengthSwitchSettings();
-        s.LengthSwitch.Steps ??= new List<LengthStep>();
-        bool ladder = NormalizeLadder(s.LengthSwitch);
-        return profiles || ladder;
+        bool dictation = NormalizeDictation(s);
+        return profiles || dictation;
+    }
+
+    // A profile about to be removed leaves the steps: a later step that names
+    // it goes with it, since a step left behind would hold a length nobody can
+    // see the use of; the first step, which always exists, takes the first
+    // profile that stays (none when it was the last one).
+    public static void RemoveProfileFromSteps(LlmSettings s, string removedId)
+    {
+        List<RewriteStep> steps = s.Dictation.Steps;
+        if (steps.Count == 0) return;
+
+        steps.RemoveAll(step => step != steps[0] && step.ProfileId == removedId);
+        if (steps[0].ProfileId == removedId)
+            steps[0].ProfileId = s.Profiles.FirstOrDefault(p => p.Id != removedId)?.Id ?? "";
+    }
+
+    // ── Dictation steps ──────────────────────────────────────────────────────
+
+    // Keeps the steps well formed, and builds them from the shape before the
+    // steps when there are none (MigrateToSteps):
+    //   - a first step always exists, with a profile (the first one when it
+    //     names none);
+    //   - every length on its grain and within range; each later step strictly
+    //     above the one before (the first counting only with "Start at" on),
+    //     a step landing on or below its neighbour moving just above it rather
+    //     than being dropped; only a step pushed past the maximum is lost;
+    //   - the later steps sorted by length, the first one staying first;
+    //   - the passage size within its bounds.
+    // A step whose profile no longer exists stays, and is skipped when a
+    // dictation picks its step, as the ladder's were.
+    public static bool NormalizeDictation(LlmSettings s)
+    {
+        bool changed = false;
+        if (s.Dictation is null)
+        {
+            s.Dictation = new DictationRewriteSettings();
+            changed = true;
+        }
+        DictationRewriteSettings d = s.Dictation;
+        if (d.Steps is null)
+        {
+            d.Steps = new List<RewriteStep>();
+            changed = true;
+        }
+        d.Steps.RemoveAll(step => step is null);
+
+        if (d.Steps.Count == 0)
+        {
+            MigrateToSteps(s);
+            changed = true;
+        }
+
+        // The shape before the steps has been read (or the steps already
+        // existed): it is not kept, and the next save drops it from the file.
+        if (s.ActiveProfileId is not null || s.ActiveProfileName is not null
+            || s.LengthSwitch is not null || s.BatchRewriting is not null)
+        {
+            s.ActiveProfileId = null;
+            s.ActiveProfileName = null;
+            s.LengthSwitch = null;
+            s.BatchRewriting = null;
+            changed = true;
+        }
+
+        RewriteStep first = d.Steps[0];
+        if (string.IsNullOrEmpty(first.ProfileId) && s.Profiles.Count > 0)
+        {
+            first.ProfileId = s.Profiles[0].Id;
+            changed = true;
+        }
+
+        var normalized = new List<RewriteStep> { Normalized(first, DictationRewriteSettings.Snap(first.FromChars)) };
+        int previous = d.StartAtLength ? normalized[0].FromChars : 0;
+        foreach (RewriteStep step in d.Steps.Skip(1).OrderBy(step => step.FromChars))
+        {
+            int snapped = DictationRewriteSettings.Snap(step.FromChars);
+            if (snapped <= previous) snapped = DictationRewriteSettings.Above(previous);
+            if (snapped > DictationRewriteSettings.MaxChars) continue;
+            normalized.Add(Normalized(step, snapped));
+            previous = snapped;
+        }
+
+        bool stepsChanged = normalized.Count != d.Steps.Count
+            || normalized.Where((step, i) =>
+                step.FromChars != d.Steps[i].FromChars
+                || step.ProfileId != d.Steps[i].ProfileId
+                || step.Streaming != d.Steps[i].Streaming).Any();
+        if (stepsChanged)
+        {
+            d.Steps = normalized;
+            changed = true;
+        }
+
+        int passage = Math.Clamp(d.PassageChars,
+            DictationRewriteSettings.MinPassageChars, DictationRewriteSettings.MaxPassageChars);
+        if (passage != d.PassageChars)
+        {
+            d.PassageChars = passage;
+            changed = true;
+        }
+
+        return changed;
+
+        static RewriteStep Normalized(RewriteStep step, int fromChars) => new()
+        {
+            ProfileId = step.ProfileId ?? "",
+            FromChars = fromChars,
+            Streaming = step.Streaming,
+        };
+    }
+
+    // The shape before the steps (an active profile, a length ladder, a
+    // switch for batches) becomes steps, so a dictation goes where it went:
+    //   - an active profile becomes the first step, from the beginning, and
+    //     the ladder's steps follow it;
+    //   - with no active profile, the ladder's first step becomes the first
+    //     step with "Start at" on at its length, since below it a dictation
+    //     stayed as said;
+    //   - with neither, "Rewrite dictations" is off and the first step takes
+    //     the first profile, ready for the day it is switched on;
+    //   - the switch for batches sets Streaming on every step, and the batch
+    //     size becomes the passage size.
+    // A ladder that was switched off is not carried over: its steps never
+    // applied, and as steps they would.
+    //
+    // Also what a fresh LlmSettings goes through: its old fields hold their
+    // defaults (nothing active, ladder and batches off), so it gets the
+    // third case.
+    private static void MigrateToSteps(LlmSettings s)
+    {
+        DictationRewriteSettings d = s.Dictation;
+        bool streaming = s.BatchRewriting?.Enabled ?? false;
+        if (s.BatchRewriting is { } batching) d.PassageChars = batching.ThresholdChars;
+
+        List<LegacyLengthStep> ladder = s.LengthSwitch is { Enabled: true, Steps: { } ladderSteps }
+            ? ladderSteps.Where(step => step is not null).OrderBy(step => step.FromChars).ToList()
+            : new List<LegacyLengthStep>();
+
+        RewriteStep FromLadder(LegacyLengthStep step) =>
+            new() { ProfileId = step.ProfileId ?? "", FromChars = step.FromChars, Streaming = streaming };
+
+        // RepairProfileReferences ran first, so a name that still resolves
+        // has its id by now; an id that resolves to nothing is kept, as the
+        // active profile was, and the step is skipped at selection.
+        bool hasActive = !string.IsNullOrEmpty(s.ActiveProfileId)
+            || !string.IsNullOrWhiteSpace(s.ActiveProfileName);
+
+        if (hasActive)
+        {
+            d.Enabled = true;
+            d.StartAtLength = false;
+            d.Steps.Add(new RewriteStep
+            {
+                ProfileId = s.ActiveProfileId ?? "",
+                FromChars = DictationRewriteSettings.DefaultStartAtChars,
+                Streaming = streaming,
+            });
+            d.Steps.AddRange(ladder.Select(FromLadder));
+        }
+        else if (ladder.Count > 0)
+        {
+            d.Enabled = true;
+            d.StartAtLength = true;
+            d.Steps.AddRange(ladder.Select(FromLadder));
+        }
+        else
+        {
+            d.Enabled = false;
+            d.StartAtLength = false;
+            d.Steps.Add(new RewriteStep
+            {
+                FromChars = DictationRewriteSettings.DefaultStartAtChars,
+                Streaming = streaming,
+            });
+        }
     }
 
     public static bool RepairProfileReferences(LlmSettings s)
@@ -105,29 +278,5 @@ public static class LlmSettingsNormalizer
         }
 
         return mutated;
-    }
-
-    // Snaps each step to the grain within range, and sorts. A step landing on
-    // or below the one before moves just above it rather than being dropped,
-    // so two thresholds close together both survive; only a step pushed past
-    // the maximum is lost.
-    public static bool NormalizeLadder(LengthSwitchSettings ladder)
-    {
-        var normalized = new List<LengthStep>();
-        foreach (LengthStep step in ladder.Steps.OrderBy(step => step.FromChars))
-        {
-            int snapped = LengthSwitchSettings.Snap(step.FromChars);
-            if (normalized.Count > 0 && snapped <= normalized[^1].FromChars)
-                snapped = LengthSwitchSettings.Above(normalized[^1].FromChars);
-            if (snapped > LengthSwitchSettings.MaxChars) continue;
-            normalized.Add(new LengthStep { FromChars = snapped, ProfileId = step.ProfileId ?? "" });
-        }
-
-        bool changed = normalized.Count != ladder.Steps.Count
-            || normalized.Where((step, i) =>
-                step.FromChars != ladder.Steps[i].FromChars
-                || step.ProfileId != ladder.Steps[i].ProfileId).Any();
-        if (changed) ladder.Steps = normalized;
-        return changed;
     }
 }

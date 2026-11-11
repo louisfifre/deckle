@@ -9,6 +9,13 @@ public static class LlmSettingsModule
     // the page.
     public const string PageTag = "Deckle.Llm.Rewrite.Views.LlmPage, Deckle.Llm.Rewrite.Views";
 
+    // Whether transcription streams, read by the Dictation section: without
+    // it no passage exists before Stop, so the steps' Streaming switch is
+    // hidden and every step rewrites at Stop. The transcription settings live
+    // in a module this one does not reference, so the host that knows both
+    // sets it; unset, the section takes streaming as on.
+    public static Func<bool>? TranscriptionStreams { get; set; }
+
     public static SettingsModuleDescriptor Describe(int order) => new()
     {
         Id = "llm",
