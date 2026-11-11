@@ -1,10 +1,15 @@
 // Deckle logo generator. Run `node logo/generate.mjs` to rewrite the SVG files
-// beside it and the app's icons under src/Deckle.App/Assets/Icons.
+// and the sheet beside it, and the app's icons under src/Deckle.App/Assets/Icons.
 //
-// The mark is four stacked sheets (d in front, a at the back) plus a flat blade (e).
+// The mark is a stack of sheets (d in front, a at the back) plus a flat blade (e).
 // A rear sheet shows only what the sheet in front leaves visible, minus a gap: the
 // gap is a parallel offset of the front sheet's edges, so it is equal everywhere by
 // construction, and an inner corner is the front corner's radius plus the gap.
+//
+// The mark has two forms, because a gap that reads at 64 px closes at 16 px:
+// `normal`, four blades, and `small`, three blades and a wider gap, for where the
+// mark is shown small (the tray, a title bar). A third, `five`, is the first
+// drawing: it is kept as a reference SVG and no icon uses it.
 //
 // The numbers come from the first logo, a generated image: they were measured on
 // its trace, then regularised (one top angle, vertical right edges, one gap, evenly
@@ -75,60 +80,89 @@ function polygon(corners) {
 // --- The mark ---------------------------------------------------------------
 
 const TOP_ANGLE = 27;   // every top edge slopes down to the right by this much
-const GAP = 24;         // between a sheet and the one behind it
-const TIP_RADIUS = 1.5;
 const INNER_RADIUS = 10;
 const PIVOT = [500, 960]; // where the blades converge; the tips sit around it
 
-// Per sheet: its left edge, a point its top edge passes through, its right edge,
+// A sheet: its left edge, a point its top edge passes through, its right edge,
 // its tip, the ray from the tip up to the right edge (`bottom`), corner radii.
-const SHEETS = {
-  d: { left: vertical(348), top: [395, 639], tip: [485, 945], right: 98, bottomLeft: 122, rTL: 16, rTR: 16, rBL: 8 },
-  c: { left: vertical(396), top: [470, 545], right: vertical(548), tip: [492.5, 951.5], bottom: 78, rTL: 20, rTR: 22, rBR: 20 },
-  b: { left: line([464, 462], 78), top: [590, 444], right: vertical(700), tip: [500, 958], bottom: 58, rTL: 26, rTR: 30, rBR: 28 },
-  a: { left: line([555, 337], 72), top: [728.5, 320], right: vertical(876), tip: [507.5, 964.5], bottom: 40, rTL: 34, rTR: 40, rBR: 36 },
-};
+// The front sheet has no bend: `right` is the ray from its tip, `bottomLeft`
+// the ray from its tip to its left edge.
+const FRONT = { left: vertical(348), top: [395, 639], tip: [485, 945], right: 98, bottomLeft: 122, rTL: 16, rTR: 16, rBL: 8 };
+const BACK = { left: line([555, 337], 72), top: [728.5, 320], right: vertical(876), tip: [507.5, 964.5], bottom: 40, rTL: 34, rTR: 40, rBR: 36 };
 const FLAT = { tip: [515, 971], bottom: 22, rApex: 14, rEnd: 22 };
 
-function buildBlades() {
-  const top = k => line(SHEETS[k].top, -TOP_ANGLE);
-  const out = {};
+// A form: the gap between a sheet and the one behind it, the tip radius, the
+// front sheet, the sheets behind it from front to back (each with the letter
+// its blade keeps across forms), the flat blade. Fewer blades take a wider gap
+// and rounder corners, so the mark stays open when it is a few pixels wide.
+const FORMS = {
+  normal: {
+    gap: 44, tipRadius: 3,
+    front: { ...FRONT, top: [395, 620], right: 92, rTL: 22, rTR: 22, rBL: 10 },
+    rear: [
+      { id: 'b', left: line([440, 470], 80), top: [570, 455], right: vertical(668), tip: [496, 955], bottom: 62, rTL: 30, rTR: 34, rBR: 30 },
+      { id: 'a', ...BACK, tip: [506, 964] }],
+    flat: { ...FLAT, rApex: 18, rEnd: 28 },
+  },
+  small: {
+    gap: 56, tipRadius: 4,
+    front: { ...FRONT, top: [400, 560], right: 80, rTL: 30, rTR: 30, rBL: 12 },
+    rear: [{ id: 'a', ...BACK, left: line([520, 360], 76), tip: [504, 962], bottom: 42 }],
+    flat: { ...FLAT, rApex: 22, rEnd: 32 },
+  },
+  five: {
+    gap: 24, tipRadius: 1.5,
+    front: FRONT,
+    rear: [
+      { id: 'c', left: vertical(396), top: [470, 545], right: vertical(548), tip: [492.5, 951.5], bottom: 78, rTL: 20, rTR: 22, rBR: 20 },
+      { id: 'b', left: line([464, 462], 78), top: [590, 444], right: vertical(700), tip: [500, 958], bottom: 58, rTL: 26, rTR: 30, rBR: 28 },
+      { id: 'a', ...BACK }],
+    flat: FLAT,
+  },
+};
 
-  // d, the front sheet, has no bend: its right edge runs straight to the tip.
-  const d = SHEETS.d, dRight = line(d.tip, d.right), dTop = top('d');
+// The blades of a form, in letter order: [{ id, corners }]. `a` is always the
+// back sheet, `d` the front one, `e` the flat blade.
+function buildBlades(form) {
+  const { gap, tipRadius } = form;
+  const top = s => line(s.top, -TOP_ANGLE);
+  const out = [];
+
+  const d = form.front, dRight = line(d.tip, d.right), dTop = top(d);
   const dTL = cross(d.left, dTop), dTR = cross(dTop, dRight), dBL = cross(line(d.tip, d.bottomLeft), d.left);
-  out.d = rounded([[...dTL, d.rTL], [...dTR, d.rTR], [...d.tip, TIP_RADIUS], [...dBL, d.rBL]]);
+  out.push({ id: 'd', corners: rounded([[...dTL, d.rTL], [...dTR, d.rTR], [...d.tip, tipRadius], [...dBL, d.rBL]]) });
   let front = { top: dTop, right: dRight, bottom: null, c: centre([dTL, dTR, d.tip, dBL]), rTR: d.rTR, rBR: 0 };
+  let back;
 
-  for (const k of ['c', 'b', 'a']) {
-    const s = SHEETS[k], sTop = top(k), bottom = line(s.tip, s.bottom);
+  for (const s of form.rear) {
+    const sTop = top(s), bottom = line(s.tip, s.bottom);
     const TL = cross(s.left, sTop), TR = cross(sTop, s.right), BR = cross(s.right, bottom);
-    const oTop = offset(front.top, GAP, front.c), oRight = offset(front.right, GAP, front.c);
-    const pts = [[...TL, s.rTL], [...TR, s.rTR], [...BR, s.rBR], [...s.tip, TIP_RADIUS]];
+    const oTop = offset(front.top, gap, front.c), oRight = offset(front.right, gap, front.c);
+    const pts = [[...TL, s.rTL], [...TR, s.rTR], [...BR, s.rBR], [...s.tip, tipRadius]];
     // The gap is not offset below the bend: the edge runs from this sheet's own
     // tip, so the gap narrows towards the pivot as in the first logo.
-    if (front.bottom) pts.push([...cross(offset(front.bottom, GAP, front.c), oRight), front.rBR + GAP]);
-    pts.push([...cross(oRight, oTop), front.rTR + GAP]);
+    if (front.bottom) pts.push([...cross(offset(front.bottom, gap, front.c), oRight), front.rBR + gap]);
+    pts.push([...cross(oRight, oTop), front.rTR + gap]);
     pts.push([...cross(oTop, s.left), INNER_RADIUS]);
-    out[k] = rounded(pts);
+    out.push({ id: s.id, corners: rounded(pts) });
     front = { top: sTop, right: s.right, bottom, c: centre([TL, TR, BR, s.tip]), rTR: s.rTR, rBR: s.rBR };
+    back = s;
   }
 
-  // e, the flat blade: its apex sits under sheet a's right edge, one gap below it.
-  const apex = cross(offset(front.bottom, GAP, front.c), SHEETS.a.right);
-  const end = cross(line(apex, -TOP_ANGLE), line(FLAT.tip, FLAT.bottom));
-  out.e = rounded([[...apex, FLAT.rApex], [...end, FLAT.rEnd], [...FLAT.tip, TIP_RADIUS]]);
-  return out;
+  // e, the flat blade: its apex sits under the back sheet's right edge, one gap below it.
+  const F = form.flat;
+  const apex = cross(offset(front.bottom, gap, front.c), back.right);
+  const end = cross(line(apex, -TOP_ANGLE), line(F.tip, F.bottom));
+  out.push({ id: 'e', corners: rounded([[...apex, F.rApex], [...end, F.rEnd], [...F.tip, tipRadius]]) });
+  return out.sort((p, q) => p.id.localeCompare(q.id));
 }
-
-const BLADE_IDS = ['a', 'b', 'c', 'd', 'e'];
 
 // --- Colour -----------------------------------------------------------------
 
 // Both gradients are placed in the drawing's space (userSpaceOnUse), not in each
 // blade's own box: the blades read as cut from one sheet of colour.
 
-// At rest: one linear gradient across the five blades.
+// At rest: one linear gradient across the blades.
 const REST = { from: PIVOT, to: [1029, 642],
   stops: [[0, '#05B2FC'], [0.25, '#1F7DFB'], [0.5, '#4F49FB'], [0.75, '#7137FB'], [1, '#8A2EFB']] };
 
@@ -139,34 +173,53 @@ const EMBER = { centre: PIVOT, radius: 720,
 // The dot an icon carries while a user incident is open: Windows' caution yellow.
 const INCIDENT = '#FFB900';
 
+// The tile behind the mark where it stands among other apps (the taskbar,
+// Alt+Tab). It is keyed by the Windows mode it is shown on: pale on a dark
+// taskbar, dark on a light one. The mark takes TILE_MARK of the tile's side.
+const TILE = { dark: '#E6E8F0', light: '#14142B' };
+const TILE_MARK = 1 / 1.34, TILE_RADIUS = 0.22;
+
 // What each state lights. The names are the app's: recording while the microphone
 // is open, rewriting while a profile rewrites the transcript.
 const STATES = { rest: [], recording: ['a'], rewriting: ['a', 'e'] };
+
+// --- Views ------------------------------------------------------------------
+
+// The square a mark is shown in: its own box, centred, with a thin margin, so it
+// takes all the pixels a 16 px tray icon has. `scale` widens it for a tile.
+function markView(blades, scale = 1) {
+  const pts = blades.flatMap(b => polygon(b.corners));
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const side = Math.max(x1 - x0, y1 - y0) * 1.03 * scale;
+  return { x: (x0 + x1 - side) / 2, y: (y0 + y1 - side) / 2, side };
+}
+const tileView = blades => markView(blades, 1 / TILE_MARK);
 
 // --- SVG --------------------------------------------------------------------
 
 const SVG_ORIGIN = [298.5, 230.5];
 const SVG_SIZE = 760;
 const f = n => Math.round(n * 100) / 100;
-const fx = x => f(x - SVG_ORIGIN[0]);
-const fy = y => f(y - SVG_ORIGIN[1]);
 
-function pathData(corners) {
+function pathData(corners, ox = 0, oy = 0) {
   let d = '';
   corners.forEach(({ s, e, r, sweep }, i) => {
-    d += `${i ? 'L' : 'M'}${fx(s[0])} ${fy(s[1])}`;
-    if (r > 0.01) d += `A${f(r)} ${f(r)} 0 0 ${sweep} ${fx(e[0])} ${fy(e[1])}`;
+    d += `${i ? 'L' : 'M'}${f(s[0] - ox)} ${f(s[1] - oy)}`;
+    if (r > 0.01) d += `A${f(r)} ${f(r)} 0 0 ${sweep} ${f(e[0] - ox)} ${f(e[1] - oy)}`;
   });
   return d + 'Z';
 }
 
 const stopTags = list => list.map(([o, c]) => `<stop offset="${o}" stop-color="${c}"/>`).join('');
+const restGradient = (ox, oy) => `<linearGradient id="rest" gradientUnits="userSpaceOnUse" x1="${f(REST.from[0] - ox)}" y1="${f(REST.from[1] - oy)}" x2="${f(REST.to[0] - ox)}" y2="${f(REST.to[1] - oy)}">${stopTags(REST.stops)}</linearGradient>`;
+const emberGradient = (ox, oy) => `<radialGradient id="ember" gradientUnits="userSpaceOnUse" cx="${f(EMBER.centre[0] - ox)}" cy="${f(EMBER.centre[1] - oy)}" r="${EMBER.radius}">${stopTags(EMBER.stops)}</radialGradient>`;
 
 function svg(blades, title, lit) {
-  let defs = `<linearGradient id="rest" gradientUnits="userSpaceOnUse" x1="${fx(REST.from[0])}" y1="${fy(REST.from[1])}" x2="${fx(REST.to[0])}" y2="${fy(REST.to[1])}">${stopTags(REST.stops)}</linearGradient>`;
-  if (lit.length) defs += `\n<radialGradient id="ember" gradientUnits="userSpaceOnUse" cx="${fx(EMBER.centre[0])}" cy="${fy(EMBER.centre[1])}" r="${EMBER.radius}">${stopTags(EMBER.stops)}</radialGradient>`;
-  const paths = BLADE_IDS
-    .map(id => `<path id="blade-${id}" d="${pathData(blades[id])}" fill="url(#${lit.includes(id) ? 'ember' : 'rest'})"/>`).join('\n');
+  const [ox, oy] = SVG_ORIGIN;
+  const defs = restGradient(ox, oy) + (lit.length ? '\n' + emberGradient(ox, oy) : '');
+  const paths = blades
+    .map(b => `<path id="blade-${b.id}" d="${pathData(b.corners, ox, oy)}" fill="url(#${lit.includes(b.id) ? 'ember' : 'rest'})"/>`).join('\n');
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SVG_SIZE} ${SVG_SIZE}" role="img" aria-label="${title}">
 <defs>
 ${defs}
@@ -198,6 +251,7 @@ const restAxis = [REST.to[0] - REST.from[0], REST.to[1] - REST.from[1]];
 const restLength2 = restAxis[0] ** 2 + restAxis[1] ** 2;
 const restColour = (x, y) => sampleRamp(restStops, ((x - REST.from[0]) * restAxis[0] + (y - REST.from[1]) * restAxis[1]) / restLength2);
 const emberColour = (x, y) => sampleRamp(emberStops, Math.hypot(x - EMBER.centre[0], y - EMBER.centre[1]) / EMBER.radius);
+const plain = hex => { const c = rgb(hex); return () => c; };
 
 function shape(points, colour) {
   const xs = points.map(p => p[0]), ys = points.map(p => p[1]);
@@ -212,24 +266,19 @@ function holds(s, x, y) {
   return inside;
 }
 
-// The square an icon shows: the mark's own box, centred, with a thin margin, so
-// the mark takes all the pixels a 16 px tray icon has.
-function iconView(shapes) {
-  const x0 = Math.min(...shapes.map(s => s.x0)), x1 = Math.max(...shapes.map(s => s.x1));
-  const y0 = Math.min(...shapes.map(s => s.y0)), y1 = Math.max(...shapes.map(s => s.y1));
-  const side = Math.max(x1 - x0, y1 - y0) * 1.03;
-  return { x: (x0 + x1 - side) / 2, y: (y0 + y1 - side) / 2, side };
-}
-
-// RGBA pixels, straight alpha.
-function raster(blades, lit, incident, size) {
-  const shapes = BLADE_IDS.map(id => shape(polygon(blades[id]), lit.includes(id) ? emberColour : restColour));
-  const view = iconView(shapes);
+// RGBA pixels, straight alpha. `tile` is a colour, or nothing for the bare mark.
+function raster(blades, lit, size, { incident = false, tile = null } = {}) {
+  const shapes = blades.map(b => shape(polygon(b.corners), lit.includes(b.id) ? emberColour : restColour));
+  const view = tile ? tileView(blades) : markView(blades);
   if (incident) {
     // The dot sits in the top-left corner, the one the mark leaves empty.
-    const c = [view.x + view.side * 0.125, view.y + view.side * 0.125], r = view.side * 0.115, dot = rgb(INCIDENT);
+    const c = [view.x + view.side * 0.125, view.y + view.side * 0.125], r = view.side * 0.115;
     const circle = Array.from({ length: 64 }, (_, i) => [c[0] + r * Math.cos(i * Math.PI / 32), c[1] + r * Math.sin(i * Math.PI / 32)]);
-    shapes.unshift(shape(circle, () => dot));
+    shapes.unshift(shape(circle, plain(INCIDENT)));
+  }
+  if (tile) {
+    const r = view.side * TILE_RADIUS, x0 = view.x, y0 = view.y, x1 = x0 + view.side, y1 = y0 + view.side;
+    shapes.push(shape(polygon(rounded([[x0, y0, r], [x1, y0, r], [x1, y1, r], [x0, y1, r]])), plain(tile)));
   }
   const grid = size >= 128 ? 4 : 8, px = new Uint8Array(size * size * 4), step = view.side / size / grid;
   for (let py = 0; py < size; py++) for (let pxl = 0; pxl < size; pxl++) {
@@ -279,7 +328,8 @@ function bitmapFrame(px, size) {
 // Bitmap frames up to 128 px, a PNG frame at 256 px: the mix every Windows
 // loader reads.
 const ICON_SIZES = [16, 20, 24, 32, 40, 48, 64, 128, 256];
-function ico(frames) {
+function ico(draw) {
+  const frames = ICON_SIZES.map(size => ({ size, data: size === 256 ? png(draw(size), size) : bitmapFrame(draw(size), size) }));
   const head = Buffer.alloc(6 + 16 * frames.length); head.writeUInt16LE(1, 2); head.writeUInt16LE(frames.length, 4);
   let at = head.length;
   frames.forEach(({ size, data }, i) => {
@@ -291,24 +341,107 @@ function ico(frames) {
   return Buffer.concat([head, ...frames.map(fr => fr.data)]);
 }
 
+// --- The sheet --------------------------------------------------------------
+
+// One fixed grid that shows what the app ships: the two forms, bare and on the
+// tile, in the three states, from 16 to 64 px. Two switches change only how it
+// is shown: the Windows mode (page colour, and the tile that goes with it) and
+// the rendering (the vector drawing, or the exact pixels an .ico holds, at the
+// same size). No script: the switches are radio buttons read by CSS.
+function sheet(forms) {
+  const sizes = [16, 20, 24, 32, 48, 64];
+  const n = v => Math.round(v * 10) / 10;
+  const symbols = Object.entries(forms).map(([name, blades]) => {
+    const v = markView(blades);
+    return `<symbol id="${name}" viewBox="${n(v.x)} ${n(v.y)} ${n(v.side)} ${n(v.side)}">`
+      + blades.map(b => `<path class="${b.id}" d="${pathData(b.corners)}"/>`).join('') + `</symbol>`;
+  });
+  const cell = (name, state, s, tiled) => {
+    const blades = forms[name], lit = STATES[state], size = `width="${s}" height="${s}"`;
+    const img = (options, cls = '') => `<img ${size}${cls} alt="" src="data:image/png;base64,${png(raster(blades, lit, s, options), s).toString('base64')}">`;
+    if (!tiled) return `<td><svg class="${state}" ${size}><use href="#${name}" width="100%" height="100%"/></svg>${img()}</td>`;
+    const t = tileView(blades), m = markView(blades);
+    return `<td><svg class="${state}" ${size} viewBox="${n(t.x)} ${n(t.y)} ${n(t.side)} ${n(t.side)}"><rect x="${n(t.x)}" y="${n(t.y)}" width="${n(t.side)}" height="${n(t.side)}" rx="${n(t.side * TILE_RADIUS)}"/><use href="#${name}" x="${n(m.x)}" y="${n(m.y)}" width="${n(m.side)}" height="${n(m.side)}"/></svg>`
+      + img({ tile: TILE.dark }, ' class="dark"') + img({ tile: TILE.light }, ' class="light"') + `</td>`;
+  };
+  let rows = '';
+  for (const state of Object.keys(STATES)) Object.keys(forms).forEach((name, fi) => [false, true].forEach((tiled, ti) => {
+    const first = fi === 0 && ti === 0;
+    rows += `<tr${first ? ' class="first"' : ''}>${first ? `<th rowspan="${Object.keys(forms).length * 2}">${state}</th>` : ''}${ti ? '' : `<th rowspan="2">${name}</th>`}<th>${tiled ? 'tile' : 'bare'}</th>${sizes.map(s => cell(name, state, s, tiled)).join('')}</tr>\n`;
+  }));
+  const group = (name, options) => `<div class="param"><span>${name}</span>` + options.map((o, i) =>
+    `<input type="radio" name="${name}" id="${name}-${o}"${i ? '' : ' checked'}><label for="${name}-${o}">${o}</label>`).join('') + `</div>`;
+
+  return `<!doctype html>
+<!-- Written by logo/generate.mjs: change the generator, not this file. -->
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Deckle — logo sheet</title><style>
+:root{--bg:#000;--fg:#fff;--line:#242424;--tile:${TILE.dark}}
+body:has(#mode-light:checked){--bg:#fff;--fg:#000;--line:#e6e6e6;--tile:${TILE.light}}
+body{margin:0;padding:24px;background:var(--bg);color:var(--fg);font:12px/16px "Cascadia Mono",Consolas,monospace}
+h1{font-size:12px;font-weight:400;margin:0 0 20px;text-transform:uppercase;letter-spacing:.12em}
+form{display:flex;gap:40px;margin-bottom:24px}
+.param{display:flex;gap:16px}
+.param>span{opacity:.5}
+input{position:absolute;opacity:0;pointer-events:none}
+label{cursor:pointer;opacity:.5;border-bottom:1px solid transparent}
+label:hover{opacity:1}
+input:checked+label{opacity:1;border-bottom-color:var(--fg)}
+input:focus-visible+label{outline:1px solid var(--fg);outline-offset:3px}
+table{border-collapse:collapse;table-layout:fixed}
+col.state{width:104px}col.form{width:72px}col.backing{width:64px}
+th,td{height:80px;padding:0;font-weight:400;text-align:center;vertical-align:middle}
+thead th{height:32px}
+th{opacity:.5;text-align:left;white-space:nowrap}
+thead th:nth-child(n+4){text-align:center}
+thead tr>*,tr.first>*{border-top:1px solid var(--line)}
+td svg,td img{display:block;margin:auto}
+td img,body:has(#rendering-pixels:checked) td svg{display:none}
+body:has(#rendering-pixels:checked) td img{display:block;image-rendering:pixelated}
+body:has(#rendering-pixels:checked):has(#mode-light:checked) td img.dark,
+body:has(#rendering-pixels:checked):not(:has(#mode-light:checked)) td img.light{display:none}
+svg{--rest:url(#rest);--a:var(--rest);--e:var(--rest)}
+svg.recording{--a:url(#ember)}
+svg.rewriting{--a:url(#ember);--e:url(#ember)}
+rect{fill:var(--tile)}path{fill:var(--rest)}path.a{fill:var(--a)}path.e{fill:var(--e)}
+</style><body><h1>Deckle — logo sheet</h1>
+<svg width="0" height="0" style="position:absolute"><defs>
+${restGradient(0, 0)}
+${emberGradient(0, 0)}
+${symbols.join('\n')}
+</defs></svg>
+<form>
+${group('mode', ['dark', 'light'])}
+${group('rendering', ['drawing', 'pixels'])}
+</form>
+<table>
+<colgroup><col class="state"><col class="form"><col class="backing">${sizes.map(s => `<col style="width:${s + 32}px">`).join('')}</colgroup>
+<thead><tr><th>state</th><th>form</th><th>backing</th>${sizes.map(s => `<th>${s}</th>`).join('')}</tr></thead>
+${rows}</table>
+</body></html>
+`;
+}
+
 // --- Files ------------------------------------------------------------------
 
-const blades = buildBlades();
+const normal = buildBlades(FORMS.normal), small = buildBlades(FORMS.small), five = buildBlades(FORMS.five);
 const beside = name => fileURLToPath(new URL(name, import.meta.url));
 const iconFile = name => fileURLToPath(new URL(`../src/Deckle.App/Assets/Icons/${name}`, import.meta.url));
 
-writeFileSync(beside('deckle.svg'), svg(blades, 'Deckle', STATES.rest));
-writeFileSync(beside('deckle-recording.svg'), svg(blades, 'Deckle, recording', STATES.recording));
-writeFileSync(beside('deckle-rewriting.svg'), svg(blades, 'Deckle, rewriting', STATES.rewriting));
-
 for (const [state, lit] of Object.entries(STATES)) {
-  for (const incident of [false, true]) {
-    const frames = ICON_SIZES.map(size => {
-      const px = raster(blades, lit, incident, size);
-      return { size, data: size === 256 ? png(px, size) : bitmapFrame(px, size) };
-    });
-    writeFileSync(iconFile(`deckle--state--${state}${incident ? '--incident--true' : ''}.ico`), ico(frames));
-  }
-  // A XAML title bar takes a bitmap: see IconAssets.
-  writeFileSync(iconFile(`deckle--state--${state}--32px.png`), png(raster(blades, lit, false, 32), 32));
+  const suffix = state === 'rest' ? '' : `-${state}`, title = state === 'rest' ? 'Deckle' : `Deckle, ${state}`;
+  writeFileSync(beside(`deckle${suffix}.svg`), svg(normal, title, lit));
+  writeFileSync(beside(`deckle-small${suffix}.svg`), svg(small, title, lit));
+
+  // The tray: the small form, bare, so the mark takes the whole height.
+  for (const incident of [false, true])
+    writeFileSync(iconFile(`deckle--state--${state}${incident ? '--incident--true' : ''}.ico`), ico(size => raster(small, lit, size, { incident })));
+  // A XAML title bar takes a bitmap, shown at 16 px: see IconAssets.
+  writeFileSync(iconFile(`deckle--state--${state}--32px.png`), png(raster(small, lit, 32), 32));
 }
+// A window's icon (taskbar, Alt+Tab): the normal form on the tile of each
+// Windows mode. A window shows the microphone, not the rewrite.
+for (const state of ['rest', 'recording']) for (const [mode, tile] of Object.entries(TILE))
+  writeFileSync(iconFile(`deckle--state--${state}--mode--${mode}.ico`), ico(size => raster(normal, STATES[state], size, { tile })));
+
+writeFileSync(beside('deckle-five.svg'), svg(five, 'Deckle, first drawing', []));
+writeFileSync(beside('sheet.html'), sheet({ normal, small }));

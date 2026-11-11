@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 760" role="img" aria-label="Deckle">
+<defs>
+<linearGradient id="rest" gradientUnits="userSpaceOnUse" x1="201.5" y1="729.5" x2="730.5" y2="411.5"><stop offset="0" stop-color="#05B2FC"/><stop offset="0.25" stop-color="#1F7DFB"/><stop offset="0.5" stop-color="#4F49FB"/><stop offset="0.75" stop-color="#7137FB"/><stop offset="1" stop-color="#8A2EFB"/></linearGradient>
+</defs>
+<path id="blade-a" d="M243.51 41.22A34 34 0 0 1 291.94 19.15L555.66 153.53A40 40 0 0 1 577.5 189.17L577.5 380.52A36 36 0 0 1 565.59 407.27L215.62 722.39A4 4 0 0 1 209.08 718.36L286.2 435.64A83.77 83.77 0 0 0 243.41 338.96L184.72 309.05A10 10 0 0 1 179.56 297.72Z" fill="url(#rest)"/>
+<path id="blade-d" d="M49.5 351.96A30 30 0 0 1 93.12 325.23L222 390.9A30 30 0 0 1 237.93 422.84L188.31 704.24A4 4 0 0 1 180.98 705.66L51.32 498.17A12 12 0 0 1 49.5 491.81Z" fill="url(#rest)"/>
+<path id="blade-e" d="M566.55 480.06A22 22 0 0 1 589.67 478.1L649.29 508.48A32 32 0 0 1 646.75 566.67L245.35 728.84A4 4 0 0 1 241.46 721.93Z" fill="url(#rest)"/>
+</svg>
