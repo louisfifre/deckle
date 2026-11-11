@@ -2779,6 +2779,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteFailureMessageTests.cs
 │   │   ├── RewriteLogTests.cs
 │   │   ├── RewriteProfileTriggerTests.cs
+│   │   ├── RewriteServiceCacheTests.cs
 │   │   ├── RewriteServiceFeedbackTests.cs
 │   │   ├── SentenceBoundaryTests.cs
 │   │   └── SentenceRewriteTests.cs
