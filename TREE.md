@@ -1543,7 +1543,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ParagraphRewriteCoordinator.cs
 │   │   │   └── ParagraphRewriteOffer.cs
 │   │   ├── Settings/
-│   │   │   └── RewriteAvailability.cs
+│   │   │   ├── RewriteAvailability.cs
+│   │   │   └── StepTimelineLayout.cs
 │   │   ├── Deckle.Llm.Rewrite.csproj
 │   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite vocabulary. It draws the Correction / Rewrite boundary, which decides w…
 │   │   ├── LlmResetDefaults.cs
@@ -1555,14 +1556,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
 │   │   ├── ViewModels/
-│   │   │   ├── LlmDictationViewModel.cs
-│   │   │   ├── LlmDictationViewModel.Settings.cs
 │   │   │   ├── LlmGeneralViewModel.cs
 │   │   │   └── LlmGeneralViewModel.Settings.cs
 │   │   ├── BoolToVisibilityConverter.cs
 │   │   ├── Deckle.Llm.Rewrite.Views.csproj
-│   │   ├── LlmActiveProfileSection.xaml
-│   │   ├── LlmActiveProfileSection.xaml.cs
 │   │   ├── LlmDictationSection.xaml
 │   │   ├── LlmDictationSection.xaml.cs
 │   │   ├── LlmGeneralSection.xaml
@@ -1584,6 +1581,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteChangeView.cs
 │   │   ├── RewriteOfferWindow.xaml
 │   │   ├── RewriteOfferWindow.xaml.cs
+│   │   ├── RewriteStepTimeline.cs
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Localization/
 │   │   ├── Deckle.Localization.csproj
@@ -2788,7 +2786,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteServiceCacheTests.cs
 │   │   ├── RewriteServiceFeedbackTests.cs
 │   │   ├── SentenceBoundaryTests.cs
-│   │   └── SentenceRewriteTests.cs
+│   │   ├── SentenceRewriteTests.cs
+│   │   └── StepTimelineLayoutTests.cs
 │   ├── Deckle.Llm.Tests/
 │   │   ├── ClaudePromptCacheTests.cs
 │   │   ├── ClaudeReasoningTests.cs

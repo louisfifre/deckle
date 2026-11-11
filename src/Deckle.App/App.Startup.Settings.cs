@@ -154,7 +154,15 @@ public partial class App
                 Transcription.Views.SettingsSearch.TelemetryEntries);
         }
         if (context.RewritePresent)
+        {
+            // The dictation steps stream only on a streaming transcription;
+            // without the transcription module, nothing is dictated anyway.
+            bool transcriptionPresent = context.TranscriptionPresent;
+            Llm.Rewrite.Views.LlmSettingsModule.TranscriptionStreams = () =>
+                transcriptionPresent
+                && TranscriptionSettingsService.Instance.Current.Streaming.Strategy == PipelineStrategyKind.Streaming;
             RegisterSettingsModule(Llm.Rewrite.Views.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.Views.SettingsSearch.Entries);
+        }
         if (context.AutocorrectPresent)
         {
             // Each page of the family registers on its own: the search index

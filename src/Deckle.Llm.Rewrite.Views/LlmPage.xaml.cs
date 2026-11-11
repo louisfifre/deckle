@@ -40,10 +40,9 @@ public sealed partial class LlmPage : Page, ISettingsSubpageSample
         // The header asks; the page adds what its reset keeps and what it loses.
         Header.ResetDetail = Loc.Get("Settings_ResetLlmDialog_Detail");
 
-        // The reset spans profiles, providers and slots that no composer
-        // models, so a dirty check cannot be computed from the page's composers
-        // (they live inside LlmGeneralSection and LlmDictationSection and cover
-        // only the switch and the batch rewriting).
+        // The reset spans profiles, providers and steps that no composer
+        // models, so a dirty check cannot be computed from the page's one
+        // composer (inside LlmGeneralSection, the module switch alone).
         // Reset all stays enabled, as it was before the shared header.
         Header.IsResetAllEnabled = true;
 
@@ -120,7 +119,7 @@ public sealed partial class LlmPage : Page, ISettingsSubpageSample
     {
         // No try/catch: Reload() is synchronous and touches only in-memory
         // state, so a throw is a state bug for the global UnhandledException.
-        ActiveProfileSection.Reload();
+        DictationSection.Reload();
     }
 
     private void Hydrate()
@@ -128,7 +127,6 @@ public sealed partial class LlmPage : Page, ISettingsSubpageSample
         GeneralSection.Reload();
         ProvidersSection.Reload();
         ProfilesSection.Reload();
-        ActiveProfileSection.Reload();
         DictationSection.Reload();
     }
 

@@ -1,9 +1,33 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Deckle.Core;
 using Deckle.Llm;
 
 namespace Deckle.Llm.Rewrite;
+
+// ── Before the steps ─────────────────────────────────────────────────────────
+//
+// The length ladder and the batch switch as a file held them before
+// 2026-11-11, read once to migrate (LlmSettingsNormalizer.MigrateToSteps) and
+// never written again.
+public sealed class LegacyLengthStep
+{
+    public int FromChars { get; set; }
+    public string ProfileId { get; set; } = "";
+}
+
+public sealed class LegacyLengthSwitchSettings
+{
+    public bool Enabled { get; set; }
+    public List<LegacyLengthStep> Steps { get; set; } = new();
+}
+
+public sealed class LegacyBatchRewriteSettings
+{
+    public bool Enabled { get; set; }
+    public int ThresholdChars { get; set; } = 600;
+}
 
 // ── LLM rewriting settings ───────────────────────────────────────────────────
 
@@ -45,93 +69,6 @@ public sealed class RewriteProfile
 
     [System.Text.Json.Serialization.JsonIgnore]
     public bool HasActiveHotkey => HotkeyEnabled && Hotkey is { IsComplete: true };
-}
-
-// One step of the length ladder: a dictation whose raw transcript holds at
-// least FromChars characters is rewritten with ProfileId, the highest step
-// reached winning. Below the first step the active profile applies.
-public sealed class LengthStep
-{
-    public int FromChars { get; set; }
-    public string ProfileId { get; set; } = "";
-}
-
-// Picking the rewrite profile by the length of the dictation.
-//
-// Characters of raw transcript, not minutes: they are counted the same way
-// whichever pipeline transcribed the take, where a duration needed one
-// measure for a monolithic take (the recording) and another for a streamed
-// one (the speech sent). A person judges by how long they spoke, so the page
-// shows each step with its spoken duration beside it (CharsPerMinute).
-//
-// Not applied to a take rewritten batch by batch: its profile is fixed when
-// the first batch leaves, before any length is known.
-public sealed class LengthSwitchSettings
-{
-    // Measured on 2,821 of the maintainer's dictations (latency telemetry,
-    // 2026-11-06): median 786 characters a minute raw, 701 on takes over two
-    // minutes, the ones a ladder is about. A display ratio only, never a
-    // threshold.
-    public const int CharsPerMinute = 700;
-
-    // From about nine seconds to about forty-five minutes of speech.
-    public const int MinChars = 100;
-    public const int MaxChars = 30000;
-
-    public bool Enabled { get; set; }
-
-    // Sorted by FromChars, strictly increasing; each one on the grain of its
-    // length (GrainAt), between MinChars and MaxChars.
-    public List<LengthStep> Steps { get; set; } = new();
-
-    // The precision a threshold is held at: about a twentieth of it, on the
-    // 1-2-5 ladder, never under MinChars. A length is meant in relative
-    // terms: 500 against 600 characters is another dictation, 20,000 against
-    // 20,100 is not. That gives 100 up to 4,000, then 200, 500 from 10,000
-    // and 1,000 from 20,000. Each band starts on a multiple of its own grain,
-    // so snapping a snapped value changes nothing.
-    public static int GrainAt(int chars)
-    {
-        int target = Math.Max(chars / 20, MinChars);
-        int grain = MinChars;
-        for (int decade = MinChars; ; decade *= 10)
-            foreach (int factor in (ReadOnlySpan<int>)[1, 2, 5])
-            {
-                if (decade * factor > target) return grain;
-                grain = decade * factor;
-            }
-    }
-
-    // The nearest threshold on the grain of its length, within the range.
-    public static int Snap(double chars)
-    {
-        int clamped = (int)Math.Clamp(Math.Round(chars), MinChars, MaxChars);
-        int grain = GrainAt(clamped);
-        int rounded = (int)Math.Round(clamped / (double)grain, MidpointRounding.AwayFromZero) * grain;
-        return Math.Clamp(rounded, MinChars, MaxChars);
-    }
-
-    // The thresholds next to a snapped one, on either side.
-    public static int Above(int chars) => chars + GrainAt(chars);
-    public static int Below(int chars) => chars - GrainAt(chars - 1);
-}
-
-// Rewriting while the dictation runs, batch by batch, instead of once at Stop.
-// Off by default: it costs one request per batch and the seams between
-// batches are a quality risk the whole-take rewrite does not have. The
-// threshold is in characters of raw transcript: a batch closes at the first
-// pause once the accumulated text reaches it (DictationBatcher). 600 is about
-// a hundred French words, forty seconds of speech: enough context for the
-// profile to condense a repeated idea, short enough that the last batch at
-// Stop is a quick one. The bounds keep a batch between a long sentence and
-// a page.
-public sealed class BatchRewriteSettings
-{
-    public const int MinThresholdChars = 200;
-    public const int MaxThresholdChars = 2000;
-
-    public bool Enabled { get; set; } = false;
-    public int ThresholdChars { get; set; } = 600;
 }
 
 // One step of the dictation timeline (specs/deckle-dictation-rewriting.md):
@@ -256,9 +193,13 @@ public sealed class LlmSettings
     //
     // The shape a file had before 2026-11-11: an active profile, a length
     // ladder and a switch for batches. LlmSettingsNormalizer.NormalizeDictation
-    // turns them into Dictation the first time such a file loads.
-    public BatchRewriteSettings BatchRewriting { get; set; } = new();
-    public LengthSwitchSettings LengthSwitch { get; set; } = new();
+    // turns them into Dictation the first time such a file loads, then clears
+    // them; null is never written, so the next save drops them from the file.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public LegacyBatchRewriteSettings? BatchRewriting { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public LegacyLengthSwitchSettings? LengthSwitch { get; set; }
 
     // Where a model is served from. A profile names one by Id. These defaults
     // are the three shapes the market has (a local Ollama, a chat-completions
@@ -274,7 +215,10 @@ public sealed class LlmSettings
     // Before the steps too: the profile every dictation took. null = plain
     // transcription. Lookup prefers the Id (stable across renames) and falls
     // back to the Name.
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ActiveProfileId { get; set; }
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? ActiveProfileName { get; set; }
 
     // Two depths of intervention, decided with Louis on 2026-10-15. The quick

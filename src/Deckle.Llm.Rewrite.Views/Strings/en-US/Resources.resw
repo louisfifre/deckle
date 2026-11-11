@@ -375,32 +375,57 @@
   <data name="LlmProfileHotkeyCard.Header" xml:space="preserve">
     <value>Keys</value>
   </data>
-  <!-- Length ladder of the Dictation section (LlmActiveProfileSection). -->
-  <data name="LlmLengthSwitchCard.Header" xml:space="preserve">
-    <value>Switch profile by length</value>
+  <!-- LlmDictationSection: the dictation steps and their timeline. The
+       section carries only these words (specs/deckle-dictation-rewriting.md,
+       Page 9); the names below them are for assistive technology only. -->
+  <data name="LlmDictationBlock.Title" xml:space="preserve">
+    <value>Dictation</value>
   </data>
-  <data name="LlmLengthSwitchCard.Description" xml:space="preserve">
-    <value>A longer dictation can use another profile. Not used while you speak.</value>
+  <data name="LlmDictationEnableCard.Header" xml:space="preserve">
+    <value>Rewrite dictations</value>
   </data>
-  <data name="LlmLengthStep_Header" xml:space="preserve">
-    <value>From (characters)</value>
+  <data name="LlmTimeline_StreamingLane" xml:space="preserve">
+    <value>Streaming</value>
   </data>
-  <data name="LlmLengthStep_Minutes_Format" xml:space="preserve">
-    <value>About {0} min of speech</value>
+  <data name="LlmTimeline_AtStopLane" xml:space="preserve">
+    <value>At stop</value>
   </data>
-  <data name="LlmLengthStep_UnderMinute" xml:space="preserve">
-    <value>Under a minute of speech</value>
+  <data name="LlmTimeline_AsSaid" xml:space="preserve">
+    <value>As said</value>
   </data>
-  <data name="LlmLengthStep_LengthName" xml:space="preserve">
+  <data name="LlmTimeline_Length_Format" xml:space="preserve">
+    <value>{0} · {1} min</value>
+    <comment>{0} a length in characters, {1} the approximate minutes of speech it takes.</comment>
+  </data>
+  <data name="LlmTimeline_LengthUnderMinute_Format" xml:space="preserve">
+    <value>{0} · &lt; 1 min</value>
+    <comment>{0} a length in characters, shorter than a minute of speech.</comment>
+  </data>
+  <data name="LlmTimeline_Name" xml:space="preserve">
+    <value>Rewriting steps</value>
+  </data>
+  <data name="LlmStep_StartAt" xml:space="preserve">
+    <value>Start at</value>
+  </data>
+  <data name="LlmStep_From" xml:space="preserve">
+    <value>From</value>
+  </data>
+  <data name="LlmStep_Characters" xml:space="preserve">
+    <value>characters</value>
+  </data>
+  <data name="LlmStep_Streaming" xml:space="preserve">
+    <value>Streaming</value>
+  </data>
+  <data name="LlmStep_LengthName" xml:space="preserve">
     <value>Length in characters</value>
   </data>
-  <data name="LlmLengthStep_ProfileName" xml:space="preserve">
+  <data name="LlmStep_ProfileName" xml:space="preserve">
     <value>Profile</value>
   </data>
-  <data name="LlmLengthStep_RemoveName" xml:space="preserve">
+  <data name="LlmStep_RemoveName" xml:space="preserve">
     <value>Remove step</value>
   </data>
-  <data name="LlmLengthAddStepButton.Content" xml:space="preserve">
+  <data name="LlmAddStepButton.Content" xml:space="preserve">
     <value>Add a step</value>
   </data>
   <data name="LlmProfile_HotkeyUsedByProfile_Format" xml:space="preserve">
@@ -460,19 +485,6 @@
     <value>Add provider</value>
   </data>
 
-  <!-- LlmActiveProfileSection -->
-  <data name="LlmActiveProfileBlock.Title" xml:space="preserve">
-    <value>Dictation</value>
-  </data>
-  <data name="LlmActiveProfileCard.Header" xml:space="preserve">
-    <value>Rewrite profile</value>
-  </data>
-  <data name="LlmActiveProfileBlock.Caption" xml:space="preserve">
-    <value>Which profile rewrites a dictation when you stop.</value>
-  </data>
-  <data name="LlmActiveProfile_None" xml:space="preserve">
-    <value>None</value>
-  </data>
   <data name="LlmProfile_NoModel" xml:space="preserve">
     <value>(no model)</value>
   </data>
@@ -481,29 +493,6 @@
   </data>
   <data name="LlmProfile_Hints_Format" xml:space="preserve">
     <value>context {0}K  ·  temperature {1}</value>
-  </data>
-  <data name="LlmActiveProfileCard.Description" xml:space="preserve">
-    <value>None keeps your dictation as spoken.</value>
-  </data>
-
-  <!-- LlmDictationSection -->
-  <data name="LlmDictationBlock.Title" xml:space="preserve">
-    <value>While you dictate</value>
-  </data>
-  <data name="LlmDictationBlock.Caption" xml:space="preserve">
-    <value>What the rewrite profile does before you stop.</value>
-  </data>
-  <data name="LlmBatchRewriteGroup.Header" xml:space="preserve">
-    <value>Rewrite while you speak</value>
-  </data>
-  <data name="LlmBatchRewriteGroup.Description" xml:space="preserve">
-    <value>Rewrites each stretch of speech as soon as you pause, so little is left when you stop. Each stretch is rewritten on its own.</value>
-  </data>
-  <data name="LlmBatchSizeCard.Header" xml:space="preserve">
-    <value>Batch size</value>
-  </data>
-  <data name="LlmBatchSizeCard.Description" xml:space="preserve">
-    <value>How much raw transcript a batch gathers before the next pause closes it.</value>
   </data>
 
   <!-- ─── Settings — TextBlock labels for x:Uid ──────────────────────

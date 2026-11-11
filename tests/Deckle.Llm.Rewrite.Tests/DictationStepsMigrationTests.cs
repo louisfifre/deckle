@@ -155,6 +155,29 @@ public sealed class DictationStepsMigrationTests : IDisposable
         Assert.Equal("aff", Assert.Single(d.Steps).ProfileId);
     }
 
+    // The old fields are read, then gone from the file on disk.
+    [Fact]
+    public void TheOldFieldsLeaveTheFileOnceMigrated()
+    {
+        using (var store = OpenStore($$"""
+            {
+              "batchRewriting": { "enabled": true, "thresholdChars": 800 },
+              "lengthSwitch": { "enabled": true, "steps": [ { "fromChars": 4000, "profileId": "lis" } ] },
+              "activeProfileId": "aff",
+              {{Profiles}}
+            }
+            """))
+        {
+            store.Flush();
+        }
+
+        string onDisk = File.ReadAllText(FilePath);
+        Assert.DoesNotContain("batchRewriting", onDisk);
+        Assert.DoesNotContain("lengthSwitch", onDisk);
+        Assert.DoesNotContain("activeProfile", onDisk);
+        Assert.Contains("\"dictation\"", onDisk);
+    }
+
     // The migration runs once: what it wrote loads back as it is, and a step
     // the person changes afterwards is not rebuilt from the old fields.
     [Fact]
