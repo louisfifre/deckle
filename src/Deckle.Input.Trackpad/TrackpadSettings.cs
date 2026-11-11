@@ -38,6 +38,22 @@ public sealed class TrackpadSettings
     public const double MinPressDelayMs = 0;
     public const double MaxPressDelayMs = 200;
 
+    /// <summary>
+    /// Pick-up distance — how far the cursor moves, in pixels, before the
+    /// press lands even though the pick-up delay has not run out. Fingers
+    /// settling for a four-finger gesture barely move before the fourth
+    /// lands; a hand that sets down and sweeps at once is dragging, and
+    /// waiting out the delay there made the drag start late. Measured on
+    /// the cursor (finger travel × drag speed) because that is the motion
+    /// the person sees. The default is a first guess to try by hand, not a
+    /// value measured on the recorded sessions.
+    /// </summary>
+    public double PressDistancePx { get; set; } = 5;
+
+    /// <summary>The range the page offers; the engine clamps a hand-edited file to it.</summary>
+    public const double MinPressDistancePx = 0;
+    public const double MaxPressDistancePx = 50;
+
     // Grace delay and start threshold stay TrackpadEngine constants, not
     // settings.
 }
