@@ -7,7 +7,8 @@ Found in review on 2026-10-18, before the recovery work merged. Never shipped.
 - **Trigger.** Two endings of a live take. First, the microphone drops after
   some utterances were already transcribed, or the app quits or restarts in
   the middle of a take. Second, the raw copy reaches the clipboard and then the
-  delivery after it throws (at the time, the paste; the paste was later\n  removed, and the rewrite is the step left after the copy).
+  step after it throws (at the time, the paste; the paste was later removed,
+  and the rewrite is the step left after the copy).
 - **Symptom.** In the first case the recovery file was deleted, so the words
   already transcribed were lost. In the second case the file was kept, so the
   next launch replaced the clipboard with that old text. Both were read in the
@@ -25,6 +26,6 @@ Found in review on 2026-10-18, before the recovery work merged. Never shipped.
   assumption that it holds nothing.
 - **Guarded by.** `LiveTranscriptionPipelineTests`:
   `RecoveryFileSurvivesAMicrophoneErrorAfterTranscribedUtterances` and
-  `RecoveryFileIsGoneWhenDeliveryFailsAfterTheRawCopy`. The quit in the
+  `RecoveryFileIsGoneWhenTheRewriteFailsAfterTheRawCopy`. The quit in the
   middle of a take has no test. It takes the same null path as the microphone
   error, which is inferred from the code and not exercised.
