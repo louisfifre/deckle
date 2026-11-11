@@ -267,6 +267,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── log.h
 │   │   ├── pch.cpp
 │   │   ├── pch.h
+│   │   ├── residency.cpp
+│   │   ├── residency.h
 │   │   ├── util.cpp
 │   │   ├── util.h
 │   │   └── version.rc
@@ -2895,6 +2897,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Shell.Taskbar.Tests/
 │   │   ├── Native/
 │   │   │   ├── BarThicknessTests.cs
+│   │   │   ├── EngineResidencyTests.cs
+│   │   │   ├── ExplorerReinjectionBugNotes.md
 │   │   │   ├── JsonLineFramingTests.cs
 │   │   │   ├── ModuleIdentityTests.cs
 │   │   │   ├── NativeCommandTests.cs
@@ -2906,6 +2910,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── StartMenuDocumentTests.cs
 │   │   │   ├── TaskbarCustomizerTests.cs
 │   │   │   ├── TaskbarDocumentBuilderTests.cs
+│   │   │   ├── TaskbarEngineHostStopTests.cs
 │   │   │   ├── TaskbarPipeServerTests.cs
 │   │   │   ├── TaskbarProblemReaderTests.cs
 │   │   │   └── VersionedNativeCopyTests.cs
