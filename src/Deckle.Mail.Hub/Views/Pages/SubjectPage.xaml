@@ -23,40 +23,56 @@
             <StackPanel HorizontalAlignment="Stretch" Margin="32,32,32,24">
             <!-- The title is the sentence of the row; beside it, the task
                  control and the trash of the row, in the same two columns and
-                 at the same right edge (spec, A subject opened). -->
-            <Grid ColumnSpacing="12" Margin="0,0,8,0">
+                 at the same right edge (spec, A subject opened). The two
+                 commands are one block (Commands) that the code places
+                 (ApplyLayout): beside the title in a wide window, under the
+                 grey line in a narrow one, and nowhere when the subject has no
+                 gesture left, so the title then has the whole width. Held
+                 beside the title at any width, their 260 px left a narrow
+                 title a few letters a line. -->
+            <Grid x:Name="HeaderGrid" ColumnSpacing="12" Margin="0,0,8,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="32" />
                 </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <TextBlock x:Name="TitleText"
                            Style="{StaticResource TitleTextBlockStyle}"
                            TextWrapping="Wrap" />
-                <local:TaskColumn x:Name="Task"
-                                  Grid.Column="1"
-                                  VerticalAlignment="Top"
-                                  Margin="0,2,0,0" />
-                <Button x:Name="TrashButton"
-                        x:Uid="SubjectRowTrash"
-                        Grid.Column="2"
-                        VerticalAlignment="Top"
-                        Margin="0,2,0,0"
-                        Style="{StaticResource SubtleButtonStyle}"
-                        Padding="8"
-                        Click="OnTrashClick">
-                    <FontIcon Glyph="{StaticResource Icon.Delete}" FontSize="16" />
-                </Button>
-            </Grid>
+                <Grid x:Name="Commands"
+                      Grid.Column="1"
+                      ColumnSpacing="12"
+                      VerticalAlignment="Top"
+                      Margin="0,2,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="32" />
+                    </Grid.ColumnDefinitions>
+                    <local:TaskColumn x:Name="Task" VerticalAlignment="Top" />
+                    <Button x:Name="TrashButton"
+                            x:Uid="SubjectRowTrash"
+                            Grid.Column="1"
+                            VerticalAlignment="Top"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            Padding="8"
+                            Click="OnTrashClick">
+                        <FontIcon Glyph="{StaticResource Icon.Delete}" FontSize="16" />
+                    </Button>
+                </Grid>
 
             <!-- One grey line: the sender with their real address, and the
                  reception; on an earlier mail, the mention that leads back to
                  the latest (35KS). For a sender not verified, the address
                  alone, then a small mark that explains itself when opened
                  (spec, A subject opened; frame 2.5 opened). -->
-            <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+            <StackPanel x:Name="FromPanel" Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,4,0,0">
                 <TextBlock x:Name="FromText"
                            Style="{StaticResource BodyTextBlockStyle}"
+                           TextWrapping="Wrap"
                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                            VerticalAlignment="Center" />
                 <Button x:Name="UnverifiedMark"
@@ -74,7 +90,7 @@
                                    VerticalAlignment="Center" />
                     </StackPanel>
                     <Button.Flyout>
-                        <Flyout Placement="BottomEdgeAlignedLeft">
+                        <Flyout x:Name="UnverifiedFlyout" Placement="BottomEdgeAlignedLeft">
                             <StackPanel MaxWidth="320" Spacing="4">
                                 <TextBlock x:Name="UnverifiedTitle" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                 <TextBlock x:Name="UnverifiedMessage" Style="{StaticResource BodyTextBlockStyle}" TextWrapping="Wrap" />
@@ -101,6 +117,7 @@
                     <TextBlock x:Uid="SubjectShowLatest" TextDecorations="Underline" />
                 </HyperlinkButton>
             </StackPanel>
+            </Grid>
 
             <!-- The text beside the list of the subject's mails; in a narrow
                  window the list goes under the text. -->

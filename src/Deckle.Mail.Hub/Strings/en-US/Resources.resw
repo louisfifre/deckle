@@ -70,6 +70,12 @@
   <data name="MailSearchBox.AutomationProperties.Name" xml:space="preserve">
     <value>Search mail</value>
   </data>
+  <data name="MailSearchIconButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Search mail</value>
+  </data>
+  <data name="MailSearchIconButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Search mail</value>
+  </data>
   <data name="Window_Title" xml:space="preserve">
     <value>Deckle Mail</value>
   </data>

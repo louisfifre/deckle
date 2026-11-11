@@ -8,7 +8,7 @@ namespace Deckle.Mail.Hub;
 // (Loc.GetFrom: no mirror in Deckle.App is needed). Every wording the spec
 // leaves open (Open 12, 23, 59) is a key of that file, so the maintainer
 // changes it there and nowhere else.
-internal static class MailText
+internal static partial class MailText
 {
     private const string Library = "Deckle.Mail.Hub";
 
@@ -66,6 +66,24 @@ internal static class MailText
         => bytes < 1024 ? Format("Size_Bytes_Format", bytes)
             : bytes < 1024 * 1024 ? Format("Size_Kilobytes_Format", Math.Max(1, bytes / 1024))
             : Format("Size_Megabytes_Format", (bytes / (1024.0 * 1024.0)).ToString("0.#", CultureInfo.GetCultureInfo("en-US")));
+
+    // A sentence shown large, where it wraps: an hour stays with its unit and
+    // a range stays whole, so « 17 h – 18 h » never ends a line on « 17 » or
+    // starts one on « – 18 h ». The spaces become no-break spaces; the words
+    // are untouched. After the dash a word joiner (U+2060, no width) is
+    // needed too: Unicode lets a line break after a dash even before a
+    // no-break space, and a narrow list did break there.
+    public static string Typeset(string sentence)
+    {
+        string bound = HourUnit().Replace(sentence, " ");
+        return RangeDash().Replace(bound, " –⁠ ");
+    }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"(?<=\d) (?=h\b)")]
+    private static partial System.Text.RegularExpressions.Regex HourUnit();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"(?<=\S) – (?=\d)")]
+    private static partial System.Text.RegularExpressions.Regex RangeDash();
 
     // A day never breaks across two lines: « Fri 13 » stays whole in a
     // narrow column.

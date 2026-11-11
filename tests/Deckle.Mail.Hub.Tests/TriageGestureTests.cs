@@ -147,6 +147,23 @@ public sealed class TriageGestureTests
     }
 
     [Fact]
+    public void DismissAllTakesTheSetAsideLineOffThePageAndSendsNothingForIt()
+    {
+        (TriageSession session, SampleMailHubSource source, _) = Open();
+        int setAside = session.SetAsideCount(MailFilter.All);
+        Assert.True(setAside > 0);
+
+        int dismissed = session.DismissAllInfo(MailFilter.All);
+
+        Assert.Equal(0, session.SetAsideCount(MailFilter.All));
+        // The mails themselves still wait for the end of the day: only the
+        // lines were handed to the source.
+        Assert.Equal(dismissed, source.Applied.Count);
+        Assert.All(source.Applied, g => Assert.Equal(MailGestureKind.DismissInfo, g.Kind));
+        Assert.Equal(setAside, session.Activity.Count(a => a.AwaitsEndOfDay));
+    }
+
+    [Fact]
     public void WithoutAnytypeNoTaskCanBeAdded()
     {
         (TriageSession session, SampleMailHubSource source, _) = Open(SampleScenario.AnytypeNotConnected);
