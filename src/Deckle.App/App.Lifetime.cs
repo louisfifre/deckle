@@ -81,7 +81,7 @@ public partial class App
     // The figure is an estimate from the pipeline's stages, not a measure.
     private static readonly TimeSpan QuitWorkBound = TimeSpan.FromSeconds(60);
 
-    // Time the HUD keeps its "pasted" or "copied" confirmation on screen before
+    // Time the HUD keeps its "copied" confirmation on screen before
     // the process exits; without it the person never sees the take arrived.
     private static readonly TimeSpan QuitConfirmationHold = TimeSpan.FromMilliseconds(800);
 

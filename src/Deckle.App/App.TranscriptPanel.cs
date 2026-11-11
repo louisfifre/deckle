@@ -7,8 +7,7 @@ namespace Deckle.App;
 // second state machine: a take opens when the engine starts recording, every
 // TranscriptChanged snapshot replaces its text, the take closes when the
 // transcription finishes, the panel leaves when the HUD leaves and comes back
-// when the HUD does mid-take (the paste hides the HUD, "Pasted" shows it
-// again). Engine events arrive on background threads; the panel marshals every
+// when the HUD does mid-take. Engine events arrive on background threads; the panel marshals every
 // call to its UI thread.
 public partial class App
 {

@@ -217,7 +217,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── research--youtube-maison--2026-10-22.md  — Cadrage (2026-10-22) — un client YouTube maison comme module de Deckle : la nou…
 │   ├── inventaire-exposables.csv
 │   ├── inventaire-exposables.md
-│   └── transcription-audio-chain.md  — How a dictation travels from the hotkey to the pasted text — vocabulary, three…
+│   └── transcription-audio-chain.md  — How a dictation travels from the hotkey to the clipboard — vocabulary, three di…
 ├── logo/
 │   ├── primary.png
 │   ├── primary.svg
@@ -1091,8 +1091,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Structs.cs
 │   │   │   ├── UIAutomation.cs
 │   │   │   ├── UIAutomation.Text.cs
-│   │   │   ├── Win32Clipboard.cs
-│   │   │   └── Win32Util.cs
+│   │   │   └── Win32Clipboard.cs
 │   │   ├── Io/
 │   │   │   ├── Downloader.cs
 │   │   │   └── ProvisioningResult.cs
@@ -2545,9 +2544,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── JsonSettingsStoreBugNotes.md
 │   │   ├── JsonSettingsStoreTests.cs
 │   │   ├── ModuleDirectoryNameTests.cs
-│   │   ├── SpacingTests.cs
-│   │   ├── Win32UtilTests.cs
-│   │   └── WindowDescriptionBugNotes.md
+│   │   └── SpacingTests.cs
 │   ├── Deckle.Diagnostics.Logging.Tests/
 │   │   ├── Deckle.Diagnostics.Logging.Tests.csproj
 │   │   ├── LogAutoScrollTests.cs

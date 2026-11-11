@@ -37,22 +37,15 @@ namespace Deckle.Transcription.Views;
 // so a hit can scroll to it.
 public static class SettingsSearch
 {
-    // The module's General page: overlay and pasting, model and engine.
+    // The module's General page: overlay, model and engine.
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
     [
-        // "Overlay and pasting" — the overlay group (fade / position / transcript
+        // "Overlay" — the overlay group (fade / position / transcript
         // panel side ride under it as composed children).
         new SettingSearchEntry
         {
             LabelKey = "GeneralOverlayExpander",
             Keywords = ["hud", "indicator", "fade", "position", "transcript", "panel"],
-        },
-
-        // Auto-paste toggle (composed).
-        new SettingSearchEntry
-        {
-            LabelKey = "GeneralAutoPasteCard",
-            Keywords = ["clipboard", "insert"],
         },
 
         // Language selector (bespoke — editable ComboBox, Tag'd in the XAML).

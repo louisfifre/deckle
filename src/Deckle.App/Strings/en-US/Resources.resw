@@ -490,12 +490,9 @@
     <value>That key isn't on this keyboard.</value>
   </data>
   <!-- ─── HUD ────────────────────────────────────────────────────────
-       Short post-paste / post-copy confirmations rendered in the HUD
-       message slot. Hud_Copied_Hint sits under the title to remind the
-       user how to paste manually when the auto-paste path didn't run. -->
-  <data name="Hud_Pasted_Title" xml:space="preserve">
-    <value>Pasted</value>
-  </data>
+       Short post-copy confirmations rendered in the HUD message slot.
+       Hud_Copied_Hint sits under the title to remind the user how to paste
+       the text themselves. -->
   <data name="Hud_Copied_Title" xml:space="preserve">
     <value>Copied to clipboard</value>
   </data>

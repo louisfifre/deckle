@@ -28,15 +28,15 @@ namespace Deckle.Transcription.Views;
 // POCO; the int→double widening into the Func<double> default is implicit.
 public partial class WhisperViewModel
 {
-    // Dictation experience — the overlay HUD group then the flat auto-paste toggle,
-    // relocated from GeneralPage. The overlay is a Group (master OverlayEnabled +
+    // Dictation experience — the overlay HUD group, relocated from
+    // GeneralPage. The overlay is a Group (master OverlayEnabled +
     // fade/position children, each masked while the master is off); the
     // position Choice matches the normalized "TopCenter"/"BottomCenter" the VM seeds.
     // Overlay animations are not set here: they follow the app-wide Animations
     // setting on the General page (Deckle.Hud.AnimationPreference, ADR-0009).
     // The transcript panel side Choice ("Left"/"Right") sits in the same group, since the
     // panel is part of the HUD and follows its master toggle.
-    // Defaults read the shell POCO initializers (OverlaySettings / PasteSettings), the
+    // Defaults read the shell POCO initializer (OverlaySettings), the
     // single source the shell's SettingsService persists. The x:Uids reuse the same
     // keys the General cards carried — already present in this module's .resw.
     public IReadOnlyList<SettingDescriptor> BehaviourSettings =>
@@ -67,11 +67,6 @@ public partial class WhisperViewModel
                     defaultValue: () => new OverlaySettings().TranscriptPanelSide),
             ],
             defaultValue: () => new OverlaySettings().Enabled),
-
-        Setting.Toggle("GeneralAutoPasteCard",
-            () => AutoPasteEnabled,
-            value => AutoPasteEnabled = value,
-            defaultValue: () => new PasteSettings().AutoPasteEnabled),
     ];
 
     // GPU acceleration — the flat toggle under the "Model & engine" header. The

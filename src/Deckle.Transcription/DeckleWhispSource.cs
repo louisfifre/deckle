@@ -5,7 +5,7 @@ namespace Deckle.Transcription;
 
 // Whisp module provider. Covers the transcription engine (TranscriptionEngine),
 // the model lifecycle as the engine sees it (lazy load, idle unload), the
-// start-of-take prime, the take and file pipelines, clipboard, paste, and
+// start-of-take prime, the take and file pipelines, clipboard, and
 // structured end-of-pipeline heartbeats (LatencyRecorded, CorpusAsrRecorded,
 // CorpusRewriteRecorded). The native Whisper backend has its own provider
 // (DeckleWhisperSource).
@@ -83,15 +83,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtClipboardVerifyMismatch          = 60;
     public const int EvtClipboardCopied                  = 61;
     public const int EvtClipboardCopyComplete            = 62;
-    public const int EvtPasteHidSync                     = 63;
-    public const int EvtPasteForeground                  = 64;
-    public const int EvtPasteSkippedNoForeground         = 65;
-    public const int EvtPasteSkippedSelfTarget           = 66;
-    public const int EvtPasteUiaDiag                     = 67;
-    public const int EvtPasteSkippedNotTextField         = 68;
-    public const int EvtPasteSendInputPartial            = 69;
-    public const int EvtPasteSucceeded                   = 70;
-    public const int EvtPasteSent                        = 71;
+    // 63–71: retired IDs, never reused (the paste events).
     // 72 retired.
     // 73 retired.
     public const int EvtPipelineLlmMetrics               = 74;
@@ -164,7 +156,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     // 143 retired.
     public const int EvtClipboardAllocFailedDetail       = 144;
     public const int EvtClipboardVerifyMismatchDetail    = 145;
-    public const int EvtPasteSendInputPartialDetail      = 146;
+    // 146 retired.
     public const int EvtPipelineCompletedDetail          = 147;
     public const int EvtManualProfileNotFoundDetail      = 148;
     public const int EvtDisposeWorkerJoinTimeoutDetail   = 149;
@@ -191,7 +183,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     public const int EvtTranscribePromptConfigured       = 168;
     public const int EvtTranscribeRepetitionLoopMetrics  = 169;
     public const int EvtSegmentRecognized                = 170;
-    public const int EvtDictationPasted                  = 171;
+    // 171 retired: DictationPasted.
     public const int EvtDictationCopied                  = 172;
     public const int EvtFileTranscriptionCompleted       = 173;
     // 174 retired.

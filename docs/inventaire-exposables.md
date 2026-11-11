@@ -644,7 +644,6 @@ Total : **625 entrées** réparties sur **38 modules**.
 | OverlaySettings.Enabled | persisted-setting | `true` | src/Deckle.Settings/Persistence/AppSettings.cs:62 | oui |  |
 | OverlaySettings.FadeOnProximity | persisted-setting | `true` | src/Deckle.Settings/Persistence/AppSettings.cs:63 | oui |  |
 | OverlaySettings.Position | persisted-setting | `"BottomCenter"` | src/Deckle.Settings/Persistence/AppSettings.cs:64 | oui | Closed vocabulary documented in-code: BottomCenter \| BottomRight \| TopCenter. |
-| PasteSettings.AutoPasteEnabled | persisted-setting | `false` | src/Deckle.Settings/Persistence/AppSettings.cs:49 | oui |  |
 | UpdatesSettings.AutoCheckEnabled | persisted-setting | `true` | src/Deckle.Settings/Persistence/AppSettings.cs:40 | non | Composed card GeneralUpdateAutoCheckCard exists (GeneralViewModel.Settings.cs:72-78); June inventory has no Updates category — likely post-June addition. |
 | PathsSettings.BackupDirectory | persisted-setting | `""` | src/Deckle.Settings/Persistence/AppSettings.cs:85 | non | Empty = auto-resolve via AppPaths.SettingsBackupDirectory. June lists a diagnostics 'Storage directory' but not this backup path — confirm they are distinct. |
 | AutostartEnabled | persisted-setting | `false (StartupService.DefaultEnabled)` | src/Deckle.Settings/ViewModels/GeneralViewModel.cs:47 | oui | ADDED FROM JUNE — sweep missed it. Not backed by AppSettings: source of truth is the OS (HKCU\Run + elevated scheduled task) via StartupService; default read from src/Deckle.Shell/AutostartService.cs:42. |

@@ -74,10 +74,10 @@ public sealed class DeckleHudSourceTests : IDisposable
         DeckleHudSource.Log.StateChanged("Hidden", "Recording", "show_recording", 0, 96);
         DeckleHudSource.Log.FadeInStarted("hud", 150, 0, 255);
         DeckleHudSource.Log.ProximityRollup(4200, 525, 100, 240, 64, 12);
-        DeckleHudSource.Log.HideSyncTimedOut("ui_thread_unresponsive", 5000);
+        DeckleHudSource.Log.RevealMaskDegraded(10, "COMException", "The parameter is incorrect.");
 
         var ev = Assert.Single(listener.Events);
-        Assert.Equal(DeckleHudSource.EvtHideSyncTimedOut, ev.EventId);
+        Assert.Equal(DeckleHudSource.EvtRevealMaskDegraded, ev.EventId);
         Assert.Equal(EventLevel.Warning, ev.Level);
     }
 

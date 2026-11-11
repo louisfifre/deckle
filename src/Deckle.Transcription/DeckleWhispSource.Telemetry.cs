@@ -30,7 +30,7 @@ public sealed partial class DeckleWhispSource
            Level = EventLevel.Verbose,
            Tags = ObservationTags.Dataset,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "transcription_id={0} | audio_sec={1:F1} | hotkey_to_capture_ms={3} | whisper_ms={7} | llm_ms={8} | outcome={22}")]
+           Message = "transcription_id={0} | audio_sec={1:F1} | hotkey_to_capture_ms={3} | whisper_ms={7} | llm_ms={8} | outcome={20}")]
     public void LatencyRecorded(
         string transcription_id,
         double audio_sec,
@@ -47,13 +47,11 @@ public sealed partial class DeckleWhispSource
         int    llm_prompt_tokens,
         int    llm_eval_tokens,
         long   clipboard_ms,
-        long   paste_ms,
         string strategy,
         int    n_segments,
         int    text_chars,
         int    text_words,
         string profile,
-        bool   pasted,
         string outcome,
         // Added last so the positions the Message reads stay what they were.
         // llm_prompt_tokens counts the input billed at the plain price; these
@@ -68,8 +66,8 @@ public sealed partial class DeckleWhispSource
             transcription_id, audio_sec, model_load_ms, hotkey_to_capture_ms, record_drain_ms,
             stop_to_pipeline_ms, whisper_init_ms,
             whisper_ms, llm_ms, ollama_load_ms, llm_prompt_eval_ms, llm_eval_ms,
-            llm_prompt_tokens, llm_eval_tokens, clipboard_ms, paste_ms,
-            strategy, n_segments, text_chars, text_words, profile, pasted, outcome,
+            llm_prompt_tokens, llm_eval_tokens, clipboard_ms,
+            strategy, n_segments, text_chars, text_words, profile, outcome,
             llm_cache_write_tokens, llm_cache_read_tokens);
     }
 

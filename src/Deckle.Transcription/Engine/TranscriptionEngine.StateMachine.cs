@@ -40,7 +40,7 @@ public sealed partial class TranscriptionEngine
     // matters only for a press that starts a take: that take is rewritten with
     // it (RewriteProfileSelection.ForDictation). A press that stops a take
     // stops it, whichever shortcut it came from.
-    public ToggleResult RequestToggle(bool shouldPaste, string? rewriteProfileId = null)
+    public ToggleResult RequestToggle(string? rewriteProfileId = null)
     {
         // _disposed is set before Dispose moves the state to Disposed, so it
         // covers the moment between "Quit clicked" and "Dispose finished".
@@ -95,7 +95,7 @@ public sealed partial class TranscriptionEngine
             return ToggleResult.IgnoredBusy;
         }
 
-        return TryStartFromIdle(shouldPaste, rewriteProfileId);
+        return TryStartFromIdle(rewriteProfileId);
     }
 
     // ── The engine's own Stop ───────────────────────────────────────────────
@@ -208,10 +208,8 @@ public sealed partial class TranscriptionEngine
             _recordDrainDuration = System.TimeSpan.Zero;
             _stopToPipelineSw    = null;
 
-            // A file batch never pastes and never rewrites. Delivery is carried
-            // explicitly by each prepared item rather than hidden in engine-wide
-            // mutable state.
-            _shouldPaste = false;
+            // A file batch never rewrites. Delivery is carried explicitly by each
+            // prepared item rather than hidden in engine-wide mutable state.
             _takeProfileId = null;
 
             // Cancel any pending idle unload — a pipeline is starting.
@@ -258,13 +256,13 @@ public sealed partial class TranscriptionEngine
     // CRITICAL: every early-return path below MUST roll the state back to
     // Idle, otherwise the engine permanently locks out future hotkeys. The
     // try/finally with `committed` ensures this.
-    private ToggleResult TryStartFromIdle(bool shouldPaste, string? rewriteProfileId)
+    private ToggleResult TryStartFromIdle(string? rewriteProfileId)
     {
         lock (_lifecycleLock)
-            return TryStartFromIdleLocked(shouldPaste, rewriteProfileId);
+            return TryStartFromIdleLocked(rewriteProfileId);
     }
 
-    private ToggleResult TryStartFromIdleLocked(bool shouldPaste, string? rewriteProfileId)
+    private ToggleResult TryStartFromIdleLocked(string? rewriteProfileId)
     {
         // The host is closing (TranscriptionEngine.Shutdown.cs): a press now
         // would start a take nobody waits for. Silent, like a press after Dispose.
@@ -308,7 +306,6 @@ public sealed partial class TranscriptionEngine
                 return ToggleResult.IgnoredBusy;
             }
 
-            _shouldPaste = shouldPaste;
             _takeProfileId = rewriteProfileId;
 
             // Cancel any pending idle unload — a new pipeline is starting.

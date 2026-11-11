@@ -31,4 +31,25 @@ public sealed class AppSettingsLegacyFieldTests
     {
         Assert.Null(typeof(OverlaySettings).GetProperty("Animations"));
     }
+
+    // Dictation no longer pastes: the text always lands on the clipboard, so the
+    // whole "paste" section left the model. A file written by an earlier build
+    // still carries it, and must load with the other sections intact.
+    [Fact]
+    public void ASettingsFileStillCarryingTheRemovedPasteSectionLoadsAndKeepsTheOtherValues()
+    {
+        const string json = """{"paste":{"autoPasteEnabled":true},"overlay":{"enabled":false,"position":"TopCenter"}}""";
+
+        var settings = JsonSerializer.Deserialize<AppSettings>(json, Options);
+
+        Assert.NotNull(settings);
+        Assert.False(settings.Overlay.Enabled);
+        Assert.Equal("TopCenter", settings.Overlay.Position);
+    }
+
+    [Fact]
+    public void TheModelNoLongerDeclaresAPasteSection()
+    {
+        Assert.Null(typeof(AppSettings).GetProperty("Paste"));
+    }
 }

@@ -11,8 +11,7 @@ namespace Deckle.Hud;
 // because they go through SetState and not through Hide().
 //
 // Only warnings and errors are protected: they carry text the person has to
-// read. A success or an information clears as before. HideSync is not routed
-// here: it is the rendezvous before a paste, which only a success reaches.
+// read. A success or an information clears as before.
 internal static class HudHidePolicy
 {
     public static bool ShouldHonorHide(HudState current, MessageKind? currentMessageKind) =>

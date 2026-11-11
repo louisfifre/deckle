@@ -12,7 +12,6 @@ public sealed class AppSettings
     public PathsSettings       Paths       { get; set; } = new();
     public AppearanceSettings  Appearance  { get; set; } = new();
     public OverlaySettings     Overlay     { get; set; } = new();
-    public PasteSettings       Paste       { get; set; } = new();
     public UpdatesSettings     Updates     { get; set; } = new();
     public HotkeysSettings     Hotkeys     { get; set; } = new();
     public DeveloperSettings   Developer   { get; set; } = new();
@@ -63,13 +62,6 @@ public sealed class HotkeysSettings
 public sealed class UpdatesSettings
 {
     public bool AutoCheckEnabled { get; set; } = true;
-}
-
-// Auto-paste after transcription. Off by default — the clipboard is the safe
-// default and the user explicitly opts in to SendInput-driven paste.
-public sealed class PasteSettings
-{
-    public bool AutoPasteEnabled { get; set; } = false;
 }
 
 // Theme = "System" | "Light" | "Dark". A ShowDescriptions key left in an older

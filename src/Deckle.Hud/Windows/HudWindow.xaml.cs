@@ -16,7 +16,7 @@ namespace Deckle.Hud;
 // WinUI 3 transient window, never destroyed. Fixed 272x78 in dips for every
 // state. Hosts two UserControls swapped via Visibility:
 //   - HudChrono   — Charging / Recording / Transcribing / Rewriting
-//   - HudMessage  — Pasted / Copied / Error / UserFeedback
+//   - HudMessage  — Copied / Error / UserFeedback
 //
 // This window owns only the technical shell: HWND, layered alpha,
 // proximity fade subclass, lifecycle. All visual logic lives in the
