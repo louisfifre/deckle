@@ -91,7 +91,7 @@ three levels on Haiku and Sonnet before the app's default moves.
 A campaign sends the same request many times, so it uses Anthropic's prompt
 cache: a call stores its prompt for five minutes, and a later call that starts
 with the same bytes reads it back at a fraction of the input price (a tenth on
-Sonnet and Haiku, a twentieth on Opus 5.5) instead of paying it whole.
+Haiku 5.5, a twentieth on Sonnet 5.5 and Opus 5.5) instead of paying it whole.
 
 - **Rewrites**: when `iterations` is above 1, the whole request (system
   prompt and dictation) is cached. Inside a lane a cell's iterations run back
@@ -101,7 +101,10 @@ Sonnet and Haiku, a twentieth on Opus 5.5) instead of paying it whole.
   latency is shorter than production's. Each generation therefore carries
   `cache_read_tokens`, `cache_write_tokens` and `cache_hit`, and each cell
   `cache_hits` and `latency_cold_ms`, measured on the calls that read nothing;
-  quote that one when comparing with the app. The app itself does not cache.
+  quote that one when comparing with the app. The app does not cache a
+  whole-dictation rewrite, the one a campaign measures; it caches only the
+  profile's prompt of a dictation rewritten in batches (see the cache probe
+  below).
 - **Judge**: its system prompt (shared by every call of a profile) and the
   raw dictation (shared by every batch of a dictation, across models) are
   cached ahead of the rewrites. A cell's batches run one after the other: the
@@ -111,6 +114,37 @@ Sonnet and Haiku, a twentieth on Opus 5.5) instead of paying it whole.
 
 `prompt_tokens` counts only the uncached input, as the API reports it; the
 costs add the cache writes and reads at their own price.
+
+### Cache probe: the batches of one dictation
+
+While a person dictates, the app can send the text to the model in batches of
+a few sentences, each with the profile's whole prompt. `cache-probe` measures
+what keeping that prompt in the cache saves, on the production engine:
+
+```
+& $exe cache-probe --profile Affinage [--model <id>] [--head-start-ms 1500]
+```
+
+It sends three batches written for the probe (no dictation is read) with the
+profile's live prompt, model and reasoning level, in three orders, each on a
+cold cache: one after the other, all together, and each a fixed delay after
+the one before. Each line gives the prompt's tokens split into plain, written
+and read, and each order its cost beside the same calls with no cache. Nine
+calls, a few cents to twenty.
+
+Measured on 2026-11-11, one run per profile:
+
+| Profile, model | Prompt | In turn | Together | Staggered |
+|:--|--:|--:|--:|:--|
+| Affinage, Sonnet 5.5 | 3,019 tokens | 35 % cheaper | 17 % dearer | 1,500 ms apart: the 2nd and 3rd read |
+| Lissage, Opus 5.5 | 1,772 tokens | 28 % cheaper | 13 % dearer | 500 ms apart: the 2nd writes, the 3rd reads |
+
+The Affinage costs were computed with a cache read at 0.20 USD per million
+tokens, before the price snapshot was corrected to 0.10: its real saving in
+turn is a little above the figure. A call can read the cache before the one
+that wrote it has answered, about a second after that one left; two runs do
+not make that delay a rule, so the app waits for the first batch's answer
+before it sends the ones that closed meanwhile.
 
 `results/<stamp>/dashboard-data.json` is the hand-off to whoever builds the
 dashboard: the frozen campaign and its prompts, the pricing snapshot, the
