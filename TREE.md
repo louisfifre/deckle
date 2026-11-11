@@ -2979,7 +2979,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ShellObservabilityCollection.cs
 │   │   ├── TrayIconBugNotes.md
 │   │   ├── TrayIconFallbackObservabilityTests.cs
-│   │   └── TrayIconRegistrationTests.cs
+│   │   ├── TrayIconRegistrationTests.cs
+│   │   └── TrayMarkTests.cs
 │   ├── Deckle.Shell.TrayMenu.Tests/
 │   │   ├── Deckle.Shell.TrayMenu.Tests.csproj
 │   │   ├── MessageTemplateDoctrineTests.cs

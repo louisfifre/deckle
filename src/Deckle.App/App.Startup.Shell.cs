@@ -81,6 +81,9 @@ public partial class App
             // The HUD follows the phase the engine names, never its sentence.
             _engine.StatusPhaseChanged += phase =>
             {
+                // Every phase passes here, so the one after the rewrite dims
+                // the blade again.
+                _tray.SetRewritingIndicator(phase == StatusPhase.Rewriting);
                 if (_engine.IsRecording) return;
                 switch (phase)
                 {
