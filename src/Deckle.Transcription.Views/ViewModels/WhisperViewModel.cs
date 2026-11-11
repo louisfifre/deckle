@@ -64,7 +64,6 @@ public partial class WhisperViewModel : ObservableObject
         // Dictation-experience seeds from the shell POCO initializers (the single
         // source the shell's SettingsService persists), overwritten by Load().
         var overlay = new OverlaySettings();
-        AutoPasteEnabled = new PasteSettings().AutoPasteEnabled;
         OverlayEnabled = overlay.Enabled;
         OverlayFadeOnProximity = overlay.FadeOnProximity;
         OverlayPosition = overlay.Position;
@@ -117,7 +116,6 @@ public partial class WhisperViewModel : ObservableObject
 
             // The shell's SettingsService persists these, not TranscriptionSettings.
             var shell = SettingsService.Instance.Current;
-            AutoPasteEnabled = shell.Paste.AutoPasteEnabled;
             OverlayEnabled = shell.Overlay.Enabled;
             OverlayFadeOnProximity = shell.Overlay.FadeOnProximity;
             OverlayPosition = shell.Overlay.Position;

@@ -483,8 +483,8 @@ public sealed partial class WhisperPage : Page
         // cards (Model, Language, Initial prompt) through their own reset
         // handlers. The Decoding and Streaming values live in the same
         // TranscriptionSettings but belong to their own pages, so they stay.
-        // The earlier whole-POCO replace wiped them, and left the overlay and
-        // auto-paste cards (which live in AppSettings) untouched.
+        // The earlier whole-POCO replace wiped them, and left the overlay
+        // card (which lives in AppSettings) untouched.
         foreach (SettingsComposer composer in _composers) composer.ResetAll();
         ModelReset_Click(sender, e);
         LanguageReset_Click(sender, e);

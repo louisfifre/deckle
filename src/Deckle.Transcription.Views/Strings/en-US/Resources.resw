@@ -330,14 +330,8 @@
        First page in the Settings nav. Page title, page subtitle, then
        sections in order: Shortcuts, Appearance, Startup, Recording,
        Telemetry, Back up & restore, Application data. -->
-  <data name="GeneralAutoPasteCard.Header" xml:space="preserve">
-    <value>Auto-paste after transcription</value>
-  </data>
-  <data name="GeneralAutoPasteCard.Description" xml:space="preserve">
-    <value>Pastes into the focused field only when the target is certain. The text is always on the clipboard.</value>
-  </data>
   <data name="WhisperPageBehaviourSection.Title" xml:space="preserve">
-    <value>Overlay and pasting</value>
+    <value>Overlay</value>
   </data>
   <data name="GeneralOverlayExpander.Header" xml:space="preserve">
     <value>Show the overlay while recording</value>

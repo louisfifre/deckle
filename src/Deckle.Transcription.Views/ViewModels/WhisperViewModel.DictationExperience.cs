@@ -5,12 +5,9 @@ namespace Deckle.Transcription.Views;
 
 public partial class WhisperViewModel
 {
-    // These persist in the shell's Overlay / Paste sections, read at runtime by
-    // the HUD and the hotkey paste path; this view model only surfaces them, and
-    // saves them through the shell's SettingsService, not TranscriptionSettings.
-
-    [ObservableProperty]
-    public partial bool AutoPasteEnabled { get; set; }
+    // These persist in the shell's Overlay section, read at runtime by the HUD;
+    // this view model only surfaces them, and saves them through the shell's
+    // SettingsService, not TranscriptionSettings.
 
     [ObservableProperty]
     public partial bool OverlayEnabled { get; set; }
@@ -20,12 +17,6 @@ public partial class WhisperViewModel
 
     [ObservableProperty]
     public partial string OverlayPosition { get; set; }
-
-    partial void OnAutoPasteEnabledChanged(bool value)
-    {
-        if (_isSyncing) return;
-        PushBehaviourToSettings();
-    }
 
     partial void OnOverlayEnabledChanged(bool value)
     {
@@ -63,7 +54,6 @@ public partial class WhisperViewModel
     private void PushBehaviourToSettings()
     {
         var shell = SettingsService.Instance.Current;
-        shell.Paste.AutoPasteEnabled = AutoPasteEnabled;
         shell.Overlay.Enabled = OverlayEnabled;
         shell.Overlay.FadeOnProximity = OverlayFadeOnProximity;
         shell.Overlay.Position = OverlayPosition;
