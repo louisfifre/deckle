@@ -2,10 +2,10 @@ using System.Runtime.InteropServices;
 
 namespace Deckle.Input;
 
-// SendInput mouse plumbing. Deckle.Core carries a keyboard-
-// flattened INPUT for the paste injection; the mouse variant needs the
-// union's MOUSEINPUT shape instead, so it lives here with its own
-// SendInput overload rather than contorting the shared struct.
+// SendInput mouse plumbing. Deckle.Core carries a keyboard-flattened INPUT
+// for the key injections; the mouse variant needs the union's MOUSEINPUT
+// shape instead, so it lives here with its own SendInput overload rather
+// than contorting the shared struct.
 public static class SendInputInterop
 {
     public const uint INPUT_MOUSE = 0;

@@ -54,7 +54,7 @@ public static partial class NativeMethods
     [DllImport("user32.dll", SetLastError = true)]
     public static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
 
-    // ── Window Identification / Keyboard Focus ───────────────────────────────
+    // ── Window Identification ────────────────────────────────────────────────
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
     public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);

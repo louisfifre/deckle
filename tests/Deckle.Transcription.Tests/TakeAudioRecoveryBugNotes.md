@@ -29,5 +29,5 @@ Found by reading the code of the v0.74.0 safety net, not from a real log. Causes
 - Symptom: the partial text is delivered, then the audio is deleted; the failed words cannot be recovered.
 - Cause: `DiscardsTakeAudio` looks only at the outcome (`clipboard_only`, formerly also `pasted`), not at the take having been incomplete.
 - Violated invariant: the audio goes only when nothing is left to recover.
-- Fix: none yet. Keeping the audio in the single slot would last only until the next take, whose `TryBegin` replaces the file. A real fix needs a second slot, a size cap and a rule for a take whose text was already pasted.
+- Fix: none yet. Keeping the audio in the single slot would last only until the next take, whose `TryBegin` replaces the file. A real fix needs a second slot, a size cap and a rule for a take whose text already reached the clipboard.
 - Guard: `TakeAudioRecoveryEngineTests.APartialTakeKeepsItsAudioForTheFailedPart`, skipped, with the reproduction.

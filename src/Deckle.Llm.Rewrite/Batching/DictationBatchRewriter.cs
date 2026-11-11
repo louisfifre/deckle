@@ -15,7 +15,7 @@ namespace Deckle.Llm.Rewrite;
 // slow rewrite never blocks a Push.
 //
 // A batch whose rewrite fails or comes back blank keeps its raw text. Losing
-// a stretch of the dictation would be worse than pasting it unrewritten, and
+// a stretch of the dictation would be worse than keeping it unrewritten, and
 // the rest of the take still gets its rewrites; FallbackCount tells the take
 // how many seams are raw.
 //

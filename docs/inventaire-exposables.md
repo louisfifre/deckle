@@ -350,7 +350,7 @@ Total : **625 entrées** réparties sur **38 modules**.
 | HudWindow.MAX_ALPHA | tuning-constant | `255` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:60 | non |  |
 | HudWindow.MIN_ALPHA | tuning-constant | `40` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:61 | non | Floor alpha of the main-HUD proximity fade. |
 | HudWindow.FADE_IN_MS | tuning-constant | `150` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:103 | non | Animation duration; gated by the Windows animation preference. |
-| HudWindow.SuccessDuration | tuning-constant | `TimeSpan.FromSeconds(2)` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:246 | non | How long the Copied/Pasted confirmation stays up - directly user-perceivable dwell time. |
+| HudWindow.SuccessDuration | tuning-constant | `TimeSpan.FromSeconds(2)` | src/Deckle.Hud/Windows/HudWindow.xaml.cs:246 | non | How long the Copied confirmation stays up - directly user-perceivable dwell time. |
 | WindowSlideAnimator.FrameIntervalMs | tuning-constant | `16` | src/Deckle.Hud/Windows/WindowSlideAnimator.cs:24 | non | ~60 Hz tick; implementation cadence rather than a knob. |
 | WindowSlideAnimator.Duration | tuning-constant | `TimeSpan.FromMilliseconds(150)` | src/Deckle.Hud/Windows/WindowSlideAnimator.cs:25 | non |  |
 | LayeredAlphaAnimator.FrameIntervalMs | tuning-constant | `16` | src/Deckle.Hud/Windows/WindowSlideAnimator.cs:153 | non | Second declaration in the same file (LayeredAlphaAnimator, not WindowSlideAnimator); same doubt as above. |

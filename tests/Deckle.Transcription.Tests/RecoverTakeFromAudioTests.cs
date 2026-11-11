@@ -41,7 +41,7 @@ public sealed class RecoverTakeFromAudioTests : IDisposable
     }
 
     [Fact]
-    public async Task TheRecoveredTextGoesToTheClipboardAndNothingIsPasted()
+    public async Task TheRecoveredTextGoesToTheClipboardAndTheCallerAnnouncesIt()
     {
         var backend = new SequencedBackend([TestInference, "bonjour", "Deckle"]);
         var clipboard = new RecordingClipboardWriter();
