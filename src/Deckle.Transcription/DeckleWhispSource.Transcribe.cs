@@ -123,13 +123,13 @@ public sealed partial class DeckleWhispSource
         if (IsEnabled()) WriteEvent(EvtTakeDropped, reason);
     }
 
-    // The take's text reached neither the clipboard nor the target window.
+    // The take's text could not be copied to the clipboard, its only way out.
     // reason (closed vocabulary): raw_copy_failed. recovery_kept says whether
     // the dictation recovery file holds the take, which is then its only copy.
     [Event(EvtDictationNotDelivered,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "The dictation reached neither the clipboard nor the window, so it was not delivered\nreason={0} | recovery_kept={1}")]
+           Message = "The dictation could not be copied to the clipboard, so it was not delivered\nreason={0} | recovery_kept={1}")]
     public void DictationNotDelivered(string reason, bool recovery_kept)
     {
         if (IsEnabled()) WriteEvent(EvtDictationNotDelivered, reason, recovery_kept);
