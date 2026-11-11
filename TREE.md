@@ -235,9 +235,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── constant_return.cpp
 │   │   │   ├── constant_return.h
 │   │   │   ├── function_site.cpp
-│   │   │   ├── function_site.h
-│   │   │   ├── instruction_length.cpp
-│   │   │   └── instruction_length.h
+│   │   │   └── function_site.h
 │   │   ├── xamldiag/
 │   │   │   ├── behaviors/
 │   │   │   │   ├── clock.cpp
