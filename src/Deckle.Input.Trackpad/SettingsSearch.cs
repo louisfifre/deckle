@@ -38,6 +38,11 @@ public static class SettingsSearch
             LabelKey = "TrackpadPage_PressDelayCard",
             Keywords = ["press", "click", "wait", "latency", "four-finger"],
         },
+        new SettingSearchEntry
+        {
+            LabelKey = "TrackpadPage_PressDistanceCard",
+            Keywords = ["press", "click", "movement", "threshold", "four-finger"],
+        },
 
         new SettingSearchEntry
         {
