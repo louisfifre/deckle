@@ -11,7 +11,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Deckle.Localization;
 
-namespace Deckle.Lighting.Ambient;
+namespace Deckle.Lighting.Ambient.Views;
 
 public sealed partial class AmbientPage
 {

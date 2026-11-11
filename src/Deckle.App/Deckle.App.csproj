@@ -145,6 +145,7 @@
     <ProjectReference Include="..\Deckle.Input.PrecisionScroll\Deckle.Input.PrecisionScroll.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />
     <ProjectReference Include="..\Deckle.Lighting.Ambient\Deckle.Lighting.Ambient.csproj" />
+    <ProjectReference Include="..\Deckle.Lighting.Ambient.Views\Deckle.Lighting.Ambient.Views.csproj" />
     <ProjectReference Include="..\Deckle.Llm\Deckle.Llm.csproj" />
     <ProjectReference Include="..\Deckle.Llm.Rewrite\Deckle.Llm.Rewrite.csproj" />
     <ProjectReference Include="..\Deckle.Llm.Rewrite.Views\Deckle.Llm.Rewrite.Views.csproj" />

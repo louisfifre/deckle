@@ -10,7 +10,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Deckle.Localization;
 
-namespace Deckle.Lighting.Ambient;
+namespace Deckle.Lighting.Ambient.Views;
 
 // Settings page for the Ambient Light module. Resolved by the Settings
 // NavigationView through the PageTag declared in AmbientSettingsModule.

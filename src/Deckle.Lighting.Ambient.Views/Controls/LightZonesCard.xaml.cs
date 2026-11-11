@@ -10,7 +10,7 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Deckle.Localization;
 
-namespace Deckle.Lighting.Ambient;
+namespace Deckle.Lighting.Ambient.Views;
 
 // Per-light settings of the "Colour per zone" mode: for each light of the
 // selected Hue group, the screen edge it follows (AmbientSettings.LightZones),

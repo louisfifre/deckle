@@ -10,6 +10,13 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Deckle.Lighting.Ambient.Tests" />
+    <!-- The pure rules the screens draw from stay here, beside the engine that
+         applies them and the tests that pin them: the light placement resolver
+         (LightZonesCard), the capture target, preview health, used zones and
+         band shares (AmbientPreviewCard), and the group preselection
+         (AmbientPage). The controls that use them live in
+         Deckle.Lighting.Ambient.Views. -->
+    <InternalsVisibleTo Include="Deckle.Lighting.Ambient.Views" />
   </ItemGroup>
 
   <ItemGroup>

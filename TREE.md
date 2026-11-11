@@ -1451,27 +1451,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── LightZone.cs
 │   │   │   ├── LightZoneSuggester.cs
 │   │   │   └── SrgbColor.cs
-│   │   ├── Strings/
-│   │   │   └── en-US/
-│   │   │       └── Resources.resw
-│   │   ├── Ui/
-│   │   │   ├── Controls/
-│   │   │   │   ├── AmbientPreviewCard.xaml
-│   │   │   │   ├── AmbientPreviewCard.xaml.cs
-│   │   │   │   ├── LightZonesCard.xaml
-│   │   │   │   └── LightZonesCard.xaml.cs
-│   │   │   ├── AmbientPage.Hue.cs
-│   │   │   ├── AmbientPage.xaml
-│   │   │   └── AmbientPage.xaml.cs
-│   │   ├── ViewModels/
-│   │   │   ├── AmbientViewModel.cs
-│   │   │   └── AmbientViewModel.Settings.cs
 │   │   ├── AmbientCaptureCap.cs
 │   │   ├── AmbientCaptureTarget.cs
 │   │   ├── AmbientPresets.cs
 │   │   ├── AmbientPresetStore.cs
 │   │   ├── AmbientSettings.cs
-│   │   ├── AmbientSettingsModule.cs
 │   │   ├── AmbientSettingsService.cs
 │   │   ├── AmbientStartSettings.cs
 │   │   ├── AmbientTuning.cs
@@ -1485,7 +1469,24 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleAmbientSource.PreviewScan.cs
 │   │   ├── DeckleAmbientSource.Push.cs
 │   │   ├── DeckleAmbientSource.UiAndSettings.cs
-│   │   ├── IAmbientEngineHost.cs
+│   │   └── IAmbientEngineHost.cs
+│   ├── Deckle.Lighting.Ambient.Views/
+│   │   ├── Controls/
+│   │   │   ├── AmbientPreviewCard.xaml
+│   │   │   ├── AmbientPreviewCard.xaml.cs
+│   │   │   ├── LightZonesCard.xaml
+│   │   │   └── LightZonesCard.xaml.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── ViewModels/
+│   │   │   ├── AmbientViewModel.cs
+│   │   │   └── AmbientViewModel.Settings.cs
+│   │   ├── AmbientPage.Hue.cs
+│   │   ├── AmbientPage.xaml
+│   │   ├── AmbientPage.xaml.cs
+│   │   ├── AmbientSettingsModule.cs
+│   │   ├── Deckle.Lighting.Ambient.Views.csproj
 │   │   └── SettingsSearch.cs
 │   ├── Deckle.Llm/
 │   │   ├── Engines/

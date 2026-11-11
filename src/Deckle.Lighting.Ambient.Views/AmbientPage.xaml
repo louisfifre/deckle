@@ -1,10 +1,10 @@
 <Page
-    x:Class="Deckle.Lighting.Ambient.AmbientPage"
+    x:Class="Deckle.Lighting.Ambient.Views.AmbientPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:ambientControls="using:Deckle.Lighting.Ambient"
+    xmlns:ambientControls="using:Deckle.Lighting.Ambient.Views"
     xmlns:catalog="using:Deckle.Catalog">
 
     <!-- Two columns: the page on the left, the live preview on the right, a

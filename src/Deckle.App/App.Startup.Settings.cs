@@ -175,7 +175,7 @@ public partial class App
                 Autocorrect.Views.SettingsSearch.TelemetryEntries);
         }
         if (context.AmbientPresent)
-            RegisterSettingsModule(Lighting.Ambient.AmbientSettingsModule.Describe(order: 400), Lighting.Ambient.SettingsSearch.Entries);
+            RegisterSettingsModule(Lighting.Ambient.Views.AmbientSettingsModule.Describe(order: 400), Lighting.Ambient.Views.SettingsSearch.Entries);
         if (context.TrackpadPresent)
         {
             RegisterSettingsModule(Input.Trackpad.TrackpadSettingsModule.Describe(order: 500), Input.Trackpad.SettingsSearch.Entries);

@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Presets;
 
-namespace Deckle.Lighting.Ambient;
+namespace Deckle.Lighting.Ambient.Views;
 
 // ─── Ambient lighting ViewModel ──────────────────────────────────────────────
 //

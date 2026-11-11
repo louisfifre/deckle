@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using Deckle.Catalog;
 using Deckle.Localization;
 
-namespace Deckle.Lighting.Ambient;
+namespace Deckle.Lighting.Ambient.Views;
 
 // ── SettingsSearch ────────────────────────────────────────────────────────────
 //

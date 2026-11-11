@@ -1138,7 +1138,7 @@
   </data>
 
   <!-- ── AmbientPage code-behind (Loc.Get / Loc.Format) ──────
-       Duplicated from src/Deckle.Lighting.Ambient/Strings/en-US/
+       Duplicated from src/Deckle.Lighting.Ambient.Views/Strings/en-US/
        Resources.resw because the default ResourceLoader binds to
        the main app's PRI ; per-module x:Uid lookups resolve
        automatically against the module's own PRI but Loc.Get
@@ -1242,14 +1242,14 @@
   </data>
 
   <!-- AmbientPage Reset all dialog — duplicated from
-       src/Deckle.Lighting.Ambient/Strings/en-US/Resources.resw, which
+       src/Deckle.Lighting.Ambient.Views/Strings/en-US/Resources.resw, which
        stays the source of truth for wording. -->
   <data name="Settings_ResetAmbientDialog_Detail" xml:space="preserve">
     <value>Your Hue bridge pairing, the selected light group, the display, the per-light zones and brightness, and whether Ambient Light is on stay as they are.</value>
   </data>
 
   <!-- AmbientPreviewCard and LightZonesCard code-behind (Loc.Get) —
-       duplicated from src/Deckle.Lighting.Ambient/Strings/en-US/
+       duplicated from src/Deckle.Lighting.Ambient.Views/Strings/en-US/
        Resources.resw, which stays the source of truth for wording. -->
   <data name="AmbientPreview_GroupSwatch" xml:space="preserve">
     <value>All lights</value>

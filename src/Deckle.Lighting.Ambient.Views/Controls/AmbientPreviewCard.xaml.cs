@@ -13,7 +13,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using Deckle.Localization;
 
-namespace Deckle.Lighting.Ambient;
+namespace Deckle.Lighting.Ambient.Views;
 
 // Live preview of the engine in the shared PreviewBlock, floating in the
 // page's pane: the sampled grid mirroring the screen as the stage, the colour

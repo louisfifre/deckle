@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Lighting.Ambient.Views</RootNamespace>
+    <UseWinUI>true</UseWinUI>
+    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.App.csproj. -->
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <!-- Generates the lib's own .pri so x:Uid lookups in AmbientPage,
+         AmbientPreviewCard and LightZonesCard, the composed cards
+         (SettingsComposer reads the view model's assembly), the settings
+         search and Loc.GetFrom (the preset labels the Playground's Ambient tab
+         reads) resolve against the Deckle.Lighting.Ambient.Views/Resources
+         subtree (Strings/en-US/Resources.resw). -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+  </PropertyGroup>
+
+  <!-- The Ambient settings page, its live preview and per-light zone cards,
+       its view model, the settings module, the search entries and the strings
+       they read. Dependencies point one way: this project reads
+       Deckle.Lighting.Ambient, which holds no XAML and knows nothing of it, so
+       the engine and its tests never run the XAML compiler on its account. -->
+  <ItemGroup>
+    <!-- One WinAppSDK runtime per process: never override the central version. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+    <!-- GridSplitter between the Ambient page and its preview pane. Referenced
+         here, not from Catalog: Ambient is the only page with a pane today. -->
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.Sizers" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Lighting.Ambient\Deckle.Lighting.Ambient.csproj" />
+    <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
+    <ProjectReference Include="..\Deckle.Presets\Deckle.Presets.csproj" />
+    <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
+    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <!-- Shell: the page and both cards use the instrumented
+         DispatcherQueue.TryEnqueueObserved wrapper. One-way (Shell does not
+         reference Ambient), so no cycle. -->
+    <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
+  </ItemGroup>
+</Project>

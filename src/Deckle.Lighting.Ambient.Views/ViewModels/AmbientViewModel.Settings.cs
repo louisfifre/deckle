@@ -1,6 +1,6 @@
 using Deckle.Catalog;
 
-namespace Deckle.Lighting.Ambient;
+namespace Deckle.Lighting.Ambient.Views;
 
 // ── Settings manifests ───────────────────────────────────────────────────────
 //
