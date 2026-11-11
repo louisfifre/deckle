@@ -13,7 +13,7 @@
   ],
   "RequiredKeys": [
     {
-      "Assembly": "Deckle.Audio",
+      "Assembly": "Deckle.Audio.Views",
       "Key": "SettingsModuleNavLabel",
       "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
     },

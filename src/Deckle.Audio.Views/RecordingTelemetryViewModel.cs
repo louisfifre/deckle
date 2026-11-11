@@ -4,7 +4,7 @@ using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Telemetry;
 
-namespace Deckle.Audio;
+namespace Deckle.Audio.Views;
 
 // ── RecordingTelemetryViewModel ───────────────────────────────────────────────
 //

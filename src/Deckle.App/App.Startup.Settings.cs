@@ -137,11 +137,11 @@ public partial class App
 
         if (context.TranscriptionPresent)
         {
-            RegisterSettingsModule(Audio.RecordingSettingsModule.Describe(order: 50), Audio.SettingsSearch.Entries);
+            RegisterSettingsModule(Audio.Views.RecordingSettingsModule.Describe(order: 50), Audio.Views.SettingsSearch.Entries);
             ContributeDiagnostics(
-                Audio.RecordingTelemetryViewModel.Contribution(order: 50),
-                "Deckle.Audio",
-                Audio.SettingsSearch.TelemetryEntries);
+                Audio.Views.RecordingTelemetryViewModel.Contribution(order: 50),
+                "Deckle.Audio.Views",
+                Audio.Views.SettingsSearch.TelemetryEntries);
             // One module, three rail entries: the module's page (General under the
             // node) then Decoding and Streaming nested under it, each registered on
             // its own so the search index resolves page coordinates per page.

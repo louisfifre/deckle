@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Deckle.Catalog;
 
-namespace Deckle.Audio;
+namespace Deckle.Audio.Views;
 
 // ── SettingsSearch ────────────────────────────────────────────────────────────
 //

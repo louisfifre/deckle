@@ -7,7 +7,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Deckle.Localization;
 
-namespace Deckle.Audio;
+namespace Deckle.Audio.Views;
 
 // ── VoiceLevelMeter ───────────────────────────────────────────────────────────
 //

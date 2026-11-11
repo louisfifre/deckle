@@ -267,6 +267,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── log.h
 │   │   ├── pch.cpp
 │   │   ├── pch.h
+│   │   ├── residency.cpp
+│   │   ├── residency.h
 │   │   ├── util.cpp
 │   │   ├── util.h
 │   │   └── version.rc
@@ -826,9 +828,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── NoiseGate.cs
 │   │   │   ├── PreprocessingSettings.cs
 │   │   │   └── TranscriptionPreprocessor.cs
-│   │   ├── Strings/
-│   │   │   └── en-US/
-│   │   │       └── Resources.resw
 │   │   ├── Telemetry/
 │   │   │   ├── MicrophoneTelemetryCalculator.cs
 │   │   │   └── MicrophoneTelemetryPayload.cs
@@ -853,6 +852,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MicrophoneLevelFeed.cs
 │   │   ├── MicrophoneLevelFeedFailure.cs
 │   │   ├── ProbeResult.cs
+│   │   ├── SpeakerOutput.cs
+│   │   ├── VoiceDetector.cs
+│   │   ├── VoiceLevelMeterHost.cs
+│   │   └── VoiceLevelMeterScale.cs
+│   ├── Deckle.Audio.Views/
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Deckle.Audio.Views.csproj
 │   │   ├── RecordingLimit.cs
 │   │   ├── RecordingPage.xaml
 │   │   ├── RecordingPage.xaml.cs
@@ -862,12 +870,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RecordingViewModel.ListeningTest.cs
 │   │   ├── RecordingViewModel.Settings.cs
 │   │   ├── SettingsSearch.cs
-│   │   ├── SpeakerOutput.cs
-│   │   ├── VoiceDetector.cs
 │   │   ├── VoiceLevelMeter.xaml
-│   │   ├── VoiceLevelMeter.xaml.cs
-│   │   ├── VoiceLevelMeterHost.cs
-│   │   └── VoiceLevelMeterScale.cs
+│   │   └── VoiceLevelMeter.xaml.cs
 │   ├── Deckle.Autocorrect/
 │   │   ├── Data/
 │   │   │   ├── lexicon-en-globish.tsv.gz
@@ -1980,6 +1984,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── TaskbarNativeMethods.Injection.cs
 │   │   ├── Native/
 │   │   │   ├── ExplorerFunctionLocator.cs
+│   │   │   ├── InjectionBreaker.cs
 │   │   │   ├── ITaskbarEngine.cs
 │   │   │   ├── JsonLineFraming.cs
 │   │   │   ├── NativeCommand.cs
@@ -2438,13 +2443,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PortAudioDeploymentBugNotes.md
 │   │   ├── PortAudioDeploymentTests.cs
 │   │   ├── PortAudioInteropTests.cs
-│   │   ├── RecordingLimitTests.cs
 │   │   ├── StreamingResamplerTests.cs
 │   │   ├── SubWindowAssemblerTests.cs
 │   │   ├── TestCaptureDoubles.cs
 │   │   ├── TranscriptionPreprocessorTests.cs
 │   │   ├── VoiceDetectorTests.cs
 │   │   └── VoiceLevelMeterScaleTests.cs
+│   ├── Deckle.Audio.Views.Tests/
+│   │   ├── Deckle.Audio.Views.Tests.csproj
+│   │   └── RecordingLimitTests.cs
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
@@ -2899,6 +2906,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Shell.Taskbar.Tests/
 │   │   ├── Native/
 │   │   │   ├── BarThicknessTests.cs
+│   │   │   ├── EngineResidencyTests.cs
+│   │   │   ├── ExplorerReinjectionBugNotes.md
+│   │   │   ├── InjectionBreakerTests.cs
 │   │   │   ├── JsonLineFramingTests.cs
 │   │   │   ├── ModuleIdentityTests.cs
 │   │   │   ├── NativeCommandTests.cs
@@ -2910,6 +2920,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── StartMenuDocumentTests.cs
 │   │   │   ├── TaskbarCustomizerTests.cs
 │   │   │   ├── TaskbarDocumentBuilderTests.cs
+│   │   │   ├── TaskbarEngineHostStopTests.cs
 │   │   │   ├── TaskbarPipeServerTests.cs
 │   │   │   ├── TaskbarProblemReaderTests.cs
 │   │   │   └── VersionedNativeCopyTests.cs

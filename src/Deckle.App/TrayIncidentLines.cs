@@ -1,4 +1,4 @@
-using Deckle.Audio;
+using Deckle.Audio.Views;
 using Deckle.Diagnostics;
 using Deckle.Input.PrecisionScroll;
 using Deckle.Lighting.Ambient;

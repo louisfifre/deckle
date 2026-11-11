@@ -5,7 +5,7 @@ using System.Globalization;
 using System.Threading.Tasks;
 using Deckle.Localization;
 
-namespace Deckle.Audio;
+namespace Deckle.Audio.Views;
 
 // ViewModel for RecordingPage — bridges CaptureSettings to the XAML via
 // x:Bind.

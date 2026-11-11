@@ -1,7 +1,7 @@
-using Deckle.Audio;
+using Deckle.Audio.Views;
 using Xunit;
 
-namespace Deckle.Audio.Tests;
+namespace Deckle.Audio.Views.Tests;
 
 // The maximum recording length as the Recording page shows it: a switch and a
 // length in minutes over a POCO that keeps seconds. A freshly built

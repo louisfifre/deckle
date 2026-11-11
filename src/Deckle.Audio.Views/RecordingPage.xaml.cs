@@ -9,7 +9,7 @@ using Deckle.Diagnostics;
 using Deckle.Shell;
 using Deckle.Localization;
 
-namespace Deckle.Audio;
+namespace Deckle.Audio.Views;
 
 // ── RecordingPage ───────────────────────────────────────────────────────────
 //

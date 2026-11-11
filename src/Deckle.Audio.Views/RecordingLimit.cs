@@ -1,4 +1,4 @@
-namespace Deckle.Audio;
+namespace Deckle.Audio.Views;
 
 // ── RecordingLimit ───────────────────────────────────────────────────────────
 //

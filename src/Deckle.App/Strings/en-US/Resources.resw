@@ -892,7 +892,7 @@
   </data>
 
   <!-- RecordingPage mic-check detail line and VoiceLevelMeter code-behind
-       (Loc.Get / Loc.Format) — duplicated from src/Deckle.Audio/Strings/en-US/
+       (Loc.Get / Loc.Format) — duplicated from src/Deckle.Audio.Views/Strings/en-US/
        Resources.resw, which stays the source of truth for wording. -->
   <data name="RecordingPageMicResultAbove_Format" xml:space="preserve">
     <value>{0} dBFS → {1} dBFS · loudest tenth {2} dB above your voice level</value>

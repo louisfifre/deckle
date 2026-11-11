@@ -1,0 +1,47 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Audio.Views</RootNamespace>
+    <UseWinUI>true</UseWinUI>
+    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.App.csproj. -->
+    <DefaultLanguage>en-US</DefaultLanguage>
+    <!-- Generates the lib's own .pri so x:Uid lookups in RecordingPage and
+         VoiceLevelMeter, the composed cards (SettingsComposer reads the view
+         model's assembly) and the Diagnostics contribution resolve against the
+         Deckle.Audio.Views/Resources subtree (Strings/en-US/Resources.resw). -->
+    <EnableMsixTooling>true</EnableMsixTooling>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Deckle.Audio.Views.Tests" />
+  </ItemGroup>
+
+  <!-- The Recording settings page, its voice level meter, their view models,
+       the microphone-telemetry card it contributes to Diagnostics, and the
+       strings they read. Dependencies point one way: this project reads
+       Deckle.Audio, which holds no XAML and knows nothing of it, so the
+       engines that capture through it never run the XAML compiler on its
+       account. -->
+  <ItemGroup>
+    <!-- One WinAppSDK runtime per process: never override the central version. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
+    <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
+    <!-- Telemetry POCOs: the microphone-telemetry opt-in reads/writes
+         TelemetrySettings via TelemetrySettingsService. No cycle — Diagnostics.Telemetry
+         does not reference Audio. -->
+    <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
+    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <!-- Shell: RecordingPage and VoiceLevelMeter use the instrumented
+         DispatcherQueue.TryEnqueueObserved wrapper. One-way (Shell does not
+         reference Audio), so no cycle. -->
+    <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
+  </ItemGroup>
+</Project>

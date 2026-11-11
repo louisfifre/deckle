@@ -2,7 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using System.Threading.Tasks;
 
-namespace Deckle.Audio;
+namespace Deckle.Audio.Views;
 
 // ── Listening test ──────────────────────────────────────────────────────────
 //

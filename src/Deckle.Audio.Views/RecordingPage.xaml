@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Page
-    x:Class="Deckle.Audio.RecordingPage"
+    x:Class="Deckle.Audio.Views.RecordingPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:CommunityToolkit.WinUI.Controls"
     xmlns:ui="using:CommunityToolkit.WinUI"
-    xmlns:vm="using:Deckle.Audio"
-    xmlns:local="using:Deckle.Audio"
+    xmlns:vm="using:Deckle.Audio.Views"
+    xmlns:local="using:Deckle.Audio.Views"
     xmlns:catalog="using:Deckle.Catalog">
 
     <Page.Resources>
