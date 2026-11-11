@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Deckle.Catalog;
 
-namespace Deckle.Transcription;
+namespace Deckle.Transcription.Views;
 
 // ── SettingsSearch ────────────────────────────────────────────────────────────
 //

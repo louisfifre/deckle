@@ -2159,16 +2159,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Utterance.cs
 │   │   │   ├── UtteranceProgress.cs
 │   │   │   └── UtteranceProgressMeter.cs
-│   │   ├── Strings/
-│   │   │   └── en-US/
-│   │   │       └── Resources.resw
-│   │   ├── ViewModels/
-│   │   │   ├── WhisperTelemetryViewModel.cs
-│   │   │   ├── WhisperViewModel.cs
-│   │   │   ├── WhisperViewModel.DictationExperience.cs
-│   │   │   ├── WhisperViewModel.Engine.cs
-│   │   │   ├── WhisperViewModel.Settings.cs
-│   │   │   └── WhisperViewModel.Streaming.cs
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Decode.cs
@@ -2185,15 +2175,27 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleWhispSource.Transcribe.cs
 │   │   ├── DeckleWhispSource.Ui.cs
 │   │   ├── DeckleWhispSource.WarmupModel.cs
-│   │   ├── DecodingPage.xaml
-│   │   ├── DecodingPage.xaml.cs
 │   │   ├── GLOSSARY.md  — glossary-deckle-transcription Transcription vocabulary. It names the two entry points (dictation, file transc…
 │   │   ├── ITranscriptionEngineHost.cs
+│   │   ├── TranscriptionSettings.cs
+│   │   └── TranscriptionSettingsService.cs
+│   ├── Deckle.Transcription.Views/
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── ViewModels/
+│   │   │   ├── WhisperTelemetryViewModel.cs
+│   │   │   ├── WhisperViewModel.cs
+│   │   │   ├── WhisperViewModel.DictationExperience.cs
+│   │   │   ├── WhisperViewModel.Engine.cs
+│   │   │   ├── WhisperViewModel.Settings.cs
+│   │   │   └── WhisperViewModel.Streaming.cs
+│   │   ├── Deckle.Transcription.Views.csproj
+│   │   ├── DecodingPage.xaml
+│   │   ├── DecodingPage.xaml.cs
 │   │   ├── SettingsSearch.cs
 │   │   ├── StreamingPage.xaml
 │   │   ├── StreamingPage.xaml.cs
-│   │   ├── TranscriptionSettings.cs
-│   │   ├── TranscriptionSettingsService.cs
 │   │   ├── WhisperPage.xaml
 │   │   ├── WhisperPage.xaml.cs
 │   │   └── WhisperSettingsModule.cs

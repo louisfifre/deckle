@@ -3,7 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Catalog;
 using Deckle.Diagnostics.Telemetry;
 
-namespace Deckle.Transcription;
+namespace Deckle.Transcription.Views;
 
 // ── WhisperTelemetryViewModel ─────────────────────────────────────────────────
 //

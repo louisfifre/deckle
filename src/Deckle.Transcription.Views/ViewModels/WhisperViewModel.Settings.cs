@@ -5,7 +5,7 @@ using Deckle.Core;
 using Deckle.Settings;
 using Deckle.Localization;
 
-namespace Deckle.Transcription;
+namespace Deckle.Transcription.Views;
 
 // ── WhisperViewModel — settings manifest ──────────────────────────────────────
 //
@@ -297,7 +297,7 @@ public partial class WhisperViewModel
     // static description.
     private string? CutCurveSentence()
     {
-        string? format = Loc.GetFromOptional("Deckle.Transcription", "WhisperCutCurveSentence_Format");
+        string? format = Loc.GetFromOptional("Deckle.Transcription.Views", "WhisperCutCurveSentence_Format");
         if (format is null) return null;
         double start = SegHangoverRampStartMs / 1000.0;
         double end = Math.Max(start, SegHangoverRampEndMs / 1000.0);
@@ -339,7 +339,7 @@ public partial class WhisperViewModel
             new MagnitudeArgs(0, 1, Slider: false),
             defaultValue: () => new DecodingSettings().TemperatureIncrement,
             advisory: () => TemperatureIncrement == 0
-                ? Loc.GetFromOptional("Deckle.Transcription", "WhisperTemperatureIncrementWarning/Message")
+                ? Loc.GetFromOptional("Deckle.Transcription.Views", "WhisperTemperatureIncrementWarning/Message")
                 : null),
     ];
 
@@ -387,7 +387,7 @@ public partial class WhisperViewModel
         Setting.Text("WhisperSuppressRegexCard",
             () => SuppressRegex,
             value => SuppressRegex = value,
-            new TextArgs(Placeholder: Loc.GetFromOptional("Deckle.Transcription", "WhisperSuppressRegexBox/PlaceholderText")),
+            new TextArgs(Placeholder: Loc.GetFromOptional("Deckle.Transcription.Views", "WhisperSuppressRegexBox/PlaceholderText")),
             defaultValue: () => new OutputFilterSettings().SuppressRegex),
     ];
 

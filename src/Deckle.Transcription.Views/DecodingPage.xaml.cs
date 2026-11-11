@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 
-namespace Deckle.Transcription;
+namespace Deckle.Transcription.Views;
 
 // The Decoding page of the Transcription module: a host-only page over the
 // WhisperViewModel manifests that apply in both pipelines. Its own view model

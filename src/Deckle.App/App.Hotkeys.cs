@@ -17,7 +17,7 @@ public partial class App
             Deckle.Localization.Loc.Get("Feedback_SpeechNotSetUp_Title"),
             Deckle.Localization.Loc.Format(
                 "Feedback_SpeechNotSetUp_Body_Format",
-                Deckle.Localization.Loc.GetFrom("Deckle.Transcription", "SettingsModuleNavLabel")),
+                Deckle.Localization.Loc.GetFrom("Deckle.Transcription.Views", "SettingsModuleNavLabel")),
             1); // Overlay
 
     // The tray panel's Record button lands here too.

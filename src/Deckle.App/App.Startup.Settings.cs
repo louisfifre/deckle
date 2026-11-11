@@ -67,7 +67,7 @@ public partial class App
             bool ok = await setup.Completion;
             if (ok)
                 RestartApp(ModulePresence.IsPresent(ModuleIds.Transcription)
-                    ? WhisperSettingsModule.PageTag
+                    ? Transcription.Views.WhisperSettingsModule.PageTag
                     : null);
         };
 
@@ -145,13 +145,13 @@ public partial class App
             // One module, three rail entries: the module's page (General under the
             // node) then Decoding and Streaming nested under it, each registered on
             // its own so the search index resolves page coordinates per page.
-            RegisterSettingsModule(Transcription.WhisperSettingsModule.Describe(order: 100), Transcription.SettingsSearch.Entries);
-            RegisterSettingsModule(Transcription.WhisperSettingsModule.DescribeDecoding(order: 110), Transcription.SettingsSearch.DecodingEntries);
-            RegisterSettingsModule(Transcription.WhisperSettingsModule.DescribeStreaming(order: 120), Transcription.SettingsSearch.StreamingEntries);
+            RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.Describe(order: 100), Transcription.Views.SettingsSearch.Entries);
+            RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.DescribeDecoding(order: 110), Transcription.Views.SettingsSearch.DecodingEntries);
+            RegisterSettingsModule(Transcription.Views.WhisperSettingsModule.DescribeStreaming(order: 120), Transcription.Views.SettingsSearch.StreamingEntries);
             ContributeDiagnostics(
-                Transcription.WhisperTelemetryViewModel.Contribution(order: 100),
-                "Deckle.Transcription",
-                Transcription.SettingsSearch.TelemetryEntries);
+                Transcription.Views.WhisperTelemetryViewModel.Contribution(order: 100),
+                "Deckle.Transcription.Views",
+                Transcription.Views.SettingsSearch.TelemetryEntries);
         }
         if (context.RewritePresent)
             RegisterSettingsModule(Llm.Rewrite.Views.LlmSettingsModule.Describe(order: 200), Llm.Rewrite.Views.SettingsSearch.Entries);

@@ -18,7 +18,7 @@
       "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
     },
     {
-      "Assembly": "Deckle.Transcription",
+      "Assembly": "Deckle.Transcription.Views",
       "Key": "SettingsModuleNavLabel",
       "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
     },

@@ -1,6 +1,6 @@
 using Deckle.Catalog;
 
-namespace Deckle.Transcription;
+namespace Deckle.Transcription.Views;
 
 // ── WhisperSettingsModule ─────────────────────────────────────────────────────
 //
@@ -15,11 +15,15 @@ namespace Deckle.Transcription;
 // filtering, segmentation) nested under it.
 public static class WhisperSettingsModule
 {
-    public const string ResourceLibrary = "Deckle.Transcription";
+    // The PRI subtree of the nav labels and the search entries: the pages'
+    // strings live with the pages, in the Views assembly.
+    public const string ResourceLibrary = "Deckle.Transcription.Views";
 
-    public const string PageTag = "Deckle.Transcription.WhisperPage, Deckle.Transcription";
-    public const string DecodingPageTag = "Deckle.Transcription.DecodingPage, Deckle.Transcription";
-    public const string StreamingPageTag = "Deckle.Transcription.StreamingPage, Deckle.Transcription";
+    // The shell resolves these with Type.GetType, so they name the assembly
+    // that compiles the pages.
+    public const string PageTag = "Deckle.Transcription.Views.WhisperPage, Deckle.Transcription.Views";
+    public const string DecodingPageTag = "Deckle.Transcription.Views.DecodingPage, Deckle.Transcription.Views";
+    public const string StreamingPageTag = "Deckle.Transcription.Views.StreamingPage, Deckle.Transcription.Views";
 
     private const string ModuleId = "whisp";
 

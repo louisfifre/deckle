@@ -6,7 +6,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Localization;
 
-namespace Deckle.Transcription;
+namespace Deckle.Transcription.Views;
 
 // The Streaming page of the Transcription module: a host-only page over the
 // WhisperViewModel manifests of the streaming pipeline. Everything under the

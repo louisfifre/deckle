@@ -50,7 +50,7 @@ public partial class App
             DeckleAppSource.Log.SpeechRepairEnded(workId, ok ? "completed" : "cancelled");
 
             // Same landing as the in-app wizard: the engine composes on restart.
-            if (ok) RestartApp("Deckle.Transcription.WhisperPage, Deckle.Transcription");
+            if (ok) RestartApp(Transcription.Views.WhisperSettingsModule.PageTag);
         }
         catch (Exception ex)
         {

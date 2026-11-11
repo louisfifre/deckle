@@ -159,6 +159,7 @@
     <ProjectReference Include="..\Deckle.Shell.WindowChrome\Deckle.Shell.WindowChrome.csproj" />
     <ProjectReference Include="..\Deckle.Speech\Deckle.Speech.csproj" />
     <ProjectReference Include="..\Deckle.Transcription\Deckle.Transcription.csproj" />
+    <ProjectReference Include="..\Deckle.Transcription.Views\Deckle.Transcription.Views.csproj" />
     <ProjectReference Include="..\Deckle.Transcription.Whisper\Deckle.Transcription.Whisper.csproj" />
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
   </ItemGroup>

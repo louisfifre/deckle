@@ -203,6 +203,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Audio.Views.Tests", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Llm.Rewrite.Views", "src\Deckle.Llm.Rewrite.Views\Deckle.Llm.Rewrite.Views.csproj", "{705118A5-9B05-4B87-81B1-A6AC058CF80F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Transcription.Views", "src\Deckle.Transcription.Views\Deckle.Transcription.Views.csproj", "{039BF6B2-3FF2-4137-B324-51928414355D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1389,6 +1391,18 @@ Global
 		{705118A5-9B05-4B87-81B1-A6AC058CF80F}.Release|x64.Build.0 = Release|x64
 		{705118A5-9B05-4B87-81B1-A6AC058CF80F}.Release|x86.ActiveCfg = Release|x64
 		{705118A5-9B05-4B87-81B1-A6AC058CF80F}.Release|x86.Build.0 = Release|x64
+		{039BF6B2-3FF2-4137-B324-51928414355D}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{039BF6B2-3FF2-4137-B324-51928414355D}.Debug|Any CPU.Build.0 = Debug|x64
+		{039BF6B2-3FF2-4137-B324-51928414355D}.Debug|x64.ActiveCfg = Debug|x64
+		{039BF6B2-3FF2-4137-B324-51928414355D}.Debug|x64.Build.0 = Debug|x64
+		{039BF6B2-3FF2-4137-B324-51928414355D}.Debug|x86.ActiveCfg = Debug|x64
+		{039BF6B2-3FF2-4137-B324-51928414355D}.Debug|x86.Build.0 = Debug|x64
+		{039BF6B2-3FF2-4137-B324-51928414355D}.Release|Any CPU.ActiveCfg = Release|x64
+		{039BF6B2-3FF2-4137-B324-51928414355D}.Release|Any CPU.Build.0 = Release|x64
+		{039BF6B2-3FF2-4137-B324-51928414355D}.Release|x64.ActiveCfg = Release|x64
+		{039BF6B2-3FF2-4137-B324-51928414355D}.Release|x64.Build.0 = Release|x64
+		{039BF6B2-3FF2-4137-B324-51928414355D}.Release|x86.ActiveCfg = Release|x64
+		{039BF6B2-3FF2-4137-B324-51928414355D}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1492,5 +1506,6 @@ Global
 		{9198479E-5685-4FE8-B7B7-C00A485A5710} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{DEC50C50-0A48-474F-BC91-FBD3030ABF59} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{705118A5-9B05-4B87-81B1-A6AC058CF80F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{039BF6B2-3FF2-4137-B324-51928414355D} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

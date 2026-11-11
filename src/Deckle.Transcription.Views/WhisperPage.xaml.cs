@@ -16,7 +16,7 @@ using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Localization;
 
-namespace Deckle.Transcription;
+namespace Deckle.Transcription.Views;
 
 public sealed partial class WhisperPage : Page
 {
@@ -440,7 +440,7 @@ public sealed partial class WhisperPage : Page
 
     private void RestartNow_Click(object sender, RoutedEventArgs e)
     {
-        SettingsHost.RestartApp?.Invoke("Deckle.Transcription.WhisperPage, Deckle.Transcription");
+        SettingsHost.RestartApp?.Invoke("Deckle.Transcription.Views.WhisperPage, Deckle.Transcription.Views");
     }
 
     private void RestartDiscard_Click(object sender, RoutedEventArgs e)

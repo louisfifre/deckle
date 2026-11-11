@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Settings;
 
-namespace Deckle.Transcription;
+namespace Deckle.Transcription.Views;
 
 // ViewModel for WhisperPage. Load() pulls from the settings POCOs, property
 // changes push back via PushToSettings(); _isSyncing prevents re-saving during

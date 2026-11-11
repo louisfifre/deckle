@@ -208,9 +208,9 @@ Where the files live:
 
 Where the settings are shown:
 
-- **Settings ▸ Transcription**: `src/Deckle.Transcription/WhisperPage.xaml` and `src/Deckle.Transcription/WhisperPage.xaml.cs` (the hand-written cards: model, language, initial prompt), plus the composed GPU and models-folder cards of `src/Deckle.Transcription/ViewModels/WhisperViewModel.Settings.cs`. The two pages below are nested under it in the rail.
-- **Settings ▸ Decoding** (`src/Deckle.Transcription/DecodingPage.xaml`): the decoding, confidence, context and output-filter cards, composed in `WhisperViewModel.Settings.cs`.
-- **Settings ▸ Streaming** (`src/Deckle.Transcription/StreamingPage.xaml`): the streaming toggle, the Silero (VAD) group and the energy segmenter cards, including the cut curve card with its anchors and the curve editor `src/Deckle.Catalog/Composer/CurveEditor.cs` (no preset selector), composed in `WhisperViewModel.Settings.cs`.
+- **Settings ▸ Transcription**: `src/Deckle.Transcription.Views/WhisperPage.xaml` and `src/Deckle.Transcription.Views/WhisperPage.xaml.cs` (the hand-written cards: model, language, initial prompt), plus the composed GPU and models-folder cards of `src/Deckle.Transcription.Views/ViewModels/WhisperViewModel.Settings.cs`. The two pages below are nested under it in the rail.
+- **Settings ▸ Decoding** (`src/Deckle.Transcription.Views/DecodingPage.xaml`): the decoding, confidence, context and output-filter cards, composed in `WhisperViewModel.Settings.cs`.
+- **Settings ▸ Streaming** (`src/Deckle.Transcription.Views/StreamingPage.xaml`): the streaming toggle, the Silero (VAD) group and the energy segmenter cards, including the cut curve card with its anchors and the curve editor `src/Deckle.Catalog/Composer/CurveEditor.cs` (no preset selector), composed in `WhisperViewModel.Settings.cs`.
 - **Settings ▸ Recording**: `src/Deckle.Audio/RecordingViewModel.Settings.cs`, plus the microphone picker in `src/Deckle.Audio/RecordingPage.xaml.cs`.
 
 ### Transcription module — `modules/transcription/settings.json`

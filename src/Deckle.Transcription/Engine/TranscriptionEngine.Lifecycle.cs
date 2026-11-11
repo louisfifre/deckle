@@ -26,7 +26,13 @@ public sealed partial class TranscriptionEngine
     // label, so a rename of the page cannot leave the message pointing at a
     // page that is gone.
     private static string SettingsPageLabel() =>
-        Loc.GetFrom("Deckle.Transcription", "SettingsModuleNavLabel");
+        Loc.GetFrom(PageStrings, "SettingsModuleNavLabel");
+
+    // The resource subtree that holds that label. The engine compiles no
+    // .resw: its strings ship with the project that presents it,
+    // Deckle.Transcription.Views, so this names that assembly's PRI subtree.
+    // A string, not a project reference: the engine never loads the Views.
+    private const string PageStrings = "Deckle.Transcription.Views";
 
     // A load that fails without a missing file has no cause the engine can
     // name: whisper_init returns null for a corrupt file, a format it does

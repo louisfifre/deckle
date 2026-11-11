@@ -1,6 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace Deckle.Transcription;
+namespace Deckle.Transcription.Views;
 
 public partial class WhisperViewModel
 {

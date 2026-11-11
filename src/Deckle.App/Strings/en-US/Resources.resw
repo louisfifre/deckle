@@ -613,7 +613,7 @@
   <!-- ─── File transcription — engine feedback ───────────────────────
        UserFeedback Title/Body pairs raised by TranscriptionEngine on the
        file-transcription path (busy guard, decode failure per cause, write
-       failure). Mirrored from the Deckle.Transcription satellite .resw so the
+       failure). Mirrored from the Deckle.Transcription.Views satellite .resw so the
        default ResourceLoader (host "Resources/" subtree only) can resolve
        them — same Loc-mirror-pattern as the AmbientPage block below : the
        module copy is the source of truth for wording, keep this mirror in

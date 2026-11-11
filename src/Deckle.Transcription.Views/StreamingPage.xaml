@@ -1,5 +1,5 @@
 <Page
-    x:Class="Deckle.Transcription.StreamingPage"
+    x:Class="Deckle.Transcription.Views.StreamingPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:catalog="using:Deckle.Catalog">
