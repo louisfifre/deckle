@@ -38,12 +38,12 @@
       "Reason": "RewriteService in Deckle.Llm.Rewrite reads it through a library constant: the engine compiles no .resw, its strings ship with the Views assembly."
     },
     {
-      "Assembly": "Deckle.Autocorrect",
+      "Assembly": "Deckle.Autocorrect.Views",
       "Key": "SettingsModuleNavLabel",
       "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
     },
     {
-      "Assembly": "Deckle.Lighting.Ambient",
+      "Assembly": "Deckle.Lighting.Ambient.Views",
       "Key": "SettingsModuleNavLabel",
       "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
     },

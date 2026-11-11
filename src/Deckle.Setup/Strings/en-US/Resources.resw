@@ -408,7 +408,7 @@
        through AppWindow.Title in each window's ConfigureWindow. -->
 
   <!-- ── AmbientPage code-behind (Loc.Get / Loc.Format) ──────
-       Duplicated from src/Deckle.Lighting.Ambient/Strings/en-US/
+       Duplicated from src/Deckle.Lighting.Ambient.Views/Strings/en-US/
        Resources.resw because the default ResourceLoader binds to
        the main app's PRI ; per-module x:Uid lookups resolve
        automatically against the module's own PRI but Loc.Get

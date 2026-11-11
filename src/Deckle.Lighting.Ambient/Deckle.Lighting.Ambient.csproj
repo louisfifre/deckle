@@ -1,41 +1,41 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Lighting.Ambient</RootNamespace>
-    <UseWinUI>true</UseWinUI>
-    <DefaultLanguage>en-US</DefaultLanguage>
-    <!-- Generates the lib's own .pri so x:Uid lookups in AmbientPage
-         resolve against the Deckle.Lighting.Ambient/Resources subtree. -->
-    <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
+  <!-- The ambient-lighting logic: the capture-to-lamp engine and its color
+       pipeline, the zone sampler, the light placement, the Hue pairing
+       service, the ambient settings, presets and their file, and the
+       DeckleAmbient event source, the page's events included. No XAML, no
+       UseWinUI and no project that holds XAML, so the engine and its tests
+       never run the XAML compiler on its account, and every rule here is
+       tested without a window.
+       Deckle.Lighting.Ambient.Views presents it: the Ambient settings page,
+       its live preview and its per-light zone cards. -->
   <ItemGroup>
     <InternalsVisibleTo Include="Deckle.Lighting.Ambient.Tests" />
+    <!-- The pure rules the screens draw from stay here, beside the engine that
+         applies them and the tests that pin them: the light placement resolver
+         (LightZonesCard), the capture target, preview health, used zones and
+         band shares (AmbientPreviewCard), and the group preselection
+         (AmbientPage). The controls that use them live in
+         Deckle.Lighting.Ambient.Views. -->
+    <InternalsVisibleTo Include="Deckle.Lighting.Ambient.Views" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.WindowsAppSDK" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
-    <PackageReference Include="CommunityToolkit.Mvvm" />
-    <!-- GridSplitter between the Ambient page and its preview pane. Referenced
-         here, not from Catalog: Ambient is the only page with a pane today. -->
-    <PackageReference Include="CommunityToolkit.WinUI.Controls.Sizers" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <!-- The color math (SrgbColor, the color pipeline, the zone sampler)
+         converts through Composition's ColorSpace. -->
     <ProjectReference Include="..\Deckle.Composition\Deckle.Composition.csproj" />
-    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <!-- Diagnostics.Logging carries AmbientCaptureGate, which AmbientEngine
          sets while its capture loop runs, for log admission. -->
     <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />
-    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <!-- The ambient presets ride the shared preset family model. -->
     <ProjectReference Include="..\Deckle.Presets\Deckle.Presets.csproj" />
-    <ProjectReference Include="..\Deckle.Settings\Deckle.Settings.csproj" />
+    <!-- The screen capture and the frame analysis the engine samples. -->
     <ProjectReference Include="..\Deckle.Vision\Deckle.Vision.csproj" />
-    <!-- Shell carries the DispatcherQueue.TryEnqueueObserved extensions the
-         UI uses; referenced directly rather than through Settings. -->
-    <ProjectReference Include="..\Deckle.Shell\Deckle.Shell.csproj" />
   </ItemGroup>
 </Project>

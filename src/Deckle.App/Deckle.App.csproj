@@ -126,6 +126,9 @@
     <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\Deckle.Audio.Views\Deckle.Audio.Views.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <!-- Catalog's compiled XAML dictionaries (icons, page header brushes).
+         The host references them; Catalog and the modules name them by URI. -->
+    <ProjectReference Include="..\Deckle.Catalog.Themes\Deckle.Catalog.Themes.csproj" />
     <ProjectReference Include="..\Deckle.Chrono\Deckle.Chrono.csproj" />
     <ProjectReference Include="..\Deckle.Composition\Deckle.Composition.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
@@ -137,10 +140,12 @@
     <ProjectReference Include="..\Deckle.Install\Deckle.Install.csproj" />
     <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
     <ProjectReference Include="..\Deckle.Autocorrect\Deckle.Autocorrect.csproj" />
+    <ProjectReference Include="..\Deckle.Autocorrect.Views\Deckle.Autocorrect.Views.csproj" />
     <ProjectReference Include="..\Deckle.Input.Trackpad\Deckle.Input.Trackpad.csproj" />
     <ProjectReference Include="..\Deckle.Input.PrecisionScroll\Deckle.Input.PrecisionScroll.csproj" />
     <ProjectReference Include="..\Deckle.Lighting\Deckle.Lighting.csproj" />
     <ProjectReference Include="..\Deckle.Lighting.Ambient\Deckle.Lighting.Ambient.csproj" />
+    <ProjectReference Include="..\Deckle.Lighting.Ambient.Views\Deckle.Lighting.Ambient.Views.csproj" />
     <ProjectReference Include="..\Deckle.Llm\Deckle.Llm.csproj" />
     <ProjectReference Include="..\Deckle.Llm.Rewrite\Deckle.Llm.Rewrite.csproj" />
     <ProjectReference Include="..\Deckle.Llm.Rewrite.Views\Deckle.Llm.Rewrite.Views.csproj" />
@@ -251,12 +256,14 @@
   </Target>
 
   <!-- The autocorrect lexicons must sit flat under Data/ beside the executable,
-       where App.Autocorrect loads them. Transitive Content from
-       Deckle.Autocorrect lands under "Deckle.Autocorrect\Data\"
-       instead (the SDK prefixes referenced-project content with the project
-       name) and re-declaring it here loses to that copy on source-path dedup,
-       so the engine silently finds nothing and never arms. Flatten it
-       deterministically after the build instead. -->
+       where App.Autocorrect loads them. While Deckle.Autocorrect set
+       EnableMsixTooling, its transitive Content landed under
+       "Deckle.Autocorrect\Data\" instead (the packaging prefixes a library's
+       content with its project name) and re-declaring it here lost to that
+       copy on source-path dedup, so the engine silently found nothing and
+       never armed. The engine no longer sets it and its Content now arrives
+       flat on its own; this copy stays as the guarantee, so a library that
+       turns the tooling back on cannot disarm autocorrect silently. -->
   <Target Name="FlattenAutocorrectLexicons" AfterTargets="Build">
     <ItemGroup>
       <_AutocorrectLexicon Include="..\Deckle.Autocorrect\Data\**\*" Exclude="..\Deckle.Autocorrect\Data\lexicon-en.tsv.gz" />

@@ -1,7 +1,7 @@
 using Deckle.Audio.Views;
 using Deckle.Diagnostics;
 using Deckle.Input.PrecisionScroll;
-using Deckle.Lighting.Ambient;
+using Deckle.Lighting.Ambient.Views;
 using Deckle.Modules;
 using Deckle.Shell.TrayMenu;
 using Deckle.Transcription.Views;
