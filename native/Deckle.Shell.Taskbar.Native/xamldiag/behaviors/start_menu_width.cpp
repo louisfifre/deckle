@@ -11,9 +11,8 @@
 // https://github.com/ramensoftware/windhawk-mods/blob/main/mods/start-menu-size.wh.cpp
 // Different on purpose: the width is held to the room the Start window has, so
 // it never overflows a narrow (portrait) screen, and "fill" takes all of it;
-// only Width is held (MainMenu has no MinWidth or MaxWidth of its own on 26100);
-// and the value is held by PropertyOverride, which answers a rewrite and gives
-// the original back. See NOTICE.md.
+// and the three values are held by PropertyOverride, which answers a rewrite
+// and gives the original back. See NOTICE.md.
 
 namespace
 {
@@ -109,13 +108,24 @@ namespace deckle::behaviors
               { L"frame_halign", std::to_wstring(static_cast<int>(frameRoot.HorizontalAlignment())) } });
 
         std::weak_ptr<StartMenuWidthHold> weak = weak_from_this();
-        m_override = std::make_shared<rules::PropertyOverride>(menu, wux::FrameworkElement::WidthProperty(),
-            [weak]() -> wf::IInspectable
-            {
-                auto self = weak.lock();
-                return wf::PropertyValue::CreateDouble(self ? self->m_width : kMinimumWidth);
-            },
-            m_counters);
+        // Width alone does not hold. Windows gives MainMenu its width again each
+        // time the menu shows (642 or 834 DIP on 26100), in a way that outranks
+        // a local Width without rewriting it, so the override is never called
+        // back: on 2026-11-10 and 11 the panel read 480 at attach and 834 at
+        // every opening. Windows leaves MinWidth and MaxWidth unset, and layout
+        // clamps whatever Width says between them.
+        for (auto const& property : { wux::FrameworkElement::WidthProperty(),
+                                      wux::FrameworkElement::MinWidthProperty(),
+                                      wux::FrameworkElement::MaxWidthProperty() })
+        {
+            m_overrides.push_back(std::make_shared<rules::PropertyOverride>(menu, property,
+                [weak]() -> wf::IInspectable
+                {
+                    auto self = weak.lock();
+                    return wf::PropertyValue::CreateDouble(self ? self->m_width : kMinimumWidth);
+                },
+                m_counters));
+        }
 
         try
         {
@@ -226,11 +236,11 @@ namespace deckle::behaviors
         if (!m_applied)
         {
             m_applied = true;
-            m_override->Apply();
+            for (auto const& held : m_overrides) held->Apply();
         }
         else if (changed)
         {
-            m_override->Refresh();
+            for (auto const& held : m_overrides) held->Refresh();
         }
 
         if (changed || reason == std::wstring_view(L"visible"))
@@ -297,7 +307,7 @@ namespace deckle::behaviors
         m_hostSizeToken = {};
         m_layoutToken = {};
 
-        if (m_override) m_override->Restore();
-        m_override.reset();
+        for (auto const& held : m_overrides) held->Restore();
+        m_overrides.clear();
     }
 }

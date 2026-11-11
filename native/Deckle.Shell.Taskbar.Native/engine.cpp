@@ -3,6 +3,7 @@
 #include "channel.h"
 #include "log.h"
 #include "util.h"
+#include "residency.h"
 #include "xamldiag/tap_connection.h"
 #include "xamldiag/visual_tree_watcher.h"
 #include "xamldiag/rules/rule_document.h"
@@ -19,7 +20,7 @@ namespace
     HMODULE g_pin = nullptr;                 // the extra reference that keeps the DLL mapped
     std::atomic<bool> g_started{false};
     std::atomic<bool> g_stopping{false};
-    HANDLE g_stopEvent = nullptr;            // manual-reset, signalled by RequestStop
+    HANDLE g_stopEvent = nullptr;            // manual-reset, signalled by RequestStop, reset at each session
     std::wstring g_stopReason;
     std::mutex g_stopReasonLock;
 
@@ -114,8 +115,10 @@ namespace
         deckle::Channel::Instance().Post(deckle::util::ToUtf8(hello.Stringify()));
     }
 
-    // Undoes what the worker did and gives the DLL back to Windows. Runs on the
-    // worker thread and does not return when the unload succeeds.
+    // Undoes what the worker did and gives the DLL back to Windows. Only while
+    // XAML Diagnostics never answered in this process: past that point the DLL
+    // parks instead (residency.h). Runs on the worker thread and does not
+    // return when the unload succeeds.
     [[noreturn]] void Shutdown(std::wstring_view reason)
     {
         using deckle::Log;
@@ -131,6 +134,9 @@ namespace
 
         deckle::xamldiag::DetachWatcher();
         channel.Flush(std::chrono::seconds(1));
+
+        // Nothing of XAML's holds this copy: the next one may claim the process.
+        deckle::residency::Release();
 
         // Objects this DLL created for explorer (the TAP site, the watcher)
         // carry its code. The DLL may only go once none is alive.
@@ -159,6 +165,91 @@ namespace
         FreeLibraryAndExitThread(g_pin, 0);
     }
 
+    // Gives back what the engine changed and waits in the process for the next
+    // Deckle, with XAML Diagnostics and the visual tree watcher left as they
+    // are (residency.h says why). Runs on the worker thread at the end of a
+    // session; returns once a later copy handed over a pipe.
+    std::wstring Park(std::wstring_view reason)
+    {
+        using deckle::Log;
+        using deckle::LogLevel;
+        auto& channel = deckle::Channel::Instance();
+
+        Log(LogLevel::Info, L"stopping", L"Stopping the taskbar engine", { { L"reason", std::wstring(reason) } });
+
+        size_t functions = deckle::patches::RestoreAll();
+        if (functions > 0) RelayOutTaskbar();
+        size_t restored = functions + deckle::rules::Engine::Instance().Park();
+        Log(LogLevel::Info, L"restored", L"Gave back everything the engine changed",
+            { { L"parts", std::to_wstring(restored) } });
+
+        if (deckle::residency::CanBeWoken())
+        {
+            Log(LogLevel::Info, L"parked", L"The engine stays in this process, idle, until Deckle connects again");
+        }
+        else
+        {
+            Log(LogLevel::Warning, L"parked_unreachable",
+                L"The engine stays in this process, idle, and no later Deckle can reach it before the process restarts",
+                { { L"pid", std::to_wstring(GetCurrentProcessId()) } });
+        }
+        channel.Flush(std::chrono::seconds(2));
+        deckle::residency::MarkParked();
+        channel.Close();
+        channel.SetAccepting(false);
+
+        std::wstring pipe = deckle::residency::WaitForHandOver();
+
+        channel.SetAccepting(true);
+        return pipe;
+    }
+
+    std::wstring StopReason(deckle::Channel::EndReason reason)
+    {
+        std::lock_guard guard(g_stopReasonLock);
+        if (!g_stopReason.empty()) return g_stopReason;
+        return reason == deckle::Channel::EndReason::Disconnected ? L"pipe_disconnected" : L"cancelled";
+    }
+
+    // One conversation with one Deckle, on a connected channel. Returns why it
+    // ended.
+    std::wstring RunSession(int session)
+    {
+        using deckle::Log;
+        using deckle::LogLevel;
+
+        SendHello();
+        Log(LogLevel::Info, L"connected", L"Connected to Deckle", { { L"session", std::to_wstring(session) } });
+
+        // The XAML Diagnostics connection, on a thread of its own: it can take
+        // up to the whole retry budget when the XAML runtime is not up yet.
+        // Once per process: a later session finds the watcher still advised.
+        std::thread connect;
+        if (!deckle::xamldiag::DiagnosticsAnswered())
+        {
+            connect = std::thread([]
+            {
+                HRESULT hr = deckle::xamldiag::ConnectToXamlDiagnostics();
+                if (FAILED(hr) && hr != E_ABORT)
+                {
+                    deckle::Log(deckle::LogLevel::Error, L"tap_failed", L"Could not connect to XAML Diagnostics",
+                                { { L"hr", deckle::util::HandleText(static_cast<uint32_t>(hr)) } });
+                }
+            });
+        }
+        else
+        {
+            Log(LogLevel::Info, L"tap_kept", L"Kept the XAML Diagnostics connection of an earlier session");
+        }
+
+        auto reason = deckle::Channel::Instance().Pump(g_stopEvent, HandleCommand);
+
+        g_stopping = true;
+        SetEvent(g_stopEvent);
+        if (connect.joinable()) connect.join();
+        return StopReason(reason);
+    }
+
     DWORD WINAPI WorkerMain(LPVOID)
     {
         winrt::init_apartment(winrt::apartment_type::multi_threaded);
@@ -172,47 +263,53 @@ namespace
               { L"xaml_modules", deckle::util::XamlModules() },
               { L"module", deckle::util::ModulePath(g_module) } });
 
-        if (!channel.Connect(std::chrono::seconds(10), g_stopEvent))
+        std::wstring pipe = deckle::util::PipeName(g_module);
+        for (int session = 1;; ++session)
         {
-            // Nobody to report to. There is no log to write to either, so the
-            // DLL leaves explorer at once rather than sit there unobserved.
-            OutputDebugStringW(L"Deckle.Shell.Taskbar.Native: no Deckle pipe, unloading\n");
-            g_stopping = true;
-            Shutdown(L"no_pipe");
-        }
+            // No pipe: the first Deckle never served one, or the Deckle that
+            // woke this engine left before it connected.
+            std::wstring why = channel.Connect(pipe, std::chrono::seconds(10), g_stopEvent)
+                ? RunSession(session)
+                : L"no_pipe";
 
-        SendHello();
-        Log(LogLevel::Info, L"connected", L"Connected to Deckle");
-
-        // The XAML Diagnostics connection, on a thread of its own: it can take
-        // up to the whole retry budget when the XAML runtime is not up yet.
-        std::thread connect([]
-        {
-            HRESULT hr = deckle::xamldiag::ConnectToXamlDiagnostics();
-            if (FAILED(hr) && hr != E_ABORT)
+            // XAML Diagnostics never answered (the session ended before the
+            // runtime was up, or there was none): nothing of XAML's holds the
+            // DLL, so it leaves rather than sit in explorer unobserved.
+            if (!deckle::xamldiag::DiagnosticsAnswered())
             {
-                deckle::Log(deckle::LogLevel::Error, L"tap_failed", L"Could not connect to XAML Diagnostics",
-                            { { L"hr", deckle::util::HandleText(static_cast<uint32_t>(hr)) } });
+                g_stopping = true;
+                Shutdown(why);
             }
-        });
 
-        auto reason = channel.Pump(g_stopEvent, HandleCommand);
+            pipe = Park(why);
 
-        g_stopping = true;
-        SetEvent(g_stopEvent);
-        if (connect.joinable()) connect.join();
-
-        std::wstring why;
-        {
-            std::lock_guard guard(g_stopReasonLock);
-            why = g_stopReason;
+            {
+                std::lock_guard guard(g_stopReasonLock);
+                g_stopReason.clear();
+            }
+            ResetEvent(g_stopEvent);
+            g_stopping = false;
         }
-        if (why.empty())
-        {
-            why = reason == deckle::Channel::EndReason::Disconnected ? L"pipe_disconnected" : L"cancelled";
-        }
+    }
 
-        Shutdown(why);
+    // The worker of a copy that found another engine serving this process:
+    // tells its own Deckle why it leaves, then leaves without touching XAML.
+    DWORD WINAPI RefusedMain(LPVOID)
+    {
+        winrt::init_apartment(winrt::apartment_type::multi_threaded);
+        auto& channel = deckle::Channel::Instance();
+
+        deckle::Log(deckle::LogLevel::Warning, L"engine_busy",
+                    L"Another Deckle engine is serving this process, so this copy leaves without touching XAML",
+                    { { L"pid", std::to_wstring(GetCurrentProcessId()) },
+                      { L"module", deckle::util::ModulePath(g_module) } });
+
+        if (channel.Connect(deckle::util::PipeName(g_module), std::chrono::seconds(10), g_stopEvent))
+        {
+            channel.Flush(std::chrono::seconds(2));
+            channel.Close();
+        }
+        FreeLibraryAndExitThread(g_pin, 0);
     }
 }
 
@@ -241,17 +338,40 @@ namespace deckle::engine
 
     void Start()
     {
-        if (g_started.exchange(true)) return;
+        if (g_started.exchange(true))
+        {
+            // Deckle injected this same file again. When the engine is parked
+            // here, a Deckle is waiting on its pipe: the engine goes to it.
+            residency::HandOverToSelf(util::PipeName(g_module));
+            return;
+        }
 
         // Pin: the hook's own reference ends when the hook is removed.
         const std::wstring path = util::ModulePath(g_module);
         g_pin = LoadLibraryW(path.c_str());
-        g_stopEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+        if (!g_pin)
+        {
+            g_started = false;
+            return;
+        }
 
-        HANDLE thread = g_pin && g_stopEvent ? CreateThread(nullptr, 0, WorkerMain, nullptr, 0, nullptr) : nullptr;
+        const residency::Claim claim = residency::ClaimOrHandOver(util::PipeName(g_module));
+        if (claim == residency::Claim::HandedOver)
+        {
+            // Another copy is this process's engine and now serves this copy's
+            // Deckle. This one never runs: it leaves with the hook.
+            FreeLibrary(g_pin);
+            g_pin = nullptr;
+            return;
+        }
+
+        g_stopEvent = CreateEventW(nullptr, TRUE, FALSE, nullptr);
+        LPTHREAD_START_ROUTINE main = claim == residency::Claim::Owner ? WorkerMain : RefusedMain;
+        HANDLE thread = g_stopEvent ? CreateThread(nullptr, 0, main, nullptr, 0, nullptr) : nullptr;
         if (!thread)
         {
-            if (g_pin) FreeLibrary(g_pin);
+            if (claim == residency::Claim::Owner) residency::Release();
+            FreeLibrary(g_pin);
             g_pin = nullptr;
             g_started = false;
             return;

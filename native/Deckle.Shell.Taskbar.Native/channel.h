@@ -29,9 +29,16 @@ namespace deckle
         // Any thread. Takes one JSON document without its line break.
         void Post(std::string line);
 
-        // Connects to Deckle's pipe, retrying until the timeout while the
+        // While false, Post drops what it is given and the queue is emptied: a
+        // parked engine has nobody to report to, and a queue filled for hours
+        // would reach the next Deckle as noise. True from the start, so the
+        // records of the first moments wait for the first connection.
+        void SetAccepting(bool accepting);
+
+        // Connects to the pipe `name` (util::PipeName for this copy, or the
+        // one a later copy handed over), retrying until the timeout while the
         // server does not exist yet. False on timeout or when cancelled.
-        bool Connect(std::chrono::milliseconds timeout, HANDLE cancelEvent);
+        bool Connect(std::wstring const& name, std::chrono::milliseconds timeout, HANDLE cancelEvent);
 
         // The owning thread's loop: writes what the queue holds, reads
         // commands and hands each line to `onLine`, which returns false to end
@@ -55,6 +62,7 @@ namespace deckle
         std::mutex m_lock;
         std::deque<std::string> m_queue;
         size_t m_dropped = 0;
+        bool m_accepting = true;
 
         HANDLE m_pipe = INVALID_HANDLE_VALUE;
         HANDLE m_queueEvent = nullptr;  // auto-reset, set by Post

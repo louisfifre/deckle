@@ -12,8 +12,9 @@ internal interface INotifyIconApi
     int LastError { get; }
 }
 
-// What one re-add attempt concluded. RetryLater asks the caller to come back
-// after a pause; GaveUp closes the sequence after MaxReaddAttempts.
+// What one add attempt concluded, the first add or a re-add. RetryLater asks
+// the caller to come back after a pause; GaveUp closes the sequence after
+// MaxReaddAttempts.
 internal enum TrayIconReaddOutcome { Added, RetryLater, GaveUp }
 
 // The icon's entry in the notification area as the shell holds it: one
@@ -30,9 +31,12 @@ internal sealed class TrayIconRegistration(IntPtr window, INotifyIconApi api)
     // Tip cap: szTip holds 128 WCHARs, terminator included.
     public const int MaxTipLength = 127;
 
-    // The shell refuses an add while its tray window is still coming up; a
-    // handful of spaced attempts covers an ordinary Explorer restart.
-    public const int MaxReaddAttempts = 5;
+    // The shell refuses an add while its tray window is still coming up or
+    // busy. Spaced half a second apart by the manager, ten attempts cover an
+    // ordinary Explorer restart and the few seconds at Deckle's own start
+    // when its taskbar engine reloads inside Explorer (about four seconds on
+    // 2026-11-11, when one refused first add cost the icon).
+    public const int MaxReaddAttempts = 10;
 
     private string _tip = "";
     private IntPtr _icon;
@@ -45,16 +49,25 @@ internal sealed class TrayIconRegistration(IntPtr window, INotifyIconApi api)
     public string Tip => _tip;
     public IntPtr Icon => _icon;
 
-    // Attempts made in the current re-add sequence, or in the last one once
-    // it closed, for the log.
+    // Attempts made in the current add sequence (a refused first add or a
+    // re-add), or in the last one once it closed, for the log.
     public int ReaddAttempts => _readdAttempts;
 
-    // First add, with the status kept so far: Update may have run before.
-    public bool Add()
+    // First add, with the status kept so far: Update may have run before. A
+    // refusal opens the sequence a re-add runs, counted from this attempt:
+    // the caller comes back through Readd after a pause, exactly as after an
+    // Explorer restart. Never GaveUp here, the sequence has room for more.
+    public TrayIconReaddOutcome Add()
     {
+        _readdAttempts = 1;
+        _readdSequenceClosed = false;
+
         var data = BuildData(NativeMethods.NIF_MESSAGE | NativeMethods.NIF_ICON | NativeMethods.NIF_TIP);
         _added = api.Notify(NativeMethods.NIM_ADD, ref data);
-        return _added;
+        if (!_added) return TrayIconReaddOutcome.RetryLater;
+
+        _readdSequenceClosed = true;
+        return TrayIconReaddOutcome.Added;
     }
 
     // Keeps the status whether or not the icon is on screen yet, so an Add
