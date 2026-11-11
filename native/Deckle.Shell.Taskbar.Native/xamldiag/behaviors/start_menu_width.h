@@ -8,7 +8,7 @@ namespace deckle::behaviors
     // is a Grid#FrameRoot whose width follows its content: AnimationRoot, and in
     // it Grid#MainMenu, the panel the person sees, which Windows gives a local
     // Width (834 DIP on 26100, 858 with the room for its shadow). This behavior
-    // holds MainMenu's Width: the width asked for, or the widest the Start window
+    // holds MainMenu's Width, MinWidth and MaxWidth at one value: the width asked for, or the widest the Start window
     // allows ("fill"), and never wider than that, so a value meant for a wide
     // screen still fits a portrait one.
     //
@@ -61,7 +61,7 @@ namespace deckle::behaviors
         winrt::weak_ref<winrt::Windows::UI::Xaml::FrameworkElement> m_content;
         void* m_identity = nullptr;
         std::shared_ptr<rules::OverrideCounters> m_counters;
-        std::shared_ptr<rules::PropertyOverride> m_override;
+        std::vector<std::shared_ptr<rules::PropertyOverride>> m_overrides;   // Width, MinWidth, MaxWidth
         winrt::event_token m_visibilityToken{};
         winrt::event_token m_windowSizeToken{};
         winrt::event_token m_hostSizeToken{};
