@@ -36,6 +36,7 @@ internal sealed class TaskbarEngineHost : ITaskbarEngine
     private readonly string? _instance;
     private readonly CancellationTokenSource _cancellation = new();
     private readonly object _gate = new();
+    private readonly InjectionBreaker _breaker;
     private TaskbarCreatedListener? _listener;
     private Task? _serverTask;
     private Task? _watchTask;
@@ -53,9 +54,11 @@ internal sealed class TaskbarEngineHost : ITaskbarEngine
     /// A side instance's name (the development console), which gives its engine a pipe of its
     /// own beside the app's; null for the app. Its copy must live under a root of its own.
     /// </param>
+    /// <param name="time">The clock the injection breaker reads; null is the system's.</param>
     public TaskbarEngineHost(string sourceDllPath, VersionedNativeCopy copy, TaskbarTarget target,
-        TaskbarPipeServer? server = null, string? instance = null)
+        TaskbarPipeServer? server = null, string? instance = null, TimeProvider? time = null)
     {
+        _breaker = new InjectionBreaker(time ?? TimeProvider.System);
         _target = target;
         _sourceDllPath = sourceDllPath;
         _copy = copy;
@@ -86,6 +89,8 @@ internal sealed class TaskbarEngineHost : ITaskbarEngine
     public bool StopConfirmed => _stopOutcome is not null;
 
     public bool IsConnected => _server.IsConnected;
+
+    public bool HeldOff => _breaker.IsOpen;
 
     /// <summary>
     /// Copies the DLL, sweeps the old copies, starts serving the pipe and
@@ -118,11 +123,19 @@ internal sealed class TaskbarEngineHost : ITaskbarEngine
     {
         lock (_gate)
         {
+            // The target died several times in a row just after it received the
+            // engine: sending it again would only kill it again. Said once in
+            // the log, when the breaker opened.
+            if (_breaker.IsOpen) return InjectionResult.Failed("held_off", 0);
+
             InjectionResult result = _target.Kind == TaskbarTargetKind.Explorer
                 ? TaskbarHookInjector.Inject(_loadedPath)
                 : InjectIntoProcess();
             if (result.Succeeded)
+            {
+                _breaker.Injected();
                 DeckleShellTaskbarSource.Log.NativeEngineInjected($"{_target.Kind}:{trigger}");
+            }
             else
                 DeckleShellTaskbarSource.Log.NativeEngineUnavailable($"{_target.Kind}:{result.Step}", result.Win32Error);
             return result;
@@ -162,7 +175,7 @@ internal sealed class TaskbarEngineHost : ITaskbarEngine
         TimeSpan retry = _appearancePoll;
         try
         {
-            while (!cancellation.IsCancellationRequested && !_stopRequested)
+            while (!cancellation.IsCancellationRequested && !_stopRequested && !_breaker.IsOpen)
             {
                 using Process? process = FindTargetProcess();
                 if (process is null)
@@ -260,6 +273,15 @@ internal sealed class TaskbarEngineHost : ITaskbarEngine
     private void OnDisconnected()
     {
         DeckleShellTaskbarSource.Log.NativeEngineDisconnected(_stopOutcome ?? "lost");
+
+        // A loss Deckle did not ask for: the target died, or dropped the
+        // engine. An engine that leaves without a word during a stop is not one.
+        if (_stopOutcome is null && !_stopRequested && _breaker.Lost())
+        {
+            DeckleShellTaskbarSource.Log.NativeEngineHeldOff(
+                TargetName, InjectionBreaker.MaxQuickLosses, (int)InjectionBreaker.QuickLoss.TotalSeconds);
+        }
+
         _disconnected.TrySetResult();
         Disconnected?.Invoke();
     }

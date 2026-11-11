@@ -8,6 +8,13 @@ internal interface ITaskbarEngine : IAsyncDisposable
     /// <summary>Whether the injected DLL is connected to the pipe now.</summary>
     bool IsConnected { get; }
 
+    /// <summary>
+    /// Whether the host gave up injecting: its target died several times in a row
+    /// just after receiving the engine (InjectionBreaker). It stays so until
+    /// Deckle restarts.
+    /// </summary>
+    bool HeldOff { get; }
+
     /// <summary>Every message from the DLL, after the host has logged it.</summary>
     event Action<NativeMessage>? MessageReceived;
 

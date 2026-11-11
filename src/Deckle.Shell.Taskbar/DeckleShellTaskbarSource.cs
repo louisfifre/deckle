@@ -54,6 +54,7 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public const int EvtSymbolsDownloaded            = 38;
     public const int EvtSymbolLookupFailed           = 39;
     public const int EvtNativeEngineBuildMismatch    = 40;
+    public const int EvtNativeEngineHeldOff          = 41;
 
     // ── Tray icon promotion ───────────────────────────────────────────────────
     //
@@ -372,6 +373,20 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public void NativeEngineBuildMismatch(string target, string resident, string offered)
     {
         if (IsEnabled()) WriteEvent(EvtNativeEngineBuildMismatch, target, resident, offered);
+    }
+
+    // target: explorer or start_menu. The process died quick_losses times in
+    // a row, each within window_seconds of receiving the engine, so Deckle
+    // stops sending it: one more injection would only kill it again. Windows
+    // runs its own taskbar until Deckle restarts, and the page marks the
+    // parts that are no longer applied.
+    [Event(EvtNativeEngineHeldOff,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar engine is no longer sent into its process, which kept dying just after receiving it; restart Deckle to try again\ntarget={0} | quick_losses={1} | window_seconds={2}")]
+    public void NativeEngineHeldOff(string target, int quick_losses, int window_seconds)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineHeldOff, target, quick_losses, window_seconds);
     }
 
     // A pass over the settings threw. trigger: startup, setting or

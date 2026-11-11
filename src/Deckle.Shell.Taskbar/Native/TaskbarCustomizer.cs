@@ -278,6 +278,9 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
     {
         if (!ReferenceEquals(process.Engine, engine)) return;
         process.SentDocument = null;
+        // A host that gave up injecting has no engine to offer until Deckle
+        // restarts: the page marks the parts it carried.
+        if (engine.HeldOff) process.Unavailable = true;
         lock (_stateGate) process.Status = null;
         RecomputeProblems();
     }

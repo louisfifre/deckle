@@ -1978,6 +1978,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── TaskbarNativeMethods.Injection.cs
 │   │   ├── Native/
 │   │   │   ├── ExplorerFunctionLocator.cs
+│   │   │   ├── InjectionBreaker.cs
 │   │   │   ├── ITaskbarEngine.cs
 │   │   │   ├── JsonLineFraming.cs
 │   │   │   ├── NativeCommand.cs
@@ -2899,6 +2900,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── BarThicknessTests.cs
 │   │   │   ├── EngineResidencyTests.cs
 │   │   │   ├── ExplorerReinjectionBugNotes.md
+│   │   │   ├── InjectionBreakerTests.cs
 │   │   │   ├── JsonLineFramingTests.cs
 │   │   │   ├── ModuleIdentityTests.cs
 │   │   │   ├── NativeCommandTests.cs
