@@ -98,6 +98,10 @@ public sealed partial class TriageSession
         return true;
     }
 
+    // Dismiss all clears everything under the rows: every line, and the line
+    // that counts the mails set aside. Those mails are not dismissed: nothing
+    // is handed to the source for them, and they go to the trash when the day
+    // ends, as before. Returns the number of lines dismissed.
     public int DismissAllInfo(MailFilter filter)
     {
         List<InfoLine> lines = [.. InfoLinesIn(filter)];
@@ -106,6 +110,8 @@ public sealed partial class TriageSession
             _infos.Remove(line);
             _source.Apply(new MailGesture(MailGestureKind.DismissInfo, line.Id));
         }
+        foreach (ActivityEntry entry in _activity)
+            if (AwaitsTheTrash(entry, filter)) _setAsideSeen.Add(entry.Id);
         if (lines.Count > 0) Raise(SessionChange.InfoLines);
         return lines.Count;
     }
