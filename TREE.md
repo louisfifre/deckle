@@ -610,6 +610,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.Atelier.cs
 │   │   ├── App.Autocorrect.cs
 │   │   ├── App.Autocorrect.Lifecycle.cs
+│   │   ├── App.DeveloperAccess.cs
 │   │   ├── App.FileTranscription.cs
 │   │   ├── App.Hotkeys.Actions.cs
 │   │   ├── App.Hotkeys.cs
@@ -621,7 +622,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.MouseWheel.cs
 │   │   ├── App.Orchestration.cs
 │   │   ├── App.ParagraphRewrite.cs
-│   │   ├── App.PlaygroundAccess.cs
 │   │   ├── App.PrecisionScroll.cs
 │   │   ├── App.Relocate.cs
 │   │   ├── App.SelfCheck.Atelier.cs

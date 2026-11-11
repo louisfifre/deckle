@@ -21,12 +21,12 @@ public partial class App
     // change and never swap items under a menu that is open.
     private bool _trayPlaygroundShown;
 
-    private static bool PlaygroundEnabled
-        => SettingsService.Instance.Current.Developer.ShowPlayground;
+    private static bool DeveloperModeEnabled
+        => SettingsService.Instance.Current.Developer.DeveloperMode;
 
     private IReadOnlyList<TrayMenuEntry> ComposeRightClickTray()
     {
-        _trayPlaygroundShown = PlaygroundEnabled;
+        _trayPlaygroundShown = DeveloperModeEnabled;
         return TrayRightClickMenu.Compose(
             AtelierPresent,
             _trayPlaygroundShown,
@@ -45,7 +45,7 @@ public partial class App
     private void ShowRightClickTray()
     {
         if (_trayMenu is null) return;
-        if (_trayPlaygroundShown != PlaygroundEnabled)
+        if (_trayPlaygroundShown != DeveloperModeEnabled)
             _trayMenu.Entries = ComposeRightClickTray();
         _trayMenu.Show();
     }
@@ -61,7 +61,7 @@ public partial class App
 
     private void ApplyPlaygroundAccess()
     {
-        bool enabled = PlaygroundEnabled;
+        bool enabled = DeveloperModeEnabled;
         _settingsWindow?.SetPlaygroundAvailable(enabled);
         _logWindow?.SetPlaygroundAvailable(enabled);
         if (enabled) return;

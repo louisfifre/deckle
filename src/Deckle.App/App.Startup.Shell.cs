@@ -156,7 +156,7 @@ public partial class App
             GetIconRect = () => _tray.GetIconRect(),
             Entries = ComposeRightClickTray(),
         };
-        // The Playground entry follows the developer setting (App.PlaygroundAccess.cs).
+        // The Playground entry follows the developer setting (App.DeveloperAccess.cs).
         _tray.RightClickRequested += ShowRightClickTray;
         WirePlaygroundAccess(Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
 
