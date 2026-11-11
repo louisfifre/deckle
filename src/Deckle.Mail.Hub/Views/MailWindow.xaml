@@ -69,17 +69,38 @@
                 <ImageIconSource x:Name="AppTitleBarIcon" />
             </TitleBar.IconSource>
             <TitleBar.Content>
-                <AutoSuggestBox x:Name="SearchBox"
-                                x:Uid="MailSearchBox"
-                                QueryIcon="Find"
-                                MaxWidth="480"
-                                Margin="8,0"
-                                HorizontalAlignment="Stretch"
-                                VerticalAlignment="Center"
-                                ItemTemplate="{StaticResource SearchLineTemplate}"
-                                TextChanged="OnSearchTextChanged"
-                                UpdateTextOnSelect="False"
-                                QuerySubmitted="OnSearchQuerySubmitted" />
+                <!-- The field while the bar has room for it; under that, a
+                     button that opens the same field under the bar (spec, A
+                     narrow window; MailWindow.Search.cs). SettingsWindow's
+                     pattern, so both windows fold their search the same way. -->
+                <Grid x:Name="SearchZone"
+                      VerticalAlignment="Center"
+                      Margin="8,0"
+                      SizeChanged="OnSearchZoneSizeChanged">
+                    <AutoSuggestBox x:Name="SearchBox"
+                                    x:Uid="MailSearchBox"
+                                    QueryIcon="Find"
+                                    MaxWidth="480"
+                                    HorizontalAlignment="Stretch"
+                                    VerticalAlignment="Center"
+                                    ItemTemplate="{StaticResource SearchLineTemplate}"
+                                    TextChanged="OnSearchTextChanged"
+                                    UpdateTextOnSelect="False"
+                                    QuerySubmitted="OnSearchQuerySubmitted"
+                                    LostFocus="OnSearchBoxLostFocus"
+                                    KeyDown="OnSearchBoxKeyDown" />
+                    <Button x:Name="SearchIconButton"
+                            x:Uid="MailSearchIconButton"
+                            Style="{StaticResource SubtleButtonStyle}"
+                            Visibility="Collapsed"
+                            HorizontalAlignment="Left"
+                            VerticalAlignment="Center"
+                            MinWidth="36"
+                            Padding="8,4"
+                            Click="OnSearchIconClick">
+                        <FontIcon Glyph="{StaticResource Icon.Search}" FontSize="16" />
+                    </Button>
+                </Grid>
             </TitleBar.Content>
             <TitleBar.RightHeader>
                 <!-- Present only while something does not work, its slot kept
@@ -157,5 +178,22 @@
                  mailboxes come and go with Settings. -->
             <Frame x:Name="PageFrame" />
         </NavigationView>
+
+        <!-- Where the search field stands once its button is clicked in a
+             narrow window: the code reparents the same AutoSuggestBox in here.
+             A surface that appears briefly, so the flyout's ground and stroke;
+             declared after the NavigationView to draw above the page. -->
+        <Border x:Name="SearchOverlay"
+                Grid.Row="1"
+                MaxWidth="376"
+                Margin="12,4"
+                Padding="8,6"
+                VerticalAlignment="Top"
+                HorizontalAlignment="Stretch"
+                Background="{ThemeResource FlyoutPresenterBackground}"
+                BorderBrush="{ThemeResource SurfaceStrokeColorFlyoutBrush}"
+                BorderThickness="1"
+                CornerRadius="{ThemeResource OverlayCornerRadius}"
+                Visibility="Collapsed" />
     </Grid>
 </Window>

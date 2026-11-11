@@ -46,6 +46,9 @@ public sealed partial class MailWindow
     // The narrow frames are drawn 640 by 860.
     private const int NarrowWidth = 640;
     private const int NarrowHeight = 860;
+    // A little over the window's floor (400), where a person's screenshot
+    // showed the title a few letters a line.
+    private const int NarrowestWidth = 430;
     private Windows.Graphics.SizeInt32? _sizeBeforeNarrow;
     private (ElementTheme Content, TitleBarTheme TitleBar)? _themeBeforeLight;
 
@@ -76,8 +79,14 @@ public sealed partial class MailWindow
         }),
         new("alias", "4.2 An alias", false, w => w.Go(MailDestination.Alias("mb-perso", "al-shop"))),
         new("mailbox-single", "4.5 A mailbox without aliases", false, w => w.Go(MailDestination.Mailbox("mb-maison"))),
-        new("activity", "5.1 Activity, by you", true, w => w.Go(MailDestination.Activity(ActivityPart.ByYou))),
-        new("activity-by-deckle", "5.2 Activity, by Deckle", false, w => (w.CurrentPage as ActivityPage)?.ShowPart(ActivityPart.ByDeckle)),
+        // Activity is first reached the way the set-aside line of Triage
+        // reaches it, on the sorting's part; then the person's part is chosen
+        // on its tab. In that order the walk sees a tab chosen on a page that
+        // opened on the other one.
+        new("activity-by-deckle", "5.2 Activity, by Deckle, reached from the set-aside line", true,
+            w => w.Go(MailDestination.Activity(ActivityPart.ByDeckle))),
+        new("activity", "5.1 Activity, by you, chosen on its tab", false,
+            w => (w.CurrentPage as ActivityPage)?.ChoosePart(ActivityPart.ByYou)),
         new("settings", "7.1 Settings", true, w => w.Go(MailDestination.Settings)),
         new("mailbox", "7.2 The page of a mailbox", false, w => w.Go(MailDestination.MailboxSettings("mb-perso"))),
         new("add-mailbox", "1.2 Add mailbox", false, w => w.Go(MailDestination.AddMailbox)),
@@ -101,6 +110,11 @@ public sealed partial class MailWindow
             KeepsPopup = true,
             Then = w => w.OpenDayMenuForCapture("s-france-travail"),
         },
+        new("pick-a-day", "2.3 The calendar of Pick a day", true, w => w.UseScenario(SampleScenario.NormalDay))
+        {
+            KeepsPopup = true,
+            Then = w => (w.CurrentPage as TriagePage)?.RowView("s-france-travail")?.TaskColumn.OpenCalendar(constrainToWindow: true),
+        },
         new("first-trash", "1.9 The notice of the first trash", true, w => w.OpenTrashNoticeForCapture("s-camille")) { KeepsPopup = true },
         new("search-menu", "5.4 The search menu with results", true, w => w.OpenSearchForCapture("martin")) { KeepsPopup = true },
         new("remove-confirm", "7.6 Remove a mailbox, confirmation", true, w =>
@@ -120,6 +134,23 @@ public sealed partial class MailWindow
             {
                 if (w._sizeBeforeNarrow is { } size) w.AppWindow.Resize(size);
                 w._sizeBeforeNarrow = null;
+            },
+        },
+        // The narrowest the window goes: the title keeps the whole width, the
+        // two commands stand under the grey line, the search is a button.
+        new("subject-narrow", "3.1 A subject opened in the narrowest window", true, w =>
+        {
+            w.Go(MailDestination.Subject("s-drive"));
+            w._sizeBeforeNarrow = w.AppWindow.Size;
+            double scale = w.Content?.XamlRoot?.RasterizationScale ?? 1.0;
+            w.AppWindow.Resize(new Windows.Graphics.SizeInt32((int)(NarrowestWidth * scale), (int)(NarrowHeight * scale)));
+        })
+        {
+            After = w =>
+            {
+                if (w._sizeBeforeNarrow is { } size) w.AppWindow.Resize(size);
+                w._sizeBeforeNarrow = null;
+                w.Go(MailDestination.Triage);
             },
         },
         new("light", "2.1 Triage, light theme", true, w =>

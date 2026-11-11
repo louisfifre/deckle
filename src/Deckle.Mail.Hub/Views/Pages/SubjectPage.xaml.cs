@@ -34,6 +34,8 @@ public sealed partial class SubjectPage : Page
         Task.DayChosen += OnDayChosen;
         Task.UndoRequested += OnUndo;
         Task.AcceptsClick = () => _subject is null || _session is null || _session.AcceptsClick(_subject.Id);
+        ComponentMotion.Still(MailsList);
+        ComponentMotion.Still(UnverifiedFlyout);
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -65,7 +67,7 @@ public sealed partial class SubjectPage : Page
         UnverifiedTitle.Text = mark;
         UnverifiedMessage.Text = MailText.Get("Subject_Unverified_Message");
         AutomationProperties.SetName(UnverifiedMark, mark);
-        TitleText.Text = _subject.Sentence;
+        TitleText.Text = MailText.Typeset(_subject.Sentence);
         TitleText.Language = _subject.Language;
         AutomationProperties.SetName(TrashButton, MailText.Format("Row_TrashName_Format", _subject.Sentence));
 
@@ -110,6 +112,7 @@ public sealed partial class SubjectPage : Page
             Task.ShowEmpty();
             TrashButton.Visibility = Visibility.Collapsed;
         }
+        ApplyLayout();
     }
 
     private void ShowMail(SubjectMail mail)
@@ -208,10 +211,38 @@ public sealed partial class SubjectPage : Page
 
     private void OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        bool stacked = e.NewSize.Width < StackBelow;
-        Grid.SetColumn(ListPanel, stacked ? 0 : 1);
-        Grid.SetRow(ListPanel, stacked ? 1 : 0);
-        ListColumn.Width = stacked ? new GridLength(0) : new GridLength(288);
-        MailGrid.ColumnSpacing = stacked ? 0 : 56;
+        _stacked = e.NewSize.Width < StackBelow;
+        ApplyLayout();
+    }
+
+    private bool _stacked;
+
+    // One width decides both: under it the list of mails goes under the text,
+    // and the two commands go under the grey line, at the title's left edge.
+    private void ApplyLayout()
+    {
+        Grid.SetColumn(ListPanel, _stacked ? 0 : 1);
+        Grid.SetRow(ListPanel, _stacked ? 1 : 0);
+        ListColumn.Width = _stacked ? new GridLength(0) : new GridLength(288);
+        MailGrid.ColumnSpacing = _stacked ? 0 : 56;
+        // The grey line is one line in a wide window. A horizontal panel
+        // gives its text no width to wrap in, so a narrow window cut the
+        // address mid-word; stacked, the line wraps and its mark and link
+        // stand under it.
+        FromPanel.Orientation = _stacked ? Orientation.Vertical : Orientation.Horizontal;
+
+        // No gesture left on this subject (treated before, or set aside): the
+        // block leaves and the title takes its width.
+        bool commands = !Task.IsEmpty || TrashButton.Visibility == Visibility.Visible;
+        Commands.Visibility = commands ? Visibility.Visible : Visibility.Collapsed;
+        bool beside = commands && !_stacked;
+
+        Grid.SetColumnSpan(TitleText, beside ? 1 : 2);
+        Grid.SetColumn(Commands, beside ? 1 : 0);
+        Grid.SetRow(Commands, beside ? 0 : 2);
+        Commands.HorizontalAlignment = beside ? HorizontalAlignment.Right : HorizontalAlignment.Left;
+        // Under the grey line the button's own padding (11 px) is taken back,
+        // so its words start where the title starts.
+        Commands.Margin = beside ? new Thickness(0, 2, 0, 0) : new Thickness(-11, 12, 0, 0);
     }
 }

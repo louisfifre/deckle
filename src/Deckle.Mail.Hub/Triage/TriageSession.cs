@@ -91,10 +91,18 @@ public sealed partial class TriageSession
     public int WaitingCount(MailFilter filter) => RowsIn(filter).Count(r => !r.IsTreated);
 
     // The last line under the list: the mails set aside without a line, which
-    // go to the trash when the person ends the day.
+    // go to the trash when the person ends the day. Dismiss all takes that
+    // line off the page with the others (_setAsideSeen): the mails it counted
+    // are no longer counted, and still wait for the end of the day. A mail
+    // set aside afterwards is counted again.
     public int SetAsideCount(MailFilter filter)
-        => _activity.Count(a => a.Part == ActivityPart.ByDeckle && a.AwaitsEndOfDay && !a.Undone
-                                && filter.Includes(a.MailboxId, a.AliasId));
+        => _activity.Count(a => AwaitsTheTrash(a, filter) && !_setAsideSeen.Contains(a.Id));
+
+    private static bool AwaitsTheTrash(ActivityEntry a, MailFilter filter)
+        => a.Part == ActivityPart.ByDeckle && a.AwaitsEndOfDay && !a.Undone
+           && filter.Includes(a.MailboxId, a.AliasId);
+
+    private readonly HashSet<string> _setAsideSeen = new(StringComparer.Ordinal);
 
     // When every row is treated, Done for today becomes the one emphasised
     // command of the page.

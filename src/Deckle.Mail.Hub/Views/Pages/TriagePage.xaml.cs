@@ -25,6 +25,8 @@ public sealed partial class TriagePage : Page
         InitializeComponent();
         RowsList.ItemsSource = _rows;
         InfoList.ItemsSource = _infos;
+        ComponentMotion.Still(RowsList);
+        ComponentMotion.Still(InfoList);
     }
 
     private MailFilter Filter => _destination?.Filter ?? MailFilter.All;

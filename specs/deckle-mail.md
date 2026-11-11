@@ -183,6 +183,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 **Secondary information**
 
 - The cross of a line dismisses it, and Dismiss all dismisses every line. A dismissed line is treated: its mail goes to the trash as for a subject.
+- Dismiss all also takes the line that counts the mails set aside off the page. Those mails are not dismissed: they still go to the trash when the person ends the day, and Activity still lists them.
 - A line carries no other command and opens nothing: its detail is read in Activity.
 - A line stays until it is dismissed or the day is ended, or until a later mail of its subject replaces it.
 - A newsletter never shows as secondary information.

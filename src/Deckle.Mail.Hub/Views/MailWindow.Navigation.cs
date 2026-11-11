@@ -62,9 +62,7 @@ public sealed partial class MailWindow
         var clock = System.Diagnostics.Stopwatch.StartNew();
         try
         {
-            NavigationTransitionInfo transition = _suppressTransitions
-                ? new SuppressNavigationTransitionInfo()
-                : new EntranceNavigationTransitionInfo();
+            NavigationTransitionInfo transition = ComponentMotion.PageTransition(suppress: _suppressTransitions);
             PageFrame.Navigate(page, new MailPageArgs(this, destination), transition);
             PageFrame.BackStack.Clear();
             DeckleMailHubSource.Log.PageShown(destination.Page.ToString(), clock.ElapsedMilliseconds);
@@ -129,6 +127,7 @@ public sealed partial class MailWindow
 
     private void OnRootPointerPressed(object sender, PointerRoutedEventArgs e)
     {
+        CloseSearchOverlayOnPressOutside(e);
         PointerPointProperties props = e.GetCurrentPoint(RootGrid).Properties;
         if (!props.IsXButton1Pressed) return;
         GoBack();

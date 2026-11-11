@@ -16,7 +16,7 @@ public sealed partial class MailListItemView : UserControl
             : mail.SenderName;
         MetaRun.Text = MailText.Format("Join_Dot_Format", MailDates.Day(DateOnly.FromDateTime(mail.Received.DateTime), today), sender);
         if (mail.Attachments.Count > 0) ClipRun.Text = "  " + Deckle.Catalog.Glyphs.Mail.Attachment;
-        SummaryText.Text = mail.Summary;
+        SummaryText.Text = MailText.Typeset(mail.Summary);
         SummaryText.Language = language;
         AutomationProperties.SetName(this, MailText.Format("Join_Comma_Format", MetaRun.Text, mail.Summary));
     }

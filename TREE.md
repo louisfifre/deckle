@@ -1685,6 +1685,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── TaskColumn.xaml
 │   │   │   │   ├── TaskColumn.xaml.cs
 │   │   │   │   └── TrashNotice.cs
+│   │   │   ├── ComponentMotion.cs
 │   │   │   ├── IMailShell.cs
 │   │   │   ├── MailText.cs
 │   │   │   ├── MailWindow.Capture.cs
@@ -2779,7 +2780,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── NavigationTests.cs
 │   │   ├── SampleAndSearchTests.cs
 │   │   ├── TaskDayTests.cs
-│   │   └── TriageGestureTests.cs
+│   │   ├── TriageGestureTests.cs
+│   │   └── TypesetTests.cs
 │   ├── Deckle.Mail.Tests/
 │   │   ├── ActivityTests.cs
 │   │   ├── Deckle.Mail.Tests.csproj
