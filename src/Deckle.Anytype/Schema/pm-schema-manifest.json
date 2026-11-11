@@ -6,7 +6,7 @@
       "plural_name": "Epics",
       "description": "Regroupement durable de projets : une grande application, une activité.",
       "layout": "collection",
-      "icon": {"format": "icon", "name": "apps", "color": "purple"},
+      "icon": {"format": "icon", "name": "grid", "color": "purple"},
       "properties": [
         "status", "priority", "done_definition",
         "budget_estimated", "budget_actual", "effort_estimated", "effort_actual",
@@ -19,7 +19,7 @@
       "plural_name": "Projets",
       "description": "Un sujet large et durable dans lequel on travaille.",
       "layout": "basic",
-      "icon": {"format": "icon", "name": "construct", "color": "orange"},
+      "icon": {"format": "icon", "name": "stop", "color": "orange"},
       "properties": [
         "status", "priority", "done_definition", "due_date",
         "budget_estimated", "budget_actual", "effort_estimated", "effort_actual",
@@ -32,7 +32,7 @@
       "plural_name": "Tâches",
       "description": "Une unité exécutable qui fait avancer un sujet et se coche vite.",
       "layout": "action",
-      "icon": {"format": "icon", "name": "checkbox", "color": "orange"},
+      "icon": {"format": "icon", "name": "checkbox", "color": "lime"},
       "properties": [
         "done", "task_type", "priority", "due_date", "slot", "done_definition",
         "projects", "documents", "contacts",
@@ -45,7 +45,7 @@
       "plural_name": "Rapports",
       "description": "Le journal d'une séance de travail.",
       "layout": "note",
-      "icon": {"format": "icon", "name": "journal", "color": "blue"},
+      "icon": {"format": "icon", "name": "clipboard", "color": "ice"},
       "properties": ["tasks", "contacts", "archive"]
     },
     {
@@ -54,7 +54,7 @@
       "plural_name": "Idées",
       "description": "Ce qui est dit en passant, à trier plus tard.",
       "layout": "note",
-      "icon": {"format": "icon", "name": "bulb", "color": "yellow"},
+      "icon": {"format": "icon", "name": "bulb", "color": "pink"},
       "properties": ["documents", "archive"]
     },
     {
@@ -63,7 +63,7 @@
       "plural_name": "Documents",
       "description": "La documentation : instructions, références, recherches, spécifications.",
       "layout": "basic",
-      "icon": {"format": "icon", "name": "document-text", "color": "ice"},
+      "icon": {"format": "icon", "name": "search", "color": "blue"},
       "properties": ["document_type", "document_global", "version", "archive"]
     },
     {
@@ -72,7 +72,7 @@
       "plural_name": "Personnes",
       "description": "Une personne avec qui on travaille.",
       "layout": "profile",
-      "icon": {"format": "icon", "name": "person", "color": "teal"},
+      "icon": {"format": "icon", "name": "person", "color": "grey"},
       "properties": ["company", "role", "email", "phone", "website", "address", "archive"]
     },
     {
@@ -81,7 +81,7 @@
       "plural_name": "Entreprises",
       "description": "Une entreprise avec laquelle on travaille.",
       "layout": "profile",
-      "icon": {"format": "icon", "name": "business", "color": "teal"},
+      "icon": {"format": "icon", "name": "business", "color": "grey"},
       "properties": ["email", "phone", "website", "address", "archive"]
     }
   ],
@@ -97,7 +97,7 @@
     {"key": "budget_actual", "name": "Budget réel", "format": "number"},
     {"key": "effort_estimated", "name": "Charge estimée", "format": "number"},
     {"key": "effort_actual", "name": "Charge réelle", "format": "number"},
-    {"key": "done", "name": "Fini", "format": "checkbox"},
+    {"key": "done", "name": "Done", "format": "checkbox"},
     {"key": "task_type", "name": "Type de tâche", "format": "select",
       "tags": [
       {"key": "research", "name": "Chercher"}, {"key": "production", "name": "Produire"},

@@ -320,7 +320,9 @@ public static class DevSpace
 
     static readonly PropertyDef[] TaskProps =
     [
-        new(Props.Done, "Fini", "checkbox"),
+        // Anytype refuses to rename its native `done` (403, measured 2026-11-11),
+        // in the app as through the API: it keeps its English name.
+        new(Props.Done, "Done", "checkbox"),
         new(Props.TaskType, "Type de tâche", "select", TaskType.All),
         new(Props.Priority, "Priorité", "select", Priority.All),
         new(Props.DueDate, "Date cible", "date"),
