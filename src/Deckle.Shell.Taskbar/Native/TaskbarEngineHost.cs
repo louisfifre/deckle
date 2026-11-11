@@ -21,7 +21,7 @@ namespace Deckle.Shell.Taskbar;
 // (Deckle.Shell.Taskbar.Harness) creates them directly.
 internal sealed class TaskbarEngineHost : ITaskbarEngine
 {
-    private static readonly TimeSpan _unloadTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan _stopTimeout = TimeSpan.FromSeconds(10);
 
     // How often a missing target process is looked for, and the longest wait
     // after a failed injection (it doubles from the first up to the second).
@@ -42,7 +42,7 @@ internal sealed class TaskbarEngineHost : ITaskbarEngine
     private string _loadedPath = "";
     private int _targetPid;
     private volatile bool _stopRequested;
-    private volatile bool _unloadReported;
+    private volatile string? _stopOutcome;   // "parked" or "unloaded", as the DLL said; null until it says
     private TaskCompletionSource _disconnected = NewSignal();
 
     /// <param name="sourceDllPath">The DLL next to the app; the host loads its versioned copy.</param>
@@ -80,8 +80,10 @@ internal sealed class TaskbarEngineHost : ITaskbarEngine
     /// <summary>The target process the DLL said hello from; 0 before.</summary>
     public int TargetProcessId => _targetPid;
 
-    /// <summary>Whether the DLL said it was unloading before its pipe closed.</summary>
-    public bool UnloadReported => _unloadReported;
+    /// <summary>
+    /// Whether the DLL said it stopped (parked or unloading) before its pipe closed.
+    /// </summary>
+    public bool StopConfirmed => _stopOutcome is not null;
 
     public bool IsConnected => _server.IsConnected;
 
@@ -196,8 +198,12 @@ internal sealed class TaskbarEngineHost : ITaskbarEngine
         _server.SendAsync(json, cancellation);
 
     /// <summary>
-    /// Asks the DLL to restore, unadvise and unload, and waits for its pipe to
-    /// close. True when the DLL reported that it unloaded itself.
+    /// Asks the DLL to restore everything and end its session, and waits for
+    /// its pipe to close. True when the DLL said it stopped: it parks in the
+    /// target (the usual case, once XAML Diagnostics answered there) or
+    /// unloads (when they never did). A parked engine is the one the next
+    /// injection wakes: XAML Diagnostics are never initialized twice in one
+    /// process (native residency.h says why).
     /// </summary>
     public async Task<bool> StopEngineAsync()
     {
@@ -207,8 +213,8 @@ internal sealed class TaskbarEngineHost : ITaskbarEngine
         Task closed = _disconnected.Task;
         // A failed send still waits: the DLL may have left on its own a moment ago.
         await _server.SendAsync(NativeCommand.Stop).ConfigureAwait(false);
-        await Task.WhenAny(closed, Task.Delay(_unloadTimeout)).ConfigureAwait(false);
-        return _unloadReported;
+        await Task.WhenAny(closed, Task.Delay(_stopTimeout)).ConfigureAwait(false);
+        return StopConfirmed;
     }
 
     private void OnMessage(NativeMessage message)
@@ -217,20 +223,43 @@ internal sealed class TaskbarEngineHost : ITaskbarEngine
         {
             case NativeHello hello:
                 _targetPid = hello.ProcessId;
-                _unloadReported = false;
+                _stopOutcome = null;
                 DeckleShellTaskbarSource.Log.NativeEngineConnected(hello.ProcessId, hello.Protocol);
+                ReportResidentBuild(hello.ModulePath);
                 break;
             case NativeLogRecord record:
-                if (record.Event == "unloading") _unloadReported = true;
+                if (record.Event is "parked" or "parked_unreachable") _stopOutcome = "parked";
+                else if (record.Event == "unloading") _stopOutcome = "unloaded";
                 NativeLogRelay.Relay(record);
                 break;
         }
         MessageReceived?.Invoke(message);
     }
 
+    // The engine that answers may be a copy an earlier Deckle left parked in
+    // the target: it stays until the target process restarts, whatever build
+    // this Deckle offers. The versioned folder names the build.
+    private void ReportResidentBuild(string modulePath)
+    {
+        string resident = BuildOf(modulePath);
+        string offered = BuildOf(_loadedPath);
+        if (resident.Length == 0 || offered.Length == 0) return;
+        if (!string.Equals(resident, offered, StringComparison.OrdinalIgnoreCase))
+            DeckleShellTaskbarSource.Log.NativeEngineBuildMismatch(TargetName, resident, offered);
+    }
+
+    internal static string BuildOf(string dllPath)
+    {
+        if (string.IsNullOrEmpty(dllPath)) return "";
+        string? folder = Path.GetDirectoryName(dllPath);
+        return string.IsNullOrEmpty(folder) ? "" : Path.GetFileName(folder);
+    }
+
+    private string TargetName => _target.Kind == TaskbarTargetKind.Explorer ? "explorer" : "start_menu";
+
     private void OnDisconnected()
     {
-        DeckleShellTaskbarSource.Log.NativeEngineDisconnected(_unloadReported ? "unloaded" : "lost");
+        DeckleShellTaskbarSource.Log.NativeEngineDisconnected(_stopOutcome ?? "lost");
         _disconnected.TrySetResult();
         Disconnected?.Invoke();
     }

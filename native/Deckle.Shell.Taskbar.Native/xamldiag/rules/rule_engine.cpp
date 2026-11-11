@@ -616,9 +616,21 @@ namespace deckle::rules
             {
                 try
                 {
+                    const auto now = Clock::now();
+
+                    // Parked too: the watcher keeps reporting elements while no
+                    // document is in force, and the dead ones must still go.
+                    if (now - lastPrune >= 5s)
+                    {
+                        lastPrune = now;
+                        for (ThreadContext* context : Contexts())
+                        {
+                            RunOn(*context, [context] { Prune(*context); }, 0ms);
+                        }
+                    }
+
                     auto set = Current();
                     if (!set) continue;
-                    const auto now = Clock::now();
 
                     // The clock: rewrite the text when the minute changes, and
                     // every 30 s regardless, in case a write of Explorer's
@@ -634,15 +646,6 @@ namespace deckle::rules
                             {
                                 RunOn(*context, [context] { RefreshClocks(*context); }, 0ms);
                             }
-                        }
-                    }
-
-                    if (now - lastPrune >= 5s)
-                    {
-                        lastPrune = now;
-                        for (ThreadContext* context : Contexts())
-                        {
-                            RunOn(*context, [context] { Prune(*context); }, 0ms);
                         }
                     }
 
@@ -731,6 +734,30 @@ namespace deckle::rules
             { { L"generation", std::to_wstring(set->generation) }, { L"rules", std::to_wstring(set->rules.size()) },
               { L"clock", set->clock->enabled ? L"on" : L"off" }, { L"start_menu_height", set->startMenuHeight ? L"on" : L"off" }, { L"start_menu_width", !set->startMenuWidth.enabled ? L"off" : set->startMenuWidth.fill ? L"fill" : L"value" }, { L"unreachable_threads", std::to_wstring(unreachable) } });
         m_impl->SendStatus(true);
+    }
+
+    size_t Engine::Park()
+    {
+        {
+            std::lock_guard guard(m_impl->lock);
+            m_impl->current.reset();
+        }
+
+        auto restored = std::make_shared<std::atomic<size_t>>(0);
+        for (ThreadContext* context : m_impl->Contexts())
+        {
+            bool done = Impl::RunOn(*context, [context, restored]
+            {
+                *restored += Impl::ClearAll(*context);
+            }, kWaitForUiThread);
+
+            if (!done)
+            {
+                Log(LogLevel::Warning, L"ui_thread_busy", L"A XAML thread did not give its overrides back in time",
+                    { { L"tid", std::to_wstring(context->tid) } });
+            }
+        }
+        return restored->load();
     }
 
     size_t Engine::Shutdown()

@@ -24,6 +24,10 @@ namespace deckle::rules
     //                     elements are walked again. The tree is not re-advised:
     //                     the engine already holds every element the watcher
     //                     reported, so a new document costs one hop per UI thread.
+    //   Park              restores everything and drops the document, but keeps
+    //                     the elements: the watcher stays advised while no
+    //                     Deckle is connected, so the next document applies to
+    //                     the live tree at once (residency.h says why).
     //   Shutdown          restores everything and forgets the elements.
     //
     // Status. The engine posts a "status" record over the channel after each
@@ -43,6 +47,11 @@ namespace deckle::rules
 
         // The worker thread. Waits for the UI threads (a few seconds at most each).
         void Apply(SettingsDocument document);
+
+        // Restores everything the engine changed and keeps tracking elements
+        // with no document in force. Returns how many overrides it gave back.
+        // The worker thread.
+        size_t Park();
 
         // Restores everything the engine changed and stops its timer thread.
         // Returns how many overrides it gave back. The worker thread.
