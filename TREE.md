@@ -419,6 +419,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   └── update-readme-stats.ps1  — Update the README pulse Regenerate the small "Development pulse" section in README.md from the local Gi…
 ├── specs/
 │   ├── atelier.md
+│   ├── deckle-dictation-rewriting.md
 │   └── deckle-mail.md
 ├── src/
 │   ├── Deckle.Anytype/
