@@ -53,7 +53,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardVerifyMissing,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "The clipboard held no text after the copy, so the paste may be empty")]
+           Message = "The clipboard held no text after the copy, so the copy may be empty")]
     public void ClipboardVerifyMissing()
     {
         if (IsEnabled()) WriteEvent(EvtClipboardVerifyMissing);
@@ -62,7 +62,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtClipboardVerifyMismatch,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Push,
-           Message = "The clipboard held other text after the copy, so the paste may be wrong")]
+           Message = "The clipboard held other text after the copy, so the copy may be wrong")]
     public void ClipboardVerifyMismatch()
     {
         if (IsEnabled()) WriteEvent(EvtClipboardVerifyMismatch);
@@ -96,97 +96,5 @@ public sealed partial class DeckleWhispSource
     public void ClipboardCopyComplete(long chars, long bytes, long h_mem)
     {
         if (IsEnabled()) WriteEvent(EvtClipboardCopyComplete, chars, bytes, h_mem);
-    }
-
-    // ── Paste ───────────────────────────────────────────────────────────
-
-    [Event(EvtPasteHidSync,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "The HUD is hidden before the paste")]
-    public void PasteHidSync()
-    {
-        if (IsEnabled()) WriteEvent(EvtPasteHidSync);
-    }
-
-    [Event(EvtPasteForeground,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "foreground_descriptor={0}")]
-    public void PasteForeground(string foreground_descriptor)
-    {
-        if (IsEnabled()) WriteEvent(EvtPasteForeground, foreground_descriptor);
-    }
-
-    [Event(EvtPasteSkippedNoForeground,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "Paste skipped — no foreground window. The text is on the clipboard, press Ctrl+V where you want it.")]
-    public void PasteSkippedNoForeground()
-    {
-        if (IsEnabled()) WriteEvent(EvtPasteSkippedNoForeground);
-    }
-
-    [Event(EvtPasteSkippedSelfTarget,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "Paste skipped — Deckle was in the foreground. The text is on the clipboard, press Ctrl+V in the right window.")]
-    public void PasteSkippedSelfTarget()
-    {
-        if (IsEnabled()) WriteEvent(EvtPasteSkippedSelfTarget);
-    }
-
-    [Event(EvtPasteUiaDiag,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "uia_diag={0}")]
-    public void PasteUiaDiag(string uia_diag)
-    {
-        if (IsEnabled()) WriteEvent(EvtPasteUiaDiag, uia_diag);
-    }
-
-    [Event(EvtPasteSkippedNotTextField,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "Paste skipped — the focused element is not a text field. The text is on the clipboard, press Ctrl+V where you want it.")]
-    public void PasteSkippedNotTextField()
-    {
-        if (IsEnabled()) WriteEvent(EvtPasteSkippedNotTextField);
-    }
-
-    [Event(EvtPasteSendInputPartial,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "Paste was only partly sent. The text is on the clipboard, press Ctrl+V manually.")]
-    public void PasteSendInputPartial()
-    {
-        if (IsEnabled()) WriteEvent(EvtPasteSendInputPartial);
-    }
-
-    [Event(EvtPasteSendInputPartialDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "sent={0} | total={1}")]
-    public void PasteSendInputPartialDetail(int sent, int total)
-    {
-        if (IsEnabled()) WriteEvent(EvtPasteSendInputPartialDetail, sent, total);
-    }
-
-    [Event(EvtPasteSucceeded,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "Pasted")]
-    public void PasteSucceeded()
-    {
-        if (IsEnabled()) WriteEvent(EvtPasteSucceeded);
-    }
-
-    [Event(EvtPasteSent,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Push,
-           Message = "foreground_descriptor={0}")]
-    public void PasteSent(string foreground_descriptor)
-    {
-        if (IsEnabled()) WriteEvent(EvtPasteSent, foreground_descriptor);
     }
 }

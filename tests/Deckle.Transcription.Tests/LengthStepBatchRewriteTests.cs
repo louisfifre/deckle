@@ -160,11 +160,11 @@ public sealed class LengthStepBatchRewriteTests
         };
         engine.TranscriptionFinished += outcome => finished.TrySetResult(outcome);
 
-        Assert.Equal(ToggleResult.Started, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Started, engine.RequestToggle());
         await backend.AllCallsCompleted.Task.WaitAsync(TimeSpan.FromSeconds(5), ct);
         if (callsBeforeStop > 0)
             await rewrite.WaitForCalls(callsBeforeStop).WaitAsync(TimeSpan.FromSeconds(5), ct);
-        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle(shouldPaste: false));
+        Assert.Equal(ToggleResult.Stopped, engine.RequestToggle());
 
         Assert.Equal(
             TranscriptionOutcome.ClipboardOnly,

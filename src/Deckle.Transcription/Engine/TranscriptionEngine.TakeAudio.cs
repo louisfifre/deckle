@@ -85,7 +85,7 @@ public sealed partial class TranscriptionEngine
     // it ends a take as "failed" (see IsFailureReason) and a failed take is
     // never discarded.
     internal static bool DiscardsTakeAudio(string outcome, string reason) =>
-        outcome is TakeOutcomes.Pasted or TakeOutcomes.ClipboardOnly
+        outcome == TakeOutcomes.ClipboardOnly
         || (outcome == TakeOutcomes.None
             && reason is TakeEndReasons.NoText or TakeEndReasons.EmptyAudio);
 }

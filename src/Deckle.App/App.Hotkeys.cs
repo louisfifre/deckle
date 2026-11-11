@@ -42,9 +42,7 @@ public partial class App
 
         // Without a profile, the engine picks one at finalize from the take's
         // length and the active profile (RewriteProfileSelection).
-        var result = _engine.RequestToggle(
-            shouldPaste: false,
-            rewriteProfileId);
+        var result = _engine.RequestToggle(rewriteProfileId);
 
         switch (result)
         {
