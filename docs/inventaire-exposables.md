@@ -673,8 +673,6 @@ Total : **625 entrées** réparties sur **38 modules**.
 
 | Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
 |---|---|---|---|---|---|
-| FileIdle | tuning-constant | `"recording--indicator--false--32px.ico"` | src/Deckle.Shell/IconAssets.cs:16 | non | Tray icon asset filename. Kept only under the doubt rule — a user could conceivably want a different tray icon, but this is an asset path, not a value. |
-| FileRecording | tuning-constant | `"recording--indicator--true--32px.ico"` | src/Deckle.Shell/IconAssets.cs:17 | non | Same as FileIdle — recording-state tray icon asset filename. |
 | AutostartService.DefaultEnabled | default-value | `false` | src/Deckle.Shell/AutostartService.cs:42 | oui | Added from the June inventory — the sweep missed it. June lists it as 'Start with Windows' / 'Autostart Enabled', hand-authored, registry-backed (HKCU Run). Expression-bodied static property, which is likely why the sweep's accessor filter dropped it; that same filter may have swallowed other real defaults repo-wide. |
 
 ## Deckle.Shell.TaskbarCover
