@@ -2545,6 +2545,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Shell.Taskbar.Tests/
 │   │   ├── Native/
 │   │   │   ├── BarThicknessTests.cs
+│   │   │   ├── EngineResidencyTests.cs
 │   │   │   ├── JsonLineFramingTests.cs
 │   │   │   ├── ModuleIdentityTests.cs
 │   │   │   ├── NativeCommandTests.cs

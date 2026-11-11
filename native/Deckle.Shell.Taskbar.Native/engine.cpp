@@ -194,10 +194,11 @@ namespace
                 { { L"pid", std::to_wstring(GetCurrentProcessId()) } });
         }
         channel.Flush(std::chrono::seconds(2));
+        deckle::residency::MarkParked();
         channel.Close();
         channel.SetAccepting(false);
 
-        std::wstring pipe = deckle::residency::ParkUntilHandedOver();
+        std::wstring pipe = deckle::residency::WaitForHandOver();
 
         channel.SetAccepting(true);
         return pipe;

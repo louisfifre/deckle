@@ -43,9 +43,15 @@ namespace deckle::residency
     // owner once it parks (it then stays idle until explorer restarts).
     bool CanBeWoken();
 
-    // The owner, from its worker. Parks, then blocks until a copy hands it a
-    // pipe, and returns that pipe's name with the owner marked as serving.
-    std::wstring ParkUntilHandedOver();
+    // The owner, from its worker, before it closes its pipe: from here on a
+    // copy may hand it a pipe. Before the close, because Deckle injects again
+    // only once it saw the pipe close, so no copy can arrive in between and be
+    // refused.
+    void MarkParked();
+
+    // The owner, after MarkParked: blocks until a copy hands it a pipe, and
+    // returns that pipe's name with the owner marked as serving.
+    std::wstring WaitForHandOver();
 
     // The owner leaves the process before XAML Diagnostics ever ran (no Deckle
     // on the pipe): the next copy may claim the process.

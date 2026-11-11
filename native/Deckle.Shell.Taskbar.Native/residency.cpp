@@ -95,7 +95,12 @@ namespace deckle::residency
         return g_block && g_wake;
     }
 
-    std::wstring ParkUntilHandedOver()
+    void MarkParked()
+    {
+        if (g_block) InterlockedExchange(&g_block->state, Parked);
+    }
+
+    std::wstring WaitForHandOver()
     {
         if (!CanBeWoken())
         {
@@ -104,7 +109,6 @@ namespace deckle::residency
             for (;;) Sleep(INFINITE);
         }
 
-        InterlockedExchange(&g_block->state, Parked);
         for (;;)
         {
             WaitForSingleObject(g_wake, INFINITE);
