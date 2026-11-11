@@ -73,6 +73,8 @@ public sealed class DictationBatchRewriterTests
         Assert.Equal(6, result.LlmEvalMs);
         Assert.Equal(8, result.LlmPromptTokens);
         Assert.Equal(10, result.LlmEvalTokens);
+        Assert.Equal(12, result.LlmCacheWriteTokens);
+        Assert.Equal(14, result.LlmCacheReadTokens);
     }
 
     [Fact]
@@ -272,7 +274,7 @@ public sealed class DictationBatchRewriterTests
         {
             Interlocked.Increment(ref _calls);
             if (delayMs > 0) Thread.Sleep(delayMs);
-            return new GenerationResult(rewrite(text), 10, 1, 2, 3, 4, 5);
+            return new GenerationResult(rewrite(text), 10, 1, 2, 3, 4, 5, CacheWriteTokens: 6, CacheReadTokens: 7);
         }
 
         public GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken)

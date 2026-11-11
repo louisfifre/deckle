@@ -92,7 +92,9 @@ public sealed partial class TranscriptionEngine
                 text_words:           finalWordCount,
                 profile:              rewrite.Profile?.Name ?? "",
                 pasted:               delivery.PasteVerified,
-                outcome:              delivery.Outcome.ToString());
+                outcome:              delivery.Outcome.ToString(),
+                llm_cache_write_tokens: rewrite.LlmCacheWriteTokens,
+                llm_cache_read_tokens:  rewrite.LlmCacheReadTokens);
         }
 
         RecordCorpus(production, rawText, rewrite, isFileRun, recordingDurationSec, whisperMs);

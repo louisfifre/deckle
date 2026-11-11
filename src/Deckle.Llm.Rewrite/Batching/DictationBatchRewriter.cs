@@ -128,7 +128,7 @@ public sealed class DictationBatchRewriter
         var text = new StringBuilder();
         int fallbacks = 0;
         long llmMs = 0, loadMs = 0, promptEvalMs = 0, evalMs = 0;
-        int promptTokens = 0, evalTokens = 0;
+        int promptTokens = 0, evalTokens = 0, cacheWriteTokens = 0, cacheReadTokens = 0;
         DictationBatch? previous = null;
 
         foreach (BatchSlot slot in batches)
@@ -166,12 +166,15 @@ public sealed class DictationBatchRewriter
             evalMs       += outcome.Result.EvalMs;
             promptTokens += outcome.Result.PromptTokens;
             evalTokens   += outcome.Result.EvalTokens;
+            cacheWriteTokens += outcome.Result.CacheWriteTokens;
+            cacheReadTokens  += outcome.Result.CacheReadTokens;
             previous = batch;
         }
 
         return new DictationBatchResult(
             text.ToString(), batches.Length, fallbacks,
-            llmMs, loadMs, promptEvalMs, evalMs, promptTokens, evalTokens);
+            llmMs, loadMs, promptEvalMs, evalMs, promptTokens, evalTokens,
+            cacheWriteTokens, cacheReadTokens);
     }
 
     // Called under _gate, so batches enter the list in Index order. The slot

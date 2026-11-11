@@ -67,9 +67,15 @@ public sealed partial class TranscriptionEngine
             result.PromptEvalMs,
             result.EvalMs,
             result.PromptTokens,
-            result.EvalTokens);
+            result.EvalTokens,
+            result.CacheWriteTokens,
+            result.CacheReadTokens);
     }
 
+    // LlmPromptTokens is the input billed at the plain price. A batched take
+    // keeps its profile's prompt in the provider's cache: what was stored and
+    // what was read back come apart, each at its own price, and the prompt
+    // the model read is the three together.
     private readonly record struct FinalizeRewrite(
         string Text,
         RewriteProfile? Profile,
@@ -78,7 +84,9 @@ public sealed partial class TranscriptionEngine
         long LlmPromptEvalMs,
         long LlmEvalMs,
         int LlmPromptTokens,
-        int LlmEvalTokens)
+        int LlmEvalTokens,
+        int LlmCacheWriteTokens = 0,
+        int LlmCacheReadTokens = 0)
     {
         public static FinalizeRewrite Verbatim(string text) =>
             new(text, null, 0, 0, 0, 0, 0, 0);
