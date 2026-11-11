@@ -343,8 +343,8 @@ function ico(draw) {
 
 // --- The sheet --------------------------------------------------------------
 
-// One fixed grid that shows what the app ships: the two forms, bare and on the
-// tile, in the three states, from 16 to 64 px. Two switches change only how it
+// One file, one fixed grid that shows what the app ships: the two forms in the
+// three states from 16 to 64 px, bare first, then on the tile. Two switches change only how it
 // is shown: the Windows mode (page colour, and the tile that goes with it) and
 // the rendering (the vector drawing, or the exact pixels an .ico holds, at the
 // same size). No script: the switches are radio buttons read by CSS.
@@ -364,13 +364,22 @@ function sheet(forms) {
     return `<td><svg class="${state}" ${size} viewBox="${n(t.x)} ${n(t.y)} ${n(t.side)} ${n(t.side)}"><rect x="${n(t.x)}" y="${n(t.y)}" width="${n(t.side)}" height="${n(t.side)}" rx="${n(t.side * TILE_RADIUS)}"/><use href="#${name}" x="${n(m.x)}" y="${n(m.y)}" width="${n(m.side)}" height="${n(m.side)}"/></svg>`
       + img({ tile: TILE.dark }, ' class="dark"') + img({ tile: TILE.light }, ' class="light"') + `</td>`;
   };
+  // The bare marks first, the tiles together at the end; inside a state, the
+  // normal form sits right above the small one.
+  const sections = [
+    [false, 'Bare mark', 'Tray and title bars. Deckle ships the small form here.'],
+    [true, 'On a tile', 'Taskbar and Alt+Tab. Deckle ships the normal form here, at rest and recording.'],
+  ];
+  const names = Object.keys(forms);
   let rows = '';
-  for (const state of Object.keys(STATES)) Object.keys(forms).forEach((name, fi) => [false, true].forEach((tiled, ti) => {
-    const first = fi === 0 && ti === 0;
-    rows += `<tr${first ? ' class="first"' : ''}>${first ? `<th rowspan="${Object.keys(forms).length * 2}">${state}</th>` : ''}${ti ? '' : `<th rowspan="2">${name}</th>`}<th>${tiled ? 'tile' : 'bare'}</th>${sizes.map(s => cell(name, state, s, tiled)).join('')}</tr>\n`;
-  }));
-  const group = (name, options) => `<div class="param"><span>${name}</span>` + options.map((o, i) =>
-    `<input type="radio" name="${name}" id="${name}-${o}"${i ? '' : ' checked'}><label for="${name}-${o}">${o}</label>`).join('') + `</div>`;
+  for (const [tiled, title, use] of sections) {
+    rows += `<tr class="section"><th colspan="${sizes.length + 2}">${title}<span>${use}</span></th></tr>\n`;
+    for (const state of Object.keys(STATES)) names.forEach((name, i) => {
+      rows += `<tr${i ? '' : ' class="first"'}>${i ? '' : `<th rowspan="${names.length}">${state}</th>`}<th>${name}</th>${sizes.map(s => cell(name, state, s, tiled)).join('')}</tr>\n`;
+    });
+  }
+  const group = (name, label, options) => `<div class="param"><span>${label}</span>` + options.map(([id, text], i) =>
+    `<input type="radio" name="${name}" id="${name}-${id}"${i ? '' : ' checked'}><label for="${name}-${id}">${text}</label>`).join('') + `</div>`;
 
   return `<!doctype html>
 <!-- Written by logo/generate.mjs: change the generator, not this file. -->
@@ -379,6 +388,7 @@ function sheet(forms) {
 body:has(#mode-light:checked){--bg:#fff;--fg:#000;--line:#e6e6e6;--tile:${TILE.light}}
 body{margin:0;padding:24px;background:var(--bg);color:var(--fg);font:12px/16px "Cascadia Mono",Consolas,monospace}
 h1{font-size:12px;font-weight:400;margin:0 0 20px;text-transform:uppercase;letter-spacing:.12em}
+p{margin:0 0 24px;max-width:64ch;opacity:.7}
 form{display:flex;gap:40px;margin-bottom:24px}
 .param{display:flex;gap:16px}
 .param>span{opacity:.5}
@@ -388,12 +398,14 @@ label:hover{opacity:1}
 input:checked+label{opacity:1;border-bottom-color:var(--fg)}
 input:focus-visible+label{outline:1px solid var(--fg);outline-offset:3px}
 table{border-collapse:collapse;table-layout:fixed}
-col.state{width:104px}col.form{width:72px}col.backing{width:64px}
+col.state{width:104px}col.form{width:72px}
 th,td{height:80px;padding:0;font-weight:400;text-align:center;vertical-align:middle}
 thead th{height:32px}
 th{opacity:.5;text-align:left;white-space:nowrap}
-thead th:nth-child(n+4){text-align:center}
-thead tr>*,tr.first>*{border-top:1px solid var(--line)}
+thead th:nth-child(n+3){text-align:center}
+thead tr>*,tr.first>*,tr.section>*{border-top:1px solid var(--line)}
+tr.section th{height:48px;opacity:1}
+tr.section span{opacity:.5;margin-left:16px}
 td svg,td img{display:block;margin:auto}
 td img,body:has(#rendering-pixels:checked) td svg{display:none}
 body:has(#rendering-pixels:checked) td img{display:block;image-rendering:pixelated}
@@ -404,18 +416,19 @@ svg.recording{--a:url(#ember)}
 svg.rewriting{--a:url(#ember);--e:url(#ember)}
 rect{fill:var(--tile)}path{fill:var(--rest)}path.a{fill:var(--a)}path.e{fill:var(--e)}
 </style><body><h1>Deckle — logo sheet</h1>
+<p>The mark has two forms. Normal has four blades. Small has three, so its gaps stay open at 16 px. A blade lights up while Deckle works: one while it records, two while it rewrites.</p>
 <svg width="0" height="0" style="position:absolute"><defs>
 ${restGradient(0, 0)}
 ${emberGradient(0, 0)}
 ${symbols.join('\n')}
 </defs></svg>
 <form>
-${group('mode', ['dark', 'light'])}
-${group('rendering', ['drawing', 'pixels'])}
+${group('mode', 'Windows mode', [['dark', 'dark'], ['light', 'light']])}
+${group('rendering', 'Show', [['drawing', 'the drawing'], ['pixels', 'the icon pixels']])}
 </form>
 <table>
-<colgroup><col class="state"><col class="form"><col class="backing">${sizes.map(s => `<col style="width:${s + 32}px">`).join('')}</colgroup>
-<thead><tr><th>state</th><th>form</th><th>backing</th>${sizes.map(s => `<th>${s}</th>`).join('')}</tr></thead>
+<colgroup><col class="state"><col class="form">${sizes.map(s => `<col style="width:${s + 32}px">`).join('')}</colgroup>
+<thead><tr><th>state</th><th>form</th>${sizes.map(s => `<th>${s} px</th>`).join('')}</tr></thead>
 ${rows}</table>
 </body></html>
 `;
