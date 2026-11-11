@@ -1685,6 +1685,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── TaskColumn.xaml
 │   │   │   │   ├── TaskColumn.xaml.cs
 │   │   │   │   └── TrashNotice.cs
+│   │   │   ├── ComponentMotion.cs
 │   │   │   ├── IMailShell.cs
 │   │   │   ├── MailText.cs
 │   │   │   ├── MailWindow.Capture.cs

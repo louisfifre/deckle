@@ -72,6 +72,7 @@ public sealed partial class MailWindow : Window, IMailShell
 
         Nav.DisplayModeChanged += (_, _) => SyncNavigationPane();
         Nav.Loaded += (_, _) => SyncNavigationPane();
+        ComponentMotion.Still(ProblemsFlyout);
 
         InstallBackInputs();
         Session = LoadSession(_source);
