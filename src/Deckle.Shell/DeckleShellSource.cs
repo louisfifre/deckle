@@ -72,6 +72,7 @@ public sealed class DeckleShellSource : DeckleEventSource
     public const int EvtSessionEnding                      = 59;
     public const int EvtSessionEndCancelled                = 60;
     public const int EvtSessionEndFlushFailed              = 61;
+    public const int EvtTrayIconAddRefused                 = 62;
 
     // ── Windows session end ─────────────────────────────────────────────
 
@@ -158,24 +159,37 @@ public sealed class DeckleShellSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtTrayIconReaddAttempt, attempt, max_attempts, outcome, error);
     }
 
+    // Closes the sequence a refused first add or a TaskbarCreated opened.
     [Event(EvtTrayIconRestored,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Taskbar recreated, tray icon added again")]
+           Message = "The tray icon is on the taskbar after a retry")]
     public void TrayIconRestored()
     {
         if (IsEnabled()) WriteEvent(EvtTrayIconRestored);
     }
 
     // win32_error is the shell's refusal on the last attempt of the sequence.
+    // The owner window stays alive, so the next TaskbarCreated tries again.
     [Event(EvtTrayIconRestoreFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Taskbar recreated, but the tray icon could not be added again — restart Deckle to get it back\nattempts={0} | win32_error={1}")]
+           Message = "The shell kept refusing the tray icon, so it stays missing until Explorer or Deckle restarts\nattempts={0} | win32_error={1}")]
     public void TrayIconRestoreFailed(int attempts, int win32_error)
     {
         if (IsEnabled()) WriteEvent(EvtTrayIconRestoreFailed, attempts, win32_error);
+    }
+
+    // The first add at startup was refused: the re-add sequence takes over,
+    // and TrayIconRestored or TrayIconRestoreFailed closes it.
+    [Event(EvtTrayIconAddRefused,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The shell refused the tray icon at startup, so Deckle tries again\nwin32_error={0}")]
+    public void TrayIconAddRefused(int win32_error)
+    {
+        if (IsEnabled()) WriteEvent(EvtTrayIconAddRefused, win32_error);
     }
 
     // The tray shows the generic application icon instead of Deckle's own.
