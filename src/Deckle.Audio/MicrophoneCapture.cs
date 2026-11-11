@@ -5,7 +5,6 @@ using Deckle.Audio;
 using Deckle.Audio.Internal;
 using Deckle.Core;
 using Deckle.Diagnostics;
-using Deckle.Localization;
 
 namespace Deckle.Audio;
 

@@ -1,5 +1,3 @@
-using Deckle.Localization;
-
 namespace Deckle.Audio;
 
 // Categorical decoding of the HRESULT returned when the microphone could not be
