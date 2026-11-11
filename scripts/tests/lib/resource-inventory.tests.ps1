@@ -43,6 +43,39 @@ try {
     Assert-Equal 2 @($result.PotentiallyUnused).Count 'unused copies'
     Assert-Equal 0 @($result.Divergences).Count 'unused mirror is not required locally'
 
+    # An engine with no map of its own, presented by a Views project that holds
+    # its strings: what the engine reads is a use of the Views map, and the
+    # mirror check covers it.
+    $engine = Join-Path $fixture 'src/Deckle.Engine'
+    $views = Join-Path $fixture 'src/Deckle.Engine.Views'
+    New-Item -ItemType Directory -Force $engine, (Join-Path $views 'Strings/en-US') | Out-Null
+    Set-Content (Join-Path $engine 'Deckle.Engine.csproj') '<Project />'
+    Set-Content (Join-Path $views 'Deckle.Engine.Views.csproj') '<Project />'
+    Set-Content (Join-Path $engine 'Engine.cs') 'var status = Loc.Get("Engine_Status");'
+    Set-Content (Join-Path $app 'Strings/en-US/Resources.resw') @'
+<root>
+  <data name="Shared_Title"><value>Root</value></data>
+  <data name="Engine_Status"><value>Working</value></data>
+</root>
+'@
+    $viewsResw = Join-Path $views 'Strings/en-US/Resources.resw'
+    Set-Content $viewsResw @'
+<root>
+  <data name="Engine_Status"><value>Working</value></data>
+  <data name="Engine_Orphan"><value>Orphan</value></data>
+</root>
+'@
+    $paired = Invoke-ResourceInventory -RepoRoot $fixture -AllowlistPath $allowlist
+    Assert-Equal 0 @($paired.Missing).Count 'engine and views: missing keys'
+    Assert-Equal 3 @($paired.PotentiallyUnused).Count 'engine and views: only the orphan is added'
+    Assert-Equal 0 @($paired.PotentiallyUnused | Where-Object Key -eq 'Engine_Status').Count 'a key the engine reads is used'
+    Assert-Equal 0 @($paired.Divergences).Count 'engine and views: mirror in step'
+
+    (Get-Content -Raw $viewsResw).Replace('<value>Working</value>', '<value>Drifted</value>') | Set-Content $viewsResw
+    $drifted = Invoke-ResourceInventory -RepoRoot $fixture -AllowlistPath $allowlist
+    Assert-Equal 1 @($drifted.Divergences).Count 'a drifted copy of a key the engine reads'
+    Assert-Equal 'Engine_Status' $drifted.Divergences[0].Key 'drifted key'
+
     $moduleResw = Join-Path $module 'Strings/en-US/Resources.resw'
     @(Get-Content $moduleResw | Where-Object { $_ -notmatch 'name="DescriptorLabel"' }) |
         Set-Content $moduleResw

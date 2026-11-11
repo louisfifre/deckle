@@ -23,7 +23,7 @@ public partial class App
             var window = CreateWindowOrLog("log", () => new LogWindow
             {
                 OnShowSettingsRequested = () => ShowSettingsWindowLazy(
-                    Diagnostics.Logging.DiagnosticsSettingsModule.PageTag),
+                    Diagnostics.Logging.Views.DiagnosticsSettingsModule.PageTag),
                 OnShowPlaygroundRequested = ShowPlaygroundLazy,
             });
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Log);

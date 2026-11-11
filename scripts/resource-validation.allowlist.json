@@ -13,19 +13,29 @@
   ],
   "RequiredKeys": [
     {
-      "Assembly": "Deckle.Audio",
+      "Assembly": "Deckle.Audio.Views",
       "Key": "SettingsModuleNavLabel",
       "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
     },
     {
-      "Assembly": "Deckle.Transcription",
+      "Assembly": "Deckle.Transcription.Views",
       "Key": "SettingsModuleNavLabel",
       "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
     },
     {
-      "Assembly": "Deckle.Llm.Rewrite",
+      "Assembly": "Deckle.Llm.Rewrite.Views",
       "Key": "SettingsModuleNavLabel",
       "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
+    },
+    {
+      "Assembly": "Deckle.Llm.Rewrite.Views",
+      "Key": "RewriteTimeout_Title",
+      "Reason": "RewriteService in Deckle.Llm.Rewrite reads it through a library constant: the engine compiles no .resw, its strings ship with the Views assembly."
+    },
+    {
+      "Assembly": "Deckle.Llm.Rewrite.Views",
+      "Key": "RewriteTimeout_Body_Format",
+      "Reason": "RewriteService in Deckle.Llm.Rewrite reads it through a library constant: the engine compiles no .resw, its strings ship with the Views assembly."
     },
     {
       "Assembly": "Deckle.Autocorrect",
@@ -43,7 +53,7 @@
       "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
     },
     {
-      "Assembly": "Deckle.Diagnostics.Logging",
+      "Assembly": "Deckle.Diagnostics.Logging.Views",
       "Key": "SettingsModuleNavLabel",
       "Reason": "SettingsModuleDescriptor uses this default key and the Settings shell resolves it through the module PRI."
     },

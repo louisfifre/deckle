@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.Tracing;
 using Deckle.Audio;
-using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Telemetry;
@@ -10,6 +9,7 @@ using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Deckle.Transcription;
 using Xunit;
+using Deckle.Localization;
 
 namespace Deckle.Transcription.Tests;
 

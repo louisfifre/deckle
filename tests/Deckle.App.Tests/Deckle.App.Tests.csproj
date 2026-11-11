@@ -9,5 +9,6 @@
        happens to live in the host. -->
   <ItemGroup>
     <ProjectReference Include="..\..\src\Deckle.App\Deckle.App.csproj" />
+    <ProjectReference Include="..\..\src\Deckle.Localization\Deckle.Localization.csproj" />
   </ItemGroup>
 </Project>

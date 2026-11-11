@@ -12,6 +12,7 @@ using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Shell;
 using Deckle.Shell.WindowChrome;
+using Deckle.Localization;
 
 namespace Deckle.Settings;
 

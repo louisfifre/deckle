@@ -1,0 +1,74 @@
+<Page
+    x:Class="Deckle.Llm.Rewrite.Views.LlmPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:llm="using:Deckle.Llm.Rewrite.Views"
+    xmlns:catalog="using:Deckle.Catalog">
+
+    <Page.Resources>
+        <llm:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+    </Page.Resources>
+
+    <Grid Background="Transparent"
+          Tapped="OnBackgroundTapped">
+    <ScrollViewer Padding="32,24,32,24"
+                  VerticalScrollBarVisibility="Auto"
+                  HorizontalScrollBarVisibility="Disabled">
+        <Grid Background="Transparent">
+            <StackPanel MaxWidth="1000"
+                        HorizontalAlignment="Stretch"
+                        Spacing="{StaticResource SettingsCardSpacing}">
+
+                <!-- The shared header block: breadcrumb, one line of description,
+                     Reset all on the trailing edge. The page asks with its own
+                     dialog (it says what the reset wipes), so the header's generic
+                     confirmation is off (see the constructor). -->
+                <catalog:SettingsPageHeader x:Name="Header"
+                                            x:Uid="LlmPageHeader"
+                                            ResetAllRequested="ResetAll_Click" />
+
+                <!-- Open only while an enabled Ollama provider does not answer. -->
+                <InfoBar x:Name="OllamaStatusBar"
+                         x:Uid="LlmPage_OllamaStatusBar"
+                         Severity="Warning"
+                         IsOpen="False"
+                         IsClosable="False"
+                         Margin="0,0,0,8"
+                         catalog:InfoBarLayout.CollapseWhenClosed="True" />
+
+                <!-- Open only while an enabled hosted provider (Claude, an
+                     OpenAI-compatible server) does not answer the model
+                     listing; the message names each one and why. -->
+                <InfoBar x:Name="ProviderStatusBar"
+                         x:Uid="LlmPage_ProviderStatusBar"
+                         Severity="Warning"
+                         IsOpen="False"
+                         IsClosable="False"
+                         Margin="0,0,0,8"
+                         catalog:InfoBarLayout.CollapseWhenClosed="True" />
+
+                <llm:LlmGeneralSection x:Name="GeneralSection" />
+
+                <!-- Mask-not-grey: the dependent sections collapse out of layout
+                     when rewriting is off, driven by the module switch. The
+                     switch itself (in GeneralSection) stays always visible.
+                     Order: what a dictation uses first, then what that profile
+                     does while you speak, then the profiles it picks from,
+                     then the providers they send to, then the Ollama models
+                     (shown by code, only while an Ollama provider is on). -->
+                <llm:LlmActiveProfileSection x:Name="ActiveProfileSection"
+                                            Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                <llm:LlmDictationSection x:Name="DictationSection"
+                                         Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                <llm:LlmProfilesSection x:Name="ProfilesSection"
+                                        Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                <llm:LlmProvidersSection x:Name="ProvidersSection"
+                                         Visibility="{x:Bind GeneralSection.IsRewritingEnabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                <llm:LlmModelsSection x:Name="ModelsSection"
+                                      Visibility="Collapsed" />
+
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+    </Grid>
+</Page>

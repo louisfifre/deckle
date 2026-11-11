@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Deckle.Localization</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Why this project exists: engines reach Loc (string lookup) without
+         pulling Deckle.Catalog, whose XAML dictionaries make every build of a
+         dependent project run the XAML compiler. No UseWinUI, no .xaml here.
+         ResourceLoader comes from the Windows App SDK package. -->
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
+  </ItemGroup>
+</Project>

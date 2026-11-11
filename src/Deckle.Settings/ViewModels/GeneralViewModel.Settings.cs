@@ -4,6 +4,7 @@ using System.Linq;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Shell;
+using Deckle.Localization;
 
 namespace Deckle.Settings;
 

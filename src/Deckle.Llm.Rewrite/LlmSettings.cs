@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using Deckle.Catalog;
+using Deckle.Core;
 using Deckle.Llm;
 
 namespace Deckle.Llm.Rewrite;

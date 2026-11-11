@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 using Deckle.Core;
-using Deckle.Catalog;
+using Deckle.Localization;
 
 namespace Deckle.Shell;
 

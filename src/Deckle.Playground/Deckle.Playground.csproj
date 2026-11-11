@@ -22,6 +22,7 @@
     <!-- The HUD tab's live preview opens the microphone and reads the pause
          gauge off it. -->
     <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
+    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <ProjectReference Include="..\Deckle.Composition\Deckle.Composition.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />

@@ -15,12 +15,12 @@ using Microsoft.UI.Xaml.Data;
 using WinRT.Interop;
 using Deckle.App;
 using Deckle.Core;
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Diagnostics.Logging.Ui.Collections;
 using Deckle.Shell;
 using Deckle.Shell.WindowChrome;
+using Deckle.Localization;
 
 namespace Deckle.App;
 

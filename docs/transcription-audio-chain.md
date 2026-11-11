@@ -208,10 +208,10 @@ Where the files live:
 
 Where the settings are shown:
 
-- **Settings ▸ Transcription**: `src/Deckle.Transcription/WhisperPage.xaml` and `src/Deckle.Transcription/WhisperPage.xaml.cs` (the hand-written cards: model, language, initial prompt), plus the composed GPU and models-folder cards of `src/Deckle.Transcription/ViewModels/WhisperViewModel.Settings.cs`. The two pages below are nested under it in the rail.
-- **Settings ▸ Decoding** (`src/Deckle.Transcription/DecodingPage.xaml`): the decoding, confidence, context and output-filter cards, composed in `WhisperViewModel.Settings.cs`.
-- **Settings ▸ Streaming** (`src/Deckle.Transcription/StreamingPage.xaml`): the streaming toggle, the Silero (VAD) group and the energy segmenter cards, including the cut curve card with its anchors and the curve editor `src/Deckle.Catalog/Composer/CurveEditor.cs` (no preset selector), composed in `WhisperViewModel.Settings.cs`.
-- **Settings ▸ Recording**: `src/Deckle.Audio/RecordingViewModel.Settings.cs`, plus the microphone picker in `src/Deckle.Audio/RecordingPage.xaml.cs`.
+- **Settings ▸ Transcription**: `src/Deckle.Transcription.Views/WhisperPage.xaml` and `src/Deckle.Transcription.Views/WhisperPage.xaml.cs` (the hand-written cards: model, language, initial prompt), plus the composed GPU and models-folder cards of `src/Deckle.Transcription.Views/ViewModels/WhisperViewModel.Settings.cs`. The two pages below are nested under it in the rail.
+- **Settings ▸ Decoding** (`src/Deckle.Transcription.Views/DecodingPage.xaml`): the decoding, confidence, context and output-filter cards, composed in `WhisperViewModel.Settings.cs`.
+- **Settings ▸ Streaming** (`src/Deckle.Transcription.Views/StreamingPage.xaml`): the streaming toggle, the Silero (VAD) group and the energy segmenter cards, including the cut curve card with its anchors and the curve editor `src/Deckle.Catalog/Composer/CurveEditor.cs` (no preset selector), composed in `WhisperViewModel.Settings.cs`.
+- **Settings ▸ Recording**: `src/Deckle.Audio.Views/RecordingViewModel.Settings.cs`, plus the microphone picker in `src/Deckle.Audio.Views/RecordingPage.xaml.cs`.
 
 ### Transcription module — `modules/transcription/settings.json`
 
@@ -271,7 +271,7 @@ The pre-processing has 18 fixed fields after `Enabled`: four stage switches and 
 
 The HUD outline's level window is no longer a setting of its own: `src/Deckle.Audio/AudioLevelMapper.cs` anchors it on the voice level, dark at the level and full 20 dB above it, through a square-root curve. The former `LevelWindow` section and its auto-calibration were removed on 2026-11-06, since they had never been persisted (the class used public fields, which System.Text.Json ignores by default; see `docs/research/research--seuils-voix--2026-11-06.md`).
 
-Under the Voice level card, the Recording page carries the voice meter (`src/Deckle.Audio/VoiceLevelMeter.xaml`): Listen opens the configured microphone with nothing kept (`RetainsAudio` off, purpose `voice_meter` in the log) and draws the live level on a fixed −80 to −10 dBFS track, with the voice level marked (and the detector's entry level beside it when the entry margin is positive; with the default margin of 0 the two coincide and only the voice level is drawn), the fill in the accent while its own `VoiceDetector` says voiced. It shows and never writes; the marks follow the field as it is edited. The microphone level check under Checks also says how far the measured level sits above or below the voice level.
+Under the Voice level card, the Recording page carries the voice meter (`src/Deckle.Audio.Views/VoiceLevelMeter.xaml`): Listen opens the configured microphone with nothing kept (`RetainsAudio` off, purpose `voice_meter` in the log) and draws the live level on a fixed −80 to −10 dBFS track, with the voice level marked (and the detector's entry level beside it when the entry margin is positive; with the default margin of 0 the two coincide and only the voice level is drawn), the fill in the accent while its own `VoiceDetector` says voiced. It shows and never writes; the marks follow the field as it is edited. The microphone level check under Checks also says how far the measured level sits above or below the voice level.
 
 ### Constants in the engine, not stored
 

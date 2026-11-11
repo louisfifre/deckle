@@ -4,8 +4,8 @@ using System.IO;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.Storage.Pickers;
-using Deckle.Catalog;
 using Deckle.Modules;
+using Deckle.Localization;
 
 namespace Deckle.Setup;
 

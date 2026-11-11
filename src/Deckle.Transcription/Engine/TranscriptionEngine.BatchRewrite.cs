@@ -1,6 +1,6 @@
-using Deckle.Catalog;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
+using Deckle.Localization;
 
 namespace Deckle.Transcription;
 

@@ -8,7 +8,8 @@
          brain: the generation seam (IGenerationEngine), the engines behind it
          (Ollama raw, chat-completions, Claude), the provider list that names
          them, and the Ollama administration calls. The rewrite-specific layer
-         and its Settings UI live in Deckle.Llm.Rewrite, so another consumer
+         lives in Deckle.Llm.Rewrite and its Settings UI in
+         Deckle.Llm.Rewrite.Views, so another consumer
          can depend on this module without dragging the rewrite UI in. -->
     <!-- Official Anthropic C# SDK: the Claude engine's transport. -->
     <PackageReference Include="Anthropic" />

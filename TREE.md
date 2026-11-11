@@ -828,9 +828,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── NoiseGate.cs
 │   │   │   ├── PreprocessingSettings.cs
 │   │   │   └── TranscriptionPreprocessor.cs
-│   │   ├── Strings/
-│   │   │   └── en-US/
-│   │   │       └── Resources.resw
 │   │   ├── Telemetry/
 │   │   │   ├── MicrophoneTelemetryCalculator.cs
 │   │   │   └── MicrophoneTelemetryPayload.cs
@@ -855,6 +852,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MicrophoneLevelFeed.cs
 │   │   ├── MicrophoneLevelFeedFailure.cs
 │   │   ├── ProbeResult.cs
+│   │   ├── SpeakerOutput.cs
+│   │   ├── VoiceDetector.cs
+│   │   ├── VoiceLevelMeterHost.cs
+│   │   └── VoiceLevelMeterScale.cs
+│   ├── Deckle.Audio.Views/
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Deckle.Audio.Views.csproj
 │   │   ├── RecordingLimit.cs
 │   │   ├── RecordingPage.xaml
 │   │   ├── RecordingPage.xaml.cs
@@ -864,12 +870,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RecordingViewModel.ListeningTest.cs
 │   │   ├── RecordingViewModel.Settings.cs
 │   │   ├── SettingsSearch.cs
-│   │   ├── SpeakerOutput.cs
-│   │   ├── VoiceDetector.cs
 │   │   ├── VoiceLevelMeter.xaml
-│   │   ├── VoiceLevelMeter.xaml.cs
-│   │   ├── VoiceLevelMeterHost.cs
-│   │   └── VoiceLevelMeterScale.cs
+│   │   └── VoiceLevelMeter.xaml.cs
 │   ├── Deckle.Autocorrect/
 │   │   ├── Data/
 │   │   │   ├── lexicon-en-globish.tsv.gz
@@ -1033,9 +1035,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SettingsComposer.Numeric.cs
 │   │   │   ├── SettingsPageHeader.cs
 │   │   │   └── SettingsSection.cs
-│   │   ├── Hotkeys/
-│   │   │   ├── HotkeyChord.cs
-│   │   │   └── HotkeyModifiers.cs
 │   │   ├── Themes/
 │   │   │   ├── Icons.xaml
 │   │   │   └── SettingsPageHeaderBrushes.xaml
@@ -1044,7 +1043,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Catalog.csproj
 │   │   ├── DiagnosticsRegistry.cs
 │   │   ├── Glyphs.cs
-│   │   ├── Loc.cs
 │   │   ├── SettingSearchEntry.cs
 │   │   ├── SettingsModuleDescriptor.cs
 │   │   ├── SettingsNavigation.cs
@@ -1077,6 +1075,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Design/
 │   │   │   ├── Dpi.cs
 │   │   │   └── Spacing.cs
+│   │   ├── Hotkeys/
+│   │   │   ├── HotkeyChord.cs
+│   │   │   └── HotkeyModifiers.cs
 │   │   ├── Interop/
 │   │   │   ├── NativeMethods.Audio.cs
 │   │   │   ├── NativeMethods.cs
@@ -1146,23 +1147,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── WindowingProbe.cs
 │   │   └── WorkId.cs
 │   ├── Deckle.Diagnostics.Logging/
-│   │   ├── Strings/
-│   │   │   └── en-US/
-│   │   │       └── Resources.resw
 │   │   ├── Ui/
-│   │   │   ├── Collections/
-│   │   │   │   └── RangeObservableCollection.cs
-│   │   │   └── Controls/
-│   │   │       ├── LogFilterBar.xaml
-│   │   │       └── LogFilterBar.xaml.cs
+│   │   │   └── Collections/
+│   │   │       └── RangeObservableCollection.cs
 │   │   ├── AmbientCaptureGate.cs
 │   │   ├── ApplicationLogSink.cs
 │   │   ├── Deckle.Diagnostics.Logging.csproj
-│   │   ├── DiagnosticsPage.xaml
-│   │   ├── DiagnosticsPage.xaml.cs
-│   │   ├── DiagnosticsSettingsModule.cs
-│   │   ├── DiagnosticsViewModel.cs
-│   │   ├── DiagnosticsViewModel.Settings.cs
 │   │   ├── LogAutoScroll.cs
 │   │   ├── LogFilterDimension.cs
 │   │   ├── LogFilterSelection.cs
@@ -1171,8 +1161,21 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LoggingSettingsService.cs
 │   │   ├── LogTransfer.cs
 │   │   ├── LogWindowFilterSession.cs
-│   │   ├── SettingsSearch.cs
 │   │   └── TranscriptionActivityScope.cs
+│   ├── Deckle.Diagnostics.Logging.Views/
+│   │   ├── Controls/
+│   │   │   ├── LogFilterBar.xaml
+│   │   │   └── LogFilterBar.xaml.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Deckle.Diagnostics.Logging.Views.csproj
+│   │   ├── DiagnosticsPage.xaml
+│   │   ├── DiagnosticsPage.xaml.cs
+│   │   ├── DiagnosticsSettingsModule.cs
+│   │   ├── DiagnosticsViewModel.cs
+│   │   ├── DiagnosticsViewModel.Settings.cs
+│   │   └── SettingsSearch.cs
 │   ├── Deckle.Diagnostics.Telemetry/
 │   │   ├── Deckle.Diagnostics.Telemetry.csproj
 │   │   ├── TelemetryListenerBootstrap.cs
@@ -1535,46 +1538,50 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   └── ParagraphRewriteOffer.cs
 │   │   ├── Settings/
 │   │   │   └── RewriteAvailability.cs
+│   │   ├── Deckle.Llm.Rewrite.csproj
+│   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite vocabulary. It draws the Correction / Rewrite boundary, which decides w…
+│   │   ├── LlmResetDefaults.cs
+│   │   ├── LlmSettings.cs
+│   │   ├── LlmSettingsNormalizer.cs
+│   │   └── LlmSettingsService.cs
+│   ├── Deckle.Llm.Rewrite.Views/
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw
-│   │   ├── Ui/
-│   │   │   ├── BoolToVisibilityConverter.cs
-│   │   │   ├── LlmActiveProfileSection.xaml
-│   │   │   ├── LlmActiveProfileSection.xaml.cs
-│   │   │   ├── LlmDictationSection.xaml
-│   │   │   ├── LlmDictationSection.xaml.cs
-│   │   │   ├── LlmGeneralSection.xaml
-│   │   │   ├── LlmGeneralSection.xaml.cs
-│   │   │   ├── LlmModelsSection.xaml
-│   │   │   ├── LlmModelsSection.xaml.cs
-│   │   │   ├── LlmOllamaContext.cs
-│   │   │   ├── LlmPage.xaml
-│   │   │   ├── LlmPage.xaml.cs
-│   │   │   ├── LlmProfilePage.xaml
-│   │   │   ├── LlmProfilePage.xaml.cs
-│   │   │   ├── LlmProfilesSection.xaml
-│   │   │   ├── LlmProfilesSection.xaml.cs
-│   │   │   ├── LlmProvidersSection.xaml
-│   │   │   ├── LlmProvidersSection.xaml.cs
-│   │   │   ├── ProfileViewModel.cs
-│   │   │   ├── ProviderViewModel.cs
-│   │   │   ├── RewriteChangeView.cs
-│   │   │   ├── RewriteOfferWindow.xaml
-│   │   │   └── RewriteOfferWindow.xaml.cs
 │   │   ├── ViewModels/
 │   │   │   ├── LlmDictationViewModel.cs
 │   │   │   ├── LlmDictationViewModel.Settings.cs
 │   │   │   ├── LlmGeneralViewModel.cs
 │   │   │   └── LlmGeneralViewModel.Settings.cs
-│   │   ├── Deckle.Llm.Rewrite.csproj
-│   │   ├── GLOSSARY.md  — glossary-deckle-llm-rewrite Rewrite vocabulary. It draws the Correction / Rewrite boundary, which decides w…
-│   │   ├── LlmResetDefaults.cs
-│   │   ├── LlmSettings.cs
+│   │   ├── BoolToVisibilityConverter.cs
+│   │   ├── Deckle.Llm.Rewrite.Views.csproj
+│   │   ├── LlmActiveProfileSection.xaml
+│   │   ├── LlmActiveProfileSection.xaml.cs
+│   │   ├── LlmDictationSection.xaml
+│   │   ├── LlmDictationSection.xaml.cs
+│   │   ├── LlmGeneralSection.xaml
+│   │   ├── LlmGeneralSection.xaml.cs
+│   │   ├── LlmModelsSection.xaml
+│   │   ├── LlmModelsSection.xaml.cs
+│   │   ├── LlmOllamaContext.cs
+│   │   ├── LlmPage.xaml
+│   │   ├── LlmPage.xaml.cs
+│   │   ├── LlmProfilePage.xaml
+│   │   ├── LlmProfilePage.xaml.cs
+│   │   ├── LlmProfilesSection.xaml
+│   │   ├── LlmProfilesSection.xaml.cs
+│   │   ├── LlmProvidersSection.xaml
+│   │   ├── LlmProvidersSection.xaml.cs
 │   │   ├── LlmSettingsModule.cs
-│   │   ├── LlmSettingsNormalizer.cs
-│   │   ├── LlmSettingsService.cs
+│   │   ├── ProfileViewModel.cs
+│   │   ├── ProviderViewModel.cs
+│   │   ├── RewriteChangeView.cs
+│   │   ├── RewriteOfferWindow.xaml
+│   │   ├── RewriteOfferWindow.xaml.cs
 │   │   └── SettingsSearch.cs
+│   ├── Deckle.Localization/
+│   │   ├── Deckle.Localization.csproj
+│   │   └── Loc.cs
 │   ├── Deckle.Mail/
 │   │   ├── Domain/
 │   │   │   ├── Deadline.cs
@@ -2152,16 +2159,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── Utterance.cs
 │   │   │   ├── UtteranceProgress.cs
 │   │   │   └── UtteranceProgressMeter.cs
-│   │   ├── Strings/
-│   │   │   └── en-US/
-│   │   │       └── Resources.resw
-│   │   ├── ViewModels/
-│   │   │   ├── WhisperTelemetryViewModel.cs
-│   │   │   ├── WhisperViewModel.cs
-│   │   │   ├── WhisperViewModel.DictationExperience.cs
-│   │   │   ├── WhisperViewModel.Engine.cs
-│   │   │   ├── WhisperViewModel.Settings.cs
-│   │   │   └── WhisperViewModel.Streaming.cs
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Decode.cs
@@ -2178,15 +2175,27 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleWhispSource.Transcribe.cs
 │   │   ├── DeckleWhispSource.Ui.cs
 │   │   ├── DeckleWhispSource.WarmupModel.cs
-│   │   ├── DecodingPage.xaml
-│   │   ├── DecodingPage.xaml.cs
 │   │   ├── GLOSSARY.md  — glossary-deckle-transcription Transcription vocabulary. It names the two entry points (dictation, file transc…
 │   │   ├── ITranscriptionEngineHost.cs
+│   │   ├── TranscriptionSettings.cs
+│   │   └── TranscriptionSettingsService.cs
+│   ├── Deckle.Transcription.Views/
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── ViewModels/
+│   │   │   ├── WhisperTelemetryViewModel.cs
+│   │   │   ├── WhisperViewModel.cs
+│   │   │   ├── WhisperViewModel.DictationExperience.cs
+│   │   │   ├── WhisperViewModel.Engine.cs
+│   │   │   ├── WhisperViewModel.Settings.cs
+│   │   │   └── WhisperViewModel.Streaming.cs
+│   │   ├── Deckle.Transcription.Views.csproj
+│   │   ├── DecodingPage.xaml
+│   │   ├── DecodingPage.xaml.cs
 │   │   ├── SettingsSearch.cs
 │   │   ├── StreamingPage.xaml
 │   │   ├── StreamingPage.xaml.cs
-│   │   ├── TranscriptionSettings.cs
-│   │   ├── TranscriptionSettingsService.cs
 │   │   ├── WhisperPage.xaml
 │   │   ├── WhisperPage.xaml.cs
 │   │   └── WhisperSettingsModule.cs
@@ -2438,13 +2447,15 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PortAudioDeploymentBugNotes.md
 │   │   ├── PortAudioDeploymentTests.cs
 │   │   ├── PortAudioInteropTests.cs
-│   │   ├── RecordingLimitTests.cs
 │   │   ├── StreamingResamplerTests.cs
 │   │   ├── SubWindowAssemblerTests.cs
 │   │   ├── TestCaptureDoubles.cs
 │   │   ├── TranscriptionPreprocessorTests.cs
 │   │   ├── VoiceDetectorTests.cs
 │   │   └── VoiceLevelMeterScaleTests.cs
+│   ├── Deckle.Audio.Views.Tests/
+│   │   ├── Deckle.Audio.Views.Tests.csproj
+│   │   └── RecordingLimitTests.cs
 │   ├── Deckle.Autocorrect.Tests/
 │   │   ├── AccentFoldingTests.cs
 │   │   ├── AccentIndexTests.cs
@@ -2507,7 +2518,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DefaultValueTextTests.cs
 │   │   ├── DialogDefaultButtonTests.cs
 │   │   ├── GestureHoldTests.cs
-│   │   ├── HotkeyChordTests.cs
 │   │   ├── HotkeyChordTextTests.cs
 │   │   ├── MagnitudeGrainBugNotes.md
 │   │   ├── MagnitudeGrainIntegerTests.cs
@@ -2527,6 +2537,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Core.Tests/
 │   │   ├── Deckle.Core.Tests.csproj
 │   │   ├── DpiTests.cs
+│   │   ├── HotkeyChordTests.cs
 │   │   ├── JsonSettingsStoreBugNotes.md
 │   │   ├── JsonSettingsStoreTests.cs
 │   │   ├── ModuleDirectoryNameTests.cs

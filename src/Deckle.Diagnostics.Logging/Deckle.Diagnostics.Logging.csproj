@@ -1,32 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Diagnostics.Logging</RootNamespace>
-    <UseWinUI>true</UseWinUI>
-    <!-- Neutral language for the lib's PRI fallback. Mirrors Deckle.App.csproj. -->
-    <DefaultLanguage>en-US</DefaultLanguage>
-    <!-- Generates the lib's own .pri so x:Uid lookups in DiagnosticsPage resolve
-         against the Deckle.Diagnostics.Logging/Resources subtree
-         (Strings/en-US/Resources.resw). -->
-    <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
-  <ItemGroup>
-    <!-- One WinAppSDK runtime per process: never override the central version. -->
-    <PackageReference Include="Microsoft.WindowsAppSDK" />
-    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" />
-    <PackageReference Include="CommunityToolkit.Mvvm" />
-    <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
-  </ItemGroup>
-
+  <!-- The logging logic: the verbosity gates and their persisted settings, the
+       application log sink, log transfer, and the LogWindow's filter and
+       auto-scroll rules. No XAML, no UseWinUI and no project that holds XAML,
+       so the engines that log through it (Transcription, Autocorrect,
+       Lighting.Ambient) never run the XAML compiler on its account, and every
+       rule here is tested without a window. Deckle.Diagnostics.Logging.Views
+       presents it: the Diagnostics settings page and the log filter bar. -->
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
-    <!-- Input owns the persisted mouse-wheel capture preference surfaced by
-         Diagnostics > Telemetry. This UI dependency does not move ownership
-         of the setting or recorder into Logging. -->
-    <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
-    <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
-    <!-- No cycle: Diagnostics.Telemetry does not reference this module. -->
-    <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
   </ItemGroup>
 </Project>

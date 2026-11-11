@@ -4,6 +4,7 @@ using CommunityToolkit.WinUI.Controls;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Windows.Globalization.NumberFormatting;
+using Deckle.Localization;
 
 namespace Deckle.Catalog;
 

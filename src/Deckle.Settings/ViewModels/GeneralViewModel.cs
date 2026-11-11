@@ -5,6 +5,7 @@ using Deckle.Catalog;
 using Deckle.Shell;
 using Deckle.Core;
 using Deckle.Diagnostics;
+using Deckle.Localization;
 
 namespace Deckle.Settings;
 

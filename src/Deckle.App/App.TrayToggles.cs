@@ -6,6 +6,7 @@ using Deckle.Lighting.Ambient;
 using Deckle.Llm.Rewrite;
 using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
+using Deckle.Localization;
 
 namespace Deckle.App;
 

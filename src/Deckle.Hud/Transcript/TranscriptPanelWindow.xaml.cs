@@ -10,6 +10,7 @@ using Deckle.Core;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Shell;
+using Deckle.Localization;
 
 namespace Deckle.Hud;
 

@@ -2,6 +2,7 @@ using Deckle.App;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Transcription;
+using Deckle.Localization;
 
 namespace Deckle.App;
 
@@ -91,7 +92,7 @@ public partial class App
     private volatile bool _quitPending;
 
     private string QuitPendingStatus(string status) =>
-        Deckle.Catalog.Loc.Format("Status_QuitPending_Format", status);
+        Deckle.Localization.Loc.Format("Status_QuitPending_Format", status);
 
     // Every path that ends the app arrives here: tray Quit, the three restarts,
     // the update and the data move. Work in flight is finished first (the
@@ -136,7 +137,7 @@ public partial class App
         try
         {
             _tray?.UpdateStatus(
-                QuitPendingStatus(Deckle.Catalog.Loc.Get(
+                QuitPendingStatus(Deckle.Localization.Loc.Get(
                     wasRecording ? "Status_Recording" : "Status_Transcribing")),
                 isRecording: false);
             // The same acknowledgement as the hotkey release: the next engine

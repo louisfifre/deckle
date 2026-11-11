@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Deckle.Core;
 using Microsoft.UI.Xaml;
 
 namespace Deckle.Catalog;

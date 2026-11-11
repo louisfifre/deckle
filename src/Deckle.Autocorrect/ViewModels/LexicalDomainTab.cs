@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using Deckle.Catalog;
 using Microsoft.UI.Xaml;
+using Deckle.Localization;
 
 namespace Deckle.Autocorrect;
 
