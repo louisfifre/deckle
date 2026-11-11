@@ -1404,6 +1404,44 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LlmSettingsNormalizer.cs
 │   │   ├── LlmSettingsService.cs
 │   │   └── SettingsSearch.cs
+│   ├── Deckle.Mail/
+│   │   ├── Domain/
+│   │   │   ├── Deadline.cs
+│   │   │   ├── Mail.cs
+│   │   │   ├── Mailbox.cs
+│   │   │   ├── MailJudgment.cs
+│   │   │   └── MailPlace.cs
+│   │   ├── Intents/
+│   │   │   └── MailIntent.cs
+│   │   ├── Strings/
+│   │   │   ├── MailStrings.resx
+│   │   │   └── MailWording.cs
+│   │   ├── Subjects/
+│   │   │   ├── MailPlacement.cs
+│   │   │   ├── SortingCorrection.cs
+│   │   │   ├── Subject.cs
+│   │   │   └── SubjectJoining.cs
+│   │   ├── Triage/
+│   │   │   ├── MailScope.cs
+│   │   │   ├── SortingRecord.cs
+│   │   │   ├── Treatment.cs
+│   │   │   ├── TriageChange.cs
+│   │   │   ├── TriageOptions.cs
+│   │   │   ├── TriageState.Corrections.cs
+│   │   │   ├── TriageState.cs
+│   │   │   ├── TriageState.Day.cs
+│   │   │   ├── TriageState.Delivery.cs
+│   │   │   ├── TriageState.Gestures.cs
+│   │   │   └── TriageState.Sorting.cs
+│   │   ├── Views/
+│   │   │   ├── ActivityLog.cs
+│   │   │   ├── DaySummary.cs
+│   │   │   ├── MailboxNaming.cs
+│   │   │   ├── MailCalendar.cs
+│   │   │   ├── NavigationCounts.cs
+│   │   │   ├── TaskDayProposal.cs
+│   │   │   └── TriageList.cs
+│   │   └── Deckle.Mail.csproj
 │   ├── Deckle.Modules/
 │   │   ├── Deckle.Modules.csproj
 │   │   ├── DeckleModulesSource.cs
@@ -2441,6 +2479,22 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ClaudeReasoningTests.cs
 │   │   ├── Deckle.Llm.Tests.csproj
 │   │   └── ReasoningOnTheWireTests.cs
+│   ├── Deckle.Mail.Tests/
+│   │   ├── ActivityTests.cs
+│   │   ├── Deckle.Mail.Tests.csproj
+│   │   ├── EndOfDayTests.cs
+│   │   ├── GestureTests.cs
+│   │   ├── ImmutabilityTests.cs
+│   │   ├── ListOrderTests.cs
+│   │   ├── MailboxNamingTests.cs
+│   │   ├── MailWordingTests.cs
+│   │   ├── NavigationCountsTests.cs
+│   │   ├── OpenDecisionTests.cs
+│   │   ├── SubjectTests.cs
+│   │   ├── SyntheticMail.cs
+│   │   ├── TaskDayProposalTests.cs
+│   │   ├── UnreachableTargetTests.cs
+│   │   └── WhereAMailLandsTests.cs
 │   ├── Deckle.Modules.Tests/
 │   │   ├── AssemblyInfo.cs
 │   │   ├── Deckle.Modules.Tests.csproj

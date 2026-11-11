@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The suite stays on the shared Windows test setup of tests/Directory.Build.props
+       (Windows target framework, Deckle.TestSupport) instead of carving a portable
+       exception into it: every suite runs on this Windows machine anyway, and the
+       portability that matters, the library's own, is already enforced by
+       Deckle.Mail building against plain net10.0. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Deckle.Mail\Deckle.Mail.csproj" />
+  </ItemGroup>
+</Project>
