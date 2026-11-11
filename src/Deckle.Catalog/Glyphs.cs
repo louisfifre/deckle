@@ -2,7 +2,8 @@ namespace Deckle.Catalog;
 
 // ─── Glyphs ───────────────────────────────────────────────────────
 //
-// C# mirror of Themes/Icons.xaml, for code that sets FontIcon.Glyph.
+// C# mirror of Icons.xaml (in Deckle.Catalog.Themes), for code that sets
+// FontIcon.Glyph.
 // Any key added here must be added to Icons.xaml too, and vice versa:
 // the two are kept in sync by hand.
 //

@@ -126,6 +126,9 @@
     <ProjectReference Include="..\Deckle.Audio\Deckle.Audio.csproj" />
     <ProjectReference Include="..\Deckle.Audio.Views\Deckle.Audio.Views.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
+    <!-- Catalog's compiled XAML dictionaries (icons, page header brushes).
+         The host references them; Catalog and the modules name them by URI. -->
+    <ProjectReference Include="..\Deckle.Catalog.Themes\Deckle.Catalog.Themes.csproj" />
     <ProjectReference Include="..\Deckle.Chrono\Deckle.Chrono.csproj" />
     <ProjectReference Include="..\Deckle.Composition\Deckle.Composition.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />

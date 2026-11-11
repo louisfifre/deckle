@@ -4,7 +4,8 @@
     Merged into App.xaml so every page resolves these keys via StaticResource.
     XAML usage : Glyph="{StaticResource Icon.Microphone}"
     Inside a markup extension : HeaderIcon="{ui:FontIcon Glyph={StaticResource Icon.Microphone}}"
-    C# usage   : Glyphs.Microphone (kept in sync manually in Glyphs.cs).
+    C# usage   : Glyphs.Microphone (kept in sync manually in Deckle.Catalog's
+                 Glyphs.cs).
 
     Naming convention :
       - Generic concepts : Icon.<Concept> (PascalCase, single dot)

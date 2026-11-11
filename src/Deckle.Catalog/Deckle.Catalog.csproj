@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <RootNamespace>Deckle.Catalog</RootNamespace>
-    <!-- UseWinUI compiles the Themes/*.xaml dictionaries as XAML resources so
-         the host App.xaml can merge Icons.xaml via
-         ms-appx:///Deckle.Catalog/Themes/Icons.xaml and SettingsPageHeader can
-         load SettingsPageHeaderBrushes.xaml by the same kind of URI. The module hosts
-         no XAML page: its controls are built in code. -->
+    <!-- UseWinUI surfaces the Microsoft.WinUI reference: the composer builds
+         its controls in code. The module holds no .xaml, so the XAML compiler
+         never runs here, nor on Catalog's account in the modules that
+         reference it. Its two compiled dictionaries (the icon catalog and the
+         page header's brushes) live in Deckle.Catalog.Themes, which the host
+         references; Catalog names them by URI and does not reference that
+         project. No .xaml and no .resw, so no PRI emission
+         (EnableMsixTooling) either. -->
     <UseWinUI>true</UseWinUI>
-    <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>
 
   <ItemGroup>

@@ -2,7 +2,7 @@
     SettingsPageHeaderBrushes.xaml — the settings page header's brushes.
 
     SettingsPageHeader merges this dictionary into its Resources
-    (ms-appx:///Deckle.Catalog/Themes/SettingsPageHeaderBrushes.xaml), where
+    (ms-appx:///Deckle.Catalog.Themes/SettingsPageHeaderBrushes.xaml), where
     its breadcrumb finds it.
 
     Breadcrumb: the stock control paints every segment in the primary text

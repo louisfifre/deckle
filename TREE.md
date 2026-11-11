@@ -1035,9 +1035,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SettingsComposer.Numeric.cs
 │   │   │   ├── SettingsPageHeader.cs
 │   │   │   └── SettingsSection.cs
-│   │   ├── Themes/
-│   │   │   ├── Icons.xaml
-│   │   │   └── SettingsPageHeaderBrushes.xaml
 │   │   ├── ConfirmationService.cs
 │   │   ├── ConsentService.cs
 │   │   ├── Deckle.Catalog.csproj
@@ -1047,6 +1044,10 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SettingsModuleDescriptor.cs
 │   │   ├── SettingsNavigation.cs
 │   │   └── TelemetryConsent.cs
+│   ├── Deckle.Catalog.Themes/
+│   │   ├── Deckle.Catalog.Themes.csproj
+│   │   ├── Icons.xaml
+│   │   └── SettingsPageHeaderBrushes.xaml
 │   ├── Deckle.Chrono/
 │   │   ├── ChronoFormatter.cs
 │   │   ├── ChronoTimer.cs
