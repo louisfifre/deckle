@@ -67,9 +67,8 @@ public partial class TaskbarViewModel
             defaultValue: () => new TaskbarSettings().CompactClock,
             advisory: () => ProblemAdvisory(TaskbarPart.CompactClock)),
         // A switch that unfolds the box the thumbnails grow to fit: two numbers,
-        // each a field with a slider (a size is judged by eye). A group's own card
-        // carries no advisory, so the engine's word hangs under the first child,
-        // which is on screen whenever the switch is.
+        // each a field with a slider (a size is judged by eye). The engine's word
+        // hangs under the group, like the other switches of this page.
         Setting.Group(
             "TaskbarPage_LargerThumbnailsCard",
             () => LargerThumbnails,
@@ -80,8 +79,7 @@ public partial class TaskbarViewModel
                     () => ThumbnailMaxWidth,
                     value => ThumbnailMaxWidth = value,
                     new MagnitudeArgs(ThumbnailMinimumWidth, ThumbnailMaximumWidth, Unit: "px", Integer: true),
-                    defaultValue: () => new TaskbarSettings().ThumbnailMaxWidth,
-                    advisory: () => ProblemAdvisory(TaskbarPart.Thumbnails)),
+                    defaultValue: () => new TaskbarSettings().ThumbnailMaxWidth),
                 Setting.Magnitude(
                     "TaskbarPage_ThumbnailMaxHeightCard",
                     () => ThumbnailMaxHeight,
@@ -89,7 +87,8 @@ public partial class TaskbarViewModel
                     new MagnitudeArgs(ThumbnailMinimumHeight, ThumbnailMaximumHeight, Unit: "px", Integer: true),
                     defaultValue: () => new TaskbarSettings().ThumbnailMaxHeight),
             ],
-            defaultValue: () => new TaskbarSettings().LargerThumbnails),
+            defaultValue: () => new TaskbarSettings().LargerThumbnails,
+            advisory: () => ProblemAdvisory(TaskbarPart.Thumbnails)),
     ];
 
     // The box's bounds, in effective pixels. The low ends are Explorer's own

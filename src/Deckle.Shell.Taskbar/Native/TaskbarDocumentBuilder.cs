@@ -130,8 +130,26 @@ internal static class TaskbarDocumentBuilder
             rules.Add(new("clock.button.stack.padding", ClockButton + OmniButtonStack, "Padding", "0,4,0,0"));
         }
 
+        if (customization.Thumbnails is not null)
+        {
+            // Explorer caps the width of a thumbnail's view when it applies its
+            // template, at about the width of its own 200 px box: a thumbnail
+            // grown past it is cut on the right. The box already bounds the
+            // thumbnail, so the view's own cap is lifted out of the way. A view
+            // exists only while a thumbnail shows, so the rule may find nothing.
+            rules.Add(new(ThumbnailViewMaxWidthId, ThumbnailView, "MaxWidth", Number(UncappedWidth), Optional: true));
+        }
+
         return rules;
     }
+
+    // One thumbnail of the hover flyout: its title, its close button and the
+    // window's picture (the runtime class is named in Taskbar.View.dll).
+    private const string ThumbnailView = "Taskbar.TaskItemThumbnailView";
+    public const string ThumbnailViewMaxWidthId = "thumbnails.view.maxWidth";
+
+    // Wider than any screen, and a plain number: a rule's value is read as XAML.
+    private const double UncappedWidth = 10000;
 
     // The styles go on the TextBlocks as rules; the text itself is the clock behavior.
     private static void AddClockStyle(List<TaskbarRule> rules, string block, string textBlock, ClockTextStyle style)

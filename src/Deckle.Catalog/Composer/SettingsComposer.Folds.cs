@@ -382,9 +382,10 @@ public sealed partial class SettingsComposer
                 info.IsOpen = true;
             }
 
-            // The card's own refresher was registered before this one, so its
-            // Visibility is already current here.
-            noteRow.Visibility = card.Visibility;
+            // A closed InfoBar takes no room but the row that hosts it does, so
+            // the row goes with the message. The card's own refresher was
+            // registered before this one, so its Visibility is already current.
+            noteRow.Visibility = message is null ? Visibility.Collapsed : card.Visibility;
         }
 
         _refreshers.Add(Refresh);
