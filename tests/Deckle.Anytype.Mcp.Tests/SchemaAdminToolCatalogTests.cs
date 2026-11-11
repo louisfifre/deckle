@@ -110,6 +110,32 @@ public class SchemaAdminToolCatalogTests
         Assert.False(action["additionalProperties"]!.GetValue<bool>());
     }
 
+    // A fresh space ships status, done and due_date under English names, so the
+    // first preview of the model v6 manifest plans renames. The advertised
+    // output left that kind out and the host refused the whole preview
+    // ("Tool output does not match the advertised JSON Schema", 2026-11-11).
+    [Theory]
+    [InlineData("rename", "property:status")]
+    [InlineData("rename", "type:task")]
+    [InlineData("create_property", "priority")]
+    [InlineData("create_tag", "priority:p_0")]
+    [InlineData("create_type", "project")]
+    [InlineData("set_icon", "project")]
+    [InlineData("set_description", "project")]
+    [InlineData("attach_property", "project:status")]
+    [InlineData("detach_property", "project:tag")]
+    [InlineData("order_properties", "project")]
+    [InlineData("create_section", "Work")]
+    [InlineData("add_to_section", "Work:project")]
+    public void EveryPlannedActionKindIsInTheAdvertisedOutputSchema(string kind, string key)
+    {
+        var result = new SchemaPreviewResult(
+            new string('a', 64), "dev", [new SchemaPreviewAction(kind, key, "Name")], [], [], "digest");
+
+        Assert.True(new McpJsonSchemaContract(
+            SchemaAdminToolCatalog.PreviewOutputSchema()).Accepts(SchemaAdminToolCatalog.PreviewContent(result)));
+    }
+
     [Fact]
     public void RealPreviewProjectionMatchesItsAdvertisedOutputSchema()
     {

@@ -279,7 +279,7 @@ public static class SchemaAdminToolCatalog
                         ["enum"] = new JsonArray
                         {
                             "create_property", "create_tag", "create_type",
-                            "set_icon", "set_description", "attach_property",
+                            "rename", "set_icon", "set_description", "attach_property",
                             "detach_property", "order_properties",
                             "create_section", "add_to_section",
                         },
