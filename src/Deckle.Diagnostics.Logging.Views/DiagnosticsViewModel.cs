@@ -3,7 +3,7 @@ using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Telemetry;
 
-namespace Deckle.Diagnostics.Logging;
+namespace Deckle.Diagnostics.Logging.Views;
 
 // Load() pulls from each store; property changes push back through the
 // matching PushXxxToSettings(), and _isSyncing prevents re-saving during

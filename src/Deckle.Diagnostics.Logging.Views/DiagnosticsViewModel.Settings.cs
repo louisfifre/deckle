@@ -3,7 +3,7 @@ using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics.Telemetry;
 
-namespace Deckle.Diagnostics.Logging;
+namespace Deckle.Diagnostics.Logging.Views;
 
 // The page's settings manifest, kept beside the ViewModel that owns the
 // values. SettingsComposer turns each list into SettingsCards; adding or

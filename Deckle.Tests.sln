@@ -195,6 +195,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Atelier.Views", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Localization", "src\Deckle.Localization\Deckle.Localization.csproj", "{C5121BB3-B77F-4693-9D3B-EEA63C7C891B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Deckle.Diagnostics.Logging.Views", "src\Deckle.Diagnostics.Logging.Views\Deckle.Diagnostics.Logging.Views.csproj", "{A69D4479-CA9B-498B-BBDE-0020B1570DA2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -1333,6 +1335,18 @@ Global
 		{C5121BB3-B77F-4693-9D3B-EEA63C7C891B}.Release|x64.Build.0 = Release|x64
 		{C5121BB3-B77F-4693-9D3B-EEA63C7C891B}.Release|x86.ActiveCfg = Release|x64
 		{C5121BB3-B77F-4693-9D3B-EEA63C7C891B}.Release|x86.Build.0 = Release|x64
+		{A69D4479-CA9B-498B-BBDE-0020B1570DA2}.Debug|Any CPU.ActiveCfg = Debug|x64
+		{A69D4479-CA9B-498B-BBDE-0020B1570DA2}.Debug|Any CPU.Build.0 = Debug|x64
+		{A69D4479-CA9B-498B-BBDE-0020B1570DA2}.Debug|x64.ActiveCfg = Debug|x64
+		{A69D4479-CA9B-498B-BBDE-0020B1570DA2}.Debug|x64.Build.0 = Debug|x64
+		{A69D4479-CA9B-498B-BBDE-0020B1570DA2}.Debug|x86.ActiveCfg = Debug|x64
+		{A69D4479-CA9B-498B-BBDE-0020B1570DA2}.Debug|x86.Build.0 = Debug|x64
+		{A69D4479-CA9B-498B-BBDE-0020B1570DA2}.Release|Any CPU.ActiveCfg = Release|x64
+		{A69D4479-CA9B-498B-BBDE-0020B1570DA2}.Release|Any CPU.Build.0 = Release|x64
+		{A69D4479-CA9B-498B-BBDE-0020B1570DA2}.Release|x64.ActiveCfg = Release|x64
+		{A69D4479-CA9B-498B-BBDE-0020B1570DA2}.Release|x64.Build.0 = Release|x64
+		{A69D4479-CA9B-498B-BBDE-0020B1570DA2}.Release|x86.ActiveCfg = Release|x64
+		{A69D4479-CA9B-498B-BBDE-0020B1570DA2}.Release|x86.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -1432,5 +1446,6 @@ Global
 		{ADCAC407-9037-4DAC-9CD5-576470F1C598} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{73AF38B3-55D2-4A05-8415-6C7CE425CF0F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{C5121BB3-B77F-4693-9D3B-EEA63C7C891B} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{A69D4479-CA9B-498B-BBDE-0020B1570DA2} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

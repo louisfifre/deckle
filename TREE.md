@@ -1143,23 +1143,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── WindowingProbe.cs
 │   │   └── WorkId.cs
 │   ├── Deckle.Diagnostics.Logging/
-│   │   ├── Strings/
-│   │   │   └── en-US/
-│   │   │       └── Resources.resw
 │   │   ├── Ui/
-│   │   │   ├── Collections/
-│   │   │   │   └── RangeObservableCollection.cs
-│   │   │   └── Controls/
-│   │   │       ├── LogFilterBar.xaml
-│   │   │       └── LogFilterBar.xaml.cs
+│   │   │   └── Collections/
+│   │   │       └── RangeObservableCollection.cs
 │   │   ├── AmbientCaptureGate.cs
 │   │   ├── ApplicationLogSink.cs
 │   │   ├── Deckle.Diagnostics.Logging.csproj
-│   │   ├── DiagnosticsPage.xaml
-│   │   ├── DiagnosticsPage.xaml.cs
-│   │   ├── DiagnosticsSettingsModule.cs
-│   │   ├── DiagnosticsViewModel.cs
-│   │   ├── DiagnosticsViewModel.Settings.cs
 │   │   ├── LogAutoScroll.cs
 │   │   ├── LogFilterDimension.cs
 │   │   ├── LogFilterSelection.cs
@@ -1168,8 +1157,21 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LoggingSettingsService.cs
 │   │   ├── LogTransfer.cs
 │   │   ├── LogWindowFilterSession.cs
-│   │   ├── SettingsSearch.cs
 │   │   └── TranscriptionActivityScope.cs
+│   ├── Deckle.Diagnostics.Logging.Views/
+│   │   ├── Controls/
+│   │   │   ├── LogFilterBar.xaml
+│   │   │   └── LogFilterBar.xaml.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Deckle.Diagnostics.Logging.Views.csproj
+│   │   ├── DiagnosticsPage.xaml
+│   │   ├── DiagnosticsPage.xaml.cs
+│   │   ├── DiagnosticsSettingsModule.cs
+│   │   ├── DiagnosticsViewModel.cs
+│   │   ├── DiagnosticsViewModel.Settings.cs
+│   │   └── SettingsSearch.cs
 │   ├── Deckle.Diagnostics.Telemetry/
 │   │   ├── Deckle.Diagnostics.Telemetry.csproj
 │   │   ├── TelemetryListenerBootstrap.cs

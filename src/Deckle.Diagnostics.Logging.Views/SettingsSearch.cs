@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Deckle.Catalog;
 
-namespace Deckle.Diagnostics.Logging;
+namespace Deckle.Diagnostics.Logging.Views;
 
 // The diagnostics page's contribution to the shell's cross-page search index: one
 // SettingSearchEntry per findable card, resolved from this module's own PRI

@@ -6,11 +6,13 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Deckle.Localization;
 
-namespace Deckle.Diagnostics.Logging.Ui.Controls;
+namespace Deckle.Diagnostics.Logging.Views;
 
 public sealed partial class LogFilterBar : UserControl
 {
-    private const string ResourceLibrary = "Deckle.Diagnostics.Logging";
+    // The PRI subtree that holds this control's strings: the assembly that
+    // compiles its XAML, not Deckle.Diagnostics.Logging.
+    private const string ResourceLibrary = "Deckle.Diagnostics.Logging.Views";
     private readonly ObservableCollection<ActiveLogFilterChip> _activeFilters = [];
     private readonly SortedDictionary<string, string> _modules = new(StringComparer.Ordinal);
     private LogFilterSelection? _selection;

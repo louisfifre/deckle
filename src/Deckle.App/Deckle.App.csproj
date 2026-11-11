@@ -130,6 +130,7 @@
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
+    <ProjectReference Include="..\Deckle.Diagnostics.Logging.Views\Deckle.Diagnostics.Logging.Views.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics.Telemetry\Deckle.Diagnostics.Telemetry.csproj" />
     <ProjectReference Include="..\Deckle.Hud\Deckle.Hud.csproj" />
     <ProjectReference Include="..\Deckle.Install\Deckle.Install.csproj" />

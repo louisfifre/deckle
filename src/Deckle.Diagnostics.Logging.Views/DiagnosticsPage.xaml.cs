@@ -8,7 +8,7 @@ using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Localization;
 
-namespace Deckle.Diagnostics.Logging;
+namespace Deckle.Diagnostics.Logging.Views;
 
 // ── DiagnosticsPage ─────────────────────────────────────────────────────────
 //

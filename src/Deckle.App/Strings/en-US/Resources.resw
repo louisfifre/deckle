@@ -1615,7 +1615,7 @@
     <value>context {0}K  ·  temperature {1}</value>
   </data>
   <!-- Action of the same notice: opens the Diagnostics page. The label names
-       the page as its nav label does (Deckle.Diagnostics.Logging). -->
+       the page as its nav label does (Deckle.Diagnostics.Logging.Views). -->
   <data name="LogWindowDroppedSettingsButton.Content" xml:space="preserve">
     <value>Open Diagnostics settings</value>
   </data>

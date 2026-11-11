@@ -119,7 +119,7 @@ public partial class App
         // under the Diagnostics page with the module's assembly, where their words
         // live. Described once here because every contribution needs its page
         // coordinates before the page itself registers, further down.
-        var diagnostics = Diagnostics.Logging.DiagnosticsSettingsModule.Describe(order: 600);
+        var diagnostics = Diagnostics.Logging.Views.DiagnosticsSettingsModule.Describe(order: 600);
 
         void ContributeDiagnostics(
             Catalog.DiagnosticsContribution contribution,
@@ -195,7 +195,7 @@ public partial class App
         RegisterSettingsModule(Shell.TaskbarCover.TaskbarCoverSettingsModule.Describe(order: 581), Shell.TaskbarCover.SettingsSearch.Entries);
         // Diagnostics is shell-level observability, not a presence module —
         // always registered.
-        RegisterSettingsModule(diagnostics, Diagnostics.Logging.SettingsSearch.Entries);
+        RegisterSettingsModule(diagnostics, Diagnostics.Logging.Views.SettingsSearch.Entries);
 
         // General and Shortcuts are static nav anchors of the shell, not registry
         // modules, so their cards register with the values their NavigationViewItems
