@@ -8,3 +8,12 @@
 - **Violated invariant:** Every entry of a `SettingsExpander`'s `Items` is a `SettingsCard`. A composer that feeds a fold composes into a panel of its own and moves the cards into `Items`, as `GeneralPage.ComposeApplicationDataSection` does since the fix (31dde575).
 - **Recurrence cue:** A `StackPanel`, a `Grid` or any element that is not a `SettingsCard` inside `SettingsExpander.Items`, in XAML or from code; a fold that nothing opens during a review. Same family as the Button style applied to a ToggleButton that blanked every page the same day (4c90a401): a WinUI style whose `TargetType` the element is not.
 - **Regression coverage:** None. The failure happens inside the Toolkit's `ItemsRepeater` at expand time, in the WinUI visual tree; the Catalog tests run without a WinUI runtime and no test project covers the Settings pages. A guard would be a UI test that expands every fold of every page, which `deckle-testing` targets and does not have yet.
+
+## A fold child with an advisory left an empty band under its card
+
+- **Trigger:** A fold child declared with an `advisory` that has nothing to say. Seen on 2026-11-11 (v0.118.1) on the Taskbar page: "Larger thumbnails" unfolded, its first child "Largest width" carrying the thumbnails' advisory.
+- **Observed symptom:** An empty band about as high as a card between "Largest width" and "Largest height".
+- **Cause:** Established from the code. A fold child's advisory goes into `Items` as a second, borderless `SettingsCard` hosting the `InfoBar` (the invariant of the note above). `AddFoldChild` closed the `InfoBar` when there was no message but gave the hosting row the advised card's `Visibility`, so the row stayed visible and kept a card's own height. No other fold child carried an advisory before, which is inferred from the page manifests and why it had not shown.
+- **Violated invariant:** A row that exists only to host a message is on screen only while there is a message. The line is in `SettingsComposer.Folds.AddFoldChild`.
+- **Recurrence cue:** An empty band inside a fold, under a child whose descriptor has an `advisory`; any new wrapper card added to `Items` for a control that can be empty.
+- **Regression coverage:** None, for the reason of the note above: the row's visibility lives in the WinUI visual tree and the Catalog tests run without a WinUI runtime. The fix was seen on screen by the maintainer on v0.118.2.

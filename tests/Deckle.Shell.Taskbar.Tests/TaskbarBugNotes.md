@@ -29,3 +29,30 @@
   capture with the harness (`--target startmenu`). Verified on 2026-11-09 at
   200 % (12 DIP above and below, measured in pixels) and by the maintainer at
   150 %.
+
+## A larger thumbnail was cut on the right
+
+- Trigger: « Larger thumbnails » on, on Windows 11 26100 (Taskbar.View.dll
+  2608.26001.200.0), with a box wider than Explorer's own 200 px; seen at
+  650 x 330 on 2026-11-11 (v0.118.1).
+- Symptom: the hover thumbnail grew to the box's height, but its frame stayed
+  about as wide as Explorer's own and the window's picture was cut on the right.
+- Cause: the size function Deckle leads to its own box
+  (`ThumbnailHelpers::GetScaledThumbnailSize`) sizes the picture only. Each
+  thumbnail sits in a `Taskbar.TaskItemThumbnailView`, whose `MaxWidth` Explorer
+  sets when it applies the view's template. The cap was not read on the live
+  tree: it is inferred from the Windhawk thumbnail mod, which lifts the same
+  property in `OnApplyTemplate`, and confirmed by the outcome, the maintainer
+  seeing whole thumbnails once the rule `thumbnails.view.maxWidth` held it open
+  (v0.118.2). The cap's exact value is not known.
+- Violated invariant: a size Explorer computes in a function is also bounded by
+  the element that shows it; growing one without the other shows less than was
+  asked. The rule and its reason are in `TaskbarDocumentBuilder.Rules`.
+- Recurrence cue: a thumbnail that reaches one side of the box and is cut on
+  the other, with `thumbnail_box_applied` in the log and no thumbnails problem
+  on the page; after a Windows update, the rule reported `contested` or `error`.
+- Guarded by: `ThumbnailBoxTests.TheViewsOwnWidthCapIsLiftedOnlyWhileTheThumbnailsGrow`
+  and `TheWidthRuleFindingNoViewSaysNothingButItsFailingDoes`, which hold the
+  rule in the document and its word on the page. That the rule lifts the cap in
+  Explorer has no automated test: it needs the live hover flyout, and the check
+  is a look at a wide window's thumbnail.
