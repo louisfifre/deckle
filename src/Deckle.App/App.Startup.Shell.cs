@@ -71,6 +71,7 @@ public partial class App
                 _lastRecordingState = isRecording;
                 _logWindow?.SetRecordingState(isRecording);
                 _playgroundWindow?.SetRecordingState(isRecording);
+                _mailWindow?.SetRecordingState(isRecording);
                 _settingsWindow?.SetRecordingState(isRecording);
 
                 if (isRecording)

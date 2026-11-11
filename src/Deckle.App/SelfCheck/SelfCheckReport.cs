@@ -51,7 +51,7 @@ internal sealed class SelfCheckReport
     public string Outcome { get; set; } = "failed";
 
     // The windows the run must have shown for "passed" to mean something.
-    private static readonly string[] RequiredWindows = ["settings", "log", "playground"];
+    private static readonly string[] RequiredWindows = ["settings", "log", "playground", "mail"];
 
     // Recomputes Failures, Warnings and Outcome from what was recorded.
     public void Judge()
@@ -137,7 +137,7 @@ internal sealed class SelfCheckReport
 }
 
 // One window or one page of a paged window, as the run saw it.
-//   Window   the stable name: settings, log, playground.
+//   Window   the stable name: settings, log, playground, mail.
 //   Page     the page slug for a paged window, null otherwise.
 //   Loaded   the surface was on screen and loaded before the timeout.
 //   Ms       how long that took.

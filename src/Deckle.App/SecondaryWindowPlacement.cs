@@ -11,6 +11,7 @@ internal static class SecondaryWindowPlacement
     public const string Settings = "settings";
     public const string Log = "log";
     public const string Playground = "playground";
+    public const string Mail = "mail";
 
     private const int SW_SHOWNORMAL = 1;
     private const int SW_SHOWMINIMIZED = 2;

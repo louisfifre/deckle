@@ -1,0 +1,518 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+
+  <!-- The window and its title bar -->
+  <data name="MailTitleBar.Title" xml:space="preserve">
+    <value>Deckle Mail</value>
+  </data>
+  <data name="MailSearchBox.PlaceholderText" xml:space="preserve">
+    <value>Search mail</value>
+  </data>
+  <data name="MailSearchBox.AutomationProperties.Name" xml:space="preserve">
+    <value>Search mail</value>
+  </data>
+  <data name="Window_Title" xml:space="preserve">
+    <value>Deckle Mail</value>
+  </data>
+
+  <!-- The navigation -->
+  <data name="Nav_Triage" xml:space="preserve">
+    <value>Triage</value>
+  </data>
+  <data name="Nav_Activity" xml:space="preserve">
+    <value>Activity</value>
+  </data>
+  <data name="Nav_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Nav_Inbox" xml:space="preserve">
+    <value>Inbox</value>
+  </data>
+  <data name="Nav_Waiting_Format" xml:space="preserve">
+    <value>{0}, {1} waiting</value>
+  </data>
+  <data name="Nav_CannotConnect_Format" xml:space="preserve">
+    <value>{0}, cannot connect</value>
+  </data>
+
+  <!-- The problems button. Open 59: its accessible name and the title of its list are not decided. -->
+  <data name="Problems_Name_Format" xml:space="preserve">
+    <value>Needs attention, {0}</value>
+  </data>
+  <data name="Problem_CannotConnect_Format" xml:space="preserve">
+    <value>{0} cannot connect</value>
+  </data>
+  <data name="Problem_ShownAsOf_Format" xml:space="preserve">
+    <value>Its mail is shown as of {0}.</value>
+  </data>
+  <data name="Problem_AnytypeNotConnected" xml:space="preserve">
+    <value>Anytype is not connected</value>
+  </data>
+  <data name="Problem_AnytypeNotConnected_Message" xml:space="preserve">
+    <value>Connect it to add tasks from your mail.</value>
+  </data>
+  <data name="Problem_OpenSettings" xml:space="preserve">
+    <value>Open settings</value>
+  </data>
+  <data name="Problem_DismissAnytype" xml:space="preserve">
+    <value>Dismiss. You can still connect it in Settings.</value>
+  </data>
+
+  <!-- The search -->
+  <data name="Search_NoMatch" xml:space="preserve">
+    <value>No mail matches</value>
+  </data>
+  <data name="Search_InTriage" xml:space="preserve">
+    <value>In Triage</value>
+  </data>
+
+  <!-- Triage. Open 12: « No action needed », « Done for today » and the proposal « Add task · Fri 13 ». -->
+  <data name="TriageNoActionNeeded.Text" xml:space="preserve">
+    <value>No action needed</value>
+  </data>
+  <data name="TriageDismissAll.Content" xml:space="preserve">
+    <value>Dismiss all</value>
+  </data>
+  <data name="TriageDoneForToday.Content" xml:space="preserve">
+    <value>Done for today</value>
+  </data>
+  <data name="TriageAddMailbox.Text" xml:space="preserve">
+    <value>Add mailbox</value>
+  </data>
+  <data name="Triage_NoMailbox" xml:space="preserve">
+    <value>No mailbox yet</value>
+  </data>
+  <data name="Triage_NoMailbox_Sentence" xml:space="preserve">
+    <value>Add one, and its mail is sorted here.</value>
+  </data>
+  <data name="Triage_NothingWaiting" xml:space="preserve">
+    <value>Nothing is waiting.</value>
+  </data>
+  <data name="Triage_SetAside_Format" xml:space="preserve">
+    <value>{0} set aside by Deckle</value>
+  </data>
+
+  <!-- A row and its two columns -->
+  <data name="Task_Add" xml:space="preserve">
+    <value>Add task</value>
+  </data>
+  <data name="Task_AddFor_Format" xml:space="preserve">
+    <value>Add task · {0}</value>
+  </data>
+  <data name="Task_Today" xml:space="preserve">
+    <value>today</value>
+  </data>
+  <data name="Task_WaitsFor_Format" xml:space="preserve">
+    <value>Waiting for {0}</value>
+  </data>
+  <data name="TaskColumnUndo.Text" xml:space="preserve">
+    <value>Undo</value>
+  </data>
+  <data name="SubjectRowTrash.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Move to trash</value>
+  </data>
+  <data name="SubjectRowRemove.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Dismiss</value>
+  </data>
+  <data name="InfoLineDismiss.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Dismiss</value>
+  </data>
+  <data name="Row_TrashName_Format" xml:space="preserve">
+    <value>Move to trash: {0}</value>
+  </data>
+  <data name="Row_RemoveName_Format" xml:space="preserve">
+    <value>Dismiss: {0}</value>
+  </data>
+  <data name="Row_UndoName_Format" xml:space="preserve">
+    <value>Undo: {0}</value>
+  </data>
+  <data name="Row_NameWithAttachment_Format" xml:space="preserve">
+    <value>{0}, has an attachment</value>
+  </data>
+  <data name="Info_DismissName_Format" xml:space="preserve">
+    <value>Dismiss: {0}</value>
+  </data>
+
+  <!-- What happened. Open 23: a task with no day reads « Task, no day ». -->
+  <data name="Result_TaskFor_Format" xml:space="preserve">
+    <value>Task for {0}</value>
+  </data>
+  <data name="Result_TaskNoDay" xml:space="preserve">
+    <value>Task, no day</value>
+  </data>
+  <data name="Result_MovedToTrash" xml:space="preserve">
+    <value>Moved to trash</value>
+  </data>
+
+  <!-- The menu of days. Open 51: whether No day yet stays, and whether the word is day or date. -->
+  <data name="Menu_Today" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="Menu_Tomorrow" xml:space="preserve">
+    <value>Tomorrow</value>
+  </data>
+  <data name="Menu_PickADay" xml:space="preserve">
+    <value>Pick a day…</value>
+  </data>
+  <data name="Menu_NoDay" xml:space="preserve">
+    <value>No day yet</value>
+  </data>
+  <data name="Menu_FromTheMail" xml:space="preserve">
+    <value>From the mail</value>
+  </data>
+
+  <!-- States the sorting sets -->
+  <data name="Reason_Newsletter" xml:space="preserve">
+    <value>Newsletter</value>
+  </data>
+  <data name="Reason_Promotion" xml:space="preserve">
+    <value>Promotion</value>
+  </data>
+  <data name="Reason_Receipt" xml:space="preserve">
+    <value>Receipt</value>
+  </data>
+  <data name="Reason_NoActionNeeded" xml:space="preserve">
+    <value>No action needed</value>
+  </data>
+  <data name="Mark_Unreadable" xml:space="preserve">
+    <value>Could not read</value>
+  </data>
+  <data name="Mark_SenderNotVerified" xml:space="preserve">
+    <value>Sender not verified</value>
+  </data>
+
+  <!-- The notice of the first trash -->
+  <data name="TrashNotice_Title" xml:space="preserve">
+    <value>Move this subject to the trash?</value>
+  </data>
+  <data name="TrashNotice_Body_Format" xml:space="preserve">
+    <value>Its mails go to the trash of {0} on the server, as in your webmail. {1} deletes them after {2} days in the trash; until then, Undo brings them back.</value>
+  </data>
+  <data name="TrashNotice_Primary" xml:space="preserve">
+    <value>Move to trash</value>
+  </data>
+  <data name="Common_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+
+  <!-- A subject opened -->
+  <data name="Subject_You" xml:space="preserve">
+    <value>You</value>
+  </data>
+  <data name="Subject_OneMail" xml:space="preserve">
+    <value>1 mail</value>
+  </data>
+  <data name="Subject_Mails_Format" xml:space="preserve">
+    <value>{0} mails</value>
+  </data>
+  <data name="Subject_NoText" xml:space="preserve">
+    <value>This mail has no text.</value>
+  </data>
+  <data name="SubjectEarlierMail.Text" xml:space="preserve">
+    <value> · Earlier mail ·</value>
+  </data>
+  <data name="SubjectShowLatest.Text" xml:space="preserve">
+    <value>Show the latest</value>
+  </data>
+  <data name="Header_RenameName_Format" xml:space="preserve">
+    <value>Rename {0}</value>
+  </data>
+
+  <!-- Activity. Open 12: « By you », « By Deckle ». -->
+  <data name="ActivityByYou.Text" xml:space="preserve">
+    <value>By you</value>
+  </data>
+  <data name="ActivityByDeckle.Text" xml:space="preserve">
+    <value>By Deckle</value>
+  </data>
+  <data name="Activity_BackInTriage" xml:space="preserve">
+    <value>Back in Triage</value>
+  </data>
+  <data name="Activity_NoneByYou" xml:space="preserve">
+    <value>What you do will be listed here.</value>
+  </data>
+  <data name="Activity_NoneByDeckle" xml:space="preserve">
+    <value>What Deckle sets aside will be listed here.</value>
+  </data>
+  <data name="Day_Today" xml:space="preserve">
+    <value>Today</value>
+  </data>
+  <data name="Day_Yesterday" xml:space="preserve">
+    <value>Yesterday</value>
+  </data>
+
+  <!-- Settings -->
+  <data name="MailSettingsMailboxes.Title" xml:space="preserve">
+    <value>Mailboxes</value>
+  </data>
+  <data name="MailSettingsAddMailbox.Text" xml:space="preserve">
+    <value>Add mailbox</value>
+  </data>
+  <data name="MailSettingsTasks.Title" xml:space="preserve">
+    <value>Tasks</value>
+  </data>
+  <data name="MailSettingsAnytype.Header" xml:space="preserve">
+    <value>Anytype</value>
+  </data>
+  <data name="Status_Connected" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="Status_CannotConnect" xml:space="preserve">
+    <value>Cannot connect</value>
+  </data>
+  <data name="Status_NotConnected" xml:space="preserve">
+    <value>Not connected</value>
+  </data>
+  <data name="Settings_NoAlias" xml:space="preserve">
+    <value>No alias</value>
+  </data>
+  <data name="Settings_OneAlias" xml:space="preserve">
+    <value>1 alias</value>
+  </data>
+  <data name="Settings_Aliases_Format" xml:space="preserve">
+    <value>{0} aliases</value>
+  </data>
+
+  <!-- The page of a mailbox -->
+  <data name="MailboxSectionMailbox.Title" xml:space="preserve">
+    <value>Mailbox</value>
+  </data>
+  <data name="MailboxNameCard.Header" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Mailbox_NameDescription_Format" xml:space="preserve">
+    <value>{0} · shown in the navigation</value>
+  </data>
+  <data name="MailboxSectionConnection.Title" xml:space="preserve">
+    <value>Connection</value>
+  </data>
+  <data name="MailboxStatusCard.Header" xml:space="preserve">
+    <value>Status</value>
+  </data>
+  <data name="Mailbox_LastChecked_Format" xml:space="preserve">
+    <value>Last checked at {0}.</value>
+  </data>
+  <data name="MailboxPasswordCard.Header" xml:space="preserve">
+    <value>App password</value>
+  </data>
+  <data name="MailboxPasswordField.AutomationProperties.Name" xml:space="preserve">
+    <value>App password</value>
+  </data>
+  <data name="MailboxSavePassword.Content" xml:space="preserve">
+    <value>Save password</value>
+  </data>
+  <data name="MailboxForgetPassword.Content" xml:space="preserve">
+    <value>Forget password</value>
+  </data>
+  <data name="Mailbox_PasswordSaved" xml:space="preserve">
+    <value>A password is saved.</value>
+  </data>
+  <data name="Mailbox_PasswordNotSaved" xml:space="preserve">
+    <value>No password is saved.</value>
+  </data>
+  <data name="MailboxServerExpander.Header" xml:space="preserve">
+    <value>Server</value>
+  </data>
+  <data name="MailboxServerHost.Header" xml:space="preserve">
+    <value>Incoming mail server</value>
+  </data>
+  <data name="MailboxServerPort.Header" xml:space="preserve">
+    <value>Port</value>
+  </data>
+  <data name="MailboxSectionAliases.Title" xml:space="preserve">
+    <value>Aliases</value>
+  </data>
+  <data name="MailboxSortByAlias.Header" xml:space="preserve">
+    <value>Sort by alias</value>
+  </data>
+  <data name="MailboxSortByAlias.Description" xml:space="preserve">
+    <value>A page for each address that sends to this mailbox.</value>
+  </data>
+  <data name="MailboxSortByAliasToggle.OnContent" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="MailboxSortByAliasToggle.OffContent" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="MailboxNameAliases.Header" xml:space="preserve">
+    <value>Name each alias from its address</value>
+  </data>
+  <data name="MailboxNameAliases.Description" xml:space="preserve">
+    <value>shop@exemple.fr is shown as Shop. A name you give stays.</value>
+  </data>
+  <data name="MailboxNameAliasesToggle.OnContent" xml:space="preserve">
+    <value>On</value>
+  </data>
+  <data name="MailboxNameAliasesToggle.OffContent" xml:space="preserve">
+    <value>Off</value>
+  </data>
+  <data name="MailboxRemoveCard.Header" xml:space="preserve">
+    <value>Remove mailbox</value>
+  </data>
+  <data name="MailboxRemoveCard.Description" xml:space="preserve">
+    <value>Its mail stays on the server.</value>
+  </data>
+  <data name="MailboxRemoveButton.Content" xml:space="preserve">
+    <value>Remove…</value>
+  </data>
+  <data name="Remove_Title_Format" xml:space="preserve">
+    <value>Remove {0}?</value>
+  </data>
+  <data name="Remove_Body" xml:space="preserve">
+    <value>Its mail stays on the server.</value>
+  </data>
+  <data name="Remove_Primary" xml:space="preserve">
+    <value>Remove</value>
+  </data>
+
+  <!-- Add mailbox -->
+  <data name="AddMailbox_Title" xml:space="preserve">
+    <value>Add mailbox</value>
+  </data>
+  <data name="AddMailboxSection.Title" xml:space="preserve">
+    <value>Mailbox</value>
+  </data>
+  <data name="AddMailboxAddressCard.Header" xml:space="preserve">
+    <value>Address and name</value>
+  </data>
+  <data name="AddMailboxAddress.Header" xml:space="preserve">
+    <value>Email address</value>
+  </data>
+  <data name="AddMailboxName.Header" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="AddMailboxName.PlaceholderText" xml:space="preserve">
+    <value>Shown in the navigation</value>
+  </data>
+  <data name="AddMailboxPasswordCard.Header" xml:space="preserve">
+    <value>App password</value>
+  </data>
+  <data name="AddMailboxPasswordCard.Description" xml:space="preserve">
+    <value>A password made for one app, not your usual one.</value>
+  </data>
+  <data name="AddMailboxPasswordField.AutomationProperties.Name" xml:space="preserve">
+    <value>App password</value>
+  </data>
+  <data name="AddMailboxServerExpander.Header" xml:space="preserve">
+    <value>Server settings</value>
+  </data>
+  <data name="AddMailbox_ServerFound_Format" xml:space="preserve">
+    <value>Found for {0}. Change them only if your provider says so.</value>
+  </data>
+  <data name="AddMailbox_ServerUnknown" xml:space="preserve">
+    <value>Enter the server your provider gives for its mail.</value>
+  </data>
+  <data name="AddMailboxAddButton.Content" xml:space="preserve">
+    <value>Add mailbox</value>
+  </data>
+  <data name="AddMailboxCancelButton.Content" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="Problem_ShownAsOfOneChange_Format" xml:space="preserve">
+    <value>Its mail is shown as of {0}. 1 change waits until it connects.</value>
+  </data>
+  <data name="Problem_ShownAsOfChanges_Format" xml:space="preserve">
+    <value>Its mail is shown as of {0}. {1} changes wait until it connects.</value>
+  </data>
+  <data name="Remove_BodyOneSubject" xml:space="preserve">
+    <value>Its mail stays on the server. 1 subject leaves Triage.</value>
+  </data>
+  <data name="Remove_BodySubjects_Format" xml:space="preserve">
+    <value>Its mail stays on the server. {0} subjects leave Triage.</value>
+  </data>
+  <data name="Task_AddName_Format" xml:space="preserve">
+    <value>{0}: {1}</value>
+  </data>
+  <data name="Date_DayAndTime_Format" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Size_Bytes_Format" xml:space="preserve">
+    <value>{0} B</value>
+  </data>
+  <data name="Size_Kilobytes_Format" xml:space="preserve">
+    <value>{0} KB</value>
+  </data>
+  <data name="Size_Megabytes_Format" xml:space="preserve">
+    <value>{0} MB</value>
+  </data>
+  <data name="Join_Dot_Format" xml:space="preserve">
+    <value>{0} · {1}</value>
+  </data>
+  <data name="Join_Dot3_Format" xml:space="preserve">
+    <value>{0} · {1} · {2}</value>
+  </data>
+  <data name="Join_Comma_Format" xml:space="preserve">
+    <value>{0}, {1}</value>
+  </data>
+  <data name="Join_Comma3_Format" xml:space="preserve">
+    <value>{0}, {1}, {2}</value>
+  </data>
+  <data name="Subject_AfterMark_Format" xml:space="preserve">
+    <value>· {0}</value>
+  </data>
+  <data name="Subject_Unverified_Message" xml:space="preserve">
+    <value>Your mail provider could not confirm that this mail comes from this address. Be careful with its links and with any payment it asks for.</value>
+  </data>
+  <data name="TrashNotice_Where_Format" xml:space="preserve">
+    <value>{0} ({1})</value>
+  </data>
+</root>

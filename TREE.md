@@ -1442,6 +1442,89 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskDayProposal.cs
 │   │   │   └── TriageList.cs
 │   │   └── Deckle.Mail.csproj
+│   ├── Deckle.Mail.Hub/
+│   │   ├── Data/
+│   │   │   ├── ActivityEntry.cs
+│   │   │   ├── IMailHubSource.cs
+│   │   │   ├── InfoLine.cs
+│   │   │   ├── Mailbox.cs
+│   │   │   └── MailSubject.cs
+│   │   ├── Navigation/
+│   │   │   ├── MailDestination.cs
+│   │   │   ├── MailHistory.cs
+│   │   │   └── MailRail.cs
+│   │   ├── Sample/
+│   │   │   ├── SampleMailHubSource.cs
+│   │   │   ├── SampleScenario.cs
+│   │   │   └── SampleWorld.cs
+│   │   ├── Strings/
+│   │   │   └── en-US/
+│   │   │       └── Resources.resw
+│   │   ├── Triage/
+│   │   │   ├── MailDates.cs
+│   │   │   ├── MailFilter.cs
+│   │   │   ├── MailNames.cs
+│   │   │   ├── MailProviders.cs
+│   │   │   ├── MailSearch.cs
+│   │   │   ├── TaskDays.cs
+│   │   │   ├── TriageOrder.cs
+│   │   │   ├── TriageRow.cs
+│   │   │   ├── TriageSession.Activity.cs
+│   │   │   ├── TriageSession.cs
+│   │   │   ├── TriageSession.Gestures.cs
+│   │   │   ├── TriageSession.Mailboxes.cs
+│   │   │   └── TriageSession.Problems.cs
+│   │   ├── Views/
+│   │   │   ├── Pages/
+│   │   │   │   ├── ActivityPage.xaml
+│   │   │   │   ├── ActivityPage.xaml.cs
+│   │   │   │   ├── AddMailboxPage.xaml
+│   │   │   │   ├── AddMailboxPage.xaml.cs
+│   │   │   │   ├── MailboxSettingsPage.xaml
+│   │   │   │   ├── MailboxSettingsPage.xaml.cs
+│   │   │   │   ├── MailSettingsPage.xaml
+│   │   │   │   ├── MailSettingsPage.xaml.cs
+│   │   │   │   ├── SubjectPage.xaml
+│   │   │   │   ├── SubjectPage.xaml.cs
+│   │   │   │   ├── TriagePage.xaml
+│   │   │   │   └── TriagePage.xaml.cs
+│   │   │   ├── Parts/
+│   │   │   │   ├── ActivityLineView.xaml
+│   │   │   │   ├── ActivityLineView.xaml.cs
+│   │   │   │   ├── ConnectionStatus.xaml
+│   │   │   │   ├── ConnectionStatus.xaml.cs
+│   │   │   │   ├── DialogBody.xaml
+│   │   │   │   ├── DialogBody.xaml.cs
+│   │   │   │   ├── EnvelopePicture.xaml
+│   │   │   │   ├── EnvelopePicture.xaml.cs
+│   │   │   │   ├── FileTile.xaml
+│   │   │   │   ├── FileTile.xaml.cs
+│   │   │   │   ├── FramedLabel.xaml
+│   │   │   │   ├── FramedLabel.xaml.cs
+│   │   │   │   ├── InfoLineView.xaml
+│   │   │   │   ├── InfoLineView.xaml.cs
+│   │   │   │   ├── MailListItemView.xaml
+│   │   │   │   ├── MailListItemView.xaml.cs
+│   │   │   │   ├── MailPageHeader.xaml
+│   │   │   │   ├── MailPageHeader.xaml.cs
+│   │   │   │   ├── ProblemLineView.xaml
+│   │   │   │   ├── ProblemLineView.xaml.cs
+│   │   │   │   ├── SubjectRowView.xaml
+│   │   │   │   ├── SubjectRowView.xaml.cs
+│   │   │   │   ├── TaskColumn.xaml
+│   │   │   │   ├── TaskColumn.xaml.cs
+│   │   │   │   └── TrashNotice.cs
+│   │   │   ├── IMailShell.cs
+│   │   │   ├── MailText.cs
+│   │   │   ├── MailWindow.Capture.cs
+│   │   │   ├── MailWindow.Navigation.cs
+│   │   │   ├── MailWindow.Problems.cs
+│   │   │   ├── MailWindow.Rail.cs
+│   │   │   ├── MailWindow.Search.cs
+│   │   │   ├── MailWindow.xaml
+│   │   │   └── MailWindow.xaml.cs
+│   │   ├── Deckle.Mail.Hub.csproj
+│   │   └── DeckleMailHubSource.cs
 │   ├── Deckle.Modules/
 │   │   ├── Deckle.Modules.csproj
 │   │   ├── DeckleModulesSource.cs
@@ -2479,6 +2562,13 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ClaudeReasoningTests.cs
 │   │   ├── Deckle.Llm.Tests.csproj
 │   │   └── ReasoningOnTheWireTests.cs
+│   ├── Deckle.Mail.Hub.Tests/
+│   │   ├── Deckle.Mail.Hub.Tests.csproj
+│   │   ├── MessageTemplateDoctrineTests.cs
+│   │   ├── NavigationTests.cs
+│   │   ├── SampleAndSearchTests.cs
+│   │   ├── TaskDayTests.cs
+│   │   └── TriageGestureTests.cs
 │   ├── Deckle.Mail.Tests/
 │   │   ├── ActivityTests.cs
 │   │   ├── Deckle.Mail.Tests.csproj

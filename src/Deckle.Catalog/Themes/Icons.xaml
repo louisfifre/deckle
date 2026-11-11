@@ -113,4 +113,22 @@
     <x:String x:Key="Icon.Badge.Warning">&#xE7BA;</x:String>
     <x:String x:Key="Icon.Badge.Info">&#xE946;</x:String>
 
+    <!-- ─── Mail cluster (Deckle Mail window) ────────────────────── -->
+    <!-- History (E81C): Activity, what was done. -->
+    <x:String x:Key="Icon.Mail.Activity">&#xE81C;</x:String>
+    <!-- Attach (E723): the paperclip of a subject carrying a real file. -->
+    <x:String x:Key="Icon.Mail.Attachment">&#xE723;</x:String>
+    <x:String x:Key="Icon.Mail.Undo">&#xE7A7;</x:String>
+    <x:String x:Key="Icon.Mail.Rename">&#xE70F;</x:String>
+    <!-- ChevronRight (E76C): an Activity line that opens its subject. -->
+    <x:String x:Key="Icon.Mail.Open">&#xE76C;</x:String>
+    <!-- The outlined circle with an exclamation mark (E783), the problems
+         button: something needs a look, without the alarm of a triangle or
+         the bell of a notification (spec Open 50, the proposal drawn). Same
+         code point as Icon.Badge.Critical, kept apart for its own intent. -->
+    <x:String x:Key="Icon.Mail.Problems">&#xE783;</x:String>
+    <x:String x:Key="Icon.Mail.Add">&#xE710;</x:String>
+    <!-- Document (E8A5): an attached file's tile. -->
+    <x:String x:Key="Icon.Mail.File">&#xE8A5;</x:String>
+
 </ResourceDictionary>

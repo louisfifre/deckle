@@ -11,6 +11,9 @@ namespace Deckle.App;
 // entry points exist: the right-click tray menu, and the Playground buttons in
 // the Settings and Logs title bars. All three are driven from here, and
 // ShowPlaygroundLazy refuses when the setting is off, so no path can bypass it.
+// The Deckle Mail window preview follows the same gate: its one entry, in the
+// right-click tray menu, shows only while the setting is on, ShowMailLazy
+// refuses otherwise, and an open Mail window closes when the setting goes off.
 public partial class App
 {
     // What the right-click menu was last composed with, to recompose only on a
@@ -29,6 +32,7 @@ public partial class App
             () => ShowLogWindowLazy(),
             () => ShowSettingsWindowLazy(),
             () => ShowPlaygroundLazy(),
+            () => ShowMailLazy(),
             () => RestartAppFromTray(),
             () => QuitApp());
     }
@@ -57,6 +61,8 @@ public partial class App
         bool enabled = PlaygroundEnabled;
         _settingsWindow?.SetPlaygroundAvailable(enabled);
         _logWindow?.SetPlaygroundAvailable(enabled);
-        if (!enabled) _playgroundWindow?.Close();
+        if (enabled) return;
+        _playgroundWindow?.Close();
+        _mailWindow?.Close();
     }
 }

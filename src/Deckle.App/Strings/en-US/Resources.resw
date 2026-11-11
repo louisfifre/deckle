@@ -557,6 +557,9 @@
   <data name="TrayMenu_Playground" xml:space="preserve">
     <value>Playground</value>
   </data>
+  <data name="TrayMenu_Mail" xml:space="preserve">
+    <value>Deckle Mail (preview)</value>
+  </data>
   <data name="TrayMenu_AmbientLight" xml:space="preserve">
     <value>Ambient Light</value>
   </data>

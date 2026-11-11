@@ -1,0 +1,14 @@
+<UserControl
+    x:Class="Deckle.Mail.Hub.ConnectionStatus"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    VerticalAlignment="Center">
+
+    <!-- Whether a mailbox or Anytype is connected, by a coloured dot and in
+         words: the colour is never the only cue (spec, Settings). The dot is
+         a native InfoBadge in its success, caution or informational style. -->
+    <StackPanel Orientation="Horizontal" Spacing="8">
+        <InfoBadge x:Name="Dot" VerticalAlignment="Center" />
+        <TextBlock x:Name="Words" VerticalAlignment="Center" />
+    </StackPanel>
+</UserControl>
