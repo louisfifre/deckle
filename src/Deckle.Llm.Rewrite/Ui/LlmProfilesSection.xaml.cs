@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Deckle.Catalog;
 using Deckle.Llm;
+using Deckle.Localization;
 
 namespace Deckle.Llm.Rewrite;
 

@@ -9,7 +9,7 @@ namespace Deckle.Playground;
 //
 // The descriptor Id is a public contract: keep it stable across renames. The
 // Title/Body/label/placeholder strings are .resw keys, resolved by the
-// channel through Deckle.Catalog.Loc, never hardcoded here.
+// channel through Deckle.Localization.Loc, never hardcoded here.
 public static class PlaygroundNotifications
 {
     // Channel Toast is a preference, not a command; the dispatcher has the

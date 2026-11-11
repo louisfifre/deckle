@@ -1042,7 +1042,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Catalog.csproj
 │   │   ├── DiagnosticsRegistry.cs
 │   │   ├── Glyphs.cs
-│   │   ├── Loc.cs
 │   │   ├── SettingSearchEntry.cs
 │   │   ├── SettingsModuleDescriptor.cs
 │   │   ├── SettingsNavigation.cs
@@ -1573,6 +1572,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LlmSettingsNormalizer.cs
 │   │   ├── LlmSettingsService.cs
 │   │   └── SettingsSearch.cs
+│   ├── Deckle.Localization/
+│   │   ├── Deckle.Localization.csproj
+│   │   └── Loc.cs
 │   ├── Deckle.Mail/
 │   │   ├── Domain/
 │   │   │   ├── Deadline.cs

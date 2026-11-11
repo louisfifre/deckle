@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Diagnostics;
+using Deckle.Localization;
 
 namespace Deckle.Diagnostics.Logging;
 

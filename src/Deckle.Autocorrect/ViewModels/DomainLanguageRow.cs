@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
-using Deckle.Catalog;
+using Deckle.Localization;
 
 namespace Deckle.Autocorrect;
 

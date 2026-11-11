@@ -1,5 +1,5 @@
-using Deckle.Catalog;
 using System.Globalization;
+using Deckle.Localization;
 
 namespace Deckle.Llm.Rewrite;
 

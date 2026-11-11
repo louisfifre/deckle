@@ -1,4 +1,3 @@
-using Deckle.Catalog;
 using Deckle.Core;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -7,6 +6,7 @@ using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using WinRT.Interop;
 using Windows.Graphics;
+using Deckle.Localization;
 
 namespace Deckle.Llm.Rewrite;
 

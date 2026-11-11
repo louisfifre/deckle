@@ -11,6 +11,7 @@ using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Llm;
 using Deckle.Security;
+using Deckle.Localization;
 
 namespace Deckle.Llm.Rewrite;
 

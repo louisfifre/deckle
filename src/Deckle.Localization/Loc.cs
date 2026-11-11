@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using Microsoft.Windows.ApplicationModel.Resources;
 
-namespace Deckle.Catalog;
+namespace Deckle.Localization;
 
 // ─── Loc ──────────────────────────────────────────────────────────
 //

@@ -3,6 +3,7 @@ using Deckle.Modules;
 using Deckle.Setup;
 using Deckle.Transcription;
 using Deckle.Transcription.Whisper;
+using Deckle.Localization;
 
 namespace Deckle.App;
 
@@ -37,7 +38,7 @@ public partial class App
                     null, TranscriptionSettingsService.Instance.Current.Engine.Model),
                 SelectedModules = ModulePresence.Choice
                     ?? ModuleRegistry.Modules.Select(m => m.Id).ToHashSet(StringComparer.Ordinal),
-                RepairNotice = Deckle.Catalog.Loc.Get(key),
+                RepairNotice = Deckle.Localization.Loc.Get(key),
             };
 
             DeckleAppSource.Log.SpeechRepairOffered(workId, reason, notice);

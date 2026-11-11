@@ -1,6 +1,6 @@
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
+using Deckle.Localization;
 
 namespace Deckle.Transcription;
 

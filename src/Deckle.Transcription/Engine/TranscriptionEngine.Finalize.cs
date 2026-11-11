@@ -1,12 +1,12 @@
 using System.Runtime.InteropServices;
 using Deckle.Audio;
-using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Telemetry;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Deckle.Transcription;
+using Deckle.Localization;
 
 namespace Deckle.Transcription;
 

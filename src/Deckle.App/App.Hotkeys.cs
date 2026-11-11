@@ -2,6 +2,7 @@ using Deckle.App;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Transcription;
+using Deckle.Localization;
 
 namespace Deckle.App;
 
@@ -13,10 +14,10 @@ public partial class App
     private static void EmitSpeechNotSetUp() =>
         DeckleAppSource.Log.UserFeedbackEmitted(
             0, // Info
-            Deckle.Catalog.Loc.Get("Feedback_SpeechNotSetUp_Title"),
-            Deckle.Catalog.Loc.Format(
+            Deckle.Localization.Loc.Get("Feedback_SpeechNotSetUp_Title"),
+            Deckle.Localization.Loc.Format(
                 "Feedback_SpeechNotSetUp_Body_Format",
-                Deckle.Catalog.Loc.GetFrom("Deckle.Transcription", "SettingsModuleNavLabel")),
+                Deckle.Localization.Loc.GetFrom("Deckle.Transcription", "SettingsModuleNavLabel")),
             1); // Overlay
 
     // The tray panel's Record button lands here too.

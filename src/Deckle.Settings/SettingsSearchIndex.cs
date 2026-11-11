@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Deckle.Catalog;
+using Deckle.Localization;
 
 namespace Deckle.Settings;
 

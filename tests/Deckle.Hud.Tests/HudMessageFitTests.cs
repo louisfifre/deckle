@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using Deckle.Hud;
 using Xunit;
+using Deckle.Localization;
 
 namespace Deckle.Hud.Tests;
 

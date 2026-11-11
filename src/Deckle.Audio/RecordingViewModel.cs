@@ -1,9 +1,9 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using System.Globalization;
 using System.Threading.Tasks;
+using Deckle.Localization;
 
 namespace Deckle.Audio;
 

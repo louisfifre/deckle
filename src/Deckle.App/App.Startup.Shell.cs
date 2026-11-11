@@ -12,6 +12,7 @@ using Deckle.Shell;
 using Deckle.Shell.TrayMenu;
 using Deckle.Transcription;
 using Deckle.Transcription.Whisper;
+using Deckle.Localization;
 
 namespace Deckle.App;
 
@@ -127,8 +128,8 @@ public partial class App
         // A present module without an engine means speech is not provisioned. A
         // module absent by choice is not a missing setup: the tooltip stays quiet.
         string initialStatus = _engine is not null || !context.TranscriptionPresent
-            ? Deckle.Catalog.Loc.Get("Status_Ready")
-            : Deckle.Catalog.Loc.Get("Feedback_SpeechNotSetUp_Title");
+            ? Deckle.Localization.Loc.Get("Status_Ready")
+            : Deckle.Localization.Loc.Get("Feedback_SpeechNotSetUp_Title");
         _tray.UpdateStatus(initialStatus, isRecording: false);
 
         // Ambient starts OFF at every boot: the app never starts screen capture
@@ -249,8 +250,8 @@ public partial class App
         {
             DeckleAppSource.Log.UserFeedbackEmitted(
                 2, // Error
-                Deckle.Catalog.Loc.Get("Feedback_HotkeysUnavailable_Title"),
-                Deckle.Catalog.Loc.Get("Feedback_HotkeysUnavailable_Body"),
+                Deckle.Localization.Loc.Get("Feedback_HotkeysUnavailable_Title"),
+                Deckle.Localization.Loc.Get("Feedback_HotkeysUnavailable_Body"),
                 1); // Overlay
         }
         Settings.SettingsService.Instance.Changed += OnShellSettingsChangedForHotkeys;

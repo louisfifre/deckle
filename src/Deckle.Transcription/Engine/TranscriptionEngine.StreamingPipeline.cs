@@ -3,11 +3,11 @@ using System.Diagnostics.Tracing;
 using System.Text;
 using System.Threading.Channels;
 using Deckle.Audio;
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Deckle.Transcription;
 using Deckle.Vad;
+using Deckle.Localization;
 
 namespace Deckle.Transcription;
 

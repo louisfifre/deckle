@@ -1,7 +1,7 @@
 using System;
 using CommunityToolkit.Mvvm.ComponentModel;
-using Deckle.Catalog;
 using Deckle.Llm;
+using Deckle.Localization;
 
 namespace Deckle.Llm.Rewrite;
 

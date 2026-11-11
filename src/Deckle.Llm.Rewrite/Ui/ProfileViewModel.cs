@@ -2,6 +2,7 @@ using System;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Catalog;
 using Microsoft.UI.Xaml.Data;
+using Deckle.Localization;
 namespace Deckle.Llm.Rewrite;
 
 // Auto-saves on every change; there is no Save/Cancel surface.

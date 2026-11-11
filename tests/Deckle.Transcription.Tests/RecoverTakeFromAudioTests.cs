@@ -1,11 +1,11 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.Tracing;
-using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.TestSupport;
 using Xunit;
 using static Deckle.Transcription.Tests.LiveTranscriptionPipelineTests;
+using Deckle.Localization;
 
 namespace Deckle.Transcription.Tests;
 

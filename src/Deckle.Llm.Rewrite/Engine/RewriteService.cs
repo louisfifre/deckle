@@ -1,7 +1,7 @@
 using System.Globalization;
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Llm;
+using Deckle.Localization;
 
 namespace Deckle.Llm.Rewrite;
 

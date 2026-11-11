@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Deckle.Localization;
 
 namespace Deckle.Notifications;
 
@@ -28,7 +29,7 @@ public sealed record NotificationDescriptor(
     // activation, so never rename or recycle it.
     string Id,
     string Category,
-    // .resw key resolved via Deckle.Catalog.Loc by the channel. Loc reads the
+    // .resw key resolved via Deckle.Localization.Loc by the channel. Loc reads the
     // root resource map only, so every key here must be mirrored into
     // Deckle.App's Resources.resw — an un-mirrored key renders as the [!key]
     // marker (DEBUG) or blank (RELEASE).

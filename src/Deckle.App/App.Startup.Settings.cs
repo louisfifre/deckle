@@ -12,6 +12,7 @@ using Deckle.Shell.TaskbarCover;
 using Deckle.Shell.TrayMenu;
 using Deckle.Transcription;
 using Deckle.Transcription.Whisper;
+using Deckle.Localization;
 
 namespace Deckle.App;
 
@@ -130,7 +131,7 @@ public partial class App
                 diagnostics.PageTag,
                 owningAssembly,
                 diagnostics.Glyph,
-                Deckle.Catalog.Loc.GetFrom(diagnostics.OwningAssembly, diagnostics.LabelKey),
+                Deckle.Localization.Loc.GetFrom(diagnostics.OwningAssembly, diagnostics.LabelKey),
                 entries);
         }
 
@@ -204,13 +205,13 @@ public partial class App
             "Deckle.Settings.GeneralPage",
             "Deckle.Settings",
             Deckle.Catalog.Glyphs.Settings,
-            Deckle.Catalog.Loc.GetFrom("Deckle.Settings", "SettingsNavGeneral/Content"),
+            Deckle.Localization.Loc.GetFrom("Deckle.Settings", "SettingsNavGeneral/Content"),
             Settings.SettingsSearch.Entries);
         Settings.SettingsSearchIndex.RegisterPage(
             "Deckle.Settings.HotkeysPage",
             "Deckle.Settings",
             Deckle.Catalog.Glyphs.Shortcut,
-            Deckle.Catalog.Loc.GetFrom("Deckle.Settings", "SettingsNavHotkeys/Content"),
+            Deckle.Localization.Loc.GetFrom("Deckle.Settings", "SettingsNavHotkeys/Content"),
             Settings.SettingsSearch.HotkeyEntries);
     }
 }

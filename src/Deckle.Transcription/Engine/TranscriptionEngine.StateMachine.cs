@@ -8,6 +8,7 @@ using System.Diagnostics.Tracing;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Deckle.Transcription;
+using Deckle.Localization;
 
 namespace Deckle.Transcription;
 

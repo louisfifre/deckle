@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Deckle.Catalog;
+using Deckle.Localization;
 
 namespace Deckle.Lighting.Ambient;
 

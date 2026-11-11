@@ -20,4 +20,7 @@
          control set transitively. -->
     <PackageReference Include="CommunityToolkit.WinUI.Controls.SettingsControls" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
+  </ItemGroup>
 </Project>

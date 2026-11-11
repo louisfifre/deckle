@@ -8,6 +8,7 @@ using Windows.System;
 using Deckle.Catalog;
 using Deckle.Llm;
 using Deckle.Security;
+using Deckle.Localization;
 
 namespace Deckle.Llm.Rewrite;
 

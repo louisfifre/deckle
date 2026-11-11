@@ -1,7 +1,7 @@
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Shell;
 using Deckle.Shell.TrayMenu;
+using Deckle.Localization;
 
 namespace Deckle.App;
 

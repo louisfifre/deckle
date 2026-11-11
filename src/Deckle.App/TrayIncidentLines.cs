@@ -1,11 +1,11 @@
 using Deckle.Audio;
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Input.PrecisionScroll;
 using Deckle.Lighting.Ambient;
 using Deckle.Modules;
 using Deckle.Shell.TrayMenu;
 using Deckle.Transcription;
+using Deckle.Localization;
 
 namespace Deckle.App;
 

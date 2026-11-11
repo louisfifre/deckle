@@ -1,5 +1,5 @@
 using System.Globalization;
-using Deckle.Catalog;
+using Deckle.Localization;
 
 namespace Deckle.Atelier.Views;
 

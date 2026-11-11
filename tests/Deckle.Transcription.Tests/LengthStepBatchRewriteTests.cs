@@ -1,10 +1,10 @@
 using System.Collections.Concurrent;
-using Deckle.Catalog;
 using Deckle.Llm;
 using Deckle.Llm.Rewrite;
 using Deckle.Transcription;
 using Xunit;
 using static Deckle.Transcription.Tests.LiveTranscriptionPipelineTests;
+using Deckle.Localization;
 
 namespace Deckle.Transcription.Tests;
 

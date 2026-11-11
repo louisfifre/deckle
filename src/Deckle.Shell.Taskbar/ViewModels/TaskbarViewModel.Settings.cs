@@ -1,4 +1,5 @@
 using Deckle.Catalog;
+using Deckle.Localization;
 
 namespace Deckle.Shell.Taskbar;
 

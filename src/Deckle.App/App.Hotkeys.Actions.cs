@@ -3,6 +3,7 @@ using Deckle.Diagnostics;
 using Deckle.Shell;
 using Deckle.Shell.TrayMenu;
 using Deckle.Settings;
+using Deckle.Localization;
 
 namespace Deckle.App;
 

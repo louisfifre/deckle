@@ -2,10 +2,10 @@ using System;
 using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
+using Deckle.Localization;
 
 namespace Deckle.Notifications;
 

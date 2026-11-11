@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using Deckle.Diagnostics;
 using Deckle.Llm;
 using Deckle.Catalog;
+using Deckle.Localization;
 
 namespace Deckle.Llm.Rewrite;
 

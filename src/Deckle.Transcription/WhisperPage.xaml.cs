@@ -14,6 +14,7 @@ using Deckle.Settings;
 using Deckle.Transcription;
 using Deckle.Core;
 using Deckle.Diagnostics;
+using Deckle.Localization;
 
 namespace Deckle.Transcription;
 

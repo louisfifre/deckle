@@ -1,7 +1,6 @@
 // LogWindow — selection, transfer scopes, clipboard and save actions.
 
 using Deckle.Core;
-using Deckle.Catalog;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
 using Microsoft.UI.Xaml;
@@ -10,6 +9,7 @@ using Microsoft.UI.Xaml.Input;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
+using Deckle.Localization;
 
 namespace Deckle.App;
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Settings;
+using Deckle.Localization;
 
 namespace Deckle.Transcription;
 

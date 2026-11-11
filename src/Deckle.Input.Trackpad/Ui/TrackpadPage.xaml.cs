@@ -3,6 +3,7 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 using Deckle.Catalog;
 using Deckle.Input.Trackpad;
+using Deckle.Localization;
 
 namespace Deckle.Input.Trackpad;
 

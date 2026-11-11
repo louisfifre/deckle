@@ -112,6 +112,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Deckle.Anytype\Deckle.Anytype.csproj" />
+    <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
     <!-- Built first and copied beside Deckle.exe, never referenced: the MCP host
          and the Home client run in the gateway process (ADR-0008). Built
          framework-dependent whatever the app's publish settings. -->
