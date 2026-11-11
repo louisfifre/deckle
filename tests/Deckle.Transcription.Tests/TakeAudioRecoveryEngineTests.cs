@@ -227,8 +227,8 @@ public sealed class TakeAudioRecoveryEngineTests : IDisposable
     // skipped). Not fixed in this change: keeping the audio "until the next
     // full delivery" needs a second slot beside take-audio.dat, because the next
     // take's TryBegin replaces that file, plus a size cap and a recovery rule for
-    // a take whose text was already pasted. Keeping it in the single slot would
-    // only last until the next hotkey press. To pick up: the Anytype task
+    // a take whose text already reached the clipboard. Keeping it in the single
+    // slot would only last until the next hotkey press. To pick up: the Anytype task
     // "Durcir le filet audio des prises", weakness 2.
     [Fact(Skip = "Weakness (b) reproduced, fix needs a second audio slot: see the comment above.")]
     [Trait("Category", "regression")]
