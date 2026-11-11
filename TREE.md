@@ -98,6 +98,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   └── lissage-opt2.md
 │   │   │   ├── .gitignore
 │   │   │   ├── BatchJudge.cs
+│   │   │   ├── CacheProbe.cs
 │   │   │   ├── Campaign.cs
 │   │   │   ├── CampaignRun.cs
 │   │   │   ├── Corpus.cs
