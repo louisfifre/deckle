@@ -98,6 +98,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   └── lissage-opt2.md
 │   │   │   ├── .gitignore
 │   │   │   ├── BatchJudge.cs
+│   │   │   ├── CacheProbe.cs
 │   │   │   ├── Campaign.cs
 │   │   │   ├── CampaignRun.cs
 │   │   │   ├── Corpus.cs
@@ -2781,10 +2782,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RewriteFailureMessageTests.cs
 │   │   ├── RewriteLogTests.cs
 │   │   ├── RewriteProfileTriggerTests.cs
+│   │   ├── RewriteServiceCacheTests.cs
 │   │   ├── RewriteServiceFeedbackTests.cs
 │   │   ├── SentenceBoundaryTests.cs
 │   │   └── SentenceRewriteTests.cs
 │   ├── Deckle.Llm.Tests/
+│   │   ├── ClaudePromptCacheTests.cs
 │   │   ├── ClaudeReasoningTests.cs
 │   │   ├── Deckle.Llm.Tests.csproj
 │   │   └── ReasoningOnTheWireTests.cs
