@@ -404,11 +404,11 @@ public sealed class LiveTranscriptionPipelineTests
         }
     }
 
-    // The raw copy landed. A file kept here would overwrite the clipboard with
-    // this old text at the next launch.
+    // The raw copy landed, then the rewrite threw. A file kept here would
+    // overwrite the clipboard with this old text at the next launch.
     [Fact]
     [Trait("Category", "regression")]
-    public async Task RecoveryFileIsGoneOnceTheRawCopyHasLanded()
+    public async Task RecoveryFileIsGoneWhenTheRewriteFailsAfterTheRawCopy()
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         string root = Path.Combine(AppContext.BaseDirectory, $"live-recovery-{Guid.NewGuid():N}");
@@ -416,16 +416,21 @@ public sealed class LiveTranscriptionPipelineTests
         {
             var store = new DictationRecoveryStore(Path.Combine(root, "dictation.dat"));
             var clipboard = new RecordingClipboardWriter();
+            var rewrite = new ThrowingRewriteService();
             using var engine = new TranscriptionEngine(
-                new StreamingHost(),
+                RewritingHost(batchRewriting: false),
                 new SequencedBackend([TestInference, "bonjour", "Deckle"]),
                 new ScriptedMicrophoneCapture(utteranceCount: 2),
                 clipboard,
+                rewrite,
                 recovery: store,
                 captureTail: TestCaptureTail);
 
             await RunTakeToIdleAsync(engine, store, "bonjour\n\nDeckle", testCancellation);
 
+            // The failure this test is about did happen: without it the file
+            // would be gone on the plain path too.
+            Assert.Equal(1, rewrite.Calls);
             Assert.Equal("bonjour\n\nDeckle", clipboard.Text);
             Assert.False(store.Exists);
         }
@@ -738,6 +743,24 @@ public sealed class LiveTranscriptionPipelineTests
             _inputs.Enqueue(text);
             _profileIds.Enqueue(profile.Id);
             return new GenerationResult("[" + text + "]", 1, 0, 0, 0, 0, 0);
+        }
+
+        public GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken) => default;
+
+        public GenerationResult RewriteSentence(string sentence, CancellationToken cancellationToken) => default;
+    }
+
+    // Fails every whole-take rewrite, the one step left after the raw copy.
+    private sealed class ThrowingRewriteService : IRewriteService
+    {
+        private int _calls;
+
+        public int Calls => Volatile.Read(ref _calls);
+
+        public GenerationResult Rewrite(string text, RewriteProfile profile)
+        {
+            Interlocked.Increment(ref _calls);
+            throw new InvalidOperationException("rewrite failed");
         }
 
         public GenerationResult RewriteParagraph(string paragraph, CancellationToken cancellationToken) => default;
