@@ -19,3 +19,12 @@
 - **Violated invariant:** The presenter is never sized below the items it shows.
 - **Recurrence cue:** any return to sizing a flyout from a window of ours (Placement Full on a carrier sized by hand, a captured presenter size, a cached measurement); a one-shot measurement kept for the process lifetime; a positivity check standing in for a size check on a control with a MinHeight.
 - **Regression coverage:** none through a natural seam: the size now comes from WinUI's own menu layout. `TrayMenuPlacementTests` covers the side the menu opens on for each taskbar edge, the one decision this module still takes about where the menu goes. The manual check is the first right click after launch showing the whole menu, on a taskbar at the bottom and on one on the left.
+
+## The anchor window's constructor threw when the shell refused to hide it from the switchers
+
+- **Trigger:** Deckle starts while Explorer is restarting. 2026-11-11, 01:52:30 and 12:59:18, each a few seconds after an Explorer crash.
+- **Observed symptom:** `NotImplementedException` ("SetShownInSwitchers failed", E_NOTIMPL) out of `AppWindow.IsShownInSwitchers = false` in the `TrayCarrierWindow` constructor, reached from `InitializeStartupShell`. The startup stopped there: no tray icon, no hotkeys (see `CrashRelaunchPolicyBugNotes.md` in `Deckle.Diagnostics.Tests`).
+- **Cause:** Established for the throw, from the stack trace. The setter goes through the shell, and a shell that is not up refuses it. Why the answer is E_NOTIMPL rather than a retryable error was not looked into.
+- **Violated invariant:** Nothing the anchor window asks of the shell for looks alone may stop it from being built. The rule lives at `TrayCarrierWindow.KeepOutOfSwitchers`: a refusal falls back to `WS_EX_TOOLWINDOW`, which Alt+Tab skips without the shell, and logs `SwitcherExclusionRefused`.
+- **Recurrence cue:** a `SurvivedException` or a startup failure whose stack ends in an `AppWindow` or presenter setter inside a window constructor; the other presenter calls in that constructor are not guarded and have not been seen to throw.
+- **Regression coverage:** none. The fallback needs an `AppWindow` whose setter throws, and there is no seam for one. Not yet seen live on a refusing shell: the proof would be a `Windows refused to keep the tray menu anchor out of the window switchers` line followed by a working menu.

@@ -43,7 +43,7 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public const int EvtTaskbarPartSkipped           = 27;
     public const int EvtTaskbarPartNotInEffect       = 28;
     public const int EvtTaskbarPartProblemEnded      = 29;
-    public const int EvtTaskbarEngineUnloadUnconfirmed = 30;
+    public const int EvtTaskbarEngineStopUnconfirmed = 30;
     public const int EvtTaskbarCustomizerFailed      = 31;
     public const int EvtWindowsKeyFocusArmed         = 32;
     public const int EvtWindowsKeyFocusDisarmed      = 33;
@@ -53,6 +53,8 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     public const int EvtWindowsKeyInjectionRecovered = 37;
     public const int EvtSymbolsDownloaded            = 38;
     public const int EvtSymbolLookupFailed           = 39;
+    public const int EvtNativeEngineBuildMismatch    = 40;
+    public const int EvtNativeEngineHeldOff          = 41;
 
     // ── Tray icon promotion ───────────────────────────────────────────────────
     //
@@ -234,8 +236,11 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
         if (IsEnabled()) WriteEvent(EvtNativeEngineConnected, explorer_pid, protocol);
     }
 
-    // outcome: unloaded (the DLL reported that it unloaded itself) or lost (the
-    // pipe closed with no word, as when explorer exits).
+    // outcome: parked (the DLL restored everything and stays in its target,
+    // idle, for the next Deckle), unloaded (it left its target, which happens
+    // only when XAML Diagnostics never answered there) or lost (the pipe closed
+    // with no word, as when explorer exits or a copy is refused because another
+    // engine serves its target).
     [Event(EvtNativeEngineDisconnected,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -346,14 +351,42 @@ public sealed class DeckleShellTaskbarSource : DeckleEventSource
     }
 
     // target: explorer or start_menu. The DLL left with the pipe, not with its
-    // own word, so explorer may still hold it until it exits.
-    [Event(EvtTaskbarEngineUnloadUnconfirmed,
+    // own word, so what it changed may still be in force until the target exits.
+    [Event(EvtTaskbarEngineStopUnconfirmed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The taskbar engine did not confirm that it unloaded\ntarget={0}")]
-    public void TaskbarEngineUnloadUnconfirmed(string target)
+           Message = "The taskbar engine did not confirm that it stopped\ntarget={0}")]
+    public void TaskbarEngineStopUnconfirmed(string target)
     {
-        if (IsEnabled()) WriteEvent(EvtTaskbarEngineUnloadUnconfirmed, target);
+        if (IsEnabled()) WriteEvent(EvtTaskbarEngineStopUnconfirmed, target);
+    }
+
+    // target: explorer or start_menu. resident: the versioned folder of the
+    // engine that answered, which an earlier Deckle left parked in the target.
+    // offered: this Deckle's. The resident build keeps running until the
+    // target restarts: XAML Diagnostics are never initialized twice in one
+    // process, so a newer copy cannot take its place.
+    [Event(EvtNativeEngineBuildMismatch,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar engine already in place is another build, and stays until its process restarts\ntarget={0} | resident={1} | offered={2}")]
+    public void NativeEngineBuildMismatch(string target, string resident, string offered)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineBuildMismatch, target, resident, offered);
+    }
+
+    // target: explorer or start_menu. The process died quick_losses times in
+    // a row, each within window_seconds of receiving the engine, so Deckle
+    // stops sending it: one more injection would only kill it again. Windows
+    // runs its own taskbar until Deckle restarts, and the page marks the
+    // parts that are no longer applied.
+    [Event(EvtNativeEngineHeldOff,
+           Level = EventLevel.Warning,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Message = "The taskbar engine is no longer sent into its process, which kept dying just after receiving it; restart Deckle to try again\ntarget={0} | quick_losses={1} | window_seconds={2}")]
+    public void NativeEngineHeldOff(string target, int quick_losses, int window_seconds)
+    {
+        if (IsEnabled()) WriteEvent(EvtNativeEngineHeldOff, target, quick_losses, window_seconds);
     }
 
     // A pass over the settings threw. trigger: startup, setting or

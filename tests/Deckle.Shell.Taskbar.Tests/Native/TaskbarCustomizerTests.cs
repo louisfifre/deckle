@@ -17,6 +17,7 @@ public sealed class TaskbarCustomizerTests
         public bool Stopped { get; private set; }
         public bool Disposed { get; private set; }
         public bool InjectionSucceeds { get; set; } = true;
+        public bool HeldOff { get; set; }
         public List<string> Sent { get; } = [];
 
         public event Action<NativeMessage>? MessageReceived;
@@ -123,6 +124,31 @@ public sealed class TaskbarCustomizerTests
         await WaitUntil(() => explorer.Sent.Count == 1);
         Assert.True(HasConstantReturn(explorer.Sent[0]));
         Assert.Empty(customizer.Problems);
+    }
+
+    // A host that gave up injecting (its target kept dying just after it
+    // received the engine) leaves the parts unapplied until Deckle restarts:
+    // the page must say so, where an ordinary loss says nothing and waits for
+    // the engine to come back.
+    [Fact]
+    public async Task AnEngineHeldOffAfterRepeatedLossesPutsItsPartsInError()
+    {
+        _settings.Background = TaskbarBackground.Transparent;
+        TaskbarCustomizer customizer = Customizer();
+        await customizer.ReconcileAsync("startup");
+        FakeEngine explorer = Engine(TaskbarTargetKind.Explorer)!;
+        explorer.SayHello();
+        await WaitUntil(() => explorer.Sent.Count == 1);
+
+        explorer.Leave();
+        Assert.Empty(customizer.Problems);
+
+        explorer.SayHello();
+        await WaitUntil(() => explorer.Sent.Count == 2);
+        explorer.HeldOff = true;
+        explorer.Leave();
+
+        Assert.Equal(TaskbarProblem.Error, customizer.Problems[TaskbarPart.Background]);
     }
 
     [Fact]

@@ -11,12 +11,20 @@
 namespace
 {
     using InitializeXamlDiagnosticsExFn = decltype(&InitializeXamlDiagnosticsEx);
+
+    std::atomic<bool> g_answered{ false };
 }
 
 namespace deckle::xamldiag
 {
+    bool DiagnosticsAnswered() { return g_answered.load(); }
+
     HRESULT ConnectToXamlDiagnostics()
     {
+        // Once per process, ever (residency.h says why): a second call, from
+        // this copy or any other, is what crashed explorer.
+        if (g_answered) return S_FALSE;
+
         const std::wstring location = util::ModulePath(engine::Module());
         if (location.empty()) return HRESULT_FROM_WIN32(GetLastError());
 
@@ -51,6 +59,9 @@ namespace deckle::xamldiag
 
             if (hr != HRESULT_FROM_WIN32(ERROR_NOT_FOUND))
             {
+                // Whatever the answer, the runtime went past the name check
+                // and may have built its diagnostics: this process is spent.
+                g_answered = true;
                 deckle::Log(SUCCEEDED(hr) ? deckle::LogLevel::Info : deckle::LogLevel::Warning,
                             L"tap_connection", L"XAML Diagnostics answered",
                             { { L"connection", connection }, { L"hr", util::HandleText(static_cast<uint32_t>(hr)) } });

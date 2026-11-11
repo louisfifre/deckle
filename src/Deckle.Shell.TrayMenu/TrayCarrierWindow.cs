@@ -116,7 +116,7 @@ public sealed class TrayCarrierWindow : IDisposable
         NativeMethods.SetWindowLongPtr(Hwnd, NativeMethods.GWL_EXSTYLE, newExStyle);
         NativeMethods.SetLayeredWindowAttributes(Hwnd, 0, 0, NativeMethods.LWA_ALPHA);
 
-        AppWindow.IsShownInSwitchers = false;
+        KeepOutOfSwitchers();
         if (AppWindow.Presenter is OverlappedPresenter presenter)
         {
             presenter.IsMaximizable = false;
@@ -133,6 +133,27 @@ public sealed class TrayCarrierWindow : IDisposable
         // target is known when Window.Activated reports the deactivation.
         _subclassProc = OnSubclassMessage;
         NativeMethods.SetWindowSubclass(Hwnd, _subclassProc, SubclassId, IntPtr.Zero);
+    }
+
+    // The setter goes through the shell, which can refuse it while Explorer
+    // is busy: E_NOTIMPL at a startup on 2026-11-11, thrown out of this
+    // constructor, cost the app its tray icon and its hotkeys. The anchor is
+    // invisible already, so leaving it out of Alt+Tab is a nicety, and
+    // WS_EX_TOOLWINDOW, which Alt+Tab skips, does the same job without the
+    // shell.
+    private void KeepOutOfSwitchers()
+    {
+        try
+        {
+            AppWindow.IsShownInSwitchers = false;
+        }
+        catch (Exception ex) when (ex is System.Runtime.InteropServices.COMException or NotImplementedException)
+        {
+            IntPtr exStyle = NativeMethods.GetWindowLongPtr(Hwnd, NativeMethods.GWL_EXSTYLE);
+            NativeMethods.SetWindowLongPtr(Hwnd, NativeMethods.GWL_EXSTYLE,
+                new IntPtr(exStyle.ToInt64() | NativeMethods.WS_EX_TOOLWINDOW));
+            DeckleShellTrayMenuSource.Log.SwitcherExclusionRefused(_windowName, ex.HResult);
+        }
     }
 
     private IntPtr OnSubclassMessage(

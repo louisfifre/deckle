@@ -91,8 +91,12 @@ public sealed class TrayIconManager : IDisposable
     // ── Initialization ───────────────────────────────────────────────────────
 
     // Creates the owner window and adds the icon with the current status.
-    // Throws when the window cannot be created or the shell refuses the
-    // first add: without an icon the app has no surface at all.
+    // Throws only when the window cannot be created. A shell that refuses the
+    // first add is retried on the re-add timer, and the window stays alive to
+    // hear TaskbarCreated: the app goes on starting, hotkeys included, and the
+    // icon appears as soon as the shell takes it. Throwing there once cost the
+    // icon and every hotkey for the whole run (2026-11-11), with no window
+    // left to hear Explorer come back.
     public void Register()
     {
         foreach (bool recording in new[] { false, true })
@@ -101,20 +105,15 @@ public sealed class TrayIconManager : IDisposable
 
         CreateOwnerWindow();
 
-        IntPtr icon;
         lock (_statusGate)
         {
             _registration = new TrayIconRegistration(_hwnd, new Win32NotifyIconApi());
-            icon = CurrentIcon();
-            _registration.Update(_tip, icon);
+            _registration.Update(_tip, CurrentIcon());
         }
-        if (!_registration.Add())
-        {
-            int error = Marshal.GetLastWin32Error();
-            Dispose();
-            throw new InvalidOperationException(
-                $"Shell_NotifyIcon(NIM_ADD) failed — hWnd={_hwnd}, hIcon={icon} (Win32 err {error})");
-        }
+        if (_registration.Add() == TrayIconReaddOutcome.Added) return;
+
+        DeckleShellSource.Log.TrayIconAddRefused(Marshal.GetLastWin32Error());
+        NativeMethods.SetTimer(_hwnd, ReaddTimerId, ReaddRetryDelayMs, IntPtr.Zero);
     }
 
     private static int IconIndex(bool recording, bool incident)
