@@ -25,6 +25,21 @@ public sealed class GatewayKeyFingerprintTests
         Assert.DoesNotContain(Key, fingerprint, StringComparison.Ordinal);
     }
 
+    private static AnytypeCredentials Credentials(string space) =>
+        new("http://localhost:31009", "2025-11-08", Key, space);
+
+    [Fact]
+    public void The_same_key_on_another_space_gives_another_fingerprint()
+        => Assert.NotEqual(
+            GatewayKeyFingerprint.Of(Credentials("space-one")),
+            GatewayKeyFingerprint.Of(Credentials("space-two")));
+
+    [Fact]
+    public void The_same_credentials_always_give_the_same_fingerprint()
+        => Assert.Equal(
+            GatewayKeyFingerprint.Of(Credentials("space-one")),
+            GatewayKeyFingerprint.Of(Credentials("space-one")));
+
     [Fact]
     public void An_empty_key_has_no_fingerprint()
         => Assert.Throws<ArgumentException>(() => GatewayKeyFingerprint.Of(""));

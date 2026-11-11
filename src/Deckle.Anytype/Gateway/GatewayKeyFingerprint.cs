@@ -16,6 +16,19 @@ public static class GatewayKeyFingerprint
 {
     private const int Bytes = 8;
 
+    // What a gateway holds from its start: the key, and with it the space, the
+    // endpoint and the API version, all read once from the same credentials. A
+    // gateway kept its first space after credentials.json named another one
+    // (2026-11-11), so the digest covers every one of them: whichever changes,
+    // the supervisor sees a gateway that is out of date.
+    public static string Of(AnytypeCredentials credentials)
+    {
+        ArgumentNullException.ThrowIfNull(credentials);
+        ArgumentException.ThrowIfNullOrEmpty(credentials.ApiKey);
+        return Of(string.Join('\n',
+            credentials.ApiKey, credentials.SpaceId, credentials.ApiUrl, credentials.ApiVersion));
+    }
+
     public static string Of(string apiKey)
     {
         ArgumentException.ThrowIfNullOrEmpty(apiKey);

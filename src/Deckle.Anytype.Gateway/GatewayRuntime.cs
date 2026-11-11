@@ -25,7 +25,7 @@ internal static class GatewayRuntime
         try
         {
             AnytypeCredentials credentials = AnytypeCredentials.Load();
-            keyFingerprint = GatewayKeyFingerprint.Of(credentials.ApiKey);
+            keyFingerprint = GatewayKeyFingerprint.Of(credentials);
             api = AnytypeApiClient.CreateForResidentGateway(credentials);
         }
         catch (Exception ex) when (ex is InvalidOperationException or SecretVaultException or UriFormatException)
