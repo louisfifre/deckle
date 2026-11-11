@@ -54,7 +54,14 @@ public sealed partial class DeckleWhispSource
         int    text_words,
         string profile,
         bool   pasted,
-        string outcome)
+        string outcome,
+        // Added last so the positions the Message reads stay what they were.
+        // llm_prompt_tokens counts the input billed at the plain price; these
+        // two count what the provider's prompt cache stored and read back
+        // over the take, each billed at its own price. A line written before
+        // them carries neither key.
+        int    llm_cache_write_tokens,
+        int    llm_cache_read_tokens)
     {
         if (!base.IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtLatencyRecorded,
@@ -62,7 +69,8 @@ public sealed partial class DeckleWhispSource
             stop_to_pipeline_ms, whisper_init_ms,
             whisper_ms, llm_ms, ollama_load_ms, llm_prompt_eval_ms, llm_eval_ms,
             llm_prompt_tokens, llm_eval_tokens, clipboard_ms, paste_ms,
-            strategy, n_segments, text_chars, text_words, profile, pasted, outcome);
+            strategy, n_segments, text_chars, text_words, profile, pasted, outcome,
+            llm_cache_write_tokens, llm_cache_read_tokens);
     }
 
     [Event(EvtCorpusAsrRecorded,

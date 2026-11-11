@@ -13,6 +13,8 @@ sealed record RawDictation(string Id, string Bucket, DateTimeOffset Timestamp, i
 
 sealed record PromptVariant(string Name, string SystemPrompt);
 
+sealed record ProfileUnderTest(PromptVariant Prompt, string Model, Deckle.Llm.ReasoningLevel? Reasoning);
+
 static class Corpus
 {
     // AppPaths resolves the data root the way the app does (DECKLE_DATA_ROOT
@@ -127,6 +129,27 @@ static class Corpus
         {
             if (string.Equals(Str(profile, "name"), profileName, StringComparison.OrdinalIgnoreCase))
                 return new PromptVariant($"profile:{profileName.ToLowerInvariant()}", Str(profile, "systemPrompt") ?? "");
+        }
+        throw new ArgumentException($"No profile named {profileName} in {settingsPath}.");
+    }
+
+    // A profile as the app would send it: its live prompt, the model it names
+    // and its reasoning level (stored as a number; absent keeps the engine's
+    // default).
+    public static ProfileUnderTest LoadProfile(string profileName)
+    {
+        string settingsPath = Path.Combine(AppPaths.ModulesDirectory, "llm", "settings.json");
+        using var doc = JsonDocument.Parse(File.ReadAllText(settingsPath));
+        foreach (var profile in doc.RootElement.GetProperty("profiles").EnumerateArray())
+        {
+            if (!string.Equals(Str(profile, "name"), profileName, StringComparison.OrdinalIgnoreCase)) continue;
+            Deckle.Llm.ReasoningLevel? reasoning = profile.TryGetProperty("reasoning", out var r) switch
+            {
+                true when r.ValueKind == JsonValueKind.Number => (Deckle.Llm.ReasoningLevel)r.GetInt32(),
+                true when r.ValueKind == JsonValueKind.String => ModelVariant.ParseLevel(r.GetString()!),
+                _ => null,
+            };
+            return new ProfileUnderTest(LoadProfilePrompt(profileName), Str(profile, "model") ?? "", reasoning);
         }
         throw new ArgumentException($"No profile named {profileName} in {settingsPath}.");
     }
