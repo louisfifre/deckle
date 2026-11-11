@@ -33,7 +33,7 @@ public partial class App : Microsoft.UI.Xaml.Application
     private HudWindow? _hudWindow;
     private HudOverlayManager? _overlayManager;
     private TrayIconManager? _tray;
-    private TrayMenuHost? _trayMenu;
+    private TrayMenuHost? _trayDeveloperMenu;
     private TrayMenuHost? _trayActions;
     private TranscriptionEngine? _engine;
     private SpeechEngine? _speechEngine;

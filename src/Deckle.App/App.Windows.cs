@@ -36,7 +36,7 @@ public partial class App
             };
 
             _logWindow = window;
-            window.SetPlaygroundAvailable(PlaygroundEnabled);
+            window.SetPlaygroundAvailable(DeveloperModeEnabled);
             AppDiagnosticsBootstrap.AttachLogWindowSink(window);
             window.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(window);
@@ -69,7 +69,7 @@ public partial class App
             };
 
             _settingsWindow = window;
-            window.SetPlaygroundAvailable(PlaygroundEnabled);
+            window.SetPlaygroundAvailable(DeveloperModeEnabled);
             window.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(window);
             DeckleWindowingSource.Log.WindowLoadComplete("settings", sw.ElapsedMilliseconds);
@@ -80,7 +80,7 @@ public partial class App
     private void ShowPlaygroundLazy()
     {
         // A developer surface: no path opens it while the setting is off.
-        if (!PlaygroundEnabled) return;
+        if (!DeveloperModeEnabled) return;
         EnsurePlaygroundWindow().ShowAndActivate();
     }
 
@@ -118,7 +118,7 @@ public partial class App
     // own registers it yet (that comes with the real engine).
     private void ShowMailLazy()
     {
-        if (!PlaygroundEnabled) return;
+        if (!DeveloperModeEnabled) return;
         EnsureMailWindow().ShowAndActivate();
     }
 

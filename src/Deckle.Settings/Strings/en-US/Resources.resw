@@ -621,17 +621,11 @@
   <data name="GeneralPageDeveloperSection.Title" xml:space="preserve">
     <value>Developer</value>
   </data>
-  <data name="GeneralShowPlaygroundCard.Header" xml:space="preserve">
-    <value>Show the Playground</value>
-  </data>
-  <data name="GeneralShowPlaygroundCard.Description" xml:space="preserve">
-    <value>Adds the Playground, a test bench for Deckle's own features, to the tray menu and to the window title bars.</value>
-  </data>
   <data name="GeneralDeveloperModeCard.Header" xml:space="preserve">
     <value>Developer mode</value>
   </data>
   <data name="GeneralDeveloperModeCard.Description" xml:space="preserve">
-    <value>Shows tools for testing and reviewing Deckle, such as saving an image of every window.</value>
+    <value>Adds a developer menu to the tray icon's right click, with the Playground, features still in preview and tools for reviewing Deckle.</value>
   </data>
   <data name="GeneralCaptureInterfaceCard.Header" xml:space="preserve">
     <value>Capture the interface</value>

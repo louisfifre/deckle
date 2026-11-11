@@ -46,7 +46,7 @@ Deckle is one app with several modules. You choose them at setup and can change 
 
 <img src="docs/media/board-ambient.png" alt="Ambient light, in progress: the Ambient Light settings page with the Hue bridge paired and the brightness response curve." width="100%">
 
-A left click on the tray icon opens a menu with a switch per background feature, Ambient Light, Record and Transcribe audio files. A right click opens the classic menu for Logs, Settings, the Playground, restart and quit. A double click opens Settings.
+A left click on the tray icon opens a menu with a switch per background feature, Ambient Light, Record and Transcribe audio files, then Settings, Logs, Restart and Quit. A right click opens the same menu, or, with Developer mode on, a developer menu with the Playground and the features still in preview. A double click opens Settings.
 
 Smaller touches outside the module list: a **taskbar cover** that masks the taskbar with an opaque band (in progress); an **Apps and games** page, still foundations: a registry of your apps, filled by hand or from your Steam libraries and chosen folders, with an HDR rule per monitor applied while an app runs; **read-aloud**, scaffolded but dormant; and **smooth scrolling** for the mouse wheel, still groundwork.
 

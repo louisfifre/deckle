@@ -29,16 +29,14 @@ public sealed class PerformanceSettings
     public bool PerformanceMode { get; set; } = false;
 }
 
-// Developer surfaces an ordinary user has no use for. Off by default: the
-// Playground is a test bench for the people building Deckle, so its entry
-// points (tray menu, window title bars) stay hidden until this is turned on.
+// The one door to everything an ordinary user has no use for. Off by default.
+// While on, the App offers the surfaces still in alpha and the test bench (the
+// tray icon's right-click menu, the Playground buttons in the window title
+// bars) and the General page shows the developer tools, the interface capture
+// first. A surface that is not ready hides behind this switch rather than
+// behind one of its own.
 public sealed class DeveloperSettings
 {
-    public bool ShowPlayground { get; set; } = false;
-
-    // Shows the developer tools on the General page, the interface capture
-    // first: every open Deckle window and every settings page to PNG files,
-    // for a reviewer who judges the interface from images.
     public bool DeveloperMode { get; set; } = false;
 }
 

@@ -187,9 +187,9 @@ public partial class App
         Step("settings_surface");
         WireSettingsSurface(context);
         ApplyTheme(Settings.SettingsService.Instance.Current.Appearance.Theme);
-        // The Playground opens only when the developer setting allows it. The
-        // setting is written in this run's own root, never the maintainer's.
-        Settings.SettingsService.Instance.Current.Developer.ShowPlayground = true;
+        // The Playground opens only while Developer mode is on. The setting is
+        // written in this run's own root, never the maintainer's.
+        Settings.SettingsService.Instance.Current.Developer.DeveloperMode = true;
         Settings.SettingsService.Instance.Save();
 
         Step("microphone");

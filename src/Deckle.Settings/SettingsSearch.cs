@@ -102,13 +102,9 @@ public static class SettingsSearch
         // ── Developer (composed: GeneralViewModel.DeveloperSettings) ──
         new SettingSearchEntry
         {
-            LabelKey = "GeneralShowPlaygroundCard",
-            Keywords = ["developer", "playground", "test bench", "advanced", "debug"],
-        },
-        new SettingSearchEntry
-        {
             LabelKey = "GeneralDeveloperModeCard",
-            Keywords = ["developer", "screenshot", "capture", "review", "debug"],
+            Keywords = ["developer", "playground", "test bench", "advanced", "preview", "alpha",
+                "screenshot", "capture", "review", "debug"],
         },
     ];
 

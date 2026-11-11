@@ -203,17 +203,8 @@ public partial class GeneralViewModel : ObservableObject
 
     // ── Developer ────────────────────────────────────────────────────────────
 
-    [ObservableProperty]
-    public partial bool ShowPlayground { get; set; }
-
-    partial void OnShowPlaygroundChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Developer.ShowPlayground", value.ToString());
-        PushToSettings();
-    }
-
-    // Read by the page alone: it shows the developer tools while this is on.
+    // The page shows the developer tools while this is on; the App reads the
+    // persisted value for every developer entry point of its own.
     [ObservableProperty]
     public partial bool DeveloperMode { get; set; }
 
@@ -291,7 +282,6 @@ public partial class GeneralViewModel : ObservableObject
         BackupDirectory = paths.BackupDirectory;
         UpdateAutoCheckEnabled = updates.AutoCheckEnabled;
         PerformanceMode = new PerformanceSettings().PerformanceMode;
-        ShowPlayground = new DeveloperSettings().ShowPlayground;
         DeveloperMode = new DeveloperSettings().DeveloperMode;
         LoadHotkeys(new HotkeysSettings());
 
@@ -316,7 +306,6 @@ public partial class GeneralViewModel : ObservableObject
             BackupDirectory = shell.Paths.BackupDirectory;
             UpdateAutoCheckEnabled = shell.Updates.AutoCheckEnabled;
             PerformanceMode = shell.Performance.PerformanceMode;
-            ShowPlayground = shell.Developer.ShowPlayground;
             DeveloperMode = shell.Developer.DeveloperMode;
             LoadHotkeys(shell.Hotkeys);
         }
@@ -352,7 +341,6 @@ public partial class GeneralViewModel : ObservableObject
         shell.Paths.BackupDirectory = BackupDirectory ?? "";
         shell.Updates.AutoCheckEnabled = UpdateAutoCheckEnabled;
         shell.Performance.PerformanceMode = PerformanceMode;
-        shell.Developer.ShowPlayground = ShowPlayground;
         shell.Developer.DeveloperMode = DeveloperMode;
         SettingsService.Instance.Save();
     }

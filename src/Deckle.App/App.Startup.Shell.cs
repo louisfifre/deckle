@@ -149,26 +149,27 @@ public partial class App
         // Tray menus — two native MenuFlyouts, each on an invisible anchor
         // window placed on the tray icon and owned by the message-only HWND
         // (TrayMenuHost). The App composes their entries here; the module
-        // renders them and knows no label and no module. Right click: the rare
-        // items, the window-opening commands then the lifecycle commands.
-        _trayMenu = new TrayMenuHost(_messageHost.Hwnd, "tray-popup")
+        // renders them and knows no label and no module. Right click: the
+        // developer menu, which opens only while Developer mode is on
+        // (App.DeveloperAccess.cs).
+        _trayDeveloperMenu = new TrayMenuHost(_messageHost.Hwnd, "tray-popup")
         {
             GetIconRect = () => _tray.GetIconRect(),
-            Entries = ComposeRightClickTray(),
+            Entries = ComposeDeveloperTray(),
         };
-        // The Playground entry follows the developer setting (App.PlaygroundAccess.cs).
         _tray.RightClickRequested += ShowRightClickTray;
-        WirePlaygroundAccess(Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
+        WireDeveloperAccess(Microsoft.UI.Dispatching.DispatcherQueue.GetForCurrentThread());
 
-        // Left click, three groups behind separators, read from the top: the
-        // background switches (set once, left on or off), then Ambient Light
-        // on its own (a visual thing one actually launches), then the actions
-        // (Record or Stop recording, Transcribe audio files…) at the bottom,
-        // nearest the icon on a taskbar at the bottom, so a command is one
-        // short move away (Louis, 2026-10-14). A switch is a row with a pill
+        // Left click, the menu of every day, four groups behind separators,
+        // read from the top: the background switches (set once, left on or
+        // off), then Ambient Light on its own (a visual thing one actually
+        // launches), then the actions (Record or Stop recording, Transcribe
+        // audio files…), then the app's own commands at the very bottom
+        // (Settings, Logs, Restart, Quit), where a tray menu keeps them
+        // (Louis, 2026-10-14 and 2026-11-11). A switch is a row with a pill
         // (TraySwitchMenuItem); a click flips its module and closes the menu,
-        // like any menu item. Every entry follows module presence: an absent
-        // module has no switch, no Record item, no file action.
+        // like any menu item. Every module entry follows module presence: an
+        // absent module has no switch, no Record item, no file action.
         //
         // Module switches (App.TrayToggles.cs). Built once: the hotkey actions
         // below derive from the same lists, so a toggle's hotkey runs exactly
@@ -199,6 +200,12 @@ public partial class App
                 () => Loc.Get("TrayMenu_TranscribeFile"),
                 () => TranscribeFilesFromTray()));
         }
+        // The app's own commands, always present.
+        if (actions.Count > 0) actions.Add(new TrayMenuSeparator());
+        actions.Add(new TrayMenuCommand("settings", () => Loc.Get("TrayMenu_Settings"), () => ShowSettingsWindowLazy()));
+        actions.Add(new TrayMenuCommand("logs", () => Loc.Get("TrayMenu_Logs"), () => ShowLogWindowLazy()));
+        actions.Add(new TrayMenuCommand("restart", () => Loc.Get("TrayMenu_Restart"), () => RestartAppFromTray()));
+        actions.Add(new TrayMenuCommand("quit", () => Loc.Get("TrayMenu_Quit"), () => QuitApp()));
         _trayActions = new TrayMenuHost(_messageHost.Hwnd, "tray-actions")
         {
             GetIconRect = () => _tray.GetIconRect(),

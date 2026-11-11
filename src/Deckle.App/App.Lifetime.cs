@@ -187,7 +187,7 @@ public partial class App
         TryShutdown("update_checks_stop", StopUpdateChecks);
         TryShutdown("hotkeys_dispose", () => _hotkeyManager?.Dispose());
         TryShutdown("tray_dispose", () => _tray?.Dispose());
-        TryShutdown("tray_menu_dispose", () => _trayMenu?.Dispose());
+        TryShutdown("tray_menu_dispose", () => _trayDeveloperMenu?.Dispose());
         TryShutdown("tray_actions_dispose", () => _trayActions?.Dispose());
         // Before _messageHost: the signal's subclass + Raw Input sink sit on the
         // host's HWND, which _messageHost.Dispose destroys.
