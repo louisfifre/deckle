@@ -909,6 +909,71 @@ public class SchemaAdminGesturesTests
     }
 
     [Fact]
+    public async Task PreviewRefusesToCreateANativeTypeTheSpaceNoLongerHolds()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyList());
+        server.OnListProperties(EmptyList());
+        string nativeKey = SchemaPlanner.NativeTypeKeys.First();
+        var manifest = new JsonObject
+        {
+            ["types"] = new JsonArray { new JsonObject { ["key"] = nativeKey, ["name"] = "Tâche" } },
+        };
+
+        SchemaPreviewResult preview = await NewGestures(server).PreviewResultAsync("home", manifest, Ct);
+
+        string conflict = Assert.Single(preview.Conflicts);
+        Assert.Contains($"type {nativeKey}", conflict);
+        Assert.DoesNotContain(preview.Actions, a => a.Kind == "create_type");
+    }
+
+    [Fact]
+    public async Task ApplyStopsWhenAnytypeKeepsAnotherKeyThanTheOneAsked()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyList());
+        server.OnListProperties(EmptyList());
+        server.OnPostProperty(ExistingProperty());
+        server.OnPostPropertyTag("prop-etat", ExistingTag());
+        server.OnPostType(new JsonObject
+        {
+            ["id"] = "type-piece", ["key"] = "piece_2", ["name"] = "Pièce",
+            ["plural_name"] = "Pièces", ["layout"] = "basic",
+        });
+
+        var gestures = NewGestures(server);
+        string previewId = PreviewId(await gestures.PreviewAsync("home", Manifest(), Ct));
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => gestures.ApplyAsync("home", previewId, Manifest(), confirm: true, Ct));
+
+        Assert.Contains("piece_2", ex.Message);
+        Assert.Contains("type-piece", ex.Message);
+        Assert.DoesNotContain(server.Requests, r => r.Method == "PATCH");
+    }
+
+    [Fact]
+    public async Task ApplyThatFailsSaysWhatItWroteBeforeTheError()
+    {
+        using var server = new FakeAnytypeServer();
+        server.OnListTypes(EmptyList());
+        server.OnListProperties(EmptyList());
+        server.OnPostProperty(ExistingProperty());
+        server.OnPostPropertyTag("prop-etat", ExistingTag());
+        // No route for POST /types: the type creation fails after two writes.
+
+        var gestures = NewGestures(server);
+        string previewId = PreviewId(await gestures.PreviewAsync("home", Manifest(), Ct));
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => gestures.ApplyAsync("home", previewId, Manifest(), confirm: true, Ct));
+
+        Assert.Contains("propriété créée etat_identification", ex.Message);
+        Assert.Contains("tag créé etat_identification:Confirmé", ex.Message);
+        Assert.DoesNotContain("type créé", ex.Message);
+        Assert.NotNull(ex.InnerException);
+        Assert.Contains(ex.InnerException.Message, ex.Message);
+    }
+
+    [Fact]
     public async Task PreviewPlansNoRenameWhenTheNamesAlreadyMatch()
     {
         using var server = new FakeAnytypeServer();

@@ -45,7 +45,7 @@ internal sealed class GatewayProcesses : IGatewayProcesses
     {
         try
         {
-            return GatewayKeyFingerprint.Of(AnytypeCredentials.Load().ApiKey);
+            return GatewayKeyFingerprint.Of(AnytypeCredentials.Load());
         }
         catch (Exception ex) when (ex is InvalidOperationException or Deckle.Security.SecretVaultException)
         {

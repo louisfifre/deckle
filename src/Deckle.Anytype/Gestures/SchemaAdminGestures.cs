@@ -72,6 +72,48 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
             throw new InvalidOperationException(
                 "Preview avec conflit : schema_apply refusé. Corrige le manifeste puis relance schema_preview.");
 
+        // A write that fails leaves the earlier ones in the space. The caller
+        // gets what was written before the error, so it knows where the space
+        // stands; a fresh preview then plans what remains.
+        var applied = new List<string>();
+        try
+        {
+            await WriteAsync(preview, snapshot, spaceId, applied, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            throw new InvalidOperationException(InterruptedReport(applied, ex), ex);
+        }
+
+        DeckleAnytypeSource.Log.GestureCompleted("schema_apply", Elapsed(started));
+        return applied.Count == 0
+            ? $"Schéma inchangé : preview {previewId} ne contenait rien à appliquer."
+            : "Schéma appliqué :\n" + string.Join("\n", applied.Select(a => "- " + a));
+    }
+
+    private static string InterruptedReport(IReadOnlyList<string> applied, Exception ex)
+    {
+        var sb = new StringBuilder("Schéma appliqué en partie : une écriture a échoué.\n");
+        sb.Append("Erreur : ").Append(ex.Message).Append('\n');
+        if (applied.Count == 0)
+            sb.Append("Rien n'a été écrit avant l'erreur.\n");
+        else
+        {
+            sb.Append("Écrit avant l'erreur :\n");
+            foreach (string line in applied)
+                sb.Append("- ").Append(line).Append('\n');
+        }
+        sb.Append("Relance schema_preview : il montre ce qui reste à faire.");
+        return sb.ToString();
+    }
+
+    private async Task WriteAsync(
+        SchemaPreview preview,
+        SchemaSnapshot snapshot,
+        string spaceId,
+        List<string> applied,
+        CancellationToken ct)
+    {
         var propertiesByKey = snapshot.Properties.ToDictionary(
             p => p.Key, p => p.Value, StringComparer.Ordinal);
         var typesByKey = snapshot.Types.ToDictionary(
@@ -81,8 +123,6 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
             .Select(action => action.Key)
             .ToHashSet(StringComparer.Ordinal);
         var createdTypeKeys = new HashSet<string>(StringComparer.Ordinal);
-
-        var applied = new List<string>();
 
         // Renames first: the type PATCH below rebuilds property links from the
         // live names, so they must already be the manifest's. A type is renamed
@@ -125,6 +165,7 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
                 ct);
 
             JsonObject createdObject = SchemaApiJson.Payload(created);
+            RequireKey("la propriété", spec.Key, createdObject);
             string id = SchemaApiJson.Id(createdObject);
             propertiesByKey[spec.Key] = new SchemaPropertyInfo(
                 id,
@@ -205,6 +246,7 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
                 ct);
 
             JsonObject createdObject = SchemaApiJson.Payload(created);
+            RequireKey("le type", spec.Key, createdObject);
             string id = SchemaApiJson.Id(createdObject);
             IReadOnlyList<SchemaPropertyLinkInfo> createdLinks = SchemaApiJson.PropertyLinks(createdObject);
             typesByKey[spec.Key] = new SchemaTypeInfo(
@@ -344,11 +386,21 @@ public sealed partial class SchemaAdminGestures(AnytypeApiClient api, AnytypeSpa
             await api.AddToCollectionAsync(preview.SpaceId, sectionIds[section.Name], memberIds, ct);
             applied.Add($"types ajoutés à {section.Name} · {string.Join(", ", section.Types)}");
         }
+    }
 
-        DeckleAnytypeSource.Log.GestureCompleted("schema_apply", Elapsed(started));
-        return applied.Count == 0
-            ? $"Schéma inchangé : preview {previewId} ne contenait rien à appliquer."
-            : "Schéma appliqué :\n" + string.Join("\n", applied.Select(a => "- " + a));
+    // Anytype answers a creation with the key it kept, which is not always the
+    // one asked: a key still held by a deleted native type comes back suffixed
+    // (`task_2`, 2026-11-11). Every command finds a type or a property by its
+    // key, so a different key is a failure, said at once and with the id.
+    private static void RequireKey(string kind, string asked, JsonObject created)
+    {
+        string kept = SchemaApiJson.Str(created, "key");
+        if (kept.Length == 0 || string.Equals(kept, asked, StringComparison.Ordinal)) return;
+        throw new InvalidOperationException(
+            $"Anytype a créé {kind} sous la clé « {kept} » au lieu de « {asked} » " +
+            $"(id {SchemaApiJson.Id(created)}) : la clé demandée est déjà prise dans cet espace. " +
+            $"Supprime « {kept} » dans l'app ; si « {asked} » était un type ou une propriété native " +
+            "supprimée, repars d'un espace neuf.");
     }
 
     // The type filter keeps collection-LAYOUT domain types (floor…) out, and
