@@ -18,10 +18,17 @@ namespace Deckle.Mail.Hub;
 // column and the end column is empty: the page has no line to remove.
 public sealed partial class SubjectPage : Page
 {
-    // Under this width the list of mails goes under the text (spec, A narrow
-    // window): the text column's sixty characters and the 288 px list no
-    // longer fit side by side.
-    private const double StackBelow = 860;
+    // Under this width of the window the list of mails goes under the text
+    // (spec, A narrow window): the 860 the page's text column of sixty
+    // characters and its 288 px list need side by side, plus the open
+    // navigation at its widest (296, MailWindow.Rail.cs).
+    //
+    // The window's width decides, not the page's: the navigation folds to its
+    // rail in a narrower window and hands the page its room back, so a page
+    // measured on its own width put the list beside the text again in a
+    // window narrower than the one that had just stacked it.
+    private const double StackBelowWindow = 860 + NavigationAtItsWidest;
+    private const double NavigationAtItsWidest = 296;
 
     private IMailShell? _shell;
     private TriageSession? _session;
@@ -211,13 +218,17 @@ public sealed partial class SubjectPage : Page
 
     private void OnSizeChanged(object sender, SizeChangedEventArgs e)
     {
-        _stacked = e.NewSize.Width < StackBelow;
+        // The page's size changes with the window and with the navigation;
+        // only the window's width is read. Before the page is in a window it
+        // has its own width to go by.
+        double window = XamlRoot?.Size.Width ?? e.NewSize.Width + NavigationAtItsWidest;
+        _stacked = window < StackBelowWindow;
         ApplyLayout();
     }
 
     private bool _stacked;
 
-    // One width decides both: under it the list of mails goes under the text,
+    // One width of the window decides both: under it the list of mails goes under the text,
     // and the two commands go under the grey line, at the title's left edge.
     private void ApplyLayout()
     {

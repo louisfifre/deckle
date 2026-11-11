@@ -122,6 +122,7 @@ Deckle Mail serves one person who owns several mailboxes and aliases and feels s
 - The search field becomes a button in the title bar.
 - Each row holds on one level: its sentence, then its controls on the same line. Add task keeps its full label.
 - On an opened subject the list of its mails goes under the text.
+- A window made narrower never brings back a layout it had already left. Example: the list of mails, once under the text, stays there when the navigation folds to its rail and the page gains its width.
 
 ## Behaviours
 
