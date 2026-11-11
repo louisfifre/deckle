@@ -7,59 +7,50 @@ using Deckle.Localization;
 
 namespace Deckle.App;
 
-// The Playground is a developer surface: every way into it follows the
-// developer setting (Settings > General > Developer, off by default). Three
-// entry points exist: the right-click tray menu, and the Playground buttons in
-// the Settings and Logs title bars. All three are driven from here, and
-// ShowPlaygroundLazy refuses when the setting is off, so no path can bypass it.
-// The Deckle Mail window preview follows the same gate: its one entry, in the
-// right-click tray menu, shows only while the setting is on, ShowMailLazy
-// refuses otherwise, and an open Mail window closes when the setting goes off.
+// Developer mode (Settings > General > Developer, off by default) is the one
+// door to what an ordinary user has no use for: the surfaces still in alpha
+// and the developer tools. Its entry points are the right-click tray menu and
+// the Playground buttons in the Settings and Logs title bars. All are driven
+// from here, and ShowPlaygroundLazy and ShowMailLazy refuse while the mode is
+// off, so no path can bypass it. A Playground or Mail window left open when
+// the mode goes off is closed, since its entry points are gone.
 public partial class App
 {
-    // What the right-click menu was last composed with, to recompose only on a
-    // change and never swap items under a menu that is open.
-    private bool _trayPlaygroundShown;
-
     private static bool DeveloperModeEnabled
         => SettingsService.Instance.Current.Developer.DeveloperMode;
 
-    private IReadOnlyList<TrayMenuEntry> ComposeRightClickTray()
-    {
-        _trayPlaygroundShown = DeveloperModeEnabled;
-        return TrayRightClickMenu.Compose(
+    // Composed once: the mode decides whether the menu opens, not what it
+    // holds, and module presence does not change during a run.
+    private IReadOnlyList<TrayMenuEntry> ComposeDeveloperTray()
+        => TrayDeveloperMenu.Compose(
             AtelierPresent,
-            _trayPlaygroundShown,
             key => Loc.Get(key),
-            () => ShowLogWindowLazy(),
-            () => ShowSettingsWindowLazy(),
             () => ShowAtelierWindowLazy(),
             () => ShowPlaygroundLazy(),
             () => ShowMailLazy(),
-            () => RestartAppFromTray(),
-            () => QuitApp());
-    }
+            () => CaptureInterfaceFromTray());
 
-    // Right click: the setting is read at each open, so the entry follows it
-    // without a restart.
+    // Right click: the developer menu while the mode is on, read at each
+    // click so it follows the setting without a restart. With the mode off it
+    // opens the left-click menu, since a tray icon whose right click does
+    // nothing reads as broken.
     private void ShowRightClickTray()
     {
-        if (_trayMenu is null) return;
-        if (_trayPlaygroundShown != DeveloperModeEnabled)
-            _trayMenu.Entries = ComposeRightClickTray();
-        _trayMenu.Show();
+        if (DeveloperModeEnabled)
+            _trayDeveloperMenu?.Show();
+        else
+            ShowTrayActions();
     }
 
     // SettingsService.Changed fires after the disk write, on any thread. The
-    // windows' buttons are updated on the UI thread; a Playground left open
-    // when the setting goes off is closed, since its entry points are gone.
-    private void WirePlaygroundAccess(DispatcherQueue ui)
+    // windows' buttons are updated on the UI thread.
+    private void WireDeveloperAccess(DispatcherQueue ui)
     {
         SettingsService.Instance.Changed += () =>
-            ui.TryEnqueueOrLog(ApplyPlaygroundAccess, "SETTINGS", "playground access");
+            ui.TryEnqueueOrLog(ApplyDeveloperAccess, "SETTINGS", "developer access");
     }
 
-    private void ApplyPlaygroundAccess()
+    private void ApplyDeveloperAccess()
     {
         bool enabled = DeveloperModeEnabled;
         _settingsWindow?.SetPlaygroundAvailable(enabled);

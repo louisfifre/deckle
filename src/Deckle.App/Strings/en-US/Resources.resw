@@ -560,6 +560,9 @@
   <data name="TrayMenu_Mail" xml:space="preserve">
     <value>Deckle Mail (preview)</value>
   </data>
+  <data name="TrayMenu_CaptureInterface" xml:space="preserve">
+    <value>Capture the interface</value>
+  </data>
   <data name="TrayMenu_AmbientLight" xml:space="preserve">
     <value>Ambient Light</value>
   </data>

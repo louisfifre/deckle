@@ -663,8 +663,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProdUpdate.cs
 │   │   ├── Program.cs
 │   │   ├── SecondaryWindowPlacement.cs
-│   │   ├── TrayIncidentLines.cs
-│   │   └── TrayRightClickMenu.cs
+│   │   ├── TrayDeveloperMenu.cs
+│   │   └── TrayIncidentLines.cs
 │   ├── Deckle.Atelier/
 │   │   ├── AddedFolders/
 │   │   │   ├── AddedFolder.cs
@@ -2388,8 +2388,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProdUpdateTests.cs
 │   │   ├── ReswMirrorTests.cs
 │   │   ├── SelfCheckTests.cs
-│   │   ├── TrayIncidentLinesTests.cs
-│   │   └── TrayRightClickMenuTests.cs
+│   │   ├── TrayDeveloperMenuTests.cs
+│   │   └── TrayIncidentLinesTests.cs
 │   ├── Deckle.Atelier.Tests/
 │   │   ├── Icons/
 │   │   │   ├── FileIconKeyTests.cs
