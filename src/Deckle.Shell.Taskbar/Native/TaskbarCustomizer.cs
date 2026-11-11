@@ -42,10 +42,11 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
 
     private TaskbarCustomization _wanted = new();
     private IReadOnlyDictionary<TaskbarPart, TaskbarProblem> _problems = new Dictionary<TaskbarPart, TaskbarProblem>();
-    // The thickness has no status line: a failed lookup, or the engine's
-    // constant_return_* record about it, is the problem. Under the state gate.
-    private TaskbarProblem? _thicknessLookupProblem;
-    private TaskbarProblem? _thicknessEngineProblem;
+    // The thickness and the thumbnails are functions the engine patches, with
+    // no status line: a failed lookup, or the engine's record about the patch
+    // (constant_return_*, thumbnail_box_*), is the problem. Under the state gate.
+    private readonly PatchProblem _thickness = new();
+    private readonly PatchProblem _thumbnails = new();
     private string _loggedParts = "none";
     private bool _loggedCompactTrayLeftOut;
     private bool _loggedCompactTaskButtonsLeftOut;
@@ -99,8 +100,13 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
             lock (_stateGate) _wanted = wanted;
             LogWanted(settings, wanted);
 
-            ExplorerFunction? frameSize = await FindFrameSizeAsync(wanted).ConfigureAwait(false);
-            await ApplyAsync(_explorer, wanted.CustomizesExplorer, () => TaskbarDocumentBuilder.Build(wanted, frameSize)).ConfigureAwait(false);
+            ExplorerFunction? frameSize = await FindFunctionAsync(
+                wanted.BarThickness is not null, _thickness,
+                TaskbarDocumentBuilder.FrameSizeModule, TaskbarDocumentBuilder.FrameSizeSymbol).ConfigureAwait(false);
+            ExplorerFunction? thumbnailSize = await FindFunctionAsync(
+                wanted.Thumbnails is not null, _thumbnails,
+                TaskbarDocumentBuilder.ThumbnailSizeModule, TaskbarDocumentBuilder.ThumbnailSizeSymbol).ConfigureAwait(false);
+            await ApplyAsync(_explorer, wanted.CustomizesExplorer, () => TaskbarDocumentBuilder.Build(wanted, frameSize, thumbnailSize)).ConfigureAwait(false);
             await ApplyAsync(_startMenu, wanted.CustomizesStartMenu, () => TaskbarDocumentBuilder.BuildStartMenu(wanted)).ConfigureAwait(false);
             RecomputeProblems();
         }
@@ -136,22 +142,23 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
 
     public ValueTask DisposeAsync() => new(ShutdownAsync());
 
-    // Where the thickness function lives in this explorer: a read of the cache,
-    // or once per build of Windows a download. A function that this build's
-    // symbols do not name is Windows having moved on (not applied); anything
-    // else (offline, explorer starting) is an error the next turn tries again.
-    private async Task<ExplorerFunction?> FindFrameSizeAsync(TaskbarCustomization wanted)
+    // Where a function the engine patches lives in this explorer: a read of the
+    // cache, or once per build of Windows a download. A function that this
+    // build's symbols do not name is Windows having moved on (not applied);
+    // anything else (offline, explorer starting) is an error the next turn
+    // tries again. A part that is off looks nothing up.
+    private async Task<ExplorerFunction?> FindFunctionAsync(bool wanted, PatchProblem patch, string module, string symbol)
     {
-        if (wanted.BarThickness is null)
+        if (!wanted)
         {
-            lock (_stateGate) _thicknessLookupProblem = null;
+            lock (_stateGate) patch.Lookup = null;
             return null;
         }
 
-        FunctionLookup lookup = await _findFunction(TaskbarDocumentBuilder.FrameSizeModule, TaskbarDocumentBuilder.FrameSizeSymbol).ConfigureAwait(false);
+        FunctionLookup lookup = await _findFunction(module, symbol).ConfigureAwait(false);
         lock (_stateGate)
         {
-            _thicknessLookupProblem = lookup.Function is not null ? null
+            patch.Lookup = lookup.Function is not null ? null
                 : lookup.FunctionGone ? TaskbarProblem.NotApplied
                 : TaskbarProblem.Error;
         }
@@ -248,7 +255,7 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
                 lock (_stateGate)
                 {
                     process.Status = null;
-                    if (process == _explorer) _thicknessEngineProblem = null;
+                    if (process == _explorer) _thickness.Engine = _thumbnails.Engine = null;
                 }
                 process.Unavailable = false;
                 process.SentDocument = null;
@@ -258,20 +265,38 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
                 lock (_stateGate) process.Status = status;
                 RecomputeProblems();
                 break;
-            case NativeLogRecord record when record.Fields.TryGetValue("id", out string? id) && id == TaskbarDocumentBuilder.BarThicknessId:
-                TaskbarProblem? problem = record.Event switch
+            case NativeLogRecord record when record.Fields.TryGetValue("id", out string? id) && PatchOf(id) is (var patch, var prefix):
+                if (!record.Event.StartsWith(prefix, StringComparison.Ordinal)) break;
+                TaskbarProblem? problem = record.Event[prefix.Length..] switch
                 {
-                    "constant_return_applied" or "constant_return_restored" => null,
+                    "applied" or "restored" => null,
                     // Another build than the one resolved, or code that is not
                     // what the file holds (another tool patched it first).
-                    "constant_return_skipped" => TaskbarProblem.NotApplied,
-                    _ when record.Event.StartsWith("constant_return_", StringComparison.Ordinal) => TaskbarProblem.Error,
-                    _ => _thicknessEngineProblem,
+                    "skipped" => TaskbarProblem.NotApplied,
+                    _ => TaskbarProblem.Error,
                 };
-                lock (_stateGate) _thicknessEngineProblem = problem;
+                lock (_stateGate) patch.Engine = problem;
                 RecomputeProblems();
                 break;
         }
+    }
+
+    // The patch an engine record speaks of, by the id Deckle gave it, with the
+    // prefix of the records the engine writes about that kind of patch.
+    private (PatchProblem Patch, string Prefix)? PatchOf(string id) => id switch
+    {
+        TaskbarDocumentBuilder.BarThicknessId => (_thickness, "constant_return_"),
+        TaskbarDocumentBuilder.ThumbnailBoxId => (_thumbnails, "thumbnail_box_"),
+        _ => null,
+    };
+
+    // What Deckle knows is wrong with one patched function. The lookup comes
+    // first: without the function the engine was told nothing.
+    private sealed class PatchProblem
+    {
+        public TaskbarProblem? Lookup;
+        public TaskbarProblem? Engine;
+        public TaskbarProblem? Current => Lookup ?? Engine;
     }
 
     private void OnDisconnected(TargetState process, ITaskbarEngine engine)
@@ -295,7 +320,7 @@ public sealed class TaskbarCustomizer : IAsyncDisposable
         {
             next = TaskbarProblemReader.Read(_wanted,
                 _explorer.Status, _explorer.Unavailable, _startMenu.Status, _startMenu.Unavailable,
-                _thicknessLookupProblem ?? _thicknessEngineProblem);
+                _thickness.Current, _thumbnails.Current);
             previous = _problems;
             if (SameProblems(previous, next)) return;
             _problems = next;

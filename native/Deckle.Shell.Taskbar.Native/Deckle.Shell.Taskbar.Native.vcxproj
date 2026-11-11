@@ -100,6 +100,7 @@
     <ClInclude Include="patches\code_write.h" />
     <ClInclude Include="patches\constant_return.h" />
     <ClInclude Include="patches\function_site.h" />
+    <ClInclude Include="patches\thumbnail_box.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -128,6 +129,7 @@
     <ClCompile Include="patches\code_write.cpp" />
     <ClCompile Include="patches\constant_return.cpp" />
     <ClCompile Include="patches\function_site.cpp" />
+    <ClCompile Include="patches\thumbnail_box.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Deckle.Shell.Taskbar.Native.def" />

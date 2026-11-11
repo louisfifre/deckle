@@ -235,7 +235,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── constant_return.cpp
 │   │   │   ├── constant_return.h
 │   │   │   ├── function_site.cpp
-│   │   │   └── function_site.h
+│   │   │   ├── function_site.h
+│   │   │   ├── thumbnail_box.cpp
+│   │   │   └── thumbnail_box.h
 │   │   ├── xamldiag/
 │   │   │   ├── behaviors/
 │   │   │   │   ├── clock.cpp
@@ -2945,6 +2947,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TaskbarEngineHostStopTests.cs
 │   │   │   ├── TaskbarPipeServerTests.cs
 │   │   │   ├── TaskbarProblemReaderTests.cs
+│   │   │   ├── ThumbnailBoxTests.cs
 │   │   │   └── VersionedNativeCopyTests.cs
 │   │   ├── WindowsKey/
 │   │   │   ├── WindowsKeyTapDetectorTests.cs
