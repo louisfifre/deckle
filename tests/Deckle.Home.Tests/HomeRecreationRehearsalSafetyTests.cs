@@ -129,6 +129,18 @@ public sealed class HomeRecreationRehearsalSafetyTests
         Assert.Contains("Oui", Tags(manifest, "earthed"));
     }
 
+    [Fact]
+    public void ASheetWithItsOwnSectionCollectionsTakesNoManifestSection()
+    {
+        var carried = new HomeReplaySheet { Structure = new HomeStructure { Collections = [new HomeStructureCollection()] } };
+
+        (JsonObject withOwn, _) = HomeRecreationRehearsal.ManifestFor(carried);
+        (JsonObject without, _) = HomeRecreationRehearsal.ManifestFor(new HomeReplaySheet());
+
+        Assert.Empty(withOwn["sections"]!.AsArray());
+        Assert.NotEmpty(without["sections"]!.AsArray());
+    }
+
     static string[] Tags(JsonObject manifest, string key) =>
         (manifest["properties"]!.AsArray().OfType<JsonObject>()
             .Single(property => property["key"]!.GetValue<string>() == key)["tags"] as JsonArray ?? [])

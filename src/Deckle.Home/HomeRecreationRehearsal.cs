@@ -211,6 +211,13 @@ internal sealed class HomeRecreationRehearsal(AnytypeApiClient api, AnytypeSpace
     internal static (JsonObject Manifest, int AddedOptions) ManifestFor(HomeReplaySheet sheet)
     {
         JsonObject manifest = Localized(HomeSchema.TargetManifest);
+
+        // A sheet that carries its own section collections brings them in the
+        // old space's words, and the structure step writes them. The
+        // manifest's sections, named in English, would stand beside them as
+        // empty twins (four of them on the live Home on 2026-11-12).
+        if (sheet.Structure?.Collections is { Count: > 0 }) manifest["sections"] = new JsonArray();
+
         Dictionary<string, JsonObject> properties = manifest["properties"]!.AsArray().OfType<JsonObject>()
             .ToDictionary(property => property["key"]!.GetValue<string>(), StringComparer.Ordinal);
         int added = 0;
