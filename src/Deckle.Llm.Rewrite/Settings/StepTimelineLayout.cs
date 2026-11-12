@@ -34,7 +34,7 @@ public sealed record StepTimelineLayout(
             .Select((step, i) => (
                 From: dictation.StartOf(i),
                 Name: profileName(step.ProfileId) ?? step.ProfileId,
-                Streaming: transcriptionStreams && step.Streaming))
+                Streaming: transcriptionStreams && dictation.RewriteWhileSpeaking))
             .ToList();
 
         List<int> lengths = steps.Select(step => step.From).Prepend(0).Distinct().Order().ToList();

@@ -86,7 +86,7 @@ internal static class RewriteProfileSelection
                 dictation.StartOf(i),
                 step.ProfileId,
                 settings.Profiles.Find(profile => profile.Id == step.ProfileId),
-                streamingTranscription && step.Streaming));
+                streamingTranscription && dictation.RewriteWhileSpeaking));
         }
         return new RewriteStepPlan(null, planned);
     }

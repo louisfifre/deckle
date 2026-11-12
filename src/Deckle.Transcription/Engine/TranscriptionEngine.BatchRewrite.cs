@@ -46,9 +46,9 @@ public sealed partial class TranscriptionEngine
         // The core does not clamp: a hand-edited settings file could hold any
         // value, and DictationBatcher rejects zero or less.
         int passageChars = Math.Clamp(
-            llm.Dictation.PassageChars,
-            DictationRewriteSettings.MinPassageChars,
-            DictationRewriteSettings.MaxPassageChars);
+            llm.Dictation.Steps[0].BlockChars,
+            DictationRewriteSettings.MinBlockChars,
+            DictationRewriteSettings.MaxBlockChars);
 
         return new StreamingRewriteTake(plan, new DictationBatchRewriter(_rewrite, passageChars));
     }

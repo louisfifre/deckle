@@ -88,7 +88,7 @@ public sealed partial class LlmDictationSection : UserControl
         List<RewriteStep> steps = Dictation.Steps;
         RewriteProfile profile = Settings.Profiles.FirstOrDefault(p => !steps.Any(step => step.ProfileId == p.Id))
             ?? Settings.Profiles[0];
-        steps.Add(new RewriteStep { ProfileId = profile.Id, FromChars = chars, Streaming = steps[^1].Streaming });
+        steps.Add(new RewriteStep { ProfileId = profile.Id, FromChars = chars, BlockChars = steps[^1].BlockChars });
         LlmSettingsService.Instance.Save();
         RebuildSteps();
     }
@@ -232,7 +232,7 @@ public sealed partial class LlmDictationSection : UserControl
 
         var streamingToggle = new ToggleSwitch
         {
-            IsOn = step.Streaming,
+            IsOn = Dictation.RewriteWhileSpeaking,
             OnContent = "",
             OffContent = "",
             MinWidth = 0,
@@ -242,8 +242,8 @@ public sealed partial class LlmDictationSection : UserControl
         AutomationProperties.SetName(streamingToggle, streamingName);
         streamingToggle.Toggled += (_, _) =>
         {
-            if (streamingToggle.IsOn == step.Streaming) return;
-            step.Streaming = streamingToggle.IsOn;
+            if (streamingToggle.IsOn == Dictation.RewriteWhileSpeaking) return;
+            Dictation.RewriteWhileSpeaking = streamingToggle.IsOn;
             LlmSettingsService.Instance.Save();
             RefreshTimeline();
         };

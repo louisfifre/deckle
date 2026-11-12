@@ -13,11 +13,12 @@ public sealed class StepTimelineLayoutTests
     {
         Enabled = true,
         StartAtLength = startAt,
+        RewriteWhileSpeaking = true,
         Steps =
         [
-            new RewriteStep { ProfileId = "aff", FromChars = 1000, Streaming = true },
-            new RewriteStep { ProfileId = "lis", FromChars = 4000, Streaming = true },
-            new RewriteStep { ProfileId = "arr", FromChars = 12000, Streaming = false },
+            new RewriteStep { ProfileId = "aff", FromChars = 1000, BlockChars = 600 },
+            new RewriteStep { ProfileId = "lis", FromChars = 4000, BlockChars = 2000 },
+            new RewriteStep { ProfileId = "arr", FromChars = 12000, BlockChars = 6000 },
         ],
     };
 
@@ -39,10 +40,11 @@ public sealed class StepTimelineLayoutTests
             [
                 new TimelineSegment(0, 1, null, AsSaid: true),
                 new TimelineSegment(1, 2, "Affinage", AsSaid: false),
-                new TimelineSegment(2, 4, "Lissage", AsSaid: false),
+                new TimelineSegment(2, 3, "Lissage", AsSaid: false),
+                new TimelineSegment(3, 4, "Arrangement", AsSaid: false),
             ],
             layout.Streaming);
-        Assert.Equal([new TimelineSegment(3, 4, "Arrangement", AsSaid: false)], layout.AtStop);
+        Assert.Empty(layout.AtStop);
     }
 
     [Fact]
@@ -64,21 +66,6 @@ public sealed class StepTimelineLayoutTests
         Assert.Equal(["Affinage", "Lissage", "Arrangement"], layout.AtStop.Select(segment => segment.Name));
     }
 
-    // A step at Stop followed by a higher streaming step ends where it starts.
-    [Fact]
-    public void AStepAtStopEndsWhereAHigherStepStarts()
-    {
-        DictationRewriteSettings dictation = Example(startAt: false);
-        dictation.Steps[1].Streaming = false;
-
-        StepTimelineLayout layout = StepTimelineLayout.For(dictation, Name, transcriptionStreams: true);
-
-        Assert.Equal(
-            [new TimelineSegment(1, 2, "Lissage", AsSaid: false), new TimelineSegment(2, 3, "Arrangement", AsSaid: false)],
-            layout.AtStop);
-        Assert.Equal([new TimelineSegment(0, 3, "Affinage", AsSaid: false)], layout.Streaming);
-    }
-
     [Fact]
     public void AStepWhoseProfileIsGoneShowsItsId()
     {
@@ -87,7 +74,7 @@ public sealed class StepTimelineLayoutTests
 
         StepTimelineLayout layout = StepTimelineLayout.For(dictation, Name, transcriptionStreams: true);
 
-        Assert.Equal("gone", layout.AtStop.Single().Name);
+        Assert.Equal("gone", layout.Streaming[^1].Name);
     }
 }
 

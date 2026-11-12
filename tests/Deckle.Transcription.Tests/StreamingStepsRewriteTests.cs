@@ -156,12 +156,13 @@ public sealed class StreamingStepsRewriteTests
         host.Llm.Profiles[0].Id = "tier1";
         host.Llm.Profiles[1].Id = "tier2";
         host.Llm.Dictation.StartAtLength = startAt is not null;
+        host.Llm.Dictation.RewriteWhileSpeaking = steps.Any(s => s.Streaming);
         host.Llm.Dictation.Steps = steps
             .Select((s, i) => new RewriteStep
             {
                 ProfileId = s.ProfileId,
                 FromChars = i == 0 && startAt is { } at ? at : s.FromChars,
-                Streaming = s.Streaming,
+                BlockChars = DictationRewriteSettings.MinBlockChars,
             })
             .ToList();
         return host;

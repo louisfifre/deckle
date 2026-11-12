@@ -25,11 +25,12 @@ public sealed class RewriteProfileSelectionTests
         {
             Enabled = true,
             StartAtLength = startAt,
+            RewriteWhileSpeaking = firstStreams,
             Steps =
             [
-                new RewriteStep { ProfileId = "aff", FromChars = 1000, Streaming = firstStreams },
-                new RewriteStep { ProfileId = "lis", FromChars = 4000, Streaming = true },
-                new RewriteStep { ProfileId = "arr", FromChars = 12000, Streaming = false },
+                new RewriteStep { ProfileId = "aff", FromChars = 1000, BlockChars = 600 },
+                new RewriteStep { ProfileId = "lis", FromChars = 4000, BlockChars = 2000 },
+                new RewriteStep { ProfileId = "arr", FromChars = 12000, BlockChars = 6000 },
             ],
         };
         return settings;
