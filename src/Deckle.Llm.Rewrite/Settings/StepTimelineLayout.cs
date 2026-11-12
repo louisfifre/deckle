@@ -41,7 +41,7 @@ public sealed record StepTimelineLayout(
     {
         bool whileSpeaking = transcriptionStreams && dictation.RewriteWhileSpeaking;
         List<RewriteStep> steps = dictation.Steps;
-        int lastStart = steps.Count > 0 ? dictation.StartOf(steps.Count - 1) : 0;
+        int lastStart = steps.Count > 0 ? steps[^1].FromChars : 0;
 
         int raw = Math.Max(lastStart + lastStart / 2, MinAxisChars);
         int interval = Interval(raw);
@@ -52,8 +52,8 @@ public sealed record StepTimelineLayout(
         for (int i = 0; i < steps.Count; i++)
         {
             RewriteStep step = steps[i];
-            int from = dictation.StartOf(i);
-            int to = i + 1 < steps.Count ? dictation.StartOf(i + 1) : axis;
+            int from = step.FromChars;
+            int to = i + 1 < steps.Count ? steps[i + 1].FromChars : axis;
             int block = Math.Clamp(step.BlockChars,
                 DictationRewriteSettings.MinBlockChars, DictationRewriteSettings.MaxBlockChars);
 

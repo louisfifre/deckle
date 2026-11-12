@@ -41,7 +41,7 @@ public sealed class StreamingStepsRewriteTests
     {
         CancellationToken ct = TestContext.Current.CancellationToken;
         var rewrite = new TaggingRewriteService();
-        StreamingHost host = StepsHost(startAt: First.Length + 1, whileSpeaking: true, ("tier1", 0, Min));
+        StreamingHost host = StepsHost(whileSpeaking: true, ("tier1", First.Length + 1, Min));
         var backend = new SequencedBackend([TestInference, First, Second, Third]);
         using var engine = NewEngine(host, backend, rewrite, out RecordingClipboardWriter clipboard);
 
@@ -64,7 +64,7 @@ public sealed class StreamingStepsRewriteTests
     {
         CancellationToken ct = TestContext.Current.CancellationToken;
         var rewrite = new TaggingRewriteService();
-        StreamingHost host = StepsHost(startAt: null, whileSpeaking: true, ("tier1", 0, Min), ("tier2", AfterSecond, Min));
+        StreamingHost host = StepsHost(whileSpeaking: true, ("tier1", 0, Min), ("tier2", AfterSecond, Min));
         var backend = new SequencedBackend([TestInference, First, Second, Third]);
         using var engine = NewEngine(host, backend, rewrite, out RecordingClipboardWriter clipboard);
 
@@ -88,7 +88,7 @@ public sealed class StreamingStepsRewriteTests
         CancellationToken ct = TestContext.Current.CancellationToken;
         var rewrite = new TaggingRewriteService();
         int twoBlocks = First.Length + 2 + Second.Length;
-        StreamingHost host = StepsHost(startAt: null, whileSpeaking: true, ("tier1", 0, Min), ("tier2", RawTake.Length, twoBlocks));
+        StreamingHost host = StepsHost(whileSpeaking: true, ("tier1", 0, Min), ("tier2", RawTake.Length, twoBlocks));
         var backend = new SequencedBackend([TestInference, First, Second, Third]);
         using var engine = NewEngine(host, backend, rewrite, out RecordingClipboardWriter clipboard);
 
@@ -111,7 +111,7 @@ public sealed class StreamingStepsRewriteTests
     {
         CancellationToken ct = TestContext.Current.CancellationToken;
         var rewrite = new TaggingRewriteService(failing: "tier2");
-        StreamingHost host = StepsHost(startAt: null, whileSpeaking: true, ("tier1", 0, Min), ("tier2", RawTake.Length, Min));
+        StreamingHost host = StepsHost(whileSpeaking: true, ("tier1", 0, Min), ("tier2", RawTake.Length, Min));
         var backend = new SequencedBackend([TestInference, First, Second, Third]);
         using var engine = NewEngine(host, backend, rewrite, out RecordingClipboardWriter clipboard);
         string shown = "tier1[" + First + "]\n\ntier1[" + Second + "]\n\n" + Third;
@@ -129,7 +129,7 @@ public sealed class StreamingStepsRewriteTests
     {
         CancellationToken ct = TestContext.Current.CancellationToken;
         var rewrite = new TaggingRewriteService();
-        StreamingHost host = StepsHost(startAt: null, whileSpeaking: false, ("tier1", 0, Min), ("tier2", AfterSecond, Min));
+        StreamingHost host = StepsHost(whileSpeaking: false, ("tier1", 0, Min), ("tier2", AfterSecond, Min));
         var backend = new SequencedBackend([TestInference, First, Second, Third]);
         using var engine = NewEngine(host, backend, rewrite, out RecordingClipboardWriter clipboard);
 
@@ -146,7 +146,7 @@ public sealed class StreamingStepsRewriteTests
     {
         CancellationToken ct = TestContext.Current.CancellationToken;
         var rewrite = new TaggingRewriteService(failing: "tier1");
-        StreamingHost host = StepsHost(startAt: null, whileSpeaking: false, ("tier1", 0, Min));
+        StreamingHost host = StepsHost(whileSpeaking: false, ("tier1", 0, Min));
         var backend = new SequencedBackend([TestInference, First, Second, Third]);
         using var engine = NewEngine(host, backend, rewrite, out RecordingClipboardWriter clipboard);
 
@@ -162,7 +162,7 @@ public sealed class StreamingStepsRewriteTests
     {
         CancellationToken ct = TestContext.Current.CancellationToken;
         var rewrite = new TaggingRewriteService();
-        StreamingHost host = StepsHost(startAt: 1_000_000, whileSpeaking: true, ("tier1", 0, Min));
+        StreamingHost host = StepsHost(whileSpeaking: true, ("tier1", 1_000_000, Min));
         var backend = new SequencedBackend([TestInference, First, Second, Third]);
         using var engine = NewEngine(host, backend, rewrite, out RecordingClipboardWriter clipboard);
 
@@ -172,21 +172,19 @@ public sealed class StreamingStepsRewriteTests
         Assert.Equal([RawTake], clipboard.Texts);
     }
 
-    // Steps (profile id, from, block size); startAt sets the first step's
-    // "Start at" (null: from the beginning). The profiles are the two the
+    // Steps (profile id, from, block size), the first from 0 to rewrite from\r\n    // the beginning. The profiles are the two the
     // settings hold, renamed.
     private static StreamingHost StepsHost(
-        int? startAt, bool whileSpeaking, params (string ProfileId, int FromChars, int BlockChars)[] steps)
+        bool whileSpeaking, params (string ProfileId, int FromChars, int BlockChars)[] steps)
     {
         StreamingHost host = RewritingHost(batchRewriting: whileSpeaking);
         host.Llm.Profiles[0].Id = "tier1";
         host.Llm.Profiles[1].Id = "tier2";
-        host.Llm.Dictation.StartAtLength = startAt is not null;
         host.Llm.Dictation.Steps = steps
-            .Select((s, i) => new RewriteStep
+            .Select(s => new RewriteStep
             {
                 ProfileId = s.ProfileId,
-                FromChars = i == 0 && startAt is { } at ? at : s.FromChars,
+                FromChars = s.FromChars,
                 BlockChars = s.BlockChars,
             })
             .ToList();

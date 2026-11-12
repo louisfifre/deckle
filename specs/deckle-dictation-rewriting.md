@@ -21,16 +21,16 @@ Louis dictates, often at length, and wants the text he gets back to read as writ
 1. With "Rewrite dictations" off, a dictation arrives as said, and nothing else of the section is shown.
 2. With it on, the page shows "Rewrite while I speak", the timeline, one card per step, then "Add a step". The first step always exists and cannot be removed.
 3. "Rewrite while I speak" appears only when transcription is streaming. Without streaming transcription, every step rewrites at Stop.
-4. The first step starts at the beginning of the dictation. With "Start at" ticked, it starts at the given length, and a shorter dictation stays as said. Example: at 1,000, a dictation of 600 characters is not rewritten.
+4. Every step, the first included, reads "From" and a length. A dictation shorter than the first step's length stays as said, and a first step from 0 rewrites every dictation from its beginning. Example: from 1,000, a dictation of 600 characters is not rewritten.
 5. Every later step carries a length and a profile. A step added lands after the last one. No step carries a switch of its own for the moment it rewrites.
 6. With "Rewrite while I speak" on, every card also shows "in blocks of" with a number of characters: the size of the stretch its profile rewrites in one go. Off, the block size is hidden and kept.
 7. Switching "Rewrite while I speak" changes no length. Example: Arrangement from 12,000 stays from 12,000 in both modes.
 8. A block size reaches at least 6,000 characters. Example: Arrangement in blocks of 6,000 is accepted as typed.
-9. The timeline shows one thin row per step, the step's name in its row, in the system accent colour and neutrals only, with the same rows in both modes. Under the rows, a scale gives lengths with an approximate speaking time written with "≈" (12,000 · ≈ 17 min).
+9. The timeline shows one thin row per step, the step's name in its row, in the system accent colour and neutrals only, with the same rows in both modes. Under the rows, a scale gives lengths with an approximate speaking time written with "≈" (12,000 ≈ 17 min).
 10. Off, each row shows the range of lengths its step takes: from its length to the next step's.
 11. On, each row shows its step's blocks, from the beginning of the dictation to where the next step takes over. The blocks before the step's own length are pale: the text it rewrites at once when it takes over. One caption under the timeline says so, in this mode only.
 12. The timeline shows and never writes: the values are changed in the cards.
-13. The words of the section are: Dictation, Rewrite dictations, Rewrite while I speak and its one-line description, Start at, From, characters, in blocks of, Add a step, and the timeline's caption. No card description.
+13. The words of the section are: Dictation, Rewrite dictations, Rewrite while I speak and its one-line description, From, characters, in blocks of, Add a step, and the timeline's caption. No card description.
 14. The page has no "Rewrite profile" card, no "Switch profile by length" switch and no "Batch size" card.
 
 ### Transcript panel, while dictating

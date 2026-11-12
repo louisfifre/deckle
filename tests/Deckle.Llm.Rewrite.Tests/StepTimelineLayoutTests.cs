@@ -4,19 +4,18 @@ namespace Deckle.Llm.Rewrite.Tests;
 
 // What the timeline of the dictation steps draws (Page 9 to 12 of
 // specs/deckle-dictation-rewriting.md), with the example settings of the
-// spec: Affinage first with "Start at" 1,000 in blocks of 600, Lissage from
+// spec: Affinage from 1,000 in blocks of 600, Lissage from
 // 4,000 in blocks of 2,000, Arrangement from 12,000 in blocks of 6,000.
 [Trait("Category", "unit")]
 public sealed class StepTimelineLayoutTests
 {
-    private static DictationRewriteSettings Example(bool whileSpeaking, bool startAt = true) => new()
+    private static DictationRewriteSettings Example(bool whileSpeaking, int firstFrom = 1000) => new()
     {
         Enabled = true,
-        StartAtLength = startAt,
         RewriteWhileSpeaking = whileSpeaking,
         Steps =
         [
-            new RewriteStep { ProfileId = "aff", FromChars = 1000, BlockChars = 600 },
+            new RewriteStep { ProfileId = "aff", FromChars = firstFrom, BlockChars = 600 },
             new RewriteStep { ProfileId = "lis", FromChars = 4000, BlockChars = 2000 },
             new RewriteStep { ProfileId = "arr", FromChars = 12000, BlockChars = 6000 },
         ],
@@ -89,9 +88,9 @@ public sealed class StepTimelineLayoutTests
     }
 
     [Fact]
-    public void WithoutStartAtTheFirstStepRunsFromTheBeginning()
+    public void AFirstStepFromZeroRunsFromTheBeginning()
     {
-        StepTimelineLayout layout = StepTimelineLayout.For(Example(true, startAt: false), Name, transcriptionStreams: true);
+        StepTimelineLayout layout = StepTimelineLayout.For(Example(true, firstFrom: 0), Name, transcriptionStreams: true);
 
         Assert.Equal(0, layout.Rows[0].FromChars);
         Assert.DoesNotContain(layout.Rows[0].Spans, span => span.Pale);

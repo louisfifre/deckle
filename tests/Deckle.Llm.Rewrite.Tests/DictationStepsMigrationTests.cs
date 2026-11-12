@@ -47,8 +47,8 @@ public sealed class DictationStepsMigrationTests : IDisposable
         """;
 
     // No active profile, a ladder on, batches off: below the ladder's first
-    // step a dictation stayed as said, so that step becomes the first one
-    // with "Start at" on at its length.
+    // step a dictation stayed as said, so that step becomes the first one,
+    // at its length.
     [Fact]
     public void ALadderWithoutAnActiveProfileStartsAtItsFirstStep()
     {
@@ -68,7 +68,6 @@ public sealed class DictationStepsMigrationTests : IDisposable
 
         DictationRewriteSettings d = store.Current.Dictation;
         Assert.True(d.Enabled);
-        Assert.True(d.StartAtLength);
         Assert.False(d.RewriteWhileSpeaking);
         Assert.Equal(
             [("aff", 1000, 600), ("lis", 4000, 600), ("arr", 12000, 600)],
@@ -95,8 +94,7 @@ public sealed class DictationStepsMigrationTests : IDisposable
 
         DictationRewriteSettings d = store.Current.Dictation;
         Assert.True(d.Enabled);
-        Assert.False(d.StartAtLength);
-        Assert.Equal(0, d.StartOf(0));
+        Assert.Equal(0, d.Steps[0].FromChars);
         Assert.True(d.RewriteWhileSpeaking);
         Assert.Equal(
             [("aff", 800), ("lis", 800), ("arr", 800)],
@@ -152,8 +150,8 @@ public sealed class DictationStepsMigrationTests : IDisposable
 
         DictationRewriteSettings d = store.Current.Dictation;
         Assert.False(d.Enabled);
-        Assert.False(d.StartAtLength);
-        Assert.Equal("aff", Assert.Single(d.Steps).ProfileId);
+        RewriteStep only = Assert.Single(d.Steps);
+        Assert.Equal(("aff", 0), (only.ProfileId, only.FromChars));
     }
 
     // The old fields are read, then gone from the file on disk.
@@ -201,7 +199,6 @@ public sealed class DictationStepsMigrationTests : IDisposable
 
         RewriteStep step = Assert.Single(second.Current.Dictation.Steps);
         Assert.Equal(("arr", 1000, 6000), (step.ProfileId, step.FromChars, step.BlockChars));
-        Assert.True(second.Current.Dictation.StartAtLength);
         Assert.True(second.Current.Dictation.RewriteWhileSpeaking);
     }
 
@@ -238,6 +235,7 @@ public sealed class DictationStepsMigrationTests : IDisposable
         string onDisk = File.ReadAllText(FilePath);
         Assert.DoesNotContain("\"streaming\"", onDisk);
         Assert.DoesNotContain("passageChars", onDisk);
+        Assert.DoesNotContain("startAtLength", onDisk);
         Assert.Contains("\"rewriteWhileSpeaking\": true", onDisk);
     }
 
@@ -262,16 +260,43 @@ public sealed class DictationStepsMigrationTests : IDisposable
         Assert.False(d.RewriteWhileSpeaking);
         Assert.Equal([(1000, 600), (4000, 600)], d.Steps.Select(step => (step.FromChars, step.BlockChars)));
     }
+
+    // A file of 2026-11-11 with "Start at" unticked: its first step started
+    // from the beginning whatever its length said, so that length becomes 0;
+    // ticked, the length is kept. Either way the box leaves the file.
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(true, 1000)]
+    public void StartAtBecomesTheFirstStepsLength(bool startAt, int firstFrom)
+    {
+        using (var store = OpenStore($$"""
+            {
+              "dictation": {
+                "enabled": true,
+                "startAtLength": {{(startAt ? "true" : "false")}},
+                "steps": [
+                  { "profileId": "aff", "fromChars": 1000, "blockChars": 600 },
+                  { "profileId": "lis", "fromChars": 4000, "blockChars": 2000 } ]
+              },
+              {{Profiles}}
+            }
+            """))
+        {
+            Assert.Equal([firstFrom, 4000], store.Current.Dictation.Steps.Select(step => step.FromChars));
+            store.Flush();
+        }
+
+        Assert.DoesNotContain("startAtLength", File.ReadAllText(FilePath));
+    }
 }
 
 [Trait("Category", "unit")]
 public sealed class DictationStepsNormalizerTests
 {
-    private static LlmSettings WithSteps(bool startAt, params (int From, int BlockChars)[] steps)
+    private static LlmSettings WithSteps(params (int From, int BlockChars)[] steps)
     {
         var settings = new LlmSettings();
         LlmSettingsNormalizer.Apply(settings);
-        settings.Dictation.StartAtLength = startAt;
         settings.Dictation.Steps = steps
             .Select(step => new RewriteStep
             {
@@ -295,24 +320,24 @@ public sealed class DictationStepsNormalizerTests
         Assert.False(LlmSettingsNormalizer.Apply(settings));
     }
 
-    // The first step stays first whatever its length; the later ones sort.
+    // The first step stays first; the later ones sort.
     [Fact]
     public void TheLaterStepsSortAndTheFirstStaysFirst()
     {
-        LlmSettings settings = WithSteps(false, (5000, 600), (4000, 2000), (1000, 600));
+        LlmSettings settings = WithSteps((0, 600), (4000, 2000), (1000, 600));
 
         Assert.True(LlmSettingsNormalizer.NormalizeDictation(settings));
 
-        Assert.Equal([5000, 1000, 4000], settings.Dictation.Steps.Select(step => step.FromChars));
+        Assert.Equal([0, 1000, 4000], settings.Dictation.Steps.Select(step => step.FromChars));
         Assert.Equal([600, 600, 2000], settings.Dictation.Steps.Select(step => step.BlockChars));
     }
 
-    // With "Start at" on, a later step at or below the first moves just above
-    // it rather than being dropped.
+    // A later step at or below the first moves just above it rather than
+    // being dropped.
     [Fact]
-    public void WithStartAtALaterStepBelowTheFirstMovesJustAboveIt()
+    public void ALaterStepBelowTheFirstMovesJustAboveIt()
     {
-        LlmSettings settings = WithSteps(true, (1000, 600), (800, 600));
+        LlmSettings settings = WithSteps((1000, 600), (800, 600));
 
         LlmSettingsNormalizer.NormalizeDictation(settings);
 
@@ -322,12 +347,11 @@ public sealed class DictationStepsNormalizerTests
     [Fact]
     public void LengthsSnapToTheirGrainAndAStepPastTheMaximumIsDropped()
     {
-        LlmSettings settings = WithSteps(false, (0, 600), (1234, 600), (29600, 600), (29900, 600));
+        LlmSettings settings = WithSteps((40, 600), (1234, 600), (29600, 600), (29900, 600));
 
         LlmSettingsNormalizer.NormalizeDictation(settings);
 
-        Assert.Equal([100, 1200, 30000], settings.Dictation.Steps.Select(step => step.FromChars));
-        Assert.Equal(0, settings.Dictation.StartOf(0));
+        Assert.Equal([0, 1200, 30000], settings.Dictation.Steps.Select(step => step.FromChars));
     }
 
     // Page 8: a block of 6,000 is accepted as typed; below the minimum or
@@ -336,7 +360,7 @@ public sealed class DictationStepsNormalizerTests
     [Fact]
     public void ABlockSizeIsKeptWithinItsBoundsAndSixThousandIsAccepted()
     {
-        LlmSettings settings = WithSteps(false, (1000, 50), (4000, 0), (12000, 6000), (20000, 99000));
+        LlmSettings settings = WithSteps((1000, 50), (4000, 0), (12000, 6000), (20000, 99000));
 
         LlmSettingsNormalizer.NormalizeDictation(settings);
 

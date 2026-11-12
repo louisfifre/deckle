@@ -85,9 +85,9 @@ public sealed class RewriteStep
 {
     public string ProfileId { get; set; } = "";
 
-    // The first step's FromChars counts only while
-    // DictationRewriteSettings.StartAtLength is on; off, it is kept so that
-    // ticking "Start at" again finds the length the person had set.
+    // The length of raw transcript from which this step takes the dictation,
+    // the first step's too: a dictation shorter than it stays as said, and 0
+    // rewrites every dictation from its first word.
     public int FromChars { get; set; }
 
     // The stretch of raw transcript this step's profile rewrites in one
@@ -107,9 +107,10 @@ public sealed class RewriteStep
 
 // Which profile rewrites a dictation, and when: an ordered list of steps.
 //
-// The first step is the base rewrite and always exists: it starts at the
-// beginning of the dictation, or at its own length with StartAtLength on.
-// Every later step starts at its FromChars, strictly above the step before.
+// The first step is the base rewrite and always exists. Every step starts at
+// its FromChars, the first one included (0: from the beginning), each later
+// one strictly above the step before. One rule for every step, where a "Start
+// at" box once marked the first (until 2026-11-12): a length of 0 says it.
 // The highest step a dictation reaches takes it, and a dictation is always
 // rewritten from its beginning, never from the length of the step.
 //
@@ -127,13 +128,10 @@ public sealed class DictationRewriteSettings
     // never a threshold.
     public const int CharsPerMinute = 700;
 
-    // From about nine seconds to about forty-five minutes of speech.
+    // A length is 0 (from the beginning) or from about nine seconds to about
+    // forty-five minutes of speech. MinChars is also the finest grain.
     public const int MinChars = 100;
     public const int MaxChars = 30000;
-
-    // Where the first step's "Start at" lands when nothing was set yet:
-    // about a minute and a half of speech.
-    public const int DefaultStartAtChars = 1000;
 
     // A block: the stretch of raw transcript a step rewrites in one request
     // while the person speaks (RewriteStep.BlockChars). 600, the size a new
@@ -160,10 +158,6 @@ public sealed class DictationRewriteSettings
     // before Stop.
     public bool RewriteWhileSpeaking { get; set; }
 
-    // The first step's "Start at": on, a dictation shorter than
-    // Steps[0].FromChars stays as said.
-    public bool StartAtLength { get; set; }
-
     // Never empty once normalized (LlmSettingsNormalizer.NormalizeDictation):
     // Steps[0] is the base rewrite. Empty in a file written before the steps
     // existed, which is what tells the normalizer to migrate it.
@@ -176,9 +170,13 @@ public sealed class DictationRewriteSettings
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public int? LegacyPassageChars { get; set; }
 
-    // Where a step starts counting, the first one at 0 unless StartAtLength.
-    public int StartOf(int index) =>
-        index == 0 && !StartAtLength ? 0 : Steps[index].FromChars;
+    // Before 2026-11-12 (read once, to migrate): the first step's "Start at"
+    // box. Off, the first step started from the beginning whatever its
+    // length said, so the normalizer sets that length to 0, then clears it;
+    // null is never written.
+    [JsonPropertyName("startAtLength")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? LegacyStartAtLength { get; set; }
 
     // The precision a length is held at: about a twentieth of it, on the
     // 1-2-5 ladder, never under MinChars. A length is meant in relative
@@ -198,13 +196,14 @@ public sealed class DictationRewriteSettings
             }
     }
 
-    // The nearest length on the grain of its size, within the range.
+    // The nearest length on the grain of its size, within the range: 0 under
+    // half the finest grain.
     public static int Snap(double chars)
     {
-        int clamped = (int)Math.Clamp(Math.Round(chars), MinChars, MaxChars);
+        int clamped = (int)Math.Clamp(Math.Round(chars), 0, MaxChars);
         int grain = GrainAt(clamped);
         int rounded = (int)Math.Round(clamped / (double)grain, MidpointRounding.AwayFromZero) * grain;
-        return Math.Clamp(rounded, MinChars, MaxChars);
+        return Math.Clamp(rounded, 0, MaxChars);
     }
 
     // A block size on the same grain as a length, within the block bounds.

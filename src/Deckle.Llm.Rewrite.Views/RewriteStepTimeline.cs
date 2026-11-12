@@ -187,7 +187,7 @@ public sealed partial class RewriteStepTimeline : UserControl
         TextWrapping = TextWrapping.NoWrap,
     };
 
-    // "12,000 · ≈ 17 min": the length as the fields hold it, then the
+    // "12,000 ≈ 17 min": the length as the fields hold it, then the
     // speaking time it takes on average (DictationRewriteSettings.
     // CharsPerMinute), an order of magnitude rather than a measure. 0 alone.
     internal static string FormatLength(int chars)

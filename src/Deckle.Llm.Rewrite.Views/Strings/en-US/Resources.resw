@@ -394,18 +394,15 @@
     <value>Pale blocks: when a step takes over, it first rewrites what you already said.</value>
   </data>
   <data name="LlmTimeline_Length_Format" xml:space="preserve">
-    <value>{0} · ≈ {1} min</value>
+    <value>{0} ≈ {1} min</value>
     <comment>{0} a length in characters, {1} the approximate minutes of speech it takes.</comment>
   </data>
   <data name="LlmTimeline_LengthUnderMinute_Format" xml:space="preserve">
-    <value>{0} · &lt; 1 min</value>
+    <value>{0} &lt; 1 min</value>
     <comment>{0} a length in characters, shorter than a minute of speech.</comment>
   </data>
   <data name="LlmTimeline_Name" xml:space="preserve">
     <value>Rewriting steps</value>
-  </data>
-  <data name="LlmStep_StartAt" xml:space="preserve">
-    <value>Start at</value>
   </data>
   <data name="LlmStep_From" xml:space="preserve">
     <value>From</value>

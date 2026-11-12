@@ -90,7 +90,7 @@ internal static class RewriteProfileSelection
             RewriteStep step = steps[i];
             planned.Add(new PlannedStep(
                 i,
-                dictation.StartOf(i),
+                step.FromChars,
                 step.ProfileId,
                 settings.Profiles.Find(profile => profile.Id == step.ProfileId),
                 // The core does not clamp: a hand-edited settings file could

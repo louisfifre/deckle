@@ -25,7 +25,6 @@ public partial class App
         string light = llm.Profiles[0].Id, heavy = llm.Profiles[1].Id;
 
         llm.Dictation.Enabled = true;
-        llm.Dictation.StartAtLength = true;
         llm.Dictation.RewriteWhileSpeaking = whileSpeaking;
         llm.Dictation.Steps =
         [

@@ -26,7 +26,6 @@ public sealed class RewriteProfileTriggerTests
         var settings = new LlmSettings();
         LlmSettingsNormalizer.Apply(settings);
         settings.Dictation.Enabled = true;
-        settings.Dictation.StartAtLength = true;
         settings.Dictation.RewriteWhileSpeaking = true;
         settings.Dictation.Steps.Add(new RewriteStep { FromChars = 3000, ProfileId = settings.Profiles[1].Id, BlockChars = 6000 });
         settings.Profiles[0].HotkeyEnabled = true;
@@ -35,7 +34,6 @@ public sealed class RewriteProfileTriggerTests
         LlmSettings read = RoundTrip(settings);
 
         Assert.True(read.Dictation.Enabled);
-        Assert.True(read.Dictation.StartAtLength);
         Assert.True(read.Dictation.RewriteWhileSpeaking);
         Assert.Equal(2, read.Dictation.Steps.Count);
         RewriteStep step = read.Dictation.Steps[1];
@@ -57,6 +55,7 @@ public sealed class RewriteProfileTriggerTests
         Assert.DoesNotContain("activeProfileId", json);
         Assert.DoesNotContain("lengthSwitch", json);
         Assert.DoesNotContain("batchRewriting", json);
+        Assert.DoesNotContain("startAtLength", json);
     }
 
     // A length typed in the field is any value on its grain, not one of a
@@ -86,7 +85,8 @@ public sealed class RewriteProfileTriggerTests
     [InlineData(4321, 4400)]
     [InlineData(12345, 12500)]
     [InlineData(23456, 23000)]
-    [InlineData(40, DictationRewriteSettings.MinChars)]
+    [InlineData(40, 0)]
+    [InlineData(60, DictationRewriteSettings.MinChars)]
     [InlineData(99999, DictationRewriteSettings.MaxChars)]
     public void ALengthSnapsToTheGrainOfItsSize(int typed, int expected)
     {

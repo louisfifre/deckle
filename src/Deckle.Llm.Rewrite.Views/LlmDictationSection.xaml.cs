@@ -16,8 +16,9 @@ namespace Deckle.Llm.Rewrite.Views;
 // streaming transcription only), the timeline (RewriteStepTimeline, which
 // shows and never writes), one card per step (LlmSettings.Dictation.Steps),
 // then "Add a step". A step card holds its profile, its length and, while
-// rewriting as the person speaks, its block size; the first one has "Start
-// at" in place of "From" and no remove button, since it always exists.
+// rewriting as the person speaks, its block size. Every card reads "From" and
+// a length, the first one too (0: from the beginning); the first has no
+// remove button, since it always exists.
 //
 // The lists depend on the defined profiles: the host must call Reload() after
 // any mutation of the Profiles section so added, renamed or removed profiles
@@ -37,12 +38,11 @@ public sealed partial class LlmDictationSection : UserControl
     private const int SecondStepChars = 2000;
 
     private const double ProfileColumnWidth = 200;
-    private const double LengthColumnWidth = 320;
+    private const double LengthColumnWidth = 260;
 
     private bool _loading;
 
-    // The length field of each step card, in step order, and the "Start at"
-    // box of the first. A committed length moves its neighbours' bounds in
+    // The length field of each step card, in step order. A committed length moves its neighbours' bounds in
     // place: rebuilding the cards would pull the field out from under the
     // pointer between two clicks on its arrows.
     private readonly List<NumberBox> _lengthBoxes = new();
@@ -119,7 +119,7 @@ public sealed partial class LlmDictationSection : UserControl
     // as dictations lengthen. Null once the last one is at the maximum.
     private static int? NextStepChars()
     {
-        int last = Dictation.StartOf(Dictation.Steps.Count - 1);
+        int last = Dictation.Steps[^1].FromChars;
         if (last == 0) return SecondStepChars;
         if (last >= DictationRewriteSettings.MaxChars) return null;
         return DictationRewriteSettings.Snap(last * 2);
@@ -171,10 +171,8 @@ public sealed partial class LlmDictationSection : UserControl
             for (int i = 0; i < _lengthBoxes.Count && i < steps.Count; i++)
             {
                 NumberBox box = _lengthBoxes[i];
-                int below = i > 0 ? Dictation.StartOf(i - 1) : 0;
-                box.Minimum = below > 0
-                    ? DictationRewriteSettings.Above(below)
-                    : DictationRewriteSettings.MinChars;
+                // The first step goes down to 0, from the beginning.
+                box.Minimum = i > 0 ? DictationRewriteSettings.Above(steps[i - 1].FromChars) : 0;
                 box.Maximum = i + 1 < steps.Count
                     ? Math.Max(box.Minimum, DictationRewriteSettings.Below(steps[i + 1].FromChars))
                     : DictationRewriteSettings.MaxChars;
@@ -184,9 +182,7 @@ public sealed partial class LlmDictationSection : UserControl
         finally { _syncingLengths = false; }
     }
 
-    // [Profile ▾]   (Start at | From) [1000] characters   in blocks of [600]   [🗑]
-    // The first step's length shows only while "Start at" is ticked: off, the
-    // step starts with the dictation and a length would not apply.
+    // [Profile ▾]   From [1000] characters   in blocks of [600]   [🗑]
     private SettingsCard BuildStepCard(int index)
     {
         RewriteStep step = Dictation.Steps[index];
@@ -205,53 +201,10 @@ public sealed partial class LlmDictationSection : UserControl
             RefreshTimeline();
         };
 
-        NumberBox lengthBox = BuildLengthBox(step);
-        var characters = Caption(Loc.GetFrom(Module, "LlmStep_Characters"));
-
         var length = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
-        if (first)
-        {
-            var startAt = new CheckBox
-            {
-                Content = Loc.GetFrom(Module, "LlmStep_StartAt"),
-                IsChecked = Dictation.StartAtLength,
-                MinWidth = 0,
-                VerticalAlignment = VerticalAlignment.Center,
-            };
-            void ShowLength()
-            {
-                Visibility shown = Dictation.StartAtLength ? Visibility.Visible : Visibility.Collapsed;
-                lengthBox.Visibility = shown;
-                characters.Visibility = shown;
-            }
-            startAt.Click += (_, _) =>
-            {
-                Dictation.StartAtLength = startAt.IsChecked == true;
-                // Ticked again under a later step's length: the first step
-                // takes the length just below it, so the order holds.
-                if (Dictation.StartAtLength && Dictation.Steps.Count > 1
-                    && step.FromChars >= Dictation.Steps[1].FromChars)
-                {
-                    step.FromChars = Math.Max(DictationRewriteSettings.MinChars,
-                        DictationRewriteSettings.Below(Dictation.Steps[1].FromChars));
-                    _syncingLengths = true;
-                    try { lengthBox.Value = step.FromChars; }
-                    finally { _syncingLengths = false; }
-                }
-                LlmSettingsService.Instance.Save();
-                ShowLength();
-                UpdateLengthBounds();
-                ApplyState();
-            };
-            ShowLength();
-            length.Children.Add(startAt);
-        }
-        else
-        {
-            length.Children.Add(Caption(Loc.GetFrom(Module, "LlmStep_From")));
-        }
-        length.Children.Add(lengthBox);
-        length.Children.Add(characters);
+        length.Children.Add(Caption(Loc.GetFrom(Module, "LlmStep_From")));
+        length.Children.Add(BuildLengthBox(step));
+        length.Children.Add(Caption(Loc.GetFrom(Module, "LlmStep_Characters")));
 
         // Page 6: the size of the stretch this step's profile rewrites in one
         // go, shown only while the steps rewrite as the person speaks.
@@ -290,8 +243,8 @@ public sealed partial class LlmDictationSection : UserControl
         };
         // A card laid out with its content on the left does not stretch it,
         // so a star column would shrink to its content: the profile and the
-        // length take fixed widths instead, the widest of their forms ("Start
-        // at" with its field), and every card's columns line up.
+        // length take fixed widths instead, room for "From", a five-digit
+        // field and "characters", and every card's columns line up.
         var row = new Grid { ColumnSpacing = 24 };
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(ProfileColumnWidth) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(LengthColumnWidth) });

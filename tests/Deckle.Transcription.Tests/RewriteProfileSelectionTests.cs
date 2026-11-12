@@ -4,12 +4,13 @@ using Xunit;
 namespace Deckle.Transcription.Tests;
 
 // The step plan of a take (specs/deckle-dictation-rewriting.md), with the
-// example settings of the spec: Affinage first in blocks of 600, Lissage from
+// example settings of the spec, the first step from 0 unless a test says:
+// Affinage in blocks of 600, Lissage from
 // 4,000 in blocks of 2,000, Arrangement from 12,000 in blocks of 6,000.
 [Trait("Category", "unit")]
 public sealed class RewriteProfileSelectionTests
 {
-    private static LlmSettings Settings(bool startAt = false, bool whileSpeaking = true)
+    private static LlmSettings Settings(int firstFrom = 0, bool whileSpeaking = true)
     {
         var settings = new LlmSettings
         {
@@ -24,11 +25,10 @@ public sealed class RewriteProfileSelectionTests
         settings.Dictation = new DictationRewriteSettings
         {
             Enabled = true,
-            StartAtLength = startAt,
             RewriteWhileSpeaking = whileSpeaking,
             Steps =
             [
-                new RewriteStep { ProfileId = "aff", FromChars = 1000, BlockChars = 600 },
+                new RewriteStep { ProfileId = "aff", FromChars = firstFrom, BlockChars = 600 },
                 new RewriteStep { ProfileId = "lis", FromChars = 4000, BlockChars = 2000 },
                 new RewriteStep { ProfileId = "arr", FromChars = 12000, BlockChars = 6000 },
             ],
@@ -49,12 +49,12 @@ public sealed class RewriteProfileSelectionTests
         Assert.Equal(profileId, Plan(Settings()).Highest(chars)?.Profile?.Id);
     }
 
-    // Page 3: with "Start at" at 1,000, a dictation of 600 characters stays
-    // as said.
+    // Page 4: with a first step from 1,000, a dictation of 600 characters
+    // stays as said.
     [Fact]
-    public void WithStartAtADictationBelowTheFirstStepStaysAsSaid()
+    public void ADictationBelowTheFirstStepStaysAsSaid()
     {
-        RewriteStepPlan plan = Plan(Settings(startAt: true));
+        RewriteStepPlan plan = Plan(Settings(firstFrom: 1000));
 
         Assert.Null(plan.Highest(600));
         Assert.Equal("aff", plan.Highest(1500)?.Profile?.Id);

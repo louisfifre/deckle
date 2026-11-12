@@ -545,7 +545,7 @@ public sealed class LiveTranscriptionPipelineTests
     [Theory]
     [InlineData(1, true)]
     [InlineData(1_000_000, false)]
-    public async Task TheFirstStepsStartAtChoosesWhetherAStreamedTakeIsRewritten(int fromChars, bool rewritten)
+    public async Task TheFirstStepsLengthChoosesWhetherAStreamedTakeIsRewritten(int fromChars, bool rewritten)
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
@@ -555,7 +555,6 @@ public sealed class LiveTranscriptionPipelineTests
         StreamingHost host = RewritingHost(batchRewriting: false);
         RewriteProfile byLength = host.Llm.Profiles[1];
         byLength.Id = "by-length";
-        host.Llm.Dictation.StartAtLength = true;
         host.Llm.Dictation.Steps = [new RewriteStep { FromChars = fromChars, ProfileId = "by-length" }];
         using var engine = new TranscriptionEngine(host, backend, capture, clipboard, rewrite, captureTail: TestCaptureTail);
 
