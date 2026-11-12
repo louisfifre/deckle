@@ -33,11 +33,13 @@ public partial class TrackpadViewModel
         Setting.Magnitude("TrackpadPage_SpeedCard",
             () => DragSpeed,
             value => DragSpeed = value,
-            new MagnitudeArgs(0.25, 3.0, Unit: "×"),
+            // Past 2× a drag overshoots what it aims at, below 0.5× it crawls;
+            // the narrower range also gives the slider a 0.05 grain.
+            new MagnitudeArgs(0.5, 2.0, Unit: "×"),
             defaultValue: () => new TrackpadSettings().DragSpeed),
 
         // Tuned by feel against stray clicks, so it keeps the slider; the
-        // range gives a 5 ms grain.
+        // 0-100 ms range gives a 5 ms grain.
         Setting.Magnitude("TrackpadPage_PressDelayCard",
             () => PressDelayMs,
             value => PressDelayMs = value,

@@ -35,8 +35,9 @@ public sealed class TrackpadSettings
     public double PressDelayMs { get; set; } = 50;
 
     /// <summary>The range the page offers; the engine clamps a hand-edited file to it.</summary>
+    /// <remarks>100 ms is already a press that visibly trails the cursor; the useful values sit well below it.</remarks>
     public const double MinPressDelayMs = 0;
-    public const double MaxPressDelayMs = 200;
+    public const double MaxPressDelayMs = 100;
 
     /// <summary>
     /// Pick-up distance — how far the cursor moves, in pixels, before the
@@ -52,8 +53,9 @@ public sealed class TrackpadSettings
     public double PressDistancePx { get; set; } = 5;
 
     /// <summary>The range the page offers; the engine clamps a hand-edited file to it.</summary>
+    /// <remarks>The first pixels are what the setting is for, so the range stops at 24, which also gives the slider a 1 px grain.</remarks>
     public const double MinPressDistancePx = 0;
-    public const double MaxPressDistancePx = 50;
+    public const double MaxPressDistancePx = 24;
 
     // Grace delay and start threshold stay TrackpadEngine constants, not
     // settings.
