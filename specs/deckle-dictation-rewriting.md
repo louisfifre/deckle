@@ -61,6 +61,7 @@ Louis dictates, often at length, and wants the text he gets back to read as writ
 - A block is rewritten without the blocks around it: a profile reorganizes inside a block, never across two. Rewriting at Stop is the only way to have a profile see the whole dictation.
 - Taking over costs: each step that takes over sends again everything already said. With the example settings, a dictation of 15,000 characters sends about 31,000 characters in 15 requests while speaking, against 15,000 in one request at Stop.
 - The speaking times on the timeline are orders of magnitude (700 characters ≈ 1 min), not measures.
+- When a step takes over, it cuts the text already said along the blocks of the step before: each of its blocks joins whole earlier blocks until it reaches its size, and the last one may stay shorter. Example: at 4,000 characters, Lissage sends one block of about 2,500 and one of about 1,500. A step with smaller blocks than the one before resends that step's blocks as they are.
 
 ## Open
 
@@ -68,3 +69,4 @@ Louis dictates, often at length, and wants the text he gets back to read as writ
 2. **The block left open at Stop.** Proposed and built: the step rewriting at Stop rewrites it, and Louis waits for that block (up to its block size). Against it: up to 6,000 characters to wait for with the example settings. To confirm in use.
 3. **A block size suggested by the profile.** Proposed on 2026-11-12: a profile may carry a block size that suits it (a light one 600, a heavy one 6,000), taken as the step's starting value when the profile is chosen. Not decided; the block size stays on the step either way.
 4. **A step's length: characters or speaking time?** Proposed and built: characters, with the speaking time shown on the timeline only. What makes a profile useful is the amount of text, and a silence must not make a step cross.
+5. **The last block cut when a step takes over.** Built (2026-11-12): sent as it is, shorter than the step's block size, since it was already closed (see Limits). Against it: a short block gives a heavy profile little to reorganize. The other way: reopen it and let it grow with the speech, which the panel would show raw again until it closes. To confirm in use.
