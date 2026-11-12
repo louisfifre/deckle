@@ -52,12 +52,16 @@ public static class LlmSettingsNormalizer
     // steps when there are none (MigrateToSteps):
     //   - a first step always exists, with a profile (the first one when it
     //     names none);
-    //   - every length on its grain and within range; each later step strictly
-    //     above the one before (the first counting only with "Start at" on),
+    //   - every length on its grain and within range (the first may be 0,
+    //     from the beginning); each later step strictly above the one before,
     //     a step landing on or below its neighbour moving just above it rather
     //     than being dropped; only a step pushed past the maximum is lost;
     //   - the later steps sorted by length, the first one staying first;
-    //   - the passage size within its bounds.
+    //   - every block size on its grain and within its bounds, the default
+    //     one where none was set;
+    //   - the per-step "Streaming" switch and the single passage size of
+    //     2026-11-11 turned into the shape of 2026-11-12 (MigrateToOneSwitch),
+    //     and its "Start at" box into the first step's length.
     // A step whose profile no longer exists stays, and is skipped when a
     // dictation picks its step, as the ladder's were.
     public static bool NormalizeDictation(LlmSettings s)
@@ -94,6 +98,17 @@ public static class LlmSettingsNormalizer
             changed = true;
         }
 
+        if (MigrateToOneSwitch(d)) changed = true;
+
+        // "Start at" unticked: the first step started from the beginning,
+        // which a length of 0 now says.
+        if (d.LegacyStartAtLength is { } startAt)
+        {
+            if (!startAt) d.Steps[0].FromChars = 0;
+            d.LegacyStartAtLength = null;
+            changed = true;
+        }
+
         RewriteStep first = d.Steps[0];
         if (string.IsNullOrEmpty(first.ProfileId) && s.Profiles.Count > 0)
         {
@@ -102,7 +117,7 @@ public static class LlmSettingsNormalizer
         }
 
         var normalized = new List<RewriteStep> { Normalized(first, DictationRewriteSettings.Snap(first.FromChars)) };
-        int previous = d.StartAtLength ? normalized[0].FromChars : 0;
+        int previous = normalized[0].FromChars;
         foreach (RewriteStep step in d.Steps.Skip(1).OrderBy(step => step.FromChars))
         {
             int snapped = DictationRewriteSettings.Snap(step.FromChars);
@@ -116,18 +131,10 @@ public static class LlmSettingsNormalizer
             || normalized.Where((step, i) =>
                 step.FromChars != d.Steps[i].FromChars
                 || step.ProfileId != d.Steps[i].ProfileId
-                || step.Streaming != d.Steps[i].Streaming).Any();
+                || step.BlockChars != d.Steps[i].BlockChars).Any();
         if (stepsChanged)
         {
             d.Steps = normalized;
-            changed = true;
-        }
-
-        int passage = Math.Clamp(d.PassageChars,
-            DictationRewriteSettings.MinPassageChars, DictationRewriteSettings.MaxPassageChars);
-        if (passage != d.PassageChars)
-        {
-            d.PassageChars = passage;
             changed = true;
         }
 
@@ -137,21 +144,52 @@ public static class LlmSettingsNormalizer
         {
             ProfileId = step.ProfileId ?? "",
             FromChars = fromChars,
-            Streaming = step.Streaming,
+            BlockChars = step.BlockChars > 0
+                ? DictationRewriteSettings.SnapBlock(step.BlockChars)
+                : DictationRewriteSettings.DefaultBlockChars,
         };
+    }
+
+    // The shape of 2026-11-11 (a "Streaming" switch on each step, one passage
+    // size for all) becomes the shape of 2026-11-12 (one "Rewrite while I
+    // speak" switch, a block size on each step), so a dictation is rewritten
+    // while the person speaks if it was before:
+    //   - the switch is on when any step streamed. A step that waited for
+    //     Stop above a streaming one now streams too: the relay has one mode
+    //     for the whole list, and losing the rewriting while speaking would
+    //     be the larger change;
+    //   - each step without a block size takes the old passage size.
+    // Returns whether it changed anything.
+    private static bool MigrateToOneSwitch(DictationRewriteSettings d)
+    {
+        bool changed = false;
+        if (d.Steps.Any(step => step.LegacyStreaming is not null))
+        {
+            if (d.Steps.Any(step => step.LegacyStreaming == true)) d.RewriteWhileSpeaking = true;
+            foreach (RewriteStep step in d.Steps) step.LegacyStreaming = null;
+            changed = true;
+        }
+
+        if (d.LegacyPassageChars is { } passage)
+        {
+            foreach (RewriteStep step in d.Steps.Where(step => step.BlockChars <= 0))
+                step.BlockChars = passage;
+            d.LegacyPassageChars = null;
+            changed = true;
+        }
+        return changed;
     }
 
     // The shape before the steps (an active profile, a length ladder, a
     // switch for batches) becomes steps, so a dictation goes where it went:
-    //   - an active profile becomes the first step, from the beginning, and
-    //     the ladder's steps follow it;
+    //   - an active profile becomes the first step, from 0, and the ladder's
+    //     steps follow it;
     //   - with no active profile, the ladder's first step becomes the first
-    //     step with "Start at" on at its length, since below it a dictation
-    //     stayed as said;
+    //     step at its length, since below it a dictation stayed as said;
     //   - with neither, "Rewrite dictations" is off and the first step takes
-    //     the first profile, ready for the day it is switched on;
-    //   - the switch for batches sets Streaming on every step, and the batch
-    //     size becomes the passage size.
+    //     the first profile from 0, ready for the day it is switched on;
+    //   - the switch for batches becomes "Rewrite while I speak", and the
+    //     batch size every step's block size.
     // A ladder that was switched off is not carried over: its steps never
     // applied, and as steps they would.
     //
@@ -161,15 +199,15 @@ public static class LlmSettingsNormalizer
     private static void MigrateToSteps(LlmSettings s)
     {
         DictationRewriteSettings d = s.Dictation;
-        bool streaming = s.BatchRewriting?.Enabled ?? false;
-        if (s.BatchRewriting is { } batching) d.PassageChars = batching.ThresholdChars;
+        d.RewriteWhileSpeaking = s.BatchRewriting?.Enabled ?? false;
+        int blockChars = s.BatchRewriting?.ThresholdChars ?? DictationRewriteSettings.DefaultBlockChars;
 
         List<LegacyLengthStep> ladder = s.LengthSwitch is { Enabled: true, Steps: { } ladderSteps }
             ? ladderSteps.Where(step => step is not null).OrderBy(step => step.FromChars).ToList()
             : new List<LegacyLengthStep>();
 
         RewriteStep FromLadder(LegacyLengthStep step) =>
-            new() { ProfileId = step.ProfileId ?? "", FromChars = step.FromChars, Streaming = streaming };
+            new() { ProfileId = step.ProfileId ?? "", FromChars = step.FromChars, BlockChars = blockChars };
 
         // RepairProfileReferences ran first, so a name that still resolves
         // has its id by now; an id that resolves to nothing is kept, as the
@@ -180,30 +218,18 @@ public static class LlmSettingsNormalizer
         if (hasActive)
         {
             d.Enabled = true;
-            d.StartAtLength = false;
-            d.Steps.Add(new RewriteStep
-            {
-                ProfileId = s.ActiveProfileId ?? "",
-                FromChars = DictationRewriteSettings.DefaultStartAtChars,
-                Streaming = streaming,
-            });
+            d.Steps.Add(new RewriteStep { ProfileId = s.ActiveProfileId ?? "", FromChars = 0, BlockChars = blockChars });
             d.Steps.AddRange(ladder.Select(FromLadder));
         }
         else if (ladder.Count > 0)
         {
             d.Enabled = true;
-            d.StartAtLength = true;
             d.Steps.AddRange(ladder.Select(FromLadder));
         }
         else
         {
             d.Enabled = false;
-            d.StartAtLength = false;
-            d.Steps.Add(new RewriteStep
-            {
-                FromChars = DictationRewriteSettings.DefaultStartAtChars,
-                Streaming = streaming,
-            });
+            d.Steps.Add(new RewriteStep { FromChars = 0, BlockChars = blockChars });
         }
     }
 

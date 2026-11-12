@@ -73,29 +73,44 @@ public sealed class RewriteProfile
 
 // One step of the dictation timeline (specs/deckle-dictation-rewriting.md):
 // from FromChars characters of raw transcript, the dictation belongs to
-// ProfileId. Streaming on: the profile rewrites passage by passage while the
-// person speaks. Off: it rewrites the whole raw text at Stop.
+// ProfileId. While the person speaks (DictationRewriteSettings.
+// RewriteWhileSpeaking), the profile rewrites in blocks of BlockChars; with
+// that switch off, it rewrites the whole raw text at Stop and BlockChars is
+// kept for the day it is switched on.
 //
-// The moment lives on the step, not on the profile: one profile can stream
-// at one length and wait for Stop at another, and the page sets both where
-// the steps are.
+// The block size lives on the step, not on the profile: a light profile reads
+// well on a short stretch and a heavy one needs a long one to reorganize, and
+// the page sets it where the lengths are.
 public sealed class RewriteStep
 {
     public string ProfileId { get; set; } = "";
 
-    // The first step's FromChars counts only while
-    // DictationRewriteSettings.StartAtLength is on; off, it is kept so that
-    // ticking "Start at" again finds the length the person had set.
+    // The length of raw transcript from which this step takes the dictation,
+    // the first step's too: a dictation shorter than it stays as said, and 0
+    // rewrites every dictation from its first word.
     public int FromChars { get; set; }
 
-    public bool Streaming { get; set; }
+    // The stretch of raw transcript this step's profile rewrites in one
+    // request, closed at the first pause once it reaches this size
+    // (DictationBatcher). Zero in a file written before the size moved onto
+    // the steps: the normalizer fills it.
+    public int BlockChars { get; set; }
+
+    // Before 2026-11-12 (read once, to migrate): each step had its own
+    // "Streaming" switch. LlmSettingsNormalizer.NormalizeDictation turns any
+    // step that streamed into DictationRewriteSettings.RewriteWhileSpeaking,
+    // then clears it; null is never written.
+    [JsonPropertyName("streaming")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? LegacyStreaming { get; set; }
 }
 
 // Which profile rewrites a dictation, and when: an ordered list of steps.
 //
-// The first step is the base rewrite and always exists: it starts at the
-// beginning of the dictation, or at its own length with StartAtLength on.
-// Every later step starts at its FromChars, strictly above the step before.
+// The first step is the base rewrite and always exists. Every step starts at
+// its FromChars, the first one included (0: from the beginning), each later
+// one strictly above the step before. One rule for every step, where a "Start
+// at" box once marked the first (until 2026-11-12): a length of 0 says it.
 // The highest step a dictation reaches takes it, and a dictation is always
 // rewritten from its beginning, never from the length of the step.
 //
@@ -113,42 +128,55 @@ public sealed class DictationRewriteSettings
     // never a threshold.
     public const int CharsPerMinute = 700;
 
-    // From about nine seconds to about forty-five minutes of speech.
+    // A length is 0 (from the beginning) or from about nine seconds to about
+    // forty-five minutes of speech. MinChars is also the finest grain.
     public const int MinChars = 100;
     public const int MaxChars = 30000;
 
-    // Where the first step's "Start at" lands when nothing was set yet:
-    // about a minute and a half of speech.
-    public const int DefaultStartAtChars = 1000;
-
-    // A passage: the stretch of raw transcript a streaming step rewrites in
-    // one request, closed at the first pause once it reaches PassageChars
-    // (DictationBatcher). 600 is about a hundred French words, forty seconds
-    // of speech: enough context for the profile to condense a repeated idea,
-    // short enough that the last passage at Stop is a quick one. The bounds
-    // keep a passage between a long sentence and a page. Not on the page: a
-    // value the app decides for the person (2026-11-11).
-    public const int MinPassageChars = 200;
-    public const int MaxPassageChars = 2000;
+    // A block: the stretch of raw transcript a step rewrites in one request
+    // while the person speaks (RewriteStep.BlockChars). 600, the size a new
+    // step starts with, is about a hundred French words, forty seconds of
+    // speech: enough context for a light profile to condense a repeated idea,
+    // short enough that the block left at Stop is a quick one. A heavy
+    // profile reorganizes, and needs more: the spec's Arrangement works in
+    // blocks of 6,000 (2026-11-12). The minimum keeps a block above a long
+    // sentence; the maximum, about seventeen minutes of speech, is not
+    // measured: past it, rewriting at Stop says the same thing better.
+    public const int MinBlockChars = 200;
+    public const int MaxBlockChars = 12000;
+    public const int DefaultBlockChars = 600;
 
     // "Rewrite dictations". Off, a dictation arrives as said; a profile's own
     // shortcut still rewrites (RewriteProfile.HotkeyEnabled).
     public bool Enabled { get; set; }
 
-    // The first step's "Start at": on, a dictation shorter than
-    // Steps[0].FromChars stays as said.
-    public bool StartAtLength { get; set; }
+    // "Rewrite while I speak", for the whole list of steps. On, the highest
+    // step reached rewrites block by block while the person speaks; off,
+    // every step rewrites the whole raw text at Stop. It changes no length:
+    // a step starts at the same length in both modes (2026-11-12). Without
+    // streaming transcription it has no effect, since nothing is transcribed
+    // before Stop.
+    public bool RewriteWhileSpeaking { get; set; }
 
     // Never empty once normalized (LlmSettingsNormalizer.NormalizeDictation):
     // Steps[0] is the base rewrite. Empty in a file written before the steps
     // existed, which is what tells the normalizer to migrate it.
     public List<RewriteStep> Steps { get; set; } = new();
 
-    public int PassageChars { get; set; } = 600;
+    // Before 2026-11-12 (read once, to migrate): one passage size for every
+    // step. The normalizer gives it to each step as its block size, then
+    // clears it; null is never written.
+    [JsonPropertyName("passageChars")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? LegacyPassageChars { get; set; }
 
-    // Where a step starts counting, the first one at 0 unless StartAtLength.
-    public int StartOf(int index) =>
-        index == 0 && !StartAtLength ? 0 : Steps[index].FromChars;
+    // Before 2026-11-12 (read once, to migrate): the first step's "Start at"
+    // box. Off, the first step started from the beginning whatever its
+    // length said, so the normalizer sets that length to 0, then clears it;
+    // null is never written.
+    [JsonPropertyName("startAtLength")]
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public bool? LegacyStartAtLength { get; set; }
 
     // The precision a length is held at: about a twentieth of it, on the
     // 1-2-5 ladder, never under MinChars. A length is meant in relative
@@ -168,14 +196,19 @@ public sealed class DictationRewriteSettings
             }
     }
 
-    // The nearest length on the grain of its size, within the range.
+    // The nearest length on the grain of its size, within the range: 0 under
+    // half the finest grain.
     public static int Snap(double chars)
     {
-        int clamped = (int)Math.Clamp(Math.Round(chars), MinChars, MaxChars);
+        int clamped = (int)Math.Clamp(Math.Round(chars), 0, MaxChars);
         int grain = GrainAt(clamped);
         int rounded = (int)Math.Round(clamped / (double)grain, MidpointRounding.AwayFromZero) * grain;
-        return Math.Clamp(rounded, MinChars, MaxChars);
+        return Math.Clamp(rounded, 0, MaxChars);
     }
+
+    // A block size on the same grain as a length, within the block bounds.
+    public static int SnapBlock(double chars) =>
+        Math.Clamp(Snap(chars), MinBlockChars, MaxBlockChars);
 
     // The lengths next to a snapped one, on either side.
     public static int Above(int chars) => chars + GrainAt(chars);

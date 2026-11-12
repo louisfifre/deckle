@@ -7,8 +7,9 @@
     xmlns:catalog="using:Deckle.Catalog">
 
     <!-- The dictation steps (specs/deckle-dictation-rewriting.md, Page): the
-         switch alone, then, while it is on, the timeline, one card per step
-         and "Add a step". No caption and no card description: the section
+         switch alone, then, while it is on, "Rewrite while I speak" (on
+         streaming transcription only), the timeline, one card per step and
+         "Add a step". No caption and no step card description: the section
          carries as few words as it can. The reset is a command (the steps
          back to one), not a dirty-tracked value, so the wheel stays enabled. -->
     <catalog:SettingsSection x:Uid="LlmDictationBlock"
@@ -26,6 +27,12 @@
             <StackPanel x:Name="StepsPanel"
                         Spacing="{StaticResource SettingsCardSpacing}"
                         Visibility="Collapsed">
+                <controls:SettingsCard x:Name="WhileSpeakingCard"
+                                       x:Uid="LlmDictationWhileSpeakingCard"
+                                       Tag="LlmDictationWhileSpeakingCard">
+                    <ToggleSwitch x:Name="WhileSpeakingToggle"
+                                  Toggled="WhileSpeakingToggle_Toggled" />
+                </controls:SettingsCard>
                 <catalog:PreviewBlock IsLive="True">
                     <llm:RewriteStepTimeline x:Name="Timeline"
                                              VerticalAlignment="Center" />

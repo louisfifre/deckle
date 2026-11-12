@@ -40,7 +40,7 @@ public sealed class LlmResetDefaultsTests
         var current = new LlmSettings { Enabled = false };
         current.Dictation.Steps =
         [
-            new RewriteStep { ProfileId = "x", Streaming = true },
+            new RewriteStep { ProfileId = "x", BlockChars = 6000 },
             new RewriteStep { ProfileId = "y", FromChars = 4000 },
         ];
         current.Providers.Clear();
@@ -50,7 +50,7 @@ public sealed class LlmResetDefaultsTests
 
         var defaults = new LlmSettings();
         RewriteStep first = Assert.Single(fresh.Dictation.Steps);
-        Assert.False(first.Streaming);
+        Assert.Equal(DictationRewriteSettings.DefaultBlockChars, first.BlockChars);
         Assert.Equal(fresh.Profiles[0].Id, first.ProfileId);
         Assert.Equal(defaults.Providers.Count, fresh.Providers.Count);
         Assert.Equal(defaults.Profiles.Count, fresh.Profiles.Count);

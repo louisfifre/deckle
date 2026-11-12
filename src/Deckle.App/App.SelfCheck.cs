@@ -227,6 +227,9 @@ public partial class App
         // image is cut at a window edge.
         if (Wants("settings"))
         {
+            // The Rewriting page with its dictation steps shown (App.SelfCheck.Rewriting.cs).
+            SeedRewritingSample(whileSpeaking: true);
+
             Step("settings");
             Settings.SettingsWindow settings = EnsureSettingsWindow();
             OffscreenWindow.ShowInactive(settings);
@@ -285,6 +288,14 @@ public partial class App
                     return slug == onlyPage;
                 });
             if (onlyPage is not null && !offered.Contains(onlyPage)) report.Views = offered;
+
+            // The same page with "Rewrite while I speak" off, when the run
+            // walks every page or targets the Rewriting one.
+            if (onlyPage is null or "llm")
+            {
+                Step("settings/llm-at-stop");
+                await CaptureRewritingAtStopAsync(report, settings, outputFolder, captures);
+            }
         }
 
         if (Wants("log"))
