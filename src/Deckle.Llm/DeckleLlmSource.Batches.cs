@@ -49,15 +49,16 @@ public sealed partial class DeckleLlmSource
         if (IsEnabled()) WriteEvent(EvtBatchRewriteReturnedDetail, new object[] { batch_index, elapsed_ms, in_chars, out_chars });
     }
 
-    // The dictation reached a higher streaming step (or its first one): the
-    // passages already closed leave again with that step's profile, from
-    // their raw text. generation counts the profiles the take streamed with;
-    // passages is how many leave again, 0 when the step was reached before
-    // any passage closed.
+    // The dictation reached a higher step (or its first one) while the
+    // person speaks: the text already closed is cut into that step's blocks
+    // and leaves again with its profile, from its raw text. generation counts
+    // the steps that took over; passages is how many blocks leave again, 0
+    // when the step was reached before any block closed; block_chars is the
+    // step's block size.
     [Event(EvtBatchRewriteProfileChanged,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The dictation reached a streaming step: its passages are rewritten with that step's profile")]
+           Message = "The dictation reached a step: what was said is rewritten in that step's blocks")]
     public void BatchRewriteProfileChanged()
     {
         if (IsEnabled()) WriteEvent(EvtBatchRewriteProfileChanged);
@@ -66,10 +67,10 @@ public sealed partial class DeckleLlmSource
     [Event(EvtBatchRewriteProfileChangedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "generation={0} | profile={1} | passages={2}")]
-    public void BatchRewriteProfileChangedDetail(int generation, string profile, int passages)
+           Message = "generation={0} | profile={1} | passages={2} | block_chars={3}")]
+    public void BatchRewriteProfileChangedDetail(int generation, string profile, int passages, int block_chars)
     {
-        if (IsEnabled()) WriteEvent(EvtBatchRewriteProfileChangedDetail, new object[] { generation, profile, passages });
+        if (IsEnabled()) WriteEvent(EvtBatchRewriteProfileChangedDetail, new object[] { generation, profile, passages, block_chars });
     }
 
     // A rewrite came back after a newer one of the same passage: the passage

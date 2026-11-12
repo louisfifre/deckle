@@ -25,17 +25,27 @@ namespace Deckle.Llm.Rewrite;
 // Flush at Stop has no next batch to carry into, so everything goes.
 public sealed class DictationBatcher
 {
-    readonly int _threshold;
-    readonly int _hardCap;
+    int _threshold;
     readonly StringBuilder _open = new();
     bool _pendingParagraphBreak;
     int _nextIndex;
 
     public DictationBatcher(int thresholdChars)
     {
-        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(thresholdChars);
-        _threshold = thresholdChars;
-        _hardCap = 2 * thresholdChars;
+        ThresholdChars = thresholdChars;
+    }
+
+    // The size a batch closes at, and twice it the hard cap. It may change
+    // while a batch is open, when a step with blocks of another size takes
+    // over: the open batch then closes at the new size.
+    public int ThresholdChars
+    {
+        get => _threshold;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            _threshold = value;
+        }
     }
 
     // The text of the open batch, carry included: what a reader of the take
@@ -55,7 +65,7 @@ public sealed class DictationBatcher
 
         int length = _open.Length;
         if (length < _threshold) return null;
-        if (!endedOnSilence && length < _hardCap) return null;
+        if (!endedOnSilence && length < 2 * _threshold) return null;
 
         return Close(endedOnSilence);
     }

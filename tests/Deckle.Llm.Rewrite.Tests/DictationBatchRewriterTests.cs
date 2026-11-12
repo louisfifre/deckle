@@ -379,6 +379,106 @@ public sealed class DictationBatchRewriterTests
         Assert.Single(service.Calls);
     }
 
+    // ── Blocks per step: a step that takes over cuts in its own size ────────
+
+    // Behaviours 4: the step that takes over cuts what was said into its own
+    // blocks, whole blocks of the step before joined until they reach its
+    // size, the rest as a last, shorter block.
+    [Fact]
+    public void AStepWithLargerBlocksJoinsTheClosedBlocksIntoItsOwn()
+    {
+        var service = new ProfileRewriteService();
+        var rewriter = new DictationBatchRewriter(service, 20);
+        rewriter.Push("Première phrase ici.", endedOnSilence: true);
+        rewriter.Push("Deuxième phrase ici.", endedOnSilence: true);
+        rewriter.Push("Troisième phrase là.", endedOnSilence: true);
+
+        rewriter.Use(Strong, blockChars: 40);
+        DictationBatchResult result = rewriter.Assemble();
+
+        Assert.Equal(
+            ["Première phrase ici.\n\nDeuxième phrase ici.", "Troisième phrase là."],
+            service.Calls.Select(call => call.Input).Order());
+        Assert.Equal(
+            "Strong(Première phrase ici.\n\nDeuxième phrase ici.)\n\nStrong(Troisième phrase là.)",
+            result.Text);
+        Assert.Equal(2, result.BatchCount);
+        Assert.Equal(0, result.FallbackCount);
+    }
+
+    // Panel 3: a block a later step joined into a larger one keeps the
+    // reading it had until the new one of its group arrives, and never goes
+    // back to the raw text.
+    [Fact]
+    public void JoinedBlocksKeepTheirEarlierReadingsUntilTheirGroupsArrives()
+    {
+        using var strongAnswers = new ManualResetEventSlim();
+        var service = new ProfileRewriteService(hold: profile => profile.Id == "strong" ? strongAnswers : null);
+        var rewriter = new DictationBatchRewriter(service, 20);
+        rewriter.Use(Light);
+        rewriter.Push("Première phrase ici.", endedOnSilence: true);
+        rewriter.Push("Deuxième phrase ici.", endedOnSilence: true);
+        const string light = "Light(Première phrase ici.)\n\nLight(Deuxième phrase ici.)";
+        Assert.True(SpinWait.SpinUntil(() => rewriter.Snapshot() == light, TimeSpan.FromSeconds(5)));
+
+        rewriter.Use(Strong, blockChars: 40);
+        Assert.True(SpinWait.SpinUntil(() => service.Calls.Length == 3, TimeSpan.FromSeconds(5)));
+        Assert.Equal(light, rewriter.Snapshot());
+
+        strongAnswers.Set();
+        Assert.Equal("Strong(Première phrase ici.\n\nDeuxième phrase ici.)", rewriter.Assemble().Text);
+    }
+
+    // Panel 4: a group whose rewrite fails shows its blocks' earlier readings.
+    [Fact]
+    public void AJoinedBlockWhoseRewriteFailsKeepsItsBlocksReadings()
+    {
+        var service = new ProfileRewriteService(fail: profile => profile.Id == "strong");
+        var rewriter = new DictationBatchRewriter(service, 20);
+        rewriter.Use(Light);
+        rewriter.Push("Première phrase ici.", endedOnSilence: true);
+        rewriter.Push("Deuxième phrase ici.", endedOnSilence: true);
+        Assert.True(SpinWait.SpinUntil(() => service.Answered == 2, TimeSpan.FromSeconds(5)));
+
+        rewriter.Use(Strong, blockChars: 40);
+        DictationBatchResult result = rewriter.Assemble();
+
+        Assert.Equal("Light(Première phrase ici.)\n\nLight(Deuxième phrase ici.)", result.Text);
+        Assert.Equal(1, result.FallbackCount);
+    }
+
+    // Behaviours 5: once a step takes over, the open block closes at its
+    // size, not at the size of the step before.
+    [Fact]
+    public void AfterATakeOverTheOpenBlockClosesAtTheNewSize()
+    {
+        var service = new ProfileRewriteService();
+        var rewriter = new DictationBatchRewriter(service, 20);
+        rewriter.Use(Strong, blockChars: 40);
+
+        rewriter.Push("Première phrase ici.", endedOnSilence: true);
+        Assert.Equal(0, rewriter.BatchCount);
+
+        rewriter.Push("Deuxième phrase ici.", endedOnSilence: true);
+        Assert.Equal(1, rewriter.BatchCount);
+    }
+
+    // The same profile at another size is another step: it cuts again.
+    [Fact]
+    public void TheSameProfileAtAnotherBlockSizeSendsAgain()
+    {
+        var service = new ProfileRewriteService();
+        var rewriter = new DictationBatchRewriter(service, 20);
+        rewriter.Use(Light);
+        rewriter.Push("Première phrase ici.", endedOnSilence: true);
+        rewriter.Push("Deuxième phrase ici.", endedOnSilence: true);
+
+        rewriter.Use(Light, blockChars: 40);
+        rewriter.Assemble();
+
+        Assert.Equal(3, service.Calls.Length);
+    }
+
     // Answers "<profile name>(<text>)", records each call, and can hold or
     // fail the calls of a profile.
     private sealed class ProfileRewriteService(

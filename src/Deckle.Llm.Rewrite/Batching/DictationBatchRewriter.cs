@@ -4,18 +4,21 @@ using Deckle.Llm;
 
 namespace Deckle.Llm.Rewrite;
 
-// The streaming rewrite of one dictation: feeds the utterances to a
-// DictationBatcher, keeps the passages it closes in the take's
-// DictationDocument, and, once a streaming step is reached (Use), sends each
-// closed passage to the rewrite service at once, on the thread pool, so the
-// model works while the speaker keeps talking and only the last passage is
-// left to wait for at Stop.
+// The rewrite of one dictation while the person speaks: feeds the utterances
+// to a DictationBatcher, keeps the blocks it closes in the take's
+// DictationDocument, and, once a step is reached (Use), sends each closed
+// block to the rewrite service at once, on the thread pool, so the model
+// works while the speaker keeps talking and only the last block is left to
+// wait for at Stop.
 //
-// Before Use, passages close and nothing leaves: the document reads raw.
-// Each Use opens a generation with a new profile, and the passages already
-// closed are sent again with it, from their raw text: a dictation is always
-// rewritten from its beginning, by one voice. A passage keeps the reading it
-// had until its new one comes back (DictationDocument's guarantees).
+// Before Use, blocks close and nothing leaves: the document reads raw. Each
+// Use is a step taking over (specs/deckle-dictation-rewriting.md, Behaviours):
+// it opens a generation with the step's profile and block size, cuts the text
+// already closed into blocks of that size (DictationDocument.Regroup), and
+// sends them all again, from their raw text: a dictation is always rewritten
+// from its beginning, by one voice. The open block goes on at the new size.
+// A block keeps the reading it had until its new one comes back
+// (DictationDocument's guarantees).
 //
 // Threads: the transcription consumer calls Push and Use, the engine's worker
 // calls Complete and Assemble, the document may be read from any thread. One
@@ -49,36 +52,41 @@ public sealed class DictationBatchRewriter
     readonly object _gate = new();
 
     // Every request sent, for the take's figures, and the last one sent for
-    // each passage, the one Assemble waits for. Guarded by _gate.
+    // each block, the one Assemble waits for. Guarded by _gate.
     readonly List<Request> _requests = new();
-    readonly List<Request?> _latest = new();
+    readonly Dictionary<DictationDocument.Block, Request> _latest = new();
 
-    // The streaming profile and its generation; null and 0 before Use.
+    // The profile of the step that took over last, its block size and its
+    // generation; null, the size given at construction and 0 before Use.
     // Guarded by _gate.
     RewriteProfile? _profile;
+    int _blockChars;
     int _generation;
 
     // The first request of the generation sent with the prompt cached, the
     // one that writes it. Guarded by _gate.
     Task? _cacheWriter;
 
-    public DictationBatchRewriter(IRewriteService service, int thresholdChars)
+    // blockChars: the size blocks close at before any step is reached, the
+    // first step's, so that reaching it finds the text already cut its way.
+    public DictationBatchRewriter(IRewriteService service, int blockChars)
     {
         _service = service;
-        _batcher = new DictationBatcher(thresholdChars);
+        _batcher = new DictationBatcher(blockChars);
+        _blockChars = blockChars;
     }
 
     public DictationDocument Document => _document;
 
-    // The profile passages are rewritten with, or null before any streaming
-    // step was reached.
+    // The profile blocks are rewritten with, or null before any step was
+    // reached.
     public RewriteProfile? Profile
     {
         get { lock (_gate) return _profile; }
     }
 
-    // Passages closed so far, the one Complete flushed included.
-    public int BatchCount => _document.PassageCount;
+    // Blocks of the current cut, the one Complete flushed included.
+    public int BatchCount => _document.BlockCount;
 
     // Raised on the thread-pool thread of a request once its rewrite changed
     // what the document reads, after Snapshot already reflects it.
@@ -94,31 +102,38 @@ public sealed class DictationBatchRewriter
         }
     }
 
-    // Rewrites with profile from now on: a new generation, and every passage
-    // already closed leaves again with it, from its raw text. The same
-    // profile again changes nothing.
-    public void Use(RewriteProfile profile)
+    // A step takes over: profile rewrites from now on, in blocks of
+    // blockChars (null keeps the current size). A new generation; the text
+    // already closed is cut into blocks of that size and leaves again with
+    // it, from its raw text, and the open block closes at that size. The same
+    // profile at the same size changes nothing: two steps that would write
+    // the same text are one step to the take.
+    public void Use(RewriteProfile profile, int? blockChars = null)
     {
         lock (_gate)
         {
-            if (_profile is not null && _profile.Id == profile.Id) return;
+            int size = blockChars ?? _blockChars;
+            if (_profile is not null && _profile.Id == profile.Id && size == _blockChars) return;
 
             _profile = profile;
+            _blockChars = size;
+            _batcher.ThresholdChars = size;
             _generation++;
             _cacheWriter = null;
 
-            DictationBatch[] closed = _document.Batches();
+            DictationDocument.Block[] cut = _document.Regroup(size);
             DeckleLlmSource.Log.BatchRewriteProfileChanged();
-            DeckleLlmSource.Log.BatchRewriteProfileChangedDetail(_generation, profile.Name, closed.Length);
-            foreach (DictationBatch batch in closed) Send(batch, flushed: false);
+            DeckleLlmSource.Log.BatchRewriteProfileChangedDetail(_generation, profile.Name, cut.Length, size);
+            foreach (DictationDocument.Block block in cut) Send(block, flushed: false);
         }
     }
 
-    // Flushes the open passage and, once a profile streams, starts its
-    // rewrite. Calling it again with nothing pushed in between finds nothing
-    // to flush, which makes it idempotent. A Push after Complete is not lost:
-    // it opens a new passage that the next Complete (Assemble calls one)
-    // flushes.
+    // Flushes the open block and, once a step is reached, starts its
+    // rewrite: at Stop, the step rewriting then rewrites the block it had not
+    // finished (Stop 2). Calling it again with nothing pushed in between finds
+    // nothing to flush, which makes it idempotent. A Push after Complete is
+    // not lost: it opens a new block that the next Complete (Assemble calls
+    // one) flushes.
     public void Complete()
     {
         lock (_gate)
@@ -132,28 +147,32 @@ public sealed class DictationBatchRewriter
     // The take as it reads right now. Never blocks.
     public string Snapshot() => _document.Snapshot();
 
-    // Blocks until the last request of every passage has returned, then
-    // returns the document's text. Call it from a background thread.
+    // Blocks until the last request of every block of the current cut has
+    // returned, then returns the document's text. Call it from a background
+    // thread.
     //
-    // The figures sum every request that has returned by then, the passages
+    // The figures sum every request that has returned by then, the blocks
     // sent again at a new generation included: they were paid for. A request
-    // a newer one overtook and that is still out is not waited for, and so
-    // not counted.
+    // a newer one overtook, or that rewrites a block a later step grouped
+    // into a larger one, and that is still out is not waited for, and so not
+    // counted.
     public DictationBatchResult Assemble()
     {
         Complete();
 
-        Request?[] latest;
+        Request[] latest;
         int generation;
         lock (_gate)
         {
-            latest = _latest.ToArray();
+            latest = _document.Blocks()
+                .Select(block => _latest.GetValueOrDefault(block))
+                .OfType<Request>()
+                .ToArray();
             generation = _generation;
         }
 
-        foreach (Request? request in latest)
+        foreach (Request request in latest)
         {
-            if (request is null) continue;
             try
             {
                 request.Task.GetAwaiter().GetResult();
@@ -164,7 +183,7 @@ public sealed class DictationBatchRewriter
                 // machinery, not the service. RewriteOne never logged this
                 // request's end, so the fallback is logged here.
                 DeckleLlmSource.Log.BatchRewriteFellBack(
-                    request.Batch.Index, "task_faulted", ex.GetType().Name, ex.Message);
+                    request.Block.Index, "task_faulted", ex.GetType().Name, ex.Message);
             }
         }
 
@@ -186,7 +205,7 @@ public sealed class DictationBatchRewriter
             cacheReadTokens  += outcome.Result.CacheReadTokens;
         }
 
-        // A passage that does not read the last profile's rewrite: never
+        // A block that does not read the last profile's rewrite: never
         // rewritten, or still on an earlier profile's reading.
         int[] shown = _document.Generations();
         int fallbacks = shown.Count(g => g == 0 || g < generation);
@@ -197,28 +216,27 @@ public sealed class DictationBatchRewriter
             cacheWriteTokens, cacheReadTokens);
     }
 
-    // Called under _gate, so passages enter the document in Index order. The
-    // passage is in the document before its request starts, so a Snapshot
-    // taken from BatchReturned always sees the passage the event is about.
+    // Called under _gate, so blocks enter the document in speech order. The
+    // block is in the document before its request starts, so a Snapshot
+    // taken from BatchReturned always sees the block the event is about.
     void Close(DictationBatch batch, bool flushed)
     {
-        _document.Add(batch);
-        _latest.Add(null);
-        if (_profile is not null) Send(batch, flushed);
+        DictationDocument.Block block = _document.Add(batch.Text, batch.EndsOnPause);
+        if (_profile is not null) Send(block, flushed);
     }
 
     // Called under _gate, with a profile set.
     //
     // flushed: the passage was closed by Complete, at Stop, and not by the
     // speech going on. See the class comment for what it changes.
-    void Send(DictationBatch batch, bool flushed)
+    void Send(DictationDocument.Block block, bool flushed)
     {
-        // A take that ends as one passage has no second request to read the
+        // A take that ends as one block has no second request to read the
         // prompt back: caching it would only pay the write.
-        bool cached = !(flushed && _document.PassageCount == 1);
-        var request = new Request(batch, _generation, _profile!);
+        bool cached = !(flushed && _document.BlockCount == 1);
+        var request = new Request(block, _generation, _profile!);
         _requests.Add(request);
-        _latest[batch.Index] = request;
+        _latest[block] = request;
 
         if (!flushed && _cacheWriter is { } writer)
         {
@@ -236,20 +254,20 @@ public sealed class DictationBatchRewriter
 
     BatchOutcome RewriteOne(Request request, bool cached)
     {
-        DictationBatch batch = request.Batch;
+        DictationDocument.Block batch = request.Block;
         // Logged here, where the request really leaves: one that waited for
         // the cache writer's answer would otherwise read as sent while it
         // queued.
         DeckleLlmSource.Log.BatchRewriteSent();
-        DeckleLlmSource.Log.BatchRewriteSentDetail(batch.Index, batch.Text.Length, request.Profile.Name);
+        DeckleLlmSource.Log.BatchRewriteSentDetail(batch.Index, batch.Raw.Length, request.Profile.Name);
         var sw = Stopwatch.StartNew();
         GenerationResult result = default;
         Exception? thrown = null;
         try
         {
             result = cached
-                ? _service.RewriteBatch(batch.Text, request.Profile)
-                : _service.Rewrite(batch.Text, request.Profile);
+                ? _service.RewriteBatch(batch.Raw, request.Profile)
+                : _service.Rewrite(batch.Raw, request.Profile);
         }
         catch (Exception ex)
         {
@@ -273,7 +291,7 @@ public sealed class DictationBatchRewriter
         {
             DeckleLlmSource.Log.BatchRewriteReturned();
             DeckleLlmSource.Log.BatchRewriteReturnedDetail(
-                batch.Index, sw.ElapsedMilliseconds, batch.Text.Length, rewritten.Length);
+                batch.Index, sw.ElapsedMilliseconds, batch.Raw.Length, rewritten.Length);
         }
 
         var outcome = new BatchOutcome(rewritten, sw.ElapsedMilliseconds, result);
@@ -282,7 +300,7 @@ public sealed class DictationBatchRewriter
         // Applied before the event, so a Snapshot taken from the handler reads
         // the rewrite; the task itself completes only after this returns. A
         // reading an answer of a later generation already replaced is dropped.
-        if (_document.Apply(batch.Index, request.Generation, rewritten))
+        if (_document.Apply(batch, request.Generation, rewritten))
             BatchReturned?.Invoke();
         else if (rewritten is not null)
             DeckleLlmSource.Log.BatchRewriteReadingIgnored(batch.Index, request.Generation);
@@ -290,12 +308,12 @@ public sealed class DictationBatchRewriter
         return outcome;
     }
 
-    // One rewrite of one passage, with the generation and profile it left
+    // One rewrite of one block, with the generation and profile it left
     // with. Task is set under _gate right after the request is listed;
     // Outcome once it has returned.
-    sealed class Request(DictationBatch batch, int generation, RewriteProfile profile)
+    sealed class Request(DictationDocument.Block block, int generation, RewriteProfile profile)
     {
-        public DictationBatch Batch { get; } = batch;
+        public DictationDocument.Block Block { get; } = block;
         public int Generation { get; } = generation;
         public RewriteProfile Profile { get; } = profile;
         public Task<BatchOutcome> Task { get; set; } = System.Threading.Tasks.Task.FromResult(new BatchOutcome(null, 0, default));
@@ -309,6 +327,6 @@ public sealed class DictationBatchRewriter
         volatile object? _outcome;
     }
 
-    // Text is the trimmed rewrite, or null when the passage keeps its reading.
+    // Text is the trimmed rewrite, or null when the block keeps its reading.
     readonly record struct BatchOutcome(string? Text, long ElapsedMs, GenerationResult Result);
 }
