@@ -45,6 +45,12 @@ internal enum DragPhase
 //     selection) means a drag from the first millimetres — waiting out the
 //     delay there made the drag start visibly late. The press comes at
 //     whichever guard is met first;
+//   • but the distance never presses inside FourthFingerWindowMs after
+//     landing. Fingers set down for a four-finger swipe can already be
+//     sweeping: in recorded sessions the distance pressed on the very
+//     first frame, and the fourth finger, one frame later, released it as
+//     a stray click that the swipe then carried. The delay alone still
+//     presses inside the window if it is set shorter;
 //   • lifting below three fingers during a drag opens a grace window;
 //     three tips returning before the deadline resume the SAME drag, no
 //     release-and-repress;
@@ -64,6 +70,9 @@ internal sealed class ThreeFingerDragRecognizer
 
     /// <summary>Travel since the fingers landed (logical units) that presses before the delay runs out. Infinity leaves the press to the delay alone.</summary>
     public double PressDistanceUnits { get; set; } = double.PositiveInfinity;
+
+    /// <summary>Time after the fingers land, in milliseconds, during which the distance cannot press: a fourth finger may still arrive. 0 lets the distance press at once.</summary>
+    public double FourthFingerWindowMs { get; set; }
 
     /// <summary>Per-frame centroid delta above which the motion is discarded as a glitch.</summary>
     public double MaxFrameDeltaUnits { get; set; } = double.MaxValue;
@@ -85,7 +94,10 @@ internal sealed class ThreeFingerDragRecognizer
     public double? GraceDeadlineMs { get; private set; }
 
     /// <summary>Host-clock instant the deferred press fires at; null outside Hovering.</summary>
-    public double? PressDeadlineMs => Phase == DragPhase.Hovering ? _engagedAtMs + PressDelayMs : null;
+    /// <remarks>Travel already past the distance presses as soon as the fourth-finger window closes, frame or not.</remarks>
+    public double? PressDeadlineMs => Phase == DragPhase.Hovering
+        ? _engagedAtMs + (DistanceReached ? Math.Min(PressDelayMs, FourthFingerWindowMs) : PressDelayMs)
+        : null;
 
     /// <summary>The next instant Tick must run at when no frame arrives, or null.</summary>
     public double? NextDeadlineMs => PressDeadlineMs ?? GraceDeadlineMs;
@@ -217,7 +229,7 @@ internal sealed class ThreeFingerDragRecognizer
     /// <summary>Drives the press and grace deadlines between frames.</summary>
     public void Tick(double nowMs)
     {
-        if (Phase == DragPhase.Hovering && nowMs >= _engagedAtMs + PressDelayMs)
+        if (Phase == DragPhase.Hovering && PressDue(nowMs))
             CommitPress();
         else if (Phase == DragPhase.Grace && GraceDeadlineMs is not null && nowMs >= GraceDeadlineMs)
             EndDrag("grace-expired");
@@ -240,10 +252,18 @@ internal sealed class ThreeFingerDragRecognizer
     private double EngagedTravel =>
         Math.Sqrt(_engagedTravelX * _engagedTravelX + _engagedTravelY * _engagedTravelY);
 
-    // The two guards on the press; whichever is met first lets it through.
-    // Tick checks the delay only: travel arrives on frames.
-    private bool PressDue(double nowMs) =>
-        nowMs >= _engagedAtMs + PressDelayMs || EngagedTravel >= PressDistanceUnits;
+    private bool DistanceReached => EngagedTravel >= PressDistanceUnits;
+
+    // The two guards on the press; whichever is met first lets it through,
+    // the distance only once the fourth-finger window has closed. Travel
+    // arrives on frames, so between frames Tick sees the travel of the last
+    // one, which is all a window closing with no frame needs.
+    private bool PressDue(double nowMs)
+    {
+        double elapsed = nowMs - _engagedAtMs;
+        return elapsed >= PressDelayMs
+            || (elapsed >= FourthFingerWindowMs && DistanceReached);
+    }
 
     private void CommitPress()
     {

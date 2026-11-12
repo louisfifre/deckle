@@ -265,6 +265,88 @@ public class ThreeFingerDragRecognizerTests
         Assert.Equal(new[] { "fourth-finger" }, rec.Abandoned.ToArray());
     }
 
+    // A four-finger swipe can land as three fingers already sweeping: the
+    // distance pressed on the first frame, and the fourth finger, one frame
+    // later, released that press as a stray click. Inside the fourth-finger
+    // window the distance presses nothing.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void FourthFingerAfterASweepingLandingPressesNothing()
+    {
+        var r = new ThreeFingerDragRecognizer
+        {
+            StartThresholdUnits = 10, PressDelayMs = 30, PressDistanceUnits = 40,
+            FourthFingerWindowMs = 20,
+        };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(11, Three(60)));
+        Assert.Equal(DragPhase.Hovering, r.Phase);
+
+        r.ProcessFrame(Frame(22, Four(90)));
+
+        Assert.Equal(0, rec.Started);
+        Assert.Empty(rec.Ended);
+        Assert.Equal(new[] { "fourth-finger" }, rec.Abandoned.ToArray());
+    }
+
+    [Fact]
+    public void DistanceReachedInsideTheWindowPressesOnTheFirstFrameAfterIt()
+    {
+        var r = new ThreeFingerDragRecognizer
+        {
+            StartThresholdUnits = 10, PressDelayMs = 30, PressDistanceUnits = 40,
+            FourthFingerWindowMs = 20,
+        };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(11, Three(60)));
+        r.ProcessFrame(Frame(22, Three(90)));
+
+        Assert.Equal(DragPhase.Dragging, r.Phase);
+        Assert.Equal(new[] { "hover", "move", "move", "press" }, rec.Sequence.ToArray());
+    }
+
+    // A hand that stops after sweeping sends no frame when the window closes.
+    [Fact]
+    public void TickAtTheWindowClosePressesATravelAlreadyPastTheDistance()
+    {
+        var r = new ThreeFingerDragRecognizer
+        {
+            StartThresholdUnits = 10, PressDelayMs = 30, PressDistanceUnits = 40,
+            FourthFingerWindowMs = 20,
+        };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(11, Three(60)));
+        Assert.Equal(20, r.NextDeadlineMs);
+
+        r.Tick(20);
+
+        Assert.Equal(DragPhase.Dragging, r.Phase);
+        Assert.Equal(1, rec.Started);
+    }
+
+    [Fact]
+    public void ADelayShorterThanTheWindowStillPressesAtTheDelay()
+    {
+        var r = new ThreeFingerDragRecognizer
+        {
+            StartThresholdUnits = 10, PressDelayMs = 10, PressDistanceUnits = 40,
+            FourthFingerWindowMs = 20,
+        };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(11, Three(60)));
+
+        Assert.Equal(DragPhase.Dragging, r.Phase);
+        Assert.Equal(1, rec.Started);
+    }
+
     [Fact]
     public void CancelWhileHoveringPressesNothing()
     {
