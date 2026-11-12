@@ -4,5 +4,6 @@ EXPORTS
     DeckleTaskbarGetMessageProc
     DeckleTaskbarNativeVersion
     DeckleTaskbarDescribeSelector
+    DeckleTaskbarReadCompositionDiagSwitch
     DllGetClassObject PRIVATE
     DllCanUnloadNow PRIVATE

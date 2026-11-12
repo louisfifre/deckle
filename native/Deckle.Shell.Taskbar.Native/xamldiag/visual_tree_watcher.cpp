@@ -1,5 +1,6 @@
 #include "pch.h"
 #include "visual_tree_watcher.h"
+#include "composition_diag_guard.h"
 #include "element_properties.h"
 #include "rules/rule_engine.h"
 #include "../log.h"
@@ -69,14 +70,33 @@ namespace deckle::xamldiag
         // The thread keeps this object alive until Advise returns.
         m_adviseThread = std::thread([self = get_strong()]
         {
-            // TODO (hooks step): around this call, make the composition
-            // diagnostics report themselves as disabled (HKLM\Software\Microsoft\
-            // XAML\Debug\DisableCompositionDiag), as the styler does by hooking
-            // RegOpenKeyExW and RegQueryValueExW. TranslucentTB runs without it.
-            // CreateWindowExW / CreateWindowInBand hooks, to catch XAML windows
-            // created after this point, belong to the same step.
-            self->m_adviseCalled = true;
-            HRESULT hr = self->m_diagnostics.as<IVisualTreeService3>()->AdviseVisualTreeChange(self.get());
+            // The composition diagnostics corrupt explorer's heap when two UI
+            // threads add DirectComposition visuals at once, and explorer then
+            // fails fast in dcomp.dll. They are switched off for the process by
+            // the read this call makes (composition_diag_guard.h).
+            // TODO (hooks step): CreateWindowExW / CreateWindowInBand hooks, to
+            // catch XAML windows created after this point.
+            const bool guarded = CompositionDiagGuard::Install();
+            HRESULT hr;
+            {
+                CompositionDiagGuard::Scope scope;
+                self->m_adviseCalled = true;
+                hr = self->m_diagnostics.as<IVisualTreeService3>()->AdviseVisualTreeChange(self.get());
+            }
+            if (CompositionDiagGuard::Answered())
+            {
+                Log(LogLevel::Info, L"composition_diag_disabled",
+                    L"The XAML composition diagnostics are off in this process");
+            }
+            else
+            {
+                // Unanswered: the guard could not be installed, or the value
+                // was read before it, by an earlier engine in this explorer.
+                // Only a restart of explorer clears the cached value.
+                Log(LogLevel::Warning, L"composition_diag_active",
+                    L"The XAML composition diagnostics may still be on in this process",
+                    { { L"guard_installed", guarded ? L"true" : L"false" } });
+            }
             if (FAILED(hr))
             {
                 Log(LogLevel::Error, L"advise_failed", L"AdviseVisualTreeChange failed",
