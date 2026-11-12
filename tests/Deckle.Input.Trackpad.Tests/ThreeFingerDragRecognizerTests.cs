@@ -26,6 +26,7 @@ public class ThreeFingerDragRecognizerTests
         public readonly List<(double dx, double dy)> Moves = new();
         public readonly List<string> Ended = new();
         public readonly List<string> Abandoned = new();
+        public int Withdrawn;
         // Every effect in emission order, for the contracts that hinge on it.
         public readonly List<string> Sequence = new();
 
@@ -37,7 +38,56 @@ public class ThreeFingerDragRecognizerTests
             r.DragMoved += (dx, dy) => { Moves.Add((dx, dy)); Sequence.Add("move"); };
             r.DragEnded += reason => { Ended.Add(reason); Sequence.Add("release"); };
             r.HoverAbandoned += (reason, _) => { Abandoned.Add(reason); Sequence.Add("abandon"); };
+            r.DragWithdrawn += () => { Withdrawn++; Sequence.Add("withdraw"); };
         }
+    }
+
+    // A fourth finger set down lightly reaches the pad 70-110 ms after the
+    // three. The press was already down and the drag stretched a selection,
+    // which the release in place then kept. A fourth finger that late after
+    // landing withdraws the drag, for the host to release where it pressed.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void LateFourthFingerAfterThePressWithdrawsTheDrag()
+    {
+        var r = new ThreeFingerDragRecognizer
+        {
+            StartThresholdUnits = 10, PressDelayMs = 30, PressDistanceUnits = 40,
+            FourthFingerWindowMs = 20, LateFourthFingerWindowMs = 200,
+        };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(11, Three(60)));
+        r.ProcessFrame(Frame(22, Three(120)));
+        Assert.Equal(DragPhase.Dragging, r.Phase);
+
+        r.ProcessFrame(Frame(80, Four(200)));
+
+        Assert.Equal(DragPhase.Idle, r.Phase);
+        Assert.Equal(1, rec.Withdrawn);
+        Assert.Empty(rec.Ended);
+    }
+
+    // A fourth finger added on purpose in the middle of a real drag ends it
+    // where it stands, as before.
+    [Fact]
+    public void FourthFingerAfterTheLateWindowEndsTheDragInPlace()
+    {
+        var r = new ThreeFingerDragRecognizer
+        {
+            StartThresholdUnits = 10, PressDelayMs = 30, PressDistanceUnits = 40,
+            FourthFingerWindowMs = 20, LateFourthFingerWindowMs = 200,
+        };
+        var rec = new Recorder(r);
+
+        r.ProcessFrame(Frame(0, Three(0)));
+        r.ProcessFrame(Frame(11, Three(60)));
+        r.ProcessFrame(Frame(22, Three(120)));
+        r.ProcessFrame(Frame(400, Four(300)));
+
+        Assert.Equal(0, rec.Withdrawn);
+        Assert.Equal(new[] { "fourth-finger" }, rec.Ended.ToArray());
     }
 
     private static (int, int, int, bool)[] Three(int x) =>

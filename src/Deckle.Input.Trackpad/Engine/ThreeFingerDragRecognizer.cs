@@ -51,6 +51,14 @@ internal enum DragPhase
 //     first frame, and the fourth finger, one frame later, released it as
 //     a stray click that the swipe then carried. The delay alone still
 //     presses inside the window if it is set shorter;
+//   • a fourth finger that comes after the press but within
+//     LateFourthFingerWindowMs of landing withdraws the drag instead of
+//     ending it where it stands: the pad can report a lightly set fourth
+//     finger 45 to 190 ms after the three (recorded sessions), by which time
+//     the press is down and a selection is stretching. No early sign tells
+//     those apart from a real drag (the travel at 30 ms overlaps), so the
+//     damage is undone instead: DragWithdrawn lets the host release where
+//     the press landed, and the drag shrinks to a click there;
 //   • lifting below three fingers during a drag opens a grace window;
 //     three tips returning before the deadline resume the SAME drag, no
 //     release-and-repress;
@@ -74,6 +82,9 @@ internal sealed class ThreeFingerDragRecognizer
     /// <summary>Time after the fingers land, in milliseconds, during which the distance cannot press: a fourth finger may still arrive. 0 lets the distance press at once.</summary>
     public double FourthFingerWindowMs { get; set; }
 
+    /// <summary>Time after the fingers land, in milliseconds, during which a fourth finger withdraws a drag already pressed rather than ending it in place. 0 never withdraws.</summary>
+    public double LateFourthFingerWindowMs { get; set; }
+
     /// <summary>Per-frame centroid delta above which the motion is discarded as a glitch.</summary>
     public double MaxFrameDeltaUnits { get; set; } = double.MaxValue;
 
@@ -84,6 +95,8 @@ internal sealed class ThreeFingerDragRecognizer
     /// <summary>Move the cursor, with or without the button held.</summary>
     public event Action<double, double>? DragMoved;
     public event Action<string>? DragEnded;
+    /// <summary>A late fourth finger: release at the point where the press landed, so the drag becomes a click there. Ends the drag in place of DragEnded.</summary>
+    public event Action? DragWithdrawn;
     /// <summary>The hover ended before the press: nothing was pressed. Carries the reason and the time since the fingers landed.</summary>
     public event Action<string, double>? HoverAbandoned;
     public event Action? TapIgnored;
@@ -182,7 +195,12 @@ internal sealed class ThreeFingerDragRecognizer
             case DragPhase.Dragging:
                 if (tips > 3)
                 {
-                    EndDrag("fourth-finger");
+                    // Counted from landing, not from the press: what makes a
+                    // fourth finger late is how long after the three it came.
+                    if (frame.TimestampMs - _engagedAtMs < LateFourthFingerWindowMs)
+                        WithdrawDrag();
+                    else
+                        EndDrag("fourth-finger");
                     break;
                 }
 
@@ -282,6 +300,12 @@ internal sealed class ThreeFingerDragRecognizer
     {
         ToIdle();
         DragEnded?.Invoke(reason);
+    }
+
+    private void WithdrawDrag()
+    {
+        ToIdle();
+        DragWithdrawn?.Invoke();
     }
 
     private void ToIdle()

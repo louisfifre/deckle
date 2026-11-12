@@ -19,3 +19,13 @@
 - **Violated invariant:** nothing presses the button while a fourth finger may still arrive; see the header bullet on the fourth-finger window in `ThreeFingerDragRecognizer.cs`.
 - **Recurrence cue:** a new press guard, or a change to `PressDue`, that can fire inside the first frames after landing.
 - **Regression coverage:** `ThreeFingerDragRecognizerTests.FourthFingerAfterASweepingLandingPressesNothing` (regression).
+
+## A fourth finger the pad reports late left a stretched selection behind
+
+- **Trigger:** four fingers set down gently, the fourth lightly: the pad reports three tips, then the fourth 68 to 113 ms later (no contact at all for it before, not even without tip), while the three have already swept 60 to 170 px.
+- **Observed symptom:** the maintainer meant a four-finger gesture and got a three-finger drag that selected things, again and again (2026-11-12, Magic Trackpad, 30 ms delay, 8 px distance). The press, measured on the replayed frames, went down 22 ms after landing; the fourth finger then released the drag where it stood, keeping what it had stretched.
+- **Cause:** the press cannot wait for a fourth finger that comes this late without making every drag late too (late fourth fingers span 44 to 191 ms over 34 sessions, so even 100 ms catches half), and the travel at 30 ms does not tell such a gesture from a real drag (medians 36 and 22 px, ranges overlap). The release then took the end point of a motion that was never a drag.
+- **Resolution (2026-11-12):** a fourth finger within `LateFourthFingerWindowMs` (200 ms, engine constant) of landing withdraws the drag; the engine releases through `MouseInjector.ReleasePrimaryAtPress`, which moves the cursor back to the press point before the button comes up, so the gesture shrinks to a click at its start. A click remains: it is limited, not removed.
+- **Violated invariant:** a four-finger gesture leaves nothing dragged behind; see the header bullet on the late fourth finger in `ThreeFingerDragRecognizer.cs`.
+- **Recurrence cue:** a new way to end a drag on a fourth finger that releases in place, or a press point that `MouseInjector` stops recording.
+- **Regression coverage:** `ThreeFingerDragRecognizerTests.LateFourthFingerAfterThePressWithdrawsTheDrag` (regression) guards the decision; the release at the press point goes through SendInput and has no test seam, so it is checked by hand.
