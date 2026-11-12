@@ -24,6 +24,9 @@ namespace Deckle.App;
 // photographs each; writes report.json (the contract
 // with scripts/self-check.ps1) and exits 0 when all is well, 1 otherwise.
 //
+// `--only <target>` after the folder keeps the run to one window, or to one
+// page of Settings (SelfCheckTarget): the check of a single change, in seconds.
+//
 // What it composes, in one place. Everything else of the boot is left out, and
 // each piece has its reason in LeftOutOfSelfCheck: a piece that acts on the
 // machine (a hook, a device, the network, the lights) has no business in a run
@@ -111,9 +114,18 @@ public partial class App
         // be the maintainer's.
         SelfCheckGateResult gate = SelfCheckDataRootGate.Evaluate(
             Environment.GetEnvironmentVariable(AppPaths.DataRootEnvVar), DefaultDataRoot.Resolve());
-        if (!gate.Allowed || string.IsNullOrWhiteSpace(outputFolder))
+
+        // A target that names nothing refuses the run here, before a window
+        // opens: walking nothing must never read as a pass.
+        string? only = SelfCheckTarget.ReadArgument(args);
+        string targetReason = "";
+        SelfCheckTarget? target = only is null ? null : SelfCheckTarget.Parse(only, out targetReason);
+
+        if (!gate.Allowed || string.IsNullOrWhiteSpace(outputFolder) || (only is not null && target is null))
         {
-            string reason = gate.Allowed ? "No output folder: usage is --self-check <output-folder>." : gate.Reason;
+            string reason = !gate.Allowed ? gate.Reason
+                : string.IsNullOrWhiteSpace(outputFolder) ? "No output folder: usage is --self-check <output-folder> [--only <target>]."
+                : targetReason;
             WriteRefusal(outputFolder, reason);
             TerminateWithoutExitHandlers(SelfCheckRefused);
             return;
@@ -127,13 +139,14 @@ public partial class App
             StartedAt = DateTimeOffset.Now,
             Composed = [.. ComposedBySelfCheck],
             LeftOut = [.. LeftOutOfSelfCheck],
+            Only = target?.Name,
         };
 
         int code;
         try
         {
             Directory.CreateDirectory(outputFolder);
-            await RunSelfCheckAsync(report, outputFolder);
+            await RunSelfCheckAsync(report, outputFolder, target);
             report.Completed = true;
             report.Current = null;
         }
@@ -164,13 +177,17 @@ public partial class App
     }
 
     // The explicit list: the steps below are the whole composition of the mode.
-    private async Task RunSelfCheckAsync(SelfCheckReport report, string outputFolder)
+    // With a target (--only), the foundation is composed the same and only the
+    // named window is opened; the microphone probe is left out with the rest.
+    private async Task RunSelfCheckAsync(SelfCheckReport report, string outputFolder, SelfCheckTarget? target)
     {
         void Step(string name)
         {
             report.Current = name;
             report.Save(outputFolder);
         }
+
+        bool Wants(string window) => target is null || target.Window == window;
 
         Step("foundation");
         PathRedaction.AddRoot(PathRedaction.DataRootToken, AppPaths.UserDataRoot);
@@ -192,9 +209,12 @@ public partial class App
         Settings.SettingsService.Instance.Current.Developer.DeveloperMode = true;
         Settings.SettingsService.Instance.Save();
 
-        Step("microphone");
-        report.Microphone = await ProbeMicrophoneForSelfCheckAsync();
-        report.Save(outputFolder);
+        if (target is null)
+        {
+            Step("microphone");
+            report.Microphone = await ProbeMicrophoneForSelfCheckAsync();
+            report.Save(outputFolder);
+        }
 
         // Images go beside the report: the data root is temporary.
         string captures = Path.Combine(outputFolder, "captures");
@@ -204,110 +224,139 @@ public partial class App
         // (OffscreenWindow), and each page is rendered whole by its own XAML
         // (ElementImage), so nothing appears on the person's desktop and no
         // image is cut at a window edge.
-        Step("settings");
-        Settings.SettingsWindow settings = EnsureSettingsWindow();
-        OffscreenWindow.ShowInactive(settings);
-        await WaitUntilLoadedAsync(settings);
-        report.Surfaces.Add(await CaptureWindowFrameAsync(run, settings, "settings", "window", null, true, 0));
+        if (Wants("settings"))
+        {
+            Step("settings");
+            Settings.SettingsWindow settings = EnsureSettingsWindow();
+            OffscreenWindow.ShowInactive(settings);
+            await WaitUntilLoadedAsync(settings);
+            // A page target asks for that page alone: the window's own frame
+            // and the other pages are not its subject.
+            string? onlyPage = target?.Page;
+            if (onlyPage is null)
+                report.Surfaces.Add(await CaptureWindowFrameAsync(run, settings, "settings", "window", null, true, 0));
+            else
+                report.Pages = [];
 
-        string currentPage = "";
-        string currentLabel = "";
-        await settings.WalkPagesAsync(
-            async visit =>
-            {
-                string slug = InterfaceCaptureNames.PageSlug(visit.Tag);
-                (int closed, int left) = await CloseTransientPopupsAsync(settings);
-                SelfCheckSurface surface = new("settings", slug, visit.Label, visit.Loaded, visit.LoadMs, null,
-                    closed, left, "page-render");
-                if (visit.Loaded && settings.CurrentPage is { } page)
+            string currentPage = "";
+            string currentLabel = "";
+            await settings.WalkPagesAsync(
+                async visit =>
                 {
-                    try
+                    string slug = InterfaceCaptureNames.PageSlug(visit.Tag);
+                    (int closed, int left) = await CloseTransientPopupsAsync(settings);
+                    SelfCheckSurface surface = new("settings", slug, visit.Label, visit.Loaded, visit.LoadMs, null,
+                        closed, left, "page-render");
+                    if (visit.Loaded && settings.CurrentPage is { } page)
                     {
-                        ElementImage.Result image = await ElementImage.CapturePageAsync(
-                            page, Path.Combine(captures, $"settings-{slug}"));
-                        string[] files = [.. image.Files.Select(f => Path.GetRelativePath(outputFolder, f))];
-                        surface = surface with
+                        try
                         {
-                            Png = files[0],
-                            Parts = files.Length > 1 ? files : null,
-                            Width = image.Width,
-                            Height = image.Height,
-                        };
+                            ElementImage.Result image = await ElementImage.CapturePageAsync(
+                                page, Path.Combine(captures, $"settings-{slug}"));
+                            string[] files = [.. image.Files.Select(f => Path.GetRelativePath(outputFolder, f))];
+                            surface = surface with
+                            {
+                                Png = files[0],
+                                Parts = files.Length > 1 ? files : null,
+                                Width = image.Width,
+                                Height = image.Height,
+                            };
+                        }
+                        catch (Exception ex)
+                        {
+                            surface = surface with { Error = $"{ex.GetType().Name}: {ex.Message}" };
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        surface = surface with { Error = $"{ex.GetType().Name}: {ex.Message}" };
-                    }
-                }
-                report.Surfaces.Add(surface);
-                Step($"settings/{slug} done");
-            },
-            starting: (tag, label) =>
-            {
-                currentPage = InterfaceCaptureNames.PageSlug(tag);
-                currentLabel = label;
-                Step($"settings/{currentPage} ({currentLabel})");
-            });
-
-        Step("log");
-        await OpenAndCaptureAsync(report, run, outputFolder, "log", EnsureLogWindow);
-
-        Step("playground");
-        await OpenAndCaptureAsync(report, run, outputFolder, "playground", EnsurePlaygroundWindow);
-
-        // The Mail window on its built-in sample: the window once, then each
-        // state the maintainer drew, page by page (MailWindow.Capture.cs), with
-        // the whole window again where the rail or the title bar changes.
-        Step("mail");
-        Mail.Hub.MailWindow mail = EnsureMailWindow();
-        OffscreenWindow.ShowInactive(mail);
-        await WaitUntilLoadedAsync(mail);
-        await mail.WalkCapturesAsync(
-            async visit =>
-            {
-                // A menu, flyout or dialog left open on purpose is the subject
-                // of the step: the window is photographed with it, and the
-                // walk closes it afterwards.
-                if (visit.KeepsPopup)
+                    report.Surfaces.Add(surface);
+                    Step($"settings/{slug} done");
+                },
+                starting: (tag, label) =>
                 {
-                    report.Surfaces.Add(await CaptureWindowFrameAsync(
-                        run, mail, "mail", visit.Slug, visit.Label, visit.Loaded, visit.LoadMs));
+                    currentPage = InterfaceCaptureNames.PageSlug(tag);
+                    currentLabel = label;
+                    Step($"settings/{currentPage} ({currentLabel})");
+                },
+                // Every slug the rail offers is noted on the way, so a target
+                // that matches none is answered with the list (SelfCheckReport).
+                only: onlyPage is null ? null : tag =>
+                {
+                    string slug = InterfaceCaptureNames.PageSlug(tag);
+                    report.Pages?.Add(slug);
+                    return slug == onlyPage;
+                });
+        }
+
+        if (Wants("log"))
+        {
+            Step("log");
+            await OpenAndCaptureAsync(report, run, outputFolder, "log", EnsureLogWindow);
+        }
+
+        if (Wants("playground"))
+        {
+            Step("playground");
+            await OpenAndCaptureAsync(report, run, outputFolder, "playground", EnsurePlaygroundWindow);
+        }
+
+        if (Wants("mail"))
+        {
+            // The Mail window on its built-in sample: the window once, then each
+            // state the maintainer drew, page by page (MailWindow.Capture.cs), with
+            // the whole window again where the rail or the title bar changes.
+            Step("mail");
+            Mail.Hub.MailWindow mail = EnsureMailWindow();
+            OffscreenWindow.ShowInactive(mail);
+            await WaitUntilLoadedAsync(mail);
+            await mail.WalkCapturesAsync(
+                async visit =>
+                {
+                    // A menu, flyout or dialog left open on purpose is the subject
+                    // of the step: the window is photographed with it, and the
+                    // walk closes it afterwards.
+                    if (visit.KeepsPopup)
+                    {
+                        report.Surfaces.Add(await CaptureWindowFrameAsync(
+                            run, mail, "mail", visit.Slug, visit.Label, visit.Loaded, visit.LoadMs));
+                        Step($"mail/{visit.Slug} done");
+                        return;
+                    }
+                    (int closed, int left) = await CloseTransientPopupsAsync(mail);
+                    SelfCheckSurface surface = new("mail", visit.Slug, visit.Label, visit.Loaded, visit.LoadMs, null,
+                        closed, left, "page-render");
+                    if (visit.Loaded && mail.CurrentPage is { } page)
+                    {
+                        try
+                        {
+                            ElementImage.Result image = await ElementImage.CapturePageAsync(
+                                page, Path.Combine(captures, $"mail-{visit.Slug}"));
+                            string[] files = [.. image.Files.Select(f => Path.GetRelativePath(outputFolder, f))];
+                            surface = surface with
+                            {
+                                Png = files[0],
+                                Parts = files.Length > 1 ? files : null,
+                                Width = image.Width,
+                                Height = image.Height,
+                            };
+                        }
+                        catch (Exception ex)
+                        {
+                            surface = surface with { Error = $"{ex.GetType().Name}: {ex.Message}" };
+                        }
+                    }
+                    report.Surfaces.Add(surface);
+                    if (visit.WholeWindow)
+                        report.Surfaces.Add(await CaptureWindowFrameAsync(
+                            run, mail, "mail", $"{visit.Slug}-window", visit.Label, visit.Loaded, visit.LoadMs));
                     Step($"mail/{visit.Slug} done");
-                    return;
-                }
-                (int closed, int left) = await CloseTransientPopupsAsync(mail);
-                SelfCheckSurface surface = new("mail", visit.Slug, visit.Label, visit.Loaded, visit.LoadMs, null,
-                    closed, left, "page-render");
-                if (visit.Loaded && mail.CurrentPage is { } page)
-                {
-                    try
-                    {
-                        ElementImage.Result image = await ElementImage.CapturePageAsync(
-                            page, Path.Combine(captures, $"mail-{visit.Slug}"));
-                        string[] files = [.. image.Files.Select(f => Path.GetRelativePath(outputFolder, f))];
-                        surface = surface with
-                        {
-                            Png = files[0],
-                            Parts = files.Length > 1 ? files : null,
-                            Width = image.Width,
-                            Height = image.Height,
-                        };
-                    }
-                    catch (Exception ex)
-                    {
-                        surface = surface with { Error = $"{ex.GetType().Name}: {ex.Message}" };
-                    }
-                }
-                report.Surfaces.Add(surface);
-                if (visit.WholeWindow)
-                    report.Surfaces.Add(await CaptureWindowFrameAsync(
-                        run, mail, "mail", $"{visit.Slug}-window", visit.Label, visit.Loaded, visit.LoadMs));
-                Step($"mail/{visit.Slug} done");
-            },
-            starting: (slug, label) => Step($"mail/{slug} ({label})"));
+                },
+                starting: (slug, label) => Step($"mail/{slug} ({label})"));
+        }
 
-        Step("atelier");
-        await WalkAtelierAsync(report, run, outputFolder, Step);
+        if (Wants("atelier"))
+        {
+            Step("atelier");
+            await WalkAtelierAsync(report, run, outputFolder, Step);
+        }
 
         run.Complete();
         Settings.SettingsService.Instance.Flush();

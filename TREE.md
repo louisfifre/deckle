@@ -618,7 +618,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── ElementImage.cs
 │   │   │   ├── OffscreenWindow.cs
 │   │   │   ├── SelfCheckDataRootGate.cs
-│   │   │   └── SelfCheckReport.cs
+│   │   │   ├── SelfCheckReport.cs
+│   │   │   └── SelfCheckTarget.cs
 │   │   ├── Strings/
 │   │   │   └── en-US/
 │   │   │       └── Resources.resw

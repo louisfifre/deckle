@@ -244,6 +244,110 @@ public class SelfCheckTests
         Assert.Equal("settings/home", read.Current);
     }
 
+    // ── The target (--only) ──────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("mail", "mail", null)]
+    [InlineData("settings", "settings", null)]
+    [InlineData("settings/general", "settings", "general")]
+    [InlineData(" Settings/LLM-Rewrite ", "settings", "llm-rewrite")]
+    [Trait("Category", "unit")]
+    public void Target_NamesAWindowOrOnePageOfSettings(string text, string window, string? page)
+    {
+        SelfCheckTarget? target = SelfCheckTarget.Parse(text, out _);
+
+        Assert.NotNull(target);
+        Assert.Equal(window, target.Window);
+        Assert.Equal(page, target.Page);
+    }
+
+    // A mistyped target must refuse the run, and say what it could have been.
+    [Theory]
+    [InlineData("")]
+    [InlineData("setings")]
+    [InlineData("settings/general/more")]
+    [Trait("Category", "unit")]
+    public void Target_RefusesWhatNamesNoWindowAndListsTheWindows(string text)
+    {
+        SelfCheckTarget? target = SelfCheckTarget.Parse(text, out string reason);
+
+        Assert.Null(target);
+        foreach (string window in SelfCheckTarget.Windows) Assert.Contains(window, reason);
+    }
+
+    [Theory]
+    [InlineData("mail/triage")]
+    [InlineData("settings/")]
+    [Trait("Category", "unit")]
+    public void Target_RefusesAPageWhereNoneCanBeNamed(string text)
+    {
+        Assert.Null(SelfCheckTarget.Parse(text, out string reason));
+        Assert.Contains("settings/<page>", reason);
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Target_IsReadFromTheArgumentAfterItsFlag()
+    {
+        Assert.Null(SelfCheckTarget.ReadArgument(["Deckle.exe", "--self-check", @"C:\out"]));
+        Assert.Equal("mail", SelfCheckTarget.ReadArgument(["Deckle.exe", "--self-check", @"C:\out", "--only", "mail"]));
+        // The flag with nothing after it is a target that names nothing, not a full run.
+        Assert.Equal("", SelfCheckTarget.ReadArgument(["Deckle.exe", "--self-check", @"C:\out", "--only"]));
+    }
+
+    private static SelfCheckReport TargetedReport(string only)
+        => new() { Completed = true, Only = only };
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Verdict_OfATargetedRunAsksOnlyForItsTarget()
+    {
+        SelfCheckReport report = TargetedReport("settings/general");
+        report.Surfaces.Add(new SelfCheckSurface("settings", "general", "General", true, 300, @"captures\settings-general.png"));
+
+        report.Judge();
+
+        Assert.Equal("passed", report.Outcome);
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Verdict_OfATargetedRunStillFailsWhenItsPageDidNotLoad()
+    {
+        SelfCheckReport report = TargetedReport("settings/general");
+        report.Surfaces.Add(new SelfCheckSurface("settings", "general", "General", false, 3000, null));
+
+        report.Judge();
+
+        Assert.Equal("failed", report.Outcome);
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Verdict_FailsAndListsThePagesWhenTheTargetedPageDoesNotExist()
+    {
+        SelfCheckReport report = TargetedReport("settings/genral");
+        report.Pages = ["home", "general"];
+
+        report.Judge();
+
+        Assert.Equal("failed", report.Outcome);
+        Assert.Contains(report.Failures, f => f.StartsWith("settings/genral") && f.Contains("home, general"));
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Verdict_FailsWhenTheTargetedWindowWasNeverWalked()
+    {
+        SelfCheckReport report = TargetedReport("mail");
+        report.Surfaces.Add(new SelfCheckSurface("log", null, null, true, 400, @"captures\log.png"));
+
+        report.Judge();
+
+        Assert.Equal("failed", report.Outcome);
+        Assert.Contains(report.Failures, f => f.StartsWith("mail"));
+    }
+
     // ── The images ───────────────────────────────────────────────────────────
 
     // RenderTargetBitmap hands over premultiplied BGRA with a transparent page
