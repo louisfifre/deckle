@@ -22,7 +22,8 @@ namespace Deckle.Llm.Rewrite.Views;
 //     each is one section-level entry with a LiteralLabel, targeting the Tag
 //     on its section block.
 //   • the dictation steps — one entry on "Rewrite dictations", the card
-//     always shown with the module; the step cards are a runtime list.
+//     always shown with the module; "Rewrite while I speak" shows only
+//     under it, and the step cards are a runtime list.
 //
 // Maintenance contract: a card added to this page is a card added here. LabelKey
 // must equal the card's Tag, the handle the post-navigation scroll-to looks for.
@@ -39,7 +40,8 @@ public static class SettingsSearch
         {
             LabelKey = "LlmDictationEnableCard",
             Keywords = ["profile", "rewrite", "dictation", "step", "length", "characters",
-                        "minutes", "streaming", "stop", "timeline", "speak", "live"],
+                        "minutes", "streaming", "stop", "timeline", "speak", "live", "block",
+                        "while I speak"],
         },
 
         new SettingSearchEntry

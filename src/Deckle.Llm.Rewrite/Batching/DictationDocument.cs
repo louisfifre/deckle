@@ -3,114 +3,167 @@ using System.Text;
 
 namespace Deckle.Llm.Rewrite;
 
-// The document of one take: its passages in speech order, each with its raw
+// The document of one take: its blocks in speech order, each with its raw
 // text and the reading it shows, then the text still open after them. The
 // transcript panel and the clipboard read it; DictationBatchRewriter writes
 // it as rewrites come back.
 //
+// A block is either a passage the batcher closed, or a group of earlier
+// blocks a later step rewrites as one (Regroup): when a step takes over, it
+// cuts the text already said into its own blocks, and each of those covers
+// whole blocks of the step before. Grouping whole blocks, never cutting one,
+// is what lets a block keep showing its earlier reading until the new one of
+// its group arrives: the group shows its children until it has a reading of
+// its own (specs/deckle-dictation-rewriting.md, Panel 3).
+//
 // Four guarantees, the reason it exists apart from the rewriter:
-//   - the raw text of a passage never changes, and every rewrite starts from
+//   - the raw text of a block never changes, and every rewrite starts from
 //     it, never from an earlier rewrite (two voices would mix otherwise);
-//   - a reading older than the one shown is ignored: each rewrite is tagged
-//     with the generation it was sent in (a generation per streaming
-//     profile, DictationBatchRewriter.Use), and a passage only moves forward;
-//   - a failed rewrite leaves the reading the passage had;
+//   - a reading older than the one a block shows is ignored: each rewrite is
+//     tagged with the generation it was sent in (a generation per step that
+//     took over, DictationBatchRewriter.Use), and a block only moves forward;
+//   - a failed rewrite leaves the reading the block had, its children's
+//     when it is a group that never had one;
 //   - reading the document never blocks: one lock, held only to copy.
 //
-// Generation 0 is the raw text: a passage nobody rewrote yet shows it.
+// Generation 0 is the raw text: a block nobody rewrote yet shows it.
 public sealed class DictationDocument
 {
     readonly object _gate = new();
-    readonly List<Passage> _passages = new();
+    readonly List<Block> _blocks = new();
     string _open = "";
+    int _nextIndex;
 
-    public int PassageCount
+    // The blocks of the current cut, the one the last step that took over
+    // rewrites.
+    public int BlockCount
     {
-        get { lock (_gate) return _passages.Count; }
+        get { lock (_gate) return _blocks.Count; }
     }
 
-    // Appends a closed passage; its Index must be the next one.
-    internal void Add(DictationBatch batch)
+    // Appends a passage the batcher closed and returns it as a block.
+    internal Block Add(string text, bool endsOnPause)
     {
         lock (_gate)
         {
-            if (batch.Index != _passages.Count)
-                throw new ArgumentException(
-                    $"Passage {batch.Index} added after {_passages.Count} passages.", nameof(batch));
-            _passages.Add(new Passage(batch));
+            var block = new Block(_nextIndex++, text, endsOnPause, []);
+            _blocks.Add(block);
+            return block;
         }
     }
 
-    // The text after the last closed passage, as said.
+    // The text after the last closed block, as said.
     internal void SetOpen(string text)
     {
         lock (_gate) _open = text;
     }
 
-    // The closed passages' raw text, in order.
-    internal DictationBatch[] Batches()
+    // Cuts the closed text into blocks of at least blockChars: consecutive
+    // blocks join until their raw text reaches the size, the way the batcher
+    // closes a passage once it reaches it, and the seam stays where a block
+    // already ended, at a pause or on the batcher's hard cap. What is left at
+    // the end, shorter than the size, is a block too: it was closed, and the
+    // step that takes over rewrites everything already closed at once. A
+    // group of one is the block itself. Returns the new cut, every block of
+    // which the caller sends.
+    internal Block[] Regroup(int blockChars)
     {
-        lock (_gate) return _passages.Select(passage => passage.Batch).ToArray();
+        lock (_gate)
+        {
+            var cut = new List<Block>();
+            var group = new List<Block>();
+            int length = 0;
+            foreach (Block block in _blocks)
+            {
+                if (group.Count > 0) length += Separator(group[^1]).Length;
+                group.Add(block);
+                length += block.Raw.Length;
+                if (length < blockChars) continue;
+                cut.Add(Group(group));
+                group = new List<Block>();
+                length = 0;
+            }
+            if (group.Count > 0) cut.Add(Group(group));
+
+            _blocks.Clear();
+            _blocks.AddRange(cut);
+            return cut.ToArray();
+        }
+
+        Block Group(List<Block> group) =>
+            group.Count == 1
+                ? group[0]
+                : new Block(_nextIndex++, Join(group, block => block.Raw), group[^1].EndsOnPause, group.ToArray());
     }
 
-    // Records a rewrite of passage index sent in generation. Returns false
-    // when it changes nothing: a failure (null text) or a reading older than
-    // or as old as the one shown.
-    internal bool Apply(int index, int generation, string? text)
+    // The blocks of the current cut, in order.
+    internal Block[] Blocks()
+    {
+        lock (_gate) return _blocks.ToArray();
+    }
+
+    // Records a rewrite of block sent in generation. Returns false when it
+    // changes nothing: a failure (null text) or a reading older than or as
+    // old as the one the block has.
+    internal bool Apply(Block block, int generation, string? text)
     {
         if (text is null) return false;
         lock (_gate)
         {
-            Passage passage = _passages[index];
-            if (generation <= passage.Generation) return false;
-            passage.Reading = text;
-            passage.Generation = generation;
+            if (generation <= block.Generation) return false;
+            block.Reading = text;
+            block.Generation = generation;
             return true;
         }
     }
 
-    // The generation each passage shows, 0 for raw.
+    // The generation each block of the current cut has its own reading in, 0
+    // for none (it shows its raw text, or its children's readings).
     internal int[] Generations()
     {
-        lock (_gate) return _passages.Select(passage => passage.Generation).ToArray();
+        lock (_gate) return _blocks.Select(block => block.Generation).ToArray();
     }
 
-    // The take as it reads right now: each passage's reading in order (its raw
-    // text until a rewrite came back), then the open text. A paragraph break
-    // after a passage that ended on a pause, a space otherwise, the way the
-    // take's raw text is joined.
+    // The take as it reads right now: each block's reading in order (its
+    // children's, or its raw text, until a rewrite came back), then the open
+    // text. A paragraph break after a block that ended on a pause, a space
+    // otherwise, the way the take's raw text is joined.
     public string Snapshot()
     {
-        (DictationBatch Batch, string? Reading)[] passages;
-        string open;
         lock (_gate)
         {
-            passages = _passages.Select(passage => (passage.Batch, passage.Reading)).ToArray();
-            open = _open;
+            string closed = Join(_blocks, Shown);
+            if (_open.Length == 0) return closed;
+            if (_blocks.Count == 0) return _open;
+            return closed + Separator(_blocks[^1]) + _open;
         }
 
-        var text = new StringBuilder();
-        DictationBatch? previous = null;
-        foreach ((DictationBatch batch, string? reading) in passages)
-        {
-            if (previous is not null) text.Append(previous.EndsOnPause ? "\n\n" : " ");
-            text.Append(reading ?? batch.Text);
-            previous = batch;
-        }
-
-        if (open.Length > 0)
-        {
-            if (previous is not null) text.Append(previous.EndsOnPause ? "\n\n" : " ");
-            text.Append(open);
-        }
-
-        return text.ToString();
+        static string Shown(Block block) =>
+            block.Reading ?? (block.Children.Length > 0 ? Join(block.Children, Shown) : block.Raw);
     }
 
-    // Guarded by the document's lock.
-    sealed class Passage(DictationBatch batch)
+    static string Join(IReadOnlyList<Block> blocks, Func<Block, string> text)
     {
-        public DictationBatch Batch { get; } = batch;
+        var joined = new StringBuilder();
+        for (int i = 0; i < blocks.Count; i++)
+        {
+            if (i > 0) joined.Append(Separator(blocks[i - 1]));
+            joined.Append(text(blocks[i]));
+        }
+        return joined.ToString();
+    }
+
+    static string Separator(Block before) => before.EndsOnPause ? "\n\n" : " ";
+
+    // One block. Index numbers the blocks of a take in the order they were
+    // made, for the log; Raw, EndsOnPause and Children never change. Reading
+    // and Generation are guarded by the document's lock.
+    internal sealed class Block(int index, string raw, bool endsOnPause, Block[] children)
+    {
+        public int Index { get; } = index;
+        public string Raw { get; } = raw;
+        public bool EndsOnPause { get; } = endsOnPause;
+        public Block[] Children { get; } = children;
         public string? Reading;
         public int Generation;
     }

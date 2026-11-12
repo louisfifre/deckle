@@ -17,8 +17,8 @@ namespace Deckle.Transcription.Tests;
 [Trait("Category", "integration")]
 public sealed class StreamingStepsRewriteTests
 {
-    // Each utterance is longer than the minimum passage size (200) and ends on
-    // a silence, so each one closes a passage of its own.
+    // Each utterance is longer than the minimum block size (200) and ends on a
+    // silence, so at that size each one closes a block of its own.
     private static readonly string First = Repeat("Je commence par le premier sujet de cette dictée. ");
     private static readonly string Second = Repeat("Puis je passe au second sujet, qui est différent. ");
     private static readonly string Third = Repeat("Enfin je termine par un dernier sujet, assez court. ");
@@ -31,20 +31,22 @@ public sealed class StreamingStepsRewriteTests
     // The raw length once the second utterance is in.
     private static readonly int AfterSecond = First.Length + 2 + Second.Length;
 
-    // Panel 1 and 2: the first step starts at a length the second utterance
-    // reaches; the passage closed before it leaves then, while the speaker is
+    private const int Min = DictationRewriteSettings.MinBlockChars;
+
+    // Panel 2: the first step starts at a length the second utterance
+    // reaches; the block closed before it leaves then, while the speaker is
     // still recording.
     [Fact]
-    public async Task ReachingTheFirstStreamingStepSendsThePassagesClosedBeforeIt()
+    public async Task ReachingTheFirstStepSendsTheBlocksClosedBeforeIt()
     {
         CancellationToken ct = TestContext.Current.CancellationToken;
         var rewrite = new TaggingRewriteService();
-        StreamingHost host = StepsHost(startAt: First.Length + 1, ("tier1", 0, true));
+        StreamingHost host = StepsHost(whileSpeaking: true, ("tier1", First.Length + 1, Min));
         var backend = new SequencedBackend([TestInference, First, Second, Third]);
         using var engine = NewEngine(host, backend, rewrite, out RecordingClipboardWriter clipboard);
 
-        // Without the streaming step nothing is sent before Stop and this wait
-        // times out.
+        // Without rewriting while speaking nothing is sent before Stop and
+        // this wait times out.
         await RunTakeAsync(engine, backend, rewrite, callsBeforeStop: 2, ct);
 
         Assert.Equal(
@@ -55,18 +57,18 @@ public sealed class StreamingStepsRewriteTests
         Assert.InRange(clipboard.WriteCount, 1, 2);
     }
 
-    // Panel 3 and Page 6: a higher streaming step rewrites the beginning again,
-    // from the raw text, with its own profile.
+    // Behaviours 4: a higher step takes over, rewrites the beginning again
+    // from the raw text with its own profile, then goes on alone.
     [Fact]
-    public async Task AHigherStreamingStepRewritesTheBeginningAgainFromTheRawText()
+    public async Task AHigherStepRewritesTheBeginningAgainFromTheRawText()
     {
         CancellationToken ct = TestContext.Current.CancellationToken;
         var rewrite = new TaggingRewriteService();
-        StreamingHost host = StepsHost(startAt: null, ("tier1", 0, true), ("tier2", AfterSecond, true));
+        StreamingHost host = StepsHost(whileSpeaking: true, ("tier1", 0, Min), ("tier2", AfterSecond, Min));
         var backend = new SequencedBackend([TestInference, First, Second, Third]);
         using var engine = NewEngine(host, backend, rewrite, out RecordingClipboardWriter clipboard);
 
-        // tier1 on the first passage, then tier2 on all three.
+        // tier1 on the first block, then tier2 on all three.
         await RunTakeAsync(engine, backend, rewrite, callsBeforeStop: 4, ct);
 
         Assert.Equal([First], rewrite.Calls.Where(c => c.ProfileId == "tier1").Select(c => c.Input));
@@ -76,68 +78,91 @@ public sealed class StreamingStepsRewriteTests
         Assert.Equal("tier2[" + First + "]\n\ntier2[" + Second + "]\n\ntier2[" + Third + "]", clipboard.Text);
     }
 
-    // Stop 3: the highest step reached is "at Stop", after a streaming step.
-    // The passage version goes to the clipboard first; the step's profile then
-    // rewrites the whole raw text and replaces it.
+    // Behaviours 4 and 5, Stop 2: a step with larger blocks takes over and
+    // cuts what was already said into its own blocks (here the first two
+    // blocks of the step before, as one); the block it had not finished is
+    // rewritten at Stop.
     [Fact]
-    public async Task AStepAtStopRewritesTheWholeRawTextAfterThePassageVersion()
+    public async Task AStepThatTakesOverCutsWhatWasSaidIntoItsOwnBlocks()
     {
         CancellationToken ct = TestContext.Current.CancellationToken;
         var rewrite = new TaggingRewriteService();
-        StreamingHost host = StepsHost(startAt: null, ("tier1", 0, true), ("tier2", RawTake.Length, false));
+        int twoBlocks = First.Length + 2 + Second.Length;
+        StreamingHost host = StepsHost(whileSpeaking: true, ("tier1", 0, Min), ("tier2", RawTake.Length, twoBlocks));
         var backend = new SequencedBackend([TestInference, First, Second, Third]);
         using var engine = NewEngine(host, backend, rewrite, out RecordingClipboardWriter clipboard);
-        string passages = "tier1[" + First + "]\n\ntier1[" + Second + "]\n\ntier1[" + Third + "]";
 
-        await RunTakeAsync(engine, backend, rewrite, callsBeforeStop: 3, ct, readsBeforeStop: passages);
+        // tier1 on the first two blocks, then tier2 on both as one.
+        await RunTakeAsync(engine, backend, rewrite, callsBeforeStop: 3, ct);
 
-        Assert.Equal([RawTake], rewrite.Calls.Where(c => c.ProfileId == "tier2").Select(c => c.Input));
-        Assert.Equal([passages, "tier2[" + RawTake + "]"], clipboard.Texts);
+        Assert.Equal(
+            new[] { First, Second }.Order(),
+            rewrite.Calls.Where(c => c.ProfileId == "tier1").Select(c => c.Input).Order());
+        Assert.Equal(
+            [First + "\n\n" + Second, Third],
+            rewrite.Calls.Where(c => c.ProfileId == "tier2").Select(c => c.Input));
+        Assert.Equal("tier2[" + First + "\n\n" + Second + "]\n\ntier2[" + Third + "]", clipboard.Text);
     }
 
-    // Stop 5: when that profile fails, the passage version stays on the
-    // clipboard.
+    // Stop 4 and Panel 4: when the step rewriting fails, each block keeps
+    // what it showed, and that is what stays on the clipboard.
     [Fact]
-    public async Task WhenTheStepAtStopFailsThePassageVersionStays()
+    public async Task WhenTheStepRewritingFailsEachBlockKeepsWhatItShowed()
     {
         CancellationToken ct = TestContext.Current.CancellationToken;
         var rewrite = new TaggingRewriteService(failing: "tier2");
-        StreamingHost host = StepsHost(startAt: null, ("tier1", 0, true), ("tier2", RawTake.Length, false));
+        StreamingHost host = StepsHost(whileSpeaking: true, ("tier1", 0, Min), ("tier2", RawTake.Length, Min));
         var backend = new SequencedBackend([TestInference, First, Second, Third]);
         using var engine = NewEngine(host, backend, rewrite, out RecordingClipboardWriter clipboard);
-        string passages = "tier1[" + First + "]\n\ntier1[" + Second + "]\n\ntier1[" + Third + "]";
+        string shown = "tier1[" + First + "]\n\ntier1[" + Second + "]\n\n" + Third;
 
-        await RunTakeAsync(engine, backend, rewrite, callsBeforeStop: 3, ct, readsBeforeStop: passages);
+        await RunTakeAsync(engine, backend, rewrite, callsBeforeStop: 4, ct, readsBeforeStop: shown);
 
-        Assert.Equal([passages], clipboard.Texts);
+        Assert.Equal([shown], clipboard.Texts);
     }
 
-    // Stop 4: a step "at Stop" with no streaming step before it. Nothing
-    // leaves while the person speaks; the raw text goes to the clipboard,
-    // then the whole rewrite replaces it.
+    // Stop 3: with "Rewrite while I speak" off, nothing leaves while the
+    // person speaks; the raw text goes to the clipboard, then the highest
+    // step reached rewrites the whole of it and replaces it.
     [Fact]
-    public async Task AStepAtStopWithNoStreamingStepBeforeItSendsNothingWhileSpeaking()
+    public async Task WithRewriteWhileSpeakingOffTheHighestStepRewritesTheWholeTextAtStop()
     {
         CancellationToken ct = TestContext.Current.CancellationToken;
         var rewrite = new TaggingRewriteService();
-        StreamingHost host = StepsHost(startAt: null, ("tier1", 0, false));
+        StreamingHost host = StepsHost(whileSpeaking: false, ("tier1", 0, Min), ("tier2", AfterSecond, Min));
         var backend = new SequencedBackend([TestInference, First, Second, Third]);
         using var engine = NewEngine(host, backend, rewrite, out RecordingClipboardWriter clipboard);
 
         await RunTakeAsync(engine, backend, rewrite, callsBeforeStop: 0, ct);
 
-        Assert.Equal([("tier1", RawTake)], rewrite.Calls);
-        Assert.Equal([RawTake, "tier1[" + RawTake + "]"], clipboard.Texts);
+        Assert.Equal([("tier2", RawTake)], rewrite.Calls);
+        Assert.Equal([RawTake, "tier2[" + RawTake + "]"], clipboard.Texts);
     }
 
-    // Page 3: below the first step's "Start at", nothing is sent and the take
+    // Stop 4: with it off, a failed rewrite leaves the raw text on the
+    // clipboard.
+    [Fact]
+    public async Task WithRewriteWhileSpeakingOffAFailedRewriteLeavesTheRawText()
+    {
+        CancellationToken ct = TestContext.Current.CancellationToken;
+        var rewrite = new TaggingRewriteService(failing: "tier1");
+        StreamingHost host = StepsHost(whileSpeaking: false, ("tier1", 0, Min));
+        var backend = new SequencedBackend([TestInference, First, Second, Third]);
+        using var engine = NewEngine(host, backend, rewrite, out RecordingClipboardWriter clipboard);
+
+        await RunTakeAsync(engine, backend, rewrite, callsBeforeStop: 0, ct);
+
+        Assert.Equal([RawTake], clipboard.Texts);
+    }
+
+    // Page 4: below the first step's "Start at", nothing is sent and the take
     // stays as said.
     [Fact]
     public async Task ATakeThatNeverReachesTheFirstStepStaysAsSaid()
     {
         CancellationToken ct = TestContext.Current.CancellationToken;
         var rewrite = new TaggingRewriteService();
-        StreamingHost host = StepsHost(startAt: 1_000_000, ("tier1", 0, true));
+        StreamingHost host = StepsHost(whileSpeaking: true, ("tier1", 1_000_000, Min));
         var backend = new SequencedBackend([TestInference, First, Second, Third]);
         using var engine = NewEngine(host, backend, rewrite, out RecordingClipboardWriter clipboard);
 
@@ -147,26 +172,24 @@ public sealed class StreamingStepsRewriteTests
         Assert.Equal([RawTake], clipboard.Texts);
     }
 
-    // Steps (profile id, from, streaming); startAt sets the first step's
-    // "Start at" (null: from the beginning). The profiles are the two the
+    // Steps (profile id, from, block size), the first from 0 to rewrite from\r\n    // the beginning. The profiles are the two the
     // settings hold, renamed.
-    private static StreamingHost StepsHost(int? startAt, params (string ProfileId, int FromChars, bool Streaming)[] steps)
+    private static StreamingHost StepsHost(
+        bool whileSpeaking, params (string ProfileId, int FromChars, int BlockChars)[] steps)
     {
-        StreamingHost host = RewritingHost(batchRewriting: false);
+        StreamingHost host = RewritingHost(batchRewriting: whileSpeaking);
         host.Llm.Profiles[0].Id = "tier1";
         host.Llm.Profiles[1].Id = "tier2";
-        host.Llm.Dictation.StartAtLength = startAt is not null;
         host.Llm.Dictation.Steps = steps
-            .Select((s, i) => new RewriteStep
+            .Select(s => new RewriteStep
             {
                 ProfileId = s.ProfileId,
-                FromChars = i == 0 && startAt is { } at ? at : s.FromChars,
-                Streaming = s.Streaming,
+                FromChars = s.FromChars,
+                BlockChars = s.BlockChars,
             })
             .ToList();
         return host;
     }
-
     private static TranscriptionEngine NewEngine(
         StreamingHost host, SequencedBackend backend, IRewriteService rewrite,
         out RecordingClipboardWriter clipboard)

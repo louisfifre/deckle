@@ -545,7 +545,7 @@ public sealed class LiveTranscriptionPipelineTests
     [Theory]
     [InlineData(1, true)]
     [InlineData(1_000_000, false)]
-    public async Task TheFirstStepsStartAtChoosesWhetherAStreamedTakeIsRewritten(int fromChars, bool rewritten)
+    public async Task TheFirstStepsLengthChoosesWhetherAStreamedTakeIsRewritten(int fromChars, bool rewritten)
     {
         CancellationToken testCancellation = TestContext.Current.CancellationToken;
         var capture = new ScriptedMicrophoneCapture(utteranceCount: 2);
@@ -555,7 +555,6 @@ public sealed class LiveTranscriptionPipelineTests
         StreamingHost host = RewritingHost(batchRewriting: false);
         RewriteProfile byLength = host.Llm.Profiles[1];
         byLength.Id = "by-length";
-        host.Llm.Dictation.StartAtLength = true;
         host.Llm.Dictation.Steps = [new RewriteStep { FromChars = fromChars, ProfileId = "by-length" }];
         using var engine = new TranscriptionEngine(host, backend, capture, clipboard, rewrite, captureTail: TestCaptureTail);
 
@@ -709,7 +708,7 @@ public sealed class LiveTranscriptionPipelineTests
     }
 
     // Rewriting dictations on, with one step from the beginning on the first
-    // default profile, streaming or not, and the passage size at its minimum.
+    // default profile, rewriting while speaking or not, and its block size at the minimum.
     internal static StreamingHost RewritingHost(bool batchRewriting)
     {
         var host = new StreamingHost();
@@ -720,8 +719,8 @@ public sealed class LiveTranscriptionPipelineTests
         llm.Dictation = new DictationRewriteSettings
         {
             Enabled = true,
-            Steps = [new RewriteStep { ProfileId = profile.Id, Streaming = batchRewriting }],
-            PassageChars = DictationRewriteSettings.MinPassageChars,
+            RewriteWhileSpeaking = batchRewriting,
+            Steps = [new RewriteStep { ProfileId = profile.Id, BlockChars = DictationRewriteSettings.MinBlockChars }],
         };
         return host;
     }
