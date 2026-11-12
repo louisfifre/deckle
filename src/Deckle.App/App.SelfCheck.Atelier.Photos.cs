@@ -21,12 +21,15 @@ public partial class App
 
     private async Task WalkAtelierPhotosAsync(
         SelfCheckReport report, InterfaceCaptureRun run, string outputFolder, Action<string> step,
-        AtelierWindow window, string sample)
+        AtelierWindow window, string sample, SelfCheckWalkGate gate)
     {
+        gate.ThrowIfDone();
         SamplePhotos.Write(Path.Combine(sample, "Photos", "2026"));
 
         async Task Capture(string state, Func<Task> reach, bool keepPopups = false)
         {
+            gate.ThrowIfDone();
+            bool photographed = gate.Photographs(state);
             step($"atelier/{state}");
             var clock = System.Diagnostics.Stopwatch.StartNew();
             try
@@ -41,6 +44,7 @@ public partial class App
                 report.Save(outputFolder);
                 return;
             }
+            if (!photographed) return;
             (int closed, int left) = keepPopups ? (0, 0) : await CloseTransientPopupsAsync(window);
             report.Surfaces.Add(await CaptureWindowFrameAsync(
                 run, window, "atelier", state, null, true, clock.ElapsedMilliseconds, closed, left));

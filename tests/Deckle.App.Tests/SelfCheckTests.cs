@@ -251,14 +251,16 @@ public class SelfCheckTests
     [InlineData("settings", "settings", null)]
     [InlineData("settings/general", "settings", "general")]
     [InlineData(" Settings/LLM-Rewrite ", "settings", "llm-rewrite")]
+    [InlineData("mail/activity", "mail", "activity")]
+    [InlineData("atelier/photos-gallery", "atelier", "photos-gallery")]
     [Trait("Category", "unit")]
-    public void Target_NamesAWindowOrOnePageOfSettings(string text, string window, string? page)
+    public void Target_NamesAWindowOrOneOfItsViews(string text, string window, string? view)
     {
         SelfCheckTarget? target = SelfCheckTarget.Parse(text, out _);
 
         Assert.NotNull(target);
         Assert.Equal(window, target.Window);
-        Assert.Equal(page, target.Page);
+        Assert.Equal(view, target.View);
     }
 
     // A mistyped target must refuse the run, and say what it could have been.
@@ -276,13 +278,55 @@ public class SelfCheckTests
     }
 
     [Theory]
-    [InlineData("mail/triage")]
+    [InlineData("log/window")]
     [InlineData("settings/")]
     [Trait("Category", "unit")]
-    public void Target_RefusesAPageWhereNoneCanBeNamed(string text)
+    public void Target_RefusesAViewWhereNoneCanBeNamed(string text)
     {
         Assert.Null(SelfCheckTarget.Parse(text, out string reason));
-        Assert.Contains("settings/<page>", reason);
+        Assert.Contains("<window>/<view>", reason);
+    }
+
+    // A walk whose states build on each other: a full walk photographs them
+    // all; a targeted one reaches the states before its target without a
+    // picture, photographs the target, and is then done.
+    [Fact]
+    [Trait("Category", "unit")]
+    public void WalkGate_PhotographsEveryStateOfAFullWalkAndNeverEndsIt()
+    {
+        var gate = new SelfCheckWalkGate(null);
+
+        Assert.True(gate.Photographs("files"));
+        Assert.True(gate.Photographs("sizes"));
+        Assert.False(gate.Done);
+        gate.ThrowIfDone();
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void WalkGate_PhotographsOnlyItsTargetThenEndsTheWalk()
+    {
+        var gate = new SelfCheckWalkGate("sizes");
+
+        Assert.False(gate.Photographs("files"));
+        gate.ThrowIfDone();
+        Assert.True(gate.Photographs("sizes"));
+
+        Assert.True(gate.Done);
+        Assert.Throws<OperationCanceledException>(gate.ThrowIfDone);
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void WalkGate_KeepsTheStatesItCameToWhenTheTargetIsNoneOfThem()
+    {
+        var gate = new SelfCheckWalkGate("sizzes");
+
+        gate.Photographs("files");
+        gate.Photographs("sizes");
+
+        Assert.False(gate.Reached);
+        Assert.Equal(["files", "sizes"], gate.Offered);
     }
 
     [Fact]
@@ -324,10 +368,10 @@ public class SelfCheckTests
 
     [Fact]
     [Trait("Category", "unit")]
-    public void Verdict_FailsAndListsThePagesWhenTheTargetedPageDoesNotExist()
+    public void Verdict_FailsAndListsTheViewsWhenTheTargetedViewDoesNotExist()
     {
         SelfCheckReport report = TargetedReport("settings/genral");
-        report.Pages = ["home", "general"];
+        report.Views = ["home", "general"];
 
         report.Judge();
 

@@ -25,7 +25,8 @@ namespace Deckle.App;
 // with scripts/self-check.ps1) and exits 0 when all is well, 1 otherwise.
 //
 // `--only <target>` after the folder keeps the run to one window, or to one
-// page of Settings (SelfCheckTarget): the check of a single change, in seconds.
+// view of Settings, Mail or the Atelier (SelfCheckTarget): the check of a
+// single change, in seconds.
 //
 // What it composes, in one place. Everything else of the boot is left out, and
 // each piece has its reason in LeftOutOfSelfCheck: a piece that acts on the
@@ -232,11 +233,10 @@ public partial class App
             await WaitUntilLoadedAsync(settings);
             // A page target asks for that page alone: the window's own frame
             // and the other pages are not its subject.
-            string? onlyPage = target?.Page;
+            string? onlyPage = target?.View;
+            var offered = new List<string>();
             if (onlyPage is null)
                 report.Surfaces.Add(await CaptureWindowFrameAsync(run, settings, "settings", "window", null, true, 0));
-            else
-                report.Pages = [];
 
             string currentPage = "";
             string currentLabel = "";
@@ -281,9 +281,10 @@ public partial class App
                 only: onlyPage is null ? null : tag =>
                 {
                     string slug = InterfaceCaptureNames.PageSlug(tag);
-                    report.Pages?.Add(slug);
+                    offered.Add(slug);
                     return slug == onlyPage;
                 });
+            if (onlyPage is not null && !offered.Contains(onlyPage)) report.Views = offered;
         }
 
         if (Wants("log"))
@@ -307,7 +308,12 @@ public partial class App
             Mail.Hub.MailWindow mail = EnsureMailWindow();
             OffscreenWindow.ShowInactive(mail);
             await WaitUntilLoadedAsync(mail);
-            await mail.WalkCapturesAsync(
+            // A view that the walk does not have is answered with the ones it
+            // has, and nothing is walked.
+            string? onlyView = target?.View;
+            if (onlyView is not null && !Mail.Hub.MailWindow.CaptureSlugs.Contains(onlyView))
+                report.Views = [.. Mail.Hub.MailWindow.CaptureSlugs];
+            else await mail.WalkCapturesAsync(
                 async visit =>
                 {
                     // A menu, flyout or dialog left open on purpose is the subject
@@ -349,13 +355,19 @@ public partial class App
                             run, mail, "mail", $"{visit.Slug}-window", visit.Label, visit.Loaded, visit.LoadMs));
                     Step($"mail/{visit.Slug} done");
                 },
-                starting: (slug, label) => Step($"mail/{slug} ({label})"));
+                starting: (slug, label) => Step($"mail/{slug} ({label})"),
+                only: onlyView);
         }
 
         if (Wants("atelier"))
         {
             Step("atelier");
-            await WalkAtelierAsync(report, run, outputFolder, Step);
+            // With a view for target, the walk is played up to it and ends
+            // there (SelfCheckWalkGate): that end is not a failure.
+            var gate = new SelfCheckWalkGate(target?.View);
+            try { await WalkAtelierAsync(report, run, outputFolder, Step, gate); }
+            catch (OperationCanceledException) when (gate.Done) { }
+            if (target?.View is not null && !gate.Reached) report.Views = gate.Offered;
         }
 
         run.Complete();

@@ -21,10 +21,13 @@
     script: 0 passed, 1 failed.
 .PARAMETER Only
     Check one thing instead of everything: a window (settings, log, playground,
-    mail, atelier) or one page of Settings (settings/<page>, the slug its image
-    carries, as in settings/general). The other windows and the microphone
-    probe are left out, and "passed" then speaks of that target alone. A target
-    that names nothing fails the run, with the names it could have been.
+    mail, atelier) or one view of Settings, Mail or the Atelier, named as its
+    image is in a full run: settings/general, mail/activity,
+    atelier/photos-gallery. A Mail or Atelier view is a state reached from the
+    ones before it, so the walk is played up to it without pictures and stops
+    there. The other windows and the microphone probe are left out, and
+    "passed" then speaks of that target alone. A target that names nothing
+    fails the run, with the names it could have been.
 .PARAMETER Configuration
     Which build to run. Debug by default, as the repository builds.
 .PARAMETER Target

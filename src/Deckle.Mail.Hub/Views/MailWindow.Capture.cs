@@ -210,15 +210,26 @@ public sealed partial class MailWindow
         },
     ];
 
+    // The slugs of the walk, in order: what `only` can name.
+    public static IReadOnlyList<string> CaptureSlugs { get; } = [.. Steps.Select(s => s.Slug)];
+
     // Calls visit once per step, the page shown and settled. starting names a
     // step before it begins, so a crash while opening it still says where.
-    public async Task WalkCapturesAsync(Func<MailCaptureVisit, Task> visit, Action<string, string>? starting = null)
+    //
+    // only names one step to visit. A step builds on the ones before it (a
+    // gesture on the day the step before loaded, a tab chosen on the page it
+    // opened), so the walk is played up to that step without a visit, the
+    // step is visited, and the walk stops: the caller sees the state the full
+    // walk shows there, and nothing after it is opened.
+    public async Task WalkCapturesAsync(
+        Func<MailCaptureVisit, Task> visit, Action<string, string>? starting = null, string? only = null)
     {
         _suppressTransitions = true;
         try
         {
             foreach (CaptureStep step in Steps)
             {
+                bool visited = only is null || step.Slug == only;
                 starting?.Invoke(step.Slug, step.Label);
                 var clock = System.Diagnostics.Stopwatch.StartNew();
                 step.Prepare(this);
@@ -228,10 +239,12 @@ public sealed partial class MailWindow
                     step.Then(this);
                     await WaitForPageAsync();
                 }
-                await visit(new MailCaptureVisit(step.Slug, step.Label, step.WholeWindow, loaded, clock.ElapsedMilliseconds, step.KeepsPopup));
+                if (visited)
+                    await visit(new MailCaptureVisit(step.Slug, step.Label, step.WholeWindow, loaded, clock.ElapsedMilliseconds, step.KeepsPopup));
                 if (step.KeepsPopup) await CloseCapturePopupsAsync();
                 step.After?.Invoke(this);
                 if (step.After is not null) await WaitForPageAsync();
+                if (only is not null && visited) break;
             }
         }
         finally

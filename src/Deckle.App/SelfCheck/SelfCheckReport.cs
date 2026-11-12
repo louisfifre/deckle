@@ -50,14 +50,14 @@ internal sealed class SelfCheckReport
     public List<string> Warnings { get; set; } = [];
     public string Outcome { get; set; } = "failed";
 
-    // The one window or page a targeted run was asked for (SelfCheckTarget's
+    // The one window or view a targeted run was asked for (SelfCheckTarget's
     // name); null for a full run. "passed" then reaches that target only: the
     // other windows and the microphone were not looked at.
     public string? Only { get; set; }
 
-    // The Settings page slugs the walk offered, recorded by a run whose target
-    // is a page, so a target that matched none can say what it could have been.
-    public List<string>? Pages { get; set; }
+    // The views the target's window offered, recorded when the target matched
+    // none of them, so the failure can say what it could have been.
+    public List<string>? Views { get; set; }
 
     // Recomputes Failures, Warnings and Outcome from what was recorded.
     public void Judge()
@@ -92,8 +92,8 @@ internal sealed class SelfCheckReport
         {
             // Said only of a run that reached its end: before that, the walk
             // may simply not have arrived there yet.
-            failures.Add(Pages is { Count: > 0 }
-                ? $"{Only}: no such page, so nothing was checked. The pages are: {string.Join(", ", Pages)}."
+            failures.Add(Views is { Count: > 0 }
+                ? $"{Only}: no such view, so nothing was checked. The views there are: {string.Join(", ", Views)}."
                 : $"{Only}: never walked, so nothing was checked there.");
         }
 
