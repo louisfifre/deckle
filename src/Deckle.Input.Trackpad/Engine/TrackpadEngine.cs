@@ -27,6 +27,16 @@ public sealed class TrackpadEngine : IDisposable
     // fingers lift.
     private const double GraceDelayMs = 0;
 
+    // How long after three fingers land the pick-up distance waits for a
+    // possible fourth finger before it may press. Measured on 13 recorded
+    // Magic Trackpad sessions (30 ms delay, 8 px distance): frames come every
+    // ~11 ms and the fourth finger lands one or two frames after the three;
+    // 20 ms cuts the stray presses of four-finger swipes from 35 to 13 and
+    // still lets a sweeping hand press on its second frame (~22 ms), where
+    // a window of 25 ms or more would leave the distance nothing to do. An
+    // engine constant: it is a property of the hand, not a preference.
+    private const double FourthFingerWindowMs = 20;
+
     // Start threshold as a fraction of the X range — the calibrated
     // minimum, perceptually instant. Not zero on purpose: at exactly 0 the
     // drag would commit on the first frame even without movement, turning
@@ -286,9 +296,10 @@ public sealed class TrackpadEngine : IDisposable
         var caps = _host.Touchpad;
         int xRange = caps?.XRange > 0 ? caps.XRange : 4096;
 
-        _recognizer.GraceDelayMs        = GraceDelayMs;
-        _recognizer.StartThresholdUnits = StartThresholdRatio * xRange;
-        _recognizer.MaxFrameDeltaUnits  = MaxFrameDeltaRatio * xRange;
+        _recognizer.GraceDelayMs         = GraceDelayMs;
+        _recognizer.FourthFingerWindowMs = FourthFingerWindowMs;
+        _recognizer.StartThresholdUnits  = StartThresholdRatio * xRange;
+        _recognizer.MaxFrameDeltaUnits   = MaxFrameDeltaRatio * xRange;
         ApplyPressGuards(_recognizer, TrackpadSettingsService.Instance.Current);
     }
 

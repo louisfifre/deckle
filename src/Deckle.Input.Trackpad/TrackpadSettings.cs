@@ -40,10 +40,11 @@ public sealed class TrackpadSettings
 
     /// <summary>
     /// Pick-up distance — how far the cursor moves, in pixels, before the
-    /// press lands even though the pick-up delay has not run out. Fingers
-    /// settling for a four-finger gesture barely move before the fourth
-    /// lands; a hand that sets down and sweeps at once is dragging, and
-    /// waiting out the delay there made the drag start late. Measured on
+    /// press lands even though the pick-up delay has not run out. A hand
+    /// that sets down and sweeps at once is dragging, and waiting out the
+    /// delay there made the drag start late. A four-finger swipe can land
+    /// sweeping too, so the distance only counts once the engine's
+    /// fourth-finger window (20 ms after landing) has closed. Measured on
     /// the cursor (finger travel × drag speed) because that is the motion
     /// the person sees. The default is a first guess to try by hand, not a
     /// value measured on the recorded sessions.
