@@ -13,7 +13,8 @@
     resident app, composes no hook, no hotkey, no tray icon and no engine, and it
     never reads the maintainer's data root. The script prints the process ids of
     the other Deckle processes before and after, so a run that touched the
-    resident app would show.
+    resident app would show. One self-check runs at a time on the machine: a
+    second one waits for the first to end.
 
     A run fails when the app exits with anything but 0 or 1 (a crash exit code
     such as 0xC00000FD, a stack overflow, is named), when it times out, when no
@@ -74,8 +75,10 @@ if (-not (Test-Path -LiteralPath $ExePath)) {
     exit 1
 }
 
-# A run folder of its own, so two runs never share a log or a report.
-$RunName = Get-Date -Format 'yyyy-MM-dd_HH-mm-ss'
+# A run folder of its own, so two runs never share a log or a report. The
+# process id tells apart two runs started in the same second, which the queue
+# below makes ordinary.
+$RunName = "$(Get-Date -Format 'yyyy-MM-dd_HH-mm-ss')_$PID"
 $RunRoot = Join-Path ([System.IO.Path]::GetTempPath()) "deckle-self-check\$RunName"
 $DataRoot = Join-Path $RunRoot 'data'
 if (-not $OutputFolder) { $OutputFolder = Join-Path $RunRoot 'out' }
@@ -100,8 +103,6 @@ if ($LinkRuntime) {
 function Get-OtherDeckleIds([int]$Except) {
     @(Get-Process -Name Deckle -ErrorAction SilentlyContinue | Where-Object { $_.Id -ne $Except } | ForEach-Object { $_.Id } | Sort-Object)
 }
-
-$Before = Get-OtherDeckleIds -Except 0
 
 # DECKLE_DATA_ROOT goes to the child's environment only: this process, and the
 # shell that called it, keep theirs.
@@ -164,42 +165,73 @@ public static class DeckleSelfCheckGuard
 
 $monitors = @([System.Windows.Forms.Screen]::AllScreens | ForEach-Object { $_.Bounds })
 $guardViolations = [System.Collections.Generic.List[string]]::new()
-$foregroundBefore = [DeckleSelfCheckGuard]::Foreground()
 $foregroundSeen = [System.Collections.Generic.HashSet[long]]::new()
-[void]$foregroundSeen.Add($foregroundBefore)
 $windowsSeen = 0
 
-$process = [System.Diagnostics.Process]::Start($psi)
-$deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
-while (-not $process.HasExited -and [DateTime]::UtcNow -lt $deadline) {
-    [void]$foregroundSeen.Add([DeckleSelfCheckGuard]::Foreground())
-    if ([DeckleSelfCheckGuard]::ForegroundPid() -eq [uint32]$process.Id) {
-        $guardViolations.Add('a window of the self-check had the foreground')
-    }
-    foreach ($entry in [DeckleSelfCheckGuard]::VisibleWindows([uint32]$process.Id)) {
-        $windowsSeen++
-        $rect = ($entry -split ':')[1] -split ','
-        $l = [int]$rect[0]; $t = [int]$rect[1]; $r = [int]$rect[2]; $b = [int]$rect[3]
-        foreach ($m in $monitors) {
-            if ($l -lt $m.Right -and $r -gt $m.Left -and $t -lt $m.Bottom -and $b -gt $m.Top) {
-                $guardViolations.Add("a self-check window ($l,$t,$r,$b) touched the monitor at $($m.Left),$($m.Top),$($m.Right),$($m.Bottom)")
-            }
+# One self-check at a time on this machine, whatever the session or the
+# worktree. The run compares the other Deckle processes before and after, so
+# that a run which touched the resident app shows: a second self-check starting
+# or ending in between is one more Deckle process, and failed that comparison
+# for a run that had touched nothing (2026-11-12, two sessions checking at
+# once). The runs queue behind one named mutex, as the builds do in
+# build-locked.ps1, and for the same reason a mutex: a killed run abandons it
+# and the next one takes it over. The wait is not counted in -TimeoutSeconds,
+# which times the app alone. A worktree still on an older copy of this script
+# does not queue, and can still fail a run here.
+$queue = [System.Threading.Mutex]::new($false, 'Global\Deckle.SelfCheck')
+$queueHeld = $false
+try {
+    while (-not $queueHeld) {
+        try {
+            $queueHeld = $queue.WaitOne([TimeSpan]::FromSeconds(30))
+        } catch [System.Threading.AbandonedMutexException] {
+            $queueHeld = $true
+        }
+        if (-not $queueHeld) {
+            Write-Host 'self-check: another self-check is running, waiting...' -ForegroundColor DarkGray
         }
     }
-    Start-Sleep -Milliseconds 20
-}
-$foregroundAfter = [DeckleSelfCheckGuard]::Foreground()
-[void]$foregroundSeen.Add($foregroundAfter)
-$timedOut = -not $process.HasExited
-if ($timedOut) {
-    # The tree: a hung app may have started helpers.
-    try { $process.Kill($true) } catch { }
-    $process.WaitForExit(10000) | Out-Null
-}
-$exitCode = if ($timedOut) { $null } else { $process.ExitCode }
-$childId = $process.Id
 
-$After = Get-OtherDeckleIds -Except $childId
+    $Before = Get-OtherDeckleIds -Except 0
+    $foregroundBefore = [DeckleSelfCheckGuard]::Foreground()
+    [void]$foregroundSeen.Add($foregroundBefore)
+
+    $process = [System.Diagnostics.Process]::Start($psi)
+    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
+    while (-not $process.HasExited -and [DateTime]::UtcNow -lt $deadline) {
+        [void]$foregroundSeen.Add([DeckleSelfCheckGuard]::Foreground())
+        if ([DeckleSelfCheckGuard]::ForegroundPid() -eq [uint32]$process.Id) {
+            $guardViolations.Add('a window of the self-check had the foreground')
+        }
+        foreach ($entry in [DeckleSelfCheckGuard]::VisibleWindows([uint32]$process.Id)) {
+            $windowsSeen++
+            $rect = ($entry -split ':')[1] -split ','
+            $l = [int]$rect[0]; $t = [int]$rect[1]; $r = [int]$rect[2]; $b = [int]$rect[3]
+            foreach ($m in $monitors) {
+                if ($l -lt $m.Right -and $r -gt $m.Left -and $t -lt $m.Bottom -and $b -gt $m.Top) {
+                    $guardViolations.Add("a self-check window ($l,$t,$r,$b) touched the monitor at $($m.Left),$($m.Top),$($m.Right),$($m.Bottom)")
+                }
+            }
+        }
+        Start-Sleep -Milliseconds 20
+    }
+    $foregroundAfter = [DeckleSelfCheckGuard]::Foreground()
+    [void]$foregroundSeen.Add($foregroundAfter)
+    $timedOut = -not $process.HasExited
+    if ($timedOut) {
+        # The tree: a hung app may have started helpers.
+        try { $process.Kill($true) } catch { }
+    }
+    # Until the process is gone, so the next run in the queue does not count it.
+    $process.WaitForExit(10000) | Out-Null
+    $exitCode = if ($timedOut) { $null } else { $process.ExitCode }
+    $childId = $process.Id
+
+    $After = Get-OtherDeckleIds -Except $childId
+} finally {
+    if ($queueHeld) { $queue.ReleaseMutex() }
+    $queue.Dispose()
+}
 
 # Known process-death codes, named so the summary says what happened.
 $crashNames = @{
