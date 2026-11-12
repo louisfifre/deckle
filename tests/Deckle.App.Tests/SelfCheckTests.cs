@@ -412,6 +412,28 @@ public class SelfCheckTests
         Assert.Equal(new byte[] { 0xF9, 0xF9, 0xF9, 255, 10, 20, 30, 255 }, bgra);
     }
 
+    // A page is rendered at its own bounds, its title against the image's
+    // edge: the margin gives it the room it has in the window.
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Pad_SurroundsTheImageWithTheSurfaceAndKeepsItsPixelsInPlace()
+    {
+        var surface = Windows.UI.Color.FromArgb(255, 3, 2, 1);
+        // Two pixels side by side.
+        byte[] bgra = [10, 20, 30, 255, 40, 50, 60, 255];
+
+        byte[] padded = SelfCheck.ElementImage.Pad(bgra, width: 2, height: 1, margin: 1, surface);
+
+        // 4 wide, 3 high: a row of surface, the image between two surface
+        // pixels, a row of surface.
+        byte[] s = [1, 2, 3, 255];
+        Assert.Equal(
+            [.. s, .. s, .. s, .. s,
+             .. s, 10, 20, 30, 255, 40, 50, 60, 255, .. s,
+             .. s, .. s, .. s, .. s],
+            padded);
+    }
+
     [Fact]
     [Trait("Category", "unit")]
     public void Flatten_AddsTheSurfaceInProportionToWhatTheAlphaLetsThrough()
