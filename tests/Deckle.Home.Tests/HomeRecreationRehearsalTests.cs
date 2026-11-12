@@ -27,6 +27,7 @@ public sealed class HomeRecreationRehearsalTests
     public const string ReplayApiKeyVariable = "DECKLE_HOME_REPLAY_API_KEY";
     public const string ReplayApiVersionVariable = "DECKLE_HOME_REPLAY_API_VERSION";
     public const string ReplaySpaceIdVariable = "DECKLE_HOME_REPLAY_SPACE_ID";
+    public const string LiveSpaceIdVariable = "DECKLE_HOME_REPLAY_LIVE_SPACE_ID";
     const string ExplicitTargetAlias = "home-replay-target";
 
     static CancellationToken Ct => TestContext.Current.CancellationToken;
@@ -99,6 +100,30 @@ public sealed class HomeRecreationRehearsalTests
 
         HomeRehearsalResult result = await new HomeRecreationRehearsal(api, aliases)
             .ReplayFromSheetAsync(sheetPath!, target!, Ct);
+
+        Write(result.Summary());
+    }
+
+    // The rebirth: DECKLE_HOME_REPLAY_SHEET replayed on the live Home, through
+    // the machine's credentials (the bot) and the alias `home` of spaces.json.
+    // DECKLE_HOME_REPLAY_LIVE_SPACE_ID is the switch: the exact id of the live
+    // space, repeated by the person; the run is refused unless the alias
+    // resolves to it and the space holds no object at all.
+    [Fact(Explicit = true)]
+    public async Task ReplaySheetOnLiveHome()
+    {
+        string? sheetPath = Variable(ReplaySheetVariable);
+        string? confirmed = Variable(LiveSpaceIdVariable);
+        Assert.SkipWhen(sheetPath is null || confirmed is null,
+            $"Rejeu non lancé : définis {ReplaySheetVariable} (chemin d'une feuille exportée) "
+            + $"et {LiveSpaceIdVariable} (id exact de l'espace Home vivant, celui que l'alias home désigne).");
+
+        AnytypeCredentials credentials = AnytypeCredentials.Load();
+        AnytypeSpaceAliases aliases = AnytypeSpaceAliases.Load(credentials.SpaceId);
+        using var api = new AnytypeApiClient(credentials);
+
+        HomeRehearsalResult result = await new HomeRecreationRehearsal(api, aliases)
+            .ReplayOnLiveHomeAsync(sheetPath!, confirmed!, Ct);
 
         Write(result.Summary());
     }

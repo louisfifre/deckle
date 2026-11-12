@@ -39,6 +39,22 @@ public sealed class HomeRecreationRehearsalSafetyTests
             HomeRecreationRehearsal.RefuseUnsafeTarget("", "home", "target-id"));
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("other-id")]
+    public void TheLiveHomeOpensOnlyOnItsOwnRepeatedId(string confirmed) =>
+        Assert.Throws<InvalidOperationException>(() =>
+            HomeRecreationRehearsal.RefuseUnconfirmedLiveTarget("old-id", "live-id", confirmed));
+
+    [Fact]
+    public void TheLiveHomeIsNeverTheSpaceItsSheetCameFrom() =>
+        Assert.Throws<InvalidOperationException>(() =>
+            HomeRecreationRehearsal.RefuseUnconfirmedLiveTarget("live-id", "live-id", "live-id"));
+
+    [Fact]
+    public void TheConfirmedLiveHomeIsAccepted() =>
+        HomeRecreationRehearsal.RefuseUnconfirmedLiveTarget("old-id", "live-id", " live-id ");
+
     [Fact]
     public async Task AReplayRefusesTheAliasItsSheetWasExportedFromBeforeAnyRead()
     {

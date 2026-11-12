@@ -70,6 +70,42 @@ internal sealed class HomeRecreationRehearsal(AnytypeApiClient api, AnytypeSpace
         return await RecreateAsync(sheet, targetAlias, targetId, sheetPath, ct).ConfigureAwait(false);
     }
 
+    // The rebirth itself: the sheet replayed on the live Home, the one target
+    // every rehearsal refuses. Two locks replace the test-space ones. The
+    // caller repeats the live space's id, so the alias `home` alone never
+    // opens the way: an alias still pointing at the old network's space, or
+    // edited by mistake, is caught before anything is read. And the space must
+    // hold no object at all, not only no Home object: a live space is replayed
+    // once, on the day it is born empty, and a second run is refused rather
+    // than doubling every object.
+    public async Task<HomeRehearsalResult> ReplayOnLiveHomeAsync(
+        string sheetPath, string confirmedSpaceId, CancellationToken ct)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sheetPath);
+        HomeReplaySheet sheet = HomeReplaySheet.Load(sheetPath);
+        string targetId = aliases.Resolve(LiveAlias);
+        RefuseUnconfirmedLiveTarget(sheet.SourceSpace, targetId, confirmedSpaceId);
+
+        HomeObjectIndex existing = await HomeObjectIndex.LoadAsync(api, targetId, ct).ConfigureAwait(false);
+        if (existing.Objects.Count > 0)
+            throw new InvalidOperationException(
+                $"Refusé : l'espace Home vivant contient déjà {existing.Objects.Count} objet(s). Le rejeu ne part "
+                + "que d'un espace vide : un second passage doublerait chaque objet.");
+        return await RecreateAsync(sheet, LiveAlias, targetId, sheetPath, ct).ConfigureAwait(false);
+    }
+
+    internal static void RefuseUnconfirmedLiveTarget(string sourceSpace, string targetId, string confirmedSpaceId)
+    {
+        if (string.IsNullOrWhiteSpace(confirmedSpaceId)
+            || !string.Equals(confirmedSpaceId.Trim(), targetId.Trim(), StringComparison.Ordinal))
+            throw new InvalidOperationException(
+                "Refusé : l'id confirmé ne correspond pas à l'espace que l'alias « home » désigne. "
+                + "Vérifie spaces.json, puis redonne l'id exact de l'espace Home vivant.");
+        if (string.Equals(sourceSpace.Trim(), targetId.Trim(), StringComparison.Ordinal))
+            throw new InvalidOperationException(
+                "Refusé : la feuille a été exportée de cet espace même ; elle ne s'y rejoue pas.");
+    }
+
     private async Task<HomeReplaySheet> ExportSheetAsync(
         string sourceId, string sourceAlias, string sheetPath, CancellationToken ct)
     {

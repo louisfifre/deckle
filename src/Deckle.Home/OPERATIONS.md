@@ -192,6 +192,14 @@ unless their variables are set. Running it is the maintainer's act.
    refusals hold, plus one: the target alias is never the alias the sheet
    was exported from.
 
+4. Replay on the live Home, once, when it is born empty. `ReplaySheetOnLiveHome`
+   with `DECKLE_HOME_REPLAY_SHEET` and `DECKLE_HOME_REPLAY_LIVE_SPACE_ID` (the
+   exact id the alias `home` must resolve to) runs the same steps as step 3 on
+   the alias `home`, through the machine's credentials. It refuses when the
+   alias resolves to another id, when the sheet was exported from that very
+   space, and when the space holds any object at all: a second run is refused,
+   never doubled.
+
 ```powershell
 $env:DECKLE_HOME_CREATE_TEST_SPACE = 'Home test'
 pwsh -File scripts/build-locked.ps1 -Test -Project tests/Deckle.Home.Tests/Deckle.Home.Tests.csproj --filter "FullyQualifiedName~HomeRecreationRehearsalTests.CreateTestSpace" /p:VSTestCLIRunSettings=xUnit.Explicit=only --logger "console;verbosity=detailed"
