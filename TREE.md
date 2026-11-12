@@ -2950,6 +2950,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── BarThicknessTests.cs
 │   │   │   ├── CompositionDiagGuardTests.cs
 │   │   │   ├── EngineResidencyTests.cs
+│   │   │   ├── ExplorerCompositionDiagBugNotes.md
 │   │   │   ├── ExplorerReinjectionBugNotes.md
 │   │   │   ├── InjectionBreakerTests.cs
 │   │   │   ├── JsonLineFramingTests.cs
