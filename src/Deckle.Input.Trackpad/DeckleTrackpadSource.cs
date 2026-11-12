@@ -93,6 +93,8 @@ public sealed class DeckleTrackpadSource : DeckleEventSource
             WriteEvent(EvtDragStarted);
     }
 
+    // reason=fourth-finger-withdrawn is a four-finger gesture whose fourth
+    // finger came after the press: the release went back to the press point.
     [Event(EvtDragEnded,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,

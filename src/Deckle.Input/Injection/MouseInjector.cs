@@ -26,6 +26,11 @@ namespace Deckle.Input;
 // could run before the input thread delivers the press, which would then
 // land at the wrong point.
 //
+// A press can also be taken back (ReleasePrimaryAtPress): the cursor
+// returns to the point where the button went down, then the button comes
+// up, in one batch for the same reason. What was dragged returns with it,
+// and the gesture lands as a click at its start.
+//
 // ReleasePrimary is idempotent and the press state is tracked, so a
 // safety release on stop/disconnect never double-fires.
 public sealed class MouseInjector
@@ -34,6 +39,9 @@ public sealed class MouseInjector
     private double _fractionY;
     private bool _pressed;
     private POINT? _pressOrigin;
+    // Where the button went down, for ReleasePrimaryAtPress; null when the
+    // cursor could not be read at that moment.
+    private POINT? _pressPoint;
 
     public bool IsPressed => _pressed;
 
@@ -61,10 +69,14 @@ public sealed class MouseInjector
         _pressOrigin = null;
 
         if (origin is POINT o && NativeMethods.GetCursorPos(out POINT current))
+        {
+            _pressPoint = o;
             return PressAt(o, current);
+        }
 
         _fractionX = 0;
         _fractionY = 0;
+        _pressPoint = NativeMethods.GetCursorPos(out POINT here) ? here : null;
         bool ok = Send(SendInputInterop.MOUSEEVENTF_LEFTDOWN, 0, 0);
         if (ok) _pressed = true;
         return ok;
@@ -73,8 +85,45 @@ public sealed class MouseInjector
     public bool ReleasePrimary()
     {
         _pressOrigin = null;
+        _pressPoint = null;
         if (!_pressed) return true;
         _pressed = false;
+        return Send(SendInputInterop.MOUSEEVENTF_LEFTUP, 0, 0);
+    }
+
+    /// <summary>
+    /// Releases the button where it went down: the cursor goes back to the
+    /// press point first, so what was dragged returns and the gesture lands
+    /// as a click there. Falls back to a release in place when the press
+    /// point is unknown.
+    /// </summary>
+    public bool ReleasePrimaryAtPress()
+    {
+        POINT? point = _pressPoint;
+        if (!_pressed || point is not POINT p) return ReleasePrimary();
+
+        _pressOrigin = null;
+        _pressPoint = null;
+        _pressed = false;
+        _fractionX = 0;
+        _fractionY = 0;
+
+        var batch = new[]
+        {
+            AbsoluteMove(p),
+            Input(SendInputInterop.MOUSEEVENTF_LEFTUP, 0, 0),
+        };
+        uint sent = SendInputInterop.SendInput(
+            (uint)batch.Length, batch, Marshal.SizeOf<SendInputInterop.MOUSE_INPUT>());
+        if (sent == batch.Length)
+        {
+            LastError = 0;
+            return true;
+        }
+
+        // The button did not come up with the batch: it must still come up,
+        // in place if need be, rather than stay held.
+        LastError = Marshal.GetLastWin32Error();
         return Send(SendInputInterop.MOUSEEVENTF_LEFTUP, 0, 0);
     }
 

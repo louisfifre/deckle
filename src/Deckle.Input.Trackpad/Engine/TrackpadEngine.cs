@@ -37,6 +37,13 @@ public sealed class TrackpadEngine : IDisposable
     // engine constant: it is a property of the hand, not a preference.
     private const double FourthFingerWindowMs = 20;
 
+    // How long after landing a fourth finger still withdraws a drag already
+    // pressed, releasing it where it was pressed. On 34 recorded sessions the
+    // fourth finger of a four-finger gesture that the pad reports late lands
+    // 44 to 191 ms after the three; a fourth finger later than that is one
+    // added on purpose in the middle of a drag, which ends where it stands.
+    private const double LateFourthFingerWindowMs = 200;
+
     // Start threshold as a fraction of the X range — the calibrated
     // minimum, perceptually instant. Not zero on purpose: at exactly 0 the
     // drag would commit on the first frame even without movement, turning
@@ -69,6 +76,7 @@ public sealed class TrackpadEngine : IDisposable
         _recognizer.DragStarted    += OnDragStarted;
         _recognizer.DragMoved      += OnDragMoved;
         _recognizer.DragEnded      += OnDragEnded;
+        _recognizer.DragWithdrawn  += OnDragWithdrawn;
         _recognizer.HoverAbandoned += OnHoverAbandoned;
         _recognizer.TapIgnored     += OnTapIgnored;
     }
@@ -216,9 +224,17 @@ public sealed class TrackpadEngine : IDisposable
             _dragMoves++;
     }
 
-    private void OnDragEnded(string reason)
+    private void OnDragEnded(string reason) => EndInjectedDrag(reason, atPress: false);
+
+    // A late fourth finger: the release goes back to the press point, so
+    // what the drag stretched or moved returns before Windows takes the
+    // four-finger gesture.
+    private void OnDragWithdrawn() => EndInjectedDrag("fourth-finger-withdrawn", atPress: true);
+
+    private void EndInjectedDrag(string reason, bool atPress)
     {
-        if (_injector.ReleasePrimary())
+        bool released = atPress ? _injector.ReleasePrimaryAtPress() : _injector.ReleasePrimary();
+        if (released)
             CloseInjectionIncident();
         else
         {
@@ -298,6 +314,7 @@ public sealed class TrackpadEngine : IDisposable
 
         _recognizer.GraceDelayMs         = GraceDelayMs;
         _recognizer.FourthFingerWindowMs = FourthFingerWindowMs;
+        _recognizer.LateFourthFingerWindowMs = LateFourthFingerWindowMs;
         _recognizer.StartThresholdUnits  = StartThresholdRatio * xRange;
         _recognizer.MaxFrameDeltaUnits   = MaxFrameDeltaRatio * xRange;
         ApplyPressGuards(_recognizer, TrackpadSettingsService.Instance.Current);
