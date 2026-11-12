@@ -12,11 +12,12 @@ namespace Deckle.Llm.Rewrite.Views;
 // ─── Dictation section of LlmPage: the dictation steps ─────────────────────
 //
 // specs/deckle-dictation-rewriting.md, group Page. "Rewrite dictations" alone;
-// while it is on, the timeline (RewriteStepTimeline, which shows and never
-// writes), one card per step (LlmSettings.Dictation.Steps), then "Add a step".
-// A step card holds its profile, its length and its "Streaming" switch; the
-// first one has "Start at" in place of "From" and no remove button, since it
-// always exists.
+// while it is on, "Rewrite while I speak" (one switch for every step, on
+// streaming transcription only), the timeline (RewriteStepTimeline, which
+// shows and never writes), one card per step (LlmSettings.Dictation.Steps),
+// then "Add a step". A step card holds its profile, its length and, while
+// rewriting as the person speaks, its block size; the first one has "Start
+// at" in place of "From" and no remove button, since it always exists.
 //
 // The lists depend on the defined profiles: the host must call Reload() after
 // any mutation of the Profiles section so added, renamed or removed profiles
@@ -50,6 +51,10 @@ public sealed partial class LlmDictationSection : UserControl
     // for the person's edit.
     private bool _syncingLengths;
 
+    // The "in blocks of" field of each step card: shown while the steps
+    // rewrite as the person speaks, hidden and kept otherwise (Page 6).
+    private readonly List<FrameworkElement> _blockFields = new();
+
     public LlmDictationSection()
     {
         InitializeComponent();
@@ -58,16 +63,32 @@ public sealed partial class LlmDictationSection : UserControl
     private static LlmSettings Settings => LlmSettingsService.Instance.Current;
     private static DictationRewriteSettings Dictation => Settings.Dictation;
 
-    // Page 8: without streaming transcription no passage exists before Stop,
-    // so the steps' "Streaming" switch is hidden and every step reads "At stop".
+    // Page 3: without streaming transcription nothing is transcribed before
+    // Stop, so "Rewrite while I speak" is hidden and every step rewrites at
+    // Stop.
     private static bool TranscriptionStreams => LlmSettingsModule.TranscriptionStreams?.Invoke() ?? true;
+
+    // Whether the steps rewrite as the person speaks on this machine: the
+    // switch, where it applies.
+    private static bool RewritesWhileSpeaking => TranscriptionStreams && Dictation.RewriteWhileSpeaking;
 
     public void Reload()
     {
         _loading = true;
         EnableToggle.IsOn = Dictation.Enabled;
+        WhileSpeakingToggle.IsOn = Dictation.RewriteWhileSpeaking;
         _loading = false;
         RebuildSteps();
+    }
+
+    // Page 7: the switch moves no length; it shows or hides the block sizes
+    // and redraws the timeline in the other mode.
+    private void WhileSpeakingToggle_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_loading || WhileSpeakingToggle.IsOn == Dictation.RewriteWhileSpeaking) return;
+        Dictation.RewriteWhileSpeaking = WhileSpeakingToggle.IsOn;
+        LlmSettingsService.Instance.Save();
+        ApplyState();
     }
 
     private void EnableToggle_Toggled(object sender, RoutedEventArgs e)
@@ -83,8 +104,8 @@ public sealed partial class LlmDictationSection : UserControl
         if (NextStepChars() is not { } chars || Settings.Profiles.Count == 0) return;
 
         // Taken by the first profile no step names yet (else the first
-        // profile), with the moment of the step before it: the field and the
-        // list move it from there.
+        // profile), with the block size of the step before it: the fields and
+        // the list move it from there.
         List<RewriteStep> steps = Dictation.Steps;
         RewriteProfile profile = Settings.Profiles.FirstOrDefault(p => !steps.Any(step => step.ProfileId == p.Id))
             ?? Settings.Profiles[0];
@@ -108,6 +129,7 @@ public sealed partial class LlmDictationSection : UserControl
     {
         StepsHost.Children.Clear();
         _lengthBoxes.Clear();
+        _blockFields.Clear();
         List<RewriteStep> steps = Dictation.Steps;
         for (int i = 0; i < steps.Count; i++)
             StepsHost.Children.Add(BuildStepCard(i));
@@ -119,6 +141,9 @@ public sealed partial class LlmDictationSection : UserControl
     private void ApplyState()
     {
         StepsPanel.Visibility = Dictation.Enabled ? Visibility.Visible : Visibility.Collapsed;
+        WhileSpeakingCard.Visibility = TranscriptionStreams ? Visibility.Visible : Visibility.Collapsed;
+        Visibility blocks = RewritesWhileSpeaking ? Visibility.Visible : Visibility.Collapsed;
+        foreach (FrameworkElement field in _blockFields) field.Visibility = blocks;
         AddStepButton.IsEnabled = NextStepChars() is not null && Settings.Profiles.Count > 0;
         RefreshTimeline();
     }
@@ -153,15 +178,13 @@ public sealed partial class LlmDictationSection : UserControl
                 box.Maximum = i + 1 < steps.Count
                     ? Math.Max(box.Minimum, DictationRewriteSettings.Below(steps[i + 1].FromChars))
                     : DictationRewriteSettings.MaxChars;
-                int grain = DictationRewriteSettings.GrainAt(steps[i].FromChars);
-                box.SmallChange = grain;
-                box.LargeChange = grain * 10;
+                SetGrain(box, steps[i].FromChars);
             }
         }
         finally { _syncingLengths = false; }
     }
 
-    // [Profile ▾]   (Start at | From) [1000] characters   Streaming [○]   [🗑]
+    // [Profile ▾]   (Start at | From) [1000] characters   in blocks of [600]   [🗑]
     // The first step's length shows only while "Start at" is ticked: off, the
     // step starts with the dictation and a length would not apply.
     private SettingsCard BuildStepCard(int index)
@@ -230,32 +253,20 @@ public sealed partial class LlmDictationSection : UserControl
         length.Children.Add(lengthBox);
         length.Children.Add(characters);
 
-        var streamingToggle = new ToggleSwitch
-        {
-            IsOn = Dictation.RewriteWhileSpeaking,
-            OnContent = "",
-            OffContent = "",
-            MinWidth = 0,
-            VerticalAlignment = VerticalAlignment.Center,
-        };
-        string streamingName = Loc.GetFrom(Module, "LlmStep_Streaming");
-        AutomationProperties.SetName(streamingToggle, streamingName);
-        streamingToggle.Toggled += (_, _) =>
-        {
-            if (streamingToggle.IsOn == Dictation.RewriteWhileSpeaking) return;
-            Dictation.RewriteWhileSpeaking = streamingToggle.IsOn;
-            LlmSettingsService.Instance.Save();
-            RefreshTimeline();
-        };
-        var streaming = new StackPanel
+        // Page 6: the size of the stretch this step's profile rewrites in one
+        // go, shown only while the steps rewrite as the person speaks.
+        var blocks = new StackPanel
         {
             Orientation = Orientation.Horizontal,
-            Spacing = 12,
+            Spacing = 8,
             VerticalAlignment = VerticalAlignment.Center,
-            Visibility = TranscriptionStreams ? Visibility.Visible : Visibility.Collapsed,
+            Visibility = RewritesWhileSpeaking ? Visibility.Visible : Visibility.Collapsed,
         };
-        streaming.Children.Add(Caption(streamingName));
-        streaming.Children.Add(streamingToggle);
+        blocks.Children.Add(Caption(Loc.GetFrom(Module, "LlmStep_InBlocksOf")));
+        // The unit is the length's, just before it, as the mockup reads:
+        // a second "characters" would push the card past its width.
+        blocks.Children.Add(BuildBlockBox(step));
+        _blockFields.Add(blocks);
 
         // The first card keeps the room of the remove button, laid out but
         // not shown, so every card's fields line up on the same edges.
@@ -289,7 +300,7 @@ public sealed partial class LlmDictationSection : UserControl
         Place(row, profileCombo, 0);
         profileCombo.HorizontalAlignment = HorizontalAlignment.Stretch;
         Place(row, length, 1);
-        Place(row, streaming, 2);
+        Place(row, blocks, 2);
         Place(row, remove, 3);
 
         return new SettingsCard
@@ -308,22 +319,7 @@ public sealed partial class LlmDictationSection : UserControl
 
     private NumberBox BuildLengthBox(RewriteStep step)
     {
-        var lengthBox = new NumberBox
-        {
-            Value = step.FromChars,
-            // Arrows on hover and focus, in a flyout that pushes no layout.
-            SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
-            ValidationMode = NumberBoxValidationMode.InvalidInputOverwritten,
-            MinWidth = 96,
-            VerticalAlignment = VerticalAlignment.Center,
-            // Digits only, no grouping, as every number field of the app.
-            NumberFormatter = new Windows.Globalization.NumberFormatting.DecimalFormatter
-            {
-                IntegerDigits = 1,
-                FractionDigits = 0,
-                IsGrouped = false,
-            },
-        };
+        NumberBox lengthBox = NewNumberBox(step.FromChars);
         AutomationProperties.SetName(lengthBox, Loc.GetFrom(Module, "LlmStep_LengthName"));
         _lengthBoxes.Add(lengthBox);
 
@@ -353,6 +349,64 @@ public sealed partial class LlmDictationSection : UserControl
             ApplyState();
         };
         return lengthBox;
+    }
+
+    // The block size: on the grain of its size, within the block bounds, and
+    // written at the commit of the field, like a length.
+    private NumberBox BuildBlockBox(RewriteStep step)
+    {
+        var blockBox = NewNumberBox(step.BlockChars);
+        blockBox.Minimum = DictationRewriteSettings.MinBlockChars;
+        blockBox.Maximum = DictationRewriteSettings.MaxBlockChars;
+        SetGrain(blockBox, step.BlockChars);
+        AutomationProperties.SetName(blockBox, Loc.GetFrom(Module, "LlmStep_BlockName"));
+
+        blockBox.ValueChanged += (_, _) =>
+        {
+            if (_syncingLengths) return;
+            int chars = double.IsNaN(blockBox.Value)
+                ? step.BlockChars
+                : DictationRewriteSettings.SnapBlock(blockBox.Value);
+            if (blockBox.Value != chars)
+            {
+                _syncingLengths = true;
+                try { blockBox.Value = chars; }
+                finally { _syncingLengths = false; }
+            }
+            if (chars == step.BlockChars) return;
+
+            step.BlockChars = chars;
+            SetGrain(blockBox, chars);
+            LlmSettingsService.Instance.Save();
+            RefreshTimeline();
+        };
+        return blockBox;
+    }
+
+    private static NumberBox NewNumberBox(int value) => new()
+    {
+        Value = value,
+        // Arrows on hover and focus, in a flyout that pushes no layout.
+        SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
+        ValidationMode = NumberBoxValidationMode.InvalidInputOverwritten,
+        MinWidth = 96,
+        VerticalAlignment = VerticalAlignment.Center,
+        // Digits only, no grouping, as every number field of the app.
+        NumberFormatter = new Windows.Globalization.NumberFormatting.DecimalFormatter
+        {
+            IntegerDigits = 1,
+            FractionDigits = 0,
+            IsGrouped = false,
+        },
+    };
+
+    // The arrows step by the grain of the current value, finely on a short
+    // one and coarsely on a long one.
+    private static void SetGrain(NumberBox box, int chars)
+    {
+        int grain = DictationRewriteSettings.GrainAt(chars);
+        box.SmallChange = grain;
+        box.LargeChange = grain * 10;
     }
 
     private static TextBlock Caption(string text) => new()

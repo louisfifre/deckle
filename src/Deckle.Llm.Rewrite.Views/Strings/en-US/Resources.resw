@@ -377,24 +377,24 @@
   </data>
   <!-- LlmDictationSection: the dictation steps and their timeline. The
        section carries only these words (specs/deckle-dictation-rewriting.md,
-       Page 9); the names below them are for assistive technology only. -->
+       Page 13); the names below them are for assistive technology only. -->
   <data name="LlmDictationBlock.Title" xml:space="preserve">
     <value>Dictation</value>
   </data>
   <data name="LlmDictationEnableCard.Header" xml:space="preserve">
     <value>Rewrite dictations</value>
   </data>
-  <data name="LlmTimeline_StreamingLane" xml:space="preserve">
-    <value>Streaming</value>
+  <data name="LlmDictationWhileSpeakingCard.Header" xml:space="preserve">
+    <value>Rewrite while I speak</value>
   </data>
-  <data name="LlmTimeline_AtStopLane" xml:space="preserve">
-    <value>At stop</value>
+  <data name="LlmDictationWhileSpeakingCard.Description" xml:space="preserve">
+    <value>Rewrite in blocks as you speak, rather than all at once when you stop</value>
   </data>
-  <data name="LlmTimeline_AsSaid" xml:space="preserve">
-    <value>As said</value>
+  <data name="LlmTimeline_Caption" xml:space="preserve">
+    <value>Pale blocks: when a step takes over, it first rewrites what you already said.</value>
   </data>
   <data name="LlmTimeline_Length_Format" xml:space="preserve">
-    <value>{0} · {1} min</value>
+    <value>{0} · ≈ {1} min</value>
     <comment>{0} a length in characters, {1} the approximate minutes of speech it takes.</comment>
   </data>
   <data name="LlmTimeline_LengthUnderMinute_Format" xml:space="preserve">
@@ -413,8 +413,19 @@
   <data name="LlmStep_Characters" xml:space="preserve">
     <value>characters</value>
   </data>
-  <data name="LlmStep_Streaming" xml:space="preserve">
-    <value>Streaming</value>
+  <data name="LlmStep_InBlocksOf" xml:space="preserve">
+    <value>in blocks of</value>
+  </data>
+  <data name="LlmStep_BlockName" xml:space="preserve">
+    <value>Block size in characters</value>
+  </data>
+  <data name="LlmTimeline_RowRange_Format" xml:space="preserve">
+    <value>{0}: from {1} to {2} characters</value>
+    <comment>{0} a profile name, {1} and {2} lengths in characters.</comment>
+  </data>
+  <data name="LlmTimeline_RowBlocks_Format" xml:space="preserve">
+    <value>{0}: blocks of {1} characters, up to {2}</value>
+    <comment>{0} a profile name, {1} a block size and {2} a length, in characters.</comment>
   </data>
   <data name="LlmStep_LengthName" xml:space="preserve">
     <value>Length in characters</value>

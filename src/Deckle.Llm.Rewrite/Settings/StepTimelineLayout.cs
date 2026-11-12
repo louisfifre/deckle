@@ -3,26 +3,35 @@ using System.Linq;
 namespace Deckle.Llm.Rewrite;
 
 // What the timeline of the dictation steps draws (specs/deckle-dictation-
-// rewriting.md, Page 7), apart from how it is drawn so a test can read it.
+// rewriting.md, Page 9 to 12), apart from how it is drawn so a test can read
+// it.
 //
-// The axis has one column per length where something starts, every column
-// the same width whatever the characters between two lengths: a step at
-// 30,000 characters (forty-five minutes) and one at 1,000 both stay readable,
-// where a proportional axis would crush the short ones. The last column runs
-// on past the highest length.
+// One row per step, in step order, the same rows in both modes; each row
+// holds spans on one axis of characters, proportional, from 0 to AxisChars:
+//   - "Rewrite while I speak" off (or no streaming transcription): one span,
+//     the range of lengths the step takes, from its length to the next
+//     step's (the last one to the end of the axis);
+//   - on: the step's blocks, from the beginning of the dictation to where the
+//     next step takes over. The blocks that end before the step's own length
+//     are Pale: the text it rewrites at once when it takes over.
 //
-// Two lanes. Streaming: from each length, the profile of the highest
-// streaming step reached, or "as said" before any; a step "at Stop" does not
-// interrupt it (Panel 4). At stop: the profile of a step "at Stop" while it
-// is the highest step reached, nothing elsewhere. Neighbouring columns with
-// the same content make one segment.
+// The axis runs half as far again past the last step's length, so the last
+// step shows a stretch of its own, and ends on a tick. The ticks fall on the
+// 1-2-5 ladder, four intervals or fewer, so their labels fit a settings
+// card's width.
 public sealed record StepTimelineLayout(
-    IReadOnlyList<int> Lengths,
-    IReadOnlyList<TimelineSegment> Streaming,
-    IReadOnlyList<TimelineSegment> AtStop)
+    int AxisChars,
+    IReadOnlyList<int> Ticks,
+    IReadOnlyList<TimelineRow> Rows,
+    bool WhileSpeaking)
 {
-    // transcriptionStreams false: no passage exists before Stop, so every
-    // step lands on the "At stop" lane and the Streaming lane reads as said.
+    // An axis never shorter than this: a single step from the beginning
+    // still shows about three minutes of speech.
+    private const int MinAxisChars = 2000;
+    private const int MaxIntervals = 4;
+
+    // transcriptionStreams false: nothing is transcribed before Stop, so the
+    // timeline shows every step's range whatever "Rewrite while I speak" says.
     // profileName names a step's profile; a profile that no longer exists
     // shows as its id, so the step is still told apart.
     public static StepTimelineLayout For(
@@ -30,46 +39,59 @@ public sealed record StepTimelineLayout(
         Func<string, string?> profileName,
         bool transcriptionStreams)
     {
-        var steps = dictation.Steps
-            .Select((step, i) => (
-                From: dictation.StartOf(i),
-                Name: profileName(step.ProfileId) ?? step.ProfileId,
-                Streaming: transcriptionStreams && dictation.RewriteWhileSpeaking))
-            .ToList();
+        bool whileSpeaking = transcriptionStreams && dictation.RewriteWhileSpeaking;
+        List<RewriteStep> steps = dictation.Steps;
+        int lastStart = steps.Count > 0 ? dictation.StartOf(steps.Count - 1) : 0;
 
-        List<int> lengths = steps.Select(step => step.From).Prepend(0).Distinct().Order().ToList();
+        int raw = Math.Max(lastStart + lastStart / 2, MinAxisChars);
+        int interval = Interval(raw);
+        int axis = (raw + interval - 1) / interval * interval;
+        List<int> ticks = Enumerable.Range(0, axis / interval + 1).Select(i => i * interval).ToList();
 
-        var streaming = new List<TimelineSegment>();
-        var atStop = new List<TimelineSegment>();
-        for (int column = 0; column < lengths.Count; column++)
+        var rows = new List<TimelineRow>(steps.Count);
+        for (int i = 0; i < steps.Count; i++)
         {
-            int at = lengths[column];
-            var reached = steps.Where(step => step.From <= at).ToList();
+            RewriteStep step = steps[i];
+            int from = dictation.StartOf(i);
+            int to = i + 1 < steps.Count ? dictation.StartOf(i + 1) : axis;
+            int block = Math.Clamp(step.BlockChars,
+                DictationRewriteSettings.MinBlockChars, DictationRewriteSettings.MaxBlockChars);
 
-            string? streamingName = reached.LastOrDefault(step => step.Streaming).Name;
-            Extend(streaming, column, streamingName, asSaid: streamingName is null);
+            var spans = new List<TimelineSpan>();
+            if (whileSpeaking)
+            {
+                for (int start = 0; start < to; start += block)
+                {
+                    int end = Math.Min(start + block, to);
+                    spans.Add(new TimelineSpan(start, end, Pale: end <= from));
+                }
+            }
+            else
+            {
+                spans.Add(new TimelineSpan(from, to, Pale: false));
+            }
 
-            if (reached.Count > 0 && !reached[^1].Streaming)
-                Extend(atStop, column, reached[^1].Name, asSaid: false);
+            rows.Add(new TimelineRow(profileName(step.ProfileId) ?? step.ProfileId, from, to, block, spans));
         }
 
-        return new StepTimelineLayout(lengths, streaming, atStop);
+        return new StepTimelineLayout(axis, ticks, rows, whileSpeaking);
     }
 
-    // Lengthens the lane's last segment when it holds the same thing and ends
-    // where this column starts, or opens a new one.
-    private static void Extend(List<TimelineSegment> lane, int column, string? name, bool asSaid)
+    // The smallest step on the 1-2-5 ladder that cuts length into at most
+    // MaxIntervals intervals.
+    private static int Interval(int length)
     {
-        if (lane.Count > 0 && lane[^1] is var last
-            && last.ToColumn == column && last.Name == name && last.AsSaid == asSaid)
-        {
-            lane[^1] = last with { ToColumn = column + 1 };
-            return;
-        }
-        lane.Add(new TimelineSegment(column, column + 1, name, asSaid));
+        for (int decade = 100; ; decade *= 10)
+            foreach (int factor in (ReadOnlySpan<int>)[1, 2, 5])
+                if (decade * factor * MaxIntervals >= length) return decade * factor;
     }
 }
 
-// Columns FromColumn to ToColumn, exclusive. AsSaid: no profile rewrites the
-// dictation there (Name is null).
-public sealed record TimelineSegment(int FromColumn, int ToColumn, string? Name, bool AsSaid);
+// One step's row: its name, the lengths it takes (FromChars to ToChars), its
+// block size, and the spans drawn on it.
+public sealed record TimelineRow(
+    string Name, int FromChars, int ToChars, int BlockChars, IReadOnlyList<TimelineSpan> Spans);
+
+// A stretch of the axis, FromChars to ToChars. Pale: a block the step
+// rewrites at once when it takes over, before its own length.
+public sealed record TimelineSpan(int FromChars, int ToChars, bool Pale);
