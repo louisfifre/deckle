@@ -9,11 +9,12 @@ public sealed partial class TranscriptionEngine
     // What the take delivers once its raw text is on the clipboard
     // (specs/deckle-dictation-rewriting.md, group Stop):
     //   - a profile's own shortcut rewrites the whole raw text with it;
-    //   - else the highest step the raw text reaches decides: streaming, the
-    //     take is its passages, already sent during the recording
-    //     (TranscriptionEngine.BatchRewrite.cs); at Stop, its profile rewrites
-    //     the whole raw text, while what was copied first (the passages read
-    //     so far, or the raw text) waits on the clipboard;
+    //   - else the highest step the raw text reaches decides: with "Rewrite
+    //     while I speak", the take is its blocks, already sent during the
+    //     recording, and only the block left open waits for the step
+    //     (TranscriptionEngine.BatchRewrite.cs); without it, the step's
+    //     profile rewrites the whole raw text, while the raw text copied first
+    //     waits on the clipboard;
     //   - below the first step, the take stays as said.
     //
     // delivered is what the clipboard holds now: the fallback whenever a
@@ -21,6 +22,7 @@ public sealed partial class TranscriptionEngine
     //
     // streaming is the live take's plan and rewriter; null on the monolithic
     // strategy, where the plan is read here and every step rewrites at Stop.
+    // The rewriter exists only when the plan rewrites while speaking.
     private FinalizeRewrite ApplyRewrite(
         string rawText, string delivered, bool isFileRun, StreamingRewrite? streaming = null)
     {
@@ -41,15 +43,9 @@ public sealed partial class TranscriptionEngine
         if (plan.Highest(rawText.Length) is not { Profile: { } profile } top)
             return FinalizeRewrite.Verbatim(delivered);
 
-        DictationBatchRewriter? rewriter = streaming?.Rewriter;
-        if (top.Streaming && rewriter is not null)
-            return ApplyPassageRewrite(delivered, rewriter, profile);
+        if (streaming?.Rewriter is { } rewriter)
+            return ApplyPassageRewrite(delivered, rewriter, profile, top.BlockChars);
 
-        if (rewriter?.Profile is { } streamed)
-        {
-            DeckleLlmSource.Log.BatchRewriteSuperseded();
-            DeckleLlmSource.Log.BatchRewriteSupersededDetail(rewriter.BatchCount, streamed.Name, profile.Name);
-        }
         return RewriteWhole(rawText, delivered, profile);
     }
 

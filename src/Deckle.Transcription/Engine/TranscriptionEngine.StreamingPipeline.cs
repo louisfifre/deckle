@@ -275,13 +275,13 @@ public sealed partial class TranscriptionEngine
 
         if (consumed.BackendAudio is not null) EmitPreprocessedTelemetry(consumed.BackendAudio);
 
-        // Sends the last open passage now rather than at Assemble, so its
+        // Sends the last open block now rather than at Assemble, so its
         // request runs while the finalize copies the text. Only here, on the
-        // path that finalizes, and only when the take ends on a streaming step:
-        // an abandoned take, or one whose whole text a step "at Stop" rewrites,
-        // must not send a request whose result nobody reads.
+        // path that finalizes, and only when the take reached a step: an
+        // abandoned take, or one that stays as said, must not send a request
+        // whose result nobody reads.
         if (rewriteTake.Rewriter is { } rewriter
-            && rewriteTake.Plan.Highest(consumed.Text.Length) is { Streaming: true })
+            && rewriteTake.Plan.Highest(consumed.Text.Length) is not null)
             rewriter.Complete();
 
         return new PipelineProduction(

@@ -84,28 +84,6 @@ public sealed partial class DeckleLlmSource
         if (IsEnabled()) WriteEvent(EvtBatchRewriteReadingIgnored, batch_index, generation);
     }
 
-    // At Stop the highest step reached rewrites the whole text, so the
-    // passages streamed during the dictation are not assembled: their reading
-    // went to the clipboard first and is replaced when the whole rewrite
-    // returns. The requests already sent were paid for.
-    [Event(EvtBatchRewriteSuperseded,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "The highest step reached rewrites the whole text at Stop, after the streamed passages")]
-    public void BatchRewriteSuperseded()
-    {
-        if (IsEnabled()) WriteEvent(EvtBatchRewriteSuperseded);
-    }
-
-    [Event(EvtBatchRewriteSupersededDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "passages={0} | streamed_profile={1} | stop_profile={2}")]
-    public void BatchRewriteSupersededDetail(int passages, string streamed_profile, string stop_profile)
-    {
-        if (IsEnabled()) WriteEvent(EvtBatchRewriteSupersededDetail, new object[] { passages, streamed_profile, stop_profile });
-    }
-
     // reason: no_result (the service gave no text; its own Warning just
     // before says why), blank (it answered whitespace), exception (it threw;
     // ex_type and ex_message say what), task_faulted (the batch task itself

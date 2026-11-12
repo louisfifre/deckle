@@ -4,12 +4,12 @@ using Xunit;
 namespace Deckle.Transcription.Tests;
 
 // The step plan of a take (specs/deckle-dictation-rewriting.md), with the
-// example settings of the spec: Affinage first, Lissage from 4,000 streaming,
-// Arrangement from 12,000 at Stop.
+// example settings of the spec: Affinage first in blocks of 600, Lissage from
+// 4,000 in blocks of 2,000, Arrangement from 12,000 in blocks of 6,000.
 [Trait("Category", "unit")]
 public sealed class RewriteProfileSelectionTests
 {
-    private static LlmSettings Settings(bool startAt = false, bool firstStreams = true)
+    private static LlmSettings Settings(bool startAt = false, bool whileSpeaking = true)
     {
         var settings = new LlmSettings
         {
@@ -25,7 +25,7 @@ public sealed class RewriteProfileSelectionTests
         {
             Enabled = true,
             StartAtLength = startAt,
-            RewriteWhileSpeaking = firstStreams,
+            RewriteWhileSpeaking = whileSpeaking,
             Steps =
             [
                 new RewriteStep { ProfileId = "aff", FromChars = 1000, BlockChars = 600 },
@@ -60,34 +60,43 @@ public sealed class RewriteProfileSelectionTests
         Assert.Equal("aff", plan.Highest(1500)?.Profile?.Id);
     }
 
-    // Panel 4: past a step "at Stop", the passages go on with the highest
-    // streaming step reached.
+    // Page 6 and Behaviours: each step carries its own block size, and the
+    // text closes at the first step's before any step is reached.
     [Fact]
-    public void PastAStepAtStopThePassagesGoOnWithTheStreamingStepBelow()
+    public void EachStepCarriesItsBlockSize()
     {
         RewriteStepPlan plan = Plan(Settings());
 
-        Assert.Equal("lis", plan.HighestStreaming(20000)?.Profile?.Id);
-        Assert.False(plan.Highest(20000)!.Value.Streaming);
+        Assert.Equal([600, 2000, 6000], plan.Steps.Select(step => step.BlockChars));
+        Assert.Equal(600, plan.FirstBlockChars);
+        Assert.Equal(6000, plan.Highest(20000)?.BlockChars);
+    }
+
+    // Page 7: switching "Rewrite while I speak" changes no length.
+    [Theory]
+    [InlineData(3999, "aff")]
+    [InlineData(4000, "lis")]
+    [InlineData(12000, "arr")]
+    public void TheSameStepTakesTheDictationInBothModes(int chars, string profileId)
+    {
+        Assert.Equal(profileId, Plan(Settings(whileSpeaking: true)).Highest(chars)?.Profile?.Id);
+        Assert.Equal(profileId, Plan(Settings(whileSpeaking: false)).Highest(chars)?.Profile?.Id);
     }
 
     [Fact]
-    public void BelowTheFirstStreamingStepNothingStreams()
+    public void WithRewriteWhileSpeakingOffNothingLeavesBeforeStop()
     {
-        RewriteStepPlan plan = Plan(Settings(firstStreams: false));
-
-        Assert.Null(plan.HighestStreaming(3000));
-        Assert.Equal("lis", plan.HighestStreaming(4000)?.Profile?.Id);
+        Assert.False(Plan(Settings(whileSpeaking: false)).RewritesWhileSpeaking);
+        Assert.True(Plan(Settings(whileSpeaking: true)).RewritesWhileSpeaking);
     }
 
-    // Page 8: when transcription does not stream, every step rewrites at Stop.
+    // Page 3: when transcription does not stream, every step rewrites at Stop.
     [Fact]
     public void WithoutStreamingTranscriptionEveryStepRewritesAtStop()
     {
         RewriteStepPlan plan = Plan(Settings(), streaming: false);
 
-        Assert.False(plan.HasStreamingStep);
-        Assert.All(plan.Steps, step => Assert.False(step.Streaming));
+        Assert.False(plan.RewritesWhileSpeaking);
         Assert.Equal("lis", plan.Highest(5000)?.Profile?.Id);
     }
 
@@ -115,7 +124,7 @@ public sealed class RewriteProfileSelectionTests
 
         Assert.Equal("arr", plan.Forced?.Id);
         Assert.Empty(plan.Steps);
-        Assert.False(plan.HasStreamingStep);
+        Assert.False(plan.RewritesWhileSpeaking);
     }
 
     // A step whose profile was deleted is skipped: the step below it takes the

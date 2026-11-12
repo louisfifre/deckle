@@ -124,7 +124,7 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     public const int EvtBatchRewriteProfileChanged       = 85;
     public const int EvtBatchRewriteProfileChangedDetail = 86;
     public const int EvtBatchRewriteReadingIgnored       = 87;
-    public const int EvtBatchRewriteSuperseded           = 88;
-    public const int EvtBatchRewriteSupersededDetail     = 89;
+    // 88 retired.
+    // 89 retired.
 
 }

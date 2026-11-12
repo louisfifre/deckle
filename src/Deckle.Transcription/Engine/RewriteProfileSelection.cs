@@ -12,24 +12,43 @@ namespace Deckle.Transcription;
 // rewriting switched off: the press asked for that rewrite.
 //
 // Steps: in order, each with where it starts, its profile (null when the one
-// it names no longer exists: the step is then skipped) and its moment. Empty
-// when rewriting or rewriting dictations is off.
-internal sealed record RewriteStepPlan(RewriteProfile? Forced, IReadOnlyList<PlannedStep> Steps)
+// it names no longer exists: the step is then skipped) and its block size.
+// Empty when rewriting or rewriting dictations is off.
+//
+// WhileSpeaking: "Rewrite while I speak" holds for this take, on streaming
+// transcription only. On, the highest step reached rewrites block by block
+// while the person speaks, one step at a time; off, it rewrites the whole
+// raw text at Stop. The lengths are the same either way.
+internal sealed record RewriteStepPlan(
+    RewriteProfile? Forced, IReadOnlyList<PlannedStep> Steps, bool WhileSpeaking = false)
 {
     public static readonly RewriteStepPlan None = new(null, []);
 
-    // A step that streams in this plan: a take with none has no passage to
-    // send while the person speaks.
-    public bool HasStreamingStep => Forced is null && Steps.Any(step => step.Streaming && step.Profile is not null);
+    // Whether blocks leave while the person speaks: never for a profile's
+    // own shortcut, nor without a step whose profile exists.
+    public bool RewritesWhileSpeaking =>
+        Forced is null && WhileSpeaking && Steps.Any(step => step.Profile is not null);
+
+    // The block size text closes at before any step is reached: the first
+    // step that can be reached's, so that reaching it finds the text already
+    // cut its way.
+    public int FirstBlockChars =>
+        Steps.FirstOrDefault(step => step.Profile is not null).BlockChars is var chars and > 0
+            ? chars
+            : DictationRewriteSettings.DefaultBlockChars;
 
     // The highest step rawChars reaches whose profile exists, or null below
-    // the first one.
-    public PlannedStep? Highest(int rawChars) => HighestWhere(rawChars, streamingOnly: false);
-
-    // The same among the streaming steps: the profile passages are rewritten
-    // with while the person speaks. A step "at Stop" crossed in between does
-    // not change it (the panel goes on with the streaming step below).
-    public PlannedStep? HighestStreaming(int rawChars) => HighestWhere(rawChars, streamingOnly: true);
+    // the first one: the step that takes the dictation, and while the person
+    // speaks the one rewriting.
+    public PlannedStep? Highest(int rawChars)
+    {
+        for (int i = Steps.Count - 1; i >= 0; i--)
+        {
+            PlannedStep step = Steps[i];
+            if (rawChars >= step.FromChars && step.Profile is not null) return step;
+        }
+        return null;
+    }
 
     // The profile a reached step names and that no longer exists, when it
     // stands above the step that takes the dictation: that step was skipped.
@@ -44,28 +63,16 @@ internal sealed record RewriteStepPlan(RewriteProfile? Forced, IReadOnlyList<Pla
         }
         return null;
     }
-
-    private PlannedStep? HighestWhere(int rawChars, bool streamingOnly)
-    {
-        for (int i = Steps.Count - 1; i >= 0; i--)
-        {
-            PlannedStep step = Steps[i];
-            if (rawChars < step.FromChars || step.Profile is null) continue;
-            if (streamingOnly && !step.Streaming) continue;
-            return step;
-        }
-        return null;
-    }
 }
 
 internal readonly record struct PlannedStep(
-    int Index, int FromChars, string ProfileId, RewriteProfile? Profile, bool Streaming);
+    int Index, int FromChars, string ProfileId, RewriteProfile? Profile, int BlockChars);
 
 internal static class RewriteProfileSelection
 {
     // streamingTranscription false: the take is transcribed in one call at
     // Stop, so nothing exists to rewrite while the person speaks and every
-    // step rewrites at Stop.
+    // step rewrites at Stop, whatever "Rewrite while I speak" says.
     public static RewriteStepPlan ForTake(
         LlmSettings settings, string? forcedProfileId, bool streamingTranscription)
     {
@@ -86,8 +93,10 @@ internal static class RewriteProfileSelection
                 dictation.StartOf(i),
                 step.ProfileId,
                 settings.Profiles.Find(profile => profile.Id == step.ProfileId),
-                streamingTranscription && dictation.RewriteWhileSpeaking));
+                // The core does not clamp: a hand-edited settings file could
+                // hold any value, and DictationBatcher rejects zero or less.
+                Math.Clamp(step.BlockChars, DictationRewriteSettings.MinBlockChars, DictationRewriteSettings.MaxBlockChars)));
         }
-        return new RewriteStepPlan(null, planned);
+        return new RewriteStepPlan(null, planned, streamingTranscription && dictation.RewriteWhileSpeaking);
     }
 }
