@@ -23,9 +23,9 @@ public class TrackpadEnginePressDelayTests
         TrackpadEngine.ApplyPressGuards(recognizer, settings);
         Assert.Equal(50, recognizer.PressDelayMs);
 
-        settings.PressDelayMs = 120;
+        settings.PressDelayMs = 80;
         TrackpadEngine.ApplyPressGuards(recognizer, settings);
-        Assert.Equal(120, recognizer.PressDelayMs);
+        Assert.Equal(80, recognizer.PressDelayMs);
     }
 
     [Theory]
