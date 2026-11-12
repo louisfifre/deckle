@@ -472,6 +472,9 @@ public sealed class DictationBatchRewriterTests
         rewriter.Use(Light);
         rewriter.Push("Première phrase ici.", endedOnSilence: true);
         rewriter.Push("Deuxième phrase ici.", endedOnSilence: true);
+        // Assemble waits for the current cut only: the two blocks' own calls
+        // are let finish first, so the count does not race them.
+        Assert.True(SpinWait.SpinUntil(() => service.Answered == 2, TimeSpan.FromSeconds(5)));
 
         rewriter.Use(Light, blockChars: 40);
         rewriter.Assemble();
