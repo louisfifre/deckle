@@ -210,7 +210,7 @@ internal sealed class HomeRecreationRehearsal(AnytypeApiClient api, AnytypeSpace
     // the names are the person's and reach nothing but the test space.
     internal static (JsonObject Manifest, int AddedOptions) ManifestFor(HomeReplaySheet sheet)
     {
-        JsonObject manifest = HomeSchema.TargetManifest;
+        JsonObject manifest = Localized(HomeSchema.TargetManifest);
         Dictionary<string, JsonObject> properties = manifest["properties"]!.AsArray().OfType<JsonObject>()
             .ToDictionary(property => property["key"]!.GetValue<string>(), StringComparer.Ordinal);
         int added = 0;
@@ -237,6 +237,33 @@ internal sealed class HomeRecreationRehearsal(AnytypeApiClient api, AnytypeSpace
                 }
             }
         return (manifest, added);
+    }
+
+    // The manifest copied from the Home repository names its types, properties
+    // and options in English; the space shows the person's words, which live in
+    // the terms file (HomeTerms). Without this overlay a recreated space comes
+    // back in English while the space it replaces spoke French (found on the
+    // live Home on 2026-11-12: the keys were right, every label was English).
+    // A key the terms file does not name throws: a missing word is a gap in the
+    // terms file, not something to guess.
+    internal static JsonObject Localized(JsonObject manifest)
+    {
+        HomeTerms terms = HomeTerms.Current;
+        foreach (JsonObject type in manifest["types"]!.AsArray().OfType<JsonObject>())
+        {
+            string key = type["key"]!.GetValue<string>();
+            type["name"] = terms.TypeName(key);
+            type["plural_name"] = terms.TypePluralName(key);
+        }
+        foreach (JsonObject property in manifest["properties"]!.AsArray().OfType<JsonObject>())
+        {
+            string key = property["key"]!.GetValue<string>();
+            property["name"] = terms.PropertyName(key);
+            if (property["tags"] is not JsonArray tags) continue;
+            foreach (JsonObject option in tags.OfType<JsonObject>())
+                option["name"] = terms.OptionName(key, option["key"]!.GetValue<string>());
+        }
+        return manifest;
     }
 
     private static bool Answers(string propertyKey, JsonObject property, string name)

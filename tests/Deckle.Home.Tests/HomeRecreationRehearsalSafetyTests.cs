@@ -107,10 +107,26 @@ public sealed class HomeRecreationRehearsalSafetyTests
         Assert.Equal(2, added);
         Assert.Contains("Marque fictive", Tags(manifest, "manufacturer"));
         Assert.Contains("Protocole fictif", Tags(manifest, "supported_protocols"));
-        Assert.Equal(Tags(HomeSchema.TargetManifest, "domain"), Tags(manifest, "domain"));
+        Assert.Equal(Tags(HomeRecreationRehearsal.Localized(HomeSchema.TargetManifest), "domain"), Tags(manifest, "domain"));
         // A closed vocabulary stays as compiled: the replay refuses and counts.
         Assert.DoesNotContain("État fictif", Tags(manifest, "state"));
         Assert.DoesNotContain("Marque fictive", Tags(HomeSchema.TargetManifest, "manufacturer"));
+    }
+
+    // The space shows the terms file's words, not the manifest's English.
+    [Fact]
+    public void TheAppliedManifestSpeaksTheTermsFile()
+    {
+        (JsonObject manifest, _) = HomeRecreationRehearsal.ManifestFor(new HomeReplaySheet());
+
+        JsonObject room = manifest["types"]!.AsArray().OfType<JsonObject>()
+            .Single(type => type["key"]!.GetValue<string>() == "room");
+        Assert.Equal("Pièce", room["name"]!.GetValue<string>());
+        Assert.Equal("Pièces", room["plural_name"]!.GetValue<string>());
+        JsonObject needed = manifest["properties"]!.AsArray().OfType<JsonObject>()
+            .Single(property => property["key"]!.GetValue<string>() == "needed");
+        Assert.Equal("Prendre", needed["name"]!.GetValue<string>());
+        Assert.Contains("Oui", Tags(manifest, "earthed"));
     }
 
     static string[] Tags(JsonObject manifest, string key) =>
