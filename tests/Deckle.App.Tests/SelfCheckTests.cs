@@ -244,6 +244,154 @@ public class SelfCheckTests
         Assert.Equal("settings/home", read.Current);
     }
 
+    // ── The target (--only) ──────────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("mail", "mail", null)]
+    [InlineData("settings", "settings", null)]
+    [InlineData("settings/general", "settings", "general")]
+    [InlineData(" Settings/LLM-Rewrite ", "settings", "llm-rewrite")]
+    [InlineData("mail/activity", "mail", "activity")]
+    [InlineData("atelier/photos-gallery", "atelier", "photos-gallery")]
+    [Trait("Category", "unit")]
+    public void Target_NamesAWindowOrOneOfItsViews(string text, string window, string? view)
+    {
+        SelfCheckTarget? target = SelfCheckTarget.Parse(text, out _);
+
+        Assert.NotNull(target);
+        Assert.Equal(window, target.Window);
+        Assert.Equal(view, target.View);
+    }
+
+    // A mistyped target must refuse the run, and say what it could have been.
+    [Theory]
+    [InlineData("")]
+    [InlineData("setings")]
+    [InlineData("settings/general/more")]
+    [Trait("Category", "unit")]
+    public void Target_RefusesWhatNamesNoWindowAndListsTheWindows(string text)
+    {
+        SelfCheckTarget? target = SelfCheckTarget.Parse(text, out string reason);
+
+        Assert.Null(target);
+        foreach (string window in SelfCheckTarget.Windows) Assert.Contains(window, reason);
+    }
+
+    [Theory]
+    [InlineData("log/window")]
+    [InlineData("settings/")]
+    [Trait("Category", "unit")]
+    public void Target_RefusesAViewWhereNoneCanBeNamed(string text)
+    {
+        Assert.Null(SelfCheckTarget.Parse(text, out string reason));
+        Assert.Contains("<window>/<view>", reason);
+    }
+
+    // A walk whose states build on each other: a full walk photographs them
+    // all; a targeted one reaches the states before its target without a
+    // picture, photographs the target, and is then done.
+    [Fact]
+    [Trait("Category", "unit")]
+    public void WalkGate_PhotographsEveryStateOfAFullWalkAndNeverEndsIt()
+    {
+        var gate = new SelfCheckWalkGate(null);
+
+        Assert.True(gate.Photographs("files"));
+        Assert.True(gate.Photographs("sizes"));
+        Assert.False(gate.Done);
+        gate.ThrowIfDone();
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void WalkGate_PhotographsOnlyItsTargetThenEndsTheWalk()
+    {
+        var gate = new SelfCheckWalkGate("sizes");
+
+        Assert.False(gate.Photographs("files"));
+        gate.ThrowIfDone();
+        Assert.True(gate.Photographs("sizes"));
+
+        Assert.True(gate.Done);
+        Assert.Throws<OperationCanceledException>(gate.ThrowIfDone);
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void WalkGate_KeepsTheStatesItCameToWhenTheTargetIsNoneOfThem()
+    {
+        var gate = new SelfCheckWalkGate("sizzes");
+
+        gate.Photographs("files");
+        gate.Photographs("sizes");
+
+        Assert.False(gate.Reached);
+        Assert.Equal(["files", "sizes"], gate.Offered);
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Target_IsReadFromTheArgumentAfterItsFlag()
+    {
+        Assert.Null(SelfCheckTarget.ReadArgument(["Deckle.exe", "--self-check", @"C:\out"]));
+        Assert.Equal("mail", SelfCheckTarget.ReadArgument(["Deckle.exe", "--self-check", @"C:\out", "--only", "mail"]));
+        // The flag with nothing after it is a target that names nothing, not a full run.
+        Assert.Equal("", SelfCheckTarget.ReadArgument(["Deckle.exe", "--self-check", @"C:\out", "--only"]));
+    }
+
+    private static SelfCheckReport TargetedReport(string only)
+        => new() { Completed = true, Only = only };
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Verdict_OfATargetedRunAsksOnlyForItsTarget()
+    {
+        SelfCheckReport report = TargetedReport("settings/general");
+        report.Surfaces.Add(new SelfCheckSurface("settings", "general", "General", true, 300, @"captures\settings-general.png"));
+
+        report.Judge();
+
+        Assert.Equal("passed", report.Outcome);
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Verdict_OfATargetedRunStillFailsWhenItsPageDidNotLoad()
+    {
+        SelfCheckReport report = TargetedReport("settings/general");
+        report.Surfaces.Add(new SelfCheckSurface("settings", "general", "General", false, 3000, null));
+
+        report.Judge();
+
+        Assert.Equal("failed", report.Outcome);
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Verdict_FailsAndListsTheViewsWhenTheTargetedViewDoesNotExist()
+    {
+        SelfCheckReport report = TargetedReport("settings/genral");
+        report.Views = ["home", "general"];
+
+        report.Judge();
+
+        Assert.Equal("failed", report.Outcome);
+        Assert.Contains(report.Failures, f => f.StartsWith("settings/genral") && f.Contains("home, general"));
+    }
+
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Verdict_FailsWhenTheTargetedWindowWasNeverWalked()
+    {
+        SelfCheckReport report = TargetedReport("mail");
+        report.Surfaces.Add(new SelfCheckSurface("log", null, null, true, 400, @"captures\log.png"));
+
+        report.Judge();
+
+        Assert.Equal("failed", report.Outcome);
+        Assert.Contains(report.Failures, f => f.StartsWith("mail"));
+    }
+
     // ── The images ───────────────────────────────────────────────────────────
 
     // RenderTargetBitmap hands over premultiplied BGRA with a transparent page
@@ -262,6 +410,28 @@ public class SelfCheckTests
         SelfCheck.ElementImage.FlattenOnto(bgra, surface);
 
         Assert.Equal(new byte[] { 0xF9, 0xF9, 0xF9, 255, 10, 20, 30, 255 }, bgra);
+    }
+
+    // A page is rendered at its own bounds, its title against the image's
+    // edge: the margin gives it the room it has in the window.
+    [Fact]
+    [Trait("Category", "unit")]
+    public void Pad_SurroundsTheImageWithTheSurfaceAndKeepsItsPixelsInPlace()
+    {
+        var surface = Windows.UI.Color.FromArgb(255, 3, 2, 1);
+        // Two pixels side by side.
+        byte[] bgra = [10, 20, 30, 255, 40, 50, 60, 255];
+
+        byte[] padded = SelfCheck.ElementImage.Pad(bgra, width: 2, height: 1, margin: 1, surface);
+
+        // 4 wide, 3 high: a row of surface, the image between two surface
+        // pixels, a row of surface.
+        byte[] s = [1, 2, 3, 255];
+        Assert.Equal(
+            [.. s, .. s, .. s, .. s,
+             .. s, 10, 20, 30, 255, 40, 50, 60, 255, .. s,
+             .. s, .. s, .. s, .. s],
+            padded);
     }
 
     [Fact]

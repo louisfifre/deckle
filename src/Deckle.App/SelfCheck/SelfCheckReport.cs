@@ -50,8 +50,14 @@ internal sealed class SelfCheckReport
     public List<string> Warnings { get; set; } = [];
     public string Outcome { get; set; } = "failed";
 
-    // The windows the run must have shown for "passed" to mean something.
-    private static readonly string[] RequiredWindows = ["settings", "log", "playground", "mail", "atelier"];
+    // The one window or view a targeted run was asked for (SelfCheckTarget's
+    // name); null for a full run. "passed" then reaches that target only: the
+    // other windows and the microphone were not looked at.
+    public string? Only { get; set; }
+
+    // The views the target's window offered, recorded when the target matched
+    // none of them, so the failure can say what it could have been.
+    public List<string>? Views { get; set; }
 
     // Recomputes Failures, Warnings and Outcome from what was recorded.
     public void Judge()
@@ -74,15 +80,27 @@ internal sealed class SelfCheckReport
                 failures.Add($"{surface.Name}: its image was taken with {surface.PopupsStillOpen} popup(s) open over the page.");
         }
 
-        foreach (string window in RequiredWindows)
+        if (Only is null)
         {
-            if (!Surfaces.Any(s => s.Window == window))
-                failures.Add($"{window}: never walked, so nothing was checked there.");
+            foreach (string window in SelfCheckTarget.Windows)
+            {
+                if (!Surfaces.Any(s => s.Window == window))
+                    failures.Add($"{window}: never walked, so nothing was checked there.");
+            }
+        }
+        else if (Completed && !Surfaces.Any(s => s.Name == Only || (s.Window == Only && !Only.Contains('/'))))
+        {
+            // Said only of a run that reached its end: before that, the walk
+            // may simply not have arrived there yet.
+            failures.Add(Views is { Count: > 0 }
+                ? $"{Only}: no such view, so nothing was checked. The views there are: {string.Join(", ", Views)}."
+                : $"{Only}: never walked, so nothing was checked there.");
         }
 
         if (Microphone is null)
         {
-            failures.Add("microphone: the probe never ran.");
+            // A targeted run leaves the probe out; a full run must have made it.
+            if (Only is null) failures.Add("microphone: the probe never ran.");
         }
         else
         {

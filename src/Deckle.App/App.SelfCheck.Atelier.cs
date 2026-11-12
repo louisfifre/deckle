@@ -16,15 +16,20 @@ namespace Deckle.App;
 public partial class App
 {
     private async Task WalkAtelierAsync(
-        SelfCheckReport report, InterfaceCaptureRun run, string outputFolder, Action<string> step)
+        SelfCheckReport report, InterfaceCaptureRun run, string outputFolder, Action<string> step,
+        SelfCheckWalkGate gate)
     {
         var clock = System.Diagnostics.Stopwatch.StartNew();
         AtelierWindow window = EnsureAtelierWindow();
         OffscreenWindow.ShowInactive(window);
         bool loaded = await WaitUntilLoadedAsync(window);
 
+        // Every state is reached; the gate says which ones get a picture, and
+        // ends the walk once a targeted state has its own.
         async Task Capture(string state, Func<Task>? reach = null)
         {
+            gate.ThrowIfDone();
+            bool photographed = gate.Photographs(state);
             step($"atelier/{state}");
             var stateClock = System.Diagnostics.Stopwatch.StartNew();
             if (!loaded)
@@ -44,6 +49,7 @@ public partial class App
                 report.Save(outputFolder);
                 return;
             }
+            if (!photographed) return;
             (int closed, int left) = await CloseTransientPopupsAsync(window);
             report.Surfaces.Add(await CaptureWindowFrameAsync(
                 run, window, "atelier", state, null, true, stateClock.ElapsedMilliseconds, closed, left));
@@ -70,7 +76,7 @@ public partial class App
         window.SetPaneOpenForReview(false);
 
         await Capture("files-subfolder", () => window.OpenForReviewAsync("Photos"));
-        if (loaded) await WalkAtelierPhotosAsync(report, run, outputFolder, step, window, sample);
+        if (loaded) await WalkAtelierPhotosAsync(report, run, outputFolder, step, window, sample, gate);
 
         await WalkAtelierMapAsync(window, sample, Capture);
 

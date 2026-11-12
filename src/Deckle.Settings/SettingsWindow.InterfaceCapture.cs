@@ -47,7 +47,13 @@ public sealed partial class SettingsWindow
     // starting is called with a page's tag before the window opens it: a
     // native crash while opening the page ends the process before visit could
     // say anything, so a caller that must name that page notes it here first.
-    public async Task WalkPagesAsync(Func<SettingsPageVisit, Task> visit, Action<string, string>? starting = null)
+    //
+    // only, when given, is asked each rail page's tag and keeps the walk to the
+    // pages it accepts: a caller that checks one page does not open the others.
+    public async Task WalkPagesAsync(
+        Func<SettingsPageVisit, Task> visit,
+        Action<string, string>? starting = null,
+        Func<string, bool>? only = null)
     {
         object? previous = Nav.SelectedItem;
         _suppressPageTransition = true;
@@ -55,6 +61,7 @@ public sealed partial class SettingsWindow
         {
             foreach (NavigationViewItem item in PageItems())
             {
+                if (only is not null && !only((string)item.Tag)) continue;
                 string label = item.Content as string ?? "";
                 starting?.Invoke((string)item.Tag, label);
                 var clock = System.Diagnostics.Stopwatch.StartNew();

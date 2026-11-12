@@ -33,6 +33,15 @@ internal static class ElementImage
     private static readonly Windows.UI.Color LightSurface = Windows.UI.Color.FromArgb(255, 0xF9, 0xF9, 0xF9);
     private static readonly Windows.UI.Color DarkSurface = Windows.UI.Color.FromArgb(255, 0x2B, 0x2B, 0x2B);
 
+    // The room left around a page, in effective pixels, filled with the
+    // surface's colour. The content of a page's scroller is rendered at its own
+    // bounds, without the padding the page keeps around it in the window: the
+    // title and the cards then touch the image's edges, and a reader cannot
+    // judge the page as it sits in the app. The margin puts that room back.
+    // It does not bring back what the element draws outside its bounds (a
+    // shadow, a focus rectangle): RenderTargetBitmap never has those pixels.
+    internal const int PageMargin = 32;
+
     internal sealed record Result(IReadOnlyList<string> Files, int Width, int Height);
 
     // Writes the page to <basePath>.png, or <basePath>-1.png, -2.png… when it
@@ -51,7 +60,8 @@ internal static class ElementImage
         double fullPixels = content.ActualHeight * scale;
         if (fullPixels <= MaxPixels)
         {
-            (string single, int w, int h) = await RenderAsync(content, basePath + ".png");
+            (string single, int w, int h) = await RenderAsync(
+                content, basePath + ".png", (int)Math.Round(PageMargin * scale));
             return new Result([single], w, h);
         }
 
@@ -84,7 +94,10 @@ internal static class ElementImage
         return new Result([file], w, h);
     }
 
-    private static async Task<(string Path, int Width, int Height)> RenderAsync(FrameworkElement element, string path)
+    // margin, in image pixels, is added on the four sides of a page that fits
+    // one image; the parts of a cut page and a window's content take none.
+    private static async Task<(string Path, int Width, int Height)> RenderAsync(
+        FrameworkElement element, string path, int margin = 0)
     {
         var bitmap = new RenderTargetBitmap();
         await bitmap.RenderAsync(element);
@@ -97,7 +110,14 @@ internal static class ElementImage
         byte[] bgra = new byte[pixels.Length];
         Windows.Storage.Streams.DataReader.FromBuffer(pixels).ReadBytes(bgra);
 
-        FlattenOnto(bgra, element.ActualTheme == ElementTheme.Dark ? DarkSurface : LightSurface);
+        Windows.UI.Color surface = element.ActualTheme == ElementTheme.Dark ? DarkSurface : LightSurface;
+        FlattenOnto(bgra, surface);
+        if (margin > 0)
+        {
+            bgra = Pad(bgra, width, height, margin, surface);
+            width += 2 * margin;
+            height += 2 * margin;
+        }
 
         using var stream = new InMemoryRandomAccessStream();
         BitmapEncoder encoder = await BitmapEncoder.CreateAsync(BitmapEncoder.PngEncoderId, stream);
@@ -124,6 +144,24 @@ internal static class ElementImage
             bgra[i + 2] = (byte)Math.Min(255, bgra[i + 2] + surface.R * inverse / 255);
             bgra[i + 3] = 255;
         }
+    }
+
+    // The same opaque image with margin pixels of the surface's colour on each
+    // of its four sides.
+    internal static byte[] Pad(byte[] bgra, int width, int height, int margin, Windows.UI.Color surface)
+    {
+        int paddedWidth = width + 2 * margin;
+        byte[] padded = new byte[paddedWidth * (height + 2 * margin) * 4];
+        for (int i = 0; i < padded.Length; i += 4)
+        {
+            padded[i] = surface.B;
+            padded[i + 1] = surface.G;
+            padded[i + 2] = surface.R;
+            padded[i + 3] = 255;
+        }
+        for (int row = 0; row < height; row++)
+            System.Buffer.BlockCopy(bgra, row * width * 4, padded, ((row + margin) * paddedWidth + margin) * 4, width * 4);
+        return padded;
     }
 
     // The page's own scroller: the one with the largest viewport, so a small

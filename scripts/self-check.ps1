@@ -19,6 +19,15 @@
     such as 0xC00000FD, a stack overflow, is named), when it times out, when no
     report was written, or when the report says "failed". Exit code of this
     script: 0 passed, 1 failed.
+.PARAMETER Only
+    Check one thing instead of everything: a window (settings, log, playground,
+    mail, atelier) or one view of Settings, Mail or the Atelier, named as its
+    image is in a full run: settings/general, mail/activity,
+    atelier/photos-gallery. A Mail or Atelier view is a state reached from the
+    ones before it, so the walk is played up to it without pictures and stops
+    there. The other windows and the microphone probe are left out, and
+    "passed" then speaks of that target alone. A target that names nothing
+    fails the run, with the names it could have been.
 .PARAMETER Configuration
     Which build to run. Debug by default, as the repository builds.
 .PARAMETER Target
@@ -45,6 +54,7 @@
 
 [CmdletBinding()]
 param(
+    [string]$Only,
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Debug',
     [string]$Target,
@@ -100,6 +110,10 @@ $psi.UseShellExecute = $false
 $psi.WorkingDirectory = Split-Path -Parent $ExePath
 $psi.ArgumentList.Add('--self-check')
 $psi.ArgumentList.Add($OutputFolder)
+if ($Only) {
+    $psi.ArgumentList.Add('--only')
+    $psi.ArgumentList.Add($Only)
+}
 $psi.Environment['DECKLE_DATA_ROOT'] = $DataRoot
 
 Write-Host "self-check: $ExePath"
@@ -247,6 +261,9 @@ if ($Before.Count -ne $After.Count -or ($Before.Count -gt 0 -and (Compare-Object
 
 # Summary.
 Write-Host ''
+if ($report -and $report.only) {
+    Write-Host "target: $($report.only) only; the other windows and the microphone were not checked"
+}
 if ($report -and $report.surfaces) {
     $loaded = @($report.surfaces | Where-Object { $_.loaded }).Count
     Write-Host ("pages and windows: {0} walked, {1} loaded" -f @($report.surfaces).Count, $loaded)
