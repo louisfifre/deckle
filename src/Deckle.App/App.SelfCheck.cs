@@ -204,6 +204,9 @@ public partial class App
         // (OffscreenWindow), and each page is rendered whole by its own XAML
         // (ElementImage), so nothing appears on the person's desktop and no
         // image is cut at a window edge.
+        // The Rewriting page with its dictation steps shown (App.SelfCheck.Rewriting.cs).
+        SeedRewritingSample(whileSpeaking: true);
+
         Step("settings");
         Settings.SettingsWindow settings = EnsureSettingsWindow();
         OffscreenWindow.ShowInactive(settings);
@@ -248,6 +251,9 @@ public partial class App
                 currentLabel = label;
                 Step($"settings/{currentPage} ({currentLabel})");
             });
+
+        Step("settings/llm-at-stop");
+        await CaptureRewritingAtStopAsync(report, settings, outputFolder, captures);
 
         Step("log");
         await OpenAndCaptureAsync(report, run, outputFolder, "log", EnsureLogWindow);

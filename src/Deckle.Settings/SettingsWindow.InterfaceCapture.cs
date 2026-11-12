@@ -155,6 +155,23 @@ public sealed partial class SettingsWindow
         CompositionTarget.Rendering -= OnRendering;
     }
 
+    // Shows the rail page of that type, loaded and settled, for a caller that
+    // captures a state of it the walk does not reach. False when it did not
+    // load in time.
+    public async Task<bool> ShowPageAsync(Type pageType)
+    {
+        _suppressPageTransition = true;
+        try
+        {
+            SelectPage($"{pageType.FullName}, {pageType.Assembly.GetName().Name}");
+            return await WaitForPageAsync(pageType);
+        }
+        finally
+        {
+            _suppressPageTransition = false;
+        }
+    }
+
     // The page the frame holds now, for a caller that renders it itself.
     public FrameworkElement? CurrentPage => PageFrame.Content as FrameworkElement;
 }

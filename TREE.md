@@ -649,6 +649,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.SelfCheck.Atelier.Photos.cs
 │   │   ├── App.SelfCheck.Atelier.Sizes.cs
 │   │   ├── App.SelfCheck.cs
+│   │   ├── App.SelfCheck.Rewriting.cs
 │   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs
 │   │   ├── App.Startup.CrashDumps.cs
