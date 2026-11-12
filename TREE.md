@@ -264,6 +264,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   │   ├── selector.h
 │   │   │   │   ├── style_resolver.cpp
 │   │   │   │   └── style_resolver.h
+│   │   │   ├── composition_diag_guard.cpp
+│   │   │   ├── composition_diag_guard.h
 │   │   │   ├── element_properties.cpp
 │   │   │   ├── element_properties.h
 │   │   │   ├── tap_connection.cpp
@@ -2946,6 +2948,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   ├── Deckle.Shell.Taskbar.Tests/
 │   │   ├── Native/
 │   │   │   ├── BarThicknessTests.cs
+│   │   │   ├── CompositionDiagGuardTests.cs
 │   │   │   ├── EngineResidencyTests.cs
 │   │   │   ├── ExplorerReinjectionBugNotes.md
 │   │   │   ├── InjectionBreakerTests.cs

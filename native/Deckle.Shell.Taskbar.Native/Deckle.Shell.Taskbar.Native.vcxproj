@@ -86,6 +86,7 @@
     <ClInclude Include="residency.h" />
     <ClInclude Include="xamldiag\tap_site.h" />
     <ClInclude Include="xamldiag\visual_tree_watcher.h" />
+    <ClInclude Include="xamldiag\composition_diag_guard.h" />
     <ClInclude Include="xamldiag\element_properties.h" />
     <ClInclude Include="xamldiag\tap_connection.h" />
     <ClInclude Include="xamldiag\rules\selector.h" />
@@ -115,6 +116,7 @@
     <ClCompile Include="hook_entry.cpp" />
     <ClCompile Include="xamldiag\tap_site.cpp" />
     <ClCompile Include="xamldiag\visual_tree_watcher.cpp" />
+    <ClCompile Include="xamldiag\composition_diag_guard.cpp" />
     <ClCompile Include="xamldiag\element_properties.cpp" />
     <ClCompile Include="xamldiag\tap_connection.cpp" />
     <ClCompile Include="xamldiag\rules\selector.cpp" />
