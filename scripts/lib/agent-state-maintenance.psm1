@@ -170,7 +170,7 @@ function Assert-AgentProcessesStopped {
         $ProcessNames = @(Get-Process -ErrorAction SilentlyContinue | ForEach-Object ProcessName)
     }
     $blocked = @($ProcessNames | Where-Object {
-        $_ -eq 'ChatGPT' -or $_ -eq 'claude' -or $_ -like 'claude-*'
+        $_ -eq 'claude' -or $_ -like 'claude-*'
     } | Sort-Object -Unique)
     if ($blocked.Count -gt 0) {
         throw "Close the active AI tools before resetting local state: $($blocked -join ', ')"

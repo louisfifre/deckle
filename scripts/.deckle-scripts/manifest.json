@@ -1,12 +1,12 @@
 {
   "source": "https://github.com/louisfifre/deckle-scripts",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "packs": [
     "git",
     "maintenance",
     "setup"
   ],
-  "installedAt": "2026-11-09T00:44:23Z",
+  "installedAt": "2026-11-12T19:20:55Z",
   "files": {
     "scripts/git/README.md": "e18dc6df0cf026ca64e64834e30efbf163db98bbcebf9ad01b319b6bd38c7ff8",
     "scripts/git/changelog.ps1": "f68c6e9d743e81145211d4ee93c1fd9bcb3ce11208baa215318a888b35a33bd7",
@@ -14,7 +14,7 @@
     "scripts/git/mark-release.ps1": "22735a687c6478421ad1f6d1bfa416dccef5f8b8d9508f050b2a3fbaf09ebc15",
     "scripts/git/record-version.ps1": "d1ca2ef75aafdb6b24ede503057d63fdb45b464c2c851a0b323e9e97a281b65a",
     "scripts/lib/action-summary.ps1": "2b56b5725e990479e984684a39e37550aa162aec127ea385ffd7cc04e14c1a5b",
-    "scripts/lib/agent-state-maintenance.psm1": "09b890469991871b8970a0890888b6a7e1cb81ef6d425838da86396066de3069",
+    "scripts/lib/agent-state-maintenance.psm1": "fd0e20ec793651ed7931940cb79be417ac7f9ea9d38d2b8948704577d33896d3",
     "scripts/lib/agent-state-maintenance.strings.psd1": "274a39a3642d49f6cdd98d6b7b7ae0b6dfa03055d82302a62d18303b49b330c8",
     "scripts/lib/agent-state-maintenance/sanitization.ps1": "580f19c22827b8168465d877a4221036480347d3ea2d6f1d503e00b81048d718",
     "scripts/lib/build-outputs.ps1": "835fe6d24a39fb2e8aacfcb11055962b531cf3713d7d9739c421f258cbe6bdea",
