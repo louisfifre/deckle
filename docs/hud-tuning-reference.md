@@ -6,14 +6,14 @@ description: Every HUD tunable the Playground exposed until its removal on 2026-
 
 The Playground was the developer window where the HUD outline, its materials, its rotations and the pause gauge were tuned by hand. It was removed on 2026-11-13. The values Louis had settled on there became the compiled defaults, and Deckle no longer reads a tuning file: the HUD now looks the same on every machine.
 
-This note keeps those values in one place for the day the HUD rendering is redesigned. It lists the 61 tunables the Playground offered, in its own sections and order, with the value the code holds today.
+This note keeps those values in one place for the day the HUD rendering is redesigned. It lists the 61 tunables the Playground offered (one per control: the hue and sweep eases were four sliders each, the gauge's two curves one curve editor each), in its own sections and order, with the value the code holds today.
 
 ## Where the values live
 
 - The outline, its materials, its rotations and the digit reveal: `HudComposition.ConicArcStrokeConfig`, in `src/Deckle.Composition/Core/HudComposition.Config.cs`. Its header comment is the lexicon of every field.
 - The pause gauge's own knobs: `UtteranceCountdownConfig`, in `src/Deckle.Composition/Core/UtteranceCountdownConfig.cs`. The gauge also reads the Recording section's fades and material.
 - `HudChrono` holds one instance of each, built from these defaults (`StrokeConfig` in `src/Deckle.Hud/Chrono/HudChrono.Stroke.cs`, `CountdownConfig` in `HudChrono.UtteranceCountdown.cs`). Changing a default and rebuilding is the only way to change the HUD.
-- A `modules\hud\settings.json` left on a machine by an older Deckle is never read. The last one Louis saved held fourteen keys: eleven are now the defaults below, `retreatSeconds` (0.33) already was, and three (`cutSeconds`, `cutEaseP1X`, `cutEaseP2X`) named fields the code had already dropped, so they changed nothing.
+- A `modules\hud\settings.json` left on a machine by an older Deckle is never read. The last one Louis saved held fourteen keys: ten are now the defaults below, `retreatSeconds` (0.33) already was, and three (`cutSeconds`, `cutEaseP1X`, `cutEaseP2X`) named fields the code had already dropped, so they changed nothing.
 
 ## How to read the tables
 
@@ -22,7 +22,7 @@ This note keeps those values in one place for the day the HUD rendering is redes
 - An ease is a CSS `cubic-bezier(x1, y1, x2, y2)`: two handles on the unit square. `(0, 0, 1, 1)` is a straight line, constant speed.
 - Lightness and chroma are OKLCh values. OKLCh is a colour space where equal steps look equal to the eye: lightness runs from 0 (black) to 1 (white), chroma is the saturation, 0 being grey.
 - The Playground sometimes showed a value in another unit than the code stores (percent, pixels). The tables give the stored value, and the Playground's form in brackets.
-- "Shipped" marks the eleven values that changed on 2026-11-13, when the tuned values became the defaults.
+- "Shipped" marks the ten values that changed on 2026-11-13 (the course curve counts three of them), when the tuned values became the defaults.
 
 ## HUD geometry
 
