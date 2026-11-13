@@ -2481,6 +2481,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PortAudioInteropTests.cs
 │   │   ├── StreamingResamplerTests.cs
 │   │   ├── SubWindowAssemblerTests.cs
+│   │   ├── SummaryTagTests.cs
 │   │   ├── TestCaptureDoubles.cs
 │   │   ├── TranscriptionPreprocessorTests.cs
 │   │   ├── VoiceDetectorTests.cs
@@ -2537,6 +2538,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RestorationEvaluatorTests.cs
 │   │   ├── SentenceCorpusTests.cs
 │   │   ├── SimulatedTextSurface.cs
+│   │   ├── SummaryTagTests.cs
 │   │   ├── SurfaceProfileMaintenanceTests.cs
 │   │   ├── SurfaceProfilerTests.cs
 │   │   ├── SurfaceProfileStoreTests.cs
@@ -2713,6 +2715,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── MouseWheelTimestampTests.cs
 │   │   ├── RawInputProbeBugNotes.md
 │   │   ├── RepeatingIncidentTests.cs
+│   │   ├── SummaryTagTests.cs
 │   │   ├── SyntheticTouchpadFrameBuilderTests.cs
 │   │   └── WheelObservationBufferTests.cs
 │   ├── Deckle.Input.Trackpad.Tests/
@@ -2765,7 +2768,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HueEndpointResolverTests.cs
 │   │   ├── LightPlacementResolverTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
-│   │   └── MilestoneClosersTests.cs
+│   │   ├── MilestoneClosersTests.cs
+│   │   └── SummaryTagTests.cs
 │   ├── Deckle.Lighting.Tests/
 │   │   ├── BugExamples/
 │   │   │   └── dns-sd-pending-status-lifetime.json
