@@ -73,8 +73,8 @@ public partial class AmbientViewModel
     // brightness floor (its switch and its level, drawn on the curve as a guide
     // while it is on), reaction speed, exposure, saturation. The preset fold
     // that held them (Game / Vivid / Movie / Ambient / Custom in its header) is
-    // set aside with every preset: the family still runs underneath (Preset,
-    // AmbientSettingsService.Presets), so a hand edit still records Custom, but
+    // set aside with every preset: the family still runs underneath
+    // (AmbientSettingsService.Presets), so a hand edit still records Custom, but
     // nothing on the page selects a preset any more. The change threshold, an
     // engine optimisation nobody tunes, keeps its AmbientSettings default and is
     // no longer exposed (triage of 2026-10-14).

@@ -103,7 +103,7 @@ public static class SettingsSearch
         new SettingSearchEntry
         {
             LabelKey = "GeneralDeveloperModeCard",
-            Keywords = ["developer", "advanced","preview", "alpha",
+            Keywords = ["developer", "advanced", "preview", "alpha",
                 "screenshot", "capture", "review", "debug"],
         },
     ];
