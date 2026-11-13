@@ -302,6 +302,16 @@ public partial class App
         {
             Step("log");
             await OpenAndCaptureAsync(report, run, outputFolder, "log", EnsureLogWindow);
+
+            // The same window scrolled to its last row, where a reader of a
+            // long session spends their time: what sits under the last entry
+            // only shows there.
+            LogWindow log = EnsureLogWindow();
+            log.ScrollToBottomForCapture();
+            await Task.Delay(300);
+            report.Surfaces.Add(await CaptureWindowFrameAsync(
+                run, log, "log", "end", null, loaded: true, ms: 0));
+            report.Save(outputFolder);
         }
 
         if (Wants("playground"))

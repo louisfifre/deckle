@@ -170,6 +170,10 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         if (!enqueued) _autoScrollPending = false;
     }
 
+    // The self-check's second image of this window, at its last row, whether
+    // or not the window counts as visible to the person.
+    internal void ScrollToBottomForCapture() => ScrollToBottom();
+
     private void ScrollToBottom()
     {
         if (_visible.Count == 0) return;
