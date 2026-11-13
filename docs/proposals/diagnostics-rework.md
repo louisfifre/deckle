@@ -47,7 +47,7 @@ Mesuré sur ta machine : une ligne de trace pèse ~720 octets. Le trace garde au
    - Le vide en bas venait d'un pied de liste de cinq lignes blanches ajouté exprès ; il est réduit à une marge.
 10. **Contenu du log.**
     - « A dictation batch came back rewritten » doublait « Transcript rewrite complete » au même instant : seule la seconde reste (elle porte le fournisseur, la durée et l'identifiant qui l'apparie à son début).
-    - Les lignes « Hot loop » (une par boucle, six à la même milliseconde chaque minute) deviennent **une** ligne par minute, nommée « Loop counts », `window_s=60 | counts=whisp_streaming_heartbeat:30 …` : la fenêtre d'abord (ce qui se répète), puis les comptes.
+    - Les lignes « Hot loop » (une par boucle, six à la même milliseconde chaque minute) sont **retirées** : personne ne les lisait (décision du 13 novembre). Restent les deux lignes sur lesquelles on peut agir : une boucle qui devait tourner s'est arrêtée (Warning), puis elle est repartie. Le module s'affiche « Loops ».
 
 11. **Détails de construction à connaître.**
     - Le pli *Detailed logs* appartient à la page Diagnostics (le composeur lit les libellés dans l'assemblage du modèle qui les possède) : d'où une nouvelle référence `Deckle.Diagnostics.Logging.Views` → `Deckle.Input.Trackpad`. Les pages Recording et Trackpad perdent leurs cartes « telemetry ».
