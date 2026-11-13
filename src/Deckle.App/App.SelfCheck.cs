@@ -296,6 +296,15 @@ public partial class App
                 Step("settings/llm-at-stop");
                 await CaptureRewritingAtStopAsync(report, settings, outputFolder, captures);
             }
+
+            // The Diagnostics page again with every opt-in on and every fold
+            // open (App.SelfCheck.Diagnostics.cs), when the run walks every
+            // page or targets that one.
+            if (onlyPage is null or "diagnostics")
+            {
+                Step("settings/diagnostics-open");
+                await CaptureDiagnosticsOpenAsync(report, settings, outputFolder, captures);
+            }
         }
 
         if (Wants("log"))
