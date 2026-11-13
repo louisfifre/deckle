@@ -14,8 +14,9 @@ namespace Deckle.Transcription;
 // trace.jsonl. It travels only in the Dataset-tagged corpus events, which those
 // sinks reject and which the corpus consent gates.
 //
-// PipelineTimings, PipelineLlmMetrics and PipelineOutputs are a take's figures,
-// in the operational log; no separate timings dataset exists (2026-11-13).
+// PipelineTimings and PipelineOutputs are a take's figures, kept by the
+// operational log through their Summary tag; PipelineLlmMetrics is detail, in
+// the trace only. No separate timings dataset exists (2026-11-13).
 [EventSource(Name = "Deckle-Whisp")]
 public sealed partial class DeckleWhispSource : DeckleEventSource
 {

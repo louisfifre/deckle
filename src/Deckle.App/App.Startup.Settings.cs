@@ -184,8 +184,6 @@ public partial class App
         }
         if (context.AmbientPresent)
             RegisterSettingsModule(Lighting.Ambient.Views.AmbientSettingsModule.Describe(order: 400), Lighting.Ambient.Views.SettingsSearch.Entries);
-        // The contact-frame capture, a developer capture, is the Diagnostics
-        // page's own card under Detailed logs, beside the wheel capture.
         if (context.TrackpadPresent)
             RegisterSettingsModule(Input.Trackpad.TrackpadSettingsModule.Describe(order: 500), Input.Trackpad.SettingsSearch.Entries);
         if (context.PrecisionScrollPresent)

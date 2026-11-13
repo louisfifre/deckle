@@ -114,7 +114,7 @@ public sealed partial class DeckleLlmSource
     // prompt_eval_count and eval_count, the OpenAI-compatible usage, the
     // Messages API usage with its cache split), never a price. It is the LLM
     // activity's detail: off by default, admitted by Settings > Diagnostics >
-    // Detailed logs > LLM calls. The template reads from the general to the
+    // Detailed logs > Language model calls. The template reads from the general to the
     // particular, so the fields a reader compares across calls line up: the
     // profile, the tokens, why it stopped, then the timings and the sizes.
     // The payload keeps its order.
