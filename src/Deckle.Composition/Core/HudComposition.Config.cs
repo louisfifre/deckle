@@ -192,9 +192,8 @@ public static partial class HudComposition
         public float  HueEaseP2X         { get; init; } = 0.875f;
         public float  HueEaseP2Y         { get; init; } = 0.625f;
         // Vestigial — the out-in curve above no longer plateaus at cycle
-        // boundaries, so the linear blend is redundant. Kept at 0 so the
-        // playground can still experiment with exotic ease curves that
-        // DO need a floor, but untouched in the shipping path.
+        // boundaries, so the linear blend is redundant. Kept at 0, for an
+        // ease curve that would plateau and need a floor again.
         public float  HueMinSpeedFraction { get; init; } = 0f;
 
         // ── Arc mask shape (white pie slice, alpha-ramped at both ends) ─
@@ -220,9 +219,8 @@ public static partial class HudComposition
 
         // ── Clone-cone placement (the pinned digit reveal) ──────────────
         // Where the reveal cone's centre sits within the host frame, as a
-        // FRACTION of host size (DPI/size-independent, so one slider drives
-        // both the live reveal and the ConicClone preview through the same
-        // value). (0.5, 0.5) = centred — reproduces the contour's cone, so
+        // FRACTION of host size (DPI/size-independent).
+        // (0.5, 0.5) = centred — reproduces the contour's cone, so
         // each digit samples the same slice the contour shows at that point.
         // (0, 0) = top-left corner, the cone radiating from there.
         //
@@ -328,8 +326,8 @@ public static partial class HudComposition
 
     // The grey material at an OKLab lightness: chroma 0 on the same
     // conversion that bakes the wheel, so 1 is white, 0 is black and the
-    // steps in between are perceptually even. Pure, so the Playground and
-    // the tests read the very colour the stroke shows.
+    // steps in between are perceptually even. Pure, so the tests read the
+    // very colour the stroke shows.
     public static Color GreyMaterialColor(float lightness)
         => ColorSpace.OklchToRgb(Math.Clamp(lightness, 0f, 1f), 0f, 0f);
 

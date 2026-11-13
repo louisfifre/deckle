@@ -89,16 +89,13 @@ public static partial class HudComposition
     // mirrored at +π when ArcMirror is set. Painted per pixel for the same
     // moiré reason as PaintConicSurface.
     //
-    // `fillColor` is written premultiplied by the coverage alpha. Masks pass
-    // white, since AlphaMaskEffect reads only alpha; the Playground's naked
-    // ArcMask view draws the surface directly and passes a theme-legible
-    // colour.
+    // White, premultiplied by the coverage alpha: AlphaMaskEffect reads only
+    // the alpha, and white keeps the bytes consistent.
     private static CompositionDrawingSurface PaintArcMaskSurface(
         CanvasDevice canvasDevice,
         CompositionGraphicsDevice graphicsDevice,
         int pxSquare,
-        ConicArcStrokeConfig cfg,
-        Color fillColor)
+        ConicArcStrokeConfig cfg)
     {
         var surface = graphicsDevice.CreateDrawingSurface(
             new Windows.Foundation.Size(pxSquare, pxSquare),
@@ -166,9 +163,9 @@ public static partial class HudComposition
                 byte a = (byte)MathF.Round(Math.Clamp(alpha, 0f, 1f) * 255f);
                 int idx = (y * pxSquare + x) * 4;
 
-                bytes[idx + 0] = (byte)((fillColor.B * a) / 255);
-                bytes[idx + 1] = (byte)((fillColor.G * a) / 255);
-                bytes[idx + 2] = (byte)((fillColor.R * a) / 255);
+                bytes[idx + 0] = a;
+                bytes[idx + 1] = a;
+                bytes[idx + 2] = a;
                 bytes[idx + 3] = a;
             }
         }

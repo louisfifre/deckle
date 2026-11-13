@@ -1091,11 +1091,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Core/
 │   │   │   ├── HudComposition.Animations.cs
 │   │   │   ├── HudComposition.Config.cs
-│   │   │   ├── HudComposition.ConicClonePreview.cs
 │   │   │   ├── HudComposition.cs
 │   │   │   ├── HudComposition.DigitReveal.cs
 │   │   │   ├── HudComposition.Factories.cs
-│   │   │   ├── HudComposition.NakedPreview.cs
 │   │   │   ├── HudComposition.Painting.cs
 │   │   │   ├── HudComposition.ProcessingStroke.cs
 │   │   │   ├── HudComposition.UtteranceCountdownVisual.cs

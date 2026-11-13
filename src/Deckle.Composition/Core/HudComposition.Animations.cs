@@ -115,8 +115,8 @@ public static partial class HudComposition
         props.InsertScalar("Eased",  startAngle);
 
         // A zero-duration Forever KeyFrameAnimation lands on its end state on
-        // frame 0 and never advances, which reads as a frozen stroke. The
-        // Playground sliders reach 0.
+        // frame 0 and never advances, which reads as a frozen stroke; the
+        // floor keeps a period at 0 from it.
         double clampedPeriod = Math.Max(0.05, periodSeconds);
         var duration = TimeSpan.FromSeconds(clampedPeriod);
 
