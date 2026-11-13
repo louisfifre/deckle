@@ -23,10 +23,9 @@ public sealed class LoggingSettings
     public bool ApplicationLogToDisk { get; set; } = false;
 
     // The one switch for everything a developer turns on to chase a bug: each
-    // activity's per-step detail and the diagnostic captures that hang under
-    // it (dictation timings, microphone level, wheel and contact frames, whose
-    // own toggles live in their modules' stores). Off, none of them runs,
-    // whatever their own toggle says.
+    // activity's per-step detail and the diagnostic capture that hangs under
+    // it (the microphone level, whose own toggle lives in the telemetry
+    // store). Off, none of them runs, whatever its own toggle says.
     public bool DetailedLogs { get; set; } = false;
 
     // Each source's share of Detailed logs. On by default, so turning the

@@ -9,8 +9,9 @@ namespace Deckle.Diagnostics;
 // per-tick detail events stay where they are, Verbose and off by default.
 //
 // Three lines tell the whole story of the loops. LoopCounts says how many
-// ticks each loop held in a window, all loops on one line. LoopStalled opens one Warning incident when a loop that should
-// be running ticked zero times in a window, and LoopRecovered closes it, once,
+// ticks each loop held in a window, all loops on one line. LoopStalled opens
+// one Warning incident when a loop that should be running ticked zero times in
+// a window, and LoopRecovered closes it, once,
 // when the count moves again or the loop is no longer expected to run. Both
 // travel in the log; the rollup does not, because a loop that works needs
 // no line in the one record a reader on another machine gets. The rollup is

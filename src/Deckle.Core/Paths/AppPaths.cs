@@ -14,8 +14,7 @@ namespace Deckle.Core;
 //   • backups/      — settings backup snapshots
 //   • recovery/     — the sealed raw text of a dictation in progress,
 //                     present only while a take runs or after a crash
-//   • telemetry/    — JSONL files (latency, microphone), raw-capture
-//                     subfolders, and per-profile corpus
+//   • telemetry/    — JSONL files (microphone level) and per-profile corpus
 //   • diagnostics/  — local logs (setup, errors, trace.jsonl); never transmitted
 //   • diagnostics/dumps/ — minidumps of fatal runtime errors, newest few kept
 //   • models/       — Whisper ggml-*.bin and the other downloaded models
