@@ -212,9 +212,16 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         if (_visible.Count == 0) return;
         try
         {
-            // ScrollIntoView(last entry) stops before ListView.Footer, so lay out
-            // first, then move to the full extent including the tail.
-            // disableAnimation keeps autoscroll independent of animation preferences.
+            // The list is virtualized: it builds only the rows near the view and
+            // estimates the height of the others from the rows it has built. A
+            // Warning or Error row is two lines high, so that estimate runs short
+            // and ScrollableHeight read before the last rows exist stopped the view
+            // rows before the end, its bottom row cut by the edge. ScrollIntoView
+            // builds the last rows, which makes the extent at the end exact; it
+            // stops before ListView.Footer, so the view then moves to the full
+            // extent, tail included. disableAnimation keeps autoscroll independent
+            // of animation preferences.
+            LogItems.ScrollIntoView(_visible[^1], ScrollIntoViewAlignment.Leading);
             LogItems.UpdateLayout();
             ScrollViewer? viewer = GetListViewScrollViewer();
             viewer?.ChangeView(
