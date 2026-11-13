@@ -69,18 +69,15 @@ public sealed class LoggingSettingsTests
 
     [Fact]
     [Trait("Category", "unit")]
-    public void RetentionNamesMatchTheArchiveCaps()
+    public void DeveloperModeKeepsAboutAGigabyteOfTraceAndOtherwiseAboutSixtyMegabytes()
     {
-        Assert.Equal(TraceRetention.About60Megabytes, new LoggingSettings().TraceRetention);
-        Assert.Equal(10, TraceRetentionPolicy.MaxArchives(TraceRetention.About60Megabytes));
-        Assert.Equal(50, TraceRetentionPolicy.MaxArchives(TraceRetention.About300Megabytes));
-        Assert.Equal(170, TraceRetentionPolicy.MaxArchives(TraceRetention.About1Gigabyte));
-        Assert.Null(TraceRetentionPolicy.MaxArchives(TraceRetention.NoLimit));
+        Assert.Equal(10, TraceRetentionPolicy.MaxArchives(developerMode: false));
+        Assert.Equal(170, TraceRetentionPolicy.MaxArchives(developerMode: true));
     }
 
     [Fact]
     [Trait("Category", "integration")]
-    public void TheSettingsRoundTripThroughTheStoreWithTheRetentionAsAWord()
+    public void TheSettingsRoundTripThroughTheStore()
     {
         string path = Path.Combine(
             Path.GetTempPath(), $"deckle-logging-test-{Guid.NewGuid():N}.json");
@@ -91,14 +88,11 @@ public sealed class LoggingSettingsTests
             using var store = new JsonSettingsStore<LoggingSettings>(path, mutex, Options());
             store.Current.DetailedLogs = true;
             store.Current.InputDetails = false;
-            store.Current.TraceRetention = TraceRetention.NoLimit;
             store.Flush();
 
-            Assert.Contains("\"traceRetention\": \"NoLimit\"", File.ReadAllText(path));
             using var reloaded = new JsonSettingsStore<LoggingSettings>(path, mutex, Options());
             Assert.True(reloaded.Current.DetailedLogs);
             Assert.False(reloaded.Current.InputDetails);
-            Assert.Equal(TraceRetention.NoLimit, reloaded.Current.TraceRetention);
         }
         finally
         {

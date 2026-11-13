@@ -19,10 +19,11 @@ public sealed class ApplicationLogSink : IFlushableLogSink
         Func<int?>? maxArchives = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(diagnosticsDirectory);
-        // Read lazily, at each roll and at start: a sink built by a test with
-        // its own reader never touches the person's settings file.
-        maxArchives ??= static () => TraceRetentionPolicy.MaxArchives(
-            LoggingSettingsService.Instance.Current.TraceRetention);
+        // Read lazily, at each roll and at start. Developer mode lives in the
+        // Settings shell, which this module does not reference: the
+        // composition root hands its reader in, and a sink built without one
+        // keeps the normal cap.
+        maxArchives ??= static () => TraceRetentionPolicy.MaxArchives(developerMode: false);
 
         _isEnabled = isEnabled
             ?? (static () => LoggingSettingsService.Instance.Current.ApplicationLogToDisk);
@@ -32,8 +33,8 @@ public sealed class ApplicationLogSink : IFlushableLogSink
             kindLabel: "log",
             predicate: static _ => true,
             schema: JsonlSchema.SelfDescribing,
-            // The person's retention, read at each roll (TraceRetention): a
-            // lowered cap trims at the next roll.
+            // The cap, read at each roll (TraceRetentionPolicy): a lowered
+            // cap trims at the next roll.
             rotation: new JsonlRotationPolicy(TraceRetentionPolicy.LinesPerFile, maxArchives));
     }
 

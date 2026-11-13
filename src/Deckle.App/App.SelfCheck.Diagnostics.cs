@@ -12,7 +12,7 @@ namespace Deckle.App;
 //
 // A fresh data root has every opt-in of the Diagnostics page off, and each
 // fold then hides what it holds: Detailed logs and its sources, the
-// retention of the logs on disk, the options of each corpus. A review pass
+// options of each corpus. A review pass
 // would never see them. So, after the walk, the run turns them on in its own
 // root, opens every fold and photographs the page again
 // (settings-diagnostics-open). The values are written straight to the stores,

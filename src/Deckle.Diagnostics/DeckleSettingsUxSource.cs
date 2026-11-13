@@ -120,7 +120,6 @@ internal static class SettingValueRedaction
         "Logging.WindowingDetails",
         "Logging.LlmDetails",
         "Logging.ApplicationLogToDisk",
-        "Logging.TraceRetention",
         "Input.RecordWheelEvents",
         "Trackpad.RecordFrames",
         "Telemetry.LatencyEnabled",

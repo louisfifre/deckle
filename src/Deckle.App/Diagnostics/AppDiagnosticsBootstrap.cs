@@ -88,7 +88,14 @@ internal static class AppDiagnosticsBootstrap
         if (_logWindowSink is not null) return;
 
         var dispatch = Dispatch;
-        dispatch.AddSink(new ApplicationLogSink(diagnosticsDirectory), replayBoot: true);
+        // The trace keeps more history in developer mode (TraceRetentionPolicy),
+        // read at each roll so the mode applies without a restart.
+        dispatch.AddSink(
+            new ApplicationLogSink(
+                diagnosticsDirectory,
+                maxArchives: static () => TraceRetentionPolicy.MaxArchives(
+                    Settings.SettingsService.Instance.Current.Developer.DeveloperMode)),
+            replayBoot: true);
 
         // Buffers from boot: the lazy LogWindow attaches on first open and
         // receives the buffer as a replay.

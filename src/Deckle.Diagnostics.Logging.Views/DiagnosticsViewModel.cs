@@ -41,7 +41,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     [ObservableProperty] public partial bool RecordTouchpadFrames { get; set; }
 
     [ObservableProperty] public partial bool ApplicationLogToDisk { get; set; }
-    [ObservableProperty] public partial TraceRetention TraceRetention { get; set; }
 
     // Empty means AppPaths.TelemetryDirectory.
     [ObservableProperty] public partial string TelemetryStorageDirectory { get; set; }
@@ -54,7 +53,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     partial void OnWindowingDetailsChanged(bool value) => PushLogging(nameof(LoggingSettings.WindowingDetails), value);
     partial void OnLlmDetailsChanged(bool value) => PushLogging(nameof(LoggingSettings.LlmDetails), value);
     partial void OnApplicationLogToDiskChanged(bool value) => PushLogging(nameof(LoggingSettings.ApplicationLogToDisk), value);
-    partial void OnTraceRetentionChanged(TraceRetention value) => PushLogging(nameof(LoggingSettings.TraceRetention), value);
 
     partial void OnDictationTimingsChanged(bool value)
     {
@@ -133,7 +131,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         WindowingDetails = l.WindowingDetails;
         LlmDetails = l.LlmDetails;
         ApplicationLogToDisk = l.ApplicationLogToDisk;
-        TraceRetention = l.TraceRetention;
         DictationTimings = t.LatencyEnabled;
         MicrophoneLevel = t.MicrophoneTelemetry;
         TelemetryStorageDirectory = t.StorageDirectory;
@@ -154,7 +151,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         l.WindowingDetails = WindowingDetails;
         l.LlmDetails = LlmDetails;
         l.ApplicationLogToDisk = ApplicationLogToDisk;
-        l.TraceRetention = TraceRetention;
         LoggingSettingsService.Instance.Save();
     }
 
@@ -189,7 +185,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         RecordWheelEvents = new MouseWheelSettings().RecordEvents;
         RecordTouchpadFrames = new TrackpadSettings().RecordFrames;
         ApplicationLogToDisk = l.ApplicationLogToDisk;
-        TraceRetention = l.TraceRetention;
     }
 
     public void ResetFoldersDefaults()

@@ -79,30 +79,15 @@ public partial class DiagnosticsViewModel
                     defaultValue: () => new MouseWheelSettings().RecordEvents),
             ]),
 
-        // The trace, with its retention inside: how much history it keeps
-        // only matters once it is on. The consent gate holds the OFF→ON
-        // write behind its dialog (TelemetryConsent.RequestApplicationLog).
-        Setting.Group("GeneralAppLogCard",
+        // The trace. How much history it keeps is decided, not set
+        // (TraceRetentionPolicy: more in developer mode). The consent gate
+        // holds the OFF→ON write behind its dialog
+        // (TelemetryConsent.RequestApplicationLog).
+        Setting.Toggle("GeneralAppLogCard",
             () => ApplicationLogToDisk,
             value => ApplicationLogToDisk = value,
             defaultValue: () => new LoggingSettings().ApplicationLogToDisk,
-            confirmOnEnable: TelemetryConsent.RequestApplicationLog,
-            children:
-            [
-                Setting.Choice("TraceRetentionCard",
-                    () => TraceRetention,
-                    value => TraceRetention = value,
-                    TraceRetentionLevels,
-                    defaultValue: () => new LoggingSettings().TraceRetention),
-            ]),
-    ];
-
-    private static readonly IReadOnlyList<(TraceRetention Value, string LabelKey)> TraceRetentionLevels =
-    [
-        (TraceRetention.About60Megabytes, "TraceRetention60MB"),
-        (TraceRetention.About300Megabytes, "TraceRetention300MB"),
-        (TraceRetention.About1Gigabyte, "TraceRetention1GB"),
-        (TraceRetention.NoLimit, "TraceRetentionNoLimit"),
+            confirmOnEnable: TelemetryConsent.RequestApplicationLog),
     ];
 
     // The Folders section that closes the page: each place Deckle writes to

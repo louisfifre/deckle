@@ -78,16 +78,11 @@ public static class SettingsSearch
             Keywords = ["mouse", "scroll", "wheel", "record", "telemetry"],
         },
 
-        // The copy on disk and its retention.
+        // The copy on disk.
         new SettingSearchEntry
         {
             LabelKey = "GeneralAppLogCard",
-            Keywords = ["trace", "application log", "debug", "troubleshoot"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "TraceRetentionCard",
-            Keywords = ["retention", "archive", "size", "disk", "history", "rotation"],
+            Keywords = ["trace", "application log", "debug", "troubleshoot", "retention", "archive", "disk", "history"],
         },
 
         // "Folders" section, last on the page: the two composed folder folds

@@ -145,31 +145,14 @@
     <value>One line per wheel event: very high volume.</value>
   </data>
 
-  <!-- The trace (diagnostics\trace.jsonl, GLOSSARY.md) and its retention.
-       The person reads "logs on disk"; the keys keep their AppLog name. -->
+  <!-- The trace (diagnostics\trace.jsonl, GLOSSARY.md). Its retention is
+       fixed, not set (TraceRetentionPolicy). The person reads "logs on
+       disk"; the keys keep their AppLog name. -->
   <data name="GeneralAppLogCard.Header" xml:space="preserve">
     <value>Keep logs on disk</value>
   </data>
   <data name="GeneralAppLogCard.Description" xml:space="preserve">
     <value>A copy of the log that survives restarts, to follow a problem over time.</value>
-  </data>
-  <data name="TraceRetentionCard.Header" xml:space="preserve">
-    <value>Keep up to</value>
-  </data>
-  <data name="TraceRetentionCard.Description" xml:space="preserve">
-    <value>All the logs on disk together. The oldest lines go first.</value>
-  </data>
-  <data name="TraceRetention60MB.Content" xml:space="preserve">
-    <value>About 60 MB</value>
-  </data>
-  <data name="TraceRetention300MB.Content" xml:space="preserve">
-    <value>About 300 MB</value>
-  </data>
-  <data name="TraceRetention1GB.Content" xml:space="preserve">
-    <value>About 1 GB</value>
-  </data>
-  <data name="TraceRetentionNoLimit.Content" xml:space="preserve">
-    <value>No limit</value>
   </data>
 
   <!-- Corpus section (x:Uid header). Its folds come from the modules that own

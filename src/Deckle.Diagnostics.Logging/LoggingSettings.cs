@@ -1,10 +1,10 @@
-using System.Text.Json.Serialization;
 using Deckle.Diagnostics;
 
 namespace Deckle.Diagnostics.Logging;
 
 // Operational-log settings, persisted by LoggingSettingsService: producer-side
-// admission plus the trace.jsonl opt-in and its retention. The LogWindow view
+// admission plus the trace.jsonl opt-in; the trace's retention is fixed
+// (TraceRetentionPolicy). The LogWindow view
 // filter is a separate, process-lifetime selection and never belongs here.
 //
 // One level model, the same for every activity (2026-11-13). An activity
@@ -21,10 +21,6 @@ public sealed class LoggingSettings
     // fixed by the Logging module at diagnostics/trace.jsonl; telemetry settings
     // and storage overrides never redirect it.
     public bool ApplicationLogToDisk { get; set; } = false;
-
-    // How much of the trace's history the archive keeps (TraceRetention).
-    [JsonConverter(typeof(JsonStringEnumConverter<TraceRetention>))]
-    public TraceRetention TraceRetention { get; set; } = TraceRetention.About60Megabytes;
 
     // The one switch for everything a developer turns on to chase a bug: each
     // activity's per-step detail and the diagnostic captures that hang under
@@ -60,30 +56,21 @@ public sealed class LoggingSettings
             : OperationalLogVerbosity.Summary;
 }
 
-// The trace archive's cap, named by the disk it takes. The rotation counts
-// lines (8,000 a file) and a line weighs about 720 bytes on a real run
-// (measured 2026-11-13: 680 to 740), so a file is about 6 MB and the names are
-// approximate. On that run 60 MB held about one day of use. Values persist as
-// words; append only.
-public enum TraceRetention
-{
-    About60Megabytes,
-    About300Megabytes,
-    About1Gigabyte,
-    NoLimit,
-}
-
+// The trace archive's cap, decided for the person (2026-11-13): no setting.
+// The rotation counts lines (8,000 a file) and a line weighs about 720 bytes
+// on a real run (measured 2026-11-13: 680 to 740), so a file is about 6 MB.
+// Ten archives, about 60 MB, held about one day of the maintainer's use;
+// developer mode keeps 170, about 1 GB, about three weeks, for whoever chases
+// a bug across days. The cap is read at each roll, so leaving developer mode
+// trims the archive at the next one.
 public static class TraceRetentionPolicy
 {
     public const int LinesPerFile = 8000;
 
-    // Archived files kept beside the active one; null keeps every file.
-    public static int? MaxArchives(TraceRetention retention) => retention switch
-    {
-        TraceRetention.About60Megabytes  => 10,
-        TraceRetention.About300Megabytes => 50,
-        TraceRetention.About1Gigabyte    => 170,
-        TraceRetention.NoLimit           => null,
-        _                                => 10,
-    };
+    public const int NormalArchives = 10;
+    public const int DeveloperArchives = 170;
+
+    // Archived files kept beside the active one.
+    public static int MaxArchives(bool developerMode)
+        => developerMode ? DeveloperArchives : NormalArchives;
 }
