@@ -84,6 +84,8 @@ Mesuré sur ta machine : une ligne de trace pèse ~720 octets. Le trace garde au
 - **Reste ta décision** : pour qu'un changement atteigne le disque sans le trace, il faut l'admettre dans `log.jsonl`. C'est un geste humain rare, donc ça ne coûte presque rien en volume, mais ça change ce que garde le log toujours actif.
 - *Autre lecture, sans rien construire* : comparer chaque fichier de réglages à ses valeurs par défaut dit **ce qui est réglé aujourd'hui**. Le log dit **ce qui a été touché, et quand**.
 
+**Construit** : l'événement est `SettingWritten` (`Deckle-SettingsUx`), un jalon Informational, donc gardé dans `log.jsonl`. Son message est une phrase sans valeur, « A setting was changed » (ADR-0007) ; le module, le réglage, l'ancienne et la nouvelle valeur sont des champs de l'événement. La fenêtre de log affiche les champs d'une ligne Informational à côté de sa phrase : `A setting was changed | module=… | setting=… | old_value=… | new_value=…`. De même pour `A Settings page was opened | page=…` et `A window was opened | window=…`.
+
 ### 3. La même forme pour les deux corpus
 
 **Établi : c'est déjà la forme livrée.** *Keep my dictations* contient *Also save the audio* (et le choix brut/traité) ; *Keep the text I type* (le corpus de l'autocorrect) contient *Also keep each correction decision*. Même pli, même verbe « Also ». *Interprétation* : si tu voulais plutôt le texte tapé comme sous-option d'un pli « Autocorrect », dis-le ; la forme actuelle met la donnée principale en titre, comme pour la dictée.
@@ -102,7 +104,8 @@ Captures prises à nouveau, relues par les mêmes types de lecteurs sans leur do
 - **Dix sous-interrupteurs dans un pli en mode développeur** (six sinon) : long, et les plis ne s'emboîtent pas.
 - **Le mot « Corpus »** reste opaque pour un lecteur froid ; la légende l'explique, le titre non.
 - **La taille actuelle sur disque et une commande pour vider** manquent ; c'est la tâche Anytype existante « Diagnostics : exporter un zip et vider les dossiers ».
-- **Fenêtre de log** : aucun signe qu'un filtre est actif ni combien de lignes il cache ; dans la capture « fin », la dernière ligne semble passer sous la barre de défilement horizontale (*incertain* : des lignes arrivaient peut-être après le défilement).
+- **Fenêtre de log, filtres** : la ligne des filtres dit combien de lignes de détail sont masquées (« Detail hidden: N lines »), et le bouton devient « Copy visible » dès qu'un filtre de vue est actif ; un filtre Severity, Module ou Category ne dit pas combien de lignes il cache.
+- **Fenêtre de log, dernière ligne coupée : corrigé** (`f96c69c9`). La liste est virtualisée et estimait trop court la hauteur des lignes pas encore construites (un avertissement fait deux lignes), donc le défilement s'arrêtait avant la fin. Le self-check, qui n'active pas la fenêtre, redescend aussi juste avant sa dernière image (`cc390b84`). Note : `LogWindowScrollBugNotes.md`.
 - **« Log settings »** ouvre la page nommée « Diagnostics » : deux noms pour un lieu.
 - **Fréquence d'image de la fenêtre de log** : pas mesurée. Je ne peux pas faire défiler au trackpad depuis le self-check, et je ne l'affirme donc pas (tâche Anytype).
 - **Réordonner les champs de tous les événements** du général au particulier : fait sur ceux que j'ai touchés seulement (tâche Anytype).
