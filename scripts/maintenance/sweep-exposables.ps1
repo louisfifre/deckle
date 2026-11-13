@@ -4,8 +4,7 @@
 .DESCRIPTION
     Text sweep of the exposables carried by the source tree. An exposable is a
     code value someone could act on: a persisted setting, a hardcoded tuning
-    constant, a default, a Playground memory-only parameter, whether or not
-    any surface exposes it today. The sweep reads text only (no build, no
+    constant or a default, whether or not any surface exposes it today. The sweep reads text only (no build, no
     reflection, no runtime) and keeps the file and line of every entry.
 .NOTES
     order: 420
@@ -63,7 +62,6 @@ function Get-ExposableKind {
         [Parameter(Mandatory)][AllowEmptyString()][string]$Qualifiers
     )
 
-    if ($Module -eq 'Deckle.Playground') { return 'playground-parameter' }
     if ($Qualifiers -match 'const|static') { return 'tuning-constant' }
     if ($DeclaringType -match 'Settings$|Settings[A-Z]|Options$|Profile$') { return 'persisted-setting' }
     if ($Declaration -eq 'property') { return 'default-value' }
