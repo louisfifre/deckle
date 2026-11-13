@@ -38,7 +38,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     // The App owns the other windows, so it hands these in, as it does for
     // SettingsWindow.OnShowLogsRequested.
     public Action? OnShowSettingsRequested { get; set; }
-    public Action? OnShowPlaygroundRequested { get; set; }
 
     private BitmapImage? _iconIdle;
     private BitmapImage? _iconRecording;
@@ -61,6 +60,11 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     // Window width in DIPs below which the SearchBox collapses into an icon button.
     private const double SearchCollapseThreshold = 520.0;
+
+    // Window width in DIPs below which the toolbar's settings label collapses
+    // to its icon: Copy all, Save all, Clear, Word wrap, Auto-scroll and the
+    // labelled settings button need about this much side by side.
+    private const double ToolbarCompactWidth = 760.0;
     private bool _isSearchNarrow;
 
     public LogWindow()
@@ -71,7 +75,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         LogItems.ItemsSource = _visible;
         LogItems.Loaded += (_, _) => AttachScrollObserver();
         FilterBar.Selection = _filterSelection;
-        UpdateFiltersToggleLabel();
 
         LoadAppIcons();
         AppTitleBarIcon.ImageSource = _iconIdle;
@@ -200,9 +203,6 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     private void OnSettingsButtonClick(object sender, RoutedEventArgs e)
         => OnShowSettingsRequested?.Invoke();
 
-    private void OnPlaygroundButtonClick(object sender, RoutedEventArgs e)
-        => OnShowPlaygroundRequested?.Invoke();
-
     private void OnWrapToggleClick(object sender, RoutedEventArgs e)
     {
         bool wrap = WrapToggle.IsChecked == true;
@@ -215,26 +215,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
             wrap ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto);
     }
 
-    private void OnFiltersToggleClick(object sender, RoutedEventArgs e)
-    {
-        FilterBar.Visibility = FiltersToggle.IsChecked == true
-            ? Visibility.Visible
-            : Visibility.Collapsed;
-    }
-
-    private void OnFilterChanged(object sender, EventArgs e)
-    {
-        UpdateFiltersToggleLabel();
-        ApplyFilter();
-    }
-
-    private void UpdateFiltersToggleLabel()
-    {
-        FiltersToggle.Label = _filterSelection.Count == 0
-            ? Loc.Get("LogWindow_FiltersButton_Default")
-            : Loc.Format("LogWindow_FiltersButton_Format", _filterSelection.Count);
-        AutomationProperties.SetName(FiltersToggle, FiltersToggle.Label);
-    }
+    private void OnFilterChanged(object sender, EventArgs e) => ApplyFilter();
 
     private void OnSearchTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {

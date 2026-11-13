@@ -54,7 +54,6 @@ public partial class App
     {
         bool enabled = DeveloperModeEnabled;
         _settingsWindow?.SetPlaygroundAvailable(enabled);
-        _logWindow?.SetPlaygroundAvailable(enabled);
         if (enabled) return;
         _playgroundWindow?.Close();
         _mailWindow?.Close();

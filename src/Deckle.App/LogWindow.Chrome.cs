@@ -76,6 +76,12 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     private void OnWindowSizeChanged(object sender, WindowSizeChangedEventArgs args)
     {
+        // The toolbar's two groups share one line; below this width the
+        // settings label gives way to its icon so they never overlap.
+        SettingsButtonText.Visibility = args.Size.Width < ToolbarCompactWidth
+            ? Visibility.Collapsed
+            : Visibility.Visible;
+
         bool narrow = args.Size.Width < SearchCollapseThreshold;
         if (narrow == _isSearchNarrow) return;
         _isSearchNarrow = narrow;

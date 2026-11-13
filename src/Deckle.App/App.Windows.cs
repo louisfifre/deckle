@@ -34,7 +34,6 @@ public partial class App
             {
                 OnShowSettingsRequested = () => ShowSettingsWindowLazy(
                     Diagnostics.Logging.Views.DiagnosticsSettingsModule.PageTag),
-                OnShowPlaygroundRequested = ShowPlaygroundLazy,
             });
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Log);
             window.AppWindow.Closing += (_, _) =>
@@ -46,7 +45,6 @@ public partial class App
             };
 
             _logWindow = window;
-            window.SetPlaygroundAvailable(DeveloperModeEnabled);
             AppDiagnosticsBootstrap.AttachLogWindowSink(window);
             window.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(window);

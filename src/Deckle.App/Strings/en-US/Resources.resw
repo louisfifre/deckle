@@ -1059,15 +1059,6 @@
   <data name="LogWindowClearText.Text" xml:space="preserve">
     <value>Clear</value>
   </data>
-  <data name="LogWindowFiltersToggle.Label" xml:space="preserve">
-    <value>Filters</value>
-  </data>
-  <data name="LogWindow_FiltersButton_Default" xml:space="preserve">
-    <value>Filters</value>
-  </data>
-  <data name="LogWindow_FiltersButton_Format" xml:space="preserve">
-    <value>Filters ({0})</value>
-  </data>
   <data name="LogWindowAutoScrollToggle.Content" xml:space="preserve">
     <value>Auto-scroll</value>
   </data>
@@ -1089,18 +1080,17 @@
   <data name="LogWindow_ContextCopy_All" xml:space="preserve">
     <value>Copy all</value>
   </data>
-  <!-- Title bar commands (icon-only Buttons): tooltip + accessible name. -->
+  <!-- Toolbar link to the Diagnostics page, the editor of what this window shows. -->
+  <data name="LogWindowSettingsText.Text" xml:space="preserve">
+    <value>Log settings</value>
+  </data>
+  <!-- The same words on the Button itself: they carry its name once its label
+       gives way to its icon in a narrow window. -->
   <data name="LogWindowSettingsButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Settings</value>
+    <value>Log settings</value>
   </data>
   <data name="LogWindowSettingsButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Settings</value>
-  </data>
-  <data name="LogWindowPlaygroundButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Playground</value>
-  </data>
-  <data name="LogWindowPlaygroundButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Playground</value>
+    <value>Log settings</value>
   </data>
   <!-- Notice above the log list (code-behind, Loc.Format). -->
   <data name="LogWindow_DroppedNotice_Format" xml:space="preserve">
