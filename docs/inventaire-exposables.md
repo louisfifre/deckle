@@ -8,7 +8,7 @@
 
 **Hors périmètre.** Les littéraux XAML (bornes `Minimum`/`Maximum`/`StepFrequency` des sliders), les tables lexicales préfixées `_`, et tout ce qui vit sous `tests/`.
 
-Total : **625 entrées** réparties sur **38 modules**.
+Total : **622 entrées** réparties sur **38 modules**.
 
 | Module | Entrées |
 |---|---|
@@ -23,12 +23,12 @@ Total : **625 entrées** réparties sur **38 modules**.
 | Deckle.Core | 9 |
 | Deckle.Diagnostics | 5 |
 | Deckle.Diagnostics.Logging | 7 |
-| Deckle.Diagnostics.Telemetry | 8 |
+| Deckle.Diagnostics.Telemetry | 7 |
 | Deckle.Home | 3 |
 | Deckle.Hud | 26 |
-| Deckle.Input | 12 |
+| Deckle.Input | 11 |
 | Deckle.Input.PrecisionScroll | 12 |
-| Deckle.Input.Trackpad | 10 |
+| Deckle.Input.Trackpad | 9 |
 | Deckle.Install | 4 |
 | Deckle.Installer | 1 |
 | Deckle.Lighting | 8 |
@@ -308,7 +308,6 @@ Total : **625 entrées** réparties sur **38 modules**.
 
 | Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
 |---|---|---|---|---|---|
-| LatencyEnabled | persisted-setting | `false` | src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs:13 | oui |  |
 | MicrophoneTelemetry | persisted-setting | `false` | src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs:14 | oui |  |
 | CorpusEnabled | persisted-setting | `false` | src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs:15 | oui |  |
 | RecordAudioCorpus | persisted-setting | `false` | src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs:16 | oui |  |
@@ -370,8 +369,7 @@ Total : **625 entrées** réparties sur **38 modules**.
 | KeyboardInputHost.WheelObservationTimerMs | tuning-constant | `10` | src/Deckle.Input/Keyboard/KeyboardInputHost.WheelObservations.cs:6 | non | Pump timer cadence draining wheel observations — pairs with RetentionMs to set wheel latency. Keep alongside it. |
 | KeyboardInputHost.RollupPeriodMs | tuning-constant | `30000` | src/Deckle.Input/Keyboard/KeyboardInputHost.cs:47 | non | Logging rollup period, diagnostic cadence only. Kept but a strong drop candidate. |
 | RawInputHost.RollupPeriodMs | tuning-constant | `5000` | src/Deckle.Input/RawInputHost.cs:30 | non | Same nature as the KeyboardInputHost one, different value (5 s vs 30 s) on the sibling host — the inconsistency itself may be worth a look. Diagnostic cadence only. |
-| ContactFrameRecorder.FlushPeriodMs | tuning-constant | `500` | src/Deckle.Input/Telemetry/ContactFrameRecorder.cs:28 | non | JSONL flush cadence of the contact-frame diagnostic recorder. Affects data-loss window on crash, nothing user-facing. |
-| WheelEventRecorder.FlushPeriodMs | tuning-constant | `500` | src/Deckle.Input/Telemetry/WheelEventRecorder.cs:33 | non | Same as ContactFrameRecorder — flush cadence of the wheel JSONL driven by MouseWheelSettings.RecordEvents. |
+| WheelEventRecorder.FlushPeriodMs | tuning-constant | `500` | src/Deckle.Input/Telemetry/WheelEventRecorder.cs:33 | non | Flush cadence of the wheel JSONL driven by MouseWheelSettings.RecordEvents. |
 
 ## Deckle.Input.PrecisionScroll
 
@@ -396,7 +394,6 @@ Total : **625 entrées** réparties sur **38 modules**.
 |---|---|---|---|---|---|
 | Enabled | persisted-setting | `false` | src/Deckle.Input.Trackpad/TrackpadSettings.cs:8 | oui |  |
 | DragSpeed | persisted-setting | `1.0` | src/Deckle.Input.Trackpad/TrackpadSettings.cs:16 | oui |  |
-| RecordFrames | persisted-setting | `false` | src/Deckle.Input.Trackpad/TrackpadSettings.cs:23 | oui |  |
 | MaxFrameDeltaRatio | tuning-constant | `0.08` | src/Deckle.Input.Trackpad/Engine/TrackpadEngine.cs:19 | non | Source comment states it is an in-engine constant by decision (smoothing is never exposed) — an exposable already arbitrated shut. |
 | BaseScale | tuning-constant | `0.25` | src/Deckle.Input.Trackpad/Engine/TrackpadEngine.cs:24 | non | Source comment states sensitivity is the DragSpeed slider alone — arbitrated shut. |
 | GraceDelayMs | tuning-constant | `0` | src/Deckle.Input.Trackpad/Engine/TrackpadEngine.cs:28 | non | Frozen 2026-06-12 after hands-on calibration; TrackpadSettings comment says a stale persisted Tuning object is ignored. |

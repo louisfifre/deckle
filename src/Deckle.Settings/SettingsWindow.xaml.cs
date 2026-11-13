@@ -568,7 +568,6 @@ public sealed partial class SettingsWindow : Window
             return;
         }
 
-        DeckleSettingsSource.Log.NavStarted();
         DeckleSettingsSource.Log.NavStartedDetail(pageType.Name);
         // One nav-start timestamp for both measures: this restart feeds the
         // Navigate-return duration on NavCompletedDetail below and the page's
@@ -587,7 +586,6 @@ public sealed partial class SettingsWindow : Window
             }
             else
             {
-                DeckleSettingsSource.Log.NavCompleted();
                 DeckleSettingsSource.Log.NavCompletedDetail(
                     pageType.Name, DeckleSettingsSource.NavClock.ElapsedMilliseconds);
                 ReportPageReadyOnFirstLoad(pageType.Name);

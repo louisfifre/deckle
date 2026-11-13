@@ -55,9 +55,9 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
     public const int EvtNavImpossibleNoTag                = 30;
     public const int EvtNavFailedTypeNotFound             = 31;
     public const int EvtNavSkippedAlreadyCurrent          = 32;
-    public const int EvtNavStarted                        = 33;
+    // 33 retired: NavStarted, one line per page is PageOpened.
     public const int EvtNavFailedFrameRejected            = 34;
-    public const int EvtNavCompleted                      = 35;
+    // 35 retired: NavCompleted, one line per page is PageOpened.
     // 36 retired.
     public const int EvtNavStackTrace                     = 37;
     // 38 retired.
@@ -155,5 +155,6 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
     // ── SettingsWindow title bar commands ──
     // Sibling of EvtOpenLogsFromFooter (39), declared later so it got the next id.
     public const int EvtOpenPlaygroundFromFooter          = 93;
+    public const int EvtPageOpened                        = 94;
 
 }

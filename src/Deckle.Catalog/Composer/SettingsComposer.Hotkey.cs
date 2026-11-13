@@ -110,7 +110,7 @@ public sealed partial class SettingsComposer
                 if (!Equals(s.GetValue(), chord))
                 {
                     synced = chord;
-                    s.SetValue(chord);
+                    Write(s, chord);
                 }
             }
             RefreshAdvisory(s);
@@ -207,7 +207,7 @@ public sealed partial class SettingsComposer
             {
                 listening = false;
                 LoadDraft(null);
-                if (s.GetValue() is not null) s.SetValue(null);
+                if (s.GetValue() is not null) Write(s, null);
                 ShowDraft();
                 RefreshAdvisory(s);
             };

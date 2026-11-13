@@ -21,8 +21,8 @@ namespace Deckle.Llm;
 // TranscriptRewriteStarted, then TranscriptRewriteCompleted, RewriteTimeout or
 // RewriteUnavailable, all carrying one work_id, and the first and last are in
 // the log. The paragraph and sentence rewrites run on every pause in
-// typing: their Started, Completed and Cancelled lines are Verbose detail and
-// the log sees them as a 60 s count (LoopPulse). Prompt and completion text never enter a payload: counts,
+// typing: their Started, Completed and Cancelled lines are Verbose detail,
+// outside the log. Prompt and completion text never enter a payload: counts,
 // models, providers and timings only.
 //
 // The Ollama /api/ps probe exists only to enrich admitted Transcription
@@ -84,9 +84,9 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     public const int EvtRewriteSkippedNoProviderDetail = 45;
     // 46 retired.
     // 47 retired.
-    public const int EvtBatchRewriteSent             = 48;
+    // 48 retired.
     public const int EvtBatchRewriteSentDetail       = 49;
-    public const int EvtBatchRewriteReturned         = 50;
+    // 50 retired.
     public const int EvtBatchRewriteReturnedDetail   = 51;
     // 52 retired.
     // 53 retired.

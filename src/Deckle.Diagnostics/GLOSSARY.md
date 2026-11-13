@@ -10,7 +10,7 @@ Observability vocabulary shared by `Deckle.Diagnostics`, `Deckle.Diagnostics.Log
 ## Admission vs view
 
 **Verbosity control** :
-A control that decides, per activity and persistently, which observations Deckle admits into its operational log stream, before any work done only for the log. When it is off, the governed observations reach no log sink, and the work that would have produced them does not run. It may govern repetitive `Informational` outcomes as well as `Verbose` detail. Workflow lifecycle, incidents, recoveries, their one-shot technical mirrors and every `Warning` or `Error` always remain. Telemetry datasets answer to a separate authority.
+A control that decides, per activity and persistently, whether Deckle admits that activity's per-step detail into its operational log stream, before any work done only for the log. When it is off, the detail reaches no log sink, and the work that would have produced it does not run. The activity's summary, a heartbeat, a rollup or the figures of one unit of work, always remains, as do workflow lifecycle, incidents, recoveries, their one-shot technical mirrors and every `Warning` or `Error`. Telemetry datasets answer to a separate authority.
 _Avoid_ : capture control (capture already names audio and screen acquisition), view filter (which never removes an observation).
 
 **Trace** :
@@ -18,7 +18,7 @@ The file `diagnostics/trace.jsonl`, an optional copy of Deckle's admitted operat
 _Avoid_ : application log (its former label in Settings, which now says Trace), telemetry (purpose-specific data collection), LogWindow log (the other sink of the same stream), log (the always-on file, which keeps only what travels).
 
 **Log** :
-The always-on file `diagnostics/log.jsonl`, the record that travels to a reader on another machine. It keeps every admitted `Warning` and `Error`, every milestone and the crash details, whatever the verbosity controls say. It needs no setting and stays small by design.
+The always-on file `diagnostics/log.jsonl`, the record that travels to a reader on another machine. It keeps every admitted `Warning` and `Error`, every milestone, every activity's summary and the crash details, whatever the verbosity controls say. It needs no setting and holds no per-step detail.
 _Avoid_ : trace (the opt-in full copy), LogWindow log (the live view), operational log stream (everything admitted, of which the log keeps a part).
 
 **Milestone** :
@@ -30,7 +30,7 @@ A degraded state of one module that a gesture of the person ends, such as a micr
 _Avoid_ : incident (in the log, a degradation that repeats, written once and closed by one recovery, whether or not the person can fix it), alert or notification (nothing pops up), error (an `Error` level entry).
 
 **Telemetry dataset** :
-A dataset collected for one purpose, machine-readable and under its own explicit consent, such as latency, microphone, corpus or autocorrect-decision data. It lies outside the operational log stream and its verbosity controls.
+A dataset collected for one purpose, machine-readable and under its own explicit consent, such as microphone, corpus or autocorrect-decision data. It lies outside the operational log stream and its verbosity controls.
 _Avoid_ : trace (the operational stream on disk), logs (too loose).
 
 **View filter** :
@@ -78,6 +78,6 @@ A filter applied at the moment of capture, in the audio or screen sense. A tempo
 ### Example conversation
 
 > - Ambient is flooding the LogWindow. I do not want those detailed observations recorded at all.
-> - Turn off its verbosity control. Its milestones and failures remain, but the governed `Verbose` stream reaches no sink.
+> - Turn off its verbosity control. Its summary, milestones and failures remain, but its per-step detail reaches no sink.
 > - I only want to inspect Ambient failures for a minute.
 > - Use a view filter. The other observations stay in the window and reappear when you clear the filter.

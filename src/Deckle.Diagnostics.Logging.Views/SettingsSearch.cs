@@ -15,12 +15,18 @@ namespace Deckle.Diagnostics.Logging.Views;
 // Maintenance contract: one card on the page, one entry here. Add a card (composed
 // or hand-authored) and it stays invisible to search until it gets a line below; a
 // bespoke card also needs its Tag="<LabelKey>" in DiagnosticsPage.xaml so a hit can
-// scroll to it.
+// scroll to it. The words of a former label stay as keywords, so a person who
+// learned the old name still finds the card.
 public static class SettingsSearch
 {
     public static IReadOnlyList<SettingSearchEntry> Entries { get; } =
     [
-        // "Logging" section — composed card (LoggingSettings).
+        // "Logs" section — the Detailed logs fold and its children.
+        new SettingSearchEntry
+        {
+            LabelKey = "LoggingDetailedCard",
+            Keywords = ["verbosity", "verbose", "debug", "details", "summary", "troubleshoot"],
+        },
         new SettingSearchEntry
         {
             LabelKey = "LoggingAmbientCard",
@@ -29,7 +35,17 @@ public static class SettingsSearch
         new SettingSearchEntry
         {
             LabelKey = "LoggingTranscriptionCard",
-            Keywords = ["dictation", "speech", "file"],
+            Keywords = ["transcription", "speech", "file"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "LoggingMicrophoneLevelCard",
+            Keywords = ["microphone", "rms", "volume", "telemetry"],
+        },
+        new SettingSearchEntry
+        {
+            LabelKey = "LoggingLlmCard",
+            Keywords = ["llm", "tokens", "usage", "cost", "ollama", "claude", "openai", "rewrite"],
         },
         new SettingSearchEntry
         {
@@ -39,40 +55,33 @@ public static class SettingsSearch
         new SettingSearchEntry
         {
             LabelKey = "LoggingInputCard",
-            Keywords = ["raw input", "trackpad", "gesture", "frames"],
+            Keywords = ["raw input", "trackpad", "gesture", "input"],
         },
         new SettingSearchEntry
         {
             LabelKey = "LoggingWindowingCard",
-            Keywords = ["monitor", "display", "placement"],
+            Keywords = ["windowing", "monitor", "display", "placement", "dpi"],
         },
 
-        // "Trace" section. Its label already says "trace"; the former label
-        // stays a keyword so a person who learned it still finds the card.
+        // The copy on disk.
         new SettingSearchEntry
         {
             LabelKey = "GeneralAppLogCard",
-            Keywords = ["application log", "debug", "troubleshoot"],
-        },
-
-        // "Telemetry" section — the page's own composed toggle (TelemetrySettings).
-        new SettingSearchEntry
-        {
-            LabelKey = "TelemetryMouseWheelCard",
-            Keywords = ["mouse", "scroll", "wheel", "jsonl", "capture"],
+            Keywords = ["trace", "application log", "debug", "troubleshoot", "retention", "archive", "disk", "history"],
         },
 
         // "Folders" section, last on the page: the two composed folder folds
-        // (FoldersSettings), the telemetry folder then the diagnostics folder.
+        // (FoldersSettings), the dictation audio folder then the diagnostics
+        // folder.
         new SettingSearchEntry
         {
             LabelKey = "GeneralStorageFolderCard",
-            Keywords = ["directory", "location", "path", "telemetry"],
+            Keywords = ["directory", "location", "path", "telemetry", "corpus", "wav"],
         },
         new SettingSearchEntry
         {
             LabelKey = "DiagnosticsFilesCard",
-            Keywords = ["crash", "troubleshoot", "debug"],
+            Keywords = ["crash", "troubleshoot", "debug", "logs"],
         },
     ];
 }

@@ -154,6 +154,8 @@ public partial class App
 
         Deckle.Diagnostics.Telemetry.TelemetryListenerBootstrap.ConfigureGates(
             () => TelemetrySettingsService.Instance.Current);
+        Deckle.Diagnostics.Telemetry.TelemetryListenerBootstrap.ConfigureDetailGate(
+            () => DeveloperCapturesAdmitted);
 
         NetworkStatusEmitter.Start();
 
@@ -288,11 +290,11 @@ public partial class App
     {
         var logging = LoggingSettingsService.Instance.Current;
         DeckleAppSource.Log.LoggingPolicy(
-            ambient:         logging.AmbientVerbosity.ToString(),
-            transcription:   logging.TranscriptionVerbosity.ToString(),
-            autocorrect:     logging.AutocorrectVerbosity.ToString(),
-            input:           logging.InputVerbosity.ToString(),
-            windowing:       logging.WindowingVerbosity.ToString(),
+            ambient:         logging.Verbosity(OperationalLogActivity.Ambient).ToString(),
+            transcription:   logging.Verbosity(OperationalLogActivity.Transcription).ToString(),
+            autocorrect:     logging.Verbosity(OperationalLogActivity.Autocorrect).ToString(),
+            input:           logging.Verbosity(OperationalLogActivity.Input).ToString(),
+            windowing:       logging.Verbosity(OperationalLogActivity.Windowing).ToString(),
             app_log_to_disk: logging.ApplicationLogToDisk);
     }
 }

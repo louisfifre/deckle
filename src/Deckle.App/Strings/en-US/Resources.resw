@@ -945,7 +945,7 @@
 
   <!-- DiagnosticsPage Telemetry + whole-page reset dialogs -->
   <data name="Settings_ResetDiagnosticsDialog_Detail" xml:space="preserve">
-    <value>The trace and every telemetry dataset are turned off, and the telemetry folder returns to its default location.</value>
+    <value>Detailed logs, logs on disk and every corpus are turned off, and the dictation audio folder returns to its default location.</value>
   </data>
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->
@@ -1044,8 +1044,16 @@
   <data name="LogWindowCopySelectionMenuItem.Text" xml:space="preserve">
     <value>Copy selection</value>
   </data>
-  <data name="LogWindowCopyFilteredMenuItem.Text" xml:space="preserve">
-    <value>Copy filtered</value>
+  <data name="LogWindowCopyAllMenuItem.Text" xml:space="preserve">
+    <value>Copy all</value>
+  </data>
+  <!-- The main Copy button's label (code-behind): all, or the visible lines
+       while a view filter is on. -->
+  <data name="LogWindow_CopyAll" xml:space="preserve">
+    <value>Copy all</value>
+  </data>
+  <data name="LogWindow_CopyVisible" xml:space="preserve">
+    <value>Copy visible</value>
   </data>
   <data name="LogWindowSaveAllText.Text" xml:space="preserve">
     <value>Save all</value>
@@ -1059,20 +1067,23 @@
   <data name="LogWindowClearText.Text" xml:space="preserve">
     <value>Clear</value>
   </data>
-  <data name="LogWindowFiltersToggle.Label" xml:space="preserve">
-    <value>Filters</value>
-  </data>
-  <data name="LogWindow_FiltersButton_Default" xml:space="preserve">
-    <value>Filters</value>
-  </data>
-  <data name="LogWindow_FiltersButton_Format" xml:space="preserve">
-    <value>Filters ({0})</value>
-  </data>
   <data name="LogWindowAutoScrollToggle.Content" xml:space="preserve">
     <value>Auto-scroll</value>
   </data>
   <data name="LogWindowWrapToggle.Content" xml:space="preserve">
     <value>Word wrap</value>
+  </data>
+  <!-- The detail switch (Verbose entries) and the filter-row notice shown
+       while the detail is hidden (code-behind, Loc.Get / Loc.Format). -->
+  <data name="LogWindowDetailToggle.Content" xml:space="preserve">
+    <value>Show detail</value>
+  </data>
+  <data name="LogWindow_DetailHidden" xml:space="preserve">
+    <value>Detail hidden</value>
+  </data>
+  <data name="LogWindow_DetailHidden_Format" xml:space="preserve">
+    <value>Detail hidden: {0:N0} lines</value>
+    <comment>{0} is the number of detail lines kept out of view.</comment>
   </data>
   <data name="LogWindowCopyMenuItem.Text" xml:space="preserve">
     <value>Copy</value>
@@ -1084,18 +1095,24 @@
     <value>Copy selection</value>
   </data>
   <data name="LogWindow_ContextCopy_Filtered" xml:space="preserve">
-    <value>Copy filtered</value>
+    <value>Copy visible</value>
   </data>
   <data name="LogWindow_ContextCopy_All" xml:space="preserve">
     <value>Copy all</value>
   </data>
-  <!-- Title bar commands (icon-only Buttons): tooltip + accessible name. -->
+  <!-- Toolbar link to the Diagnostics page, the editor of what this window shows. -->
+  <data name="LogWindowSettingsText.Text" xml:space="preserve">
+    <value>Log settings</value>
+  </data>
+  <!-- The same words on the Button itself: they carry its name once its label
+       gives way to its icon in a narrow window. -->
   <data name="LogWindowSettingsButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Settings</value>
+    <value>Log settings</value>
   </data>
   <data name="LogWindowSettingsButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Settings</value>
+    <value>Log settings</value>
   </data>
+  <!-- Title bar command (icon-only Button): tooltip + accessible name. -->
   <data name="LogWindowPlaygroundButton.ToolTipService.ToolTip" xml:space="preserve">
     <value>Playground</value>
   </data>

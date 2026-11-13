@@ -45,39 +45,30 @@ public sealed class TranscriptionObservabilityContractTests : IDisposable
     }
 
     [Fact]
-    public void CorrelationIdJoinsOperationalLogAndLatencyDataset()
+    public void CorrelationIdJoinsOperationalLogAndCorpusDataset()
     {
         using var listener = new TestEventListener("Deckle-Whisp");
         const string id = "0123456789abcdef0123456789abcdef";
 
-        // The take's start milestone carries the id the latency dataset
+        // The take's start milestone carries the id the corpus dataset
         // repeats, at every verbosity.
         DeckleWhispSource.Log.TakeStarted("w1", "dictation", id);
-        DeckleWhispSource.Log.LatencyRecorded(
+        DeckleWhispSource.Log.CorpusAsrRecorded(
             transcription_id: id,
-            audio_sec: 1,
-            model_load_ms: 0,
-            hotkey_to_capture_ms: 0,
-            record_drain_ms: 0,
-            stop_to_pipeline_ms: 0,
-            whisper_init_ms: 0,
-            whisper_ms: 1,
-            llm_ms: 0,
-            ollama_load_ms: 0,
-            llm_prompt_eval_ms: 0,
-            llm_eval_ms: 0,
-            llm_prompt_tokens: 0,
-            llm_eval_tokens: 0,
-            clipboard_ms: 0,
-            strategy: "greedy",
-            n_segments: 1,
-            text_chars: 4,
+            audio_file: "",
+            bucket: "raw",
+            tier: "short",
+            backend: "whisper",
+            model: "test",
+            language: "fr",
+            prompt_or_instruction: "",
+            text: "test",
             text_words: 1,
-            profile: "",
-            outcome: "ClipboardOnly",
-            llm_cache_write_tokens: 0,
-            llm_cache_read_tokens: 0);
-
+            text_chars: 4,
+            duration_seconds: 1,
+            words_per_second: 1,
+            elapsed_ms: 1,
+            audio_content: "raw");
         Assert.Collection(listener.Events,
             operational => Assert.Equal(id, PayloadValue(operational, "transcription_id")),
             dataset =>

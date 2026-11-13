@@ -17,8 +17,9 @@ namespace Deckle.Autocorrect.Views;
 // Decisions is the per-word decision dataset (autocorrect.decisions.jsonl).
 // Text is one consent envelope over the two verbatim captures: the
 // typed-sentence corpus (autocorrect.text.jsonl) and, on enrolled surfaces
-// only, the typing stream (autocorrect.stream.jsonl). Text is NOT gated by
-// Decisions, so they stay two independent leaves, never a masking Group. Both
+// only, the typing stream (autocorrect.stream.jsonl). Decisions has been
+// Text's option since 2026-11-13, a child of its fold, because a decision
+// carries the typed word, so it needs that consent as well as its own. Both
 // are consent-gated through the Catalog registry and off by default. Each
 // reads its default from TelemetrySettings, so each card has its reset (Louis,
 // 2026-10-15: every setting with a default gets its reset); the reset only
@@ -75,18 +76,26 @@ public sealed partial class AutocorrectTelemetryViewModel : ObservableObject
         TelemetrySettingsService.Instance.Save();
     }
 
+    // One fold of the same form as the dictation corpus: the typed text, then
+    // what it may also keep. The decisions carry the typed words, so they are
+    // that corpus's option rather than a dataset of their own (2026-11-13):
+    // they hide while the text is off, and the sinks gate them on both
+    // consents (TelemetryListenerBootstrap, App.Autocorrect).
     public IReadOnlyList<SettingDescriptor> Settings =>
     [
-        Setting.Toggle("AutocorrectDecisionsCard",
-            () => AutocorrectDecisions,
-            value => AutocorrectDecisions = value,
-            defaultValue: () => new TelemetrySettings().AutocorrectDecisions,
-            confirmOnEnable: TelemetryConsent.RequestAutocorrectDecisions),
-        Setting.Toggle("AutocorrectTextCard",
+        Setting.Group("AutocorrectTextCard",
             () => AutocorrectText,
             value => AutocorrectText = value,
             defaultValue: () => new TelemetrySettings().AutocorrectText,
-            confirmOnEnable: TelemetryConsent.RequestAutocorrectText),
+            confirmOnEnable: TelemetryConsent.RequestAutocorrectText,
+            children:
+            [
+                Setting.Toggle("AutocorrectDecisionsCard",
+                    () => AutocorrectDecisions,
+                    value => AutocorrectDecisions = value,
+                    defaultValue: () => new TelemetrySettings().AutocorrectDecisions,
+                    confirmOnEnable: TelemetryConsent.RequestAutocorrectDecisions),
+            ]),
     ];
 
     // Called by the Diagnostics page's Reset all. Outside the sync guard, so

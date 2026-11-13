@@ -19,6 +19,49 @@ public sealed class DispatchEventListenerTests
         {
             if (IsEnabled()) WriteEvent(1, value);
         }
+
+        [Event(2, Level = EventLevel.Verbose, Tags = ObservationTags.Summary, Message = "count={0}")]
+        public void CountSummarized(int count)
+        {
+            if (IsEnabled()) WriteEvent(2, count);
+        }
+
+        [Event(3, Level = EventLevel.Informational, Message = "A value was seen")]
+        public void ValueSeen(string value)
+        {
+            if (IsEnabled()) WriteEvent(3, value);
+        }
+    }
+
+    [Fact]
+    public void TheEntryTellsWhetherItsTemplateWritesAValue()
+    {
+        using var dispatch = new DispatchEventListener();
+        var sink = new CollectingSink();
+        dispatch.AddSink(sink);
+
+        TestSource.Log.ValueObserved("written");
+        TestSource.Log.ValueSeen("kept");
+
+        Assert.True(Assert.Single(sink.Entries, e => e.EventName == nameof(TestSource.ValueObserved)).MessageShowsValues);
+        Assert.False(Assert.Single(sink.Entries, e => e.EventName == nameof(TestSource.ValueSeen)).MessageShowsValues);
+    }
+
+    [Fact]
+    public void TheSummaryTagReachesTheEntryAndOnlyThere()
+    {
+        using var dispatch = new DispatchEventListener();
+        var sink = new CollectingSink();
+        dispatch.AddSink(sink);
+
+        TestSource.Log.CountSummarized(3);
+        TestSource.Log.ValueObserved("plain");
+
+        EventEntry summary = Assert.Single(sink.Entries, e => e.EventName == nameof(TestSource.CountSummarized));
+        EventEntry plain = Assert.Single(sink.Entries, e => e.EventName == nameof(TestSource.ValueObserved));
+        Assert.True(summary.Summary);
+        Assert.False(summary.Milestone);
+        Assert.False(plain.Summary);
     }
 
     [Fact]

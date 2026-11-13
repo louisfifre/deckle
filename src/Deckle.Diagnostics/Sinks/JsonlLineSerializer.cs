@@ -42,6 +42,7 @@ internal sealed class JsonlLineSerializer
             // with plain detail, and a reader needs to tell them apart. Rows
             // without the mark read exactly as they did before.
             if (entry.Milestone) writer.WriteBoolean("milestone", true);
+            if (entry.Summary) writer.WriteBoolean("summary", true);
             if (entry.FormattedMessage is null) writer.WriteNull("message");
             else writer.WriteString("message", entry.FormattedMessage);
             writer.WriteString("line", LogLineFormatter.Format(entry));

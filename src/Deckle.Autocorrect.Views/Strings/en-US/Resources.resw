@@ -200,16 +200,16 @@
        (AutocorrectTelemetryViewModel); their words stay here. Decisions and
        text are independent disk-persistence opt-ins. -->
   <data name="AutocorrectDecisionsCard.Header" xml:space="preserve">
-    <value>Autocorrect decisions</value>
+    <value>Also keep each correction decision</value>
   </data>
   <data name="AutocorrectDecisionsCard.Description" xml:space="preserve">
-    <value>One line per word weighed in an enrolled app, with its candidates, scores and the rule that decided. Includes the words you type.</value>
+    <value>For each word weighed: its candidates, their scores and the rule that decided.</value>
   </data>
   <data name="AutocorrectTextCard.Header" xml:space="preserve">
     <value>Keep the text I type</value>
   </data>
   <data name="AutocorrectTextCard.Description" xml:space="preserve">
-    <value>Each sentence you type in enrolled apps, verbatim, paired with its corrected form. Password fields, paste and dictation are never recorded.</value>
+    <value>Each sentence you type in enrolled apps, with its corrected form. Never password fields, paste or dictation.</value>
   </data>
   <!-- Rail labels: the module's own entry, then its two nested children. -->
   <data name="SettingsModuleNavLabel" xml:space="preserve">

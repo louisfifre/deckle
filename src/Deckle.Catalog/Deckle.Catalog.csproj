@@ -27,5 +27,8 @@
     <!-- HotkeyChord and HotkeyModifiers: the hotkey card edits a chord that
          engines persist, so the type lives in Core, which holds no XAML. -->
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
+    <!-- DeckleSettingsUxSource: every composed card logs its writes through
+         SettingsComposer.Write, the one logging point of the settings. -->
+    <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
   </ItemGroup>
 </Project>

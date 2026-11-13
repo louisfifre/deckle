@@ -296,12 +296,48 @@ public partial class App
                 Step("settings/llm-at-stop");
                 await CaptureRewritingAtStopAsync(report, settings, outputFolder, captures);
             }
+
+            // The Diagnostics page again with every opt-in on and every fold
+            // open (App.SelfCheck.Diagnostics.cs), when the run walks every
+            // page or targets that one.
+            if (onlyPage is null or "diagnostics")
+            {
+                Step("settings/diagnostics-open");
+                await CaptureDiagnosticsOpenAsync(report, settings, outputFolder, captures);
+            }
         }
 
         if (Wants("log"))
         {
             Step("log");
             await OpenAndCaptureAsync(report, run, outputFolder, "log", EnsureLogWindow);
+
+            // The same window scrolled to its last row, where a reader of a
+            // long session spends their time: what sits under the last entry
+            // only shows there.
+            LogWindow log = EnsureLogWindow();
+            log.ScrollToBottomForCapture();
+            await Task.Delay(300);
+            report.Surfaces.Add(await CaptureWindowFrameAsync(
+                run, log, "log", "end", null, loaded: true, ms: 0));
+
+            // The same two images with the detail shown: the window opens with
+            // it hidden, and only the full stream is long enough to scroll.
+            log.SetDetailShownForCapture(true);
+            await Task.Delay(300);
+            report.Surfaces.Add(await CaptureWindowFrameAsync(
+                run, log, "log", "detail", null, loaded: true, ms: 0));
+            log.ScrollToBottomForCapture();
+            await Task.Delay(800);
+            // Again, just before the image: the window does not count as visible
+            // to the person here (it is never activated), so auto-scroll does not
+            // follow the rows this run writes in the meantime, and they would
+            // land under the view, the last row seen cut by the edge.
+            log.ScrollToBottomForCapture();
+            await Task.Delay(300);
+            report.Surfaces.Add(await CaptureWindowFrameAsync(
+                run, log, "log", "detail-end", null, loaded: true, ms: 0));
+            report.Save(outputFolder);
         }
 
         if (Wants("playground"))

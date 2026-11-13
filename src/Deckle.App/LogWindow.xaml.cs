@@ -61,6 +61,12 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     // Window width in DIPs below which the SearchBox collapses into an icon button.
     private const double SearchCollapseThreshold = 520.0;
+
+    // Window width in DIPs below which the toolbar's settings label collapses
+    // to its icon: Copy all, Save all, Clear, Show detail, Word wrap,
+    // Auto-scroll and the labelled settings button need about this much side
+    // by side.
+    private const double ToolbarCompactWidth = 880.0;
     private bool _isSearchNarrow;
 
     public LogWindow()
@@ -71,7 +77,11 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         LogItems.ItemsSource = _visible;
         LogItems.Loaded += (_, _) => AttachScrollObserver();
         FilterBar.Selection = _filterSelection;
-        UpdateFiltersToggleLabel();
+        // The selection outlives the window: a reopened window shows the
+        // detail state the person left.
+        DetailToggle.IsChecked = _filterSelection.ShowDetail;
+        UpdateDetailNotice();
+        UpdateCopyCommand();
 
         LoadAppIcons();
         AppTitleBarIcon.ImageSource = _iconIdle;
@@ -215,25 +225,21 @@ public sealed partial class LogWindow : Window, ILogWindowSink
             wrap ? ScrollBarVisibility.Disabled : ScrollBarVisibility.Auto);
     }
 
-    private void OnFiltersToggleClick(object sender, RoutedEventArgs e)
-    {
-        FilterBar.Visibility = FiltersToggle.IsChecked == true
-            ? Visibility.Visible
-            : Visibility.Collapsed;
-    }
+    private void OnFilterChanged(object sender, EventArgs e) => ApplyFilter();
 
-    private void OnFilterChanged(object sender, EventArgs e)
+    // The selection raises Changed, which the filter bar relays as
+    // FilterChanged: the view is rebuilt there, once.
+    private void OnDetailToggleClick(object sender, RoutedEventArgs e)
+        => _filterSelection.ShowDetail = DetailToggle.IsChecked == true;
+
+    // The self-check photographs the window with the detail hidden and shown.
+    internal void SetDetailShownForCapture(bool shown)
     {
-        UpdateFiltersToggleLabel();
+        DetailToggle.IsChecked = shown;
+        _filterSelection.ShowDetail = shown;
+        // The filter bar relays only while loaded; an off-screen window may
+        // not be, so the view is rebuilt here too.
         ApplyFilter();
-    }
-
-    private void UpdateFiltersToggleLabel()
-    {
-        FiltersToggle.Label = _filterSelection.Count == 0
-            ? Loc.Get("LogWindow_FiltersButton_Default")
-            : Loc.Format("LogWindow_FiltersButton_Format", _filterSelection.Count);
-        AutomationProperties.SetName(FiltersToggle, FiltersToggle.Label);
     }
 
     private void OnSearchTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)

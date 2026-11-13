@@ -19,8 +19,6 @@ public sealed record ContactFrame(
     double TimestampMs,
     int ReportCount)
 {
-    public IntPtr DeviceHandle { get; init; }
-
     public int TipCount
     {
         get

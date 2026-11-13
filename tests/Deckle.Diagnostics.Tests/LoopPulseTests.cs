@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Deckle.Diagnostics.Tests;
 
-// The rollup, the stall and the recovery of a hot loop. The clock is a parameter
+// The stall and the recovery of a hot loop. The clock is a parameter
 // of Evaluate, so a minute passes without waiting.
 [Trait("Category", "observability")]
 public sealed class LoopPulseTests
@@ -22,43 +22,11 @@ public sealed class LoopPulseTests
 
     private sealed record EventEntryView(int Id, EventLevel Level, bool Milestone, IReadOnlyList<object?> Payload);
 
-    // Verbose and no milestone: the rollup is detail a person can filter out of
-    // the LogWindow, and it never enters the always-on log.
-    [Fact]
-    public void AWindowWithTicksWritesOneRollupAsVerboseDetail()
-    {
-        using var listener = new TestEventListener("Deckle-HotLoop");
-        var pulse = new LoopPulse("test_rollup", watchesStall: false);
-        long t = Start;
-
-        for (int i = 0; i < 5; i++) pulse.Tick();
-        pulse.Evaluate(t + Minute);
-
-        var ev = Assert.Single(Of(listener, "test_rollup"));
-        Assert.Equal(DeckleHotLoopSource.EvtLoopRollup, ev.Id);
-        Assert.Equal(EventLevel.Verbose, ev.Level);
-        Assert.False(ev.Milestone);
-        Assert.Equal(5L, ev.Payload[1]);
-    }
-
-    [Fact]
-    public void AQuietWindowWritesNothing()
-    {
-        using var listener = new TestEventListener("Deckle-HotLoop");
-        var pulse = new LoopPulse("test_quiet", watchesStall: false);
-        long t = Start;
-
-        pulse.Evaluate(t + Minute);
-        pulse.Evaluate(t + 2 * Minute);
-
-        Assert.Empty(Of(listener, "test_quiet"));
-    }
-
     [Fact]
     public void ASilentLoopThatShouldRunOpensOneWarningAfterTwoWindows()
     {
         using var listener = new TestEventListener("Deckle-HotLoop");
-        var pulse = new LoopPulse("test_stall", watchesStall: true);
+        var pulse = new LoopPulse("test_stall");
         using IDisposable armed = pulse.Arm();
         long t = Start;
 
@@ -78,7 +46,7 @@ public sealed class LoopPulseTests
     public void ALoopThatTicksAgainClosesTheStallInTheLog()
     {
         using var listener = new TestEventListener("Deckle-HotLoop");
-        var pulse = new LoopPulse("test_resume", watchesStall: true);
+        var pulse = new LoopPulse("test_resume");
         using IDisposable armed = pulse.Arm();
         long t = Start;
         pulse.Evaluate(t + Minute);
@@ -89,7 +57,7 @@ public sealed class LoopPulseTests
 
         var events = Of(listener, "test_resume");
         Assert.Equal(
-            [DeckleHotLoopSource.EvtLoopStalled, DeckleHotLoopSource.EvtLoopRecovered, DeckleHotLoopSource.EvtLoopRollup],
+            [DeckleHotLoopSource.EvtLoopStalled, DeckleHotLoopSource.EvtLoopRecovered],
             events.Select(e => e.Id));
         Assert.True(events[1].Milestone);
         Assert.Equal("resumed", events[1].Payload[1]);
@@ -99,7 +67,7 @@ public sealed class LoopPulseTests
     public void ALoopThatIsNoLongerExpectedClosesTheStallAsStopped()
     {
         using var listener = new TestEventListener("Deckle-HotLoop");
-        var pulse = new LoopPulse("test_stopped", watchesStall: true);
+        var pulse = new LoopPulse("test_stopped");
         IDisposable armed = pulse.Arm();
         long t = Start;
         pulse.Evaluate(t + Minute);
@@ -117,25 +85,42 @@ public sealed class LoopPulseTests
     }
 
     [Fact]
-    public void AnEventDrivenLoopNeverStalls()
+    public void ALoopNobodyArmedNeverStalls()
     {
         using var listener = new TestEventListener("Deckle-HotLoop");
-        var pulse = new LoopPulse("test_event_driven", watchesStall: false);
-        using IDisposable armed = pulse.Arm();
+        var pulse = new LoopPulse("test_unarmed");
         long t = Start;
 
         pulse.Evaluate(t + Minute);
         pulse.Evaluate(t + 2 * Minute);
         pulse.Evaluate(t + 3 * Minute);
 
-        Assert.Empty(Of(listener, "test_event_driven"));
+        Assert.Empty(Of(listener, "test_unarmed"));
+    }
+
+    // A loop that ticks writes nothing: only a stall and its recovery are lines.
+    [Fact]
+    public void AWorkingLoopWritesNothing()
+    {
+        using var listener = new TestEventListener("Deckle-HotLoop");
+        var pulse = new LoopPulse("test_working");
+        using IDisposable armed = pulse.Arm();
+        long t = Start;
+
+        for (int window = 1; window <= 3; window++)
+        {
+            pulse.Tick();
+            pulse.Evaluate(t + window * Minute);
+        }
+
+        Assert.Empty(Of(listener, "test_working"));
     }
 
     [Fact]
     public void ADisposedArmingScopeIsCountedOnce()
     {
         using var listener = new TestEventListener("Deckle-HotLoop");
-        var pulse = new LoopPulse("test_double_dispose", watchesStall: true);
+        var pulse = new LoopPulse("test_double_dispose");
         using IDisposable outer = pulse.Arm();
         IDisposable inner = pulse.Arm();
         inner.Dispose();

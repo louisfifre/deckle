@@ -55,7 +55,6 @@ public sealed partial class SettingsWindow
 
     public void OpenSubpage(Type pageType, object? parameter)
     {
-        DeckleSettingsSource.Log.NavStarted();
         DeckleSettingsSource.Log.NavStartedDetail(pageType.Name);
         DeckleSettingsSource.NavClock.Restart();
         try
@@ -68,7 +67,6 @@ public sealed partial class SettingsWindow
                 : new DrillInNavigationTransitionInfo();
             if (PageFrame.Navigate(pageType, parameter, transition))
             {
-                DeckleSettingsSource.Log.NavCompleted();
                 DeckleSettingsSource.Log.NavCompletedDetail(
                     pageType.Name, DeckleSettingsSource.NavClock.ElapsedMilliseconds);
             }
@@ -105,6 +103,7 @@ public sealed partial class SettingsWindow
 
     private void OnPageFrameNavigated(object sender, NavigationEventArgs e)
     {
+        DeckleSettingsSource.Log.PageOpened(e.SourcePageType?.Name ?? "unknown");
         bool onSubpage = IsOnSubpage;
         AppTitleBar.IsBackButtonVisible = onSubpage;
         AppTitleBar.IsBackButtonEnabled = onSubpage;

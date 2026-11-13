@@ -181,24 +181,16 @@ public static class SettingsSearch
         },
     ];
 
-    // The dictation's dataset consents, composed on Settings > Diagnostics
-    // (WhisperTelemetryViewModel); registered under that page with this
-    // module's assembly, where their words live.
+    // The dictation corpus, composed in the Corpus section of Settings >
+    // Diagnostics (WhisperTelemetryViewModel); registered under that page with
+    // this module's assembly, where its words live. The WAV opt-in and its
+    // content radio ride under it as composed children.
     public static IReadOnlyList<SettingSearchEntry> TelemetryEntries { get; } =
     [
-        // Latency telemetry (composed toggle).
-        new SettingSearchEntry
-        {
-            LabelKey = "GeneralLatencyCard",
-            Keywords = ["timing", "performance", "benchmark", "dictation"],
-        },
-
-        // "Corpus" — the audio-corpus consent group (the WAV opt-in and its content
-        // radio ride under it as composed children).
         new SettingSearchEntry
         {
             LabelKey = "GeneralCorpusExpander",
-            Keywords = ["dataset", "recording", "training", "audio", "dictation"],
+            Keywords = ["corpus", "dataset", "recording", "training", "audio", "dictation", "transcription"],
         },
     ];
 }

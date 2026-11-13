@@ -15,8 +15,11 @@ namespace Deckle.App;
 
 public sealed partial class LogWindow : Window, ILogWindowSink
 {
+    // Hidden detail is a view filter like any other (LogFilterSelection.ShowDetail).
     private bool HasActiveFilter =>
-        _filterSelection.Count > 0 || !string.IsNullOrEmpty(_currentSearch);
+        _filterSelection.Count > 0
+        || !_filterSelection.ShowDetail
+        || !string.IsNullOrEmpty(_currentSearch);
 
     private bool CopyToClipboard(string text)
     {
@@ -65,14 +68,26 @@ public sealed partial class LogWindow : Window, ILogWindowSink
             CopyToClipboard(text);
     }
 
+    // The main button copies what the reader sees: everything, or the visible
+    // lines while a view filter is on, its label saying which.
     private void OnCopyAllClick(SplitButton sender, SplitButtonClickEventArgs e)
+        => Copy(HasActiveFilter ? LogTransferScope.Filtered : LogTransferScope.All);
+
+    // Shown only while a view filter is on: the way to the whole buffer.
+    private void OnCopyOtherClick(object sender, RoutedEventArgs e)
         => Copy(LogTransferScope.All);
+
+    private void UpdateCopyCommand()
+    {
+        bool filtered = HasActiveFilter;
+        string label = Loc.Get(filtered ? "LogWindow_CopyVisible" : "LogWindow_CopyAll");
+        CopyAllText.Text = label;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(CopyButton, label);
+        CopyOtherMenuItem.Visibility = filtered ? Visibility.Visible : Visibility.Collapsed;
+    }
 
     private void OnCopySelectionClick(object sender, RoutedEventArgs e)
         => Copy(LogTransferScope.Selection);
-
-    private void OnCopyFilteredClick(object sender, RoutedEventArgs e)
-        => Copy(LogTransferScope.Filtered);
 
     private void OnCopyKeyboardAcceleratorInvoked(
         KeyboardAccelerator sender,

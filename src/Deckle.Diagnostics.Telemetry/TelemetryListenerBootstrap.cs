@@ -44,19 +44,16 @@ public static class TelemetryListenerBootstrap
 
         Directory.CreateDirectory(rootDirectory);
 
-        Register(new JsonlSink(
-            filePath:  Path.Combine(rootDirectory, "latency.jsonl"),
-            kindLabel: "latency",
-            predicate: e => e.Kind == ObservationKind.Dataset
-                         && e.EventName == "LatencyRecorded"
-                         && ReadGate(s => s.LatencyEnabled)));
-
+        // No latency.jsonl (2026-11-13): a dictation's timings are the
+        // PipelineTimings line the operational log carries at the end of each
+        // take, and nothing read the separate file. A latency.jsonl already on
+        // disk is left where it is.
         Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "microphone.jsonl"),
             kindLabel: "microphone",
             predicate: e => e.Kind == ObservationKind.Dataset
                          && e.EventName == "MicrophoneTelemetryRecorded"
-                         && ReadGate(s => s.MicrophoneTelemetry)));
+                         && ReadDetailGate(s => s.MicrophoneTelemetry)));
 
         // Post-DSP mirror of microphone.jsonl, same field-for-field schema.
         // Two homogeneous files rather than one mixed file: each loads as-is
@@ -67,16 +64,17 @@ public static class TelemetryListenerBootstrap
             kindLabel: "microphone_processed",
             predicate: e => e.Kind == ObservationKind.Dataset
                          && e.EventName == "PreprocessedTelemetryRecorded"
-                         && ReadGate(s => s.MicrophoneTelemetry)));
+                         && ReadDetailGate(s => s.MicrophoneTelemetry)));
 
-        // The per-word decision ledger. Carries typed words by design, so it is
-        // gated on its own consent toggle.
+        // The per-word decision ledger. Carries typed words by design, so it
+        // needs the typed-text consent as well as its own: it is that corpus's
+        // option, never a dataset of its own (2026-11-13).
         Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "autocorrect.decisions.jsonl"),
             kindLabel: "autocorrect_decision",
             predicate: e => e.Kind == ObservationKind.Dataset
                          && e.EventName == "AutocorrectDecisionRecorded"
-                         && ReadGate(s => s.AutocorrectDecisions)));
+                         && ReadGate(s => s.AutocorrectText && s.AutocorrectDecisions)));
 
         // Verbatim typed input, the heaviest text capture, so it carries its
         // own consent toggle, separate from the decision dataset.
@@ -143,6 +141,27 @@ public static class TelemetryListenerBootstrap
         _settingsReader = settingsReader;
     }
 
+    // The developer capture among these datasets (the microphone level)
+    // answers to Detailed logs as well as to its own
+    // toggle: Settings > Diagnostics shows them under that switch, and off it
+    // stops them all. Null until ConfigureDetailGate runs, which reads as off.
+    private static Func<bool>? _detailedLogsReader;
+
+    public static void ConfigureDetailGate(Func<bool> detailedLogsReader)
+    {
+        if (detailedLogsReader is null) throw new ArgumentNullException(nameof(detailedLogsReader));
+        _detailedLogsReader = detailedLogsReader;
+    }
+
+    private static bool ReadDetailGate(Func<TelemetrySettings, bool> gate)
+    {
+        // The consent reader first: a reader that throws is reported as a sink
+        // incident whatever the detail switch says.
+        if (!ReadGate(gate)) return false;
+        Func<bool>? detailed = _detailedLogsReader;
+        return detailed is not null && detailed();
+    }
+
     private static bool ReadGate(Func<TelemetrySettings, bool> gate)
     {
         var reader = _settingsReader;
@@ -181,5 +200,6 @@ public static class TelemetryListenerBootstrap
         _dispatch = null;
         _configured = false;
         _settingsReader = null;
+        _detailedLogsReader = null;
     }
 }

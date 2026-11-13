@@ -363,17 +363,11 @@
   <data name="GeneralTranscriptPanelSideRight.Content" xml:space="preserve">
     <value>Right</value>
   </data>
-  <data name="GeneralLatencyCard.Header" xml:space="preserve">
-    <value>Transcription timings</value>
-  </data>
-  <data name="GeneralLatencyCard.Description" xml:space="preserve">
-    <value>Per-step timings of each transcription go to latency.jsonl. No transcript text.</value>
-  </data>
   <data name="GeneralCorpusExpander.Header" xml:space="preserve">
-    <value>Transcription corpus</value>
+    <value>Keep my dictations</value>
   </data>
   <data name="GeneralCorpusExpander.Description" xml:space="preserve">
-    <value>Every transcription as a line of corpus.jsonl, one file per rewrite profile. Text only.</value>
+    <value>The text of each dictation, raw and rewritten.</value>
   </data>
   <data name="GeneralAudioCorpusCard.Header" xml:space="preserve">
     <value>Also save the audio</value>

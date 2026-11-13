@@ -26,7 +26,6 @@ public partial class App
     private const string TaskbarCoverModule      = "taskbar_cover";
     private const string TaskbarModule           = "taskbar";
     private const string InputHostModule         = "input_host";
-    private const string MouseWheelModule        = "mouse_wheel";
     private const string TaskbarWindowsKeyModule = "taskbar_windows_key";
 
     private const string SkipNotPresent          = "not_present";
@@ -141,8 +140,6 @@ public partial class App
             context.Compose(ModuleIds.Rewrite, InitializeParagraphRewrite);
         else
             context.Skip(ModuleIds.Rewrite, SkipNotPresent);
-
-        context.Compose(MouseWheelModule, InitializeMouseWheel);
 
         // Listens to the shared host only while its setting is on, which it is
         // not by default. Composed after the host it holds.

@@ -19,6 +19,14 @@ public partial class App
     private static bool DeveloperModeEnabled
         => SettingsService.Instance.Current.Developer.DeveloperMode;
 
+    // The developer capture under Settings > Diagnostics > Detailed logs, the
+    // microphone level, is a dataset, not log lines a person shares. It
+    // records only while both switches are on: an ordinary user who turns
+    // Detailed logs on gets the list shown to them, nothing hidden under it.
+    private static bool DeveloperCapturesAdmitted
+        => DeveloperModeEnabled
+        && Diagnostics.Logging.LoggingSettingsService.Instance.Current.DetailedLogs;
+
     // Composed once: the mode decides whether the menu opens, not what it
     // holds, and module presence does not change during a run.
     private IReadOnlyList<TrayMenuEntry> ComposeDeveloperTray()

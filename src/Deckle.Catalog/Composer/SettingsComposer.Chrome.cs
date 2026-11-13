@@ -32,9 +32,9 @@ public sealed partial class SettingsComposer
 
         bool Dirty() => !DefaultEquals(s.GetValue(), s.Default!());
         _dirtyChecks.Add(Dirty);
-        _resetActions.Add(() => s.SetValue(s.Default!()));
+        _resetActions.Add(() => Write(s, s.Default!()));
 
-        reset.Click += (_, _) => s.SetValue(s.Default!());
+        reset.Click += (_, _) => Write(s, s.Default!());
 
         var content = new StackPanel
         {

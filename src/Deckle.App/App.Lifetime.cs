@@ -206,7 +206,6 @@ public partial class App
         TryShutdown("precision_scroll_shutdown", ShutdownPrecisionScroll);
         TryShutdown("orchestration_shutdown", ShutdownOrchestration);
         TryShutdown("taskbar_windows_key_shutdown", ShutdownTaskbarWindowsKey);
-        TryShutdown("mouse_wheel_shutdown", ShutdownMouseWheel);
         TryShutdown("paragraph_rewrite_shutdown", ShutdownParagraphRewrite);
         TryShutdown("autocorrect_shutdown", ShutdownAutocorrect);
         TryShutdown("anytype_mcp_shutdown", ShutdownAnytypeMcp);

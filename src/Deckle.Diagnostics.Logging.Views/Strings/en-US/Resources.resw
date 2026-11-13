@@ -62,117 +62,111 @@
   <!-- Nav label — module-owned. The Settings shell reads this bare key straight
        into the module's NavigationViewItem.Content (SettingsModuleDescriptor.LabelKey). -->
 
-  <!-- DiagnosticsPage — page chrome (x:Uid) -->
+  <!-- DiagnosticsPage — page chrome (x:Uid). Three sections, no caption under
+       a section title but the Corpus one, whose title is a technical word. -->
   <data name="DiagnosticsPageHeader.Title" xml:space="preserve">
     <value>Diagnostics</value>
   </data>
   <data name="DiagnosticsPageHeader.Description" xml:space="preserve">
-    <value>What Deckle logs and records about itself, and where it keeps it.</value>
+    <value>What Deckle keeps about itself and about what you say or type, on this device only.</value>
   </data>
 
-  <!-- Logging section (x:Uid header + composed card label key). Each card is a
-       verbosity control; its description says what Summary and Details add,
-       in that order, since milestones, warnings and errors pass at every level. -->
-  <data name="DiagnosticsPageLoggingSection.Title" xml:space="preserve">
-    <value>Log verbosity</value>
+  <!-- Logs section (x:Uid header + composed card label keys,
+       DiagnosticsViewModel.LogsSettings). Detailed logs is one fold: its
+       children are each source's detail and the developer captures, with no
+       description where the name says it all. -->
+  <data name="DiagnosticsPageLogsSection.Title" xml:space="preserve">
+    <value>Logs</value>
   </data>
-  <data name="LoggingVerbosityOff.Content" xml:space="preserve">
-    <value>Off</value>
+  <data name="LoggingDetailedCard.Header" xml:space="preserve">
+    <value>Detailed logs</value>
   </data>
-  <data name="LoggingVerbositySummary.Content" xml:space="preserve">
-    <value>Summary</value>
-  </data>
-  <data name="LoggingVerbosityDetails.Content" xml:space="preserve">
-    <value>Details</value>
+  <data name="LoggingDetailedCard.Description" xml:space="preserve">
+    <value>Step-by-step detail to investigate a problem. Turn it on before the problem comes back.</value>
   </data>
   <data name="LoggingAmbientCard.Header" xml:space="preserve">
     <value>Ambient lighting</value>
   </data>
   <data name="LoggingAmbientCard.Description" xml:space="preserve">
-    <value>Summary: a heartbeat every 5 seconds. Details: also light pushes, colours and frame analysis.</value>
+    <value>Each light push, its colours and the frame analysis.</value>
   </data>
   <data name="LoggingTranscriptionCard.Header" xml:space="preserve">
-    <value>Transcription</value>
+    <value>Dictation</value>
   </data>
   <data name="LoggingTranscriptionCard.Description" xml:space="preserve">
-    <value>Summary: a heartbeat every second and the figures of each take. Details: also each utterance and segment. Transcript text stays in the corpus only.</value>
+    <value>Each utterance and segment. Never what you said.</value>
+  </data>
+  <data name="LoggingMicrophoneLevelCard.Header" xml:space="preserve">
+    <value>Microphone level</value>
+  </data>
+  <data name="LoggingMicrophoneLevelCard.Description" xml:space="preserve">
+    <value>The level of each recording. Levels only, never the sound.</value>
+  </data>
+  <data name="LoggingLlmCard.Header" xml:space="preserve">
+    <value>Language model calls</value>
+  </data>
+  <data name="LoggingLlmCard.Description" xml:space="preserve">
+    <value>Tokens and time of each call, local or online.</value>
   </data>
   <data name="LoggingAutocorrectCard.Header" xml:space="preserve">
     <value>Autocorrect</value>
   </data>
   <data name="LoggingAutocorrectCard.Description" xml:space="preserve">
-    <value>Summary: activity counts every 30 seconds. Details: also focus probes, decisions and learning. Typed text stays in its own datasets.</value>
+    <value>Never the words you type.</value>
   </data>
   <data name="LoggingInputCard.Header" xml:space="preserve">
-    <value>Input</value>
+    <value>Touchpad gestures</value>
   </data>
   <data name="LoggingInputCard.Description" xml:space="preserve">
-    <value>Summary: touchpad frame counts. Details: also Trackpad gestures.</value>
+    <value>Each gesture recognised on the touchpad.</value>
   </data>
   <data name="LoggingWindowingCard.Header" xml:space="preserve">
-    <value>Windowing</value>
+    <value>Windows</value>
   </data>
   <data name="LoggingWindowingCard.Description" xml:space="preserve">
-    <value>Details: window placement, DPI, overlay stacking, popups and resize frames. No summary yet.</value>
+    <value>Placement, scaling and stacking of Deckle's windows.</value>
   </data>
 
-  <!-- Telemetry section (x:Uid header + composed card label keys). The General*
-       prefix on the card keys is a historical naming artifact carried over from
-       the shell, not a page binding. -->
-  <data name="DiagnosticsPageTelemetrySection.Title" xml:space="preserve">
-    <value>Telemetry</value>
-  </data>
-  <data name="DiagnosticsPageTelemetrySection.Caption" xml:space="preserve">
-    <value>What Deckle records on this device for tuning and bug reports; nothing is sent anywhere.</value>
-  </data>
-  <!-- The person reads "trace" for diagnostics\trace.jsonl (GLOSSARY.md); the
-       keys keep their ApplicationLog and AppLog names. -->
-  <data name="DiagnosticsPageApplicationLogSection.Title" xml:space="preserve">
-    <value>Trace</value>
-  </data>
-  <data name="DiagnosticsPageApplicationLogSection.Caption" xml:space="preserve">
-    <value>A copy of what Deckle logs, kept on this device, to follow an issue across restarts.</value>
-  </data>
+  <!-- The trace (diagnostics\trace.jsonl, GLOSSARY.md). Its retention is
+       fixed, not set (TraceRetentionPolicy). The person reads "logs on
+       disk"; the keys keep their AppLog name. -->
   <data name="GeneralAppLogCard.Header" xml:space="preserve">
-    <value>Keep a trace on disk</value>
+    <value>Keep logs on disk</value>
   </data>
   <data name="GeneralAppLogCard.Description" xml:space="preserve">
-    <value>Every log line goes to diagnostics\trace.jsonl. Every 8,000 lines, the file moves to diagnostics\archive, which keeps the last 10.</value>
+    <value>A copy of the log that survives restarts, to follow a problem over time.</value>
   </data>
-  <data name="TelemetryMouseWheelCard.Header" xml:space="preserve">
-    <value>Record wheel events</value>
+
+  <!-- Corpus section (x:Uid header). Its folds come from the modules that own
+       each corpus, with their words in their own .resw. -->
+  <data name="DiagnosticsPageCorpusSection.Title" xml:space="preserve">
+    <value>Corpus</value>
   </data>
-  <data name="TelemetryMouseWheelCard.Description" xml:space="preserve">
-    <value>Wheel timing and deltas go to telemetry\mouse-wheel.</value>
+  <data name="DiagnosticsPageCorpusSection.Caption" xml:space="preserve">
+    <value>What you say or type, kept to tune Deckle to your own words.</value>
   </data>
 
   <!-- Folders section, last on the page (x:Uid header + the two composed
        folder folds' label keys, DiagnosticsViewModel.FoldersSettings; each
        heads its fold, the Location line inside uses the Settings shell's
-       FolderLocationLine_* words). The storage card's General* prefix is the
-       same historical artifact as above. A custom storage folder only
-       receives what reads CorpusPaths (the dictation audio); the other
-       datasets keep writing under the default telemetry folder, and the
-       wording says so. -->
+       FolderLocationLine_* words). The storage card keeps its General* key;
+       a custom storage folder only receives what reads CorpusPaths (the
+       dictation audio), so the card is named for that. -->
   <data name="DiagnosticsPageFoldersSection.Title" xml:space="preserve">
     <value>Folders</value>
   </data>
-  <data name="DiagnosticsPageFoldersSection.Caption" xml:space="preserve">
-    <value>Where Deckle keeps what it records.</value>
-  </data>
   <data name="GeneralStorageFolderCard.Header" xml:space="preserve">
-    <value>Telemetry folder</value>
+    <value>Dictation audio folder</value>
   </data>
   <data name="GeneralStorageFolderCard.Description" xml:space="preserve">
-    <value>The datasets you turn on under Telemetry. A folder you choose here receives only the dictation audio.</value>
+    <value>Where the saved audio of your dictations goes.</value>
   </data>
   <data name="DiagnosticsFilesCard.Header" xml:space="preserve">
     <value>Diagnostics folder</value>
   </data>
   <data name="DiagnosticsFilesCard.Description" xml:space="preserve">
-    <value>Holds log.jsonl, setup.jsonl, the trace (trace.jsonl) when it is on, and crash dumps. Open it when you report a problem.</value>
+    <value>Logs and crash reports. Open it when you report a problem.</value>
   </data>
-
   <!-- Shared log filter bar. The live Log Window and the trace.jsonl settings
        instantiate the same control with independent filter selections. -->
   <data name="LogFilterBarSeverityButton.Content" xml:space="preserve">
@@ -254,12 +248,9 @@
   <!-- Reset dialogs (Loc.Get from code-behind). Source of truth for the wording;
        Loc.Get resolves the runtime copy from Deckle.App's root map. -->
   <data name="Settings_ResetDiagnosticsDialog_Detail" xml:space="preserve">
-    <value>The trace and every telemetry dataset are turned off, and the telemetry folder returns to its default location.</value>
+    <value>Detailed logs, logs on disk and every corpus are turned off, and the dictation audio folder returns to its default location.</value>
   </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Diagnostics</value>
-  </data>
-  <data name="DiagnosticsPageLoggingSection.Caption" xml:space="preserve">
-    <value>How much each part of Deckle logs. Milestones, warnings and errors are always logged.</value>
   </data>
 </root>

@@ -57,16 +57,4 @@ public static class SettingsSearch
         // "Start elevated" is a General page card now (Deckle.Settings
         // SettingsSearch, GeneralStartElevatedCard).
     ];
-
-    // The raw-frame recording, composed on Settings > Diagnostics
-    // (TrackpadTelemetryViewModel); registered under that page with this
-    // module's assembly, where its words live.
-    public static IReadOnlyList<SettingSearchEntry> TelemetryEntries { get; } =
-    [
-        new SettingSearchEntry
-        {
-            LabelKey = "TrackpadPage_RecordFramesCard",
-            Keywords = ["telemetry", "capture", "jsonl", "diagnostics", "trackpad"],
-        },
-    ];
 }

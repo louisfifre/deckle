@@ -126,6 +126,56 @@ public sealed class LogFilterSelectionTests
         Assert.Equal(1, changes);
     }
 
+    [Fact]
+    public void HidingTheDetailKeepsVerboseOutOfViewAndCountsItAsHidden()
+    {
+        var selection = new LogFilterSelection { ShowDetail = false };
+        EventEntry detail = Entry("Deckle-Audio", EventLevel.Verbose, Keywords.Capture);
+        EventEntry milestone = Entry("Deckle-Audio", EventLevel.Informational, Keywords.Capture);
+
+        Assert.False(selection.Matches(detail));
+        Assert.True(selection.IsHiddenDetail(detail));
+        Assert.True(selection.Matches(milestone));
+        Assert.False(selection.IsHiddenDetail(milestone));
+
+        selection.ShowDetail = true;
+
+        Assert.True(selection.Matches(detail));
+        Assert.False(selection.IsHiddenDetail(detail));
+    }
+
+    [Fact]
+    public void ADetailLineAnotherFilterExcludesIsNotCountedAsHiddenByTheDetailSwitch()
+    {
+        var selection = new LogFilterSelection { ShowDetail = false };
+        selection.Add(new LogFilterToken(LogFilterDimension.Module, "Deckle-Vision"));
+
+        Assert.False(selection.IsHiddenDetail(Entry("Deckle-Audio", EventLevel.Verbose, Keywords.Capture)));
+        Assert.True(selection.IsHiddenDetail(Entry("Deckle-Vision", EventLevel.Verbose, Keywords.Capture)));
+    }
+
+    [Fact]
+    public void TheDetailSwitchIsNotATokenAndRaisesChangedOncePerFlip()
+    {
+        var selection = new LogFilterSelection();
+        int changes = 0;
+        selection.Changed += (_, _) => changes++;
+
+        selection.ShowDetail = false;
+        selection.ShowDetail = false;
+        selection.Clear();
+
+        Assert.Equal(1, changes);
+        Assert.True(selection.IsEmpty);
+        Assert.False(selection.ShowDetail);
+    }
+
+    [Fact]
+    public void TheLogWindowOpensWithTheDetailHidden()
+    {
+        Assert.False(LogWindowFilterSession.Selection.ShowDetail);
+    }
+
     private static LogFilterToken Severity(EventLevel level)
         => new(LogFilterDimension.Severity, level.ToString());
 

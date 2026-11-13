@@ -21,6 +21,7 @@ public partial class App
     {
         if (!AtelierPresent) return;
         EnsureAtelierWindow().ShowAndActivate();
+        DeckleAppSource.Log.WindowOpened("atelier");
     }
 
     private AtelierWindow EnsureAtelierWindow()

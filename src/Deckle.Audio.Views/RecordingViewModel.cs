@@ -39,7 +39,6 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnExclusiveModeChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("ExclusiveMode", value.ToString());
         PushToSettings();
     }
 
@@ -55,7 +54,6 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnVoiceLevelDbfsChanged(double value)
     {
         if (_isSyncing || double.IsNaN(value)) return;
-        DeckleSettingsUxSource.Log.SettingChanged("VoiceLevelDbfs", value.ToString(CultureInfo.InvariantCulture));
         PushToSettings();
     }
 
@@ -70,7 +68,6 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnMaxRecordingDurationSecondsChanged(int value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("MaxRecordingDurationSeconds", value.ToString(CultureInfo.InvariantCulture));
         PushToSettings();
     }
 
@@ -128,7 +125,6 @@ public partial class RecordingViewModel : ObservableObject
     partial void OnPreprocessingEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Preprocessing.Enabled", value.ToString());
         // On = active. The DSP self-adjusts on every recording (a no-op when
         // the mic is already at target); the mic level check only advises
         // whether turning it on is worth it.
@@ -226,8 +222,8 @@ public partial class RecordingViewModel : ObservableObject
         MicResultDetail   = "";
     }
 
-    // The microphone-telemetry opt-in lives in RecordingTelemetryViewModel, the
-    // module's contribution to the Diagnostics page.
+    // The microphone-level capture lives on the Diagnostics page, under
+    // Detailed logs.
 
     // ── Sync with CaptureSettingsService ────────────────────────────────────
 

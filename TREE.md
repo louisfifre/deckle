@@ -137,6 +137,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── board-dictation.png
 │   │   ├── board-hero.png
 │   │   └── board-rewrite.png
+│   ├── proposals/
+│   │   └── diagnostics-rework.md
 │   ├── research/
 │   │   ├── atelier-boards/
 │   │   │   ├── P12-01-fichiers.dc.html
@@ -640,7 +642,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.InterfaceCapture.cs
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
-│   │   ├── App.MouseWheel.cs
 │   │   ├── App.Orchestration.cs
 │   │   ├── App.ParagraphRewrite.cs
 │   │   ├── App.PrecisionScroll.cs
@@ -650,6 +651,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.SelfCheck.Atelier.Photos.cs
 │   │   ├── App.SelfCheck.Atelier.Sizes.cs
 │   │   ├── App.SelfCheck.cs
+│   │   ├── App.SelfCheck.Diagnostics.cs
 │   │   ├── App.SelfCheck.Rewriting.cs
 │   │   ├── App.SpeechRepair.cs
 │   │   ├── App.Startup.CommandLine.cs
@@ -896,7 +898,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RecordingPage.xaml
 │   │   ├── RecordingPage.xaml.cs
 │   │   ├── RecordingSettingsModule.cs
-│   │   ├── RecordingTelemetryViewModel.cs
 │   │   ├── RecordingViewModel.cs
 │   │   ├── RecordingViewModel.ListeningTest.cs
 │   │   ├── RecordingViewModel.Settings.cs
@@ -1064,6 +1065,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SettingsComposer.Folds.cs
 │   │   │   ├── SettingsComposer.Hotkey.cs
 │   │   │   ├── SettingsComposer.Inputs.cs
+│   │   │   ├── SettingsComposer.Log.cs
 │   │   │   ├── SettingsComposer.Numeric.cs
 │   │   │   ├── SettingsPageHeader.cs
 │   │   │   └── SettingsSection.cs
@@ -1321,23 +1323,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── RepeatingIncident.cs
 │   │   │   ├── WheelEventQueue.cs
 │   │   │   └── WheelObservationBuffer.cs
-│   │   ├── Telemetry/
-│   │   │   ├── ContactDeviceRegistry.cs
-│   │   │   ├── ContactFrameRecorder.cs
-│   │   │   └── WheelEventRecorder.cs
 │   │   ├── Touchpad/
 │   │   │   ├── ContactFrame.cs
 │   │   │   ├── ContactFrameAssembler.cs
 │   │   │   ├── TouchpadCapabilities.cs
 │   │   │   ├── TouchpadContact.cs
-│   │   │   ├── TouchpadDevice.cs
 │   │   │   ├── TouchpadParser.cs
 │   │   │   └── TouchpadReport.cs
 │   │   ├── Deckle.Input.csproj
 │   │   ├── DeckleInputSource.cs
 │   │   ├── GLOSSARY.md  — glossary-deckle-input Input-layer vocabulary. It defines the contact frame, the unit assembled from o…
-│   │   ├── MouseWheelSettings.cs
-│   │   ├── MouseWheelSettingsService.cs
 │   │   └── RawInputHost.cs
 │   ├── Deckle.Input.PrecisionScroll/
 │   │   ├── Engine/
@@ -1378,7 +1373,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TrackpadPage.xaml
 │   │   │   └── TrackpadPage.xaml.cs
 │   │   ├── ViewModels/
-│   │   │   ├── TrackpadTelemetryViewModel.cs
 │   │   │   ├── TrackpadViewModel.cs
 │   │   │   └── TrackpadViewModel.Settings.cs
 │   │   ├── Deckle.Input.Trackpad.csproj
@@ -2413,7 +2407,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ReswMirrorTests.cs
 │   │   ├── SelfCheckTests.cs
 │   │   ├── TrayDeveloperMenuTests.cs
-│   │   └── TrayIncidentLinesTests.cs
+│   │   ├── TrayIncidentLinesTests.cs
+│   │   └── WindowOpenedEventTests.cs
 │   ├── Deckle.Atelier.Tests/
 │   │   ├── Icons/
 │   │   │   ├── FileIconKeyTests.cs
@@ -2486,6 +2481,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PortAudioInteropTests.cs
 │   │   ├── StreamingResamplerTests.cs
 │   │   ├── SubWindowAssemblerTests.cs
+│   │   ├── SummaryTagTests.cs
 │   │   ├── TestCaptureDoubles.cs
 │   │   ├── TranscriptionPreprocessorTests.cs
 │   │   ├── VoiceDetectorTests.cs
@@ -2506,7 +2502,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AutocorrectEngineLifecycleTests.cs
 │   │   ├── AutocorrectEngineMistouchTests.cs
 │   │   ├── AutocorrectEngineObservabilityTests.cs
-│   │   ├── AutocorrectHotLoopCountTests.cs
 │   │   ├── AutocorrectLexiconArtifactsTests.cs
 │   │   ├── AutocorrectObservabilityCollection.cs
 │   │   ├── AutocorrectSettingsTests.cs
@@ -2542,6 +2537,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RestorationEvaluatorTests.cs
 │   │   ├── SentenceCorpusTests.cs
 │   │   ├── SimulatedTextSurface.cs
+│   │   ├── SummaryTagTests.cs
 │   │   ├── SurfaceProfileMaintenanceTests.cs
 │   │   ├── SurfaceProfilerTests.cs
 │   │   ├── SurfaceProfileStoreTests.cs
@@ -2564,7 +2560,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ResetWheelBugNotes.md
 │   │   ├── SentinelNumberFormatterTests.cs
 │   │   ├── SettingFactoryTests.cs
-│   │   └── SettingsExpanderItemsBugNotes.md
+│   │   ├── SettingsExpanderItemsBugNotes.md
+│   │   └── SettingValueTextTests.cs
 │   ├── Deckle.Chrono.Tests/
 │   │   ├── ChronoFormatterTests.cs
 │   │   ├── ChronoTimerTests.cs
@@ -2585,6 +2582,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LogFilterSelectionTests.cs
 │   │   ├── LoggingSettingsTests.cs
 │   │   ├── LogTransferTests.cs
+│   │   ├── LogWindowScrollBugNotes.md
 │   │   ├── OperationalSinkRoutingTests.cs
 │   │   ├── RangeObservableCollectionBugNotes.md
 │   │   ├── RangeObservableCollectionRegressionTests.cs
@@ -2637,7 +2635,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SurvivedExceptionLedgerTests.cs
 │   │   ├── TableTemplateTests.cs
 │   │   ├── TemplateDoctrineTests.cs
-│   │   ├── ThreadingHotLoopCountTests.cs
 │   │   ├── UserIncidentListenerFaultTests.cs
 │   │   ├── UserIncidentRegistryTests.cs
 │   │   └── WorkIdTests.cs
@@ -2673,7 +2670,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── HudHidePolicyTests.cs
-│   │   ├── HudHotLoopCountTests.cs
 │   │   ├── HudMessageFitTests.cs
 │   │   ├── HudSettingsOverridesTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
@@ -2705,19 +2701,18 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PrecisionScrollTuningTests.cs
 │   │   └── WheelTickQueueTests.cs
 │   ├── Deckle.Input.Tests/
-│   │   ├── ContactDeviceRegistryTests.cs
 │   │   ├── ContactFrameAssemblerTests.cs
 │   │   ├── Deckle.Input.Tests.csproj
 │   │   ├── DeckleInputSourceTests.cs
 │   │   ├── FocusEventCoalescerTests.cs
 │   │   ├── InputObservabilityCollection.cs
-│   │   ├── InputPathRedactionTests.cs
 │   │   ├── LowLevelMouseHookInteropTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MouseInteractionRouterTests.cs
 │   │   ├── MouseWheelTimestampTests.cs
 │   │   ├── RawInputProbeBugNotes.md
 │   │   ├── RepeatingIncidentTests.cs
+│   │   ├── SummaryTagTests.cs
 │   │   ├── SyntheticTouchpadFrameBuilderTests.cs
 │   │   └── WheelObservationBufferTests.cs
 │   ├── Deckle.Input.Trackpad.Tests/
@@ -2770,7 +2765,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── HueEndpointResolverTests.cs
 │   │   ├── LightPlacementResolverTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
-│   │   └── MilestoneClosersTests.cs
+│   │   ├── MilestoneClosersTests.cs
+│   │   └── SummaryTagTests.cs
 │   ├── Deckle.Lighting.Tests/
 │   │   ├── BugExamples/
 │   │   │   └── dns-sd-pending-status-lifetime.json
@@ -2823,6 +2819,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ClaudePromptCacheTests.cs
 │   │   ├── ClaudeReasoningTests.cs
 │   │   ├── Deckle.Llm.Tests.csproj
+│   │   ├── LlmUsageLogTests.cs
 │   │   └── ReasoningOnTheWireTests.cs
 │   ├── Deckle.Mail.Hub.Tests/
 │   │   ├── Deckle.Mail.Hub.Tests.csproj
@@ -2921,6 +2918,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeveloperSettingsTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── PageOpenedEventTests.cs
 │   │   ├── PerformanceSettingsTests.cs
 │   │   ├── SettingsBackupBugNotes.md
 │   │   └── SettingsBackupRoundTripTests.cs
@@ -3066,6 +3064,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SegmentedTranscriptionSessionTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
 │   │   ├── StreamingStepsRewriteTests.cs
+│   │   ├── SummaryTagTests.cs
 │   │   ├── TakeAudioRecoveryBugNotes.md
 │   │   ├── TakeAudioRecoveryEngineTests.cs
 │   │   ├── TakeAudioRecoveryStoreTests.cs

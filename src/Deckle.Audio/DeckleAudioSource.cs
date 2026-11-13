@@ -143,6 +143,7 @@ public sealed class DeckleAudioSource : DeckleEventSource
     [Event(EvtCaptureCompleted,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Capture,
+           Tags = ObservationTags.Summary,
            Message = "audio_sec={0,6:F1} | buffers={1,5} | bytes={2,9} | rms_avg={3:F4} | rms_peak={4:F4} | dbfs_avg={5,6:F1}")]
     public void CaptureCompleted(double audio_sec, int buffers, int bytes, double rms_avg, double rms_peak, double dbfs_avg)
     {

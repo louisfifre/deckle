@@ -256,7 +256,7 @@
 
                 <!-- The microphone-telemetry opt-in lives on Settings > Diagnostics,
                      the one editor of what Deckle records
-                     (RecordingTelemetryViewModel, 2026-10-14). -->
+                     (Detailed logs > Microphone level, 2026-11-13). -->
 
             </StackPanel>
         </Grid>

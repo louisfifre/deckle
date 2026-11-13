@@ -27,6 +27,7 @@ public sealed class DeckleSettingsUxSource : DeckleEventSource
     // 4 retired.
     // 5 retired.
     public const int EvtFolderActionFailed     = 6;
+    public const int EvtSettingWritten         = 7;
 
     // ── Setting change ──────────────────────────────────────────────────
     //
@@ -43,6 +44,26 @@ public sealed class DeckleSettingsUxSource : DeckleEventSource
     {
         if (IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Lifecycle))
             WriteEvent(EvtSettingChanged, setting, SettingValueRedaction.Redact(setting, value));
+    }
+
+    // ── Setting written from a composed card ────────────────────────────
+    //
+    // The one logging point of SettingsComposer: a card wrote a value that
+    // differs from the one it read. Milestone-tagged so the change reaches
+    // log.jsonl, where an incident is read against the settings in force.
+    // `setting` is the card's LabelKey, stable across wording changes;
+    // `module` the assembly that declares it. The composer formats the
+    // values from the setting's kind and writes "(changed)" for any kind
+    // whose value may carry what the person typed or a path naming them.
+    [Event(EvtSettingWritten,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "A setting was changed")]
+    public void SettingWritten(string module, string setting, string old_value, string new_value)
+    {
+        if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
+            WriteEvent(EvtSettingWritten, module, setting, old_value, new_value);
     }
 
     // ── Section reset ───────────────────────────────────────────────────
@@ -100,32 +121,14 @@ internal static class SettingValueRedaction
 {
     internal const string Redacted = "(changed)";
 
+    // The settings composed into cards log through SettingWritten, which
+    // formats by kind; only the hand-wired setters still come through here.
     private static readonly HashSet<string> s_valueBearing = new(StringComparer.Ordinal)
     {
-        "Theme",
-        "Start with Windows",
-        "Start elevated",
-        "Updates.AutoCheckEnabled",
-        // Device index, not the device name.
+        // Endpoint id or "system default", not the device name.
         "Audio input device",
-        "MaxRecordingDurationSeconds",
-        "VoiceLevelDbfs",
-        "Preprocessing.Enabled",
-        "Telemetry.MicrophoneTelemetry",
-        "Logging.AmbientVerbosity",
-        "Logging.TranscriptionVerbosity",
-        "Logging.AutocorrectVerbosity",
-        "Logging.InputVerbosity",
-        "Logging.WindowingVerbosity",
-        "Logging.ApplicationLogToDisk",
-        "Input.RecordWheelEvents",
     };
 
-    // Hotkey setters format modifier flags and a scancode, never typed text.
-    private const string HotkeyPrefix = "Hotkeys.";
-
     internal static string Redact(string setting, string value)
-        => s_valueBearing.Contains(setting) || setting.StartsWith(HotkeyPrefix, StringComparison.Ordinal)
-            ? value
-            : Redacted;
+        => s_valueBearing.Contains(setting) ? value : Redacted;
 }

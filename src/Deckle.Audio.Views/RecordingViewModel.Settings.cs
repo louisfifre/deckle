@@ -84,6 +84,6 @@ public partial class RecordingViewModel
     // worth it, and says how far it sits above or below the voice level. It
     // sets nothing.
     //
-    // The microphone-telemetry opt-in lives in RecordingTelemetryViewModel,
-    // composed on the Diagnostics page.
+    // The microphone-level capture lives on the Diagnostics page, under
+    // Detailed logs.
 }

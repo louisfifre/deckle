@@ -65,7 +65,7 @@ public sealed partial class SettingsComposer
         picker.PathChanged += (_, _) =>
         {
             if (_syncingFromModel) return;
-            s.SetValue(picker.Path);
+            Write(s, picker.Path);
         };
 
         // The reset goes ahead of the actions, [reset | actions] like every
@@ -133,7 +133,7 @@ public sealed partial class SettingsComposer
         void Reset()
         {
             extraReset?.Invoke();
-            if (s.Default is not null) s.SetValue(s.Default!());
+            if (s.Default is not null) Write(s, s.Default!());
         }
         _dirtyChecks.Add(Dirty);
         _resetActions.Add(Reset);
@@ -223,6 +223,11 @@ public sealed partial class SettingsComposer
         }
 
         // Subscribe AFTER the initial Text assignment above so it does not fire.
+        // The model follows every keystroke; the log waits for the field to
+        // lose focus, so one edit is one line, not one line per character.
+        object? textBeforeEdit = null;
+        box.GotFocus += (_, _) => textBeforeEdit = s.GetValue();
+        box.LostFocus += (_, _) => LogChange(s, textBeforeEdit, s.GetValue());
         box.TextChanged += (_, _) =>
         {
             if (_syncingFromModel) return;
@@ -268,7 +273,7 @@ public sealed partial class SettingsComposer
         {
             if (_syncingFromModel) return;
             if (combo.SelectedIndex < 0) return;
-            s.SetValue(args.Options[combo.SelectedIndex].Value);
+            Write(s, args.Options[combo.SelectedIndex].Value);
         };
 
         (FrameworkElement content, Action? updateReset) = WrapWithReset(card, combo, s,
@@ -296,7 +301,7 @@ public sealed partial class SettingsComposer
         {
             if (_syncingFromModel) return;
             if (radio.SelectedIndex < 0) return;
-            s.SetValue(args.Options[radio.SelectedIndex].Value);
+            Write(s, args.Options[radio.SelectedIndex].Value);
         };
 
         // A RadioButtons group stacks below the header, the Windows 11 pattern,

@@ -65,7 +65,6 @@ public sealed class DeckleThreadingSource : DeckleEventSource
            Message = "operation={0} | caller={1} | queue_depth={2}")]
     public void MarshalQueued(string operation, string caller, int queue_depth)
     {
-        HotLoops.ThreadingMarshal.Tick();
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Threading)) return;
         WriteEvent(EvtMarshalQueued, operation, caller, queue_depth);
     }

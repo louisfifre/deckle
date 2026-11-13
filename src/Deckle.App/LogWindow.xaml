@@ -138,45 +138,46 @@
                 </Grid>
             </TitleBar.Content>
             <TitleBar.RightHeader>
-                <!-- Lateral commands, so RightHeader; the central Content slot
-                     holds the search. Settings opens on the Diagnostics page,
-                     the editor of what this window may show. -->
-                <StackPanel Orientation="Horizontal" Spacing="4">
-                    <Button x:Name="SettingsButton"
-                            x:Uid="LogWindowSettingsButton"
-                            Style="{StaticResource SubtleButtonStyle}"
-                            VerticalAlignment="Center"
-                            MinWidth="36"
-                            Padding="8,4"
-                            Click="OnSettingsButtonClick">
-                        <FontIcon Glyph="{StaticResource Icon.Settings}" FontSize="16" />
-                    </Button>
-                    <Button x:Name="PlaygroundButton"
-                            x:Uid="LogWindowPlaygroundButton"
-                            Style="{StaticResource SubtleButtonStyle}"
-                            VerticalAlignment="Center"
-                            MinWidth="36"
-                            Padding="8,4"
-                            Click="OnPlaygroundButtonClick">
-                        <FontIcon Glyph="{StaticResource Icon.Playground}" FontSize="16" />
-                    </Button>
-                </StackPanel>
+                <!-- A lateral command, so RightHeader; the central Content slot
+                     holds the search. Shown only in developer mode
+                     (SetPlaygroundAvailable). -->
+                <Button x:Name="PlaygroundButton"
+                        x:Uid="LogWindowPlaygroundButton"
+                        Style="{StaticResource SubtleButtonStyle}"
+                        VerticalAlignment="Center"
+                        MinWidth="36"
+                        Padding="8,4"
+                        Click="OnPlaygroundButtonClick">
+                    <FontIcon Glyph="{StaticResource Icon.Playground}" FontSize="16" />
+                </Button>
             </TitleBar.RightHeader>
         </TitleBar>
 
-        <CommandBar Grid.Row="1"
-                    x:Name="MainCommandBar"
-                    DefaultLabelPosition="Right"
-                    Background="Transparent"
-                    IsOpen="False">
-            <CommandBar.Content>
-                <StackPanel Orientation="Horizontal" Spacing="8" Margin="4,0">
+        <!-- One row, one form: every command is a standard button of the same
+             height on the same line. The actions on the log sit on the left,
+             the view toggles and the way to what is logged on the right. A
+             plain Grid rather than a CommandBar, whose Content slot and
+             primary commands lay out on two different baselines. Under
+             ToolbarCompactWidth the right-hand labels give way to their
+             icons (OnWindowSizeChanged). -->
+        <Grid Grid.Row="1"
+              x:Name="Toolbar"
+              Margin="12,4,12,8"
+              ColumnSpacing="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <SplitButton x:Name="CopyButton"
                                  Click="OnCopyAllClick">
                         <SplitButton.Content>
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <FontIcon Glyph="{StaticResource Icon.Copy}" FontSize="16" />
-                                <TextBlock x:Uid="LogWindowCopyAllText" />
+                                <!-- "Copy visible" while a view filter is on
+                                     (UpdateCopyCommand). -->
+                                <TextBlock x:Name="CopyAllText" x:Uid="LogWindowCopyAllText" />
                             </StackPanel>
                         </SplitButton.Content>
                         <SplitButton.Flyout>
@@ -184,9 +185,13 @@
                                 <MenuFlyoutItem x:Uid="LogWindowCopySelectionMenuItem"
                                                 Icon="Copy"
                                                 Click="OnCopySelectionClick" />
-                                <MenuFlyoutItem x:Uid="LogWindowCopyFilteredMenuItem"
-                                                Icon="Filter"
-                                                Click="OnCopyFilteredClick" />
+                                <!-- "Copy all" while a view filter is on, the main
+                                     button then copying what is visible; hidden
+                                     otherwise, when both would copy the same. -->
+                                <MenuFlyoutItem x:Name="CopyOtherMenuItem"
+                                                x:Uid="LogWindowCopyAllMenuItem"
+                                                Icon="Copy"
+                                                Click="OnCopyOtherClick" />
                             </MenuFlyout>
                         </SplitButton.Flyout>
                     </SplitButton>
@@ -219,43 +224,44 @@
                         </StackPanel>
                     </Button>
                 </StackPanel>
-            </CommandBar.Content>
 
-            <AppBarToggleButton x:Name="FiltersToggle"
-                                x:Uid="LogWindowFiltersToggle"
-                                DynamicOverflowOrder="0"
-                                Click="OnFiltersToggleClick">
-                <AppBarToggleButton.Icon>
-                    <FontIcon Glyph="&#xE71C;" />
-                </AppBarToggleButton.Icon>
-            </AppBarToggleButton>
-            <AppBarElementContainer DynamicOverflowOrder="2"
-                                    Padding="{StaticResource AppBarButtonInnerBorderOverflowMargin}"
-                                    HorizontalContentAlignment="Stretch"
-                                    VerticalContentAlignment="Center">
-                <ToggleButton x:Name="WrapToggle"
-                              x:Uid="LogWindowWrapToggle"
-                              FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                              IsChecked="False"
-                              Click="OnWrapToggleClick" />
-            </AppBarElementContainer>
-            <AppBarElementContainer DynamicOverflowOrder="1"
-                                    Padding="{StaticResource AppBarButtonInnerBorderOverflowMargin}"
-                                    HorizontalContentAlignment="Stretch"
-                                    VerticalContentAlignment="Center">
-                <ToggleButton x:Name="AutoScrollToggle"
-                              x:Uid="LogWindowAutoScrollToggle"
-                              FontSize="{ThemeResource CaptionTextBlockFontSize}"
-                              IsChecked="True"
-                              Click="OnAutoScrollToggleClick" />
-            </AppBarElementContainer>
-        </CommandBar>
+                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <!-- The one gesture for the per-step detail, the Verbose
+                         entries: off when the window opens, a view filter that
+                         destroys nothing. While it is off, the filter row says
+                         how many lines it hides (UpdateDetailNotice). -->
+                    <ToggleButton x:Name="DetailToggle"
+                                  x:Uid="LogWindowDetailToggle"
+                                  IsChecked="False"
+                                  Click="OnDetailToggleClick" />
+                    <ToggleButton x:Name="WrapToggle"
+                                  x:Uid="LogWindowWrapToggle"
+                                  IsChecked="False"
+                                  Click="OnWrapToggleClick" />
+                    <ToggleButton x:Name="AutoScrollToggle"
+                                  x:Uid="LogWindowAutoScrollToggle"
+                                  IsChecked="True"
+                                  Click="OnAutoScrollToggleClick" />
+                    <!-- Opens Settings on the Diagnostics page, the editor of
+                         what this window may show. Labelled, because a bare
+                         gear in a log window does not say which settings. -->
+                    <Button x:Name="SettingsButton"
+                            x:Uid="LogWindowSettingsButton"
+                            Click="OnSettingsButtonClick">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <FontIcon Glyph="{StaticResource Icon.Settings}" FontSize="16" />
+                            <TextBlock x:Name="SettingsButtonText" x:Uid="LogWindowSettingsText" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+        </Grid>
 
-        <!-- Collapsing the editor never changes the active filter: the selection
-             lives outside the lazy window, for the whole process. -->
+        <!-- The filters sit with the rows they filter, always shown: a filter
+             hidden behind a toggle could be on without the reader seeing it.
+             The selection lives outside the lazy window, for the whole
+             process. -->
         <loggingControls:LogFilterBar x:Name="FilterBar"
                                       Grid.Row="2"
-                                      Visibility="Collapsed"
                                       FilterChanged="OnFilterChanged" />
 
         <Grid Grid.Row="3" x:Name="LogSurface">
@@ -269,16 +275,13 @@
                  so its margin only counts while it shows. Messages are set in
                  LogWindow.Notices.cs, where they are formatted. -->
             <StackPanel Grid.Row="0">
-                <!-- No bar for verbosity controls that are off: the Settings
-                     button in the title bar opens their editor, the Diagnostics
-                     page, where each control carries its description. -->
                 <InfoBar x:Name="DroppedEntriesInfoBar"
                          Severity="Informational"
                          IsClosable="True"
                          IsOpen="False"
                          catalog:InfoBarLayout.CollapseWhenClosed="True"
                          Margin="12,0,12,8">
-                    <!-- The same action as the title bar's Settings button: the
+                    <!-- The same action as the toolbar's Log settings button: the
                          bar tells that entries were skipped, and the Diagnostics
                          page is where what this window may show is edited. -->
                     <InfoBar.ActionButton>
@@ -324,16 +327,16 @@
                                          Invoked="OnCopyKeyboardAcceleratorInvoked" />
                 </ListView.KeyboardAccelerators>
                 <ListView.Footer>
-                    <!-- Five real row heights of tail space, outside ItemsSource
-                         so they cannot be selected, copied or exported. -->
-                    <StackPanel IsHitTestVisible="False"
-                                AutomationProperties.AccessibilityView="Raw">
-                        <TextBlock Text=" " FontFamily="Consolas" FontSize="12" Margin="4,1" />
-                        <TextBlock Text=" " FontFamily="Consolas" FontSize="12" Margin="4,1" />
-                        <TextBlock Text=" " FontFamily="Consolas" FontSize="12" Margin="4,1" />
-                        <TextBlock Text=" " FontFamily="Consolas" FontSize="12" Margin="4,1" />
-                        <TextBlock Text=" " FontFamily="Consolas" FontSize="12" Margin="4,1" />
-                    </StackPanel>
+                    <!-- One row height of tail space, outside ItemsSource so it
+                         cannot be selected, copied or exported: enough for the
+                         horizontal scroll bar to never sit over the last row.
+                         Five rows read as an empty band under the log. -->
+                    <TextBlock Text=" "
+                               FontFamily="Consolas"
+                               FontSize="12"
+                               Margin="4,1"
+                               IsHitTestVisible="False"
+                               AutomationProperties.AccessibilityView="Raw" />
                 </ListView.Footer>
             </ListView>
         </Grid>

@@ -5,120 +5,72 @@ using Deckle.Diagnostics.Telemetry;
 
 namespace Deckle.Diagnostics.Logging.Views;
 
-// Load() pulls from each store; property changes push back through the
-// matching PushXxxToSettings(), and _isSyncing prevents re-saving during
-// Load(). A toggle rewrites only its own store: the logging and telemetry
-// files share neither schema nor lifecycle.
+// Load() pulls from each store; a property change pushes back to the one store
+// that owns it, and _isSyncing prevents re-saving during Load(). The values
+// live where their consumers read them (logging and telemetry stores); this
+// page is their one editor.
 public partial class DiagnosticsViewModel : ObservableObject
 {
     private bool _isSyncing;
 
-    [ObservableProperty]
-    public partial OperationalLogVerbosity AmbientVerbosity { get; set; }
+    // ── Logs ────────────────────────────────────────────────────────────────
 
-    [ObservableProperty]
-    public partial OperationalLogVerbosity TranscriptionVerbosity { get; set; }
+    [ObservableProperty] public partial bool DetailedLogs { get; set; }
+    [ObservableProperty] public partial bool AmbientDetails { get; set; }
+    [ObservableProperty] public partial bool TranscriptionDetails { get; set; }
+    [ObservableProperty] public partial bool AutocorrectDetails { get; set; }
+    [ObservableProperty] public partial bool InputDetails { get; set; }
+    [ObservableProperty] public partial bool WindowingDetails { get; set; }
+    [ObservableProperty] public partial bool LlmDetails { get; set; }
 
-    [ObservableProperty]
-    public partial OperationalLogVerbosity AutocorrectVerbosity { get; set; }
+    // Developer mode lives in the Settings shell, which this module does not
+    // reference; the composition root hands its reader in. Read at each
+    // Load(), so a visit after the mode changed shows or hides the captures.
+    public static Func<bool> DeveloperModeReader { get; set; } = static () => false;
 
-    [ObservableProperty]
-    public partial OperationalLogVerbosity InputVerbosity { get; set; }
+    // Not a setting: the developer capture below shows only while it is true,
+    // and records only while it is true too (App.DeveloperCapturesAdmitted).
+    [ObservableProperty] public partial bool DeveloperMode { get; set; }
 
-    [ObservableProperty]
-    public partial OperationalLogVerbosity WindowingVerbosity { get; set; }
+    // The developer capture under Detailed logs, in the telemetry store.
+    [ObservableProperty] public partial bool MicrophoneLevel { get; set; }
 
-    // ── Telemetry — opt-in disk persistence ─────────────────────────────────
-
-    [ObservableProperty]
-    public partial bool ApplicationLogToDisk { get; set; }
-
-    [ObservableProperty]
-    public partial bool RecordWheelEvents { get; set; }
+    [ObservableProperty] public partial bool ApplicationLogToDisk { get; set; }
 
     // Empty means AppPaths.TelemetryDirectory.
-    [ObservableProperty]
-    public partial string TelemetryStorageDirectory { get; set; }
+    [ObservableProperty] public partial string TelemetryStorageDirectory { get; set; }
 
-    partial void OnAmbientVerbosityChanged(OperationalLogVerbosity value)
+    partial void OnDetailedLogsChanged(bool value) => PushLogging(nameof(LoggingSettings.DetailedLogs), value);
+    partial void OnAmbientDetailsChanged(bool value) => PushLogging(nameof(LoggingSettings.AmbientDetails), value);
+    partial void OnTranscriptionDetailsChanged(bool value) => PushLogging(nameof(LoggingSettings.TranscriptionDetails), value);
+    partial void OnAutocorrectDetailsChanged(bool value) => PushLogging(nameof(LoggingSettings.AutocorrectDetails), value);
+    partial void OnInputDetailsChanged(bool value) => PushLogging(nameof(LoggingSettings.InputDetails), value);
+    partial void OnWindowingDetailsChanged(bool value) => PushLogging(nameof(LoggingSettings.WindowingDetails), value);
+    partial void OnLlmDetailsChanged(bool value) => PushLogging(nameof(LoggingSettings.LlmDetails), value);
+    partial void OnApplicationLogToDiskChanged(bool value) => PushLogging(nameof(LoggingSettings.ApplicationLogToDisk), value);
+
+    partial void OnMicrophoneLevelChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Logging.AmbientVerbosity", value.ToString());
-        PushLoggingToSettings();
-    }
-
-    partial void OnTranscriptionVerbosityChanged(OperationalLogVerbosity value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Logging.TranscriptionVerbosity", value.ToString());
-        PushLoggingToSettings();
-    }
-
-    partial void OnAutocorrectVerbosityChanged(OperationalLogVerbosity value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Logging.AutocorrectVerbosity", value.ToString());
-        PushLoggingToSettings();
-    }
-
-    partial void OnInputVerbosityChanged(OperationalLogVerbosity value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Logging.InputVerbosity", value.ToString());
-        PushLoggingToSettings();
-    }
-
-    partial void OnWindowingVerbosityChanged(OperationalLogVerbosity value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Logging.WindowingVerbosity", value.ToString());
-        PushLoggingToSettings();
-    }
-
-    partial void OnApplicationLogToDiskChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Logging.ApplicationLogToDisk", value.ToString());
-        PushLoggingToSettings();
-    }
-
-    partial void OnRecordWheelEventsChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Input.RecordWheelEvents", value.ToString());
-        var settings = Deckle.Input.MouseWheelSettingsService.Instance.Current;
-        settings.RecordEvents = value;
-        Deckle.Input.MouseWheelSettingsService.Instance.Save();
+        PushTelemetry();
     }
 
     partial void OnTelemetryStorageDirectoryChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.StorageDirectory", $"\"{value}\"");
-        PushTelemetryToSettings();
+        PushTelemetry();
     }
 
-    // ── Sync with LoggingSettingsService and TelemetrySettingsService ───────
+    // ── Sync with the stores ────────────────────────────────────────────────
 
     public DiagnosticsViewModel()
     {
         // Guard before any property assignment, or each change handler would
-        // save these placeholders over the stored settings.
+        // save these placeholders over the stored settings. The placeholders
+        // read the defaults from the classes that own them, the same source
+        // the resets below use. _isSyncing stays true: Load() clears it.
         _isSyncing = true;
-
-        // The placeholders read the defaults from the settings classes that
-        // own them, the same source the resets below use.
-        var logging = new LoggingSettings();
-        AmbientVerbosity = logging.AmbientVerbosity;
-        TranscriptionVerbosity = logging.TranscriptionVerbosity;
-        AutocorrectVerbosity = logging.AutocorrectVerbosity;
-        InputVerbosity = logging.InputVerbosity;
-        WindowingVerbosity = logging.WindowingVerbosity;
-        ApplicationLogToDisk = logging.ApplicationLogToDisk;
-        RecordWheelEvents = new Deckle.Input.MouseWheelSettings().RecordEvents;
-        TelemetryStorageDirectory = new TelemetrySettings().StorageDirectory;
-
-        // _isSyncing stays true — Load() will set it to false.
+        Apply(new LoggingSettings(), new TelemetrySettings());
     }
 
     public void Load()
@@ -126,17 +78,9 @@ public partial class DiagnosticsViewModel : ObservableObject
         _isSyncing = true;
         try
         {
-            var l = LoggingSettingsService.Instance.Current;
-            AmbientVerbosity = l.AmbientVerbosity;
-            TranscriptionVerbosity = l.TranscriptionVerbosity;
-            AutocorrectVerbosity = l.AutocorrectVerbosity;
-            InputVerbosity = l.InputVerbosity;
-            WindowingVerbosity = l.WindowingVerbosity;
-            ApplicationLogToDisk = l.ApplicationLogToDisk;
-            RecordWheelEvents = Deckle.Input.MouseWheelSettingsService.Instance.Current.RecordEvents;
-
-            var t = TelemetrySettingsService.Instance.Current;
-            TelemetryStorageDirectory = t.StorageDirectory;
+            Apply(LoggingSettingsService.Instance.Current,
+                TelemetrySettingsService.Instance.Current);
+            DeveloperMode = DeveloperModeReader();
         }
         finally
         {
@@ -144,79 +88,64 @@ public partial class DiagnosticsViewModel : ObservableObject
         }
     }
 
-    private void PushLoggingToSettings()
+    private void Apply(LoggingSettings l, TelemetrySettings t)
     {
+        DetailedLogs = l.DetailedLogs;
+        AmbientDetails = l.AmbientDetails;
+        TranscriptionDetails = l.TranscriptionDetails;
+        AutocorrectDetails = l.AutocorrectDetails;
+        InputDetails = l.InputDetails;
+        WindowingDetails = l.WindowingDetails;
+        LlmDetails = l.LlmDetails;
+        ApplicationLogToDisk = l.ApplicationLogToDisk;
+        MicrophoneLevel = t.MicrophoneTelemetry;
+        TelemetryStorageDirectory = t.StorageDirectory;
+    }
+
+    private void PushLogging(string setting, object value)
+    {
+        if (_isSyncing) return;
         var l = LoggingSettingsService.Instance.Current;
-        l.AmbientVerbosity = AmbientVerbosity;
-        l.TranscriptionVerbosity = TranscriptionVerbosity;
-        l.AutocorrectVerbosity = AutocorrectVerbosity;
-        l.InputVerbosity = InputVerbosity;
-        l.WindowingVerbosity = WindowingVerbosity;
+        l.DetailedLogs = DetailedLogs;
+        l.AmbientDetails = AmbientDetails;
+        l.TranscriptionDetails = TranscriptionDetails;
+        l.AutocorrectDetails = AutocorrectDetails;
+        l.InputDetails = InputDetails;
+        l.WindowingDetails = WindowingDetails;
+        l.LlmDetails = LlmDetails;
         l.ApplicationLogToDisk = ApplicationLogToDisk;
         LoggingSettingsService.Instance.Save();
     }
 
-    private void PushTelemetryToSettings()
+    private void PushTelemetry()
     {
         var t = TelemetrySettingsService.Instance.Current;
+        t.MicrophoneTelemetry = MicrophoneLevel;
         t.StorageDirectory = TelemetryStorageDirectory ?? "";
         TelemetrySettingsService.Instance.Save();
     }
 
     // ── Reset ───────────────────────────────────────────────────────────────
 
-    // Each reset reads its defaults from a fresh settings object, the same
-    // source the descriptors' defaultValue reads. A default changed in the
-    // settings class then moves the section reset and the value reset together.
-
-    public void ResetLoggingDefaults()
+    // Every value of the page's own sections back to its default, through the
+    // setters, so each store saves once per changed value like a person's
+    // flip. The defaults are off for every capture and every opt-in, so a
+    // reset never turns on what a consent dialog guards.
+    public void ResetLogsDefaults()
     {
-        var defaults = new LoggingSettings();
-        _isSyncing = true;
-        try
-        {
-            AmbientVerbosity = defaults.AmbientVerbosity;
-            TranscriptionVerbosity = defaults.TranscriptionVerbosity;
-            AutocorrectVerbosity = defaults.AutocorrectVerbosity;
-            InputVerbosity = defaults.InputVerbosity;
-            WindowingVerbosity = defaults.WindowingVerbosity;
-        }
-        finally { _isSyncing = false; }
-        PushLoggingToSettings();
-        DeckleSettingsUxSource.Log.SectionReset();
-        DeckleSettingsUxSource.Log.SectionResetDetail("Logging");
+        var l = new LoggingSettings();
+        var t = new TelemetrySettings();
+        DetailedLogs = l.DetailedLogs;
+        AmbientDetails = l.AmbientDetails;
+        TranscriptionDetails = l.TranscriptionDetails;
+        AutocorrectDetails = l.AutocorrectDetails;
+        InputDetails = l.InputDetails;
+        WindowingDetails = l.WindowingDetails;
+        LlmDetails = l.LlmDetails;
+        MicrophoneLevel = t.MicrophoneTelemetry;
+        ApplicationLogToDisk = l.ApplicationLogToDisk;
     }
 
-    public void ResetTelemetryDefaults()
-    {
-        var telemetryDefaults = new TelemetrySettings();
-        var mouseWheelDefaults = new Deckle.Input.MouseWheelSettings();
-        _isSyncing = true;
-        try
-        {
-            TelemetryStorageDirectory = telemetryDefaults.StorageDirectory;
-            RecordWheelEvents = mouseWheelDefaults.RecordEvents;
-        }
-        finally { _isSyncing = false; }
-        PushTelemetryToSettings();
-        var mouseWheel = Deckle.Input.MouseWheelSettingsService.Instance.Current;
-        mouseWheel.RecordEvents = mouseWheelDefaults.RecordEvents;
-        Deckle.Input.MouseWheelSettingsService.Instance.Save();
-        DeckleSettingsUxSource.Log.SectionReset();
-        DeckleSettingsUxSource.Log.SectionResetDetail("Telemetry");
-    }
-
-    public void ResetApplicationLogDefaults()
-    {
-        var defaults = new LoggingSettings();
-        _isSyncing = true;
-        try
-        {
-            ApplicationLogToDisk = defaults.ApplicationLogToDisk;
-        }
-        finally { _isSyncing = false; }
-        PushLoggingToSettings();
-        DeckleSettingsUxSource.Log.SectionReset();
-        DeckleSettingsUxSource.Log.SectionResetDetail("ApplicationLog");
-    }
+    public void ResetFoldersDefaults()
+        => TelemetryStorageDirectory = new TelemetrySettings().StorageDirectory;
 }

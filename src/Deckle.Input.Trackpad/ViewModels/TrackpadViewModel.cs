@@ -5,8 +5,6 @@ namespace Deckle.Input.Trackpad;
 // The _isSyncing flag suppresses the write-back while Load() seeds the
 // properties, so re-hydration never re-saves. Push() rounds before persisting
 // so a snapped slider value's float noise (1.3666670…) never reaches the store.
-// Push writes only the fields this model owns: the raw-frame recording
-// belongs to TrackpadTelemetryViewModel, and a save here must not overwrite it.
 public partial class TrackpadViewModel : ObservableObject
 {
     private bool _isSyncing;

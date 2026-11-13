@@ -187,14 +187,6 @@
     <value>Repair…</value>
   </data>
 
-  <!-- Raw-frame recording, composed on Settings > Diagnostics
-       (TrackpadTelemetryViewModel); its words stay here. -->
-  <data name="TrackpadPage_RecordFramesCard.Header" xml:space="preserve">
-    <value>Record raw contact frames</value>
-  </data>
-  <data name="TrackpadPage_RecordFramesCard.Description" xml:space="preserve">
-    <value>Every contact frame goes to telemetry\trackpad, whether or not the drag is on.</value>
-  </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Trackpad</value>
   </data>

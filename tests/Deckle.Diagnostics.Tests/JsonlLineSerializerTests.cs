@@ -52,6 +52,29 @@ public sealed class JsonlLineSerializerTests
         Assert.Equal(milestone, root.TryGetProperty("milestone", out JsonElement mark) && mark.GetBoolean());
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void SelfDescribingMarksASummaryAndLeavesOtherRowsUntouched(bool summary)
+    {
+        var entry = new EventEntry(
+            timestamp:        DateTimeOffset.UtcNow,
+            provider:         "Deckle-SerializerTest",
+            eventName:        "Sample",
+            level:            EventLevel.Verbose,
+            keywords:         EventKeywords.None,
+            kind:             ObservationKind.Operational,
+            formattedMessage: "count=1",
+            payload:          new Dictionary<string, object?>(),
+            summary:          summary);
+
+        ReadOnlyMemory<byte> line = new JsonlLineSerializer().Serialize(entry, "log", JsonlSchema.SelfDescribing);
+        JsonElement root = JsonDocument.Parse(Encoding.UTF8.GetString(line.Span)).RootElement;
+
+        Assert.Equal(summary, root.TryGetProperty("summary", out JsonElement mark) && mark.GetBoolean());
+        Assert.False(root.TryGetProperty("milestone", out _));
+    }
+
     [Fact]
     public void SelfDescribingNamesTheTransverseKeywordsInDeclarationOrder()
     {

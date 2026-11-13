@@ -122,7 +122,6 @@ public sealed class DeckleAnytypeSource : DeckleEventSource
            Message = "method={0} | path={1}")]
     public void ApiRequestStarted(string method, string path)
     {
-        HotLoops.AnytypeApiRequest.Tick();
         if (IsEnabled()) WriteEvent(EvtApiRequestStarted, method, path);
     }
 

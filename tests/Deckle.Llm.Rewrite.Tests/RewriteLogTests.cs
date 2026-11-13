@@ -10,7 +10,7 @@ namespace Deckle.Llm.Rewrite.Tests;
 // A rewrite of a take is lasting work: the log must hold its start and its
 // end under one work_id, so a reader of the file alone can tell a rewrite that
 // finished from one that never did. The paragraph and sentence rewrites run on
-// every pause in typing and stay detail, counted once a minute.
+// every pause in typing and stay detail.
 [Trait("Category", "observability")]
 public sealed class RewriteLogTests
 {
@@ -51,21 +51,31 @@ public sealed class RewriteLogTests
     }
 
     [Fact]
-    public void AnInteractiveRewriteStaysDetailAndIsCounted()
+    public void AnInteractiveRewriteStaysDetail()
     {
-        const string provider = SentenceRewrite.ProviderId;
-        var service = new RewriteService(new SingleEngine(provider, new AnsweringEngine()));
-        long before = HotLoops.LlmInteractiveRewrite.Total;
-
-        service.RewriteSentence("Phrase.", TestContext.Current.CancellationToken);
-
-        Assert.True(HotLoops.LlmInteractiveRewrite.Total >= before + 1);
         Assert.False(IsMilestone(DeckleLlmSource.EvtRewriteStarted));
         Assert.False(IsMilestone(DeckleLlmSource.EvtRewriteCompleted));
         Assert.False(IsMilestone(DeckleLlmSource.EvtRewriteCancelled));
         Assert.Equal(EventLevel.Verbose, LevelOf(DeckleLlmSource.EvtRewriteStarted));
         Assert.Equal(EventLevel.Verbose, LevelOf(DeckleLlmSource.EvtRewriteCompleted));
         Assert.Equal(EventLevel.Verbose, LevelOf(DeckleLlmSource.EvtRewriteCancelled));
+    }
+
+    // A dictation batch used to write "A dictation batch came back rewritten"
+    // at the same millisecond as "Transcript rewrite complete", and "A
+    // dictation batch left for rewriting" beside the rewrite's start: the
+    // same moment told twice. The rewrite's own start and end are the run
+    // story; the batch keeps only its Verbose details (index, sizes).
+    [Fact]
+    [Trait("Category", "regression")]
+    public void ABatchRewriteTellsItsStartAndItsEndOnceInTheRunStory()
+    {
+        var events = ProviderManifest.EventsOf(typeof(DeckleLlmSource));
+        Assert.DoesNotContain(events, d => d.Name is "BatchRewriteSent" or "BatchRewriteReturned");
+        Assert.All(
+            events.Where(d => d.Name.StartsWith("BatchRewrite", StringComparison.Ordinal)
+                           && d.Name is not "BatchRewriteFellBack" and not "BatchRewriteProfileChanged"),
+            d => Assert.Equal(EventLevel.Verbose, d.Level));
     }
 
     static RewriteProfile ProfileOf(string provider) => new()

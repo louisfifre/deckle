@@ -10,71 +10,64 @@ namespace Deckle.Diagnostics.Logging.Views;
 // moving a setting edits this list, never a card in XAML. No glyph on any
 // card: the rail carries the page's icon (2026-10-14).
 //
-// The page is the one editor of everything Deckle records about itself: the
-// module-owned datasets (microphone level, dictation latency and corpus,
-// autocorrect decisions and text, trackpad frames) compose into the Telemetry
-// section beside TelemetrySettings, from DiagnosticsRegistry, with their own
-// models. The page sorts that section, folds first, then flat cards.
+// The page has three sections (2026-11-13). Logs: what Deckle writes about
+// itself, normal by default, with one switch for the detail a developer
+// turns on to chase a bug, and the copy kept on disk. Corpus: what the
+// person says or types, kept on purpose, contributed by the modules that own
+// it through DiagnosticsRegistry. Folders: where it all lands.
 public partial class DiagnosticsViewModel
 {
-    // One verbosity control per activity, a ComboBox of its levels: three
-    // ordered values are one choice, not two toggles. Windowing has no summary
-    // record, so it offers Off and Details alone rather than a Summary that
-    // would silently mean Off.
-    private static readonly IReadOnlyList<(OperationalLogVerbosity Value, string LabelKey)> VerbosityLevels =
-    [
-        (OperationalLogVerbosity.Off, "LoggingVerbosityOff"),
-        (OperationalLogVerbosity.Summary, "LoggingVerbositySummary"),
-        (OperationalLogVerbosity.Details, "LoggingVerbosityDetails"),
-    ];
-
-    private static readonly IReadOnlyList<(OperationalLogVerbosity Value, string LabelKey)> VerbosityLevelsWithoutSummary =
-    [
-        (OperationalLogVerbosity.Off, "LoggingVerbosityOff"),
-        (OperationalLogVerbosity.Details, "LoggingVerbosityDetails"),
-    ];
-
-    public IReadOnlyList<SettingDescriptor> LoggingSettings =>
-    [
-        Setting.Choice("LoggingAmbientCard",
-            () => AmbientVerbosity,
-            value => AmbientVerbosity = value,
-            VerbosityLevels,
-            defaultValue: () => new LoggingSettings().AmbientVerbosity),
-        Setting.Choice("LoggingTranscriptionCard",
-            () => TranscriptionVerbosity,
-            value => TranscriptionVerbosity = value,
-            VerbosityLevels,
-            defaultValue: () => new LoggingSettings().TranscriptionVerbosity),
-        Setting.Choice("LoggingAutocorrectCard",
-            () => AutocorrectVerbosity,
-            value => AutocorrectVerbosity = value,
-            VerbosityLevels,
-            defaultValue: () => new LoggingSettings().AutocorrectVerbosity),
-        Setting.Choice("LoggingInputCard",
-            () => InputVerbosity,
-            value => InputVerbosity = value,
-            VerbosityLevels,
-            defaultValue: () => new LoggingSettings().InputVerbosity),
-        Setting.Choice("LoggingWindowingCard",
-            () => WindowingVerbosity,
-            value => WindowingVerbosity = value,
-            VerbosityLevelsWithoutSummary,
-            defaultValue: () => new LoggingSettings().WindowingVerbosity),
-    ];
-
-    // The confirmOnEnable gate holds the OFF→ON write behind the consent
-    // dialog, reached through the Catalog registry
-    // (TelemetryConsent.RequestApplicationLog, wired by the App at boot) so this
-    // module does not reference Deckle.Settings.
+    // Detailed logs, one fold. Its switch is the one gesture for "give me
+    // everything for this bug", meant for anyone, not only a developer: each
+    // log source under it is on by default, so the switch alone gives every
+    // source's detail, and the list underneath is there for whoever wants to
+    // choose. Those sources write log lines, the kind a person shares.
     //
-    // A default exists, so the card has its reset (Louis, 2026-10-15: every
-    // setting with a default gets its reset). The default is off, so the reset
-    // only turns the opt-in off, a write the consent gate does not hold; the
-    // composer's reset writes past the gate, so a default that turned an
-    // opt-in on would skip the consent.
-    public IReadOnlyList<SettingDescriptor> ApplicationLogSettings =>
+    // The developer capture, the microphone level, comes last and shows only
+    // in developer mode (Settings > General): it is a dataset, not lines to
+    // share, and it records only in developer mode too, so the list an
+    // ordinary user sees is all the switch turns on. It keeps the consent it
+    // had as a dataset. Off, the switch stops every child whatever its own
+    // toggle says (App.DeveloperCapturesAdmitted,
+    // TelemetryListenerBootstrap.ReadDetailGate), and the children hide.
+    public IReadOnlyList<SettingDescriptor> LogsSettings =>
     [
+        Setting.Group("LoggingDetailedCard",
+            () => DetailedLogs,
+            value => DetailedLogs = value,
+            defaultValue: () => new LoggingSettings().DetailedLogs,
+            children:
+            [
+                Setting.Toggle("LoggingAmbientCard",
+                    () => AmbientDetails, value => AmbientDetails = value,
+                    defaultValue: () => new LoggingSettings().AmbientDetails),
+                Setting.Toggle("LoggingTranscriptionCard",
+                    () => TranscriptionDetails, value => TranscriptionDetails = value,
+                    defaultValue: () => new LoggingSettings().TranscriptionDetails),
+                Setting.Toggle("LoggingLlmCard",
+                    () => LlmDetails, value => LlmDetails = value,
+                    defaultValue: () => new LoggingSettings().LlmDetails),
+                Setting.Toggle("LoggingAutocorrectCard",
+                    () => AutocorrectDetails, value => AutocorrectDetails = value,
+                    defaultValue: () => new LoggingSettings().AutocorrectDetails),
+                Setting.Toggle("LoggingInputCard",
+                    () => InputDetails, value => InputDetails = value,
+                    defaultValue: () => new LoggingSettings().InputDetails),
+                Setting.Toggle("LoggingWindowingCard",
+                    () => WindowingDetails, value => WindowingDetails = value,
+                    defaultValue: () => new LoggingSettings().WindowingDetails),
+
+                Setting.Toggle("LoggingMicrophoneLevelCard",
+                    () => MicrophoneLevel, value => MicrophoneLevel = value,
+                    visibleWhen: () => DeveloperMode,
+                    defaultValue: () => new TelemetrySettings().MicrophoneTelemetry,
+                    confirmOnEnable: TelemetryConsent.RequestMicrophone),
+            ]),
+
+        // The trace. How much history it keeps is decided, not set
+        // (TraceRetentionPolicy: more in developer mode). The consent gate
+        // holds the OFF→ON write behind its dialog
+        // (TelemetryConsent.RequestApplicationLog).
         Setting.Toggle("GeneralAppLogCard",
             () => ApplicationLogToDisk,
             value => ApplicationLogToDisk = value,
@@ -82,27 +75,17 @@ public partial class DiagnosticsViewModel
             confirmOnEnable: TelemetryConsent.RequestApplicationLog),
     ];
 
-    // The mouse-wheel dataset opt-in, the page's own source in the Telemetry
-    // section. A flat card, so it leads the flat cards, under every module
-    // fold.
-    public IReadOnlyList<SettingDescriptor> TelemetrySettings =>
-    [
-        Setting.Toggle("TelemetryMouseWheelCard",
-            () => RecordWheelEvents,
-            value => RecordWheelEvents = value,
-            defaultValue: () => new Deckle.Input.MouseWheelSettings().RecordEvents),
-    ];
-
     // The Folders section that closes the page: each place Deckle writes to
     // sits in one section, after everything that writes there. Both are
     // folder folds (a standalone Path renders as one), their Location line
     // inside.
     //
-    // The telemetry storage folder first, configurable. The override reaches
-    // only what reads CorpusPaths (today the dictation audio WAVs); the JSONL
-    // sinks, trackpad and wheel recorders write under
-    // AppPaths.TelemetryDirectory whatever it holds. The path's reset default
-    // is the POCO initializer (empty means AppPaths.TelemetryDirectory).
+    // The storage folder first, configurable. The override reaches only what
+    // reads CorpusPaths (today the dictation audio WAVs); the JSONL sinks write
+    // under AppPaths.TelemetryDirectory
+    // whatever it holds, so the card is named for what it moves. The path's
+    // reset default is the POCO initializer (empty means
+    // AppPaths.TelemetryDirectory).
     //
     // Then the diagnostics folder, which the app owns and never moves: OpenOnly,
     // so the line shows the path and offers Open alone, and the setter is

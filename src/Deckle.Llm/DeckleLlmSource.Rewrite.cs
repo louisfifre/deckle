@@ -108,17 +108,28 @@ public sealed partial class DeckleLlmSource
     // (cache_read_tokens), and the whole prompt is the three together. A
     // batch that reads nothing while the one before it wrote is the sign of
     // a cache that does not serve.
+    //
+    // It is the one line per call that carries what the call cost, the
+    // counts each provider's response already holds (Ollama's
+    // prompt_eval_count and eval_count, the OpenAI-compatible usage, the
+    // Messages API usage with its cache split), never a price. It is the LLM
+    // activity's detail: off by default, admitted by Settings > Diagnostics >
+    // Detailed logs > Language model calls. The template reads from the general to the
+    // particular, so the fields a reader compares across calls line up: the
+    // profile, the tokens, why it stopped, then the timings and the sizes.
+    // The payload keeps its order.
     [Event(EvtRewriteResponseDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "elapsed_ms={0} | in_chars={1} | out_chars={2} | profile={3} | load_ms={4} | prompt_eval_ms={5} | eval_ms={6} | prompt_tokens={7} | eval_tokens={8} | stop_reason={9} | cache_write_tokens={10} | cache_read_tokens={11}")]
+           Message = "profile={3} | prompt_tokens={7} | eval_tokens={8} | cache_write_tokens={10} | cache_read_tokens={11} | stop_reason={9} | elapsed_ms={0} | load_ms={4} | prompt_eval_ms={5} | eval_ms={6} | in_chars={1} | out_chars={2}")]
     public void RewriteResponseDetail(
         long elapsed_ms, int in_chars, int out_chars, string profile,
         long load_ms, long prompt_eval_ms, long eval_ms,
         int prompt_tokens, int eval_tokens, string stop_reason,
         int cache_write_tokens = 0, int cache_read_tokens = 0)
     {
-        if (IsEnabled())
+        if (OperationalLogAdmission.IsDetailEnabled(
+                OperationalLogActivity.Llm, this, EventLevel.Verbose, (EventKeywords)Keywords.Pipeline))
             WriteEvent(EvtRewriteResponseDetail, new object[]
             {
                 elapsed_ms, in_chars, out_chars, profile,

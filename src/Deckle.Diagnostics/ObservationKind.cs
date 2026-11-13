@@ -28,10 +28,19 @@ public static class ObservationTags
     // catches them.
     public const EventTags Milestone = (EventTags)0x2;
 
+    // A summary: the one record an activity leaves per unit of work or per
+    // period (a heartbeat, a rollup, a take's figures). The verbosity control
+    // admits it into the stream at Summary, and the always-on log keeps it so
+    // a reader on another machine sees how each piece of work went without
+    // turning the trace on.
+    public const EventTags Summary = (EventTags)0x4;
+
     public static ObservationKind GetKind(EventTags tags)
         => (tags & Dataset) != 0
             ? ObservationKind.Dataset
             : ObservationKind.Operational;
 
     public static bool IsMilestone(EventTags tags) => (tags & Milestone) != 0;
+
+    public static bool IsSummary(EventTags tags) => (tags & Summary) != 0;
 }

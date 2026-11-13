@@ -62,35 +62,6 @@ public sealed partial class TranscriptionEngine
 
         _recordingSw?.Stop();
 
-        if (!isFileRun)
-        {
-            float audioSec = (float)production.RawAudio.Length / 16_000f;
-            DeckleWhispSource.Log.LatencyRecorded(
-                transcription_id:     _transcriptionId,
-                audio_sec:            audioSec,
-                model_load_ms:        _modelLoadMs,
-                hotkey_to_capture_ms: hotkeyToCaptureMs,
-                record_drain_ms:      recordDrainMs,
-                stop_to_pipeline_ms:  stopToPipelineMs,
-                whisper_init_ms:      whisperInitMs,
-                whisper_ms:           whisperMs,
-                llm_ms:               rewrite.LlmMs,
-                ollama_load_ms:       rewrite.LlmLoadMs,
-                llm_prompt_eval_ms:   rewrite.LlmPromptEvalMs,
-                llm_eval_ms:          rewrite.LlmEvalMs,
-                llm_prompt_tokens:    rewrite.LlmPromptTokens,
-                llm_eval_tokens:      rewrite.LlmEvalTokens,
-                clipboard_ms:         clipboardMs,
-                strategy:             strategyLabel,
-                n_segments:           production.NSegments,
-                text_chars:           rewrite.Text.Length,
-                text_words:           finalWordCount,
-                profile:              rewrite.Profile?.Name ?? "",
-                outcome:              delivery.Outcome.ToString(),
-                llm_cache_write_tokens: rewrite.LlmCacheWriteTokens,
-                llm_cache_read_tokens:  rewrite.LlmCacheReadTokens);
-        }
-
         RecordCorpus(production, rawText, rewrite, isFileRun, recordingDurationSec, whisperMs);
     }
 

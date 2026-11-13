@@ -16,13 +16,6 @@ public sealed class TrackpadSettings
     public double DragSpeed { get; set; } = 1.0;
 
     /// <summary>
-    /// Diagnostics — record raw contact frames to a dedicated JSONL file
-    /// under telemetry/trackpad/ (independent of the master switch, so real
-    /// Bluetooth sessions can be captured with the recognizer off).
-    /// </summary>
-    public bool RecordFrames { get; set; } = false;
-
-    /// <summary>
     /// Pick-up delay — how long the button press waits after three fingers
     /// land, in milliseconds; the cursor follows from the first frame either
     /// way. A four-finger gesture passes through three fingers, so the wait

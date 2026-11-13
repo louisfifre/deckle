@@ -28,10 +28,6 @@
     <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
-    <!-- Input owns the persisted mouse-wheel capture preference surfaced by
-         Diagnostics > Telemetry. This UI dependency does not move ownership
-         of the setting or recorder into Logging. -->
-    <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <!-- No cycle: Diagnostics.Telemetry does not reference this module. -->

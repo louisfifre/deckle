@@ -110,15 +110,6 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtNavSkippedAlreadyCurrent, page_name);
     }
 
-    [Event(EvtNavStarted,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Navigation started")]
-    public void NavStarted()
-    {
-        if (IsEnabled()) WriteEvent(EvtNavStarted);
-    }
-
     [Event(EvtNavStartedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -144,15 +135,6 @@ public sealed partial class DeckleSettingsSource
     public void NavFailedFrameRejectedDetail(string page_name)
     {
         if (IsEnabled()) WriteEvent(EvtNavFailedFrameRejectedDetail, page_name);
-    }
-
-    [Event(EvtNavCompleted,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Navigation completed")]
-    public void NavCompleted()
-    {
-        if (IsEnabled()) WriteEvent(EvtNavCompleted);
     }
 
     // duration_ms runs from nav-start (NavClock) to Navigate's return. It once
@@ -213,6 +195,19 @@ public sealed partial class DeckleSettingsSource
     public void OpenPlaygroundFromFooter()
     {
         if (IsEnabled()) WriteEvent(EvtOpenPlaygroundFromFooter);
+    }
+
+    // One line per page shown, rail page or subpage, whatever led there:
+    // milestone-tagged so log.jsonl says which page the person was on when
+    // something went wrong. Only the page's type name, never what it holds.
+    [Event(EvtPageOpened,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "A Settings page was opened")]
+    public void PageOpened(string page)
+    {
+        if (IsEnabled()) WriteEvent(EvtPageOpened, page);
     }
 
 }

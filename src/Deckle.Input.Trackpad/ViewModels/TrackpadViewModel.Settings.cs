@@ -11,9 +11,7 @@ namespace Deckle.Input.Trackpad;
 //
 // Two flat manifests, one per page region, not a master-child group: each
 // setting is an independent leaf. The master is the module's on/off switch,
-// first on the page and outside any section, so it has its own list. The
-// raw-frame recording lives in TrackpadTelemetryViewModel, composed on the
-// Diagnostics page.
+// first on the page and outside any section, so it has its own list.
 //
 // Every descriptor's default reads the POCO initializer (new TrackpadSettings()
 // .<Field>), the same literal TrackpadSettingsService persists, so each card's

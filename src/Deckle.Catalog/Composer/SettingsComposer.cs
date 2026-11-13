@@ -329,7 +329,7 @@ public sealed partial class SettingsComposer
             toggle.Toggled += (_, _) =>
             {
                 if (_syncingFromModel) return;
-                s.SetValue(toggle.IsOn);
+                Write(s, toggle.IsOn);
             };
             return;
         }
@@ -340,7 +340,7 @@ public sealed partial class SettingsComposer
             if (_syncingFromModel) return;
             if (!toggle.IsOn)
             {
-                s.SetValue(false);
+                Write(s, false);
                 return;
             }
             if (confirmInFlight) return;
@@ -350,7 +350,7 @@ public sealed partial class SettingsComposer
             {
                 if (await s.ConfirmOnEnable(_host.XamlRoot))
                 {
-                    s.SetValue(true);
+                    Write(s, true);
                 }
                 else
                 {

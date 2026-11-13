@@ -40,6 +40,57 @@ public sealed class JsonlSinkRotationTests
     private static string Generation(string dir, int n) =>
         Path.Combine(dir, "archive", $"trace.jsonl.{n:D4}");
 
+    // The trace's retention is a setting the person changes while the sink
+    // runs: the cap is read at each roll, so a lowered cap trims the archive
+    // at the next roll without a new sink.
+    [Fact]
+    public void ACapReadAtEachRollTrimsAtTheNextRollAfterItIsLowered()
+    {
+        string dir = NewTempDir("live-cap");
+        string active = Path.Combine(dir, "trace.jsonl");
+        int? cap = null;
+
+        var sink = new JsonlSink(
+            filePath:  active,
+            kindLabel: "log",
+            predicate: _ => true,
+            schema:    JsonlSchema.SelfDescribing,
+            rotation:  new JsonlRotationPolicy(1, () => cap));
+        try
+        {
+            for (int i = 0; i < 5; i++) sink.Write(Line(i));
+            sink.Flush();
+            Assert.Equal(4, Directory.GetFiles(Path.Combine(dir, "archive")).Length);
+
+            cap = 2;
+            sink.Write(Line(5));
+            sink.Flush();
+
+            Assert.Equal(2, Directory.GetFiles(Path.Combine(dir, "archive")).Length);
+            Assert.False(File.Exists(Generation(dir, 1)));
+            Assert.True(File.Exists(Generation(dir, 5)));
+        }
+        finally
+        {
+            sink.Dispose();
+            Directory.Delete(dir, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ACapReaderThatThrowsDeletesNoGeneration()
+    {
+        var policy = new JsonlRotationPolicy(10, () => throw new InvalidOperationException("unreadable"));
+        Assert.Null(policy.MaxArchives);
+    }
+
+    [Fact]
+    public void ACapBelowOneKeepsOneGeneration()
+    {
+        var policy = new JsonlRotationPolicy(10, () => 0);
+        Assert.Equal(1, policy.MaxArchives);
+    }
+
     [Fact]
     public void RollsByLineCountIntoArchiveSubfolderWithPaddedIndex()
     {

@@ -1,11 +1,20 @@
-using System.Text.Json.Serialization;
 using Deckle.Diagnostics;
 
 namespace Deckle.Diagnostics.Logging;
 
 // Operational-log settings, persisted by LoggingSettingsService: producer-side
-// admission levels plus the trace.jsonl opt-in. The LogWindow view filter is a
-// separate, process-lifetime selection and never belongs here.
+// admission plus the trace.jsonl opt-in; the trace's retention is fixed
+// (TraceRetentionPolicy). The LogWindow view
+// filter is a separate, process-lifetime selection and never belongs here.
+//
+// One level model, the same for every activity (2026-11-13). An activity
+// always leaves its run story and its summary, the heartbeat, rollup or
+// per-take figures, at Summary; Detailed logs adds its per-step detail on top,
+// source by source. There is no Off: a summary costs one line per period and
+// is what says an activity runs, and a reader who does not want it hides it
+// with the LogWindow's Heartbeat filter without destroying it. The levels
+// Off/Summary/Details had a different meaning on each card and could not be
+// read without a description.
 public sealed class LoggingSettings
 {
     // Optional disk mirror of admitted operational observations. Its path is
@@ -13,51 +22,54 @@ public sealed class LoggingSettings
     // and storage overrides never redirect it.
     public bool ApplicationLogToDisk { get; set; } = false;
 
-    // One verbosity control per activity (OperationalLogVerbosity). They ship
-    // at Summary: an activity leaves its heartbeat, rollup or per-take figures,
-    // and its per-step detail waits for Details. Milestones, warnings and
-    // errors pass at every level. The values are written as words so the file
-    // reads by itself.
+    // The one switch for everything a developer turns on to chase a bug: each
+    // activity's per-step detail and the diagnostic capture that hangs under
+    // it (the microphone level, whose own toggle lives in the telemetry
+    // store). Off, none of them runs, whatever its own toggle says.
+    public bool DetailedLogs { get; set; } = false;
 
-    // Summary: the push loop's heartbeat, one line per period. Details: the
-    // sparse per-change push lines and the engine's other Verbose detail,
-    // never one line per frame.
-    [JsonConverter(typeof(JsonStringEnumConverter<OperationalLogVerbosity>))]
-    public OperationalLogVerbosity AmbientVerbosity { get; set; } = OperationalLogVerbosity.Summary;
+    // Each source's share of Detailed logs. On by default, so turning the
+    // master on gives every source's detail at once, and a reader narrows it
+    // from there.
+    public bool AmbientDetails       { get; set; } = true;
+    public bool TranscriptionDetails { get; set; } = true;
+    public bool AutocorrectDetails   { get; set; } = true;
+    public bool InputDetails         { get; set; } = true;
+    public bool WindowingDetails     { get; set; } = true;
+    public bool LlmDetails           { get; set; } = true;
 
-    // Summary: the 1 Hz streaming heartbeat and each take's figures (capture,
-    // utterance totals, latencies, output). Details: per utterance and per
-    // segment, decode parameters, model load internals.
-    [JsonConverter(typeof(JsonStringEnumConverter<OperationalLogVerbosity>))]
-    public OperationalLogVerbosity TranscriptionVerbosity { get; set; } = OperationalLogVerbosity.Summary;
-
-    // Summary: the 30 s activity rollup and the keyboard rollup. Details: the
-    // SurfaceChanged probe and the learning signals. An applied correction's
-    // detail (reason and lengths, never the word) and injection failures
-    // remain at every level. There is no capture window: the engine runs
-    // continuously, so the level applies whenever it is below Details.
-    [JsonConverter(typeof(JsonStringEnumConverter<OperationalLogVerbosity>))]
-    public OperationalLogVerbosity AutocorrectVerbosity { get; set; } = OperationalLogVerbosity.Summary;
-
-    // Summary: the Raw Input contact-frame rollup. Details: Trackpad's
-    // per-gesture detail. Device presence, lifecycle, incidents, warnings and
-    // recoveries remain admitted at every level.
-    [JsonConverter(typeof(JsonStringEnumConverter<OperationalLogVerbosity>))]
-    public OperationalLogVerbosity InputVerbosity { get; set; } = OperationalLogVerbosity.Summary;
-
-    // Windowing probes have no summary record yet: below Details the provider,
-    // Verbose only, stays silent, so the control ships Off and offers Off and
-    // Details alone.
-    [JsonConverter(typeof(JsonStringEnumConverter<OperationalLogVerbosity>))]
-    public OperationalLogVerbosity WindowingVerbosity { get; set; } = OperationalLogVerbosity.Off;
-
-    public OperationalLogVerbosity Verbosity(OperationalLogActivity activity) => activity switch
+    public bool Details(OperationalLogActivity activity) => activity switch
     {
-        OperationalLogActivity.Ambient       => AmbientVerbosity,
-        OperationalLogActivity.Transcription => TranscriptionVerbosity,
-        OperationalLogActivity.Autocorrect   => AutocorrectVerbosity,
-        OperationalLogActivity.Input         => InputVerbosity,
-        OperationalLogActivity.Windowing     => WindowingVerbosity,
-        _                                    => OperationalLogVerbosity.Off,
+        OperationalLogActivity.Ambient       => AmbientDetails,
+        OperationalLogActivity.Transcription => TranscriptionDetails,
+        OperationalLogActivity.Autocorrect   => AutocorrectDetails,
+        OperationalLogActivity.Input         => InputDetails,
+        OperationalLogActivity.Windowing     => WindowingDetails,
+        OperationalLogActivity.Llm           => LlmDetails,
+        _                                    => false,
     };
+
+    public OperationalLogVerbosity Verbosity(OperationalLogActivity activity)
+        => DetailedLogs && Details(activity)
+            ? OperationalLogVerbosity.Details
+            : OperationalLogVerbosity.Summary;
+}
+
+// The trace archive's cap, decided for the person (2026-11-13): no setting.
+// The rotation counts lines (8,000 a file) and a line weighs about 720 bytes
+// on a real run (measured 2026-11-13: 680 to 740), so a file is about 6 MB.
+// Ten archives, about 60 MB, held about one day of the maintainer's use;
+// developer mode keeps 170, about 1 GB, about three weeks, for whoever chases
+// a bug across days. The cap is read at each roll, so leaving developer mode
+// trims the archive at the next one.
+public static class TraceRetentionPolicy
+{
+    public const int LinesPerFile = 8000;
+
+    public const int NormalArchives = 10;
+    public const int DeveloperArchives = 170;
+
+    // Archived files kept beside the active one.
+    public static int MaxArchives(bool developerMode)
+        => developerMode ? DeveloperArchives : NormalArchives;
 }

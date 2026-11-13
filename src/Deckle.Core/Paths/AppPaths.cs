@@ -14,8 +14,7 @@ namespace Deckle.Core;
 //   • backups/      — settings backup snapshots
 //   • recovery/     — the sealed raw text of a dictation in progress,
 //                     present only while a take runs or after a crash
-//   • telemetry/    — JSONL files (latency, microphone), raw-capture
-//                     subfolders, and per-profile corpus
+//   • telemetry/    — JSONL files (microphone level) and per-profile corpus
 //   • diagnostics/  — local logs (setup, errors, trace.jsonl); never transmitted
 //   • diagnostics/dumps/ — minidumps of fatal runtime errors, newest few kept
 //   • models/       — Whisper ggml-*.bin and the other downloaded models
@@ -57,8 +56,6 @@ public static class AppPaths
     // recovery run that may have crashed the app.
     public static string TakeAudioRecoveryFilePath    { get; }
     public static string TelemetryDirectory          { get; }
-    public static string TrackpadTelemetryDirectory   { get; }
-    public static string MouseWheelTelemetryDirectory { get; }
     public static string DiagnosticsDirectory         { get; }
     // Minidumps createdump writes on a fatal runtime error; created by the
     // host's entry point before it arms the capture, not here.
@@ -99,8 +96,6 @@ public static class AppPaths
         DictationRecoveryFilePath    = Path.Combine(RecoveryDirectory, "dictation.dat");
         TakeAudioRecoveryFilePath    = Path.Combine(RecoveryDirectory, "take-audio.dat");
         TelemetryDirectory           = Path.Combine(UserDataRoot, "telemetry");
-        TrackpadTelemetryDirectory   = Path.Combine(TelemetryDirectory, "trackpad");
-        MouseWheelTelemetryDirectory = Path.Combine(TelemetryDirectory, "mouse-wheel");
         DiagnosticsDirectory         = Path.Combine(UserDataRoot, "diagnostics");
         CrashDumpsDirectory          = Path.Combine(DiagnosticsDirectory, "dumps");
         ModelsDirectory            = Path.Combine(UserDataRoot, "models");
@@ -118,8 +113,6 @@ public static class AppPaths
         // by SettingsBackupService.
         Directory.CreateDirectory(UserDataRoot);
         Directory.CreateDirectory(TelemetryDirectory);
-        Directory.CreateDirectory(TrackpadTelemetryDirectory);
-        Directory.CreateDirectory(MouseWheelTelemetryDirectory);
         Directory.CreateDirectory(DiagnosticsDirectory);
     }
 

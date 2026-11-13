@@ -16,7 +16,7 @@ public sealed class OperationalSinkRoutingTests
             "application-log-" + Guid.NewGuid().ToString("N"));
         string path = Path.Combine(root, "trace.jsonl");
         bool enabled = false;
-        var sink = new ApplicationLogSink(root, () => enabled);
+        var sink = new ApplicationLogSink(root, () => enabled, maxArchives: static () => 10);
 
         try
         {
@@ -59,7 +59,8 @@ public sealed class OperationalSinkRoutingTests
         var sink = new ApplicationLogSink(
             root,
             static () => true,
-            recordingSelection.Matches);
+            recordingSelection.Matches,
+            maxArchives: static () => 10);
 
         try
         {
@@ -89,7 +90,8 @@ public sealed class OperationalSinkRoutingTests
             "application-log-throws-" + Guid.NewGuid().ToString("N"));
         var sink = new ApplicationLogSink(
             root,
-            () => throw new InvalidOperationException("settings unreadable"));
+            () => throw new InvalidOperationException("settings unreadable"),
+            maxArchives: static () => 10);
 
         try
         {

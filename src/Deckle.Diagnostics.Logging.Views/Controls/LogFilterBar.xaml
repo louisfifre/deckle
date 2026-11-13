@@ -73,6 +73,18 @@
                     </DropDownButton.Flyout>
                 </DropDownButton>
 
+                <!-- What the host's own switches keep out of view, such as the
+                     log window's hidden detail (Notice). Empty, it collapses. -->
+                <TextBlock x:Name="NoticeText"
+                           Grid.Column="3"
+                           HorizontalAlignment="Right"
+                           VerticalAlignment="Center"
+                           Style="{StaticResource CaptionTextBlockStyle}"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           TextTrimming="CharacterEllipsis"
+                           TextWrapping="NoWrap"
+                           Visibility="Collapsed" />
+
                 <Button x:Name="ResetButton"
                         x:Uid="LogFilterBarResetButton"
                         Grid.Column="4"

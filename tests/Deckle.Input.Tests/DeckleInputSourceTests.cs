@@ -81,38 +81,6 @@ public class DeckleInputSourceTests : IDisposable
     }
 
     [Fact]
-    public void RecordingSessionsTravelInTheLogFromStartToOutcome()
-    {
-        using var listener = new TestEventListener("Deckle-Input");
-
-        DeckleInputSource.Log.RecordingStarted();
-        DeckleInputSource.Log.RecordingStopped("failed", 7);
-        DeckleInputSource.Log.WheelRecordingStarted();
-        DeckleInputSource.Log.WheelRecordingStopped("completed", 3);
-
-        Assert.Collection(listener.Events,
-            frameStart => AssertMilestone(frameStart, DeckleInputSource.EvtRecordingStarted),
-            frameStop =>
-            {
-                AssertMilestone(frameStop, DeckleInputSource.EvtRecordingStopped);
-                Assert.Equal("failed", frameStop.Payload?[0]);
-                Assert.Equal(7L, frameStop.Payload?[1]);
-            },
-            wheelStart => AssertMilestone(wheelStart, DeckleInputSource.EvtWheelRecordingStarted),
-            wheelStop =>
-            {
-                AssertMilestone(wheelStop, DeckleInputSource.EvtWheelRecordingStopped);
-                Assert.Equal("completed", wheelStop.Payload?[0]);
-            });
-    }
-
-    private static void AssertMilestone(EventWrittenEventArgs e, int eventId)
-    {
-        Assert.Equal(eventId, e.EventId);
-        Assert.Equal(ObservationTags.Milestone, e.Tags & ObservationTags.Milestone);
-    }
-
-    [Fact]
     public void PumpFailureIsAnErrorCarryingItsCause()
     {
         using var listener = new TestEventListener("Deckle-Input");
@@ -164,31 +132,5 @@ public class DeckleInputSourceTests : IDisposable
 
         Assert.Equal(2, listener.Events.Count);
         Assert.Equal(DeckleInputSource.EvtFrameRollup, listener.Events[1].EventId);
-    }
-
-    // The settings store reports in free text. A damaged file at load is a
-    // Warning (degraded, defaults in use) and a failed write an Error.
-    [Fact]
-    public void ADamagedSettingsFileSurfacesAsAWarningAndAFailedWriteAsAnError()
-    {
-        using var listener = new TestEventListener("Deckle-Input");
-
-        DeckleInputSource.Log.SettingsLoadWarning("reason=parse_failed");
-        DeckleInputSource.Log.SettingsLoadError("reason=write_failed");
-
-        Assert.Collection(
-            listener.Events,
-            warning =>
-            {
-                Assert.Equal(DeckleInputSource.EvtSettingsLoadWarning, warning.EventId);
-                Assert.Equal(EventLevel.Warning, warning.Level);
-                Assert.Equal("reason=parse_failed", warning.Payload?[0]);
-            },
-            error =>
-            {
-                Assert.Equal(DeckleInputSource.EvtSettingsLoadError, error.EventId);
-                Assert.Equal(EventLevel.Error, error.Level);
-                Assert.Equal("reason=write_failed", error.Payload?[0]);
-            });
     }
 }
