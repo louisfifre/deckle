@@ -183,7 +183,6 @@ public partial class App
         }
 
         TryShutdown("settings_flush", () => Settings.SettingsService.Instance.Flush());
-        TryShutdown("hud_settings_flush", () => Hud.HudSettingsService.Instance.Flush());
         TryShutdown("update_checks_stop", StopUpdateChecks);
         TryShutdown("hotkeys_dispose", () => _hotkeyManager?.Dispose());
         TryShutdown("tray_dispose", () => _tray?.Dispose());

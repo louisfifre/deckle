@@ -19,19 +19,8 @@ public sealed partial class HudChrono
     private float _renderedCountdownValue = -1f;
     private long _countdownStarted;
 
-    // Playground-only override, held until replaced. Not a one-shot like
-    // _nextStrokeConfig: the gauge is built at the first pause, after the
-    // Recording entry, and again at every pause the engine reports after an
-    // inactive frame, so a one-shot would leave the later builds on the store.
-    // Null in shipping Deckle, which builds from HudSettingsService.
-    private UtteranceCountdownConfig? _countdownConfigOverride;
-
-    // Null lifts the override. A gauge on screen is rebuilt at once.
-    public void OverrideCountdownConfig(UtteranceCountdownConfig? config)
-    {
-        _countdownConfigOverride = config;
-        RebuildCountdownVisual();
-    }
+    // The gauge's own knobs, the compiled defaults like the outline's.
+    private static readonly UtteranceCountdownConfig CountdownConfig = new();
 
     public void UpdateUtteranceProgress(bool active, float progress, int completed)
     {
@@ -87,25 +76,19 @@ public sealed partial class HudChrono
         if (width <= 0 || height <= 0) return;
         var size = new Vector2(width, height);
         var compositor = ElementCompositionPreview.GetElementVisual(CountdownSurfaceHost).Compositor;
-        // The stroke's own config, so the gauge extends the outline on screen
-        // whatever that was built from: the store in shipping Deckle, the
-        // tab's knobs in the Playground. The countdown config has no stroke to
-        // follow, so the Playground overrides it directly; the store otherwise.
-        var settings  = HudSettingsService.Instance;
-        var stroke    = _strokeConfig            ?? settings.EffectiveStroke();
-        var countdown = _countdownConfigOverride ?? settings.EffectiveCountdown();
+        // The outline's config, so the gauge extends the outline on screen.
         // The gauge's surface is its host, so a host the size of the card cut
         // the outer half of a negative-inset contour while the outline, a
         // visual, overflowed the card untouched. Oversizing the host by that
         // overflow and pulling the container back by it draws the whole
-        // contour at the outline's place: in the Playground both overflow
-        // alike, and in the HUD window the HWND crops both alike.
-        float overflow = MathF.Max(0f, -stroke.InsetDip);
+        // contour at the outline's place: the HUD window's HWND crops both
+        // alike.
+        float overflow = MathF.Max(0f, -StrokeConfig.InsetDip);
         var hostSize = new Vector2(width + 2f * overflow, height + 2f * overflow);
         _countdownVisual = HudComposition.CreateUtteranceCountdownVisual(
-            compositor, hostSize, size, stroke,
+            compositor, hostSize, size, StrokeConfig,
             ChronoRoot.ActualTheme == ElementTheme.Dark,
-            countdown, materialOpacity: 0f, animationsEnabled: _animationsEnabled);
+            CountdownConfig, materialOpacity: 0f, animationsEnabled: _animationsEnabled);
         _countdownVisual.Container.Offset = new Vector3(-overflow, -overflow, 0f);
         _renderedCountdownValue = _countdownState.ValueAt(Stopwatch.GetElapsedTime(_countdownStarted));
         _countdownVisual.SetProgress(_renderedCountdownValue);

@@ -40,11 +40,6 @@ public sealed record UtteranceCountdownConfig
     // (2026-10-22); the cut once had its own, shorter and accelerating. The
     // defaults are the 0.33 s he settled on and that curve, (0, 0, 0, 1).
     // FollowSeconds is his 0.1 s: the gauge trails the capture closely.
-    //
-    // The names stay Retreat*: the stored overrides are keyed by property
-    // name (ConfigOverrides), so values already tuned under them keep
-    // applying. A leftover Cut* key in an older file is ignored on load and
-    // dropped at the next save.
     public double FollowSeconds { get; init; } = 0.1;
     public double RetreatSeconds { get; init; } = 0.33;
     public float RetreatEaseP1X { get; init; } = 0f;

@@ -1261,10 +1261,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HudPalette.cs
 │   │   │   ├── HudState.cs
 │   │   │   └── MessageKind.cs
-│   │   ├── Settings/
-│   │   │   ├── ConfigOverrides.cs
-│   │   │   ├── HudSettings.cs
-│   │   │   └── HudSettingsService.cs
 │   │   ├── Transcript/
 │   │   │   ├── TranscriptPanelLayout.cs
 │   │   │   ├── TranscriptPanelWindow.Proximity.cs
@@ -2628,13 +2624,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AnimationOfferTests.cs
 │   │   ├── AnimationPreferenceBugNotes.md
 │   │   ├── AnimationPreferenceTests.cs
-│   │   ├── ConfigOverridesBugNotes.md
 │   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── HudHidePolicyTests.cs
 │   │   ├── HudMessageFitTests.cs
-│   │   ├── HudSettingsOverridesTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── OverlayCardBugNotes.md

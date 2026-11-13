@@ -29,16 +29,14 @@ public static partial class HudComposition
     // a white-to-dark ramp on every entry in light theme.
     public static ProcessingStroke CreateProcessingStroke(
         Compositor compositor, Vector2 hostSize, bool isDark,
-        ConicArcStrokeConfig? configOverride = null,
+        ConicArcStrokeConfig config,
         bool animationsEnabled = true,
         ProcessingVariant? from = null)
     {
-        // Optional override used by HudChrono.RebuildStroke (HudPlayground
-        // slider wiring). Null keeps the shipping defaults.
         bool afterRecording = from == ProcessingVariant.Recording;
         return CreateConicArcStroke(
             compositor, hostSize,
-            configOverride ?? new ConicArcStrokeConfig(),
+            config,
             isDark,
             initialOpacity:    afterRecording ? 0f : -1f,
             initialVariant:    afterRecording ? ProcessingVariant.Recording : ProcessingVariant.Transcribing,
@@ -53,8 +51,8 @@ public static partial class HudComposition
     //
     // All Recording-specific knobs live on the Recording* fields of
     // ConicArcStrokeConfig (see the struct section above). This factory
-    // reads a default-constructed config and maps the Recording* paint-
-    // time fields into the generic paint-time slots that
+    // takes the config HudChrono holds, the compiled defaults, and maps the
+    // Recording* paint-time fields into the generic paint-time slots that
     // CreateConicArcStroke consumes, through BuildRecordingPaintConfig
     // below — tweak the defaults on the struct itself to iterate, just
     // like the Transcribing*/Rewriting* knobs.
@@ -85,13 +83,10 @@ public static partial class HudComposition
     // level, whichever material Recording shows.
     public static ProcessingStroke CreateRecordingStroke(
         Compositor compositor, Vector2 hostSize, bool isDark,
-        ConicArcStrokeConfig? configOverride = null,
+        ConicArcStrokeConfig config,
         bool animationsEnabled = true)
     {
-        // HudPlayground passes a pre-customized config via configOverride
-        // so its Recording* sliders land on the live struct before the
-        // mapping bakes them into the generic slots.
-        var cfg = BuildRecordingPaintConfig(configOverride ?? new ConicArcStrokeConfig());
+        var cfg = BuildRecordingPaintConfig(config);
         return CreateConicArcStroke(
             compositor, hostSize, cfg, isDark,
             freezeHueRotation: true,
