@@ -226,8 +226,8 @@ public partial class RecordingViewModel : ObservableObject
         MicResultDetail   = "";
     }
 
-    // The microphone-telemetry opt-in lives in RecordingTelemetryViewModel, the
-    // module's contribution to the Diagnostics page.
+    // The microphone-level capture lives on the Diagnostics page, under
+    // Detailed logs.
 
     // ── Sync with CaptureSettingsService ────────────────────────────────────
 

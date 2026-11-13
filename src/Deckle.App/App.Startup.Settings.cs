@@ -137,11 +137,9 @@ public partial class App
 
         if (context.TranscriptionPresent)
         {
+            // The microphone level, a developer capture, is the Diagnostics
+            // page's own card under Detailed logs, no longer a contribution.
             RegisterSettingsModule(Audio.Views.RecordingSettingsModule.Describe(order: 50), Audio.Views.SettingsSearch.Entries);
-            ContributeDiagnostics(
-                Audio.Views.RecordingTelemetryViewModel.Contribution(order: 50),
-                "Deckle.Audio.Views",
-                Audio.Views.SettingsSearch.TelemetryEntries);
             // One module, three rail entries: the module's page (General under the
             // node) then Decoding and Streaming nested under it, each registered on
             // its own so the search index resolves page coordinates per page.
@@ -184,14 +182,10 @@ public partial class App
         }
         if (context.AmbientPresent)
             RegisterSettingsModule(Lighting.Ambient.Views.AmbientSettingsModule.Describe(order: 400), Lighting.Ambient.Views.SettingsSearch.Entries);
+        // The contact-frame capture, a developer capture, is the Diagnostics
+        // page's own card under Detailed logs, beside the wheel capture.
         if (context.TrackpadPresent)
-        {
             RegisterSettingsModule(Input.Trackpad.TrackpadSettingsModule.Describe(order: 500), Input.Trackpad.SettingsSearch.Entries);
-            ContributeDiagnostics(
-                Input.Trackpad.TrackpadTelemetryViewModel.Contribution(order: 500),
-                "Deckle.Input.Trackpad",
-                Input.Trackpad.SettingsSearch.TelemetryEntries);
-        }
         if (context.PrecisionScrollPresent)
             RegisterSettingsModule(Input.PrecisionScroll.PrecisionScrollSettingsModule.Describe(order: 550), Input.PrecisionScroll.SettingsSearch.Entries);
         if (context.OrchestrationPresent)

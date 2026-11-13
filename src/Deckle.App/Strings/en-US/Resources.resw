@@ -945,7 +945,7 @@
 
   <!-- DiagnosticsPage Telemetry + whole-page reset dialogs -->
   <data name="Settings_ResetDiagnosticsDialog_Detail" xml:space="preserve">
-    <value>The trace and every telemetry dataset are turned off, and the telemetry folder returns to its default location.</value>
+    <value>Detailed logs, logs on disk and every corpus are turned off, and the dictation audio folder returns to its default location.</value>
   </data>
 
   <!-- LlmPage Reset all rewriting dialog + Ollama status -->

@@ -7,21 +7,19 @@ namespace Deckle.Transcription.Views;
 
 // ── WhisperTelemetryViewModel ─────────────────────────────────────────────────
 //
-// The dictation's dataset consents — latency timings and the audio corpus —
-// as the module's contribution to Settings > Diagnostics, the one editor of
-// everything Deckle records about itself (2026-10-14; the cards sat in a
-// Diagnostics section of the Dictation page before). The module keeps the
-// model and the consent dialogs; the Diagnostics page composes the cards
-// through DiagnosticsRegistry and resolves their words from this assembly.
+// The dictation corpus, with its audio option, as the module's contribution
+// to the Corpus section of Settings > Diagnostics (2026-11-13; the dictation
+// timings, a developer capture, moved to that page's Detailed logs). The
+// module keeps the model and the consent dialogs; the Diagnostics page
+// composes the cards through DiagnosticsRegistry and resolves their words
+// from this assembly.
 //
-// Load() pulls from the telemetry store; a property change pushes the whole
-// set back, and _isSyncing prevents re-saving during Load().
+// Load() pulls from the telemetry store; a property change pushes the
+// corpus values back, never a value another model on the page owns, and
+// _isSyncing prevents re-saving during Load().
 public sealed partial class WhisperTelemetryViewModel : ObservableObject
 {
     private bool _isSyncing;
-
-    [ObservableProperty]
-    public partial bool TelemetryLatencyEnabled { get; set; }
 
     [ObservableProperty]
     public partial bool TelemetryCorpusEnabled { get; set; }
@@ -39,7 +37,6 @@ public sealed partial class WhisperTelemetryViewModel : ObservableObject
         // Seeded closed under the guard, so no setter saves the seeds; Load()
         // overwrites them.
         _isSyncing = true;
-        TelemetryLatencyEnabled = false;
         TelemetryCorpusEnabled = false;
         RecordAudioCorpus = false;
         AudioCorpusContentIndex = 0;
@@ -51,7 +48,6 @@ public sealed partial class WhisperTelemetryViewModel : ObservableObject
         try
         {
             var t = TelemetrySettingsService.Instance.Current;
-            TelemetryLatencyEnabled = t.LatencyEnabled;
             TelemetryCorpusEnabled = t.CorpusEnabled;
             RecordAudioCorpus = t.RecordAudioCorpus;
             AudioCorpusContentIndex = (int)t.AudioCorpusContent;
@@ -60,12 +56,6 @@ public sealed partial class WhisperTelemetryViewModel : ObservableObject
         {
             _isSyncing = false;
         }
-    }
-
-    partial void OnTelemetryLatencyEnabledChanged(bool value)
-    {
-        if (_isSyncing) return;
-        Push();
     }
 
     partial void OnTelemetryCorpusEnabledChanged(bool value)
@@ -90,7 +80,6 @@ public sealed partial class WhisperTelemetryViewModel : ObservableObject
     private void Push()
     {
         var t = TelemetrySettingsService.Instance.Current;
-        t.LatencyEnabled = TelemetryLatencyEnabled;
         t.CorpusEnabled = TelemetryCorpusEnabled;
         t.RecordAudioCorpus = RecordAudioCorpus;
         t.AudioCorpusContent = AudioCorpusContentIndex < 0
@@ -99,8 +88,7 @@ public sealed partial class WhisperTelemetryViewModel : ObservableObject
         TelemetrySettingsService.Instance.Save();
     }
 
-    // The cards, in on-screen order: the latency toggle, then the audio-corpus
-    // consent fold. The fold is a Group whose master and audio child each gate
+    // One card, the dictation-corpus consent fold. The fold is a Group whose master and audio child each gate
     // their OFF→ON flip behind a consent dialog reached through the Catalog
     // registry (TelemetryConsent.RequestCorpus, .RequestAudioCorpus), so the
     // module asks without referencing the shell. The master → record → content
@@ -112,10 +100,6 @@ public sealed partial class WhisperTelemetryViewModel : ObservableObject
     // write the consent gates do not hold.
     public IReadOnlyList<SettingDescriptor> Settings =>
     [
-        Setting.Toggle("GeneralLatencyCard",
-            () => TelemetryLatencyEnabled,
-            value => TelemetryLatencyEnabled = value,
-            defaultValue: () => new TelemetrySettings().LatencyEnabled),
         Setting.Group("GeneralCorpusExpander",
             () => TelemetryCorpusEnabled,
             value => TelemetryCorpusEnabled = value,
@@ -147,7 +131,6 @@ public sealed partial class WhisperTelemetryViewModel : ObservableObject
     // page's composers return it to its default beside this call.
     public void TurnOff()
     {
-        TelemetryLatencyEnabled = false;
         RecordAudioCorpus = false;
         TelemetryCorpusEnabled = false;
     }

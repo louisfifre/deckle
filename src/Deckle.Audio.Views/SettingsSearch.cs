@@ -84,16 +84,4 @@ public static class SettingsSearch
         },
 
     ];
-
-    // The microphone-telemetry opt-in, composed on Settings > Diagnostics
-    // (RecordingTelemetryViewModel); registered under that page with this
-    // module's assembly, where its words live.
-    public static IReadOnlyList<SettingSearchEntry> TelemetryEntries { get; } =
-    [
-        new SettingSearchEntry
-        {
-            LabelKey = "RecordingMicrophoneTelemetryCard",
-            Keywords = ["diagnostics", "metrics", "stats", "microphone", "recording"],
-        },
-    ];
 }

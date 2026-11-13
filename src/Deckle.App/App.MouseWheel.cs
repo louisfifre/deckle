@@ -2,7 +2,8 @@ using Deckle.Input;
 
 namespace Deckle.App;
 
-// A diagnostic capture, independent of any master switch. A capture holds its
+// A diagnostic capture, independent of any module switch and held under
+// Detailed logs (Settings > Diagnostics). A capture holds its
 // own reference on the shared input host, so wheel events flow whatever the
 // other consumers do, and releasing it never pulls the host from under them.
 public partial class App
@@ -18,6 +19,7 @@ public partial class App
         _keyboardMouseHost.WheelObserved += OnWheelObserved;
 
         MouseWheelSettingsService.Instance.Changed += ReconcileMouseWheel;
+        Diagnostics.Logging.LoggingSettingsService.Instance.Changed += ReconcileMouseWheel;
         ReconcileMouseWheel();
     }
 
@@ -27,7 +29,10 @@ public partial class App
     {
         if (_keyboardMouseHost is null || _wheelRecorder is null) return;
 
-        bool record = MouseWheelSettingsService.Instance.Current.RecordEvents;
+        // A developer capture under Settings > Diagnostics > Detailed logs:
+        // the switch above it stops it whatever its own toggle says.
+        bool record = Diagnostics.Logging.LoggingSettingsService.Instance.Current.DetailedLogs
+                   && MouseWheelSettingsService.Instance.Current.RecordEvents;
         if (record && !_wheelRecording)
         {
             if (_keyboardMouseHost.Start())

@@ -35,8 +35,8 @@
                 </catalog:SettingsSection>
 
                 <!-- The raw-frame recording lives on Settings > Diagnostics, the
-                     one editor of what Deckle records (TrackpadTelemetryViewModel,
-                     2026-10-14). -->
+                     one editor of what Deckle records (Detailed logs > Touchpad
+                     frames, 2026-11-13). -->
 
                 <!-- ── Windows integration ──────────────────────────────────── -->
                 <!-- Hand-authored: imperative commands with their own success

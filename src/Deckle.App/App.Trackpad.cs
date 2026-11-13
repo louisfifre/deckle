@@ -3,8 +3,10 @@ using Deckle.Input.Trackpad;
 
 namespace Deckle.App;
 
-// The frame recorder is deliberately independent of the master switch, so real
-// Bluetooth sessions can be recorded with the recognizer off.
+// The frame recorder is deliberately independent of the module's switch, so
+// real Bluetooth sessions can be recorded with the recognizer off. It answers
+// to Detailed logs instead (Settings > Diagnostics), like every developer
+// capture.
 public partial class App
 {
     private RawInputHost? _inputHost;
@@ -28,6 +30,7 @@ public partial class App
         _inputHost.TouchpadDeviceConnected += device => _frameRecorder.NoteDevice(device);
 
         TrackpadSettingsService.Instance.Changed += ReconcileTrackpad;
+        Diagnostics.Logging.LoggingSettingsService.Instance.Changed += ReconcileTrackpad;
         ReconcileTrackpad();
     }
 
@@ -37,7 +40,11 @@ public partial class App
         if (_inputHost is null || _trackpadEngine is null || _frameRecorder is null) return;
 
         var settings = TrackpadSettingsService.Instance.Current;
-        bool needsFrames = settings.Enabled || settings.RecordFrames;
+        // A developer capture under Settings > Diagnostics > Detailed logs:
+        // the switch above it stops it whatever its own toggle says.
+        bool recordFrames = settings.RecordFrames
+                         && Diagnostics.Logging.LoggingSettingsService.Instance.Current.DetailedLogs;
+        bool needsFrames = settings.Enabled || recordFrames;
 
         bool inputAvailable = !needsFrames || _inputHost.Start();
         if (!inputAvailable && !_trackpadHostFailureReported)
@@ -53,7 +60,7 @@ public partial class App
         if (settings.Enabled && inputAvailable) _trackpadEngine.Start();
         else                                    _trackpadEngine.Stop();
 
-        if (settings.RecordFrames && inputAvailable)
+        if (recordFrames && inputAvailable)
         {
             if (!_frameRecorder.IsRecording) _frameRecorder.Start(_inputHost.Touchpads);
         }

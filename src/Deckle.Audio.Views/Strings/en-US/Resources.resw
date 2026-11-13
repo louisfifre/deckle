@@ -343,14 +343,6 @@
     <value>Saved microphone (not connected)</value>
   </data>
 
-  <!-- Microphone-telemetry opt-in, composed on Settings > Diagnostics
-       (RecordingTelemetryViewModel); its words stay here. -->
-  <data name="RecordingMicrophoneTelemetryCard.Header" xml:space="preserve">
-    <value>Log microphone level</value>
-  </data>
-  <data name="RecordingMicrophoneTelemetryCard.Description" xml:space="preserve">
-    <value>After each recording, the level distribution of your microphone goes to microphone.jsonl. Levels only, no audio.</value>
-  </data>
   <data name="SettingsModuleNavLabel" xml:space="preserve">
     <value>Recording</value>
   </data>

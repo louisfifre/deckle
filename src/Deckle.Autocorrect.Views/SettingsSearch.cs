@@ -37,20 +37,17 @@ public static class SettingsSearch
         },
     ];
 
-    // The module's two dataset consents, composed on Settings > Diagnostics
-    // (AutocorrectTelemetryViewModel); registered under that page with this
-    // module's assembly, where their words live.
+    // The typed-text corpus, composed in the Corpus section of Settings >
+    // Diagnostics (AutocorrectTelemetryViewModel); registered under that page
+    // with this module's assembly, where its words live. The decisions ride
+    // under it as a composed child, so the fold is the one entry, and their
+    // words are its keywords.
     public static IReadOnlyList<SettingSearchEntry> TelemetryEntries { get; } =
     [
         new SettingSearchEntry
         {
-            LabelKey = "AutocorrectDecisionsCard",
-            Keywords = ["diagnostics", "telemetry", "logging", "autocorrect"],
-        },
-        new SettingSearchEntry
-        {
             LabelKey = "AutocorrectTextCard",
-            Keywords = ["corpus", "telemetry", "diagnostics", "keystrokes", "autocorrect"],
+            Keywords = ["corpus", "telemetry", "diagnostics", "keystrokes", "autocorrect", "decisions"],
         },
     ];
 

@@ -15,9 +15,14 @@ public sealed class ApplicationLogSink : IFlushableLogSink
     public ApplicationLogSink(
         string diagnosticsDirectory,
         Func<bool>? isEnabled = null,
-        Func<EventEntry, bool>? recordingFilter = null)
+        Func<EventEntry, bool>? recordingFilter = null,
+        Func<int?>? maxArchives = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(diagnosticsDirectory);
+        // Read lazily, at each roll and at start: a sink built by a test with
+        // its own reader never touches the person's settings file.
+        maxArchives ??= static () => TraceRetentionPolicy.MaxArchives(
+            LoggingSettingsService.Instance.Current.TraceRetention);
 
         _isEnabled = isEnabled
             ?? (static () => LoggingSettingsService.Instance.Current.ApplicationLogToDisk);
@@ -27,9 +32,9 @@ public sealed class ApplicationLogSink : IFlushableLogSink
             kindLabel: "log",
             predicate: static _ => true,
             schema: JsonlSchema.SelfDescribing,
-            // Ten generations: a week of use with every activity on stays
-            // readable, and the folder no longer grows without end.
-            rotation: new JsonlRotationPolicy(maxLines: 8000, maxArchives: 10));
+            // The person's retention, read at each roll (TraceRetention): a
+            // lowered cap trims at the next roll.
+            rotation: new JsonlRotationPolicy(TraceRetentionPolicy.LinesPerFile, maxArchives));
     }
 
     public bool Wants(EventEntry entry)

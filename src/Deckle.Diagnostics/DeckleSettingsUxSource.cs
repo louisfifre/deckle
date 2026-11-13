@@ -112,13 +112,18 @@ internal static class SettingValueRedaction
         "VoiceLevelDbfs",
         "Preprocessing.Enabled",
         "Telemetry.MicrophoneTelemetry",
-        "Logging.AmbientVerbosity",
-        "Logging.TranscriptionVerbosity",
-        "Logging.AutocorrectVerbosity",
-        "Logging.InputVerbosity",
-        "Logging.WindowingVerbosity",
+        "Logging.DetailedLogs",
+        "Logging.AmbientDetails",
+        "Logging.TranscriptionDetails",
+        "Logging.AutocorrectDetails",
+        "Logging.InputDetails",
+        "Logging.WindowingDetails",
+        "Logging.LlmDetails",
         "Logging.ApplicationLogToDisk",
+        "Logging.TraceRetention",
         "Input.RecordWheelEvents",
+        "Trackpad.RecordFrames",
+        "Telemetry.LatencyEnabled",
     };
 
     // Hotkey setters format modifier flags and a scancode, never typed text.
