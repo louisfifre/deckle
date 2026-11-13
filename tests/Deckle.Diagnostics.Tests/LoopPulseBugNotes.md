@@ -8,4 +8,4 @@
 - **Violated invariant:** the rollup is detail (deckle-logging: the record that travels keeps milestones, Warnings and Errors; the rest is detail a person admits or filters). Detail is Verbose and reads as `name={n}` pairs, so the person filters it with the rest of the detail and a line that stays carries its values.
 - **Recurrence cue:** an Informational, non-milestone event emitted on a timer or per tick of a hot loop; a `TemplateDoctrine` run that accepts a sentence template on an event whose payload is the whole message.
 
-Regression: `LoopPulseTests.AWindowWithTicksWritesOneRollupAsVerboseDetail`, and `MessageTemplateDoctrineTests.EveryTemplateFollowsTheShapeOfItsLevel` holds the pairs template.
+Regression: the rollup itself was removed on 2026-11-13, since nobody read it, so no test of it remains; `LoopPulseTests.AWorkingLoopWritesNothing` holds that a loop that ticks writes no line, and `MessageTemplateDoctrineTests.EveryTemplateFollowsTheShapeOfItsLevel` still holds the template shape of any timer event that returns.
