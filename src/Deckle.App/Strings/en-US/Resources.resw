@@ -1092,6 +1092,13 @@
   <data name="LogWindowSettingsButton.AutomationProperties.Name" xml:space="preserve">
     <value>Log settings</value>
   </data>
+  <!-- Title bar command (icon-only Button): tooltip + accessible name. -->
+  <data name="LogWindowPlaygroundButton.ToolTipService.ToolTip" xml:space="preserve">
+    <value>Playground</value>
+  </data>
+  <data name="LogWindowPlaygroundButton.AutomationProperties.Name" xml:space="preserve">
+    <value>Playground</value>
+  </data>
   <!-- Notice above the log list (code-behind, Loc.Format). -->
   <data name="LogWindow_DroppedNotice_Format" xml:space="preserve">
     <value>Entries skipped because they arrived faster than this window could show them: {0:N0}</value>

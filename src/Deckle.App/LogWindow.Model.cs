@@ -82,6 +82,13 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         else DispatcherQueue.TryEnqueueOrLog(ClearAll, "LOGWIN", "clear all");
     }
 
+    // Called on the UI thread by the App when the developer setting changes,
+    // and once when the window is created.
+    public void SetPlaygroundAvailable(bool available)
+        => PlaygroundButton.Visibility = available
+            ? Microsoft.UI.Xaml.Visibility.Visible
+            : Microsoft.UI.Xaml.Visibility.Collapsed;
+
     public void SetRecordingState(bool isRecording)
     {
         if (DispatcherQueue.HasThreadAccess) ApplyRecordingState(isRecording);
