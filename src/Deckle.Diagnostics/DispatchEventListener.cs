@@ -354,7 +354,21 @@ public sealed class DispatchEventListener : EventListener
             formattedMessage: formatted,
             payload: payload,
             milestone: ObservationTags.IsMilestone(e.Tags),
-            summary: ObservationTags.IsSummary(e.Tags));
+            summary: ObservationTags.IsSummary(e.Tags),
+            messageShowsValues: HasPlaceholder(e.Message));
+    }
+
+    // True when the template itself writes a value ("{0}"). Read here, where
+    // the template is still at hand: the formatted message no longer tells a
+    // value from a word of the sentence.
+    private static bool HasPlaceholder(string? template)
+    {
+        if (string.IsNullOrEmpty(template)) return false;
+        for (int i = template.IndexOf('{'); i >= 0 && i < template.Length - 1; i = template.IndexOf('{', i + 1))
+        {
+            if (char.IsAsciiDigit(template[i + 1])) return true;
+        }
+        return false;
     }
 
     // Clean-shutdown barrier for sinks that hand work to a background writer.

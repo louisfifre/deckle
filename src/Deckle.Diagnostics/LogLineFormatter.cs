@@ -36,7 +36,29 @@ public static class LogLineFormatter
         return new LogLineParts(
             entry.Timestamp.ToString("HH:mm:ss.fff", CultureInfo.InvariantCulture),
             DisplayName(entry.Provider),
-            Normalize(entry.FormattedMessage ?? entry.EventName));
+            WithValues(entry, Normalize(entry.FormattedMessage ?? entry.EventName)));
+    }
+
+    // An Informational template is a sentence with no value in it (ADR-0007),
+    // so the values the event carries are shown here, on the same line:
+    // "A Settings page was opened | page=DiagnosticsPage". The pairs take the
+    // name=value form and the " | " separator a Verbose row already uses.
+    // A template that writes its values itself (a listed breach) is left as
+    // it is, so no value is shown twice.
+    private static string WithValues(EventEntry entry, string message)
+    {
+        if (entry.Level != System.Diagnostics.Tracing.EventLevel.Informational
+            || entry.MessageShowsValues
+            || entry.Payload.Count == 0)
+            return message;
+
+        var builder = new StringBuilder(message);
+        foreach ((string name, object? value) in entry.Payload)
+        {
+            builder.Append(" | ").Append(name).Append('=')
+                   .Append(Convert.ToString(value, CultureInfo.InvariantCulture));
+        }
+        return builder.ToString();
     }
 
     // A Warning or an Error reads as a sentence, a line break, then its pairs
