@@ -164,9 +164,9 @@
   <data name="AmbientPageBehaviourSection.LinkText" xml:space="preserve">
     <value>Live preview</value>
   </data>
-  <!-- Preset options, read as "<key>.Content" (the preset's LabelKey). The
-       Settings page no longer selects a preset; the Playground Ambient page
-       and the tray still do. -->
+  <!-- Preset options, read as "<key>.Content" (the preset's LabelKey,
+       PresetFamily.SelectorOptions). No surface selects a preset today; the
+       names stay with the presets they name. -->
   <data name="AmbientPresetVividFast.Content" xml:space="preserve">
     <value>Vivid Fast</value>
   </data>
