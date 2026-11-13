@@ -82,13 +82,19 @@
     <value>Detailed logs</value>
   </data>
   <data name="LoggingDetailedCard.Description" xml:space="preserve">
-    <value>Adds step-by-step detail to the log, to investigate a problem.</value>
+    <value>Step-by-step detail to investigate a problem. Turn it on before the problem comes back.</value>
   </data>
   <data name="LoggingAmbientCard.Header" xml:space="preserve">
     <value>Ambient lighting</value>
   </data>
+  <data name="LoggingAmbientCard.Description" xml:space="preserve">
+    <value>Each light push, its colours and the frame analysis.</value>
+  </data>
   <data name="LoggingTranscriptionCard.Header" xml:space="preserve">
     <value>Dictation</value>
+  </data>
+  <data name="LoggingTranscriptionCard.Description" xml:space="preserve">
+    <value>Each utterance and segment. Never what you said.</value>
   </data>
   <data name="LoggingDictationTimingsCard.Header" xml:space="preserve">
     <value>Dictation timings</value>
@@ -116,6 +122,9 @@
   </data>
   <data name="LoggingInputCard.Header" xml:space="preserve">
     <value>Touchpad gestures</value>
+  </data>
+  <data name="LoggingInputCard.Description" xml:space="preserve">
+    <value>Each gesture recognised on the touchpad.</value>
   </data>
   <data name="LoggingWindowingCard.Header" xml:space="preserve">
     <value>Windows</value>
@@ -148,7 +157,7 @@
     <value>Keep up to</value>
   </data>
   <data name="TraceRetentionCard.Description" xml:space="preserve">
-    <value>The oldest lines go first.</value>
+    <value>All the logs on disk together. The oldest lines go first.</value>
   </data>
   <data name="TraceRetention60MB.Content" xml:space="preserve">
     <value>About 60 MB</value>
@@ -183,6 +192,9 @@
   </data>
   <data name="GeneralStorageFolderCard.Header" xml:space="preserve">
     <value>Dictation audio folder</value>
+  </data>
+  <data name="GeneralStorageFolderCard.Description" xml:space="preserve">
+    <value>Where the saved audio of your dictations goes.</value>
   </data>
   <data name="DiagnosticsFilesCard.Header" xml:space="preserve">
     <value>Diagnostics folder</value>
