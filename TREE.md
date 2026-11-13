@@ -2623,6 +2623,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── HudHidePolicyTests.cs
 │   │   ├── HudMessageFitTests.cs
+│   │   ├── HudShippedValuesTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── OverlayCardBugNotes.md
