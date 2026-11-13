@@ -149,4 +149,5 @@ public sealed partial class DeckleAppSource : DeckleEventSource
     public const int EvtShutdownRequestIgnored         = 133;
     public const int EvtStartupFailed                  = 134;
     public const int EvtCaptureFolderOpenFailed        = 135;
+    public const int EvtWindowOpened                   = 136;
 }

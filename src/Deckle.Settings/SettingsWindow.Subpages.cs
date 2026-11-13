@@ -105,6 +105,7 @@ public sealed partial class SettingsWindow
 
     private void OnPageFrameNavigated(object sender, NavigationEventArgs e)
     {
+        DeckleSettingsSource.Log.PageOpened(e.SourcePageType?.Name ?? "unknown");
         bool onSubpage = IsOnSubpage;
         AppTitleBar.IsBackButtonVisible = onSubpage;
         AppTitleBar.IsBackButtonEnabled = onSubpage;

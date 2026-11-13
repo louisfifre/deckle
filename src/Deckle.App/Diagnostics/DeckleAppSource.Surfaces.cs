@@ -40,6 +40,19 @@ public sealed partial class DeckleAppSource
         if (IsEnabled()) WriteEvent(EvtWindowCreated, window);
     }
 
+    // Each time the person opens a window, created or already there:
+    // milestone-tagged so log.jsonl says what was on screen. Only the
+    // window's name: settings, log, playground, mail, atelier.
+    [Event(EvtWindowOpened,
+           Level = EventLevel.Informational,
+           Keywords = (EventKeywords)Keywords.Lifecycle,
+           Tags = ObservationTags.Milestone,
+           Message = "A window was opened")]
+    public void WindowOpened(string window)
+    {
+        if (IsEnabled()) WriteEvent(EvtWindowOpened, window);
+    }
+
     // The window does not open; the exception goes on to the crash net.
     [Event(EvtWindowOpenFailed,
            Level = EventLevel.Error,

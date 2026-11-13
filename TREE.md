@@ -2407,7 +2407,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ReswMirrorTests.cs
 │   │   ├── SelfCheckTests.cs
 │   │   ├── TrayDeveloperMenuTests.cs
-│   │   └── TrayIncidentLinesTests.cs
+│   │   ├── TrayIncidentLinesTests.cs
+│   │   └── WindowOpenedEventTests.cs
 │   ├── Deckle.Atelier.Tests/
 │   │   ├── Icons/
 │   │   │   ├── FileIconKeyTests.cs
@@ -2915,6 +2916,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── DeveloperSettingsTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
+│   │   ├── PageOpenedEventTests.cs
 │   │   ├── PerformanceSettingsTests.cs
 │   │   ├── SettingsBackupBugNotes.md
 │   │   └── SettingsBackupRoundTripTests.cs

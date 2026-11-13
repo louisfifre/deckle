@@ -17,7 +17,11 @@ public partial class App
         _settingsWindow?.SetRecordingState(isRecording);
     }
 
-    private void ShowLogWindowLazy() => EnsureLogWindow().ShowAndActivate();
+    private void ShowLogWindowLazy()
+    {
+        EnsureLogWindow().ShowAndActivate();
+        DeckleAppSource.Log.WindowOpened("log");
+    }
 
     // The window created and wired, not shown: the self-check shows it without
     // activating it (SelfCheck/OffscreenWindow.cs).
@@ -56,7 +60,10 @@ public partial class App
     }
 
     private void ShowSettingsWindowLazy(string? pageTag = null)
-        => EnsureSettingsWindow().ShowAndActivate(pageTag);
+    {
+        EnsureSettingsWindow().ShowAndActivate(pageTag);
+        DeckleAppSource.Log.WindowOpened("settings");
+    }
 
     private Settings.SettingsWindow EnsureSettingsWindow()
     {
@@ -92,6 +99,7 @@ public partial class App
         // A developer surface: no path opens it while the setting is off.
         if (!DeveloperModeEnabled) return;
         EnsurePlaygroundWindow().ShowAndActivate();
+        DeckleAppSource.Log.WindowOpened("playground");
     }
 
     private PlaygroundWindow EnsurePlaygroundWindow()
@@ -130,6 +138,7 @@ public partial class App
     {
         if (!DeveloperModeEnabled) return;
         EnsureMailWindow().ShowAndActivate();
+        DeckleAppSource.Log.WindowOpened("mail");
     }
 
     private Mail.Hub.MailWindow EnsureMailWindow()

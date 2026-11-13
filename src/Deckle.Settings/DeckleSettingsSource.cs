@@ -155,5 +155,6 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
     // ── SettingsWindow title bar commands ──
     // Sibling of EvtOpenLogsFromFooter (39), declared later so it got the next id.
     public const int EvtOpenPlaygroundFromFooter          = 93;
+    public const int EvtPageOpened                        = 94;
 
 }
