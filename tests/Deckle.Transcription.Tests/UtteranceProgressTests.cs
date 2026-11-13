@@ -41,6 +41,18 @@ public sealed class UtteranceProgressTests
             segmenter.Push(Frame(voiced));
     }
 
+    // A dictation publishes this before it subscribes to the frames.
+    [Fact]
+    public void ASegmenterBeforeItsFirstFrameIsActiveWithNoPauseAndNothingCompleted()
+    {
+        var progress = new EnergySegmenter(Settings(), VoiceLevel, MinSpeechMs, _ => { }).Progress;
+
+        Assert.True(progress.IsActive);
+        Assert.False(progress.IsPausing);
+        Assert.Equal(0f, progress.Fraction);
+        Assert.Equal(0, progress.CompletedUtterances);
+    }
+
     [Fact]
     public void ProgressFractionFollowsConsecutiveSilenceUntilCut()
     {

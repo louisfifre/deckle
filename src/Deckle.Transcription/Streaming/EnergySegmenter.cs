@@ -57,11 +57,6 @@ internal sealed class EnergySegmenter
 
     private readonly Action<Utterance> _onUtterance;
 
-    // False for a segmenter that is not cutting a dictation (the live pause
-    // gauge in the Playground): its cuts would otherwise read in the detailed
-    // log exactly like the cuts of a take.
-    private readonly bool _logsDetail;
-
     // The voice decision: an utterance opens from the entry level up, and
     // inside it a frame is voiced down to the exit level (the user's).
     private readonly VoiceDetector _voice;
@@ -93,11 +88,9 @@ internal sealed class EnergySegmenter
         double voiceLevelDbfs,
         int minSpeechMs,
         Action<Utterance> onUtterance,
-        bool logsDetail = true,
         double entryMarginDb = VoiceDetector.DefaultEntryMarginDb)
     {
         _onUtterance = onUtterance;
-        _logsDetail = logsDetail;
 
         _voice             = new VoiceDetector(voiceLevelDbfs, entryMarginDb);
         _hangoverMaxFrames = FramesFromMs(settings.HangoverMaxMs,       min: 1);
@@ -221,11 +214,8 @@ internal sealed class EnergySegmenter
         int keptCount    = Math.Min(_frames.Count, voicedExtent + _marginFrames);
         if (voicedExtent < _minVoicedFrames)
         {
-            if (_logsDetail)
-            {
-                DeckleWhispSource.Log.SegmenterBlipDropped(
-                    voicedExtent, (int)Math.Round(voicedExtent * FrameMs));
-            }
+            DeckleWhispSource.Log.SegmenterBlipDropped(
+                voicedExtent, (int)Math.Round(voicedExtent * FrameMs));
             return; // blip — dropped
         }
 
@@ -239,12 +229,9 @@ internal sealed class EnergySegmenter
         int index = _nextIndex++;
         _onUtterance(new Utterance(Concat(frameCount), index, startSec, endSec, endedOnSilence));
 
-        if (_logsDetail)
-        {
-            DeckleWhispSource.Log.SegmenterUtteranceEmitted(
-                index, voicedFrames, frameCount, startSec, endSec,
-                (int)Math.Round(hangoverUsedFrames * FrameMs));
-        }
+        DeckleWhispSource.Log.SegmenterUtteranceEmitted(
+            index, voicedFrames, frameCount, startSec, endSec,
+            (int)Math.Round(hangoverUsedFrames * FrameMs));
     }
 
     internal SegmenterSnapshot Snapshot()

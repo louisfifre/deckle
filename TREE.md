@@ -2141,8 +2141,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscribedUtterance.cs
 │   │   │   ├── TranscriptSnapshot.cs
 │   │   │   ├── Utterance.cs
-│   │   │   ├── UtteranceProgress.cs
-│   │   │   └── UtteranceProgressMeter.cs
+│   │   │   └── UtteranceProgress.cs
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Decode.cs
@@ -3019,7 +3018,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TranscriptionDeliveryTests.cs
 │   │   ├── TranscriptionObservabilityContractTests.cs
 │   │   ├── UnitBezierTests.cs
-│   │   ├── UtteranceProgressMeterTests.cs
 │   │   ├── UtteranceProgressTests.cs
 │   │   ├── VadServiceIncidentTests.cs
 │   │   ├── WhispEventIdBugNotes.md
