@@ -320,6 +320,17 @@ public partial class App
             await Task.Delay(300);
             report.Surfaces.Add(await CaptureWindowFrameAsync(
                 run, log, "log", "end", null, loaded: true, ms: 0));
+
+            // The same two images with the detail shown: the window opens with
+            // it hidden, and only the full stream is long enough to scroll.
+            log.SetDetailShownForCapture(true);
+            await Task.Delay(300);
+            report.Surfaces.Add(await CaptureWindowFrameAsync(
+                run, log, "log", "detail", null, loaded: true, ms: 0));
+            log.ScrollToBottomForCapture();
+            await Task.Delay(800);
+            report.Surfaces.Add(await CaptureWindowFrameAsync(
+                run, log, "log", "detail-end", null, loaded: true, ms: 0));
             report.Save(outputFolder);
         }
 
