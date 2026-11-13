@@ -1,6 +1,6 @@
 # Refonte des diagnostics — proposition
 
-> Le grill du 13 novembre 2026 a remplacé cette proposition sur trois points : le bouton Playground reste dans la fenêtre de log, le fichier des temps de dictée est retiré, l'enregistrement des trames du trackpad et de la molette est retiré.
+> Le grill du 13 novembre 2026 a remplacé cette proposition sur trois points : le bouton Playground reste dans la fenêtre de log, le fichier des temps de dictée est retiré, l'enregistrement des trames du trackpad et de la molette est retiré. Construit depuis, un quatrième écart : la rétention du trace n'est pas un réglage mais une règle fixe, 10 archives de 8 000 lignes, 170 en mode développeur (`TraceRetentionPolicy`) ; les points 7 et 8 et les paliers « Keep up to » ci-dessous ne sont donc pas construits.
 
 Pour Louis. Branche `refs/heads/diagnostics-rework-4dbe26`, rien de fusionné ni de poussé. Captures avant/après sous `docs/proposals/captures/` (ignorées par git, présentes dans le worktree).
 
@@ -47,7 +47,7 @@ Mesuré sur ta machine : une ligne de trace pèse ~720 octets. Le trace garde au
    - Le vide en bas venait d'un pied de liste de cinq lignes blanches ajouté exprès ; il est réduit à une marge.
 10. **Contenu du log.**
     - « A dictation batch came back rewritten » doublait « Transcript rewrite complete » au même instant : seule la seconde reste (elle porte le fournisseur, la durée et l'identifiant qui l'apparie à son début).
-    - Les lignes « Hot loop » (une par boucle, six à la même milliseconde chaque minute) deviennent **une** ligne par minute, nommée « Loop counts », `window_s=60 | whisp_streaming_heartbeat=30 | …` : la fenêtre d'abord (ce qui se répète), puis les comptes.
+    - Les lignes « Hot loop » (une par boucle, six à la même milliseconde chaque minute) deviennent **une** ligne par minute, nommée « Loop counts », `window_s=60 | counts=whisp_streaming_heartbeat:30 …` : la fenêtre d'abord (ce qui se répète), puis les comptes.
 
 11. **Détails de construction à connaître.**
     - Le pli *Detailed logs* appartient à la page Diagnostics (le composeur lit les libellés dans l'assemblage du modèle qui les possède) : d'où une nouvelle référence `Deckle.Diagnostics.Logging.Views` → `Deckle.Input.Trackpad`. Les pages Recording et Trackpad perdent leurs cartes « telemetry ».
@@ -101,7 +101,7 @@ Captures prises à nouveau, relues par les mêmes types de lecteurs sans leur do
 
 ## Ce qui reste faible
 
-- **Dix sous-interrupteurs dans un pli en mode développeur** (six sinon) : long, et les plis ne s'emboîtent pas.
+- **Sept sous-interrupteurs dans un pli en mode développeur** (six sinon) : long, et les plis ne s'emboîtent pas.
 - **Le mot « Corpus »** reste opaque pour un lecteur froid ; la légende l'explique, le titre non.
 - **La taille actuelle sur disque et une commande pour vider** manquent ; c'est la tâche Anytype existante « Diagnostics : exporter un zip et vider les dossiers ».
 - **Fenêtre de log, filtres** : la ligne des filtres dit combien de lignes de détail sont masquées (« Detail hidden: N lines »), et le bouton devient « Copy visible » dès qu'un filtre de vue est actif ; un filtre Severity, Module ou Category ne dit pas combien de lignes il cache.
