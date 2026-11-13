@@ -122,6 +122,16 @@ public sealed class LogLineFormatterTests
     }
 
     [Fact]
+    public void A_value_with_a_line_break_keeps_the_Informational_row_on_one_line()
+    {
+        var entry = Entry(formattedMessage: "The Anytype runtime ended", payload: new() { ["ex_message"] = "Connection refused\r\nat port 31009\nretry later" });
+
+        Assert.Equal(
+            "The Anytype runtime ended | ex_message=Connection refused at port 31009 retry later",
+            LogLineFormatter.GetParts(entry).Message);
+    }
+
+    [Fact]
     public void Informational_template_that_writes_its_values_is_not_given_them_twice()
     {
         var entry = Entry(formattedMessage: "Module Dictation started", payload: new() { ["module"] = "Dictation" }, messageShowsValues: true);

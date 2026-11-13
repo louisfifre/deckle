@@ -44,7 +44,9 @@ public static class LogLineFormatter
     // "A Settings page was opened | page=DiagnosticsPage". The pairs take the
     // name=value form and the " | " separator a Verbose row already uses.
     // A template that writes its values itself (a listed breach) is left as
-    // it is, so no value is shown twice.
+    // it is, so no value is shown twice. A value can hold a line break (an
+    // exception message); it is flattened to a space so the row stays one line
+    // and never reads as a Warning's sentence-then-pairs layout.
     private static string WithValues(EventEntry entry, string message)
     {
         if (entry.Level != System.Diagnostics.Tracing.EventLevel.Informational
@@ -55,8 +57,9 @@ public static class LogLineFormatter
         var builder = new StringBuilder(message);
         foreach ((string name, object? value) in entry.Payload)
         {
+            string text = Convert.ToString(value, CultureInfo.InvariantCulture) ?? "";
             builder.Append(" | ").Append(name).Append('=')
-                   .Append(Convert.ToString(value, CultureInfo.InvariantCulture));
+                   .Append(text.ReplaceLineEndings(" "));
         }
         return builder.ToString();
     }
