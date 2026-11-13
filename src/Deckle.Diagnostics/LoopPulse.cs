@@ -21,8 +21,9 @@ public static class HotLoops
     public static readonly LoopPulse LlmInteractiveRewrite = new("llm_interactive_rewrite", watchesStall: false);
 }
 
-// Counts the ticks of one loop and, once a minute, turns the count into a
-// rollup, and a silence it should not have into one stall incident.
+// Counts the ticks of one loop and, once a minute, hands the count to the
+// shared count line, and turns a silence it should not have into one stall
+// incident.
 //
 // Tick is one interlocked increment: it runs inside loops that fire many times
 // a second, whether or not any listener is enabled, because a count that only
@@ -69,12 +70,12 @@ public sealed class LoopPulse
         return new ArmedScope(this);
     }
 
-    // One window: the rollup when ticks arrived, the stall when none did while
-    // the loop was expected in this window and the one before (a loop that
-    // started a second ago has not had its chance), the recovery when a stalled
-    // loop ticks again or is no longer expected. `nowMs` is a parameter so a test
-    // moves the clock without waiting.
-    internal void Evaluate(long nowMs)
+    // One window: the ticks it held, returned for the shared count line, the
+    // stall when none arrived while the loop was expected in this window and the
+    // one before (a loop that started a second ago has not had its chance), the
+    // recovery when a stalled loop ticks again or is no longer expected. `nowMs`
+    // is a parameter so a test moves the clock without waiting.
+    internal long Evaluate(long nowMs)
     {
         lock (_gate)
         {
@@ -83,7 +84,7 @@ public sealed class LoopPulse
             _lastTotal = total;
             long windowMs = nowMs - _lastEvaluatedMs;
             _lastEvaluatedMs = nowMs;
-            int windowS = (int)Math.Round(windowMs / 1000.0);
+            int windowS = WindowSecondsOf(windowMs);
 
             bool expected = _watchesStall && Volatile.Read(ref _armed) > 0;
             bool expectedBefore = _expectedBefore;
@@ -92,14 +93,13 @@ public sealed class LoopPulse
             if (delta > 0)
             {
                 if (_stalled) Settle("resumed", nowMs);
-                DeckleHotLoopSource.Log.LoopRollup(Loop, delta, windowS);
-                return;
+                return delta;
             }
 
             if (_stalled)
             {
                 if (!expected) Settle("stopped", nowMs);
-                return;
+                return 0;
             }
 
             if (expected && expectedBefore)
@@ -108,8 +108,11 @@ public sealed class LoopPulse
                 _stalledSinceMs = nowMs - windowMs;
                 DeckleHotLoopSource.Log.LoopStalled(Loop, windowS, total);
             }
+            return 0;
         }
     }
+
+    private static int WindowSecondsOf(long windowMs) => (int)Math.Round(windowMs / 1000.0);
 
     private void Settle(string reason, long nowMs)
     {
@@ -130,16 +133,38 @@ public sealed class LoopPulse
         }
     }
 
-    private static void EvaluateAll()
+    private static long s_lastCountedMs = Environment.TickCount64;
+
+    private static void EvaluateAll() => EvaluateAll(Environment.TickCount64);
+
+    // Every loop of the window on one line, `loop:count` in registration
+    // order: one row a minute that reads as what it is, where one row per loop,
+    // six at the same millisecond, told the reader nothing apart. A loop with
+    // no tick is left out, and a window where none ticked writes nothing: a
+    // quiet minute is not an event.
+    internal static void EvaluateAll(long nowMs)
     {
         LoopPulse[] pulses;
         lock (RegistryGate) pulses = [.. Registry];
-        long now = Environment.TickCount64;
+        var counts = new System.Text.StringBuilder();
         foreach (LoopPulse pulse in pulses)
         {
-            try { pulse.Evaluate(now); }
-            catch (Exception) { /* a timer callback must never take the process down */ }
+            long delta;
+            try { delta = pulse.Evaluate(nowMs); }
+            catch (Exception) { continue; /* a timer callback must never take the process down */ }
+            if (delta <= 0) continue;
+            if (counts.Length > 0) counts.Append(' ');
+            counts.Append(pulse.Loop).Append(':').Append(delta);
         }
+
+        int windowS;
+        lock (RegistryGate)
+        {
+            windowS = WindowSecondsOf(nowMs - s_lastCountedMs);
+            s_lastCountedMs = nowMs;
+        }
+        if (counts.Length > 0)
+            DeckleHotLoopSource.Log.LoopCounts(windowS, counts.ToString());
     }
 
     private sealed class ArmedScope(LoopPulse owner) : IDisposable

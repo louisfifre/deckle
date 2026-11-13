@@ -25,6 +25,9 @@ public static class LogLineFormatter
             ["Deckle-Vad"] = "VAD",
             ["Deckle-AnytypeMcp"] = "Anytype MCP",
             ["Deckle-SettingsUx"] = "Settings UX",
+            // "Hot Loop" named an implementation detail; the rows count how
+            // often each busy loop ran in the last minute.
+            ["Deckle-HotLoop"] = "Loop counts",
         }.ToFrozenDictionary(StringComparer.Ordinal);
 
     public static LogLineParts GetParts(EventEntry entry)

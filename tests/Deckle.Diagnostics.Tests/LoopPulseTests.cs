@@ -22,23 +22,45 @@ public sealed class LoopPulseTests
 
     private sealed record EventEntryView(int Id, EventLevel Level, bool Milestone, IReadOnlyList<object?> Payload);
 
-    // Verbose and no milestone: the rollup is detail a person can filter out of
-    // the LogWindow, and it never enters the always-on log.
+    // Verbose and no milestone: the count line is detail a person can filter
+    // out of the LogWindow, and it never enters the always-on log.
     [Fact]
-    public void AWindowWithTicksWritesOneRollupAsVerboseDetail()
+    public void AWindowWithTicksReturnsItsCountAndWritesNoRowOfItsOwn()
     {
         using var listener = new TestEventListener("Deckle-HotLoop");
         var pulse = new LoopPulse("test_rollup", watchesStall: false);
         long t = Start;
 
         for (int i = 0; i < 5; i++) pulse.Tick();
-        pulse.Evaluate(t + Minute);
 
-        var ev = Assert.Single(Of(listener, "test_rollup"));
-        Assert.Equal(DeckleHotLoopSource.EvtLoopRollup, ev.Id);
-        Assert.Equal(EventLevel.Verbose, ev.Level);
-        Assert.False(ev.Milestone);
-        Assert.Equal(5L, ev.Payload[1]);
+        Assert.Equal(5L, pulse.Evaluate(t + Minute));
+        Assert.Empty(Of(listener, "test_rollup"));
+    }
+
+    // Each minute wrote one row per loop that ticked, six at the same
+    // millisecond on a normal run: rows that told the reader nothing apart.
+    // Every loop of a window now shares one row, its window first.
+    [Fact]
+    [Trait("Category", "regression")]
+    public void EveryLoopOfAWindowSharesOneVerboseRow()
+    {
+        using var listener = new TestEventListener("Deckle-HotLoop");
+        var a = new LoopPulse("test_shared_a", watchesStall: false);
+        var b = new LoopPulse("test_shared_b", watchesStall: false);
+        for (int i = 0; i < 3; i++) a.Tick();
+        b.Tick();
+
+        LoopPulse.EvaluateAll(Start + Minute);
+
+        var rows = listener.Events
+            .Where(e => e.EventId == DeckleHotLoopSource.EvtLoopCounts
+                     && ((string)e.Payload![1]!).Contains("test_shared_a:3", StringComparison.Ordinal))
+            .ToList();
+        var row = Assert.Single(rows);
+        Assert.Contains("test_shared_b:1", (string)row.Payload![1]!, StringComparison.Ordinal);
+        Assert.Equal("window_s", row.PayloadNames![0]);
+        Assert.Equal(EventLevel.Verbose, row.Level);
+        Assert.Equal(EventTags.None, row.Tags & ObservationTags.Milestone);
     }
 
     [Fact]
@@ -85,11 +107,11 @@ public sealed class LoopPulseTests
         pulse.Evaluate(t + 2 * Minute);
 
         pulse.Tick();
-        pulse.Evaluate(t + 3 * Minute);
+        Assert.Equal(1L, pulse.Evaluate(t + 3 * Minute));
 
         var events = Of(listener, "test_resume");
         Assert.Equal(
-            [DeckleHotLoopSource.EvtLoopStalled, DeckleHotLoopSource.EvtLoopRecovered, DeckleHotLoopSource.EvtLoopRollup],
+            [DeckleHotLoopSource.EvtLoopStalled, DeckleHotLoopSource.EvtLoopRecovered],
             events.Select(e => e.Id));
         Assert.True(events[1].Milestone);
         Assert.Equal("resumed", events[1].Payload[1]);

@@ -8,8 +8,8 @@ namespace Deckle.Diagnostics;
 // counts (LoopPulse) and this provider carries the count once a minute. The
 // per-tick detail events stay where they are, Verbose and off by default.
 //
-// Three lines tell the whole story of a loop. LoopRollup says how many ticks a
-// window held. LoopStalled opens one Warning incident when a loop that should
+// Three lines tell the whole story of the loops. LoopCounts says how many
+// ticks each loop held in a window, all loops on one line. LoopStalled opens one Warning incident when a loop that should
 // be running ticked zero times in a window, and LoopRecovered closes it, once,
 // when the count moves again or the loop is no longer expected to run. Both
 // travel in the log; the rollup does not, because a loop that works needs
@@ -29,20 +29,24 @@ public sealed class DeckleHotLoopSource : DeckleEventSource
 
     // ── EventIds ────────────────────────────────────────────────────────
     // IDs are public in the ETW manifest; never reuse an id after deleting an event.
-    public const int EvtLoopRollup    = 1;
+    // 1 retired (LoopRollup, one row per loop per window).
     public const int EvtLoopStalled   = 2;
     public const int EvtLoopRecovered = 3;
+    public const int EvtLoopCounts    = 4;
 
-    // `count` is the ticks of the window, `window_s` the seconds it spans. A
-    // window with no tick writes nothing: a quiet loop is not an event.
-    [Event(EvtLoopRollup,
+    // One row per window for every loop that ticked: `window_s` first, the
+    // field every row shares, then `counts`, `loop:ticks` pairs separated by a
+    // space in registration order. It replaced one row per loop, six at the
+    // same millisecond each minute, that read as noise and told the reader
+    // nothing apart. A window where no loop ticked writes nothing.
+    [Event(EvtLoopCounts,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
-           Message = "loop={0} | count={1} | window_s={2}")]
-    public void LoopRollup(string loop, long count, int window_s)
+           Message = "window_s={0} | counts={1}")]
+    public void LoopCounts(int window_s, string counts)
     {
         if (!IsEnabled(EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat)) return;
-        WriteEvent(EvtLoopRollup, loop, count, window_s);
+        WriteEvent(EvtLoopCounts, window_s, counts);
     }
 
     // The loop was expected to run in two windows in a row and ticked zero times
