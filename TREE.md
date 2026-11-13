@@ -2581,6 +2581,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── LogFilterSelectionTests.cs
 │   │   ├── LoggingSettingsTests.cs
 │   │   ├── LogTransferTests.cs
+│   │   ├── LogWindowScrollBugNotes.md
 │   │   ├── OperationalSinkRoutingTests.cs
 │   │   ├── RangeObservableCollectionBugNotes.md
 │   │   ├── RangeObservableCollectionRegressionTests.cs
