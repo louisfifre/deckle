@@ -10,7 +10,7 @@ Observability vocabulary shared by `Deckle.Diagnostics`, `Deckle.Diagnostics.Log
 ## Admission vs view
 
 **Verbosity control** :
-A control that decides, per activity and persistently, which observations Deckle admits into its operational log stream, before any work done only for the log. When it is off, the governed observations reach no log sink, and the work that would have produced them does not run. It may govern repetitive `Informational` outcomes as well as `Verbose` detail. Workflow lifecycle, incidents, recoveries, their one-shot technical mirrors and every `Warning` or `Error` always remain. Telemetry datasets answer to a separate authority.
+A control that decides, per activity and persistently, whether Deckle admits that activity's per-step detail into its operational log stream, before any work done only for the log. When it is off, the detail reaches no log sink, and the work that would have produced it does not run. The activity's summary, a heartbeat, a rollup or the figures of one unit of work, always remains, as do workflow lifecycle, incidents, recoveries, their one-shot technical mirrors and every `Warning` or `Error`. Telemetry datasets answer to a separate authority.
 _Avoid_ : capture control (capture already names audio and screen acquisition), view filter (which never removes an observation).
 
 **Trace** :
@@ -78,6 +78,6 @@ A filter applied at the moment of capture, in the audio or screen sense. A tempo
 ### Example conversation
 
 > - Ambient is flooding the LogWindow. I do not want those detailed observations recorded at all.
-> - Turn off its verbosity control. Its milestones and failures remain, but the governed `Verbose` stream reaches no sink.
+> - Turn off its verbosity control. Its summary, milestones and failures remain, but its per-step detail reaches no sink.
 > - I only want to inspect Ambient failures for a minute.
 > - Use a view filter. The other observations stay in the window and reappear when you clear the filter.
