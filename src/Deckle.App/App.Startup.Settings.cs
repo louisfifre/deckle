@@ -98,6 +98,8 @@ public partial class App
 
         // Developer mode's "Capture the interface" (App.InterfaceCapture.cs).
         Settings.SettingsHost.CaptureInterface = CaptureInterfaceAsync;
+        // The Diagnostics page shows its developer captures in developer mode.
+        Diagnostics.Logging.Views.DiagnosticsViewModel.DeveloperModeReader = () => DeveloperModeEnabled;
 
         // Each module page declares its own nav identity in its own assembly; the
         // composition root supplies only the Order, which leaves gaps so a later

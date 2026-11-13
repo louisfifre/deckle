@@ -20,6 +20,7 @@ public partial class App
 
         MouseWheelSettingsService.Instance.Changed += ReconcileMouseWheel;
         Diagnostics.Logging.LoggingSettingsService.Instance.Changed += ReconcileMouseWheel;
+        Settings.SettingsService.Instance.Changed += ReconcileMouseWheel; // developer mode
         ReconcileMouseWheel();
     }
 
@@ -30,8 +31,8 @@ public partial class App
         if (_keyboardMouseHost is null || _wheelRecorder is null) return;
 
         // A developer capture under Settings > Diagnostics > Detailed logs:
-        // the switch above it stops it whatever its own toggle says.
-        bool record = Diagnostics.Logging.LoggingSettingsService.Instance.Current.DetailedLogs
+        // the switches above it stop it whatever its own toggle says.
+        bool record = DeveloperCapturesAdmitted
                    && MouseWheelSettingsService.Instance.Current.RecordEvents;
         if (record && !_wheelRecording)
         {

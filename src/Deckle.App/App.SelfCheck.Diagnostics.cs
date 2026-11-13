@@ -40,9 +40,37 @@ public partial class App
         SeedDiagnosticsSample();
         var clock = System.Diagnostics.Stopwatch.StartNew();
         bool loaded = await settings.ShowPageAsync(typeof(Diagnostics.Logging.Views.DiagnosticsPage));
-        const string slug = "diagnostics-open";
-        SelfCheckSurface surface = new("settings", slug, "Diagnostics (every fold open)", loaded,
-            clock.ElapsedMilliseconds, null, 0, 0, "page-render");
+        long elapsed = clock.ElapsedMilliseconds;
+        // The walk may have left this page current, so the navigation above
+        // did not reload it: reload, so it reads the seeded values.
+        var diagnostics = settings.CurrentPage as Diagnostics.Logging.Views.DiagnosticsPage;
+        diagnostics?.ViewModel.Load();
+
+        // The run is in developer mode, which shows the developer captures
+        // under Detailed logs; the second photograph is the page an ordinary
+        // user sees, the mode off in this run's own settings only.
+        await CaptureOpenPageAsync(report, settings, outputFolder, captures, loaded, elapsed,
+            "diagnostics-open", "Diagnostics (every fold open, developer mode)");
+
+        Settings.SettingsService.Instance.Current.Developer.DeveloperMode = false;
+        try
+        {
+            diagnostics?.ViewModel.Load();
+            await CaptureOpenPageAsync(report, settings, outputFolder, captures, loaded, elapsed,
+                "diagnostics-open-user", "Diagnostics (every fold open, developer mode off)");
+        }
+        finally
+        {
+            Settings.SettingsService.Instance.Current.Developer.DeveloperMode = true;
+        }
+    }
+
+    private static async Task CaptureOpenPageAsync(
+        SelfCheckReport report, Settings.SettingsWindow settings, string outputFolder, string captures,
+        bool loaded, long elapsedMs, string slug, string title)
+    {
+        SelfCheckSurface surface = new("settings", slug, title, loaded,
+            elapsedMs, null, 0, 0, "page-render");
         if (loaded && settings.CurrentPage is { } page)
         {
             try

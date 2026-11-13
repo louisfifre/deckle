@@ -25,6 +25,15 @@ public partial class DiagnosticsViewModel : ObservableObject
     [ObservableProperty] public partial bool WindowingDetails { get; set; }
     [ObservableProperty] public partial bool LlmDetails { get; set; }
 
+    // Developer mode lives in the Settings shell, which this module does not
+    // reference; the composition root hands its reader in. Read at each
+    // Load(), so a visit after the mode changed shows or hides the captures.
+    public static Func<bool> DeveloperModeReader { get; set; } = static () => false;
+
+    // Not a setting: the developer captures below show only while it is true,
+    // and record only while it is true too (App.DeveloperCapturesAdmitted).
+    [ObservableProperty] public partial bool DeveloperMode { get; set; }
+
     // The developer captures under Detailed logs, each in its own store.
     [ObservableProperty] public partial bool DictationTimings { get; set; }
     [ObservableProperty] public partial bool MicrophoneLevel { get; set; }
@@ -106,6 +115,7 @@ public partial class DiagnosticsViewModel : ObservableObject
                 TelemetrySettingsService.Instance.Current,
                 MouseWheelSettingsService.Instance.Current,
                 TrackpadSettingsService.Instance.Current);
+            DeveloperMode = DeveloperModeReader();
         }
         finally
         {

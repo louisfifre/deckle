@@ -155,7 +155,7 @@ public partial class App
         Deckle.Diagnostics.Telemetry.TelemetryListenerBootstrap.ConfigureGates(
             () => TelemetrySettingsService.Instance.Current);
         Deckle.Diagnostics.Telemetry.TelemetryListenerBootstrap.ConfigureDetailGate(
-            () => LoggingSettingsService.Instance.Current.DetailedLogs);
+            () => DeveloperCapturesAdmitted);
 
         NetworkStatusEmitter.Start();
 

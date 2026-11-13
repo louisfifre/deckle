@@ -10,7 +10,7 @@ namespace Deckle.App;
 // Developer mode (Settings > General > Developer, off by default) is the one
 // door to what an ordinary user has no use for: the surfaces still in alpha
 // and the developer tools. Its entry points are the right-click tray menu and
-// the Playground buttons in the Settings and Logs title bars. All are driven
+// the Playground button in the Settings title bar. All are driven
 // from here, and ShowPlaygroundLazy and ShowMailLazy refuse while the mode is
 // off, so no path can bypass it. A Playground or Mail window left open when
 // the mode goes off is closed, since its entry points are gone.
@@ -18,6 +18,15 @@ public partial class App
 {
     private static bool DeveloperModeEnabled
         => SettingsService.Instance.Current.Developer.DeveloperMode;
+
+    // The developer captures under Settings > Diagnostics > Detailed logs
+    // (dictation timings, microphone level, touchpad frames, wheel events)
+    // are datasets for the analysis scripts, not log lines a person shares.
+    // They record only while both switches are on: an ordinary user who turns
+    // Detailed logs on gets the list shown to them, nothing hidden under it.
+    private static bool DeveloperCapturesAdmitted
+        => DeveloperModeEnabled
+        && Diagnostics.Logging.LoggingSettingsService.Instance.Current.DetailedLogs;
 
     // Composed once: the mode decides whether the menu opens, not what it
     // holds, and module presence does not change during a run.

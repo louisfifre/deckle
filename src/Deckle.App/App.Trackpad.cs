@@ -31,6 +31,7 @@ public partial class App
 
         TrackpadSettingsService.Instance.Changed += ReconcileTrackpad;
         Diagnostics.Logging.LoggingSettingsService.Instance.Changed += ReconcileTrackpad;
+        Settings.SettingsService.Instance.Changed += ReconcileTrackpad; // developer mode
         ReconcileTrackpad();
     }
 
@@ -41,9 +42,8 @@ public partial class App
 
         var settings = TrackpadSettingsService.Instance.Current;
         // A developer capture under Settings > Diagnostics > Detailed logs:
-        // the switch above it stops it whatever its own toggle says.
-        bool recordFrames = settings.RecordFrames
-                         && Diagnostics.Logging.LoggingSettingsService.Instance.Current.DetailedLogs;
+        // the switches above it stop it whatever its own toggle says.
+        bool recordFrames = settings.RecordFrames && DeveloperCapturesAdmitted;
         bool needsFrames = settings.Enabled || recordFrames;
 
         bool inputAvailable = !needsFrames || _inputHost.Start();

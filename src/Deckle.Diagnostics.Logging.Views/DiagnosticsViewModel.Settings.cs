@@ -20,12 +20,18 @@ namespace Deckle.Diagnostics.Logging.Views;
 public partial class DiagnosticsViewModel
 {
     // Detailed logs, one fold. Its switch is the one gesture for "give me
-    // everything for this bug"; each source under it is on by default, so the
-    // switch alone gives every source's detail, except what needs more than
-    // that switch: the two per-frame captures, whose volume is warned of in
-    // their own words, and the microphone level, which keeps the consent it
-    // had as a dataset. Off, the switch stops every one of them whatever its
-    // own toggle says (App.MouseWheel, App.Trackpad,
+    // everything for this bug", meant for anyone, not only a developer: each
+    // log source under it is on by default, so the switch alone gives every
+    // source's detail, and the list underneath is there for whoever wants to
+    // choose. Those sources write log lines, the kind a person shares.
+    //
+    // The developer captures come last and show only in developer mode
+    // (Settings > General): they are datasets the analysis scripts read, not
+    // lines to share, and they record only in developer mode too, so the list
+    // an ordinary user sees is all the switch turns on. Two of them are
+    // per-frame, warned of in their own words; the microphone level keeps the
+    // consent it had as a dataset. Off, the switch stops every child whatever
+    // its own toggle says (App.DeveloperCapturesAdmitted,
     // TelemetryListenerBootstrap.ReadDetailGate), and the children hide.
     public IReadOnlyList<SettingDescriptor> LogsSettings =>
     [
@@ -41,13 +47,6 @@ public partial class DiagnosticsViewModel
                 Setting.Toggle("LoggingTranscriptionCard",
                     () => TranscriptionDetails, value => TranscriptionDetails = value,
                     defaultValue: () => new LoggingSettings().TranscriptionDetails),
-                Setting.Toggle("LoggingDictationTimingsCard",
-                    () => DictationTimings, value => DictationTimings = value,
-                    defaultValue: () => new TelemetrySettings().LatencyEnabled),
-                Setting.Toggle("LoggingMicrophoneLevelCard",
-                    () => MicrophoneLevel, value => MicrophoneLevel = value,
-                    defaultValue: () => new TelemetrySettings().MicrophoneTelemetry,
-                    confirmOnEnable: TelemetryConsent.RequestMicrophone),
                 Setting.Toggle("LoggingLlmCard",
                     () => LlmDetails, value => LlmDetails = value,
                     defaultValue: () => new LoggingSettings().LlmDetails),
@@ -60,13 +59,23 @@ public partial class DiagnosticsViewModel
                 Setting.Toggle("LoggingWindowingCard",
                     () => WindowingDetails, value => WindowingDetails = value,
                     defaultValue: () => new LoggingSettings().WindowingDetails),
-                // The two per-frame captures, side by side, last: the same
-                // kind of thing, warned of in the same words.
+
+                Setting.Toggle("LoggingDictationTimingsCard",
+                    () => DictationTimings, value => DictationTimings = value,
+                    visibleWhen: () => DeveloperMode,
+                    defaultValue: () => new TelemetrySettings().LatencyEnabled),
+                Setting.Toggle("LoggingMicrophoneLevelCard",
+                    () => MicrophoneLevel, value => MicrophoneLevel = value,
+                    visibleWhen: () => DeveloperMode,
+                    defaultValue: () => new TelemetrySettings().MicrophoneTelemetry,
+                    confirmOnEnable: TelemetryConsent.RequestMicrophone),
                 Setting.Toggle("LoggingTouchpadFramesCard",
                     () => RecordTouchpadFrames, value => RecordTouchpadFrames = value,
+                    visibleWhen: () => DeveloperMode,
                     defaultValue: () => new TrackpadSettings().RecordFrames),
                 Setting.Toggle("LoggingWheelEventsCard",
                     () => RecordWheelEvents, value => RecordWheelEvents = value,
+                    visibleWhen: () => DeveloperMode,
                     defaultValue: () => new MouseWheelSettings().RecordEvents),
             ]),
 
