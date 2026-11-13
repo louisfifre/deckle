@@ -13,11 +13,31 @@ public sealed class LogFilterSelection
     private readonly HashSet<string> _modules = new(StringComparer.Ordinal);
     private readonly HashSet<Keywords> _categories = [];
     private Keywords _categoryMask;
+    private bool _showDetail = true;
 
     public event EventHandler? Changed;
 
+    // The tokens a person picked in the three dimensions. The detail switch
+    // below is not one of them: it has its own control and its own notice.
     public int Count => _severities.Count + _modules.Count + _categories.Count;
     public bool IsEmpty => Count == 0;
+
+    // Whether Verbose entries, the per-step detail, pass. One switch for all
+    // of it, apart from the severity dimension, so a single gesture shows or
+    // hides the detail whatever else is picked. On by default, so a selection
+    // that never touches it filters nothing; the log window's own selection
+    // starts with it off (LogWindowFilterSession). Hiding is a lens: no entry
+    // is dropped.
+    public bool ShowDetail
+    {
+        get => _showDetail;
+        set
+        {
+            if (_showDetail == value) return;
+            _showDetail = value;
+            Changed?.Invoke(this, EventArgs.Empty);
+        }
+    }
 
     public IReadOnlyCollection<string> Modules => _modules;
     public IReadOnlyCollection<Keywords> Categories => _categories;
@@ -76,7 +96,22 @@ public sealed class LogFilterSelection
     public bool Matches(EventEntry entry)
     {
         ArgumentNullException.ThrowIfNull(entry);
+        if (!_showDetail && IsDetail(entry)) return false;
+        return MatchesTokens(entry);
+    }
 
+    // True for an entry the detail switch alone keeps out of view: Verbose,
+    // and matching every token picked. What a notice counts as hidden.
+    public bool IsHiddenDetail(EventEntry entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        return !_showDetail && IsDetail(entry) && MatchesTokens(entry);
+    }
+
+    private static bool IsDetail(EventEntry entry) => entry.Level == EventLevel.Verbose;
+
+    private bool MatchesTokens(EventEntry entry)
+    {
         if (_severities.Count > 0 && !_severities.Contains(Normalize(entry.Level)))
             return false;
 

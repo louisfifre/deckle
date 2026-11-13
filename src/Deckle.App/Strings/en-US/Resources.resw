@@ -1065,6 +1065,18 @@
   <data name="LogWindowWrapToggle.Content" xml:space="preserve">
     <value>Word wrap</value>
   </data>
+  <!-- The detail switch (Verbose entries) and the filter-row notice shown
+       while the detail is hidden (code-behind, Loc.Get / Loc.Format). -->
+  <data name="LogWindowDetailToggle.Content" xml:space="preserve">
+    <value>Show detail</value>
+  </data>
+  <data name="LogWindow_DetailHidden" xml:space="preserve">
+    <value>Detail hidden</value>
+  </data>
+  <data name="LogWindow_DetailHidden_Format" xml:space="preserve">
+    <value>Detail hidden: {0:N0} lines</value>
+    <comment>{0} is the number of detail lines kept out of view.</comment>
+  </data>
   <data name="LogWindowCopyMenuItem.Text" xml:space="preserve">
     <value>Copy</value>
   </data>

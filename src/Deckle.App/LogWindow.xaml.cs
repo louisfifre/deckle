@@ -63,9 +63,10 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     private const double SearchCollapseThreshold = 520.0;
 
     // Window width in DIPs below which the toolbar's settings label collapses
-    // to its icon: Copy all, Save all, Clear, Word wrap, Auto-scroll and the
-    // labelled settings button need about this much side by side.
-    private const double ToolbarCompactWidth = 760.0;
+    // to its icon: Copy all, Save all, Clear, Show detail, Word wrap,
+    // Auto-scroll and the labelled settings button need about this much side
+    // by side.
+    private const double ToolbarCompactWidth = 880.0;
     private bool _isSearchNarrow;
 
     public LogWindow()
@@ -76,6 +77,10 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         LogItems.ItemsSource = _visible;
         LogItems.Loaded += (_, _) => AttachScrollObserver();
         FilterBar.Selection = _filterSelection;
+        // The selection outlives the window: a reopened window shows the
+        // detail state the person left.
+        DetailToggle.IsChecked = _filterSelection.ShowDetail;
+        UpdateDetailNotice();
 
         LoadAppIcons();
         AppTitleBarIcon.ImageSource = _iconIdle;
@@ -220,6 +225,21 @@ public sealed partial class LogWindow : Window, ILogWindowSink
     }
 
     private void OnFilterChanged(object sender, EventArgs e) => ApplyFilter();
+
+    // The selection raises Changed, which the filter bar relays as
+    // FilterChanged: the view is rebuilt there, once.
+    private void OnDetailToggleClick(object sender, RoutedEventArgs e)
+        => _filterSelection.ShowDetail = DetailToggle.IsChecked == true;
+
+    // The self-check photographs the window with the detail hidden and shown.
+    internal void SetDetailShownForCapture(bool shown)
+    {
+        DetailToggle.IsChecked = shown;
+        _filterSelection.ShowDetail = shown;
+        // The filter bar relays only while loaded; an off-screen window may
+        // not be, so the view is rebuilt here too.
+        ApplyFilter();
+    }
 
     private void OnSearchTextChanged(AutoSuggestBox sender, AutoSuggestBoxTextChangedEventArgs args)
     {

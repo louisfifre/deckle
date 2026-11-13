@@ -15,8 +15,11 @@ namespace Deckle.App;
 
 public sealed partial class LogWindow : Window, ILogWindowSink
 {
+    // Hidden detail is a view filter like any other (LogFilterSelection.ShowDetail).
     private bool HasActiveFilter =>
-        _filterSelection.Count > 0 || !string.IsNullOrEmpty(_currentSearch);
+        _filterSelection.Count > 0
+        || !_filterSelection.ShowDetail
+        || !string.IsNullOrEmpty(_currentSearch);
 
     private bool CopyToClipboard(string text)
     {

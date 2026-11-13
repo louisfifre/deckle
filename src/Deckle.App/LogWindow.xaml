@@ -220,6 +220,14 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <!-- The one gesture for the per-step detail, the Verbose
+                         entries: off when the window opens, a view filter that
+                         destroys nothing. While it is off, the filter row says
+                         how many lines it hides (UpdateDetailNotice). -->
+                    <ToggleButton x:Name="DetailToggle"
+                                  x:Uid="LogWindowDetailToggle"
+                                  IsChecked="False"
+                                  Click="OnDetailToggleClick" />
                     <ToggleButton x:Name="WrapToggle"
                                   x:Uid="LogWindowWrapToggle"
                                   IsChecked="False"

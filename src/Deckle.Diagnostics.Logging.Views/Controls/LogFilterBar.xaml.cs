@@ -55,10 +55,26 @@ public sealed partial class LogFilterBar : UserControl
 
     public void Detach() => Unsubscribe();
 
+    // A line at the end of the filter row saying what the host keeps out of
+    // view apart from the picked tokens; null or empty hides it.
+    public string? Notice
+    {
+        get => NoticeText.Text;
+        set
+        {
+            NoticeText.Text = value ?? "";
+            NoticeText.Visibility = string.IsNullOrEmpty(value)
+                ? Visibility.Collapsed
+                : Visibility.Visible;
+        }
+    }
+
+    // Verbose is not offered: the per-step detail has its own switch
+    // (LogFilterSelection.ShowDetail), so one control governs it.
     private void BuildFixedOptions()
     {
         RebuildOptions(SeverityOptions, LogFilterDimension.Severity,
-            LogFilterSelection.SeverityOrder.Select(level =>
+            LogFilterSelection.SeverityOrder.Where(level => level != EventLevel.Verbose).Select(level =>
                 new LogFilterOption(level.ToString(), Localize("LogFilter_Severity_" + level))));
 
         RebuildOptions(CategoryOptions, LogFilterDimension.Category,

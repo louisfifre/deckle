@@ -4,6 +4,7 @@
 using System.Collections.Concurrent;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Logging;
+using Deckle.Localization;
 using Deckle.Shell;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
@@ -70,6 +71,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
         int dropped = Interlocked.Exchange(ref _droppedPendingCount, 0);
         if (dropped > 0) ReportDroppedEntries(dropped);
+        if (drained > 0) UpdateDetailNotice();
 
         Volatile.Write(ref _entryDrainScheduled, 0);
         if (!_pendingEntries.IsEmpty)
@@ -111,6 +113,32 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         ResetDroppedEntries();
         _entries.Clear();
         _visible.Clear();
+        _hiddenDetailCount = 0;
+        UpdateDetailNotice();
+    }
+
+    // Entries in the buffer that the detail switch alone keeps out of view.
+    // Kept by AddEntrySafe and recounted by ApplyFilter, which every change of
+    // filter or search goes through.
+    private int _hiddenDetailCount;
+
+    private bool IsHiddenDetail(LogEntry e)
+        => _filterSelection.IsHiddenDetail(e.Entry) && MatchesSearch(e);
+
+    // While the detail is hidden the filter row says so, with how many lines
+    // it keeps out of view, so a quiet window never reads as a quiet app.
+    private void UpdateDetailNotice()
+    {
+        if (_filterSelection.ShowDetail)
+        {
+            FilterBar.Notice = null;
+            return;
+        }
+        // The count can lag a search typed but not yet applied; never below 0.
+        int hidden = Math.Max(0, _hiddenDetailCount);
+        FilterBar.Notice = hidden == 0
+            ? Loc.Get("LogWindow_DetailHidden")
+            : Loc.Format("LogWindow_DetailHidden_Format", hidden);
     }
 
     private void AddEntrySafe(LogEntry entry)
@@ -121,6 +149,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         while (_entries.Count > MaxEntries)
         {
             var removed = _entries.Dequeue();
+            if (IsHiddenDetail(removed)) _hiddenDetailCount--;
             // The visible projection preserves queue order. If the expired
             // entry is visible it can only be at index 0, so avoid the linear
             // IndexOf performed by ObservableCollection.Remove.
@@ -129,6 +158,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         }
 
         if (Matches(entry)) _visible.Add(entry);
+        else if (IsHiddenDetail(entry)) _hiddenDetailCount++;
 
         if (!_isVisible) return;
         if (AutoScrollToggle?.IsChecked != true) return;
@@ -138,16 +168,18 @@ public sealed partial class LogWindow : Window, ILogWindowSink
 
     private bool Matches(LogEntry e)
     {
-        if (!_filterSelection.Matches(e.Entry)) return false;
-
-        if (_currentSearch.Length > 0 &&
-            e.Text.IndexOf(_currentSearch, StringComparison.OrdinalIgnoreCase) < 0) return false;
-        return true;
+        return _filterSelection.Matches(e.Entry) && MatchesSearch(e);
     }
+
+    private bool MatchesSearch(LogEntry e)
+        => _currentSearch.Length == 0
+        || e.Text.IndexOf(_currentSearch, StringComparison.OrdinalIgnoreCase) >= 0;
 
     private void ApplyFilter()
     {
         _visible.ReplaceAll(_entries.Where(Matches));
+        _hiddenDetailCount = _filterSelection.ShowDetail ? 0 : _entries.Count(IsHiddenDetail);
+        UpdateDetailNotice();
         if (_isVisible && AutoScrollToggle?.IsChecked == true)
             RequestScrollToBottom();
     }
