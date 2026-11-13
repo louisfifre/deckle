@@ -14,6 +14,7 @@ public sealed class MessageTemplateDoctrineTests
         { "DeckleAppSource.ModuleSkipped", "the module is the subject of the startup step, so the sentence names it with its reason" },
         { "DeckleAppSource.ModuleStarted", "the module is the subject of the startup step, so the sentence names it" },
         { "DeckleAppSource.ModuleStarting", "the module is the subject of the startup step, so the sentence names it" },
+        { "DeckleAppSource.WindowOpened", "the window is the subject of the line, so the sentence names it" },
         { "DeckleAppSource.RunIdentity", "the run identity line exists to show the version, build and session it names" },
     };
 

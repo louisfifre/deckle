@@ -55,7 +55,6 @@ public sealed partial class SettingsWindow
 
     public void OpenSubpage(Type pageType, object? parameter)
     {
-        DeckleSettingsSource.Log.NavStarted();
         DeckleSettingsSource.Log.NavStartedDetail(pageType.Name);
         DeckleSettingsSource.NavClock.Restart();
         try
@@ -68,7 +67,6 @@ public sealed partial class SettingsWindow
                 : new DrillInNavigationTransitionInfo();
             if (PageFrame.Navigate(pageType, parameter, transition))
             {
-                DeckleSettingsSource.Log.NavCompleted();
                 DeckleSettingsSource.Log.NavCompletedDetail(
                     pageType.Name, DeckleSettingsSource.NavClock.ElapsedMilliseconds);
             }

@@ -47,7 +47,7 @@ public sealed partial class DeckleAppSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "A window was opened")]
+           Message = "Window {0} opened")]
     public void WindowOpened(string window)
     {
         if (IsEnabled()) WriteEvent(EvtWindowOpened, window);

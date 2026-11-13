@@ -11,6 +11,7 @@ public sealed class MessageTemplateDoctrineTests
 {
     private static readonly Dictionary<string, string> KnownBreaches = new(StringComparer.Ordinal)
     {
+        { "DeckleSettingsSource.PageOpened", "the page is the subject of the line, so the sentence names it" },
     };
 
     [Fact]
