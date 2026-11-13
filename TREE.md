@@ -2823,6 +2823,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ClaudePromptCacheTests.cs
 │   │   ├── ClaudeReasoningTests.cs
 │   │   ├── Deckle.Llm.Tests.csproj
+│   │   ├── LlmUsageLogTests.cs
 │   │   └── ReasoningOnTheWireTests.cs
 │   ├── Deckle.Mail.Hub.Tests/
 │   │   ├── Deckle.Mail.Hub.Tests.csproj

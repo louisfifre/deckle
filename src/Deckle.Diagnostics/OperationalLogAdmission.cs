@@ -12,6 +12,8 @@ public enum OperationalLogActivity
     Autocorrect,
     Input,
     Windowing,
+    // Calls to a language model, local or hosted: the per-call usage line.
+    Llm,
 }
 
 // How much of an activity's own detail the verbosity control admits, in
