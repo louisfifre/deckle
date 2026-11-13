@@ -27,7 +27,7 @@ namespace Deckle.Diagnostics;
 //   "init-flag-clear"   — clearing an `_initializing` flag after page
 //                         constructor hydrates XAML controls, Low-deferred to
 //                         wait for the end of the layout batch
-//                         (Settings/Playground page pattern)
+//                         (Settings page pattern)
 //   "engine-state-sync" — UI synchronization after an engine event (pipeline
 //                         state, recording transition, screen capture stop)
 //

@@ -1828,43 +1828,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── OrchestrationSettingsModule.cs
 │   │   ├── OrchestrationSettingsService.cs
 │   │   └── SettingsSearch.cs
-│   ├── Deckle.Playground/
-│   │   ├── Models/
-│   │   │   ├── MicrophonePreviewFailure.cs
-│   │   │   ├── MicrophonePreviewFeed.cs
-│   │   │   ├── TuningModel.cs
-│   │   │   └── UtteranceCycle.cs
-│   │   ├── Strings/
-│   │   │   └── en-US/
-│   │   │       └── Resources.resw
-│   │   ├── ViewModels/
-│   │   │   └── HudViewModel.cs
-│   │   ├── Views/
-│   │   │   ├── Ambient/
-│   │   │   │   ├── AmbientPage.HdrTuning.cs
-│   │   │   │   ├── AmbientPage.Hue.cs
-│   │   │   │   ├── AmbientPage.LightZones.cs
-│   │   │   │   ├── AmbientPage.Preview.cs
-│   │   │   │   ├── AmbientPage.ScreenCapture.cs
-│   │   │   │   ├── AmbientPage.xaml
-│   │   │   │   └── AmbientPage.xaml.cs
-│   │   │   ├── Hud/
-│   │   │   │   ├── HudPage.Expanders.cs
-│   │   │   │   ├── HudPage.Gauge.cs
-│   │   │   │   ├── HudPage.Microphone.cs
-│   │   │   │   ├── HudPage.RowFactories.cs
-│   │   │   │   ├── HudPage.SectionState.cs
-│   │   │   │   ├── HudPage.Simulation.cs
-│   │   │   │   ├── HudPage.xaml
-│   │   │   │   └── HudPage.xaml.cs
-│   │   │   ├── HomePage.xaml
-│   │   │   ├── HomePage.xaml.cs
-│   │   │   ├── PlaygroundWindow.xaml
-│   │   │   └── PlaygroundWindow.xaml.cs
-│   │   ├── Deckle.Playground.csproj
-│   │   ├── DecklePlaygroundSource.cs
-│   │   ├── PlaygroundNotifications.cs
-│   │   └── PlaygroundShell.cs
 │   ├── Deckle.Presets/
 │   │   ├── Deckle.Presets.csproj
 │   │   ├── IPresetStore.cs
@@ -2890,20 +2853,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ScanOnDiskTests.cs
 │   │   ├── SteamLibraryScanEdgeCaseTests.cs
 │   │   └── SteamLibraryTests.cs
-│   ├── Deckle.Playground.Tests/
-│   │   ├── Deckle.Playground.Tests.csproj
-│   │   ├── HudTargetControlsTests.cs
-│   │   ├── HudTuningBugNotes.md
-│   │   ├── HudTuningSectionsBugNotes.md
-│   │   ├── HudViewModelTests.cs
-│   │   ├── IlReferences.cs
-│   │   ├── MessageTemplateDoctrineTests.cs
-│   │   ├── MicrophonePreviewFailureTests.cs
-│   │   ├── MicrophonePreviewFeedTests.cs
-│   │   ├── PlaygroundFailureBugNotes.md
-│   │   ├── PlaygroundFailureObservabilityTests.cs
-│   │   ├── TuningModelTests.cs
-│   │   └── UtteranceCycleTests.cs
 │   ├── Deckle.Presets.Tests/
 │   │   ├── Deckle.Presets.Tests.csproj
 │   │   └── PresetFamilyTests.cs

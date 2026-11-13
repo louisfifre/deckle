@@ -6,7 +6,6 @@ using Deckle.Diagnostics.Telemetry;
 using Deckle.Hud;
 using Deckle.Lighting.Ambient;
 using Deckle.Modules;
-using Deckle.Playground;
 using Deckle.Setup;
 using Deckle.Shell;
 using Deckle.Shell.Foreground;
@@ -28,7 +27,6 @@ public partial class App : Microsoft.UI.Xaml.Application
     private LogWindow? _logWindow;
 
     private Settings.SettingsWindow? _settingsWindow;
-    private PlaygroundWindow? _playgroundWindow;
     private Mail.Hub.MailWindow? _mailWindow;
     private HudWindow? _hudWindow;
     private HudOverlayManager? _overlayManager;

@@ -9,11 +9,10 @@ namespace Deckle.App;
 
 // Developer mode (Settings > General > Developer, off by default) is the one
 // door to what an ordinary user has no use for: the surfaces still in alpha
-// and the developer tools. Its entry points are the right-click tray menu and
-// the Playground buttons in the Settings and Logs title bars. All are driven
-// from here, and ShowPlaygroundLazy and ShowMailLazy refuse while the mode is
-// off, so no path can bypass it. A Playground or Mail window left open when
-// the mode goes off is closed, since its entry points are gone.
+// and the developer tools. Its entry point is the right-click tray menu,
+// driven from here, and ShowMailLazy refuses while the mode is off, so no
+// path can bypass it. A Mail window left open when the mode goes off is
+// closed, since its entry point is gone.
 public partial class App
 {
     private static bool DeveloperModeEnabled
@@ -34,7 +33,6 @@ public partial class App
             AtelierPresent,
             key => Loc.Get(key),
             () => ShowAtelierWindowLazy(),
-            () => ShowPlaygroundLazy(),
             () => ShowMailLazy(),
             () => CaptureInterfaceFromTray());
 
@@ -51,7 +49,7 @@ public partial class App
     }
 
     // SettingsService.Changed fires after the disk write, on any thread. The
-    // windows' buttons are updated on the UI thread.
+    // window is closed on the UI thread.
     private void WireDeveloperAccess(DispatcherQueue ui)
     {
         SettingsService.Instance.Changed += () =>
@@ -60,11 +58,7 @@ public partial class App
 
     private void ApplyDeveloperAccess()
     {
-        bool enabled = DeveloperModeEnabled;
-        _settingsWindow?.SetPlaygroundAvailable(enabled);
-        _logWindow?.SetPlaygroundAvailable(enabled);
-        if (enabled) return;
-        _playgroundWindow?.Close();
+        if (DeveloperModeEnabled) return;
         _mailWindow?.Close();
     }
 }

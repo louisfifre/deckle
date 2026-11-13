@@ -12,7 +12,7 @@ namespace Deckle.Vision;
 // two folders compare file by file.
 //
 //   folder   2026-11-07_22-10-03      local time, sortable as text
-//   window   log.png, playground.png, hud.png
+//   window   log.png, mail.png, hud.png
 //   page     settings-recording.png   the window name, then the page's slug
 //
 // A page slug comes from its page type, the rail's tag: "RecordingPage" becomes

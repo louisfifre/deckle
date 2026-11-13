@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Deckle.App;
 using Deckle.Diagnostics;
-using Deckle.Playground;
 
 namespace Deckle.App;
 
@@ -12,7 +11,6 @@ public partial class App
     private void ApplyRecordingStateToWindows(bool isRecording)
     {
         _logWindow?.SetRecordingState(isRecording);
-        _playgroundWindow?.SetRecordingState(isRecording);
         _mailWindow?.SetRecordingState(isRecording);
         _settingsWindow?.SetRecordingState(isRecording);
     }
@@ -38,7 +36,6 @@ public partial class App
             {
                 OnShowSettingsRequested = () => ShowSettingsWindowLazy(
                     Diagnostics.Logging.Views.DiagnosticsSettingsModule.PageTag),
-                OnShowPlaygroundRequested = ShowPlaygroundLazy,
             });
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Log);
             window.AppWindow.Closing += (_, _) =>
@@ -50,7 +47,6 @@ public partial class App
             };
 
             _logWindow = window;
-            window.SetPlaygroundAvailable(DeveloperModeEnabled);
             AppDiagnosticsBootstrap.AttachLogWindowSink(window);
             window.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(window);
@@ -75,7 +71,6 @@ public partial class App
             var window = CreateWindowOrLog("settings", () => new Settings.SettingsWindow
             {
                 OnShowLogsRequested = ShowLogWindowLazy,
-                OnShowPlaygroundRequested = ShowPlaygroundLazy,
             });
             SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Settings);
             window.AppWindow.Closing += (_, _) =>
@@ -86,7 +81,6 @@ public partial class App
             };
 
             _settingsWindow = window;
-            window.SetPlaygroundAvailable(DeveloperModeEnabled);
             window.SetRecordingState(_lastRecordingState);
             ApplyThemeToSingle(window);
             DeckleWindowingSource.Log.WindowLoadComplete("settings", sw.ElapsedMilliseconds);
@@ -94,45 +88,9 @@ public partial class App
         return _settingsWindow;
     }
 
-    private void ShowPlaygroundLazy()
-    {
-        // A developer surface: no path opens it while the setting is off.
-        if (!DeveloperModeEnabled) return;
-        EnsurePlaygroundWindow().ShowAndActivate();
-        DeckleAppSource.Log.WindowOpened("playground");
-    }
-
-    private PlaygroundWindow EnsurePlaygroundWindow()
-    {
-        if (_playgroundWindow is null)
-        {
-            // Not gated: one Stopwatch per window per process, and the provider
-            // declares this milestone ungoverned.
-            var sw = Stopwatch.StartNew();
-            var window = CreateWindowOrLog("playground", () => new PlaygroundWindow
-            {
-                OnShowSettingsRequested = () => ShowSettingsWindowLazy(),
-                OnShowLogsRequested = ShowLogWindowLazy,
-            });
-            SecondaryWindowPlacement.Restore(window, SecondaryWindowPlacement.Playground);
-            window.AppWindow.Closing += (_, _) =>
-                SecondaryWindowPlacement.Save(window, SecondaryWindowPlacement.Playground);
-            window.Closed += (_, _) =>
-            {
-                if (ReferenceEquals(_playgroundWindow, window)) _playgroundWindow = null;
-            };
-
-            _playgroundWindow = window;
-            window.SetRecordingState(_lastRecordingState);
-            ApplyThemeToSingle(window);
-            DeckleWindowingSource.Log.WindowLoadComplete("playground", sw.ElapsedMilliseconds);
-        }
-        return _playgroundWindow;
-    }
-
     // The Deckle Mail window, on its built-in sample until the engine is
     // wired. A preview for the maintainer: it opens only under the developer
-    // setting that governs the Playground, and no module or setting of its
+    // setting, and no module or setting of its
     // own registers it yet (that comes with the real engine).
     private void ShowMailLazy()
     {

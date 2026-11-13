@@ -10,7 +10,7 @@ public sealed class TrayDeveloperMenuTests
 {
     private static IReadOnlyList<TrayMenuEntry> Compose(bool showAtelier)
         => TrayDeveloperMenu.Compose(
-            showAtelier, key => key, () => { }, () => { }, () => { }, () => { });
+            showAtelier, key => key, () => { }, () => { }, () => { });
 
     private static IEnumerable<string> CommandIds(IReadOnlyList<TrayMenuEntry> entries)
         => entries.OfType<TrayMenuCommand>().Select(c => c.Id);
@@ -19,7 +19,7 @@ public sealed class TrayDeveloperMenuTests
     public void TheMenuHoldsTheAlphaSurfacesThenTheCapture()
     {
         Assert.Equal(
-            ["atelier", "playground", "mail", "capture-interface"],
+            ["atelier", "mail", "capture-interface"],
             CommandIds(Compose(showAtelier: true)));
     }
 
@@ -27,7 +27,7 @@ public sealed class TrayDeveloperMenuTests
     public void TheAtelierEntryIsAbsentWhenItsModuleIs()
     {
         Assert.Equal(
-            ["playground", "mail", "capture-interface"],
+            ["mail", "capture-interface"],
             CommandIds(Compose(showAtelier: false)));
     }
 
@@ -58,12 +58,11 @@ public sealed class TrayDeveloperMenuTests
         var ran = new List<string>();
         IReadOnlyList<TrayMenuEntry> entries = TrayDeveloperMenu.Compose(
             true, key => key,
-            () => ran.Add("atelier"), () => ran.Add("playground"),
-            () => ran.Add("mail"), () => ran.Add("capture-interface"));
+            () => ran.Add("atelier"), () => ran.Add("mail"), () => ran.Add("capture-interface"));
 
         foreach (TrayMenuCommand command in entries.OfType<TrayMenuCommand>())
             command.Invoke();
 
-        Assert.Equal(["atelier", "playground", "mail", "capture-interface"], ran);
+        Assert.Equal(["atelier", "mail", "capture-interface"], ran);
     }
 }

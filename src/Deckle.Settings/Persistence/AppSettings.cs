@@ -30,10 +30,9 @@ public sealed class PerformanceSettings
 }
 
 // The one door to everything an ordinary user has no use for. Off by default.
-// While on, the App offers the surfaces still in alpha and the test bench (the
-// tray icon's right-click menu, the Playground buttons in the window title
-// bars) and the General page shows the developer tools, the interface capture
-// first. A surface that is not ready hides behind this switch rather than
+// While on, the App offers the surfaces still in alpha (the tray icon's
+// right-click menu) and the General page shows the developer tools, the
+// interface capture first. A surface that is not ready hides behind this switch rather than
 // behind one of its own.
 public sealed class DeveloperSettings
 {

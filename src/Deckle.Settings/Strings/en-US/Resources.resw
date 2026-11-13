@@ -329,12 +329,6 @@
   <data name="SettingsLogsButton.AutomationProperties.Name" xml:space="preserve">
     <value>Logs</value>
   </data>
-  <data name="SettingsPlaygroundButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Playground</value>
-  </data>
-  <data name="SettingsPlaygroundButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Playground</value>
-  </data>
 
   <!-- Cross-page search (TitleBar central Content). x:Uid strings resolve locally.
        The box collapses to SettingsSearchIconButton below a width threshold. The two
@@ -625,7 +619,7 @@
     <value>Developer mode</value>
   </data>
   <data name="GeneralDeveloperModeCard.Description" xml:space="preserve">
-    <value>Adds a developer menu to the tray icon's right click, with the Playground, features still in preview and tools for reviewing Deckle.</value>
+    <value>Adds a developer menu to the tray icon's right click, with features still in preview and tools for reviewing Deckle.</value>
   </data>
   <data name="GeneralCaptureInterfaceCard.Header" xml:space="preserve">
     <value>Capture the interface</value>

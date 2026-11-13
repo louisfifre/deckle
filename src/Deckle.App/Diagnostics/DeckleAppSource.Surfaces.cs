@@ -17,7 +17,7 @@ public sealed partial class DeckleAppSource
     }
 
     // One event for any secondary window step that failed without breaking
-    // the window. window: settings, log, playground. operation names the step
+    // the window. window: settings, log, mail. operation names the step
     // (placement_restore, placement_save, placement_load...); reason is
     // exception when ex_type and ex_message carry the cause.
     [Event(EvtWindowOperationFailed,
@@ -42,7 +42,7 @@ public sealed partial class DeckleAppSource
 
     // Each time the person opens a window, created or already there:
     // milestone-tagged so log.jsonl says what was on screen. Only the
-    // window's name: settings, log, playground, mail, atelier.
+    // window's name: settings, log, mail, atelier.
     [Event(EvtWindowOpened,
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,

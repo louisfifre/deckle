@@ -14,7 +14,7 @@ namespace Deckle.App;
 // mode is on.
 //
 // The App is the one place that knows which window is which, so it names them:
-// the Log window "log", the Playground "playground", the HUD "hud". Any other
+// the Log window "log", the Mail window "mail", the HUD "hud". Any other
 // visible window of this process (the transcript panel, a rewrite offer, the
 // setup wizard, a taskbar cover) is captured too, named after its title. The
 // Settings window is captured once per page, by its own walk, rather than as
@@ -116,7 +116,6 @@ public partial class App
             if (window is not null) names[WindowNative.GetWindowHandle(window)] = name;
         }
         Add(_logWindow, "log");
-        Add(_playgroundWindow, "playground");
         Add(_mailWindow, "mail");
         Add(_hudWindow, "hud");
         return names;

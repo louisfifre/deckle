@@ -44,7 +44,7 @@ public sealed class ResizeCoalescer : IDisposable
     public bool IsResizing => _gesture.IsResizing;
 
     // `window` is the short logical name from the DeckleWindowingSource closed
-    // vocabulary ("playground", "settings", "log", …). `onResizeSettled` runs the
+    // vocabulary ("settings", "log", …). `onResizeSettled` runs the
     // window's one deferred recompute, `onResizeStarted` (optional) the rising-edge
     // suspend. Only a real drag raises `onResizeStarted`; a direct settle
     // (maximize, snap, programmatic resize) never does.

@@ -1,5 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Deckle.Playground\Deckle.Playground.csproj" />
-  </ItemGroup>
-</Project>
