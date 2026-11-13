@@ -1836,11 +1836,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── UserProfilePath.cs
 │   ├── Deckle.Settings/
 │   │   ├── Controls/
-│   │   │   ├── FolderLocationLine.cs
-│   │   │   ├── TunableRow.xaml
-│   │   │   ├── TunableRow.xaml.cs
-│   │   │   ├── TuningCard.xaml
-│   │   │   └── TuningCard.xaml.cs
+│   │   │   └── FolderLocationLine.cs
 │   │   ├── Dialogs/
 │   │   │   ├── ApplicationLogConsentDialog.cs
 │   │   │   ├── AudioCorpusConsentDialog.cs
