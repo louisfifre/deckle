@@ -8,7 +8,7 @@
 
 **Hors périmètre.** Les littéraux XAML (bornes `Minimum`/`Maximum`/`StepFrequency` des sliders), les tables lexicales préfixées `_`, et tout ce qui vit sous `tests/`.
 
-Total : **623 entrées** réparties sur **38 modules**.
+Total : **622 entrées** réparties sur **38 modules**.
 
 | Module | Entrées |
 |---|---|
@@ -26,7 +26,7 @@ Total : **623 entrées** réparties sur **38 modules**.
 | Deckle.Diagnostics.Telemetry | 7 |
 | Deckle.Home | 3 |
 | Deckle.Hud | 26 |
-| Deckle.Input | 12 |
+| Deckle.Input | 11 |
 | Deckle.Input.PrecisionScroll | 12 |
 | Deckle.Input.Trackpad | 9 |
 | Deckle.Install | 4 |
@@ -369,7 +369,6 @@ Total : **623 entrées** réparties sur **38 modules**.
 | KeyboardInputHost.WheelObservationTimerMs | tuning-constant | `10` | src/Deckle.Input/Keyboard/KeyboardInputHost.WheelObservations.cs:6 | non | Pump timer cadence draining wheel observations — pairs with RetentionMs to set wheel latency. Keep alongside it. |
 | KeyboardInputHost.RollupPeriodMs | tuning-constant | `30000` | src/Deckle.Input/Keyboard/KeyboardInputHost.cs:47 | non | Logging rollup period, diagnostic cadence only. Kept but a strong drop candidate. |
 | RawInputHost.RollupPeriodMs | tuning-constant | `5000` | src/Deckle.Input/RawInputHost.cs:30 | non | Same nature as the KeyboardInputHost one, different value (5 s vs 30 s) on the sibling host — the inconsistency itself may be worth a look. Diagnostic cadence only. |
-| ContactFrameRecorder.FlushPeriodMs | tuning-constant | `500` | src/Deckle.Input/Telemetry/ContactFrameRecorder.cs:28 | non | JSONL flush cadence of the contact-frame diagnostic recorder. Affects data-loss window on crash, nothing user-facing. |
 | WheelEventRecorder.FlushPeriodMs | tuning-constant | `500` | src/Deckle.Input/Telemetry/WheelEventRecorder.cs:33 | non | Same as ContactFrameRecorder — flush cadence of the wheel JSONL driven by MouseWheelSettings.RecordEvents. |
 
 ## Deckle.Input.PrecisionScroll
