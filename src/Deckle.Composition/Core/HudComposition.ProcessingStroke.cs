@@ -12,13 +12,10 @@ namespace Deckle.Composition;
 
 public static partial class HudComposition
 {
-    // Counters for the "animation freezes after N rebuilds" failure: a missing
-    // Dispose makes the live count climb while the compositor saturates and
-    // Forever animations go silent.
-    private static int _creationCounter;
+    // The strokes alive now, named in the DeviceLost report: a missing Dispose
+    // makes the count climb while the compositor saturates and Forever
+    // animations go silent.
     private static int _liveStrokeCount;
-    public   static int LiveStrokeCount     => _liveStrokeCount;
-    internal static event Action<int, string>? StrokeLifecycle; // (creationId, event)
 
     // ── DeviceLost hook ──────────────────────────────────────────────────
     // Every surface here is baked on Win2D's process-wide shared device. When
@@ -58,7 +55,6 @@ public static partial class HudComposition
     public sealed class ProcessingStroke : IDisposable
     {
         public ContainerVisual Visual { get; }
-        public int CreationId { get; }
 
         // The live Mix / HueAngle / Grey entries ApplyVariant animates. The
         // digit reveals bind their own material mix to them: a built effect
@@ -122,9 +118,7 @@ public static partial class HudComposition
             _arcRotationProps   = arcRotationProps;
             _animationsEnabled  = animationsEnabled;
 
-            CreationId = System.Threading.Interlocked.Increment(ref _creationCounter);
             System.Threading.Interlocked.Increment(ref _liveStrokeCount);
-            StrokeLifecycle?.Invoke(CreationId, "created");
         }
 
         // Safe to call repeatedly (state entries, live theme changes): each
@@ -354,7 +348,6 @@ public static partial class HudComposition
             try { Visual.Dispose();        } catch { }
 
             System.Threading.Interlocked.Decrement(ref _liveStrokeCount);
-            StrokeLifecycle?.Invoke(CreationId, "disposed");
         }
     }
 }

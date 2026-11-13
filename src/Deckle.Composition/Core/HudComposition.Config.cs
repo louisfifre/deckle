@@ -52,8 +52,8 @@ public static partial class HudComposition
     // full-saturation HSV rainbow reads with yellow much brighter
     // than blue, which was visible as a top/bottom luminance
     // asymmetry on the conic wheel. OKLCh removes that asymmetry.
-    //   OklchLightness 0 = black, 1 = white. 0.75 is bright-but-not-
-    //                  blinding, comparable to a vivid mid-tone.
+    //   OklchLightness 0 = black, 1 = white. the default 0.65 is a
+    //                  vivid mid-tone, bright but not blinding.
     //   OklchChroma    saturation in OKLab space. 0 = greyscale,
     //                  ~0.15 = vivid pastel. sRGB cannot show every hue
     //                  at one chroma: at L=0.75 yellows and blues run
