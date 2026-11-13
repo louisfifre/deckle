@@ -73,9 +73,9 @@ public sealed partial class SettingsComposer
 
             void ResetGroup()
             {
-                if (s.Default is not null) s.SetValue(s.Default());
+                if (s.Default is not null) Write(s, s.Default());
                 foreach (SettingDescriptor child in defaultedChildren)
-                    child.SetValue(child.Default!());
+                    Write(child, child.Default!());
             }
 
             _dirtyChecks.Add(GroupDirty);
@@ -161,7 +161,7 @@ public sealed partial class SettingsComposer
             void ResetSection()
             {
                 foreach (SettingDescriptor child in defaultedChildren)
-                    child.SetValue(child.Default!());
+                    Write(child, child.Default!());
             }
 
             _dirtyChecks.Add(SectionDirty);
@@ -227,7 +227,7 @@ public sealed partial class SettingsComposer
         {
             if (_syncingFromModel) return;
             if (combo.SelectedIndex < 0) return;
-            s.SetValue(args.Options[combo.SelectedIndex].Value);
+            Write(s, args.Options[combo.SelectedIndex].Value);
         };
 
         var defaultedChildren = new List<SettingDescriptor>();
@@ -281,8 +281,8 @@ public sealed partial class SettingsComposer
             void ResetMode()
             {
                 foreach (SettingDescriptor child in defaultedChildren)
-                    child.SetValue(child.Default!());
-                if (s.Default is not null) s.SetValue(s.Default());
+                    Write(child, child.Default!());
+                if (s.Default is not null) Write(s, s.Default());
             }
 
             _dirtyChecks.Add(ModeDirty);

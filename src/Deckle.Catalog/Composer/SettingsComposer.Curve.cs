@@ -61,7 +61,7 @@ public sealed partial class SettingsComposer
         editor.PointsCommitted += (_, _) =>
         {
             if (_syncingFromModel) return;
-            s.SetValue(editor.Points);
+            Write(s, editor.Points);
         };
 
         var anchorRefreshers = new List<Action>();

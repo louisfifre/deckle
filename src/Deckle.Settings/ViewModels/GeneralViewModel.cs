@@ -25,7 +25,6 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnThemeChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Theme", value);
         PushToSettings();
         SettingsHost.ApplyTheme?.Invoke(value);
     }
@@ -38,7 +37,6 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnAnimationsChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Appearance.Animations", value);
         PushToSettings();
     }
 
@@ -80,9 +78,6 @@ public partial class GeneralViewModel : ObservableObject
     private void OnHotkeyChanged(string name, HotkeyChord? value)
     {
         if (_isSyncing) return;
-        // Modifier flags and scancode only: no typed text reaches the log.
-        DeckleSettingsUxSource.Log.SettingChanged(
-            name, value is { } c ? $"{c.Modifiers}+0x{c.ScanCode:X}" : "unbound");
         PushHotkeysToSettings();
     }
 
@@ -108,7 +103,6 @@ public partial class GeneralViewModel : ObservableObject
         {
             if (ok)
             {
-                DeckleSettingsUxSource.Log.SettingChanged("Start with Windows", value.ToString());
                 // StopStartup removes every vehicle, the elevated task included.
                 if (!value) ElevatedStartupEnabled = false;
             }
@@ -141,7 +135,6 @@ public partial class GeneralViewModel : ObservableObject
         {
             if (ok)
             {
-                DeckleSettingsUxSource.Log.SettingChanged("Start elevated", value.ToString());
                 AutostartEnabled = true;
             }
             else
@@ -185,7 +178,6 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnUpdateAutoCheckEnabledChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Updates.AutoCheckEnabled", value.ToString());
         PushToSettings();
     }
 
@@ -197,7 +189,6 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnPerformanceModeChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Performance.PerformanceMode", value.ToString());
         PushToSettings();
     }
 
@@ -211,7 +202,6 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnDeveloperModeChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Developer.DeveloperMode", value.ToString());
         PushToSettings();
     }
 
@@ -243,7 +233,6 @@ public partial class GeneralViewModel : ObservableObject
     partial void OnBackupDirectoryChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Paths.BackupDirectory", $"\"{value}\"");
         PushToSettings();
         RefreshBackups();
     }

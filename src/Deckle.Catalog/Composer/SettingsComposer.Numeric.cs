@@ -94,7 +94,7 @@ public sealed partial class SettingsComposer
                 new PointerEventHandler((_, _) => hold.Begin()), handledEventsToo: true);
             var endGesture = new PointerEventHandler((_, _) =>
             {
-                if (hold.End() is double held) s.SetValue(held);
+                if (hold.End() is double held) Write(s, held);
             });
             slider.AddHandler(UIElement.PointerReleasedEvent, endGesture, handledEventsToo: true);
             slider.AddHandler(UIElement.PointerCaptureLostEvent, endGesture, handledEventsToo: true);
@@ -115,7 +115,7 @@ public sealed partial class SettingsComposer
                 // gesture's live readout, the write still waits for the release.
                 args.Preview?.Invoke(snapped);
                 if (_syncingFromModel) return;
-                if (hold.Offer(snapped)) s.SetValue(snapped);
+                if (hold.Offer(snapped)) Write(s, snapped);
             };
         }
 
@@ -139,7 +139,7 @@ public sealed partial class SettingsComposer
             finally { coordinating = false; }
             args.Preview?.Invoke(snapped);
             if (_syncingFromModel) return;
-            s.SetValue(snapped);
+            Write(s, snapped);
         };
 
         var content = new StackPanel

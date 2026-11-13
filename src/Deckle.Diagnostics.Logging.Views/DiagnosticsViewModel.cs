@@ -52,14 +52,12 @@ public partial class DiagnosticsViewModel : ObservableObject
     partial void OnMicrophoneLevelChanged(bool value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.MicrophoneTelemetry", value.ToString());
         PushTelemetry();
     }
 
     partial void OnTelemetryStorageDirectoryChanged(string value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.StorageDirectory", $"\"{value}\"");
         PushTelemetry();
     }
 
@@ -107,7 +105,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     private void PushLogging(string setting, object value)
     {
         if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged($"Logging.{setting}", value.ToString() ?? "");
         var l = LoggingSettingsService.Instance.Current;
         l.DetailedLogs = DetailedLogs;
         l.AmbientDetails = AmbientDetails;

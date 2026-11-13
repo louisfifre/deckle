@@ -1,3 +1,4 @@
+using System.Diagnostics.Tracing;
 using Deckle.Diagnostics;
 using Deckle.TestSupport;
 using Xunit;
@@ -25,14 +26,30 @@ public class DeckleSettingsUxSourceTests
 
     [Fact]
     [Trait("Category", "observability")]
-    public void SettingChangedKeepsAllowlistedValues()
+    public void SettingChangedKeepsOnlyTheAudioDevice()
     {
         using var listener = new TestEventListener("Deckle-SettingsUx");
 
+        DeckleSettingsUxSource.Log.SettingChanged("Audio input device", "system default");
         DeckleSettingsUxSource.Log.SettingChanged("Theme", "Dark");
-        DeckleSettingsUxSource.Log.SettingChanged("Hotkeys.Record", "Control+0x1E");
 
-        Assert.Equal("Dark", listener.Events[0].Payload?[1]);
-        Assert.Equal("Control+0x1E", listener.Events[1].Payload?[1]);
+        Assert.Equal("system default", listener.Events[0].Payload?[1]);
+        Assert.Equal("(changed)", listener.Events[1].Payload?[1]);
+    }
+
+    // The composer's line reaches log.jsonl only as an Informational
+    // milestone; Verbose would stay in the trace.
+    [Fact]
+    [Trait("Category", "observability")]
+    public void SettingWrittenIsAMilestoneCarryingBothValues()
+    {
+        using var listener = new TestEventListener("Deckle-SettingsUx");
+
+        DeckleSettingsUxSource.Log.SettingWritten("Deckle.Settings", "GeneralDeveloperModeCard", "off", "on");
+
+        var ev = Assert.Single(listener.Events);
+        Assert.Equal(EventLevel.Informational, ev.Level);
+        Assert.Equal(ObservationTags.Milestone, ev.Tags & ObservationTags.Milestone);
+        Assert.Equal(new object?[] { "Deckle.Settings", "GeneralDeveloperModeCard", "off", "on" }, ev.Payload);
     }
 }

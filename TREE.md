@@ -1065,6 +1065,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── SettingsComposer.Folds.cs
 │   │   │   ├── SettingsComposer.Hotkey.cs
 │   │   │   ├── SettingsComposer.Inputs.cs
+│   │   │   ├── SettingsComposer.Log.cs
 │   │   │   ├── SettingsComposer.Numeric.cs
 │   │   │   ├── SettingsPageHeader.cs
 │   │   │   └── SettingsSection.cs
@@ -2557,7 +2558,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ResetWheelBugNotes.md
 │   │   ├── SentinelNumberFormatterTests.cs
 │   │   ├── SettingFactoryTests.cs
-│   │   └── SettingsExpanderItemsBugNotes.md
+│   │   ├── SettingsExpanderItemsBugNotes.md
+│   │   └── SettingValueTextTests.cs
 │   ├── Deckle.Chrono.Tests/
 │   │   ├── ChronoFormatterTests.cs
 │   │   ├── ChronoTimerTests.cs
