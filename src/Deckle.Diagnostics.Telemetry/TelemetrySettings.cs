@@ -9,11 +9,7 @@ namespace Deckle.Diagnostics.Telemetry;
 public sealed class TelemetrySettings
 {
     // A developer capture under Detailed logs (Settings > Diagnostics), which
-    // gates it (TelemetryListenerBootstrap.ReadDetailGate): on here so that
-    // switch alone gives it, like every source's detail. Nothing is written
-    // while Detailed logs is off, its default.
-    public bool LatencyEnabled       { get; set; } = true;
-    // Off by default although it carries no voice: an RMS summary still
+    // gates it too (TelemetryListenerBootstrap.ReadDetailGate). Off by default although it carries no voice: an RMS summary still
     // measures the user's microphone.
     public bool MicrophoneTelemetry  { get; set; } = false;
     public bool CorpusEnabled        { get; set; } = false;

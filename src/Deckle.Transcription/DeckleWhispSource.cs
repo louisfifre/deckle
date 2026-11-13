@@ -6,7 +6,7 @@ namespace Deckle.Transcription;
 // Whisp module provider. Covers the transcription engine (TranscriptionEngine),
 // the model lifecycle as the engine sees it (lazy load, idle unload), the
 // start-of-take prime, the take and file pipelines, clipboard, and
-// structured end-of-pipeline heartbeats (LatencyRecorded, CorpusAsrRecorded,
+// structured end-of-pipeline heartbeats (CorpusAsrRecorded,
 // CorpusRewriteRecorded). The native Whisper backend has its own provider
 // (DeckleWhisperSource).
 //
@@ -14,8 +14,8 @@ namespace Deckle.Transcription;
 // trace.jsonl. It travels only in the Dataset-tagged corpus events, which those
 // sinks reject and which the corpus consent gates.
 //
-// PipelineTimings, PipelineLlmMetrics and PipelineOutputs repeat LatencyRecorded
-// for the LogWindow reader; latency.jsonl takes only LatencyRecorded.
+// PipelineTimings, PipelineLlmMetrics and PipelineOutputs are a take's figures,
+// in the operational log; no separate timings dataset exists (2026-11-13).
 [EventSource(Name = "Deckle-Whisp")]
 public sealed partial class DeckleWhispSource : DeckleEventSource
 {
@@ -88,7 +88,7 @@ public sealed partial class DeckleWhispSource : DeckleEventSource
     // 73 retired.
     public const int EvtPipelineLlmMetrics               = 74;
     public const int EvtPipelineOutputs                  = 75;
-    public const int EvtLatencyRecorded                  = 76;
+    // 76 retired: LatencyRecorded, the latency.jsonl row (PipelineTimings carries the timings).
     // 77: retired ID, never reused.
     public const int EvtUserFeedbackEmitted              = 78;
     public const int EvtManualProfileNotFound            = 79;

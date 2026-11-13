@@ -60,10 +60,6 @@ public partial class DiagnosticsViewModel
                     () => WindowingDetails, value => WindowingDetails = value,
                     defaultValue: () => new LoggingSettings().WindowingDetails),
 
-                Setting.Toggle("LoggingDictationTimingsCard",
-                    () => DictationTimings, value => DictationTimings = value,
-                    visibleWhen: () => DeveloperMode,
-                    defaultValue: () => new TelemetrySettings().LatencyEnabled),
                 Setting.Toggle("LoggingMicrophoneLevelCard",
                     () => MicrophoneLevel, value => MicrophoneLevel = value,
                     visibleWhen: () => DeveloperMode,

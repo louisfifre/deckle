@@ -35,7 +35,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     [ObservableProperty] public partial bool DeveloperMode { get; set; }
 
     // The developer captures under Detailed logs, each in its own store.
-    [ObservableProperty] public partial bool DictationTimings { get; set; }
     [ObservableProperty] public partial bool MicrophoneLevel { get; set; }
     [ObservableProperty] public partial bool RecordWheelEvents { get; set; }
     [ObservableProperty] public partial bool RecordTouchpadFrames { get; set; }
@@ -53,13 +52,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     partial void OnWindowingDetailsChanged(bool value) => PushLogging(nameof(LoggingSettings.WindowingDetails), value);
     partial void OnLlmDetailsChanged(bool value) => PushLogging(nameof(LoggingSettings.LlmDetails), value);
     partial void OnApplicationLogToDiskChanged(bool value) => PushLogging(nameof(LoggingSettings.ApplicationLogToDisk), value);
-
-    partial void OnDictationTimingsChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Telemetry.LatencyEnabled", value.ToString());
-        PushTelemetry();
-    }
 
     partial void OnMicrophoneLevelChanged(bool value)
     {
@@ -131,7 +123,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         WindowingDetails = l.WindowingDetails;
         LlmDetails = l.LlmDetails;
         ApplicationLogToDisk = l.ApplicationLogToDisk;
-        DictationTimings = t.LatencyEnabled;
         MicrophoneLevel = t.MicrophoneTelemetry;
         TelemetryStorageDirectory = t.StorageDirectory;
         RecordWheelEvents = wheel.RecordEvents;
@@ -157,7 +148,6 @@ public partial class DiagnosticsViewModel : ObservableObject
     private void PushTelemetry()
     {
         var t = TelemetrySettingsService.Instance.Current;
-        t.LatencyEnabled = DictationTimings;
         t.MicrophoneTelemetry = MicrophoneLevel;
         t.StorageDirectory = TelemetryStorageDirectory ?? "";
         TelemetrySettingsService.Instance.Save();
@@ -180,7 +170,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         InputDetails = l.InputDetails;
         WindowingDetails = l.WindowingDetails;
         LlmDetails = l.LlmDetails;
-        DictationTimings = t.LatencyEnabled;
         MicrophoneLevel = t.MicrophoneTelemetry;
         RecordWheelEvents = new MouseWheelSettings().RecordEvents;
         RecordTouchpadFrames = new TrackpadSettings().RecordFrames;

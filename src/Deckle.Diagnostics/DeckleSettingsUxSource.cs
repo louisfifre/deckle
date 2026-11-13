@@ -122,7 +122,6 @@ internal static class SettingValueRedaction
         "Logging.ApplicationLogToDisk",
         "Input.RecordWheelEvents",
         "Trackpad.RecordFrames",
-        "Telemetry.LatencyEnabled",
     };
 
     // Hotkey setters format modifier flags and a scancode, never typed text.

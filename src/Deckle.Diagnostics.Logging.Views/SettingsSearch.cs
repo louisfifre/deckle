@@ -39,11 +39,6 @@ public static class SettingsSearch
         },
         new SettingSearchEntry
         {
-            LabelKey = "LoggingDictationTimingsCard",
-            Keywords = ["latency", "timing", "performance", "benchmark", "telemetry"],
-        },
-        new SettingSearchEntry
-        {
             LabelKey = "LoggingMicrophoneLevelCard",
             Keywords = ["microphone", "rms", "volume", "telemetry"],
         },

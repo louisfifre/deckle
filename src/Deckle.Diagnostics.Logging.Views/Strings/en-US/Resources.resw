@@ -96,12 +96,6 @@
   <data name="LoggingTranscriptionCard.Description" xml:space="preserve">
     <value>Each utterance and segment. Never what you said.</value>
   </data>
-  <data name="LoggingDictationTimingsCard.Header" xml:space="preserve">
-    <value>Dictation timings</value>
-  </data>
-  <data name="LoggingDictationTimingsCard.Description" xml:space="preserve">
-    <value>How long each step of a dictation took.</value>
-  </data>
   <data name="LoggingMicrophoneLevelCard.Header" xml:space="preserve">
     <value>Microphone level</value>
   </data>

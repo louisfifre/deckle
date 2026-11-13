@@ -44,13 +44,10 @@ public static class TelemetryListenerBootstrap
 
         Directory.CreateDirectory(rootDirectory);
 
-        Register(new JsonlSink(
-            filePath:  Path.Combine(rootDirectory, "latency.jsonl"),
-            kindLabel: "latency",
-            predicate: e => e.Kind == ObservationKind.Dataset
-                         && e.EventName == "LatencyRecorded"
-                         && ReadDetailGate(s => s.LatencyEnabled)));
-
+        // No latency.jsonl (2026-11-13): a dictation's timings are the
+        // PipelineTimings line the operational log carries at the end of each
+        // take, and nothing read the separate file. A latency.jsonl already on
+        // disk is left where it is.
         Register(new JsonlSink(
             filePath:  Path.Combine(rootDirectory, "microphone.jsonl"),
             kindLabel: "microphone",
@@ -144,8 +141,8 @@ public static class TelemetryListenerBootstrap
         _settingsReader = settingsReader;
     }
 
-    // The developer captures among these datasets (dictation timings,
-    // microphone level) answer to Detailed logs as well as to their own
+    // The developer capture among these datasets (the microphone level)
+    // answers to Detailed logs as well as to its own
     // toggle: Settings > Diagnostics shows them under that switch, and off it
     // stops them all. Null until ConfigureDetailGate runs, which reads as off.
     private static Func<bool>? _detailedLogsReader;

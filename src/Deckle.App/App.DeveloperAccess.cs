@@ -20,7 +20,7 @@ public partial class App
         => SettingsService.Instance.Current.Developer.DeveloperMode;
 
     // The developer captures under Settings > Diagnostics > Detailed logs
-    // (dictation timings, microphone level, touchpad frames, wheel events)
+    // (microphone level, touchpad frames, wheel events)
     // are datasets for the analysis scripts, not log lines a person shares.
     // They record only while both switches are on: an ordinary user who turns
     // Detailed logs on gets the list shown to them, nothing hidden under it.
