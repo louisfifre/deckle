@@ -369,7 +369,7 @@ Total : **622 entrées** réparties sur **38 modules**.
 | KeyboardInputHost.WheelObservationTimerMs | tuning-constant | `10` | src/Deckle.Input/Keyboard/KeyboardInputHost.WheelObservations.cs:6 | non | Pump timer cadence draining wheel observations — pairs with RetentionMs to set wheel latency. Keep alongside it. |
 | KeyboardInputHost.RollupPeriodMs | tuning-constant | `30000` | src/Deckle.Input/Keyboard/KeyboardInputHost.cs:47 | non | Logging rollup period, diagnostic cadence only. Kept but a strong drop candidate. |
 | RawInputHost.RollupPeriodMs | tuning-constant | `5000` | src/Deckle.Input/RawInputHost.cs:30 | non | Same nature as the KeyboardInputHost one, different value (5 s vs 30 s) on the sibling host — the inconsistency itself may be worth a look. Diagnostic cadence only. |
-| WheelEventRecorder.FlushPeriodMs | tuning-constant | `500` | src/Deckle.Input/Telemetry/WheelEventRecorder.cs:33 | non | Same as ContactFrameRecorder — flush cadence of the wheel JSONL driven by MouseWheelSettings.RecordEvents. |
+| WheelEventRecorder.FlushPeriodMs | tuning-constant | `500` | src/Deckle.Input/Telemetry/WheelEventRecorder.cs:33 | non | Flush cadence of the wheel JSONL driven by MouseWheelSettings.RecordEvents. |
 
 ## Deckle.Input.PrecisionScroll
 
