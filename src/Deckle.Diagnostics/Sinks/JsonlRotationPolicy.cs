@@ -17,7 +17,7 @@ namespace Deckle.Diagnostics;
 // so a lowered cap trims at the next roll without rebuilding the sink.
 //
 // Scope. Only the operational log files (setup, log, trace) roll. The dataset
-// channels (latency, microphone, corpus) are append-only datasets with a
+// channels (microphone, corpus) are append-only datasets with a
 // stable cross-session contract and are never given a rotation policy —
 // losing their tail would corrupt the dataset.
 public sealed class JsonlRotationPolicy
@@ -28,15 +28,17 @@ public sealed class JsonlRotationPolicy
 
     // Null keeps every generation. A value is a count of generations, so
     // zero would mean "archive nothing" — a different policy, not a cap. A
-    // reader that answers below one or throws reads as the safest cap that
-    // still keeps history: one generation.
+    // reader that answers below one reads as one generation. A reader that
+    // throws reads as no cap, so this prune deletes nothing: a fault in the
+    // settings it reads must not erase a developer's whole trace history, and
+    // the next roll after the reader recovers trims to the real cap.
     public int? MaxArchives
     {
         get
         {
             int? cap;
             try { cap = _maxArchives(); }
-            catch { return 1; }
+            catch { return null; }
             return cap is < 1 ? 1 : cap;
         }
     }

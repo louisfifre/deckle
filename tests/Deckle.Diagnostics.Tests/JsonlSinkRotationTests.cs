@@ -78,9 +78,16 @@ public sealed class JsonlSinkRotationTests
     }
 
     [Fact]
-    public void ACapReaderThatThrowsKeepsOneGeneration()
+    public void ACapReaderThatThrowsDeletesNoGeneration()
     {
         var policy = new JsonlRotationPolicy(10, () => throw new InvalidOperationException("unreadable"));
+        Assert.Null(policy.MaxArchives);
+    }
+
+    [Fact]
+    public void ACapBelowOneKeepsOneGeneration()
+    {
+        var policy = new JsonlRotationPolicy(10, () => 0);
         Assert.Equal(1, policy.MaxArchives);
     }
 
