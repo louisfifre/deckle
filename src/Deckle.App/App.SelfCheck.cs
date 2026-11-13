@@ -329,6 +329,12 @@ public partial class App
                 run, log, "log", "detail", null, loaded: true, ms: 0));
             log.ScrollToBottomForCapture();
             await Task.Delay(800);
+            // Again, just before the image: the window does not count as visible
+            // to the person here (it is never activated), so auto-scroll does not
+            // follow the rows this run writes in the meantime, and they would
+            // land under the view, the last row seen cut by the edge.
+            log.ScrollToBottomForCapture();
+            await Task.Delay(300);
             report.Surfaces.Add(await CaptureWindowFrameAsync(
                 run, log, "log", "detail-end", null, loaded: true, ms: 0));
             report.Save(outputFolder);
