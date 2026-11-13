@@ -898,7 +898,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── RecordingPage.xaml
 │   │   ├── RecordingPage.xaml.cs
 │   │   ├── RecordingSettingsModule.cs
-│   │   ├── RecordingTelemetryViewModel.cs
 │   │   ├── RecordingViewModel.cs
 │   │   ├── RecordingViewModel.ListeningTest.cs
 │   │   ├── RecordingViewModel.Settings.cs
@@ -1380,7 +1379,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TrackpadPage.xaml
 │   │   │   └── TrackpadPage.xaml.cs
 │   │   ├── ViewModels/
-│   │   │   ├── TrackpadTelemetryViewModel.cs
 │   │   │   ├── TrackpadViewModel.cs
 │   │   │   └── TrackpadViewModel.Settings.cs
 │   │   ├── Deckle.Input.Trackpad.csproj
