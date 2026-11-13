@@ -41,9 +41,6 @@
     <x:String x:Key="Icon.Taskbar">&#xE90E;</x:String>
     <x:String x:Key="Icon.Diagnostics">&#xE9D9;</x:String>
     <x:String x:Key="Icon.Logs">&#xEC7A;</x:String>
-    <!-- Segoe Fluent "Puzzle" (EA86) — the Playground, where pipelines are
-         tuned live. -->
-    <x:String x:Key="Icon.Playground">&#xEA86;</x:String>
 
     <!-- ─── Common semantic concepts ─────────────────────────────── -->
     <x:String x:Key="Icon.Shortcut">&#xE765;</x:String>
@@ -98,15 +95,8 @@
     <x:String x:Key="Icon.Link">&#xE71B;</x:String>
     <x:String x:Key="Icon.List">&#xE71D;</x:String>
 
-    <!-- ─── Lightbulb variants ──────────────────────────────────── -->
-    <!-- E7E8, the filled lightbulb, also backs Icon.Launch; this key is for
-         sites where the lightbulb itself is the intent. -->
-    <x:String x:Key="Icon.LightbulbFilled">&#xE7E8;</x:String>
-
-    <!-- ─── Transport cluster (Playground HUD page) ──────────────── -->
-    <x:String x:Key="Icon.Transport.Play">&#xE768;</x:String>
+    <!-- ─── Transport (the Ambient preview's freeze) ─────────────── -->
     <x:String x:Key="Icon.Transport.Pause">&#xE769;</x:String>
-    <x:String x:Key="Icon.Transport.Stop">&#xE71A;</x:String>
 
     <!-- ─── Badge cluster (HudPalette mirror, MessageKind) ───────── -->
     <x:String x:Key="Icon.Badge.Success">&#xE73E;</x:String>

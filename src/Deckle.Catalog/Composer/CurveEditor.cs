@@ -68,8 +68,8 @@ public sealed partial class CurveEditor : UserControl
     public const double DataLeftInset = GutterLeft;
     public const double DataRightInset = PadRight;
     private const double SquareSide = 220.0;
-    // The compact axes plot: a column of this width (smaller when the room is),
-    // the Playground's proportions, instead of the card's full width.
+    // The compact axes plot: a column of this width (smaller when the room is)
+    // instead of the card's full width.
     private const double PlotColumnWidth = 360.0;
     private const double CompactPlotHeight = 210.0;
     private const double StackBelowWidth = 560.0;
@@ -197,7 +197,7 @@ public sealed partial class CurveEditor : UserControl
         };
 
         // The four fields: x1 y1 over x2 y2, each with a caption, the readout
-        // under them in a monospace caption as the Playground prints it.
+        // under them in a monospace caption.
         _x1Box = BuildField();
         _y1Box = BuildField();
         _x2Box = BuildField();
