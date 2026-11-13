@@ -11,7 +11,6 @@ public sealed class MessageTemplateDoctrineTests
 {
     private static readonly Dictionary<string, string> KnownBreaches = new(StringComparer.Ordinal)
     {
-        { "DeckleSettingsUxSource.SettingWritten", "the setting and its two values are the subject of the line, so the sentence names them" },
     };
 
     [Fact]

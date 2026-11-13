@@ -204,7 +204,7 @@ public sealed partial class DeckleSettingsSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Settings page {0} opened")]
+           Message = "A Settings page was opened")]
     public void PageOpened(string page)
     {
         if (IsEnabled()) WriteEvent(EvtPageOpened, page);

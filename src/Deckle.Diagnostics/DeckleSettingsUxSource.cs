@@ -59,7 +59,7 @@ public sealed class DeckleSettingsUxSource : DeckleEventSource
            Level = EventLevel.Informational,
            Keywords = (EventKeywords)Keywords.Lifecycle,
            Tags = ObservationTags.Milestone,
-           Message = "Setting {1} of {0} changed from {2} to {3}")]
+           Message = "A setting was changed")]
     public void SettingWritten(string module, string setting, string old_value, string new_value)
     {
         if (IsEnabled(EventLevel.Informational, (EventKeywords)Keywords.Lifecycle))
