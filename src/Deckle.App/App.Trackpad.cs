@@ -3,15 +3,13 @@ using Deckle.Input.Trackpad;
 
 namespace Deckle.App;
 
-// The frame recorder is deliberately independent of the module's switch, so
-// real Bluetooth sessions can be recorded with the recognizer off. It answers
-// to Detailed logs instead (Settings > Diagnostics), like every developer
-// capture.
+// The raw input host runs while the gesture engine needs frames. Raw contact
+// frames are no longer recorded to disk (2026-11-13): the host's periodic
+// frame-count rollup in the log is what remains of them.
 public partial class App
 {
     private RawInputHost? _inputHost;
     private TrackpadEngine? _trackpadEngine;
-    private ContactFrameRecorder? _frameRecorder;
 
     // Reconcile runs on every trackpad settings change, tuning included: a
     // host that keeps failing is reported once until it starts again.
@@ -20,31 +18,18 @@ public partial class App
     private void InitializeTrackpad()
     {
         _inputHost = new RawInputHost();
-        _frameRecorder = new ContactFrameRecorder();
         _trackpadEngine = new TrackpadEngine(_inputHost);
 
-        // The recorder listens permanently; it ignores frames while not
-        // recording. Device lines keep a session self-describing when the
-        // trackpad (re)connects mid-recording.
-        _inputHost.FrameAssembled        += frame => _frameRecorder.OnFrame(frame);
-        _inputHost.TouchpadDeviceConnected += device => _frameRecorder.NoteDevice(device);
-
         TrackpadSettingsService.Instance.Changed += ReconcileTrackpad;
-        Diagnostics.Logging.LoggingSettingsService.Instance.Changed += ReconcileTrackpad;
-        Settings.SettingsService.Instance.Changed += ReconcileTrackpad; // developer mode
         ReconcileTrackpad();
     }
 
     // Start and Stop are idempotent, so unrelated settings changes cost nothing.
     private void ReconcileTrackpad()
     {
-        if (_inputHost is null || _trackpadEngine is null || _frameRecorder is null) return;
+        if (_inputHost is null || _trackpadEngine is null) return;
 
-        var settings = TrackpadSettingsService.Instance.Current;
-        // A developer capture under Settings > Diagnostics > Detailed logs:
-        // the switches above it stop it whatever its own toggle says.
-        bool recordFrames = settings.RecordFrames && DeveloperCapturesAdmitted;
-        bool needsFrames = settings.Enabled || recordFrames;
+        bool needsFrames = TrackpadSettingsService.Instance.Current.Enabled;
 
         bool inputAvailable = !needsFrames || _inputHost.Start();
         if (!inputAvailable && !_trackpadHostFailureReported)
@@ -57,27 +42,17 @@ public partial class App
             _trackpadHostFailureReported = false;
         }
 
-        if (settings.Enabled && inputAvailable) _trackpadEngine.Start();
-        else                                    _trackpadEngine.Stop();
-
-        if (recordFrames && inputAvailable)
-        {
-            if (!_frameRecorder.IsRecording) _frameRecorder.Start(_inputHost.Touchpads);
-        }
-        else
-        {
-            _frameRecorder.Stop();
-        }
+        if (needsFrames && inputAvailable) _trackpadEngine.Start();
+        else                               _trackpadEngine.Stop();
 
         if (!needsFrames) _inputHost.Stop();
     }
 
     // An injected primary button must never outlive the process, so the engine
-    // and its safety release go down first, then the recorder, then the input thread.
+    // and its safety release go down first, then the input thread.
     private void ShutdownTrackpad()
     {
         _trackpadEngine?.Dispose();
-        _frameRecorder?.Stop();
         _inputHost?.Dispose();
     }
 }

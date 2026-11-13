@@ -120,8 +120,6 @@ internal static class SettingValueRedaction
         "Logging.WindowingDetails",
         "Logging.LlmDetails",
         "Logging.ApplicationLogToDisk",
-        "Input.RecordWheelEvents",
-        "Trackpad.RecordFrames",
     };
 
     // Hotkey setters format modifier flags and a scancode, never typed text.

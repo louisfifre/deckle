@@ -23,7 +23,7 @@ namespace Deckle.Input;
 // The mouse is a single Raw Input resource per process — only one window
 // may receive it (the last one registered wins), so this host is the sole
 // owner and the app shares one instance across consumers: autocorrect
-// (keys, pointer-down, focus), wheel recording (WheelObserved), and precision
+// (keys, pointer-down, focus), the Windows-key taskbar focus (WheelObserved), and precision
 // scrolling (the synchronous wheel policy). Hook and Raw Input wheel reports
 // are correlated on this thread so observers receive one device-aware event;
 // hook-only transitions remain visible after a short bounded wait. Start/Stop

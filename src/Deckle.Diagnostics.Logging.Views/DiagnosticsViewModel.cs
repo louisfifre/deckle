@@ -2,15 +2,13 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using Deckle.Core;
 using Deckle.Diagnostics;
 using Deckle.Diagnostics.Telemetry;
-using Deckle.Input;
-using Deckle.Input.Trackpad;
 
 namespace Deckle.Diagnostics.Logging.Views;
 
 // Load() pulls from each store; a property change pushes back to the one store
 // that owns it, and _isSyncing prevents re-saving during Load(). The values
-// live where their consumers read them (logging, telemetry, mouse-wheel and
-// trackpad stores); this page is their one editor.
+// live where their consumers read them (logging and telemetry stores); this
+// page is their one editor.
 public partial class DiagnosticsViewModel : ObservableObject
 {
     private bool _isSyncing;
@@ -30,14 +28,12 @@ public partial class DiagnosticsViewModel : ObservableObject
     // Load(), so a visit after the mode changed shows or hides the captures.
     public static Func<bool> DeveloperModeReader { get; set; } = static () => false;
 
-    // Not a setting: the developer captures below show only while it is true,
-    // and record only while it is true too (App.DeveloperCapturesAdmitted).
+    // Not a setting: the developer capture below shows only while it is true,
+    // and records only while it is true too (App.DeveloperCapturesAdmitted).
     [ObservableProperty] public partial bool DeveloperMode { get; set; }
 
-    // The developer captures under Detailed logs, each in its own store.
+    // The developer capture under Detailed logs, in the telemetry store.
     [ObservableProperty] public partial bool MicrophoneLevel { get; set; }
-    [ObservableProperty] public partial bool RecordWheelEvents { get; set; }
-    [ObservableProperty] public partial bool RecordTouchpadFrames { get; set; }
 
     [ObservableProperty] public partial bool ApplicationLogToDisk { get; set; }
 
@@ -60,22 +56,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         PushTelemetry();
     }
 
-    partial void OnRecordWheelEventsChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Input.RecordWheelEvents", value.ToString());
-        MouseWheelSettingsService.Instance.Current.RecordEvents = value;
-        MouseWheelSettingsService.Instance.Save();
-    }
-
-    partial void OnRecordTouchpadFramesChanged(bool value)
-    {
-        if (_isSyncing) return;
-        DeckleSettingsUxSource.Log.SettingChanged("Trackpad.RecordFrames", value.ToString());
-        TrackpadSettingsService.Instance.Current.RecordFrames = value;
-        TrackpadSettingsService.Instance.Save();
-    }
-
     partial void OnTelemetryStorageDirectoryChanged(string value)
     {
         if (_isSyncing) return;
@@ -92,8 +72,7 @@ public partial class DiagnosticsViewModel : ObservableObject
         // read the defaults from the classes that own them, the same source
         // the resets below use. _isSyncing stays true: Load() clears it.
         _isSyncing = true;
-        Apply(new LoggingSettings(), new TelemetrySettings(),
-            new MouseWheelSettings(), new TrackpadSettings());
+        Apply(new LoggingSettings(), new TelemetrySettings());
     }
 
     public void Load()
@@ -102,9 +81,7 @@ public partial class DiagnosticsViewModel : ObservableObject
         try
         {
             Apply(LoggingSettingsService.Instance.Current,
-                TelemetrySettingsService.Instance.Current,
-                MouseWheelSettingsService.Instance.Current,
-                TrackpadSettingsService.Instance.Current);
+                TelemetrySettingsService.Instance.Current);
             DeveloperMode = DeveloperModeReader();
         }
         finally
@@ -113,7 +90,7 @@ public partial class DiagnosticsViewModel : ObservableObject
         }
     }
 
-    private void Apply(LoggingSettings l, TelemetrySettings t, MouseWheelSettings wheel, TrackpadSettings trackpad)
+    private void Apply(LoggingSettings l, TelemetrySettings t)
     {
         DetailedLogs = l.DetailedLogs;
         AmbientDetails = l.AmbientDetails;
@@ -125,8 +102,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         ApplicationLogToDisk = l.ApplicationLogToDisk;
         MicrophoneLevel = t.MicrophoneTelemetry;
         TelemetryStorageDirectory = t.StorageDirectory;
-        RecordWheelEvents = wheel.RecordEvents;
-        RecordTouchpadFrames = trackpad.RecordFrames;
     }
 
     private void PushLogging(string setting, object value)
@@ -171,8 +146,6 @@ public partial class DiagnosticsViewModel : ObservableObject
         WindowingDetails = l.WindowingDetails;
         LlmDetails = l.LlmDetails;
         MicrophoneLevel = t.MicrophoneTelemetry;
-        RecordWheelEvents = new MouseWheelSettings().RecordEvents;
-        RecordTouchpadFrames = new TrackpadSettings().RecordFrames;
         ApplicationLogToDisk = l.ApplicationLogToDisk;
     }
 

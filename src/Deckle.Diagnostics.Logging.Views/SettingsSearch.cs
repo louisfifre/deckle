@@ -62,16 +62,6 @@ public static class SettingsSearch
             LabelKey = "LoggingWindowingCard",
             Keywords = ["windowing", "monitor", "display", "placement", "dpi"],
         },
-        new SettingSearchEntry
-        {
-            LabelKey = "LoggingTouchpadFramesCard",
-            Keywords = ["trackpad", "contact", "frames", "raw", "record", "telemetry"],
-        },
-        new SettingSearchEntry
-        {
-            LabelKey = "LoggingWheelEventsCard",
-            Keywords = ["mouse", "scroll", "wheel", "record", "telemetry"],
-        },
 
         // The copy on disk.
         new SettingSearchEntry

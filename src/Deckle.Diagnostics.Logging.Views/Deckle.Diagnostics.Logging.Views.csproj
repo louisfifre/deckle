@@ -28,13 +28,6 @@
     <ProjectReference Include="..\Deckle.Diagnostics.Logging\Deckle.Diagnostics.Logging.csproj" />
     <ProjectReference Include="..\Deckle.Diagnostics\Deckle.Diagnostics.csproj" />
     <ProjectReference Include="..\Deckle.Localization\Deckle.Localization.csproj" />
-    <!-- Input and Input.Trackpad own the persisted wheel and contact-frame
-         capture preferences surfaced under Diagnostics > Logs > Detailed logs,
-         beside each other. This UI dependency does not move ownership of the
-         settings or recorders into Logging. No cycle: neither references this
-         module. -->
-    <ProjectReference Include="..\Deckle.Input\Deckle.Input.csproj" />
-    <ProjectReference Include="..\Deckle.Input.Trackpad\Deckle.Input.Trackpad.csproj" />
     <ProjectReference Include="..\Deckle.Core\Deckle.Core.csproj" />
     <ProjectReference Include="..\Deckle.Catalog\Deckle.Catalog.csproj" />
     <!-- No cycle: Diagnostics.Telemetry does not reference this module. -->

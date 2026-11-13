@@ -57,8 +57,6 @@ public static class AppPaths
     // recovery run that may have crashed the app.
     public static string TakeAudioRecoveryFilePath    { get; }
     public static string TelemetryDirectory          { get; }
-    public static string TrackpadTelemetryDirectory   { get; }
-    public static string MouseWheelTelemetryDirectory { get; }
     public static string DiagnosticsDirectory         { get; }
     // Minidumps createdump writes on a fatal runtime error; created by the
     // host's entry point before it arms the capture, not here.
@@ -99,8 +97,6 @@ public static class AppPaths
         DictationRecoveryFilePath    = Path.Combine(RecoveryDirectory, "dictation.dat");
         TakeAudioRecoveryFilePath    = Path.Combine(RecoveryDirectory, "take-audio.dat");
         TelemetryDirectory           = Path.Combine(UserDataRoot, "telemetry");
-        TrackpadTelemetryDirectory   = Path.Combine(TelemetryDirectory, "trackpad");
-        MouseWheelTelemetryDirectory = Path.Combine(TelemetryDirectory, "mouse-wheel");
         DiagnosticsDirectory         = Path.Combine(UserDataRoot, "diagnostics");
         CrashDumpsDirectory          = Path.Combine(DiagnosticsDirectory, "dumps");
         ModelsDirectory            = Path.Combine(UserDataRoot, "models");
@@ -118,8 +114,6 @@ public static class AppPaths
         // by SettingsBackupService.
         Directory.CreateDirectory(UserDataRoot);
         Directory.CreateDirectory(TelemetryDirectory);
-        Directory.CreateDirectory(TrackpadTelemetryDirectory);
-        Directory.CreateDirectory(MouseWheelTelemetryDirectory);
         Directory.CreateDirectory(DiagnosticsDirectory);
     }
 

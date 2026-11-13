@@ -126,18 +126,6 @@
   <data name="LoggingWindowingCard.Description" xml:space="preserve">
     <value>Placement, scaling and stacking of Deckle's windows.</value>
   </data>
-  <data name="LoggingTouchpadFramesCard.Header" xml:space="preserve">
-    <value>Touchpad frames</value>
-  </data>
-  <data name="LoggingTouchpadFramesCard.Description" xml:space="preserve">
-    <value>One line per frame: very high volume.</value>
-  </data>
-  <data name="LoggingWheelEventsCard.Header" xml:space="preserve">
-    <value>Wheel events</value>
-  </data>
-  <data name="LoggingWheelEventsCard.Description" xml:space="preserve">
-    <value>One line per wheel event: very high volume.</value>
-  </data>
 
   <!-- The trace (diagnostics\trace.jsonl, GLOSSARY.md). Its retention is
        fixed, not set (TraceRetentionPolicy). The person reads "logs on

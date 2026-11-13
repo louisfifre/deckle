@@ -5,11 +5,10 @@ namespace Deckle.Input;
 
 // Input module provider. Covers the Raw Input host lifecycle (dedicated
 // thread + message-only window), Precision Touchpad device presence
-// (Bluetooth arrivals and removals), the periodic contact-frame rollup,
-// and the frame-telemetry recording sessions.
+// (Bluetooth arrivals and removals) and the periodic contact-frame rollup.
 //
 // Frames themselves are never logged — at report cadence they would drown
-// the LogWindow. They go to the dedicated JSONL recorder; the EventSource
+// the LogWindow — nor recorded to disk since 2026-11-13; the EventSource
 // carries the aggregated rollup and the lifecycle milestones.
 [EventSource(Name = "Deckle-Input")]
 public sealed class DeckleInputSource : DeckleEventSource
@@ -52,8 +51,8 @@ public sealed class DeckleInputSource : DeckleEventSource
     // 9 retired.
     // 10 retired.
     public const int EvtFrameRollup              = 11;
-    public const int EvtRecordingStarted         = 12;
-    public const int EvtRecordingStartedDetail   = 13;
+    // 12 retired: RecordingStarted (raw contact frame recording, 2026-11-13).
+    // 13 retired.
     // 14 retired.
     // 15 retired.
     // 16 retired.
@@ -65,13 +64,13 @@ public sealed class DeckleInputSource : DeckleEventSource
     // 22 retired.
     // 23 retired.
     public const int EvtKeyboardRollup           = 24;
-    public const int EvtWheelRecordingStarted      = 25;
-    public const int EvtWheelRecordingStartedDetail = 26;
+    // 25 retired: WheelRecordingStarted (wheel event recording, 2026-11-13).
+    // 26 retired.
     // 27 retired.
     // 28 retired.
     // 29 retired.
     // 30 retired.
-    public const int EvtWheelDeviceObserved        = 31;
+    // 31 retired: WheelDeviceObserved.
     // 32 retired.
     // 33 retired.
     // 34 retired.
@@ -91,16 +90,16 @@ public sealed class DeckleInputSource : DeckleEventSource
     public const int EvtMouseHookSilenceEnded      = 48;
     public const int EvtInputRelayDegraded         = 49;
     public const int EvtInputRelayRecovered        = 50;
-    public const int EvtRecordingStopped           = 51;
-    public const int EvtRecordingStoppedDetail     = 52;
-    public const int EvtRecordingFailed            = 53;
-    public const int EvtWheelRecordingStopped      = 54;
-    public const int EvtWheelRecordingStoppedDetail = 55;
-    public const int EvtWheelRecordingFailed       = 56;
-    public const int EvtRecordingSizeUnavailable   = 57;
+    // 51 retired.
+    // 52 retired.
+    // 53 retired.
+    // 54 retired.
+    // 55 retired.
+    // 56 retired.
+    // 57 retired.
     public const int EvtTouchpadEnumerationFailed  = 58;
-    public const int EvtSettingsLoadWarning = 59;
-    public const int EvtSettingsLoadError = 60;
+    // 59 retired: SettingsLoadWarning of the mouse wheel settings store.
+    // 60 retired.
 
     // ── Raw input host lifecycle ─────────────────────────────────────────
 
@@ -235,68 +234,6 @@ public sealed class DeckleInputSource : DeckleEventSource
                 EventLevel.Verbose, (EventKeywords)Keywords.Heartbeat))
             WriteEvent(EvtFrameRollup,
             count, rate_hz, max_gap_ms, max_tips, fragmented, orphans, flushes, scan_mismatches);
-    }
-
-    // ── Frame recording sessions ─────────────────────────────────────────
-
-    [Event(EvtRecordingStarted,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Milestone,
-           Message = "Frame recording started")]
-    public void RecordingStarted()
-    {
-        if (IsEnabled()) WriteEvent(EvtRecordingStarted);
-    }
-
-    [Event(EvtRecordingStartedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "path={0}")]
-    public void RecordingStartedDetail(string path)
-    {
-        if (IsEnabled()) WriteEvent(EvtRecordingStartedDetail, PathRedaction.Redact(path));
-    }
-
-    // Closes every armed session, including one that never saw a frame
-    // (frames=0) and one an I/O error ended (outcome=failed).
-    [Event(EvtRecordingStopped,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Milestone,
-           Message = "Frame recording stopped")]
-    public void RecordingStopped(string outcome, long frames)
-    {
-        if (IsEnabled()) WriteEvent(EvtRecordingStopped, outcome, frames);
-    }
-
-    [Event(EvtRecordingStoppedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "path={0} | duration_s={1} | bytes={2}")]
-    public void RecordingStoppedDetail(string path, double duration_s, long bytes)
-    {
-        if (IsEnabled()) WriteEvent(EvtRecordingStoppedDetail, PathRedaction.Redact(path), duration_s, bytes);
-    }
-
-    [Event(EvtRecordingFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Touchpad frame recording failed and stopped\nex_type={0} | ex_message={1}")]
-    public void RecordingFailed(string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtRecordingFailed, ex_type, PathRedaction.Redact(ex_message));
-    }
-
-    // The file size only decorates the closing line; a failed stat must not
-    // fail the stop, but its cause is still kept.
-    [Event(EvtRecordingSizeUnavailable,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "recording={0} | ex_type={1} | ex_message={2}")]
-    public void RecordingSizeUnavailable(string recording, string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtRecordingSizeUnavailable, recording, ex_type, PathRedaction.Redact(ex_message));
     }
 
     // ── Keyboard host lifecycle ──────────────────────────────────────────
@@ -434,84 +371,5 @@ public sealed class DeckleInputSource : DeckleEventSource
     public void InputRelayRecovered(string reason, int occurrences)
     {
         if (IsEnabled()) WriteEvent(EvtInputRelayRecovered, reason, occurrences);
-    }
-
-    // ── Wheel recording sessions ─────────────────────────────────────────
-    // Wheel events themselves never reach the EventSource (they go to the
-    // JSONL); only the lifecycle milestones and the per-device line do.
-
-    [Event(EvtWheelRecordingStarted,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Milestone,
-           Message = "Wheel recording started")]
-    public void WheelRecordingStarted()
-    {
-        if (IsEnabled()) WriteEvent(EvtWheelRecordingStarted);
-    }
-
-    [Event(EvtWheelRecordingStartedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "path={0}")]
-    public void WheelRecordingStartedDetail(string path)
-    {
-        if (IsEnabled()) WriteEvent(EvtWheelRecordingStartedDetail, PathRedaction.Redact(path));
-    }
-
-    [Event(EvtWheelRecordingStopped,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Tags = ObservationTags.Milestone,
-           Message = "Wheel recording stopped")]
-    public void WheelRecordingStopped(string outcome, long events)
-    {
-        if (IsEnabled()) WriteEvent(EvtWheelRecordingStopped, outcome, events);
-    }
-
-    [Event(EvtWheelRecordingStoppedDetail,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "path={0} | duration_s={1} | bytes={2}")]
-    public void WheelRecordingStoppedDetail(string path, double duration_s, long bytes)
-    {
-        if (IsEnabled()) WriteEvent(EvtWheelRecordingStoppedDetail, PathRedaction.Redact(path), duration_s, bytes);
-    }
-
-    [Event(EvtWheelRecordingFailed,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "Wheel event recording failed and stopped\nex_type={0} | ex_message={1}")]
-    public void WheelRecordingFailed(string ex_type, string ex_message)
-    {
-        if (IsEnabled()) WriteEvent(EvtWheelRecordingFailed, ex_type, PathRedaction.Redact(ex_message));
-    }
-
-    [Event(EvtWheelDeviceObserved,
-           Level = EventLevel.Verbose,
-           Keywords = (EventKeywords)Keywords.Capture,
-           Message = "dev={0} | name={1} | vid=0x{2:X4} | pid=0x{3:X4}")]
-    public void WheelDeviceObserved(int dev, string name, uint vendor_id, uint product_id)
-    {
-        if (IsEnabled()) WriteEvent(EvtWheelDeviceObserved, dev, name, vendor_id, product_id);
-    }
-
-    // The settings store reports in free text; the text carries its own cause.
-    [Event(EvtSettingsLoadWarning,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The mouse wheel settings store worked around a problem\ndetail={0}")]
-    public void SettingsLoadWarning(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
-    }
-
-    [Event(EvtSettingsLoadError,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The mouse wheel settings could not be saved or applied\ndetail={0}")]
-    public void SettingsLoadError(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 }

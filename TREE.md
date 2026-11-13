@@ -642,7 +642,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.InterfaceCapture.cs
 │   │   ├── App.Lifetime.cs
 │   │   ├── app.manifest
-│   │   ├── App.MouseWheel.cs
 │   │   ├── App.Orchestration.cs
 │   │   ├── App.ParagraphRewrite.cs
 │   │   ├── App.PrecisionScroll.cs
@@ -1323,23 +1322,16 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── RepeatingIncident.cs
 │   │   │   ├── WheelEventQueue.cs
 │   │   │   └── WheelObservationBuffer.cs
-│   │   ├── Telemetry/
-│   │   │   ├── ContactDeviceRegistry.cs
-│   │   │   ├── ContactFrameRecorder.cs
-│   │   │   └── WheelEventRecorder.cs
 │   │   ├── Touchpad/
 │   │   │   ├── ContactFrame.cs
 │   │   │   ├── ContactFrameAssembler.cs
 │   │   │   ├── TouchpadCapabilities.cs
 │   │   │   ├── TouchpadContact.cs
-│   │   │   ├── TouchpadDevice.cs
 │   │   │   ├── TouchpadParser.cs
 │   │   │   └── TouchpadReport.cs
 │   │   ├── Deckle.Input.csproj
 │   │   ├── DeckleInputSource.cs
 │   │   ├── GLOSSARY.md  — glossary-deckle-input Input-layer vocabulary. It defines the contact frame, the unit assembled from o…
-│   │   ├── MouseWheelSettings.cs
-│   │   ├── MouseWheelSettingsService.cs
 │   │   └── RawInputHost.cs
 │   ├── Deckle.Input.PrecisionScroll/
 │   │   ├── Engine/
@@ -2706,13 +2698,11 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── PrecisionScrollTuningTests.cs
 │   │   └── WheelTickQueueTests.cs
 │   ├── Deckle.Input.Tests/
-│   │   ├── ContactDeviceRegistryTests.cs
 │   │   ├── ContactFrameAssemblerTests.cs
 │   │   ├── Deckle.Input.Tests.csproj
 │   │   ├── DeckleInputSourceTests.cs
 │   │   ├── FocusEventCoalescerTests.cs
 │   │   ├── InputObservabilityCollection.cs
-│   │   ├── InputPathRedactionTests.cs
 │   │   ├── LowLevelMouseHookInteropTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MouseInteractionRouterTests.cs

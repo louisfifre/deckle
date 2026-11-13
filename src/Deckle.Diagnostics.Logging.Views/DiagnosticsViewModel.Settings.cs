@@ -2,8 +2,6 @@ using System.Collections.Generic;
 using Deckle.Catalog;
 using Deckle.Core;
 using Deckle.Diagnostics.Telemetry;
-using Deckle.Input;
-using Deckle.Input.Trackpad;
 
 namespace Deckle.Diagnostics.Logging.Views;
 
@@ -25,13 +23,12 @@ public partial class DiagnosticsViewModel
     // source's detail, and the list underneath is there for whoever wants to
     // choose. Those sources write log lines, the kind a person shares.
     //
-    // The developer captures come last and show only in developer mode
-    // (Settings > General): they are datasets the analysis scripts read, not
-    // lines to share, and they record only in developer mode too, so the list
-    // an ordinary user sees is all the switch turns on. Two of them are
-    // per-frame, warned of in their own words; the microphone level keeps the
-    // consent it had as a dataset. Off, the switch stops every child whatever
-    // its own toggle says (App.DeveloperCapturesAdmitted,
+    // The developer capture, the microphone level, comes last and shows only
+    // in developer mode (Settings > General): it is a dataset, not lines to
+    // share, and it records only in developer mode too, so the list an
+    // ordinary user sees is all the switch turns on. It keeps the consent it
+    // had as a dataset. Off, the switch stops every child whatever its own
+    // toggle says (App.DeveloperCapturesAdmitted,
     // TelemetryListenerBootstrap.ReadDetailGate), and the children hide.
     public IReadOnlyList<SettingDescriptor> LogsSettings =>
     [
@@ -65,14 +62,6 @@ public partial class DiagnosticsViewModel
                     visibleWhen: () => DeveloperMode,
                     defaultValue: () => new TelemetrySettings().MicrophoneTelemetry,
                     confirmOnEnable: TelemetryConsent.RequestMicrophone),
-                Setting.Toggle("LoggingTouchpadFramesCard",
-                    () => RecordTouchpadFrames, value => RecordTouchpadFrames = value,
-                    visibleWhen: () => DeveloperMode,
-                    defaultValue: () => new TrackpadSettings().RecordFrames),
-                Setting.Toggle("LoggingWheelEventsCard",
-                    () => RecordWheelEvents, value => RecordWheelEvents = value,
-                    visibleWhen: () => DeveloperMode,
-                    defaultValue: () => new MouseWheelSettings().RecordEvents),
             ]),
 
         // The trace. How much history it keeps is decided, not set
@@ -92,8 +81,8 @@ public partial class DiagnosticsViewModel
     // inside.
     //
     // The storage folder first, configurable. The override reaches only what
-    // reads CorpusPaths (today the dictation audio WAVs); the JSONL sinks,
-    // trackpad and wheel recorders write under AppPaths.TelemetryDirectory
+    // reads CorpusPaths (today the dictation audio WAVs); the JSONL sinks write
+    // under AppPaths.TelemetryDirectory
     // whatever it holds, so the card is named for what it moves. The path's
     // reset default is the POCO initializer (empty means
     // AppPaths.TelemetryDirectory).
