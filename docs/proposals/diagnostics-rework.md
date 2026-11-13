@@ -52,13 +52,52 @@ Mesuré sur ta machine : une ligne de trace pèse ~720 octets. Le trace garde au
     - *Dictation timings* est maintenant allumé par défaut, mais n'écrit rien tant que *Detailed logs* est éteint.
     - Les décisions d'autocorrect exigent les deux consentements (texte tapé **et** décisions) ; le code le vérifie aussi, pas seulement l'interface.
 
+## Trois demandes ajoutées en cours de route
+
+### 1. Un geste pour un utilisateur ordinaire, et le partage
+
+**Construit** (`069b4934`) : *Detailed logs* est ce geste unique. Sous l'interrupteur, une personne qui n'est pas développeur voit **six** sources, toutes allumées : Ambient lighting, Dictation, Language model calls, Autocorrect, Touchpad gestures, Windows. Ce sont des lignes de log, celles qu'on partage. Les quatre captures de développeur (Dictation timings, Microphone level, Touchpad frames, Wheel events) sont des jeux de données pour les scripts d'analyse : elles ne s'affichent **et n'enregistrent** qu'en mode développeur (Settings > General). Ainsi, la liste que voit la personne est tout ce que l'interrupteur allume ; rien de caché n'enregistre dessous. Le self-check photographie la page des deux façons : `docs/proposals/captures/after-dev/captures/settings-diagnostics-open.png` (développeur, 10 sources) et `settings-diagnostics-open-user.png` (ordinaire, 6 sources).
+
+**Proposé, pas construit : le partage, sans aucun envoi automatique.**
+- Un bouton **« Save a diagnostics report… »** dans la section Logs. Il ouvre le sélecteur de fichier de Windows et écrit **un zip** là où la personne le choisit. Elle l'envoie elle-même (courriel, issue GitHub). Deckle n'envoie rien, et aucune télémétrie réseau n'est ajoutée.
+- Le zip contient : `log.jsonl` et ses archives, le trace s'il est gardé, les rapports de plantage récents, la version de Deckle et de Windows, et les réglages **sans leurs valeurs personnelles** (les chemins et les noms d'appareil sont déjà caviardés par `SettingValueRedaction`).
+- Il **ne contient jamais** le corpus (dictées, audio, texte tapé), ni les jeux de développeur. Avant d'écrire, une ligne dit sa taille et ce qu'il contient.
+- Le parcours : *allumer Detailed logs → reproduire le problème → Save a diagnostics report*. La description de *Detailed logs* le dit déjà en partie (« Turn it on before the problem comes back »).
+- Une tâche Anytype existe déjà pour ça : « Diagnostics : exporter un zip et vider les dossiers ». Je ne l'ai pas construite ici pour garder la branche relisible.
+
+### 2. Savoir quels réglages sont utilisés
+
+**Établi : c'est journalisé, mais en partie seulement.**
+- L'événement existe : `Deckle-SettingsUx` › `SettingChanged`, message `setting=… | value=…` (`src/Deckle.Diagnostics/DeckleSettingsUxSource.cs`). La valeur passe par une liste blanche ; un réglage inconnu s'écrit `(changed)`.
+- **Où le lire** : dans la fenêtre de log, filtre Module › « Settings UX ». Sur disque, seulement dans le trace (`trace.jsonl` et `archive/`), donc seulement si *Keep logs on disk* est allumé : il est en Verbose, et `log.jsonl` ne garde que jalons, avertissements et erreurs.
+- **Ce qui manque** :
+  1. Seuls les réglages écrits à la main l'émettent (General, Hotkeys, Recording, Diagnostics, Animations), une soixantaine d'appels en tout. Les réglages composés par `SettingsComposer` (la plupart des pages de module) ne l'émettent pas.
+  2. L'ancienne valeur n'y est pas.
+  3. Par défaut, rien n'atteint le disque.
+
+**Proposé, le plus petit point de log** : un seul endroit, dans `SettingsComposer`. Chaque descripteur reçoit un setter enveloppé qui lit l'ancienne valeur, écrit, puis émet `SettingChanged(setting, old_value, new_value)` si la valeur a changé.
+- `setting` = module + `LabelKey`, déjà unique et stable.
+- La valeur n'est écrite que pour les natures sûres : interrupteur, choix d'une énumération, nombre, raccourci clavier. Un chemin, un texte libre ou un éditeur s'écrit `(changed)`, jamais la valeur.
+- Il couvre d'un coup toutes les pages composées. Il demande une référence `Deckle.Catalog` → `Deckle.Diagnostics`, et un nouvel identifiant d'événement (l'ancien garde sa forme).
+- **Reste ta décision** : pour qu'un changement atteigne le disque sans le trace, il faut l'admettre dans `log.jsonl`. C'est un geste humain rare, donc ça ne coûte presque rien en volume, mais ça change ce que garde le log toujours actif.
+- *Autre lecture, sans rien construire* : comparer chaque fichier de réglages à ses valeurs par défaut dit **ce qui est réglé aujourd'hui**. Le log dit **ce qui a été touché, et quand**.
+
+### 3. La même forme pour les deux corpus
+
+**Établi : c'est déjà la forme livrée.** *Keep my dictations* contient *Also save the audio* (et le choix brut/traité) ; *Keep the text I type* (le corpus de l'autocorrect) contient *Also keep each correction decision*. Même pli, même verbe « Also ». *Interprétation* : si tu voulais plutôt le texte tapé comme sous-option d'un pli « Autocorrect », dis-le ; la forme actuelle met la donnée principale en titre, comme pour la dictée.
+
+**Établi : les deux corpus sont stockés en clair.**
+- Dictées : JSONL texte sous `telemetry\corpus\…\corpus.jsonl` ; l'audio en fichiers WAV.
+- Texte tapé : `telemetry\autocorrect.text.jsonl`, `autocorrect.stream.jsonl` et, si l'option est allumée, `autocorrect.decisions.jsonl`.
+- Aucun chiffrement. À noter pour plus tard : les magasins de *récupération* de dictée (`DictationRecoveryStore`, `TakeAudioRecoveryStore`) protègent déjà leurs fichiers, et `Deckle.Security` a un coffre (`SecretVault`). Le chiffrement du corpus reste hors périmètre (tâche Anytype Sécurité).
+
 ## Après la seconde revue
 
 Captures prises à nouveau, relues par les mêmes types de lecteurs sans leur donner mes constats. Établi : la fenêtre de log a une barre d'une seule forme et ses filtres au-dessus des lignes ; la page a trois sections ; le coût disque est lisible. Ils ont relevé que *Dictation* et *Dictation timings* se confondaient, que « About 60 MB » se lisait « par fichier », et que la carte du dossier audio était la seule sans texte : corrigé (`d091fcea`), chaque source dit ce qu'elle **ajoute**, la rétention dit qu'elle couvre tout l'historique, *Detailed logs* dit de l'allumer avant que le problème revienne.
 
 ## Ce qui reste faible
 
-- **Dix sous-interrupteurs dans un pli** : long, et les plis ne s'emboîtent pas. Je n'ai pas trouvé de regroupement qui ne crée pas un quatrième niveau.
+- **Dix sous-interrupteurs dans un pli en mode développeur** (six sinon) : long, et les plis ne s'emboîtent pas.
 - **Le mot « Corpus »** reste opaque pour un lecteur froid ; la légende l'explique, le titre non.
 - **La taille actuelle sur disque et une commande pour vider** manquent ; c'est la tâche Anytype existante « Diagnostics : exporter un zip et vider les dossiers ».
 - **Fenêtre de log** : aucun signe qu'un filtre est actif ni combien de lignes il cache ; dans la capture « fin », la dernière ligne semble passer sous la barre de défilement horizontale (*incertain* : des lignes arrivaient peut-être après le défilement).
@@ -84,3 +123,6 @@ Captures prises à nouveau, relues par les mêmes types de lecteurs sans leur do
 7. **Anciens réglages de verbosité** : tes choix Summary/Details actuels ne sont pas repris ; tout repart sur « normal ». Acceptable pour l'alpha ?
 8. **Rétention en paliers** (60 Mo / 300 Mo / 1 Go / sans limite) plutôt qu'un nombre libre : ça te suffit ?
 9. **`GLOSSARY.md`** : je le mets à jour au nouveau modèle (normal / détaillé) ?
+10. **Rapport de diagnostic en zip** : le contenu proposé (logs, trace, plantages, versions, réglages caviardés ; jamais le corpus) te va-t-il ? Je le construis ici ou dans sa tâche Anytype ?
+11. **Changements de réglages** : je pose le point de log unique dans `SettingsComposer` ? Et l'admets-tu dans `log.jsonl`, toujours actif, pour que l'usage se lise sans le trace ?
+12. **Dictation timings** était allumé par défaut sous *Detailed logs* ; il est maintenant réservé au mode développeur. D'accord ?
