@@ -7,7 +7,281 @@ the project adheres to [Semantic Versioning](https://semver.org/).
 
 This file is generated from the Conventional Commits history by `scripts/git/changelog.ps1`; do not edit it by hand.
 
-## [0.96.0](https://github.com/louisfifre/deckle/compare/release/v0.76.1...release/v0.96.0) — 2026-11-07
+## [0.120.1](https://github.com/louisfifre/deckle/compare/v0.96.0...v0.120.1) — 2026-11-13
+
+### Added
+
+- **hud:** Show only the frozen clock while processing without animations
+- **app:** Apply a staged local copy build at start
+- **scripts:** Deploy main to the local copy without stopping Deckle
+- **taskbar:** Build the native injected half with the module
+- **app:** Offer Deckle's own animations once when Windows turns its own off
+- **taskbar:** Inject the native engine and talk to it over a pipe
+- **taskbar:** Probe the Start menu host and fix the engine's unload
+- **taskbar:** Parse rule selectors in the native engine
+- **taskbar:** Hold rules and the clock text over the live XAML tree
+- **taskbar:** Build the settings document from what Deckle wants
+- **taskbar:** Hold the Start menu at the height of its window
+- **taskbar:** One engine host per target process
+- **taskbar:** Add the settings that drive the native engine
+- **taskbar:** Keep the native engines in line with the settings
+- **taskbar:** Give the held Start menu equal gaps above and below
+- **app:** Run the taskbar engines from the settings
+- **taskbar:** Add the background, compact tray, compact clock and Start menu cards
+- **scripts:** Show running builds and Deckle instances in one command
+- **scripts:** Read Deckle's diagnostics log with filters
+- **taskbar-cover:** Cap each band's approach span at half its monitor
+- **taskbar-cover:** Let the approach slider reach half the screen
+- **llm:** Let a caller cache the whole Claude prompt and report cache tokens
+- **benchmark:** Cache a campaign's repeated rewrites and price cache tokens
+- **benchmark:** Cache the judge's system prompt and raw dictation
+- **input:** Let a deferred press land where the cursor started
+- **llm:** Let a generation request choose how much the model reasons
+- **rewrite:** Choose a profile's reasoning level in its fold
+- **benchmark:** Run a campaign's models at several reasoning levels
+- **anytype:** Add unlink, the inverse of link
+- **anytype:** Refuse to archive a project that still has open tasks
+- **anytype:** Let create_task take the due date, the estimate, the done definition and the slot
+- **anytype:** Add a today_overview read
+- **anytype:** Add close_report with the real time of the report and of its tasks
+- **anytype:** Add create_person and create_company, and link contacts from tasks and reports
+- **rewrite:** Offer a profile Off, Low or Medium as its Claude model allows
+- **settings:** Open a subpage under a rail page, with a back button and a trail
+- **rewrite:** Open each profile on a page of its own
+- **anytype:** Add the project-management space manifest, model v6
+- **anytype:** Declare the option keys of the v6 manifest and send them on tag creation
+- **anytype:** Speak the model v6 keys and project lifecycle in the gestures and tools
+- **anytype:** Plan and apply a rename when a native property or type carries another name than the manifest
+- **scripts:** Switch the Anytype backend to the pinned version
+- **scripts:** Say in the deploy summary when the Anytype pin is not active
+- **taskbar:** Give the development console a pipe of its own
+- **taskbar:** Add the Windows key shows the taskbar setting
+- **taskbar:** Pack the app buttons, quick settings and clock at the tray's pitch
+- **taskbar:** Tell a lone Windows key tap from a shortcut
+- **taskbar:** Bring the taskbar forward on a lone Windows key tap
+- **app:** Apply the Windows key setting live
+- **trackpad:** Read the three-finger drag press delay from the settings
+- **trackpad:** Tune the pick-up delay from the Trackpad page
+- **catalog:** Let a group carry an advisory under its fold
+- **taskbar:** Set the tray icon and app button pitches
+- **catalog:** Let a mode carry an advisory under its fold
+- **taskbar:** Hold the Start menu width in its engine
+- **taskbar:** Choose the Start menu width
+- **taskbar:** Let the engine make an explorer function return a constant
+- **taskbar:** Find an explorer function from Microsoft's public symbols
+- **taskbar:** Make the taskbar's thickness a setting
+- **taskbar:** Drive the bar thickness from the development console's customizer
+- **atelier:** Add the logic library for added folders, listing and history
+- **mail:** Model mail sorting and triage gestures as pure state transitions
+- **mail:** Project the Triage list, navigation counts and Activity from the state
+- **mail:** Word dates, gesture results and mailbox names from one string catalog
+- **atelier:** Add the window, its address bar, the file tool and the tool seam
+- **atelier:** Read which files are photos and what the camera recorded
+- **atelier:** Add the sizes engine that measures the folders beneath a place
+- **atelier:** Keep the photo marks in the app's own store
+- **atelier:** Send files to the Recycle Bin through the shell
+- **atelier:** Add the map engine: inventory, loading rules and links
+- **atelier:** Rename photos by the date they were taken
+- **atelier:** Plan and apply the photo marks in one step
+- **atelier:** Find darktable and open it on a folder
+- **atelier:** Register the Atelier module, open its window from the tray and walk it in the self-check
+- **atelier:** Link an item whose path a document writes in code
+- **catalog:** Add the Mail glyph cluster
+- **mail:** Add the Mail window on a built-in sample
+- **app:** Open the Mail preview from the tray under the developer gate
+- **atelier:** Add the thumbnail request to the file icon seam
+- **atelier:** Add the map graph's neighbourhood and the list filter
+- **atelier:** Show folder sizes, the heaviest files and the analysis progress in the sizes tool
+- **atelier:** Read file icons and thumbnails from the Windows shell
+- **atelier:** Show the icons Windows draws in the file list
+- **atelier:** Show the map as a details list with its filters and panel graph
+- **atelier:** Add a generated sample shoot for the photo tool
+- **atelier:** Build the photo tool's gallery, marks and apply step
+- **atelier:** Add sparse heavy files to the sample folder for the sizes tool
+- **mail:** Add a sample day with an unreadable row and an unverified sender
+- **atelier:** Show the module to the person as Deckle Folders
+- **taskbar:** Stop injecting into a process that keeps dying after the engine arrives
+- **llm:** Let a request keep its system prompt alone in the provider's cache
+- **benchmark:** Probe what the prompt cache saves on a dictation's batches
+- **llm-rewrite:** Keep the profile's prompt in the provider's cache across a dictation's batches
+- **llm:** Log what a response wrote to the prompt cache and read back
+- **transcription:** Record a dictation's cache tokens in the latency line
+- **llm-rewrite:** Add the dictation steps to the settings and migrate the old shape into them
+- **trackpad:** Pick up as soon as the fingers travel the pick-up distance
+- **transcription:** Rewrite a dictation by its steps around the take's document
+- **llm-rewrite-views:** One Dictation section with a step timeline
+- **shell:** Show the Deckle mark in the tray and windows, lit by state
+- **settings:** Fold the Playground switch into Developer mode
+- **app:** Make the right click a developer menu and the left click the whole everyday menu
+- **logo:** Draw a normal and a small form, a tile per Windows mode and a sheet
+- **shell:** Give a window the tile made for the Windows mode
+- **app:** Keep the bare mark in title bars and re-pick window icons when the Windows mode changes
+- **taskbar:** Grow the hover thumbnails to the box the setting gives
+- **scripts:** Apply an anytype schema manifest without a model
+- **llm-rewrite:** One "Rewrite while I speak" switch and a block size per step
+- **llm-rewrite:** Cut a dictation into each step's own blocks when it takes over
+- **transcription:** One step rewrites at a time, in its own blocks, while the person speaks
+- **settings:** Let the page walk keep to the pages a caller accepts
+- **app:** Keep a self-check to one window or one settings page
+- **scripts:** Pass a target to the self-check with -Only
+- **llm-rewrite-views:** "Rewrite while I speak" on the Dictation section, block sizes and a timeline per step
+- **app:** Target one view of Mail or the Atelier in the self-check
+- **app:** Leave a margin around a page in the self-check images
+- **llm-rewrite:** Every step reads "From", the first one too, and 0 starts from the beginning
+- **log-window:** One toolbar line and filters beside the rows
+- **diagnostics:** Count every hot loop of a minute on one row
+- **diagnostics:** Read a rotation's archive cap at each roll
+- **llm:** Log each call's token usage as the language-model activity's detail
+- **diagnostics:** One level model, Detailed logs and Corpus on the Diagnostics page
+- **diagnostics:** Keep the developer captures to developer mode
+- **diagnostics:** Fix the trace's retention to developer mode
+- **diagnostics:** Drop the dictation timings dataset
+- **input:** Stop recording raw touchpad frames and wheel events
+- **log-window:** Bring the Playground button back to the title bar
+- **log-window:** Open with the detail hidden behind one toolbar switch
+- **log-window:** Copy what is visible while a view filter is on
+- **settings:** Log every composed setting change from one point
+- **diagnostics:** Log each Settings page and window the person opens
+- **diagnostics:** Keep every summary event in the always-on log
+- **diagnostics:** Show an Informational row's values beside its sentence
+- **hud:** Ship the stroke and gauge values Louis tuned as the compiled defaults
+- **app:** Remove the Playground window and its entry points
+
+### Changed
+
+- **anytype:** Remove the dialogue gestures
+- **autocorrect:** Drop Codex from the lexicon and the scenarios
+- **scripts:** Move the daily build to deckle-prod beside the checkout
+- **scripts:** Drop the Codex scope from the agent-state reset
+- **scripts:** Keep the prod copy in prod\ of the primary checkout
+- **taskbar:** Remove the Recommended section policy
+- **taskbar:** Drop the Start menu hold's unused measures
+- **taskbar:** Name the horizontal-bar line for every compact card
+- **taskbar:** Share the code write and the function site between patches
+- **atelier:** Keep one level of the sizes tree and drop paths from its nodes
+- **atelier:** Make the file icon seam asynchronous, keyed by path and pixel size
+- **localization:** Extract Loc into Deckle.Localization
+- **diagnostics:** Move the Diagnostics page and the log filter bar into Deckle.Diagnostics.Logging.Views
+- **audio:** Move the Recording page and the voice level meter into Deckle.Audio.Views
+- **core:** Move the hotkey chord types from Catalog to Core
+- **llm-rewrite:** Move the Rewriting pages and the offer window into Deckle.Llm.Rewrite.Views
+- **transcription:** Move the Transcription pages into Deckle.Transcription.Views
+- **catalog:** Move the compiled dictionaries into Deckle.Catalog.Themes
+- **autocorrect:** Move the Autocorrect pages into Deckle.Autocorrect.Views
+- **ambient:** Move the Ambient page and its controls into Deckle.Lighting.Ambient.Views
+- **playground:** Drop the unused ambientControls prefix from the Ambient tab
+- **core:** Remove the focus probes only the paste used
+- **taskbar:** Drop the instruction decoder the thumbnails no longer need
+- **diagnostics:** One visible line per page, window and setting
+- **diagnostics:** Keep the page, window and setting lines plain sentences
+- **diagnostics:** Remove the LoopCounts rollup and the pulses that only fed it
+- **hud:** Stop reading the HUD settings file and drop the Playground's config hooks
+- **hud:** Remove the preview factories, the gauge replay and the mask colour only the Playground used
+- **transcription:** Remove the pause meter only the Playground's preview used
+- **audio:** Remove the open-run restart only the Playground's gauge used
+- **ambient:** Remove the preset picker, change threshold and section resets only the Playground drove
+- **settings:** Remove the TuningCard and TunableRow controls nothing shows
+- **catalog:** Remove the glyphs and icon keys only the Playground drew
+- **hud:** Remove the stroke creation counter and lifecycle event the rebuild log read
+
+### Removed
+
+- **mcp:** Remove the Codex client and the dialogue tools
+- **settings:** Remove the auto-paste setting
+- **transcription:** Remove the paste path from dictation
+
+### Fixed
+
+- **scripts:** Stop inspect-context from failing after its summary
+- **scripts:** Offer the self-check as a named Run action
+- **build:** Start the build-server watchdog outside the project folder
+- **taskbar:** Fit the full-height Start menu by measuring the live layout
+- **taskbar:** Take the Start menu gap from the panel's shadow inset
+- **trackpad:** Defer the drag press so four-finger gestures stop clicking
+- **trackpad:** Say the drag works on any precision touchpad, not only a Magic Trackpad
+- **settings:** Draw the page on the window ground, as Windows Settings does
+- **anytype:** Keep nested list items at their level and underscore keys literal
+- **anytype:** Create an idea with a body and no name
+- **anytype:** Keep the archive and unlink refusals when update writes the same fields
+- **anytype:** Count only the work logged after a report's last closing when it is closed again
+- **anytype:** Escape only edge underscores outside addresses and nest list items by content column
+- **anytype:** Take a blank due date as an unplaced task in create_task
+- **anytype:** Give the document research option its own key, the server keeps option keys unique per space
+- **anytype:** Leave the header relations out of the type diff so a clean apply plans nothing
+- **anytype:** Create collection-layout types through v2, v1 refuses that layout
+- **anytype:** Adopt the native priority option keys p_0 to p_5 in the manifest and DevSpace
+- **taskbar-cover:** Step aside while the band's own taskbar holds the focus
+- **taskbar:** Keep the development console out of the app's DLL folder
+- **taskbar:** Count a click or a wheel turn as part of a Windows shortcut
+- **taskbar:** Hold only Start and Task view to the compact pitch
+- **mail:** Order a deadline after null as IComparable requires
+- **mail:** Read the day of an Activity line in the offset it was recorded with
+- **mail:** Count two aliases that differ only by case as one address
+- **mail:** Count the set-aside mails the sorting's part of Activity lists
+- **atelier:** Keep a capture value and its unit together
+- **mail:** Give the task the mail whose sentence the row shows
+- **mail:** Bring the subject back to Triage on a sorting Undo whatever it became
+- **mail:** Mark every sorting line of a subject brought back to Triage
+- **mail:** Drop an undelivered intent the subject no longer wants
+- **mail:** Copy the lists handed to mails, mailboxes, judgments and intents
+- **atelier:** Keep the rail's items one line high and the panel to the active tool
+- **mail:** Open a search result only when the person submits it
+- **mail:** Refresh the rail numbers in place after a gesture
+- **mail:** Empty a typed app password when its page is left
+- **mail:** Draw the problems count in a caution badge
+- **mail:** Keep the slot of the problems button so the title bar never moves
+- **mail:** Keep the system colours of a contrast theme on the ground and Remove
+- **mail:** Hold each page's column at the left at any window width
+- **mail:** Draw the envelope's flap as a gap that keeps the rounded corners
+- **mail:** Frame the sorting's state in the search menu and say Could not read
+- **mail:** Drop a click on Add task in the instant after a gesture
+- **mail:** Show a mailbox's server as text instead of fields that keep nothing
+- **mail:** Read composed sentences, units and separators from the resources
+- **mail:** Take the header's and the rail mark's type from the theme
+- **atelier:** Make the sizes bars readable and keep the analysis time in one place
+- **mail:** Name an unverified sender by its address and mark it on its opened subject
+- **mail:** Read the trash notice's mailbox wording from the resources
+- **mail:** Leave a menu's window constraint alone after its first opening
+- **foreground:** Never read a hidden or cloaked window as fullscreen
+- **foreground:** Probe the window that holds the foreground at delivery
+- **taskbar:** Keep one engine per explorer, parked instead of unloaded
+- **taskbar:** Count a parked engine as stopped and name a resident build
+- **taskbar:** Mark the engine parked before its pipe closes
+- **taskbar:** Hold the Start menu's MinWidth and MaxWidth with its Width
+- **app:** End a startup that cannot finish instead of running with no surface
+- **mail:** Take the set-aside line off the page with Dismiss all
+- **mail:** Keep an hour with its unit and a range of hours on one line
+- **mail:** Hold pages, menus and lists still when Windows animations are off
+- **mail:** Fold the search field into a button in a narrow title bar
+- **mail:** Give a narrow subject its title's width, a plain menu focus and a calendar that fills its flyout
+- **localization:** Fold a missing resource map into Loc.GetFrom's miss contract
+- **scripts:** Count an engine's reads as uses of its Views resource map
+- **mail:** Keep an opened subject stacked when the navigation folds to its rail
+- **mail:** Open and fold the navigation at once when Windows animations are off
+- **benchmark:** Price a Sonnet 5.5 cache read at its published tenth of a dollar
+- **transcription:** Drop pasting from the Transcription page description
+- **settings:** Drop paste from the log consent text
+- **transcription:** Say the failed clipboard copy in the not-delivered log message
+- **atelier:** Hide the root grid's shortcut tooltip
+- **settings:** Hide the root grid's shortcut tooltip
+- **anytype:** Let schema_preview return the renames it plans
+- **catalog:** Collapse a fold child's advisory row while it has nothing to say
+- **taskbar:** Lift the thumbnail view's width cap while the thumbnails grow
+- **anytype:** Align the pm manifest with what the space accepts
+- **anytype:** Replace a gateway whose space is out of date
+- **anytype:** Stop a schema apply that would leave a space unusable
+- **taskbar:** Keep the XAML composition diagnostics off in explorer
+- **scripts:** Queue the self-checks so one runs at a time
+- **trackpad:** Keep the pick-up distance from pressing before a fourth finger
+- **trackpad:** Narrow the drag sliders to the values worth reaching
+- **trackpad:** Release a late fourth finger's drag where it was pressed
+- **llm:** Tell a batch rewrite's start and end once
+- **diagnostics:** Give every Detailed logs source the same description shape
+- **log-window:** Scroll to the real end of a list of mixed row heights
+- **diagnostics:** Delete no trace archive when the retention cap cannot be read
+- **diagnostics:** Keep an Informational row on one line when a value holds a line break
+
+## [0.96.0](https://github.com/louisfifre/deckle/compare/v0.76.1...v0.96.0) — 2026-11-07
 
 ### Added
 
@@ -214,7 +488,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **catalog:** Track where the pause values sit instead of comparing WinRT parents
 - **transcription:** Give the take-audio and corpus events their own ids
 
-## [0.76.1](https://github.com/louisfifre/deckle/compare/release/v0.72.4...release/v0.76.1) — 2026-11-04
+## [0.76.1](https://github.com/louisfifre/deckle/compare/v0.72.4...v0.76.1) — 2026-11-04
 
 ### Added
 
@@ -261,7 +535,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **anytype:** Read type views by their v2 key, tied to the v1 type by id
 - **mcp:** Return tool text whole instead of cutting it at 8 000 characters
 
-## [0.72.4](https://github.com/louisfifre/deckle/compare/release/v0.72.0...release/v0.72.4) — 2026-10-27
+## [0.72.4](https://github.com/louisfifre/deckle/compare/v0.72.0...v0.72.4) — 2026-10-27
 
 ### Added
 
@@ -280,7 +554,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **whisper:** Purge an older bundle's DLLs before ggml loads its backends
 - **whisper:** Keep ggml-base loaded after the startup load check
 
-## [0.72.0](https://github.com/louisfifre/deckle/compare/release/v0.67.1...release/v0.72.0) — 2026-10-27
+## [0.72.0](https://github.com/louisfifre/deckle/compare/v0.67.1...v0.72.0) — 2026-10-27
 
 ### Added
 
@@ -383,7 +657,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **whisper:** Ask ggml-base for a backend's name
 - **whisper:** Download native bundle 1.9.2
 
-## [0.67.1](https://github.com/louisfifre/deckle/compare/release/v0.59.0...release/v0.67.1) — 2026-10-23
+## [0.67.1](https://github.com/louisfifre/deckle/compare/v0.59.0...v0.67.1) — 2026-10-23
 
 ### Added
 
@@ -541,7 +815,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **mcp:** Keep a surrogate pair whole when the tool text is cut
 - **anytype:** Name a lost heading before the content mismatch it causes
 - **anytype:** Count report tails in journal entries, not lines
-- **anytype:** Read Priorité under the key the server serves
+- **anytype:** Read Priorit├® under the key the server serves
 - **anytype:** Say in French when a subtask add meets a changed task
 - **anytype:** Count a read-back timeout as a failed check in replace_section
 - **setup:** Mirror the wizard's new strings into the app resources
@@ -663,7 +937,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **anytype:** Point open_report's task id to the reads that give it
 - **anytype:** Open the report even when its task's project cannot be read
 
-## [0.59.0](https://github.com/louisfifre/deckle/compare/release/v0.58.5...release/v0.59.0) — 2026-10-21
+## [0.59.0](https://github.com/louisfifre/deckle/compare/v0.58.5...v0.59.0) — 2026-10-21
 
 ### Added
 
@@ -685,7 +959,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **anytype:** Pin the patched anytype-cli 0.5.0 rebuild as the backend
 - **anytype:** Pin the backend asset that carries the license texts
 
-## [0.58.5](https://github.com/louisfifre/deckle/compare/release/v0.57.0...release/v0.58.5) — 2026-10-20
+## [0.58.5](https://github.com/louisfifre/deckle/compare/v0.57.0...v0.58.5) — 2026-10-20
 
 ### Added
 
@@ -725,13 +999,13 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **autocorrect:** Follow the generation seam in the proposal replay test
 - **hud:** Fade the transcript panel's first visible line through a clipped copy
 
-## [0.57.0](https://github.com/louisfifre/deckle/compare/release/v0.35.0...release/v0.57.0) — 2026-10-15
+## [0.57.0](https://github.com/louisfifre/deckle/compare/v0.35.0...v0.57.0) — 2026-10-15
 
 ### Added
 
 - **anytype:** Schema surface provisions type descriptions through the object face
 - **scripts:** Establish terminal visual hierarchy
-- **anytype:** The manifest owns a type's property list — order and membership follow it, detachments named before confirm
+- **anytype:** The manifest owns a type's property list ÔÇö order and membership follow it, detachments named before confirm
 - **transcription:** Expose live utterance boundary progress
 - **composition:** Render mirrored utterance countdown masks
 - **hud:** Share transcribing material tuning
@@ -930,7 +1204,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **llm:** Chat-completions engine for LM Studio, llama.cpp and hosted APIs
 - **llm:** List the models a provider serves
 - **rewrite:** Providers list, API key and provider per profile in Settings
-- **rewrite:** Two default profiles on Claude, Lissage and Réécriture
+- **rewrite:** Two default profiles on Claude, Lissage and R├®├®criture
 - **hud:** Release the gauge on its own fast curve at the cut
 - **playground:** Expose the gauge's cut release and a Cut button
 - **diagnostics:** Give the logging and application-log toggles their reset
@@ -944,8 +1218,8 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 
 ### Changed
 
-- **home:** Survey date retires from the schema — retraction guard keeps the reference half
-- **home:** Electricity grill — existence leaves, categories v3, the circuit gains a nature
+- **home:** Survey date retires from the schema ÔÇö retraction guard keeps the reference half
+- **home:** Electricity grill ÔÇö existence leaves, categories v3, the circuit gains a nature
 - **scripts:** Move Release, Maintenance and Setup commands into subfolders
 - **catalog:** Extract the trailing-reset layout from BuildPath
 - **hud:** Expose the HUD bottom margin to sibling surfaces
@@ -1070,7 +1344,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **transcription:** Count the bespoke cards in the Reset all gate
 - **playground:** Keep the gauge's curve handles inside the frame
 
-## [0.35.0](https://github.com/louisfifre/deckle/compare/release/v0.31.6...release/v0.35.0) — 2026-08-13
+## [0.35.0](https://github.com/louisfifre/deckle/compare/v0.31.6...v0.35.0) — 2026-08-13
 
 ### Added
 
@@ -1089,7 +1363,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 
 ### Changed
 
-- **home:** Watering retires from the surface — property and verb removed
+- **home:** Watering retires from the surface ÔÇö property and verb removed
 
 ### Fixed
 
@@ -1110,7 +1384,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **scripts:** Fill focused terminal cells
 - **home:** Drop restock_threshold from the required schema
 
-## [0.31.6](https://github.com/louisfifre/deckle/compare/release/v0.30.2...release/v0.31.6) — 2026-07-31
+## [0.31.6](https://github.com/louisfifre/deckle/compare/v0.30.2...v0.31.6) — 2026-07-31
 
 ### Added
 
@@ -1130,7 +1404,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **ambient:** Keep pairing status in expander footer
 - **transcription:** Keep file batches on live pipeline
 
-## [0.30.2](https://github.com/louisfifre/deckle/compare/release/v0.14.1...release/v0.30.2) — 2026-07-31
+## [0.30.2](https://github.com/louisfifre/deckle/compare/v0.14.1...v0.30.2) — 2026-07-31
 
 ### Added
 
@@ -1253,13 +1527,13 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **precision-scroll:** Convert wheel input globally
 - **scripts:** Restore semantic scrollable action logs
 
-## [0.14.1](https://github.com/louisfifre/deckle/compare/release/v0.14.0...release/v0.14.1) — 2026-07-20
+## [0.14.1](https://github.com/louisfifre/deckle/compare/v0.14.0...v0.14.1) — 2026-07-20
 
 ### Fixed
 
 - **release:** Materialize tags before finalizing drafts
 
-## [0.14.0](https://github.com/louisfifre/deckle/compare/release/v0.13.7...release/v0.14.0) — 2026-07-20
+## [0.14.0](https://github.com/louisfifre/deckle/compare/v0.13.7...v0.14.0) — 2026-07-20
 
 ### Added
 
@@ -1276,7 +1550,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **install:** Isolate app releases from native bundles
 - **release:** Stage verified releases before publication
 
-## [0.13.7](https://github.com/louisfifre/deckle/compare/release/v0.13.4...release/v0.13.7) — 2026-07-19
+## [0.13.7](https://github.com/louisfifre/deckle/compare/v0.13.4...v0.13.7) — 2026-07-19
 
 ### Fixed
 
@@ -1284,7 +1558,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **app:** Exclude duplicate DirectML publish payload
 - **logging:** Restore structured filter labels
 
-## [0.13.4](https://github.com/louisfifre/deckle/compare/release/v0.8.0...release/v0.13.4) — 2026-07-19
+## [0.13.4](https://github.com/louisfifre/deckle/compare/v0.8.0...v0.13.4) — 2026-07-19
 
 ### Added
 
@@ -1344,7 +1618,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **installer:** Make the stub a silent web-installer with a native window
 - **logging:** Add structured log window filters
 - **transcription:** Default to ggml-base with installed-model fallback
-- **setup:** Update pipeline — silent check, download page, deploy update mode
+- **setup:** Update pipeline ÔÇö silent check, download page, deploy update mode
 - **settings:** Update opt-out and version row on the General page
 - **app:** Wire the in-app updater end to end
 - **setup:** Data-root relocation page
@@ -1447,7 +1721,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - Align runtime behavior and observability
 - **app:** Resolve DirectML publish collision
 
-## [0.8.0](https://github.com/louisfifre/deckle/compare/release/v0.7.2...release/v0.8.0) — 2026-07-03
+## [0.8.0](https://github.com/louisfifre/deckle/compare/v0.7.2...v0.8.0) — 2026-07-03
 
 ### Added
 
@@ -1485,7 +1759,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **autocorrect:** Add deterministic locative la rule
 - **autocorrect:** Score suffix evidence in ONNX judge
 
-## [0.7.2](https://github.com/louisfifre/deckle/compare/release/v0.7.1...release/v0.7.2) — 2026-07-02
+## [0.7.2](https://github.com/louisfifre/deckle/compare/v0.7.1...v0.7.2) — 2026-07-02
 
 ### Added
 
@@ -1499,13 +1773,13 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **installer:** Clean before extraction only over a recognised install
 - **installer:** Match running processes anywhere under the install folder
 
-## [0.7.1](https://github.com/louisfifre/deckle/compare/release/v0.7.0...release/v0.7.1) — 2026-07-01
+## [0.7.1](https://github.com/louisfifre/deckle/compare/v0.7.0...v0.7.1) — 2026-07-01
 
 ### Added
 
 - **installer:** Recap-and-one-keystroke console install
 
-## [0.7.0](https://github.com/louisfifre/deckle/compare/release/v0.6.0...release/v0.7.0) — 2026-07-01
+## [0.7.0](https://github.com/louisfifre/deckle/compare/v0.6.0...v0.7.0) — 2026-07-01
 
 ### Added
 
@@ -1528,7 +1802,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **ambient:** Ignore weak Hue echo mismatches
 - **ambient:** Attribute Hue bridge changes
 
-## [0.6.0](https://github.com/louisfifre/deckle/compare/release/v0.5.0...release/v0.6.0) — 2026-07-01
+## [0.6.0](https://github.com/louisfifre/deckle/compare/v0.5.0...v0.6.0) — 2026-07-01
 
 ### Added
 
@@ -1571,7 +1845,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **scripts:** Split the menu launch entry into Release and Debug
 - **scripts:** Add a version bump-and-tag menu command
 - **scripts:** Rework the dev menu as a 2D navigable grid
-- **anytype:** Management layer — lifecycle verbs and reversible delete
+- **anytype:** Management layer ÔÇö lifecycle verbs and reversible delete
 - **diagnostics:** Add windowing activity log toggle
 - **scripts:** Summarize workflow outcomes
 - **scripts:** Configure Anytype MCP management
@@ -1596,9 +1870,9 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **settings:** Confirm-on-enable gate for consent toggles
 - **settings:** Reusable confirmation service for destructive commands
 - **autocorrect:** Derive the verb-morphology artifact and its loader
-- **autocorrect:** Add the grammar stage with subject–verb agreement
+- **autocorrect:** Add the grammar stage with subjectÔÇôverb agreement
 - **shell:** Unify both logon vehicles behind a StartupService facade
-- **anytype:** Backend lifecycle mechanism — triggerless on-demand task + supervisor
+- **anytype:** Backend lifecycle mechanism ÔÇö triggerless on-demand task + supervisor
 - **app:** Launch without the speech setup gate
 - **setup:** Recover a failed first-run download with a link and local import
 - **transcription:** Surface a set-up call-to-action when speech is unprovisioned
@@ -1662,7 +1936,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **scripts:** Point the native runtime source at the louisfifre release
 - **scripts:** Parenthesise the version-bump arithmetic
 
-## [0.5.0](https://github.com/louisfifre/deckle/compare/release/v0.4.4...release/v0.5.0) — 2026-06-14
+## [0.5.0](https://github.com/louisfifre/deckle/compare/v0.4.4...v0.5.0) — 2026-06-14
 
 ### Added
 
@@ -1675,7 +1949,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **app:** Compose the trackpad module
 - **trackpad:** Settings page and navigation entry
 - **trackpad:** Freeze calibrated values, retire the tuning expander
-- **anytype:** Core library over the live PM space — client, frozen schema, gestures
+- **anytype:** Core library over the live PM space ÔÇö client, frozen schema, gestures
 - **mcp:** Stdio JSON-RPC host exposing the 13 PM tools
 - **transcription:** Paragraph break on silence-cut utterances
 - **notifications:** Notification catalogue, dispatcher, and interactive toast channel
@@ -1702,7 +1976,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **app:** Persist the setup narrative and critical errors locally
 - **settings:** Link to the local diagnostics folder
 - **setup:** Offer the diagnostics folder on a failed first run
-- **anytype:** Replace_section — heading-located body edit, verified
+- **anytype:** Replace_section ÔÇö heading-located body edit, verified
 - **anytype:** Add dialogue chat tools
 - **autocorrect:** N-gram left-context disambiguation and precision-first eval
 - **autocorrect:** CamemBERT MLM reranker probe (offline)
@@ -1776,12 +2050,12 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **app:** Detach and flush taskbar cover settings at shutdown
 - **taskbar-cover:** Hold the provider to the Verbose/Info separation
 - **input:** Guard the parser-failure detail behind its braces
-- **anytype:** Invert the rapport↔task link, derive the project through tasks
+- **anytype:** Invert the rapportÔåötask link, derive the project through tasks
 - **app:** Always surface the streaming transcript in the log
 - **app:** Add missing Setup_OpenDiagnosticsFolder to the root resource map
 - **app:** Register always-on local sinks before settings migration
 
-## [0.4.4](https://github.com/louisfifre/deckle/compare/release/v0.4.1...release/v0.4.4) — 2026-06-07
+## [0.4.4](https://github.com/louisfifre/deckle/compare/v0.4.1...v0.4.4) — 2026-06-07
 
 ### Added
 
@@ -1816,7 +2090,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **app:** Keep the streaming firehose log gate whole across the VAD split
 - **transcription:** Start chrono and duration on real capture start
 
-## [0.4.1](https://github.com/louisfifre/deckle/compare/release/v0.4.0...release/v0.4.1) — 2026-06-04
+## [0.4.1](https://github.com/louisfifre/deckle/compare/v0.4.0...v0.4.1) — 2026-06-04
 
 ### Added
 
@@ -1828,29 +2102,29 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 
 - **scripts:** Mark 0.x releases as pre-release
 
-## [0.4.0](https://github.com/louisfifre/deckle/releases/tag/release/v0.4.0) — 2026-06-04
+## [0.4.0](https://github.com/louisfifre/deckle/releases/tag/v0.4.0) — 2026-06-04
 
 ### Added
 
 - **settings:** Frame+Page navigation + CommunityToolkit SettingsCard
-- **settings:** Persistance JSON + WhisperPage câblée (6 sections)
-- **hud:** Click-through natif + fade plancher réglable
-- **settings:** Passe contenu EN + réordonnancement pages
-- **settings:** GeneralPage fonctionnelle + descriptions WhisperPage auditées + restart ciblé
-- **settings:** Câblage complet GeneralPage + thème live + overlay configurable
+- **settings:** Persistance JSON + WhisperPage c├óbl├®e (6 sections)
+- **hud:** Click-through natif + fade plancher r├®glable
+- **settings:** Passe contenu EN + r├®ordonnancement pages
+- **settings:** GeneralPage fonctionnelle + descriptions WhisperPage audit├®es + restart cibl├®
+- **settings:** C├óblage complet GeneralPage + th├¿me live + overlay configurable
 - **logwindow:** Refonte ListView native + clic-to-copy + UX copy Microsoft
-- **llm:** Système de réécriture multi-profils Ollama complet
-- **llm:** Paramètres de génération, OllamaService, import GGUF et modèles custom
+- **llm:** Syst├¿me de r├®├®criture multi-profils Ollama complet
+- **llm:** Param├¿tres de g├®n├®ration, OllamaService, import GGUF et mod├¿les custom
 - **ui:** Titre LogWindow, restart tray, shortcut rewrite, suppression override caption buttons
-- **llm:** Refonte LlmPage en sections + mode RAW Ollama + détection micro
-- **settings:** ComboBox modèle Ollama dans profils, UX import GGUF, titre Models
-- **benchmark:** Add autoresearch.py — autonomous prompt optimization loop
-- **llm:** Prompt Nettoyage optimisé par autoresearch v2
+- **llm:** Refonte LlmPage en sections + mode RAW Ollama + d├®tection micro
+- **settings:** ComboBox mod├¿le Ollama dans profils, UX import GGUF, titre Models
+- **benchmark:** Add autoresearch.py ÔÇö autonomous prompt optimization loop
+- **llm:** Prompt Nettoyage optimis├® par autoresearch v2
 - **whisper:** Activate beam search, carry_initial_prompt, and richer initial prompt
 - **engine:** Lazy load + idle unload whisper model to free VRAM
-- **benchmark:** Suite restructuration — corpus, scripts, boucle 40 itérations
-- **llm:** Prompt restructuration optimisé (benchmark 0.0000), suppression nettoyage
-- **llm:** Restaure Nettoyage, prépare Restructuration pour benchmark
+- **benchmark:** Suite restructuration ÔÇö corpus, scripts, boucle 40 it├®rations
+- **llm:** Prompt restructuration optimis├® (benchmark 0.0000), suppression nettoyage
+- **llm:** Restaure Nettoyage, pr├®pare Restructuration pour benchmark
 - **engine:** Silent warmup transcription at launch
 - **shell:** Autostart via HKCU\Run registry key
 - **hud:** Audio-level coupled recording outline (WIP, render to validate)
@@ -1861,7 +2135,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **dev:** Scaffold HudPlayground standalone dev tool
 - **dev:** HudPlayground tuning panel + simulated RMS pump
 - **hud:** Swipe = critical flash on changed digits only (no disabled)
-- **hud:** OKLCh palette, anti-moiré, RMS window + Recording accent
+- **hud:** OKLCh palette, anti-moir├®, RMS window + Recording accent
 - **playground:** Promote HudPlayground to first-party WhispUI window
 - **hud:** Message stack with proximity fade + gated low-audio warning
 - **playground:** Persistence (auto-hydrate + Save + Reset all), responsive layout
@@ -1869,8 +2143,8 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **engine,settings:** Microphone.jsonl + level window calibration defaults
 - **settings,engine:** Voice level window UI + auto-calibration heuristic
 - **benchmark:** Whisper initial prompt tuning + folder layout refacto
-- **rewrite:** Aligner les profils par défaut sur les 4 brackets de cleanup
-- **robustness:** Hardening sweep — Ollama startup race, dispatcher safety, settings mutex, lifecycle guards
+- **rewrite:** Aligner les profils par d├®faut sur les 4 brackets de cleanup
+- **robustness:** Hardening sweep ÔÇö Ollama startup race, dispatcher safety, settings mutex, lifecycle guards
 - **settings:** Add SettingsBackupService and BackupDirectory
 - **settings/general:** Add Backup section (snapshot and restore)
 - **telemetry:** Per-stage latency instrumentation + Ollama metrics
@@ -1879,7 +2153,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **settings/general:** Add Application data section with Open data folder
 - **setup:** Add SpeechModels catalog, Downloader, SetupContext (B.1)
 - **setup:** Add SetupWindow shell (B.2)
-- **setup:** Add wizard pages — Choices, Installing, Summary (B.3-B.5)
+- **setup:** Add wizard pages ÔÇö Choices, Installing, Summary (B.3-B.5)
 - **setup:** Wire wizard from App.OnLaunched + Re-run button (B.6, B.7)
 - **telemetry:** Rolling history buffer + Replay() for late-registered sinks
 - **localization:** Introduce .resw + Loc helper, migrate CorpusConsentDialog
@@ -1888,7 +2162,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **scripts:** Unify setup-assets, drop restore-assets and setup-userdata
 - **scripts:** Add interactive launcher with two-step menu
 - **rename:** Migrate %LOCALAPPDATA%\WhispUI\ to %LOCALAPPDATA%\Deckle\
-- **hud:** Fade-in 150ms on Hidden→visible transition
+- **hud:** Fade-in 150ms on HiddenÔåÆvisible transition
 - **native-runtime:** Add publish script + recompile recipe doc
 - **setup:** Auto-download native runtime in the first-run wizard
 - **paths:** Add AppPaths.GetModuleDirectory(moduleId)
@@ -1896,15 +2170,15 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **lighting:** Hue REST driver scaffolding + Playground Discover/Pair (J2 step 1)
 - **lighting:** Hue group listing + colour push + Playground rotation (J2 step 2)
 - **ambient:** AmbientEngine scaffolding + Playground pipeline card (J3 step 1)
-- **ambient:** J3 step 2 — real frame analysis + HDR + Playground polish
-- **ambient:** Persist Hue bridge state — no more re-pair per session
+- **ambient:** J3 step 2 ÔÇö real frame analysis + HDR + Playground polish
+- **ambient:** Persist Hue bridge state ÔÇö no more re-pair per session
 - **ambient:** Clamp near-black averages to off so dark screens dim the lights
 - **hue:** Force transitiontime=1 (100ms) so the lamp keeps up with the screen
 - **vision:** Wire optional target monitor through ScreenCaptureService.Start
 - **ambient:** J4 multi-light zones with Hue entertainment auto-fill
 - **diagnostics:** Logging section + brightness/ComboBox UX rework
 - **ambient:** Canonical engine ownership + Settings page + tray toggle + HDR tuning
-- **ambient:** Color science pipeline — gamut C clip + linear-light averaging + OKLCh saturation
+- **ambient:** Color science pipeline ÔÇö gamut C clip + linear-light averaging + OKLCh saturation
 - **vision:** Switch capture backend to DXGI Output Duplication (removes Windows yellow capture border)
 - **scripts:** Add bootstrap-dev-env.ps1 + global.json rollForward for multi-machine dev
 - **ambient:** Promote BrightnessCurveGamma to AmbientSettings
@@ -1922,22 +2196,22 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **playground:** Minimal Home page with section picker
 - **playground:** Preview follows the canonical engine + free the Pipeline toggle
 - **playground, ambient:** Multi-curve canvas + light-zones toggle
-- **ambient:** Allow inverted gamma (γ<1) and inverted S-curve (k<0)
+- **ambient:** Allow inverted gamma (╬│<1) and inverted S-curve (k<0)
 - **ambient:** Resilient pipeline against transient interruptions
 - **ambient:** Expose zone-sampling thickness as a user setting
 - **agent:** Add tdd skill for red-green-refactor workflow
 - **transcription:** Ajouter CorpusAsr/RewriteRecorded au provider Whisp
-- **diagnostics:** RoutedJsonlEventListener pour paths résolus par event
-- **diagnostics:** Câbler les destinations routées du corpus normalisé
+- **diagnostics:** RoutedJsonlEventListener pour paths r├®solus par event
+- **diagnostics:** C├óbler les destinations rout├®es du corpus normalis├®
 - **bench:** Add Voxtral smoke test script
-- **bench:** Add Voxtral POC bench — 6 configs + judge + métriques
-- **transcription:** Brancher le pipeline sur le corpus normalisé
+- **bench:** Add Voxtral POC bench ÔÇö 6 configs + judge + m├®triques
+- **transcription:** Brancher le pipeline sur le corpus normalis├®
 - **scripts:** Introduire TREE.md auto-update via hook pre-commit
 - **bench:** Versionner les prompts par scope
-- **bench:** Scénario voxtral-poc orchestrateur des régimes
-- **bench:** Joindre events × monitor pour exposer les peaks system par row
-- **bench:** Juge Gemini multimodal écoutant le WAV brut
-- **bench:** Câbler --judge gemini dans le scénario voxtral-poc
+- **bench:** Sc├®nario voxtral-poc orchestrateur des r├®gimes
+- **bench:** Joindre events ├ù monitor pour exposer les peaks system par row
+- **bench:** Juge Gemini multimodal ├®coutant le WAV brut
+- **bench:** C├óbler --judge gemini dans le sc├®nario voxtral-poc
 - **bench:** Retry GeminiJudge sur 429 free tier Gemini
 - **diagnostics:** Ouvrir les sub-providers transverses
 - **diagnostics:** Instrumenter les transitions reseau
@@ -1945,27 +2219,27 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **vision:** Ajouter heartbeat capture (fps + percentiles)
 - **diagnostics:** Instrumenter cycle de vie ressources natives
 - **diagnostics:** Instrumenter les annulations applicatives
-- **diagnostics:** Instrumenter le positionnement des fenêtres
+- **diagnostics:** Instrumenter le positionnement des fen├¬tres
 - **diagnostics:** Instrumenter le marshalling dispatcher
-- **diagnostics:** Instrumenter les changements de thème
+- **diagnostics:** Instrumenter les changements de th├¿me
 - **skills:** Introduire save-context et spawn-tasks pour la discipline de session
 - **diagnostics:** Instrumenter le positionnement de PlaygroundWindow
 - **diagnostics:** Exposer priority sur les wrappers Threading
-- **settings:** Câbler les marshallings Settings sur le wrapper Threading
-- **hud:** Câbler le warm pass tail sur le wrapper Threading
-- **ambient:** Câbler les marshallings UI d'AmbientPage sur le wrapper Threading
-- **playground:** Câbler les marshallings UI du Playground sur le wrapper Threading
-- **playground:** Instrumenter les changements de thème de PlaygroundWindow
-- **diagnostics:** Étendre Cancellation au pipeline ambient
-- **hud:** Émettre le proximity rollup en récap fin de session
-- **bench:** Corpus voxtral-val-30 stratifié + script de construction
-- **bench:** Source Voxtral via llama-mtmd-cli (Vulkan) + régimes T1-T6
-- **bench:** Source Gemini audio + pré-gen ground truth
-- **bench:** Bench voxtral-validation — WER vs Gemini ground truth
-- **bench:** Viewer HTML — comparaison Voxtral vs Whisper vs Gemini
-- **bench:** Viewer HTML générique sous viewers/ — auto-discovery
+- **settings:** C├óbler les marshallings Settings sur le wrapper Threading
+- **hud:** C├óbler le warm pass tail sur le wrapper Threading
+- **ambient:** C├óbler les marshallings UI d'AmbientPage sur le wrapper Threading
+- **playground:** C├óbler les marshallings UI du Playground sur le wrapper Threading
+- **playground:** Instrumenter les changements de th├¿me de PlaygroundWindow
+- **diagnostics:** ├®tendre Cancellation au pipeline ambient
+- **hud:** ├®mettre le proximity rollup en r├®cap fin de session
+- **bench:** Corpus voxtral-val-30 stratifi├® + script de construction
+- **bench:** Source Voxtral via llama-mtmd-cli (Vulkan) + r├®gimes T1-T6
+- **bench:** Source Gemini audio + pr├®-gen ground truth
+- **bench:** Bench voxtral-validation ÔÇö WER vs Gemini ground truth
+- **bench:** Viewer HTML ÔÇö comparaison Voxtral vs Whisper vs Gemini
+- **bench:** Viewer HTML g├®n├®rique sous viewers/ ÔÇö auto-discovery
 - **bench:** Sanity check Voxtral Mini 3B en BF16 sur Transformers
-- **bench:** Mesure perf RTF Voxtral 3B BF16 sur 3 durées audio
+- **bench:** Mesure perf RTF Voxtral 3B BF16 sur 3 dur├®es audio
 - **bench:** Backend Voxtral Transformers BF16 sur voxtral-validation
 - **bench:** Comparaison BF16 vs Q4_K_M sur T1_baseline
 - **bench:** Router voxtral-transformers vers apply_chat_template pour T2-T5
@@ -1973,7 +2247,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **shell:** Introduire Deckle.Shell.TrayMenu pour le menu tray WinUI 3
 - **shell:** Bascule l'item Ambient sur un ToggleSwitch via Style custom
 - **bench:** Scaffold PhiBench C# tool for Phi-4 ONNX/DirectML POC
-- **bench:** Smoke test voxtral ONNX DirectML — voie 2
+- **bench:** Smoke test voxtral ONNX DirectML ÔÇö voie 2
 - **whisp:** Warm up the model on first hotkey instead of at boot
 - **vision:** Add capture stall detector with unit tests
 - **observability:** Self-describing, bounded app.jsonl persistence
@@ -2005,14 +2279,14 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **logs:** Bind log entry colors via ThemeResource
 - **hud:** Nettoyage XAML natif + backdrop transient
 - **settings:** Burger dans TitleBar native + purge styles custom
-- **logs:** Structured LogEntry model, CommandBar cleanup, FR→EN comments
-- **logs:** Modularise logging — LogService singleton, ILogSink, sources typées
-- Réorganisation dossiers — Interop/, Llm/, Shell/, DebugLog → Logging/
-- **settings:** WhisperPage MVVM — ViewModel + x:Bind TwoWay, suppression handlers manuels
-- **settings:** LlmPage MVVM — ProfilesSection et RulesSection en XAML déclaratif
-- **benchmark:** V2 — scoring robuste, designer ciblé, observabilité
+- **logs:** Structured LogEntry model, CommandBar cleanup, FRÔåÆEN comments
+- **logs:** Modularise logging ÔÇö LogService singleton, ILogSink, sources typ├®es
+- R├®organisation dossiers ÔÇö Interop/, Llm/, Shell/, DebugLog ÔåÆ Logging/
+- **settings:** WhisperPage MVVM ÔÇö ViewModel + x:Bind TwoWay, suppression handlers manuels
+- **settings:** LlmPage MVVM ÔÇö ProfilesSection et RulesSection en XAML d├®claratif
+- **benchmark:** V2 ÔÇö scoring robuste, designer cibl├®, observabilit├®
 - **benchmark:** Config.ini + gitignore artefacts
-- Restructure repo — flatten layout, decouple native deps, English comments
+- Restructure repo ÔÇö flatten layout, decouple native deps, English comments
 - **hud:** Unify recording outline into ProcessingStroke pipeline
 - **benchmark:** Extract shared lib/ for ollama, corpus, metrics, judge
 - **hud:** Expose Recording* overrides on ConicArcStrokeConfig
@@ -2021,7 +2295,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **playground:** Flat Expander list + resizable sash + rounded steps
 - **telemetry:** Single Microphone event carries text + payload
 - **paths:** Centralize filesystem resolution in AppPaths
-- **settings/general:** Reorder sections — Appearance / Startup before Recording
+- **settings/general:** Reorder sections ÔÇö Appearance / Startup before Recording
 - **settings/general:** Collapse Backup section into a PowerToys-style expander
 - **logwindow:** Drop Narrative tab, default to All, fold narrative into Activity
 - **record:** Rephrase Tail-600 ms log as plain-English signal at Stop
@@ -2043,17 +2317,17 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **structure:** Scaffold Deckle.Whisp + extract libwhisper P/Invokes
 - **structure:** Move Win32 Interop layer into Deckle.Core
 - **structure:** Extract WhispEngine + Whisp/Recording/Telemetry POCOs
-- **llm:** Align LlmSettings namespace Deckle.Settings → Deckle.Llm
+- **llm:** Align LlmSettings namespace Deckle.Settings ÔåÆ Deckle.Llm
 - **capture:** Scaffold Deckle.Capture project + extract CaptureSettings POCO
 - **capture:** Extract MicrophoneCapture engine into Deckle.Capture
 - **composition:** Scaffold Deckle.Composition + extract pure primitives
 - **composition:** Move HudComposition + extract SwipeWaveAnimator
-- **capture:** Migrate audio level mapping HudChrono → AudioLevelMapper
-- **chrono:** Extract Deckle.Chrono — timer + formatter primitives
+- **capture:** Migrate audio level mapping HudChrono ÔåÆ AudioLevelMapper
+- **chrono:** Extract Deckle.Chrono ÔÇö timer + formatter primitives
 - **chrono:** Extract HudChrono UserControl into Deckle.Chrono.Hud
-- **shell:** Extract Deckle.Shell — Hotkey + Tray + Autostart + MessageOnlyHost
-- **settings:** Extract Deckle.Settings — slice A (core service)
-- **settings:** Extract Deckle.Settings — slice B (UI surface)
+- **shell:** Extract Deckle.Shell ÔÇö Hotkey + Tray + Autostart + MessageOnlyHost
+- **settings:** Extract Deckle.Settings ÔÇö slice A (core service)
+- **settings:** Extract Deckle.Settings ÔÇö slice B (UI surface)
 - **core:** Extract JsonSettingsStore<T> from SettingsService
 - **settings:** Per-module persistence (slice C2b)
 - **settings:** Cross-module page split (slice C1)
@@ -2062,7 +2336,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **settings:** Canonical Set/Open text-only buttons (slice S1)
 - **settings:** Extract Diagnostics page from General (slice S2)
 - **settings:** Extract Recording page from General (slice S3)
-- **settings:** Rename Shortcuts → Hotkeys, Transcribe → Principal hotkey (slice S4)
+- **settings:** Rename Shortcuts ÔåÆ Hotkeys, Transcribe ÔåÆ Principal hotkey (slice S4)
 - **whisp:** Wrap Decoding and Confidence sliders in SettingsExpander parents (slice S5)
 - **settings:** Move Behaviour section from Recording to General (pass2)
 - **whisp:** Reorder Transcription section and fold storage into model expander (pass2)
@@ -2116,18 +2390,18 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **transcription:** Retirer l'event legacy CorpusRecorded
 - **bench:** Pivot Voxtral POC stack de transformers+ROCm vers llama.cpp+Vulkan+GGUF
 - **bench:** Basculer le squelette POC sur le layout modulaire v2
-- **bench:** Étendre Judge.score_row avec audio_path optionnel
-- **bench:** Désactiver le thinking sur GeminiJudge
-- **bench:** Refondre le monitor système
+- **bench:** ├®tendre Judge.score_row avec audio_path optionnel
+- **bench:** D├®sactiver le thinking sur GeminiJudge
+- **bench:** Refondre le monitor syst├¿me
 - **bench:** Durcir les sources Voxtral DML contre l'inflation VRAM
 - **bench:** Externaliser corpora et runs vers AppData via lib/paths.py
-- **bench:** Centraliser les paths modèles GGUF vers paths.VOXTRAL_DIR
+- **bench:** Centraliser les paths mod├¿les GGUF vers paths.VOXTRAL_DIR
 - **agent:** Aplatir la structure du skill ux-designer
 - **shell:** Bascule le menu tray sur TrayContextMenuHost WinUI 3
-- **shell:** Réordonner les items du menu tray avec Ambient en tête
-- **shell:** Laisser le rendu natif WinUI 3 décider de la hauteur des items
-- **shell:** WIP — polir le rendu du tray menu sur les rails Win11
-- **shell:** WIP — pillule custom + helper réutilisable pour switch tray menu
+- **shell:** R├®ordonner les items du menu tray avec Ambient en t├¬te
+- **shell:** Laisser le rendu natif WinUI 3 d├®cider de la hauteur des items
+- **shell:** WIP ÔÇö polir le rendu du tray menu sur les rails Win11
+- **shell:** WIP ÔÇö pillule custom + helper r├®utilisable pour switch tray menu
 - **ambient:** Isolate engine lifecycle and push loop
 - **whisp:** Split transcription event source
 - **settings:** Remove the dead warmup-on-launch toggle
@@ -2143,20 +2417,20 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 ### Removed
 
 - **llm:** Restore default SystemPrompts as the shipped example
-- **perf:** Re-enable Mica — disabling didn't fix the lag
+- **perf:** Re-enable Mica ÔÇö disabling didn't fix the lag
 
 ### Fixed
 
-- **settings:** WhisperPage nav débloquée + refacto Settings canonique
-- **settings:** Plages sliders confiance alignées sur rapport whisper.cpp + descriptions corrigées
-- **settings:** Persistence cassée au restart + refacto GeneralPage MVVM
-- **settings:** Import GGUF sans freeze UI + dirty detection immédiate profils
-- **settings:** Defaults profils réécriture — températures basses, ctx 2K, modèle vide
+- **settings:** WhisperPage nav d├®bloqu├®e + refacto Settings canonique
+- **settings:** Plages sliders confiance align├®es sur rapport whisper.cpp + descriptions corrig├®es
+- **settings:** Persistence cass├®e au restart + refacto GeneralPage MVVM
+- **settings:** Import GGUF sans freeze UI + dirty detection imm├®diate profils
+- **settings:** Defaults profils r├®├®criture ÔÇö temp├®ratures basses, ctx 2K, mod├¿le vide
 - **paste:** Figer la cible paste au Start, supprimer la re-capture au Stop
 - **benchmark:** Force UTF-8 stdout on Windows to prevent CP1252 crash in redirected output
 - **benchmark:** Sanitize LLM output against terminal escape sequences
 - **settings:** Click-to-unfocus on WhisperPage and LlmPage, fix Language ComboBox initial display
-- **llm:** Augmenter NumCtxK par défaut (Restructuration 2→8K, Prompt 2→4K)
+- **llm:** Augmenter NumCtxK par d├®faut (Restructuration 2ÔåÆ8K, Prompt 2ÔåÆ4K)
 - Route startup milestones through LogService
 - Gate PublishSingleFile on _IsPublishing, add SelfContained
 - **diag:** Surface Silero-missing and LLM-empty-model errors
@@ -2166,13 +2440,13 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **playground:** Sash cursor, display rounding, focus dismiss, RMS step
 - **playground:** SashThumb derives from ContentControl (Thumb is sealed)
 - **hud:** Complementary digit opacities (primary + accent = 1)
-- **playground:** Moiré, composition freeze, ArcMask in light theme
+- **playground:** Moir├®, composition freeze, ArcMask in light theme
 - **hud:** Live low-audio tracker + tighter stack gap + animations override
 - **hud:** Kill DWM Shell dropshadow on overlays + tune low-audio tracker
 - **playground,hud:** Responsive preview + badge semantic/centering
 - **logwindow,hud:** Drop blank Microphone row + bump palette chroma
 - **settings/llm:** Align rewrite rules, drop Prompt profile, recalibrate word thresholds
-- **engine:** Tooltip stuck on "Loading model…", warmup pollutes logs
+- **engine:** Tooltip stuck on "Loading modelÔÇª", warmup pollutes logs
 - **whisper:** Pass UTF-8 to whisper.cpp instead of CP-1252 ANSI
 - **llm:** Keep rules independent of profiles, add UX-copy reset dialogs
 - **llm:** Retry ProfileCombo selection on dispatcher tick after Reset Rules
@@ -2191,7 +2465,7 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **build-run:** Launch Deckle via cmd /c start so it gets foreground promotion
 - **core:** Add Microsoft.WindowsAppSDK reference to Deckle.Core
 - **whisp:** Track Pinvoke files (Native/ collided with .gitignore)
-- **whisp:** Align namespace Native → Pinvoke in WhisperPInvoke.cs
+- **whisp:** Align namespace Native ÔåÆ Pinvoke in WhisperPInvoke.cs
 - **llm:** Make Ollama types public for cross-assembly visibility
 - **setup:** DPI-aware wizard sizing + skip whisper re-download
 - **settings:** Add Resources.resw to Deckle.Settings for x:Uid resolution
@@ -2209,11 +2483,11 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **playground+diagnostics:** Revert light zones row + flip Log Ambient default off
 - **playground:** Zone ComboBox via static ItemsSource (fixes 3-click bug)
 - **playground:** Zone picker via DropDownButton + MenuFlyout; pane closed; tooltip + width
-- **ui+logging:** Focus stealing, dropdown UX, Verbose×source filter, Info promotions
+- **ui+logging:** Focus stealing, dropdown UX, Verbose├ùsource filter, Info promotions
 - **logging:** Per-loop capture toggle + Verbose/Info doctrine enforcement
 - **logging:** Central filter w/ capture-active flag; default OFF
 - **diagnostics:** Trim Log ambient capture activity description to one factual sentence
-- **ambient:** Audit remediation — Critical UI desync + Major transient feedback + IP validation + pre-publication docs
+- **ambient:** Audit remediation ÔÇö Critical UI desync + Major transient feedback + IP validation + pre-publication docs
 - **ambient:** GammaSlider default Value + Padding warning
 - **ambient:** GammaSlider XAML attribute order Max/Value/Min
 - **ambient:** Move GammaSlider range to code-behind
@@ -2228,29 +2502,29 @@ This file is generated from the Conventional Commits history by `scripts/git/cha
 - **playground:** Preview timer runs for the window's lifetime
 - **ambient:** Drop duplicate LatestSample property
 - **playground:** Zones toggle pattern + SCurve range + light names
-- **scripts:** Stats.ps1 path split — use -split regex over String.Split overload
+- **scripts:** Stats.ps1 path split ÔÇö use -split regex over String.Split overload
 - **integration:** Resolve cross-layer EventSource refs post-merge
 - **integration:** Rewrite App.xaml.cs refs after moved Diagnostics namespaces
 - **playground:** Restore capture preview placeholder on ambient stop
 - **ambient:** Release DXGI duplication eagerly on engine stop
-- **bench:** Commentaires .gitignore sur des lignes dédiées
+- **bench:** Commentaires .gitignore sur des lignes d├®di├®es
 - **bench:** Dtype= au lieu de torch_dtype= pour charger Voxtral en fp16
-- **bench:** Élargir pauses model_load à 10 s pour stabilité monitor
-- **bench:** Bumper max_output_tokens GeminiJudge à 4096
-- **bench:** Aligner la fenêtre idle_baseline sur la pause pré-load
-- **diagnostics:** Garder TryEnqueueObserved contre la récursion synchrone du listener
-- **bench:** Aligner le prompt judge sur les régimes T1-T6 actuels
-- **bench:** Empêcher l'écrasement silencieux des runs avec model composé
-- **bench:** Relever max_new_tokens Voxtral à 8 tokens/s d'audio
-- **shell:** Déplace les strings TrayMenu dans le .resw de Deckle.App
+- **bench:** ├®largir pauses model_load ├á 10 s pour stabilit├® monitor
+- **bench:** Bumper max_output_tokens GeminiJudge ├á 4096
+- **bench:** Aligner la fen├¬tre idle_baseline sur la pause pr├®-load
+- **diagnostics:** Garder TryEnqueueObserved contre la r├®cursion synchrone du listener
+- **bench:** Aligner le prompt judge sur les r├®gimes T1-T6 actuels
+- **bench:** Emp├¬cher l'├®crasement silencieux des runs avec model compos├®
+- **bench:** Relever max_new_tokens Voxtral ├á 8 tokens/s d'audio
+- **shell:** D├®place les strings TrayMenu dans le .resw de Deckle.App
 - **shell:** Scaler le menu tray via le DPI du moniteur sous le curseur
-- **shell:** Ancrer le menu tray sur le rect de l'icône, pas le curseur
+- **shell:** Ancrer le menu tray sur le rect de l'ic├┤ne, pas le curseur
 - **shell:** Forcer FlyoutPlacementMode.Full pour aligner le popup
-- **shell:** Aligner le tray menu sur la densité Win11 narrow
+- **shell:** Aligner le tray menu sur la densit├® Win11 narrow
 - **observability:** Drop per-frame capture firehose before buffering
 - **observability:** Stop LogWindow observing its own log-append
 - **ambient:** Classify Hue echoes by pushed state
-- **shell:** Aligner le dimensionnement du tray menu sur le rendu réel
+- **shell:** Aligner le dimensionnement du tray menu sur le rendu r├®el
 - **vision:** Make the duplication recreate format-aware
 - **ambient:** Rebuild the frame sampler on capture format change
 - **app:** Make LogWindow Copy reliable on full selection
