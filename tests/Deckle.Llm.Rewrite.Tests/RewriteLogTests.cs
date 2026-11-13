@@ -10,7 +10,7 @@ namespace Deckle.Llm.Rewrite.Tests;
 // A rewrite of a take is lasting work: the log must hold its start and its
 // end under one work_id, so a reader of the file alone can tell a rewrite that
 // finished from one that never did. The paragraph and sentence rewrites run on
-// every pause in typing and stay detail, counted once a minute.
+// every pause in typing and stay detail.
 [Trait("Category", "observability")]
 public sealed class RewriteLogTests
 {
@@ -51,15 +51,8 @@ public sealed class RewriteLogTests
     }
 
     [Fact]
-    public void AnInteractiveRewriteStaysDetailAndIsCounted()
+    public void AnInteractiveRewriteStaysDetail()
     {
-        const string provider = SentenceRewrite.ProviderId;
-        var service = new RewriteService(new SingleEngine(provider, new AnsweringEngine()));
-        long before = HotLoops.LlmInteractiveRewrite.Total;
-
-        service.RewriteSentence("Phrase.", TestContext.Current.CancellationToken);
-
-        Assert.True(HotLoops.LlmInteractiveRewrite.Total >= before + 1);
         Assert.False(IsMilestone(DeckleLlmSource.EvtRewriteStarted));
         Assert.False(IsMilestone(DeckleLlmSource.EvtRewriteCompleted));
         Assert.False(IsMilestone(DeckleLlmSource.EvtRewriteCancelled));

@@ -2502,7 +2502,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AutocorrectEngineLifecycleTests.cs
 │   │   ├── AutocorrectEngineMistouchTests.cs
 │   │   ├── AutocorrectEngineObservabilityTests.cs
-│   │   ├── AutocorrectHotLoopCountTests.cs
 │   │   ├── AutocorrectLexiconArtifactsTests.cs
 │   │   ├── AutocorrectObservabilityCollection.cs
 │   │   ├── AutocorrectSettingsTests.cs
@@ -2636,7 +2635,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SurvivedExceptionLedgerTests.cs
 │   │   ├── TableTemplateTests.cs
 │   │   ├── TemplateDoctrineTests.cs
-│   │   ├── ThreadingHotLoopCountTests.cs
 │   │   ├── UserIncidentListenerFaultTests.cs
 │   │   ├── UserIncidentRegistryTests.cs
 │   │   └── WorkIdTests.cs
@@ -2672,7 +2670,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── HudHidePolicyTests.cs
-│   │   ├── HudHotLoopCountTests.cs
 │   │   ├── HudMessageFitTests.cs
 │   │   ├── HudSettingsOverridesTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs

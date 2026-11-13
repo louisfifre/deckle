@@ -270,9 +270,6 @@ public class RewriteService : IRewriteService
         Func<GenerationRequest> buildRequest,
         CancellationToken cancellationToken)
     {
-        // Counted for the 60 s rollup before anything can return: the log sees
-        // how many paragraph and sentence rewrites ran, not one line for each.
-        HotLoops.LlmInteractiveRewrite.Tick();
         IGenerationEngine? engine = _engines.Resolve(providerId);
         if (engine is null)
         {

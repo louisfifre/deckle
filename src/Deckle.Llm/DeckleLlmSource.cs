@@ -21,8 +21,8 @@ namespace Deckle.Llm;
 // TranscriptRewriteStarted, then TranscriptRewriteCompleted, RewriteTimeout or
 // RewriteUnavailable, all carrying one work_id, and the first and last are in
 // the log. The paragraph and sentence rewrites run on every pause in
-// typing: their Started, Completed and Cancelled lines are Verbose detail and
-// the log sees them as a 60 s count (LoopPulse). Prompt and completion text never enter a payload: counts,
+// typing: their Started, Completed and Cancelled lines are Verbose detail,
+// outside the log. Prompt and completion text never enter a payload: counts,
 // models, providers and timings only.
 //
 // The Ollama /api/ps probe exists only to enrich admitted Transcription

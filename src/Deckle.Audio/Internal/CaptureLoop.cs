@@ -229,7 +229,6 @@ internal static class CaptureLoop
             double behindMs = ready * msPerFrame;
             if (behindMs >= LagThresholdMs)
             {
-                HotLoops.AudioCaptureLag.Tick();
                 if ((int)behindMs > lagMaxBehindMs) lagMaxBehindMs = (int)behindMs;
                 if (captureLagEpisode.ObserveFailure() == CaptureAnomalyTransition.Opened)
                 {
