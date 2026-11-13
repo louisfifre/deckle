@@ -153,14 +153,14 @@ public static partial class HudComposition
         public ConicArcStrokeConfig() {}
 
         // Shared across Recording, Transcribing and Rewriting.
-        public float StrokeThickness { get; init; } = 4f;
-        public float InsetDip { get; init; } = -2f;
+        public float StrokeThickness { get; init; } = 5f;
+        public float InsetDip { get; init; } = -3f;
 
         // ── Colour palette (paint-time, baked once) ──────────────────────
         // OKLCh replaces HSV so the baked conic wheel has perceptually
         // uniform luminance across hues: a full-saturation HSV rainbow
         // reads with yellow far brighter than blue.
-        public float  OklchLightness     { get; init; } = 0.75f;
+        public float  OklchLightness     { get; init; } = 0.65f;
         public float  OklchChroma        { get; init; } = 0.3f;
         public float  HueStart           { get; init; } = 0f;
         public float  HueRange           { get; init; } = 1f;
@@ -320,7 +320,7 @@ public static partial class HudComposition
         public float  RecordingConicSpanTurns      { get; init; } = 0.5f;
         public float  RecordingConicLeadFadeTurns  { get; init; } = 1f;
         public float  RecordingConicTailFadeTurns  { get; init; } = 1f;
-        public float  RecordingConicFadeCurve      { get; init; } = 2f;
+        public float  RecordingConicFadeCurve      { get; init; } = 3.5f;
         public bool   RecordingArcMirror           { get; init; } = true;
         public float  RecordingArcPhaseTurns       { get; init; } = 0f;
         public double RecordingBlendSeconds        { get; init; } = 2;

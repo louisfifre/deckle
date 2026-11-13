@@ -3,10 +3,8 @@ namespace Deckle.Composition;
 // The gauge's course: the CSS cubic-bezier(x1, y1, x2, y2) of
 // UtteranceCountdownConfig's Course* fields, read as y at a given x. The
 // capture reports the pause's progress linearly; the gauge runs it through
-// this curve before it reaches the mask, so the light starts slow and brakes
-// late without the capture knowing. The Playground's replay hands the same
-// four points to the compositor's own cubic-bezier easing, so both paths
-// draw one curve.
+// this curve before it reaches the mask, so the light can start slow and
+// speed up to the cut without the capture knowing.
 //
 // Same arithmetic as Deckle.Transcription's UnitBezier and the Catalog's
 // CubicBezier (Newton-Raphson, bisection fallback, WebKit's UnitBezier
