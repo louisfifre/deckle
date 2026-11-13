@@ -379,6 +379,7 @@ public sealed class DeckleAutocorrectSource : DeckleEventSource
     [Event(EvtActivityRollup,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
+           Tags = ObservationTags.Summary,
            Message = "commits={0} | corrections={1} | re_edited={2} | learning_signals={3} | gated_surfaces={4}")]
     public void ActivityRollup(int commits, int corrections, int re_edited, int learning_signals, int gated_surfaces)
     {

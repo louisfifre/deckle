@@ -40,6 +40,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPipelineTimings,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Summary,
            Message = "audio_s={0,6:F1} | model_load_ms={1,6} | hotkey_to_capture_ms={2,5} | record_drain_ms={3,5} | stop_to_pipeline_ms={4,6} | whisper_init_ms={5,6} | whisper_ms={6,6} | llm_ms={7,6} | clipboard_ms={8,5}")]
     public void PipelineTimings(double audio_s, long model_load_ms, long hotkey_to_capture_ms, long record_drain_ms, long stop_to_pipeline_ms, long whisper_init_ms, long whisper_ms, long llm_ms, long clipboard_ms)
     {
@@ -110,6 +111,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtPipelineOutputs,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Summary,
            Message = "n_seg={0,3} | chars={1,6} | words={2,5} | strategy={3,-7} | outcome={5,-13} | profile={4}")]
     public void PipelineOutputs(int n_seg, int chars, int words, string strategy, string profile, string outcome)
     {

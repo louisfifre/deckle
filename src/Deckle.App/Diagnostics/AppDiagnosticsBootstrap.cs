@@ -76,11 +76,14 @@ internal static class AppDiagnosticsBootstrap
             predicate: static e => e.Kind == ObservationKind.Operational
                 && (e.Level <= EventLevel.Warning
                 || e.Milestone
+                || e.Summary
                 || _crashCompanions.Contains(e.EventName)),
             schema:    JsonlSchema.SelfDescribing,
-            // Five generations: the log is sparse, so this spans weeks of
-            // runs, and an incident older than that has lost its context anyway.
-            rotation:  new JsonlRotationPolicy(maxLines: 4000, maxArchives: 5)));
+            // Twenty generations: summaries (heartbeats, rollups, a take's
+            // figures) fill the file faster than milestones alone did, so it
+            // keeps more archives to still span days of runs, and an incident
+            // older than that has lost its context anyway.
+            rotation:  new JsonlRotationPolicy(maxLines: 4000, maxArchives: 20)));
     }
 
     public static void InitializeOperationalSinks(string diagnosticsDirectory)

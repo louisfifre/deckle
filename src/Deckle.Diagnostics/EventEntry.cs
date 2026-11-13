@@ -9,7 +9,8 @@ namespace Deckle.Diagnostics;
 // method name on the provider. `FormattedMessage` is null when the provider
 // declared no Message template; LogLineFormatter then falls back to the
 // event name. `Milestone` is the ObservationTags.Milestone mark: a milestone the
-// always-on log file keeps whatever its level.
+// always-on log file keeps whatever its level. `Summary` is the
+// ObservationTags.Summary mark, kept by that file the same way.
 public sealed class EventEntry
 {
     public System.DateTimeOffset Timestamp { get; }
@@ -19,6 +20,7 @@ public sealed class EventEntry
     public EventKeywords Keywords { get; }
     public ObservationKind Kind { get; }
     public bool Milestone { get; }
+    public bool Summary { get; }
     public string? FormattedMessage { get; }
     public IReadOnlyDictionary<string, object?> Payload { get; }
 
@@ -31,7 +33,8 @@ public sealed class EventEntry
         ObservationKind kind,
         string? formattedMessage,
         IReadOnlyDictionary<string, object?> payload,
-        bool milestone = false)
+        bool milestone = false,
+        bool summary = false)
     {
         Timestamp = timestamp;
         Provider = provider;
@@ -40,6 +43,7 @@ public sealed class EventEntry
         Keywords = keywords;
         Kind = kind;
         Milestone = milestone;
+        Summary = summary;
         FormattedMessage = formattedMessage;
         Payload = payload;
     }

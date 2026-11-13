@@ -225,6 +225,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtFrameRollup,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
+           Tags = ObservationTags.Summary,
            Message = "count={0} | rate_hz={1} | max_gap_ms={2} | max_tips={3} | fragmented={4} | orphans={5} | flushes={6} | scan_mismatches={7}")]
     public void FrameRollup(
         int count, double rate_hz, double max_gap_ms, int max_tips,
@@ -308,6 +309,7 @@ public sealed class DeckleInputSource : DeckleEventSource
     [Event(EvtKeyboardRollup,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
+           Tags = ObservationTags.Summary,
            Message = "keys={0} | injected_filtered={1} | pointer_downs={2} | wheel={3} | focus_changes={4}")]
     public void KeyboardRollup(int keys, int injected_filtered, int pointer_downs, int wheel, int focus_changes)
     {

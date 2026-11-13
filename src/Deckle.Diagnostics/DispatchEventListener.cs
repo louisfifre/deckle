@@ -353,7 +353,8 @@ public sealed class DispatchEventListener : EventListener
             kind: ObservationTags.GetKind(e.Tags),
             formattedMessage: formatted,
             payload: payload,
-            milestone: ObservationTags.IsMilestone(e.Tags));
+            milestone: ObservationTags.IsMilestone(e.Tags),
+            summary: ObservationTags.IsSummary(e.Tags));
     }
 
     // Clean-shutdown barrier for sinks that hand work to a background writer.

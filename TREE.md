@@ -3062,6 +3062,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── SegmentedTranscriptionSessionTests.cs
 │   │   ├── StreamingBackendAudioTests.cs
 │   │   ├── StreamingStepsRewriteTests.cs
+│   │   ├── SummaryTagTests.cs
 │   │   ├── TakeAudioRecoveryBugNotes.md
 │   │   ├── TakeAudioRecoveryEngineTests.cs
 │   │   ├── TakeAudioRecoveryStoreTests.cs

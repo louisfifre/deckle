@@ -19,6 +19,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtStreamingDrainedDetail,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Pipeline,
+           Tags = ObservationTags.Summary,
            Message = "utterances={0,3} | audio_s={1,6:F1} | whisper_ms={2,6} | words={3,5} | n_seg={4,3}")]
     public void StreamingDrainedDetail(int n_utterances, double audio_s, long whisper_ms, int words, int n_seg)
     {
@@ -124,6 +125,7 @@ public sealed partial class DeckleWhispSource
     [Event(EvtStreamingHeartbeat,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
+           Tags = ObservationTags.Summary,
            Message = "state={0,-8} | rms_dbfs={1,6:F1} | rms_max_dbfs={2,6:F1} | utterance_ms={3,6} | hangover_required_ms={4,5} | backlog={5,3} | emitted={6,3} | recording_s={7,5}")]
     public void StreamingHeartbeat(string state, double rms_dbfs, double rms_max_dbfs, int utterance_ms, int hangover_required_ms, int backlog, int emitted, int recording_s)
     {

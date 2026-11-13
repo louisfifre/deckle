@@ -95,6 +95,7 @@ public sealed partial class DeckleAmbientSource
     [Event(EvtHeartbeat,
            Level = EventLevel.Verbose,
            Keywords = (EventKeywords)Keywords.Heartbeat,
+           Tags = ObservationTags.Summary,
            Message = "mode={0,-5} | period_s={1,5:F1} | target_hz={2,3} | effective_hz={3,5:F1} | ticks={4,5} | pushed={5,5} | dropped={6,5} | skipped_slots={7,5} | unmapped_lights={8,3} | push_failures={9,5} | push_avg_ms={10,6:F1} | push_p95_ms={11,6:F1} | push_max_ms={12,6:F1}")]
     public void Heartbeat(
         string mode,
