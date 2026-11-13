@@ -258,7 +258,6 @@ public sealed class DictationBatchRewriter
         // Logged here, where the request really leaves: one that waited for
         // the cache writer's answer would otherwise read as sent while it
         // queued.
-        DeckleLlmSource.Log.BatchRewriteSent();
         DeckleLlmSource.Log.BatchRewriteSentDetail(batch.Index, batch.Raw.Length, request.Profile.Name);
         var sw = Stopwatch.StartNew();
         GenerationResult result = default;
@@ -289,7 +288,6 @@ public sealed class DictationBatchRewriter
         }
         else
         {
-            DeckleLlmSource.Log.BatchRewriteReturned();
             DeckleLlmSource.Log.BatchRewriteReturnedDetail(
                 batch.Index, sw.ElapsedMilliseconds, batch.Raw.Length, rewritten.Length);
         }

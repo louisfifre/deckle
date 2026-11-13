@@ -84,9 +84,9 @@ public sealed partial class DeckleLlmSource : DeckleEventSource
     public const int EvtRewriteSkippedNoProviderDetail = 45;
     // 46 retired.
     // 47 retired.
-    public const int EvtBatchRewriteSent             = 48;
+    // 48 retired.
     public const int EvtBatchRewriteSentDetail       = 49;
-    public const int EvtBatchRewriteReturned         = 50;
+    // 50 retired.
     public const int EvtBatchRewriteReturnedDetail   = 51;
     // 52 retired.
     // 53 retired.

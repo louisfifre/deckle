@@ -68,6 +68,23 @@ public sealed class RewriteLogTests
         Assert.Equal(EventLevel.Verbose, LevelOf(DeckleLlmSource.EvtRewriteCancelled));
     }
 
+    // A dictation batch used to write "A dictation batch came back rewritten"
+    // at the same millisecond as "Transcript rewrite complete", and "A
+    // dictation batch left for rewriting" beside the rewrite's start: the
+    // same moment told twice. The rewrite's own start and end are the run
+    // story; the batch keeps only its Verbose details (index, sizes).
+    [Fact]
+    [Trait("Category", "regression")]
+    public void ABatchRewriteTellsItsStartAndItsEndOnceInTheRunStory()
+    {
+        var events = ProviderManifest.EventsOf(typeof(DeckleLlmSource));
+        Assert.DoesNotContain(events, d => d.Name is "BatchRewriteSent" or "BatchRewriteReturned");
+        Assert.All(
+            events.Where(d => d.Name.StartsWith("BatchRewrite", StringComparison.Ordinal)
+                           && d.Name is not "BatchRewriteFellBack" and not "BatchRewriteProfileChanged"),
+            d => Assert.Equal(EventLevel.Verbose, d.Level));
+    }
+
     static RewriteProfile ProfileOf(string provider) => new()
     {
         Name = "Lissage", ProviderId = provider, Model = "test-model",

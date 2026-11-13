@@ -7,20 +7,15 @@ public sealed partial class DeckleLlmSource
 {
     // ── DictationBatchRewriter ──────────────────────────────────────────
     //
-    // One Sent per batch when its rewrite starts, then one Returned or one
-    // FellBack when it ends. The Detail mirrors with mixed parameter types pass
-    // an explicit object[]: their signatures match no typed WriteEvent
-    // overload, and an explicit array keeps a near-match overload from ever
-    // being picked by implicit conversion.
-
-    [Event(EvtBatchRewriteSent,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A dictation batch left for rewriting")]
-    public void BatchRewriteSent()
-    {
-        if (IsEnabled()) WriteEvent(EvtBatchRewriteSent);
-    }
+    // One SentDetail per batch when its rewrite starts, then one ReturnedDetail
+    // or one FellBack when it ends. The run-story lines are RewriteService's
+    // TranscriptRewriteStarted and TranscriptRewriteCompleted, written at the
+    // same instant: an Informational line here said the same thing twice
+    // (BatchRewriteSent, 48, and BatchRewriteReturned, 50, are retired). The
+    // Detail lines with mixed parameter types pass an explicit object[]: their
+    // signatures match no typed WriteEvent overload, and an explicit array
+    // keeps a near-match overload from ever being picked by implicit
+    // conversion.
 
     [Event(EvtBatchRewriteSentDetail,
            Level = EventLevel.Verbose,
@@ -29,15 +24,6 @@ public sealed partial class DeckleLlmSource
     public void BatchRewriteSentDetail(int batch_index, int chars, string profile)
     {
         if (IsEnabled()) WriteEvent(EvtBatchRewriteSentDetail, new object[] { batch_index, chars, profile });
-    }
-
-    [Event(EvtBatchRewriteReturned,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Pipeline,
-           Message = "A dictation batch came back rewritten")]
-    public void BatchRewriteReturned()
-    {
-        if (IsEnabled()) WriteEvent(EvtBatchRewriteReturned);
     }
 
     [Event(EvtBatchRewriteReturnedDetail,
