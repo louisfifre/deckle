@@ -81,6 +81,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         // detail state the person left.
         DetailToggle.IsChecked = _filterSelection.ShowDetail;
         UpdateDetailNotice();
+        UpdateCopyCommand();
 
         LoadAppIcons();
         AppTitleBarIcon.ImageSource = _iconIdle;

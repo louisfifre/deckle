@@ -180,6 +180,7 @@ public sealed partial class LogWindow : Window, ILogWindowSink
         _visible.ReplaceAll(_entries.Where(Matches));
         _hiddenDetailCount = _filterSelection.ShowDetail ? 0 : _entries.Count(IsHiddenDetail);
         UpdateDetailNotice();
+        UpdateCopyCommand();
         if (_isVisible && AutoScrollToggle?.IsChecked == true)
             RequestScrollToBottom();
     }

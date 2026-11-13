@@ -175,7 +175,9 @@
                         <SplitButton.Content>
                             <StackPanel Orientation="Horizontal" Spacing="8">
                                 <FontIcon Glyph="{StaticResource Icon.Copy}" FontSize="16" />
-                                <TextBlock x:Uid="LogWindowCopyAllText" />
+                                <!-- "Copy visible" while a view filter is on
+                                     (UpdateCopyCommand). -->
+                                <TextBlock x:Name="CopyAllText" x:Uid="LogWindowCopyAllText" />
                             </StackPanel>
                         </SplitButton.Content>
                         <SplitButton.Flyout>
@@ -183,9 +185,13 @@
                                 <MenuFlyoutItem x:Uid="LogWindowCopySelectionMenuItem"
                                                 Icon="Copy"
                                                 Click="OnCopySelectionClick" />
-                                <MenuFlyoutItem x:Uid="LogWindowCopyFilteredMenuItem"
-                                                Icon="Filter"
-                                                Click="OnCopyFilteredClick" />
+                                <!-- "Copy all" while a view filter is on, the main
+                                     button then copying what is visible; hidden
+                                     otherwise, when both would copy the same. -->
+                                <MenuFlyoutItem x:Name="CopyOtherMenuItem"
+                                                x:Uid="LogWindowCopyAllMenuItem"
+                                                Icon="Copy"
+                                                Click="OnCopyOtherClick" />
                             </MenuFlyout>
                         </SplitButton.Flyout>
                     </SplitButton>

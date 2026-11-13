@@ -1044,8 +1044,16 @@
   <data name="LogWindowCopySelectionMenuItem.Text" xml:space="preserve">
     <value>Copy selection</value>
   </data>
-  <data name="LogWindowCopyFilteredMenuItem.Text" xml:space="preserve">
-    <value>Copy filtered</value>
+  <data name="LogWindowCopyAllMenuItem.Text" xml:space="preserve">
+    <value>Copy all</value>
+  </data>
+  <!-- The main Copy button's label (code-behind): all, or the visible lines
+       while a view filter is on. -->
+  <data name="LogWindow_CopyAll" xml:space="preserve">
+    <value>Copy all</value>
+  </data>
+  <data name="LogWindow_CopyVisible" xml:space="preserve">
+    <value>Copy visible</value>
   </data>
   <data name="LogWindowSaveAllText.Text" xml:space="preserve">
     <value>Save all</value>
@@ -1087,7 +1095,7 @@
     <value>Copy selection</value>
   </data>
   <data name="LogWindow_ContextCopy_Filtered" xml:space="preserve">
-    <value>Copy filtered</value>
+    <value>Copy visible</value>
   </data>
   <data name="LogWindow_ContextCopy_All" xml:space="preserve">
     <value>Copy all</value>
