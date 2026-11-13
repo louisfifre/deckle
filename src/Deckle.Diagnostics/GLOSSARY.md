@@ -18,7 +18,7 @@ The file `diagnostics/trace.jsonl`, an optional copy of Deckle's admitted operat
 _Avoid_ : application log (its former label in Settings, which now says Trace), telemetry (purpose-specific data collection), LogWindow log (the other sink of the same stream), log (the always-on file, which keeps only what travels).
 
 **Log** :
-The always-on file `diagnostics/log.jsonl`, the record that travels to a reader on another machine. It keeps every admitted `Warning` and `Error`, every milestone and the crash details, whatever the verbosity controls say. It needs no setting and stays small by design.
+The always-on file `diagnostics/log.jsonl`, the record that travels to a reader on another machine. It keeps every admitted `Warning` and `Error`, every milestone, every activity's summary and the crash details, whatever the verbosity controls say. It needs no setting and holds no per-step detail.
 _Avoid_ : trace (the opt-in full copy), LogWindow log (the live view), operational log stream (everything admitted, of which the log keeps a part).
 
 **Milestone** :
@@ -30,7 +30,7 @@ A degraded state of one module that a gesture of the person ends, such as a micr
 _Avoid_ : incident (in the log, a degradation that repeats, written once and closed by one recovery, whether or not the person can fix it), alert or notification (nothing pops up), error (an `Error` level entry).
 
 **Telemetry dataset** :
-A dataset collected for one purpose, machine-readable and under its own explicit consent, such as latency, microphone, corpus or autocorrect-decision data. It lies outside the operational log stream and its verbosity controls.
+A dataset collected for one purpose, machine-readable and under its own explicit consent, such as microphone, corpus or autocorrect-decision data. It lies outside the operational log stream and its verbosity controls.
 _Avoid_ : trace (the operational stream on disk), logs (too loose).
 
 **View filter** :

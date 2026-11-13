@@ -292,7 +292,7 @@ Louis reports that he runs the Streaming strategy with the segmenter threshold (
 
 ### What the code measures for each take
 
-At the end of each dictation, `RecordPipelineMetrics` emits the `LatencyRecorded` event (`src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.Observability.cs`). It is not emitted for file transcription. The table lists the dictation-chain timings. The same event also carries three rewrite sub-timings (`ollama_load_ms`, `llm_prompt_eval_ms`, `llm_eval_ms`, set in the same file); they are left out here because they belong to the rewrite.
+At the end of each take, `RecordPipelineMetrics` emits the `PipelineTimings` event (`src/Deckle.Transcription/Engine/TranscriptionEngine.Finalize.Observability.cs`). The table lists its timings. The rewrite sub-timings travel in a separate event, `PipelineLlmMetrics`, emitted in the same file; they are left out here because they belong to the rewrite.
 
 | Field | Start → end | Where it is measured |
 |---|---|---|
@@ -309,7 +309,7 @@ On a cold take, `AwaitPrime` also emits `PrimeOverlap` with the prime's own dura
 
 Reading: in Streaming, `stop_to_pipeline_ms` is the delay you feel after the second press, minus finalize. It includes the drain and the transcription of whatever utterances were still queued.
 
-The Latency toggle is `LatencyEnabled` in `src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs`, and its default is `false`. `src/Deckle.Diagnostics.Telemetry/TelemetryListenerBootstrap.cs` writes `LatencyRecorded` events to `latency.jsonl` only while it is `true`. The event itself is emitted on every dictation, whatever the toggle.
+`PipelineTimings` is part of the transcription summary: it is written to `diagnostics/log.jsonl` on every take, with no setting. The separate `latency.jsonl` file and its toggle were removed on 2026-11-13.
 
 A code comment in `EnsurePrimed` says the dummy inference takes "~200–800 ms on RX 7900 XT with Vulkan ggml". That is a comment, not a measurement this note can rely on.
 

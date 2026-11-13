@@ -1,5 +1,7 @@
 # Refonte des diagnostics — proposition
 
+> Le grill du 13 novembre 2026 a remplacé cette proposition sur trois points : le bouton Playground reste dans la fenêtre de log, le fichier des temps de dictée est retiré, l'enregistrement des trames du trackpad et de la molette est retiré.
+
 Pour Louis. Branche `refs/heads/diagnostics-rework-4dbe26`, rien de fusionné ni de poussé. Captures avant/après sous `docs/proposals/captures/` (ignorées par git, présentes dans le worktree).
 
 ## Ce qui ne va pas aujourd'hui
