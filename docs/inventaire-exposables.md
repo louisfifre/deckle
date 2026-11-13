@@ -8,7 +8,7 @@
 
 **Hors périmètre.** Les littéraux XAML (bornes `Minimum`/`Maximum`/`StepFrequency` des sliders), les tables lexicales préfixées `_`, et tout ce qui vit sous `tests/`.
 
-Total : **625 entrées** réparties sur **38 modules**.
+Total : **623 entrées** réparties sur **38 modules**.
 
 | Module | Entrées |
 |---|---|
@@ -23,12 +23,12 @@ Total : **625 entrées** réparties sur **38 modules**.
 | Deckle.Core | 9 |
 | Deckle.Diagnostics | 5 |
 | Deckle.Diagnostics.Logging | 7 |
-| Deckle.Diagnostics.Telemetry | 8 |
+| Deckle.Diagnostics.Telemetry | 7 |
 | Deckle.Home | 3 |
 | Deckle.Hud | 26 |
 | Deckle.Input | 12 |
 | Deckle.Input.PrecisionScroll | 12 |
-| Deckle.Input.Trackpad | 10 |
+| Deckle.Input.Trackpad | 9 |
 | Deckle.Install | 4 |
 | Deckle.Installer | 1 |
 | Deckle.Lighting | 8 |
@@ -308,7 +308,6 @@ Total : **625 entrées** réparties sur **38 modules**.
 
 | Nom | Type | Valeur actuelle | Fichier:ligne | Juin | Doute |
 |---|---|---|---|---|---|
-| LatencyEnabled | persisted-setting | `false` | src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs:13 | oui |  |
 | MicrophoneTelemetry | persisted-setting | `false` | src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs:14 | oui |  |
 | CorpusEnabled | persisted-setting | `false` | src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs:15 | oui |  |
 | RecordAudioCorpus | persisted-setting | `false` | src/Deckle.Diagnostics.Telemetry/TelemetrySettings.cs:16 | oui |  |
@@ -396,7 +395,6 @@ Total : **625 entrées** réparties sur **38 modules**.
 |---|---|---|---|---|---|
 | Enabled | persisted-setting | `false` | src/Deckle.Input.Trackpad/TrackpadSettings.cs:8 | oui |  |
 | DragSpeed | persisted-setting | `1.0` | src/Deckle.Input.Trackpad/TrackpadSettings.cs:16 | oui |  |
-| RecordFrames | persisted-setting | `false` | src/Deckle.Input.Trackpad/TrackpadSettings.cs:23 | oui |  |
 | MaxFrameDeltaRatio | tuning-constant | `0.08` | src/Deckle.Input.Trackpad/Engine/TrackpadEngine.cs:19 | non | Source comment states it is an in-engine constant by decision (smoothing is never exposed) — an exposable already arbitrated shut. |
 | BaseScale | tuning-constant | `0.25` | src/Deckle.Input.Trackpad/Engine/TrackpadEngine.cs:24 | non | Source comment states sensitivity is the DragSpeed slider alone — arbitrated shut. |
 | GraceDelayMs | tuning-constant | `0` | src/Deckle.Input.Trackpad/Engine/TrackpadEngine.cs:28 | non | Frozen 2026-06-12 after hands-on calibration; TrackpadSettings comment says a stale persisted Tuning object is ignored. |
