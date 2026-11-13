@@ -21,7 +21,7 @@ Mesuré sur ta machine : une ligne de trace pèse ~720 octets. Le trace garde au
 **Après**
 
 1. **Logs**
-   - *Detailed logs* — un interrupteur, éteint par défaut. Ouvert, il montre une ligne par source, chacune son interrupteur : Ambient lighting, Dictation, Autocorrect, Touchpad, Windows, LLM calls, Dictation timings, Microphone level, Wheel events, Touchpad frames. Les deux dernières disent « One line per frame: very high volume » et sont éteintes par défaut ; les autres sont allumées, donc allumer *Detailed logs* donne « tout, sauf le très gros volume ».
+   - *Detailed logs* — un interrupteur, éteint par défaut. Ouvert, il montre une ligne par source, chacune son interrupteur, dans cet ordre (ce qu'on suit, puis ce qui se mesure, puis le très gros volume) : Ambient lighting, Dictation, Dictation timings, Microphone level, Language model calls, Autocorrect, Touchpad gestures, Windows, Touchpad frames, Wheel events. Les deux dernières disent leur volume (une ligne par trame) et sont éteintes par défaut ; *Microphone level* garde son dialogue de consentement ; les autres sont allumées, donc allumer *Detailed logs* donne « tout, sauf le très gros volume et le micro ».
    - *Keep logs on disk* — le trace, avec dedans *Keep up to* : About 60 MB · About 300 MB · About 1 GB · No limit.
 2. **Corpus**
    - *Keep my dictations* → dedans *Also save the audio* (et son choix brut/traité).
@@ -35,7 +35,7 @@ Mesuré sur ta machine : une ligne de trace pèse ~720 octets. Le trace garde au
 3. **Les diagnostics de développeur rejoignent les logs.** Niveau du micro, timings de dictée, molette et trames du touchpad deviennent des sous-interrupteurs de *Detailed logs* : l'interrupteur général les coupe tous. Les deux « enregistrements de trames » (molette, touchpad) sont côte à côte, avec le même avertissement de volume.
 4. **Les fichiers de ces jeux restent où ils sont** (`telemetry\latency.jsonl`, `microphone.jsonl`, `mouse-wheel`, `trackpad`). Une série trame par trame dans une liste à l'écran serait illisible et ferait tomber la fenêtre ; les scripts d'analyse lisent ces fichiers. Seul l'endroit du réglage change.
 5. **Corpus = ce que tu dis ou tapes, gardé volontairement.** Deux plis de même forme : la donnée principale, puis l'option « en plus ». *Also keep each correction decision* devient l'option de *Keep the text I type* : les décisions contiennent les mots tapés, donc elles ne peuvent exister sans ce consentement-là. Elles ne peuvent pas aller dans les logs : la doctrine de log interdit d'y mettre ce que la personne tape.
-6. **Tokens des appels LLM.** Les trois moteurs (Ollama, OpenAI-compatible, Claude) lisent déjà les compteurs que la réponse porte (`prompt_eval_count`/`eval_count`, `usage.prompt_tokens`/`completion_tokens`, `usage.input_tokens`/`output_tokens` + cache) et les écrivaient déjà, toujours, dans une ligne Verbose sans le nom du fournisseur. Cette ligne passe sous *LLM calls* (éteinte par défaut, comme tu le demandes), commence par profil et modèle, et porte les tokens avant les durées. Aucun prix n'est inventé.
+6. **Tokens des appels LLM.** Les trois moteurs (Ollama, OpenAI-compatible, Claude) lisent déjà les compteurs que la réponse porte (`prompt_eval_count`/`eval_count`, `usage.prompt_tokens`/`completion_tokens`, `usage.input_tokens`/`output_tokens` + cache) et les écrivaient déjà, toujours, dans une ligne Verbose sans le nom du fournisseur. Cette ligne passe sous *Language model calls* (éteinte par défaut, comme tu le demandes), commence par profil et modèle, et porte les tokens avant les durées. Aucun prix n'est inventé.
 7. **Rétention exprimée en taille, pas en lignes.** Ce qui compte pour toi, c'est le disque. Les tailles sont « About » : la rotation reste en lignes, la taille d'une ligne varie. Coût : 60 Mo ≈ une journée chez toi, 300 Mo ≈ une semaine, 1 Go ≈ trois semaines, « No limit » ≈ 60 Mo par jour d'usage comme le tien, sans fin.
 8. **Moins de texte.** Plus de légende sous les titres de section ; une description de carte seulement quand l'effet n'est pas évident ; jamais de nom de fichier dans une description (le dossier est en bas).
 9. **Fenêtre de log.**
@@ -47,10 +47,31 @@ Mesuré sur ta machine : une ligne de trace pèse ~720 octets. Le trace garde au
     - « A dictation batch came back rewritten » doublait « Transcript rewrite complete » au même instant : seule la seconde reste (elle porte le fournisseur, la durée et l'identifiant qui l'apparie à son début).
     - Les lignes « Hot loop » (une par boucle, six à la même milliseconde chaque minute) deviennent **une** ligne par minute, nommée « Loop counts », `window_s=60 | whisp_streaming_heartbeat=30 | …` : la fenêtre d'abord (ce qui se répète), puis les comptes.
 
-## Ce qui n'est pas fait, et pourquoi
+11. **Détails de construction à connaître.**
+    - Le pli *Detailed logs* appartient à la page Diagnostics (le composeur lit les libellés dans l'assemblage du modèle qui les possède) : d'où une nouvelle référence `Deckle.Diagnostics.Logging.Views` → `Deckle.Input.Trackpad`. Les pages Recording et Trackpad perdent leurs cartes « telemetry ».
+    - *Dictation timings* est maintenant allumé par défaut, mais n'écrit rien tant que *Detailed logs* est éteint.
+    - Les décisions d'autocorrect exigent les deux consentements (texte tapé **et** décisions) ; le code le vérifie aussi, pas seulement l'interface.
 
-- **Fréquence d'image de la fenêtre de log** : pas mesurée. Je ne peux pas faire défiler au trackpad depuis le self-check, et je ne l'affirme donc pas. À mesurer avec toi.
-- **Réordonner les champs de tous les événements** du général au particulier : fait sur ceux que j'ai touchés seulement ; un balayage complet des providers est une autre tâche (notée dans Anytype).
+## Après la seconde revue
+
+Captures prises à nouveau, relues par les mêmes types de lecteurs sans leur donner mes constats. Établi : la fenêtre de log a une barre d'une seule forme et ses filtres au-dessus des lignes ; la page a trois sections ; le coût disque est lisible. Ils ont relevé que *Dictation* et *Dictation timings* se confondaient, que « About 60 MB » se lisait « par fichier », et que la carte du dossier audio était la seule sans texte : corrigé (`d091fcea`), chaque source dit ce qu'elle **ajoute**, la rétention dit qu'elle couvre tout l'historique, *Detailed logs* dit de l'allumer avant que le problème revienne.
+
+## Ce qui reste faible
+
+- **Dix sous-interrupteurs dans un pli** : long, et les plis ne s'emboîtent pas. Je n'ai pas trouvé de regroupement qui ne crée pas un quatrième niveau.
+- **Le mot « Corpus »** reste opaque pour un lecteur froid ; la légende l'explique, le titre non.
+- **La taille actuelle sur disque et une commande pour vider** manquent ; c'est la tâche Anytype existante « Diagnostics : exporter un zip et vider les dossiers ».
+- **Fenêtre de log** : aucun signe qu'un filtre est actif ni combien de lignes il cache ; dans la capture « fin », la dernière ligne semble passer sous la barre de défilement horizontale (*incertain* : des lignes arrivaient peut-être après le défilement).
+- **« Log settings »** ouvre la page nommée « Diagnostics » : deux noms pour un lieu.
+- **Fréquence d'image de la fenêtre de log** : pas mesurée. Je ne peux pas faire défiler au trackpad depuis le self-check, et je ne l'affirme donc pas (tâche Anytype).
+- **Réordonner les champs de tous les événements** du général au particulier : fait sur ceux que j'ai touchés seulement (tâche Anytype).
+- **`GLOSSARY.md`** de Diagnostics décrit encore Off/Summary/Details : c'est un élément de contexte, je ne le réécris qu'avec ton accord.
+
+## Captures
+
+- Avant : `docs/proposals/captures/before/captures/`, fenêtre de log défilée : `docs/proposals/captures/before-log/captures/log-end.png`.
+- Après : `docs/proposals/captures/after/captures/`.
+- Après correction : `docs/proposals/captures/after-fix/captures/` (dont `settings-diagnostics-open.png`, tous les plis ouverts).
 
 ## Questions pour toi
 
@@ -61,3 +82,5 @@ Mesuré sur ta machine : une ligne de trace pèse ~720 octets. Le trace garde au
 5. **Copy all** : deux lecteurs voudraient que le bouton principal copie ce qui est filtré quand un filtre est actif. Je ne l'ai pas changé ; le veux-tu ?
 6. **Recherche dans la barre de titre** : un lecteur la voudrait à côté des filtres. Je l'ai laissée (modèle Explorer/Settings). Ton avis ?
 7. **Anciens réglages de verbosité** : tes choix Summary/Details actuels ne sont pas repris ; tout repart sur « normal ». Acceptable pour l'alpha ?
+8. **Rétention en paliers** (60 Mo / 300 Mo / 1 Go / sans limite) plutôt qu'un nombre libre : ça te suffit ?
+9. **`GLOSSARY.md`** : je le mets à jour au nouveau modèle (normal / détaillé) ?
