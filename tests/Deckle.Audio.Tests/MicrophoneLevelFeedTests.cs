@@ -3,7 +3,7 @@ using Xunit;
 
 namespace Deckle.Audio.Tests;
 
-// The live microphone behind the voice meter and the Playground's HUD preview.
+// The live microphone behind the Recording page's voice meter.
 // Driven through a fake capture, so no device is opened: the tests hold the
 // feed to what it asks the capture for (the caller's host, no Frame stream),
 // to the promise its callers lean on, that once Stop returns nothing more
@@ -75,20 +75,6 @@ public sealed class MicrophoneLevelFeedTests
 
         Assert.False(h.Feed.Start());
         Assert.Equal(1, h.CaptureCount);
-    }
-
-    [Fact]
-    public void ARestartOfTheOpenRunKeepsTheDevice()
-    {
-        using var h = new Harness();
-        Assert.False(h.Feed.RestartOpenRun(() => h.Events.Enqueue("restart")));
-
-        h.Feed.Start();
-        h.WaitForCapture();
-
-        Assert.True(h.Feed.RestartOpenRun(() => h.Events.Enqueue("restart")));
-        Assert.Equal(1, h.CaptureCount);
-        Assert.Equal("restart", h.Events.Last());
     }
 
     [Theory]
