@@ -20,7 +20,7 @@ namespace Deckle.App;
 // What it does: refuses to run unless DECKLE_DATA_ROOT names a root of its own;
 // composes a short, explicit list of pieces (below); probes the microphone once;
 // opens the Settings window and walks every page of the rail, then opens the Log
-// window and the Playground, then the Mail window and its walk of drawn states;
+// window, then the Mail window and its walk of drawn states;
 // photographs each; writes report.json (the contract
 // with scripts/self-check.ps1) and exits 0 when all is well, 1 otherwise.
 //
@@ -49,7 +49,7 @@ public partial class App
         "module registry and presence flags (a fresh root has no choice, so every module is present)",
         "settings surface: host hooks and every module's pages and search entries, as the resident app registers them",
         "theme from the settings of the run's own root",
-        "windows: Settings, Log, Playground, Mail, Atelier, created by the same lazy paths the tray uses",
+        "windows: Settings, Log, Mail, Atelier, created by the same lazy paths the tray uses",
         "atelier: a sample folder generated under the run's own root, added as the picker adds one",
         "microphone: one shared open and close through MicrophoneCapture.Probe",
         "interface capture: the walk and the WindowSnapshot of the interface capture",
@@ -205,8 +205,8 @@ public partial class App
         Step("settings_surface");
         WireSettingsSurface(context);
         ApplyTheme(Settings.SettingsService.Instance.Current.Appearance.Theme);
-        // The Playground opens only while Developer mode is on. The setting is
-        // written in this run's own root, never the maintainer's.
+        // Developer mode on, so the pages show the rows it adds. The setting
+        // is written in this run's own root, never the maintainer's.
         Settings.SettingsService.Instance.Current.Developer.DeveloperMode = true;
         Settings.SettingsService.Instance.Save();
 
@@ -338,12 +338,6 @@ public partial class App
             report.Surfaces.Add(await CaptureWindowFrameAsync(
                 run, log, "log", "detail-end", null, loaded: true, ms: 0));
             report.Save(outputFolder);
-        }
-
-        if (Wants("playground"))
-        {
-            Step("playground");
-            await OpenAndCaptureAsync(report, run, outputFolder, "playground", EnsurePlaygroundWindow);
         }
 
         if (Wants("mail"))

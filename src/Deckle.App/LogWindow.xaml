@@ -137,20 +137,6 @@
                     </Button>
                 </Grid>
             </TitleBar.Content>
-            <TitleBar.RightHeader>
-                <!-- A lateral command, so RightHeader; the central Content slot
-                     holds the search. Shown only in developer mode
-                     (SetPlaygroundAvailable). -->
-                <Button x:Name="PlaygroundButton"
-                        x:Uid="LogWindowPlaygroundButton"
-                        Style="{StaticResource SubtleButtonStyle}"
-                        VerticalAlignment="Center"
-                        MinWidth="36"
-                        Padding="8,4"
-                        Click="OnPlaygroundButtonClick">
-                    <FontIcon Glyph="{StaticResource Icon.Playground}" FontSize="16" />
-                </Button>
-            </TitleBar.RightHeader>
         </TitleBar>
 
         <!-- One row, one form: every command is a standard button of the same

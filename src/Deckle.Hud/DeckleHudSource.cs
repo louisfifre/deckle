@@ -46,8 +46,7 @@ public sealed class DeckleHudSource : DeckleEventSource
     public const int EvtOverlayCardChanged        = 24;
     public const int EvtCleanupFailed             = 25;
     public const int EvtFadeInEnded               = 26;
-    public const int EvtSettingsLoadWarning = 27;
-    public const int EvtSettingsLoadError = 28;
+    // 27, 28 retired: the HUD settings store, removed with the Playground.
 
     // Callers test this before any measurement made only for the log.
     [NonEvent]
@@ -122,8 +121,9 @@ public sealed class DeckleHudSource : DeckleEventSource
     // Composition refused the stroke (device lost, surface creation,
     // expression parse); the exception still reaches the caller, which used to
     // be the only trace. One incident: every failure is Verbose, the first one
-    // also opens the Warning, and the next successful attach or rebuild closes
-    // it. `phase`: attach (a state change) or rebuild (a settings change).
+    // also opens the Warning, and the next successful attach closes it.
+    // `phase`: attach (a state change); rebuild, a settings change, went with
+    // the HUD settings store, and the field stays for the logs' shape.
     [Event(EvtStrokeCreationFailed,
            Level = EventLevel.Warning,
            Keywords = (EventKeywords)Keywords.Lifecycle,
@@ -261,24 +261,5 @@ public sealed class DeckleHudSource : DeckleEventSource
     {
         if (!IsHudDetailEnabled((EventKeywords)Keywords.Heartbeat)) return;
         WriteEvent(EvtProximityRollup, duration_ms, samples, min_alpha, max_alpha, p50_cursor_dist_dip, p95_cursor_dist_dip);
-    }
-
-    // The settings store reports in free text; the text carries its own cause.
-    [Event(EvtSettingsLoadWarning,
-           Level = EventLevel.Warning,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The HUD settings store worked around a problem\ndetail={0}")]
-    public void SettingsLoadWarning(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtSettingsLoadWarning, message);
-    }
-
-    [Event(EvtSettingsLoadError,
-           Level = EventLevel.Error,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "The HUD settings could not be saved or applied\ndetail={0}")]
-    public void SettingsLoadError(string message)
-    {
-        if (IsEnabled()) WriteEvent(EvtSettingsLoadError, message);
     }
 }

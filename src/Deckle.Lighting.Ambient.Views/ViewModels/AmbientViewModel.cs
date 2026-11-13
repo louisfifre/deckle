@@ -10,18 +10,17 @@ namespace Deckle.Lighting.Ambient.Views;
 // AmbientSettingsService.Save() on each property change.
 //
 // Owned by this module so the Settings AmbientPage composes its cards from
-// the manifests in AmbientViewModel.Settings.cs and the Playground Ambient tab
-// binds the same surface. Persistence lands in
+// the manifests in AmbientViewModel.Settings.cs. Persistence lands in
 // <UserDataRoot>/modules/ambient/settings.json via AmbientSettingsService
 // — the same store the App-side AmbientEngine reads, so a slider drag applies
 // live on the next push tick.
 //
 // Presets (Deckle.Presets, the family on AmbientSettingsService.Presets): a
-// hand edit of one of the eight tuning values reports itself to the family,
-// which keeps the values as Custom and turns the selection to Custom;
-// picking a preset writes its values; picking Custom brings the hand-made
-// values back. The floor, the zones, the capture rate and the pipeline
-// shape are outside the presets and never touch the selection.
+// hand edit of a tuning value reports itself to the family, which keeps the
+// values as Custom and turns the selection to Custom. No surface picks a
+// preset any more; Reset all returns to the default one. The floor, the
+// zones, the capture rate and the pipeline shape are outside the presets and
+// never touch the selection.
 //
 // Only persisted settings live here : runtime state belongs to the engine
 // and to the controls that draw it.
@@ -29,7 +28,8 @@ public partial class AmbientViewModel : ObservableObject
 {
     private bool _isSyncing;
 
-    // ── Tuning (the eight values a preset fixes) ────────────────────────────
+    // ── Tuning: seven of the eight values a preset fixes ────────────────────
+    // The eighth, ChangeThreshold, has no control: it keeps its preset's value.
 
     [ObservableProperty]
     public partial double ExposureEv { get; set; }
@@ -48,9 +48,6 @@ public partial class AmbientViewModel : ObservableObject
 
     [ObservableProperty]
     public partial double BrightnessCurveY2 { get; set; }
-
-    [ObservableProperty]
-    public partial int ChangeThreshold { get; set; }
 
     [ObservableProperty]
     public partial double SmoothingAlpha { get; set; }
@@ -85,12 +82,7 @@ public partial class AmbientViewModel : ObservableObject
     [ObservableProperty]
     public partial int BorderCells { get; set; }
 
-    // ── Preset & pipeline ────────────────────────────────────────────────────
-
-    // The stored selection: a preset id from AmbientPresets, or
-    // PresetFamily.Custom. Mirrors AmbientSettingsService.Presets.Selection.
-    [ObservableProperty]
-    public partial string Preset { get; set; }
+    // ── Pipeline ─────────────────────────────────────────────────────────────
 
     [ObservableProperty]
     public partial bool UseMultiLight { get; set; }
@@ -111,15 +103,11 @@ public partial class AmbientViewModel : ObservableObject
 
     // ── Setter side-effects ──────────────────────────────────────────────────
     //
-    // The eight tuning setters write the store, report the edit to the preset
+    // The tuning setters write the store, report the edit to the preset
     // family (MarkEdited) and save. Pipeline-shape changes (UseMultiLight, the
-    // floor, the capture rate) write and save only.
-    //
-    // Preset = selection request : the family writes the preset's values (or
-    // the kept Custom values) onto the same AmbientSettings instance, then we
-    // save. The store's Changed event re-fires Load() on the page so the VM
-    // observes the new values (the OnXxxChanged side-effects are suppressed
-    // by _isSyncing during Load).
+    // floor, the capture rate) write and save only. The store's Changed event
+    // re-fires Load() on the page so the VM observes the new values (the
+    // OnXxxChanged side-effects are suppressed by _isSyncing during Load).
 
     partial void OnExposureEvChanged(double value)
     {
@@ -191,15 +179,6 @@ public partial class AmbientViewModel : ObservableObject
         AmbientSettingsService.Instance.Save();
     }
 
-    partial void OnChangeThresholdChanged(int value)
-    {
-        if (_isSyncing) return;
-        DeckleAmbientSource.Log.TuningChanged("ChangeThreshold", value.ToString());
-        AmbientSettingsService.Instance.Current.ChangeThreshold = value;
-        MarkEdited();
-        AmbientSettingsService.Instance.Save();
-    }
-
     partial void OnSmoothingAlphaChanged(double value)
     {
         if (_isSyncing) return;
@@ -250,33 +229,11 @@ public partial class AmbientViewModel : ObservableObject
         AmbientSettingsService.Instance.Save();
     }
 
-    partial void OnPresetChanged(string value)
-    {
-        if (_isSyncing) return;
-        var service = AmbientSettingsService.Instance;
-        // Select writes the preset's eight values (or the kept Custom values)
-        // onto the store and the selection with them; an unknown id writes
-        // nothing. Save raises Changed, which reloads every surface.
-        if (!service.Presets.Select(value)) return;
-        DeckleAmbientSource.Log.TuningChanged("Preset", value);
-        service.Save();
-    }
-
-    // Reports a hand edit of a tuning value to the preset family (which keeps
-    // the live values as Custom and turns the selection to Custom) and mirrors
-    // the selection into the VM under _isSyncing so OnPresetChanged does not
-    // apply it again. The caller saves right after.
-    private void MarkEdited()
-    {
-        var presets = AmbientSettingsService.Instance.Presets;
-        presets.NotifyEdited();
-        if (Preset == presets.Selection) return;
-
-        bool prev = _isSyncing;
-        _isSyncing = true;
-        try   { Preset = presets.Selection; }
-        finally { _isSyncing = prev; }
-    }
+    // Reports a hand edit of a tuning value to the preset family, which keeps
+    // the live values as Custom and turns the selection to Custom. The caller
+    // saves right after.
+    private static void MarkEdited()
+        => AmbientSettingsService.Instance.Presets.NotifyEdited();
 
     // ── Sync with AmbientSettingsService ─────────────────────────────────────
 
@@ -295,12 +252,10 @@ public partial class AmbientViewModel : ObservableObject
         BrightnessCurveY1      = d.BrightnessCurveY1;
         BrightnessCurveX2      = d.BrightnessCurveX2;
         BrightnessCurveY2      = d.BrightnessCurveY2;
-        ChangeThreshold        = d.ChangeThreshold;
         SmoothingAlpha         = d.SmoothingAlpha;
         BorderMode             = d.BorderMode;
         BorderDepth            = d.BorderDepth;
         BorderCells            = d.BorderCells;
-        Preset                 = AmbientPresets.Default;
         UseMultiLight          = d.UseMultiLight;
         Enabled                = d.Enabled;
 
@@ -322,12 +277,10 @@ public partial class AmbientViewModel : ObservableObject
             BrightnessCurveY1     = s.BrightnessCurveY1;
             BrightnessCurveX2     = s.BrightnessCurveX2;
             BrightnessCurveY2     = s.BrightnessCurveY2;
-            ChangeThreshold       = s.ChangeThreshold;
             SmoothingAlpha        = s.SmoothingAlpha;
             BorderMode            = s.BorderMode;
             BorderDepth           = s.BorderDepth;
             BorderCells           = s.BorderCells;
-            Preset                = service.Presets.Selection;
             UseMultiLight         = s.UseMultiLight;
             Enabled               = s.Enabled;
         }
@@ -362,31 +315,6 @@ public partial class AmbientViewModel : ObservableObject
         ApplyZoneSamplingDefaults(cur, d);
         cur.UseMultiLight      = d.UseMultiLight;
 
-        service.Save();
-    }
-
-    // Per-section resets for the Playground Ambient tab's card headers. Each
-    // writes its section's defaults onto the store and saves once; the Changed
-    // observer reloads every surface. The tuning section is the default preset
-    // plus the floor; the zone section is the band shape and depth.
-    public void ResetTuningSection()
-    {
-        var service = AmbientSettingsService.Instance;
-        var d   = new AmbientSettings();
-        var cur = service.Current;
-
-        service.Presets.Select(service.Presets.Default.Id);
-        cur.MinBrightnessEnabled = d.MinBrightnessEnabled;
-        cur.MinBrightness        = d.MinBrightness;
-        DeckleAmbientSource.Log.TuningChanged("TuningSection", "default");
-        service.Save();
-    }
-
-    public void ResetZoneSamplingSection()
-    {
-        var service = AmbientSettingsService.Instance;
-        ApplyZoneSamplingDefaults(service.Current, new AmbientSettings());
-        DeckleAmbientSource.Log.TuningChanged("ZoneSampling", "default");
         service.Save();
     }
 

@@ -20,7 +20,6 @@ namespace Deckle.Diagnostics;
 //   "settings"    — SettingsWindow
 //   "log"         — LogWindow
 //   "setup"       — SetupWindow first-run wizard
-//   "playground"  — PlaygroundWindow
 //
 // Closed `from` / `to` vocabulary: string representations of
 // `Microsoft.UI.Xaml.ElementTheme`:

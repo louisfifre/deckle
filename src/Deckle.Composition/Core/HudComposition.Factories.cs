@@ -29,16 +29,14 @@ public static partial class HudComposition
     // a white-to-dark ramp on every entry in light theme.
     public static ProcessingStroke CreateProcessingStroke(
         Compositor compositor, Vector2 hostSize, bool isDark,
-        ConicArcStrokeConfig? configOverride = null,
+        ConicArcStrokeConfig config,
         bool animationsEnabled = true,
         ProcessingVariant? from = null)
     {
-        // Optional override used by HudChrono.RebuildStroke (HudPlayground
-        // slider wiring). Null keeps the shipping defaults.
         bool afterRecording = from == ProcessingVariant.Recording;
         return CreateConicArcStroke(
             compositor, hostSize,
-            configOverride ?? new ConicArcStrokeConfig(),
+            config,
             isDark,
             initialOpacity:    afterRecording ? 0f : -1f,
             initialVariant:    afterRecording ? ProcessingVariant.Recording : ProcessingVariant.Transcribing,
@@ -53,8 +51,8 @@ public static partial class HudComposition
     //
     // All Recording-specific knobs live on the Recording* fields of
     // ConicArcStrokeConfig (see the struct section above). This factory
-    // reads a default-constructed config and maps the Recording* paint-
-    // time fields into the generic paint-time slots that
+    // takes the config HudChrono holds, the compiled defaults, and maps the
+    // Recording* paint-time fields into the generic paint-time slots that
     // CreateConicArcStroke consumes, through BuildRecordingPaintConfig
     // below — tweak the defaults on the struct itself to iterate, just
     // like the Transcribing*/Rewriting* knobs.
@@ -85,13 +83,10 @@ public static partial class HudComposition
     // level, whichever material Recording shows.
     public static ProcessingStroke CreateRecordingStroke(
         Compositor compositor, Vector2 hostSize, bool isDark,
-        ConicArcStrokeConfig? configOverride = null,
+        ConicArcStrokeConfig config,
         bool animationsEnabled = true)
     {
-        // HudPlayground passes a pre-customized config via configOverride
-        // so its Recording* sliders land on the live struct before the
-        // mapping bakes them into the generic slots.
-        var cfg = BuildRecordingPaintConfig(configOverride ?? new ConicArcStrokeConfig());
+        var cfg = BuildRecordingPaintConfig(config);
         return CreateConicArcStroke(
             compositor, hostSize, cfg, isDark,
             freezeHueRotation: true,
@@ -107,10 +102,9 @@ public static partial class HudComposition
     // by CreateConicArcStroke and PaintArcMaskSurface with the Recording*
     // values. All other fields come through unchanged — the Recording*
     // runtime fields are still read by ApplyVariant and by the
-    // initialVariant seed. Shared by the Recording stroke, the utterance
-    // countdown and the Playground previews of them, so every visual that
-    // claims to be the Recording outline paints from one mapping instead of
-    // restating it.
+    // initialVariant seed. Shared by the Recording stroke and the utterance
+    // countdown, so every visual that claims to be the Recording outline
+    // paints from one mapping instead of restating it.
     //
     // The cone stays frozen at HuePhaseTurns in every Recording visual: the
     // outline and the countdown. A spinning cone was the first cause of a
@@ -130,7 +124,7 @@ public static partial class HudComposition
         };
 
     // The material stage every cone-sampling visual shares: the contour, the
-    // digit reveals, the countdown and the Playground previews. One builder
+    // digit reveals and the countdown. One builder
     // so the grey and the colour cannot drift between them.
     //
     // CrossFadeEffect weighs its FIRST input: Direct2D documents the
@@ -312,9 +306,8 @@ public static partial class HudComposition
         var graphicsDevice = CanvasComposition.CreateCompositionGraphicsDevice(compositor, canvasDevice);
 
         // ── Surface 1: conic rainbow (full 360°, no arc carving here) ────
-        // Surface painting extracted to PaintConicSurface so the naked
-        // mask preview factory (CreateNakedMaskPreview, end of file) can
-        // reuse the exact same logic without risking drift.
+        // Painted by PaintConicSurface, which the countdown shares, so its
+        // wheel cannot drift from this one.
         var conicSurface = PaintConicSurface(canvasDevice, graphicsDevice, pxSquare, cfg);
 
         // ── Surface 2: arc mask (white pie slice, fade at both ends) ─────
@@ -324,14 +317,10 @@ public static partial class HudComposition
         // the AlphaMaskEffect output. When cfg.ArcMirror is true, the
         // same arc is painted a second time at +π (180°) inside the same
         // surface, so both copies rotate together and stay in perfect
-        // symmetry. Extracted to PaintArcMaskSurface for CreateNaked-
-        // MaskPreview reuse.
-        //
-        // fillColor = Colors.White: downstream AlphaMaskEffect reads only
-        // .A, so the mask's RGB is invisible to the shipping stroke. We
-        // still write premultiplied-consistent bytes (white · α).
+        // symmetry. PaintArcMaskSurface is shared with the digit reveal and
+        // the countdown.
         var arcMaskSurface = PaintArcMaskSurface(
-            canvasDevice, graphicsDevice, pxSquare, cfg, Colors.White);
+            canvasDevice, graphicsDevice, pxSquare, cfg);
 
         // ── Surface 3: stroke silhouette (static rounded-rect outline) ───
         // Inset by 0.5 dip so the 1-dip stroke is centred on the same path

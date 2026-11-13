@@ -3,8 +3,8 @@ namespace Deckle.Audio;
 // ── MicrophoneLevelFeed ───────────────────────────────────────────────────────
 //
 // A live microphone that hands over the RMS of each 50 ms frame and keeps
-// nothing: the base of every "show me my microphone" surface, the Recording
-// page's voice meter and the Playground's HUD preview. The caller's host says
+// nothing: the base of every "show me my microphone" surface, today the
+// Recording page's voice meter. The caller's host says
 // what is opened and how the capture's own log lines read (its purpose); the
 // feed subscribes AudioLevel, the RMS a Frame would carry, and no Frame, so the
 // capture allocates no per-frame copy.
@@ -104,20 +104,6 @@ public sealed class MicrophoneLevelFeed
             _lastThread = thread;
             _onOpened?.Invoke();
             thread.Start();
-            return true;
-        }
-    }
-
-    // When a run is open, calls change under the gate, between two levels, and
-    // returns true; the device stays open. A caller that keeps state beside the
-    // feed (the Playground's pause gauge) starts it over this way without
-    // closing and reopening the microphone. Returns false when nothing is open.
-    public bool RestartOpenRun(Action change)
-    {
-        lock (_gate)
-        {
-            if (_current is null) return false;
-            change();
             return true;
         }
     }

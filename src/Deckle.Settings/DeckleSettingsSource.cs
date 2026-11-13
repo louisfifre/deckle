@@ -152,9 +152,7 @@ public sealed partial class DeckleSettingsSource : DeckleEventSource
     public const int EvtDataSizeFilesSkippedDetail        = 91;
     public const int EvtCleanupFailedDetail               = 92;
 
-    // ── SettingsWindow title bar commands ──
-    // Sibling of EvtOpenLogsFromFooter (39), declared later so it got the next id.
-    public const int EvtOpenPlaygroundFromFooter          = 93;
+    // 93 retired: OpenPlaygroundFromFooter, the Playground is removed.
     public const int EvtPageOpened                        = 94;
 
 }

@@ -9,8 +9,7 @@ namespace Deckle.Lighting.Ambient.Views;
 public static class AmbientSettingsModule
 {
     // This module's PRI subtree. Code resolving a module string through
-    // Loc.GetFrom (the Playground's Ambient tab) reads it from here, never from a
-    // repeated literal.
+    // Loc.GetFrom reads it from here, never from a repeated literal.
     public const string ResourceLibrary = "Deckle.Lighting.Ambient.Views";
 
     public const string PageTag = "Deckle.Lighting.Ambient.Views.AmbientPage, Deckle.Lighting.Ambient.Views";

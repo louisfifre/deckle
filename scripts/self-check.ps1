@@ -6,7 +6,7 @@
     Takes the already-built Deckle.exe of this checkout (it never builds), runs it
     with --self-check on a fresh data root of its own, waits for it, and reads
     the report.json it writes. The app opens its Settings window, walks every
-    page, opens the Log window and the Playground, probes the microphone once
+    page, opens the Log window, the Mail window and the Atelier, probes the microphone once
     and exits (see src/Deckle.App/App.SelfCheck.cs for what it composes and why).
 
     It runs beside the maintainer's resident Deckle: it takes no mutex of the
@@ -21,7 +21,7 @@
     report was written, or when the report says "failed". Exit code of this
     script: 0 passed, 1 failed.
 .PARAMETER Only
-    Check one thing instead of everything: a window (settings, log, playground,
+    Check one thing instead of everything: a window (settings, log,
     mail, atelier) or one view of Settings, Mail or the Atelier, named as its
     image is in a full run: settings/general, mail/activity,
     atelier/photos-gallery. A Mail or Atelier view is a state reached from the
@@ -87,7 +87,7 @@ New-Item -ItemType Directory -Force -Path $DataRoot, $OutputFolder | Out-Null
 # What the fresh root needs: nothing. The mode never opens the first-run wizard,
 # and with no module choice on disk every module counts as present, so every
 # settings page is registered, which is what the walk must see. The app writes
-# the one setting it needs (the Playground) in its own root. Nothing is copied
+# the one setting it needs (Developer mode) in its own root. Nothing is copied
 # from the maintainer's root: Anytype data, telemetry, the personal dictionary
 # and secrets.dat stay where they are.
 if ($LinkRuntime) {

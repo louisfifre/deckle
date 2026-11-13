@@ -22,9 +22,8 @@
          wider, and the header shares that column with the cards, so its edge
          is theirs. A header over both columns would sit on another axis and
          drift from the cards' edge as soon as the page is wider than its
-         column. The pane is an instrument beside the page, the way the
-         Playground puts its title with the settings and gives the stage the
-         whole height. -->
+         column. The pane is an instrument beside the page: the title stays
+         with the settings and the stage gets the whole height. -->
     <Grid>
         <Grid.ColumnDefinitions>
             <!-- The page. 320 keeps the cards readable in their narrow layout
@@ -286,8 +285,8 @@
                                Visibility="Collapsed" />
 
         <!-- The preview, floating in its column: the shared block takes the
-             column's height so the stage scales to the room, the Playground's
-             form, with the page's padding around it and nothing else. Opened
+             column's height so the stage scales to the room, with the
+             page's padding around it and nothing else. Opened
              by the Live preview tile and the section links, closed by its own
              Close; its width is the user's (SyncPreviewPane). Collapsed with the column, so the
              control inside refreshes nothing while the pane is closed. -->

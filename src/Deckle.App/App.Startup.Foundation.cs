@@ -5,7 +5,6 @@ using Deckle.Diagnostics.Telemetry;
 using Deckle.Hud;
 using Deckle.Lighting.Ambient;
 using Deckle.Modules;
-using Deckle.Playground;
 using Deckle.Setup;
 using Deckle.Shell;
 using Deckle.Shell.TaskbarCover;
@@ -184,7 +183,6 @@ public partial class App
         // notification. A duplicate descriptor id fails the boot.
         var toastChannel = new Deckle.Notifications.ToastChannel();
         var dispatcher = Deckle.Notifications.NotificationDispatcher.Initialize(toastChannel);
-        dispatcher.Catalog.Register(PlaygroundNotifications.All);
         // The updater is shell, not a presence-gated module, so it always registers.
         dispatcher.Catalog.Register(Deckle.Setup.SetupNotifications.All);
         // Appearance is shell too: the offer of Deckle's own animations.

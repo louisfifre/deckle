@@ -7,8 +7,7 @@
     <!-- Generates the lib's own .pri so x:Uid lookups in AmbientPage,
          AmbientPreviewCard and LightZonesCard, the composed cards
          (SettingsComposer reads the view model's assembly), the settings
-         search and Loc.GetFrom (the preset labels the Playground's Ambient tab
-         reads) resolve against the Deckle.Lighting.Ambient.Views/Resources
+         search and Loc.GetFrom resolve against the Deckle.Lighting.Ambient.Views/Resources
          subtree (Strings/en-US/Resources.resw). -->
     <EnableMsixTooling>true</EnableMsixTooling>
   </PropertyGroup>

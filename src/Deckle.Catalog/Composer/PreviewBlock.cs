@@ -13,8 +13,8 @@ namespace Deckle.Catalog;
 // application has the same shape — the Ambient capture today, the HUD and
 // other scenes later.
 //
-// Floating, never a card: the preview is an instrument beside the page, the
-// Playground's form, and a card around it framed the stage twice (Louis,
+// Floating, never a card: the preview is an instrument beside the page, and
+// a card around it framed the stage twice (Louis,
 // 2026-10-14, on screen: not framed on every side). The stage layer is the
 // one border, the same materials as a card's content area, and it takes the
 // height it is given so the scene scales to the room (a Viewbox keeps a
@@ -68,7 +68,7 @@ public sealed partial class PreviewBlock : UserControl
         _stageSlot = new Border { Visibility = Visibility.Collapsed };
 
         // The empty text: what the scene would show, in the tertiary colour,
-        // centred on the layer, the Playground's form.
+        // centred on the layer.
         _emptyHeader = new TextBlock
         {
             Style = Application.Current.Resources["BodyStrongTextBlockStyle"] as Style,

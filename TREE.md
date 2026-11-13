@@ -217,6 +217,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── research--taskbar-sans-windhawk--2026-10-08.md  — Recherche vérifiée (2026-10-08) — remplacer Windhawk par un module Deckle pour…
 │   │   ├── research--temps-de-build--2026-11-07.md  — Où passe le temps de build et de test de Deckle (mesuré le 2026-11-06/07 sur le…
 │   │   └── research--youtube-maison--2026-10-22.md  — Cadrage (2026-10-22) — un client YouTube maison comme module de Deckle : la nou…
+│   ├── hud-tuning-reference.md  — Every HUD tunable the Playground exposed until its removal on 2026-11-13, group…
 │   ├── inventaire-exposables.csv
 │   ├── inventaire-exposables.md
 │   └── transcription-audio-chain.md  — How a dictation travels from the hotkey to the clipboard — vocabulary, three di…
@@ -1091,11 +1092,9 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── Core/
 │   │   │   ├── HudComposition.Animations.cs
 │   │   │   ├── HudComposition.Config.cs
-│   │   │   ├── HudComposition.ConicClonePreview.cs
 │   │   │   ├── HudComposition.cs
 │   │   │   ├── HudComposition.DigitReveal.cs
 │   │   │   ├── HudComposition.Factories.cs
-│   │   │   ├── HudComposition.NakedPreview.cs
 │   │   │   ├── HudComposition.Painting.cs
 │   │   │   ├── HudComposition.ProcessingStroke.cs
 │   │   │   ├── HudComposition.UtteranceCountdownVisual.cs
@@ -1261,10 +1260,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── HudPalette.cs
 │   │   │   ├── HudState.cs
 │   │   │   └── MessageKind.cs
-│   │   ├── Settings/
-│   │   │   ├── ConfigOverrides.cs
-│   │   │   ├── HudSettings.cs
-│   │   │   └── HudSettingsService.cs
 │   │   ├── Transcript/
 │   │   │   ├── TranscriptPanelLayout.cs
 │   │   │   ├── TranscriptPanelWindow.Proximity.cs
@@ -1828,43 +1823,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── OrchestrationSettingsModule.cs
 │   │   ├── OrchestrationSettingsService.cs
 │   │   └── SettingsSearch.cs
-│   ├── Deckle.Playground/
-│   │   ├── Models/
-│   │   │   ├── MicrophonePreviewFailure.cs
-│   │   │   ├── MicrophonePreviewFeed.cs
-│   │   │   ├── TuningModel.cs
-│   │   │   └── UtteranceCycle.cs
-│   │   ├── Strings/
-│   │   │   └── en-US/
-│   │   │       └── Resources.resw
-│   │   ├── ViewModels/
-│   │   │   └── HudViewModel.cs
-│   │   ├── Views/
-│   │   │   ├── Ambient/
-│   │   │   │   ├── AmbientPage.HdrTuning.cs
-│   │   │   │   ├── AmbientPage.Hue.cs
-│   │   │   │   ├── AmbientPage.LightZones.cs
-│   │   │   │   ├── AmbientPage.Preview.cs
-│   │   │   │   ├── AmbientPage.ScreenCapture.cs
-│   │   │   │   ├── AmbientPage.xaml
-│   │   │   │   └── AmbientPage.xaml.cs
-│   │   │   ├── Hud/
-│   │   │   │   ├── HudPage.Expanders.cs
-│   │   │   │   ├── HudPage.Gauge.cs
-│   │   │   │   ├── HudPage.Microphone.cs
-│   │   │   │   ├── HudPage.RowFactories.cs
-│   │   │   │   ├── HudPage.SectionState.cs
-│   │   │   │   ├── HudPage.Simulation.cs
-│   │   │   │   ├── HudPage.xaml
-│   │   │   │   └── HudPage.xaml.cs
-│   │   │   ├── HomePage.xaml
-│   │   │   ├── HomePage.xaml.cs
-│   │   │   ├── PlaygroundWindow.xaml
-│   │   │   └── PlaygroundWindow.xaml.cs
-│   │   ├── Deckle.Playground.csproj
-│   │   ├── DecklePlaygroundSource.cs
-│   │   ├── PlaygroundNotifications.cs
-│   │   └── PlaygroundShell.cs
 │   ├── Deckle.Presets/
 │   │   ├── Deckle.Presets.csproj
 │   │   ├── IPresetStore.cs
@@ -1879,11 +1837,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   └── UserProfilePath.cs
 │   ├── Deckle.Settings/
 │   │   ├── Controls/
-│   │   │   ├── FolderLocationLine.cs
-│   │   │   ├── TunableRow.xaml
-│   │   │   ├── TunableRow.xaml.cs
-│   │   │   ├── TuningCard.xaml
-│   │   │   └── TuningCard.xaml.cs
+│   │   │   └── FolderLocationLine.cs
 │   │   ├── Dialogs/
 │   │   │   ├── ApplicationLogConsentDialog.cs
 │   │   │   ├── AudioCorpusConsentDialog.cs
@@ -2184,8 +2138,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   │   ├── TranscribedUtterance.cs
 │   │   │   ├── TranscriptSnapshot.cs
 │   │   │   ├── Utterance.cs
-│   │   │   ├── UtteranceProgress.cs
-│   │   │   └── UtteranceProgressMeter.cs
+│   │   │   └── UtteranceProgress.cs
 │   │   ├── Deckle.Transcription.csproj
 │   │   ├── DeckleWhispSource.cs
 │   │   ├── DeckleWhispSource.Decode.cs
@@ -2665,13 +2618,12 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── AnimationOfferTests.cs
 │   │   ├── AnimationPreferenceBugNotes.md
 │   │   ├── AnimationPreferenceTests.cs
-│   │   ├── ConfigOverridesBugNotes.md
 │   │   ├── ConicPaletteTests.cs
 │   │   ├── Deckle.Hud.Tests.csproj
 │   │   ├── DeckleHudSourceTests.cs
 │   │   ├── HudHidePolicyTests.cs
 │   │   ├── HudMessageFitTests.cs
-│   │   ├── HudSettingsOverridesTests.cs
+│   │   ├── HudShippedValuesTests.cs
 │   │   ├── MessageTemplateDoctrineTests.cs
 │   │   ├── MilestoneClosersTests.cs
 │   │   ├── OverlayCardBugNotes.md
@@ -2890,20 +2842,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ScanOnDiskTests.cs
 │   │   ├── SteamLibraryScanEdgeCaseTests.cs
 │   │   └── SteamLibraryTests.cs
-│   ├── Deckle.Playground.Tests/
-│   │   ├── Deckle.Playground.Tests.csproj
-│   │   ├── HudTargetControlsTests.cs
-│   │   ├── HudTuningBugNotes.md
-│   │   ├── HudTuningSectionsBugNotes.md
-│   │   ├── HudViewModelTests.cs
-│   │   ├── IlReferences.cs
-│   │   ├── MessageTemplateDoctrineTests.cs
-│   │   ├── MicrophonePreviewFailureTests.cs
-│   │   ├── MicrophonePreviewFeedTests.cs
-│   │   ├── PlaygroundFailureBugNotes.md
-│   │   ├── PlaygroundFailureObservabilityTests.cs
-│   │   ├── TuningModelTests.cs
-│   │   └── UtteranceCycleTests.cs
 │   ├── Deckle.Presets.Tests/
 │   │   ├── Deckle.Presets.Tests.csproj
 │   │   └── PresetFamilyTests.cs
@@ -3078,7 +3016,6 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── TranscriptionDeliveryTests.cs
 │   │   ├── TranscriptionObservabilityContractTests.cs
 │   │   ├── UnitBezierTests.cs
-│   │   ├── UtteranceProgressMeterTests.cs
 │   │   ├── UtteranceProgressTests.cs
 │   │   ├── VadServiceIncidentTests.cs
 │   │   ├── WhispEventIdBugNotes.md

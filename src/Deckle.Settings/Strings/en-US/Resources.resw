@@ -329,12 +329,6 @@
   <data name="SettingsLogsButton.AutomationProperties.Name" xml:space="preserve">
     <value>Logs</value>
   </data>
-  <data name="SettingsPlaygroundButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Playground</value>
-  </data>
-  <data name="SettingsPlaygroundButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Playground</value>
-  </data>
 
   <!-- Cross-page search (TitleBar central Content). x:Uid strings resolve locally.
        The box collapses to SettingsSearchIconButton below a width threshold. The two
@@ -625,7 +619,7 @@
     <value>Developer mode</value>
   </data>
   <data name="GeneralDeveloperModeCard.Description" xml:space="preserve">
-    <value>Adds a developer menu to the tray icon's right click, with the Playground, features still in preview and tools for reviewing Deckle.</value>
+    <value>Adds a developer menu to the tray icon's right click, with features still in preview and tools for reviewing Deckle.</value>
   </data>
   <data name="GeneralCaptureInterfaceCard.Header" xml:space="preserve">
     <value>Capture the interface</value>
@@ -680,22 +674,6 @@
   <!-- ─── LogWindow ──────────────────────────────────────────────────
        Title bar, search, level selector, command bar, and the floating
        copy badge that flips between Copy / Copy selection / Copied. -->
-
-  <!-- ─── Tuning controls (Controls/TuningCard, Controls/TunableRow) ──
-       x:Uid in the controls' own XAML. TunableRow's reset is an icon
-       alone, so its name repeats its tooltip for Narrator. -->
-  <data name="TuningCardResetButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset this section to its defaults</value>
-  </data>
-  <data name="TuningCardResetLabel.Text" xml:space="preserve">
-    <value>Reset section</value>
-  </data>
-  <data name="TunableRowResetButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Reset to default</value>
-  </data>
-  <data name="TunableRowResetButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Reset to default</value>
-  </data>
 
   <!-- ─── Window titles (set via AppWindow.Title in code) ────────────
        The XAML Title="..." attribute is overridden in code-behind

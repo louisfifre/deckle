@@ -5,7 +5,6 @@ using Deckle.Diagnostics.Telemetry;
 using Deckle.Hud;
 using Deckle.Lighting.Ambient;
 using Deckle.Modules;
-using Deckle.Playground;
 using Deckle.Setup;
 using Deckle.Shell;
 using Deckle.Shell.TaskbarCover;

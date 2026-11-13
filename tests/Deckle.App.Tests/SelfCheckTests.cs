@@ -68,7 +68,6 @@ public class SelfCheckTests
         var report = new SelfCheckReport { Completed = true };
         report.Surfaces.Add(new SelfCheckSurface("settings", "general", "General", true, 300, @"captures\settings-general.png"));
         report.Surfaces.Add(new SelfCheckSurface("log", null, null, true, 400, @"captures\log.png"));
-        report.Surfaces.Add(new SelfCheckSurface("playground", null, null, true, 400, @"captures\playground.png"));
         report.Surfaces.Add(new SelfCheckSurface("mail", "triage", "Triage", true, 300, @"captures\mail-triage.png"));
         report.Surfaces.Add(new SelfCheckSurface("atelier", "files", null, true, 400, @"captures\atelier-files.png"));
         report.Microphone = new SelfCheckMicrophone(SelfCheckMicrophone.Ok, null, "OK", "0");
@@ -157,7 +156,6 @@ public class SelfCheckTests
     [Theory]
     [InlineData("settings")]
     [InlineData("log")]
-    [InlineData("playground")]
     [InlineData("mail")]
     [InlineData("atelier")]
     [Trait("Category", "unit")]
@@ -239,7 +237,7 @@ public class SelfCheckTests
         SelfCheckReport? read = SelfCheckReport.Parse(report.ToJson());
 
         Assert.NotNull(read);
-        Assert.Equal(5, read.Surfaces.Count);
+        Assert.Equal(report.Surfaces.Count, read.Surfaces.Count);
         Assert.Equal("passed", read.Outcome);
         Assert.Equal("settings/home", read.Current);
     }

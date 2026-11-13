@@ -188,15 +188,6 @@ public sealed partial class DeckleSettingsSource
         if (IsEnabled()) WriteEvent(EvtOpenLogsFromFooter);
     }
 
-    [Event(EvtOpenPlaygroundFromFooter,
-           Level = EventLevel.Informational,
-           Keywords = (EventKeywords)Keywords.Lifecycle,
-           Message = "Open playground from footer")]
-    public void OpenPlaygroundFromFooter()
-    {
-        if (IsEnabled()) WriteEvent(EvtOpenPlaygroundFromFooter);
-    }
-
     // One line per page shown, rail page or subpage, whatever led there:
     // milestone-tagged so log.jsonl says which page the person was on when
     // something went wrong. Only the page's type name, never what it holds.

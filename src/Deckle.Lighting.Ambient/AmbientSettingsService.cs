@@ -6,8 +6,8 @@ namespace Deckle.Lighting.Ambient;
 
 // Module-local persistence for AmbientSettings.
 //
-// The preset family lives here, one per process, so the Settings page and
-// the Playground tab select and edit the same selection.
+// The preset family lives here, one per process, so every surface that
+// edits the tuning reports to the same selection.
 public sealed class AmbientSettingsService
 {
     private static readonly Lazy<AmbientSettingsService> _instance = new(() => new AmbientSettingsService());

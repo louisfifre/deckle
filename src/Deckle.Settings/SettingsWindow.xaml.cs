@@ -33,7 +33,6 @@ public sealed partial class SettingsWindow : Window
     private readonly IntPtr _hwnd;
 
     public Action? OnShowLogsRequested { get; set; }
-    public Action? OnShowPlaygroundRequested { get; set; }
 
     private readonly List<NavigationViewItem> _moduleNavItems = new();
 
@@ -141,11 +140,6 @@ public sealed partial class SettingsWindow : Window
     // which picks the frame it needs; the title bar gets the 32 px PNG. A
     // BitmapImage of the .ico decodes its first frame, 16 px, and the bar's DPI
     // scale then stretched it into a blur.
-    // Called on the UI thread by the App when the developer setting changes,
-    // and once when the window is created.
-    public void SetPlaygroundAvailable(bool available)
-        => PlaygroundButton.Visibility = available ? Visibility.Visible : Visibility.Collapsed;
-
     public void SetRecordingState(bool isRecording)
     {
         if (DispatcherQueue.HasThreadAccess) ApplyRecordingState(isRecording);
@@ -160,8 +154,8 @@ public sealed partial class SettingsWindow : Window
         string? icoPath = IconAssets.ResolvePath(isRecording);
         if (icoPath is not null) AppWindow.SetIcon(icoPath);
 
-        // Rebuilt wholesale, as PlaygroundWindow does: an in-place ImageSource
-        // change does not reach the TitleBar visual once it is shown.
+        // Rebuilt wholesale: an in-place ImageSource change does not reach
+        // the TitleBar visual once it is shown.
         string? pngPath = IconAssets.ResolveImagePath(isRecording);
         if (pngPath is not null)
             AppTitleBar.IconSource = new ImageIconSource { ImageSource = new BitmapImage(new Uri(pngPath)) };
@@ -516,12 +510,6 @@ public sealed partial class SettingsWindow : Window
     {
         DeckleSettingsSource.Log.OpenLogsFromFooter();
         OnShowLogsRequested?.Invoke();
-    }
-
-    private void OnPlaygroundButtonClick(object sender, RoutedEventArgs e)
-    {
-        DeckleSettingsSource.Log.OpenPlaygroundFromFooter();
-        OnShowPlaygroundRequested?.Invoke();
     }
 
     // ── NavigationView: pane sync by DisplayMode ─────────────────────────

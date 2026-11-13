@@ -551,9 +551,6 @@
   <data name="TrayMenu_Settings" xml:space="preserve">
     <value>Settings</value>
   </data>
-  <data name="TrayMenu_Playground" xml:space="preserve">
-    <value>Playground</value>
-  </data>
   <data name="TrayMenu_Atelier" xml:space="preserve">
     <value>Deckle Folders</value>
   </data>
@@ -1112,13 +1109,6 @@
   <data name="LogWindowSettingsButton.AutomationProperties.Name" xml:space="preserve">
     <value>Log settings</value>
   </data>
-  <!-- Title bar command (icon-only Button): tooltip + accessible name. -->
-  <data name="LogWindowPlaygroundButton.ToolTipService.ToolTip" xml:space="preserve">
-    <value>Playground</value>
-  </data>
-  <data name="LogWindowPlaygroundButton.AutomationProperties.Name" xml:space="preserve">
-    <value>Playground</value>
-  </data>
   <!-- Notice above the log list (code-behind, Loc.Format). -->
   <data name="LogWindow_DroppedNotice_Format" xml:space="preserve">
     <value>Entries skipped because they arrived faster than this window could show them: {0:N0}</value>
@@ -1360,26 +1350,6 @@
   </data>
   <data name="TrackpadPage_GesturesButton_AlreadyOff" xml:space="preserve">
     <value>Already off</value>
-  </data>
-
-  <!-- Deckle.Playground notification descriptor strings, mirrored per the
-       block above : Loc resolves the root resource map only, so the
-       PlaygroundNotifications.cs keys must live here. The module copy is
-       the source of truth for wording. -->
-  <data name="PlaygroundNotifications_TestPrompt_Title" xml:space="preserve">
-    <value>Deckle test notification</value>
-  </data>
-  <data name="PlaygroundNotifications_TestPrompt_Body" xml:space="preserve">
-    <value>Interactive prompt from the Playground. Reply or pick an action.</value>
-  </data>
-  <data name="PlaygroundNotifications_TestPrompt_Accept" xml:space="preserve">
-    <value>Accept</value>
-  </data>
-  <data name="PlaygroundNotifications_TestPrompt_Decline" xml:space="preserve">
-    <value>Decline</value>
-  </data>
-  <data name="PlaygroundNotifications_TestPrompt_Placeholder" xml:space="preserve">
-    <value>Optional reply</value>
   </data>
 
   <!-- Second validation of an agent's move to the Anytype bin. The descriptor

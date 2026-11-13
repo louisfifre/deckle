@@ -70,8 +70,8 @@
              zone bands over the grid, freeze the refresh to look at a frame.
              The swatches share the row, one per light (or one for the group),
              the colour the engine sends on the latest tick: beside the
-             commands, where the Playground puts them and the eye finds them
-             (Louis, 2026-10-14, did not find them under the stage). -->
+             commands, where the eye finds them (Louis, 2026-10-14, did not
+             find them under the stage). -->
         <catalog:PreviewBlock.Commands>
             <StackPanel Orientation="Horizontal" Spacing="8">
                 <ToggleButton x:Name="ZonesToggle"

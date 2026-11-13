@@ -24,7 +24,7 @@ public enum NotificationChannel
 }
 
 public sealed record NotificationDescriptor(
-    // Stable, point.snake_case identity (e.g. "playground.test_prompt"). A
+    // Stable, point.snake_case identity (e.g. "setup.update_available"). A
     // public contract: it keys the catalogue and threads through the toast
     // activation, so never rename or recycle it.
     string Id,

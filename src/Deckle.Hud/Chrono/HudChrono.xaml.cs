@@ -66,7 +66,6 @@ public sealed partial class HudChrono : UserControl
         _animationPreferenceSubscribed = true;
         _animationsEnabled = AnimationPreference.Instance.AnimationsEnabled;
         AnimationPreference.Instance.Changed += OnAnimationPreferenceChanged;
-        HudSettingsService.Instance.Changed += OnHudSettingsChanged;
         SetCountdownRecording(_state == HudState.Recording);
     }
 
@@ -75,36 +74,7 @@ public sealed partial class HudChrono : UserControl
         if (!_animationPreferenceSubscribed) return;
         _animationPreferenceSubscribed = false;
         AnimationPreference.Instance.Changed -= OnAnimationPreferenceChanged;
-        HudSettingsService.Instance.Changed -= OnHudSettingsChanged;
         SetCountdownRecording(false);
-    }
-
-    // Changed fires on the store's writer thread, after the disk write. The
-    // stroke and the countdown bake their config into Win2D surfaces, so a new
-    // config means a rebuild, not a property change.
-    private void OnHudSettingsChanged()
-    {
-        if (DispatcherQueue.HasThreadAccess)
-        {
-            ApplyStoredSettings();
-            return;
-        }
-
-        DispatcherQueue.TryEnqueue(ApplyStoredSettings);
-    }
-
-    private void ApplyStoredSettings()
-    {
-        // Under _strokeSync: the audio pump may be writing to the stroke.
-        lock (_strokeSync)
-        {
-            if (_processingStroke is not null)
-                RebuildStroke(HudSettingsService.Instance.EffectiveStroke());
-        }
-
-        // After the stroke: the gauge reads the config the stroke was built
-        // from, so the other order would rebuild it on the old one.
-        RebuildCountdownVisual();
     }
 
     private void OnAnimationPreferenceChanged(bool enabled)

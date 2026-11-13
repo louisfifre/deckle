@@ -47,16 +47,11 @@ public sealed partial class HudChrono
     private long _processingStrokeAcquiredTicks;
     private long _processingStrokeHandle;
 
-    // Playground-only one-shot config override, consumed by the next stroke
-    // creation so a state comes up with its tuned config in a single stroke
-    // creation. Null in shipping Deckle, which builds from HudSettingsService.
-    private HudComposition.ConicArcStrokeConfig? _nextStrokeConfig;
-
-    // The config the stroke on screen was built from, whatever it came from:
-    // the gauge paints on the same outline, so it reads this rather than the
-    // store, and the two can never disagree. Written under _strokeSync and
-    // read on the UI thread only (RebuildCountdownVisual).
-    private HudComposition.ConicArcStrokeConfig? _strokeConfig;
+    // The outline's look is the compiled defaults, nothing else: the stroke,
+    // the gauge and the digit reveal all paint from this one config, so they
+    // cannot disagree. A modules\hud\settings.json left by an older Deckle is
+    // never read.
+    private static readonly HudComposition.ConicArcStrokeConfig StrokeConfig = new();
 
     // The mapping and its tunables live in Deckle.Audio.AudioLevelMapper; the
     // smoother state is per-consumer, so it stays here.
@@ -108,8 +103,8 @@ public sealed partial class HudChrono
             }
             catch (System.Exception ex)
             {
-                // Composition can throw here like in RebuildStroke (device
-                // lost, surface creation, expression parse). Recorded before
+                // Composition can throw here (device lost, surface
+                // creation, expression parse). Recorded before
                 // the rethrow, which keeps the caller's existing handling: a
                 // failure that only surfaced as a missing stroke left no trace.
                 NoteStrokeFailure("attach", variant, ex);
@@ -149,13 +144,9 @@ public sealed partial class HudChrono
             if (w == 0f || h == 0f) { w = 272f; h = 78f; }
             var size = new Vector2(w, h);
 
-            var cfg = _nextStrokeConfig ?? HudSettingsService.Instance.EffectiveStroke();
-            _nextStrokeConfig = null;
-            _strokeConfig = cfg;
-
             _processingStroke = variant == ProcessingVariant.Recording
-                ? HudComposition.CreateRecordingStroke(compositor, size, isDark, cfg, _animationsEnabled)
-                : HudComposition.CreateProcessingStroke(compositor, size, isDark, cfg, _animationsEnabled,
+                ? HudComposition.CreateRecordingStroke(compositor, size, isDark, StrokeConfig, _animationsEnabled)
+                : HudComposition.CreateProcessingStroke(compositor, size, isDark, StrokeConfig, _animationsEnabled,
                                                         from: crossingBoundary ? previous : null);
             ElementCompositionPreview.SetElementChildVisual(
                 ProcessingSurfaceHost, _processingStroke.Visual);
@@ -196,7 +187,6 @@ public sealed partial class HudChrono
                 "composition-visual", _processingStrokeHandle, ageMs, "hud-chrono-stroke");
             _processingStroke.Dispose();
             _processingStroke = null;
-            _strokeConfig     = null;
             _currentVariant   = null;
         }
     }
@@ -222,89 +212,5 @@ public sealed partial class HudChrono
         _strokeIncidentOpen = false;
         DeckleHudSource.Log.StrokeCreationRecovered(_strokeFailures);
         _strokeFailures = 0;
-    }
-
-    // One-shot: must be armed before the ApplyState that creates the stroke,
-    // and is cleared as soon as it is used.
-    public void SetNextStrokeConfig(HudComposition.ConicArcStrokeConfig config)
-    {
-        _nextStrokeConfig = config;
-    }
-
-    // Rebuilt, not mutated: paint-time fields are baked into Win2D surfaces
-    // and cannot be animated live. The config must match the current variant
-    // (Recording* fields apply only to Recording).
-    public void RebuildStroke(
-        HudComposition.ConicArcStrokeConfig config,
-        System.Action<string, string>? log = null)
-    {
-        if (_currentVariant is not { } variant)
-        {
-            log?.Invoke("REBUILD", "skip — no active variant");
-            return;
-        }
-
-        try
-        {
-            log?.Invoke("REBUILD", $"begin variant={variant}");
-
-            ElementCompositionPreview.SetElementChildVisual(ProcessingSurfaceHost, null);
-            log?.Invoke("REBUILD", "detached old visual from host");
-
-            if (_processingStroke != null)
-            {
-                int ageMsRebuild = (int)((Stopwatch.GetTimestamp() - _processingStrokeAcquiredTicks)
-                                          * 1000L / Stopwatch.Frequency);
-                DeckleResourceSource.Log.ResourceReleased(
-                    "composition-visual", _processingStrokeHandle, ageMsRebuild, "hud-chrono-stroke");
-            }
-            _processingStroke?.Dispose();
-            _processingStroke = null;
-            log?.Invoke("REBUILD", "disposed old ProcessingStroke");
-
-            var compositor = ElementCompositionPreview
-                .GetElementVisual(ProcessingSurfaceHost).Compositor;
-
-            float w = (float)ProcessingSurfaceHost.ActualWidth;
-            float h = (float)ProcessingSurfaceHost.ActualHeight;
-            bool fallback = (w == 0f || h == 0f);
-            if (fallback) { w = 272f; h = 78f; }
-            var size = new Vector2(w, h);
-            log?.Invoke("REBUILD", $"size={w:F1}×{h:F1}{(fallback ? " (fallback)" : "")}");
-
-            bool isDark = ChronoRoot.ActualTheme == ElementTheme.Dark;
-            _processingStroke = variant == ProcessingVariant.Recording
-                ? HudComposition.CreateRecordingStroke(compositor, size, isDark, config, _animationsEnabled)
-                : HudComposition.CreateProcessingStroke(compositor, size, isDark, config, _animationsEnabled);
-            _strokeConfig = config;
-            // A live count climbing above 1 means a Dispose path is leaking.
-            log?.Invoke("REBUILD",
-                $"created {(variant == ProcessingVariant.Recording ? "Recording" : "Processing")}Stroke " +
-                $"#{_processingStroke.CreationId} (live={HudComposition.LiveStrokeCount})");
-
-            ElementCompositionPreview.SetElementChildVisual(
-                ProcessingSurfaceHost, _processingStroke.Visual);
-            log?.Invoke("REBUILD", "attached new visual to host");
-
-            _processingStrokeHandle = RuntimeHelpers.GetHashCode(_processingStroke.Visual);
-            _processingStrokeAcquiredTicks = Stopwatch.GetTimestamp();
-            DeckleResourceSource.Log.ResourceAcquired(
-                "composition-visual", _processingStrokeHandle, 0, "hud-chrono-stroke");
-
-            _processingStroke.ApplyVariant(variant, isDark);
-            log?.Invoke("REBUILD", $"ApplyVariant {variant} isDark={isDark} — done");
-            NoteStrokeBuilt();
-        }
-        catch (System.Exception ex)
-        {
-            // Composition can throw here (device lost, surface creation,
-            // expression parse in StartRotation). Log it before rethrowing:
-            // otherwise the failure can show only as frozen animations. The
-            // callback serves the playground's own console; the provider is
-            // what reaches the log in shipping Deckle.
-            NoteStrokeFailure("rebuild", variant, ex);
-            log?.Invoke("ERROR", $"RebuildStroke threw {ex.GetType().Name}: {ex.Message}");
-            throw;
-        }
     }
 }

@@ -201,8 +201,7 @@ public static partial class HudComposition
 
         var conicSurface = PaintConicSurface  (canvasDevice, graphicsDevice, pxSquare,
                                                CloneSurfaceConfig(cfg));
-        var arcSurface   = PaintArcMaskSurface(canvasDevice, graphicsDevice, pxSquare, cfg,
-                                               Microsoft.UI.Colors.White);
+        var arcSurface   = PaintArcMaskSurface(canvasDevice, graphicsDevice, pxSquare, cfg);
 
         var hueProps = CreateRotationPropertySet(
             compositor, cfg.CloneHuePeriodSeconds, cfg.CloneHueDirection, cfg.HuePhaseTurns,
@@ -216,15 +215,14 @@ public static partial class HudComposition
         return new RevealConeMaterial(conicSurface, arcSurface, hueProps, arcProps);
     }
 
-    // Shared by the live reveal and the ConicClone preview so their surfaces
-    // cannot drift.
+    // The reveal's own palette over the contour's config.
     private static ConicArcStrokeConfig CloneSurfaceConfig(ConicArcStrokeConfig cfg)
         => cfg with { OklchLightness = cfg.CloneOklchLightness, OklchChroma = cfg.CloneOklchChroma };
 
     // Side of the square whose inscribed circle reaches every corner of `frame`
     // from `centre`, at any rotation angle: off the surface a brush samples
-    // transparent. Shared by the reveal, the ConicClone preview and the
-    // countdown so they cannot drift.
+    // transparent. Shared by the reveal and the countdown so they cannot
+    // drift.
     private static int CoverageSquareSide(Vector2 frame, Vector2 centre)
     {
         var corners = new[]

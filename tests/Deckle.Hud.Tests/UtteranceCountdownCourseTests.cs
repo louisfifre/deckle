@@ -32,18 +32,20 @@ public sealed class UtteranceCountdownCourseTests
         Assert.Equal(1f, course.Solve(1.5f));
     }
 
-    // Louis, 2026-10-15: start at zero, accelerate gently to a strong speed,
-    // brake only at the very end.
+    // Louis, 2026-11-13: the course he kept eases in. The light barely moves
+    // through the first half of the pause, then runs faster and faster to
+    // the cut. It replaces the 2026-10-15 curve that braked at the end.
     [Fact]
     [Trait("Category", "regression")]
-    public void TheDefaultCourseStartsSlowAndBrakesLate()
+    public void TheDefaultCourseStartsSlowAndAcceleratesToTheCut()
     {
         var course = UtteranceCountdownCourse.Of(new UtteranceCountdownConfig());
 
-        Assert.True(course.Solve(0.2f) < 0.1f, "The first fifth of the pause must stay near the centre.");
-        Assert.True(course.Solve(0.9f) > 0.9f, "By nine tenths the light must be nearly full.");
+        Assert.True(course.Solve(0.5f) < 0.15f, "The first half of the pause must stay near the centre.");
         Assert.True(course.Solve(0.5f) - course.Solve(0.4f) > course.Solve(0.2f) - course.Solve(0.1f),
             "The middle must run faster than the start.");
+        Assert.True(course.Solve(1f) - course.Solve(0.9f) > course.Solve(0.5f) - course.Solve(0.4f),
+            "The end must run faster than the middle.");
     }
 
     [Fact]

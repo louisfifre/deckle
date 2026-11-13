@@ -33,8 +33,6 @@ public static partial class HudComposition
         private readonly Vector2 _retreatEaseControlPoint1;
         private readonly Vector2 _retreatEaseControlPoint2;
         private readonly UtteranceCountdownCourse _course;
-        private readonly Vector2 _courseEaseControlPoint1;
-        private readonly Vector2 _courseEaseControlPoint2;
 
         private readonly List<IDisposable> _resources = new();
         private readonly List<CompositionSurfaceBrush> _movingBrushes = new();
@@ -52,14 +50,12 @@ public static partial class HudComposition
         {
             _compositor = compositor;
             // A zero duration lands on its end state on frame 0, which reads
-            // as a jump; the Playground sliders reach it.
+            // as a jump; the floor keeps a config at zero from it.
             _followDuration  = TimeSpan.FromSeconds(Math.Max(0.016, countdown.FollowSeconds));
             _retreatDuration = TimeSpan.FromSeconds(Math.Max(0.016, countdown.RetreatSeconds));
             _retreatEaseControlPoint1 = new Vector2(countdown.RetreatEaseP1X, countdown.RetreatEaseP1Y);
             _retreatEaseControlPoint2 = new Vector2(countdown.RetreatEaseP2X, countdown.RetreatEaseP2Y);
             _course = UtteranceCountdownCourse.Of(countdown);
-            _courseEaseControlPoint1 = new Vector2(countdown.CourseEaseP1X, countdown.CourseEaseP1Y);
-            _courseEaseControlPoint2 = new Vector2(countdown.CourseEaseP2X, countdown.CourseEaseP2Y);
             Container = Own(compositor.CreateContainerVisual());
             Container.Size = size;
             _progress = Own(progress);
@@ -143,28 +139,6 @@ public static partial class HudComposition
             move.InsertKeyFrame(1f, value, easing);
             move.Duration = rest ? _retreatDuration : _followDuration;
             _progress.StartAnimation("Value", move);
-        }
-
-        public void Replay(double seconds, bool animationsEnabled)
-        {
-            SetProgress(0f);
-            if (_disposed) return;
-
-            if (!animationsEnabled)
-            {
-                SetProgress(1f);
-                return;
-            }
-
-            // The pause replayed at the capture's pace: linear progress run
-            // through the course, which the compositor evaluates itself.
-            using var animation = _compositor.CreateScalarKeyFrameAnimation();
-            using var course = _compositor.CreateCubicBezierEasingFunction(
-                _courseEaseControlPoint1, _courseEaseControlPoint2);
-            animation.InsertKeyFrame(0f, 0f);
-            animation.InsertKeyFrame(1f, 1f, course);
-            animation.Duration = TimeSpan.FromSeconds(Math.Clamp(seconds, 0.1, 30));
-            _progress.StartAnimation("Value", animation);
         }
 
         public void Dispose()
@@ -320,8 +294,7 @@ public static partial class HudComposition
                 CoverageSquareSide(hostSize, centre) * Math.Sqrt(2));
             var maskSurface = visual.Own(
                 PaintArcMaskSurface(
-                    device, graphics, maskSquare, maskConfig,
-                    Microsoft.UI.Colors.White));
+                    device, graphics, maskSquare, maskConfig));
 
             var contourSurface = visual.Own(graphics.CreateDrawingSurface(
                 new Windows.Foundation.Size(hostSize.X, hostSize.Y),

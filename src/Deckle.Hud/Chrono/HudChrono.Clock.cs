@@ -13,7 +13,7 @@ namespace Deckle.Hud;
 // styles the card, it never touches the clock value or the digit text — so the
 // same look can be painted over either a zeroed clock (session start) or a
 // frozen one (end of take). The host (HudWindow.SetState) pairs each transition
-// with the matching clock op; the Playground drives the same public methods.
+// with the matching clock op.
 public sealed partial class HudChrono
 {
     // Recording cap that freezes the chrono at the configured ceiling. The App

@@ -8,7 +8,7 @@
        their file, the dictation and take-audio recovery, the corpus writer and
        the DeckleWhisp event source. No XAML, no UseWinUI and no project that
        holds XAML, so the projects that transcribe through it (the Whisper
-       backend, Setup, Playground) never run the XAML compiler on its account,
+       backend, Setup) never run the XAML compiler on its account,
        and every rule here is tested without a window.
        Deckle.Transcription.Views presents it: the Transcription settings page
        and its Decoding and Streaming subpages. -->

@@ -28,7 +28,7 @@ public interface IAudioRecordingHost
     double VoiceLevelDbfs { get; }
 
     // What the take is for, as the recording milestones name it: dictation,
-    // level_test, listening_test, voice_meter or playground. A free string that
+    // level_test, listening_test or voice_meter. A free string that
     // only tags log lines, no closed set. Without it a Settings test
     // reads in the log exactly like a dictation. Defaulted so a dictation host
     // needs no change.

@@ -52,8 +52,8 @@ public static partial class HudComposition
     // full-saturation HSV rainbow reads with yellow much brighter
     // than blue, which was visible as a top/bottom luminance
     // asymmetry on the conic wheel. OKLCh removes that asymmetry.
-    //   OklchLightness 0 = black, 1 = white. 0.75 is bright-but-not-
-    //                  blinding, comparable to a vivid mid-tone.
+    //   OklchLightness 0 = black, 1 = white. the default 0.65 is a
+    //                  vivid mid-tone, bright but not blinding.
     //   OklchChroma    saturation in OKLab space. 0 = greyscale,
     //                  ~0.15 = vivid pastel. sRGB cannot show every hue
     //                  at one chroma: at L=0.75 yellows and blues run
@@ -153,14 +153,14 @@ public static partial class HudComposition
         public ConicArcStrokeConfig() {}
 
         // Shared across Recording, Transcribing and Rewriting.
-        public float StrokeThickness { get; init; } = 4f;
-        public float InsetDip { get; init; } = -2f;
+        public float StrokeThickness { get; init; } = 5f;
+        public float InsetDip { get; init; } = -3f;
 
         // ── Colour palette (paint-time, baked once) ──────────────────────
         // OKLCh replaces HSV so the baked conic wheel has perceptually
         // uniform luminance across hues: a full-saturation HSV rainbow
         // reads with yellow far brighter than blue.
-        public float  OklchLightness     { get; init; } = 0.75f;
+        public float  OklchLightness     { get; init; } = 0.65f;
         public float  OklchChroma        { get; init; } = 0.3f;
         public float  HueStart           { get; init; } = 0f;
         public float  HueRange           { get; init; } = 1f;
@@ -192,9 +192,8 @@ public static partial class HudComposition
         public float  HueEaseP2X         { get; init; } = 0.875f;
         public float  HueEaseP2Y         { get; init; } = 0.625f;
         // Vestigial — the out-in curve above no longer plateaus at cycle
-        // boundaries, so the linear blend is redundant. Kept at 0 so the
-        // playground can still experiment with exotic ease curves that
-        // DO need a floor, but untouched in the shipping path.
+        // boundaries, so the linear blend is redundant. Kept at 0, for an
+        // ease curve that would plateau and need a floor again.
         public float  HueMinSpeedFraction { get; init; } = 0f;
 
         // ── Arc mask shape (white pie slice, alpha-ramped at both ends) ─
@@ -220,9 +219,8 @@ public static partial class HudComposition
 
         // ── Clone-cone placement (the pinned digit reveal) ──────────────
         // Where the reveal cone's centre sits within the host frame, as a
-        // FRACTION of host size (DPI/size-independent, so one slider drives
-        // both the live reveal and the ConicClone preview through the same
-        // value). (0.5, 0.5) = centred — reproduces the contour's cone, so
+        // FRACTION of host size (DPI/size-independent).
+        // (0.5, 0.5) = centred — reproduces the contour's cone, so
         // each digit samples the same slice the contour shows at that point.
         // (0, 0) = top-left corner, the cone radiating from there.
         //
@@ -320,7 +318,7 @@ public static partial class HudComposition
         public float  RecordingConicSpanTurns      { get; init; } = 0.5f;
         public float  RecordingConicLeadFadeTurns  { get; init; } = 1f;
         public float  RecordingConicTailFadeTurns  { get; init; } = 1f;
-        public float  RecordingConicFadeCurve      { get; init; } = 2f;
+        public float  RecordingConicFadeCurve      { get; init; } = 3.5f;
         public bool   RecordingArcMirror           { get; init; } = true;
         public float  RecordingArcPhaseTurns       { get; init; } = 0f;
         public double RecordingBlendSeconds        { get; init; } = 2;
@@ -328,8 +326,8 @@ public static partial class HudComposition
 
     // The grey material at an OKLab lightness: chroma 0 on the same
     // conversion that bakes the wheel, so 1 is white, 0 is black and the
-    // steps in between are perceptually even. Pure, so the Playground and
-    // the tests read the very colour the stroke shows.
+    // steps in between are perceptually even. Pure, so the tests read the
+    // very colour the stroke shows.
     public static Color GreyMaterialColor(float lightness)
         => ColorSpace.OklchToRgb(Math.Clamp(lightness, 0f, 1f), 0f, 0f);
 

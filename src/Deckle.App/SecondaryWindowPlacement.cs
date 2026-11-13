@@ -10,7 +10,6 @@ internal static class SecondaryWindowPlacement
 {
     public const string Settings = "settings";
     public const string Log = "log";
-    public const string Playground = "playground";
     public const string Mail = "mail";
     public const string Atelier = "atelier";
 

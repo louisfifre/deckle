@@ -27,8 +27,6 @@ public static class Glyphs
     public const string Mouse = "";
     public const string Diagnostics = "";
     public const string Logs = "";
-    // Segoe Fluent "Puzzle" (EA86) — the Playground.
-    public const string Playground = "";
 
     // Segoe Fluent "Spelling" (F87B) — proofing / autocorrect.
     public const string Autocorrect = "";
@@ -91,15 +89,9 @@ public static class Glyphs
     public const string Link = "";
     public const string List = "";
 
-    // Same code point as Launch, named for sites where the lightbulb
-    // itself is the intent.
-    public const string LightbulbFilled = "";
-
     public static class Transport
     {
-        public const string Play = "";
         public const string Pause = "";
-        public const string Stop = "";
     }
 
     public static class Badge

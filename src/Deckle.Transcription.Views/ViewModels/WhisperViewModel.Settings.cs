@@ -286,10 +286,9 @@ public partial class WhisperViewModel
         return new CurveFrame(start, max, end, min, xMax, yMax, Axes: true, XUnit: "s", YUnit: "s");
     }
 
-    // The plain-language reading of the envelope the curve eases, the Playground
-    // Segmentation page's sentence. Its words live in the module's .resw like
-    // every other string of the page; a missing entry falls back to the card's
-    // static description.
+    // The plain-language reading of the envelope the curve eases. Its words
+    // live in the module's .resw like every other string of the page; a
+    // missing entry falls back to the card's static description.
     private string? CutCurveSentence()
     {
         string? format = Loc.GetFromOptional("Deckle.Transcription.Views", "WhisperCutCurveSentence_Format");
