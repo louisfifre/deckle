@@ -137,6 +137,8 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── board-dictation.png
 │   │   ├── board-hero.png
 │   │   └── board-rewrite.png
+│   ├── proposals/
+│   │   └── diagnostics-rework.md
 │   ├── research/
 │   │   ├── atelier-boards/
 │   │   │   ├── P12-01-fichiers.dc.html
