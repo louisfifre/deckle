@@ -17,7 +17,7 @@ namespace Deckle.Lighting;
 // the state of the group's lights on connect and writes it back on dispose,
 // the same way the Entertainment output does, so the fallback path does not
 // leave the room on the last colour Ambient pushed. An output built with the
-// public constructor (the Playground, light placement) does neither: it
+// public constructor (light placement) does neither: it
 // would write a stale state over whatever the person did meanwhile.
 public sealed class HueRestLightOutput : IMultiLightOutput
 {
