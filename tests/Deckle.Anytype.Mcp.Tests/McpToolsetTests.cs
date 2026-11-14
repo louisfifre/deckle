@@ -68,6 +68,30 @@ public class McpToolsetTests
         Assert.Contains("schema administration", descriptor.Instructions);
     }
 
+    static readonly string[] SpacePlanTools =
+        ["space_plan_preview", "space_plan_apply", "space_plan_read", "create_type_preview", "create_type"];
+
+    [Fact]
+    public void SchemaAdminMountsTheSpacePlanToolsWithUniqueNames()
+    {
+        var aliases = new AnytypeSpaceAliases(
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase) { ["dev"] = "dummy-space" });
+        var (tools, _) = McpToolset.Build(DummyClient(), ToolProfile.SchemaAdmin, management: false, aliases);
+        var names = Names(tools);
+
+        foreach (string tool in SpacePlanTools) Assert.Contains(tool, names);
+        Assert.Equal(names.Length, names.Distinct().Count());
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void ProjectManagementNeverMountsTheSpacePlanTools(bool management)
+    {
+        var (tools, _) = McpToolset.Build(DummyClient(), ToolProfile.ProjectManagement, management);
+        foreach (string tool in SpacePlanTools) Assert.DoesNotContain(tool, Names(tools));
+    }
+
     [Fact]
     public void EachBuildYieldsFreshDescriptorInstances()
     {

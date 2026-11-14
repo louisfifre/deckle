@@ -59,6 +59,7 @@ public static class McpToolset
     {
         AnytypeSpaceAliases spaces = aliases ?? AnytypeSpaceAliases.Load(api.SpaceId);
         return SchemaAdminToolCatalog.Build(new SchemaAdminGestures(api, spaces))
+            .Concat(SpacePlanToolCatalog.Build(new SpacePlanGestures(api, spaces)))
             .Concat(AnytypeUtilityToolCatalog.Build(
                 new CollectionMembershipGestures(api, spaces, resolver),
                 new SelectValueGestures(api, spaces, resolver)))
