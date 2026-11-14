@@ -23,10 +23,10 @@ internal sealed record SelfCheckTarget(string Window, string? View)
 
     // The windows a full run walks, in walk order. The verdict requires each
     // of them of a full run, and the one named of a targeted run.
-    public static readonly string[] Windows = ["settings", "log", "mail", "atelier"];
+    public static readonly string[] Windows = ["settings", "log", "transcribe-rewrite", "mail", "atelier"];
 
     // The windows whose walk shows more than one view.
-    private static readonly string[] WithViews = ["settings", "mail", "atelier"];
+    private static readonly string[] WithViews = ["settings", "transcribe-rewrite", "mail", "atelier"];
 
     public string Name => View is null ? Window : $"{Window}/{View}";
 

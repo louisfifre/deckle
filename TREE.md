@@ -668,6 +668,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── App.TaskbarWindowsKey.cs
 │   │   ├── App.Theme.cs
 │   │   ├── App.Trackpad.cs
+│   │   ├── App.TranscribeRewrite.cs
 │   │   ├── App.TranscriptPanel.cs
 │   │   ├── App.TrayIncidents.cs
 │   │   ├── App.TrayToggles.cs
@@ -689,6 +690,14 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProdUpdate.cs
 │   │   ├── Program.cs
 │   │   ├── SecondaryWindowPlacement.cs
+│   │   ├── TranscribeRewriteHistory.cs
+│   │   ├── TranscribeRewriteWindow.Capture.cs
+│   │   ├── TranscribeRewriteWindow.Commands.cs
+│   │   ├── TranscribeRewriteWindow.Editor.cs
+│   │   ├── TranscribeRewriteWindow.Feed.cs
+│   │   ├── TranscribeRewriteWindow.Outline.cs
+│   │   ├── TranscribeRewriteWindow.xaml
+│   │   ├── TranscribeRewriteWindow.xaml.cs
 │   │   ├── TrayDeveloperMenu.cs
 │   │   └── TrayIncidentLines.cs
 │   ├── Deckle.Atelier/
@@ -2361,6 +2370,7 @@ _Generated from `git ls-files` — do not edit by hand._
 │   │   ├── ProdUpdateTests.cs
 │   │   ├── ReswMirrorTests.cs
 │   │   ├── SelfCheckTests.cs
+│   │   ├── TranscribeRewriteHistoryTests.cs
 │   │   ├── TrayDeveloperMenuTests.cs
 │   │   ├── TrayIncidentLinesTests.cs
 │   │   └── WindowOpenedEventTests.cs

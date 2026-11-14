@@ -340,6 +340,44 @@ public partial class App
             report.Save(outputFolder);
         }
 
+        if (Wants("transcribe-rewrite"))
+        {
+            // The window empty, then in each state its spec describes
+            // (TranscribeRewriteWindow.Capture.cs), back to empty after.
+            Step("transcribe-rewrite");
+            await OpenAndCaptureAsync(report, run, outputFolder, "transcribe-rewrite", EnsureTranscribeRewriteWindow);
+            TranscribeRewriteWindow transcribe = EnsureTranscribeRewriteWindow();
+            string? onlyState = target?.View;
+            string[] views = [.. TranscribeRewriteWindow.CaptureStates, "long"];
+            if (onlyState is not null && !views.Contains(onlyState))
+                report.Views = [.. views];
+            else
+            {
+                foreach (string state in TranscribeRewriteWindow.CaptureStates)
+                {
+                    if (onlyState is not null && state != onlyState) continue;
+                    Step($"transcribe-rewrite/{state}");
+                    transcribe.ShowStateForCapture(state);
+                    await Task.Delay(600);
+                    report.Surfaces.Add(await CaptureWindowFrameAsync(
+                        run, transcribe, "transcribe-rewrite", state, null, loaded: true, ms: 0));
+                }
+                // The field filled with three hours of transcript, appended
+                // utterance by utterance: the label carries the timing.
+                if (onlyState is null or "long")
+                {
+                    Step("transcribe-rewrite/long");
+                    var clock = System.Diagnostics.Stopwatch.StartNew();
+                    string timing = await transcribe.MeasureLongTranscriptAsync();
+                    report.Surfaces.Add(await CaptureWindowFrameAsync(
+                        run, transcribe, "transcribe-rewrite", "long", timing,
+                        loaded: true, ms: clock.ElapsedMilliseconds));
+                }
+                transcribe.ShowStateForCapture(TranscribeRewriteWindow.EmptyState);
+            }
+            report.Save(outputFolder);
+        }
+
         if (Wants("mail"))
         {
             // The Mail window on its built-in sample: the window once, then each

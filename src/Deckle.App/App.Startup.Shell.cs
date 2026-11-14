@@ -192,14 +192,20 @@ public partial class App
         {
             // Record runs the exact path of the transcription hotkey; the menu
             // closes first, as for any command. Its label follows the engine
-            // state at each open. File transcription opens the system file
-            // picker and runs each file through the dictation pipeline (see
-            // App.FileTranscription.cs).
+            // state at each open. Transcribe and rewrite opens its window, for
+            // one text to work on (App.TranscribeRewrite.cs). File transcription
+            // opens the system file picker and writes each file's .txt beside
+            // it (App.FileTranscription.cs); it stays until the file assistant
+            // of the spec takes over that road.
             if (actions.Count > 0) actions.Add(new TrayMenuSeparator());
             actions.Add(new TrayMenuCommand(
                 "record",
                 () => Loc.Get(_engine?.IsRecording == true ? "TrayPanel_StopRecording" : "TrayPanel_Record"),
                 () => OnHotkey(RecordHotkeyId)));
+            actions.Add(new TrayMenuCommand(
+                "transcribe-rewrite",
+                () => Loc.Get("TrayMenu_TranscribeRewrite"),
+                () => ShowTranscribeRewriteWindowLazy()));
             actions.Add(new TrayMenuCommand(
                 "transcribe-files",
                 () => Loc.Get("TrayMenu_TranscribeFile"),
