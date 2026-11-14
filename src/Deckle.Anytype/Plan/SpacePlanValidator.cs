@@ -69,6 +69,11 @@ internal static class SpacePlanValidator
             if (Name(template).Length == 0) problems.Add("un modèle n'a pas de « name ».");
             if (!typeKeys.Contains(forKey))
                 problems.Add($"{label} : le type « {forKey} » n'est pas déclaré.");
+            // A note has no title: the server keeps a template for one without its
+            // name, so the plan, which finds a template by name, never finds it again
+            // and would create it on every run (trial space, 2026-11-14).
+            if (plan.Manifest.Types.FirstOrDefault(t => t.Key == forKey)?.Layout == "note")
+                problems.Add($"{label} : le type « {forKey} » est une note, sans titre ; un modèle pour lui perd son nom et ne se retrouve plus.");
             ValidateBody(problems, label, template["blocks"] as JsonArray, KnownProperty, tags, typeKeys, plan);
         }
 

@@ -42,7 +42,7 @@ public static class SpacePlanToolCatalog
 
             new(
                 "space_plan_apply",
-                "Apply a previous space_plan_preview. Repeat the exact plan, the same stages and the preview_id; the live state must still match what was reviewed. Builds in creation order, and is idempotent: a second run on a built space does nothing. Pages that exist are never rewritten. Requires confirm:true. The sidebar stage (stages including widgets) is written only with the space owner's key; an editor's key is refused.",
+                "Apply a previous space_plan_preview. Repeat the exact plan, the same stages and the preview_id; the live state must still match what was reviewed. Builds in creation order, and is idempotent: a second run on a built space does nothing. A page that exists and differs has its body rewritten in place, in one edit, keeping its id. With the prune stage it also removes what the preview listed as absent from the plan; a removal the server refuses (an object another key created, a native) is reported and the others go on. Requires confirm:true. The sidebar stage (stages including widgets) is written only with the space owner's key; an editor's key is refused.",
                 Schema(
                     required:
                     [
@@ -62,7 +62,7 @@ public static class SpacePlanToolCatalog
 
             new(
                 "space_plan_read",
-                "Read a configured Anytype space into a plan, read only: its properties and options with colours, its types with panel, default template and views, its templates with bodies and in-body views, its collections and queries with their views, its sidebar, and the pages named in `pages`. The plan is the form space_plan_preview takes, so a space can be read once, corrected by hand and built again elsewhere. Objects are never read. Things the space holds twice (an option, a template) are read once and listed in `reader_notes`.",
+                "Read a configured Anytype space into a plan, read only: its properties and options with colours, its types with panel, display (header list or inline, page width), default template and views, its templates with bodies and in-body views, its collections and queries with their views, its sidebar, and the pages named in `pages`. The plan is the form space_plan_preview takes, so a space can be read once, corrected by hand and built again elsewhere. Objects are never read. Things the space holds twice (an option, a template) are read once and listed in `reader_notes`.",
                 Schema(
                     required: [Prop("space", "string", "Configured space alias, for example home or pm.")],
                     optional:
@@ -136,7 +136,7 @@ public static class SpacePlanToolCatalog
         {
             string word = node?.GetValue<string>() ?? "";
             if (!Enum.TryParse(word, ignoreCase: true, out SpacePlanStages stage) || stage is SpacePlanStages.None or SpacePlanStages.Default)
-                throw new ArgumentException($"Unknown stage '{word}'. Stages: schema, structure, objects, widgets.");
+                throw new ArgumentException($"Unknown stage '{word}'. Stages: schema, structure, objects, widgets, prune.");
             stages |= stage;
         }
         return stages;
@@ -146,11 +146,11 @@ public static class SpacePlanToolCatalog
         ("stages", new JsonObject
         {
             ["type"] = "array",
-            ["description"] = "Which parts of the plan to cover: schema (properties, options, types), structure (panels, collections, queries, templates, views, pages), objects, widgets (the sidebar, owner only). Default: schema and structure.",
+            ["description"] = "Which parts of the plan to cover: schema (properties, options and their colours, types), structure (panels, type display, collections, queries, templates, views, pages), objects, widgets (the sidebar, owner only). Add prune to also remove, within those stages, what the space holds and a section the plan states leaves out: widgets, collection members, templates, queries, collections, types, properties and options; natives are never removed, and a section the plan omits is left alone. Default: schema and structure, no prune.",
             ["items"] = new JsonObject
             {
                 ["type"] = "string",
-                ["enum"] = new JsonArray { "schema", "structure", "objects", "widgets" },
+                ["enum"] = new JsonArray { "schema", "structure", "objects", "widgets", "prune" },
             },
         });
 
@@ -158,7 +158,7 @@ public static class SpacePlanToolCatalog
     {
         ["type"] = "object",
         ["description"] =
-            "A space plan: the schema manifest's `properties`, `types` (each may add `panel` {featured, hidden}, `default_template` and `views`) and `sections`, plus `templates`, `collections`, `queries`, `pages`, `widgets` and `objects`. Keys are snake_case ASCII; nothing holds an Anytype id; references are `type:<key>`, `object:<name>`, and `$self` for the object a view lives in (a filter value). A select option is its name.",
+            "A space plan: the schema manifest's `properties`, `types` (each may add `panel` {featured, hidden}, `display` {header: list|inline, width: 0 automatic to 1}, `default_template` and `views`) and `sections`, plus `templates`, `collections`, `queries`, `pages`, `widgets` and `objects`. Keys are snake_case ASCII; nothing holds an Anytype id; references are `type:<key>`, `object:<name>`, and `$self` for the object a view lives in (a filter value). A select option is its name.",
     };
 
     // The same shape schema_preview returns (kind, key, name per action; conflicts;

@@ -136,6 +136,41 @@ public sealed partial class AnytypeApiClient
         return InnerOrRoot(root, "tag");
     }
 
+    // PATCH /tags/{id}: name and colour of an option that exists. v2 writes a colour
+    // only when it creates an option; this is the one route that changes it after
+    // (color-options.ps1 on Project management, 2026-11-12).
+    public async Task<JsonObject> UpdatePropertyTagAsync(
+        string spaceId,
+        string propertyId,
+        string tagId,
+        JsonObject payload,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(propertyId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tagId);
+        ArgumentNullException.ThrowIfNull(payload);
+
+        JsonObject root = await SendAsync(
+            HttpMethod.Patch, $"{SpacePath(spaceId)}/properties/{propertyId}/tags/{tagId}", payload, ct,
+            replaySafety: RequestReplaySafety.Safe).ConfigureAwait(false);
+        return InnerOrRoot(root, "tag");
+    }
+
+    // DELETE /tags/{id}: v2 has no route that removes an option.
+    public async Task DeletePropertyTagAsync(
+        string spaceId,
+        string propertyId,
+        string tagId,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(propertyId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tagId);
+
+        await SendAsync(
+            HttpMethod.Delete, $"{SpacePath(spaceId)}/properties/{propertyId}/tags/{tagId}", null, ct,
+            parseBody: false).ConfigureAwait(false);
+    }
+
     private static string SpacePath(string spaceId)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(spaceId);

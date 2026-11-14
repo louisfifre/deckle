@@ -15,6 +15,10 @@ public enum SpacePlanStages
     Structure = 2,
     Objects = 4,
     Widgets = 8,
+    // Not a part of the plan but a way to run the others: within the stages asked
+    // for, also remove what the space holds and a stated section of the plan
+    // leaves out. Never on by default; the preview lists every removal.
+    Prune = 16,
     Default = Schema | Structure,
 }
 
@@ -64,7 +68,9 @@ public sealed class SpacePlanGestures(AnytypeApiClient api, AnytypeSpaceAliases 
             digest.Append(schema.PreviewId);
         }
 
-        if (stages.HasFlag(SpacePlanStages.Structure) || stages.HasFlag(SpacePlanStages.Objects) || stages.HasFlag(SpacePlanStages.Widgets))
+        // The schema stage has steps of its own here too: option colours and, with a
+        // prune, the removal of types, properties and options.
+        if ((stages & (SpacePlanStages.Schema | SpacePlanStages.Structure | SpacePlanStages.Objects | SpacePlanStages.Widgets)) != 0)
         {
             (IReadOnlyList<PlanStep> steps, _) = await StepsAsync(spaceId, plan, stages, ct).ConfigureAwait(false);
             foreach (PlanStep step in steps)
@@ -116,7 +122,7 @@ public sealed class SpacePlanGestures(AnytypeApiClient api, AnytypeSpaceAliases 
             using IDisposable _ = await api.AcquireWriteScopeAsync("space_plan_apply", spaceId, ct).ConfigureAwait(false);
             (IReadOnlyList<PlanStep> steps, SpacePlanRead live) =
                 await StepsAsync(spaceId, plan, stages, ct).ConfigureAwait(false);
-            var executor = new SpacePlanExecutor(api, new PlanApi(api.V2, spaceId), live.Refs, live.Templates);
+            var executor = new SpacePlanExecutor(api, new PlanApi(api.V2, spaceId), live);
             await executor.RunAsync(steps, log, ct).ConfigureAwait(false);
 
             // The search index lags a few seconds behind a write (runbook, 2026-11-12), and
@@ -192,6 +198,11 @@ public sealed class SpacePlanGestures(AnytypeApiClient api, AnytypeSpaceAliases 
         return SpacePlanFragments.ForType(live["properties"] as JsonArray ?? [], typeArgs);
     }
 
+    // Steps of the structure planner that belong to the schema stage: they run
+    // with it even when the structure stage is not asked for.
+    private static readonly HashSet<string> SchemaKinds =
+        new(StringComparer.Ordinal) { "option_color", "option_delete", "type_delete", "property_delete" };
+
     private static bool HasSchema(SpacePlan plan) =>
         plan.Manifest.Types.Count > 0 || plan.Manifest.Properties.Count > 0 || plan.Manifest.Sections.Count > 0;
 
@@ -217,10 +228,13 @@ public sealed class SpacePlanGestures(AnytypeApiClient api, AnytypeSpaceAliases 
         IReadOnlyList<PlanStep> steps = SpacePlanPlanner.Plan(
             plan, live.Plan, existingObjects,
             includeObjects: stages.HasFlag(SpacePlanStages.Objects),
-            includeWidgets: stages.HasFlag(SpacePlanStages.Widgets));
+            includeWidgets: stages.HasFlag(SpacePlanStages.Widgets),
+            includeSchema: stages.HasFlag(SpacePlanStages.Schema),
+            prune: stages.HasFlag(SpacePlanStages.Prune));
         if (!stages.HasFlag(SpacePlanStages.Structure))
-            steps = steps.Where(s => s.Kind.StartsWith("object_", StringComparison.Ordinal)
-                || s.Kind.StartsWith("widget_", StringComparison.Ordinal)).ToList();
+            steps = steps.Where(s => s.Kind.StartsWith("object_create", StringComparison.Ordinal)
+                || s.Kind.StartsWith("widget_", StringComparison.Ordinal)
+                || SchemaKinds.Contains(s.Kind)).ToList();
         return (steps, live);
     }
 

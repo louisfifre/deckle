@@ -25,15 +25,21 @@ internal sealed record SpacePlan(
     IReadOnlyList<JsonObject> Queries,
     IReadOnlyList<JsonObject> Pages,
     IReadOnlyList<JsonObject> Widgets,
-    IReadOnlyList<JsonObject> Objects)
+    IReadOnlyList<JsonObject> Objects,
+    IReadOnlySet<string> Declared)
 {
     public const int CurrentVersion = 1;
+
+    // Whether the file states a section at all. A prune removes from a section
+    // only what a stated section leaves out: a plan without `templates` says
+    // nothing about the space's templates, it does not ask to remove them.
+    public bool States(string section) => Declared.Contains(section);
 
     // Top-level members the manifest grammar does not own.
     internal static readonly string[] PlanOnlyMembers =
         ["plan_version", "reader_notes", "templates", "collections", "queries", "pages", "widgets", "objects"];
 
-    private static readonly string[] TypeOnlyMembers = ["panel", "default_template", "views"];
+    private static readonly string[] TypeOnlyMembers = ["panel", "default_template", "views", "display"];
 
     public static SpacePlan Parse(JsonObject root)
     {
@@ -87,7 +93,8 @@ internal sealed record SpacePlan(
             Section(root, "queries"),
             Section(root, "pages"),
             Section(root, "widgets"),
-            Section(root, "objects"));
+            Section(root, "objects"),
+            root.Where(kv => kv.Value is not null).Select(kv => kv.Key).ToHashSet(StringComparer.Ordinal));
     }
 
     private static List<JsonObject> Section(JsonObject root, string name)
@@ -107,7 +114,8 @@ internal sealed record PlanTypeExtras(
     IReadOnlyList<string> Hidden,
     string? DefaultTemplate,
     JsonArray? Views,
-    IReadOnlyList<string> AllProperties)
+    IReadOnlyList<string> AllProperties,
+    PlanTypeDisplay? Display = null)
 {
     public static PlanTypeExtras Parse(string typeKey, JsonObject type)
     {
@@ -129,7 +137,7 @@ internal sealed record PlanTypeExtras(
         // Every property the type holds, the hidden ones included: the manifest the
         // schema stage reads has the hidden ones taken out.
         var all = Keys(type["properties"], $"type {typeKey}.properties").ToList();
-        return new PlanTypeExtras(featured, hidden, template, type["views"] as JsonArray, all);
+        return new PlanTypeExtras(featured, hidden, template, type["views"] as JsonArray, all, PlanTypeDisplay.Parse(typeKey, type["display"]));
     }
 
     private static IEnumerable<string> Keys(JsonNode? node, string label)
@@ -139,4 +147,60 @@ internal sealed record PlanTypeExtras(
         foreach (JsonNode? item in array)
             yield return KeyRules.Validate(item?.GetValue<string>() ?? "", label);
     }
+}
+
+// How a type draws its own objects, set in the type's settings in the app:
+// `header` is « Properties view » (list: one property per line under the title;
+// inline: side by side), `width` the page width (0 = automatic, else 0 to 1).
+// Both live on the type as an object, not in its type settings: they are read
+// from GET objects/{type id} and written by set_properties on it, since
+// PATCH types/{key} refuses set_properties (measured 2026-11-14). Either may be
+// left out, and then the plan says nothing about it.
+internal sealed record PlanTypeDisplay(string? Header, double? Width)
+{
+    public const string HeaderProperty = "header_relations_layout";
+    public const string WidthProperty = "layout_width";
+
+    public static PlanTypeDisplay? Parse(string typeKey, JsonNode? node)
+    {
+        if (node is null) return null;
+        if (node is not JsonObject obj)
+            throw new ArgumentException($"Le champ « display » du type « {typeKey} » doit être un objet.");
+        JsonShape.RequireOnly(obj, ["header", "width"], $"display du type {typeKey}");
+        string? header = obj["header"]?.GetValue<string>();
+        if (header is not (null or "list" or "inline"))
+            throw new ArgumentException($"type {typeKey} : display.header vaut « list » ou « inline », pas « {header} ».");
+        double? width = obj["width"]?.GetValue<double>();
+        if (width is < 0 or > 1)
+            throw new ArgumentException($"type {typeKey} : display.width va de 0 (automatique) à 1, pas {width}.");
+        return new PlanTypeDisplay(header, width);
+    }
+
+    // The type object's properties as the API gives them; a value it lacks reads
+    // as the app's default (inline, automatic).
+    public static PlanTypeDisplay FromWire(JsonObject? properties)
+    {
+        double header = Number(properties?[HeaderProperty]);
+        return new PlanTypeDisplay(header == 1 ? "list" : "inline", Number(properties?[WidthProperty]));
+    }
+
+    public JsonObject ToPlan()
+    {
+        var node = new JsonObject();
+        if (Header is not null) node["header"] = Header;
+        if (Width is not null) node["width"] = Width;
+        return node;
+    }
+
+    // The set_properties values for what this display states and `live` lacks.
+    public JsonObject Differences(PlanTypeDisplay live)
+    {
+        var set = new JsonObject();
+        if (Header is not null && Header != live.Header) set[HeaderProperty] = Header == "list" ? 1 : 0;
+        if (Width is not null && Math.Abs(Width.Value - (live.Width ?? 0)) > 1e-9) set[WidthProperty] = Width.Value;
+        return set;
+    }
+
+    private static double Number(JsonNode? node) =>
+        node is JsonValue value && value.TryGetValue(out double d) ? d : 0;
 }
